@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.modules.identity.models import Permission, PlatformAdmin, RefreshToken, Role, User
+from app.modules.identity.models import Organization, Permission, PlatformAdmin, RefreshToken, Role, User
 
 class IdentityRepository:
   def __init__(self, session: AsyncSession):
@@ -23,6 +23,7 @@ class IdentityRepository:
         .selectinload(Role.permissions),
       )
     )
+
     return result.scalar_one_or_none()
 
   async def get_user_by_email(
@@ -38,7 +39,101 @@ class IdentityRepository:
         .selectinload(Role.permissions),
       )
     )
+
     return result.scalar_one_or_none()
+
+  async def get_user_by_email_unverified(
+    self,
+    email: str,
+  ) -> User | None:
+    result = await self.session.execute(
+      select(User)
+      .where(
+        User.email == email.strip().lower(),
+        User.is_verified.is_(False),
+      )
+      .options(
+        selectinload(User.organization),
+        selectinload(User.role)
+        .selectinload(Role.permissions),
+      )
+    )
+
+    return result.scalar_one_or_none()
+
+  async def create_user(
+    self,
+    *,
+    organization_id: UUID,
+    role_id: UUID,
+    email: str,
+    password_hash: str,
+    first_name: str,
+    last_name: str,
+    is_active: bool = True,
+    is_verified: bool = False,
+  ) -> User:
+    user = User(
+      organization_id=organization_id,
+      role_id=role_id,
+      email=email.strip().lower(),
+      password_hash=password_hash,
+      first_name=first_name,
+      last_name=last_name,
+      is_active=is_active,
+      is_verified=is_verified,
+    )
+
+    self.session.add(user)
+    await self.session.flush()
+
+    return user
+
+  async def add_user(
+    self,
+    user: User,
+  ) -> User:
+    self.session.add(user)
+    await self.session.flush()
+
+    return user
+
+  async def get_organization_by_name(
+    self,
+    name: str,
+  ) -> Organization | None:
+    result = await self.session.execute(
+      select(Organization)
+      .where(Organization.name == name.strip())
+    )
+
+    return result.scalar_one_or_none()
+
+  async def create_organization(
+    self,
+    *,
+    name: str,
+    slug: str,
+  ) -> Organization:
+    organization = Organization(
+      name=name.strip(),
+      slug=slug.strip().lower(),
+      is_active=True,
+    )
+
+    self.session.add(organization)
+    await self.session.flush()
+
+    return organization
+
+  async def add_organization(
+    self,
+    organization: Organization,
+  ) -> Organization:
+    self.session.add(organization)
+    await self.session.flush()
+
+    return organization
 
   async def get_role_by_id(
     self,
@@ -51,7 +146,47 @@ class IdentityRepository:
         selectinload(Role.permissions),
       )
     )
+
     return result.scalar_one_or_none()
+
+  async def get_role_by_name(
+    self,
+    *,
+    organization_id: UUID,
+    name: str,
+  ) -> Role | None:
+    result = await self.session.execute(
+      select(Role)
+      .where(
+        Role.organization_id == organization_id,
+        Role.name == name,
+      )
+      .options(
+        selectinload(Role.permissions),
+      )
+    )
+
+    return result.scalar_one_or_none()
+
+  async def create_role(
+    self,
+    *,
+    organization_id: UUID,
+    name: str,
+    description: str | None = None,
+    is_system: bool = False,
+  ) -> Role:
+    role = Role(
+      organization_id=organization_id,
+      name=name,
+      description=description,
+      is_system=is_system,
+    )
+
+    self.session.add(role)
+    await self.session.flush()
+
+    return role
 
   async def get_permission_by_key(
     self,
@@ -61,6 +196,7 @@ class IdentityRepository:
       select(Permission)
       .where(Permission.key == key)
     )
+
     return result.scalar_one_or_none()
 
   async def get_platform_admin(
@@ -71,6 +207,7 @@ class IdentityRepository:
       select(PlatformAdmin)
       .where(PlatformAdmin.user_id == user_id)
     )
+
     return result.scalar_one_or_none()
 
   async def get_refresh_token_by_hash(
@@ -87,6 +224,7 @@ class IdentityRepository:
         selectinload(RefreshToken.organization),
       )
     )
+
     return result.scalar_one_or_none()
 
   async def add_refresh_token(
@@ -95,6 +233,7 @@ class IdentityRepository:
   ) -> RefreshToken:
     self.session.add(refresh_token)
     await self.session.flush()
+
     return refresh_token
 
   async def revoke_refresh_token(
@@ -102,9 +241,12 @@ class IdentityRepository:
     refresh_token: RefreshToken,
     replacement_id: UUID | None = None,
   ) -> None:
-    refresh_token.revoked_at = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc)
+
+    refresh_token.revoked_at = now
     refresh_token.replaced_by_token_id = replacement_id
-    refresh_token.last_used_at = datetime.now(timezone.utc)
+    refresh_token.last_used_at = now
+
     await self.session.flush()
 
   async def revoke_all_user_refresh_tokens(
@@ -124,6 +266,7 @@ class IdentityRepository:
         last_used_at=now,
       )
     )
+
     await self.session.flush()
 
   async def update_user_last_login(
@@ -133,6 +276,7 @@ class IdentityRepository:
     user.last_login_at = datetime.now(timezone.utc)
     user.failed_login_attempts = 0
     user.locked_until = None
+
     await self.session.flush()
 
   async def record_failed_login(
@@ -145,6 +289,7 @@ class IdentityRepository:
 
     if locked_until is not None:
       user.locked_until = locked_until
+
     await self.session.flush()
 
   async def update_password(
@@ -156,6 +301,7 @@ class IdentityRepository:
     user.password_changed_at = datetime.now(
       timezone.utc
     )
+
     await self.session.flush()
 
   async def mark_email_verified(
@@ -163,4 +309,5 @@ class IdentityRepository:
     user: User,
   ) -> None:
     user.is_verified = True
+
     await self.session.flush()

@@ -22,13 +22,15 @@ class LoginRequest(PasswordMixin):
 
 class RegisterRequest(BaseModel):
   email: EmailStr
+
   password: str = Field(
-    min_length=12,
-    max_length=128,
+    min_length=PASSWORD_MIN_LENGTH,
+    max_length=PASSWORD_MAX_LENGTH,
   )
+
   password_confirmation: str = Field(
-    min_length=12,
-    max_length=128,
+    min_length=PASSWORD_MIN_LENGTH,
+    max_length=PASSWORD_MAX_LENGTH,
   )
 
   first_name: str = Field(
@@ -58,20 +60,24 @@ class RegisterRequest(BaseModel):
     value: str,
     info,
   ) -> str:
-    if (
-      "password" in info.data
-      and value != info.data["password"]
-    ):
-      raise ValueError(
-        "Passwords do not match."
-      )
+    password = info.data.get("password")
+
+    if password is not None and value != password:
+      raise ValueError("Passwords do not match.")
+
     return value
 
 class RefreshRequest(BaseModel):
-  refresh_token: str = Field(min_length=1, max_length=4096)
+  refresh_token: str = Field(
+    min_length=1,
+    max_length=4096,
+  )
 
 class LogoutRequest(BaseModel):
-  refresh_token: str = Field(min_length=1, max_length=4096)
+  refresh_token: str = Field(
+    min_length=1,
+    max_length=4096,
+  )
 
 class ForgotPasswordRequest(BaseModel):
   email: EmailStr
@@ -82,11 +88,16 @@ class ForgotPasswordRequest(BaseModel):
     return str(value).strip().lower()
 
 class ResetPasswordRequest(BaseModel):
-  token: str = Field(min_length=1, max_length=4096)
+  token: str = Field(
+    min_length=1,
+    max_length=4096,
+  )
+
   password: str = Field(
     min_length=PASSWORD_MIN_LENGTH,
     max_length=PASSWORD_MAX_LENGTH,
   )
+
   password_confirmation: str = Field(
     min_length=PASSWORD_MIN_LENGTH,
     max_length=PASSWORD_MAX_LENGTH,
@@ -111,10 +122,12 @@ class ChangePasswordRequest(BaseModel):
     min_length=1,
     max_length=128,
   )
+
   new_password: str = Field(
     min_length=PASSWORD_MIN_LENGTH,
     max_length=PASSWORD_MAX_LENGTH,
   )
+
   new_password_confirmation: str = Field(
     min_length=PASSWORD_MIN_LENGTH,
     max_length=PASSWORD_MAX_LENGTH,
@@ -131,11 +144,13 @@ class ChangePasswordRequest(BaseModel):
 
     if password is not None and value != password:
       raise ValueError("Passwords do not match.")
-
     return value
 
 class VerifyEmailRequest(BaseModel):
-  token: str = Field(min_length=1, max_length=4096)
+  token: str = Field(
+    min_length=1,
+    max_length=4096,
+  )
 
 class ResendVerificationRequest(BaseModel):
   email: EmailStr
@@ -160,7 +175,7 @@ class RoleResponse(BaseModel):
   description: str | None
   is_system: bool
   permissions: list[PermissionResponse] = Field(
-    default_factory=list
+    default_factory=list,
   )
 
 class OrganizationResponse(BaseModel):
@@ -206,7 +221,3 @@ class PasswordResetResponse(BaseModel):
 class RegistrationResponse(BaseModel):
   user: UserResponse
   message: str
-  
-class VerifyEmailRequest(BaseModel):
-  token: str = Field(min_length=1, max_length=4096,
-  )

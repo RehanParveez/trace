@@ -8,7 +8,7 @@ class Settings(BaseSettings):
   debug: bool = True
   api_v1_prefix: str = "/api/v1"
   backend_host: str = "0.0.0.0"
-  backend_port: int = 8000
+  backend_port: int = 8015
   database_url: str
   
   redis_url: str
@@ -45,7 +45,7 @@ class Settings(BaseSettings):
   smtp_from_name: str = "Trace"
   smtp_use_tls: bool = True
   
-  frontend_base_url: str = "http://localhost:5085"
+  frontend_base_url: str = "http://localhost:5094"
   ai_enabled: bool = False
   ollama_base_url: str = "http://ollama:11434"
   ollama_model: str = "qwen2.5:7b-instruct"
@@ -53,7 +53,7 @@ class Settings(BaseSettings):
   supported_locales: str = "en,ur"
   default_currency: str = "PKR"
   default_timezone: str = "Asia/Karachi"
-  cors_origins: str = "http://localhost:5085"
+  cors_origins: str = "http://localhost:5094"
   model_config = SettingsConfigDict(
     env_file=".env",
     extra="ignore",

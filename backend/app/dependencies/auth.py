@@ -5,6 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.exceptions import TraceException
+from app.core.redis import IdentityTokenStore, redis_client
 from app.core.security import decode_token
 from app.modules.identity.enums import TokenType
 from app.modules.identity.models import User
@@ -37,6 +38,7 @@ async def get_current_user(
       status_code=401,
       code="INVALID_ACCESS_TOKEN",
     ) from exc
+
   if payload.get("type") != TokenType.ACCESS:
     raise TraceException(
       "Invalid access token.",
@@ -46,6 +48,7 @@ async def get_current_user(
 
   subject = payload.get("sub")
   organization_id = payload.get("org_id")
+
   if not subject or not organization_id:
     raise TraceException(
       "Invalid access token claims.",
@@ -64,9 +67,17 @@ async def get_current_user(
       status_code=401,
       code="INVALID_ACCESS_TOKEN",
     ) from exc
+  token_store = IdentityTokenStore(
+    redis_client
+  )
 
-  service = IdentityService(session)
-  user = await service.get_current_user(user_id)
+  service = IdentityService(
+    session=session,
+    token_store=token_store,
+  )
+  user = await service.get_current_user(
+    user_id
+  )
 
   if user.organization_id != token_organization_id:
     raise TraceException(
@@ -77,6 +88,8 @@ async def get_current_user(
   return user
 
 async def get_current_user_id(
-  current_user: User = Depends(get_current_user),
+  current_user: User = Depends(
+    get_current_user
+  ),
 ) -> UUID:
   return current_user.id
