@@ -1,22 +1,82 @@
+from __future__ import annotations
+from uuid import UUID
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
 from app.core.exceptions import TraceException
 from app.core.security import decode_token
+from app.modules.identity.enums import TokenType
+from app.modules.identity.models import User
+from app.modules.identity.service import IdentityService
 
-bearer = HTTPBearer(auto_error=False)
+bearer_scheme = HTTPBearer(
+  auto_error=False,
+)
 
-async def get_current_subject(
-  credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
-) -> str:
-  if not credentials:
-    raise TraceException("Authentication required.", 401, "AUTH_REQUIRED")
+async def get_current_user(
+  credentials: HTTPAuthorizationCredentials | None = Depends(
+    bearer_scheme
+  ),
+  session: AsyncSession = Depends(get_db),
+) -> User:
+  if credentials is None:
+    raise TraceException(
+      "Authentication required.",
+      status_code=401,
+      code="AUTHENTICATION_REQUIRED",
+    )
 
   try:
-    payload = decode_token(credentials.credentials)
+    payload = decode_token(
+      credentials.credentials
+    )
   except Exception as exc:
-    raise TraceException("wrong or expired token.", 401, "INVALID_TOKEN") from exc
+    raise TraceException(
+      "Invalid or expired access token.",
+      status_code=401,
+      code="INVALID_ACCESS_TOKEN",
+    ) from exc
+  if payload.get("type") != TokenType.ACCESS:
+    raise TraceException(
+      "Invalid access token.",
+      status_code=401,
+      code="INVALID_ACCESS_TOKEN",
+    )
 
-  if payload.get("type") != "access" or not payload.get("sub"):
-    raise TraceException("wrong access token.", 401, "INVALID_ACCESS_TOKEN")
+  subject = payload.get("sub")
+  organization_id = payload.get("org_id")
+  if not subject or not organization_id:
+    raise TraceException(
+      "Invalid access token claims.",
+      status_code=401,
+      code="INVALID_ACCESS_TOKEN",
+    )
 
-  return str(payload["sub"])
+  try:
+    user_id = UUID(subject)
+    token_organization_id = UUID(
+      organization_id
+    )
+  except ValueError as exc:
+    raise TraceException(
+      "Invalid access token claims.",
+      status_code=401,
+      code="INVALID_ACCESS_TOKEN",
+    ) from exc
+
+  service = IdentityService(session)
+  user = await service.get_current_user(user_id)
+
+  if user.organization_id != token_organization_id:
+    raise TraceException(
+      "Authentication context mismatch.",
+      status_code=401,
+      code="AUTHENTICATION_CONTEXT_MISMATCH",
+    )
+  return user
+
+async def get_current_user_id(
+  current_user: User = Depends(get_current_user),
+) -> UUID:
+  return current_user.id

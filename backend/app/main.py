@@ -5,6 +5,7 @@ from app.core.config import settings
 from app.core.database import dispose_engine
 from app.core.exceptions import TraceException, trace_exception_handler
 from app.core.logging import configure_logging
+from app.modules.identity.router import router as identity_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +28,9 @@ app.add_middleware(
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],
+)
+
+app.include_router(identity_router, prefix = "/api/v1",
 )
 
 @app.get("/health", tags=["system"])
