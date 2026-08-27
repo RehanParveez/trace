@@ -96,7 +96,7 @@ export function ProfilePage() {
             </div>
 
             <Link
-              to="/app/dashboard"
+              to="/app/profile"
               className="text-[12px] font-bold text-[#B98626]"
             >
               ← Back to workspace

@@ -28,7 +28,7 @@ export function LoginPage() {
         };
       } | null
     )?.from?.pathname ??
-    "/app/dashboard";
+    "/app/profile";
 
   useEffect(() => {
     if (login.isSuccess) {
