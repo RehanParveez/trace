@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from app.core.config import settings
 from app.core.database import Base
 from app.modules.identity import models as identity_models
+from app.modules.subscriptions import models as subscriptions_models
 
 config = context.config
 

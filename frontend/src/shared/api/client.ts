@@ -4,7 +4,7 @@ import { identityStorage } from "../../modules/identity/utils/identity.storage";
 
 export const apiClient = axios.create({
   baseURL:
-    import.meta.env.VITE_API_BASE_URL ??
+    import.meta.env.VITE_API_BASE_URL ||
     "/api/v1",
 
   headers: {
@@ -77,29 +77,36 @@ apiClient.interceptors.response.use(
     original._retry = true;
 
     if (!refreshPromise) {
-      refreshPromise =
-        apiClient
-          .post("/auth/refresh", {
-            refresh_token:
-              refreshToken,
-          })
-          .then(({ data }) => {
-            identityStorage.setTokens(
-              data.access_token,
-              data.refresh_token,
-            );
+     refreshPromise =
+     apiClient
+      .post("/auth/refresh", {
+        refresh_token: refreshToken,
+      })
+      .then(({ data }) => {
+        console.log('Refresh response data:', data);
+        console.log('data.access_token:', data.access_token);
+        console.log('data.tokens?.access_token:', data.tokens?.access_token);
+        
+        const accessToken = data.access_token || data.tokens?.access_token;
+        const refreshToken = data.refresh_token || data.tokens?.refresh_token;
+        
+        if (!accessToken || !refreshToken) {
+          console.error('Invalid token refresh response:', data);
+          return null;
+        }
 
-            return data.access_token as string;
-          })
-          .catch(() => {
-            identityStorage.clear();
+        identityStorage.setTokens(accessToken, refreshToken);
+        return accessToken as string;
+      })
+      .catch(() => {
+        identityStorage.clear();
 
-            return null;
-          })
-          .finally(() => {
-            refreshPromise = null;
-          });
-    }
+        return null;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+}
 
     const nextToken =
       await refreshPromise;

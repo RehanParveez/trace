@@ -47,6 +47,14 @@ export function LoginPage() {
   ) {
     event.preventDefault();
 
+    console.log('=== LOGIN SUBMIT DEBUG ===');
+    console.log('Email:', email.trim().toLowerCase());
+    console.log('Password:', password ? '***' : '(empty)');
+    console.log('Payload being sent:', {
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
     login.mutate({
       email: email.trim().toLowerCase(),
       password,

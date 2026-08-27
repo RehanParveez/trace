@@ -6,6 +6,8 @@ from app.core.database import dispose_engine
 from app.core.exceptions import TraceException, trace_exception_handler
 from app.core.logging import configure_logging
 from app.modules.identity.router import router as identity_router
+from app.modules.organizations.router import router as organizations_router
+from app.modules.subscriptions.router import router as subscriptions_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -16,7 +18,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
   title=settings.app_name,
   version="0.1.0",
-  description="Trace — Construction Intelligence Platform",
+  description="Trace, Construction Intelligence Platform",
   lifespan=lifespan,
 )
 
@@ -31,6 +33,10 @@ app.add_middleware(
 )
 
 app.include_router(identity_router, prefix = "/api/v1",
+)
+app.include_router(organizations_router, prefix = "/api/v1",
+)
+app.include_router(subscriptions_router, prefix = "/api/v1",
 )
 
 @app.get("/health", tags=["system"])

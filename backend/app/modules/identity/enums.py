@@ -15,3 +15,6 @@ class PermissionKey(StrEnum):
   ORGANIZATION_READ = "organization.read"
   ORGANIZATION_MANAGE = "organization.manage"
   ORGANIZATION_MEMBERS_MANAGE = "organization.members.manage"
+  SUBSCRIPTION_READ = "subscription.read"
+  SUBSCRIPTION_MANAGE = "subscription.manage"
+  SUBSCRIPTION_BILLING_MANAGE = "subscription.billing.manage"
