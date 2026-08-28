@@ -55,6 +55,9 @@ async def seed_identity() -> None:
       PermissionKey.ORGANIZATION_MEMBERS_MANAGE: (
         "Manage organization members."
       ),
+      PermissionKey.SUBSCRIPTION_READ: "Read access to subscription data.",
+      PermissionKey.SUBSCRIPTION_MANAGE: "Manage subscription plan.",
+      PermissionKey.SUBSCRIPTION_BILLING_MANAGE: "Manage subscription billing.",
     }
 
     permissions: dict[str, Permission] = {}
@@ -87,22 +90,46 @@ async def seed_identity() -> None:
       role = Role(
         id=uuid4(),
         organization_id=organization.id,
-        name = "Company Admin",
-        description=(
-          "Full administrative access to the organization."
-        ),
+        name="Company Admin",
+        description="Full administrative access to the organization.",
         is_system=True,
       )
-      role.permissions = list(
-        permissions.values()
-      )
+      role.permissions = list(permissions.values())
       session.add(role)
       await session.flush()
-
     else:
-      role.permissions = list(
-        permissions.values()
+      role.permissions = list(permissions.values())
+
+    target_email = "npm@gmail.com"
+    user = (
+      await session.execute(
+        select(User).where(User.email == target_email)
       )
+    ).scalar_one_or_none()
+
+    if user is not None:
+      user_role = (
+        await session.execute(
+          select(Role).where(Role.id == user.role_id)
+        )
+      ).scalar_one_or_none()
+
+      if user_role is not None:
+        current_keys = {p.key for p in user_role.permissions}
+        new_perms = [
+          p for key, p in permissions.items()
+          if key not in current_keys
+        ]
+        if new_perms:
+          user_role.permissions.extend(new_perms)
+          print(f"Granted new permissions to role '{user_role.name}' for user {target_email}")
+        else:
+          print(f"Role '{user_role.name}' for {target_email} already has all permissions")
+      else:
+        print(f"Role not found for user {target_email}")
+    else:
+      print(f"User {target_email} not found; skipping permission grant")
+
     user_result = await session.execute(
       select(User).where(
         User.email == DEFAULT_USER["email"]
@@ -115,9 +142,7 @@ async def seed_identity() -> None:
         organization_id=organization.id,
         role_id=role.id,
         email=DEFAULT_USER["email"],
-        password_hash=hash_password(
-          DEFAULT_USER["password"]
-        ),
+        password_hash=hash_password(DEFAULT_USER["password"]),
         first_name=DEFAULT_USER["first_name"],
         last_name=DEFAULT_USER["last_name"],
         is_active=True,
@@ -125,7 +150,6 @@ async def seed_identity() -> None:
       )
       session.add(user)
       await session.flush()
-
     else:
       user.organization_id = organization.id
       user.role_id = role.id
@@ -137,16 +161,13 @@ async def seed_identity() -> None:
         PlatformAdmin.user_id == user.id
       )
     )
-    platform_admin = (
-      platform_admin_result.scalar_one_or_none()
-    )
+    platform_admin = platform_admin_result.scalar_one_or_none()
 
     if platform_admin is None:
       platform_admin = PlatformAdmin(
         user_id=user.id,
       )
       session.add(platform_admin)
-
     await session.commit()
     print("Identity seed completed.")
     print(f"Organization: {organization.slug}")

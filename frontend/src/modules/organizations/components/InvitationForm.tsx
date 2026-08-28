@@ -1,18 +1,13 @@
-import {useState,
-} from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
-import type {Role,
-} from "../types/organization.types";
-import {Button, Field, Icon, inputClass, Panel, PanelHeader,
+import type { Role } from "../types/organization.types";
+import {Badge, Button, Field, Icon, inputClass, Panel, PanelHeader,
 } from "./OrganizationUi";
 
 interface InvitationFormProps {
   roles: Role[];
   isSubmitting?: boolean;
-  onSubmit: (
-    email: string,
-    roleId: string,
-  ) => void;
+  onSubmit: (email: string, roleId: string) => void;
   onCancel?: () => void;
 }
 
@@ -22,23 +17,15 @@ export function InvitationForm({
   onSubmit,
   onCancel,
 }: InvitationFormProps) {
-  const [email, setEmail] =
-    useState("");
+  const [email, setEmail] = useState("");
+  const [roleId, setRoleId] = useState(roles[0]?.id ?? "");
 
-  const [roleId, setRoleId] =
-    useState(
-      roles[0]?.id ?? "",
-    );
+  const selectedRole = roles.find((role) => role.id === roleId);
 
-  function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    onSubmit(
-      email.trim().toLowerCase(),
-      roleId,
-    );
+    onSubmit(email.trim().toLowerCase(), roleId);
   }
 
   return (
@@ -57,11 +44,7 @@ export function InvitationForm({
           <input
             type="email"
             value={email}
-            onChange={(event) =>
-              setEmail(
-                event.target.value,
-              )
-            }
+            onChange={(event) => setEmail(event.target.value)}
             required
             className={inputClass}
             placeholder="name@company.com"
@@ -72,34 +55,21 @@ export function InvitationForm({
         <Field label="Role">
           <select
             value={roleId}
-            onChange={(event) =>
-              setRoleId(
-                event.target.value,
-              )
-            }
+            onChange={(event) => setRoleId(event.target.value)}
             required
             className={inputClass}
           >
-            {roles.map(
-              (role) => (
-                <option
-                  key={role.id}
-                  value={role.id}
-                >
-                  {role.name}
-                </option>
-              ),
-            )}
+            {roles.map((role) => (
+              <option key={role.id} value={role.id}>
+                {role.name}
+              </option>
+            ))}
           </select>
         </Field>
 
         <div className="flex justify-end gap-2">
           {onCancel ? (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onCancel}
-            >
+            <Button type="button" variant="ghost" onClick={onCancel}>
               Cancel
             </Button>
           ) : null}
@@ -107,21 +77,30 @@ export function InvitationForm({
           <Button
             type="submit"
             variant="primary"
-            disabled={
-              isSubmitting ||
-              !roleId
-            }
+            disabled={isSubmitting || !roleId}
           >
-            <Icon
-              name="mail"
-              size={13}
-            />
+            <Icon name="mail" size={13} />
 
-            {isSubmitting
-              ? "Sending…"
-              : "Send invitation"}
+            {isSubmitting ? "Sending…" : "Send invitation"}
           </Button>
         </div>
+
+        {selectedRole ? (
+          <div className="flex items-center gap-2 md:col-span-3">
+            <span className="text-[10.5px] text-[#6b6152]">
+              This invitation grants:
+            </span>
+
+            <Badge tone={selectedRole.is_system ? "blue" : "slate"}>
+              {selectedRole.name} ·{" "}
+              {selectedRole.is_system ? "System" : "Custom"}
+            </Badge>
+
+            <span className="font-mono text-[10px] text-[#a2957c]">
+              {selectedRole.permissions.length} permissions
+            </span>
+          </div>
+        ) : null}
       </form>
     </Panel>
   );

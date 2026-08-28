@@ -16,16 +16,14 @@ import type {
   RoleCreateRequest,
   RoleUpdateRequest,
 } from "../types/organization.types";
-
+ 
 export const organizationsApi = {
   async getOrganization(): Promise<Organization> {
-    const response = await apiClient.get<Organization>(
-      "/organizations/me",
-    );
-
+    const response = await apiClient.get<Organization>("/organizations/me");
+ 
     return response.data;
   },
-
+ 
   async updateOrganization(
     payload: OrganizationUpdateRequest,
   ): Promise<Organization> {
@@ -33,18 +31,18 @@ export const organizationsApi = {
       "/organizations/me",
       payload,
     );
-
+ 
     return response.data;
   },
-
+ 
   async getAISettings(): Promise<AISettingsResponse> {
     const response = await apiClient.get<AISettingsResponse>(
       "/organizations/me/ai-settings",
     );
-
+ 
     return response.data;
   },
-
+ 
   async updateAISettings(
     payload: AISettingsUpdateRequest,
   ): Promise<AISettingsResponse> {
@@ -52,35 +50,27 @@ export const organizationsApi = {
       "/organizations/me/ai-settings",
       payload,
     );
-
+ 
     return response.data;
   },
-
-  async listMembers(
-    skip = 0,
-    limit = 100,
-  ): Promise<Member[]> {
+ 
+  async listMembers(skip = 0, limit = 100): Promise<Member[]> {
     const response = await apiClient.get<Member[]>(
       "/organizations/me/members",
-      {
-        params: {
-          skip,
-          limit,
-        },
-      },
+      { params: { skip, limit } },
     );
-
+ 
     return response.data;
   },
-
+ 
   async getMember(userId: string): Promise<Member> {
     const response = await apiClient.get<Member>(
       `/organizations/me/members/${userId}`,
     );
-
+ 
     return response.data;
   },
-
+ 
   async updateMemberRole(
     userId: string,
     payload: MemberRoleUpdateRequest,
@@ -89,10 +79,10 @@ export const organizationsApi = {
       `/organizations/me/members/${userId}/role`,
       payload,
     );
-
+ 
     return response.data;
   },
-
+ 
   async updateMemberStatus(
     userId: string,
     payload: MemberStatusUpdateRequest,
@@ -101,37 +91,33 @@ export const organizationsApi = {
       `/organizations/me/members/${userId}/status`,
       payload,
     );
-
+ 
     return response.data;
   },
-
+ 
   async listRoles(): Promise<Role[]> {
-    const response = await apiClient.get<Role[]>(
-      "/organizations/me/roles",
-    );
-
+    const response = await apiClient.get<Role[]>("/organizations/me/roles");
+ 
     return response.data;
   },
-
+ 
   async getRole(roleId: string): Promise<Role> {
     const response = await apiClient.get<Role>(
       `/organizations/me/roles/${roleId}`,
     );
-
+ 
     return response.data;
   },
-
-  async createRole(
-    payload: RoleCreateRequest,
-  ): Promise<Role> {
+ 
+  async createRole(payload: RoleCreateRequest): Promise<Role> {
     const response = await apiClient.post<Role>(
       "/organizations/me/roles",
       payload,
     );
-
+ 
     return response.data;
   },
-
+ 
   async updateRole(
     roleId: string,
     payload: RoleUpdateRequest,
@@ -140,26 +126,22 @@ export const organizationsApi = {
       `/organizations/me/roles/${roleId}`,
       payload,
     );
-
+ 
     return response.data;
   },
-
-  async deleteRole(
-    roleId: string,
-  ): Promise<void> {
-    await apiClient.delete(
-      `/organizations/me/roles/${roleId}`,
-    );
+ 
+  async deleteRole(roleId: string): Promise<void> {
+    await apiClient.delete(`/organizations/me/roles/${roleId}`);
   },
-
+ 
   async listPermissions(): Promise<Permission[]> {
     const response = await apiClient.get<Permission[]>(
       "/organizations/me/permissions",
     );
-
+ 
     return response.data;
   },
-
+ 
   async createInvitation(
     payload: InvitationCreateRequest,
   ): Promise<Invitation> {
@@ -167,44 +149,31 @@ export const organizationsApi = {
       "/organizations/me/invitations",
       payload,
     );
-
+ 
     return response.data;
   },
-
-  async listInvitations(
-    skip = 0,
-    limit = 100,
-  ): Promise<Invitation[]> {
+ 
+  async listInvitations(skip = 0, limit = 100): Promise<Invitation[]> {
     const response = await apiClient.get<Invitation[]>(
       "/organizations/me/invitations",
-      {
-        params: {
-          skip,
-          limit,
-        },
-      },
+      { params: { skip, limit } },
     );
-
+ 
     return response.data;
   },
-
-  async revokeInvitation(
-    invitationId: string,
-  ): Promise<void> {
-    await apiClient.delete(
-      `/organizations/me/invitations/${invitationId}`,
-    );
+ 
+  async revokeInvitation(invitationId: string): Promise<void> {
+    await apiClient.delete(`/organizations/me/invitations/${invitationId}`);
   },
-
+ 
   async acceptInvitation(
     payload: InvitationAcceptRequest,
   ): Promise<InvitationAcceptanceResponse> {
-    const response =
-      await apiClient.post<InvitationAcceptanceResponse>(
-        "/organizations/invitations/accept",
-        payload,
-      );
-
+    const response = await apiClient.post<InvitationAcceptanceResponse>(
+      "/organizations/invitations/accept",
+      payload,
+    );
+ 
     return response.data;
   },
 };

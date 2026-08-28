@@ -8,6 +8,7 @@ from app.core.logging import configure_logging
 from app.modules.identity.router import router as identity_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.subscriptions.router import router as subscriptions_router
+from app.modules.projects.router import router as projects_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -37,6 +38,8 @@ app.include_router(identity_router, prefix = "/api/v1",
 app.include_router(organizations_router, prefix = "/api/v1",
 )
 app.include_router(subscriptions_router, prefix = "/api/v1",
+)
+app.include_router(projects_router,
 )
 
 @app.get("/health", tags=["system"])

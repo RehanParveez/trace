@@ -1,22 +1,16 @@
-import {useEffect, useState,
-} from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type {Permission, Role, RoleCreateRequest, RoleUpdateRequest,
 } from "../types/organization.types";
-import { Button, Field, Icon, inputClass, Panel, PanelHeader,
+import {Button, Field, Icon, inputClass, Panel, PanelHeader,
 } from "./OrganizationUi";
-import {PermissionSelector,
-} from "./PermissionSelector";
+import { PermissionSelector } from "./PermissionSelector";
 
 interface RoleFormProps {
   role?: Role;
   permissions: Permission[];
   isSubmitting?: boolean;
-  onSubmit: (
-    payload:
-      | RoleCreateRequest
-      | RoleUpdateRequest,
-  ) => void;
+  onSubmit: (payload: RoleCreateRequest | RoleUpdateRequest) => void;
   onCancel?: () => void;
 }
 
@@ -27,73 +21,36 @@ export function RoleForm({
   onSubmit,
   onCancel,
 }: RoleFormProps) {
-  const [name, setName] =
-    useState(role?.name ?? "");
-
-  const [description, setDescription] =
-    useState(
-      role?.description ?? "",
-    );
-
-  const [
-    selectedPermissionIds,
-    setSelectedPermissionIds,
-  ] = useState<string[]>(
-    role?.permissions.map(
-      (permission) =>
-        permission.id,
-    ) ?? [],
-  );
+  const [name, setName] = useState(role?.name ?? "");
+  const [description, setDescription] = useState(role?.description ?? "");
+  const [selectedPermissionIds, setSelectedPermissionIds] = useState<
+    string[]
+  >(role?.permissions.map((permission) => permission.id) ?? []);
 
   useEffect(() => {
-    setName(
-      role?.name ?? "",
-    );
-
-    setDescription(
-      role?.description ?? "",
-    );
-
+    setName(role?.name ?? "");
+    setDescription(role?.description ?? "");
     setSelectedPermissionIds(
-      role?.permissions.map(
-        (permission) =>
-          permission.id,
-      ) ?? [],
+      role?.permissions.map((permission) => permission.id) ?? [],
     );
   }, [role]);
 
-  function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     onSubmit({
       name: name.trim(),
-      description:
-        description.trim() ||
-        null,
-      permission_ids:
-        selectedPermissionIds,
+      description: description.trim() || null,
+      permission_ids: selectedPermissionIds,
     });
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4"
-    >
+    <form onSubmit={handleSubmit} className="space-y-4">
       <Panel>
         <PanelHeader
-          eyebrow={
-            role
-              ? "ROLE CONFIGURATION"
-              : "NEW ACCESS ROLE"
-          }
-          title={
-            role
-              ? `Edit ${role.name}`
-              : "Create a role"
-          }
+          eyebrow={role ? "ROLE CONFIGURATION" : "NEW ACCESS ROLE"}
+          title={role ? `Edit ${role.name}` : "Create a role"}
           description={
             role?.is_system
               ? "System roles are protected by the platform and cannot be structurally changed."
@@ -101,21 +58,23 @@ export function RoleForm({
           }
         />
 
+        {role?.is_system ? (
+          <div className="mx-5 mt-5 flex items-center gap-2.5 rounded-[8px] border border-[#cfe0f2] bg-[#e7f0fa] px-3 py-2.5 text-[11.5px] font-medium text-[#2c5c8f]">
+            <Icon name="lock" size={13} />
+            This is a system role. Its name and permissions are managed by
+            the platform.
+          </div>
+        ) : null}
+
         <div className="grid gap-4 p-5 md:grid-cols-2">
           <Field label="Role name">
             <input
               value={name}
-              onChange={(event) =>
-                setName(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setName(event.target.value)}
               minLength={2}
               maxLength={100}
               required
-              disabled={
-                role?.is_system
-              }
+              disabled={role?.is_system}
               className={inputClass}
               placeholder="e.g. Procurement Officer"
             />
@@ -127,15 +86,9 @@ export function RoleForm({
           >
             <input
               value={description}
-              onChange={(event) =>
-                setDescription(
-                  event.target.value,
-                )
-              }
+              onChange={(event) => setDescription(event.target.value)}
               maxLength={500}
-              disabled={
-                role?.is_system
-              }
+              disabled={role?.is_system}
               className={inputClass}
               placeholder="What this role is responsible for"
             />
@@ -146,18 +99,10 @@ export function RoleForm({
       <Panel>
         <div className="p-5">
           <PermissionSelector
-            permissions={
-              permissions
-            }
-            selectedIds={
-              selectedPermissionIds
-            }
-            disabled={
-              role?.is_system
-            }
-            onChange={
-              setSelectedPermissionIds
-            }
+            permissions={permissions}
+            selectedIds={selectedPermissionIds}
+            disabled={role?.is_system}
+            onChange={setSelectedPermissionIds}
           />
         </div>
       </Panel>
@@ -165,11 +110,7 @@ export function RoleForm({
       {!role?.is_system ? (
         <div className="flex justify-end gap-2">
           {onCancel ? (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onCancel}
-            >
+            <Button type="button" variant="ghost" onClick={onCancel}>
               Cancel
             </Button>
           ) : null}
@@ -177,21 +118,11 @@ export function RoleForm({
           <Button
             type="submit"
             variant="primary"
-            disabled={
-              isSubmitting ||
-              name.trim().length < 2
-            }
+            disabled={isSubmitting || name.trim().length < 2}
           >
-            <Icon
-              name="check"
-              size={13}
-            />
+            <Icon name="check" size={13} />
 
-            {isSubmitting
-              ? "Saving…"
-              : role
-                ? "Save role"
-                : "Create role"}
+            {isSubmitting ? "Saving…" : role ? "Save role" : "Create role"}
           </Button>
         </div>
       ) : null}

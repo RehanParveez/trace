@@ -5,9 +5,11 @@ import {LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, VerifyEm
 } from "../modules/identity/pages";
 import {ProtectedRoute, PublicOnlyRoute,
 } from "../modules/identity";
-import {OrganizationPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage,
+import { OrganizationShell, OrganizationPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage,
 } from "../modules/organizations";
 import { AppErrorBoundary } from "../shared/components/AppErrorBoundary";
+import {SubscriptionPage,
+} from "../modules/subscriptions";
 
 export const router = createBrowserRouter([
   {
@@ -77,39 +79,45 @@ export const router = createBrowserRouter([
       },
 
       {
-        path: "organization",
-        children: [
-          {
-            index: true,
-            element: <OrganizationPage />,
-          },
-
-          {
-            path: "members",
-            element: <OrganizationMembersPage />,
-          },
-
-          {
-            path: "members/:userId",
-            element: <OrganizationMemberDetailPage />,
-          },
-
-          {
-            path: "roles",
-            element: <OrganizationRolesPage />,
-          },
-
-          {
-            path: "roles/:roleId",
-            element: <OrganizationRoleDetailPage />,
-          },
-
-          {
-            path: "invitations",
-            element: <OrganizationInvitationsPage />,
-          },
-        ],
+      path: "subscription",
+      element: <SubscriptionPage />,
       },
+
+      {
+       path: "organization",
+       element: <OrganizationShell />,
+       children: [
+    {
+      index: true,
+      element: <OrganizationPage />,
+    },
+
+    {
+      path: "members",
+      element: <OrganizationMembersPage />,
+    },
+
+    {
+      path: "members/:userId",
+      element: <OrganizationMemberDetailPage />,
+    },
+
+    {
+      path: "roles",
+      element: <OrganizationRolesPage />,
+    },
+
+    {
+      path: "roles/:roleId",
+      element: <OrganizationRoleDetailPage />,
+    },
+
+    {
+      path: "invitations",
+      element: <OrganizationInvitationsPage />,
+    },
+  ],
+},
     ],
   },
 ]);

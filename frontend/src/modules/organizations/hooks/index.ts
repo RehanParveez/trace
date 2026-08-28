@@ -5,7 +5,7 @@ export {
   useUpdateAISettings,
   useUpdateOrganization,
 } from "./useOrganization";
-
+ 
 export {
   memberKeys,
   useMember,
@@ -13,7 +13,7 @@ export {
   useUpdateMemberRole,
   useUpdateMemberStatus,
 } from "./useMembers";
-
+ 
 export {
   roleKeys,
   useCreateRole,
@@ -22,12 +22,9 @@ export {
   useRoles,
   useUpdateRole,
 } from "./useRoles";
-
-export {
-  permissionKeys,
-  usePermissions,
-} from "./usePermissions";
-
+ 
+export { permissionKeys, usePermissions } from "./usePermissions";
+ 
 export {
   invitationKeys,
   useAcceptInvitation,
@@ -35,3 +32,4 @@ export {
   useInvitations,
   useRevokeInvitation,
 } from "./useInvitations";
+ 

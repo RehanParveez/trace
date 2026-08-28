@@ -360,6 +360,7 @@ class SubscriptionService:
         )
 
     counter.quantity += quantity
+
     await self.session.flush()
     await self.session.commit()
     return counter
