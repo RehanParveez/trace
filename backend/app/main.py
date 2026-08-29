@@ -9,6 +9,7 @@ from app.modules.identity.router import router as identity_router
 from app.modules.organizations.router import router as organizations_router
 from app.modules.subscriptions.router import router as subscriptions_router
 from app.modules.projects.router import router as projects_router
+from app.modules.drawings_boq.router import router as drawings_boq_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,14 +34,15 @@ app.add_middleware(
   allow_headers=["*"],
 )
 
-app.include_router(identity_router, prefix = "/api/v1",
-)
-app.include_router(organizations_router, prefix = "/api/v1",
-)
-app.include_router(subscriptions_router, prefix = "/api/v1",
-)
-app.include_router(projects_router,
-)
+app.include_router(identity_router, prefix=settings.api_v1_prefix)
+
+app.include_router(organizations_router, prefix=settings.api_v1_prefix)
+
+app.include_router(subscriptions_router, prefix=settings.api_v1_prefix)
+
+app.include_router(projects_router, prefix=settings.api_v1_prefix)
+
+app.include_router(drawings_boq_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:

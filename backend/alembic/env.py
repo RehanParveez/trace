@@ -9,6 +9,7 @@ from app.core.database import Base
 from app.modules.identity import models as identity_models
 from app.modules.subscriptions import models as subscriptions_models
 from app.modules.projects import models as projects_models
+from app.modules.drawings_boq import models as drawings_boq_models
 
 config = context.config
 

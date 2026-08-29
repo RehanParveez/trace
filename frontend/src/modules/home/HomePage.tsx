@@ -275,7 +275,6 @@ export function HomePage() {
         </div>
       </nav>
 
-      {/* HERO */}
       <section className="lp-hero">
         <div className="lp-wrap lp-hero-grid">
           <div className="lp-hero-copy">
@@ -355,7 +354,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* PRINCIPLE */}
       <section className="lp-stat" id="principles">
         <div className="lp-wrap">
           <div className="lp-stat-num">
@@ -407,7 +405,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* PRODUCT */}
       <section className="lp-section" id="product">
         <div className="lp-wrap">
           <div className="lp-section-head">
@@ -482,7 +479,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* WORKFLOW */}
       <section
         className="lp-section lp-section-alt"
         id="workflow"
@@ -547,7 +543,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* TEAMS */}
       <section className="lp-section" id="teams">
         <div className="lp-wrap">
           <div className="lp-section-head">
@@ -579,7 +574,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* CAPABILITIES */}
       <section className="lp-section lp-section-cap">
         <div className="lp-wrap">
           <div className="lp-section-head">
@@ -611,7 +605,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="lp-cta">
         <div className="lp-wrap">
           <p className="lp-eyebrow">
@@ -646,7 +639,6 @@ export function HomePage() {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="lp-footer">
         <div className="lp-wrap">
           <div className="lp-foot-top">

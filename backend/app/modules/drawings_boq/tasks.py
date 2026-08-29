@@ -1,0 +1,237 @@
+from __future__ import annotations
+import asyncio
+import json
+import os
+import tempfile
+from datetime import datetime, timezone
+from decimal import Decimal
+from uuid import UUID
+import httpx
+import ifcopenshell
+import ifcopenshell.util.element
+from sqlalchemy import select
+from app.core.config import settings
+from app.core.database import AsyncSessionLocal
+from app.modules.drawings_boq.models import BOQItem, BOQVersion, DrawingElement, DrawingStatus
+from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
+from app.modules.drawings_boq.service import DrawingBOQService
+from app.modules.identity.models import Organization
+from app.shared.storage import download_to_path
+from app.workers.celery_app import celery_app
+
+TARGET_IFC_TYPES = [
+  "IfcWall",
+  "IfcSlab",
+  "IfcBeam",
+  "IfcColumn",
+  "IfcDoor",
+  "IfcWindow",
+  "IfcRoof",
+  "IfcStair",
+]
+
+QUANTITY_ATTRS = (
+  "NetVolume",
+  "GrossVolume",
+  "NetArea",
+  "GrossArea",
+  "Length",
+)
+
+@celery_app.task(
+  name="app.modules.drawings_boq.tasks.parse_drawing_task",
+  time_limit=900,
+  soft_time_limit=780,
+)
+def parse_drawing_task(drawing_id: str) -> str:
+  asyncio.run(_parse_drawing(UUID(drawing_id)))
+  return "parsed"
+
+async def _parse_drawing(drawing_id: UUID) -> None:
+  async with AsyncSessionLocal() as session:
+    drawings = DrawingRepository(session)
+    drawing = await drawings.get_by_id(drawing_id)
+    if drawing is None:
+      return
+    drawing.status = DrawingStatus.PROCESSING
+    await drawings.update(drawing)
+    await session.commit()
+
+  with tempfile.TemporaryDirectory() as tmp_dir:
+    local_path = os.path.join(tmp_dir, "drawing.ifc")
+    try:
+      download_to_path(drawing.storage_key, local_path)
+      elements_data = _extract_ifc_elements(local_path)
+    except Exception as exc:
+      async with AsyncSessionLocal() as session:
+        drawings = DrawingRepository(session)
+        failed = await drawings.get_by_id(drawing_id)
+        if failed is not None:
+          failed.status = DrawingStatus.FAILED
+          failed.error_message = str(exc)[:2000]
+          await drawings.update(failed)
+          await session.commit()
+      return
+
+  async with AsyncSessionLocal() as session:
+    drawings = DrawingRepository(session)
+    elements_repo = DrawingElementRepository(session)
+    boq_versions_repo = BOQVersionRepository(session)
+    boq_items_repo = BOQItemRepository(session)
+    service = DrawingBOQService(session)
+
+    current_drawing = await drawings.get_by_id(drawing_id)
+    if current_drawing is None:
+      return
+
+    ai_enabled_result = await session.execute(
+      select(Organization.ai_enabled).where(
+        Organization.id == current_drawing.organization_id
+      )
+    )
+    organization_ai_enabled = bool(
+      ai_enabled_result.scalar_one_or_none()
+    )
+
+    drawing_elements = [
+      DrawingElement(
+        drawing_id=current_drawing.id,
+        organization_id=current_drawing.organization_id,
+        ifc_global_id=item["global_id"],
+        ifc_type=item["ifc_type"],
+        name=item["name"],
+        raw_material_text=item["material_text"],
+        unit=item["unit"],
+        quantity=item["quantity"],
+        properties=item["properties"],
+      )
+      for item in elements_data
+    ]
+
+    if drawing_elements:
+      await elements_repo.bulk_create(drawing_elements)
+
+    boq_version = await boq_versions_repo.create(
+      BOQVersion(
+        organization_id=current_drawing.organization_id,
+        project_id=current_drawing.project_id,
+        drawing_id=current_drawing.id,
+        label=f"{current_drawing.original_filename} — auto-generated",
+      )
+    )
+
+    boq_items: list[BOQItem] = []
+
+    for element, drawing_element in zip(
+      elements_data, drawing_elements
+    ):
+      raw_text = element["material_text"] or element["ifc_type"]
+      normalized_name, category, matched = await service.normalize_material(
+        current_drawing.organization_id,
+        raw_text,
+      )
+
+      if not matched and organization_ai_enabled:
+        ai_result = await _call_ollama_normalize(raw_text)
+        if ai_result is not None:
+          normalized_name, category = ai_result
+          await service.store_ai_normalization(
+            raw_text, normalized_name, category
+          )
+
+      boq_items.append(
+        BOQItem(
+          organization_id=current_drawing.organization_id,
+          boq_version_id=boq_version.id,
+          drawing_element_id=drawing_element.id,
+          material_name=normalized_name,
+          category=category,
+          unit=element["unit"] or "unit",
+          quantity=element["quantity"],
+        )
+      )
+
+    if boq_items:
+      await boq_items_repo.bulk_create(boq_items)
+
+    current_drawing.status = DrawingStatus.PARSED
+    current_drawing.parsed_at = datetime.now(timezone.utc)
+    await drawings.update(current_drawing)
+    await session.commit()
+
+def _extract_ifc_elements(path: str) -> list[dict]:
+  model = ifcopenshell.open(path)
+  results: list[dict] = []
+
+  for ifc_type in TARGET_IFC_TYPES:
+    for element in model.by_type(ifc_type):
+      psets = ifcopenshell.util.element.get_psets(element) or {}
+      quantity, unit = _best_quantity(psets)
+      results.append(
+        {
+          "global_id": getattr(element, "GlobalId", None),
+          "ifc_type": ifc_type,
+          "name": getattr(element, "Name", None),
+          "material_text": _material_text(element),
+          "unit": unit,
+          "quantity": quantity,
+          "properties": dict(psets),
+        }
+      )
+
+  return results
+
+def _best_quantity(psets: dict) -> tuple[Decimal, str | None]:
+  for pset_name, pset_values in psets.items():
+    if not pset_name.startswith("Qto_"):
+      continue
+    for attr in QUANTITY_ATTRS:
+      if attr in pset_values and pset_values[attr] is not None:
+        unit = (
+          "m3"
+          if "Volume" in attr
+          else "m2"
+          if "Area" in attr
+          else "m"
+        )
+        return Decimal(str(pset_values[attr])), unit
+  return Decimal("0"), None
+
+def _material_text(element) -> str | None:
+  try:
+    material = ifcopenshell.util.element.get_material(element)
+    return (
+      getattr(material, "Name", None)
+      if material is not None
+      else None
+    )
+  except Exception:
+    return None
+
+async def _call_ollama_normalize(
+  raw_text: str,
+) -> tuple[str, str] | None:
+  prompt = (
+    "Normalize this construction material description extracted from a BIM/IFC "
+    "drawing. Respond with strict JSON only: "
+    '{"normalized_name": "...", "category": "..."}. Raw text: ' + raw_text
+  )
+  try:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+      response = await client.post(
+        f"{settings.ollama_base_url}/api/generate",
+        json={
+          "model": settings.ollama_model,
+          "prompt": prompt,
+          "stream": False,
+          "format": "json",
+        },
+      )
+      response.raise_for_status()
+      parsed = json.loads(response.json()["response"])
+      normalized_name = parsed.get("normalized_name")
+      if not normalized_name:
+        return None
+      return normalized_name, parsed.get("category")
+  except Exception:
+    return None

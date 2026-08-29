@@ -15,6 +15,7 @@ const iconPaths: Record<OrganizationIconName, ReactNode> = {
       <path d="M10 11h.01M14 11h.01M10 8h.01M14 8h.01" />
     </>
   ),
+
   settings: (
     <>
       <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" />
@@ -48,6 +49,7 @@ const iconPaths: Record<OrganizationIconName, ReactNode> = {
   ),
   check: <path d="m5 12 4 4L19 7" />,
   x: <path d="m7 7 10 10M17 7 7 17" />,
+  close: <path d="m7 7 10 10M17 7 7 17" />,
   arrow: (
     <>
       <path d="M5 12h14" />

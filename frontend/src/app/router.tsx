@@ -10,6 +10,8 @@ import { OrganizationShell, OrganizationPage, OrganizationMembersPage, Organizat
 import { AppErrorBoundary } from "../shared/components/AppErrorBoundary";
 import {SubscriptionPage,
 } from "../modules/subscriptions";
+import {ProjectsPage, ProjectDetailPage,
+} from "../modules/projects";
 
 export const router = createBrowserRouter([
   {
@@ -124,6 +126,23 @@ export const router = createBrowserRouter([
     },
   ],
 },
-    ],
-  },
+
+{
+  path: "projects",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <ProjectsPage />,
+    },
+
+    {
+      path: ":projectId",
+      element: <ProjectDetailPage />,
+    },
+  ],
+},
+
+  ],
+ },
 ]);

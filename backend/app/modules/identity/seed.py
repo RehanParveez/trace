@@ -58,7 +58,20 @@ async def seed_identity() -> None:
       PermissionKey.SUBSCRIPTION_READ: "Read access to subscription data.",
       PermissionKey.SUBSCRIPTION_MANAGE: "Manage subscription plan.",
       PermissionKey.SUBSCRIPTION_BILLING_MANAGE: "Manage subscription billing.",
-    }
+      
+      PermissionKey.PROJECT_READ: (
+        "View projects, clients, members, and milestones."
+      ),
+      PermissionKey.PROJECT_CREATE: (
+        "Create projects and clients."
+      ),
+      PermissionKey.PROJECT_UPDATE: (
+        "Update projects, clients, members, and milestones."
+      ),
+      PermissionKey.PROJECT_DELETE: (
+        "Delete projects, clients, members, and milestones."
+      ),
+     }
 
     permissions: dict[str, Permission] = {}
     for key, description in permission_definitions.items():

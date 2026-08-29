@@ -107,10 +107,6 @@ export type OrganizationPermissionKey =
   | "organization:manage"
   | "organization:members_manage";
 
-/**
- * Every icon used across the organization module's visual system.
- * Centralizing the name union keeps <Icon /> exhaustive and typo-proof.
- */
 export type OrganizationIconName =
   | "building"
   | "settings"
@@ -120,6 +116,7 @@ export type OrganizationIconName =
   | "spark"
   | "check"
   | "x"
+  | "close"
   | "arrow"
   | "chevron"
   | "edit"
