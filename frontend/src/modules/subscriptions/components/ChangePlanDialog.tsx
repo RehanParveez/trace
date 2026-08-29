@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import type {BillingInterval, Plan,
+import type { BillingInterval, Plan,
 } from "../types/subscription.types";
 import {Badge, Button, Field, Icon, Modal,
 } from "../../organizations/components/OrganizationUi";
-import {formatPrice,
-} from "../utils/subscription.utils";
+import { formatPrice } from "../utils/subscription.utils";
 
 interface ChangePlanDialogProps {
   plans: Plan[];
@@ -71,9 +70,9 @@ export function ChangePlanDialog({
           );
         }}
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Field label="Plan">
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {plans.map((plan) => {
                 const selected =
                   plan.id === planId;
@@ -81,10 +80,10 @@ export function ChangePlanDialog({
                 return (
                   <label
                     key={plan.id}
-                    className={`flex cursor-pointer items-center gap-3 rounded-[9px] border p-3 transition ${
+                    className={`flex cursor-pointer items-center gap-3.5 rounded-[10px] border p-3.5 transition ${
                       selected
-                        ? "border-[#c6a449] bg-[#fff8e8]"
-                        : "border-[#e1d5bc] bg-white hover:bg-[#f5efe3]"
+                        ? "border-[#c6a449] bg-[#fffaf0] shadow-[0_4px_14px_rgba(80,60,20,0.05)]"
+                        : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c] hover:bg-[#fbf8f2]"
                     }`}
                   >
                     <input
@@ -98,7 +97,13 @@ export function ChangePlanDialog({
                       className="sr-only"
                     />
 
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#efe6d3] text-[#6b6152]">
+                    <div
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] ${
+                        selected
+                          ? "bg-[#f5ead3] text-[#b17a18]"
+                          : "bg-[#f5efe3] text-[#756957]"
+                      }`}
+                    >
                       <Icon
                         name="building"
                         size={14}
@@ -107,7 +112,7 @@ export function ChangePlanDialog({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[12px] font-semibold text-[#191410]">
+                        <span className="text-[12px] font-semibold text-[#16283f]">
                           {plan.name}
                         </span>
 
@@ -119,19 +124,28 @@ export function ChangePlanDialog({
                         ) : null}
                       </div>
 
-                      <div className="mt-0.5 text-[10.5px] text-[#6b6152]">
+                      <div className="mt-1 text-[10.5px] leading-4 text-[#756957]">
                         {plan.description}
                       </div>
                     </div>
 
-                    <div className="shrink-0 font-mono text-[10.5px] font-semibold text-[#332a21]">
-                      {formatPrice(
-                        billingInterval ===
-                          "YEARLY"
-                          ? plan.price_yearly
-                          : plan.price_monthly,
-                        plan.currency,
-                      )}
+                    <div className="shrink-0 text-right">
+                      <div className="font-mono text-[10.5px] font-semibold text-[#16283f]">
+                        {formatPrice(
+                          billingInterval ===
+                            "YEARLY"
+                            ? plan.price_yearly
+                            : plan.price_monthly,
+                          plan.currency,
+                        )}
+                      </div>
+
+                      <div className="mt-0.5 text-[9px] text-[#9a8c75]">
+                        {billingInterval ===
+                        "YEARLY"
+                          ? "per year"
+                          : "per month"}
+                      </div>
                     </div>
                   </label>
                 );
@@ -140,7 +154,7 @@ export function ChangePlanDialog({
           </Field>
 
           <Field label="Billing interval">
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2.5">
               {(
                 [
                   "MONTHLY",
@@ -159,19 +173,25 @@ export function ChangePlanDialog({
                         interval,
                       )
                     }
-                    className={`rounded-[8px] border px-3 py-2.5 text-left transition ${
+                    className={`rounded-[9px] border px-3.5 py-3 text-left transition ${
                       selected
-                        ? "border-[#c6a449] bg-[#fff8e8]"
-                        : "border-[#e1d5bc] bg-white hover:bg-[#f5efe3]"
+                        ? "border-[#c6a449] bg-[#fffaf0]"
+                        : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c] hover:bg-[#fbf8f2]"
                     }`}
                   >
-                    <div className="text-[11.5px] font-semibold text-[#332a21]">
+                    <div
+                      className={`text-[11.5px] font-semibold ${
+                        selected
+                          ? "text-[#16283f]"
+                          : "text-[#332a21]"
+                      }`}
+                    >
                       {interval === "YEARLY"
                         ? "Yearly"
                         : "Monthly"}
                     </div>
 
-                    <div className="mt-0.5 text-[10px] text-[#6b6152]">
+                    <div className="mt-1 text-[10px] text-[#756957]">
                       {interval === "YEARLY"
                         ? "Annual billing"
                         : "Monthly billing"}
@@ -183,17 +203,18 @@ export function ChangePlanDialog({
           </Field>
 
           {selectedPlan ? (
-            <div className="rounded-[9px] border border-[#cfe0f2] bg-[#e7f0fa] p-3">
-              <div className="flex gap-2.5">
-                <Icon
-                  name="settings"
-                  size={14}
-                  className="mt-0.5 shrink-0 text-[#2c5c8f]"
-                />
+            <div className="rounded-[10px] border border-[#cfe0f2] bg-[#edf4fb] p-3.5">
+              <div className="flex gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#dceafa] text-[#2c5c8f]">
+                  <Icon
+                    name="settings"
+                    size={13}
+                  />
+                </div>
 
                 <div className="text-[11px] leading-5 text-[#2c5c8f]">
                   Changing to{" "}
-                  <strong>
+                  <strong className="font-semibold text-[#214a75]">
                     {selectedPlan.name}
                   </strong>{" "}
                   will update the organization's

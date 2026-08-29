@@ -1,24 +1,17 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {useCancelSubscription, useChangePlan, useSubscription, useSubscriptionPlans, useSubscriptionUsage,
 } from "../hooks";
 import type {BillingInterval, Plan,
 } from "../types/subscription.types";
-import {CancelSubscriptionDialog,
-} from "../components/CancelSubscriptionDialog";
-import {ChangePlanDialog,
-} from "../components/ChangePlanDialog";
-import {CurrentPlanCard,
-} from "../components/CurrentPlanCard";
-import {PlanComparison,
-} from "../components/PlanComparison";
-import {SubscriptionHeader,
-} from "../components/SubscriptionHeader";
-import {UsageOverview,
-} from "../components/UsageOverview";
+import { CancelSubscriptionDialog } from "../components/CancelSubscriptionDialog";
+import { ChangePlanDialog } from "../components/ChangePlanDialog";
+import { CurrentPlanCard } from "../components/CurrentPlanCard";
+import { PlanComparison } from "../components/PlanComparison";
+import { SubscriptionHeader } from "../components/SubscriptionHeader";
+import { UsageOverview } from "../components/UsageOverview";
 import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
 } from "../../organizations/components/OrganizationUi";
-import {SUBSCRIPTION_PERMISSIONS,
-} from "../permissions";
+import { SUBSCRIPTION_PERMISSIONS } from "../permissions";
 import {formatBillingInterval, formatDate, formatSubscriptionStatus,
 } from "../utils/subscription.utils";
 
@@ -117,6 +110,19 @@ export function SubscriptionPage({
       (plan) => plan.id === subscription.plan_id,
     ) ?? plans[0];
 
+  if (!currentPlan) {
+    return (
+      <ErrorState
+        title="Current plan unavailable"
+        description="The subscription references a plan that is not available in the public plan catalog."
+      />
+    );
+  }
+
+  const activeFeatures = Object.values(
+    currentPlan.features ?? {},
+  ).filter(Boolean).length;
+
   const usedMetrics = usage.metrics;
 
   const totalUsed = usedMetrics.reduce(
@@ -136,23 +142,6 @@ export function SubscriptionPage({
         metric.limit > 0 &&
         metric.used / metric.limit >= 0.8,
     ).length;
-
-  const activeFeatures = useMemo(
-    () =>
-      Object.values(
-        currentPlan?.features ?? {},
-      ).filter(Boolean).length,
-    [currentPlan],
-  );
-
-  if (!currentPlan) {
-    return (
-      <ErrorState
-        title="Current plan unavailable"
-        description="The subscription references a plan that is not available in the public plan catalog."
-      />
-    );
-  }
 
   function openChangePlan(plan?: Plan) {
     setSelectedPlan(plan);

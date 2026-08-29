@@ -37,7 +37,7 @@ export function PlanComparison({
   onChangePlan,
 }: PlanComparisonProps) {
   return (
-    <Panel>
+    <Panel className="overflow-hidden">
       <PanelHeader
         eyebrow="PLAN CATALOG"
         title="Available plans"
@@ -51,7 +51,7 @@ export function PlanComparison({
         }
       />
 
-      <div className="grid gap-3 p-4 md:grid-cols-3">
+      <div className="grid gap-4 p-5 md:grid-cols-3">
         {plans.map((plan) => {
           const current =
             plan.id === subscription.plan_id;
@@ -64,19 +64,23 @@ export function PlanComparison({
           return (
             <div
               key={plan.id}
-              className={`rounded-[12px] border p-4 transition ${
+              className={`relative flex flex-col rounded-[11px] border p-5 transition ${
                 current
-                  ? "border-[#c6a449] bg-[#fffaf0] shadow-[0_8px_25px_rgba(80,60,20,0.08)]"
-                  : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c]"
+                  ? "border-[#d9a441] bg-[#fbefd9] shadow-[0_10px_28px_rgba(90,70,40,0.08)]"
+                  : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c] hover:shadow-[0_8px_22px_rgba(90,70,40,0.05)]"
               }`}
             >
+              {current ? (
+                <div className="absolute left-5 top-0 h-0.5 w-12 rounded-b-full bg-[#d9a441]" />
+              ) : null}
+
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="font-[Archivo] text-[15px] font-bold text-[#191410]">
+                <div className="min-w-0">
+                  <div className="font-[Archivo] text-[19px] font-bold tracking-[-0.015em] text-[#191410]">
                     {plan.name}
                   </div>
 
-                  <div className="mt-1 min-h-[32px] text-[10.5px] leading-4 text-[#6b6152]">
+                  <div className="mt-1.5 min-h-[36px] text-[10.5px] leading-4 text-[#6b6152]">
                     {plan.description}
                   </div>
                 </div>
@@ -88,8 +92,8 @@ export function PlanComparison({
                 ) : null}
               </div>
 
-              <div className="mt-4">
-                <span className="font-[Archivo] text-[23px] font-bold text-[#191410]">
+              <div className="mt-5">
+                <span className="font-[Archivo] text-[27px] font-bold tracking-[-0.02em] text-[#191410]">
                   {formatPrice(
                     price,
                     plan.currency,
@@ -97,70 +101,92 @@ export function PlanComparison({
                 </span>
 
                 {price !== 0 ? (
-                  <span className="ml-1 text-[10px] text-[#7c7060]">
-                    /{" "}
-                    {billingInterval === "YEARLY"
-                      ? "year"
-                      : "month"}
+                  <span className="ml-1.5 text-[10px] text-[#7c7060]">
+                    /
+                    {billingInterval ===
+                    "YEARLY"
+                      ? " year"
+                      : " month"}
                   </span>
                 ) : null}
               </div>
 
-              <div className="mt-4 space-y-2 border-t border-[#e1d5bc] pt-4">
-                {quotaRows.map((metric) => (
-                  <div
-                    key={metric}
-                    className="flex items-center justify-between gap-2"
-                  >
-                    <span className="text-[10.5px] text-[#6b6152]">
-                      {metric
-                        .replaceAll("_", " ")
-                        .replace(/\b\w/g, (letter) =>
-                          letter.toUpperCase(),
+              <div className="mt-5 border-t border-[#e1d5bc] pt-4">
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+                  Resource limits
+                </div>
+
+                <div className="mt-3 space-y-2.5">
+                  {quotaRows.map((metric) => (
+                    <div
+                      key={metric}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <span className="text-[10.5px] text-[#6b6152]">
+                        {metric
+                          .replaceAll("_", " ")
+                          .replace(
+                            /\b\w/g,
+                            (letter) =>
+                              letter.toUpperCase(),
+                          )}
+                      </span>
+
+                      <span className="font-mono text-[9.5px] font-semibold text-[#191410]">
+                        {formatQuota(
+                          metric,
+                          plan.quotas[metric] ??
+                            null,
                         )}
-                    </span>
-
-                    <span className="font-mono text-[9.5px] font-semibold text-[#332a21]">
-                      {formatQuota(
-                        metric,
-                        plan.quotas[metric] ??
-                          null,
-                      )}
-                    </span>
-                  </div>
-                ))}
-
-                {featureRows.map((feature) => (
-                  <div
-                    key={feature}
-                    className="flex items-center gap-2"
-                  >
-                    <Icon
-                      name={
-                        plan.features[feature]
-                          ? "check"
-                          : "lock"
-                      }
-                      size={11}
-                      className={
-                        plan.features[feature]
-                          ? "text-[#2f7d5a]"
-                          : "text-[#a2957c]"
-                      }
-                    />
-
-                    <span className="text-[10.5px] text-[#6b6152]">
-                      {feature
-                        .replaceAll("_", " ")
-                        .replace(/\b\w/g, (letter) =>
-                          letter.toUpperCase(),
-                        )}
-                    </span>
-                  </div>
-                ))}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="mt-5">
+              <div className="mt-5 border-t border-[#e1d5bc] pt-4">
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+                  Included capabilities
+                </div>
+
+                <div className="mt-3 space-y-2.5">
+                  {featureRows.map((feature) => (
+                    <div
+                      key={feature}
+                      className="flex items-center gap-2.5"
+                    >
+                      <div
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] ${
+                          plan.features[feature]
+                            ? "bg-[#e4f5ec] text-[#1e9d63]"
+                            : "bg-[#f5efe3] text-[#a2957c]"
+                        }`}
+                      >
+                        <Icon
+                          name={
+                            plan.features[feature]
+                              ? "check"
+                              : "lock"
+                          }
+                          size={10}
+                        />
+                      </div>
+
+                      <span className="text-[10.5px] text-[#6b6152]">
+                        {feature
+                          .replaceAll("_", " ")
+                          .replace(
+                            /\b\w/g,
+                            (letter) =>
+                              letter.toUpperCase(),
+                          )}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-auto pt-6">
                 {current ? (
                   <Button
                     variant="ghost"

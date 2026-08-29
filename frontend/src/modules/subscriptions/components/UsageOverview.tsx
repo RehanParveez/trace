@@ -12,16 +12,16 @@ export function UsageOverview({
   metrics,
 }: UsageOverviewProps) {
   return (
-    <Panel>
+    <Panel className="overflow-hidden">
       <PanelHeader
         eyebrow="CURRENT PERIOD"
         title="Usage"
         description="Usage reported by the subscription service for the current billing period."
       />
 
-      <div className="divide-y divide-[#e1d5bc]">
+      <div className="divide-y divide-[#e1d5bc] bg-[#fbf8f2]">
         {metrics.length === 0 ? (
-          <div className="p-5 text-[11px] text-[#6b6152]">
+          <div className="p-5 sm:p-6 text-[11px] text-[#756957]">
             No usage metrics have been reported for this period.
           </div>
         ) : (
@@ -46,17 +46,17 @@ export function UsageOverview({
             return (
               <div
                 key={metric.metric}
-                className="p-5"
+                className="p-5 sm:p-6"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start justify-between gap-5">
                   <div className="min-w-0">
-                    <div className="text-[12px] font-semibold text-[#191410]">
+                    <div className="text-[13px] font-semibold text-[#16283f]">
                       {formatMetricLabel(
                         metric.metric,
                       )}
                     </div>
 
-                    <div className="mt-1 text-[10.5px] text-[#6b6152]">
+                    <div className="mt-1.5 text-[10.5px] text-[#756957]">
                       {metric.limit === null
                         ? `${metric.used.toLocaleString("en-PK")} used`
                         : `${metric.used.toLocaleString(
@@ -75,7 +75,7 @@ export function UsageOverview({
                           ? "text-[#c24a3a]"
                           : isNearLimit
                             ? "text-[#b17a18]"
-                            : "text-[#332a21]"
+                            : "text-[#16283f]"
                       }`}
                     >
                       {metric.limit === null
@@ -86,17 +86,18 @@ export function UsageOverview({
                     </div>
 
                     {metric.remaining !== null ? (
-                      <div className="mt-0.5 font-mono text-[9.5px] text-[#a2957c]">
+                      <div className="mt-1 font-mono text-[9.5px] text-[#9a8c75]">
                         {metric.remaining.toLocaleString(
                           "en-PK",
-                        )} remaining
+                        )}{" "}
+                        remaining
                       </div>
                     ) : null}
                   </div>
                 </div>
 
                 {percentage !== null ? (
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#efe6d3]">
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee5d3]">
                     <div
                       className={`h-full rounded-full transition-all ${
                         isExceeded
@@ -111,7 +112,7 @@ export function UsageOverview({
                     />
                   </div>
                 ) : (
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#efe6d3]">
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee5d3]">
                     <div className="h-full w-full rounded-full bg-[#d6b86a]/40" />
                   </div>
                 )}

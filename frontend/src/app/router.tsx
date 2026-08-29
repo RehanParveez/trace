@@ -79,9 +79,15 @@ export const router = createBrowserRouter([
       },
 
       {
-      path: "subscription",
-      element: <SubscriptionPage />,
-      },
+       path: "subscription",
+       element: <OrganizationShell />,
+       children: [
+        {
+         index: true,
+         element: <SubscriptionPage />,
+        },
+      ],
+    },
 
       {
        path: "organization",

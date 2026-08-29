@@ -22,6 +22,7 @@ class SubscriptionService:
     self,
     organization_id: UUID,
   ) -> Subscription:
+    print(f"DB lookup subscription for org: {organization_id}")
     subscription = await self.repository.get_subscription(
       organization_id
     )
@@ -39,6 +40,7 @@ class SubscriptionService:
     self,
     organization_id: UUID,
   ):
+    print(f"Loading subscription for org: {organization_id}")
     subscription = await self.get_subscription(
       organization_id
     )
