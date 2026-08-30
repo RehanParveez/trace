@@ -9,14 +9,18 @@ import { ProjectHeader } from "../components/ProjectHeader";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectMembers } from "../components/ProjectMembers";
 import { MilestoneTable } from "../components/MilestoneTable";
+import { usePermissionKeys } from "../../identity/";
+import { DrawingsBoqSection } from "../../drawings_boq";
 
 interface ProjectDetailPageProps {
   permissions?: string[];
 }
 
 export function ProjectDetailPage({
-  permissions = [],
+  permissions: providedPermissions,
 }: ProjectDetailPageProps) {
+  const permissions =
+    providedPermissions ?? usePermissionKeys();
   const navigate = useNavigate();
 
   const { projectId } =
@@ -197,6 +201,11 @@ export function ProjectDetailPage({
           milestones={milestones}
           canUpdate={canUpdate}
         />
+      </section>
+
+      <section>
+        <SectionDivider title="Drawings & BOQ" description="Upload IFC drawings and manage the auto-generated bill of quantities." />
+        <DrawingsBoqSection projectId={project.id} permissions={permissions} />
       </section>
 
       <section>

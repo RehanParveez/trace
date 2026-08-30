@@ -35,3 +35,11 @@ def upload_fileobj(key: str, fileobj, content_type: str | None = None) -> None:
 def download_to_path(key: str, destination_path: str) -> None:
   client = get_s3_client()
   client.download_file(settings.minio_bucket, key, destination_path)
+  
+def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
+  client = get_s3_client()
+  return client.generate_presigned_url(
+    "get_object",
+    Params={"Bucket": settings.minio_bucket, "Key": key},
+    ExpiresIn=expires_in,
+  )

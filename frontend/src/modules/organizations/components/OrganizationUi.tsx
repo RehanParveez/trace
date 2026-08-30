@@ -41,6 +41,13 @@ const iconPaths: Record<OrganizationIconName, ReactNode> = {
       <path d="m4 7 8 6 8-6" />
     </>
   ),
+  materials: (
+    <>
+      <path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" />
+      <path d="m4 7.5 8 4.5 8-4.5" />
+      <path d="M12 12v9" />
+    </>
+  ),
   spark: (
     <>
       <path d="m12 3 1.4 5.6L19 10l-5.6 1.4L12 17l-1.4-5.6L5 10l5.6-1.4L12 3Z" />

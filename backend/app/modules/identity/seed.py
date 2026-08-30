@@ -71,6 +71,25 @@ async def seed_identity() -> None:
       PermissionKey.PROJECT_DELETE: (
         "Delete projects, clients, members, and milestones."
       ),
+      
+      PermissionKey.DRAWING_READ: (
+        "View drawings and parsed BOQ data."
+      ),
+      PermissionKey.DRAWING_CREATE: (
+        "Create drawings."
+      ),
+      PermissionKey.DRAWING_DELETE: (
+        "Delete drawings."
+      ),
+      PermissionKey.BOQ_UPDATE: (
+        "Update BOQ data."
+      ),
+      PermissionKey.BOQ_APPROVE: (
+        "Approve BOQ data."
+      ),
+      PermissionKey.MATERIAL_LIBRARY_MANAGE: (
+        "Manage material library."
+      ),
      }
 
     permissions: dict[str, Permission] = {}

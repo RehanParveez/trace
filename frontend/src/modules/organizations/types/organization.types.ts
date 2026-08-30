@@ -113,6 +113,7 @@ export type OrganizationIconName =
   | "users"
   | "shield"
   | "mail"
+  | "materials"
   | "spark"
   | "check"
   | "x"

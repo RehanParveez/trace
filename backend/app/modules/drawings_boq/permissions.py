@@ -8,4 +8,3 @@ DRAWINGS_BOQ_PERMISSIONS = {
   PermissionKey.BOQ_APPROVE: "Approve BOQ items for export.",
   PermissionKey.MATERIAL_LIBRARY_MANAGE: "Manage the organization's material library.",
 }
-

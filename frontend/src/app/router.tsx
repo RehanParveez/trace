@@ -12,6 +12,8 @@ import {SubscriptionPage,
 } from "../modules/subscriptions";
 import {ProjectsPage, ProjectDetailPage,
 } from "../modules/projects";
+import { MaterialLibraryPage } from "../modules/drawings_boq";
+import { SitePhotosPage, WhatsAppSettingsPage } from "../modules/whatsapp";
 
 export const router = createBrowserRouter([
   {
@@ -139,6 +141,39 @@ export const router = createBrowserRouter([
     {
       path: ":projectId",
       element: <ProjectDetailPage />,
+    },
+  ],
+},
+
+{
+  path: "drawings_boq",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <MaterialLibraryPage />,
+    },
+   ],
+  },
+
+  {
+  path: "site-photos",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <SitePhotosPage />,
+    },
+  ],
+},
+
+{
+  path: "whatsapp-settings",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <WhatsAppSettingsPage />,
     },
   ],
 },

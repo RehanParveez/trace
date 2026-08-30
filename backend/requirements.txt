@@ -17,3 +17,4 @@ pytest
 pytest-asyncio
 ruff
 email-validator
+ifcopenshell

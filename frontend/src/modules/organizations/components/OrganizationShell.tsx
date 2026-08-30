@@ -44,6 +44,11 @@ function buildOrganizationNav(
       icon: "mail",
       badge: pendingInvitationCount,
     },
+    {
+      label: "Material library",
+      to: "/app/drawings_boq",
+      icon: "materials",
+    },
   ];
 }
 

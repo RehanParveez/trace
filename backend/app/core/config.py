@@ -47,6 +47,11 @@ class Settings(BaseSettings):
   smtp_from_name: str = "Trace"
   smtp_use_tls: bool = True
   
+  whatsapp_app_secret: str = ""
+  whatsapp_webhook_verify_token: str = ""
+  whatsapp_media_download_timeout_seconds: int = 240
+  whatsapp_graph_api_version: str = "v21.0"
+  
   frontend_base_url: str = "http://localhost:5094"
   ai_enabled: bool = False
   ollama_base_url: str = "http://ollama:11434"

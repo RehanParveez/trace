@@ -28,3 +28,6 @@ class PermissionKey(StrEnum):
   BOQ_UPDATE = "boq:update"
   BOQ_APPROVE = "boq:approve"
   MATERIAL_LIBRARY_MANAGE = "material_library:manage"
+  WHATSAPP_CHANNEL_MANAGE = "whatsapp.channel.manage"
+  SITE_PHOTO_READ = "site_photo.read"
+  SITE_PHOTO_MANAGE = "site_photo.manage"

@@ -18,3 +18,5 @@ export * from "./types/identity.types";
 
 export * from "./utils/api-error";
 export * from "./utils/identity.storage";
+
+export * from "./hooks";
