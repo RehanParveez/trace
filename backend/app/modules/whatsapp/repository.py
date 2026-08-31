@@ -57,13 +57,15 @@ class WhatsAppMessageRepository:
   async def try_create(
     self,
     message: WhatsAppMessage,
-  ) -> WhatsAppMessage | None:
+) -> WhatsAppMessage | None:
     self.session.add(message)
+
     try:
-      await self.session.flush()
+      async with self.session.begin_nested():
+        await self.session.flush()
     except IntegrityError:
-      await self.session.rollback()
       return None
+
     return message
 
   async def get_by_id(

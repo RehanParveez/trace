@@ -146,6 +146,12 @@ class WhatsAppMessage(Base, TimestampMixin):
     String(128),
     nullable=True,
   )
+  
+  raw_payload: Mapped[dict] = mapped_column(
+    JSON,
+    nullable=False,
+    default=dict,
+  )
 
   status: Mapped[WhatsAppMessageStatus] = mapped_column(
     Enum(WhatsAppMessageStatus, name="whatsapp_message_status"),
@@ -284,6 +290,12 @@ class PhotoTag(Base, TimestampMixin):
     Index(
       "ix_photo_tags_site_photo",
       "site_photo_id",
+    ),
+    
+    UniqueConstraint(
+      "site_photo_id",
+      "tag",
+      name="uq_photo_tags_site_photo_tag",
     ),
   )
 

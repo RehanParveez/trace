@@ -39,10 +39,12 @@ async def receive_webhook(
   signature = request.headers.get("X-Hub-Signature-256")
   if not WhatsAppService.verify_signature(raw_body, signature):
     return Response(status_code=403)
-  payload = json.loads(raw_body)
+  try:
+    payload = json.loads(raw_body)
+  except json.JSONDecodeError:
+    return Response(status_code=400)
   service = _service(session)
   await service.handle_webhook_payload(payload)
-
   return {"status": "received"}
 
 @router.post(

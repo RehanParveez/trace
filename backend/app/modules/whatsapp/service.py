@@ -187,6 +187,7 @@ class WhatsAppService:
       media_id=media_id,
       status=WhatsAppMessageStatus.RECEIVED,
       received_at=received_at,
+      raw_payload=raw_message,
     )
 
     created = await self.messages.try_create(message)
@@ -311,13 +312,30 @@ class WhatsAppService:
         message.organization_id
       ):
         caption_parsed = await _call_ollama_parse_caption(
-          message.caption_text
+         message.caption_text
         ) or {}
-        project_name_guess = caption_parsed.get("project")
-        if project_name_guess:
-          project_match = await self._match_project_by_name(
-            message.organization_id, project_name_guess
-          )
+
+      photo_date = _parse_ai_date(
+      caption_parsed.get("date")
+  )
+
+      project_name_guess = caption_parsed.get("project")
+
+      if project_name_guess:
+        project_match = await self._match_project_by_name(
+        message.organization_id,
+        project_name_guess,
+    )
+      
+      existing_photo = await self.photos.get_by_whatsapp_message_id(message.id)
+
+      if existing_photo is not None:
+       message.status = WhatsAppMessageStatus.PROCESSED
+       message.processed_at = datetime.now(timezone.utc)
+       await self.messages.update(message)
+       await self.session.commit()
+
+       return
 
       photo = SitePhoto(
         id=uuid4(),
@@ -329,7 +347,7 @@ class WhatsAppService:
         caption_raw=message.caption_text,
         caption_parsed=caption_parsed,
         location_text=caption_parsed.get("location"),
-        photo_date=_parse_ai_date(caption_parsed.get("date")),
+        photo_date=photo_date,
       )
       await self.photos.create(photo)
       await self.subscriptions.increment_usage(
@@ -508,13 +526,20 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: PhotoTagCreateRequest,
-  ) -> PhotoTag:
+) -> PhotoTag:
     photo = await self.get_photo(organization_id, photo_id)
 
+    tag_value = payload.tag.strip()
+    if not tag_value:
+      raise TraceException(
+        "Photo tag cannot be empty.",
+        status_code=400,
+        code="PHOTO_TAG_EMPTY",
+      )
     tag = PhotoTag(
       id=uuid4(),
       site_photo_id=photo.id,
-      tag=payload.tag.strip(),
+      tag=tag_value,
       source=PhotoTagSource.MANUAL,
     )
     tag = await self.tags.create(tag)
