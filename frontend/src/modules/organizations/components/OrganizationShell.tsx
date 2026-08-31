@@ -63,6 +63,13 @@ const productNav: NavItem[] = [
     to: "/app/budgets",
     icon: "budget",
   },
+
+  {
+    label: "Progress review",
+    to: "/app/progress-review",
+    icon: "check",
+  },
+
   {
     label: "Site progress",
     to: "/app/site-logs",

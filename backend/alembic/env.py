@@ -11,6 +11,7 @@ from app.modules.subscriptions import models as subscriptions_models
 from app.modules.projects import models as projects_models
 from app.modules.drawings_boq import models as drawings_boq_models
 from app.modules.whatsapp import models as whatsapp_models
+from app.modules.verification import models as verification_models
 
 config = context.config
 

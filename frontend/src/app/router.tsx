@@ -14,6 +14,7 @@ import {ProjectsPage, ProjectDetailPage,
 } from "../modules/projects";
 import { MaterialLibraryPage } from "../modules/drawings_boq";
 import { SitePhotosPage, WhatsAppSettingsPage } from "../modules/whatsapp";
+import { ProgressClaimsReviewPage } from "../modules/verification";
 
 export const router = createBrowserRouter([
   {
@@ -174,6 +175,17 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <WhatsAppSettingsPage />,
+    },
+  ],
+},
+
+{
+  path: "progress-review",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <ProgressClaimsReviewPage />,
     },
   ],
 },

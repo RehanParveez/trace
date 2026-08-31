@@ -11,6 +11,7 @@ import { ProjectMembers } from "../components/ProjectMembers";
 import { MilestoneTable } from "../components/MilestoneTable";
 import { usePermissionKeys } from "../../identity/";
 import { DrawingsBoqSection } from "../../drawings_boq";
+import { VerificationSection } from "../../verification";
 
 interface ProjectDetailPageProps {
   permissions?: string[];
@@ -206,6 +207,11 @@ export function ProjectDetailPage({
       <section>
         <SectionDivider title="Drawings & BOQ" description="Upload IFC drawings and manage the auto-generated bill of quantities." />
         <DrawingsBoqSection projectId={project.id} permissions={permissions} />
+      </section>
+
+      <section>
+        <SectionDivider title="Progress verification" description="Claims of physical progress, backed by photo evidence, against approved BOQ items." />
+        <VerificationSection projectId={project.id} permissions={permissions} />
       </section>
 
       <section>
