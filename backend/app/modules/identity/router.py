@@ -8,6 +8,9 @@ from app.dependencies.auth import get_current_user
 from app.modules.identity.models import User
 from app.modules.identity.schemas import ChangePasswordRequest, CurrentUserResponse, ForgotPasswordRequest, LoginRequest, LoginResponse, LogoutRequest, MessageResponse, RefreshRequest, RegisterRequest, RegistrationResponse, ResendVerificationRequest, ResetPasswordRequest, TokenResponse, VerifyEmailRequest
 from app.modules.identity.service import IdentityService
+from fastapi import APIRouter, Depends, Request
+from app.core.config import settings
+from app.modules.identity.rate_limit import RateLimiter
 
 router = APIRouter(
   prefix="/auth",
@@ -22,6 +25,19 @@ def build_identity_service(
     session,
     IdentityTokenStore(redis),
   )
+  
+async def enforce_auth_rate_limit(
+  request: Request,
+  redis: Redis = Depends(get_redis),
+) -> None:
+  limiter = RateLimiter(redis)
+  client_ip = request.client.host if request.client else "unknown"
+
+  await limiter.check(
+    key=f"auth:{request.url.path}:{client_ip}",
+    limit=settings.rate_limit_auth_per_minute,
+    window_seconds=60,
+  )
 
 @router.post(
   "/register",
@@ -31,6 +47,7 @@ async def register(
   payload: RegisterRequest,
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
+  _: None = Depends(enforce_auth_rate_limit),
 ) -> RegistrationResponse:
   service = build_identity_service(
     session,
@@ -53,6 +70,7 @@ async def login(
   payload: LoginRequest,
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
+  _: None = Depends(enforce_auth_rate_limit),
 ) -> LoginResponse:
   service = build_identity_service(
     session,
@@ -72,7 +90,7 @@ async def refresh(
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
 ) -> TokenResponse:
-  service = IdentityService(session, redis,)
+  service = build_identity_service(session, redis,)
 
   return await service.refresh(
     raw_refresh_token=payload.refresh_token,
@@ -87,7 +105,7 @@ async def logout(
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
 ) -> MessageResponse:
-  service = IdentityService(session, redis,)
+  service = build_identity_service(session, redis,)
 
   await service.logout(
     raw_refresh_token=payload.refresh_token,
@@ -120,7 +138,7 @@ async def logout_all(
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
 ) -> MessageResponse:
-  service = IdentityService(session, redis,)
+  service = build_identity_service(session, redis,)
   await service.logout_all(
     current_user.id
   )
@@ -136,6 +154,7 @@ async def forgot_password(
   payload: ForgotPasswordRequest,
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
+  _: None = Depends(enforce_auth_rate_limit),
 ) -> MessageResponse:
   service = build_identity_service(
     session,
@@ -200,6 +219,7 @@ async def resend_verification(
   payload: ResendVerificationRequest,
   session: AsyncSession = Depends(get_db),
   redis: Redis = Depends(get_redis),
+  _: None = Depends(enforce_auth_rate_limit),
 ) -> MessageResponse:
   service = build_identity_service(
     session,

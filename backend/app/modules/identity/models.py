@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Table, Column, UniqueConstraint, Index, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -190,7 +190,7 @@ class OrganizationInvitation(TimestampMixin, Base):
 
   @property
   def is_expired(self) -> bool:
-    return self.expires_at <= datetime.now().astimezone()
+    return self.expires_at <= datetime.now(timezone.utc)
 
   @property
   def is_pending(self) -> bool:

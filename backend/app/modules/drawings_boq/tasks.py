@@ -19,6 +19,8 @@ from app.shared.storage import download_to_path
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.workers.celery_app import celery_app
 from app.dependencies.tenancy import scope_session_to_org
+from app.modules.notifications.models import NotificationType
+from app.modules.notifications.service import NotificationService
 
 TARGET_IFC_TYPES = [
   "IfcWall",
@@ -65,15 +67,25 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       download_to_path(drawing.storage_key, local_path)
       elements_data = _extract_ifc_elements(local_path)
     except Exception as exc:
-      async with AsyncSessionLocal() as session:
-        drawings = DrawingRepository(session)
-        failed = await drawings.get_by_id(drawing_id)
-        if failed is not None:
-          failed.status = DrawingStatus.FAILED
-          failed.error_message = str(exc)[:2000]
-          await drawings.update(failed)
-          await session.commit()
-      return
+     async with AsyncSessionLocal() as session:
+       drawings = DrawingRepository(session)
+       failed = await drawings.get_by_id(drawing_id)
+       if failed is not None:
+        failed.status = DrawingStatus.FAILED
+        failed.error_message = str(exc)[:2000]
+        await drawings.update(failed)
+        if failed.uploaded_by_user_id is not None:
+         await NotificationService(session).notify_user(
+          failed.organization_id, failed.uploaded_by_user_id,
+          NotificationType.DRAWING_FAILED,
+          f'"{failed.original_filename}" failed to parse',
+          body=str(exc)[:500],
+          link_path=f"/app/projects/{failed.project_id}",
+          commit=False,
+        )
+       await session.commit()
+    return
+  
 
   async with AsyncSessionLocal() as session:
     drawings = DrawingRepository(session)
@@ -155,6 +167,16 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
     if boq_items:
       await boq_items_repo.bulk_create(boq_items)
+      
+    if current_drawing.uploaded_by_user_id is not None:
+     await NotificationService(session).notify_user(
+      current_drawing.organization_id, current_drawing.uploaded_by_user_id,
+      NotificationType.DRAWING_PARSED,
+      f'"{current_drawing.original_filename}" finished parsing',
+      body=f"{len(boq_items)} draft BOQ items were generated.",
+      link_path=f"/app/projects/{current_drawing.project_id}",
+      commit=False,
+    )
 
     current_drawing.status = DrawingStatus.PARSED
     current_drawing.parsed_at = datetime.now(timezone.utc)

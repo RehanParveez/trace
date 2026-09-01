@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from uuid import UUID
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.modules.identity.models import Organization, Permission, PlatformAdmin, RefreshToken, Role, User
@@ -104,9 +104,8 @@ class IdentityRepository:
   ) -> Organization | None:
     result = await self.session.execute(
       select(Organization)
-      .where(Organization.name == name.strip())
+      .where(func.lower(Organization.name) == name.strip().lower())
     )
-
     return result.scalar_one_or_none()
 
   async def create_organization(

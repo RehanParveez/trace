@@ -15,6 +15,7 @@ import {ProjectsPage, ProjectDetailPage,
 import { MaterialLibraryPage } from "../modules/drawings_boq";
 import { SitePhotosPage, WhatsAppSettingsPage } from "../modules/whatsapp";
 import { ProgressClaimsReviewPage } from "../modules/verification";
+import { NotificationsPage } from "../modules/notifications";
 
 export const router = createBrowserRouter([
   {
@@ -186,6 +187,17 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <ProgressClaimsReviewPage />,
+    },
+  ],
+},
+
+{
+  path: "notifications",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <NotificationsPage />,
     },
   ],
 },

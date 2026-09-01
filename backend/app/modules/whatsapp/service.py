@@ -20,6 +20,8 @@ from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoReposit
 from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest
 from app.shared.storage import build_site_photo_storage_key, generate_presigned_url, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
+from app.modules.notifications.service import NotificationService
+from app.modules.notifications.schemas import NotificationType
 
 GRAPH_API_BASE = (
   f"https://graph.facebook.com/{settings.whatsapp_graph_api_version}"
@@ -35,6 +37,7 @@ class WhatsAppService:
     self.tags = PhotoTagRepository(session)
     self.projects = ProjectRepository(session)
     self.subscriptions = SubscriptionService(session)
+    self.notifications = NotificationService(session)
 
   async def connect_channel(
     self,
@@ -396,7 +399,15 @@ class WhatsAppService:
     ][:MAX_QUICK_REPLY_PROJECTS]
 
     if not active_projects:
-      return
+     await self.notifications.notify_by_permission(
+      message.organization_id,
+      "site_photo:manage",
+      NotificationType.SITE_PHOTO_NEEDS_PROJECT,
+      "A site photo needs a project assigned",
+      body="No active projects were available to prompt the sender — assign it manually.",
+      link_path="/app/site-photos",
+    )
+     return
 
     body = {
       "messaging_product": "whatsapp",

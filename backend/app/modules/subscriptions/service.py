@@ -9,11 +9,14 @@ from app.modules.identity.models import Organization
 from app.modules.subscriptions.models import BillingInterval, Subscription, SubscriptionStatus, UsageCounter, UsagePeriod
 from app.modules.subscriptions.repository import SubscriptionRepository
 from app.modules.subscriptions.schemas import ChangePlanRequest, UsageMetricResponse, UsageResponse
+from app.modules.notifications.service import NotificationService
+from app.modules.notifications.schemas import NotificationType
 
 class SubscriptionService:
   def __init__(self, session: AsyncSession):
     self.session = session
     self.repository = SubscriptionRepository(session)
+    self.notifications = NotificationService(session)
 
   async def list_plans(self):
     return await self.repository.list_public_plans()
@@ -361,9 +364,23 @@ class SubscriptionService:
           code="USAGE_LIMIT_EXCEEDED",
         )
 
+    previous_quantity = counter.quantity
     counter.quantity += quantity
-
     await self.session.flush()
+
+    if limit is not None:
+      previous_ratio = previous_quantity / int(limit)
+      new_ratio = counter.quantity / int(limit)
+      if previous_ratio < 0.8 <= new_ratio:
+       await self.notifications.notify_by_permission(
+        organization_id,
+        "organization:manage",
+        NotificationType.SUBSCRIPTION_USAGE_WARNING,
+        f"{metric.replace('_', ' ').title()} usage is near your plan limit",
+        body=f"{counter.quantity} of {limit} used this billing period.",
+        link_path="/app/subscription",
+        commit=False,
+      )
     await self.session.commit()
     return counter
 

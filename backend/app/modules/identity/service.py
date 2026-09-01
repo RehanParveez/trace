@@ -9,10 +9,13 @@ from app.core.exceptions import TraceException
 from app.core.redis import IdentityTokenStore
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.modules.identity.enums import TokenType
-from app.modules.identity.models import RefreshToken, User
+from app.modules.identity.models import RefreshToken, User, Organization
 from app.modules.identity.password_policy import validate_password
 from app.modules.identity.repository import IdentityRepository
 from app.modules.identity.schemas import LoginResponse, RegistrationResponse, TokenResponse
+from app.core.config import settings
+from app.modules.identity.email import EmailService
+from sqlalchemy import select
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
@@ -26,6 +29,7 @@ class IdentityService:
     self,
     session: AsyncSession,
     token_store: IdentityTokenStore,
+    email_service: EmailService | None = None,
   ):
     self.session = session
 
@@ -34,6 +38,7 @@ class IdentityService:
     )
 
     self.token_store = token_store
+    self.email_service = email_service or EmailService()
 
   @staticmethod
   def hash_refresh_token(
@@ -145,6 +150,15 @@ class IdentityService:
 
     return user
 
+  async def get_organization_by_slug(
+    self,
+    slug: str,
+  ) -> Organization | None:
+    result = await self.session.execute(
+      select(Organization).where(Organization.slug == slug)
+    )
+    return result.scalar_one_or_none()
+  
   async def register(self, email: str, password: str, first_name: str, last_name: str, organization_name: str, password_confirmation: str,
 ) -> RegistrationResponse:
 
@@ -194,6 +208,9 @@ class IdentityService:
     organization_name
    )
 
+   if await self.repository.get_organization_by_slug(organization_slug) is not None:
+    organization_slug = f"{organization_slug}-{secrets.token_hex(3)}"
+
    organization = await self.repository.create_organization(
     name=organization_name,
     slug=organization_slug,
@@ -238,7 +255,15 @@ class IdentityService:
       code="REGISTRATION_USER_LOAD_FAILED",
     )
 
-   await self.create_email_verification_token(user)
+   verification_token = await self.create_email_verification_token(user)
+   await self.email_service.send(
+     recipient=user.email,
+     subject="Verify your email address",
+     body=(
+       "Welcome. Please verify your email address:\n\n"
+       f"{settings.frontend_base_url}/verify-email?token={verification_token}"
+     ),
+   )
 
    return RegistrationResponse(
     user=user,
@@ -310,19 +335,18 @@ class IdentityService:
   ) -> str | None:
     email = self.normalize_email(email)
 
-    user = await self.repository.get_user_by_email(
-      email
+    user = await self.repository.get_user_by_email(email)
+    if user is None or user.is_verified:
+      return None
+    token = await self.create_email_verification_token(user)
+
+    await self.email_service.send(
+      recipient=user.email,
+      subject="Verify your email address",
+      body=f"Verify your email address: {settings.frontend_base_url}/verify-email?token={token}",
     )
 
-    if user is None:
-      return None
-
-    if user.is_verified:
-      return None
-
-    return await self.create_email_verification_token(
-      user
-    )
+    return token
 
   async def change_password(
     self,
@@ -390,16 +414,16 @@ class IdentityService:
   ) -> str | None:
     email = self.normalize_email(email)
 
-    user = await self.repository.get_user_by_email(
-      email
-    )
-
+    user = await self.repository.get_user_by_email(email)
     if user is None:
       return None
-
-    return await self.create_password_reset_token(
-      user
+    token = await self.create_password_reset_token(user)
+    await self.email_service.send(
+      recipient=user.email,
+      subject="Reset your password",
+      body=f"Reset your password: {settings.frontend_base_url}/reset-password?token={token}",
     )
+    return token
 
   async def reset_password(
     self,
@@ -456,47 +480,13 @@ class IdentityService:
 
   async def login(
     self,
-    email: str,
-    password: str,
-  ) -> LoginResponse:
-
-    user = await self.authenticate(
-      email=email,
-      password=password,
-    )
-
-    access_token = create_access_token(
-      subject=str(user.id),
-      organization_id=str(
-        user.organization_id
-      ),
-    )
-
-    refresh_token = create_refresh_token(
-      subject=str(user.id),
-      organization_id=str(
-        user.organization_id
-      ),
-    )
-
-    await self._store_refresh_token(
-      user=user,
-      raw_token=refresh_token,
-    )
-
-    await self.repository.update_user_last_login(
-      user
-    )
-
+    email: str, password: str) -> LoginResponse:
+    user = await self.authenticate(email=email, password=password)
+    tokens = await self.issue_tokens(user)
+    await self.repository.update_user_last_login(user)
     await self.session.commit()
-
-    return LoginResponse(
-      user=user,
-      tokens=TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-      ),
-    )
+    
+    return LoginResponse(user=user, tokens=tokens)
 
   async def _store_refresh_token(
     self,
@@ -524,6 +514,19 @@ class IdentityService:
     return await self.repository.add_refresh_token(
       token
     )
+    
+  async def issue_tokens(self, user: User) -> TokenResponse:
+    access_token = create_access_token(
+      subject=str(user.id),
+      organization_id=str(user.organization_id),
+    )
+    refresh_token = create_refresh_token(
+      subject=str(user.id),
+      organization_id=str(user.organization_id),
+    )
+    
+    await self._store_refresh_token(user=user, raw_token=refresh_token)
+    return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
   async def refresh(
     self,

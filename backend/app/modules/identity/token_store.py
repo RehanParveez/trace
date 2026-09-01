@@ -16,6 +16,24 @@ class IdentityTokenStore:
     return hashlib.sha256(
       token.encode("utf-8")
     ).hexdigest()
+    
+  async def create(
+    self,
+    *,
+    prefix: str,
+    user_id: str,
+    ttl_seconds: int,
+  ) -> str:
+    token = self.generate_token()
+
+    await self.store(
+      prefix=prefix,
+      token=token,
+      value=user_id,
+      ttl_seconds=ttl_seconds,
+    )
+
+    return token
 
   async def store(
     self,

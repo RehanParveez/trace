@@ -2,6 +2,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import type { ReactNode } from "react";
 import { BrandMark, Icon, LivePip } from "./OrganizationUi";
 import type { OrganizationIconName } from "../types/organization.types";
+import { NotificationBell } from "../../notifications";
 
 interface OrganizationShellProps {
   children?: ReactNode;
@@ -247,21 +248,23 @@ export function OrganizationShell({
           </div>
 
           <div className="ml-auto flex items-center gap-3">
-            <div className="hidden items-center gap-2 text-[9px] font-bold uppercase tracking-[0.16em] !text-[#668165] sm:flex">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1e9d63] opacity-60" />
-                <span className="relative h-1.5 w-1.5 rounded-full bg-[#1e9d63]" />
-              </span>
+           <div className="hidden items-center gap-2 text-[9px] font-bold uppercase tracking-[0.16em] !text-[#668165] sm:flex">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1e9d63] opacity-60" />
+              <span className="relative h-1.5 w-1.5 rounded-full bg-[#1e9d63]" />
+            </span>
 
-              Workspace operational
+            Workspace operational
             </div>
+
+            <NotificationBell />
 
             <button
               type="button"
               className="flex h-9 w-9 items-center justify-center rounded-[9px] !border !border-[#e1d5bc] !bg-white !text-[#6b6152] transition hover:!bg-[#f5efe3]"
               aria-label="Organization settings"
             >
-              <Icon name="settings" size={15} />
+             <Icon name="settings" size={15} />
             </button>
           </div>
         </header>

@@ -10,6 +10,8 @@ from app.modules.verification.models import PhotoBOQLink, ProgressClaim, Progres
 from app.modules.whatsapp.models import SitePhoto
 from app.modules.verification.repository import PhotoBOQLinkRepository, ProgressClaimRepository
 from app.modules.verification.schemas import PhotoBOQLinkCreateRequest, ProgressClaimCreateRequest, ProgressClaimReviewRequest, ProgressClaimUpdateRequest
+from app.modules.notifications.service import NotificationService
+from app.modules.notifications.service import NotificationService
 
 class VerificationService:
   def __init__(self, session: AsyncSession):
@@ -17,6 +19,7 @@ class VerificationService:
     self.claims = ProgressClaimRepository(session)
     self.photo_boq_links = PhotoBOQLinkRepository(session)
     self.projects = ProjectRepository(session)
+    self.notifications = NotificationService(session)
 
   async def _get_project(
     self,
@@ -191,6 +194,16 @@ class VerificationService:
     await self.claims.update(claim)
     await self.session.commit()
     await self.session.refresh(claim)
+
+    await self.notifications.notify_by_permission(
+     organization_id,
+     "progress_claim:review",
+     NotificationType.PROGRESS_CLAIM_SUBMITTED,
+     "A progress claim was submitted for review",
+     body=f"Claim dated {claim.claim_date.isoformat()} is awaiting review.",
+     link_path=f"/app/projects/{claim.project_id}",
+     exclude_user_id=user_id,
+    )
 
     return claim
 

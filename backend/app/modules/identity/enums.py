@@ -41,3 +41,4 @@ class PermissionKey(StrEnum):
   BOQ_ITEM_CREATE = "boq_item_create"
   BOQ_EXPORT = "boq_export"
   LABOUR_RATE_MANAGE = "labour_rate_manage"
+  NOTIFICATION_READ = "notification:read"
