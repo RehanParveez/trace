@@ -4,7 +4,10 @@ export const DRAWINGS_BOQ_PERMISSIONS = {
   DRAWING_DELETE: "drawing:delete",
   BOQ_UPDATE: "boq:update",
   BOQ_APPROVE: "boq:approve",
+  BOQ_ITEM_CREATE: "boq_item:create",
+  BOQ_EXPORT: "boq:export",
   MATERIAL_LIBRARY_MANAGE: "material_library:manage",
+  LABOUR_RATE_MANAGE: "labour_rate:manage",
 } as const;
 
 export type DrawingsBoqPermission =

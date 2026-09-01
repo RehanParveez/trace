@@ -18,7 +18,7 @@ from app.modules.subscriptions.service import SubscriptionService
 from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
 from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository
 from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest
-from app.shared.storage import build_storage_key, generate_presigned_url, upload_fileobj
+from app.shared.storage import build_site_photo_storage_key, generate_presigned_url, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
 
 GRAPH_API_BASE = (
@@ -295,18 +295,15 @@ class WhatsAppService:
       return
 
     try:
-      storage_key = build_storage_key(
-        message.organization_id,
-        "site-photos",
-        "unassigned",
-        f"{message.id}.jpg",
-      )
+      extension = _extension_for_mime_type(mime_type)
+      storage_key = build_site_photo_storage_key(message.organization_id, f"{message.id}{extension}",)
       await asyncio.to_thread(
         upload_fileobj, storage_key, BytesIO(media_bytes), mime_type
       )
 
       caption_parsed: dict[str, Any] = {}
       project_match: UUID | None = None
+      photo_date: date | None = None
 
       if message.caption_text and await self._is_ai_enabled(
         message.organization_id
@@ -315,18 +312,13 @@ class WhatsAppService:
          message.caption_text
         ) or {}
 
-      photo_date = _parse_ai_date(
-      caption_parsed.get("date")
-  )
-
-      project_name_guess = caption_parsed.get("project")
-
-      if project_name_guess:
-        project_match = await self._match_project_by_name(
-        message.organization_id,
-        project_name_guess,
-    )
-      
+        photo_date = _parse_photo_date(
+         caption_parsed.get("date")
+        )
+        project_name_guess = caption_parsed.get("project")
+        
+        if project_name_guess:
+          project_match = await self._match_project_by_name(message.organization_id, project_name_guess,)
       existing_photo = await self.photos.get_by_whatsapp_message_id(message.id)
 
       if existing_photo is not None:
@@ -562,6 +554,14 @@ class WhatsAppService:
       )
     await self.tags.delete(matching)
     await self.session.commit()
+    
+def _extension_for_mime_type(mime_type: str) -> str:
+  mapping = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+  }
+  return mapping.get(mime_type.lower(), ".jpg")
 
 async def _download_whatsapp_media(
   access_token: str,
@@ -604,15 +604,15 @@ async def _send_whatsapp_message(
     messages = response.json().get("messages", [])
     return messages[0]["id"] if messages else None
 
-def _parse_ai_date(value: str | None) -> date | None:
+def _parse_photo_date(
+  value: Any,
+) -> date | None:
   if not value:
     return None
-  for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
-    try:
-      return datetime.strptime(value, fmt).date()
-    except ValueError:
-      continue
-  return None
+  try:
+    return date.fromisoformat(str(value))
+  except (TypeError, ValueError):
+    return None
 
 async def _call_ollama_parse_caption(caption_text: str) -> dict | None:
   import json

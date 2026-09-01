@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
-from app.modules.drawings_boq.models import BOQItemStatus, DrawingFormat, DrawingStatus
+from app.modules.drawings_boq.models import BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingFormat, DrawingStatus
 
 class DrawingResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -38,6 +38,9 @@ class BOQVersionResponse(BaseModel):
   drawing_id: UUID | None
   label: str
   created_at: datetime
+  status: BOQVersionStatus
+  covered_area_sqft: Decimal | None
+  export_meta: dict
 
 class BOQItemResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -53,6 +56,8 @@ class BOQItemResponse(BaseModel):
   status: BOQItemStatus
   version: int
   approved_at: datetime | None
+  item_type: BOQItemType
+  created_by_user_id: UUID | None
 
 class BOQItemUpdateRequest(BaseModel):
   version: int = Field(
@@ -93,6 +98,7 @@ class MaterialLibraryCreateRequest(BaseModel):
     default=None,
     max_length=20,
   )
+  default_rate: Decimal | None = None
 
 class MaterialLibraryResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -102,3 +108,52 @@ class MaterialLibraryResponse(BaseModel):
   normalized_name: str
   category: str | None
   default_unit: str | None
+  default_rate: Decimal | None
+  
+class MaterialLibraryUpdateRequest(BaseModel):
+  normalized_name: str | None = Field(default=None, min_length=1, max_length=300)
+  category: str | None = Field(default=None, max_length=150)
+  default_unit: str | None = Field(default=None, max_length=20)
+  default_rate: Decimal | None = None
+
+class LabourRateCreateRequest(BaseModel):
+  trade: str = Field(min_length=1, max_length=150)
+  unit: str = Field(min_length=1, max_length=20)
+  rate: Decimal
+
+class LabourRateUpdateRequest(BaseModel):
+  trade: str | None = Field(default=None, min_length=1, max_length=150)
+  unit: str | None = Field(default=None, min_length=1, max_length=20)
+  rate: Decimal | None = None
+
+class LabourRateResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  trade: str
+  unit: str
+  rate: Decimal
+
+class BOQCustomItemCreateRequest(BaseModel):
+  material_name: str = Field(min_length=1, max_length=300)
+  category: str | None = Field(default=None, max_length=150)
+  unit: str = Field(min_length=1, max_length=20)
+  quantity: Decimal
+  unit_rate: Decimal | None = None
+
+class BOQVersionUpdateRequest(BaseModel):
+  covered_area_sqft: Decimal | None = None
+  export_meta: dict | None = None
+
+class BOQSummaryResponse(BaseModel):
+  boq_version_id: UUID
+  materials_total: Decimal
+  labour_total: Decimal
+  custom_total: Decimal
+  grand_total: Decimal
+  cost_per_sqft: Decimal | None
+  covered_area_sqft: Decimal | None
+  amount_in_words: str
+  unpriced_item_count: int
+  unapproved_item_count: int
+  item_count: int

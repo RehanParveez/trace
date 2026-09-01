@@ -25,6 +25,15 @@ class DrawingStatus(str, enum.Enum):
 class BOQItemStatus(str, enum.Enum):
   DRAFT = "DRAFT"
   APPROVED = "APPROVED"
+  
+class BOQItemType(str, enum.Enum):
+  MATERIAL = "MATERIAL"
+  LABOUR = "LABOUR"
+  CUSTOM = "CUSTOM"
+
+class BOQVersionStatus(str, enum.Enum):
+  ACTIVE = "ACTIVE"
+  SUPERSEDED = "SUPERSEDED"
 
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -215,6 +224,24 @@ class BOQVersion(Base, TimestampMixin):
     String(200),
     nullable=False,
   )
+  
+  status: Mapped[BOQVersionStatus] = mapped_column(
+    Enum(BOQVersionStatus, name="boq_version_status"),
+    nullable=False,
+    default=BOQVersionStatus.ACTIVE,
+    index=True,
+  )
+
+  covered_area_sqft: Mapped[Decimal | None] = mapped_column(
+    Numeric(14, 2),
+    nullable=True,
+  )
+
+  export_meta: Mapped[dict] = mapped_column(
+    JSON,
+    nullable=False,
+    default=dict,
+  )
 
   drawing: Mapped["Drawing | None"] = relationship(
     "Drawing",
@@ -284,6 +311,19 @@ class BOQItem(Base, TimestampMixin):
 
   unit_rate: Mapped[Decimal | None] = mapped_column(
     Numeric(14, 2),
+    nullable=True,
+  )
+  
+  item_type: Mapped[BOQItemType] = mapped_column(
+    Enum(BOQItemType, name="boq_item_type"),
+    nullable=False,
+    default=BOQItemType.MATERIAL,
+    index=True,
+  )
+
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
     nullable=True,
   )
 
@@ -360,6 +400,40 @@ class MaterialLibrary(Base, TimestampMixin):
     String(20),
     nullable=True,
   )
+  
+  default_rate: Mapped[Decimal | None] = mapped_column(
+    Numeric(14, 2),
+    nullable=True,
+  )
+  
+class LabourRate(Base, TimestampMixin):
+  __tablename__ = "labour_rates"
+
+  __table_args__ = (
+    UniqueConstraint(
+      "organization_id",
+      "trade",
+      name="uq_labour_rates_org_trade",
+    ),
+    Index("ix_labour_rates_org", "organization_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
+
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+
+  trade: Mapped[str] = mapped_column(String(150), nullable=False)
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  rate: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
 
 class MaterialNormalizationCache(Base, TimestampMixin):
   __tablename__ = "material_normalization_cache"

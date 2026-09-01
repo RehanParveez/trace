@@ -38,3 +38,6 @@ class PermissionKey(StrEnum):
   PROGRESS_CLAIM_REVIEW = "progress_claim:review"
   PHOTO_BOQ_LINK_READ = "photo_boq_link:read" 
   PHOTO_BOQ_LINK_MANAGE = "photo_boq_link:manage"
+  BOQ_ITEM_CREATE = "boq_item_create"
+  BOQ_EXPORT = "boq_export"
+  LABOUR_RATE_MANAGE = "labour_rate_manage"

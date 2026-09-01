@@ -5,12 +5,15 @@ celery_app = Celery(
   "trace",
   broker=settings.celery_broker_url,
   backend=settings.celery_result_backend,
+  include=[
+    "app.modules.whatsapp.tasks",
+  ],
 )
 
 celery_app.conf.update(
   task_default_queue = "default",
   task_routes={
-    "app.workers.whatsapp.*": {"queue": "whatsapp_priority"},
+    "app.modules.whatsapp.*": {"queue": "whatsapp_priority"},
     "app.workers.bim.*": {"queue": "bim_parsing"},
   },
   task_serializer = "json",

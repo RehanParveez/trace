@@ -12,11 +12,13 @@ import ifcopenshell.util.element
 from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.modules.drawings_boq.models import BOQItem, BOQVersion, DrawingElement, DrawingStatus
+from app.modules.drawings_boq.models import BOQItem, BOQItemType, BOQVersion, DrawingElement, DrawingStatus
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
 from app.modules.identity.models import Organization
 from app.shared.storage import download_to_path
+from app.modules.drawings_boq.service import DrawingBOQService
 from app.workers.celery_app import celery_app
+from app.dependencies.tenancy import scope_session_to_org
 
 TARGET_IFC_TYPES = [
   "IfcWall",
@@ -47,7 +49,7 @@ def parse_drawing_task(drawing_id: str) -> str:
   return "parsed"
 
 async def _parse_drawing(drawing_id: UUID) -> None:
-  from app.modules.drawings_boq.service import DrawingBOQService
+
   async with AsyncSessionLocal() as session:
     drawings = DrawingRepository(session)
     drawing = await drawings.get_by_id(drawing_id)

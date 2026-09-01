@@ -1,4 +1,4 @@
-import type { BOQItemStatus, DrawingStatus } from "../types/drawings-boq.types";
+import type { BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingStatus } from "../types/drawings-boq.types";
 
 export function formatDrawingStatus(status: DrawingStatus): string {
   switch (status) {
@@ -51,4 +51,28 @@ export function computeLineTotal(quantity: number | string, unitRate: number | s
   const q = Number(quantity);
   const r = Number(unitRate);
   return Number.isNaN(q) || Number.isNaN(r) ? null : q * r;
+}
+
+export function formatBOQItemType(type: BOQItemType): string {
+  switch (type) {
+    case "MATERIAL": return "Material";
+    case "LABOUR": return "Labour";
+    case "CUSTOM": return "Additional";
+    default: return type;
+  }
+}
+
+export function formatBOQVersionStatus(status: BOQVersionStatus): string {
+  return status === "ACTIVE" ? "Active" : "Superseded";
+}
+
+export function triggerBlobDownload(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
 }

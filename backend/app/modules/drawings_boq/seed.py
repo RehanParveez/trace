@@ -1,13 +1,15 @@
 from __future__ import annotations
 import asyncio
+from decimal import Decimal
 from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.core.database import AsyncSessionLocal
-from app.modules.drawings_boq.models import MaterialLibrary
+from app.modules.drawings_boq.models import LabourRate, MaterialLibrary
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import Organization, Permission, Role
+from datetime import datetime, timezone
 
 MATERIAL_ENTRIES = [
   {
@@ -15,36 +17,60 @@ MATERIAL_ENTRIES = [
     "normalized_name": "Concrete Grade 25 (M25)",
     "category": "Concrete",
     "default_unit": "m3",
+    "default_rate": Decimal("18500.00"),
   },
   {
     "raw_text": "concrete grade 30",
     "normalized_name": "Concrete Grade 30 (M30)",
     "category": "Concrete",
     "default_unit": "m3",
+    "default_rate": Decimal("19500.00"),
   },
   {
     "raw_text": "concrete gr45",
     "normalized_name": "Concrete Grade 45 (M45)",
     "category": "Concrete",
     "default_unit": "m3",
+    "default_rate": Decimal("21500.00"),
   },
   {
     "raw_text": "steel rebar grade 60",
     "normalized_name": "Steel Reinforcement Bar Grade 60",
     "category": "Steel",
     "default_unit": "kg",
+    "default_rate": Decimal("210.00"),
   },
   {
     "raw_text": "burnt clay brick",
     "normalized_name": "Burnt Clay Brick (Standard)",
     "category": "Masonry",
     "default_unit": "unit",
+    "default_rate": Decimal("25.00"),
   },
   {
     "raw_text": "cement opc",
     "normalized_name": "Ordinary Portland Cement",
     "category": "Cement",
     "default_unit": "kg",
+    "default_rate": Decimal("12.50"),
+  },
+]
+
+LABOUR_RATE_ENTRIES = [
+  {
+    "trade": "Labour Contractor — grey structure",
+    "unit": "Sft",
+    "rate": Decimal("550.00"),
+  },
+  {
+    "trade": "Electrician — electrical works labour",
+    "unit": "Sft",
+    "rate": Decimal("30.00"),
+  },
+  {
+    "trade": "Plumber — plumbing works labour",
+    "unit": "Sft",
+    "rate": Decimal("30.00"),
   },
 ]
 
@@ -128,6 +154,37 @@ async def seed_material_library(
           normalized_name=data["normalized_name"],
           category=data["category"],
           default_unit=data["default_unit"],
+          default_rate=data["default_rate"],
+        )
+      )
+
+async def seed_labour_rates(session: AsyncSession) -> None:
+  organization_result = await session.execute(
+    select(Organization).order_by(Organization.created_at.asc()).limit(1)
+  )
+  organization = organization_result.scalar_one_or_none()
+  if organization is None:
+    return
+  
+  now = datetime.now(timezone.utc)
+  
+  for data in LABOUR_RATE_ENTRIES:
+    existing = await session.execute(
+      select(LabourRate).where(
+        LabourRate.organization_id == organization.id,
+        LabourRate.trade == data["trade"],
+      )
+    )
+    if existing.scalar_one_or_none() is None:
+      session.add(
+        LabourRate(
+          id=uuid4(),
+          organization_id=organization.id,
+          trade=data["trade"],
+          unit=data["unit"],
+          rate=data["rate"],
+          created_at=now,
+          updated_at=now,
         )
       )
 
@@ -136,6 +193,7 @@ async def main():
     permissions = await seed_permissions(session)
     await grant_permissions_to_admin_roles(session, permissions)
     await seed_material_library(session)
+    await seed_labour_rates(session)
     await session.commit()
   print(
     "Drawings & BOQ module seeding completed successfully."

@@ -3,7 +3,7 @@ import axios from "axios";
 import { Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
 import { useApproveBOQItem, useBOQItems, useUpdateBOQItem } from "../hooks";
 import type { BOQItem } from "../types/drawings-boq.types";
-import { computeLineTotal, formatBOQItemStatus, formatCurrency, formatQuantity } from "../utils/drawings-boq.utils";
+import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity } from "../utils/drawings-boq.utils";
 
 interface BOQItemTableProps {
   boqVersionId: string;
@@ -48,6 +48,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
             <thead className="bg-[#f5efe3]">
               <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
                 <th className="px-4 py-3">Material</th>
+                <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Unit</th>
                 <th className="px-4 py-3 text-right">Quantity</th>
                 <th className="px-4 py-3 text-right">Rate</th>
@@ -86,6 +87,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                       <span className="block text-[12px] font-semibold text-[#191410]">{item.material_name}</span>
                       {item.category ? <span className="mt-0.5 block text-[10px] text-[#756957]">{item.category}</span> : null}
                     </td>
+                    <td className="px-4 py-3.5 text-[10.5px] text-[#6b6152]">{formatBOQItemType(item.item_type)}</td>
                     <td className="px-4 py-3.5 text-[11px] text-[#6b6152]">{item.unit}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[11px] text-[#191410]">{formatQuantity(item.quantity)}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[11px] text-[#191410]">{formatCurrency(item.unit_rate)}</td>
@@ -147,6 +149,7 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
         <input className={cls} value={materialName} onChange={(e) => setMaterialName(e.target.value)} />
         <input className={`${cls} mt-1.5`} placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
       </td>
+      <td className="px-4 py-3 text-[10.5px] text-[#a2957c]">{formatBOQItemType(item.item_type)}</td>
       <td className="px-4 py-3"><input className={cls} value={unit} onChange={(e) => setUnit(e.target.value)} /></td>
       <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></td>
       <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" placeholder="—" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} /></td>

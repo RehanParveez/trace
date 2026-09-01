@@ -27,6 +27,11 @@ def build_storage_key(organization_id: UUID, project_id: UUID, filename: str) ->
   safe_name = filename.replace("/", "_").replace("\\", "_")
   return f"{organization_id}/{project_id}/drawings/{uuid.uuid4().hex}_{safe_name}"
 
+def build_site_photo_storage_key(organization_id: UUID, filename: str,
+) -> str:
+  safe_name = filename.replace("/", "_").replace("\\", "_")
+  return f"{organization_id}/site-photos/unassigned/{uuid.uuid4().hex}_{safe_name}"
+
 def upload_fileobj(key: str, fileobj, content_type: str | None = None) -> None:
   client = get_s3_client()
   extra_args = {"ContentType": content_type} if content_type else {}

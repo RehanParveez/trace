@@ -18,3 +18,4 @@ pytest-asyncio
 ruff
 email-validator
 ifcopenshell
+reportlab openpyxl

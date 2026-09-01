@@ -2,7 +2,7 @@ from __future__ import annotations
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.drawings_boq.models import BOQItem, BOQVersion, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache
+from app.modules.drawings_boq.models import BOQItem, BOQItemType, BOQVersionStatus, BOQVersion, LabourRate, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache
 
 class DrawingRepository:
   def __init__(self, session: AsyncSession):
@@ -83,6 +83,11 @@ class BOQVersionRepository:
     self.session.add(boq_version)
     await self.session.flush()
     return boq_version
+  
+  async def create(self, item: BOQItem) -> BOQItem:
+    self.session.add(item)
+    await self.session.flush()
+    return item
 
   async def get_by_id_and_org(
     self,
@@ -111,6 +116,29 @@ class BOQVersionRepository:
       .order_by(BOQVersion.created_at.desc())
     )
     return list(result.scalars().all())
+  
+  async def update(self, boq_version: BOQVersion) -> BOQVersion:
+    self.session.add(boq_version)
+    await self.session.flush()
+    return boq_version
+
+  async def supersede_active_for_project(
+    self,
+    organization_id: UUID,
+    project_id: UUID,
+    exclude_id: UUID,
+  ) -> None:
+    result = await self.session.execute(
+      select(BOQVersion).where(
+        BOQVersion.organization_id == organization_id,
+        BOQVersion.project_id == project_id,
+        BOQVersion.status == BOQVersionStatus.ACTIVE,
+        BOQVersion.id != exclude_id,
+      )
+    )
+    for version in result.scalars().all():
+      version.status = BOQVersionStatus.SUPERSEDED
+    await self.session.flush()
 
 class BOQItemRepository:
   def __init__(self, session: AsyncSession):
@@ -187,6 +215,24 @@ class MaterialLibraryRepository:
     self.session.add(entry)
     await self.session.flush()
     return entry
+  
+  async def get_by_id_and_org(
+    self,
+    entry_id: UUID,
+    organization_id: UUID,
+  ) -> MaterialLibrary | None:
+    result = await self.session.execute(
+      select(MaterialLibrary).where(
+        MaterialLibrary.id == entry_id,
+        MaterialLibrary.organization_id == organization_id,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def update(self, entry: MaterialLibrary) -> MaterialLibrary:
+    self.session.add(entry)
+    await self.session.flush()
+    return entry
 
 class MaterialNormalizationCacheRepository:
   def __init__(self, session: AsyncSession):
@@ -210,3 +256,51 @@ class MaterialNormalizationCacheRepository:
     self.session.add(entry)
     await self.session.flush()
     return entry
+  
+class LabourRateRepository:
+  def __init__(self, session: AsyncSession):
+    self.session = session
+
+  async def list_by_org(self, organization_id: UUID) -> list[LabourRate]:
+    result = await self.session.execute(
+      select(LabourRate)
+      .where(LabourRate.organization_id == organization_id)
+      .order_by(LabourRate.trade.asc())
+    )
+    return list(result.scalars().all())
+
+  async def get_by_id_and_org(
+    self,
+    rate_id: UUID,
+    organization_id: UUID,
+  ) -> LabourRate | None:
+    result = await self.session.execute(
+      select(LabourRate).where(
+        LabourRate.id == rate_id,
+        LabourRate.organization_id == organization_id,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def get_by_trade(
+    self,
+    organization_id: UUID,
+    trade: str,
+  ) -> LabourRate | None:
+    result = await self.session.execute(
+      select(LabourRate).where(
+        LabourRate.organization_id == organization_id,
+        LabourRate.trade == trade,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def create(self, rate: LabourRate) -> LabourRate:
+    self.session.add(rate)
+    await self.session.flush()
+    return rate
+
+  async def update(self, rate: LabourRate) -> LabourRate:
+    self.session.add(rate)
+    await self.session.flush()
+    return rate
