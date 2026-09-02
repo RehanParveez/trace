@@ -90,6 +90,14 @@ async def seed_identity() -> None:
       PermissionKey.MATERIAL_LIBRARY_MANAGE: (
         "Manage material library."
       ),
+      PermissionKey.AUDIT_LOG_READ: (
+        "View the organization's audit trail."
+      ),
+      
+      PermissionKey.AI_REQUEST_READ: (
+        "View the organization's AI request and response log.",
+      ), 
+      
      }
 
     permissions: dict[str, Permission] = {}

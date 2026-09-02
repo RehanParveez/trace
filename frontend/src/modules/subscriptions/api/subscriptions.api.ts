@@ -1,5 +1,7 @@
 import { apiClient } from "../../../shared/api/client";
-import type {CancelSubscriptionRequest, ChangePlanRequest, Plan, Subscription, UsageResponse,
+import type {
+  AdminSubscriptionListParams, CancelSubscriptionRequest, ChangePlanRequest, Plan,
+  Subscription, SubscriptionListResponse, SubscriptionSummary, UsageResponse,
 } from "../types/subscription.types";
 
 export const subscriptionsApi = {
@@ -15,7 +17,13 @@ export const subscriptionsApi = {
     const response = await apiClient.get<Subscription>(
       "/subscriptions/me",
     );
+    return response.data;
+  },
 
+  async getSubscriptionSummary(): Promise<SubscriptionSummary> {
+    const response = await apiClient.get<SubscriptionSummary>(
+      "/subscriptions/me/summary",
+    );
     return response.data;
   },
 
@@ -27,12 +35,16 @@ export const subscriptionsApi = {
     return response.data;
   },
 
-  async changePlan(
+    async changePlan(
     payload: ChangePlanRequest,
+    idempotencyKey?: string,
   ): Promise<Subscription> {
     const response = await apiClient.patch<Subscription>(
       "/subscriptions/me/plan",
       payload,
+      idempotencyKey
+        ? { headers: { "Idempotency-Key": idempotencyKey } }
+        : undefined,
     );
 
     return response.data;
@@ -40,10 +52,24 @@ export const subscriptionsApi = {
 
   async cancelSubscription(
     payload: CancelSubscriptionRequest,
+    idempotencyKey?: string,
   ): Promise<Subscription> {
     const response = await apiClient.post<Subscription>(
       "/subscriptions/me/cancel",
       payload,
+      idempotencyKey
+        ? { headers: { "Idempotency-Key": idempotencyKey } }
+        : undefined,
+    );
+    return response.data;
+  },
+
+  async listAllSubscriptions(
+    params: AdminSubscriptionListParams = {},
+  ): Promise<SubscriptionListResponse> {
+    const response = await apiClient.get<SubscriptionListResponse>(
+      "/subscriptions/admin",
+      { params },
     );
 
     return response.data;

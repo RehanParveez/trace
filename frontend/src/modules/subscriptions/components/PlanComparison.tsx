@@ -60,6 +60,7 @@ export function PlanComparison({
             billingInterval === "YEARLY"
               ? plan.price_yearly
               : plan.price_monthly;
+          const numericPrice = Number(price);
 
           return (
             <div
@@ -100,7 +101,7 @@ export function PlanComparison({
                   )}
                 </span>
 
-                {price !== 0 ? (
+                {numericPrice !== 0 ? (
                   <span className="ml-1.5 text-[10px] text-[#7c7060]">
                     /
                     {billingInterval ===

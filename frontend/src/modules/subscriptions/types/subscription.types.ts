@@ -14,8 +14,8 @@ export interface Plan {
   name: string;
   slug: string;
   description: string | null;
-  price_monthly: number;
-  price_yearly: number;
+  price_monthly: number | string;
+  price_yearly: number | string;
   currency: string;
   is_active: boolean;
   is_public: boolean;
@@ -64,4 +64,17 @@ export interface ChangePlanRequest {
 
 export interface CancelSubscriptionRequest {
   cancel_at_period_end: boolean;
+}
+
+export interface SubscriptionListResponse {
+  items: Subscription[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AdminSubscriptionListParams {
+  status?: SubscriptionStatus;
+  page?: number;
+  page_size?: number;
 }

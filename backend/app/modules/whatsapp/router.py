@@ -11,6 +11,7 @@ from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse
  SitePhotoResponse, SitePhotoUpdateRequest,
 )
 from app.modules.whatsapp.service import WhatsAppService
+from datetime import date
 
 router = APIRouter(
   prefix="/whatsapp",
@@ -88,6 +89,9 @@ async def disconnect_channel(
 async def list_photos(
   project_id: UUID | None = Query(default=None),
   tag: str | None = Query(default=None),
+  photo_date_from: date | None = Query(default=None),
+  photo_date_to: date | None = Query(default=None),
+  unassigned_only: bool = Query(default=False),
   skip: int = Query(default=0, ge=0),
   limit: int = Query(default=100, ge=1, le=100),
   current_user: User = Depends(
@@ -100,6 +104,9 @@ async def list_photos(
     current_user.organization_id,
     project_id=project_id,
     tag=tag,
+    photo_date_from=photo_date_from,
+    photo_date_to=photo_date_to,
+    unassigned_only=unassigned_only,
     skip=skip,
     limit=limit,
   )

@@ -1,7 +1,8 @@
 import {useMutation, useQuery, useQueryClient,
 } from "@tanstack/react-query";
 import { subscriptionsApi } from "../api/subscriptions.api";
-import type {CancelSubscriptionRequest, ChangePlanRequest,
+import type {
+  AdminSubscriptionListParams, CancelSubscriptionRequest, ChangePlanRequest,
 } from "../types/subscription.types";
 
 export const subscriptionKeys = {
@@ -13,8 +14,14 @@ export const subscriptionKeys = {
   current: () =>
     [...subscriptionKeys.all, "current"] as const,
 
+  summary: () =>
+    [...subscriptionKeys.all, "summary"] as const,
+
   usage: () =>
     [...subscriptionKeys.all, "usage"] as const,
+
+  admin: (params: AdminSubscriptionListParams) =>
+    [...subscriptionKeys.all, "admin", params] as const,
 };
 
 export function useSubscriptionPlans() {
@@ -31,6 +38,13 @@ export function useSubscription() {
   });
 }
 
+export function useSubscriptionSummary() {
+  return useQuery({
+    queryKey: subscriptionKeys.summary(),
+    queryFn: subscriptionsApi.getSubscriptionSummary,
+  });
+}
+
 export function useSubscriptionUsage() {
   return useQuery({
     queryKey: subscriptionKeys.usage(),
@@ -42,14 +56,24 @@ export function useChangePlan() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: ChangePlanRequest) =>
-      subscriptionsApi.changePlan(payload),
+    mutationFn: (variables: {
+      payload: ChangePlanRequest;
+      idempotencyKey?: string;
+    }) =>
+      subscriptionsApi.changePlan(
+        variables.payload,
+        variables.idempotencyKey,
+      ),
 
     onSuccess: (subscription) => {
       queryClient.setQueryData(
         subscriptionKeys.current(),
         subscription,
       );
+
+      void queryClient.invalidateQueries({
+        queryKey: subscriptionKeys.summary(),
+      });
 
       void queryClient.invalidateQueries({
         queryKey: subscriptionKeys.usage(),
@@ -62,8 +86,14 @@ export function useCancelSubscription() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: CancelSubscriptionRequest) =>
-      subscriptionsApi.cancelSubscription(payload),
+    mutationFn: (variables: {
+      payload: CancelSubscriptionRequest;
+      idempotencyKey?: string;
+    }) =>
+      subscriptionsApi.cancelSubscription(
+        variables.payload,
+        variables.idempotencyKey,
+      ),
 
     onSuccess: (subscription) => {
       queryClient.setQueryData(
@@ -72,8 +102,21 @@ export function useCancelSubscription() {
       );
 
       void queryClient.invalidateQueries({
+        queryKey: subscriptionKeys.summary(),
+      });
+
+      void queryClient.invalidateQueries({
         queryKey: subscriptionKeys.usage(),
       });
     },
+  });
+}
+
+export function useAdminSubscriptions(
+  params: AdminSubscriptionListParams = {},
+) {
+  return useQuery({
+    queryKey: subscriptionKeys.admin(params),
+    queryFn: () => subscriptionsApi.listAllSubscriptions(params),
   });
 }

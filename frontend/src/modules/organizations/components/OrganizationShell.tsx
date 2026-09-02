@@ -86,6 +86,19 @@ const productNav: NavItem[] = [
     to: "/app/expenses",
     icon: "expenses",
   },
+
+ { 
+  label: "Audit log",
+  to: "/app/audit-log",
+  icon: "shield"
+ },
+
+ { 
+  label: "AI activity",
+   to: "/app/ai-activity",
+   icon: "spark" 
+ }
+
 ];
 
 function SidebarLink({ item }: { item: NavItem }) {

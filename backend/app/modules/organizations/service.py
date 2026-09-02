@@ -15,6 +15,8 @@ from app.modules.organizations.schemas import ( AISettingsUpdateRequest, Invitat
 from app.core.config import settings
 from app.modules.identity.email import EmailService
 from app.modules.identity.enums import PermissionKey
+from app.modules.audit.models import AuditAction, AuditEntityType
+from app.modules.audit.service import AuditLogService
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -23,6 +25,7 @@ class OrganizationService:
     self.session = session
     self.repository = OrganizationRepository(session)
     self.email_service = email_service or EmailService()
+    self.audit = AuditLogService(session)
 
   async def get_organization(self, organization_id: UUID) -> Organization:
     organization = await self.repository.get_organization(organization_id)
@@ -95,8 +98,19 @@ class OrganizationService:
         status_code=404,
         code="ORGANIZATION_NOT_FOUND",
       )
+
     organization.ai_enabled = payload.ai_enabled
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.ORGANIZATION,
+      organization_id,
+      AuditAction.UPDATE,
+      f"AI features {'enabled' if payload.ai_enabled else 'disabled'} for the organization",
+    )
+
     return organization.ai_enabled
 
   async def create_invitation(
@@ -414,11 +428,27 @@ class OrganizationService:
         status_code=409,
         code="LAST_ADMIN_PROTECTED",
       )
+    old_role_id = membership.role_id
     membership.role_id = new_role.id
     user.role_id = new_role.id
 
     await self.session.flush()
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      current_user_id,
+      AuditEntityType.MEMBER,
+      user_id,
+      AuditAction.UPDATE,
+      f"Changed {user.email}'s role to {new_role.name}",
+      changes={
+        "role_id": {
+          "old": str(old_role_id),
+          "new": str(new_role.id),
+        }
+      },
+    )
     return user, new_role
 
   async def update_member_status(

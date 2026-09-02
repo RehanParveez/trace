@@ -51,6 +51,7 @@ class SitePhotoResponse(BaseModel):
   id: UUID
   project_id: UUID | None
   storage_key: str
+  photo_url: str 
   sender_phone_number: str | None
   caption_raw: str | None
   caption_parsed: dict

@@ -1,26 +1,23 @@
 from __future__ import annotations
 import asyncio
-import json
 import os
 import tempfile
 from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
-import httpx
 import ifcopenshell
 import ifcopenshell.util.element
-from sqlalchemy import select
-from app.core.config import settings
 from app.core.database import AsyncSessionLocal
-from app.modules.drawings_boq.models import BOQItem, BOQItemType, BOQVersion, DrawingElement, DrawingStatus
+from app.modules.drawings_boq.models import BOQItem, BOQVersion, DrawingElement, DrawingStatus
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
-from app.modules.identity.models import Organization
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.workers.celery_app import celery_app
 from app.dependencies.tenancy import scope_session_to_org
 from app.modules.notifications.models import NotificationType
 from app.modules.notifications.service import NotificationService
+from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
+from app.modules.ai_requests.service import AIOrchestratorService
 
 TARGET_IFC_TYPES = [
   "IfcWall",
@@ -98,15 +95,6 @@ async def _parse_drawing(drawing_id: UUID) -> None:
     if current_drawing is None:
       return
 
-    ai_enabled_result = await session.execute(
-      select(Organization.ai_enabled).where(
-        Organization.id == current_drawing.organization_id
-      )
-    )
-    organization_ai_enabled = bool(
-      ai_enabled_result.scalar_one_or_none()
-    )
-
     drawing_elements = [
       DrawingElement(
         drawing_id=current_drawing.id,
@@ -145,12 +133,30 @@ async def _parse_drawing(drawing_id: UUID) -> None:
         raw_text,
       )
 
-      if not matched and organization_ai_enabled:
-        ai_result = await _call_ollama_normalize(raw_text)
-        if ai_result is not None:
-          normalized_name, category = ai_result
+      if not matched:
+        orchestrator = AIOrchestratorService(session)
+        result = await orchestrator.run(
+          organization_id=current_drawing.organization_id,
+          purpose=AIRequestPurpose.MATERIAL_NORMALIZATION,
+          entity_type=AIEntityType.DRAWING_ELEMENT,
+          entity_id=drawing_element.id,
+          prompt=(
+            "Normalize this construction material description extracted from a "
+            "BIM/IFC drawing. Respond with strict JSON only: "
+            '{"normalized_name": "...", "category": "..."}. Raw text: ' + raw_text
+          ),
+        )
+        if (
+          result.success
+          and result.parsed_output
+          and result.parsed_output.get("normalized_name")
+        ):
+          normalized_name = result.parsed_output["normalized_name"]
+          category = result.parsed_output.get("category")
           await service.store_ai_normalization(
-            raw_text, normalized_name, category
+            raw_text,
+            normalized_name,
+            category,
           )
 
       boq_items.append(
@@ -229,33 +235,5 @@ def _material_text(element) -> str | None:
       if material is not None
       else None
     )
-  except Exception:
-    return None
-
-async def _call_ollama_normalize(
-  raw_text: str,
-) -> tuple[str, str] | None:
-  prompt = (
-    "Normalize this construction material description extracted from a BIM/IFC "
-    "drawing. Respond with strict JSON only: "
-    '{"normalized_name": "...", "category": "..."}. Raw text: ' + raw_text
-  )
-  try:
-    async with httpx.AsyncClient(timeout=30.0) as client:
-      response = await client.post(
-        f"{settings.ollama_base_url}/api/generate",
-        json={
-          "model": settings.ollama_model,
-          "prompt": prompt,
-          "stream": False,
-          "format": "json",
-        },
-      )
-      response.raise_for_status()
-      parsed = json.loads(response.json()["response"])
-      normalized_name = parsed.get("normalized_name")
-      if not normalized_name:
-        return None
-      return normalized_name, parsed.get("category")
   except Exception:
     return None

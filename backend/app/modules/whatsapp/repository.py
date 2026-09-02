@@ -156,6 +156,8 @@ class SitePhotoRepository:
 
     if project_id is not None:
       query = query.where(SitePhoto.project_id == project_id)
+    if unassigned_only:                                 
+      query = query.where(SitePhoto.project_id.is_(None))
     if photo_date_from is not None:
       query = query.where(SitePhoto.photo_date >= photo_date_from)
     if photo_date_to is not None:

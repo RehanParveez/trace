@@ -11,7 +11,8 @@ from app.modules.whatsapp.models import SitePhoto
 from app.modules.verification.repository import PhotoBOQLinkRepository, ProgressClaimRepository
 from app.modules.verification.schemas import PhotoBOQLinkCreateRequest, ProgressClaimCreateRequest, ProgressClaimReviewRequest, ProgressClaimUpdateRequest
 from app.modules.notifications.service import NotificationService, NotificationType
-
+from app.modules.audit.models import AuditAction, AuditEntityType
+from app.modules.audit.service import AuditLogService
 
 class VerificationService:
   def __init__(self, session: AsyncSession):
@@ -20,6 +21,7 @@ class VerificationService:
     self.photo_boq_links = PhotoBOQLinkRepository(session)
     self.projects = ProjectRepository(session)
     self.notifications = NotificationService(session)
+    self.audit = AuditLogService(session)
 
   async def _get_project(
     self,
@@ -243,6 +245,21 @@ class VerificationService:
     await self.session.commit()
     await self.session.refresh(claim)
 
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.PROGRESS_CLAIM,
+      claim.id,
+      AuditAction.APPROVE,
+      f"Approved progress claim dated {claim.claim_date.isoformat()}",
+      changes={
+        "status": {
+          "old": "SUBMITTED",
+          "new": claim.status.value,
+        }
+      },
+    )
+
     return claim
 
   async def reject_claim(
@@ -280,6 +297,21 @@ class VerificationService:
     await self.claims.update(claim)
     await self.session.commit()
     await self.session.refresh(claim)
+
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.PROGRESS_CLAIM,
+      claim.id,
+      AuditAction.REJECT,
+      f"Rejected progress claim dated {claim.claim_date.isoformat()}",
+      changes={
+        "status": {
+          "old": "SUBMITTED",
+          "new": claim.status.value,
+        }
+      },
+    )
 
     return claim
 

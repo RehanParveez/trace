@@ -17,13 +17,15 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
 from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
 from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository
-from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest
+from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, PhotoTagResponse
 from app.shared.storage import build_site_photo_storage_key, generate_presigned_url, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
+from app.modules.audit.models import AuditAction, AuditEntityType
+from app.modules.audit.service import AuditLogService
 from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
-from app.shared.storage import build_site_photo_storage_key, upload_fileobj
+
 
 GRAPH_API_BASE = (
   f"https://graph.facebook.com/{settings.whatsapp_graph_api_version}"
@@ -40,6 +42,7 @@ class WhatsAppService:
     self.projects = ProjectRepository(session)
     self.subscriptions = SubscriptionService(session)
     self.notifications = NotificationService(session)
+    self.audit = AuditLogService(session)
 
   async def connect_channel(
     self,
@@ -76,6 +79,15 @@ class WhatsAppService:
 
     channel = await self.channels.create(channel)
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.WHATSAPP_CHANNEL,
+      channel.id,
+      AuditAction.CREATE,
+      f"Connected WhatsApp number {channel.display_phone_number or channel.phone_number_id}",
+    )
+
     return channel
 
   async def get_channel(
@@ -468,7 +480,7 @@ class WhatsAppService:
     )
     for photo in photos:
       photo.photo_url = generate_presigned_url(photo.storage_key)
-    return photos
+    return [_to_photo_response(p) for p in photos]
 
   async def get_photo(
     self,
@@ -483,7 +495,7 @@ class WhatsAppService:
         code="SITE_PHOTO_NOT_FOUND",
       )
     photo.photo_url = generate_presigned_url(photo.storage_key)
-    return photo
+    return _to_photo_response(photo)
 
   async def assign_project(
     self,
@@ -506,7 +518,7 @@ class WhatsAppService:
     photo.project_id = project.id
     await self.photos.update(photo)
     await self.session.commit()
-    return photo
+    return _to_photo_response(photo)
 
   async def update_photo(
     self,
@@ -523,7 +535,7 @@ class WhatsAppService:
 
     await self.photos.update(photo)
     await self.session.commit()
-    return photo
+    return _to_photo_response(photo)
 
   async def add_tag(
     self,
@@ -615,6 +627,22 @@ async def _send_whatsapp_message(
     response.raise_for_status()
     messages = response.json().get("messages", [])
     return messages[0]["id"] if messages else None
+  
+def _to_photo_response(photo: SitePhoto) -> SitePhotoResponse:
+  return SitePhotoResponse(
+    id=photo.id,
+    project_id=photo.project_id,
+    storage_key=photo.storage_key,
+    photo_url=generate_presigned_url(photo.storage_key),
+    sender_phone_number=photo.sender_phone_number,
+    caption_raw=photo.caption_raw,
+    caption_parsed=photo.caption_parsed,
+    location_text=photo.location_text,
+    photo_date=photo.photo_date,
+    is_ai_tagged=photo.is_ai_tagged,
+    tags=[PhotoTagResponse.model_validate(t) for t in photo.tags],
+    created_at=photo.created_at,
+  )
 
 def _parse_photo_date(
   value: Any,

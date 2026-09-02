@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { BillingInterval, Plan,
 } from "../types/subscription.types";
 import {Badge, Button, Field, Icon, Modal,
@@ -13,6 +13,7 @@ interface ChangePlanDialogProps {
   onSubmit: (
     planId: string,
     billingInterval: BillingInterval,
+    idempotencyKey: string,
   ) => void;
   onClose: () => void;
 }
@@ -35,6 +36,7 @@ export function ChangePlanDialog({
 
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("MONTHLY");
+  const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
 
   useEffect(() => {
     setPlanId(
@@ -67,6 +69,7 @@ export function ChangePlanDialog({
           onSubmit(
             planId,
             billingInterval,
+            idempotencyKey,
           );
         }}
       >

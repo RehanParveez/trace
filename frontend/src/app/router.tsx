@@ -16,6 +16,8 @@ import { MaterialLibraryPage } from "../modules/drawings_boq";
 import { SitePhotosPage, WhatsAppSettingsPage } from "../modules/whatsapp";
 import { ProgressClaimsReviewPage } from "../modules/verification";
 import { NotificationsPage } from "../modules/notifications";
+import { AuditLogPage } from "../modules/audit";
+import { AIRequestsPage } from "../modules/ai_requests";
 
 export const router = createBrowserRouter([
   {
@@ -198,6 +200,28 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <NotificationsPage />,
+    },
+  ],
+},
+
+{
+  path: "audit-log",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <AuditLogPage />,
+    },
+  ],
+},
+
+{
+  path: "ai-activity",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <AIRequestsPage />,
     },
   ],
 },

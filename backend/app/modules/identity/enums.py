@@ -42,3 +42,5 @@ class PermissionKey(StrEnum):
   BOQ_EXPORT = "boq_export"
   LABOUR_RATE_MANAGE = "labour_rate_manage"
   NOTIFICATION_READ = "notification:read"
+  AUDIT_LOG_READ = "audit_log:read"
+  AI_REQUEST_READ = "ai_request:read"

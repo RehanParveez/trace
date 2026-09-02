@@ -52,18 +52,20 @@ export function formatBillingInterval(
 }
 
 export function formatPrice(
-  price: number,
+  price: number | string,
   currency: string,
 ): string {
-  if (price === 0) {
+  const numericPrice =
+    typeof price === "string" ? Number(price) : price;
+
+  if (!Number.isFinite(numericPrice) || numericPrice === 0) {
     return "Free";
   }
-
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(price);
+  }).format(numericPrice);
 }
 
 export function formatDate(
@@ -143,6 +145,10 @@ export function formatMetricLabel(
         .replaceAll("_", " ")
         .replace(/\b\w/g, (letter) =>
           letter.toUpperCase(),
-        );
-  }
+      );
+   }
+}
+
+export function createIdempotencyKey(): string {
+  return crypto.randomUUID();
 }

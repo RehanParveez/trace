@@ -11,6 +11,8 @@ from app.modules.subscriptions.repository import SubscriptionRepository
 from app.modules.subscriptions.schemas import ChangePlanRequest, UsageMetricResponse, UsageResponse
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
+from app.modules.audit.models import AuditAction, AuditEntityType
+from app.modules.audit.service import AuditLogService
 import logging
 
 logger = logging.getLogger("trace.subscriptions")
@@ -20,6 +22,7 @@ class SubscriptionService:
     self.session = session
     self.repository = SubscriptionRepository(session)
     self.notifications = NotificationService(session)
+    self.audit = AuditLogService(session)
 
   async def list_plans(self):
     return await self.repository.list_public_plans()
@@ -115,6 +118,7 @@ class SubscriptionService:
     self,
     organization_id: UUID,
     payload: ChangePlanRequest,
+    actor_user_id: UUID,
   ) -> Subscription:
     subscription = await self.repository.get_subscription_for_update(
       organization_id
@@ -146,6 +150,7 @@ class SubscriptionService:
         code="SUBSCRIPTION_NOT_CHANGEABLE",
       )
 
+    old_plan_id = subscription.plan_id
     interval_changed = subscription.billing_interval != payload.billing_interval
     subscription.plan_id = plan.id
     subscription.billing_interval = payload.billing_interval
@@ -159,6 +164,20 @@ class SubscriptionService:
       subscription
     )
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.SUBSCRIPTION,
+      subscription.id,
+      AuditAction.UPDATE,
+      f"Changed subscription plan to {plan.name}",
+      changes={
+        "plan_id": {
+          "old": str(old_plan_id),
+          "new": str(plan.id),
+        }
+      },
+    )
 
     logger.info(
       "subscription.plan_changed",

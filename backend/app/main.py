@@ -13,6 +13,8 @@ from app.modules.drawings_boq.router import router as drawings_boq_router
 from app.modules.whatsapp.router import router as  whatsapp_router
 from app.modules.verification.router import router as verification_router
 from app.modules.notifications.router import router as notifications_router
+from app.modules.audit.router import router as audit_router
+from app.modules.ai_requests.router import router as ai_requests_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -52,6 +54,10 @@ app.include_router(whatsapp_router, prefix=settings.api_v1_prefix)
 app.include_router(verification_router, prefix=settings.api_v1_prefix)
 
 app.include_router(notifications_router, prefix=settings.api_v1_prefix)
+
+app.include_router(audit_router, prefix=settings.api_v1_prefix)
+
+app.include_router(ai_requests_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:

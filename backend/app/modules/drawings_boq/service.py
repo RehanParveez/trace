@@ -19,6 +19,8 @@ from sqlalchemy import select
 from app.modules.drawings_boq.export import build_boq_pdf, build_boq_xlsx
 from app.modules.drawings_boq.words import rupees_in_words
 from app.modules.identity.models import Organization
+from app.modules.audit.models import AuditAction, AuditEntityType
+from app.modules.audit.service import AuditLogService
 from decimal import Decimal
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
@@ -43,6 +45,7 @@ class DrawingBOQService:
     self.material_cache = MaterialNormalizationCacheRepository(session)
     self.projects = ProjectRepository(session)
     self.subscriptions = SubscriptionService(session)
+    self.audit = AuditLogService(session)
 
   async def _require_project(
     self,
@@ -241,6 +244,15 @@ class DrawingBOQService:
 
     await self.boq_items.update(item)
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.BOQ_ITEM,
+      item.id,
+      AuditAction.APPROVE,
+      f'Approved BOQ item "{item.material_name}"',
+    )
+
     return item
 
   async def approve_boq_item(

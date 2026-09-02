@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {useCancelSubscription, useChangePlan, useSubscription, useSubscriptionPlans, useSubscriptionUsage,
+import {useCancelSubscription, useChangePlan, useSubscriptionPlans, useSubscriptionSummary, useSubscriptionUsage,
 } from "../hooks";
 import type {BillingInterval, Plan,
 } from "../types/subscription.types";
@@ -31,8 +31,8 @@ export function SubscriptionPage({
   const [selectedPlan, setSelectedPlan] =
     useState<Plan | undefined>();
 
-  const subscriptionQuery =
-    useSubscription();
+  const subscriptionSummaryQuery =
+    useSubscriptionSummary();
 
   const plansQuery =
     useSubscriptionPlans();
@@ -70,18 +70,18 @@ export function SubscriptionPage({
   }
 
   if (
-    subscriptionQuery.isLoading ||
+    subscriptionSummaryQuery.isLoading ||
     plansQuery.isLoading ||
     usageQuery.isLoading
   ) {
     return <LoadingState />;
   }
 
-  if (
-    subscriptionQuery.isError ||
+    if (
+    subscriptionSummaryQuery.isError ||
     plansQuery.isError ||
     usageQuery.isError ||
-    !subscriptionQuery.data ||
+    !subscriptionSummaryQuery.data ||
     !plansQuery.data ||
     !usageQuery.data
   ) {
@@ -90,7 +90,7 @@ export function SubscriptionPage({
         title="We couldn't load subscription details"
         description="The subscription, plans or usage information could not be loaded."
         onRetry={() => {
-          void subscriptionQuery.refetch();
+          void subscriptionSummaryQuery.refetch();
           void plansQuery.refetch();
           void usageQuery.refetch();
         }}
@@ -98,27 +98,10 @@ export function SubscriptionPage({
     );
   }
 
-  const subscription =
-    subscriptionQuery.data;
-
+  const { subscription, plan: currentPlan } =
+    subscriptionSummaryQuery.data;
   const plans = plansQuery.data;
-
   const usage = usageQuery.data;
-
-  const currentPlan =
-    plans.find(
-      (plan) => plan.id === subscription.plan_id,
-    ) ?? plans[0];
-
-  if (!currentPlan) {
-    return (
-      <ErrorState
-        title="Current plan unavailable"
-        description="The subscription references a plan that is not available in the public plan catalog."
-      />
-    );
-  }
-
   const activeFeatures = Object.values(
     currentPlan.features ?? {},
   ).filter(Boolean).length;
@@ -148,15 +131,18 @@ export function SubscriptionPage({
     setChangePlanOpen(true);
   }
 
-  function handleChangePlan(
+    function handleChangePlan(
     planId: string,
     billingInterval: BillingInterval,
+    idempotencyKey: string,
   ) {
     changePlan.mutate(
       {
-        plan_id: planId,
-        billing_interval:
-          billingInterval,
+        payload: {
+          plan_id: planId,
+          billing_interval: billingInterval,
+        },
+        idempotencyKey,
       },
       {
         onSuccess: () => {
@@ -169,11 +155,14 @@ export function SubscriptionPage({
 
   function handleCancel(
     cancelAtPeriodEnd: boolean,
+    idempotencyKey: string,
   ) {
     cancelSubscription.mutate(
       {
-        cancel_at_period_end:
-          cancelAtPeriodEnd,
+        payload: {
+          cancel_at_period_end: cancelAtPeriodEnd,
+        },
+        idempotencyKey,
       },
       {
         onSuccess: () => {

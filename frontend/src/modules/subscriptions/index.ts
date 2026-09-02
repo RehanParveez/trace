@@ -9,6 +9,7 @@ export * from "./components/UsageOverview";
 
 export * from "./hooks";
 
+export * from "./pages/AdminSubscriptionsPage";
 export * from "./pages/SubscriptionPage";
 
 export * from "./permissions";

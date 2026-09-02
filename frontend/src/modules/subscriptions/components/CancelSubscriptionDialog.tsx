@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {Button, Icon, Modal,
 } from "../../organizations/components/OrganizationUi";
 
@@ -5,6 +6,7 @@ interface CancelSubscriptionDialogProps {
   isSubmitting?: boolean;
   onConfirm: (
     cancelAtPeriodEnd: boolean,
+    idempotencyKey: string,
   ) => void;
   onClose: () => void;
 }
@@ -14,6 +16,8 @@ export function CancelSubscriptionDialog({
   onConfirm,
   onClose,
 }: CancelSubscriptionDialogProps) {
+  const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
+
   return (
     <Modal
       title="Cancel subscription"
@@ -25,7 +29,7 @@ export function CancelSubscriptionDialog({
           type="button"
           disabled={isSubmitting}
           onClick={() =>
-            onConfirm(true)
+            onConfirm(true, idempotencyKey)
           }
           className="flex w-full items-start gap-3.5 rounded-[10px] border border-[#e1d5bc] bg-white p-4 text-left transition hover:border-[#cdbd9c] hover:bg-[#fbf8f2] disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -53,7 +57,7 @@ export function CancelSubscriptionDialog({
           type="button"
           disabled={isSubmitting}
           onClick={() =>
-            onConfirm(false)
+            onConfirm(false, idempotencyKey)
           }
           className="flex w-full items-start gap-3.5 rounded-[10px] border border-[#efc5bd] bg-[#fff7f5] p-4 text-left transition hover:border-[#e2a89d] hover:bg-[#f9e5df] disabled:cursor-not-allowed disabled:opacity-50"
         >

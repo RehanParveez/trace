@@ -13,6 +13,8 @@ from app.modules.drawings_boq import models as drawings_boq_models
 from app.modules.whatsapp import models as whatsapp_models
 from app.modules.verification import models as verification_models
 from app.modules.notifications import models as notifications_models
+from app.modules.audit import models as audit_models
+from app.modules.ai_requests import models as ai_requests_models
 
 config = context.config
 
@@ -43,7 +45,6 @@ def do_run_migrations(connection: Connection) -> None:
   )
   with context.begin_transaction():
     context.run_migrations()
-
 
 async def run_migrations_online() -> None:
   configuration = config.get_section(
