@@ -175,6 +175,22 @@ class OrganizationRepository:
       )
     )
     return list(result.scalars().unique())
+  
+  async def list_active_memberships_with_roles(
+    self,
+    organization_id: UUID,
+  ) -> list[OrganizationMembership]:
+    result = await self.session.execute(
+      select(OrganizationMembership)
+      .where(
+        OrganizationMembership.organization_id == organization_id,
+        OrganizationMembership.is_active.is_(True),
+      )
+      .options(
+        selectinload(OrganizationMembership.role).selectinload(Role.permissions)
+      )
+    )
+    return list(result.scalars().unique())
 
   async def has_any_membership(
     self,
@@ -206,19 +222,19 @@ class OrganizationRepository:
     self,
     organization_id: UUID,
     user_id: UUID,
-  ) -> User | None:
+  ) -> tuple[User, Role] | None:
     membership = await self.get_membership(user_id, organization_id)
     if membership is None:
       return None
 
     result = await self.session.execute(
-      select(User)
-      .where(User.id == user_id)
-      .options(
-        selectinload(User.role).selectinload(Role.permissions),
-      )
+      select(User).where(User.id == user_id)
     )
-    return result.scalar_one_or_none()
+    user = result.scalar_one_or_none()
+    if user is None:
+      return None
+
+    return user, membership.role
 
   async def list_members(
     self,
@@ -226,7 +242,7 @@ class OrganizationRepository:
     *,
     skip: int = 0,
     limit: int = 100,
-  ) -> tuple[list[User], int]:
+  ) -> tuple[list[tuple[User, Role]], int]:
     count_result = await self.session.execute(
       select(func.count())
       .select_from(OrganizationMembership)
@@ -235,20 +251,22 @@ class OrganizationRepository:
     total = count_result.scalar_one()
 
     result = await self.session.execute(
-      select(User)
+      select(User, Role)
       .join(
         OrganizationMembership,
         OrganizationMembership.user_id == User.id,
       )
-      .where(OrganizationMembership.organization_id == organization_id)
-      .options(
-        selectinload(User.role).selectinload(Role.permissions),
+      .join(
+        Role,
+        Role.id == OrganizationMembership.role_id,
       )
+      .where(OrganizationMembership.organization_id == organization_id)
+      .options(selectinload(Role.permissions))
       .order_by(User.created_at.asc())
       .offset(skip)
       .limit(limit)
     )
-    return list(result.scalars().unique()), total
+    return [(row[0], row[1]) for row in result.all()], total
 
   async def get_role(
     self,

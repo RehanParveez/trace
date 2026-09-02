@@ -9,7 +9,7 @@ from app.core.exceptions import TraceException
 from app.core.redis import IdentityTokenStore
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.modules.identity.enums import TokenType
-from app.modules.identity.models import RefreshToken, User, Organization
+from app.modules.identity.models import RefreshToken, User, Organization, OrganizationMembership
 from app.modules.identity.password_policy import validate_password
 from app.modules.identity.repository import IdentityRepository
 from app.modules.identity.schemas import LoginResponse, RegistrationResponse, TokenResponse
@@ -231,17 +231,25 @@ class IdentityService:
       is_system=True,
     )
 
-   user = await self.repository.create_user(
-    organization_id=organization.id,
-    role_id=role.id,
-    email=email,
-    password_hash=hash_password(password),
-    first_name=first_name.strip(),
-    last_name=last_name.strip(),
-    is_active=True,
-    is_verified=False,
-  )
+    user = await self.repository.create_user(
+     organization_id=organization.id,
+     role_id=role.id,
+     email=email,
+     password_hash=hash_password(password),
+     first_name=first_name.strip(),
+     last_name=last_name.strip(),
+     is_active=True,
+     is_verified=False,
+    )
 
+    self.session.add(
+     OrganizationMembership(
+      user_id=user.id,
+      organization_id=organization.id,
+      role_id=role.id,
+      is_active=True,
+     )
+    )
    await self.session.commit()
 
    user = await self.repository.get_user_by_id(

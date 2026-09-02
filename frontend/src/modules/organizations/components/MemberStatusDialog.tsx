@@ -1,10 +1,12 @@
 import type { Member } from "../types/organization.types";
 import { Avatar, Badge, Button, Icon, Modal } from "./OrganizationUi";
 import { getMemberFullName, getMemberInitials } from "../utils/organization.utils";
+import { getApiErrorMessage } from "../../identity";
 
 interface MemberStatusDialogProps {
   member: Member;
   isSubmitting?: boolean;
+  error?: unknown;
   onConfirm: () => void;
   onClose: () => void;
 }
@@ -12,6 +14,7 @@ interface MemberStatusDialogProps {
 export function MemberStatusDialog({
   member,
   isSubmitting = false,
+  error,
   onConfirm,
   onClose,
 }: MemberStatusDialogProps) {
@@ -27,6 +30,13 @@ export function MemberStatusDialog({
       }
       onClose={onClose}
     >
+      {error ? (
+        <div className="mb-3 flex items-center gap-2 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+          <Icon name="alert" size={13} className="shrink-0" />
+          {getApiErrorMessage(error, "Couldn't update this member's status.")}
+        </div>
+      ) : null}
+
       <div className="flex items-center gap-3 rounded-[10px] border border-[#e1d5bc] bg-white p-4">
         <Avatar initials={getMemberInitials(member)} size="sm" />
 

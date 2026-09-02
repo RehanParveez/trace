@@ -60,6 +60,19 @@ class IdentityRepository:
     )
 
     return result.scalar_one_or_none()
+  
+  async def get_user_by_id_and_org(
+    self,
+    user_id: UUID,
+    organization_id: UUID,
+  ) -> User | None:
+    result = await self.session.execute(
+      select(User).where(
+        User.id == user_id,
+        User.organization_id == organization_id,
+      )
+    )
+    return result.scalar_one_or_none()
 
   async def create_user(
     self,

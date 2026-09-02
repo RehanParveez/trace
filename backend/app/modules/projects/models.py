@@ -99,6 +99,11 @@ class Project(Base, TimestampMixin):
   __tablename__ = "projects"
 
   __table_args__ = (
+    UniqueConstraint(
+      "organization_id",
+      "code",
+      name="uq_projects_organization_code",
+    ),
     Index(
       "ix_projects_org_status",
       "organization_id",

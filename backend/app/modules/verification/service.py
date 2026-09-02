@@ -10,8 +10,8 @@ from app.modules.verification.models import PhotoBOQLink, ProgressClaim, Progres
 from app.modules.whatsapp.models import SitePhoto
 from app.modules.verification.repository import PhotoBOQLinkRepository, ProgressClaimRepository
 from app.modules.verification.schemas import PhotoBOQLinkCreateRequest, ProgressClaimCreateRequest, ProgressClaimReviewRequest, ProgressClaimUpdateRequest
-from app.modules.notifications.service import NotificationService
-from app.modules.notifications.service import NotificationService
+from app.modules.notifications.service import NotificationService, NotificationType
+
 
 class VerificationService:
   def __init__(self, session: AsyncSession):

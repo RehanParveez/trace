@@ -2,6 +2,7 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -51,16 +52,16 @@ class Plan(Base, TimestampMixin):
     nullable=True,
   )
 
-  price_monthly: Mapped[float] = mapped_column(
+  price_monthly: Mapped[Decimal] = mapped_column(
     Numeric(12, 2),
     nullable=False,
-    default=0,
+    default=Decimal("0"),
   )
 
-  price_yearly: Mapped[float] = mapped_column(
+  price_yearly: Mapped[Decimal] = mapped_column(
     Numeric(12, 2),
     nullable=False,
-    default=0,
+    default=Decimal("0"),
   )
 
   currency: Mapped[str] = mapped_column(

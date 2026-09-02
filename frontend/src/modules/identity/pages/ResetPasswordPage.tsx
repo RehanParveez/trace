@@ -5,7 +5,7 @@ import {Link, useNavigate, useSearchParams,
 import { AuthField } from "../components/AuthField";
 import { AuthNotice } from "../components/AuthNotice";
 import { AuthShell } from "../components/AuthShell";
-import { PasswordStrength } from "../components/PasswordStrength";
+import { PasswordStrength, isPasswordStrong } from "../components/PasswordStrength";
 import { useResetPassword } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
 
@@ -33,15 +33,6 @@ export function ResetPasswordPage() {
 
   const matches =
     password === confirmation;
-
-  function isPasswordStrong(password: string): boolean {
-  return (
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password)
-  );
-}
 
   function submit(
     event: React.FormEvent,

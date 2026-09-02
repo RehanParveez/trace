@@ -2,6 +2,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from app.modules.identity.models import Role, User
 
 class OrganizationResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -105,6 +106,20 @@ class MemberResponse(BaseModel):
   is_verified: bool
   last_login_at: datetime | None
   role: RoleResponse
+
+  @classmethod
+  def from_user_and_role(cls, user: User, role: Role) -> "MemberResponse":
+    return cls(
+      id=user.id,
+      organization_id=user.organization_id,
+      email=user.email,
+      first_name=user.first_name,
+      last_name=user.last_name,
+      is_active=user.is_active,
+      is_verified=user.is_verified,
+      last_login_at=user.last_login_at,
+      role=RoleResponse.model_validate(role),
+    )
 
 class MemberRoleUpdateRequest(BaseModel):
   role_id: UUID

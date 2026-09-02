@@ -7,6 +7,7 @@ from app.core.database import get_db
 from app.core.exceptions import TraceException
 from app.core.redis import IdentityTokenStore, redis_client
 from app.core.security import decode_token
+from app.dependencies.tenancy import scope_session_to_org
 from app.modules.identity.enums import TokenType
 from app.modules.identity.models import User
 from app.modules.identity.service import IdentityService
@@ -67,6 +68,8 @@ async def get_current_user(
       status_code=401,
       code="INVALID_ACCESS_TOKEN",
     ) from exc
+
+  await scope_session_to_org(session, token_organization_id)
   token_store = IdentityTokenStore(
     redis_client
   )
@@ -85,6 +88,7 @@ async def get_current_user(
       status_code=401,
       code="AUTHENTICATION_CONTEXT_MISMATCH",
     )
+
   return user
 
 async def get_current_user_id(

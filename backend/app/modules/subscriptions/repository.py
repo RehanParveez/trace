@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.modules.subscriptions.models import Plan, Subscription, UsageCounter
+from app.modules.subscriptions.models import Plan, Subscription, SubscriptionStatus, UsageCounter
 
 class SubscriptionRepository:
   def __init__(self, session: AsyncSession):
@@ -142,12 +142,36 @@ class SubscriptionRepository:
       .select_from(Subscription)
       .where(
         Subscription.organization_id == organization_id,
-        Subscription.status.in_(
+          Subscription.status.in_(
           [
-            "TRIALING",
-            "ACTIVE",
+            SubscriptionStatus.TRIALING,
+            SubscriptionStatus.ACTIVE,
           ]
         ),
       )
     )
     return result.scalar_one()
+
+  async def list_all_subscriptions(
+    self,
+    *,
+    status: SubscriptionStatus | None = None,
+    plan_id: UUID | None = None,
+    limit: int = 20,
+    offset: int = 0,
+  ) -> tuple[list[Subscription], int]:
+    query = select(Subscription).options(selectinload(Subscription.plan))
+    count_query = select(func.count()).select_from(Subscription)
+
+    if status is not None:
+      query = query.where(Subscription.status == status)
+      count_query = count_query.where(Subscription.status == status)
+    if plan_id is not None:
+      query = query.where(Subscription.plan_id == plan_id)
+      count_query = count_query.where(Subscription.plan_id == plan_id)
+
+    query = query.order_by(Subscription.created_at.desc()).limit(limit).offset(offset)
+    items_result = await self.session.execute(query)
+    total_result = await self.session.execute(count_query)
+
+    return list(items_result.scalars().all()), total_result.scalar_one()

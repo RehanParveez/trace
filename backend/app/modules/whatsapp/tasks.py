@@ -3,11 +3,12 @@ import asyncio
 from uuid import UUID
 from app.core.database import AsyncSessionLocal
 from app.workers.celery_app import celery_app
+from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
 
 @celery_app.task(
   name="app.modules.whatsapp.tasks.process_whatsapp_photo_task",
-  time_limit=180,
-  soft_time_limit=150,
+  time_limit=300,
+  soft_time_limit=270,
 )
 def process_whatsapp_photo_task(message_id: str) -> str:
   asyncio.run(_process(UUID(message_id)))
@@ -17,4 +18,17 @@ async def _process(message_id: UUID) -> None:
   from app.modules.whatsapp.service import WhatsAppService
   async with AsyncSessionLocal() as session:
     service = WhatsAppService(session)
+    await service.process_photo_message(message_id)
+    
+async def _process(message_id: UUID) -> None:
+  from app.modules.whatsapp.service import WhatsAppService
+  async with AsyncSessionLocal() as session:
+    service = WhatsAppService(session)
+
+    await scope_session_as_platform_admin(session)
+    message = await service.messages.get_by_id(message_id)
+    if message is None:
+      return
+
+    await scope_session_to_org(session, message.organization_id)
     await service.process_photo_message(message_id)

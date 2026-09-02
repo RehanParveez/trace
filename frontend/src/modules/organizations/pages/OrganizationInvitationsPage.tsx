@@ -8,6 +8,7 @@ import { RevokeInvitationDialog } from "../components/RevokeInvitationDialog";
 import {Button, ErrorState, Icon, PageHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 import { getInvitationStatus } from "../utils/organization.utils";
+import { ORGANIZATION_PERMISSIONS } from "../permissions";
 
 interface OrganizationInvitationsPageProps {
   permissions?: string[];
@@ -26,7 +27,9 @@ export function OrganizationInvitationsPage({
   const createInvitation = useCreateInvitation();
   const revoke = useRevokeInvitation();
 
-  const canManage = permissions.includes("organization:members_manage");
+  const canManage = permissions.includes(
+    ORGANIZATION_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
+  );
 
   const invitations = invitationsQuery.data ?? [];
   const roles = rolesQuery.data ?? [];

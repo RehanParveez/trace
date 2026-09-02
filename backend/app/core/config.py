@@ -37,6 +37,7 @@ class Settings(BaseSettings):
   password_reset_rate_limit_window_seconds: int = 900
   registration_rate_limit_attempts: int = 5
   registration_rate_limit_window_seconds: int = 3600
+  rate_limit_auth_per_minute: int = 10
   
   email_enabled: bool = False
   smtp_host: str = ""
@@ -51,6 +52,10 @@ class Settings(BaseSettings):
   whatsapp_webhook_verify_token: str = ""
   whatsapp_media_download_timeout_seconds: int = 240
   whatsapp_graph_api_version: str = "v21.0"
+  
+  ai_provider: str = "ollama"
+  ai_api_key: str = ""
+  ai_model: str = "claude-haiku-4-5-20251001"
   
   frontend_base_url: str = "http://localhost:5094"
   ai_enabled: bool = False

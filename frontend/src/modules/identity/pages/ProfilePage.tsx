@@ -6,6 +6,7 @@ import { AuthNotice } from "../components/AuthNotice";
 import { AuthField } from "../components/AuthField";
 import {useChangePassword, useLogout, useLogoutAll,
 } from "../hooks/useIdentity";
+import { PasswordStrength, isPasswordStrong } from "../components/PasswordStrength";
 import { useAuthStore } from "../store/auth.store";
 import { getApiErrorMessage } from "../utils/api-error";
 
@@ -38,15 +39,6 @@ export function ProfilePage() {
 
   const passwordsMatch =
     newPassword === confirmation;
-
-  function isPasswordStrong(password: string): boolean {
-  return (
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password)
-  );
-}
 
   function submitPassword(
     event: React.FormEvent,
@@ -235,6 +227,10 @@ export function ProfilePage() {
                 }
                 required
               />
+
+              {newPassword ? (
+                <PasswordStrength password={newPassword} />
+              ) : null}
 
               <AuthField
                 label="Confirm new password"

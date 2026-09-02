@@ -1,7 +1,7 @@
 export const ORGANIZATION_PERMISSIONS = {
-  ORGANIZATION_READ: "organization:read",
-  ORGANIZATION_MANAGE: "organization:manage",
-  ORGANIZATION_MEMBERS_MANAGE: "organization:members_manage",
+  ORGANIZATION_READ: "organization.read",
+  ORGANIZATION_MANAGE: "organization.manage",
+  ORGANIZATION_MEMBERS_MANAGE: "organization.members.manage",
 } as const;
 
 export type OrganizationPermission =

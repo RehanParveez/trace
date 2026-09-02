@@ -1,5 +1,6 @@
 from __future__ import annotations
 from datetime import datetime
+from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from app.modules.subscriptions.models import BillingInterval, SubscriptionStatus, UsagePeriod
@@ -11,8 +12,8 @@ class PlanResponse(BaseModel):
   name: str
   slug: str
   description: str | None
-  price_monthly: float
-  price_yearly: float
+  price_monthly: Decimal
+  price_yearly: Decimal
   currency: str
   is_active: bool
   is_public: bool
@@ -72,3 +73,9 @@ class CancelSubscriptionRequest(BaseModel):
 class IncrementUsageRequest(BaseModel):
   metric: str = Field(min_length=1, max_length=100)
   quantity: int = Field(gt=0)
+  
+class SubscriptionListResponse(BaseModel):
+  items: list[SubscriptionResponse]
+  total: int
+  page: int
+  page_size: int

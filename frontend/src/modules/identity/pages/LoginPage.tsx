@@ -20,15 +20,13 @@ export function LoginPage() {
   const [password, setPassword] =
     useState("");
 
-  const from =
-    (
-      location.state as {
-        from?: {
-          pathname?: string;
-        };
-      } | null
-    )?.from?.pathname ??
-    "/app/profile";
+  const locationState = location.state as {
+    from?: { pathname?: string };
+    registrationSuccess?: boolean;
+    passwordReset?: boolean;
+  } | null;
+
+  const from = locationState?.from?.pathname ?? "/app/profile";
 
   useEffect(() => {
     if (login.isSuccess) {
@@ -99,6 +97,18 @@ export function LoginPage() {
         onSubmit={submit}
         className="space-y-5"
       >
+        {locationState?.registrationSuccess && !login.isError && (
+          <AuthNotice tone="success">
+            Workspace created. Check your email for a verification link, then sign in.
+          </AuthNotice>
+        )}
+
+        {locationState?.passwordReset && !login.isError && (
+          <AuthNotice tone="success">
+            Your password has been reset. Sign in with your new password.
+          </AuthNotice>
+        )}
+
         {login.isError && (
           <AuthNotice tone="error">
             {getApiErrorMessage(

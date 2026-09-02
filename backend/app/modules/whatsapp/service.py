@@ -22,6 +22,8 @@ from app.shared.storage import build_site_photo_storage_key, generate_presigned_
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
+from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
+from app.shared.storage import build_site_photo_storage_key, upload_fileobj
 
 GRAPH_API_BASE = (
   f"https://graph.facebook.com/{settings.whatsapp_graph_api_version}"
@@ -298,26 +300,25 @@ class WhatsAppService:
       return
 
     try:
-      extension = _extension_for_mime_type(mime_type)
-      storage_key = build_site_photo_storage_key(message.organization_id, f"{message.id}{extension}",)
+      _extension_for_mime_type(mime_type)
+      storage_key = build_site_photo_storage_key(message.organization_id,f"{message.id}.jpg",
+      )
       await asyncio.to_thread(
         upload_fileobj, storage_key, BytesIO(media_bytes), mime_type
       )
 
       caption_parsed: dict[str, Any] = {}
       project_match: UUID | None = None
-      photo_date: date | None = None
+      photo_date = message.received_at.date()
 
       if message.caption_text and await self._is_ai_enabled(
         message.organization_id
       ):
-        caption_parsed = await _call_ollama_parse_caption(
-         message.caption_text
-        ) or {}
+        caption_parsed = await _parse_caption(message.caption_text) or {}
+        parsed = _parse_photo_date(caption_parsed.get("date"))
+        if parsed is not None:
+          photo_date = parsed
 
-        photo_date = _parse_photo_date(
-         caption_parsed.get("date")
-        )
         project_name_guess = caption_parsed.get("project")
         
         if project_name_guess:
@@ -648,5 +649,58 @@ async def _call_ollama_parse_caption(caption_text: str) -> dict | None:
       )
       response.raise_for_status()
       return json.loads(response.json()["response"])
+  except Exception:
+    return None
+  
+async def handle_webhook_payload(self, payload: dict) -> None:
+  for entry in payload.get("entry", []):
+    for change in entry.get("changes", []):
+      value = change.get("value", {})
+      phone_number_id = value.get("metadata", {}).get("phone_number_id")
+      if not phone_number_id:
+        continue
+
+      await scope_session_as_platform_admin(self.session)
+      channel = await self.channels.get_by_phone_number_id(phone_number_id)
+      if channel is None:
+        continue
+
+      await scope_session_to_org(self.session, channel.organization_id)
+
+      for raw_message in value.get("messages", []):
+        await self._handle_inbound_message(channel, raw_message)
+        
+async def _parse_caption(caption_text: str) -> dict | None:
+  if settings.ai_provider == "anthropic":
+    return await _call_cloud_parse_caption(caption_text)
+  return await _call_ollama_parse_caption(caption_text)
+
+async def _call_cloud_parse_caption(caption_text: str) -> dict | None:
+  import json
+  prompt = (
+    "Extract structured information from this WhatsApp caption sent by a "
+    "site engineer along with a construction site photo. The caption may "
+    "mix English and Urdu. Respond with strict JSON only: "
+    '{"project": "... or null", "location": "... or null", '
+    '"date": "... or null", "notes": "..."}. Caption: ' + caption_text
+  )
+  try:
+    async with httpx.AsyncClient(timeout=30.0) as client:
+      response = await client.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+          "x-api-key": settings.ai_api_key,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        json={
+          "model": settings.ai_model,
+          "max_tokens": 300,
+          "messages": [{"role": "user", "content": prompt}],
+        },
+      )
+      response.raise_for_status()
+      text = response.json()["content"][0]["text"]
+      return json.loads(text)
   except Exception:
     return None

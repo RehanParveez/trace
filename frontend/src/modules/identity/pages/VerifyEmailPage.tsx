@@ -4,7 +4,7 @@ import {Link, useSearchParams,
 } from "react-router-dom";
 import { AuthNotice } from "../components/AuthNotice";
 import { AuthShell } from "../components/AuthShell";
-import { useVerifyEmail } from "../hooks/useIdentity";
+import { useResendVerification, useVerifyEmail } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
 
 export function VerifyEmailPage() {
@@ -13,6 +13,12 @@ export function VerifyEmailPage() {
 
   const verify =
     useVerifyEmail();
+
+  const resend =
+    useResendVerification();
+
+  const [resendEmail, setResendEmail] =
+    useState("");
 
   const initialToken =
     params.get("token") ?? "";
@@ -95,6 +101,43 @@ export function VerifyEmailPage() {
                 "The verification link is invalid or expired.",
               )}
             </AuthNotice>
+          )}
+
+          {verify.isError && (
+            <div className="space-y-2 rounded-[9px] border border-[#E1D5BC] bg-[#F8F3E9] p-3.5">
+              {resend.isSuccess ? (
+                <AuthNotice tone="success">
+                  If that account exists and isn't verified yet, a new link has been sent.
+                </AuthNotice>
+              ) : (
+                <>
+                  <p className="text-[11.5px] text-[#6B6152]">
+                    Link expired? Request a new one.
+                  </p>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={resendEmail}
+                      onChange={(event) => setResendEmail(event.target.value)}
+                      placeholder="you@company.com"
+                      className="h-10 flex-1 rounded-[8px] border border-[#E1D5BC] bg-white px-3 text-[12px] outline-none focus:border-[#D9A441]"
+                    />
+
+                    <button
+                      type="button"
+                      disabled={resend.isPending || !resendEmail.trim()}
+                      onClick={() =>
+                        resend.mutate({ email: resendEmail.trim().toLowerCase() })
+                      }
+                      className="h-10 shrink-0 rounded-[8px] bg-[#0D1424] px-3.5 text-[11.5px] font-bold text-white disabled:opacity-50"
+                    >
+                      {resend.isPending ? "Sending…" : "Resend"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           )}
 
           <label className="block">

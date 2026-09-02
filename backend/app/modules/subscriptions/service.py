@@ -11,6 +11,9 @@ from app.modules.subscriptions.repository import SubscriptionRepository
 from app.modules.subscriptions.schemas import ChangePlanRequest, UsageMetricResponse, UsageResponse
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
+import logging
+
+logger = logging.getLogger("trace.subscriptions")
 
 class SubscriptionService:
   def __init__(self, session: AsyncSession):
@@ -74,15 +77,16 @@ class SubscriptionService:
       )
 
     now = datetime.now(timezone.utc)
+    billing_interval = BillingInterval.MONTHLY
 
-    period_end = self._add_month(now)
+    period_end = self._advance_period(now, billing_interval)
 
     subscription = Subscription(
       id=uuid4(),
       organization_id=organization.id,
       plan_id=plan.id,
       status=SubscriptionStatus.ACTIVE,
-      billing_interval=BillingInterval.MONTHLY,
+      billing_interval=billing_interval,
       started_at=now,
       current_period_start=now,
       current_period_end=period_end,
@@ -94,16 +98,19 @@ class SubscriptionService:
         subscription
       )
       await self.session.commit()
-    except IntegrityError as exc:
+    except IntegrityError:
       await self.session.rollback()
+      existing = await self.repository.get_subscription(organization.id)
+      if existing is not None:
+        return existing
       raise TraceException(
         "Unable to create initial subscription.",
         status_code=409,
         code="SUBSCRIPTION_CREATE_CONFLICT",
-      ) from exc
+      )
 
     return subscription
-
+  
   async def change_plan(
     self,
     organization_id: UUID,
@@ -139,14 +146,28 @@ class SubscriptionService:
         code="SUBSCRIPTION_NOT_CHANGEABLE",
       )
 
+    interval_changed = subscription.billing_interval != payload.billing_interval
     subscription.plan_id = plan.id
     subscription.billing_interval = payload.billing_interval
+
+    if interval_changed:
+      subscription.current_period_end = self._advance_period(
+        subscription.current_period_start, payload.billing_interval,
+      )
 
     await self.repository.update_subscription(
       subscription
     )
     await self.session.commit()
 
+    logger.info(
+      "subscription.plan_changed",
+      extra={
+        "organization_id": str(organization_id),
+        "new_plan_id": str(plan.id),
+        "billing_interval": payload.billing_interval.value,
+      },
+    )
     return subscription
 
   async def cancel_subscription(
@@ -184,6 +205,76 @@ class SubscriptionService:
 
     await self.session.flush()
     await self.session.commit()
+
+    logger.info(
+      "subscription.cancelled",
+      extra={"organization_id": str(organization_id), "immediate": not cancel_at_period_end},
+    )
+
+    return subscription
+
+  async def roll_subscription_if_expired(
+    self,
+    organization_id: UUID,
+    now: datetime | None = None,
+  ) -> Subscription | None:
+    now = now or datetime.now(timezone.utc)
+    subscription = await self.repository.get_subscription_for_update(organization_id)
+
+    if subscription is None:
+      return None
+    if subscription.status in {SubscriptionStatus.CANCELLED, SubscriptionStatus.EXPIRED}:
+      return None
+    if subscription.current_period_end > now:
+      return None
+
+    if subscription.cancel_at_period_end:
+      subscription.status = SubscriptionStatus.CANCELLED
+      subscription.cancelled_at = now
+    else:
+      subscription.current_period_start = subscription.current_period_end
+      subscription.current_period_end = self._advance_period(
+        subscription.current_period_start, subscription.billing_interval,
+      )
+      if subscription.status == SubscriptionStatus.TRIALING:
+        subscription.status = SubscriptionStatus.ACTIVE
+
+    await self.repository.update_subscription(subscription)
+    await self.session.commit()
+
+    logger.info(
+      "subscription.period_rolled",
+      extra={"organization_id": str(organization_id), "new_status": subscription.status.value},
+    )
+
+    return subscription
+
+  async def apply_provider_event(
+    self,
+    organization_id: UUID,
+    *,
+    status: SubscriptionStatus,
+    provider_subscription_id: str | None = None,
+    provider_customer_id: str | None = None,
+  ) -> Subscription:
+    subscription = await self.repository.get_subscription_for_update(organization_id)
+
+    if subscription is None:
+      raise TraceException("Subscription not found.", status_code=404, code="SUBSCRIPTION_NOT_FOUND")
+
+    subscription.status = status
+    if provider_subscription_id is not None:
+      subscription.provider_subscription_id = provider_subscription_id
+    if provider_customer_id is not None:
+      subscription.provider_customer_id = provider_customer_id
+
+    await self.repository.update_subscription(subscription)
+    await self.session.commit()
+
+    logger.info(
+      "subscription.provider_event_applied",
+      extra={"organization_id": str(organization_id), "status": status.value},
+    )
 
     return subscription
 
@@ -385,21 +476,23 @@ class SubscriptionService:
     return counter
 
   @staticmethod
-  def _add_month(value: datetime) -> datetime:
-    year = value.year
-    month = value.month + 1
+  def _advance_period(value: datetime, interval: BillingInterval) -> datetime:
+    if interval == BillingInterval.YEARLY:
+      return SubscriptionService._add_years(value, 1)
+    return SubscriptionService._add_months(value, 1)
 
-    if month == 13:
-      year += 1
-      month = 1
+  @staticmethod
+  def _add_months(value: datetime, months: int) -> datetime:
+    total = value.month - 1 + months
+    year = value.year + total // 12
+    month = total % 12 + 1
+    day = min(value.day, calendar.monthrange(year, month)[1])
+    return value.replace(year=year, month=month, day=day)
 
-    day = min(
-      value.day,
-      calendar.monthrange(year, month)[1],
-    )
-
-    return value.replace(
-      year=year,
-      month=month,
-      day=day,
-    )
+  @staticmethod
+  def _add_years(value: datetime, years: int) -> datetime:
+    year = value.year + years
+    day = value.day
+    if value.month == 2 and value.day == 29 and not calendar.isleap(year):
+      day = 28
+    return value.replace(year=year, day=day)

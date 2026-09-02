@@ -5,6 +5,7 @@ import type { Role } from "../types/organization.types";
 import { RoleTable } from "../components/RoleTable";
 import {Button, ErrorState, Icon, Modal, PageHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
+import { ORGANIZATION_PERMISSIONS } from "../permissions";
 
 interface OrganizationRolesPageProps {
   permissions?: string[];
@@ -20,7 +21,9 @@ export function OrganizationRolesPage({
 
   const [deletingRole, setDeletingRole] = useState<Role | null>(null);
 
-  const canManage = permissions.includes("organization:manage");
+  const canManage = permissions.includes(
+    ORGANIZATION_PERMISSIONS.ORGANIZATION_MANAGE,
+  );
 
   const roles = rolesQuery.data ?? [];
 

@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AuthField } from "../components/AuthField";
 import { AuthNotice } from "../components/AuthNotice";
 import { AuthShell } from "../components/AuthShell";
-import { PasswordStrength } from "../components/PasswordStrength";
+import { PasswordStrength, isPasswordStrong } from "../components/PasswordStrength";
 import { useRegister } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
 
@@ -16,17 +16,7 @@ export function RegisterPage() {
   const [organizationName, setOrganizationName] = useState("");
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
-
   const passwordsMatch = password === confirmation;
-
-  function isPasswordStrong(password: string): boolean {
-    return (
-      password.length >= 12 &&
-      /[A-Z]/.test(password) &&
-      /[a-z]/.test(password) &&
-      /[0-9]/.test(password)
-    );
-  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -34,7 +24,6 @@ export function RegisterPage() {
     if (!isPasswordStrong(password)) {
       return;
     }
-
     if (!passwordsMatch) {
       return;
     }

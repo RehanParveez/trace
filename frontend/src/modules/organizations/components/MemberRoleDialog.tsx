@@ -5,11 +5,13 @@ import {Avatar, Badge, Button, Icon, Modal,
 } from "./OrganizationUi";
 import {getMemberFullName, getMemberInitials,
 } from "../utils/organization.utils";
+import { getApiErrorMessage } from "../../identity";
 
 interface MemberRoleDialogProps {
   member: Member;
   roles: Role[];
   isSubmitting?: boolean;
+  error?: unknown;
   onSubmit: (roleId: string) => void;
   onClose: () => void;
 }
@@ -18,6 +20,7 @@ export function MemberRoleDialog({
   member,
   roles,
   isSubmitting = false,
+  error,
   onSubmit,
   onClose,
 }: MemberRoleDialogProps) {
@@ -39,7 +42,14 @@ export function MemberRoleDialog({
       description={`Update the access role assigned to ${member.email}.`}
       onClose={onClose}
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+     <form onSubmit={handleSubmit} className="space-y-4">
+        {error ? (
+          <div className="flex items-center gap-2 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+            <Icon name="alert" size={13} className="shrink-0" />
+            {getApiErrorMessage(error, "Couldn't change this member's role.")}
+          </div>
+        ) : null}
+
         <div className="flex items-center gap-3 rounded-[10px] border border-[#e1d5bc] bg-white p-3">
           <Avatar initials={getMemberInitials(member)} size="sm" />
 

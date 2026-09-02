@@ -81,7 +81,7 @@ async def list_members(
   members, _total = await service.list_members(
     current_user.organization_id, skip=skip, limit=limit
   )
-  return members
+  return [MemberResponse.from_user_and_role(user, role) for user, role in members]
 
 @router.get("/me/members/{user_id}", response_model=MemberResponse)
 async def get_member(
@@ -92,7 +92,8 @@ async def get_member(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.get_member(current_user.organization_id, user_id)
+  user, role = await service.get_member(current_user.organization_id, user_id)
+  return MemberResponse.from_user_and_role(user, role)
 
 @router.patch("/me/members/{user_id}/role", response_model=MemberResponse)
 async def update_member_role(
@@ -104,9 +105,10 @@ async def update_member_role(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.update_member_role(
-    current_user.organization_id, user_id, payload
+  user, role = await service.update_member_role(
+    current_user.organization_id, user_id, payload, current_user.id
   )
+  return MemberResponse.from_user_and_role(user, role)
 
 @router.patch("/me/members/{user_id}/status", response_model=MemberResponse)
 async def update_member_status(
@@ -118,12 +120,13 @@ async def update_member_status(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.update_member_status(
+  user, role = await service.update_member_status(
     current_user.organization_id,
     user_id,
     payload,
     current_user.id,
   )
+  return MemberResponse.from_user_and_role(user, role)
 
 @router.get("/me/roles", response_model=list[RoleResponse])
 async def list_roles(

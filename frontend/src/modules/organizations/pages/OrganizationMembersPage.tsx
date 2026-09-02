@@ -8,6 +8,7 @@ import { MemberStatusDialog } from "../components/MemberStatusDialog";
 import { MemberTable } from "../components/MemberTable";
 import {ErrorState, Icon, PageHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
+import { ORGANIZATION_PERMISSIONS } from "../permissions";
 
 interface OrganizationMembersPageProps {
   permissions?: string[];
@@ -28,7 +29,9 @@ export function OrganizationMembersPage({
   const updateRole = useUpdateMemberRole();
   const updateStatus = useUpdateMemberStatus();
 
-  const canManage = permissions.includes("organization:members_manage");
+  const canManage = permissions.includes(
+    ORGANIZATION_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
+  );
 
   const members = membersQuery.data ?? [];
 
@@ -123,7 +126,11 @@ export function OrganizationMembersPage({
           member={roleMember}
           roles={rolesQuery.data ?? []}
           isSubmitting={updateRole.isPending}
-          onClose={() => setRoleMember(null)}
+          error={updateRole.error}
+          onClose={() => {
+            updateRole.reset();
+            setRoleMember(null);
+          }}
           onSubmit={(roleId) =>
             updateRole.mutate(
               { userId: roleMember.id, payload: { role_id: roleId } },
@@ -137,7 +144,11 @@ export function OrganizationMembersPage({
         <MemberStatusDialog
           member={statusMember}
           isSubmitting={updateStatus.isPending}
-          onClose={() => setStatusMember(null)}
+          error={updateStatus.error}
+          onClose={() => {
+            updateStatus.reset();
+            setStatusMember(null);
+          }}
           onConfirm={() =>
             updateStatus.mutate(
               {

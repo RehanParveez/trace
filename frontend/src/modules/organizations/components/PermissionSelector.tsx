@@ -10,7 +10,7 @@ interface PermissionSelectorProps {
 }
 
 function getResourceGroup(permission: Permission): string {
-  const [resource] = permission.key.split(":");
+  const [resource] = permission.key.split(".");
 
   return resource || "general";
 }

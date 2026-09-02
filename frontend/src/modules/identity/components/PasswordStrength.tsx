@@ -7,7 +7,7 @@ type PasswordChecks = {
   notCommon: boolean;
 };
 
-function getPasswordChecks(password: string): PasswordChecks {
+export function getPasswordChecks(password: string): PasswordChecks {
   const commonPasswords = [
     "password",
     "password123",
@@ -111,4 +111,8 @@ export function PasswordStrength({
       </div>
     </div>
   );
+}
+
+export function isPasswordStrong(password: string): boolean {
+  return Object.values(getPasswordChecks(password)).every(Boolean);
 }

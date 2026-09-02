@@ -6,6 +6,7 @@ from app.core.exceptions import TraceException
 from app.modules.projects.models import Client, Milestone, Project, ProjectMember
 from app.modules.projects.repository import ClientRepository, MilestoneRepository, ProjectMemberRepository, ProjectRepository
 from app.modules.projects.schemas import ClientCreate, ClientUpdate, MilestoneCreate, MilestoneUpdate, ProjectCreate, ProjectMemberCreate, ProjectMemberUpdate, ProjectUpdate
+from app.modules.identity.repository import IdentityRepository
 
 class ProjectService:
   def __init__(
@@ -344,6 +345,16 @@ class ProjectService:
       organization_id,
       project_id,
     )
+
+    user = await IdentityRepository(self.session).get_user_by_id_and_org(
+      payload.user_id, organization_id
+    )
+    if user is None:
+      raise TraceException(
+        "User not found in this organization.",
+        status_code=404,
+        code="USER_NOT_IN_ORGANIZATION",
+      )
 
     existing = await self.members.get_by_project_and_user(
       project_id,
