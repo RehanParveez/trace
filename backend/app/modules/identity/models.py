@@ -373,16 +373,6 @@ class User(TimestampMixin, Base):
     cascade="all, delete-orphan",
   )
 
-  sent_invitations: Mapped[list["OrganizationInvitation"]] = relationship(
-    foreign_keys="OrganizationInvitation.invited_by_user_id",
-    back_populates="invited_by",
-  )
-
-  accepted_invitations: Mapped[list["OrganizationInvitation"]] = relationship(
-    foreign_keys="OrganizationInvitation.accepted_by_user_id",
-    back_populates="accepted_by",
-  )
-
 class Role(TimestampMixin, Base):
   __tablename__ = "roles"
 
@@ -437,10 +427,6 @@ class Role(TimestampMixin, Base):
   memberships: Mapped[list["OrganizationMembership"]] = relationship(
     back_populates="role",
     )
-
-  invitations: Mapped[list["OrganizationInvitation"]] = relationship(
-    back_populates="role",
-  )
 
   __table_args__ = (
     UniqueConstraint(

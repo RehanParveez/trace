@@ -72,61 +72,42 @@ async def update_ai_settings(
 async def list_members(
   skip: int = Query(default=0, ge=0),
   limit: int = Query(default=100, ge=1, le=100),
-  current_user: User = Depends(
-    require_permission(PermissionKey.ORGANIZATION_READ)
-  ),
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_READ)),
   session: AsyncSession = Depends(get_db),
 ):
-  service = _service(session)
-  members, _total = await service.list_members(
-    current_user.organization_id, skip=skip, limit=limit
-  )
-  return [MemberResponse.from_user_and_role(user, role) for user, role in members]
+  organization_id = current_user.active_membership.organization_id
+  members, _total = await _service(session).list_members(organization_id, skip=skip, limit=limit)
+  return [MemberResponse.from_user_and_role(u, r, organization_id, active) for u, r, active in members]
 
 @router.get("/me/members/{user_id}", response_model=MemberResponse)
 async def get_member(
   user_id: UUID,
-  current_user: User = Depends(
-    require_permission(PermissionKey.ORGANIZATION_READ)
-  ),
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_READ)),
   session: AsyncSession = Depends(get_db),
 ):
-  service = _service(session)
-  user, role = await service.get_member(current_user.organization_id, user_id)
-  return MemberResponse.from_user_and_role(user, role)
+  organization_id = current_user.active_membership.organization_id
+  user, role, is_active = await _service(session).get_member(organization_id, user_id)
+  return MemberResponse.from_user_and_role(user, role, organization_id, is_active)
 
 @router.patch("/me/members/{user_id}/role", response_model=MemberResponse)
 async def update_member_role(
-  user_id: UUID,
-  payload: MemberRoleUpdateRequest,
-  current_user: User = Depends(
-    require_permission(PermissionKey.ORGANIZATION_MEMBERS_MANAGE)
-  ),
+  user_id: UUID, payload: MemberRoleUpdateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MEMBERS_MANAGE)),
   session: AsyncSession = Depends(get_db),
 ):
-  service = _service(session)
-  user, role = await service.update_member_role(
-    current_user.organization_id, user_id, payload, current_user.id
-  )
-  return MemberResponse.from_user_and_role(user, role)
+  organization_id = current_user.active_membership.organization_id
+  user, role, is_active = await _service(session).update_member_role(organization_id, user_id, payload, current_user.id)
+  return MemberResponse.from_user_and_role(user, role, organization_id, is_active)
 
 @router.patch("/me/members/{user_id}/status", response_model=MemberResponse)
 async def update_member_status(
-  user_id: UUID,
-  payload: MemberStatusUpdateRequest,
-  current_user: User = Depends(
-    require_permission(PermissionKey.ORGANIZATION_MEMBERS_MANAGE)
-  ),
+  user_id: UUID, payload: MemberStatusUpdateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MEMBERS_MANAGE)),
   session: AsyncSession = Depends(get_db),
 ):
-  service = _service(session)
-  user, role = await service.update_member_status(
-    current_user.organization_id,
-    user_id,
-    payload,
-    current_user.id,
-  )
-  return MemberResponse.from_user_and_role(user, role)
+  organization_id = current_user.active_membership.organization_id
+  user, role, is_active = await _service(session).update_member_status(organization_id, user_id, payload, current_user.id)
+  return MemberResponse.from_user_and_role(user, role, organization_id, is_active)
 
 @router.get("/me/roles", response_model=list[RoleResponse])
 async def list_roles(

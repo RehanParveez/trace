@@ -220,4 +220,5 @@ class PasswordResetResponse(BaseModel):
 
 class RegistrationResponse(BaseModel):
   user: UserResponse
+  verification_required: bool
   message: str

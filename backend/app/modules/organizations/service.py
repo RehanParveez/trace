@@ -266,10 +266,9 @@ class OrganizationService:
         status_code=400,
         code="INVITATION_EXPIRED",
       )
-
     invitation_email = invitation.email.strip().lower()
     current_user_email = str(current_user.email).strip().lower()
-
+    
     if invitation_email != current_user_email:
       raise TraceException(
         "This invitation was issued for a different email address.",
@@ -311,13 +310,6 @@ class OrganizationService:
         code="MEMBER_ALREADY_EXISTS",
       )
 
-    if await self.repository.has_any_membership(current_user.id):
-      raise TraceException(
-        "This account already belongs to an organization. Multi-organization accounts aren't supported yet.",
-        status_code=409,
-        code="ALREADY_BELONGS_TO_ORGANIZATION",
-      )
-
     membership = OrganizationMembership(
       user_id=current_user.id,
       organization_id=invitation.organization_id,
@@ -325,11 +317,8 @@ class OrganizationService:
       is_active=True,
     )
     self.session.add(membership)
-
     invitation.accepted_by_user_id = current_user.id
     invitation.accepted_at = now
-    current_user.organization_id = invitation.organization_id
-    current_user.role_id = role.id
 
     try:
       await self.session.flush()
@@ -394,28 +383,19 @@ class OrganizationService:
 
   async def update_member_role(
     self,
-    organization_id: UUID,
-    user_id: UUID,
-    payload: MemberRoleUpdateRequest,
-    current_user_id: UUID,
-  ) -> tuple[User, Role]:
-    user, current_role = await self.get_member(organization_id, user_id)
+    organization_id,
+    user_id, payload,
+    current_user_id,
+  ) -> tuple[User, Role, bool]:
+    user, current_role, _ = await self.get_member(organization_id, user_id)
 
     new_role = await self.repository.get_role(organization_id, payload.role_id)
     if new_role is None:
-      raise TraceException(
-        "Role not found in this organization.",
-        status_code=404,
-        code="ROLE_NOT_FOUND",
-      )
+      raise TraceException("Role not found in this organization.", status_code=404, code="ROLE_NOT_FOUND")
 
     membership = await self.repository.get_membership(user_id, organization_id)
     if membership is None:
-      raise TraceException(
-        "Membership not found.",
-        status_code=404,
-        code="MEMBERSHIP_NOT_FOUND",
-      )
+      raise TraceException("Membership not found.", status_code=404, code="MEMBERSHIP_NOT_FOUND")
 
     is_self_demotion = (
       user_id == current_user_id
@@ -425,80 +405,53 @@ class OrganizationService:
     if is_self_demotion and not await self._has_other_active_admin(organization_id, user_id):
       raise TraceException(
         "You're the only administrator. Assign another admin before changing your own role.",
-        status_code=409,
-        code="LAST_ADMIN_PROTECTED",
+        status_code=409, code="LAST_ADMIN_PROTECTED",
       )
-    old_role_id = membership.role_id
-    membership.role_id = new_role.id
-    user.role_id = new_role.id
 
+    membership.role_id = new_role.id         
     await self.session.flush()
     await self.session.commit()
-
-    await self.audit.log(
-      organization_id,
-      current_user_id,
-      AuditEntityType.MEMBER,
-      user_id,
-      AuditAction.UPDATE,
-      f"Changed {user.email}'s role to {new_role.name}",
-      changes={
-        "role_id": {
-          "old": str(old_role_id),
-          "new": str(new_role.id),
-        }
-      },
-    )
-    return user, new_role
+    return user, new_role, membership.is_active
 
   async def update_member_status(
     self,
-    organization_id: UUID,
-    user_id: UUID,
-    payload: MemberStatusUpdateRequest,
-    current_user_id: UUID,
-  ) -> tuple[User, Role]:
-    user, role = await self.get_member(organization_id, user_id)
+    organization_id,
+    user_id,
+    payload,
+    current_user_id,
+  ) -> tuple[User, Role, bool]:
+    user, role, _ = await self.get_member(organization_id, user_id)
 
     membership = await self.repository.get_membership(user_id, organization_id)
     if membership is None:
-      raise TraceException(
-        "Membership not found.",
-        status_code=404,
-        code="MEMBERSHIP_NOT_FOUND",
-      )
+      raise TraceException("Membership not found.", status_code=404, code="MEMBERSHIP_NOT_FOUND")
 
     if user.id == current_user_id and not payload.is_active:
-      raise TraceException(
-        "You cannot deactivate your own account.",
-        status_code=400,
-        code="CANNOT_DEACTIVATE_SELF",
-      )
+      raise TraceException("You cannot deactivate your own account.", status_code=400, code="CANNOT_DEACTIVATE_SELF")
 
     if not payload.is_active:
       is_admin = any(p.key == str(PermissionKey.ORGANIZATION_MANAGE) for p in role.permissions)
       if is_admin and not await self._has_other_active_admin(organization_id, user_id):
         raise TraceException(
           "Cannot deactivate the only administrator in this organization.",
-          status_code=409,
-          code="LAST_ADMIN_PROTECTED",
+          status_code=409, code="LAST_ADMIN_PROTECTED",
         )
 
-    membership.is_active = payload.is_active
-    user.is_active = payload.is_active
+    membership.is_active = payload.is_active   
     await self.session.flush()
     await self.session.commit()
-
-    return user, role
-
+    return user, role, membership.is_active
+  
   async def list_roles(self, organization_id: UUID) -> list[Role]:
     return await self.repository.list_roles(organization_id)
-
+  
   async def get_role(self, organization_id: UUID, role_id: UUID) -> Role:
     role = await self.repository.get_role(organization_id, role_id)
     if role is None:
       raise TraceException(
-        "Role not found.", status_code=404, code="ROLE_NOT_FOUND"
+        "Role not found in this organization.",
+          status_code=404,
+            code="ROLE_NOT_FOUND",
       )
     return role
 

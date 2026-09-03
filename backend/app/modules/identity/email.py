@@ -1,7 +1,10 @@
 from __future__ import annotations
+import logging
 import smtplib
 from email.message import EmailMessage
 from app.core.config import settings
+
+logger = logging.getLogger(__name__)
 
 class EmailService:
   async def send(
@@ -12,6 +15,12 @@ class EmailService:
     body: str,
   ) -> None:
     if not settings.email_enabled:
+      logger.info(
+        "Email disabled — would send to %s\nSubject: %s\n%s",
+        recipient,
+        subject,
+        body,
+      )
       return
 
     message = EmailMessage()

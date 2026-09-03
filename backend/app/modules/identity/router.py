@@ -124,7 +124,9 @@ async def me(
   ),
 ) -> CurrentUserResponse:
   return CurrentUserResponse(
-    user=current_user
+    user=IdentityService.build_user_response(
+      current_user, current_user.active_membership,
+    )
   )
 
 @router.post(
@@ -253,7 +255,7 @@ async def change_password(
     user=current_user,
     current_password=payload.current_password,
     new_password=payload.new_password,
-    new_password_confirmation=(
+    password_confirmation=(
       payload.new_password_confirmation
     ),
   )

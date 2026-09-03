@@ -4,7 +4,7 @@ from uuid import UUID
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.modules.identity.models import Organization, Permission, PlatformAdmin, RefreshToken, Role, User
+from app.modules.identity.models import Organization, Permission, PlatformAdmin, RefreshToken, Role, User, OrganizationMembership
 
 class IdentityRepository:
   def __init__(self, session: AsyncSession):
@@ -137,6 +137,19 @@ class IdentityRepository:
     await self.session.flush()
 
     return organization
+  
+  async def get_organization_by_slug(
+    self,
+    slug: str,
+  ) -> Organization | None:
+    result = await self.session.execute(
+      select(Organization).where(Organization.slug == slug.strip().lower())
+    )
+    return result.scalar_one_or_none()
+
+  async def get_all_permissions(self) -> list[Permission]:
+    result = await self.session.execute(select(Permission))
+    return list(result.scalars().all())
 
   async def add_organization(
     self,
@@ -187,14 +200,14 @@ class IdentityRepository:
     name: str,
     description: str | None = None,
     is_system: bool = False,
-  ) -> Role:
+) -> Role:
     role = Role(
       organization_id=organization_id,
       name=name,
       description=description,
       is_system=is_system,
+      permissions=[],
     )
-
     self.session.add(role)
     await self.session.flush()
 
@@ -323,3 +336,40 @@ class IdentityRepository:
     user.is_verified = True
 
     await self.session.flush()
+    
+  async def get_membership(
+     self,
+     *,
+     user_id: UUID,
+     organization_id: UUID,
+  ) -> OrganizationMembership | None:
+     result = await self.session.execute(
+      select(OrganizationMembership)
+      .where(
+        OrganizationMembership.user_id == user_id,
+        OrganizationMembership.organization_id == organization_id,
+        OrganizationMembership.is_active.is_(True),
+      )
+      .options(
+        selectinload(OrganizationMembership.role),
+        selectinload(OrganizationMembership.organization),
+      )
+    )
+     return result.scalar_one_or_none()
+
+  async def get_active_memberships(
+    self,
+    user_id: UUID,
+  ) -> list[OrganizationMembership]:
+    result = await self.session.execute(
+      select(OrganizationMembership)
+      .where(
+        OrganizationMembership.user_id == user_id,
+        OrganizationMembership.is_active.is_(True),
+      )
+      .options(
+        selectinload(OrganizationMembership.role),
+        selectinload(OrganizationMembership.organization),
+      )
+    )
+    return list(result.scalars().all())

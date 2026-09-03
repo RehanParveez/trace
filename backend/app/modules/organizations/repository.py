@@ -222,19 +222,17 @@ class OrganizationRepository:
     self,
     organization_id: UUID,
     user_id: UUID,
-  ) -> tuple[User, Role] | None:
+  ) -> tuple[User, Role, bool] | None:
     membership = await self.get_membership(user_id, organization_id)
     if membership is None:
       return None
 
-    result = await self.session.execute(
-      select(User).where(User.id == user_id)
-    )
+    result = await self.session.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:
       return None
 
-    return user, membership.role
+    return user, membership.role, membership.is_active
 
   async def list_members(
     self,
@@ -242,7 +240,7 @@ class OrganizationRepository:
     *,
     skip: int = 0,
     limit: int = 100,
-  ) -> tuple[list[tuple[User, Role]], int]:
+  ) -> tuple[list[tuple[User, Role, bool]], int]:
     count_result = await self.session.execute(
       select(func.count())
       .select_from(OrganizationMembership)
@@ -251,22 +249,16 @@ class OrganizationRepository:
     total = count_result.scalar_one()
 
     result = await self.session.execute(
-      select(User, Role)
-      .join(
-        OrganizationMembership,
-        OrganizationMembership.user_id == User.id,
-      )
-      .join(
-        Role,
-        Role.id == OrganizationMembership.role_id,
-      )
+      select(User, Role, OrganizationMembership.is_active)
+      .join(OrganizationMembership, OrganizationMembership.user_id == User.id)
+      .join(Role, Role.id == OrganizationMembership.role_id)
       .where(OrganizationMembership.organization_id == organization_id)
       .options(selectinload(Role.permissions))
       .order_by(User.created_at.asc())
       .offset(skip)
       .limit(limit)
     )
-    return [(row[0], row[1]) for row in result.all()], total
+    return [(row[0], row[1], row[2]) for row in result.all()], total
 
   async def get_role(
     self,

@@ -12,7 +12,7 @@ from app.modules.identity.enums import TokenType
 from app.modules.identity.models import RefreshToken, User, Organization, OrganizationMembership
 from app.modules.identity.password_policy import validate_password
 from app.modules.identity.repository import IdentityRepository
-from app.modules.identity.schemas import LoginResponse, RegistrationResponse, TokenResponse
+from app.modules.identity.schemas import LoginResponse, RegistrationResponse, TokenResponse, UserResponse, RoleResponse, OrganizationResponse
 from app.core.config import settings
 from app.modules.identity.email import EmailService
 from sqlalchemy import select
@@ -231,25 +231,31 @@ class IdentityService:
       is_system=True,
     )
 
-    user = await self.repository.create_user(
-     organization_id=organization.id,
-     role_id=role.id,
-     email=email,
-     password_hash=hash_password(password),
-     first_name=first_name.strip(),
-     last_name=last_name.strip(),
-     is_active=True,
-     is_verified=False,
-    )
+    await self.session.flush()
+    all_permissions = await self.repository.get_all_permissions()
+    role.permissions = all_permissions
+    
+    await self.session.flush()
 
-    self.session.add(
-     OrganizationMembership(
+   user = await self.repository.create_user(
+    organization_id=organization.id,
+    role_id=role.id,
+    email=email,
+    password_hash=hash_password(password),
+    first_name=first_name.strip(),
+    last_name=last_name.strip(),
+    is_active=True,
+    is_verified=False,
+  )
+
+   self.session.add(
+    OrganizationMembership(
       user_id=user.id,
       organization_id=organization.id,
       role_id=role.id,
       is_active=True,
-     )
     )
+  )
    await self.session.commit()
 
    user = await self.repository.get_user_by_id(
@@ -486,54 +492,45 @@ class IdentityService:
 
     await self.session.commit()
 
-  async def login(
-    self,
-    email: str, password: str) -> LoginResponse:
+  async def login(self, email: str, password: str) -> LoginResponse:
     user = await self.authenticate(email=email, password=password)
-    tokens = await self.issue_tokens(user)
+    membership = await self.resolve_login_membership(user)
+    tokens = await self.issue_tokens(user, membership)
     await self.repository.update_user_last_login(user)
     await self.session.commit()
-    
-    return LoginResponse(user=user, tokens=tokens)
+
+    return LoginResponse(
+      user=self.build_user_response(user, membership),
+      tokens=tokens,
+    )
 
   async def _store_refresh_token(
-    self,
-    user: User,
-    raw_token: str,
+    self, user: User, raw_token: str, organization_id: UUID,
   ) -> RefreshToken:
-
     payload = decode_token(raw_token)
-
-    expires_at = datetime.fromtimestamp(
-      payload["exp"],
-      tz=timezone.utc,
-    )
+    expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
 
     token = RefreshToken(
       id=uuid4(),
       user_id=user.id,
-      organization_id=user.organization_id,
-      token_hash=self.hash_refresh_token(
-        raw_token
-      ),
+      organization_id=organization_id,
+      token_hash=self.hash_refresh_token(raw_token),
       expires_at=expires_at,
     )
+    return await self.repository.add_refresh_token(token)
 
-    return await self.repository.add_refresh_token(
-      token
-    )
-    
-  async def issue_tokens(self, user: User) -> TokenResponse:
+  async def issue_tokens(
+    self, user: User, membership: OrganizationMembership,
+  ) -> TokenResponse:
     access_token = create_access_token(
-      subject=str(user.id),
-      organization_id=str(user.organization_id),
+      subject=str(user.id), organization_id=str(membership.organization_id),
     )
     refresh_token = create_refresh_token(
-      subject=str(user.id),
-      organization_id=str(user.organization_id),
+      subject=str(user.id), organization_id=str(membership.organization_id),
     )
-    
-    await self._store_refresh_token(user=user, raw_token=refresh_token)
+    await self._store_refresh_token(
+      user=user, raw_token=refresh_token, organization_id=membership.organization_id,
+    )
     return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
   async def refresh(
@@ -648,44 +645,57 @@ class IdentityService:
         code="USER_UNAVAILABLE",
       )
 
-    if not user.organization.is_active:
+    membership = await self.repository.get_membership(
+      user_id=user.id,
+      organization_id=stored_token.organization_id,
+    )
+
+    if membership is None or not membership.organization.is_active:
       raise TraceException(
-        "Organization is inactive.",
+        "Organization membership is no longer active.",
         status_code=403,
-        code="ORGANIZATION_INACTIVE",
+        code="ORGANIZATION_MEMBERSHIP_INACTIVE",
       )
 
     new_access_token = create_access_token(
-      subject=str(user.id),
-      organization_id=str(
-        user.organization_id
-      ),
+      subject=str(user.id), organization_id=str(stored_token.organization_id),
     )
-
     new_refresh_token = create_refresh_token(
-      subject=str(user.id),
-      organization_id=str(
-        user.organization_id
-      ),
+      subject=str(user.id), organization_id=str(stored_token.organization_id),
     )
-
     replacement = await self._store_refresh_token(
-      user=user,
-      raw_token=new_refresh_token,
+      user=user, raw_token=new_refresh_token, organization_id=stored_token.organization_id,
     )
 
-    await self.repository.revoke_refresh_token(
-      stored_token,
-      replacement_id=replacement.id,
-    )
-
+    await self.repository.revoke_refresh_token(stored_token, replacement_id=replacement.id)
     await self.session.commit()
 
-    return TokenResponse(
-      access_token=new_access_token,
-      refresh_token=new_refresh_token,
+    return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
+  
+  async def get_current_user_in_organization(
+    self, user_id: UUID, organization_id: UUID,
+  ) -> User:
+    user = await self.repository.get_user_by_id(user_id)
+
+    if user is None:
+      raise TraceException("User not found.", status_code=401, code="USER_NOT_FOUND")
+    if not user.is_active:
+      raise TraceException("User account is inactive.", status_code=403, code="USER_INACTIVE")
+
+    membership = await self.repository.get_membership(
+      user_id=user_id, organization_id=organization_id,
     )
 
+    if membership is None:
+      raise TraceException(
+        "Authentication context mismatch.", status_code=401, code="AUTHENTICATION_CONTEXT_MISMATCH",
+      )
+    if not membership.organization.is_active:
+      raise TraceException("Organization is inactive.", status_code=403, code="ORGANIZATION_INACTIVE")
+
+    user.active_membership = membership
+    return user
+  
   async def logout(
     self,
     raw_refresh_token: str,
@@ -745,12 +755,55 @@ class IdentityService:
         status_code=403,
         code="USER_INACTIVE",
       )
-
-    if not user.organization.is_active:
+    
+    if not user.is_verified:
       raise TraceException(
-        "Organization is inactive.",
+        "Please verify your email address before logging in.",
         status_code=403,
-        code="ORGANIZATION_INACTIVE",
+        code="EMAIL_NOT_VERIFIED",
       )
 
     return user
+  
+  async def resolve_login_membership(
+    self,
+    user: User,
+  ) -> OrganizationMembership:
+    membership = await self.repository.get_membership(
+      user_id=user.id,
+      organization_id=user.organization_id,
+    )
+
+    if membership is not None and membership.organization.is_active:
+      return membership
+
+    active_memberships = [
+      m for m in await self.repository.get_active_memberships(user.id)
+      if m.organization.is_active
+    ]
+
+    if not active_memberships:
+      raise TraceException(
+        "No active organization membership found.",
+        status_code=403, code="NO_ACTIVE_ORGANIZATION",
+      )
+
+    return active_memberships[0]
+  
+  @staticmethod
+  def build_user_response(
+    user: User,
+    membership: OrganizationMembership,
+  ) -> UserResponse:
+    return UserResponse(
+      id=user.id,
+      organization_id=membership.organization_id,
+      email=user.email,
+      first_name=user.first_name,
+      last_name=user.last_name,
+      is_active=user.is_active,
+      is_verified=user.is_verified,
+      last_login_at=user.last_login_at,
+      role=RoleResponse.model_validate(membership.role),
+      organization=OrganizationResponse.model_validate(membership.organization),
+    )

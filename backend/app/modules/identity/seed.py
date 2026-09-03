@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.modules.identity.enums import PermissionKey
-from app.modules.identity.models import Organization, Permission, PlatformAdmin, Role, User
+from app.modules.identity.models import Organization, Permission, PlatformAdmin, Role, User, OrganizationMembership
 
 DEFAULT_ORGANIZATION = {
   "name": "Trace Organization",
@@ -195,6 +195,24 @@ async def seed_identity() -> None:
       user.role_id = role.id
       user.is_active = True
       user.is_verified = True
+    
+    membership_result = await session.execute(
+      select(OrganizationMembership).where(
+        OrganizationMembership.user_id == user.id,
+        OrganizationMembership.organization_id == organization.id,
+      )
+    )
+    membership = membership_result.scalar_one_or_none()
+
+    if membership is None:
+      session.add(
+        OrganizationMembership(
+          user_id=user.id,
+          organization_id=organization.id,
+          role_id=role.id,
+          is_active=True,
+        )
+      )
 
     platform_admin_result = await session.execute(
       select(PlatformAdmin).where(

@@ -70,24 +70,14 @@ async def get_current_user(
     ) from exc
 
   await scope_session_to_org(session, token_organization_id)
-  token_store = IdentityTokenStore(
-    redis_client
-  )
+  token_store = IdentityTokenStore(redis_client)
 
-  service = IdentityService(
-    session=session,
-    token_store=token_store,
-  )
-  user = await service.get_current_user(
-    user_id
-  )
+  service = IdentityService(session=session, token_store=token_store)
 
-  if user.organization_id != token_organization_id:
-    raise TraceException(
-      "Authentication context mismatch.",
-      status_code=401,
-      code="AUTHENTICATION_CONTEXT_MISMATCH",
-    )
+  user = await service.get_current_user_in_organization(
+    user_id=user_id,
+    organization_id=token_organization_id,
+  )
 
   return user
 
