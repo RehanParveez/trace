@@ -62,7 +62,7 @@ async def connect_channel(
 ):
   service = _service(session)
   return await service.connect_channel(
-    current_user.organization_id, payload
+    current_user.organization_id
   )
 
 @router.get("/channel", response_model=ChannelResponse)

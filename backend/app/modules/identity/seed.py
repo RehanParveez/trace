@@ -6,6 +6,7 @@ from app.core.database import AsyncSessionLocal
 from app.core.security import hash_password
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import Organization, Permission, PlatformAdmin, Role, User, OrganizationMembership
+from app.modules.subscriptions.service import SubscriptionService
 
 DEFAULT_ORGANIZATION = {
   "name": "Trace Organization",
@@ -38,6 +39,12 @@ async def seed_identity() -> None:
 
       session.add(organization)
       await session.flush()
+
+    subscription_service = SubscriptionService(session)
+    await subscription_service.create_initial_subscription(
+      organization,
+      plan_slug="free",
+    )
 
     permission_definitions = {
       PermissionKey.IDENTITY_READ: (

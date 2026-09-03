@@ -78,6 +78,18 @@ class WhatsAppMessageRepository:
       )
     )
     return result.scalar_one_or_none()
+  
+  async def get_by_id_for_update(
+    self,
+    message_id: UUID,
+  ) -> WhatsAppMessage | None:
+   result = await self.session.execute(
+    select(WhatsAppMessage)
+    .where(WhatsAppMessage.id == message_id)
+    .with_for_update()
+  )
+
+   return result.scalar_one_or_none()
 
   async def get_by_prompt_wa_message_id(
     self,
@@ -164,8 +176,6 @@ class SitePhotoRepository:
       query = query.where(SitePhoto.photo_date <= photo_date_to)
     if tag is not None:
       query = query.join(PhotoTag).where(PhotoTag.tag == tag)
-    if unassigned_only:
-      query = query.where(SitePhoto.project_id.is_(None))
 
     query = (
       query.order_by(SitePhoto.created_at.desc())

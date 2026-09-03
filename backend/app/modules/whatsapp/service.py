@@ -25,7 +25,7 @@ from app.modules.notifications.schemas import NotificationType
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
-
+from app.modules.identity.enums import PermissionKey
 
 GRAPH_API_BASE = (
   f"https://graph.facebook.com/{settings.whatsapp_graph_api_version}"
@@ -106,11 +106,23 @@ class WhatsAppService:
   async def disconnect_channel(
     self,
     organization_id: UUID,
-  ) -> None:
+) -> None:
     channel = await self.get_channel(organization_id)
     channel.is_active = False
     await self.channels.update(channel)
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.WHATSAPP_CHANNEL,
+      channel.id,
+      AuditAction.UPDATE,
+      (
+        f"Disconnected WhatsApp number "
+        f"{channel.display_phone_number or channel.phone_number_id}"
+      ),
+    )
 
   @staticmethod
   def verify_subscription_challenge(
@@ -142,114 +154,154 @@ class WhatsAppService:
     provided = signature_header.removeprefix("sha256=")
     return hmac.compare_digest(expected, provided)
 
-  async def handle_webhook_payload(self, payload: dict) -> None:
+  async def handle_webhook_payload(
+    self,
+    payload: dict,
+) -> None:
     for entry in payload.get("entry", []):
       for change in entry.get("changes", []):
         value = change.get("value", {})
-        phone_number_id = value.get("metadata", {}).get("phone_number_id")
+        phone_number_id = (
+          value.get("metadata", {})
+          .get("phone_number_id")
+        )
+
         if not phone_number_id:
           continue
 
-        channel = await self.channels.get_by_phone_number_id(phone_number_id)
+        await scope_session_as_platform_admin(self.session)
+        channel = await self.channels.get_by_phone_number_id(
+          phone_number_id
+        )
         if channel is None:
           continue
-
+        await scope_session_to_org(
+          self.session,
+          channel.organization_id,
+        )
         for raw_message in value.get("messages", []):
-          await self._handle_inbound_message(channel, raw_message)
+          await self._handle_inbound_message(
+            channel,
+            raw_message,
+        )
 
   async def _handle_inbound_message(
-    self,
-    channel: WhatsAppChannel,
-    raw_message: dict,
+   self,
+   channel: WhatsAppChannel,
+   raw_message: dict,
   ) -> None:
-    wa_message_id = raw_message.get("id")
-    if not wa_message_id:
-      return
+   wa_message_id = raw_message.get("id")
+   if not wa_message_id:
+    return
 
-    message_type_raw = raw_message.get("type", "")
+   message_type_raw = raw_message.get("type", "")
 
-    if message_type_raw == "interactive":
-      await self._handle_interactive_reply(raw_message)
-      return
+   from_phone_number = raw_message.get("from", "")
+   timestamp = raw_message.get("timestamp")
+   received_at = (
+    datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+    if timestamp
+    else datetime.now(timezone.utc)
+   )
 
-    from_phone_number = raw_message.get("from", "")
-    timestamp = raw_message.get("timestamp")
-    received_at = (
-      datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
-      if timestamp
-      else datetime.now(timezone.utc)
+   if message_type_raw == "image":
+    message_type = WhatsAppMessageType.IMAGE
+    media_id = raw_message.get("image", {}).get("id")
+    caption_text = raw_message.get("image", {}).get("caption")
+   elif message_type_raw == "text":
+    message_type = WhatsAppMessageType.TEXT
+    media_id = None
+    caption_text = raw_message.get("text", {}).get("body")
+   elif message_type_raw == "interactive":
+    message_type = WhatsAppMessageType.INTERACTIVE
+    media_id = None
+    caption_text = None
+   else:
+    message_type = WhatsAppMessageType.OTHER
+    media_id = None
+    caption_text = None
+
+   message = WhatsAppMessage(
+    id=uuid4(),
+    organization_id=channel.organization_id,
+    channel_id=channel.id,
+    wa_message_id=wa_message_id,
+    from_phone_number=from_phone_number,
+    message_type=message_type,
+    caption_text=caption_text,
+    media_id=media_id,
+    status=WhatsAppMessageStatus.RECEIVED,
+    received_at=received_at,
+    raw_payload=raw_message,
+   )
+
+   created = await self.messages.try_create(message)
+   if created is None:
+    return
+
+   await self.session.commit()
+
+   if message_type == WhatsAppMessageType.IMAGE:
+    process_whatsapp_photo_task.apply_async(
+      args=[str(created.id)],
+      queue="whatsapp_priority",
     )
-
-    if message_type_raw == "image":
-      message_type = WhatsAppMessageType.IMAGE
-      media_id = raw_message.get("image", {}).get("id")
-      caption_text = raw_message.get("image", {}).get("caption")
-    elif message_type_raw == "text":
-      message_type = WhatsAppMessageType.TEXT
-      media_id = None
-      caption_text = raw_message.get("text", {}).get("body")
-    else:
-      message_type = WhatsAppMessageType.OTHER
-      media_id = None
-      caption_text = None
-
-    message = WhatsAppMessage(
-      id=uuid4(),
-      organization_id=channel.organization_id,
-      channel_id=channel.id,
-      wa_message_id=wa_message_id,
-      from_phone_number=from_phone_number,
-      message_type=message_type,
-      caption_text=caption_text,
-      media_id=media_id,
-      status=WhatsAppMessageStatus.RECEIVED,
-      received_at=received_at,
-      raw_payload=raw_message,
-    )
-
-    created = await self.messages.try_create(message)
-    if created is None:
-      return
-
+   elif message_type == WhatsAppMessageType.INTERACTIVE:
+    await self._handle_interactive_reply(created)
+    created.status = WhatsAppMessageStatus.IGNORED
+    await self.messages.update(created)
+    await self.session.commit()
+   else:
+    created.status = WhatsAppMessageStatus.IGNORED
+    await self.messages.update(created)
     await self.session.commit()
 
-    if message_type == WhatsAppMessageType.IMAGE:
-      process_whatsapp_photo_task.apply_async(
-        args=[str(created.id)], queue="whatsapp_priority"
-      )
-    else:
-      created.status = WhatsAppMessageStatus.IGNORED
-      await self.messages.update(created)
-      await self.session.commit()
+  async def _handle_interactive_reply(
+   self,
+   interactive_message: WhatsAppMessage,
+  ) -> None:
+   raw_message = interactive_message.raw_payload
 
-  async def _handle_interactive_reply(self, raw_message: dict) -> None:
-    interactive = raw_message.get("interactive", {})
-    button_reply = interactive.get("button_reply") or interactive.get("list_reply")
-    if not button_reply:
-      return
+   interactive = raw_message.get("interactive", {})
+   button_reply = (
+    interactive.get("button_reply")
+    or interactive.get("list_reply")
+   )
 
-    context_id = raw_message.get("context", {}).get("id")
-    if not context_id:
-      return
+   if not button_reply:
+    return
 
-    pending_message = await self.messages.get_by_prompt_wa_message_id(context_id)
-    if pending_message is None:
-      return
-    if pending_message.status != WhatsAppMessageStatus.AWAITING_PROJECT_SELECTION:
-      return
+   context_id = raw_message.get("context", {}).get("id")
+   if not context_id:
+    return
 
-    try:
-      project_uuid = UUID(button_reply.get("id", ""))
-    except (ValueError, TypeError):
-      return
+   pending_message = await self.messages.get_by_prompt_wa_message_id(
+    context_id
+   )
 
-    project = await self.projects.get_by_id_and_org(
-      project_uuid, pending_message.organization_id
-    )
-    if project is None:
-      return
+   if pending_message is None:
+    return
 
-    await self._finalize_photo_for_message(pending_message, project.id)
+   if pending_message.status != WhatsAppMessageStatus.AWAITING_PROJECT_SELECTION:
+    return
+
+   try:
+    project_uuid = UUID(button_reply.get("id", ""))
+   except (ValueError, TypeError):
+    return
+
+   project = await self.projects.get_by_id_and_org(
+    project_uuid,
+    pending_message.organization_id,
+  )
+
+   if project is None:
+    return
+
+   await self._finalize_photo_for_message(
+    pending_message,
+    project.id,
+  )
 
   async def _finalize_photo_for_message(
     self,
@@ -270,12 +322,12 @@ class WhatsAppService:
     await self.session.commit()
 
   async def process_photo_message(self, message_id: UUID) -> None:
-    message = await self.messages.get_by_id(message_id)
+    message = await self.messages.get_by_id_for_update(message_id)
     if message is None:
-      return
+     return
 
     if message.status != WhatsAppMessageStatus.RECEIVED:
-      return
+     return
 
     channel = await self.channels.get_by_organization(message.organization_id)
     if channel is None or not channel.is_active:
@@ -312,31 +364,46 @@ class WhatsAppService:
       return
 
     try:
-      _extension_for_mime_type(mime_type)
-      storage_key = build_site_photo_storage_key(message.organization_id,f"{message.id}.jpg",
-      )
+      mime_type = mime_type.strip().lower()
+      extension = _extension_for_mime_type(mime_type)
+
+      storage_key = build_site_photo_storage_key(
+      message.organization_id,
+      f"{message.id}{extension}",
+     )
+
       await asyncio.to_thread(
-        upload_fileobj, storage_key, BytesIO(media_bytes), mime_type
-      )
+       upload_fileobj,
+       storage_key,
+       BytesIO(media_bytes),
+       mime_type,
+     )
 
       caption_parsed: dict[str, Any] = {}
       project_match: UUID | None = None
       photo_date = message.received_at.date()
 
-      if message.caption_text and await self._is_ai_enabled(
-        message.organization_id
-      ):
-        caption_parsed = await _parse_caption(message.caption_text) or {}
-        parsed = _parse_photo_date(caption_parsed.get("date"))
-        if parsed is not None:
-          photo_date = parsed
+      caption_text = (message.caption_text or "")[:2000]
 
-        project_name_guess = caption_parsed.get("project")
-        
-        if project_name_guess:
-          project_match = await self._match_project_by_name(message.organization_id, project_name_guess,)
+      if caption_text and await self._is_ai_enabled(message.organization_id):
+       caption_parsed = await _parse_caption(caption_text) or {}
+
+       if not isinstance(caption_parsed, dict):
+        caption_parsed = {}
+
+       parsed = _parse_photo_date(caption_parsed.get("date"))
+       if parsed is not None:
+        photo_date = parsed
+
+       project_name_guess = caption_parsed.get("project")
+
+       if project_name_guess:
+        project_match = await self._match_project_by_name(
+          message.organization_id,
+          project_name_guess,
+        )
+
       existing_photo = await self.photos.get_by_whatsapp_message_id(message.id)
-
       if existing_photo is not None:
        message.status = WhatsAppMessageStatus.PROCESSED
        message.processed_at = datetime.now(timezone.utc)
@@ -362,13 +429,19 @@ class WhatsAppService:
         message.organization_id, "site_photos"
       )
     except Exception as exc:
-      await self.session.rollback()
-      message.status = WhatsAppMessageStatus.FAILED
-      message.error_message = str(exc)[:2000]
-      await self.messages.update(message)
-      await self.session.commit()
-      return
+     await self.session.rollback()
 
+     failed_message = await self.messages.get_by_id(message_id)
+     if failed_message is None:
+        return
+
+     failed_message.status = WhatsAppMessageStatus.FAILED
+     failed_message.error_message = str(exc)[:2000]
+
+     await self.messages.update(failed_message)
+     await self.session.commit()
+     return
+    
     if project_match is not None:
       message.status = WhatsAppMessageStatus.PROCESSED
       message.processed_at = datetime.now(timezone.utc)
@@ -405,22 +478,25 @@ class WhatsAppService:
     self,
     channel: WhatsAppChannel,
     message: WhatsAppMessage,
-  ) -> None:
+) -> None:
     projects = await self.projects.list_by_org(message.organization_id)
     active_projects = [
-      p for p in projects if p.status == ProjectStatus.ACTIVE
+        p for p in projects if p.status == ProjectStatus.ACTIVE
     ][:MAX_QUICK_REPLY_PROJECTS]
 
     if not active_projects:
-     await self.notifications.notify_by_permission(
-      message.organization_id,
-      "site_photo:manage",
-      NotificationType.SITE_PHOTO_NEEDS_PROJECT,
-      "A site photo needs a project assigned",
-      body="No active projects were available to prompt the sender — assign it manually.",
-      link_path="/app/site-photos",
-    )
-     return
+      await self.notifications.notify_by_permission(
+        message.organization_id,
+        PermissionKey.SITE_PHOTO_MANAGE,
+        NotificationType.SITE_PHOTO_NEEDS_PROJECT,
+        "A site photo needs a project assigned",
+        body=(
+          "No active projects were available to prompt the sender — "
+          "assign it manually."
+        ),
+        link_path="/app/site-photos",
+      )
+      return
 
     body = {
       "messaging_product": "whatsapp",
@@ -467,7 +543,7 @@ class WhatsAppService:
     unassigned_only: bool = False,
     skip: int = 0,
     limit: int = 100,
-  ) -> list[SitePhoto]:
+) -> list[SitePhotoResponse]:
     photos = await self.photos.list_by_org(
       organization_id,
       project_id=project_id,
@@ -478,23 +554,36 @@ class WhatsAppService:
       skip=skip,
       limit=limit,
     )
-    for photo in photos:
-      photo.photo_url = generate_presigned_url(photo.storage_key)
-    return [_to_photo_response(p) for p in photos]
-
-  async def get_photo(
+    return [_to_photo_response(photo) for photo in photos]
+  
+  async def _get_photo_model(
     self,
     organization_id: UUID,
     photo_id: UUID,
-  ) -> SitePhoto:
-    photo = await self.photos.get_by_id_and_org(photo_id, organization_id)
+) -> SitePhoto:
+    photo = await self.photos.get_by_id_and_org(
+      photo_id,
+      organization_id,
+    )
+
     if photo is None:
       raise TraceException(
         "Site photo not found.",
         status_code=404,
         code="SITE_PHOTO_NOT_FOUND",
       )
-    photo.photo_url = generate_presigned_url(photo.storage_key)
+
+    return photo
+
+  async def get_photo(
+    self,
+    organization_id: UUID,
+    photo_id: UUID,
+) -> SitePhotoResponse:
+    photo = await self._get_photo_model(
+      organization_id,
+      photo_id,
+    )
     return _to_photo_response(photo)
 
   async def assign_project(
@@ -502,8 +591,8 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: SitePhotoAssignProjectRequest,
-  ) -> SitePhoto:
-    photo = await self.get_photo(organization_id, photo_id)
+) -> SitePhotoResponse:
+    photo = await self._get_photo_model(organization_id, photo_id)
 
     project = await self.projects.get_by_id_and_org(
       payload.project_id, organization_id
@@ -518,6 +607,16 @@ class WhatsAppService:
     photo.project_id = project.id
     await self.photos.update(photo)
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.SITE_PHOTO,
+      photo.id,
+      AuditAction.UPDATE,
+      f"Assigned site photo {photo.id} to project {project.id}",
+    )
+
     return _to_photo_response(photo)
 
   async def update_photo(
@@ -525,8 +624,8 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: SitePhotoUpdateRequest,
-  ) -> SitePhoto:
-    photo = await self.get_photo(organization_id, photo_id)
+) -> SitePhotoResponse:
+    photo = await self._get_photo_model(organization_id, photo_id)
 
     if payload.location_text is not None:
       photo.location_text = payload.location_text
@@ -535,6 +634,16 @@ class WhatsAppService:
 
     await self.photos.update(photo)
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.SITE_PHOTO,
+      photo.id,
+      AuditAction.UPDATE,
+      f"Updated site photo {photo.id}",
+    )
+
     return _to_photo_response(photo)
 
   async def add_tag(
@@ -542,8 +651,8 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: PhotoTagCreateRequest,
-) -> PhotoTag:
-    photo = await self.get_photo(organization_id, photo_id)
+) -> PhotoTagResponse:
+    photo = await self._get_photo_model(organization_id, photo_id)
 
     tag_value = payload.tag.strip()
     if not tag_value:
@@ -551,7 +660,8 @@ class WhatsAppService:
         "Photo tag cannot be empty.",
         status_code=400,
         code="PHOTO_TAG_EMPTY",
-      )
+        )
+
     tag = PhotoTag(
       id=uuid4(),
       site_photo_id=photo.id,
@@ -560,15 +670,26 @@ class WhatsAppService:
     )
     tag = await self.tags.create(tag)
     await self.session.commit()
-    return tag
+
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.SITE_PHOTO,
+      photo.id,
+      AuditAction.CREATE,
+      f"Added tag '{tag.tag}' to site photo {photo.id}",
+    )
+
+    return PhotoTagResponse.model_validate(tag)
 
   async def remove_tag(
     self,
     organization_id: UUID,
     photo_id: UUID,
     tag_id: UUID,
-  ) -> None:
-    photo = await self.get_photo(organization_id, photo_id)
+) -> None:
+    photo = await self._get_photo_model(organization_id, photo_id)
+
     matching = next((t for t in photo.tags if t.id == tag_id), None)
     if matching is None:
       raise TraceException(
@@ -576,16 +697,34 @@ class WhatsAppService:
         status_code=404,
         code="PHOTO_TAG_NOT_FOUND",
       )
+
+    removed_tag_value = matching.tag
     await self.tags.delete(matching)
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.SITE_PHOTO,
+      photo.id,
+      AuditAction.DELETE,
+      f"Removed tag '{removed_tag_value}' from site photo {photo.id}",
+    )
     
-def _extension_for_mime_type(mime_type: str) -> str:
-  mapping = {
+MIME_EXTENSIONS = {
     "image/jpeg": ".jpg",
     "image/png": ".png",
     "image/webp": ".webp",
-  }
-  return mapping.get(mime_type.lower(), ".jpg")
+}
+
+def _extension_for_mime_type(mime_type: str) -> str:
+  normalized = mime_type.strip().lower()
+  extension = MIME_EXTENSIONS.get(normalized)
+
+  if extension is None:
+    raise ValueError(
+      f"Unsupported image MIME type: {mime_type}"
+  )
+  return extension
 
 async def _download_whatsapp_media(
   access_token: str,
@@ -602,16 +741,40 @@ async def _download_whatsapp_media(
       headers={"Authorization": f"Bearer {access_token}"},
     )
     meta_response.raise_for_status()
+
     meta_data = meta_response.json()
     media_url = meta_data["url"]
     mime_type = meta_data.get("mime_type", "image/jpeg")
 
-    media_response = await client.get(
+    async with client.stream(
+      "GET",
       media_url,
       headers={"Authorization": f"Bearer {access_token}"},
-    )
-    media_response.raise_for_status()
-    return media_response.content, mime_type
+    ) as media_response:
+      media_response.raise_for_status()
+
+      content_length = media_response.headers.get("Content-Length")
+
+      if (
+        content_length is not None
+        and int(content_length) > settings.whatsapp_max_photo_bytes
+      ):
+        raise ValueError(
+          "WhatsApp media exceeds the maximum allowed size."
+        )
+
+      chunks: list[bytes] = []
+      total_size = 0
+      async for chunk in media_response.aiter_bytes():
+        total_size += len(chunk)
+
+        if total_size > settings.whatsapp_max_photo_bytes:
+          raise ValueError(
+            "WhatsApp media exceeds the maximum allowed size."
+          )
+        chunks.append(chunk)
+
+      return b"".join(chunks), mime_type
 
 async def _send_whatsapp_message(
   phone_number_id: str,
@@ -679,24 +842,6 @@ async def _call_ollama_parse_caption(caption_text: str) -> dict | None:
       return json.loads(response.json()["response"])
   except Exception:
     return None
-  
-async def handle_webhook_payload(self, payload: dict) -> None:
-  for entry in payload.get("entry", []):
-    for change in entry.get("changes", []):
-      value = change.get("value", {})
-      phone_number_id = value.get("metadata", {}).get("phone_number_id")
-      if not phone_number_id:
-        continue
-
-      await scope_session_as_platform_admin(self.session)
-      channel = await self.channels.get_by_phone_number_id(phone_number_id)
-      if channel is None:
-        continue
-
-      await scope_session_to_org(self.session, channel.organization_id)
-
-      for raw_message in value.get("messages", []):
-        await self._handle_inbound_message(channel, raw_message)
         
 async def _parse_caption(caption_text: str) -> dict | None:
   if settings.ai_provider == "anthropic":

@@ -62,7 +62,6 @@ class SitePhotoResponse(BaseModel):
     default_factory=list,
   )
   created_at: datetime
-  photo_url: str
 
 class SitePhotoAssignProjectRequest(BaseModel):
   project_id: UUID

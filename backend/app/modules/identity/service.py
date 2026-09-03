@@ -16,6 +16,7 @@ from app.modules.identity.schemas import LoginResponse, RegistrationResponse, To
 from app.core.config import settings
 from app.modules.identity.email import EmailService
 from sqlalchemy import select
+from app.modules.subscriptions.service import SubscriptionService
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
@@ -256,6 +257,13 @@ class IdentityService:
       is_active=True,
     )
   )
+   subscription_service = SubscriptionService(self.session)
+
+   await subscription_service.create_initial_subscription(
+     organization,
+     plan_slug="free",
+   )
+   
    await self.session.commit()
 
    user = await self.repository.get_user_by_id(

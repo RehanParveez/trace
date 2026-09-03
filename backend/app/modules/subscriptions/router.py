@@ -109,7 +109,7 @@ async def change_plan(
       return SubscriptionResponse(**cached)
 
   service = _service(session)
-  subscription = await service.change_plan(organization_id, payload)
+  subscription = await service.change_plan(organization_id, payload, current_user.id,)
   response = SubscriptionResponse.model_validate(subscription)
 
   if idempotency_key:
@@ -147,6 +147,27 @@ async def cancel_subscription(
     await store_response(organization_id, scope, idempotency_key, response.model_dump())
 
   return response
+
+@router.post(
+  "/me/reactivate",
+  response_model=SubscriptionResponse,
+)
+async def reactivate_subscription(
+  current_user: User = Depends(
+    require_permission(
+      PermissionKey.SUBSCRIPTION_BILLING_MANAGE
+    )
+  ),
+    session: AsyncSession = Depends(get_db),
+):
+  organization_id = current_user.organization_id
+
+  service = _service(session)
+  subscription = await service.reactivate_subscription(
+    organization_id
+  )
+
+  return SubscriptionResponse.model_validate(subscription)
 
 
 @router.get("/admin", response_model=SubscriptionListResponse)

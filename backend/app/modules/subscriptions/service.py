@@ -31,7 +31,6 @@ class SubscriptionService:
     self,
     organization_id: UUID,
   ) -> Subscription:
-    print(f"DB lookup subscription for org: {organization_id}")
     subscription = await self.repository.get_subscription(
       organization_id
     )
@@ -49,7 +48,6 @@ class SubscriptionService:
     self,
     organization_id: UUID,
   ):
-    print(f"Loading subscription for org: {organization_id}")
     subscription = await self.get_subscription(
       organization_id
     )
@@ -228,6 +226,50 @@ class SubscriptionService:
     logger.info(
       "subscription.cancelled",
       extra={"organization_id": str(organization_id), "immediate": not cancel_at_period_end},
+    )
+
+    return subscription
+  
+  async def reactivate_subscription(
+    self,
+    organization_id: UUID,
+) -> Subscription:
+    subscription = await self.repository.get_subscription_for_update(
+      organization_id
+    )
+
+    if subscription is None:
+      raise TraceException(
+        "Subscription not found.",
+        status_code=404,
+        code="SUBSCRIPTION_NOT_FOUND",
+      )
+
+    if subscription.status in {
+      SubscriptionStatus.CANCELLED,
+      SubscriptionStatus.EXPIRED,
+    }:
+      raise TraceException(
+        "Cancelled or expired subscriptions can't be reactivated this way — change to a plan instead.",
+        status_code=409,
+        code="SUBSCRIPTION_NOT_REACTIVATABLE",
+      )
+
+    if not subscription.cancel_at_period_end:
+      raise TraceException(
+        "Subscription is not scheduled for cancellation.",
+        status_code=409,
+        code="SUBSCRIPTION_NOT_SCHEDULED_FOR_CANCELLATION",
+      )
+    subscription.cancel_at_period_end = False
+    await self.session.flush()
+    await self.session.commit()
+
+    logger.info(
+      "subscription.reactivated",
+      extra={
+        "organization_id": str(organization_id),
+      },
     )
 
     return subscription
@@ -484,7 +526,7 @@ class SubscriptionService:
       if previous_ratio < 0.8 <= new_ratio:
        await self.notifications.notify_by_permission(
         organization_id,
-        "organization:manage",
+        "organization.manage",
         NotificationType.SUBSCRIPTION_USAGE_WARNING,
         f"{metric.replace('_', ' ').title()} usage is near your plan limit",
         body=f"{counter.quantity} of {limit} used this billing period.",

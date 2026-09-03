@@ -52,6 +52,7 @@ class Settings(BaseSettings):
   whatsapp_webhook_verify_token: str = ""
   whatsapp_media_download_timeout_seconds: int = 240
   whatsapp_graph_api_version: str = "v21.0"
+  whatsapp_max_photo_bytes: int = 10 * 1024 * 1024
   
   ai_provider: str = "ollama"
   ai_api_key: str = ""
