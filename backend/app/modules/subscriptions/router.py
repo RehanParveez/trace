@@ -49,7 +49,7 @@ async def get_subscription(
   service = _service(session)
 
   return await service.get_subscription(
-    current_user.organization_id
+    current_user.active_membership.organization_id
   )
 
 @router.get(
@@ -65,7 +65,7 @@ async def get_subscription_summary(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  subscription = await service.get_subscription_summary(current_user.organization_id)
+  subscription = await service.get_subscription_summary(current_user.active_membership.organization_id)
   return SubscriptionSummaryResponse(subscription=subscription, plan=subscription.plan)
 
 @router.get(
@@ -83,7 +83,7 @@ async def get_usage(
   service = _service(session)
 
   return await service.get_usage(
-    current_user.organization_id
+    current_user.active_membership.organization_id
   )
 
 @router.patch(
@@ -100,7 +100,7 @@ async def change_plan(
   session: AsyncSession = Depends(get_db),
   idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
-  organization_id = current_user.organization_id
+  organization_id = current_user.active_membership.organization_id
   scope = "subscription_change_plan"
 
   if idempotency_key:
@@ -131,7 +131,7 @@ async def cancel_subscription(
   session: AsyncSession = Depends(get_db),
   idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
 ):
-  organization_id = current_user.organization_id
+  organization_id = current_user.active_membership.organization_id
   scope = "subscription_cancel"
 
   if idempotency_key:
@@ -160,7 +160,7 @@ async def reactivate_subscription(
   ),
     session: AsyncSession = Depends(get_db),
 ):
-  organization_id = current_user.organization_id
+  organization_id = current_user.active_membership.organization_id
 
   service = _service(session)
   subscription = await service.reactivate_subscription(
@@ -168,7 +168,6 @@ async def reactivate_subscription(
   )
 
   return SubscriptionResponse.model_validate(subscription)
-
 
 @router.get("/admin", response_model=SubscriptionListResponse)
 async def list_all_subscriptions(

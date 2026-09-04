@@ -36,7 +36,7 @@ async def list_audit_log(
 ):
   service = _service(session)
   return await service.list_logs(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     entity_type=entity_type,
     entity_id=entity_id,
     actor_user_id=actor_user_id,
@@ -61,5 +61,5 @@ async def list_audit_log_for_entity(
 ):
   service = _service(session)
   return await service.list_for_entity(
-    current_user.organization_id, entity_type, entity_id
+    current_user.active_membership.organization_id, entity_type, entity_id
   )

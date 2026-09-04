@@ -62,7 +62,9 @@ async def connect_channel(
 ):
   service = _service(session)
   return await service.connect_channel(
-    current_user.organization_id
+    current_user.active_membership.organization_id,
+    payload,
+    current_user.id,
   )
 
 @router.get("/channel", response_model=ChannelResponse)
@@ -73,7 +75,7 @@ async def get_channel(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.get_channel(current_user.organization_id)
+  return await service.get_channel(current_user.active_membership.organization_id)
 
 @router.delete("/channel", status_code=status.HTTP_204_NO_CONTENT)
 async def disconnect_channel(
@@ -83,7 +85,10 @@ async def disconnect_channel(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  await service.disconnect_channel(current_user.organization_id)
+  await service.disconnect_channel(
+    current_user.active_membership.organization_id,
+    current_user.id,
+  )
 
 @router.get("/photos", response_model=list[SitePhotoResponse])
 async def list_photos(
@@ -101,7 +106,7 @@ async def list_photos(
 ):
   service = _service(session)
   return await service.list_photos(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id=project_id,
     tag=tag,
     photo_date_from=photo_date_from,
@@ -121,7 +126,7 @@ async def get_photo(
 ):
   service = _service(session)
   return await service.get_photo(
-    current_user.organization_id, photo_id
+    current_user.active_membership.organization_id, photo_id
   )
 
 @router.patch("/photos/{photo_id}", response_model=SitePhotoResponse)
@@ -135,7 +140,10 @@ async def update_photo(
 ):
   service = _service(session)
   return await service.update_photo(
-    current_user.organization_id, photo_id, payload
+    current_user.active_membership.organization_id,
+    photo_id,
+    payload,
+    current_user.id,
   )
 
 @router.post(
@@ -152,7 +160,10 @@ async def assign_project(
 ):
   service = _service(session)
   return await service.assign_project(
-    current_user.organization_id, photo_id, payload
+    current_user.active_membership.organization_id,
+    photo_id,
+    payload,
+    current_user.id,
   )
 
 @router.post(
@@ -170,7 +181,10 @@ async def add_tag(
 ):
   service = _service(session)
   return await service.add_tag(
-    current_user.organization_id, photo_id, payload
+    current_user.active_membership.organization_id,
+    photo_id,
+    payload,
+    current_user.id,
   )
 
 @router.delete(
@@ -187,5 +201,8 @@ async def remove_tag(
 ):
   service = _service(session)
   await service.remove_tag(
-    current_user.organization_id, photo_id, tag_id
+    current_user.active_membership.organization_id,
+    photo_id,
+    tag_id,
+    current_user.id,
   )

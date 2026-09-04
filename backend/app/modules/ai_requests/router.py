@@ -32,7 +32,7 @@ async def list_ai_requests(
 ):
   service = _service(session)
   return await service.list_requests(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     purpose=purpose,
     entity_type=entity_type,
     entity_id=entity_id,
@@ -48,5 +48,5 @@ async def get_ai_usage_summary(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  summary = await service.get_usage_summary(current_user.organization_id)
+  summary = await service.get_usage_summary(current_user.active_membership.organization_id)
   return AIUsageSummaryResponse(**summary)

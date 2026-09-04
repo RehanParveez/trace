@@ -102,7 +102,7 @@ async def seed_identity() -> None:
       ),
       
       PermissionKey.AI_REQUEST_READ: (
-        "View the organization's AI request and response log.",
+        "View the organization's AI request and response log."
       ), 
       
      }

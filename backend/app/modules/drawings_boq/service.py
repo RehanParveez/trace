@@ -9,7 +9,7 @@ from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache
-from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, MaterialLibraryRepository, MaterialNormalizationCacheRepository
+from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, LabourRateRepository, MaterialLibraryRepository, MaterialNormalizationCacheRepository
 from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
 from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
@@ -43,6 +43,7 @@ class DrawingBOQService:
     self.boq_items = BOQItemRepository(session)
     self.material_library = MaterialLibraryRepository(session)
     self.material_cache = MaterialNormalizationCacheRepository(session)
+    self.labour_rates = LabourRateRepository(session)
     self.projects = ProjectRepository(session)
     self.subscriptions = SubscriptionService(session)
     self.audit = AuditLogService(session)
@@ -138,7 +139,7 @@ class DrawingBOQService:
       )
 
     parse_drawing_task.apply_async(
-      args=[str(drawing.id), str(organization_id)], queue="bim_parsing"
+      args=[str(drawing.id)], queue="bim_parsing"
     )
 
     return drawing
@@ -203,6 +204,7 @@ class DrawingBOQService:
     self,
     organization_id: UUID,
     item_id: UUID,
+    user_id: UUID,
     payload: BOQItemUpdateRequest,
   ) -> BOQItem:
     item = await self.boq_items.get_by_id_and_org_for_update(
@@ -249,8 +251,8 @@ class DrawingBOQService:
       user_id,
       AuditEntityType.BOQ_ITEM,
       item.id,
-      AuditAction.APPROVE,
-      f'Approved BOQ item "{item.material_name}"',
+      AuditAction.UPDATE,
+      f'Updated BOQ item "{item.material_name}"',
     )
 
     return item
@@ -310,6 +312,7 @@ class DrawingBOQService:
       normalized_name=payload.normalized_name.strip(),
       category=payload.category,
       default_unit=payload.default_unit,
+      default_rate=payload.default_rate,
     )
     entry = await self.material_library.create(entry)
     await self.session.commit()

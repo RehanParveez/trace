@@ -37,7 +37,7 @@ async def create_client(
   service = _service(session)
 
   return await service.create_client(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     payload,
   )
 
@@ -56,7 +56,7 @@ async def list_clients(
   service = _service(session)
 
   return await service.list_clients(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
   )
 
 @router.get(
@@ -75,7 +75,7 @@ async def get_client(
   service = _service(session)
 
   return await service.get_client(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     client_id,
   )
 
@@ -96,7 +96,7 @@ async def update_client(
   service = _service(session)
 
   return await service.update_client(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     client_id,
     payload,
   )
@@ -117,7 +117,7 @@ async def delete_client(
   service = _service(session)
 
   await service.delete_client(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     client_id,
   )
 
@@ -137,7 +137,7 @@ async def create_project(
   service = _service(session)
 
   return await service.create_project(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     payload,
   )
 
@@ -156,7 +156,7 @@ async def list_projects(
   service = _service(session)
 
   return await service.list_projects(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
   )
 
 @router.get(
@@ -175,7 +175,7 @@ async def get_project(
   service = _service(session)
 
   return await service.get_project(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
   )
 
@@ -196,7 +196,7 @@ async def update_project(
   service = _service(session)
 
   return await service.update_project(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     payload,
   )
@@ -217,7 +217,7 @@ async def delete_project(
   service = _service(session)
 
   await service.delete_project(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
   )
 
@@ -238,7 +238,7 @@ async def add_project_member(
   service = _service(session)
 
   return await service.add_member(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     payload,
   )
@@ -259,7 +259,7 @@ async def list_project_members(
   service = _service(session)
 
   return await service.list_members(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
   )
 
@@ -281,7 +281,7 @@ async def update_project_member(
   service = _service(session)
 
   return await service.update_member(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     user_id,
     payload,
@@ -304,7 +304,7 @@ async def remove_project_member(
   service = _service(session)
 
   await service.remove_member(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     user_id,
   )
@@ -326,7 +326,7 @@ async def create_milestone(
   service = _service(session)
 
   return await service.create_milestone(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     payload,
   )
@@ -347,7 +347,7 @@ async def list_milestones(
   service = _service(session)
 
   return await service.list_milestones(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
   )
 
@@ -369,7 +369,7 @@ async def update_milestone(
   service = _service(session)
 
   return await service.update_milestone(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     milestone_id,
     payload,
@@ -392,7 +392,7 @@ async def delete_milestone(
   service = _service(session)
 
   await service.delete_milestone(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     milestone_id,
   )

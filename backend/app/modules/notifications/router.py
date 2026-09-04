@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.modules.identity.models import User
-from app.modules.notifications.schemas import NotificationResponse, UnreadCountResponse
+from app.modules.notifications.schemas import NotificationResponse, UnreadCountResponse, MessageResponse
 from app.modules.notifications.service import NotificationService
 
 router = APIRouter(
@@ -26,7 +26,7 @@ async def list_notifications(
 ):
   service = _service(session)
   return await service.list_notifications(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     current_user.id,
     unread_only=unread_only,
     skip=skip,
@@ -40,7 +40,7 @@ async def get_unread_count(
 ):
   service = _service(session)
   count = await service.get_unread_count(
-    current_user.organization_id, current_user.id
+    current_user.active_membership.organization_id, current_user.id
   )
   return UnreadCountResponse(unread_count=count)
 
@@ -55,18 +55,18 @@ async def mark_notification_read(
 ):
   service = _service(session)
   return await service.mark_read(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     current_user.id,
     notification_id,
   )
 
-@router.post("/read-all")
+@router.post("/read-all", response_model=MessageResponse)
 async def mark_all_notifications_read(
   current_user: User = Depends(get_current_user),
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
   await service.mark_all_read(
-    current_user.organization_id, current_user.id
+    current_user.active_membership.organization_id, current_user.id
   )
   return {"message": "All notifications marked as read."}

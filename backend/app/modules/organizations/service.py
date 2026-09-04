@@ -16,6 +16,8 @@ from app.core.config import settings
 from app.modules.identity.email import EmailService
 from app.modules.identity.enums import PermissionKey
 from app.modules.audit.models import AuditAction, AuditEntityType
+from app.modules.notifications.service import NotificationService
+from app.modules.notifications.models import NotificationType
 from app.modules.audit.service import AuditLogService
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
@@ -25,6 +27,7 @@ class OrganizationService:
     self.session = session
     self.repository = OrganizationRepository(session)
     self.email_service = email_service or EmailService()
+    self.notifications = NotificationService(session)
     self.audit = AuditLogService(session)
 
   async def get_organization(self, organization_id: UUID) -> Organization:
@@ -41,6 +44,7 @@ class OrganizationService:
     self,
     organization_id: UUID,
     payload: OrganizationUpdateRequest,
+    actor_user_id: UUID | None = None,
   ) -> Organization:
     organization = await self.repository.get_organization_for_update(
       organization_id
@@ -77,7 +81,15 @@ class OrganizationService:
         status_code=409,
         code="ORGANIZATION_UPDATE_CONFLICT",
       ) from exc
-
+    
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.ORGANIZATION,
+      organization_id,
+      AuditAction.UPDATE,
+      f"Organization '{organization.name}' updated",
+    )
     return organization
 
   async def get_ai_settings(self, organization_id: UUID) -> bool:
@@ -88,6 +100,7 @@ class OrganizationService:
     self,
     organization_id: UUID,
     payload: AISettingsUpdateRequest,
+    actor_user_id: UUID | None = None,
   ) -> bool:
     organization = await self.repository.get_organization_for_update(
       organization_id
@@ -104,7 +117,7 @@ class OrganizationService:
 
     await self.audit.log(
       organization_id,
-      None,
+      actor_user_id,
       AuditEntityType.ORGANIZATION,
       organization_id,
       AuditAction.UPDATE,
@@ -176,6 +189,15 @@ class OrganizationService:
 
     organization = await self.repository.get_organization(organization_id)
     organization_name = organization.name if organization is not None else "your organization"
+    
+    await self.audit.log(
+      organization_id,
+      invited_by_user_id,
+      AuditEntityType.INVITATION,
+      invitation.id,
+      AuditAction.CREATE,
+      f"Invitation created for {email}",
+    )
 
     await self.email_service.send(
       recipient=email,
@@ -203,6 +225,7 @@ class OrganizationService:
     self,
     organization_id: UUID,
     invitation_id: UUID,
+    actor_user_id: UUID | None = None,
   ) -> None:
     invitation = await self.repository.get_invitation(
       organization_id, invitation_id
@@ -228,6 +251,14 @@ class OrganizationService:
     invitation.revoked_at = datetime.now(timezone.utc)
     await self.session.flush()
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.INVITATION,
+      invitation.id,
+      AuditAction.DELETE,
+      f"Invitation for {invitation.email} revoked",
+    )
 
   async def accept_invitation(
     self,
@@ -330,6 +361,24 @@ class OrganizationService:
         status_code=409,
         code="INVITATION_ACCEPT_CONFLICT",
       ) from exc
+      
+    await self.audit.log(
+      invitation.organization_id,
+      current_user.id,
+      AuditEntityType.MEMBER,
+      current_user.id,
+      AuditAction.CREATE,
+      f"{current_user.email} joined as {role.name}",
+    )
+
+    await self.notifications.notify_by_permission(
+      invitation.organization_id,
+      str(PermissionKey.ORGANIZATION_MEMBERS_MANAGE),
+      NotificationType.MEMBER_JOINED,
+      title=f"{current_user.first_name} {current_user.last_name} joined the organization",
+      body=f"{current_user.email} accepted an invitation and joined as {role.name}.",
+      exclude_user_id=current_user.id,
+    )
 
     return InvitationAcceptanceResponse(
       message="Invitation accepted successfully.",
@@ -411,6 +460,14 @@ class OrganizationService:
     membership.role_id = new_role.id         
     await self.session.flush()
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      current_user_id,
+      AuditEntityType.MEMBER,
+      user_id,
+      AuditAction.UPDATE,
+      f"Member {user.email} role changed to '{new_role.name}'",
+    )
     return user, new_role, membership.is_active
 
   async def update_member_status(
@@ -440,6 +497,14 @@ class OrganizationService:
     membership.is_active = payload.is_active   
     await self.session.flush()
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      current_user_id,
+      AuditEntityType.MEMBER,
+      user_id,
+      AuditAction.STATUS_CHANGE,
+      f"Member {user.email} {'activated' if payload.is_active else 'deactivated'}",
+    )
     return user, role, membership.is_active
   
   async def list_roles(self, organization_id: UUID) -> list[Role]:
@@ -459,6 +524,7 @@ class OrganizationService:
     self,
     organization_id: UUID,
     payload: RoleCreateRequest,
+    actor_user_id: UUID | None = None,
   ) -> Role:
     existing = await self.repository.get_role_by_name(
       organization_id, payload.name
@@ -492,6 +558,14 @@ class OrganizationService:
     try:
       return_role = await self.repository.create_role(role)
       await self.session.commit()
+      await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.ROLE,
+      return_role.id,
+      AuditAction.CREATE,
+      f"Role '{return_role.name}' created",
+    )
       return return_role
     except IntegrityError as exc:
       await self.session.rollback()
@@ -506,6 +580,7 @@ class OrganizationService:
     organization_id: UUID,
     role_id: UUID,
     payload: RoleUpdateRequest,
+    actor_user_id: UUID | None = None,
   ) -> Role:
     role = await self.get_role(organization_id, role_id)
     if role.is_system:
@@ -544,12 +619,21 @@ class OrganizationService:
 
     await self.session.flush()
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.ROLE,
+      role.id,
+      AuditAction.UPDATE,
+      f"Role '{role.name}' updated",
+    )
     return role
 
   async def delete_role(
     self,
     organization_id: UUID,
     role_id: UUID,
+    actor_user_id: UUID | None = None,
   ) -> None:
     role = await self.get_role(organization_id, role_id)
     if role.is_system:
@@ -568,6 +652,16 @@ class OrganizationService:
         status_code=409,
         code="ROLE_IN_USE",
       )
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.ROLE,
+      role.id,
+      AuditAction.DELETE,
+      f"Role '{role.name}' deleted",
+      commit=False,
+    )
+
     await self.repository.delete_role(role)
     await self.session.commit()
 

@@ -64,25 +64,25 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       download_to_path(drawing.storage_key, local_path)
       elements_data = _extract_ifc_elements(local_path)
     except Exception as exc:
-     async with AsyncSessionLocal() as session:
-       drawings = DrawingRepository(session)
-       failed = await drawings.get_by_id(drawing_id)
-       if failed is not None:
-        failed.status = DrawingStatus.FAILED
-        failed.error_message = str(exc)[:2000]
-        await drawings.update(failed)
-        if failed.uploaded_by_user_id is not None:
-         await NotificationService(session).notify_user(
-          failed.organization_id, failed.uploaded_by_user_id,
-          NotificationType.DRAWING_FAILED,
-          f'"{failed.original_filename}" failed to parse',
-          body=str(exc)[:500],
-          link_path=f"/app/projects/{failed.project_id}",
-          commit=False,
-        )
-       await session.commit()
-    return
-  
+      async with AsyncSessionLocal() as session:
+        drawings = DrawingRepository(session)
+        failed = await drawings.get_by_id(drawing_id)
+        if failed is not None:
+          failed.status = DrawingStatus.FAILED
+          failed.error_message = str(exc)[:2000]
+          await drawings.update(failed)
+          if failed.uploaded_by_user_id is not None:
+            await NotificationService(session).notify_user(
+              failed.organization_id,
+              failed.uploaded_by_user_id,
+              NotificationType.DRAWING_FAILED,
+              f'"{failed.original_filename}" failed to parse',
+              body=str(exc)[:500],
+              link_path=f"/app/projects/{failed.project_id}",
+              commit=False,
+            )
+        await session.commit()
+      return  
 
   async with AsyncSessionLocal() as session:
     drawings = DrawingRepository(session)

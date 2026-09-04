@@ -36,7 +36,7 @@ async def upload_drawing(
 ):
   service = _service(session)
   return await service.upload_drawing(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
     current_user.id,
     file,
@@ -56,7 +56,7 @@ async def list_drawings(
 ):
   service = _service(session)
   return await service.list_drawings(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
   )
 
@@ -73,7 +73,7 @@ async def get_drawing(
 ):
   service = _service(session)
   return await service.get_drawing(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     drawing_id,
   )
 
@@ -90,7 +90,7 @@ async def list_drawing_elements(
 ):
   service = _service(session)
   return await service.list_elements(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     drawing_id,
   )
 
@@ -107,7 +107,7 @@ async def list_boq_versions(
 ):
   service = _service(session)
   return await service.list_boq_versions(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id,
   )
 
@@ -124,7 +124,7 @@ async def list_boq_items(
 ):
   service = _service(session)
   return await service.list_boq_items(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     boq_version_id,
   )
 
@@ -142,8 +142,9 @@ async def update_boq_item(
 ):
   service = _service(session)
   return await service.update_boq_item(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     item_id,
+    current_user.id,
     payload,
   )
 
@@ -160,7 +161,7 @@ async def approve_boq_item(
 ):
   service = _service(session)
   return await service.approve_boq_item(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     item_id,
     current_user.id,
   )
@@ -179,7 +180,7 @@ async def create_material_library_entry(
 ):
   service = _service(session)
   return await service.create_material_library_entry(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     payload,
   )
 
@@ -195,7 +196,7 @@ async def list_material_library(
 ):
   service = _service(session)
   return await service.list_material_library(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
   )
   
 @router.patch(
@@ -212,7 +213,7 @@ async def update_material_library_entry(
 ):
   service = _service(session)
   return await service.update_material_library_entry(
-    current_user.organization_id, entry_id, payload,
+    current_user.active_membership.organization_id, entry_id, payload,
   )
 
 @router.post(
@@ -228,7 +229,7 @@ async def create_labour_rate(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.create_labour_rate(current_user.organization_id, payload)
+  return await service.create_labour_rate(current_user.active_membership.organization_id, payload)
 
 @router.get(
   "/labour-rates",
@@ -241,7 +242,7 @@ async def list_labour_rates(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.list_labour_rates(current_user.organization_id)
+  return await service.list_labour_rates(current_user.active_membership.organization_id)
 
 @router.patch(
   "/labour-rates/{rate_id}",
@@ -257,7 +258,7 @@ async def update_labour_rate(
 ):
   service = _service(session)
   return await service.update_labour_rate(
-    current_user.organization_id, rate_id, payload,
+    current_user.active_membership.organization_id, rate_id, payload,
   )
 
 @router.post(
@@ -275,7 +276,7 @@ async def add_custom_boq_item(
 ):
   service = _service(session)
   return await service.add_custom_boq_item(
-    current_user.organization_id, boq_version_id, current_user.id, payload,
+    current_user.active_membership.organization_id, boq_version_id, current_user.id, payload,
   )
 
 @router.patch(
@@ -292,7 +293,7 @@ async def update_boq_version(
 ):
   service = _service(session)
   return await service.update_boq_version(
-    current_user.organization_id, boq_version_id, payload,
+    current_user.active_membership.organization_id, boq_version_id, payload,
   )
 
 @router.post(
@@ -308,7 +309,7 @@ async def generate_labour_items(
 ):
   service = _service(session)
   return await service.generate_labour_items(
-    current_user.organization_id, boq_version_id,
+    current_user.active_membership.organization_id, boq_version_id,
   )
 
 @router.get(
@@ -324,7 +325,7 @@ async def get_boq_summary(
 ):
   service = _service(session)
   return await service.get_boq_summary(
-    current_user.organization_id, boq_version_id,
+    current_user.active_membership.organization_id, boq_version_id,
   )
 
 @router.get("/boq-versions/{boq_version_id}/export/pdf")
@@ -337,7 +338,7 @@ async def export_boq_pdf(
 ):
   service = _service(session)
   pdf_bytes, filename = await service.export_boq_pdf(
-    current_user.organization_id, boq_version_id,
+    current_user.active_membership.organization_id, boq_version_id,
   )
   return Response(
     content=pdf_bytes,
@@ -355,7 +356,7 @@ async def export_boq_xlsx(
 ):
   service = _service(session)
   xlsx_bytes, filename = await service.export_boq_xlsx(
-    current_user.organization_id, boq_version_id,
+    current_user.active_membership.organization_id, boq_version_id,
   )
   return Response(
     content=xlsx_bytes,

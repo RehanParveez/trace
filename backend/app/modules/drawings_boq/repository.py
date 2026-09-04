@@ -83,11 +83,6 @@ class BOQVersionRepository:
     self.session.add(boq_version)
     await self.session.flush()
     return boq_version
-  
-  async def create(self, item: BOQItem) -> BOQItem:
-    self.session.add(item)
-    await self.session.flush()
-    return item
 
   async def get_by_id_and_org(
     self,
@@ -149,6 +144,11 @@ class BOQItemRepository:
     await self.session.flush()
     return items
 
+  async def create(self, item: BOQItem) -> BOQItem:
+    self.session.add(item)
+    await self.session.flush()
+    return item
+  
   async def get_by_id_and_org_for_update(
     self,
     item_id: UUID,

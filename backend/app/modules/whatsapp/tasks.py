@@ -16,10 +16,9 @@ def process_whatsapp_photo_task(message_id: str) -> str:
 
 async def _process(message_id: UUID) -> None:
   from app.modules.whatsapp.service import WhatsAppService
+
   async with AsyncSessionLocal() as session:
     service = WhatsAppService(session)
-    await service.process_photo_message(message_id)
-
     await scope_session_as_platform_admin(session)
     message = await service.messages.get_by_id(message_id)
     if message is None:

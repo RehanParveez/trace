@@ -15,6 +15,7 @@ class PermissionKey(StrEnum):
   ORGANIZATION_READ = "organization.read"
   ORGANIZATION_MANAGE = "organization.manage"
   ORGANIZATION_MEMBERS_MANAGE = "organization.members.manage"
+  ORGANIZATION_INVITATIONS_MANAGE = "organization.invitations.manage"
   PROJECT_READ = "project.read"
   PROJECT_CREATE = "project.create"
   PROJECT_UPDATE = "project.update"

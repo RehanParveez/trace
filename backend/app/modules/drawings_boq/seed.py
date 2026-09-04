@@ -80,7 +80,10 @@ PERMISSIONS = [
   PermissionKey.DRAWING_DELETE,
   PermissionKey.BOQ_UPDATE,
   PermissionKey.BOQ_APPROVE,
+  PermissionKey.BOQ_ITEM_CREATE,
+  PermissionKey.BOQ_EXPORT,
   PermissionKey.MATERIAL_LIBRARY_MANAGE,
+  PermissionKey.LABOUR_RATE_MANAGE,
 ]
 
 async def seed_permissions(
@@ -109,7 +112,7 @@ async def grant_permissions_to_admin_roles(
 ) -> None:
   result = await session.execute(
     select(Role)
-    .where(func.lower(Role.name) == "admin")
+    .where(Role.is_system.is_(True))
     .options(selectinload(Role.permissions))
   )
   admin_roles = list(result.scalars().unique())

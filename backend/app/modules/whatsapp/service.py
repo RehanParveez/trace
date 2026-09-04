@@ -48,9 +48,10 @@ class WhatsAppService:
     self,
     organization_id: UUID,
     payload: ChannelConnectRequest,
+    user_id: UUID,
   ) -> WhatsAppChannel:
     existing = await self.channels.get_by_organization(organization_id)
-    if existing is not None:
+    if existing is not None and existing.is_active:
       raise TraceException(
         "This organization already has a connected WhatsApp channel.",
         status_code=409,
@@ -67,21 +68,29 @@ class WhatsAppService:
         code="WHATSAPP_PHONE_NUMBER_ALREADY_CONNECTED",
       )
 
-    channel = WhatsAppChannel(
-      id=uuid4(),
-      organization_id=organization_id,
-      phone_number_id=payload.phone_number_id,
-      business_account_id=payload.business_account_id,
-      display_phone_number=payload.display_phone_number,
-      access_token=payload.access_token,
-      is_active=True,
-    )
+    if existing is not None:
+      existing.phone_number_id = payload.phone_number_id
+      existing.business_account_id = payload.business_account_id
+      existing.display_phone_number = payload.display_phone_number
+      existing.access_token = payload.access_token
+      existing.is_active = True
+      channel = await self.channels.update(existing)
+    else:
+      channel = WhatsAppChannel(
+        id=uuid4(),
+        organization_id=organization_id,
+        phone_number_id=payload.phone_number_id,
+        business_account_id=payload.business_account_id,
+        display_phone_number=payload.display_phone_number,
+        access_token=payload.access_token,
+        is_active=True,
+      )
+      channel = await self.channels.create(channel)
 
-    channel = await self.channels.create(channel)
     await self.session.commit()
     await self.audit.log(
       organization_id,
-      None,
+      user_id,
       AuditEntityType.WHATSAPP_CHANNEL,
       channel.id,
       AuditAction.CREATE,
@@ -106,7 +115,8 @@ class WhatsAppService:
   async def disconnect_channel(
     self,
     organization_id: UUID,
-) -> None:
+    user_id: UUID,
+  ) -> None:
     channel = await self.get_channel(organization_id)
     channel.is_active = False
     await self.channels.update(channel)
@@ -114,7 +124,7 @@ class WhatsAppService:
 
     await self.audit.log(
       organization_id,
-      None,
+      user_id,
       AuditEntityType.WHATSAPP_CHANNEL,
       channel.id,
       AuditAction.UPDATE,
@@ -591,7 +601,8 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: SitePhotoAssignProjectRequest,
-) -> SitePhotoResponse:
+    user_id: UUID,
+  ) -> SitePhotoResponse:
     photo = await self._get_photo_model(organization_id, photo_id)
 
     project = await self.projects.get_by_id_and_org(
@@ -610,7 +621,7 @@ class WhatsAppService:
 
     await self.audit.log(
       organization_id,
-      None,
+      user_id,
       AuditEntityType.SITE_PHOTO,
       photo.id,
       AuditAction.UPDATE,
@@ -624,20 +635,20 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: SitePhotoUpdateRequest,
-) -> SitePhotoResponse:
+    user_id: UUID,
+  ) -> SitePhotoResponse:
     photo = await self._get_photo_model(organization_id, photo_id)
 
     if payload.location_text is not None:
       photo.location_text = payload.location_text
     if payload.photo_date is not None:
       photo.photo_date = payload.photo_date
-
     await self.photos.update(photo)
     await self.session.commit()
 
     await self.audit.log(
       organization_id,
-      None,
+      user_id,
       AuditEntityType.SITE_PHOTO,
       photo.id,
       AuditAction.UPDATE,
@@ -651,7 +662,8 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     payload: PhotoTagCreateRequest,
-) -> PhotoTagResponse:
+    user_id: UUID,
+  ) -> PhotoTagResponse:
     photo = await self._get_photo_model(organization_id, photo_id)
 
     tag_value = payload.tag.strip()
@@ -660,8 +672,7 @@ class WhatsAppService:
         "Photo tag cannot be empty.",
         status_code=400,
         code="PHOTO_TAG_EMPTY",
-        )
-
+      )
     tag = PhotoTag(
       id=uuid4(),
       site_photo_id=photo.id,
@@ -673,7 +684,7 @@ class WhatsAppService:
 
     await self.audit.log(
       organization_id,
-      None,
+      user_id,
       AuditEntityType.SITE_PHOTO,
       photo.id,
       AuditAction.CREATE,
@@ -687,7 +698,8 @@ class WhatsAppService:
     organization_id: UUID,
     photo_id: UUID,
     tag_id: UUID,
-) -> None:
+    user_id: UUID,
+  ) -> None:
     photo = await self._get_photo_model(organization_id, photo_id)
 
     matching = next((t for t in photo.tags if t.id == tag_id), None)
@@ -697,13 +709,13 @@ class WhatsAppService:
         status_code=404,
         code="PHOTO_TAG_NOT_FOUND",
       )
-
     removed_tag_value = matching.tag
     await self.tags.delete(matching)
     await self.session.commit()
+
     await self.audit.log(
       organization_id,
-      None,
+      user_id,
       AuditEntityType.SITE_PHOTO,
       photo.id,
       AuditAction.DELETE,
@@ -711,9 +723,9 @@ class WhatsAppService:
     )
     
 MIME_EXTENSIONS = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
 }
 
 def _extension_for_mime_type(mime_type: str) -> str:

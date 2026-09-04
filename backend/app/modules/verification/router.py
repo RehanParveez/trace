@@ -37,7 +37,7 @@ async def list_progress_claims(
 ):
   service = _service(session)
   return await service.list_claims(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id=project_id,
     status=claim_status,
     skip=skip,
@@ -58,7 +58,7 @@ async def get_progress_claim(
   service = _service(session)
 
   return await service.get_claim(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     claim_id,
   )
 
@@ -76,7 +76,7 @@ async def create_progress_claim(
 ):
   service = _service(session)
   return await service.create_claim(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     current_user.id,
     payload,
   )
@@ -96,7 +96,7 @@ async def update_progress_claim(
   service = _service(session)
 
   return await service.update_claim(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     claim_id,
     payload,
   )
@@ -115,7 +115,7 @@ async def submit_progress_claim(
   service = _service(session)
 
   return await service.submit_claim(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     claim_id,
     current_user.id,
   )
@@ -135,7 +135,7 @@ async def approve_progress_claim(
   service = _service(session)
 
   return await service.approve_claim(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     claim_id,
     current_user.id,
     payload,
@@ -156,7 +156,7 @@ async def reject_progress_claim(
   service = _service(session)
 
   return await service.reject_claim(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     claim_id,
     current_user.id,
     payload,
@@ -181,7 +181,7 @@ async def list_photo_boq_links(
   service = _service(session)
 
   return await service.list_photo_boq_links(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     project_id=project_id,
     progress_claim_id=progress_claim_id,
     site_photo_id=site_photo_id,
@@ -205,7 +205,7 @@ async def create_photo_boq_link(
   service = _service(session)
 
   return await service.create_photo_boq_link(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     current_user.id,
     payload,
   )
@@ -223,6 +223,6 @@ async def delete_photo_boq_link(
 ):
   service = _service(session)
   await service.delete_photo_boq_link(
-    current_user.organization_id,
+    current_user.active_membership.organization_id,
     link_id,
   )

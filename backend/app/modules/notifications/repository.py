@@ -2,7 +2,7 @@ from __future__ import annotations
 from uuid import UUID
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.identity.models import Permission, Role, User
+from app.modules.identity.models import Permission, Role, User, OrganizationMembership
 from app.modules.notifications.models import Notification
 
 class NotificationRepository:
@@ -89,13 +89,15 @@ class NotificationRepository:
     self, organization_id: UUID, permission_key: str
   ) -> list[UUID]:
     result = await self.session.execute(
-      select(User.id)
-      .join(Role, User.role_id == Role.id)
+      select(OrganizationMembership.user_id)
+      .join(Role, OrganizationMembership.role_id == Role.id)
       .join(Role.permissions)
+      .join(User, User.id == OrganizationMembership.user_id)
       .where(
-        User.organization_id == organization_id,
+        OrganizationMembership.organization_id == organization_id,
+        OrganizationMembership.is_active.is_(True),
         Permission.key == permission_key,
         User.is_active.is_(True),
       )
     )
-    return list(result.scalars().all())
+    return list(result.scalars().unique().all())

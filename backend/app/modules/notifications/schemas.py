@@ -18,3 +18,6 @@ class NotificationResponse(BaseModel):
 
 class UnreadCountResponse(BaseModel):
   unread_count: int
+  
+class MessageResponse(BaseModel):
+  message: str

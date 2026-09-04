@@ -40,7 +40,7 @@ async def update_current_organization(
 ):
   service = _service(session)
   return await service.update_organization(
-    current_user.organization_id, payload
+    current_user.organization_id, payload, actor_user_id=current_user.id
   )
 
 @router.get("/me/ai-settings", response_model=AISettingsResponse)
@@ -64,7 +64,7 @@ async def update_ai_settings(
 ):
   service = _service(session)
   enabled = await service.update_ai_settings(
-    current_user.organization_id, payload
+    current_user.organization_id, payload, actor_user_id=current_user.id
   )
   return AISettingsResponse(ai_enabled=enabled)
 
@@ -143,7 +143,7 @@ async def create_role(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.create_role(current_user.organization_id, payload)
+  return await service.create_role(current_user.organization_id, payload, actor_user_id=current_user.id)
 
 @router.patch("/me/roles/{role_id}", response_model=RoleResponse)
 async def update_role(
@@ -156,7 +156,7 @@ async def update_role(
 ):
   service = _service(session)
   return await service.update_role(
-    current_user.organization_id, role_id, payload
+    current_user.organization_id, role_id, payload, actor_user_id=current_user.id
   )
 
 @router.delete(
@@ -171,7 +171,7 @@ async def delete_role(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  await service.delete_role(current_user.organization_id, role_id)
+  await service.delete_role(current_user.organization_id, role_id, actor_user_id=current_user.id)
 
 
 @router.get("/me/permissions", response_model=list[PermissionResponse])
@@ -228,7 +228,7 @@ async def revoke_invitation(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  await service.revoke_invitation(current_user.organization_id, invitation_id)
+  await service.revoke_invitation(current_user.organization_id, invitation_id, actor_user_id=current_user.id)
 
 @router.post(
   "/invitations/accept",
