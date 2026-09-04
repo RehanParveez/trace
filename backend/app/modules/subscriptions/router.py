@@ -109,7 +109,7 @@ async def change_plan(
       return SubscriptionResponse(**cached)
 
   service = _service(session)
-  subscription = await service.change_plan(organization_id, payload, current_user.id,)
+  subscription = await service.change_plan(organization_id, payload, current_user.id)
   response = SubscriptionResponse.model_validate(subscription)
 
   if idempotency_key:

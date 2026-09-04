@@ -60,7 +60,7 @@ class SubscriptionRepository:
   async def get_subscription_for_update(
     self,
     organization_id: UUID,
-  ) -> Subscription | None:
+) -> Subscription | None:
     result = await self.session.execute(
       select(Subscription)
       .where(
@@ -69,7 +69,7 @@ class SubscriptionRepository:
       .options(
         selectinload(Subscription.plan),
       )
-      .with_for_update()
+      .with_for_update(of=Subscription)
     )
     return result.scalar_one_or_none()
 
@@ -95,7 +95,7 @@ class SubscriptionRepository:
     metric: str,
     period_start: datetime,
     period_end: datetime,
-  ) -> UsageCounter | None:
+) -> UsageCounter | None:
     result = await self.session.execute(
       select(UsageCounter)
       .where(
@@ -104,7 +104,7 @@ class SubscriptionRepository:
         UsageCounter.period_start == period_start,
         UsageCounter.period_end == period_end,
       )
-      .with_for_update()
+        .with_for_update(of=UsageCounter)
     )
     return result.scalar_one_or_none()
 

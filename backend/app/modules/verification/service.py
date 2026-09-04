@@ -13,6 +13,8 @@ from app.modules.verification.schemas import PhotoBOQLinkCreateRequest, Progress
 from app.modules.notifications.service import NotificationService, NotificationType
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
+from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
+from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult
 
 class VerificationService:
   def __init__(self, session: AsyncSession):
@@ -22,6 +24,7 @@ class VerificationService:
     self.projects = ProjectRepository(session)
     self.notifications = NotificationService(session)
     self.audit = AuditLogService(session)
+    self.ai = AIOrchestratorService(session)
 
   async def _get_project(
     self,
@@ -388,6 +391,22 @@ class VerificationService:
         status_code=409,
         code="PHOTO_BOQ_LINK_ALREADY_EXISTS",
       )
+      
+    prompt = (
+      f"Tag this site photo for progress claim verification. "
+      f"BOQ item: {payload.boq_item_id}. "
+      f"Claim date: {claim.claim_date.isoformat()}. "
+      f"Photo note (if any): {payload.note or 'none'}."
+    )
+
+    ai_result = await self._run_photo_tagging(
+      organization_id=organization_id,
+      site_photo_id=payload.site_photo_id,
+      user_id=user_id,
+      prompt=prompt,
+    )
+    if not ai_result.success:
+      pass
 
     link = PhotoBOQLink(
       id=uuid4(),
@@ -436,6 +455,23 @@ class VerificationService:
         code="SITE_PHOTO_PROJECT_MISMATCH",
       )
     return photo
+
+  async def _run_photo_tagging(
+    self,
+    *,
+    organization_id: UUID,
+    site_photo_id: UUID,
+    user_id: UUID | None,
+    prompt: str,
+) -> AIRunResult:
+    return await self.ai.run(
+      organization_id=organization_id,
+      purpose=AIRequestPurpose.PHOTO_TAGGING,
+      prompt=prompt,
+      entity_type=AIEntityType.SITE_PHOTO,
+      entity_id=site_photo_id,
+      requested_by=user_id,
+    )
 
   async def list_photo_boq_links(
     self,

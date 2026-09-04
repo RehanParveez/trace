@@ -1,6 +1,6 @@
 from __future__ import annotations
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.projects.models import Client, Milestone, Project, ProjectMember
 
@@ -38,10 +38,9 @@ class ClientRepository:
     result = await self.session.execute(
       select(Client).where(
         Client.organization_id == organization_id,
-        Client.name == name,
+        func.lower(Client.name) == func.lower(name),
       )
     )
-
     return result.scalar_one_or_none()
 
   async def list_by_org(
@@ -99,10 +98,9 @@ class ProjectRepository:
     result = await self.session.execute(
       select(Project).where(
         Project.organization_id == organization_id,
-        Project.code == code,
+        func.lower(Project.code) == func.lower(code),
       )
     )
-
     return result.scalar_one_or_none()
 
   async def list_by_org(

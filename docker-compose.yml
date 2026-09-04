@@ -164,6 +164,14 @@ services:
         condition: service_healthy
     command: celery -A app.workers.celery_app.celery_app flower --port=5555
     restart: unless-stopped
+  
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11435:11434"     
+    volumes:
+      - ollama_data:/root/.ollama
 
   frontend:
     build:
@@ -188,3 +196,4 @@ volumes:
   redis_data:
   minio_data:
   frontend_node_modules:
+  ollama_data:

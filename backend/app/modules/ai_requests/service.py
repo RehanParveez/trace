@@ -20,6 +20,8 @@ class AIRunResult:
   error_message: str | None = None
 
 class AIOrchestratorService:
+  SUPPORTED_PROVIDERS = {AIProvider.OLLAMA, AIProvider.ANTHROPIC}
+  
   def __init__(self, session: AsyncSession):
     self.session = session
     self.requests = AIRequestRepository(session)
@@ -27,81 +29,89 @@ class AIOrchestratorService:
     self.subscriptions = SubscriptionService(session)
 
   async def run(
-    self,
-    *,
-    organization_id: UUID,
-    purpose: AIRequestPurpose,
-    prompt: str,
-    entity_type: AIEntityType | None = None,
-    entity_id: UUID | None = None,
-    requested_by: UUID | None = None,
-    model: str | None = None,
-  ) -> AIRunResult:
-    if not await self._is_ai_enabled(organization_id):
-      return AIRunResult(
-        success=False, error_message="AI is not enabled for this organization."
-      )
+   self,
+   *,
+   organization_id: UUID,
+   purpose: AIRequestPurpose,
+   prompt: str,
+   entity_type: AIEntityType | None = None,
+   entity_id: UUID | None = None,
+   requested_by: UUID | None = None,
+   model: str | None = None,
+) -> AIRunResult:
+   if not await self._is_ai_enabled(organization_id):
+    return AIRunResult(
+      success=False, error_message="AI is not enabled for this organization."
+    )
 
-    try:
-      await self.subscriptions.check_quota(organization_id, "ai_requests")
-    except Exception as exc:
-      return AIRunResult(success=False, error_message=str(exc))
+   provider = AIProvider(settings.ai_provider.upper())
+   if provider not in self.SUPPORTED_PROVIDERS:
+    return AIRunResult(
+      success=False,
+      error_message=f"AI provider {provider.value} is not yet implemented.",
+    )
 
-    provider = AIProvider(settings.ai_provider.upper())
-    resolved_model = model or settings.ollama_model
+   try:
+    await self.subscriptions.check_quota(organization_id, "ai_requests")
+   except Exception as exc:
+    return AIRunResult(success=False, error_message=str(exc))
 
-    ai_request = await self.requests.create(
-      AIRequest(
+   resolved_model = model or (
+    settings.ollama_model if provider == AIProvider.OLLAMA else settings.ai_model
+  )
+
+   ai_request = await self.requests.create(
+    AIRequest(
+      id=uuid4(),
+      organization_id=organization_id,
+      purpose=purpose,
+      entity_type=entity_type,
+      entity_id=entity_id,
+      provider=provider,
+      model=resolved_model,
+      prompt_text=prompt,
+      requested_by=requested_by,
+    )
+  )
+   await self.session.commit()
+
+   started_at = time.monotonic()
+   try:
+    raw_response, parsed_output = await self._call_provider(
+      provider, resolved_model, prompt
+    )
+    latency_ms = int((time.monotonic() - started_at) * 1000)
+
+    await self.responses.create(
+      AIResponse(
         id=uuid4(),
-        organization_id=organization_id,
-        purpose=purpose,
-        entity_type=entity_type,
-        entity_id=entity_id,
-        provider=provider,
-        model=resolved_model,
-        prompt_text=prompt,
-        requested_by=requested_by,
+        ai_request_id=ai_request.id,
+        status=AIResponseStatus.SUCCEEDED,
+        raw_response=raw_response,
+        parsed_output=parsed_output,
+        latency_ms=latency_ms,
       )
     )
+    await self.subscriptions.increment_usage(organization_id, "ai_requests")
     await self.session.commit()
+    return AIRunResult(
+      success=True, parsed_output=parsed_output, raw_response=raw_response
+    )
 
-    started_at = time.monotonic()
-    try:
-      raw_response, parsed_output = await self._call_provider(
-        provider, resolved_model, prompt
+   except Exception as exc:
+    latency_ms = int((time.monotonic() - started_at) * 1000)
+    await self.responses.create(
+      AIResponse(
+        id=uuid4(),
+        ai_request_id=ai_request.id,
+        status=AIResponseStatus.FAILED,
+        error_message=str(exc)[:2000],
+        latency_ms=latency_ms,
       )
-      latency_ms = int((time.monotonic() - started_at) * 1000)
-
-      await self.responses.create(
-        AIResponse(
-          id=uuid4(),
-          ai_request_id=ai_request.id,
-          status=AIResponseStatus.SUCCEEDED,
-          raw_response=raw_response,
-          parsed_output=parsed_output,
-          latency_ms=latency_ms,
-        )
-      )
-      await self.subscriptions.increment_usage(organization_id, "ai_requests")
-      await self.session.commit()
-      return AIRunResult(
-        success=True, parsed_output=parsed_output, raw_response=raw_response
-      )
-
-    except Exception as exc:
-      latency_ms = int((time.monotonic() - started_at) * 1000)
-      await self.responses.create(
-        AIResponse(
-          id=uuid4(),
-          ai_request_id=ai_request.id,
-          status=AIResponseStatus.FAILED,
-          error_message=str(exc)[:2000],
-          latency_ms=latency_ms,
-        )
-      )
-      await self.subscriptions.increment_usage(organization_id, "ai_requests")
-      await self.session.commit()
-      return AIRunResult(success=False, error_message=str(exc))
+    )
+    await self.subscriptions.increment_usage(organization_id, "ai_requests")
+    await self.session.commit()
+    return AIRunResult(success=False, error_message=str(exc))
 
   async def _is_ai_enabled(self, organization_id: UUID) -> bool:
     result = await self.session.execute(
@@ -115,10 +125,12 @@ class AIOrchestratorService:
     self, provider: AIProvider, model: str, prompt: str
   ) -> tuple[str, dict | None]:
     if provider == AIProvider.OLLAMA:
-      return await self._call_ollama(model, prompt)
+     return await self._call_ollama(model, prompt)
+    if provider == AIProvider.ANTHROPIC:
+     return await self._call_anthropic(model, prompt)
     raise NotImplementedError(
-      f"AI provider {provider.value} is not yet implemented."
-    )
+     f"AI provider {provider.value} is not yet implemented."
+   )
 
   @staticmethod
   async def _call_ollama(model: str, prompt: str) -> tuple[str, dict | None]:
@@ -139,6 +151,37 @@ class AIOrchestratorService:
       except (json.JSONDecodeError, TypeError):
         parsed = None
       return raw_text, parsed
+   
+  @staticmethod
+  async def _call_anthropic(model: str, prompt: str) -> tuple[str, dict | None]:
+   if not settings.ai_api_key:
+    raise RuntimeError("AI_API_KEY is not configured for the Anthropic provider.")
+   async with httpx.AsyncClient(timeout=30.0) as client:
+    response = await client.post(
+      "https://api.anthropic.com/v1/messages",
+      headers={
+        "x-api-key": settings.ai_api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      json={
+        "model": model,
+        "max_tokens": 1024,
+        "messages": [{"role": "user", "content": prompt}],
+      },
+    )
+    response.raise_for_status()
+    payload = response.json()
+    raw_text = "".join(
+      block.get("text", "")
+      for block in payload.get("content", [])
+      if block.get("type") == "text"
+    )
+    try:
+      parsed = json.loads(raw_text)
+    except (json.JSONDecodeError, TypeError):
+      parsed = None
+    return raw_text, parsed 
 
   async def list_requests(
     self, organization_id: UUID, **kwargs

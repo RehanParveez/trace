@@ -7,6 +7,7 @@ from app.modules.projects.models import Client, Milestone, Project, ProjectMembe
 from app.modules.projects.repository import ClientRepository, MilestoneRepository, ProjectMemberRepository, ProjectRepository
 from app.modules.projects.schemas import ClientCreate, ClientUpdate, MilestoneCreate, MilestoneUpdate, ProjectCreate, ProjectMemberCreate, ProjectMemberUpdate, ProjectUpdate
 from app.modules.identity.repository import IdentityRepository
+from app.modules.subscriptions.service import SubscriptionService
 
 class ProjectService:
   def __init__(
@@ -189,6 +190,8 @@ class ProjectService:
         status_code=422,
         code="INVALID_PROJECT_DATES",
       )
+      
+    await SubscriptionService(self.session).check_quota(organization_id, "projects", 1)
 
     project = Project(
       id=uuid4(),
@@ -207,12 +210,13 @@ class ProjectService:
       await self.session.commit()
     except IntegrityError as exc:
       await self.session.rollback()
-
       raise TraceException(
         "Unable to create project.",
         status_code=409,
         code="PROJECT_CREATE_CONFLICT",
       ) from exc
+
+    await SubscriptionService(self.session).increment_usage(organization_id, "projects", 1)
     return project
 
   async def list_projects(
@@ -345,13 +349,13 @@ class ProjectService:
       organization_id,
       project_id,
     )
-
-    user = await IdentityRepository(self.session).get_user_by_id_and_org(
-      payload.user_id, organization_id
+    membership = await IdentityRepository(self.session).get_membership(
+      user_id=payload.user_id,
+      organization_id=organization_id,
     )
-    if user is None:
+    if membership is None:
       raise TraceException(
-        "User not found in this organization.",
+        "User is not an active member of this organization.",
         status_code=404,
         code="USER_NOT_IN_ORGANIZATION",
       )
