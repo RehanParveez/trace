@@ -41,6 +41,17 @@ class WhatsAppChannelRepository:
       )
     )
     return result.scalar_one_or_none()
+  
+  async def get_by_phone_number_id_any_status(
+    self,
+    phone_number_id: str,
+  ) -> WhatsAppChannel | None:
+    result = await self.session.execute(
+      select(WhatsAppChannel).where(
+        WhatsAppChannel.phone_number_id == phone_number_id,
+      )
+    )
+    return result.scalar_one_or_none()
 
   async def update(
     self,

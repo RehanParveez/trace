@@ -30,6 +30,11 @@ class BOQItemType(str, enum.Enum):
   MATERIAL = "MATERIAL"
   LABOUR = "LABOUR"
   CUSTOM = "CUSTOM"
+  
+class BOQItemRateSource(str, enum.Enum):
+  LIBRARY = "LIBRARY"
+  AI_SUGGESTED = "AI_SUGGESTED"
+  MANUAL = "MANUAL"
 
 class BOQVersionStatus(str, enum.Enum):
   ACTIVE = "ACTIVE"
@@ -311,6 +316,11 @@ class BOQItem(Base, TimestampMixin):
 
   unit_rate: Mapped[Decimal | None] = mapped_column(
     Numeric(14, 2),
+    nullable=True,
+  )
+  
+  rate_source: Mapped[BOQItemRateSource | None] = mapped_column(
+    Enum(BOQItemRateSource, name="boq_item_rate_source"),
     nullable=True,
   )
   

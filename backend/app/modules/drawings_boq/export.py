@@ -1,12 +1,12 @@
 from __future__ import annotations
+from app.modules.drawings_boq.models import BOQItem, BOQVersion, BOQItemRateSource
 from decimal import Decimal
 from io import BytesIO
-from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-from app.modules.drawings_boq.models import BOQItem, BOQVersion
+from reportlab.lib import colors
 from app.modules.drawings_boq.words import rupees_in_words
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
@@ -55,6 +55,19 @@ def build_boq_pdf(
       ParagraphStyle("Warn", parent=styles["Normal"], textColor=colors.red),
     ))
 
+  missing_rate_count = sum(1 for i in items if i.unit_rate is None)
+  ai_rate_count = sum(1 for i in items if i.rate_source == BOQItemRateSource.AI_SUGGESTED)
+  if missing_rate_count:
+    story.append(Paragraph(
+      f"{missing_rate_count} item(s) have no rate yet — grand total is understated until priced.",
+      ParagraphStyle("Warn2", parent=styles["Normal"], textColor=colors.red),
+    ))
+  if ai_rate_count:
+    story.append(Paragraph(
+      f"{ai_rate_count} item(s) use an AI-suggested rate — verify before final issue.",
+      ParagraphStyle("Warn3", parent=styles["Normal"], textColor=colors.HexColor("#b45309")),
+    ))
+
   project_rows = [
     ["Client", meta.get("client_name", "-"), "Project Title", meta.get("project_title", "-")],
     ["Location", meta.get("location", "-"), "Plot Size", meta.get("plot_size", "-")],
@@ -81,7 +94,10 @@ def build_boq_pdf(
     rows = [["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"]]
     for idx, item in enumerate(section_items, start=1):
       amount = item.quantity * item.unit_rate if item.unit_rate is not None else None
-      label = item.material_name + (" (unapproved)" if item.status.value == "DRAFT" else "")
+      rate_flag = " [RATE MISSING]" if item.unit_rate is None else (
+        " [AI est. — verify]" if item.rate_source == BOQItemRateSource.AI_SUGGESTED else ""
+      )
+      label = item.material_name + (" (unapproved)" if item.status.value == "DRAFT" else "") + rate_flag
       rows.append([
         str(idx), label, item.unit, f"{item.quantity:,.2f}",
         f"{item.unit_rate:,.2f}" if item.unit_rate is not None else "—",
@@ -149,6 +165,13 @@ def build_boq_xlsx(
   ws.append(["Client", meta.get("client_name", "-"), "Project Title", meta.get("project_title", "-")])
   ws.append(["Location", meta.get("location", "-"), "Plot Size", meta.get("plot_size", "-")])
   ws.append(["Covered Area (Sft)", str(boq_version.covered_area_sqft or "-"), "Storeys", meta.get("storeys", "-")])
+
+  missing_rate_count = sum(1 for i in items if i.unit_rate is None)
+  ai_rate_count = sum(1 for i in items if i.rate_source == BOQItemRateSource.AI_SUGGESTED)
+  if missing_rate_count:
+    ws.append([f"{missing_rate_count} item(s) have no rate — total understated"])
+  if ai_rate_count:
+    ws.append([f"{ai_rate_count} item(s) use an AI-suggested rate — verify"])
   ws.append([])
 
   groups = _group_items(items)
@@ -167,7 +190,10 @@ def build_boq_xlsx(
       cell.font = header_font
     for idx, item in enumerate(section_items, start=1):
       amount = item.quantity * item.unit_rate if item.unit_rate is not None else None
-      label = item.material_name + (" (unapproved)" if item.status.value == "DRAFT" else "")
+      rate_flag = " [RATE MISSING]" if item.unit_rate is None else (
+        " [AI est. — verify]" if item.rate_source == BOQItemRateSource.AI_SUGGESTED else ""
+      )
+      label = item.material_name + (" (unapproved)" if item.status.value == "DRAFT" else "") + rate_flag
       ws.append([
         idx, label, item.unit, float(item.quantity),
         float(item.unit_rate) if item.unit_rate is not None else None,

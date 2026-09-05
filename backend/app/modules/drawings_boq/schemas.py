@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
-from app.modules.drawings_boq.models import BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingFormat, DrawingStatus
+from app.modules.drawings_boq.models import BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingFormat, DrawingStatus, BOQItemRateSource
 
 class DrawingResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -53,6 +53,7 @@ class BOQItemResponse(BaseModel):
   unit: str
   quantity: Decimal
   unit_rate: Decimal | None
+  rate_source: str | None
   status: BOQItemStatus
   version: int
   approved_at: datetime | None
@@ -80,6 +81,10 @@ class BOQItemUpdateRequest(BaseModel):
   )
   quantity: Decimal | None = None
   unit_rate: Decimal | None = None
+  save_as_library_default: bool = Field(
+    default=False,
+    description="If true and unit_rate is set, save this rate as the org's default for this material going forward.",
+  )
 
 class MaterialLibraryCreateRequest(BaseModel):
   raw_text: str = Field(

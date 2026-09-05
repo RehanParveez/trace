@@ -58,10 +58,10 @@ class WhatsAppService:
         code="WHATSAPP_CHANNEL_ALREADY_EXISTS",
       )
 
-    conflicting = await self.channels.get_by_phone_number_id(
+    conflicting = await self.channels.get_by_phone_number_id_any_status(
       payload.phone_number_id
     )
-    if conflicting is not None:
+    if conflicting is not None and conflicting.organization_id != organization_id:
       raise TraceException(
         "This WhatsApp phone number is already connected to another organization.",
         status_code=409,
@@ -534,7 +534,21 @@ class WhatsAppService:
       prompt_wa_message_id = await _send_whatsapp_message(
         channel.phone_number_id, channel.access_token, body
       )
-    except Exception:
+    except Exception as exc:
+      message.error_message = f"Failed to send project-selection prompt: {exc}"[:2000]
+      await self.messages.update(message)
+      await self.session.commit()
+      await self.notifications.notify_by_permission(
+        message.organization_id,
+        PermissionKey.SITE_PHOTO_MANAGE,
+        NotificationType.SITE_PHOTO_NEEDS_PROJECT,
+        "A site photo needs a project assigned",
+        body=(
+          "Couldn't send the project-selection prompt on WhatsApp — "
+          "assign it manually."
+        ),
+        link_path="/app/site-photos",
+      )
       return
 
     if prompt_wa_message_id:
@@ -665,7 +679,7 @@ class WhatsAppService:
     user_id: UUID,
   ) -> PhotoTagResponse:
     photo = await self._get_photo_model(organization_id, photo_id)
-
+    
     tag_value = payload.tag.strip()
     if not tag_value:
       raise TraceException(
@@ -673,6 +687,13 @@ class WhatsAppService:
         status_code=400,
         code="PHOTO_TAG_EMPTY",
       )
+    if any(t.tag == tag_value for t in photo.tags):
+      raise TraceException(
+        "This tag already exists on this photo.",
+        status_code=409,
+        code="PHOTO_TAG_ALREADY_EXISTS",
+      )
+
     tag = PhotoTag(
       id=uuid4(),
       site_photo_id=photo.id,

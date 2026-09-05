@@ -8,7 +8,7 @@ from uuid import UUID, uuid4
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
-from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache
+from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, BOQItemRateSource
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, LabourRateRepository, MaterialLibraryRepository, MaterialNormalizationCacheRepository
 from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
 from app.modules.projects.repository import ProjectRepository
@@ -241,6 +241,28 @@ class DrawingBOQService:
       item.quantity = payload.quantity
     if payload.unit_rate is not None:
       item.unit_rate = payload.unit_rate
+      item.rate_source = BOQItemRateSource.MANUAL
+
+      if payload.save_as_library_default and item.drawing_element_id is not None:
+        drawing_element = await self.session.get(DrawingElement, item.drawing_element_id)
+        if drawing_element is not None and drawing_element.raw_material_text:
+          raw_key = drawing_element.raw_material_text.strip().lower()
+          existing_entry = await self.material_library.get_by_raw_text(organization_id, raw_key)
+          if existing_entry is None:
+            await self.material_library.create(
+              MaterialLibrary(
+                id=uuid4(),
+                organization_id=organization_id,
+                raw_text=raw_key,
+                normalized_name=item.material_name,
+                category=item.category,
+                default_unit=item.unit,
+                default_rate=payload.unit_rate,
+              )
+            )
+          else:
+            existing_entry.default_rate = payload.unit_rate
+            await self.material_library.update(existing_entry)
 
     item.version += 1
 
@@ -278,6 +300,13 @@ class DrawingBOQService:
         "BOQ item is already approved.",
         status_code=409,
         code="BOQ_ITEM_ALREADY_APPROVED",
+      )
+      
+    if item.unit_rate is None:
+      raise TraceException(
+        "Cannot approve an item with no rate. Set a rate first.",
+        status_code=422,
+        code="BOQ_ITEM_UNPRICED",
       )
 
     item.status = BOQItemStatus.APPROVED

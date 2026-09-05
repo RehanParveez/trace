@@ -21,6 +21,7 @@ class AuditEntityType(str, enum.Enum):
   PROGRESS_CLAIM = "PROGRESS_CLAIM"
   WHATSAPP_CHANNEL = "WHATSAPP_CHANNEL"
   MATERIAL_LIBRARY = "MATERIAL_LIBRARY"
+  SITE_PHOTO = "SITE_PHOTO"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"
