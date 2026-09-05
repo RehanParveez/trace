@@ -262,6 +262,15 @@ class VerificationService:
         }
       },
     )
+    
+    if claim.submitted_by is not None:
+      await self.notifications.notify_user(
+        organization_id, claim.submitted_by,
+        NotificationType.PROGRESS_CLAIM_APPROVED,
+        "Your progress claim was approved",
+        body=f"Claim dated {claim.claim_date.isoformat()} was approved.",
+        link_path=f"/app/projects/{claim.project_id}",
+      )
 
     return claim
 
@@ -315,6 +324,15 @@ class VerificationService:
         }
       },
     )
+    
+    if claim.submitted_by is not None:
+      await self.notifications.notify_user(
+        organization_id, claim.submitted_by,
+        NotificationType.PROGRESS_CLAIM_REJECTED,
+        "Your progress claim was rejected",
+        body=f"Claim dated {claim.claim_date.isoformat()} was rejected." + (f" Note: {payload.note}" if payload.note else ""),
+        link_path=f"/app/projects/{claim.project_id}",
+      )
 
     return claim
 

@@ -7,7 +7,7 @@ from decimal import Decimal
 from uuid import UUID
 import ifcopenshell
 import ifcopenshell.util.element
-from app.core.database import AsyncSessionLocal
+from app.core.database import WorkerSessionLocal, dispose_worker_engine
 from app.modules.drawings_boq.models import BOQItem, BOQVersion, DrawingElement, DrawingStatus
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
 from app.shared.storage import download_to_path
@@ -43,13 +43,20 @@ QUANTITY_ATTRS = (
   time_limit=900,
   soft_time_limit=780,
 )
+
 def parse_drawing_task(drawing_id: str) -> str:
-  asyncio.run(_parse_drawing(UUID(drawing_id)))
+  async def _run() -> None:
+    try:
+      await _parse_drawing(UUID(drawing_id))
+    finally:
+      await dispose_worker_engine()
+
+  asyncio.run(_run())
   return "parsed"
 
 async def _parse_drawing(drawing_id: UUID) -> None:
 
-  async with AsyncSessionLocal() as session:
+  async with WorkerSessionLocal() as session:
     drawings = DrawingRepository(session)
     drawing = await drawings.get_by_id(drawing_id)
     if drawing is None:
@@ -64,7 +71,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       download_to_path(drawing.storage_key, local_path)
       elements_data = _extract_ifc_elements(local_path)
     except Exception as exc:
-      async with AsyncSessionLocal() as session:
+      async with WorkerSessionLocal() as session:
         drawings = DrawingRepository(session)
         failed = await drawings.get_by_id(drawing_id)
         if failed is not None:
@@ -84,7 +91,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
         await session.commit()
       return  
 
-  async with AsyncSessionLocal() as session:
+  async with WorkerSessionLocal() as session:
     drawings = DrawingRepository(session)
     elements_repo = DrawingElementRepository(session)
     boq_versions_repo = BOQVersionRepository(session)

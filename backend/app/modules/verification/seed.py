@@ -31,15 +31,13 @@ async def seed_verification() -> None:
     await seed_verification_permissions(session)
 
     result = await session.execute(
-      select(Role)
+      select(Role).where(Role.is_system.is_(True))
     )
     roles = result.scalars().all()
 
     permissions_result = await session.execute(
       select(Permission).where(
-        Permission.key.in_(
-          list(VERIFICATION_PERMISSIONS.keys())
-        )
+        Permission.key.in_(list(VERIFICATION_PERMISSIONS.keys()))
       )
     )
     permissions = {
@@ -47,35 +45,21 @@ async def seed_verification() -> None:
       for permission in permissions_result.scalars().all()
     }
 
-    review_roles = {
-      "admin",
-    }
-
-    create_roles = {
-     "admin",
-     "member",
+    allowed = {
+      PermissionKey.PROGRESS_CLAIM_READ,
+      PermissionKey.PROGRESS_CLAIM_CREATE,
+      PermissionKey.PROGRESS_CLAIM_UPDATE,
+      PermissionKey.PROGRESS_CLAIM_SUBMIT,
+      PermissionKey.PROGRESS_CLAIM_REVIEW,
+      PermissionKey.PHOTO_BOQ_LINK_READ,
+      PermissionKey.PHOTO_BOQ_LINK_MANAGE,
     }
 
     for role in roles:
-      role_name = role.name.strip().lower().replace(" ", "_")
-
-      if role_name in create_roles:
-        allowed = {
-          PermissionKey.PROGRESS_CLAIM_READ,
-          PermissionKey.PROGRESS_CLAIM_CREATE,
-          PermissionKey.PROGRESS_CLAIM_UPDATE,
-          PermissionKey.PROGRESS_CLAIM_SUBMIT,
-          PermissionKey.PHOTO_BOQ_LINK_READ,
-          PermissionKey.PHOTO_BOQ_LINK_MANAGE,
-        }
-
-        if role_name in review_roles:
-          allowed.add(PermissionKey.PROGRESS_CLAIM_REVIEW)
-
-        for key in allowed:
-          permission = permissions.get(key)
-          if permission is not None and permission not in role.permissions:
-            role.permissions.append(permission)
+      for key in allowed:
+        permission = permissions.get(key)
+        if permission is not None and permission not in role.permissions:
+          role.permissions.append(permission)
 
     await session.commit()
 

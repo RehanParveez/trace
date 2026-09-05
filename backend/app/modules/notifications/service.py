@@ -75,41 +75,28 @@ class NotificationService:
 
   async def list_notifications(
     self,
-    organization_id: UUID,
     user_id: UUID,
     *,
+    organization_id: UUID | None = None,
     unread_only: bool = False,
     skip: int = 0,
     limit: int = 50,
   ) -> list[Notification]:
     return await self.repository.list_by_user(
-      organization_id,
-      user_id,
-      unread_only=unread_only,
-      skip=skip,
-      limit=limit,
+      user_id, organization_id=organization_id, unread_only=unread_only, skip=skip, limit=limit,
     )
 
   async def get_unread_count(
-    self, organization_id: UUID, user_id: UUID
+    self, user_id: UUID, *, organization_id: UUID | None = None
   ) -> int:
-    return await self.repository.count_unread(organization_id, user_id)
+    return await self.repository.count_unread(user_id, organization_id=organization_id)
 
   async def mark_read(
-    self,
-    organization_id: UUID,
-    user_id: UUID,
-    notification_id: UUID,
+    self, user_id: UUID, notification_id: UUID,
   ) -> Notification:
-    notification = await self.repository.get_by_id_and_user(
-      notification_id, user_id
-    )
-    if notification is None or notification.organization_id != organization_id:
-      raise TraceException(
-        "Notification not found.",
-        status_code=404,
-        code="NOTIFICATION_NOT_FOUND",
-      )
+    notification = await self.repository.get_by_id_and_user(notification_id, user_id)
+    if notification is None:
+      raise TraceException("Notification not found.", status_code=404, code="NOTIFICATION_NOT_FOUND")
     if not notification.is_read:
       notification.is_read = True
       notification.read_at = datetime.now(timezone.utc)
@@ -117,9 +104,7 @@ class NotificationService:
     return notification
 
   async def mark_all_read(
-    self, organization_id: UUID, user_id: UUID
+    self, user_id: UUID, *, organization_id: UUID | None = None
   ) -> None:
-    await self.repository.mark_all_read(
-      organization_id, user_id, datetime.now(timezone.utc)
-    )
+    await self.repository.mark_all_read(user_id, datetime.now(timezone.utc), organization_id=organization_id)
     await self.session.commit()

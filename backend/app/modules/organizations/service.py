@@ -8,8 +8,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.modules.identity.models import Organization, OrganizationInvitation, OrganizationMembership, Role, User
+from app.modules.identity.repository import IdentityRepository
 from app.modules.organizations.repository import OrganizationRepository
-from app.modules.organizations.schemas import ( AISettingsUpdateRequest, InvitationAcceptRequest, InvitationAcceptanceResponse, InvitationCreateRequest, MemberRoleUpdateRequest, MemberStatusUpdateRequest,
+from app.modules.organizations.schemas import ( AISettingsUpdateRequest, InvitationAcceptRequest, InvitationAcceptanceResponse, InvitationCreateRequest,
   OrganizationUpdateRequest, RoleCreateRequest, RoleUpdateRequest,
 )
 from app.core.config import settings
@@ -26,6 +27,7 @@ class OrganizationService:
   def __init__(self, session: AsyncSession, email_service: EmailService | None = None):
     self.session = session
     self.repository = OrganizationRepository(session)
+    self.identity = IdentityRepository(session)
     self.email_service = email_service or EmailService()
     self.notifications = NotificationService(session)
     self.audit = AuditLogService(session)
@@ -208,6 +210,18 @@ class OrganizationService:
         "This invitation expires in 7 days."
       ),
     )
+    
+    existing_user = await self.identity.get_user_by_email(email)
+    if existing_user is not None:
+      await self.notifications.notify_user(
+        organization_id,
+        existing_user.id,
+        NotificationType.ORGANIZATION_INVITATION_RECEIVED,
+        f"You've been invited to join {organization_name}",
+        body="Check your invitations to accept or decline.",
+        link_path="/app/invitations",
+      )
+
     return invitation
 
   async def list_invitations(

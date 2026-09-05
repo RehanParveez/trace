@@ -34,55 +34,44 @@ class NotificationRepository:
 
   async def list_by_user(
     self,
-    organization_id: UUID,
     user_id: UUID,
     *,
+    organization_id: UUID | None = None,
     unread_only: bool = False,
     skip: int = 0,
     limit: int = 50,
-  ) -> list[Notification]:
-    query = select(Notification).where(
-      Notification.organization_id == organization_id,
-      Notification.user_id == user_id,
-    )
-    if unread_only:
-      query = query.where(Notification.is_read.is_(False))
-
-    query = (
-      query
-      .order_by(Notification.created_at.desc())
-      .offset(skip)
-      .limit(limit)
-    )
-    result = await self.session.execute(query)
-    return list(result.scalars().all())
+    ) -> list[Notification]:
+      query = select(Notification).where(Notification.user_id == user_id)
+      if organization_id is not None:
+        query = query.where(Notification.organization_id == organization_id)
+      if unread_only:
+        query = query.where(Notification.is_read.is_(False))
+      query = query.order_by(Notification.created_at.desc()).offset(skip).limit(limit)
+      result = await self.session.execute(query)
+      return list(result.scalars().all())
 
   async def count_unread(
-    self, organization_id: UUID, user_id: UUID
+    self, user_id: UUID, *, organization_id: UUID | None = None
   ) -> int:
-    result = await self.session.execute(
-      select(func.count())
-      .select_from(Notification)
-      .where(
-        Notification.organization_id == organization_id,
-        Notification.user_id == user_id,
-        Notification.is_read.is_(False),
-      )
+    query = select(func.count()).select_from(Notification).where(
+      Notification.user_id == user_id,
+      Notification.is_read.is_(False),
     )
+    if organization_id is not None:
+      query = query.where(Notification.organization_id == organization_id)
+    result = await self.session.execute(query)
     return result.scalar_one()
 
   async def mark_all_read(
-    self, organization_id: UUID, user_id: UUID, read_at
+    self, user_id: UUID, read_at, *, organization_id: UUID | None = None
   ) -> None:
-    await self.session.execute(
-      update(Notification)
-      .where(
-        Notification.organization_id == organization_id,
-        Notification.user_id == user_id,
-        Notification.is_read.is_(False),
-      )
-      .values(is_read=True, read_at=read_at)
+    query = update(Notification).where(
+      Notification.user_id == user_id,
+      Notification.is_read.is_(False),
     )
+    if organization_id is not None:
+      query = query.where(Notification.organization_id == organization_id)
+    await self.session.execute(query.values(is_read=True, read_at=read_at))
     await self.session.flush()
 
   async def get_user_ids_with_permission(

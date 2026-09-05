@@ -18,6 +18,7 @@ def _service(session: AsyncSession) -> NotificationService:
 
 @router.get("", response_model=list[NotificationResponse])
 async def list_notifications(
+  organization_id: UUID | None = Query(default=None),
   unread_only: bool = Query(default=False),
   skip: int = Query(default=0, ge=0),
   limit: int = Query(default=50, ge=1, le=100),
@@ -26,11 +27,7 @@ async def list_notifications(
 ):
   service = _service(session)
   return await service.list_notifications(
-    current_user.active_membership.organization_id,
-    current_user.id,
-    unread_only=unread_only,
-    skip=skip,
-    limit=limit,
+    current_user.id, organization_id=organization_id, unread_only=unread_only, skip=skip, limit=limit,
   )
 
 @router.get("/unread-count", response_model=UnreadCountResponse)
@@ -39,9 +36,7 @@ async def get_unread_count(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  count = await service.get_unread_count(
-    current_user.active_membership.organization_id, current_user.id
-  )
+  count = await service.get_unread_count(current_user.id)
   return UnreadCountResponse(unread_count=count)
 
 @router.post(
@@ -55,7 +50,6 @@ async def mark_notification_read(
 ):
   service = _service(session)
   return await service.mark_read(
-    current_user.active_membership.organization_id,
     current_user.id,
     notification_id,
   )
@@ -66,7 +60,5 @@ async def mark_all_notifications_read(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  await service.mark_all_read(
-    current_user.active_membership.organization_id, current_user.id
-  )
+  await service.mark_all_read(current_user.id)
   return {"message": "All notifications marked as read."}

@@ -578,8 +578,9 @@ class DrawingBOQService:
       )
     items = await self.boq_items.list_by_version(boq_version_id)
     organization_name = await self._get_organization_name(organization_id)
+    safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     pdf_bytes = build_boq_pdf(version, items, organization_name)
-    return pdf_bytes, f"BOQ-{version.label.replace(' ', '_')}.pdf"
+    return pdf_bytes, f"BOQ-{safe_label}.pdf"
 
   async def export_boq_xlsx(
     self,
@@ -595,8 +596,9 @@ class DrawingBOQService:
       )
     items = await self.boq_items.list_by_version(boq_version_id)
     organization_name = await self._get_organization_name(organization_id)
+    safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     xlsx_bytes = build_boq_xlsx(version, items, organization_name)
-    return xlsx_bytes, f"BOQ-{version.label.replace(' ', '_')}.xlsx"
+    return xlsx_bytes, f"BOQ-{safe_label}.xlsx"
 
   async def normalize_material(
     self,
