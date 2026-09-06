@@ -41,6 +41,11 @@ def download_to_path(key: str, destination_path: str) -> None:
   client = get_s3_client()
   client.download_file(settings.minio_bucket, key, destination_path)
   
+def download_bytes(key: str) -> bytes:
+  client = get_s3_client()
+  response = client.get_object(Bucket=settings.minio_bucket, Key=key)
+  return response["Body"].read()
+  
 def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
   client = get_s3_client()
   return client.generate_presigned_url(

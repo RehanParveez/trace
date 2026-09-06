@@ -1,4 +1,5 @@
 from __future__ import annotations
+import base64
 import json
 import time
 from dataclasses import dataclass
@@ -38,6 +39,8 @@ class AIOrchestratorService:
    entity_id: UUID | None = None,
    requested_by: UUID | None = None,
    model: str | None = None,
+   image_bytes: bytes | None = None,
+   image_mime_type: str | None = None,
 ) -> AIRunResult:
    if not await self._is_ai_enabled(organization_id):
     return AIRunResult(
@@ -78,7 +81,7 @@ class AIOrchestratorService:
    started_at = time.monotonic()
    try:
     raw_response, parsed_output = await self._call_provider(
-      provider, resolved_model, prompt
+      provider, resolved_model, prompt, image_bytes, image_mime_type,
     )
     latency_ms = int((time.monotonic() - started_at) * 1000)
 
@@ -122,27 +125,35 @@ class AIOrchestratorService:
     return bool(result.scalar_one_or_none())
 
   async def _call_provider(
-    self, provider: AIProvider, model: str, prompt: str
+    self, provider: AIProvider, model: str, prompt: str,
+    image_bytes: bytes | None = None, image_mime_type: str | None = None,
   ) -> tuple[str, dict | None]:
     if provider == AIProvider.OLLAMA:
-     return await self._call_ollama(model, prompt)
+     return await self._call_ollama(model, prompt, image_bytes, image_mime_type)
     if provider == AIProvider.ANTHROPIC:
-     return await self._call_anthropic(model, prompt)
+     return await self._call_anthropic(model, prompt, image_bytes, image_mime_type)
     raise NotImplementedError(
      f"AI provider {provider.value} is not yet implemented."
    )
 
   @staticmethod
-  async def _call_ollama(model: str, prompt: str) -> tuple[str, dict | None]:
+  async def _call_ollama(
+    model: str, prompt: str,
+    image_bytes: bytes | None = None, image_mime_type: str | None = None,
+  ) -> tuple[str, dict | None]:
+    payload: dict = {
+      "model": model,
+      "prompt": prompt,
+      "stream": False,
+      "format": "json",
+    }
+    if image_bytes is not None:
+      payload["images"] = [base64.b64encode(image_bytes).decode("ascii")]
+
     async with httpx.AsyncClient(timeout=30.0) as client:
       response = await client.post(
         f"{settings.ollama_base_url}/api/generate",
-        json={
-          "model": model,
-          "prompt": prompt,
-          "stream": False,
-          "format": "json",
-        },
+        json=payload,
       )
       response.raise_for_status()
       raw_text = response.json()["response"]
@@ -153,9 +164,25 @@ class AIOrchestratorService:
       return raw_text, parsed
    
   @staticmethod
-  async def _call_anthropic(model: str, prompt: str) -> tuple[str, dict | None]:
+  async def _call_anthropic(
+    model: str, prompt: str,
+    image_bytes: bytes | None = None, image_mime_type: str | None = None,
+  ) -> tuple[str, dict | None]:
    if not settings.ai_api_key:
     raise RuntimeError("AI_API_KEY is not configured for the Anthropic provider.")
+
+   content: list[dict] = []
+   if image_bytes is not None and image_mime_type is not None:
+    content.append({
+      "type": "image",
+      "source": {
+        "type": "base64",
+        "media_type": image_mime_type,
+        "data": base64.b64encode(image_bytes).decode("ascii"),
+      },
+    })
+   content.append({"type": "text", "text": prompt})
+
    async with httpx.AsyncClient(timeout=30.0) as client:
     response = await client.post(
       "https://api.anthropic.com/v1/messages",
@@ -167,7 +194,7 @@ class AIOrchestratorService:
       json={
         "model": model,
         "max_tokens": 1024,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": content}],
       },
     )
     response.raise_for_status()
@@ -181,7 +208,7 @@ class AIOrchestratorService:
       parsed = json.loads(raw_text)
     except (json.JSONDecodeError, TypeError):
       parsed = None
-    return raw_text, parsed 
+    return raw_text, parsed  
 
   async def list_requests(
     self, organization_id: UUID, **kwargs

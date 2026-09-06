@@ -27,7 +27,7 @@ PLANS = [
       "storage_bytes": 1073741824,
       "site_photos": 100,
       "drawings": 3,
-      "ai_requests": 0,
+      "ai_requests": 10,
     },
   },
   {

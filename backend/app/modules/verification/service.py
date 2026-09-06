@@ -1,13 +1,17 @@
 from __future__ import annotations
+import asyncio
 from datetime import datetime, timezone
+from pathlib import PurePosixPath
 from uuid import UUID, uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.models import BOQItem, BOQVersion, BOQItemStatus
 from app.modules.projects.repository import ProjectRepository
 from app.modules.verification.models import PhotoBOQLink, ProgressClaim, ProgressClaimStatus
-from app.modules.whatsapp.models import SitePhoto
+from app.modules.whatsapp.models import PhotoTag, PhotoTagSource ,SitePhoto
+from app.modules.whatsapp.repository import PhotoTagRepository
 from app.modules.verification.repository import PhotoBOQLinkRepository, ProgressClaimRepository
 from app.modules.verification.schemas import PhotoBOQLinkCreateRequest, ProgressClaimCreateRequest, ProgressClaimReviewRequest, ProgressClaimUpdateRequest
 from app.modules.notifications.service import NotificationService, NotificationType
@@ -15,12 +19,25 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult
+from app.shared.storage import download_bytes
+
+_MIME_BY_EXTENSION = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+}
+
+def _guess_mime_type(storage_key: str) -> str:
+  suffix = PurePosixPath(storage_key).suffix.lower()
+  return _MIME_BY_EXTENSION.get(suffix, "image/jpeg")
 
 class VerificationService:
   def __init__(self, session: AsyncSession):
     self.session = session
     self.claims = ProgressClaimRepository(session)
     self.photo_boq_links = PhotoBOQLinkRepository(session)
+    self.photo_tags = PhotoTagRepository(session)
     self.projects = ProjectRepository(session)
     self.notifications = NotificationService(session)
     self.audit = AuditLogService(session)
@@ -354,95 +371,169 @@ class VerificationService:
     )
 
   async def create_photo_boq_link(
-    self,
-    organization_id: UUID,
-    user_id: UUID,
-    payload: PhotoBOQLinkCreateRequest,
+   self,
+   organization_id: UUID,
+   user_id: UUID,
+   payload: PhotoBOQLinkCreateRequest,
   ) -> PhotoBOQLink:
-    claim = await self.get_claim(
-      organization_id,
-      payload.progress_claim_id,
+   claim = await self.get_claim(
+    organization_id,
+    payload.progress_claim_id,
+   )
+
+   if claim.project_id is None:
+    raise TraceException(
+      "Progress claim has no project.",
+      status_code=409,
+      code="PROGRESS_CLAIM_PROJECT_MISSING",
     )
 
-    if claim.project_id is None:
-      raise TraceException(
-        "Progress claim has no project.",
-        status_code=409,
-        code="PROGRESS_CLAIM_PROJECT_MISSING",
-      )
-
-    if claim.boq_item_id != payload.boq_item_id:
-      raise TraceException(
-        "The BOQ item must match the progress claim.",
-        status_code=400,
-        code="BOQ_ITEM_MISMATCH",
-      )
-
-    await self._get_boq_item(
-      organization_id,
-      claim.project_id,
-      payload.boq_item_id,
+   if claim.boq_item_id != payload.boq_item_id:
+    raise TraceException(
+      "The BOQ item must match the progress claim.",
+      status_code=400,
+      code="BOQ_ITEM_MISMATCH",
     )
 
-    photo = await self._get_site_photo(
-      organization_id,
-      claim.project_id,
-      payload.site_photo_id,
+   boq_item = await self._get_boq_item(    
+    organization_id,
+    claim.project_id,
+    payload.boq_item_id,
+  )
+
+   photo = await self._get_site_photo(
+    organization_id,
+    claim.project_id,
+    payload.site_photo_id,
+  )
+
+   if photo.project_id is not None and photo.project_id != claim.project_id:
+    raise TraceException(
+      "Site photo belongs to another project.",
+      status_code=400,
+      code="SITE_PHOTO_PROJECT_MISMATCH",
     )
 
-    if photo.project_id is not None and photo.project_id != claim.project_id:
-      raise TraceException(
-        "Site photo belongs to another project.",
-        status_code=400,
-        code="SITE_PHOTO_PROJECT_MISMATCH",
-      )
+   existing = await self.photo_boq_links.get_existing(
+    claim.id,
+    payload.site_photo_id,
+    payload.boq_item_id,
+  )
 
-    existing = await self.photo_boq_links.get_existing(
-      claim.id,
-      payload.site_photo_id,
-      payload.boq_item_id,
+   if existing is not None:
+    raise TraceException(
+      "This photo is already linked to this BOQ item for the claim.",
+      status_code=409,
+      code="PHOTO_BOQ_LINK_ALREADY_EXISTS",
     )
 
-    if existing is not None:
-      raise TraceException(
-        "This photo is already linked to this BOQ item for the claim.",
-        status_code=409,
-        code="PHOTO_BOQ_LINK_ALREADY_EXISTS",
-      )
-      
-    prompt = (
-      f"Tag this site photo for progress claim verification. "
-      f"BOQ item: {payload.boq_item_id}. "
-      f"Claim date: {claim.claim_date.isoformat()}. "
-      f"Photo note (if any): {payload.note or 'none'}."
-    )
+   prompt = (
+    "You are reviewing a construction site photo submitted as evidence for "
+    "a progress claim. Based on what is visible in the photo, identify "
+    "tags describing the construction work, materials, or stage shown, "
+    "and note whether the photo appears visually consistent with the "
+    "claim below. Respond with strict JSON only, no other text: "
+    '{"tags": [{"tag": "short-label", "confidence": 0.0}], '
+    '"visually_consistent_with_claim": true or false, "notes": "..."}. '
+    f"Claimed BOQ item: {boq_item.material_name}"
+    + (f" ({boq_item.category})" if boq_item.category else "")
+    + f", unit {boq_item.unit}. "
+    f"Claimed quantity: {claim.claimed_quantity} {boq_item.unit} "
+    f"({claim.claimed_percentage}% of total). "
+    f"Claim date: {claim.claim_date.isoformat()}. "
+    f"Photo note (if any): {payload.note or 'none'}."
+  )
 
-    ai_result = await self._run_photo_tagging(
-      organization_id=organization_id,
-      site_photo_id=payload.site_photo_id,
-      user_id=user_id,
-      prompt=prompt,
-    )
-    if not ai_result.success:
+   image_bytes: bytes | None = None
+   image_mime_type: str | None = None
+   try:
+    image_bytes = await asyncio.to_thread(download_bytes, photo.storage_key)
+    image_mime_type = _guess_mime_type(photo.storage_key)
+   except Exception as exc:
+    print(">>> PHOTO DOWNLOAD FAILED:", repr(exc), flush=True)
+    image_bytes = None
+    image_mime_type = None
+   
+   print(">>> BEFORE AI TAGGING", flush=True)
+
+   ai_result = await self._run_photo_tagging(
+    organization_id=organization_id,
+    site_photo_id=payload.site_photo_id,
+    user_id=user_id,
+    prompt=prompt,
+    image_bytes=image_bytes,
+    image_mime_type=image_mime_type,
+   )
+   print(">>> AFTER AI TAGGING", flush=True)
+   print(">>> AI RESULT:", ai_result.success, "| error:", ai_result.error_message)
+
+   if ai_result.success and ai_result.parsed_output:
+    try:
+      await self._apply_ai_tags(photo, ai_result.parsed_output)
+    except Exception:
       pass
 
-    link = PhotoBOQLink(
-      id=uuid4(),
-      organization_id=organization_id,
-      project_id=claim.project_id,
-      progress_claim_id=claim.id,
-      site_photo_id=payload.site_photo_id,
-      boq_item_id=payload.boq_item_id,
-      note=payload.note,
-      created_by=user_id,
+   link = PhotoBOQLink(
+    id=uuid4(),
+    organization_id=organization_id,
+    project_id=claim.project_id,
+    progress_claim_id=claim.id,
+    site_photo_id=payload.site_photo_id,
+    boq_item_id=payload.boq_item_id,
+    note=payload.note,
+    created_by=user_id,
+   )
+
+   link = await self.photo_boq_links.create(link)
+   await self.session.commit()
+   await self.session.refresh(link)
+
+   return link
+
+  async def _apply_ai_tags(
+    self,
+    photo: SitePhoto,
+    parsed_output: dict,
+  ) -> None:
+    raw_tags = parsed_output.get("tags")
+    if not isinstance(raw_tags, list):
+     return
+
+    existing_tag_values = {t.tag for t in photo.tags}
+    new_tags: list[PhotoTag] = []
+
+    for entry in raw_tags[:10]:
+     if isinstance(entry, dict):
+      tag_value = str(entry.get("tag", "")).strip().lower()
+      confidence = entry.get("confidence")
+     elif isinstance(entry, str):
+      tag_value = entry.strip().lower()
+      confidence = None
+     else:
+      continue
+
+     if not tag_value or tag_value in existing_tag_values:
+      continue
+
+     try:
+      confidence_value = float(confidence) if confidence is not None else None
+     except (TypeError, ValueError):
+      confidence_value = None
+
+     new_tags.append(
+      PhotoTag(
+        id=uuid4(),
+        site_photo_id=photo.id,
+        tag=tag_value,
+        confidence=confidence_value,
+        source=PhotoTagSource.AI,       
+      )
     )
+     existing_tag_values.add(tag_value)
 
-    link = await self.photo_boq_links.create(link)
-
-    await self.session.commit()
-    await self.session.refresh(link)
-
-    return link
+    if new_tags:
+     await self.photo_tags.bulk_create(new_tags)
+     photo.is_ai_tagged = True
 
   async def _get_site_photo(
     self,
@@ -450,28 +541,29 @@ class VerificationService:
     project_id: UUID,
     site_photo_id: UUID,
   ):
-
     result = await self.session.execute(
-      select(SitePhoto).where(
-        SitePhoto.id == site_photo_id,
-        SitePhoto.organization_id == organization_id,
-      )
+     select(SitePhoto)
+     .where(
+      SitePhoto.id == site_photo_id,
+      SitePhoto.organization_id == organization_id,
     )
+     .options(selectinload(SitePhoto.tags))    
+   )
     photo = result.scalar_one_or_none()
 
     if photo is None:
-      raise TraceException(
-        "Site photo is not present.",
-        status_code=404,
-        code="SITE_PHOTO_NOT_FOUND",
-      )
+     raise TraceException(
+      "Site photo is not present.",
+      status_code=404,
+      code="SITE_PHOTO_NOT_FOUND",
+    )
 
     if photo.project_id is not None and photo.project_id != project_id:
-      raise TraceException(
-        "Site photo belongs to another project.",
-        status_code=400,
-        code="SITE_PHOTO_PROJECT_MISMATCH",
-      )
+     raise TraceException(
+      "Site photo belongs to another project.",
+      status_code=400,
+      code="SITE_PHOTO_PROJECT_MISMATCH",
+    )
     return photo
 
   async def _run_photo_tagging(
@@ -481,6 +573,8 @@ class VerificationService:
     site_photo_id: UUID,
     user_id: UUID | None,
     prompt: str,
+    image_bytes: bytes | None = None,
+    image_mime_type: str | None = None,
 ) -> AIRunResult:
     return await self.ai.run(
       organization_id=organization_id,
@@ -489,6 +583,8 @@ class VerificationService:
       entity_type=AIEntityType.SITE_PHOTO,
       entity_id=site_photo_id,
       requested_by=user_id,
+      image_bytes=image_bytes,
+      image_mime_type=image_mime_type,
     )
 
   async def list_photo_boq_links(
