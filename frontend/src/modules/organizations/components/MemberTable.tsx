@@ -5,6 +5,7 @@ import { MemberRow } from "./MemberRow";
 interface MemberTableProps {
   members: Member[];
   canManage?: boolean;
+  currentUserId?: string;
   onRoleChange?: (member: Member) => void;
   onStatusChange?: (member: Member) => void;
   onView?: (member: Member) => void;

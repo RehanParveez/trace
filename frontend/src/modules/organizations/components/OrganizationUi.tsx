@@ -863,3 +863,47 @@ export function SectionLabel({ children }: { children: ReactNode }) {
 export function Divider() {
   return <div className="h-px bg-[#e1d5bc]" />;
 }
+
+export function Pager({
+  page,
+  totalPages,
+  totalItems,
+  onPrevious,
+  onNext,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="mt-3 flex items-center justify-between gap-3 px-1">
+      <span className="text-[11px] text-[#6b6152]">
+        Page {page + 1} of {totalPages} · {totalItems} total
+      </span>
+
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onPrevious}
+          disabled={page === 0}
+        >
+          Previous
+        </Button>
+
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={onNext}
+          disabled={page + 1 >= totalPages}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}

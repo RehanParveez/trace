@@ -6,34 +6,35 @@ import type { Member } from "../types/organization.types";
 import { MemberRoleDialog } from "../components/MemberRoleDialog";
 import { MemberStatusDialog } from "../components/MemberStatusDialog";
 import { MemberTable } from "../components/MemberTable";
-import {ErrorState, Icon, PageHeader, SectionDivider, StatCard,
+import {ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
-import { ORGANIZATION_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys, useAuthStore } from "../../identity";
 
-interface OrganizationMembersPageProps {
-  permissions?: string[];
-}
+const PAGE_SIZE = 20;
 
-export function OrganizationMembersPage({
-  permissions = [],
-}: OrganizationMembersPageProps) {
+export function OrganizationMembersPage() {
   const navigate = useNavigate();
+  const permissions = usePermissionKeys();
+  const currentUser = useAuthStore((state) => state.user);
 
   const [roleMember, setRoleMember] = useState<Member | null>(null);
   const [statusMember, setStatusMember] = useState<Member | null>(null);
   const [query, setQuery] = useState("");
+  const [page, setPage] = useState(0);
 
-  const membersQuery = useMembers();
+  const membersQuery = useMembers(page * PAGE_SIZE, PAGE_SIZE);
   const rolesQuery = useRoles();
 
   const updateRole = useUpdateMemberRole();
   const updateStatus = useUpdateMemberStatus();
 
   const canManage = permissions.includes(
-    ORGANIZATION_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
+    IDENTITY_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
   );
 
-  const members = membersQuery.data ?? [];
+  const members = membersQuery.data?.items ?? [];
+  const totalMembers = membersQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalMembers / PAGE_SIZE));
 
   const filteredMembers = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -83,7 +84,7 @@ export function OrganizationMembersPage({
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Total members"
-          value={members.length}
+          value={totalMembers}
           note="Organization users"
           icon="users"
           tone="blue"
@@ -92,7 +93,7 @@ export function OrganizationMembersPage({
         <StatCard
           label="Active"
           value={members.filter((member) => member.is_active).length}
-          note="Can access workspace"
+          note="On this page"
           icon="check"
           tone="green"
         />
@@ -100,7 +101,7 @@ export function OrganizationMembersPage({
         <StatCard
           label="Verified"
           value={members.filter((member) => member.is_verified).length}
-          note="Identity verified"
+          note="On this page"
           icon="shield"
           tone="gold"
         />
@@ -114,11 +115,20 @@ export function OrganizationMembersPage({
       <MemberTable
         members={filteredMembers}
         canManage={canManage}
+        currentUserId={currentUser?.id}
         onView={(member) =>
           navigate(`/app/organization/members/${member.id}`)
         }
         onRoleChange={setRoleMember}
         onStatusChange={setStatusMember}
+      />
+
+      <Pager
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalMembers}
+        onPrevious={() => setPage((current) => Math.max(0, current - 1))}
+        onNext={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
       />
 
       {roleMember ? (

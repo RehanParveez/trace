@@ -102,11 +102,6 @@ export interface PaginatedResult<T> {
   total: number;
 }
 
-export type OrganizationPermissionKey =
-  | "organization:read"
-  | "organization:manage"
-  | "organization:members_manage";
-
 export type OrganizationIconName =
   | "building"
   | "settings"

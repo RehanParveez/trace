@@ -5,33 +5,34 @@ import type { Invitation } from "../types/organization.types";
 import { InvitationForm } from "../components/InvitationForm";
 import { InvitationTable } from "../components/InvitationTable";
 import { RevokeInvitationDialog } from "../components/RevokeInvitationDialog";
-import {Button, ErrorState, Icon, PageHeader, SectionDivider, StatCard,
+import {Button, ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 import { getInvitationStatus } from "../utils/organization.utils";
-import { ORGANIZATION_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 
-interface OrganizationInvitationsPageProps {
-  permissions?: string[];
-}
+const PAGE_SIZE = 20;
 
-export function OrganizationInvitationsPage({
-  permissions = [],
-}: OrganizationInvitationsPageProps) {
+export function OrganizationInvitationsPage() {
+  const permissions = usePermissionKeys();
+
   const [showForm, setShowForm] = useState(false);
   const [revokeInvitation, setRevokeInvitation] =
     useState<Invitation | null>(null);
+  const [page, setPage] = useState(0);
 
-  const invitationsQuery = useInvitations();
+  const invitationsQuery = useInvitations(page * PAGE_SIZE, PAGE_SIZE);
   const rolesQuery = useRoles();
 
   const createInvitation = useCreateInvitation();
   const revoke = useRevokeInvitation();
 
   const canManage = permissions.includes(
-    ORGANIZATION_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
+    IDENTITY_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
   );
 
-  const invitations = invitationsQuery.data ?? [];
+  const invitations = invitationsQuery.data?.items ?? [];
+  const totalInvitations = invitationsQuery.data?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalInvitations / PAGE_SIZE));
   const roles = rolesQuery.data ?? [];
 
   const pending = invitations.filter(
@@ -130,6 +131,14 @@ export function OrganizationInvitationsPage({
         roles={roles}
         canManage={canManage}
         onRevoke={setRevokeInvitation}
+      />
+
+      <Pager
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalInvitations}
+        onPrevious={() => setPage((current) => Math.max(0, current - 1))}
+        onNext={() => setPage((current) => Math.min(totalPages - 1, current + 1))}
       />
 
       {revokeInvitation ? (

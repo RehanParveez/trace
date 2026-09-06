@@ -83,17 +83,18 @@ class OrganizationService:
         status_code=409,
         code="ORGANIZATION_UPDATE_CONFLICT",
       ) from exc
-    
+
     await self.audit.log(
       organization_id,
-      actor_user_id,
+      None,
       AuditEntityType.ORGANIZATION,
       organization_id,
       AuditAction.UPDATE,
-      f"Organization '{organization.name}' updated",
+      f"Organization details updated: {organization.name} ({organization.slug})",
     )
-    return organization
 
+    return organization
+  
   async def get_ai_settings(self, organization_id: UUID) -> bool:
     organization = await self.get_organization(organization_id)
     return organization.ai_enabled

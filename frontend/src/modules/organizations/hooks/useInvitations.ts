@@ -10,11 +10,19 @@ export const invitationKeys = {
     [...invitationKeys.all, "list", skip, limit] as const,
 };
  
-export function useInvitations(skip = 0, limit = 100) {
+export function useInvitations(
+  skip = 0,
+  limit = 100,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: invitationKeys.list(skip, limit),
  
     queryFn: () => organizationsApi.listInvitations(skip, limit),
+
+    placeholderData: (previous) => previous,
+
+    enabled: options?.enabled,
   });
 }
  

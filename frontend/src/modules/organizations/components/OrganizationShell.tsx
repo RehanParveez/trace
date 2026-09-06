@@ -3,13 +3,9 @@ import type { ReactNode } from "react";
 import { BrandMark, Icon, LivePip } from "./OrganizationUi";
 import type { OrganizationIconName } from "../types/organization.types";
 import { NotificationBell } from "../../notifications";
-
-interface OrganizationShellProps {
-  children?: ReactNode;
-  organizationName?: string;
-  organizationSlug?: string;
-  pendingInvitationCount?: number;
-}
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useOrganization, useInvitations } from "../hooks";
+import { getInvitationStatus } from "../utils/organization.utils";
 
 interface NavItem {
   label: string;
@@ -158,10 +154,27 @@ function SidebarLink({ item }: { item: NavItem }) {
 
 export function OrganizationShell({
   children,
-  organizationName = "Current organization",
-  organizationSlug,
-  pendingInvitationCount,
-}: OrganizationShellProps) {
+}: {
+  children?: ReactNode;
+}) {
+  const permissions = usePermissionKeys();
+  const canManageMembers = permissions.includes(
+    IDENTITY_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
+  );
+
+  const organizationQuery = useOrganization();
+  const invitationsQuery = useInvitations(0, 100, {
+    enabled: canManageMembers,
+  });
+
+  const organizationName = organizationQuery.data?.name ?? "Current organization";
+  const organizationSlug = organizationQuery.data?.slug;
+  const pendingInvitationCount = canManageMembers
+    ? invitationsQuery.data?.items.filter(
+        (invitation) => getInvitationStatus(invitation) === "pending",
+      ).length
+    : undefined;
+
   const organizationNav = buildOrganizationNav(
     pendingInvitationCount,
   );

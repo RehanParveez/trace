@@ -5,16 +5,11 @@ import type { Role } from "../types/organization.types";
 import { RoleTable } from "../components/RoleTable";
 import {Button, ErrorState, Icon, Modal, PageHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
-import { ORGANIZATION_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 
-interface OrganizationRolesPageProps {
-  permissions?: string[];
-}
-
-export function OrganizationRolesPage({
-  permissions = [],
-}: OrganizationRolesPageProps) {
+export function OrganizationRolesPage() {
   const navigate = useNavigate();
+  const permissions = usePermissionKeys();
 
   const rolesQuery = useRoles();
   const deleteRole = useDeleteRole();
@@ -22,7 +17,7 @@ export function OrganizationRolesPage({
   const [deletingRole, setDeletingRole] = useState<Role | null>(null);
 
   const canManage = permissions.includes(
-    ORGANIZATION_PERMISSIONS.ORGANIZATION_MANAGE,
+    IDENTITY_PERMISSIONS.ORGANIZATION_MANAGE,
   );
 
   const roles = rolesQuery.data ?? [];

@@ -17,6 +17,8 @@ export function useMembers(skip = 0, limit = 100) {
     queryKey: memberKeys.list(skip, limit),
  
     queryFn: () => organizationsApi.listMembers(skip, limit),
+
+    placeholderData: (previous) => previous,
   });
 }
  

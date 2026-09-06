@@ -54,13 +54,20 @@ export const organizationsApi = {
     return response.data;
   },
  
-  async listMembers(skip = 0, limit = 100): Promise<Member[]> {
+  async listMembers(
+    skip = 0,
+    limit = 100,
+  ): Promise<{ items: Member[]; total: number }> {
     const response = await apiClient.get<Member[]>(
       "/organizations/me/members",
       { params: { skip, limit } },
     );
- 
-    return response.data;
+
+    const total = Number(
+      response.headers["x-total-count"] ?? response.data.length,
+    );
+
+    return { items: response.data, total };
   },
  
   async getMember(userId: string): Promise<Member> {
@@ -153,13 +160,20 @@ export const organizationsApi = {
     return response.data;
   },
  
-  async listInvitations(skip = 0, limit = 100): Promise<Invitation[]> {
+  async listInvitations(
+    skip = 0,
+    limit = 100,
+  ): Promise<{ items: Invitation[]; total: number }> {
     const response = await apiClient.get<Invitation[]>(
       "/organizations/me/invitations",
       { params: { skip, limit } },
     );
- 
-    return response.data;
+
+    const total = Number(
+      response.headers["x-total-count"] ?? response.data.length,
+    );
+
+    return { items: response.data, total };
   },
  
   async revokeInvitation(invitationId: string): Promise<void> {

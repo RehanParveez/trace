@@ -6,16 +6,11 @@ import { OrganizationForm } from "../components/OrganizationForm";
 import { OrganizationHeader } from "../components/OrganizationHeader";
 import {ErrorState, LoadingState, PageHeader, Panel, PanelHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
-import { ORGANIZATION_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 
-interface OrganizationPageProps {
-  permissions?: string[];
-}
-
-export function OrganizationPage({
-  permissions = [],
-}: OrganizationPageProps) {
+export function OrganizationPage() {
   const [editing, setEditing] = useState(false);
+  const permissions = usePermissionKeys();
 
   const organizationQuery = useOrganization();
   const aiSettingsQuery = useAISettings();
@@ -26,7 +21,7 @@ export function OrganizationPage({
   const updateAISettings = useUpdateAISettings();
 
   const canManage = permissions.includes(
-    ORGANIZATION_PERMISSIONS.ORGANIZATION_MANAGE,
+    IDENTITY_PERMISSIONS.ORGANIZATION_MANAGE,
   );
 
   if (organizationQuery.isLoading) {
@@ -41,10 +36,10 @@ export function OrganizationPage({
 
   const organization = organizationQuery.data;
 
-  const memberCount = membersQuery.data?.length ?? 0;
+  const memberCount = membersQuery.data?.total ?? 0;
 
   const activeMemberCount =
-    membersQuery.data?.filter((member) => member.is_active).length ?? 0;
+    membersQuery.data?.items.filter((member) => member.is_active).length ?? 0;
 
   const roleCount = rolesQuery.data?.length ?? 0;
 

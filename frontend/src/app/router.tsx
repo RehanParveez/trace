@@ -5,7 +5,7 @@ import {LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, VerifyEm
 } from "../modules/identity/pages";
 import {ProtectedRoute, PublicOnlyRoute,
 } from "../modules/identity";
-import { OrganizationShell, OrganizationPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage,
+import { OrganizationShell, OrganizationPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage, AcceptInvitationPage,
 } from "../modules/organizations";
 import { AppErrorBoundary } from "../shared/components/AppErrorBoundary";
 import {SubscriptionPage,
@@ -84,6 +84,11 @@ export const router = createBrowserRouter([
       {
         path: "profile",
         element: <ProfilePage />,
+      },
+
+      {
+        path: "accept-invitation",
+        element: <AcceptInvitationPage />,
       },
 
       {

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
@@ -28,7 +28,7 @@ async def get_current_organization(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.get_organization(current_user.organization_id)
+  return await service.get_organization(current_user.active_membership.organization_id)
 
 @router.patch("/me", response_model=OrganizationResponse)
 async def update_current_organization(
@@ -40,7 +40,7 @@ async def update_current_organization(
 ):
   service = _service(session)
   return await service.update_organization(
-    current_user.organization_id, payload, actor_user_id=current_user.id
+    current_user.active_membership.organization_id, payload, actor_user_id=current_user.id
   )
 
 @router.get("/me/ai-settings", response_model=AISettingsResponse)
@@ -51,7 +51,7 @@ async def get_ai_settings(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  enabled = await service.get_ai_settings(current_user.organization_id)
+  enabled = await service.get_ai_settings(current_user.active_membership.organization_id)
   return AISettingsResponse(ai_enabled=enabled)
 
 @router.patch("/me/ai-settings", response_model=AISettingsResponse)
@@ -64,19 +64,21 @@ async def update_ai_settings(
 ):
   service = _service(session)
   enabled = await service.update_ai_settings(
-    current_user.organization_id, payload, actor_user_id=current_user.id
+    current_user.active_membership.organization_id, payload, actor_user_id=current_user.id
   )
   return AISettingsResponse(ai_enabled=enabled)
 
 @router.get("/me/members", response_model=list[MemberResponse])
 async def list_members(
+  response: Response,
   skip: int = Query(default=0, ge=0),
   limit: int = Query(default=100, ge=1, le=100),
   current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_READ)),
   session: AsyncSession = Depends(get_db),
 ):
   organization_id = current_user.active_membership.organization_id
-  members, _total = await _service(session).list_members(organization_id, skip=skip, limit=limit)
+  members, total = await _service(session).list_members(organization_id, skip=skip, limit=limit)
+  response.headers["X-Total-Count"] = str(total)
   return [MemberResponse.from_user_and_role(u, r, organization_id, active) for u, r, active in members]
 
 @router.get("/me/members/{user_id}", response_model=MemberResponse)
@@ -117,7 +119,7 @@ async def list_roles(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.list_roles(current_user.organization_id)
+  return await service.list_roles(current_user.active_membership.organization_id)
 
 @router.get("/me/roles/{role_id}", response_model=RoleResponse)
 async def get_role(
@@ -128,7 +130,7 @@ async def get_role(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.get_role(current_user.organization_id, role_id)
+  return await service.get_role(current_user.active_membership.organization_id, role_id)
 
 @router.post(
   "/me/roles",
@@ -143,7 +145,7 @@ async def create_role(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.create_role(current_user.organization_id, payload, actor_user_id=current_user.id)
+  return await service.create_role(current_user.active_membership.organization_id, payload, actor_user_id=current_user.id)
 
 @router.patch("/me/roles/{role_id}", response_model=RoleResponse)
 async def update_role(
@@ -156,7 +158,7 @@ async def update_role(
 ):
   service = _service(session)
   return await service.update_role(
-    current_user.organization_id, role_id, payload, actor_user_id=current_user.id
+    current_user.active_membership.organization_id, role_id, payload, actor_user_id=current_user.id
   )
 
 @router.delete(
@@ -171,7 +173,7 @@ async def delete_role(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  await service.delete_role(current_user.organization_id, role_id, actor_user_id=current_user.id)
+  await service.delete_role(current_user.active_membership.organization_id, role_id, actor_user_id=current_user.id)
 
 
 @router.get("/me/permissions", response_model=list[PermissionResponse])
@@ -198,23 +200,26 @@ async def create_invitation(
 ):
   service = _service(session)
   return await service.create_invitation(
-    current_user.organization_id, current_user.id, payload
+    current_user.active_membership.organization_id, current_user.id, payload
   )
 
 @router.get("/me/invitations", response_model=list[InvitationResponse])
 async def list_invitations(
+  response: Response,
   skip: int = Query(default=0, ge=0),
   limit: int = Query(default=100, ge=1, le=100),
   current_user: User = Depends(
     require_permission(PermissionKey.ORGANIZATION_MEMBERS_MANAGE)
   ),
-  session: AsyncSession = Depends(get_db),
+    session: AsyncSession = Depends(get_db),
 ):
-  service = _service(session)
-  invitations, _total = await service.list_invitations(
-    current_user.organization_id, skip=skip, limit=limit
-  )
-  return invitations
+    organization_id = current_user.active_membership.organization_id
+    service = _service(session)
+    invitations, total = await service.list_invitations(
+      organization_id, skip=skip, limit=limit
+    )
+    response.headers["X-Total-Count"] = str(total)
+    return invitations
 
 @router.delete(
   "/me/invitations/{invitation_id}",

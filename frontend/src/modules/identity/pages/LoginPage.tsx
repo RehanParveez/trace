@@ -21,13 +21,14 @@ export function LoginPage() {
     useState("");
 
   const locationState = location.state as {
-    from?: { pathname?: string };
+    from?: { pathname?: string; search?: string };
     registrationSuccess?: boolean;
     passwordReset?: boolean;
   } | null;
 
-  const from = locationState?.from?.pathname ?? "/app/profile";
-
+  const from =
+    (locationState?.from?.pathname ?? "/app/profile") +
+    (locationState?.from?.search ?? "");
   useEffect(() => {
     if (login.isSuccess) {
       navigate(from, {

@@ -6,6 +6,7 @@ import { Avatar, Badge, DropdownMenu, type MenuAction } from "./OrganizationUi";
 interface MemberRowProps {
   member: Member;
   canManage?: boolean;
+  currentUserId?: string;
   onRoleChange?: (member: Member) => void;
   onStatusChange?: (member: Member) => void;
   onView?: (member: Member) => void;
@@ -14,10 +15,13 @@ interface MemberRowProps {
 export function MemberRow({
   member,
   canManage = false,
+  currentUserId,
   onRoleChange,
   onStatusChange,
   onView,
 }: MemberRowProps) {
+  const isSelf = member.id === currentUserId;
+
   const actions: MenuAction[] = [
     {
       label: "View member",
@@ -29,12 +33,16 @@ export function MemberRow({
       icon: "shield",
       onSelect: () => onRoleChange?.(member),
     },
-    {
-      label: member.is_active ? "Deactivate member" : "Activate member",
-      icon: member.is_active ? "lock" : "check",
-      tone: member.is_active ? "danger" : "default",
-      onSelect: () => onStatusChange?.(member),
-    },
+    ...(isSelf
+      ? []
+      : [
+          {
+            label: member.is_active ? "Deactivate member" : "Activate member",
+            icon: member.is_active ? "lock" : "check",
+            tone: member.is_active ? "danger" : "default",
+            onSelect: () => onStatusChange?.(member),
+          } as MenuAction,
+        ]),
   ];
 
   return (

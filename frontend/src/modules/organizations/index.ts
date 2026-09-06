@@ -26,6 +26,5 @@ export * from "./pages/OrganizationRoleDetailPage";
 export * from "./pages/OrganizationInvitationsPage";
 export * from "./pages/AcceptInvitationPage";
 
-export * from "./permissions";
 export * from "./types/organization.types";
 export * from "./utils/organization.utils";
