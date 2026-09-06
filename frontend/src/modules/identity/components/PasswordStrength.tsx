@@ -1,34 +1,7 @@
-type PasswordChecks = {
-  length: boolean;
-  uppercase: boolean;
-  lowercase: boolean;
-  number: boolean;
-  special: boolean;
-  notCommon: boolean;
-};
-
-export function getPasswordChecks(password: string): PasswordChecks {
-  const commonPasswords = [
-    "password",
-    "password123",
-    "12345678",
-    "qwerty123",
-    "letmein",
-    "welcome",
-    "admin123",
-  ];
-
-  return {
-    length: password.length >= 12 && password.length <= 128,
-    uppercase: /[A-Z]/.test(password),
-    lowercase: /[a-z]/.test(password),
-    number: /[0-9]/.test(password),
-    special: /[^A-Za-z0-9]/.test(password),
-    notCommon:
-      password.length > 0 &&
-      !commonPasswords.includes(password.toLowerCase()),
-  };
-}
+import {
+  getPasswordChecks,
+  type PasswordChecks,
+} from "../utils/identity.password";
 
 type PasswordStrengthProps = {
   password: string;

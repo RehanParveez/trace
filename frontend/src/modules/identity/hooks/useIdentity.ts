@@ -94,11 +94,16 @@ export function useForgotPassword() {
 }
 
 export function useResetPassword() {
+  const queryClient = useQueryClient();
+  const clearSession = useAuthStore((state) => state.clearSession);
+
   return useMutation({
-    mutationFn: (
-      payload: ResetPasswordPayload,
-    ) =>
+    mutationFn: (payload: ResetPasswordPayload) =>
       identityApi.resetPassword(payload),
+    onSuccess: () => {
+      clearSession();
+      queryClient.clear();
+    },
   });
 }
 
@@ -123,11 +128,16 @@ export function useResendVerification() {
 }
 
 export function useChangePassword() {
+  const queryClient = useQueryClient();
+  const clearSession = useAuthStore((state) => state.clearSession);
+
   return useMutation({
-    mutationFn: (
-      payload: ChangePasswordPayload,
-    ) =>
+    mutationFn: (payload: ChangePasswordPayload) =>
       identityApi.changePassword(payload),
+    onSuccess: () => {
+      clearSession();
+      queryClient.clear();
+    },
   });
 }
 

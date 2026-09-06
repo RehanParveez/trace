@@ -3,6 +3,7 @@ import {useEffect,
 } from "react";
 import {identityApi,
 } from "../api/identity.api";
+import axios from "axios";
 import {useAuthStore,
 } from "../store/auth.store";
 import {identityStorage,
@@ -29,17 +30,13 @@ export function IdentityBootstrap({
     let cancelled = false;
 
     async function hydrate() {
-      const hasSession =
-        identityStorage.hasSession();
-
-      if (!hasSession) {
+      if (!identityStorage.hasSession()) {
         if (!cancelled) {
+          setUser(null);
           setHydrating(false);
         }
-
         return;
       }
-
       try {
         const response =
           await identityApi.me();
@@ -47,11 +44,15 @@ export function IdentityBootstrap({
         if (!cancelled) {
           setUser(response.user);
         }
-      } catch {
-        identityStorage.clear();
-
-        if (!cancelled) {
-          setUser(null);
+      } catch (error) {
+        if (
+          axios.isAxiosError(error) &&
+          [401, 403].includes(error.response?.status ?? 0)
+        ) {
+          identityStorage.clear();
+          if (!cancelled) {
+            setUser(null);
+          }
         }
       } finally {
         if (!cancelled) {
@@ -60,7 +61,7 @@ export function IdentityBootstrap({
       }
     }
 
-    hydrate();
+    void hydrate();
 
     return () => {
       cancelled = true;

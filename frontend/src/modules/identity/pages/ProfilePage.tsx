@@ -312,7 +312,7 @@ export function ProfilePage() {
                 onClick={() =>
                   logoutAll.mutate()
                 }
-                disabled={logoutAll.isPending}
+                disabled={logout.isPending || logoutAll.isPending}
                 className="h-10 rounded-[8px] bg-[#C24A3A] px-4 text-[11px] font-bold text-white"
               >
                 {logoutAll.isPending

@@ -1,4 +1,4 @@
-import {useEffect, useState,
+import {useEffect, useState, useRef
 } from "react";
 import {Link, useSearchParams,
 } from "react-router-dom";
@@ -10,6 +10,9 @@ import { getApiErrorMessage } from "../utils/api-error";
 export function VerifyEmailPage() {
   const [params] =
     useSearchParams();
+
+  const autoVerificationAttempted = 
+    useRef(false);
 
   const verify =
     useVerifyEmail();
@@ -27,13 +30,13 @@ export function VerifyEmailPage() {
     useState(initialToken);
 
   useEffect(() => {
-    if (initialToken) {
-      verify.mutate({
-        token: initialToken,
-      });
-    }
+  if (!initialToken || autoVerificationAttempted.current) {
+    return;
+  }
 
-  }, [initialToken]);
+  autoVerificationAttempted.current = true;
+  verify.mutate({ token: initialToken });
+}, [initialToken, verify]);
 
   function submit(
     event: React.FormEvent,

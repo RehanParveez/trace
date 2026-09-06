@@ -17,6 +17,7 @@ export type Organization = {
   name: string;
   slug: string;
   is_active: boolean;
+  ai_enabled: boolean;
 };
 
 export type User = {
@@ -53,6 +54,7 @@ export type MessageResponse = {
 
 export type RegistrationResponse = {
   user: User;
+  verification_required: boolean;
   message: string;
 };
 

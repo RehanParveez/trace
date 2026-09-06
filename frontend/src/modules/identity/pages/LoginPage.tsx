@@ -40,24 +40,14 @@ export function LoginPage() {
     from,
   ]);
 
-  function submit(
-    event: React.FormEvent,
-  ) {
-    event.preventDefault();
+  function submit(event: React.FormEvent) {
+  event.preventDefault();
 
-    console.log('=== LOGIN SUBMIT DEBUG ===');
-    console.log('Email:', email.trim().toLowerCase());
-    console.log('Password:', password ? '***' : '(empty)');
-    console.log('Payload being sent:', {
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    login.mutate({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-  }
+  login.mutate({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+}
 
   return (
     <AuthShell
