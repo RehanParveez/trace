@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useConnectChannel } from "../hooks";
 
 interface ChannelConnectDialogProps {
@@ -20,15 +21,24 @@ export function ChannelConnectDialog({ onClose }: ChannelConnectDialogProps) {
     setError(null);
 
     connect.mutate(
-      {
-        phone_number_id: phoneNumberId.trim(),
-        business_account_id: businessAccountId.trim(),
-        access_token: accessToken.trim(),
-        display_phone_number: displayPhoneNumber.trim() || null,
-      },
-      { onSuccess: onClose, onError: () => setError("Couldn't connect this number — it may already be connected elsewhere.") },
-    );
-  }
+  {
+    phone_number_id: phoneNumberId.trim(),
+    business_account_id: businessAccountId.trim(),
+    access_token: accessToken.trim(),
+    display_phone_number: displayPhoneNumber.trim() || null,
+  },
+  {
+    onSuccess: onClose,
+    onError: (mutationError) =>
+      setError(
+        getApiErrorMessage(
+          mutationError,
+          "Couldn't connect this number — it may already be connected elsewhere.",
+        ),
+      ),
+  },
+);
+}
 
   return (
     <Modal title="Connect WhatsApp Business number" description="Connect this organization's WhatsApp Business Cloud API credentials." onClose={onClose} wide>

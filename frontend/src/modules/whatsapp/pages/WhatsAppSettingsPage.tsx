@@ -1,11 +1,10 @@
 import { PageHeader } from "../../organizations/components/OrganizationUi";
-import { usePermissionKeys } from "../../identity";
-import { WHATSAPP_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { ChannelStatusCard } from "../components/ChannelStatusCard";
 
 export function WhatsAppSettingsPage() {
   const permissions = usePermissionKeys();
-  const canManage = permissions.includes(WHATSAPP_PERMISSIONS.WHATSAPP_CHANNEL_MANAGE);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.WHATSAPP_CHANNEL_MANAGE);
 
   return (
     <div className="space-y-7">

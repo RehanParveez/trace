@@ -7,6 +7,5 @@ export * from "./components/SitePhotoGallery";
 export * from "./hooks";
 export * from "./pages/SitePhotosPage";
 export * from "./pages/WhatsAppSettingsPage";
-export * from "./permissions";
 export * from "./types/whatsapp.types";
 export * from "./utils/whatsapp.utils";

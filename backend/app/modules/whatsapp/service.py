@@ -653,10 +653,10 @@ class WhatsAppService:
   ) -> SitePhotoResponse:
     photo = await self._get_photo_model(organization_id, photo_id)
 
-    if payload.location_text is not None:
-      photo.location_text = payload.location_text
-    if payload.photo_date is not None:
-      photo.photo_date = payload.photo_date
+    if "location_text" in payload.model_fields_set:
+     photo.location_text = payload.location_text
+    if "photo_date" in payload.model_fields_set:
+     photo.photo_date = payload.photo_date
     await self.photos.update(photo)
     await self.session.commit()
 

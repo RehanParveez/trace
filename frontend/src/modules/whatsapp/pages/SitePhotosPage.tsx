@@ -1,11 +1,10 @@
 import { PageHeader } from "../../organizations/components/OrganizationUi";
-import { usePermissionKeys } from "../../identity";
-import { WHATSAPP_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { SitePhotoGallery } from "../components/SitePhotoGallery";
 
 export function SitePhotosPage() {
   const permissions = usePermissionKeys();
-  const canManage = permissions.includes(WHATSAPP_PERMISSIONS.SITE_PHOTO_MANAGE);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.SITE_PHOTO_MANAGE);
 
   return (
     <div className="space-y-7">
