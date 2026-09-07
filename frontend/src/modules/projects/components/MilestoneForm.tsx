@@ -18,24 +18,24 @@ export function MilestoneForm({
   milestone,
   onClose,
 }: MilestoneFormProps) {
-  const createMilestone =
-    useCreateMilestone();
+  const createMilestone = useCreateMilestone();
+  const updateMilestone = useUpdateMilestone();
 
-  const updateMilestone =
-    useUpdateMilestone();
+  const [name, setName] = useState(
+    milestone?.name ?? "",
+  );
 
-  const [name, setName] =
-    useState(milestone?.name ?? "");
+  const [description, setDescription] = useState(
+    milestone?.description ?? "",
+  );
 
-  const [description, setDescription] =
-    useState(
-      milestone?.description ?? "",
-    );
+  const [dueDate, setDueDate] = useState(
+    milestone?.due_date ?? "",
+  );
 
-  const [dueDate, setDueDate] =
-    useState(
-      milestone?.due_date ?? "",
-    );
+  const [completed, setCompleted] = useState(
+    Boolean(milestone?.completed_at),
+  );
 
   const editing = Boolean(milestone);
 
@@ -53,6 +53,14 @@ export function MilestoneForm({
       description:
         description.trim() || null,
       due_date: dueDate || null,
+      completed_at: completed
+        ? (
+            milestone?.completed_at ??
+            new Date()
+              .toISOString()
+              .slice(0, 10)
+          )
+        : null,
     };
 
     if (editing && milestone) {
@@ -153,6 +161,20 @@ export function MilestoneForm({
             />
           </label>
 
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={completed}
+              onChange={(e) =>
+                setCompleted(e.target.checked)
+              }
+            />
+
+            <span className="text-[11px] text-[#191410]">
+              Mark as completed
+            </span>
+          </label>
+
           <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
             <Button
               type="button"
@@ -167,8 +189,7 @@ export function MilestoneForm({
               type="submit"
               variant="primary"
               disabled={
-                isSubmitting ||
-                !name.trim()
+                isSubmitting || !name.trim()
               }
             >
               {isSubmitting

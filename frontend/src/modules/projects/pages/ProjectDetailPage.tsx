@@ -4,57 +4,31 @@ import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
 } from "../../organizations/components/OrganizationUi";
 import {useClients, useDeleteProject, useProject, useProjectMembers, useProjectMilestones,
 } from "../hooks";
-import { PROJECT_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { ProjectHeader } from "../components/ProjectHeader";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectMembers } from "../components/ProjectMembers";
 import { MilestoneTable } from "../components/MilestoneTable";
-import { usePermissionKeys } from "../../identity/";
 import { DrawingsBoqSection } from "../../drawings_boq";
 import { VerificationSection } from "../../verification";
 
-interface ProjectDetailPageProps {
-  permissions?: string[];
-}
-
-export function ProjectDetailPage({
-  permissions: providedPermissions,
-}: ProjectDetailPageProps) {
-  const permissions =
-    providedPermissions ?? usePermissionKeys();
+export function ProjectDetailPage() {
   const navigate = useNavigate();
+  const permissions = usePermissionKeys();
 
-  const { projectId } =
-    useParams<{ projectId: string }>();
+  const { projectId } = useParams<{ projectId: string }>();
 
-  const [editOpen, setEditOpen] =
-    useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
-  const projectQuery =
-    useProject(projectId ?? "");
-
+  const projectQuery = useProject(projectId ?? "");
   const clientsQuery = useClients();
+  const membersQuery = useProjectMembers(projectId ?? "");
+  const milestonesQuery = useProjectMilestones(projectId ?? "");
+  const deleteProject = useDeleteProject();
 
-  const membersQuery =
-    useProjectMembers(projectId ?? "");
-
-  const milestonesQuery =
-    useProjectMilestones(projectId ?? "");
-
-  const deleteProject =
-    useDeleteProject();
-
-  const canRead = permissions.includes(
-    PROJECT_PERMISSIONS.PROJECT_READ,
-  );
-
-  const canUpdate = permissions.includes(
-    PROJECT_PERMISSIONS.PROJECT_UPDATE,
-  );
-
-  const canDelete = permissions.includes(
-    PROJECT_PERMISSIONS.PROJECT_DELETE,
-  );
+  const canRead = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_READ);
+  const canUpdate = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_UPDATE);
+  const canDelete = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_DELETE);
 
   if (!canRead && permissions.length > 0) {
     return (
@@ -104,15 +78,11 @@ export function ProjectDetailPage({
   const members = membersQuery.data;
   const milestones = milestonesQuery.data;
 
-  const client = clients.find(
-    (item) => item.id === project.client_id,
-  );
+  const client = clients.find((item) => item.id === project.client_id);
 
-  const completedMilestones =
-    milestones.filter(
-      (milestone) =>
-        milestone.completed_at !== null,
-    ).length;
+  const completedMilestones = milestones.filter(
+    (milestone) => milestone.completed_at !== null,
+  ).length;
 
   function handleDelete() {
     const confirmed = window.confirm(
@@ -142,9 +112,7 @@ export function ProjectDetailPage({
         project={project}
         canUpdate={canUpdate}
         canDelete={canDelete}
-        onEdit={() =>
-          setEditOpen(true)
-        }
+        onEdit={() => setEditOpen(true)}
         onDelete={handleDelete}
       />
 
@@ -165,9 +133,7 @@ export function ProjectDetailPage({
 
           <StatCard
             label="Client"
-            value={
-              client?.name ?? "No client"
-            }
+            value={client?.name ?? "No client"}
             note="Assigned client"
             icon="building"
             tone="blue"
@@ -205,13 +171,22 @@ export function ProjectDetailPage({
       </section>
 
       <section>
-        <SectionDivider title="Drawings & BOQ" description="Upload IFC drawings and manage the auto-generated bill of quantities." />
+        <SectionDivider
+          title="Drawings & BOQ"
+          description="Upload IFC drawings and manage the auto-generated bill of quantities."
+        />
         <DrawingsBoqSection projectId={project.id} />
       </section>
 
       <section>
-        <SectionDivider title="Progress verification" description="Claims of physical progress, backed by photo evidence, against approved BOQ items." />
-        <VerificationSection projectId={project.id} permissions={permissions} />
+        <SectionDivider
+          title="Progress verification"
+          description="Claims of physical progress, backed by photo evidence, against approved BOQ items."
+        />
+        <VerificationSection
+          projectId={project.id}
+          permissions={permissions}
+        />
       </section>
 
       <section>
@@ -231,9 +206,7 @@ export function ProjectDetailPage({
         <ProjectForm
           project={project}
           clients={clients}
-          onClose={() =>
-            setEditOpen(false)
-          }
+          onClose={() => setEditOpen(false)}
         />
       ) : null}
     </div>

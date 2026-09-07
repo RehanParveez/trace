@@ -4,7 +4,6 @@ import {Button, Icon,
 } from "../../organizations/components/OrganizationUi";
 import {useCreateProject, useUpdateProject,
 } from "../hooks";
-
 import type {Client, Project, ProjectStatus,
 } from "../types/project.types";
 
@@ -33,38 +32,41 @@ export function ProjectForm({
 
   const editing = Boolean(project);
 
-  const [name, setName] =
-    useState(project?.name ?? "");
+  const [name, setName] = useState(
+    project?.name ?? "",
+  );
 
-  const [code, setCode] =
-    useState(project?.code ?? "");
+  const [code, setCode] = useState(
+    project?.code ?? "",
+  );
 
-  const [description, setDescription] =
-    useState(project?.description ?? "");
+  const [description, setDescription] = useState(
+    project?.description ?? "",
+  );
 
-  const [clientId, setClientId] =
-    useState(project?.client_id ?? "");
+  const [clientId, setClientId] = useState(
+    project?.client_id ?? "",
+  );
 
-  const [location, setLocation] =
-    useState(project?.location ?? "");
+  const [location, setLocation] = useState(
+    project?.location ?? "",
+  );
 
-  const [status, setStatus] =
-    useState<ProjectStatus>(
-      project?.status ?? "PLANNING",
-    );
+  const [status, setStatus] = useState<ProjectStatus>(
+    project?.status ?? "PLANNING",
+  );
 
-  const [startDate, setStartDate] =
-    useState(project?.start_date ?? "");
+  const [startDate, setStartDate] = useState(
+    project?.start_date ?? "",
+  );
 
-  const [expectedEndDate, setExpectedEndDate] =
-    useState(
-      project?.expected_end_date ?? "",
-    );
+  const [expectedEndDate, setExpectedEndDate] = useState(
+    project?.expected_end_date ?? "",
+  );
 
-  const [actualEndDate, setActualEndDate] =
-    useState(
-      project?.actual_end_date ?? "",
-    );
+  const [actualEndDate, setActualEndDate] = useState(
+    project?.actual_end_date ?? "",
+  );
 
   useEffect(() => {
     if (!project) {
@@ -73,9 +75,7 @@ export function ProjectForm({
 
     setName(project.name);
     setCode(project.code ?? "");
-    setDescription(
-      project.description ?? "",
-    );
+    setDescription(project.description ?? "");
     setClientId(project.client_id ?? "");
     setLocation(project.location ?? "");
     setStatus(project.status);
@@ -97,23 +97,23 @@ export function ProjectForm({
   ) {
     event.preventDefault();
 
-    const payload = {
-      name: name.trim(),
-      code: code.trim() || null,
-      description:
-        description.trim() || null,
-      client_id: clientId || null,
-      location:
-        location.trim() || null,
-      status,
-      start_date: startDate || null,
-      expected_end_date:
-        expectedEndDate || null,
-      actual_end_date:
-        actualEndDate || null,
-    };
-
     if (editing && project) {
+      const payload = {
+        name: name.trim(),
+        code: code.trim() || null,
+        description:
+          description.trim() || null,
+        client_id: clientId || null,
+        location:
+          location.trim() || null,
+        status,
+        start_date: startDate || null,
+        expected_end_date:
+          expectedEndDate || null,
+        actual_end_date:
+          actualEndDate || null,
+      };
+
       updateProject.mutate(
         {
           projectId: project.id,
@@ -126,6 +126,19 @@ export function ProjectForm({
 
       return;
     }
+
+    const payload = {
+      name: name.trim(),
+      code: code.trim() || null,
+      description:
+        description.trim() || null,
+      client_id: clientId || null,
+      location:
+        location.trim() || null,
+      start_date: startDate || null,
+      expected_end_date:
+        expectedEndDate || null,
+    };
 
     createProject.mutate(payload, {
       onSuccess: onClose,
@@ -189,15 +202,19 @@ export function ProjectForm({
             placeholder="Project description"
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div
+            className={`grid gap-4 ${
+              editing
+                ? "sm:grid-cols-2"
+                : "sm:grid-cols-1"
+            }`}
+          >
             <SelectField
               label="Client"
               value={clientId}
               onChange={setClientId}
             >
-              <option value="">
-                No client
-              </option>
+              <option value="">No client</option>
 
               {clients.map((client) => (
                 <option
@@ -209,29 +226,31 @@ export function ProjectForm({
               ))}
             </SelectField>
 
-            <SelectField
-              label="Status"
-              value={status}
-              onChange={(value) =>
-                setStatus(
-                  value as ProjectStatus,
-                )
-              }
-            >
-              {statuses.map(
-                (projectStatus) => (
-                  <option
-                    key={projectStatus}
-                    value={projectStatus}
-                  >
-                    {projectStatus.replace(
-                      "_",
-                      " ",
-                    )}
-                  </option>
-                ),
-              )}
-            </SelectField>
+            {editing ? (
+              <SelectField
+                label="Status"
+                value={status}
+                onChange={(value) =>
+                  setStatus(
+                    value as ProjectStatus,
+                  )
+                }
+              >
+                {statuses.map(
+                  (projectStatus) => (
+                    <option
+                      key={projectStatus}
+                      value={projectStatus}
+                    >
+                      {projectStatus.replace(
+                        "_",
+                        " ",
+                      )}
+                    </option>
+                  ),
+                )}
+              </SelectField>
+            ) : null}
           </div>
 
           <Field
@@ -241,7 +260,13 @@ export function ProjectForm({
             placeholder="Project location"
           />
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div
+            className={`grid gap-4 ${
+              editing
+                ? "sm:grid-cols-3"
+                : "sm:grid-cols-2"
+            }`}
+          >
             <DateField
               label="Start date"
               value={startDate}
@@ -254,11 +279,13 @@ export function ProjectForm({
               onChange={setExpectedEndDate}
             />
 
-            <DateField
-              label="Actual end"
-              value={actualEndDate}
-              onChange={setActualEndDate}
-            />
+            {editing ? (
+              <DateField
+                label="Actual end"
+                value={actualEndDate}
+                onChange={setActualEndDate}
+              />
+            ) : null}
           </div>
 
           <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-5">
@@ -275,8 +302,7 @@ export function ProjectForm({
               type="submit"
               variant="primary"
               disabled={
-                isSubmitting ||
-                !name.trim()
+                isSubmitting || !name.trim()
               }
             >
               {isSubmitting

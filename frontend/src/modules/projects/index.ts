@@ -15,8 +15,6 @@ export * from "./hooks";
 export * from "./pages/ProjectDetailPage";
 export * from "./pages/ProjectsPage";
 
-export * from "./permissions";
-
 export * from "./types/project.types";
 
 export * from "./utils/project.utils";

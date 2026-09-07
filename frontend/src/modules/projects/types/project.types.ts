@@ -93,10 +93,8 @@ export interface ProjectCreateRequest {
   description?: string | null;
   client_id?: string | null;
   location?: string | null;
-  status?: ProjectStatus;
   start_date?: string | null;
   expected_end_date?: string | null;
-  actual_end_date?: string | null;
 }
 
 export interface ProjectUpdateRequest {
