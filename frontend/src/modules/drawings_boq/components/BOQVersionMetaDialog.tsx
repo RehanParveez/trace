@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Modal } from "../../organizations/components/OrganizationUi";
 import { useUpdateBOQVersion } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type { BOQVersion } from "../types/drawings-boq.types";
 
 interface BOQVersionMetaDialogProps {
@@ -37,18 +38,22 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
         payload: {
           covered_area_sqft: coveredArea === "" ? null : Number(coveredArea),
           export_meta: {
-            company_name: companyName.trim() || undefined,
-            client_name: clientName.trim() || undefined,
-            project_title: projectTitle.trim() || undefined,
-            location: location.trim() || undefined,
-            plot_size: plotSize.trim() || undefined,
-            storeys: storeys.trim() || undefined,
-            prepared_by: preparedBy.trim() || undefined,
-            checked_by: checkedBy.trim() || undefined,
+            company_name: companyName.trim() || null,
+            client_name: clientName.trim() || null,
+            project_title: projectTitle.trim() || null,
+            location: location.trim() || null,
+            plot_size: plotSize.trim() || null,
+            storeys: storeys.trim() || null,
+            prepared_by: preparedBy.trim() || null,
+            checked_by: checkedBy.trim() || null,
           },
         },
       },
-      { onSuccess: onClose, onError: () => setError("Couldn't save these details. Please try again.") },
+      {
+        onSuccess: onClose,
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "Couldn't save these details. Please try again.")),
+      },
     );
   }
 

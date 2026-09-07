@@ -13,6 +13,5 @@ export * from "./components/MaterialLibraryPanel";
 export * from "./hooks";
 export * from "./pages/LabourRatesPage";
 export * from "./pages/MaterialLibraryPage";
-export * from "./permissions";
 export * from "./types/drawings-boq.types";
 export * from "./utils/drawings-boq.utils";

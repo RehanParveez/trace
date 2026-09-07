@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Modal } from "../../organizations/components/OrganizationUi";
 import { useAddCustomBOQItem } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 
 interface AddCustomBOQItemDialogProps {
   boqVersionId: string;
@@ -34,7 +35,8 @@ export function AddCustomBOQItemDialog({ boqVersionId, onClose }: AddCustomBOQIt
       },
       {
         onSuccess: onClose,
-        onError: () => setError("Couldn't add this line item. Please try again."),
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "Couldn't add this line item. Please try again.")),
       },
     );
   }

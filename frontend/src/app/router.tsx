@@ -12,7 +12,7 @@ import {SubscriptionPage, AdminSubscriptionsPage,
 } from "../modules/subscriptions";
 import {ProjectsPage, ProjectDetailPage,
 } from "../modules/projects";
-import { MaterialLibraryPage } from "../modules/drawings_boq";
+import { MaterialLibraryPage, LabourRatesPage } from "../modules/drawings_boq";
 import { SitePhotosPage, WhatsAppSettingsPage } from "../modules/whatsapp";
 import { ProgressClaimsReviewPage } from "../modules/verification";
 import { NotificationsPage } from "../modules/notifications";
@@ -161,6 +161,10 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <MaterialLibraryPage />,
+    },
+    {
+      path: "labour-rates",
+      element: <LabourRatesPage />,
     },
    ],
   },

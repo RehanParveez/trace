@@ -39,14 +39,14 @@ export interface BOQVersion {
 }
 
 export interface BOQExportMeta {
-  company_name?: string;
-  client_name?: string;
-  project_title?: string;
-  location?: string;
-  plot_size?: string;
-  storeys?: string;
-  prepared_by?: string;
-  checked_by?: string;
+  company_name?: string | null;
+  client_name?: string | null;
+  project_title?: string | null;
+  location?: string | null;
+  plot_size?: string | null;
+  storeys?: string | null;
+  prepared_by?: string | null;
+  checked_by?: string | null;
 }
 
 export interface BOQItem {

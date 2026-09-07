@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ErrorState, LoadingState, Panel } from "../../organizations/components/OrganizationUi";
 import { useBOQVersions, useDrawings } from "../hooks";
 import type { BOQVersion, Drawing } from "../types/drawings-boq.types";
-import { DRAWINGS_BOQ_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { DrawingTable } from "./DrawingTable";
 import { DrawingUploadDialog } from "./DrawingUploadDialog";
 import { DrawingElementsDialog } from "./DrawingElementsDialog";
@@ -14,10 +14,10 @@ import { BOQVersionMetaDialog } from "./BOQVersionMetaDialog";
 
 interface DrawingsBoqSectionProps {
   projectId: string;
-  permissions: string[];
 }
 
-export function DrawingsBoqSection({ projectId, permissions }: DrawingsBoqSectionProps) {
+export function DrawingsBoqSection({ projectId }: DrawingsBoqSectionProps) {
+  const permissions = usePermissionKeys();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [viewingDrawing, setViewingDrawing] = useState<Drawing | null>(null);
   const [selectedVersionId, setSelectedVersionId] = useState<string | undefined>();
@@ -27,12 +27,12 @@ export function DrawingsBoqSection({ projectId, permissions }: DrawingsBoqSectio
   const drawingsQuery = useDrawings(projectId);
   const boqVersionsQuery = useBOQVersions(projectId);
 
-  const canRead = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.DRAWING_READ);
-  const canUpload = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.DRAWING_CREATE);
-  const canUpdateBOQ = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.BOQ_UPDATE);
-  const canApproveBOQ = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.BOQ_APPROVE);
-  const canCreateItem = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.BOQ_ITEM_CREATE);
-  const canExport = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.BOQ_EXPORT);
+  const canRead = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
+  const canUpload = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_CREATE);
+  const canUpdateBOQ = permissions.includes(IDENTITY_PERMISSIONS.BOQ_UPDATE);
+  const canApproveBOQ = permissions.includes(IDENTITY_PERMISSIONS.BOQ_APPROVE);
+  const canCreateItem = permissions.includes(IDENTITY_PERMISSIONS.BOQ_ITEM_CREATE);
+  const canExport = permissions.includes(IDENTITY_PERMISSIONS.BOQ_EXPORT);
 
   const boqVersions = boqVersionsQuery.data ?? [];
   const selectedVersion: BOQVersion | undefined = boqVersions.find((v) => v.id === selectedVersionId);

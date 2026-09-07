@@ -1,11 +1,10 @@
 import { PageHeader } from "../../organizations/components/OrganizationUi";
-import { usePermissionKeys } from "../../identity";
-import { DRAWINGS_BOQ_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { MaterialLibraryPanel } from "../components/MaterialLibraryPanel";
 
 export function MaterialLibraryPage() {
   const permissions = usePermissionKeys();
-  const canManage = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.MATERIAL_LIBRARY_MANAGE);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.MATERIAL_LIBRARY_MANAGE);
 
   return (
     <div className="space-y-7">

@@ -129,6 +129,15 @@ class DrawingBOQService:
     drawing = await self.drawings.create(drawing)
     await self.subscriptions.increment_usage(organization_id, "drawings")
     await self.session.commit()
+    
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.DRAWING,
+      drawing.id,
+      AuditAction.CREATE,
+      f'Uploaded drawing "{drawing.original_filename}"',
+    )
 
     if idempotency_key:
       await store_response(
@@ -313,9 +322,18 @@ class DrawingBOQService:
     item.approved_by_user_id = user_id
     item.approved_at = datetime.now(timezone.utc)
     item.version += 1
-
+    
     await self.boq_items.update(item)
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.BOQ_ITEM,
+      item.id,
+      AuditAction.APPROVE,
+      f'Approved BOQ item "{item.material_name}"',
+    )
     return item
 
   async def create_material_library_entry(
@@ -345,6 +363,15 @@ class DrawingBOQService:
     )
     entry = await self.material_library.create(entry)
     await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      None,
+      AuditEntityType.MATERIAL_LIBRARY,
+      entry.id,
+      AuditAction.CREATE,
+      f'Created material library entry "{entry.normalized_name}"',
+    )
     return entry
 
   async def list_material_library(
@@ -375,7 +402,16 @@ class DrawingBOQService:
     if payload.default_rate is not None:
       entry.default_rate = payload.default_rate
     entry = await self.material_library.update(entry)
+    
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      None, 
+      AuditEntityType.MATERIAL_LIBRARY,
+      entry.id,
+      AuditAction.UPDATE,
+      f'Updated material library entry "{entry.normalized_name}"',
+    )
     return entry
 
   async def get_material_default_rate(
@@ -463,6 +499,14 @@ class DrawingBOQService:
     )
     item = await self.boq_items.create(item)
     await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.BOQ_ITEM,
+      item.id,
+      AuditAction.CREATE,
+      f'Added custom BOQ item "{item.material_name}"',
+    )
     return item
 
   async def update_boq_version(

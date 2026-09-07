@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, EmptyState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { Button, EmptyState, ErrorState, LoadingState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useCreateMaterialLibraryEntry, useMaterialLibrary, useUpdateMaterialLibraryEntry } from "../hooks";
 import { formatCurrency } from "../utils/drawings-boq.utils";
 import type { MaterialLibraryEntry } from "../types/drawings-boq.types";
@@ -45,7 +46,8 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
       },
       {
         onSuccess: () => { setRawText(""); setNormalizedName(""); setCategory(""); setDefaultUnit(""); setDefaultRate(""); setFormOpen(false); },
-        onError: () => setError("A mapping for this text may already exist."),
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "A mapping for this text may already exist.")),
       },
     );
   }
@@ -88,7 +90,11 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
         </form>
       ) : null}
 
-      {entries.length === 0 ? (
+      {libraryQuery.isLoading ? (
+        <LoadingState label="Loading material library…" />
+      ) : libraryQuery.isError ? (
+        <ErrorState title="We couldn't load the material library" onRetry={() => void libraryQuery.refetch()} />
+      ) : entries.length === 0 ? (
         <EmptyState icon="info" title="No mappings yet" description="Add entries here to speed up material normalization during parsing." />
       ) : (
         <TableShell>

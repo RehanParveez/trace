@@ -1,11 +1,10 @@
 import { PageHeader } from "../../organizations/components/OrganizationUi";
-import { usePermissionKeys } from "../../identity";
-import { DRAWINGS_BOQ_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { LabourRatesPanel } from "../components/LabourRatesPanel";
 
 export function LabourRatesPage() {
   const permissions = usePermissionKeys();
-  const canManage = permissions.includes(DRAWINGS_BOQ_PERMISSIONS.LABOUR_RATE_MANAGE);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.LABOUR_RATE_MANAGE);
 
   return (
     <div className="space-y-7">

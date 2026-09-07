@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Button, Icon, Modal } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useUploadDrawing } from "../hooks";
 import { formatFileSize } from "../utils/drawings-boq.utils";
 
@@ -33,7 +34,11 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
 
     upload.mutate(
       { file, idempotencyKey: idempotencyKeyRef.current },
-      { onSuccess: onClose, onError: () => setError("Upload failed. Check the file and try again.") },
+      {
+        onSuccess: onClose,
+        onError: (error) =>
+          setError(getApiErrorMessage(error, "Upload failed. Check the file and try again.")),
+      },
     );
   }
 

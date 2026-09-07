@@ -46,6 +46,11 @@ function buildOrganizationNav(
       to: "/app/drawings_boq",
       icon: "materials",
     },
+    {
+      label: "Labour rates",
+      to: "/app/drawings_boq/labour-rates",
+      icon: "budget",
+    },
   ];
 }
 

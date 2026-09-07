@@ -206,7 +206,7 @@ export function ProjectDetailPage({
 
       <section>
         <SectionDivider title="Drawings & BOQ" description="Upload IFC drawings and manage the auto-generated bill of quantities." />
-        <DrawingsBoqSection projectId={project.id} permissions={permissions} />
+        <DrawingsBoqSection projectId={project.id} />
       </section>
 
       <section>

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios";
-import { Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { Badge, Button, EmptyState, ErrorState, Icon, LoadingState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useApproveBOQItem, useBOQItems, useUpdateBOQItem } from "../hooks";
 import type { BOQItem } from "../types/drawings-boq.types";
 import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity } from "../utils/drawings-boq.utils";
@@ -40,7 +41,11 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
         <div className="border-b border-[#cfe0f2] bg-[#e7f0fa] px-5 py-3 text-[11px] text-[#2c5c8f]">{notice}</div>
       ) : null}
 
-      {items.length === 0 ? (
+      {itemsQuery.isLoading ? (
+        <LoadingState label="Loading BOQ items…" />
+      ) : itemsQuery.isError ? (
+        <ErrorState title="We couldn't load BOQ items" onRetry={() => void itemsQuery.refetch()} />
+      ) : items.length === 0 ? (
         <EmptyState icon="building" title="No BOQ items yet" description="Items appear here once a drawing has finished parsing." />
       ) : (
         <TableShell>
@@ -75,7 +80,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                               handleConflict();
                               return;
                             }
-                            setNotice("Couldn't save this item. Please try again.");
+                            setNotice(getApiErrorMessage(error, "Couldn't save this item. Please try again."));
                           },
                         },
                       )
@@ -109,7 +114,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                             variant="primary"
                             size="sm"
                             disabled={approveItem.isPending}
-                            onClick={() => approveItem.mutate(item.id, { onError: () => setNotice("Couldn't approve this item. Please try again.") })}
+                            onClick={() => approveItem.mutate(item.id, { onError: (error) => setNotice(getApiErrorMessage(error, "Couldn't approve this item. Please try again.")) })}
                           >
                             Approve
                           </Button>
@@ -153,7 +158,9 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
       <td className="px-4 py-3"><input className={cls} value={unit} onChange={(e) => setUnit(e.target.value)} /></td>
       <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></td>
       <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" placeholder="—" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} /></td>
-      <td className="px-4 py-3 text-right font-mono text-[11px] text-[#a2957c]">—</td>
+      <td className="px-4 py-3 text-right font-mono text-[11px] text-[#a2957c]">
+        {formatCurrency(computeLineTotal(quantity, unitRate === "" ? null : unitRate))}
+      </td>
       <td className="px-4 py-3" />
       <td className="px-4 py-3">
         <div className="flex justify-end gap-2">

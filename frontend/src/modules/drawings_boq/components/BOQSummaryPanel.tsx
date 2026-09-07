@@ -1,5 +1,7 @@
-import { Badge, Button, Icon, Panel } from "../../organizations/components/OrganizationUi";
+import { useState } from "react";
+import { Badge, Button, ErrorState, Icon, Panel } from "../../organizations/components/OrganizationUi";
 import { useBOQSummary, useExportBOQ, useGenerateLabourItems } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type { BOQVersion } from "../types/drawings-boq.types";
 import { formatCurrency } from "../utils/drawings-boq.utils";
 
@@ -16,8 +18,18 @@ export function BOQSummaryPanel({ version, canUpdate, canAddItem, canExport, onE
   const summaryQuery = useBOQSummary(version.id);
   const generateLabour = useGenerateLabourItems(version.id);
   const exportBOQ = useExportBOQ(version.id, version.label);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const summary = summaryQuery.data;
+
+  if (summaryQuery.isError) {
+    return (
+      <ErrorState
+        title="We couldn't load the BOQ summary"
+        onRetry={() => void summaryQuery.refetch()}
+      />
+    );
+  }
 
   return (
     <Panel className="space-y-4 p-5">
@@ -39,19 +51,63 @@ export function BOQSummaryPanel({ version, canUpdate, canAddItem, canExport, onE
               <Icon name="plus" size={12} />Add line item
             </Button>
           ) : null}
+
           {canUpdate ? (
-            <Button variant="ghost" size="sm" disabled={generateLabour.isPending || !version.covered_area_sqft} onClick={() => generateLabour.mutate()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={generateLabour.isPending || !version.covered_area_sqft}
+              onClick={() => {
+                setActionError(null);
+                generateLabour.mutate(undefined, {
+                  onError: (error) =>
+                    setActionError(getApiErrorMessage(error, "Couldn't generate labour items.")),
+                });
+              }}
+            >
               {generateLabour.isPending ? "Generating…" : "Generate labour"}
             </Button>
           ) : null}
           {canExport ? (
             <>
-              <Button variant="ghost" size="sm" disabled={exportBOQ.isPending} onClick={() => exportBOQ.mutate("pdf")}>Export PDF</Button>
-              <Button variant="ghost" size="sm" disabled={exportBOQ.isPending} onClick={() => exportBOQ.mutate("xlsx")}>Export Excel</Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={exportBOQ.isPending}
+                onClick={() => {
+                  setActionError(null);
+                  exportBOQ.mutate("pdf", {
+                    onError: (error) =>
+                      setActionError(getApiErrorMessage(error, "Couldn't export the PDF.")),
+                  });
+                }}
+              >
+                Export PDF
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={exportBOQ.isPending}
+                onClick={() => {
+                  setActionError(null);
+                  exportBOQ.mutate("xlsx", {
+                    onError: (error) =>
+                      setActionError(getApiErrorMessage(error, "Couldn't export the spreadsheet.")),
+                  });
+                }}
+              >
+                Export Excel
+              </Button>
             </>
           ) : null}
         </div>
       </div>
+
+      {actionError ? (
+        <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+          {actionError}
+        </div>
+      ) : null}
 
       {summary && !version.covered_area_sqft ? (
         <div className="rounded-[8px] border border-[#e6dcc0] bg-[#fbf6e8] px-3 py-2 text-[11px] text-[#8a6d1f]">

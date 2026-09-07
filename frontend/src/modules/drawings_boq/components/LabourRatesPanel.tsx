@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, EmptyState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { Button, EmptyState, ErrorState, LoadingState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
 import { useCreateLabourRate, useLabourRates, useUpdateLabourRate } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import { formatCurrency } from "../utils/drawings-boq.utils";
 import type { LabourRate } from "../types/drawings-boq.types";
 
@@ -31,7 +32,8 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
       { trade: trade.trim(), unit: unit.trim(), rate: Number(rate) },
       {
         onSuccess: () => { setTrade(""); setUnit("Sft"); setRate(""); setFormOpen(false); },
-        onError: () => setError("A rate for this trade may already exist."),
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "A rate for this trade may already exist.")),
       },
     );
   }
@@ -66,7 +68,11 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
         </form>
       ) : null}
 
-      {rates.length === 0 ? (
+      {ratesQuery.isLoading ? (
+        <LoadingState label="Loading labour rates…" />
+      ) : ratesQuery.isError ? (
+        <ErrorState title="We couldn't load labour rates" onRetry={() => void ratesQuery.refetch()} />
+      ) : rates.length === 0 ? (
         <EmptyState icon="info" title="No labour rates yet" description="Add trade rates here to auto-generate labour costs on any BOQ version." />
       ) : (
         <TableShell>
