@@ -8,7 +8,7 @@ import {ProtectedRoute, PublicOnlyRoute,
 import { OrganizationShell, OrganizationPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage, AcceptInvitationPage,
 } from "../modules/organizations";
 import { AppErrorBoundary } from "../shared/components/AppErrorBoundary";
-import {SubscriptionPage,
+import {SubscriptionPage, AdminSubscriptionsPage,
 } from "../modules/subscriptions";
 import {ProjectsPage, ProjectDetailPage,
 } from "../modules/projects";
@@ -227,6 +227,17 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <AIRequestsPage />,
+    },
+  ],
+},
+
+{
+  path: "platform-admin/subscriptions",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <AdminSubscriptionsPage />,
     },
   ],
 },

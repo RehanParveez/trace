@@ -9,6 +9,7 @@ from app.modules.identity.models import Organization
 from app.modules.subscriptions.models import BillingInterval, Subscription, SubscriptionStatus, UsageCounter, UsagePeriod
 from app.modules.subscriptions.repository import SubscriptionRepository
 from app.modules.subscriptions.schemas import ChangePlanRequest, UsageMetricResponse, UsageResponse
+from app.modules.identity.enums import PermissionKey
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
 from app.modules.audit.models import AuditAction, AuditEntityType
@@ -191,6 +192,7 @@ class SubscriptionService:
     self,
     organization_id: UUID,
     cancel_at_period_end: bool,
+    actor_user_id: UUID,
   ) -> Subscription:
     subscription = await self.repository.get_subscription_for_update(
       organization_id
@@ -202,7 +204,6 @@ class SubscriptionService:
         status_code=404,
         code="SUBSCRIPTION_NOT_FOUND",
       )
-
     if subscription.status in {
       SubscriptionStatus.CANCELLED,
       SubscriptionStatus.EXPIRED,
@@ -223,6 +224,16 @@ class SubscriptionService:
     await self.session.flush()
     await self.session.commit()
 
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.SUBSCRIPTION,
+      subscription.id,
+      AuditAction.UPDATE,
+      "Subscription cancelled at period end"
+      if cancel_at_period_end
+      else "Subscription cancelled immediately",
+    )
     logger.info(
       "subscription.cancelled",
       extra={"organization_id": str(organization_id), "immediate": not cancel_at_period_end},
@@ -233,6 +244,7 @@ class SubscriptionService:
   async def reactivate_subscription(
     self,
     organization_id: UUID,
+    actor_user_id: UUID,
 ) -> Subscription:
     subscription = await self.repository.get_subscription_for_update(
       organization_id
@@ -264,6 +276,15 @@ class SubscriptionService:
     subscription.cancel_at_period_end = False
     await self.session.flush()
     await self.session.commit()
+    
+    await self.audit.log(
+      organization_id,
+      actor_user_id,
+      AuditEntityType.SUBSCRIPTION,
+      subscription.id,
+      AuditAction.UPDATE,
+      "Subscription reactivated (cancel_at_period_end cleared)",
+    )
 
     logger.info(
       "subscription.reactivated",
@@ -526,7 +547,7 @@ class SubscriptionService:
       if previous_ratio < 0.8 <= new_ratio:
        await self.notifications.notify_by_permission(
         organization_id,
-        "organization.manage",
+        str(PermissionKey.ORGANIZATION_MANAGE),
         NotificationType.SUBSCRIPTION_USAGE_WARNING,
         f"{metric.replace('_', ' ').title()} usage is near your plan limit",
         body=f"{counter.quantity} of {limit} used this billing period.",

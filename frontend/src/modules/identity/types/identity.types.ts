@@ -31,6 +31,7 @@ export type User = {
   last_login_at: string | null;
   role: Role;
   organization: Organization;
+  is_platform_admin: boolean;
 };
 
 export type TokenResponse = {

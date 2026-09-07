@@ -122,9 +122,13 @@ async def me(
   current_user: User = Depends(
     get_current_user
   ),
+  session: AsyncSession = Depends(get_db),
+  redis: Redis = Depends(get_redis),
 ) -> CurrentUserResponse:
+  service = build_identity_service(session, redis)
+
   return CurrentUserResponse(
-    user=IdentityService.build_user_response(
+    user=await service.build_user_response(
       current_user, current_user.active_membership,
     )
   )

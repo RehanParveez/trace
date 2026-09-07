@@ -276,6 +276,7 @@ class IdentityService:
       status_code=500,
       code="REGISTRATION_USER_LOAD_FAILED",
     )
+   await SubscriptionService(self.session).create_initial_subscription(organization)
 
    verification_token = await self.create_email_verification_token(user)
    await self.email_service.send(
@@ -508,7 +509,7 @@ class IdentityService:
     await self.session.commit()
 
     return LoginResponse(
-      user=self.build_user_response(user, membership),
+      user=await self.build_user_response(user, membership),
       tokens=tokens,
     )
 
@@ -798,11 +799,12 @@ class IdentityService:
 
     return active_memberships[0]
   
-  @staticmethod
-  def build_user_response(
+  async def build_user_response(
+    self,
     user: User,
     membership: OrganizationMembership,
   ) -> UserResponse:
+    platform_admin = await self.repository.get_platform_admin(user.id)
     return UserResponse(
       id=user.id,
       organization_id=membership.organization_id,
@@ -814,4 +816,5 @@ class IdentityService:
       last_login_at=user.last_login_at,
       role=RoleResponse.model_validate(membership.role),
       organization=OrganizationResponse.model_validate(membership.organization),
+      is_platform_admin=platform_admin is not None,
     )

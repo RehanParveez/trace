@@ -5,10 +5,7 @@ import {Badge, Button, ErrorState, LoadingState, PageHeader, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import {formatBillingInterval, formatDate, formatSubscriptionStatus, getSubscriptionStatusTone,
 } from "../utils/subscription.utils";
-
-interface AdminSubscriptionsPageProps {
-  isPlatformAdmin?: boolean;
-}
+import { useAuthStore } from "../../identity";
 
 const STATUS_FILTERS: { label: string; value: SubscriptionStatus | "ALL" }[] = [
   { label: "All", value: "ALL" },
@@ -21,9 +18,10 @@ const STATUS_FILTERS: { label: string; value: SubscriptionStatus | "ALL" }[] = [
 
 const PAGE_SIZE = 20;
 
-export function AdminSubscriptionsPage({
-  isPlatformAdmin = false,
-}: AdminSubscriptionsPageProps) {
+export function AdminSubscriptionsPage() {
+  const isPlatformAdmin = useAuthStore(
+    (state) => state.user?.is_platform_admin ?? false,
+  );
   const [statusFilter, setStatusFilter] = useState<SubscriptionStatus | "ALL">("ALL");
   const [page, setPage] = useState(1);
 

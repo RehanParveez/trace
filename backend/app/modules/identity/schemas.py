@@ -199,6 +199,7 @@ class UserResponse(BaseModel):
   last_login_at: datetime | None
   role: RoleResponse
   organization: OrganizationResponse
+  is_platform_admin: bool = False
 
 class TokenResponse(BaseModel):
   access_token: str

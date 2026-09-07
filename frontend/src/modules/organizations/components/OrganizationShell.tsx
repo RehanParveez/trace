@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { BrandMark, Icon, LivePip } from "./OrganizationUi";
 import type { OrganizationIconName } from "../types/organization.types";
 import { NotificationBell } from "../../notifications";
-import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { IDENTITY_PERMISSIONS, useAuthStore, usePermissionKeys } from "../../identity";
 import { useOrganization, useInvitations } from "../hooks";
 import { getInvitationStatus } from "../utils/organization.utils";
 
@@ -49,53 +49,64 @@ function buildOrganizationNav(
   ];
 }
 
-const productNav: NavItem[] = [
-  {
-    label: "Projects",
-    to: "/app/projects",
-    icon: "projects",
-  },
-  {
-    label: "Budgets",
-    to: "/app/budgets",
-    icon: "budget",
-  },
+function buildProductNav(isPlatformAdmin: boolean): NavItem[] {
+  return [
+    {
+      label: "Projects",
+      to: "/app/projects",
+      icon: "projects",
+    },
+    {
+      label: "Budgets",
+      to: "/app/budgets",
+      icon: "budget",
+    },
 
-  {
-    label: "Progress review",
-    to: "/app/progress-review",
-    icon: "check",
-  },
+    {
+      label: "Progress review",
+      to: "/app/progress-review",
+      icon: "check",
+    },
 
-  {
-    label: "Site progress",
-    to: "/app/site-logs",
-    icon: "site",
-  },
-  {
-    label: "Procurement",
-    to: "/app/procurement",
-    icon: "procurement",
-  },
-  {
-    label: "Expenses",
-    to: "/app/expenses",
-    icon: "expenses",
-  },
+    {
+      label: "Site progress",
+      to: "/app/site-logs",
+      icon: "site",
+    },
+    {
+      label: "Procurement",
+      to: "/app/procurement",
+      icon: "procurement",
+    },
+    {
+      label: "Expenses",
+      to: "/app/expenses",
+      icon: "expenses",
+    },
 
- { 
-  label: "Audit log",
-  to: "/app/audit-log",
-  icon: "shield"
- },
+    {
+      label: "Audit log",
+      to: "/app/audit-log",
+      icon: "shield",
+    },
 
- { 
-  label: "AI activity",
-   to: "/app/ai-activity",
-   icon: "spark" 
- }
+    {
+      label: "AI activity",
+      to: "/app/ai-activity",
+      icon: "spark",
+    },
 
-];
+    ...(isPlatformAdmin
+      ? [
+          {
+            label: "All subscriptions",
+            to: "/app/platform-admin/subscriptions",
+            icon: "shield" as OrganizationIconName,
+          },
+        ]
+      : []),
+  ];
+}
 
 function SidebarLink({ item }: { item: NavItem }) {
   return (
@@ -158,6 +169,9 @@ export function OrganizationShell({
   children?: ReactNode;
 }) {
   const permissions = usePermissionKeys();
+  const isPlatformAdmin = useAuthStore(
+    (state) => state.user?.is_platform_admin ?? false,
+  );
   const canManageMembers = permissions.includes(
     IDENTITY_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
   );
@@ -218,7 +232,7 @@ export function OrganizationShell({
           </div>
 
           <div className="space-y-1">
-            {productNav.map((item) => (
+            {buildProductNav(isPlatformAdmin).map((item) => (
               <SidebarLink key={item.to} item={item} />
             ))}
           </div>

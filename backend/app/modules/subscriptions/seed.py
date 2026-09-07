@@ -5,8 +5,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.modules.identity.enums import PermissionKey
-from app.modules.identity.models import Permission
+from app.modules.identity.models import Permission, Organization
 from app.modules.subscriptions.models import Plan
+from app.modules.subscriptions.service import SubscriptionService
 
 PLANS = [
   {
@@ -142,6 +143,16 @@ async def seed_plans(
       plan.is_public = True
 
   await session.commit()
+  
+async def seed_default_subscriptions(
+  session: AsyncSession,
+) -> None:
+  service = SubscriptionService(session)
+  result = await session.execute(select(Organization))
+  organizations = result.scalars().all()
+
+  for organization in organizations:
+    await service.create_initial_subscription(organization)
 
 async def main():
   async with AsyncSessionLocal() as session:

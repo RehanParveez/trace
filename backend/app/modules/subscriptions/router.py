@@ -140,7 +140,7 @@ async def cancel_subscription(
       return SubscriptionResponse(**cached)
 
   service = _service(session)
-  subscription = await service.cancel_subscription(organization_id, payload.cancel_at_period_end)
+  subscription = await service.cancel_subscription(organization_id, payload.cancel_at_period_end, current_user.id)
   response = SubscriptionResponse.model_validate(subscription)
 
   if idempotency_key:
@@ -164,7 +164,7 @@ async def reactivate_subscription(
 
   service = _service(session)
   subscription = await service.reactivate_subscription(
-    organization_id
+    organization_id, current_user.id
   )
 
   return SubscriptionResponse.model_validate(subscription)

@@ -11,17 +11,12 @@ import { SubscriptionHeader } from "../components/SubscriptionHeader";
 import { UsageOverview } from "../components/UsageOverview";
 import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
 } from "../../organizations/components/OrganizationUi";
-import { SUBSCRIPTION_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import {formatBillingInterval, formatDate, formatSubscriptionStatus,
 } from "../utils/subscription.utils";
 
-interface SubscriptionPageProps {
-  permissions?: string[];
-}
-
-export function SubscriptionPage({
-  permissions = [],
-}: SubscriptionPageProps) {
+export function SubscriptionPage() {
+  const permissions = usePermissionKeys();
   const [changePlanOpen, setChangePlanOpen] =
     useState(false);
 
@@ -47,16 +42,16 @@ export function SubscriptionPage({
     useCancelSubscription();
 
   const canRead = permissions.includes(
-    SUBSCRIPTION_PERMISSIONS.SUBSCRIPTION_READ,
+    IDENTITY_PERMISSIONS.SUBSCRIPTION_READ,
   );
 
   const canManage = permissions.includes(
-    SUBSCRIPTION_PERMISSIONS.SUBSCRIPTION_MANAGE,
+    IDENTITY_PERMISSIONS.SUBSCRIPTION_MANAGE,
   );
 
   const canManageBilling =
     permissions.includes(
-      SUBSCRIPTION_PERMISSIONS
+      IDENTITY_PERMISSIONS
         .SUBSCRIPTION_BILLING_MANAGE,
     );
 

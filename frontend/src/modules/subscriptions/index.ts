@@ -12,8 +12,6 @@ export * from "./hooks";
 export * from "./pages/AdminSubscriptionsPage";
 export * from "./pages/SubscriptionPage";
 
-export * from "./permissions";
-
 export * from "./types/subscription.types";
 
 export * from "./utils/subscription.utils";
