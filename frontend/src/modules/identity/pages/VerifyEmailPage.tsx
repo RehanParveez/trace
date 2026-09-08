@@ -55,7 +55,7 @@ export function VerifyEmailPage() {
         <>
           Confirm your
           <br />
-          <em className="text-[#B98626]">
+          <em className="text-[var(--color-trace-gold-dark)]">
             email.
           </em>
         </>
@@ -65,9 +65,9 @@ export function VerifyEmailPage() {
         <p className="text-center text-[12px] text-[#6B6152]">
           <Link
             to="/login"
-            className="font-bold text-[#B98626] hover:underline"
+            className="font-bold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-            Continue to sign in
+           Continue to sign in
           </Link>
         </p>
       }
@@ -81,13 +81,7 @@ export function VerifyEmailPage() {
 
           <Link
             to="/login"
-            className="
-              flex h-12 items-center
-              justify-center rounded-[9px]
-              bg-[#D9A441]
-              text-[13px] font-bold
-              text-[#080D18]
-            "
+            className="flex h-12 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)]"
           >
             Continue to sign in
           </Link>
@@ -176,14 +170,7 @@ export function VerifyEmailPage() {
               verify.isPending ||
               !token.trim()
             }
-            className="
-              h-12 w-full rounded-[9px]
-              bg-[#D9A441]
-              text-[13px] font-bold
-              text-[#080D18]
-              disabled:opacity-50
-            "
-          >
+            className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
             {verify.isPending
               ? "Verifying…"
               : "Verify email"}

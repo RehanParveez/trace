@@ -32,7 +32,7 @@ export function ForgotPasswordPage() {
         <>
           Find your way
           <br />
-          <em className="text-[#B98626]">
+          <em className="text-[var(--color-trace-gold-dark)]">
             back.
           </em>
         </>
@@ -43,9 +43,9 @@ export function ForgotPasswordPage() {
           Remember your password?{" "}
           <Link
             to="/login"
-            className="font-bold text-[#B98626] hover:underline"
+            className="font-bold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-            Return to sign in
+           Return to sign in
           </Link>
         </p>
       }
@@ -90,14 +90,7 @@ export function ForgotPasswordPage() {
               forgot.isPending ||
               !email
             }
-            className="
-              h-12 w-full rounded-[9px]
-              bg-[#D9A441]
-              text-[13px] font-bold
-              text-[#080D18]
-              disabled:opacity-50
-            "
-          >
+            className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
             {forgot.isPending
               ? "Sending…"
               : "Send reset link"}

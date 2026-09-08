@@ -57,7 +57,7 @@ export function LoginPage() {
         <>
           Welcome
           <br />
-          <em className="text-[#B98626]">
+          <em className="text-[var(--color-trace-gold-dark)]">
             back.
           </em>
         </>
@@ -69,7 +69,7 @@ export function LoginPage() {
             Don't have a workspace yet?{" "}
             <Link
               to="/register"
-              className="font-bold text-[#B98626] hover:underline"
+              className="text-[var(--color-trace-gold-dark)] hover:underline"
             >
               Create one
             </Link>
@@ -77,16 +77,17 @@ export function LoginPage() {
 
           <Link
             to="/"
-            className="text-[#8B806F] hover:text-[#332A21]"
+            className="text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)]"
           >
             ← Back to Trace
           </Link>
         </div>
-      }
-    >
+        }
+      >
+        
       <form
         onSubmit={submit}
-        className="space-y-5"
+        className="space-y-4"
       >
         {locationState?.registrationSuccess && !login.isError && (
           <AuthNotice tone="success">
@@ -150,19 +151,7 @@ export function LoginPage() {
             !email ||
             !password
           }
-          className="
-            h-12 w-full rounded-[9px]
-            bg-[#D9A441]
-            px-5
-            text-[13px] font-bold
-            text-[#080D18]
-            shadow-[0_5px_16px_rgba(217,164,65,.18)]
-            transition
-            hover:bg-[#C99532]
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-          "
-        >
+          className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
           {login.isPending
             ? "Signing in…"
             : "Sign in to Trace"}

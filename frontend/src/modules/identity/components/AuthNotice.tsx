@@ -8,13 +8,11 @@ type AuthNoticeProps = {
 
 const styles = {
   error:
-    "border-[#C24A3A]/25 bg-[#F9E5DF] text-[#9A3D31]",
-
+    "border-[var(--color-danger)]/25 bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
   success:
-    "border-[#1E9D63]/25 bg-[#E4F5EC] text-[#176F49]",
-
+    "border-[var(--color-success)]/25 bg-[var(--color-success-bg)] text-[var(--color-success)]",
   info:
-    "border-[#3B7DC4]/25 bg-[#E7F0FA] text-[#2F68A8]",
+    "border-[var(--color-info)]/25 bg-[var(--color-info-bg)] text-[var(--color-info)]",
 };
 
 export function AuthNotice({
@@ -24,9 +22,9 @@ export function AuthNotice({
   return (
     <div
       className={[
-        "rounded-[9px] border",
-        "px-3.5 py-3",
-        "text-[12px] leading-5",
+        "rounded-[var(--radius-sm)] border",
+        "px-4 py-3.5",
+        "text-[14px] leading-5",
         styles[tone],
       ].join(" ")}
     >

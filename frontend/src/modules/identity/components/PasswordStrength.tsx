@@ -1,7 +1,4 @@
-import {
-  getPasswordChecks,
-  type PasswordChecks,
-} from "../utils/identity.password";
+import { getPasswordChecks } from "../utils/identity.password";
 
 type PasswordStrengthProps = {
   password: string;
@@ -29,41 +26,38 @@ export function PasswordStrength({
       : Math.round((passed / checks.length) * 100);
 
   return (
-    <div className="rounded-[10px] border border-[#E1D5BC] bg-[#F8F3E9] p-3.5">
+    <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6B6152]">
+        <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
           Password strength
         </span>
 
-        <span className="font-mono text-[10px] text-[#A2957C]">
+        <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
           {passed}/{checks.length}
         </span>
       </div>
 
-      <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-[#E6DCC9]">
+      <div className="mb-3.5 h-1.5 overflow-hidden rounded-full bg-[var(--color-border)]">
         <div
-          className="h-full rounded-full bg-[#D9A441] transition-all"
+          className="h-full rounded-full bg-[var(--color-trace-gold)] transition-all"
           style={{
             width: `${percentage}%`,
           }}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
         {checks.map(([key, label]) => {
           const valid = result[key];
 
           return (
-            <div
-              key={key}
-              className="flex items-center gap-2 text-[11px]"
-            >
+            <div key={key} className="flex items-center gap-2 text-[13px]">
               <span
                 className={[
                   "grid h-4 w-4 place-items-center rounded-full text-[9px] font-bold",
                   valid
-                    ? "bg-[#D9A441] text-[#0D1424]"
-                    : "border border-[#D8CDB9] text-transparent",
+                   ? "bg-[var(--color-trace-gold)] text-[var(--color-trace-navy)]"
+                   : "border border-[var(--color-border-strong)] text-transparent",
                 ].join(" ")}
               >
                 ✓
@@ -71,9 +65,9 @@ export function PasswordStrength({
 
               <span
                 className={
-                  valid
-                    ? "text-[#332A21]"
-                    : "text-[#A2957C]"
+                 valid
+                 ? "text-[var(--color-text-primary)]"
+                 : "text-[var(--color-text-muted)]"
                 }
               >
                 {label}

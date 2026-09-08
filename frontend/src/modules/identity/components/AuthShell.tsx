@@ -18,22 +18,9 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <main className="min-h-screen bg-[#F5EFE3] text-[#191410]">
+    <main className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)]">
       <div className="grid min-h-screen lg:grid-cols-[0.92fr_1.08fr]">
-        <aside
-          className="
-            relative
-            hidden
-            overflow-hidden
-            bg-[#0D1424]
-            p-8
-            text-[#FBF8F2]
-            lg:flex
-            lg:flex-col
-            lg:justify-between
-            xl:p-10
-          "
-        >
+        <aside className="relative hidden overflow-hidden bg-[var(--color-trace-navy-soft)] p-8 text-[var(--color-surface-muted)] lg:flex lg:flex-col lg:justify-between xl:p-10">
           <div
             className="
               absolute
@@ -52,18 +39,7 @@ export function AuthShell({
               to="/"
               className="inline-flex items-center gap-3"
             >
-              <span
-                className="
-                  grid
-                  h-10
-                  w-10
-                  place-items-center
-                  rounded-[10px]
-                  bg-[#D9A441]
-                  text-[#080D18]
-                  shadow-[0_4px_14px_rgba(217,164,65,.28)]
-                "
-              >
+              <span className="grid h-10 w-10 place-items-center rounded-[10px] bg-[var(--color-trace-gold)] text-[var(--color-trace-navy)] shadow-[0_4px_14px_rgba(217,164,65,.28)]">
                 <svg
                   viewBox="0 0 24 24"
                   className="h-5 w-5"
@@ -82,7 +58,7 @@ export function AuthShell({
                   Trace
                 </span>
 
-                <span className="block text-[10px] uppercase tracking-[.08em] text-[#A2957C]">
+                <span className="block text-[10px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
                   Construction Intelligence
                 </span>
               </span>
@@ -90,15 +66,15 @@ export function AuthShell({
           </div>
 
           <div className="relative max-w-md">
-            <p className="mb-4 font-mono text-[10px] uppercase tracking-[.14em] text-[#D9A441]">
+            <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-trace-gold)]">
               One record of truth
             </p>
 
-            <h2 className="font-['Fraunces'] text-4xl leading-[1.08] text-[#FBF8F2] xl:text-5xl">
+            <h2 className="font-['Fraunces'] text-4xl leading-[1.08] text-white xl:text-5xl">
               The work stays moving when the record stays clear.
             </h2>
 
-            <p className="mt-4 max-w-sm text-sm leading-7 text-[#A2957C]">
+            <p className="mt-4 max-w-sm text-[15px] leading-7 text-[var(--color-text-muted)]">
               Drawings, quantities, site progress,
               procurement and project intelligence
               connected in one workspace.
@@ -106,38 +82,21 @@ export function AuthShell({
           </div>
 
           <div className="relative flex items-center justify-between border-t border-white/10 pt-4">
-            <span className="font-mono text-[9px] uppercase tracking-[.12em] text-[#706A62]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
               TRACE / IDENTITY
             </span>
 
-            <span className="font-mono text-[9px] text-[#706A62]">
+            <span className="font-mono text-[10px] text-[var(--color-text-muted)]">
               SECURE WORKSPACE
             </span>
           </div>
         </aside>
 
-        <section
-          className="
-            flex
-            min-h-screen
-            items-center
-            justify-center
-            overflow-y-auto
-            px-5
-            py-5
-            sm:px-8
-            lg:px-10
-            lg:py-4
-            xl:px-14
-          "
-        >
+        <section className="flex min-h-screen items-center justify-center overflow-y-auto px-5 py-8 sm:px-8 lg:px-10 lg:py-6 xl:px-14">
           <div className="w-full max-w-[480px]">
             <div className="mb-6 lg:hidden">
-              <Link
-                to="/"
-                className="inline-flex items-center gap-2"
-              >
-                <span className="grid h-9 w-9 place-items-center rounded-[9px] bg-[#0D1424] text-[#D9A441]">
+              <Link to="/" className="inline-flex items-center gap-2.5">
+                <span className="grid h-9 w-9 place-items-center rounded-[9px] bg-[var(--color-trace-navy)] text-[var(--color-trace-gold)]">
                   <span className="font-bold">
                     T
                   </span>
@@ -149,27 +108,23 @@ export function AuthShell({
               </Link>
             </div>
 
-            <div className="mb-4">
-              <p className="mb-1.5 font-mono text-[10px] font-semibold uppercase tracking-[.14em] text-[#B98626]">
+            <div className="mb-6">
+              <p className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-trace-gold-dark)]">
                 {eyebrow}
               </p>
 
-              <h1 className="font-['Fraunces'] text-[34px] leading-[1.02] tracking-[-.02em] text-[#191410] sm:text-[40px]">
+              <h1 className="font-['Fraunces'] text-[36px] leading-[1.05] tracking-[-0.02em] text-[var(--color-text-primary)] sm:text-[42px]">
                 {title}
               </h1>
 
-              <p className="mt-2 max-w-[430px] text-[13px] leading-5 text-[#776D5E]">
+              <p className="mt-3 max-w-[430px] text-[15px] leading-6 text-[var(--color-text-secondary)]">
                 {description}
               </p>
             </div>
 
             {children}
 
-            {footer && (
-              <div className="mt-4">
-                {footer}
-              </div>
-            )}
+            {footer && <div className="mt-5">{footer}</div>}
           </div>
         </section>
       </div>

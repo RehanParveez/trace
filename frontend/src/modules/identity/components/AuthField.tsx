@@ -17,11 +17,11 @@ export function AuthField({
 }: AuthFieldProps) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center justify-between text-[12px] font-semibold text-[#332A21]">
+      <span className="mb-2 flex items-center justify-between text-[13px] font-semibold text-[var(--color-text-primary)]">
         <span>{label}</span>
 
         {hint && (
-          <span className="font-normal text-[#A2957C]">
+          <span className="font-normal text-[var(--color-text-muted)]">
             {hint}
           </span>
         )}
@@ -31,23 +31,22 @@ export function AuthField({
         id={id}
         {...props}
         className={[
-          "h-12 w-full rounded-[9px]",
-          "border bg-[#FBF8F2]",
-          "px-3.5 text-[13.5px]",
-          "text-[#191410]",
+          "h-12 w-full rounded-[var(--radius-sm)]",
+          "border bg-[var(--color-surface)]",
+          "px-3.5 text-[14px]",
+          "text-[var(--color-text-primary)]",
           "outline-none transition",
-          "placeholder:text-[#A2957C]",
-          "focus:border-[#D9A441]",
-          "focus:ring-4",
-          "focus:ring-[#D9A441]/10",
+          "placeholder:text-[var(--color-text-muted)]",
+          "focus:border-[var(--color-trace-gold-dark)]",
+          "focus:ring-2 focus:ring-[var(--color-trace-gold)]/20",
           error
-            ? "border-[#C24A3A]"
-            : "border-[#E1D5BC]",
+            ? "border-[var(--color-danger)]"
+            : "border-[var(--color-border)]",
         ].join(" ")}
       />
 
       {error && (
-        <span className="mt-1.5 block text-[11.5px] text-[#C24A3A]">
+        <span className="mt-1.5 block text-[13px] text-[var(--color-danger)]">
           {error}
         </span>
       )}

@@ -75,7 +75,7 @@ export function ResetPasswordPage() {
           <>
             Reset link
             <br />
-            <em className="text-[#B98626]">
+            <em className="text-[var(--color-trace-gold-dark)]">
               unavailable.
             </em>
           </>
@@ -89,7 +89,7 @@ export function ResetPasswordPage() {
 
         <Link
           to="/forgot-password"
-          className="mt-5 block text-center text-[12px] font-bold text-[#B98626]"
+          className="mt-5 block text-center text-[12px] font-bold text-[var(--color-trace-gold-dark)]"
         >
           Request another link
         </Link>
@@ -104,7 +104,7 @@ export function ResetPasswordPage() {
         <>
           Create a new
           <br />
-          <em className="text-[#B98626]">
+          <em className="text-[var(--color-trace-gold-dark)]">
             password.
           </em>
         </>
@@ -114,7 +114,7 @@ export function ResetPasswordPage() {
         <p className="text-center text-[12px] text-[#6B6152]">
           <Link
             to="/login"
-            className="font-bold text-[#B98626]"
+            className="font-bold text-[var(--color-trace-gold-dark)]"
           >
             Return to sign in
           </Link>
@@ -183,14 +183,7 @@ export function ResetPasswordPage() {
             !isPasswordStrong(password) ||
             !matches
           }
-          className="
-            h-12 w-full rounded-[9px]
-            bg-[#D9A441]
-            text-[13px] font-bold
-            text-[#080D18]
-            disabled:opacity-50
-          "
-        >
+          className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
           {reset.isPending
             ? "Updating password…"
             : "Set new password"}

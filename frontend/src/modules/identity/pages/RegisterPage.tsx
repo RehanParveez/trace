@@ -56,7 +56,7 @@ export function RegisterPage() {
           Start with a
           <br />
           clear
-          <em className="text-[#B98626]">
+          <em className="text-[var(--color-trace-gold-dark)]">
             record.
           </em>
         </>
@@ -67,9 +67,9 @@ export function RegisterPage() {
           Already have an account?{" "}
           <Link
             to="/login"
-            className="font-bold text-[#B98626] hover:underline"
+            className="font-bold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-            Sign in
+          Sign in
           </Link>
         </p>
       }
@@ -185,21 +185,7 @@ export function RegisterPage() {
             !isPasswordStrong(password) ||
             !passwordsMatch
           }
-          className="
-            mt-1
-            h-12
-            w-full
-            rounded-[9px]
-            bg-[#D9A441]
-            text-[13px]
-            font-bold
-            text-[#080D18]
-            transition
-            hover:bg-[#C99532]
-            disabled:cursor-not-allowed
-            disabled:opacity-50
-          "
-        >
+          className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
           {register.isPending
             ? "Creating workspace…"
             : "Create Trace workspace"}
