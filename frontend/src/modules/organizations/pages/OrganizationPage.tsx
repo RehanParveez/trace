@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {useAISettings, useMembers, useOrganization, useRoles, useUpdateAISettings, useUpdateOrganization,
 } from "../hooks";
 import { AISettingsCard } from "../components/AISettingsCard";
@@ -9,6 +10,7 @@ import {ErrorState, LoadingState, PageHeader, Panel, PanelHeader, SectionDivider
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 
 export function OrganizationPage() {
+  const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const permissions = usePermissionKeys();
 
@@ -73,6 +75,8 @@ export function OrganizationPage() {
             note={`${activeMemberCount} active`}
             icon="users"
             tone="blue"
+            actionLabel="Manage members"
+            onAction={() => navigate("/app/organization/members")}
           />
 
           <StatCard
@@ -81,6 +85,8 @@ export function OrganizationPage() {
             note="System + custom access"
             icon="shield"
             tone="gold"
+            actionLabel="Manage roles"
+            onAction={() => navigate("/app/organization/roles")}
           />
 
           <StatCard
@@ -134,31 +140,31 @@ export function OrganizationPage() {
             description="Core workspace identifiers and operating status."
           />
 
-          <div className="grid gap-0 divide-y divide-[#e1d5bc] md:grid-cols-2 md:divide-x md:divide-y-0">
+          <div className="grid gap-0 divide-y divide-[var(--color-border)] md:grid-cols-2 md:divide-x md:divide-y-0">
             <div className="min-w-0 p-5 sm:p-6">
-              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+              <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
                 Organization name
               </div>
 
-              <div className="mt-2 truncate text-[14px] font-semibold text-[#191410]">
+              <div className="mt-2 truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
                 {organization.name}
               </div>
 
-              <div className="mt-1 text-[11px] text-[#7c7060]">
+              <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
                 Primary workspace identity
               </div>
             </div>
 
             <div className="min-w-0 p-5 sm:p-6">
-              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+              <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
                 Workspace slug
               </div>
 
-              <div className="mt-2 min-w-0 truncate font-mono text-[11px] font-semibold text-[#332a21]">
+              <div className="mt-2 min-w-0 truncate font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">
                 {organization.slug}
               </div>
 
-              <div className="mt-1 text-[11px] text-[#7c7060]">
+              <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
                 Stable workspace identifier
               </div>
             </div>

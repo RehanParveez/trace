@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMember } from "../hooks";
 import {Avatar, Badge, Button, ErrorState, Icon, LoadingState, PageHeader, Panel, PanelHeader,
 } from "../components/OrganizationUi";
-import {formatDateTime, getMemberFullName, getMemberInitials,
+import {formatDateTime, getMemberFullName, getMemberInitials, humanizePermission,
 } from "../utils/organization.utils";
 
 export function OrganizationMemberDetailPage() {
@@ -83,14 +83,14 @@ export function OrganizationMemberDetailPage() {
             </div>
           </div>
 
-          <dl className="grid gap-0 divide-y divide-[#e1d5bc] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+          <dl className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
             {details.map(([label, value]) => (
               <div key={label} className="p-5">
-                <dt className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+                <dt className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
                   {label}
                 </dt>
 
-                <dd className="mt-1.5 text-[12.5px] font-semibold text-[#191410]">
+                <dd className="mt-1.5 text-[13.5px] font-semibold text-[var(--color-text-primary)]">
                   {value}
                 </dd>
               </div>
@@ -103,26 +103,34 @@ export function OrganizationMemberDetailPage() {
 
           <div className="space-y-2 p-5">
             {member.role.permissions.length === 0 ? (
-              <div className="text-[11px] text-[#6b6152]">
+              <div className="text-[12px] text-[var(--color-text-secondary)]">
                 No permissions are attached to this role.
               </div>
             ) : (
-              member.role.permissions.map((permission) => (
-                <div
-                  key={permission.id}
-                  className="rounded-[8px] border border-[#e1d5bc] bg-white p-3"
-                >
-                  <div className="break-all font-mono text-[10px] font-semibold text-[#332a21]">
-                    {permission.key}
-                  </div>
+              member.role.permissions.map((permission) => {
+                const { label } = humanizePermission(permission.key);
 
-                  {permission.description ? (
-                    <div className="mt-1 text-[10px] leading-4 text-[#6b6152]">
-                      {permission.description}
+                return (
+                  <div
+                    key={permission.id}
+                    className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3"
+                  >
+                    <div className="text-[13px] font-semibold text-[var(--color-text-primary)]">
+                      {label}
                     </div>
-                  ) : null}
-                </div>
-              ))
+
+                    <div className="mt-0.5 break-all font-mono text-[10.5px] text-[var(--color-text-muted)]">
+                      {permission.key}
+                    </div>
+
+                    {permission.description ? (
+                      <div className="mt-1 text-[11.5px] leading-4 text-[var(--color-text-secondary)]">
+                        {permission.description}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })
             )}
           </div>
         </Panel>

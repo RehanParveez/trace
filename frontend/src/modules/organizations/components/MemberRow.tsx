@@ -46,7 +46,7 @@ export function MemberRow({
   ];
 
   return (
-    <tr className="border-t border-[#e1d5bc] transition hover:bg-[#f5efe3]">
+    <tr className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
       <td className="px-4 py-3.5">
         <button
           type="button"
@@ -56,11 +56,11 @@ export function MemberRow({
           <Avatar initials={getMemberInitials(member)} size="sm" />
 
           <span className="min-w-0">
-            <span className="block truncate text-[12.5px] font-semibold text-[#191410]">
+            <span className="block truncate text-[14px] font-semibold text-[var(--color-text-primary)]">
               {getMemberFullName(member)}
             </span>
 
-            <span className="mt-0.5 block truncate text-[10.5px] text-[#6b6152]">
+            <span className="mt-0.5 block truncate text-[12px] text-[var(--color-text-secondary)]">
               {member.email}
             </span>
           </span>
@@ -69,7 +69,7 @@ export function MemberRow({
 
       <td className="px-4 py-3.5">
         <div className="flex items-center gap-2">
-          <span className="text-[11.5px] font-semibold text-[#332a21]">
+          <span className="text-[13px] font-semibold text-[var(--color-text-primary)]">
             {member.role.name}
           </span>
 
@@ -84,7 +84,7 @@ export function MemberRow({
       </td>
 
       <td
-        className="px-4 py-3.5 font-mono text-[11px] text-[#6b6152]"
+        className="px-4 py-3.5 font-mono text-[12px] text-[var(--color-text-secondary)]"
         title={formatDateTime(member.last_login_at)}
       >
         {formatRelativeTime(member.last_login_at)}

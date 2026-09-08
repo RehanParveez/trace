@@ -21,7 +21,7 @@ export function MemberTable(props: MemberTableProps) {
         title="Members"
         description="Everyone with access to this organization's projects and data."
         action={
-          <span className="rounded-full bg-[#efe6d3] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#6b6152]">
+          <span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">
             {members.length}
           </span>
         }
@@ -31,13 +31,13 @@ export function MemberTable(props: MemberTableProps) {
         <EmptyState
           icon="users"
           title="No members yet"
-          description="Your organization has no member records matching the current view."
+          description="Invite your team to give them access to projects, drawings and site data. Members appear here as soon as they accept an invitation."
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[760px] text-left">
-            <thead className="bg-[#f5efe3]">
-              <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+            <thead className="bg-[var(--color-surface-muted)]">
+              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">Member</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>

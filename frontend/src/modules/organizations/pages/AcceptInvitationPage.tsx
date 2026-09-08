@@ -54,11 +54,11 @@ export function AcceptInvitationPage() {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-[#f5efe3] px-4 py-10">
+      <div className="min-h-screen bg-[var(--color-workspace)] px-4 py-10">
         <div className="mx-auto max-w-xl">
           <BrandBar />
 
-          <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[#e4f5ec] text-[#1e9d63]">
+          <div className="mb-6 flex h-11 w-11 items-center justify-center rounded-[10px]bg-[var(--color-success-bg)] text-[var(--color-success)]">
             <Icon name="check" size={20} />
           </div>
 
@@ -66,7 +66,7 @@ export function AcceptInvitationPage() {
             Invitation accepted
           </h1>
 
-          <p className="mt-2 max-w-md text-[13px] leading-5 text-[#6b6152]">
+          <p className="mt-2 max-w-md text-[13px] leading-5 text-[var(--color-text-secondary)]">
             {result.message}
           </p>
 
@@ -77,13 +77,13 @@ export function AcceptInvitationPage() {
                 title="Membership created"
               />
 
-              <div className="grid gap-0 divide-y divide-[#e1d5bc] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+              <div className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 <div className="p-5">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
                     Organization
                   </div>
 
-                  <div className="mt-1.5 text-[13px] font-semibold text-[#191410]">
+                  <div className="mt-1.5 text-[13px] font-semibold text-[var(--color-text-primary)]">
                     {result.organization_name}
                   </div>
                 </div>
@@ -93,13 +93,13 @@ export function AcceptInvitationPage() {
                     Role
                   </div>
 
-                  <div className="mt-1.5 text-[13px] font-semibold text-[#191410]">
+                  <div className="mt-1.5 text-[13px] font-semibold text-[var(--color-text-primary)]">
                     {result.role_name}
                   </div>
                 </div>
               </div>
 
-              <div className="border-t border-[#e1d5bc] p-5">
+              <div className="border-t border-[var(--color-border)] p-5">
                 <Button variant="primary" onClick={() => navigate("/app")}>
                   Continue to workspace
                   <Icon name="arrow" size={13} />
@@ -141,7 +141,7 @@ export function AcceptInvitationPage() {
             </Field>
 
             {acceptInvitation.isError ? (
-              <div className="flex items-center gap-2 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+              <div className="flex items-center gap-2 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
                 <Icon name="alert" size={13} className="shrink-0" />
                 Unable to accept this invitation. The token may be invalid,
                 expired or already used.

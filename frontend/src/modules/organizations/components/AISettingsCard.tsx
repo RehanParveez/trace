@@ -54,16 +54,16 @@ export function AISettingsCard({
 
         <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
           <div className="flex gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#fbefd9] text-[#b98626]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
               <Icon name="spark" size={16} />
             </div>
 
             <div className="min-w-0">
-              <div className="text-[13px] font-semibold text-[#191410]">
+              <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
                 {enabled ? "AI features are available" : "AI features are off"}
               </div>
 
-              <p className="mt-1 max-w-2xl text-[11.5px] leading-5 text-[#6b6152]">
+              <p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-[var(--color-text-secondary)]">
                 {enabled
                   ? "Organization-approved AI features may process supported project content. Generated output must remain a suggestion until a human confirms it."
                   : "No organization AI processing is enabled. Turn it on only when your team is comfortable with the configured AI processing path."}
@@ -75,8 +75,8 @@ export function AISettingsCard({
                     key={capability}
                     className={`rounded-full border px-2.5 py-1 text-[10.5px] font-medium ${
                       enabled
-                        ? "border-[#e1d5bc] bg-white text-[#332a21]"
-                        : "border-[#e1d5bc] bg-[#f5efe3] text-[#a2957c]"
+                        ? "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)]"
+                        : "border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
                     }`}
                   >
                     {capability}
@@ -101,7 +101,7 @@ export function AISettingsCard({
         </div>
 
         {!canManage ? (
-          <div className="border-t border-[#e1d5bc] bg-[#f5efe3] px-5 py-3 text-[11px] text-[#6b6152]">
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)] px-5 py-3 text-[12px] text-[var(--color-text-secondary)]">
             You can view the organization setting, but only users with
             organization management permission can change it.
           </div>
@@ -117,11 +117,11 @@ export function AISettingsCard({
           }
           onClose={() => setConfirming(false)}
         >
-          <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-[#fbefd9] text-[#b98626]">
+          <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
             <Icon name="spark" size={16} />
           </div>
 
-          <p className="mt-4 text-[12px] leading-5 text-[#6b6152]">
+          <p className="mt-4 text-[13px] leading-5 text-[var(--color-text-secondary)]">
             {nextEnabled
               ? "This enables the organization-level AI path. Keep in mind that AI output remains assistive and must not be treated as approved business state."
               : "This stops organization-level AI features. Existing records are not deleted by this setting change."}

@@ -370,8 +370,10 @@ export function LivePip({
   label?: string;
   tone?: "green" | "gold";
 }) {
-  const dot = tone === "green" ? "bg-[#3ddc8a]" : "bg-[#d9a441]";
-  const text = tone === "green" ? "text-[#7fd9a8]" : "text-[#d9a441]";
+    const dot =
+      tone === "green" ? "bg-[var(--color-success)]" : "bg-[var(--color-trace-gold)]";
+    const text =
+      tone === "green" ? "text-[#7fd9a8]" : "text-[var(--color-trace-gold)]";
 
   return (
     <span
@@ -399,7 +401,7 @@ export function GlassChip({
   return (
     <div className="flex min-w-0 items-center gap-2.5 rounded-[12px] border border-white/[0.14] bg-[#0a0f19]/50 px-3.5 py-2.5 text-white backdrop-blur-[6px]">
       {icon ? (
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-white/10 text-[#d9a441]">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-white/10 text-[var(--color-trace-gold)]">
           <Icon name={icon} size={14} />
         </span>
       ) : null}
@@ -445,12 +447,16 @@ export function StatCard({
   note,
   icon,
   tone = "gold",
+  actionLabel,
+  onAction,
 }: {
   label: string;
   value: string | number;
   note?: string;
   icon: OrganizationIconName;
   tone?: "gold" | "green" | "blue" | "red";
+  actionLabel?: string;
+  onAction?: () => void;
 }) {
   const iconTone = {
     gold: "bg-[var(--color-warning-bg)] text-[var(--color-warning)]",
@@ -459,10 +465,31 @@ export function StatCard({
     red: "bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
   }[tone];
 
+  const isActionable = Boolean(onAction && actionLabel);
+
   return (
-    <Panel className="relative overflow-hidden p-5">
+    <Panel
+      onClick={onAction}
+      role={isActionable ? "button" : undefined}
+      tabIndex={isActionable ? 0 : undefined}
+      onKeyDown={
+        isActionable
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onAction?.();
+              }
+            }
+          : undefined
+      }
+      className={`relative overflow-hidden p-5 ${
+        isActionable
+          ? "cursor-pointer text-left transition hover:border-[var(--color-border-strong)] hover:shadow-[0_4px_14px_rgba(25,20,16,0.08)] focus:outline-none focus:ring-2 focus:ring-[var(--color-trace-gold)]/30"
+          : ""
+      }`}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="min-w-0">
           <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
             {label}
           </div>
@@ -473,10 +500,17 @@ export function StatCard({
             <div className="mt-1.5 text-[13px] text-[var(--color-text-secondary)]">{note}</div>
           ) : null}
         </div>
-        <div className={`flex h-9 w-9 items-center justify-center rounded-[9px] ${iconTone}`}>
+        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] ${iconTone}`}>
           <Icon name={icon} size={16} />
         </div>
       </div>
+
+      {isActionable ? (
+        <div className="mt-3.5 flex items-center gap-1.5 border-t border-[var(--color-border)] pt-3 text-[12.5px] font-semibold text-[var(--color-trace-gold-dark)]">
+          {actionLabel}
+          <Icon name="arrow" size={12} />
+        </div>
+      ) : null}
     </Panel>
   );
 }
@@ -560,7 +594,7 @@ export function ProgressBar({
 
   return (
     <div
-      className={`w-full overflow-hidden rounded-full bg-[#efe6d3] ${size === "sm" ? "h-1.5" : "h-[7px]"}`}
+      className={`w-full overflow-hidden rounded-full bg-[var(--color-surface-muted)] ${size === "sm" ? "h-1.5" : "h-[7px]"}`}
     >
       <div
         className={`h-full rounded-full transition-[width] ${fills[tone]}`}
@@ -591,8 +625,8 @@ export function Toggle({
       onClick={onChange}
       className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         checked
-          ? "border-[#b98626] bg-[#d9a441]"
-          : "border-[#e1d5bc] bg-[#e1d5bc]"
+          ? "border-[var(--color-trace-gold-dark)] bg-[var(--color-trace-gold)]"
+          : "border-[var(--color-border)] bg-[var(--color-border)]"
       }`}
     >
       <span
@@ -656,7 +690,7 @@ export function DropdownMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#6b6152] transition hover:bg-[#efe6d3]"
+        className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
       >
         <Icon name="more" size={15} />
       </button>
@@ -664,7 +698,7 @@ export function DropdownMenu({
       {open ? (
         <div
           role="menu"
-          className={`absolute top-[calc(100%+4px)] z-30 min-w-[180px] overflow-hidden rounded-[10px] border border-[#e1d5bc] bg-white py-1 shadow-[0_16px_40px_rgba(8,13,24,0.14)] ${
+          className={`absolute top-[calc(100%+4px)] z-30 min-w-[180px] overflow-hidden rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] py-1 shadow-[0_16px_40px_rgba(8,13,24,0.14)] ${
             align === "end" ? "right-0" : "left-0"
           }`}
         >
@@ -678,10 +712,10 @@ export function DropdownMenu({
                 setOpen(false);
                 item.onSelect();
               }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
                 item.tone === "danger"
-                  ? "text-[#c24a3a] hover:bg-[#f9e5df]"
-                  : "text-[#332a21] hover:bg-[#f5efe3]"
+                  ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
+                  : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]"
               }`}
             >
               {item.icon ? <Icon name={item.icon} size={13} /> : null}
@@ -708,20 +742,20 @@ export function Modal({
   wide?: boolean;
 }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#080d18]/70 p-4 backdrop-blur-[2px]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-trace-navy)]/70 p-4 backdrop-blur-[2px]">
       <div
-        className={`w-full overflow-hidden rounded-[16px] border border-[#e1d5bc] bg-[#fbf8f2] shadow-[0_24px_70px_rgba(8,13,24,0.35)] ${
+        className={`w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] shadow-[0_24px_70px_rgba(8,13,24,0.35)] ${
           wide ? "max-w-2xl" : "max-w-md"
         }`}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-[#e1d5bc] px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
           <div>
-            <h2 className="font-[Archivo] text-[16px] font-bold text-[#191410]">
+            <h2 className="font-[Archivo] text-[17px] font-bold text-[var(--color-text-primary)]">
               {title}
             </h2>
 
             {description ? (
-              <p className="mt-1 text-[12px] leading-5 text-[#6b6152]">
+              <p className="mt-1 text-[13px] leading-5 text-[var(--color-text-secondary)]">
                 {description}
               </p>
             ) : null}
@@ -731,7 +765,7 @@ export function Modal({
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[#6b6152] hover:bg-[#efe6d3]"
+            className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
           >
             <Icon name="x" size={16} />
           </button>
@@ -776,9 +810,9 @@ export function LoadingState({
   label?: string;
 }) {
   return (
-    <div className="flex min-h-[280px] items-center justify-center rounded-[16px] border border-[#e1d5bc] bg-[#fbf8f2]">
-      <div className="flex items-center gap-3 text-[12px] font-medium text-[#6b6152]">
-        <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#e1d5bc] border-t-[#d9a441]" />
+    <div className="flex min-h-[280px] items-center justify-center rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+      <div className="flex items-center gap-3 text-[13px] font-medium text-[var(--color-text-secondary)]">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-trace-gold)]" />
         {label}
       </div>
     </div>
@@ -795,18 +829,18 @@ export function ErrorState({
   onRetry?: () => void;
 }) {
   return (
-    <div className="rounded-[16px] border border-[#efc5bd] bg-[#fff7f5] p-6">
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] p-6">
       <div className="flex items-start gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[#f9e5df] text-[#c24a3a]">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-surface)] text-[var(--color-danger)]">
           <Icon name="alert" size={15} />
         </div>
 
         <div>
-          <h2 className="font-[Archivo] text-[14px] font-bold text-[#191410]">
+          <h2 className="font-[Archivo] text-[15px] font-bold text-[var(--color-text-primary)]">
             {title}
           </h2>
 
-          <p className="mt-1 text-[12px] leading-5 text-[#6b6152]">
+          <p className="mt-1 text-[13px] leading-5 text-[var(--color-text-secondary)]">
             {description}
           </p>
 
@@ -828,14 +862,14 @@ export function TableShell({ children }: { children: ReactNode }) {
 
 export function SectionLabel({ children }: { children: ReactNode }) {
   return (
-    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+    <div className="mb-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
       {children}
     </div>
   );
 }
 
 export function Divider() {
-  return <div className="h-px bg-[#e1d5bc]" />;
+  return <div className="h-px bg-[var(--color-border)]" />;
 }
 
 export function Pager({
@@ -853,7 +887,7 @@ export function Pager({
 }) {
   return (
     <div className="mt-3 flex items-center justify-between gap-3 px-1">
-      <span className="text-[11px] text-[#6b6152]">
+      <span className="text-[12px] text-[var(--color-text-secondary)]">
         Page {page + 1} of {totalPages} · {totalItems} total
       </span>
 

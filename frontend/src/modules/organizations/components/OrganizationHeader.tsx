@@ -15,7 +15,7 @@ export function OrganizationHeader({
   canManage = false,
 }: OrganizationHeaderProps) {
   return (
-    <section className="overflow-hidden rounded-[14px] border border-[#263356] bg-[linear-gradient(120deg,#080d18_0%,#0d1424_60%,#192640_100%)] text-white shadow-[0_12px_32px_rgba(8,13,24,0.14)]">
+    <section className="overflow-hidden rounded-[var(--radius-lg)] border border-[#263356] bg-[linear-gradient(120deg,var(--color-trace-navy)_0%,var(--color-trace-navy-soft)_60%,var(--color-trace-navy-mid)_100%)] text-white shadow-[0_12px_32px_rgba(8,13,24,0.14)]">
       <div className="relative p-5 sm:p-6">
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.028)_1px,transparent_1px)] bg-[length:28px_28px]" />
 
@@ -26,13 +26,13 @@ export function OrganizationHeader({
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex min-w-0 items-start gap-4">
         
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[11px] border border-[#d9a441]/30 bg-[linear-gradient(155deg,#d9a441,#b98626)] font-[Archivo] text-[15px] font-bold text-[#080d18] shadow-[0_6px_18px_rgba(217,164,65,0.12)]">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[11px] border border-[var(--color-trace-gold)]/30 bg-[linear-gradient(155deg,var(--color-trace-gold),var(--color-trace-gold-dark))] font-[Archivo] text-[15px] font-bold text-[var(--color-trace-navy)] shadow-[0_6px_18px_rgba(217,164,65,0.12)]">
                 {getOrganizationInitials(organization.name)}
               </div>
 
               <div className="min-w-0">
                 <div className="mb-1.5 flex flex-wrap items-center gap-2.5">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#8f9bb0]">
+                  <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8f9bb0]">
                     Organization workspace
                   </span>
 
@@ -46,7 +46,7 @@ export function OrganizationHeader({
                 </h1>
 
                 <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-2">
-                  <span className="max-w-[260px] truncate font-mono text-[10.5px] text-[#a2957c]">
+                  <span className="max-w-[260px] truncate font-mono text-[11.5px] text-[#a2957c]">
                     {organization.slug}
                   </span>
 

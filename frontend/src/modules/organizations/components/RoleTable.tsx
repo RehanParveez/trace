@@ -53,7 +53,7 @@ export function RoleTable({
         title="Roles"
         description="System roles are protected; custom roles can be tailored to your operating model."
         action={
-          <span className="rounded-full bg-[#efe6d3] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#6b6152]">
+          <span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">
             {roles.length}
           </span>
         }
@@ -68,8 +68,8 @@ export function RoleTable({
       ) : (
         <TableShell>
           <table className="w-full min-w-[700px] text-left">
-            <thead className="bg-[#f5efe3]">
-              <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+            <thead className="bg-[var(--color-surface-muted)]">
+              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Access</th>
@@ -81,7 +81,7 @@ export function RoleTable({
               {roles.map((role) => (
                 <tr
                   key={role.id}
-                  className="border-t border-[#e1d5bc] transition hover:bg-[#f5efe3]"
+                  className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]"
                 >
                   <td className="px-4 py-3.5">
                     <button
@@ -89,12 +89,12 @@ export function RoleTable({
                       onClick={() => onView?.(role)}
                       className="text-left"
                     >
-                      <span className="block text-[12.5px] font-semibold text-[#191410]">
+                      <span className="block text-[14px] font-semibold text-[var(--color-text-primary)]">
                         {role.name}
                       </span>
 
                       {role.description ? (
-                        <span className="mt-0.5 block max-w-[420px] text-[10.5px] leading-4 text-[#6b6152]">
+                        <span className="mt-0.5 block max-w-[420px] text-[12px] leading-4 text-[var(--color-text-secondary)]">
                           {role.description}
                         </span>
                       ) : null}
@@ -108,7 +108,7 @@ export function RoleTable({
                   </td>
 
                   <td className="px-4 py-3.5">
-                    <span className="font-mono text-[11px] font-semibold text-[#332a21]">
+                    <span className="font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">
                       {role.permissions.length} permissions
                     </span>
                   </td>

@@ -20,17 +20,17 @@ export function RevokeInvitationDialog({
       description="The invitation will no longer be usable by the recipient."
       onClose={onClose}
     >
-      <div className="flex items-center gap-3 rounded-[10px] border border-[#e1d5bc] bg-white p-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#efe6d3] text-[#6b6152]">
+      <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
           <Icon name="mail" size={14} />
         </div>
 
         <div className="min-w-0">
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+          <div className="text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
             Invitee
           </div>
 
-          <div className="truncate text-[13px] font-semibold text-[#191410]">
+          <div className="truncate text-[14px] font-semibold text-[var(--color-text-primary)]">
             {invitation.email}
           </div>
         </div>

@@ -200,8 +200,8 @@ export function OrganizationShell({
 
   return (
     <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-hidden !border-r !border-[#24314d] !bg-[#080d18] !text-[#cbd5e1] lg:flex">
-        <div className="relative flex h-[94px] shrink-0 items-center overflow-hidden !border-b !border-[#24314d] !bg-[#080d18] px-5">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-hidden !border-r !border-[#24314d] !bg-[var(--color-trace-navy)] !text-[#cbd5e1] lg:flex">
+        <div className="relative flex h-[94px] shrink-0 items-center overflow-hidden !border-b !border-[#24314d] !bg-[var(--color-trace-navy)] px-5">
           <div className="pointer-events-none absolute inset-0 opacity-[0.22] [background-image:linear-gradient(#53617a_1px,transparent_1px),linear-gradient(90deg,#53617a_1px,transparent_1px)] [background-size:18px_18px]" />
 
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_35%,rgba(217,164,65,0.12),transparent_32%)]" />
@@ -223,7 +223,7 @@ export function OrganizationShell({
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
           <div className="mb-3 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
-            Workspace
+            Organization
           </div>
 
           <div className="space-y-1">
@@ -243,12 +243,12 @@ export function OrganizationShell({
           </div>
         </nav>
 
-        <div className="shrink-0 !border-t !border-[#24314d] !bg-[#080d18] p-4">
+        <div className="shrink-0 !border-t !border-[#24314d] !bg-[var(--color-trace-navy)] p-4">
           <div className="mb-3 px-1">
             <LivePip label="All systems synced" />
           </div>
 
-          <div className="flex items-center gap-3 rounded-[10px] !border !border-[#202d46] !bg-[#0d1525] p-2.5">
+          <div className="flex items-center gap-3 rounded-[10px] !border !border-[#202d46] !bg-[var(--color-trace-navy-soft)] p-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(155deg,#4a5b82,#2a3652)] font-[Archivo] text-[11px] font-semibold !text-white">
               OR
             </div>

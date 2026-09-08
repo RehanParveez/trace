@@ -102,11 +102,6 @@ export function formatDateTime(value: string | null | undefined): string {
   }).format(date);
 }
  
-/**
- * Short, human relative time ("2m ago", "3h ago", "5d ago") used anywhere
- * space is tight — table cells, activity rows — with `formatDateTime`
- * available as the precise fallback (e.g. in a tooltip).
- */
 export function formatRelativeTime(value: string | null | undefined): string {
   if (!value) {
     return "Never";
@@ -168,3 +163,45 @@ export function getInvitationStatusTone(
   return "slate";
 }
  
+const PERMISSION_ACTION_LABELS: Record<string, string> = {
+  create: "Create",
+  read: "View",
+  view: "View",
+  update: "Edit",
+  edit: "Edit",
+  delete: "Delete",
+  manage: "Manage",
+  approve: "Approve",
+  submit: "Submit",
+  revoke: "Revoke",
+  invite: "Invite",
+  assign: "Assign",
+};
+
+export interface HumanizedPermission {
+  group: string;
+  action: string;
+  label: string;
+}
+
+export function humanizePermission(key: string): HumanizedPermission {
+  const parts = key.split(/[.:_]/).filter(Boolean);
+  const lastPart = parts[parts.length - 1]?.toLowerCase() ?? "";
+  const hasKnownAction = lastPart in PERMISSION_ACTION_LABELS;
+
+  const action = hasKnownAction ? lastPart : "access";
+  const resourceParts = hasKnownAction ? parts.slice(0, -1) : parts;
+
+  const group = resourceParts.length
+    ? resourceParts.join(" ").replace(/\b\w/g, (char) => char.toUpperCase())
+    : "General";
+
+  const verb = PERMISSION_ACTION_LABELS[action] ?? "Access";
+  const label = `${verb} ${group.toLowerCase()}`;
+
+  return {
+    group,
+    action,
+    label: label.charAt(0).toUpperCase() + label.slice(1),
+  };
+}

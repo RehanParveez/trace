@@ -31,21 +31,21 @@ export function MemberStatusDialog({
       onClose={onClose}
     >
       {error ? (
-        <div className="mb-3 flex items-center gap-2 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+        <div className="mb-3 flex items-center gap-2 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
           <Icon name="alert" size={13} className="shrink-0" />
           {getApiErrorMessage(error, "Couldn't update this member's status.")}
         </div>
       ) : null}
 
-      <div className="flex items-center gap-3 rounded-[10px] border border-[#e1d5bc] bg-white p-4">
+      <div className="flex items-center gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
         <Avatar initials={getMemberInitials(member)} size="sm" />
 
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[12.5px] font-semibold text-[#191410]">
+          <div className="truncate text-[13.5px] font-semibold text-[var(--color-text-primary)]">
             {getMemberFullName(member)}
           </div>
 
-          <div className="mt-0.5 truncate text-[10.5px] text-[#6b6152]">
+          <div className="mt-0.5 truncate text-[12px] text-[var(--color-text-secondary)]">
             {member.email}
           </div>
         </div>
@@ -56,23 +56,23 @@ export function MemberStatusDialog({
       </div>
 
       <div
-        className={`mt-3 flex gap-3 rounded-[10px] border p-4 ${
+        className={`mt-3 flex gap-3 rounded-[var(--radius-md)] border p-4 ${
           activating
-            ? "border-[#c9e9d7] bg-[#e4f5ec]"
-            : "border-[#efc5bd] bg-[#fff7f5]"
+            ? "border-[var(--color-success)]/30 bg-[var(--color-success-bg)]"
+            : "border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)]"
         }`}
       >
         <div
           className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] ${
             activating
-              ? "bg-white text-[#1e9d63]"
-              : "bg-white text-[#c24a3a]"
+              ? "bg-[var(--color-surface)] text-[var(--color-success)]"
+              : "bg-[var(--color-surface)] text-[var(--color-danger)]"
           }`}
         >
           <Icon name={activating ? "check" : "lock"} size={14} />
         </div>
 
-        <p className="text-[11.5px] leading-5 text-[#332a21]">
+        <p className="text-[12.5px] leading-5 text-[var(--color-text-primary)]">
           {activating
             ? "The member will become active again and regain workspace access immediately."
             : "The member will no longer be treated as an active organization user and loses workspace access immediately."}

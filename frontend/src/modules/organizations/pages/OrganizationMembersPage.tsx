@@ -68,13 +68,13 @@ export function OrganizationMembersPage() {
         title="Members"
         description="Manage the people who operate this organization and control their access without leaving the main workspace."
         actions={
-          <div className="flex h-9 items-center gap-2 rounded-[8px] border border-[#e1d5bc] bg-white px-3">
-            <Icon name="search" size={14} className="text-[#a2957c]" />
+          <div className="flex h-9 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3">
+            <Icon name="search" size={14} className="text-[var(--color-text-muted)]" />
 
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              className="w-[170px] bg-transparent text-[12px] outline-none placeholder:text-[#a2957c]"
+              className="w-[170px] bg-transparent text-[13px] outline-none placeholder:text-[var(--color-text-muted)]"
               placeholder="Filter members"
             />
           </div>

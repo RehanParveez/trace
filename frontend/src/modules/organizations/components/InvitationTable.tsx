@@ -28,7 +28,7 @@ export function InvitationTable({
         title="Invitations"
         description="Pending, accepted and expired invitations for this organization."
         action={
-          <span className="rounded-full bg-[#efe6d3] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#6b6152]">
+          <span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">
             {invitations.length}
           </span>
         }
@@ -43,8 +43,8 @@ export function InvitationTable({
       ) : (
         <TableShell>
           <table className="w-full min-w-[760px] text-left">
-            <thead className="bg-[#f5efe3]">
-              <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+            <thead className="bg-[var(--color-surface-muted)]">
+              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">Invitee</th>
                 <th className="px-4 py-3">Role</th>
                 <th className="px-4 py-3">Status</th>
@@ -60,21 +60,21 @@ export function InvitationTable({
                 return (
                   <tr
                     key={invitation.id}
-                    className="border-t border-[#e1d5bc] transition hover:bg-[#f5efe3]"
+                    className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]"
                   >
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#efe6d3] text-[#6b6152]">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
                           <Icon name="mail" size={12} />
                         </div>
 
-                        <span className="truncate text-[12px] font-semibold text-[#191410]">
+                        <span className="truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
                           {invitation.email}
                         </span>
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px] font-semibold text-[#332a21]">
+                    <td className="px-4 py-3.5 text-[12.5px] font-semibold text-[var(--color-text-primary)]">
                       {roleLabel(invitation.role_id)}
                     </td>
 
@@ -84,7 +84,7 @@ export function InvitationTable({
                       </Badge>
                     </td>
 
-                    <td className="px-4 py-3.5 text-[11px] text-[#6b6152]">
+                    <td className="px-4 py-3.5 text-[12px] text-[var(--color-text-secondary)]">
                       {formatDate(invitation.expires_at)}
                     </td>
 
@@ -99,7 +99,7 @@ export function InvitationTable({
                           Revoke
                         </Button>
                       ) : (
-                        <span className="text-[10px] text-[#a2957c]">—</span>
+                        <span className="text-[11px] text-[var(--color-text-muted)]">—</span>
                       )}
                     </td>
                   </tr>

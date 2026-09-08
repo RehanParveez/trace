@@ -80,20 +80,20 @@ export function OrganizationForm({
           />
         </Field>
 
-        <div className="flex items-center gap-2 rounded-[8px] border border-[#e1d5bc] bg-white px-3 py-2 font-mono text-[11.5px] text-[#6b6152]">
-          <Icon name="external" size={13} className="shrink-0 text-[#a2957c]" />
+        <div className="flex items-center gap-2 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-[12px] text-[var(--color-text-secondary)]">
+          <Icon name="external" size={13} className="shrink-0 text-[var(--color-text-muted)]" />
           <span className="truncate">
-            trace.app/<span className="text-[#191410]">{normalizeSlug(slug) || "…"}</span>
+            trace.app/<span className="text-[var(--color-text-primary)]">{normalizeSlug(slug) || "…"}</span>
           </span>
 
           {slugChanged ? (
-            <span className="ml-auto shrink-0 rounded-full bg-[#fbefd9] px-2 py-0.5 text-[10px] font-sans font-semibold text-[#b98626]">
+            <span className="ml-auto shrink-0 rounded-full bg-[var(--color-warning-bg)] px-2 py-0.5 text-[10px] font-sans font-semibold text-[var(--color-warning)]">
               Changing this may break shared links
             </span>
           ) : null}
         </div>
 
-        <div className="flex items-center justify-end gap-2 border-t border-[#e1d5bc] pt-4">
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           {onCancel ? (
             <Button type="button" variant="ghost" onClick={onCancel}>
               Cancel

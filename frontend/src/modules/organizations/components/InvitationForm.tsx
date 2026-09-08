@@ -87,7 +87,7 @@ export function InvitationForm({
 
         {selectedRole ? (
           <div className="flex items-center gap-2 md:col-span-3">
-            <span className="text-[10.5px] text-[#6b6152]">
+            <span className="text-[12px] text-[var(--color-text-secondary)]">
               This invitation grants:
             </span>
 
@@ -96,7 +96,7 @@ export function InvitationForm({
               {selectedRole.is_system ? "System" : "Custom"}
             </Badge>
 
-            <span className="font-mono text-[10px] text-[#a2957c]">
+            <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
               {selectedRole.permissions.length} permissions
             </span>
           </div>

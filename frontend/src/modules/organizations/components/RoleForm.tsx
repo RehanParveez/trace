@@ -59,7 +59,7 @@ export function RoleForm({
         />
 
         {role?.is_system ? (
-          <div className="mx-5 mt-5 flex items-center gap-2.5 rounded-[8px] border border-[#cfe0f2] bg-[#e7f0fa] px-3 py-2.5 text-[11.5px] font-medium text-[#2c5c8f]">
+          <div className="mx-5 mt-5 flex items-center gap-2.5 rounded-[8px] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-3 py-2.5 text-[12px] font-medium text-[var(--color-info)]">
             <Icon name="lock" size={13} />
             This is a system role. Its name and permissions are managed by
             the platform.

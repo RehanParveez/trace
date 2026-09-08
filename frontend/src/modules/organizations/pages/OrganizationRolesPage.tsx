@@ -93,12 +93,12 @@ export function OrganizationRolesPage() {
           description="This removes the custom role definition. System roles cannot be deleted."
           onClose={() => setDeletingRole(null)}
         >
-          <div className="rounded-[10px] border border-[#e1d5bc] bg-white p-4">
-            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
+          <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+            <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
               Role
             </div>
 
-            <div className="mt-1 text-[13px] font-semibold text-[#191410]">
+            <div className="mt-1 text-[14px] font-semibold text-[var(--color-text-primary)]">
               {deletingRole.name}
             </div>
           </div>
