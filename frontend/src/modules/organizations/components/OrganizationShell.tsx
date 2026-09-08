@@ -199,7 +199,7 @@ export function OrganizationShell({
   );
 
   return (
-    <div className="min-h-screen bg-[#f5efe3] text-[#191410] [font-family:Inter,system-ui,sans-serif]">
+    <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-hidden !border-r !border-[#24314d] !bg-[#080d18] !text-[#cbd5e1] lg:flex">
         <div className="relative flex h-[94px] shrink-0 items-center overflow-hidden !border-b !border-[#24314d] !bg-[#080d18] px-5">
           <div className="pointer-events-none absolute inset-0 opacity-[0.22] [background-image:linear-gradient(#53617a_1px,transparent_1px),linear-gradient(90deg,#53617a_1px,transparent_1px)] [background-size:18px_18px]" />
@@ -267,54 +267,42 @@ export function OrganizationShell({
       </aside>
 
       <div className="min-h-screen lg:pl-[248px]">
-        <header className="sticky top-0 z-30 flex min-h-[64px] items-center gap-3 !border-b !border-[#e1d5bc] !bg-white/95 px-4 backdrop-blur sm:px-7">
-          <div className="flex min-w-0 items-center gap-2 rounded-[9px] !border !border-[#e1d5bc] !bg-[#fbf8f2] px-3 py-2">
-            <Icon
-              name="building"
-              size={14}
-              className="text-[#8b7350]"
-            />
-
-            <span className="max-w-[220px] truncate text-[12px] font-semibold !text-[#332a21]">
+        <header className="sticky top-0 z-30 flex min-h-[64px] items-center gap-3 border-b border-[var(--color-border)] bg-white/95 px-4 backdrop-blur sm:px-7">
+          <div className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2 shadow-sm">
+            <Icon name="building" size={15} className="text-[var(--color-text-muted)]" />
+            <span className="max-w-[220px] truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
               {organizationName}
             </span>
           </div>
 
-          <div className="hidden h-9 max-w-[380px] flex-1 items-center gap-2 rounded-[9px] !border !border-[#e1d5bc] !bg-[#fbf8f2] px-3 !text-[#a2957c] md:flex">
-            <Icon name="search" size={14} />
+      <div className="hidden h-10 max-w-[380px] flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-[var(--color-text-muted)] md:flex">
+       <Icon name="search" size={15} />
+       <span className="text-[13px]">Search organization workspace</span>
+       <span className="ml-auto rounded border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">
+         ⌘K
+       </span>
+      </div>
 
-            <span className="text-[12px]">
-              Search organization workspace
-            </span>
+      <div className="ml-auto flex items-center gap-3">
+       <div className="hidden items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-success)] sm:flex">
+        <span className="relative flex h-1.5 w-1.5">
+         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-success)] opacity-60" />
+         <span className="relative h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+      </span>
+      Workspace operational
+    </div>
+    <NotificationBell />
+    <button
+      type="button"
+      className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
+      aria-label="Organization settings"
+    >
+      <Icon name="settings" size={16} />
+    </button>
+  </div>
+</header>
 
-            <span className="ml-auto rounded border border-[#e1d5bc] bg-white px-1.5 py-0.5 font-mono text-[9px] !text-[#8c806e]">
-              ⌘K
-            </span>
-          </div>
-
-          <div className="ml-auto flex items-center gap-3">
-           <div className="hidden items-center gap-2 text-[9px] font-bold uppercase tracking-[0.16em] !text-[#668165] sm:flex">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#1e9d63] opacity-60" />
-              <span className="relative h-1.5 w-1.5 rounded-full bg-[#1e9d63]" />
-            </span>
-
-            Workspace operational
-            </div>
-
-            <NotificationBell />
-
-            <button
-              type="button"
-              className="flex h-9 w-9 items-center justify-center rounded-[9px] !border !border-[#e1d5bc] !bg-white !text-[#6b6152] transition hover:!bg-[#f5efe3]"
-              aria-label="Organization settings"
-            >
-             <Icon name="settings" size={15} />
-            </button>
-          </div>
-        </header>
-
-        <main className="mx-auto w-full max-w-[1440px] px-4 py-6 sm:px-7 lg:px-8">
+        <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-7 lg:px-8">
           {children ?? <Outlet />}
         </main>
       </div>

@@ -227,7 +227,7 @@ export function Icon({
 
 export function BrandMark() {
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[linear-gradient(155deg,#d9a441,#b98626)] text-[13px] font-extrabold text-[#080d18] shadow-[0_2px_8px_rgba(217,164,65,0.35)]">
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[linear-gradient(155deg,var(--color-trace-gold),var(--color-trace-gold-dark))] text-[13px] font-extrabold text-[var(--color-trace-navy)] shadow-[0_2px_8px_rgba(217,164,65,0.35)]">
       T
     </div>
   );
@@ -240,7 +240,7 @@ export function Panel({
 }: HTMLAttributes<HTMLDivElement>) {
   return (
     <section
-      className={`rounded-[16px] border border-[#e1d5bc] bg-[#fbf8f2] shadow-[0_1px_2px_rgba(90,70,40,0.04)] ${className}`}
+      className={`rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_1px_3px_rgba(25,20,16,0.04)] ${className}`}
       {...props}
     >
       {children}
@@ -260,25 +260,22 @@ export function PanelHeader({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[#e1d5bc] px-5 py-4">
+    <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
       <div className="min-w-0">
         {eyebrow ? (
-          <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a2957c]">
+          <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-text-muted)]">
             {eyebrow}
           </div>
         ) : null}
-
-        <h2 className="font-[Archivo] text-[15px] font-bold tracking-[-0.02em] text-[#191410]">
+        <h2 className="font-[Archivo] text-[17px] font-bold tracking-[-0.02em] text-[var(--color-text-primary)]">
           {title}
         </h2>
-
         {description ? (
-          <p className="mt-1 max-w-2xl text-[12px] leading-5 text-[#6b6152]">
+          <p className="mt-1.5 max-w-2xl text-[14px] leading-5 text-[var(--color-text-secondary)]">
             {description}
           </p>
         ) : null}
       </div>
-
       {action}
     </div>
   );
@@ -294,17 +291,15 @@ export function SectionDivider({
   action?: ReactNode;
 }) {
   return (
-    <div className="mb-4 mt-8 flex flex-wrap items-baseline justify-between gap-4 first:mt-0">
+    <div className="mb-5 mt-9 flex flex-wrap items-baseline justify-between gap-4 first:mt-0">
       <div>
-        <h2 className="font-['Fraunces',serif] text-[20px] font-semibold italic tracking-[-0.01em] text-[#191410]">
+        <h2 className="font-['Fraunces',serif] text-[22px] font-semibold italic tracking-[-0.01em] text-[var(--color-text-primary)]">
           {title}
         </h2>
-
         {description ? (
-          <p className="mt-1 text-[12.5px] text-[#6b6152]">{description}</p>
+          <p className="mt-1.5 text-[14px] text-[var(--color-text-secondary)]">{description}</p>
         ) : null}
       </div>
-
       {action}
     </div>
   );
@@ -322,21 +317,22 @@ export function Button({
 }) {
   const variants = {
     primary:
-      "border-[#d9a441] bg-[#d9a441] text-[#080d18] hover:bg-[#b98626]",
-    secondary: "border-[#e1d5bc] bg-white text-[#332a21] hover:bg-[#f5efe3]",
-    ghost: "border-transparent bg-transparent text-[#6b6152] hover:bg-[#efe6d3]",
-    danger: "border-[#efc5bd] bg-[#fff7f5] text-[#a33f31] hover:bg-[#f9e5df]",
+      "border-[var(--color-trace-gold)] bg-[var(--color-trace-gold)] text-[var(--color-trace-navy)] hover:bg-[var(--color-trace-gold-dark)]",
+    secondary:
+      "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]",
+    ghost:
+      "border-transparent bg-transparent text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]",
+    danger:
+      "border-[#efc5bd] bg-[var(--color-danger-bg)] text-[var(--color-danger)] hover:bg-[#f9e5df]",
   };
-
   const sizes = {
-    sm: "min-h-8 px-3 text-[12px]",
-    md: "min-h-9 px-3.5 text-[13px]",
+    sm: "min-h-9 px-3.5 text-[13px]",
+    md: "min-h-10 px-4 text-[14px]",
   };
-
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 rounded-[8px] border font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}
     </button>
@@ -351,16 +347,15 @@ export function Badge({
   children: ReactNode;
 }) {
   const tones = {
-    green: "bg-[#e4f5ec] text-[#1e9d63]",
-    red: "bg-[#f9e5df] text-[#c24a3a]",
-    blue: "bg-[#e7f0fa] text-[#3b7dc4]",
-    gold: "bg-[#fbefd9] text-[#b98626]",
-    slate: "bg-[#efe6d3] text-[#6b6152]",
+    green: "bg-[var(--color-success-bg)] text-[var(--color-success)]",
+    red: "bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
+    blue: "bg-[var(--color-info-bg)] text-[var(--color-info)]",
+    gold: "bg-[var(--color-warning-bg)] text-[var(--color-warning)]",
+    slate: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
   };
-
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10.5px] font-semibold ${tones[tone]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold ${tones[tone]}`}
     >
       <span className="h-1.5 w-1.5 rounded-full bg-current" />
       {children}
@@ -458,37 +453,30 @@ export function StatCard({
   tone?: "gold" | "green" | "blue" | "red";
 }) {
   const iconTone = {
-    gold: "bg-[#fbefd9] text-[#b98626]",
-    green: "bg-[#e4f5ec] text-[#1e9d63]",
-    blue: "bg-[#e7f0fa] text-[#3b7dc4]",
-    red: "bg-[#f9e5df] text-[#c24a3a]",
+    gold: "bg-[var(--color-warning-bg)] text-[var(--color-warning)]",
+    green: "bg-[var(--color-success-bg)] text-[var(--color-success)]",
+    blue: "bg-[var(--color-info-bg)] text-[var(--color-info)]",
+    red: "bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
   }[tone];
 
   return (
-    <Panel className="relative overflow-hidden p-4">
+    <Panel className="relative overflow-hidden p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-[10.5px] font-bold uppercase tracking-[0.06em] text-[#a2957c]">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
             {label}
           </div>
-
-          <div className="mt-1.5 font-mono text-[25px] font-semibold tracking-[-0.04em] text-[#191410]">
+          <div className="mt-2 font-[Archivo] text-[30px] font-semibold tracking-[-0.04em] text-[var(--color-text-primary)]">
             {value}
           </div>
-
           {note ? (
-            <div className="mt-1 text-[11px] text-[#6b6152]">{note}</div>
+            <div className="mt-1.5 text-[13px] text-[var(--color-text-secondary)]">{note}</div>
           ) : null}
         </div>
-
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-[9px] ${iconTone}`}
-        >
-          <Icon name={icon} size={15} />
+        <div className={`flex h-9 w-9 items-center justify-center rounded-[9px] ${iconTone}`}>
+          <Icon name={icon} size={16} />
         </div>
       </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-[linear-gradient(180deg,transparent,rgba(217,164,65,0.06))]" />
     </Panel>
   );
 }
@@ -505,25 +493,20 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mb-5 flex flex-wrap items-end justify-between gap-4">
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <div className="mb-2 flex items-center gap-2.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#a2957c]">
-          <span className="h-px w-7 bg-[#d9a441]" />
+        <div className="mb-2.5 flex items-center gap-2.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-text-muted)]">
+          <span className="h-px w-7 bg-[var(--color-trace-gold)]" />
           {eyebrow}
         </div>
-
-        <h1 className="font-[Archivo] text-[26px] font-bold leading-tight tracking-[-0.04em] text-[#191410] sm:text-[30px]">
+        <h1 className="font-[Archivo] text-[32px] font-bold leading-tight tracking-[-0.04em] text-[var(--color-text-primary)] sm:text-[36px]">
           {title}
         </h1>
-
-        <p className="mt-1.5 max-w-2xl text-[13px] leading-5 text-[#6b6152]">
+        <p className="mt-2 max-w-2xl text-[15px] leading-6 text-[var(--color-text-secondary)]">
           {description}
         </p>
       </div>
-
-      {actions ? (
-        <div className="flex items-center gap-2">{actions}</div>
-      ) : null}
+      {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </header>
   );
 }
@@ -541,27 +524,21 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.04em] text-[#6b6152]">
+      <span className="mb-1.5 block text-[12px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text-secondary)]">
         {label}
       </span>
-
       {children}
-
       {error ? (
-        <span className="mt-1.5 block text-[11px] text-[#c24a3a]">
-          {error}
-        </span>
+        <span className="mt-1.5 block text-[13px] text-[var(--color-danger)]">{error}</span>
       ) : hint ? (
-        <span className="mt-1.5 block text-[11px] leading-4 text-[#a2957c]">
-          {hint}
-        </span>
+        <span className="mt-1.5 block text-[13px] leading-4 text-[var(--color-text-muted)]">{hint}</span>
       ) : null}
     </label>
   );
 }
 
 export const inputClass =
-  "w-full rounded-[8px] border border-[#e1d5bc] bg-white px-3 py-2 text-[13px] text-[#191410] outline-none transition focus:border-[#b98626] focus:ring-2 focus:ring-[#d9a441]/15 disabled:bg-[#f5efe3] disabled:text-[#a2957c]";
+  "w-full rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[14px] text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-trace-gold-dark)] focus:ring-2 focus:ring-[var(--color-trace-gold)]/20 disabled:bg-[var(--color-surface-muted)] disabled:text-[var(--color-text-muted)]";
 
 export function ProgressBar({
   value,
@@ -778,20 +755,17 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-[10px] bg-[#efe6d3] text-[#6b6152]">
-        <Icon name={icon} size={18} />
+    <div className="flex flex-col items-center justify-center px-6 py-14 text-center">
+      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-[10px] bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
+        <Icon name={icon} size={20} />
       </div>
-
-      <h3 className="font-[Archivo] text-[14px] font-bold text-[#191410]">
+      <h3 className="font-[Archivo] text-[16px] font-bold text-[var(--color-text-primary)]">
         {title}
       </h3>
-
-      <p className="mt-1 max-w-md text-[12px] leading-5 text-[#6b6152]">
+      <p className="mt-2 max-w-md text-[14px] leading-6 text-[var(--color-text-secondary)]">
         {description}
       </p>
-
-      {action ? <div className="mt-4">{action}</div> : null}
+      {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
 }

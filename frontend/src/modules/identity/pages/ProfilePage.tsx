@@ -66,58 +66,54 @@ export function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5EFE3]">
-      <div className="mx-auto max-w-[1200px] px-6 py-8 lg:px-10">
+    <div className="min-h-screen bg-[var(--color-workspace)]">
+      <div className="mx-auto max-w-[1200px] px-6 py-10 lg:px-10">
 
-        <div className="mb-8">
-          <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#B98626]">
-            Identity
+        <div className="mb-9">
+         <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-trace-gold-dark)]">
+          Identity
+        </p>
+
+        <div className="mt-2.5 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+         <div>
+          <h1 className="font-['Fraunces'] text-[36px] font-semibold text-[var(--color-text-primary)]">
+            My profile
+          </h1>
+          <p className="mt-2 text-[15px] text-[var(--color-text-secondary)]">
+           Manage your identity, organization access and security.
           </p>
-
-          <div className="mt-2 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-              <h1 className="font-['Fraunces'] text-4xl text-[#191410]">
-                My profile
-              </h1>
-
-              <p className="mt-2 text-[13px] text-[#776D5E]">
-                Manage your identity,
-                organization access and
-                security.
-              </p>
-            </div>
-
-            <Link
-              to="/app/profile"
-              className="text-[12px] font-bold text-[#B98626]"
-            >
-              ← Back to workspace
-            </Link>
           </div>
-        </div>
+
+          <Link
+            to="/app/organization"
+            className="text-[13px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
+          >
+          ← Back to workspace
+        </Link>
+       </div>
+    </div>
 
         <div className="grid gap-5 lg:grid-cols-[1fr_1fr]">
 
-          <section className="rounded-[12px] border border-[#E1D5BC] bg-[#FBF8F2] p-6 shadow-[0_2px_10px_rgba(50,42,33,.035)]">
+          <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
             <div className="mb-6 flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-[12px] bg-[#0D1424] font-['Fraunces'] text-xl text-[#D9A441]">
+              <div className="grid h-14 w-14 place-items-center rounded-[12px] bg-[var(--color-trace-navy)] font-['Fraunces'] text-xl text-[var(--color-trace-gold)]">
                 {user.first_name[0]}
                 {user.last_name[0]}
               </div>
 
               <div>
-                <h2 className="font-['Fraunces'] text-xl text-[#191410]">
-                  {user.first_name}{" "}
-                  {user.last_name}
+                <h2 className="font-['Fraunces'] text-[22px] text-[var(--color-text-primary)]">
+                 {user.first_name} {user.last_name}
                 </h2>
 
-                <p className="mt-1 font-mono text-[9px] uppercase tracking-[.1em] text-[#8B806F]">
-                  {user.role.name}
+                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
+                 {user.role.name}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-0">
               <ProfileRow
                 label="Email"
                 value={user.email}
@@ -168,14 +164,14 @@ export function ProfilePage() {
             </div>
           </section>
 
-          <section className="rounded-[12px] border border-[#E1D5BC] bg-[#FBF8F2] p-6 shadow-[0_2px_10px_rgba(50,42,33,.035)]">
+          <section className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
             <div className="mb-6">
-              <p className="font-mono text-[9px] uppercase tracking-[.12em] text-[#B98626]">
-                Security
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-trace-gold-dark)]">
+               Security
               </p>
 
-              <h2 className="mt-1 font-['Fraunces'] text-xl">
-                Change password
+              <h2 className="mt-1.5 font-['Fraunces'] text-[22px]">
+               Change password
               </h2>
             </div>
 
@@ -257,67 +253,61 @@ export function ProfilePage() {
                   changePassword.isPending ||
                   !currentPassword ||
                   !isPasswordStrong(
-                    newPassword,
+                  newPassword,
                   ) ||
                   !passwordsMatch
                 }
                 className="
-                  h-11 w-full rounded-[8px]
-                  bg-[#0D1424]
-                  text-[12px] font-bold
-                  text-[#FBF8F2]
-                  disabled:opacity-40
-                "
+                 h-11 w-full rounded-[8px]
+                 bg-[#0D1424]
+                 text-[12px] font-bold
+                text-[#FBF8F2]
+                disabled:opacity-40
+               "
               >
-                {changePassword.isPending
-                  ? "Updating…"
-                  : "Update password"}
-              </button>
+             {changePassword.isPending
+              ? "Updating…"
+              : "Update password"}
+             </button>
             </form>
           </section>
         </div>
 
-        <section className="mt-5 rounded-[12px] border border-[#E1D5BC] bg-[#FBF8F2] p-6">
+        <section className="mt-6 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-center">
             <div>
-              <p className="font-mono text-[9px] uppercase tracking-[.12em] text-[#B98626]">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-trace-gold-dark)]">
                 Sessions
               </p>
 
-              <h2 className="mt-1 font-['Fraunces'] text-xl">
+              <h2 className="mt-1.5 font-['Fraunces'] text-[22px]">
                 Secure your workspace
               </h2>
 
-              <p className="mt-2 max-w-xl text-[12px] leading-5 text-[#776D5E]">
-                Sign out from every active
-                refresh-token session associated
-                with this account.
+              <p className="mt-2 max-w-xl text-[14px] leading-6 text-[var(--color-text-secondary)]">
+                Sign out from every active refresh-token session associated with this account.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={() =>
-                  logout.mutate()
-                }
+                onClick={() => logout.mutate()}
                 disabled={logout.isPending}
-                className="h-10 rounded-[8px] border border-[#D8CDB9] px-4 text-[11px] font-bold text-[#332A21]"
+                className="h-10 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-[13px] font-semibold text-[var(--color-text-primary)]"
               >
-                {logout.isPending
-                  ? "Signing out…"
-                  : "Sign out"}
+              {logout.isPending
+                ? "Signing out…"
+                : "Sign out"}
               </button>
 
               <button
-                onClick={() =>
-                  logoutAll.mutate()
-                }
+                onClick={() => logoutAll.mutate()}
                 disabled={logout.isPending || logoutAll.isPending}
-                className="h-10 rounded-[8px] bg-[#C24A3A] px-4 text-[11px] font-bold text-white"
+                className="h-10 rounded-[var(--radius-sm)] bg-[var(--color-danger)] px-4 text-[13px] font-semibold text-white"
               >
-                {logoutAll.isPending
-                  ? "Revoking…"
-                  : "Revoke all sessions"}
+              {logoutAll.isPending
+                ? "Revoking…"
+                : "Revoke all sessions"}
               </button>
             </div>
           </div>
@@ -337,17 +327,15 @@ function ProfileRow({
   positive?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-[#E8DFCF] py-3 last:border-b-0">
-      <span className="font-mono text-[9px] uppercase tracking-[.08em] text-[#8B806F]">
+    <div className="flex items-center justify-between border-b border-[var(--color-border)] py-3.5 last:border-b-0">
+      <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
         {label}
       </span>
 
       <span
         className={[
-          "max-w-[60%] truncate text-right text-[12px] font-semibold",
-          positive
-            ? "text-[#176F49]"
-            : "text-[#332A21]",
+          "max-w-[60%] truncate text-right text-[14px] font-semibold",
+          positive ? "text-[var(--color-success)]" : "text-[var(--color-text-primary)]",
         ].join(" ")}
       >
         {value}
