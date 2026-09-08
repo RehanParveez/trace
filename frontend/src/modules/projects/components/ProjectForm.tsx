@@ -4,6 +4,7 @@ import {Button, Icon,
 } from "../../organizations/components/OrganizationUi";
 import {useCreateProject, useUpdateProject,
 } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type {Client, Project, ProjectStatus,
 } from "../types/project.types";
 
@@ -64,9 +65,13 @@ export function ProjectForm({
     project?.expected_end_date ?? "",
   );
 
-  const [actualEndDate, setActualEndDate] = useState(
-    project?.actual_end_date ?? "",
-  );
+  const [actualEndDate, setActualEndDate] =
+    useState(
+      project?.actual_end_date ?? "",
+    );
+
+  const [error, setError] =
+    useState<string | null>(null);
 
   useEffect(() => {
     if (!project) {
@@ -96,53 +101,50 @@ export function ProjectForm({
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+    setError(null);
 
     if (editing && project) {
-      const payload = {
-        name: name.trim(),
-        code: code.trim() || null,
-        description:
-          description.trim() || null,
-        client_id: clientId || null,
-        location:
-          location.trim() || null,
-        status,
-        start_date: startDate || null,
-        expected_end_date:
-          expectedEndDate || null,
-        actual_end_date:
-          actualEndDate || null,
-      };
-
       updateProject.mutate(
         {
           projectId: project.id,
-          payload,
+          payload: {
+            name: name.trim(),
+            code: code.trim() || null,
+            description: description.trim() || null,
+            client_id: clientId || null,
+            location: location.trim() || null,
+            status,
+            start_date: startDate || null,
+            expected_end_date: expectedEndDate || null,
+            actual_end_date: actualEndDate || null,
+          },
         },
         {
           onSuccess: onClose,
+          onError: (mutationError) =>
+            setError(getApiErrorMessage(mutationError, "Couldn't save this project. Please try again.")),
         },
       );
 
       return;
     }
 
-    const payload = {
-      name: name.trim(),
-      code: code.trim() || null,
-      description:
-        description.trim() || null,
-      client_id: clientId || null,
-      location:
-        location.trim() || null,
-      start_date: startDate || null,
-      expected_end_date:
-        expectedEndDate || null,
-    };
-
-    createProject.mutate(payload, {
-      onSuccess: onClose,
-    });
+    createProject.mutate(
+      {
+        name: name.trim(),
+        code: code.trim() || null,
+        description: description.trim() || null,
+        client_id: clientId || null,
+        location: location.trim() || null,
+        start_date: startDate || null,
+        expected_end_date: expectedEndDate || null,
+      },
+      {
+        onSuccess: onClose,
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "Couldn't create this project. The code may already be in use.")),
+      },
+    );
   }
 
   return (
@@ -287,6 +289,12 @@ export function ProjectForm({
               />
             ) : null}
           </div>
+
+          {error ? (
+            <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+              {error}
+            </div>
+          ) : null}
 
           <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-5">
             <Button

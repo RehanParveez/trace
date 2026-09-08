@@ -4,6 +4,7 @@ import {Button,
 } from "../../organizations/components/OrganizationUi";
 import {useCreateClient, useUpdateClient,
 } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type {Client,
 } from "../types/project.types";
 
@@ -44,6 +45,9 @@ export function ClientForm({
   const [notes, setNotes] =
     useState(client?.notes ?? "");
 
+  const [error, setError] =
+    useState<string | null>(null);
+
   const isSubmitting =
     createClient.isPending ||
     updateClient.isPending;
@@ -52,6 +56,7 @@ export function ClientForm({
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+    setError(null);
 
     const payload = {
       name: name.trim(),
@@ -72,6 +77,8 @@ export function ClientForm({
         },
         {
           onSuccess: onClose,
+          onError: (mutationError) =>
+            setError(getApiErrorMessage(mutationError, "Couldn't save this client. Please try again.")),
         },
       );
 
@@ -80,6 +87,8 @@ export function ClientForm({
 
     createClient.mutate(payload, {
       onSuccess: onClose,
+      onError: (mutationError) =>
+        setError(getApiErrorMessage(mutationError, "Couldn't create this client. It may already exist.")),
     });
   }
 
@@ -152,6 +161,12 @@ export function ClientForm({
               className="mt-1.5 w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2.5 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]"
             />
           </label>
+
+          {error ? (
+            <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+              {error}
+            </div>
+          ) : null}
 
           <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
             <Button

@@ -4,6 +4,7 @@ import {Button,
 } from "../../organizations/components/OrganizationUi";
 import {useCreateMilestone, useUpdateMilestone,
 } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type {Milestone,
 } from "../types/project.types";
 
@@ -37,6 +38,9 @@ export function MilestoneForm({
     Boolean(milestone?.completed_at),
   );
 
+  const [error, setError] =
+    useState<string | null>(null);
+
   const editing = Boolean(milestone);
 
   const isSubmitting =
@@ -44,50 +48,51 @@ export function MilestoneForm({
     updateMilestone.isPending;
 
   function submit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
+  event: FormEvent<HTMLFormElement>,
+) {
+  event.preventDefault();
+  setError(null);
 
-    const payload = {
-      name: name.trim(),
-      description:
-        description.trim() || null,
-      due_date: dueDate || null,
-      completed_at: completed
-        ? (
-            milestone?.completed_at ??
-            new Date()
-              .toISOString()
-              .slice(0, 10)
-          )
-        : null,
-    };
-
-    if (editing && milestone) {
-      updateMilestone.mutate(
-        {
-          projectId,
-          milestoneId: milestone.id,
-          payload,
-        },
-        {
-          onSuccess: onClose,
-        },
-      );
-
-      return;
-    }
-
-    createMilestone.mutate(
+  if (editing && milestone) {
+    updateMilestone.mutate(
       {
         projectId,
-        payload,
+        milestoneId: milestone.id,
+        payload: {
+          name: name.trim(),
+          description: description.trim() || null,
+          due_date: dueDate || null,
+          completed_at: completed
+            ? (milestone.completed_at ?? new Date().toISOString().slice(0, 10))
+            : null,
+        },
       },
       {
         onSuccess: onClose,
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "Couldn't save this milestone. Please try again.")),
       },
     );
+
+    return;
   }
+
+  createMilestone.mutate(
+    {
+      projectId,
+      payload: {
+        name: name.trim(),
+        description: description.trim() || null,
+        due_date: dueDate || null,
+      },
+    },
+    {
+      onSuccess: onClose,
+      onError: (mutationError) =>
+        setError(getApiErrorMessage(mutationError, "Couldn't add this milestone. Please try again.")),
+    },
+  );
+}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#16283f]/45 p-4 backdrop-blur-[2px]">
@@ -161,19 +166,22 @@ export function MilestoneForm({
             />
           </label>
 
-          <label className="flex items-center gap-2">
+          {editing ? (
+           <label className="flex items-center gap-2">
             <input
               type="checkbox"
               checked={completed}
-              onChange={(e) =>
-                setCompleted(e.target.checked)
-              }
-            />
+              onChange={(event) => setCompleted(event.target.checked)}
+             />
+            <span className="text-[11px] text-[#191410]">Mark as completed</span>
+           </label>
+          ) : null}
 
-            <span className="text-[11px] text-[#191410]">
-              Mark as completed
-            </span>
-          </label>
+          {error ? (
+            <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+              {error}
+            </div>
+          ) : null}
 
           <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
             <Button

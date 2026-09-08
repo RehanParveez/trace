@@ -4,6 +4,7 @@ import {Button,
 } from "../../organizations/components/OrganizationUi";
 import {useAddProjectMember,
 } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type {ProjectMemberRole,
 } from "../types/project.types";
 
@@ -30,15 +31,19 @@ export function ProjectMemberDialog({
   const [userId, setUserId] =
     useState("");
 
-  const [role, setRole] =
+    const [role, setRole] =
     useState<ProjectMemberRole>(
       "MEMBER",
     );
+
+  const [error, setError] =
+    useState<string | null>(null);
 
   function submit(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+    setError(null);
 
     addMember.mutate(
       {
@@ -50,6 +55,8 @@ export function ProjectMemberDialog({
       },
       {
         onSuccess: onClose,
+        onError: (mutationError) =>
+          setError(getApiErrorMessage(mutationError, "Couldn't add this member. Check the user ID and try again.")),
       },
     );
   }
@@ -119,6 +126,12 @@ export function ProjectMemberDialog({
               )}
             </select>
           </label>
+
+          {error ? (
+            <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+              {error}
+            </div>
+          ) : null}
 
           <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
             <Button

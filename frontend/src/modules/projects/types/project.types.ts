@@ -44,8 +44,8 @@ export interface Project {
 export interface ProjectMemberUser {
   id: string;
   email: string;
-  first_name?: string | null;
-  last_name?: string | null;
+  first_name?: string
+  last_name?: string 
 }
 
 export interface ProjectMember {
@@ -53,7 +53,7 @@ export interface ProjectMember {
   project_id: string;
   user_id: string;
   role: ProjectMemberRole;
-  user?: ProjectMemberUser | null;
+  user?: ProjectMemberUser;
   created_at?: string;
   updated_at?: string;
 }

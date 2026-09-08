@@ -142,6 +142,7 @@ class ProjectMemberRepository:
   ) -> ProjectMember:
     self.session.add(member)
     await self.session.flush()
+    await self.session.refresh(member, attribute_names=["user"])
     return member
 
   async def get_by_id(

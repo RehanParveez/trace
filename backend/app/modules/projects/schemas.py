@@ -140,6 +140,14 @@ class ProjectMemberCreate(BaseModel):
 class ProjectMemberUpdate(BaseModel):
   role: ProjectMemberRole
 
+class ProjectMemberUserResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  email: str
+  first_name: str
+  last_name: str
+
 class ProjectMemberResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
 
@@ -147,6 +155,7 @@ class ProjectMemberResponse(BaseModel):
   project_id: UUID
   user_id: UUID
   role: ProjectMemberRole
+  user: ProjectMemberUserResponse
   created_at: datetime
   updated_at: datetime
 

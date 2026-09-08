@@ -1,8 +1,9 @@
 import { useState } from "react";
 import {Button, Panel,
 } from "../../organizations/components/OrganizationUi";
-import {useDeleteMilestone,
+import {useDeleteMilestone, useUpdateMilestone,
 } from "../hooks";
+import { getApiErrorMessage } from "../../identity";
 import type {Milestone,
 } from "../types/project.types";
 import {formatProjectDate,
@@ -28,6 +29,9 @@ export function MilestoneTable({
 
   const deleteMilestone =
     useDeleteMilestone();
+
+    const updateMilestone =
+    useUpdateMilestone();
 
   function openCreate() {
     setEditingMilestone(undefined);
@@ -122,6 +126,24 @@ export function MilestoneTable({
                       <div className="flex shrink-0 gap-2">
                         <Button
                           variant="ghost"
+                          disabled={updateMilestone.isPending}
+                          onClick={() =>
+                            updateMilestone.mutate({
+                              projectId,
+                              milestoneId: milestone.id,
+                              payload: {
+                                completed_at: completed
+                                  ? null
+                                  : new Date().toISOString().slice(0, 10),
+                              },
+                            })
+                          }
+                        >
+                          {completed ? "Reopen" : "Complete"}
+                        </Button>
+
+                        <Button
+                          variant="ghost"
                           onClick={() =>
                             openEdit(
                               milestone,
@@ -150,6 +172,10 @@ export function MilestoneTable({
                                 projectId,
                                 milestoneId:
                                   milestone.id,
+                              },
+                              {
+                                onError: (error) =>
+                                  window.alert(getApiErrorMessage(error, "Couldn't delete this milestone.")),
                               },
                             );
                           }}
