@@ -22,12 +22,12 @@ export function EntityHistoryPanel({ entityType, entityId }: EntityHistoryPanelP
       {entries.length === 0 ? (
         <EmptyState icon="clock" title="No history yet" description="Changes to this record will appear here." />
       ) : (
-        <div className="divide-y divide-[#e1d5bc]">
+        <div className="divide-y divide-[var(--color-border)]">
           {entries.map((entry) => (
             <div key={entry.id} className="flex items-start gap-3 p-4">
               <div className="min-w-0 flex-1">
-                <div className="text-[11.5px] font-semibold text-[#191410]">{entry.summary}</div>
-                <div className="mt-1 text-[10px] text-[#a2957c]">
+                <div className="text-[13px] font-semibold text-[var(--color-text-primary)]">{entry.summary}</div>
+                <div className="mt-1 text-[11.5px] text-[var(--color-text-muted)]">
                   {formatAuditAction(entry.action)} · {entry.actor_name ?? entry.actor_email ?? "System"} · {formatAuditTimestamp(entry.created_at)}
                 </div>
               </div>

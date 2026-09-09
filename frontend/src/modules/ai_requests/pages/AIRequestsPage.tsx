@@ -18,7 +18,8 @@ export function AIRequestsPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader title="AI activity" description="Every AI call made on behalf of this organization — material normalization, caption parsing, and their outcomes." />
+      <PageHeader eyebrow="INTELLIGENCE" title="AI activity" description="Every AI call made on behalf of this organization — material normalization, caption parsing, and their outcomes."
+    />
       <AIUsageSummaryCards />
       <AIRequestTable entries={requestsQuery.data ?? []} />
     </div>

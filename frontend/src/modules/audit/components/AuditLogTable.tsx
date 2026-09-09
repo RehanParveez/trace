@@ -13,7 +13,7 @@ export function AuditLogTable({ entries }: AuditLogTableProps) {
         eyebrow="ACTIVITY RECORD"
         title="Audit log"
         description="An append-only record of who did what across this organization."
-        action={<span className="rounded-full bg-[#efe6d3] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#6b6152]">{entries.length}</span>}
+        action={<span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">{entries.length}</span>}
       />
 
       {entries.length === 0 ? (
@@ -21,8 +21,8 @@ export function AuditLogTable({ entries }: AuditLogTableProps) {
       ) : (
         <TableShell>
           <table className="w-full min-w-[700px] text-left">
-            <thead className="bg-[#f5efe3]">
-              <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+            <thead className="bg-[var(--color-surface-muted)]">
+              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">When</th>
                 <th className="px-4 py-3">Actor</th>
                 <th className="px-4 py-3">Action</th>
@@ -32,12 +32,12 @@ export function AuditLogTable({ entries }: AuditLogTableProps) {
             </thead>
             <tbody>
               {entries.map((entry) => (
-                <tr key={entry.id} className="border-t border-[#e1d5bc]">
-                  <td className="px-4 py-3.5 whitespace-nowrap font-mono text-[10.5px] text-[#6b6152]">{formatAuditTimestamp(entry.created_at)}</td>
-                  <td className="px-4 py-3.5 text-[11.5px] text-[#191410]">{entry.actor_name ?? entry.actor_email ?? "System"}</td>
-                  <td className="px-4 py-3.5"><Badge tone={getAuditActionTone(entry.action)}>{formatAuditAction(entry.action)}</Badge></td>
-                  <td className="px-4 py-3.5 text-[10.5px] text-[#6b6152]">{formatEntityType(entry.entity_type)}</td>
-                  <td className="px-4 py-3.5 text-[11.5px] text-[#332a21]">{entry.summary}</td>
+                <tr key={entry.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
+                  <td className="px-4 py-2.5 whitespace-nowrap font-mono text-[12px] text-[var(--color-text-secondary)]">{formatAuditTimestamp(entry.created_at)}</td>
+                  <td className="px-4 py-2.5 text-[13px] text-[var(--color-text-primary)]">{entry.actor_name ?? entry.actor_email ?? "System"}</td>
+                  <td className="px-4 py-2.5"><Badge tone={getAuditActionTone(entry.action)}>{formatAuditAction(entry.action)}</Badge></td>
+                  <td className="px-4 py-2.5 text-[12px] text-[var(--color-text-secondary)]">{formatEntityType(entry.entity_type)}</td>
+                  <td className="px-4 py-2.5 text-[13px] text-[var(--color-text-primary)]">{entry.summary}</td>
                 </tr>
               ))}
             </tbody>

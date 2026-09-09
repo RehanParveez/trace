@@ -59,7 +59,7 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
         </Field>
 
         {selectedItem ? (
-          <div className="rounded-[8px] border border-[#cfe0f2] bg-[#edf4fb] px-3.5 py-2.5 text-[11px] text-[#2c5c8f]">
+          <div className="rounded-[8px] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-3.5 py-2.5 text-[12px] text-[var(--color-info)]">
             Contracted quantity: {formatClaimQuantity(selectedItem.quantity, selectedItem.unit)}
           </div>
         ) : null}
@@ -81,9 +81,9 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
           <textarea className={`${inputClass} resize-y`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional context for this claim" />
         </Field>
 
-        {error ? <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
+        {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
-        <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
+        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={createClaim.isPending}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={createClaim.isPending || !boqItemId || !claimedQuantity || !claimedPercentage}>
             {createClaim.isPending ? "Saving…" : "Create claim"}

@@ -44,23 +44,23 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Badge tone={getClaimStatusTone(claim.status)}>{formatClaimStatus(claim.status)}</Badge>
-          <span className="font-mono text-[13px] font-semibold text-[#191410]">{formatClaimPercentage(claim.claimed_percentage)}</span>
+          <span className="font-mono text-[14px] font-semibold text-[var(--color-text-primary)]">{formatClaimPercentage(claim.claimed_percentage)}</span>
         </div>
 
-        {claim.notes ? <p className="text-[11.5px] leading-5 text-[#332a21]">{claim.notes}</p> : null}
+        {claim.notes ? <p className="text-[13px] leading-5 text-[var(--color-text-primary)]">{claim.notes}</p> : null}
 
         {claim.review_note ? (
-          <div className="rounded-[8px] border border-[#e1d5bc] bg-[#f5efe3] px-3 py-2.5 text-[11px] text-[#6b6152]">
-            <span className="font-semibold text-[#332a21]">Review note: </span>{claim.review_note}
+          <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2.5 text-[12px] text-[var(--color-text-secondary)]">
+            <span className="font-semibold text-[var(--color-text-primary)]">Review note: </span>{claim.review_note}
           </div>
         ) : null}
 
         <PhotoEvidencePicker claimId={claim.id} projectId={projectId} boqItemId={claim.boq_item_id} canManage={canReview || canSubmit} />
 
-        {error ? <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
+        {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
         {claim.status === "DRAFT" && canSubmit ? (
-          <div className="flex justify-end border-t border-[#e1d5bc] pt-4">
+          <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
             <Button variant="primary" disabled={submitClaim.isPending} onClick={() => submitClaim.mutate(claim.id)}>
               {submitClaim.isPending ? "Submitting…" : "Submit for review"}
             </Button>
@@ -68,7 +68,7 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
         ) : null}
 
         {claim.status === "SUBMITTED" && canReview ? (
-          <div className="space-y-2 border-t border-[#e1d5bc] pt-4">
+          <div className="space-y-2 border-t border-[var(--color-border)] pt-4">
             <Field label="Review note">
               <textarea className={`${inputClass} resize-y`} rows={2} value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} placeholder="Optional" />
             </Field>
