@@ -65,23 +65,23 @@ export function PlanComparison({
           return (
             <div
               key={plan.id}
-              className={`relative flex flex-col rounded-[11px] border p-5 transition ${
+              className={`relative flex flex-col rounded-[var(--radius-lg)] border p-5 transition ${
                 current
-                  ? "border-[#d9a441] bg-[#fbefd9] shadow-[0_10px_28px_rgba(90,70,40,0.08)]"
-                  : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c] hover:shadow-[0_8px_22px_rgba(90,70,40,0.05)]"
+                  ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)] shadow-[0_10px_28px_rgba(90,70,40,0.08)]"
+                  : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)] hover:shadow-[0_8px_22px_rgba(90,70,40,0.05)]"
               }`}
             >
               {current ? (
-                <div className="absolute left-5 top-0 h-0.5 w-12 rounded-b-full bg-[#d9a441]" />
+                <div className="absolute left-5 top-0 h-0.5 w-12 rounded-b-full bg-[var(--color-trace-gold)]" />
               ) : null}
 
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <div className="font-[Archivo] text-[19px] font-bold tracking-[-0.015em] text-[#191410]">
+                  <div className="font-[Archivo] text-[20px] font-bold tracking-[-0.015em] text-[var(--color-text-primary)]">
                     {plan.name}
                   </div>
 
-                  <div className="mt-1.5 min-h-[36px] text-[10.5px] leading-4 text-[#6b6152]">
+                  <div className="mt-1.5 min-h-[36px] text-[12px] leading-5 text-[var(--color-text-secondary)]">
                     {plan.description}
                   </div>
                 </div>
@@ -94,7 +94,7 @@ export function PlanComparison({
               </div>
 
               <div className="mt-5">
-                <span className="font-[Archivo] text-[27px] font-bold tracking-[-0.02em] text-[#191410]">
+                <span className="font-[Archivo] text-[28px] font-bold tracking-[-0.02em] text-[var(--color-text-primary)]">
                   {formatPrice(
                     price,
                     plan.currency,
@@ -102,7 +102,7 @@ export function PlanComparison({
                 </span>
 
                 {numericPrice !== 0 ? (
-                  <span className="ml-1.5 text-[10px] text-[#7c7060]">
+                  <span className="ml-1.5 text-[11px] text-[var(--color-text-secondary)]">
                     /
                     {billingInterval ===
                     "YEARLY"
@@ -112,8 +112,8 @@ export function PlanComparison({
                 ) : null}
               </div>
 
-              <div className="mt-5 border-t border-[#e1d5bc] pt-4">
-                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+              <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+                <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
                   Resource limits
                 </div>
 
@@ -123,7 +123,7 @@ export function PlanComparison({
                       key={metric}
                       className="flex items-center justify-between gap-3"
                     >
-                      <span className="text-[10.5px] text-[#6b6152]">
+                      <span className="text-[12px] text-[var(--color-text-secondary)]">
                         {metric
                           .replaceAll("_", " ")
                           .replace(
@@ -133,7 +133,7 @@ export function PlanComparison({
                           )}
                       </span>
 
-                      <span className="font-mono text-[9.5px] font-semibold text-[#191410]">
+                      <span className="font-mono text-[11px] font-semibold text-[var(--color-text-primary)]">
                         {formatQuota(
                           metric,
                           plan.quotas[metric] ??
@@ -145,8 +145,8 @@ export function PlanComparison({
                 </div>
               </div>
 
-              <div className="mt-5 border-t border-[#e1d5bc] pt-4">
-                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+              <div className="mt-5 border-t border-[var(--color-border)] pt-4">
+                <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
                   Included capabilities
                 </div>
 
@@ -159,8 +159,8 @@ export function PlanComparison({
                       <div
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] ${
                           plan.features[feature]
-                            ? "bg-[#e4f5ec] text-[#1e9d63]"
-                            : "bg-[#f5efe3] text-[#a2957c]"
+                            ? "bg-[var(--color-success-bg)] text-[var(--color-success)]"
+                            : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
                         }`}
                       >
                         <Icon
@@ -173,7 +173,7 @@ export function PlanComparison({
                         />
                       </div>
 
-                      <span className="text-[10.5px] text-[#6b6152]">
+                      <span className="text-[12px] text-[var(--color-text-secondary)]">
                         {feature
                           .replaceAll("_", " ")
                           .replace(

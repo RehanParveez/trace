@@ -201,6 +201,8 @@ export function SubscriptionPage() {
             note="Current subscription"
             icon="building"
             tone="blue"
+            actionLabel={canManage ? "Change plan" : undefined}
+            onAction={canManage ? () => openChangePlan() : undefined}
           />
 
           <StatCard
@@ -254,11 +256,17 @@ export function SubscriptionPage() {
                 ? "gold"
                 : "blue"
             }
+            actionLabel="View usage detail"
+            onAction={() =>
+              document
+                .getElementById("usage-overview")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
           />
         </div>
       </section>
 
-      <section>
+      <section id="usage-overview">
         <SectionDivider
           title="Current-period usage"
           description={`Usage from ${formatDate(

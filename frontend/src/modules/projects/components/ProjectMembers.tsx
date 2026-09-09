@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Button, Panel,
+import {Button, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import {useRemoveProjectMember,
 } from "../hooks";
@@ -29,43 +29,33 @@ export function ProjectMembers({
   return (
     <>
       <Panel className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#e1d5bc] p-5 sm:p-6">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
-              PROJECT TEAM
-            </div>
-
-            <div className="mt-1 font-[Archivo] text-[17px] font-bold text-[#191410]">
-              Assigned members
-            </div>
-          </div>
-
-          {canUpdate ? (
-            <Button
-              variant="primary"
-              onClick={() =>
-                setDialogOpen(true)
-              }
-            >
-              Add member
-            </Button>
-          ) : null}
-        </div>
+        <PanelHeader
+          eyebrow="PROJECT TEAM"
+          title="Assigned members"
+          description="Users with access to this project and their project-level role."
+          action={
+            canUpdate ? (
+              <Button variant="primary" onClick={() => setDialogOpen(true)}>
+                Add member
+              </Button>
+            ) : undefined
+          }
+        />
 
         {members.length === 0 ? (
-          <div className="p-6 text-[11px] text-[#756957]">
+          <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
             No members have been assigned to
             this project yet.
           </div>
         ) : (
-          <div className="divide-y divide-[#e1d5bc]">
+          <div className="divide-y divide-[var(--color-border)]">
             {members.map((member) => (
               <div
                 key={member.id}
                 className="flex items-center justify-between gap-4 p-5"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[#fbefd9] text-[11px] font-bold text-[#9b6f1d]">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-warning-bg)] text-[13px] font-bold text-[var(--color-warning)]">
                     {getProjectMemberName(
                       member,
                     )
@@ -74,13 +64,13 @@ export function ProjectMembers({
                   </div>
 
                   <div className="min-w-0">
-                    <div className="truncate text-[11.5px] font-semibold text-[#191410]">
+                    <div className="truncate text-[13.5px] font-semibold text-[var(--color-text-primary)]">
                       {getProjectMemberName(
                         member,
                       )}
                     </div>
 
-                    <div className="mt-0.5 truncate text-[9.5px] text-[#756957]">
+                    <div className="mt-0.5 truncate text-[12px] text-[var(--color-text-secondary)]">
                       {member.user?.email ??
                         member.user_id}
                     </div>
@@ -88,7 +78,7 @@ export function ProjectMembers({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-3">
-                  <span className="rounded-full border border-[#e1d5bc] bg-white px-2.5 py-1 text-[9px] font-semibold text-[#6b6152]">
+                  <span className="rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-text-secondary)]">
                     {formatProjectMemberRole(
                       member.role,
                     )}

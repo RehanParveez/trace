@@ -56,9 +56,9 @@ export function ChannelConnectDialog({ onClose }: ChannelConnectDialogProps) {
           <input className={inputClass} value={displayPhoneNumber} onChange={(e) => setDisplayPhoneNumber(e.target.value)} />
         </Field>
 
-        {error ? <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
+        {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
-        <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
+        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={connect.isPending}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={connect.isPending}>
             {connect.isPending ? "Connecting…" : "Connect number"}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Badge, Button, Icon, Modal } from "../../organizations/components/OrganizationUi";
+import { Badge, Button, Icon, inputClass, Modal, SectionLabel } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import {useAddPhotoTag, useAssignProject, useRemovePhotoTag, useSitePhoto, useUpdateSitePhoto,
 } from "../hooks";
@@ -56,13 +56,12 @@ export function SitePhotoDetailDialog({
   if (photoQuery.isLoading || !photo) {
     return (
       <Modal title="Site photo" onClose={onClose}>
-        <div className="py-8 text-center text-[11px] text-[#6b6152]">
+        <div className="py-8 text-center text-[12.5px] text-[var(--color-text-secondary)]">
           Loading…
         </div>
       </Modal>
     );
   }
-
   const location = locationDraft ?? photo.location_text ?? "";
   const photoDate = dateDraft ?? photo.photo_date ?? "";
   const noteText = getCaptionField(photo.caption_parsed, "notes");
@@ -75,7 +74,7 @@ export function SitePhotoDetailDialog({
       wide
     >
       {error ? (
-        <div className="mb-4 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+        <div className="mb-4 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
           {error}
         </div>
       ) : null}
@@ -84,29 +83,25 @@ export function SitePhotoDetailDialog({
         <img
           src={photo.photo_url}
           alt=""
-          className="w-full rounded-[10px] border border-[#e1d5bc] object-cover"
+          className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] object-cover"
         />
 
         <div className="space-y-4">
           <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-              Sender
-            </div>
-            <div className="mt-1 text-[12.5px] font-semibold text-[#191410]">
+            <SectionLabel>Sender</SectionLabel>
+            <div className="mt-1 text-[13.5px] font-semibold text-[var(--color-text-primary)]">
               {formatPhoneNumber(photo.sender_phone_number)}
             </div>
           </div>
 
           {photo.caption_raw ? (
             <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-                Caption
-              </div>
-              <div className="mt-1 text-[11.5px] leading-5 text-[#332a21]">
+              <SectionLabel>Caption</SectionLabel>
+              <div className="mt-1 text-[13px] leading-5 text-[var(--color-text-primary)]">
                 {photo.caption_raw}
               </div>
               {noteText ? (
-                <div className="mt-1 text-[10.5px] italic text-[#756957]">
+                <div className="mt-1 text-[12px] italic text-[var(--color-text-secondary)]">
                   AI notes: {noteText}
                 </div>
               ) : null}
@@ -114,12 +109,10 @@ export function SitePhotoDetailDialog({
           ) : null}
 
           <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-              Project
-            </div>
+            <SectionLabel>Project</SectionLabel>
             {canManage ? (
               <select
-                className="mt-1.5 w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]"
+                className={`mt-1.5 ${inputClass}`}
                 value={photo.project_id ?? ""}
                 onChange={(event) => {
                   if (!event.target.value) return;
@@ -148,7 +141,7 @@ export function SitePhotoDetailDialog({
                 ))}
               </select>
             ) : (
-              <div className="mt-1 text-[11.5px] font-semibold text-[#191410]">
+              <div className="mt-1 text-[13.5px] font-semibold text-[var(--color-text-primary)]">
                 {projects.find((p) => p.id === photo.project_id)?.name ??
                   "Unassigned"}
               </div>
@@ -157,12 +150,10 @@ export function SitePhotoDetailDialog({
 
           {canManage ? (
             <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-                Location
-              </div>
+              <SectionLabel>Location</SectionLabel>
               <div className="mt-1.5 flex gap-2">
                 <input
-                  className="w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]"
+                  className={inputClass}
                   value={location}
                   onChange={(e) => setLocationDraft(e.target.value)}
                   placeholder="e.g. Block C, Level 3"
@@ -194,10 +185,8 @@ export function SitePhotoDetailDialog({
             </div>
           ) : photo.location_text ? (
             <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-                Location
-              </div>
-              <div className="mt-1 text-[11.5px] text-[#191410]">
+              <SectionLabel>Location</SectionLabel>
+              <div className="mt-1 text-[13px] text-[var(--color-text-primary)]">
                 {photo.location_text}
               </div>
             </div>
@@ -205,13 +194,11 @@ export function SitePhotoDetailDialog({
 
           {canManage ? (
             <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-                Captured date
-              </div>
+              <SectionLabel>Captured date</SectionLabel>
               <div className="mt-1.5 flex gap-2">
                 <input
                   type="date"
-                  className="w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]"
+                  className={inputClass}
                   value={photoDate}
                   onChange={(e) => setDateDraft(e.target.value)}
                 />
@@ -242,24 +229,20 @@ export function SitePhotoDetailDialog({
             </div>
           ) : photo.photo_date ? (
             <div>
-              <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-                Captured date
-              </div>
-              <div className="mt-1 text-[11.5px] text-[#191410]">
+              <SectionLabel>Captured date</SectionLabel>
+              <div className="mt-1 text-[13px] text-[var(--color-text-primary)]">
                 {formatPhotoDate(photo.photo_date)}
               </div>
             </div>
           ) : null}
 
           <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#a2957c]">
-              Tags
-            </div>
+            <SectionLabel>Tags</SectionLabel>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {photo.tags.map((tag) => (
                 <span
                   key={tag.id}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-[#efe6d3] px-2.5 py-1 text-[10.5px] font-semibold text-[#6b6152]"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 text-[12px] font-semibold text-[var(--color-text-secondary)]"
                 >
                   {tag.tag}
                   {tag.source === "AI" ? <Badge tone="blue">AI</Badge> : null}
@@ -278,7 +261,7 @@ export function SitePhotoDetailDialog({
                             ),
                         });
                       }}
-                      className="text-[#a2957c] hover:text-[#c24a3a]"
+                      className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
                     >
                       <Icon name="x" size={9} />
                     </button>
@@ -286,14 +269,14 @@ export function SitePhotoDetailDialog({
                 </span>
               ))}
               {photo.tags.length === 0 ? (
-                <span className="text-[10.5px] text-[#a2957c]">No tags yet.</span>
+                <span className="text-[12px] text-[var(--color-text-muted)]">No tags yet.</span>
               ) : null}
             </div>
 
             {canManage ? (
               <form onSubmit={submitTag} className="mt-2 flex gap-2">
                 <input
-                  className="w-full rounded-[7px] border border-[#d9ceb9] bg-white px-2.5 py-1.5 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]"
+                  className={`${inputClass} py-1.5`}
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder="Add a tag"

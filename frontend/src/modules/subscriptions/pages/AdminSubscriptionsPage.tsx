@@ -83,10 +83,10 @@ export function AdminSubscriptionsPage() {
                   setStatusFilter(filter.value);
                   setPage(1);
                 }}
-                className={`rounded-[9px] border px-3.5 py-2 text-[11px] font-semibold transition ${
+                className={`rounded-[9px] border px-3.5 py-2 text-[12px] font-semibold transition ${
                   selected
-                    ? "border-[#c6a449] bg-[#fffaf0] text-[#16283f]"
-                    : "border-[#e1d5bc] bg-white text-[#6b6152] hover:border-[#cdbd9c] hover:bg-[#fbf8f2]"
+                    ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)] text-[var(--color-text-primary)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
                 }`}
               >
                 {filter.label}
@@ -103,9 +103,9 @@ export function AdminSubscriptionsPage() {
           description="One row per organization subscription, most recently created first."
         />
 
-        <div className="divide-y divide-[#e1d5bc]">
+        <div className="divide-y divide-[var(--color-border)]">
           {items.length === 0 ? (
-            <div className="p-5 sm:p-6 text-[11px] text-[#756957]">
+            <div className="p-5 sm:p-6 text-[12px] text-[var(--color-text-secondary)]">
               No subscriptions match this filter.
             </div>
           ) : (
@@ -115,20 +115,20 @@ export function AdminSubscriptionsPage() {
                 className="flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6"
               >
                 <div className="min-w-0">
-            
-                  <div className="font-mono text-[10.5px] text-[#9a8c75]">
+
+                  <div className="font-mono text-[12px] text-[var(--color-text-muted)]">
                     {subscription.organization_id}
                   </div>
 
-                  <div className="mt-1 text-[11px] text-[#6b6152]">
+                  <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
                     {formatBillingInterval(subscription.billing_interval)} · Provider: {subscription.provider}
                   </div>
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-4">
                   <div className="text-right">
-                    <div className="text-[10px] text-[#a2957c]">Period ends</div>
-                    <div className="font-mono text-[11.5px] font-semibold text-[#191410]">
+                    <div className="text-[11px] text-[var(--color-text-muted)]">Period ends</div>
+                    <div className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
                       {formatDate(subscription.current_period_end)}
                     </div>
                   </div>
@@ -142,8 +142,8 @@ export function AdminSubscriptionsPage() {
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-[#e1d5bc] p-4">
-          <span className="text-[10.5px] text-[#9a8c75]">
+        <div className="flex items-center justify-between border-t border-[var(--color-border)] p-4">
+          <span className="text-[12px] text-[var(--color-text-muted)]">
             Page {currentPage} of {totalPages}
           </span>
 

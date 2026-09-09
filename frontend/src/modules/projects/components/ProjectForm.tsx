@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import {Button, Icon,
+import {Button, Field, inputClass, Modal,
 } from "../../organizations/components/OrganizationUi";
 import {useCreateProject, useUpdateProject,
 } from "../hooks";
@@ -33,45 +33,16 @@ export function ProjectForm({
 
   const editing = Boolean(project);
 
-  const [name, setName] = useState(
-    project?.name ?? "",
-  );
-
-  const [code, setCode] = useState(
-    project?.code ?? "",
-  );
-
-  const [description, setDescription] = useState(
-    project?.description ?? "",
-  );
-
-  const [clientId, setClientId] = useState(
-    project?.client_id ?? "",
-  );
-
-  const [location, setLocation] = useState(
-    project?.location ?? "",
-  );
-
-  const [status, setStatus] = useState<ProjectStatus>(
-    project?.status ?? "PLANNING",
-  );
-
-  const [startDate, setStartDate] = useState(
-    project?.start_date ?? "",
-  );
-
-  const [expectedEndDate, setExpectedEndDate] = useState(
-    project?.expected_end_date ?? "",
-  );
-
-  const [actualEndDate, setActualEndDate] =
-    useState(
-      project?.actual_end_date ?? "",
-    );
-
-  const [error, setError] =
-    useState<string | null>(null);
+  const [name, setName] = useState(project?.name ?? "");
+  const [code, setCode] = useState(project?.code ?? "");
+  const [description, setDescription] = useState(project?.description ?? "");
+  const [clientId, setClientId] = useState(project?.client_id ?? "");
+  const [location, setLocation] = useState(project?.location ?? "");
+  const [status, setStatus] = useState<ProjectStatus>(project?.status ?? "PLANNING");
+  const [startDate, setStartDate] = useState(project?.start_date ?? "");
+  const [expectedEndDate, setExpectedEndDate] = useState(project?.expected_end_date ?? "");
+  const [actualEndDate, setActualEndDate] = useState(project?.actual_end_date ?? "");
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!project) {
@@ -85,21 +56,13 @@ export function ProjectForm({
     setLocation(project.location ?? "");
     setStatus(project.status);
     setStartDate(project.start_date ?? "");
-    setExpectedEndDate(
-      project.expected_end_date ?? "",
-    );
-    setActualEndDate(
-      project.actual_end_date ?? "",
-    );
+    setExpectedEndDate(project.expected_end_date ?? "");
+    setActualEndDate(project.actual_end_date ?? "");
   }, [project]);
 
-  const isSubmitting =
-    createProject.isPending ||
-    updateProject.isPending;
+  const isSubmitting = createProject.isPending || updateProject.isPending;
 
-  function submit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
 
@@ -148,293 +111,133 @@ export function ProjectForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#16283f]/45 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[12px] border border-[#d9ceb9] bg-[#fbf8f2] shadow-[0_24px_70px_rgba(20,25,35,0.22)]">
-        <div className="flex items-start justify-between border-b border-[#e1d5bc] p-5 sm:p-6">
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#a2957c]">
-              PROJECT CONFIGURATION
-            </div>
-
-            <h2 className="mt-1 font-[Archivo] text-[21px] font-bold tracking-[-0.02em] text-[#191410]">
-              {editing
-                ? "Edit project"
-                : "Create project"}
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-[7px] text-[#756957] hover:bg-[#efe6d3]"
-          >
-            <Icon
-              name="close"
-              size={13}
+    <Modal
+      title={editing ? "Edit project" : "Create project"}
+      description="Core project identity, delivery timeline and client assignment."
+      onClose={onClose}
+      wide
+    >
+      <form onSubmit={submit} className="space-y-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Project name">
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              placeholder="Main construction project"
+              className={inputClass}
             />
-          </button>
+          </Field>
+
+          <Field label="Project code">
+            <input
+              value={code}
+              onChange={(event) => setCode(event.target.value)}
+              placeholder="PRJ-001"
+              className={inputClass}
+            />
+          </Field>
         </div>
 
-        <form
-          onSubmit={submit}
-          className="space-y-5 p-5 sm:p-6"
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field
-              label="Project name"
-              required
-              value={name}
-              onChange={setName}
-              placeholder="Main construction project"
-            />
-
-            <Field
-              label="Project code"
-              value={code}
-              onChange={setCode}
-              placeholder="PRJ-001"
-            />
-          </div>
-
-          <Field
-            label="Description"
+        <Field label="Description">
+          <textarea
             value={description}
-            onChange={setDescription}
-            textarea
+            onChange={(event) => setDescription(event.target.value)}
+            rows={4}
             placeholder="Project description"
+            className={`${inputClass} resize-y`}
           />
+        </Field>
 
-          <div
-            className={`grid gap-4 ${
-              editing
-                ? "sm:grid-cols-2"
-                : "sm:grid-cols-1"
-            }`}
-          >
-            <SelectField
-              label="Client"
+        <div className={`grid gap-4 ${editing ? "sm:grid-cols-2" : "sm:grid-cols-1"}`}>
+          <Field label="Client">
+            <select
               value={clientId}
-              onChange={setClientId}
+              onChange={(event) => setClientId(event.target.value)}
+              className={inputClass}
             >
               <option value="">No client</option>
-
               {clients.map((client) => (
-                <option
-                  key={client.id}
-                  value={client.id}
-                >
+                <option key={client.id} value={client.id}>
                   {client.name}
                 </option>
               ))}
-            </SelectField>
+            </select>
+          </Field>
 
-            {editing ? (
-              <SelectField
-                label="Status"
+          {editing ? (
+            <Field label="Status">
+              <select
                 value={status}
-                onChange={(value) =>
-                  setStatus(
-                    value as ProjectStatus,
-                  )
-                }
+                onChange={(event) => setStatus(event.target.value as ProjectStatus)}
+                className={inputClass}
               >
-                {statuses.map(
-                  (projectStatus) => (
-                    <option
-                      key={projectStatus}
-                      value={projectStatus}
-                    >
-                      {projectStatus.replace(
-                        "_",
-                        " ",
-                      )}
-                    </option>
-                  ),
-                )}
-              </SelectField>
-            ) : null}
-          </div>
-
-          <Field
-            label="Location"
-            value={location}
-            onChange={setLocation}
-            placeholder="Project location"
-          />
-
-          <div
-            className={`grid gap-4 ${
-              editing
-                ? "sm:grid-cols-3"
-                : "sm:grid-cols-2"
-            }`}
-          >
-            <DateField
-              label="Start date"
-              value={startDate}
-              onChange={setStartDate}
-            />
-
-            <DateField
-              label="Expected end"
-              value={expectedEndDate}
-              onChange={setExpectedEndDate}
-            />
-
-            {editing ? (
-              <DateField
-                label="Actual end"
-                value={actualEndDate}
-                onChange={setActualEndDate}
-              />
-            ) : null}
-          </div>
-
-          {error ? (
-            <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
-              {error}
-            </div>
+                {statuses.map((projectStatus) => (
+                  <option key={projectStatus} value={projectStatus}>
+                    {projectStatus.replace("_", " ")}
+                  </option>
+                ))}
+              </select>
+            </Field>
           ) : null}
+        </div>
 
-          <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
+        <Field label="Location">
+          <input
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+            placeholder="Project location"
+            className={inputClass}
+          />
+        </Field>
 
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={
-                isSubmitting || !name.trim()
-              }
-            >
-              {isSubmitting
-                ? "Saving..."
-                : editing
-                  ? "Save changes"
-                  : "Create project"}
-            </Button>
+        <div className={`grid gap-4 ${editing ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
+          <Field label="Start date">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(event) => setStartDate(event.target.value)}
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label="Expected end">
+            <input
+              type="date"
+              value={expectedEndDate}
+              onChange={(event) => setExpectedEndDate(event.target.value)}
+              className={inputClass}
+            />
+          </Field>
+
+          {editing ? (
+            <Field label="Actual end">
+              <input
+                type="date"
+                value={actualEndDate}
+                onChange={(event) => setActualEndDate(event.target.value)}
+                className={inputClass}
+              />
+            </Field>
+          ) : null}
+        </div>
+
+        {error ? (
+          <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
+            {error}
           </div>
-        </form>
-      </div>
-    </div>
-  );
-}
+        ) : null}
 
-interface FieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  required?: boolean;
-  textarea?: boolean;
-}
+        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-5">
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
+            Cancel
+          </Button>
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  required,
-  textarea,
-}: FieldProps) {
-  const className =
-    "mt-1.5 w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2.5 text-[11px] text-[#191410] outline-none transition placeholder:text-[#a2957c] focus:border-[#c39a38] focus:ring-2 focus:ring-[#d9a441]/15";
-
-  return (
-    <label className="block">
-      <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">
-        {label}
-        {required ? " *" : ""}
-      </span>
-
-      {textarea ? (
-        <textarea
-          value={value}
-          onChange={(event) =>
-            onChange(event.target.value)
-          }
-          placeholder={placeholder}
-          rows={4}
-          className={className}
-        />
-      ) : (
-        <input
-          value={value}
-          onChange={(event) =>
-            onChange(event.target.value)
-          }
-          placeholder={placeholder}
-          required={required}
-          className={className}
-        />
-      )}
-    </label>
-  );
-}
-
-interface SelectFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  children: React.ReactNode;
-}
-
-function SelectField({
-  label,
-  value,
-  onChange,
-  children,
-}: SelectFieldProps) {
-  return (
-    <label className="block">
-      <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">
-        {label}
-      </span>
-
-      <select
-        value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
-        className="mt-1.5 w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2.5 text-[11px] text-[#191410] outline-none focus:border-[#c39a38] focus:ring-2 focus:ring-[#d9a441]/15"
-      >
-        {children}
-      </select>
-    </label>
-  );
-}
-
-interface DateFieldProps {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}
-
-function DateField({
-  label,
-  value,
-  onChange,
-}: DateFieldProps) {
-  return (
-    <label className="block">
-      <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">
-        {label}
-      </span>
-
-      <input
-        type="date"
-        value={value}
-        onChange={(event) =>
-          onChange(event.target.value)
-        }
-        className="mt-1.5 w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2.5 text-[10.5px] text-[#191410] outline-none focus:border-[#c39a38] focus:ring-2 focus:ring-[#d9a441]/15"
-      />
-    </label>
+          <Button type="submit" variant="primary" disabled={isSubmitting || !name.trim()}>
+            {isSubmitting ? "Saving…" : editing ? "Save changes" : "Create project"}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Button, Panel,
+import {Button, Panel, PanelHeader
 } from "../../organizations/components/OrganizationUi";
 import {useDeleteClient,
 } from "../hooks";
@@ -30,49 +30,42 @@ export function ClientTable({
   return (
     <>
       <Panel className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#e1d5bc] p-5 sm:p-6">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
-              CLIENT DIRECTORY
-            </div>
-
-            <div className="mt-1 font-[Archivo] text-[17px] font-bold text-[#191410]">
-              Clients
-            </div>
-          </div>
-
-          {canUpdate ? (
-            <Button
-              variant="primary"
-              onClick={() => {
-                setEditingClient(
-                  undefined,
-                );
-                setFormOpen(true);
-              }}
-            >
-              Add client
-            </Button>
-          ) : null}
-        </div>
+        <PanelHeader
+          eyebrow="CLIENT DIRECTORY"
+          title="Clients"
+          description="Client records that can be linked to any project in this organization."
+          action={
+            canUpdate ? (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setEditingClient(undefined);
+                  setFormOpen(true);
+                }}
+              >
+                Add client
+              </Button>
+            ) : undefined
+          }
+        />
 
         {clients.length === 0 ? (
-          <div className="p-6 text-[11px] text-[#756957]">
+          <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
             No clients have been created yet.
           </div>
         ) : (
-          <div className="divide-y divide-[#e1d5bc]">
+          <div className="divide-y divide-[var(--color-border)]">
             {clients.map((client) => (
               <div
                 key={client.id}
                 className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div>
-                  <div className="text-[12px] font-semibold text-[#191410]">
+                  <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
                     {client.name}
                   </div>
 
-                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[#756957]">
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
                     {client.contact_name ? (
                       <span>
                         {client.contact_name}

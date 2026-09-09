@@ -34,11 +34,11 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
         eyebrow="BILL OF QUANTITIES"
         title="BOQ items"
         description="Draft line items generated from the drawing. Approve only once quantities and rates are confirmed."
-        action={<span className="rounded-full bg-[#efe6d3] px-2.5 py-1 font-mono text-[11px] font-semibold text-[#6b6152]">{items.length}</span>}
+        action={<span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">{items.length}</span>}
       />
 
       {notice ? (
-        <div className="border-b border-[#cfe0f2] bg-[#e7f0fa] px-5 py-3 text-[11px] text-[#2c5c8f]">{notice}</div>
+      <div className="border-b border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-5 py-3 text-[12px] text-[var(--color-info)]">{notice}</div>
       ) : null}
 
       {itemsQuery.isLoading ? (
@@ -50,8 +50,8 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
       ) : (
         <TableShell>
           <table className="w-full min-w-[800px] text-left">
-            <thead className="bg-[#f5efe3]">
-              <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
+            <thead className="bg-[var(--color-surface-muted)]">
+              <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">Material</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Unit</th>
@@ -87,16 +87,16 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                     }
                   />
                 ) : (
-                  <tr key={item.id} className="border-t border-[#e1d5bc] transition hover:bg-[#f5efe3]">
+                  <tr key={item.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
                     <td className="px-4 py-3.5">
-                      <span className="block text-[12px] font-semibold text-[#191410]">{item.material_name}</span>
-                      {item.category ? <span className="mt-0.5 block text-[10px] text-[#756957]">{item.category}</span> : null}
+                      <span className="block text-[14px] font-semibold text-[var(--color-text-primary)]">{item.material_name}</span>
+                      {item.category ? <span className="mt-0.5 block text-[12px] text-[var(--color-text-secondary)]">{item.category}</span> : null}
                     </td>
-                    <td className="px-4 py-3.5 text-[10.5px] text-[#6b6152]">{formatBOQItemType(item.item_type)}</td>
-                    <td className="px-4 py-3.5 text-[11px] text-[#6b6152]">{item.unit}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[11px] text-[#191410]">{formatQuantity(item.quantity)}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[11px] text-[#191410]">{formatCurrency(item.unit_rate)}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[11px] font-semibold text-[#191410]">
+                    <td className="px-4 py-3.5 text-[12px] text-[var(--color-text-secondary)]">{formatBOQItemType(item.item_type)}</td>
+                    <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{item.unit}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{formatQuantity(item.quantity)}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{formatCurrency(item.unit_rate)}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
                       {formatCurrency(computeLineTotal(item.quantity, item.unit_rate))}
                     </td>
                     <td className="px-4 py-3.5">
@@ -146,19 +146,19 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [unitRate, setUnitRate] = useState(item.unit_rate !== null ? String(item.unit_rate) : "");
 
-  const cls = "w-full rounded-[6px] border border-[#d9ceb9] bg-white px-2 py-1.5 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]";
+  const cls = "w-full rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[12.5px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]";
 
   return (
-    <tr className="border-t border-[#e1d5bc] bg-[#fffaf0]">
+    <tr className="border-t border-[var(--color-border)] bg-[var(--color-warning-bg)]">
       <td className="px-4 py-3">
         <input className={cls} value={materialName} onChange={(e) => setMaterialName(e.target.value)} />
         <input className={`${cls} mt-1.5`} placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
       </td>
-      <td className="px-4 py-3 text-[10.5px] text-[#a2957c]">{formatBOQItemType(item.item_type)}</td>
+      <td className="px-4 py-3 text-[12px] text-[var(--color-text-muted)]">{formatBOQItemType(item.item_type)}</td>
       <td className="px-4 py-3"><input className={cls} value={unit} onChange={(e) => setUnit(e.target.value)} /></td>
       <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></td>
       <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" placeholder="—" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} /></td>
-      <td className="px-4 py-3 text-right font-mono text-[11px] text-[#a2957c]">
+      <td className="px-4 py-3 text-right font-mono text-[12.5px] text-[var(--color-text-muted)]">
         {formatCurrency(computeLineTotal(quantity, unitRate === "" ? null : unitRate))}
       </td>
       <td className="px-4 py-3" />

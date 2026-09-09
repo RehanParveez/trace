@@ -83,10 +83,10 @@ export function ChangePlanDialog({
                 return (
                   <label
                     key={plan.id}
-                    className={`flex cursor-pointer items-center gap-3.5 rounded-[10px] border p-3.5 transition ${
+                    className={`flex cursor-pointer items-center gap-3.5 rounded-[var(--radius-md)] border p-3.5 transition ${
                       selected
-                        ? "border-[#c6a449] bg-[#fffaf0] shadow-[0_4px_14px_rgba(80,60,20,0.05)]"
-                        : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c] hover:bg-[#fbf8f2]"
+                        ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)] shadow-[0_4px_14px_rgba(80,60,20,0.05)]"
+                        : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
                     }`}
                   >
                     <input
@@ -103,8 +103,8 @@ export function ChangePlanDialog({
                     <div
                       className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] ${
                         selected
-                          ? "bg-[#f5ead3] text-[#b17a18]"
-                          : "bg-[#f5efe3] text-[#756957]"
+                          ? "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"
+                          : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"
                       }`}
                     >
                       <Icon
@@ -115,7 +115,7 @@ export function ChangePlanDialog({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-[12px] font-semibold text-[#16283f]">
+                        <span className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">
                           {plan.name}
                         </span>
 
@@ -127,13 +127,13 @@ export function ChangePlanDialog({
                         ) : null}
                       </div>
 
-                      <div className="mt-1 text-[10.5px] leading-4 text-[#756957]">
+                      <div className="mt-1 text-[12px] leading-4 text-[var(--color-text-secondary)]">
                         {plan.description}
                       </div>
                     </div>
 
                     <div className="shrink-0 text-right">
-                      <div className="font-mono text-[10.5px] font-semibold text-[#16283f]">
+                      <div className="font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">
                         {formatPrice(
                           billingInterval ===
                             "YEARLY"
@@ -143,7 +143,7 @@ export function ChangePlanDialog({
                         )}
                       </div>
 
-                      <div className="mt-0.5 text-[9px] text-[#9a8c75]">
+                      <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
                         {billingInterval ===
                         "YEARLY"
                           ? "per year"
@@ -178,15 +178,15 @@ export function ChangePlanDialog({
                     }
                     className={`rounded-[9px] border px-3.5 py-3 text-left transition ${
                       selected
-                        ? "border-[#c6a449] bg-[#fffaf0]"
-                        : "border-[#e1d5bc] bg-white hover:border-[#cdbd9c] hover:bg-[#fbf8f2]"
+                        ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)]"
+                        : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
                     }`}
                   >
                     <div
-                      className={`text-[11.5px] font-semibold ${
+                      className={`text-[13px] font-semibold ${
                         selected
-                          ? "text-[#16283f]"
-                          : "text-[#332a21]"
+                          ? "text-[var(--color-text-primary)]"
+                          : "text-[var(--color-text-primary)]"
                       }`}
                     >
                       {interval === "YEARLY"
@@ -194,7 +194,7 @@ export function ChangePlanDialog({
                         : "Monthly"}
                     </div>
 
-                    <div className="mt-1 text-[10px] text-[#756957]">
+                    <div className="mt-1 text-[11px] text-[var(--color-text-secondary)]">
                       {interval === "YEARLY"
                         ? "Annual billing"
                         : "Monthly billing"}
@@ -206,18 +206,18 @@ export function ChangePlanDialog({
           </Field>
 
           {selectedPlan ? (
-            <div className="rounded-[10px] border border-[#cfe0f2] bg-[#edf4fb] p-3.5">
+            <div className="rounded-[var(--radius-md)] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] p-3.5">
               <div className="flex gap-3">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#dceafa] text-[#2c5c8f]">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-surface)] text-[var(--color-info)]">
                   <Icon
                     name="settings"
                     size={13}
                   />
                 </div>
 
-                <div className="text-[11px] leading-5 text-[#2c5c8f]">
+                <div className="text-[12px] leading-5 text-[var(--color-info)]">
                   Changing to{" "}
-                  <strong className="font-semibold text-[#214a75]">
+                  <strong className="font-semibold">
                     {selectedPlan.name}
                   </strong>{" "}
                   will update the organization's
@@ -227,7 +227,7 @@ export function ChangePlanDialog({
             </div>
           ) : null}
 
-          <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
+          <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
             <Button
               type="button"
               variant="ghost"

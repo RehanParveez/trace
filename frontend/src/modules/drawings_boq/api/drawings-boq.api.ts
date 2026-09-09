@@ -5,17 +5,25 @@ import type {BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQSumma
 
 export const drawingsBoqApi = {
   async uploadDrawing(projectId: string, file: File, idempotencyKey: string): Promise<Drawing> {
-    const formData = new FormData();
-    formData.append("file", file);
+  if (!file) {
+    throw new Error("No file selected");
+  }
 
-    const response = await apiClient.post<Drawing>(
-      `/drawings-boq/projects/${projectId}/drawings`,
-      formData,
-      { headers: { "Idempotency-Key": idempotencyKey } },
-    );
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await apiClient.post<Drawing>(
+    `/drawings-boq/projects/${projectId}/drawings`,
+    formData,
+    {
+      headers: {
+        "Idempotency-Key": idempotencyKey,
+        "Content-Type": "multipart/form-data",
+      },
+    },
+  );
 
-    return response.data;
-  },
+  return response.data;
+},
 
   async listDrawings(projectId: string): Promise<Drawing[]> {
     const response = await apiClient.get<Drawing[]>(`/drawings-boq/projects/${projectId}/drawings`);

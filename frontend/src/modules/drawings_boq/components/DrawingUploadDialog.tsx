@@ -48,20 +48,20 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="flex w-full flex-col items-center gap-2 rounded-[10px] border border-dashed border-[#d9ceb9] bg-white px-4 py-8 text-center transition hover:border-[#c39a38]"
+          className="flex w-full flex-col items-center gap-2 rounded-[var(--radius-md)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-8 text-center transition hover:border-[var(--color-trace-gold-dark)]"
         >
-          <Icon name="download" size={20} className="text-[#a2957c]" />
-          <span className="text-[12px] font-semibold text-[#332a21]">{file ? file.name : "Choose an IFC file"}</span>
-          <span className="text-[10.5px] text-[#a2957c]">{file ? formatFileSize(file.size) : ".ifc files only, for now"}</span>
+          <Icon name="download" size={20} className="text-[var(--color-text-muted)]" />
+          <span className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">{file ? file.name : "Choose an IFC file"}</span>
+          <span className="text-[12px] text-[var(--color-text-muted)]">{file ? formatFileSize(file.size) : ".ifc files only, for now"}</span>
         </button>
 
         <input ref={inputRef} type="file" accept=".ifc" onChange={handleFileChange} className="hidden" />
 
         {error ? (
-          <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div>
+          <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div>
         ) : null}
 
-        <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
+        <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button variant="ghost" onClick={onClose} disabled={upload.isPending}>Cancel</Button>
           <Button variant="primary" onClick={submit} disabled={!file || upload.isPending}>
             {upload.isPending ? "Uploading…" : "Upload & parse"}

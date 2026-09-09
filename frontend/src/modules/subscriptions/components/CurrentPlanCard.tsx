@@ -51,32 +51,32 @@ export function CurrentPlanCard({
         }
       />
 
-      <div className="grid gap-0 divide-y divide-[#e1d5bc] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
+      <div className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
         <div className="p-5 sm:p-6">
-          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
             Quotas
           </div>
 
           <div className="mt-4 space-y-2.5">
             {quotas.length === 0 ? (
-              <div className="rounded-[9px] border border-[#e1d5bc] bg-white px-3.5 py-3 text-[11px] text-[#6b6152]">
+              <div className="rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-[12px] text-[var(--color-text-secondary)]">
                 No quota configuration supplied.
               </div>
             ) : (
               quotas.map((metric) => (
                 <div
                   key={metric}
-                  className="flex items-center justify-between gap-4 rounded-[9px] border border-[#e1d5bc] bg-white px-3.5 py-3"
+                  className="flex items-center justify-between gap-4 rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3"
                 >
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[#fbefd9] text-[#b98626]">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
                       <Icon
                         name="building"
                         size={12}
                       />
                     </div>
 
-                    <span className="text-[11.5px] font-semibold text-[#191410]">
+                    <span className="text-[13px] font-semibold text-[var(--color-text-primary)]">
                       {metric
                         .replaceAll("_", " ")
                         .replace(
@@ -87,7 +87,7 @@ export function CurrentPlanCard({
                     </span>
                   </div>
 
-                  <span className="shrink-0 font-mono text-[10.5px] font-semibold text-[#6b6152]">
+                  <span className="shrink-0 font-mono text-[12px] font-semibold text-[var(--color-text-secondary)]">
                     {formatQuota(
                       metric,
                       plan.quotas[metric],
@@ -100,26 +100,26 @@ export function CurrentPlanCard({
         </div>
 
         <div className="p-5 sm:p-6">
-          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
             Included capabilities
           </div>
 
           <div className="mt-4 space-y-2.5">
             {features.length === 0 ? (
-              <div className="rounded-[9px] border border-[#e1d5bc] bg-white px-3.5 py-3 text-[11px] text-[#6b6152]">
+              <div className="rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-[12px] text-[var(--color-text-secondary)]">
                 No feature configuration supplied.
               </div>
             ) : (
               features.map(([feature, enabled]) => (
                 <div
                   key={feature}
-                  className="flex items-center gap-3 rounded-[9px] border border-[#e1d5bc] bg-white px-3.5 py-3"
+                  className="flex items-center gap-3 rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3"
                 >
                   <div
                     className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] ${
                       enabled
-                        ? "bg-[#e4f5ec] text-[#1e9d63]"
-                        : "bg-[#efe6d3] text-[#6b6152]"
+                        ? "bg-[var(--color-success-bg)] text-[var(--color-success)]"
+                        : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"
                     }`}
                   >
                     <Icon
@@ -132,7 +132,7 @@ export function CurrentPlanCard({
                     />
                   </div>
 
-                  <span className="text-[11.5px] font-semibold text-[#191410]">
+                  <span className="text-[13px] font-semibold text-[var(--color-text-primary)]">
                     {feature
                       .replaceAll("_", " ")
                       .replace(

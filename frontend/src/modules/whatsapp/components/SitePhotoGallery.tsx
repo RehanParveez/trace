@@ -34,28 +34,28 @@ export function SitePhotoGallery({ projectId, canManage }: SitePhotoGalleryProps
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-[#e1d5bc] bg-white p-3">
+      <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
         <input
-          className="w-[150px] rounded-[7px] border border-[#d9ceb9] bg-white px-2.5 py-1.5 text-[11px] outline-none focus:border-[#c39a38]"
+          className="w-[160px] rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12.5px] outline-none focus:border-[var(--color-trace-gold-dark)]"
           placeholder="Filter by tag"
           value={tagFilter}
           onChange={(e) => setTagFilter(e.target.value)}
         />
         <input
           type="date"
-          className="rounded-[7px] border border-[#d9ceb9] bg-white px-2.5 py-1.5 text-[10.5px] outline-none focus:border-[#c39a38]"
+          className="rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] outline-none focus:border-[var(--color-trace-gold-dark)]"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
         />
-        <span className="text-[10px] text-[#a2957c]">to</span>
+        <span className="text-[12px] text-[var(--color-text-muted)]">to</span>
         <input
           type="date"
-          className="rounded-[7px] border border-[#d9ceb9] bg-white px-2.5 py-1.5 text-[10.5px] outline-none focus:border-[#c39a38]"
+          className="rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] outline-none focus:border-[var(--color-trace-gold-dark)]"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
         />
-        <label className="ml-auto flex items-center gap-1.5 text-[10.5px] text-[#6b6152]">
-          <input type="checkbox" checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)} />
+        <label className="ml-auto flex items-center gap-1.5 text-[12px] text-[var(--color-text-secondary)]">
+          <input type="checkbox" checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)} className="accent-[var(--color-trace-gold)]" />
           Needs project only
         </label>
       </div>

@@ -49,14 +49,14 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
           ) : !channel || !channel.is_active ? (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-[#efe6d3] text-[#6b6152]">
+                <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
                   <Icon name="mail" size={16} />
                 </div>
                 <div>
-                  <div className="text-[12.5px] font-semibold text-[#191410]">
+                  <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
                     No WhatsApp number connected
                   </div>
-                  <div className="mt-0.5 text-[11px] text-[#6b6152]">
+                  <div className="mt-0.5 text-[12px] text-[var(--color-text-secondary)]">
                     Connect a Business number to start receiving site photos.
                   </div>
                 </div>
@@ -70,10 +70,10 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
           ) : (
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-[13px] font-semibold text-[#191410]">
+                <div className="text-[14.5px] font-semibold text-[var(--color-text-primary)]">
                   {channel.display_phone_number ?? channel.phone_number_id}
                 </div>
-                <div className="mt-1 font-mono text-[10.5px] text-[#a2957c]">
+                <div className="mt-1 font-mono text-[12px] text-[var(--color-text-muted)]">
                   Phone number ID: {channel.phone_number_id}
                 </div>
               </div>
@@ -93,7 +93,7 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
         </div>
 
         {!canManage ? (
-          <div className="border-t border-[#e1d5bc] bg-[#f5efe3] px-5 py-3 text-[11px] text-[#6b6152]">
+          <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)] px-5 py-3 text-[12px] text-[var(--color-text-secondary)]">
             You can view the connection status, but only users with channel
             management permission can connect or disconnect it.
           </div>
@@ -112,7 +112,7 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
         >
           <div className="space-y-3">
             {disconnectError ? (
-              <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">
+              <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
                 {disconnectError}
               </div>
             ) : null}

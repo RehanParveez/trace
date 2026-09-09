@@ -133,6 +133,8 @@ export function ProjectsPage() {
             note="Organization projects"
             icon="building"
             tone="blue"
+            actionLabel={statusFilter !== "ALL" ? "Clear filter" : undefined}
+            onAction={statusFilter !== "ALL" ? () => setStatusFilter("ALL") : undefined}
           />
 
           <StatCard
@@ -141,6 +143,8 @@ export function ProjectsPage() {
             note="Currently underway"
             icon="check"
             tone="green"
+            actionLabel="View active"
+            onAction={() => setStatusFilter("ACTIVE")}
           />
 
           <StatCard
@@ -149,6 +153,8 @@ export function ProjectsPage() {
             note="Not yet underway"
             icon="settings"
             tone="gold"
+            actionLabel="View planning"
+            onAction={() => setStatusFilter("PLANNING")}
           />
 
           <StatCard
@@ -157,6 +163,8 @@ export function ProjectsPage() {
             note="Finished projects"
             icon="shield"
             tone="blue"
+            actionLabel="View completed"
+            onAction={() => setStatusFilter("COMPLETED")}
           />
         </div>
       </section>
@@ -167,8 +175,8 @@ export function ProjectsPage() {
           description="Organization-scoped project records returned by the Projects service."
         />
 
-        <div className="overflow-hidden rounded-[11px] border border-[#d9ceb9] bg-[#fbf8f2]">
-          <div className="flex flex-wrap items-center gap-2 border-b border-[#e1d5bc] p-4">
+        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
+          <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] p-4">
             {(
               [
                 ["ALL", "All"],
@@ -183,10 +191,10 @@ export function ProjectsPage() {
                 key={value}
                 type="button"
                 onClick={() => setStatusFilter(value)}
-                className={`rounded-[7px] border px-3 py-1.5 text-[10px] font-semibold transition ${
+                className={`rounded-[7px] border px-3 py-1.5 text-[12px] font-semibold transition ${
                   statusFilter === value
-                    ? "border-[#d9a441] bg-[#fbefd9] text-[#76531a]"
-                    : "border-[#e1d5bc] bg-white text-[#6b6152] hover:border-[#cdbd9c]"
+                    ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)] text-[var(--color-warning)]"
+                    : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"
                 }`}
               >
                 {label}
@@ -195,15 +203,15 @@ export function ProjectsPage() {
           </div>
 
           {filteredProjects.length === 0 ? (
-            <div className="p-8 text-center text-[11px] text-[#756957]">
+            <div className="p-8 text-center text-[12px] text-[var(--color-text-secondary)]">
               No projects match this filter.
             </div>
           ) : (
-            <div className="divide-y divide-[#e1d5bc]">
+            <div className="divide-y divide-[var(--color-border)]">
               {filteredProjects.map((project) => (
                 <div
                   key={project.id}
-                  className="flex flex-col gap-4 p-5 transition hover:bg-white sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-4 p-5 transition hover:bg-[var(--color-surface)] sm:flex-row sm:items-center sm:justify-between"
                 >
                   <button
                     type="button"
@@ -213,14 +221,14 @@ export function ProjectsPage() {
                     className="min-w-0 text-left"
                   >
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-[Archivo] text-[15px] font-bold text-[#191410]">
+                      <span className="font-[Archivo] text-[16px] font-bold text-[var(--color-text-primary)]">
                         {project.name}
                       </span>
 
                       <ProjectStatusBadge status={project.status} />
                     </div>
 
-                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-[#756957]">
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
                       {project.code ? (
                         <span className="font-mono">{project.code}</span>
                       ) : null}

@@ -31,6 +31,10 @@ apiClient.interceptors.request.use(
         `Bearer ${token}`;
     }
 
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
 );

@@ -19,9 +19,9 @@ export function UsageOverview({
         description="Usage reported by the subscription service for the current billing period."
       />
 
-      <div className="divide-y divide-[#e1d5bc] bg-[#fbf8f2]">
+      <div className="divide-y divide-[var(--color-border)] bg-[var(--color-surface-muted)]">
         {metrics.length === 0 ? (
-          <div className="p-5 sm:p-6 text-[11px] text-[#756957]">
+          <div className="p-5 sm:p-6 text-[12px] text-[var(--color-text-secondary)]">
             No usage metrics have been reported for this period.
           </div>
         ) : (
@@ -50,13 +50,13 @@ export function UsageOverview({
               >
                 <div className="flex items-start justify-between gap-5">
                   <div className="min-w-0">
-                    <div className="text-[13px] font-semibold text-[#16283f]">
+                    <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
                       {formatMetricLabel(
                         metric.metric,
                       )}
                     </div>
 
-                    <div className="mt-1.5 text-[10.5px] text-[#756957]">
+                    <div className="mt-1.5 text-[12px] text-[var(--color-text-secondary)]">
                       {metric.limit === null
                         ? `${metric.used.toLocaleString("en-PK")} used`
                         : `${metric.used.toLocaleString(
@@ -70,12 +70,12 @@ export function UsageOverview({
 
                   <div className="shrink-0 text-right">
                     <div
-                      className={`font-mono text-[12px] font-bold ${
+                      className={`font-mono text-[13px] font-bold ${
                         isExceeded
-                          ? "text-[#c24a3a]"
+                          ? "text-[var(--color-danger)]"
                           : isNearLimit
-                            ? "text-[#b17a18]"
-                            : "text-[#16283f]"
+                            ? "text-[var(--color-warning)]"
+                            : "text-[var(--color-text-primary)]"
                       }`}
                     >
                       {metric.limit === null
@@ -86,7 +86,7 @@ export function UsageOverview({
                     </div>
 
                     {metric.remaining !== null ? (
-                      <div className="mt-1 font-mono text-[9.5px] text-[#9a8c75]">
+                      <div className="mt-1 font-mono text-[11px] text-[var(--color-text-muted)]">
                         {metric.remaining.toLocaleString(
                           "en-PK",
                         )}{" "}
@@ -97,14 +97,14 @@ export function UsageOverview({
                 </div>
 
                 {percentage !== null ? (
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee5d3]">
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--color-surface)]">
                     <div
                       className={`h-full rounded-full transition-all ${
                         isExceeded
-                          ? "bg-[#c24a3a]"
+                          ? "bg-[var(--color-danger)]"
                           : isNearLimit
-                            ? "bg-[#c39a38]"
-                            : "bg-[#2f7d5a]"
+                            ? "bg-[var(--color-warning)]"
+                            : "bg-[var(--color-success)]"
                       }`}
                       style={{
                         width: `${percentage}%`,
@@ -112,8 +112,8 @@ export function UsageOverview({
                     />
                   </div>
                 ) : (
-                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[#eee5d3]">
-                    <div className="h-full w-full rounded-full bg-[#d6b86a]/40" />
+                  <div className="mt-4 h-2 overflow-hidden rounded-full bg-[var(--color-surface)]">
+                    <div className="h-full w-full rounded-full bg-[var(--color-trace-gold)]/30" />
                   </div>
                 )}
               </div>

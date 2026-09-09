@@ -10,22 +10,22 @@ export function BOQVersionTabs({ versions, selectedId, onSelect }: BOQVersionTab
   if (versions.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 border-b border-[#e1d5bc] p-4">
+    <div className="flex flex-wrap gap-2 border-b border-[var(--color-border)] p-4">
       {versions.map((version) => (
         <button
           key={version.id}
           type="button"
           onClick={() => onSelect(version.id)}
-          className={`rounded-[7px] border px-3 py-1.5 text-[10.5px] font-semibold transition ${
+          className={`rounded-[7px] border px-3 py-1.5 text-[12px] font-semibold transition ${
             selectedId === version.id
-              ? "border-[#d9a441] bg-[#fbefd9] text-[#76531a]"
+              ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)] text-[var(--color-warning)]"
               : version.status === "SUPERSEDED"
-                ? "border-[#e1d5bc] bg-[#f5efe3] text-[#a2957c] hover:border-[#cdbd9c]"
-                : "border-[#e1d5bc] bg-white text-[#6b6152] hover:border-[#cdbd9c]"
+                ? "border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)]"
+                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"
           }`}
         >
           {version.label}
-          {version.status === "SUPERSEDED" ? <span className="ml-1.5 text-[9px] font-normal italic">superseded</span> : null}
+          {version.status === "SUPERSEDED" ? <span className="ml-1.5 text-[10px] font-normal italic">superseded</span> : null}
         </button>
       ))}
     </div>

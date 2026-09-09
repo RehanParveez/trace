@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Button, Panel,
+import {Button, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import {useDeleteMilestone, useUpdateMilestone,
 } from "../hooks";
@@ -48,34 +48,26 @@ export function MilestoneTable({
   return (
     <>
       <Panel className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-[#e1d5bc] p-5 sm:p-6">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
-              DELIVERY TRACK
-            </div>
-
-            <div className="mt-1 font-[Archivo] text-[17px] font-bold text-[#191410]">
-              Milestones
-            </div>
-          </div>
-
-          {canUpdate ? (
-            <Button
-              variant="primary"
-              onClick={openCreate}
-            >
-              Add milestone
-            </Button>
-          ) : null}
-        </div>
+        <PanelHeader
+          eyebrow="DELIVERY TRACK"
+          title="Milestones"
+          description="Major delivery checkpoints tracked against this project's timeline."
+          action={
+            canUpdate ? (
+              <Button variant="primary" onClick={openCreate}>
+                Add milestone
+              </Button>
+            ) : undefined
+          }
+        />
 
         {milestones.length === 0 ? (
-          <div className="p-6 text-[11px] text-[#756957]">
+          <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
             No milestones have been configured
             for this project.
           </div>
         ) : (
-          <div className="divide-y divide-[#e1d5bc]">
+          <div className="divide-y divide-[var(--color-border)]">
             {milestones.map(
               (milestone) => {
                 const completed =
@@ -91,8 +83,8 @@ export function MilestoneTable({
                       <div
                         className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] ${
                           completed
-                            ? "bg-[#e4f5ec] text-[#1e9d63]"
-                            : "bg-[#fbefd9] text-[#b98626]"
+                            ? "bg-[var(--color-success-bg)] text-[var(--color-success)]"
+                            : "bg-[var(--color-warning-bg)] text-[var(--color-warning)]"
                         }`}
                       >
                         {completed
@@ -101,19 +93,19 @@ export function MilestoneTable({
                       </div>
 
                       <div className="min-w-0">
-                        <div className="text-[12px] font-semibold text-[#191410]">
+                        <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
                           {milestone.name}
                         </div>
 
                         {milestone.description ? (
-                          <div className="mt-1 text-[10px] leading-4 text-[#756957]">
+                          <div className="mt-1 text-[12px] leading-4 text-[var(--color-text-secondary)]">
                             {
                               milestone.description
                             }
                           </div>
                         ) : null}
 
-                        <div className="mt-1.5 text-[9px] text-[#a2957c]">
+                        <div className="mt-1.5 text-[11px] text-[var(--color-text-muted)]">
                           Due:{" "}
                           {formatProjectDate(
                             milestone.due_date,

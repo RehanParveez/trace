@@ -145,6 +145,12 @@ export function ProjectDetailPage() {
             note="Assigned project members"
             icon="shield"
             tone="gold"
+            actionLabel="View team"
+            onAction={() =>
+              document
+                .getElementById("project-team")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
           />
 
           <StatCard
@@ -153,11 +159,17 @@ export function ProjectDetailPage() {
             note={`${completedMilestones} completed`}
             icon="check"
             tone="blue"
+            actionLabel="View milestones"
+            onAction={() =>
+              document
+                .getElementById("project-milestones")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }
           />
         </div>
       </section>
 
-      <section>
+      <section id="project-milestones">
         <SectionDivider
           title="Delivery milestones"
           description="Track the major delivery checkpoints attached to this project."
@@ -189,7 +201,7 @@ export function ProjectDetailPage() {
         />
       </section>
 
-      <section>
+      <section id="project-team">
         <SectionDivider
           title="Project team"
           description="Users assigned to this project and their project-level responsibilities."

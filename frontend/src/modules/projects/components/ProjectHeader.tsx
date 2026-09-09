@@ -21,9 +21,14 @@ export function ProjectHeader({
   onDelete,
 }: ProjectHeaderProps) {
   return (
-    <div className="overflow-hidden rounded-[12px] border border-[#d9ceb9] bg-[#16283f] shadow-[0_12px_30px_rgba(35,29,20,0.08)]">
+    <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[#263356] bg-[linear-gradient(120deg,var(--color-trace-navy)_0%,var(--color-trace-navy-soft)_60%,var(--color-trace-navy-mid)_100%)] shadow-[0_12px_32px_rgba(8,13,24,0.14)]">
       <div className="relative p-6 sm:p-7">
-        <div className="absolute left-6 top-0 h-0.5 w-16 rounded-b-full bg-[#d9a441]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.028)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.028)_1px,transparent_1px)] bg-[length:28px_28px]" />
+
+        <div className="pointer-events-none absolute -right-20 -top-24 h-56 w-56 rounded-full bg-[var(--color-trace-gold)]/[0.07] blur-3xl" />
+
+        <div className="relative">
+          <div className="absolute left-0 top-0 h-0.5 w-16 rounded-b-full bg-[var(--color-trace-gold)]" />
 
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
@@ -41,7 +46,7 @@ export function ProjectHeader({
               {project.name}
             </h1>
 
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-[#bfc8d3]">
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-[#bfc8d3]">
               {project.code ? (
                 <span>
                   Code:{" "}
@@ -59,7 +64,7 @@ export function ProjectHeader({
             </div>
 
             {project.description ? (
-              <p className="mt-4 max-w-2xl text-[11.5px] leading-5 text-[#c7ced7]">
+              <p className="mt-4 max-w-2xl text-[12.5px] leading-5 text-[#c7ced7]">
                 {project.description}
               </p>
             ) : null}
@@ -91,38 +96,39 @@ export function ProjectHeader({
         </div>
 
         <div className="mt-7 grid gap-px overflow-hidden rounded-[9px] border border-white/10 bg-white/10 sm:grid-cols-3">
-          <div className="bg-[#1b3049] p-4">
-            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#8291a4]">
+          <div className="bg-[var(--color-trace-navy-soft)] p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8291a4]">
               Start date
             </div>
-            <div className="mt-1.5 text-[11.5px] font-semibold text-white">
+            <div className="mt-1.5 text-[13px] font-semibold text-white">
               {formatProjectDate(
                 project.start_date,
               )}
             </div>
           </div>
 
-          <div className="bg-[#1b3049] p-4">
-            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#8291a4]">
+          <div className="bg-[var(--color-trace-navy-soft)] p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8291a4]">
               Expected completion
             </div>
-            <div className="mt-1.5 text-[11.5px] font-semibold text-white">
+            <div className="mt-1.5 text-[13px] font-semibold text-white">
               {formatProjectDate(
                 project.expected_end_date,
               )}
             </div>
           </div>
 
-          <div className="bg-[#1b3049] p-4">
-            <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#8291a4]">
+          <div className="bg-[var(--color-trace-navy-soft)] p-4">
+            <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8291a4]">
               Actual completion
             </div>
-            <div className="mt-1.5 text-[11.5px] font-semibold text-white">
+            <div className="mt-1.5 text-[13px] font-semibold text-white">
               {formatProjectDate(
                 project.actual_end_date,
               )}
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
