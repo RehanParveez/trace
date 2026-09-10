@@ -8,7 +8,7 @@ import type { Project, ProjectStatus } from "../types/project.types";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { ClientTable } from "../components/ClientTable";
 import { ProjectForm } from "../components/ProjectForm";
-import { ProjectStatusBadge } from "../components/ProjectStatusBadge";
+import { ProjectCard } from "../components/ProjectCard";
 
 export function ProjectsPage() {
   const navigate = useNavigate();
@@ -169,14 +169,14 @@ export function ProjectsPage() {
         </div>
       </section>
 
-      <section>
+            <section>
         <SectionDivider
           title="Project register"
           description="Organization-scoped project records returned by the Projects service."
         />
 
-        <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)]">
-          <div className="flex flex-wrap items-center gap-2 border-b border-[var(--color-border)] p-4">
+        <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
+          <div className="flex flex-wrap items-center gap-2">
             {(
               [
                 ["ALL", "All"],
@@ -201,78 +201,30 @@ export function ProjectsPage() {
               </button>
             ))}
           </div>
-
-          {filteredProjects.length === 0 ? (
-            <div className="p-8 text-center text-[12px] text-[var(--color-text-secondary)]">
-              No projects match this filter.
-            </div>
-          ) : (
-            <div className="divide-y divide-[var(--color-border)]">
-              {filteredProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="flex flex-col gap-4 p-5 transition hover:bg-[var(--color-surface)] sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigate(`/app/projects/${project.id}`)
-                    }
-                    className="min-w-0 text-left"
-                  >
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-[Archivo] text-[16px] font-bold text-[var(--color-text-primary)]">
-                        {project.name}
-                      </span>
-
-                      <ProjectStatusBadge status={project.status} />
-                    </div>
-
-                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
-                      {project.code ? (
-                        <span className="font-mono">{project.code}</span>
-                      ) : null}
-
-                      <span>
-                        {project.client_id
-                          ? (clientMap.get(project.client_id) ??
-                            "Unknown client")
-                          : "No client"}
-                      </span>
-
-                      {project.location ? (
-                        <span>{project.location}</span>
-                      ) : null}
-                    </div>
-                  </button>
-
-                  {canUpdate || canDelete ? (
-                    <div className="flex shrink-0 gap-2">
-                      {canUpdate ? (
-                        <Button
-                          variant="ghost"
-                          onClick={() => openEdit(project)}
-                        >
-                          Edit
-                        </Button>
-                      ) : null}
-
-                      {canDelete ? (
-                        <Button
-                          variant="ghost"
-                          onClick={() => handleDelete(project)}
-                          disabled={deleteProject.isPending}
-                        >
-                          Delete
-                        </Button>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
+        {filteredProjects.length === 0 ? (
+          <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-8 text-center text-[12px] text-[var(--color-text-secondary)]">
+            No projects match this filter.
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {filteredProjects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                clientName={
+                  project.client_id ? clientMap.get(project.client_id) : undefined
+                }
+                canUpdate={canUpdate}
+                canDelete={canDelete}
+                onOpen={(item) => navigate(`/app/projects/${item.id}`)}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <section>

@@ -15,6 +15,10 @@ from app.modules.verification.router import router as verification_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.audit.router import router as audit_router
 from app.modules.ai_requests.router import router as ai_requests_router
+from app.modules.budgets.router import router as budgets_router
+from app.modules.site_progress.router import router as site_progress_router
+from app.modules.procurement.router import router as procurement_router
+from app.modules.expenses.router import router as expenses_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -59,6 +63,14 @@ app.include_router(notifications_router, prefix=settings.api_v1_prefix)
 app.include_router(audit_router, prefix=settings.api_v1_prefix)
 
 app.include_router(ai_requests_router, prefix=settings.api_v1_prefix)
+
+app.include_router(budgets_router, prefix=settings.api_v1_prefix)
+
+app.include_router(site_progress_router, prefix=settings.api_v1_prefix)
+
+app.include_router(procurement_router, prefix=settings.api_v1_prefix)
+
+app.include_router(expenses_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:

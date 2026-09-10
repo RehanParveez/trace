@@ -15,15 +15,25 @@ interface NavItem {
   badge?: number;
 }
 
-function buildOrganizationNav(
-  pendingInvitationCount?: number,
-): NavItem[] {
+function buildWorkspaceNav(): NavItem[] {
   return [
     {
       label: "Overview",
       to: "/app/organization",
       icon: "dashboard",
       exact: true,
+    },
+  ];
+}
+
+function buildOrganizationNav(
+  pendingInvitationCount?: number,
+): NavItem[] {
+  return [
+    {
+      label: "Settings",
+      to: "/app/organization/settings",
+      icon: "settings",
     },
     {
       label: "Members",
@@ -42,6 +52,11 @@ function buildOrganizationNav(
       badge: pendingInvitationCount,
     },
     {
+      label: "Subscription",
+      to: "/app/subscription",
+      icon: "budget",
+    },
+    {
       label: "Material library",
       to: "/app/drawings_boq",
       icon: "materials",
@@ -51,10 +66,15 @@ function buildOrganizationNav(
       to: "/app/drawings_boq/labour-rates",
       icon: "budget",
     },
+    {
+      label: "WhatsApp connection",
+      to: "/app/whatsapp-settings",
+      icon: "external",
+    },
   ];
 }
 
-function buildProductNav(isPlatformAdmin: boolean): NavItem[] {
+function buildProjectsNav(): NavItem[] {
   return [
     {
       label: "Projects",
@@ -66,13 +86,16 @@ function buildProductNav(isPlatformAdmin: boolean): NavItem[] {
       to: "/app/budgets",
       icon: "budget",
     },
-
     {
       label: "Progress review",
       to: "/app/progress-review",
       icon: "check",
     },
-
+    {
+      label: "Site photos",
+      to: "/app/site-photos",
+      icon: "spark",
+    },
     {
       label: "Site progress",
       to: "/app/site-logs",
@@ -88,19 +111,21 @@ function buildProductNav(isPlatformAdmin: boolean): NavItem[] {
       to: "/app/expenses",
       icon: "expenses",
     },
+  ];
+}
 
-    {
-      label: "Audit log",
-      to: "/app/audit-log",
-      icon: "shield",
-    },
-
+function buildIntelligenceNav(isPlatformAdmin: boolean): NavItem[] {
+  return [
     {
       label: "AI activity",
       to: "/app/ai-activity",
       icon: "spark",
     },
-
+    {
+      label: "Audit log",
+      to: "/app/audit-log",
+      icon: "shield",
+    },
     ...(isPlatformAdmin
       ? [
           {
@@ -194,9 +219,10 @@ export function OrganizationShell({
       ).length
     : undefined;
 
-  const organizationNav = buildOrganizationNav(
-    pendingInvitationCount,
-  );
+  const workspaceNav = buildWorkspaceNav();
+  const organizationNav = buildOrganizationNav(pendingInvitationCount);
+  const projectsNav = buildProjectsNav();
+  const intelligenceNav = buildIntelligenceNav(isPlatformAdmin);
 
   return (
     <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
@@ -223,6 +249,16 @@ export function OrganizationShell({
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
           <div className="mb-3 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
+            Workspace
+          </div>
+
+          <div className="space-y-1">
+            {workspaceNav.map((item) => (
+              <SidebarLink key={item.to} item={item} />
+            ))}
+          </div>
+
+          <div className="mb-3 mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
             Organization
           </div>
 
@@ -233,11 +269,21 @@ export function OrganizationShell({
           </div>
 
           <div className="mb-3 mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
-            Project data
+            Projects
           </div>
 
           <div className="space-y-1">
-            {buildProductNav(isPlatformAdmin).map((item) => (
+            {projectsNav.map((item) => (
+              <SidebarLink key={item.to} item={item} />
+            ))}
+          </div>
+
+          <div className="mb-3 mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
+            Intelligence
+          </div>
+
+          <div className="space-y-1">
+            {intelligenceNav.map((item) => (
               <SidebarLink key={item.to} item={item} />
             ))}
           </div>

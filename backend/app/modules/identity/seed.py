@@ -105,6 +105,50 @@ async def seed_identity() -> None:
         "View the organization's AI request and response log."
       ), 
       
+      PermissionKey.BUDGET_READ: (
+        "View project budgets and category allocations."
+      ),
+      
+      PermissionKey.BUDGET_MANAGE: (
+        "Create and update project budgets."
+      ),
+      
+      PermissionKey.SITE_LOG_READ: (
+        "View site progress logs."
+      ),
+      
+      PermissionKey.SITE_LOG_CREATE: (
+        "Create site progress logs."
+      ),
+      
+      PermissionKey.SITE_LOG_MANAGE: (
+        "Update and delete site progress logs."
+      ),
+      
+      PermissionKey.PROCUREMENT_READ: (
+        "View procurement requests."
+      ),
+      
+      PermissionKey.PROCUREMENT_CREATE: (
+        "Create procurement requests."
+      ),
+      
+      PermissionKey.PROCUREMENT_MANAGE: (
+        "Approve, order, receive or cancel procurement requests."
+      ),
+      
+      PermissionKey.EXPENSE_READ: (
+        "View project expenses."
+      ),
+      
+      PermissionKey.EXPENSE_CREATE: (
+        "Record project expenses."
+      ),
+      
+      PermissionKey.EXPENSE_APPROVE: (
+        "Approve or reject project expenses."
+      ),
+      
      }
 
     permissions: dict[str, Permission] = {}

@@ -15,6 +15,10 @@ from app.modules.verification import models as verification_models
 from app.modules.notifications import models as notifications_models
 from app.modules.audit import models as audit_models
 from app.modules.ai_requests import models as ai_requests_models
+from app.modules.budgets import models as budgets_models
+from app.modules.site_progress import models as site_progress_models
+from app.modules.procurement import models as procurement_models
+from app.modules.expenses import models as expenses_models
 
 config = context.config
 

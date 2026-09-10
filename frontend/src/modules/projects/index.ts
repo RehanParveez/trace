@@ -6,6 +6,7 @@ export * from "./components/MilestoneForm";
 export * from "./components/MilestoneTable";
 export * from "./components/ProjectForm";
 export * from "./components/ProjectHeader";
+export * from "./components/ProjectCard";
 export * from "./components/ProjectMemberDialog";
 export * from "./components/ProjectMembers";
 export * from "./components/ProjectStatusBadge";

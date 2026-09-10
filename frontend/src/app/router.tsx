@@ -5,7 +5,7 @@ import {LoginPage, RegisterPage, ForgotPasswordPage, ResetPasswordPage, VerifyEm
 } from "../modules/identity/pages";
 import {ProtectedRoute, PublicOnlyRoute,
 } from "../modules/identity";
-import { OrganizationShell, OrganizationPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage, AcceptInvitationPage,
+import {OrganizationShell, OrganizationPage, DashboardPage, OrganizationMembersPage, OrganizationMemberDetailPage, OrganizationRolesPage, OrganizationRoleDetailPage, OrganizationInvitationsPage, AcceptInvitationPage
 } from "../modules/organizations";
 import { AppErrorBoundary } from "../shared/components/AppErrorBoundary";
 import {SubscriptionPage, AdminSubscriptionsPage,
@@ -18,6 +18,10 @@ import { ProgressClaimsReviewPage } from "../modules/verification";
 import { NotificationsPage } from "../modules/notifications";
 import { AuditLogPage } from "../modules/audit";
 import { AIRequestsPage } from "../modules/ai_requests";
+import { BudgetsPage } from "../modules/budgets";
+import { SiteProgressPage } from "../modules/site_progress";
+import { ProcurementPage } from "../modules/procurement";
+import { ExpensesPage } from "../modules/expenses";
 
 export const router = createBrowserRouter([
   {
@@ -108,6 +112,11 @@ export const router = createBrowserRouter([
        children: [
     {
       index: true,
+      element: <DashboardPage />,
+    },
+
+    {
+      path: "settings",
       element: <OrganizationPage />,
     },
 
@@ -198,6 +207,50 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <ProgressClaimsReviewPage />,
+    },
+  ],
+},
+
+{
+  path: "budgets",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <BudgetsPage />,
+    },
+  ],
+},
+
+{
+  path: "site-logs",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <SiteProgressPage />,
+    },
+  ],
+},
+
+{
+  path: "procurement",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <ProcurementPage />,
+    },
+  ],
+},
+
+{
+  path: "expenses",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <ExpensesPage />,
     },
   ],
 },

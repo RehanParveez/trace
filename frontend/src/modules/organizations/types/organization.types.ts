@@ -140,3 +140,11 @@ export type OrganizationIconName =
   | "dot"
   | "copy"
   | "external";
+
+export interface DashboardAttentionItem {
+  key: string;
+  icon: OrganizationIconName;
+  label: string;
+  count: number;
+  to: string;
+}

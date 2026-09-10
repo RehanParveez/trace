@@ -15,9 +15,14 @@ export * from "./components/PermissionSelector";
 export * from "./components/InvitationTable";
 export * from "./components/InvitationForm";
 export * from "./components/RevokeInvitationDialog";
+export * from "./components/DashboardGreeting";
+export * from "./components/DashboardProjectHealth";
+export * from "./components/DashboardAttentionFeed";
+export * from "./components/DashboardActivityFeed";
 
 export * from "./hooks";
 
+export * from "./pages/DashboardPage";
 export * from "./pages/OrganizationPage";
 export * from "./pages/OrganizationMembersPage";
 export * from "./pages/OrganizationMemberDetailPage";
