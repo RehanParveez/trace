@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.procurement.service import ProcurementService
-from app.modules.procurement.schemas import ProcurementCreateRequest, ProcurementResponse, ProcurementStatusUpdateRequest
+from app.modules.procurement.schemas import ProcurementCreateRequest, ProcurementOrganizationSummaryResponse, ProcurementResponse, ProcurementStatusUpdateRequest
 from app.modules.procurement.models import ProcurementStatus
 from app.modules.identity.models import User
 from app.modules.identity.enums import PermissionKey
@@ -28,6 +28,14 @@ async def list_requests(
   return await _service(session).list_requests(
     org_id, project_id, status, skip, limit,
   )
+  
+@router.get("/organization-summary", response_model=ProcurementOrganizationSummaryResponse)
+async def get_organization_summary(
+  current_user: User = Depends(require_permission(PermissionKey.PROCUREMENT_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).get_organization_summary(org_id)
 
 @router.post("/requests", response_model=ProcurementResponse, status_code=201)
 async def create_request(

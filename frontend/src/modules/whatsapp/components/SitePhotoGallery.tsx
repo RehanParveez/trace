@@ -36,23 +36,26 @@ export function SitePhotoGallery({ projectId, canManage }: SitePhotoGalleryProps
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
         <input
-          className="w-[160px] rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12.5px] outline-none focus:border-[var(--color-trace-gold-dark)]"
+          className="w-[160px] rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12.5px] outline-none focus-visible:border-[var(--color-trace-gold-dark)]"
           placeholder="Filter by tag"
           value={tagFilter}
           onChange={(e) => setTagFilter(e.target.value)}
+          aria-label="Filter photos by tag"
         />
         <input
           type="date"
-          className="rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] outline-none focus:border-[var(--color-trace-gold-dark)]"
+          className="rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] outline-none focus-visible:border-[var(--color-trace-gold-dark)]"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
+          aria-label="Filter photos from date"
         />
         <span className="text-[12px] text-[var(--color-text-muted)]">to</span>
         <input
           type="date"
-          className="rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] outline-none focus:border-[var(--color-trace-gold-dark)]"
+          className="rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px] outline-none focus-visible:border-[var(--color-trace-gold-dark)]"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
+          aria-label="Filter photos to date"
         />
         <label className="ml-auto flex items-center gap-1.5 text-[12px] text-[var(--color-text-secondary)]">
           <input type="checkbox" checked={unassignedOnly} onChange={(e) => setUnassignedOnly(e.target.checked)} className="accent-[var(--color-trace-gold)]" />

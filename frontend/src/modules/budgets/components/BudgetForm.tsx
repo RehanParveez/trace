@@ -77,12 +77,14 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
             />
           </Field>
 
-          <Field label="Currency">
+          <Field label="Currency" hint="Exactly 3 letters, e.g. PKR">
             <input
               className={inputClass}
               value={currency}
               onChange={(event) => setCurrency(event.target.value.toUpperCase())}
+              minLength={3}
               maxLength={3}
+              required
             />
           </Field>
         </div>
@@ -140,7 +142,8 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
                   <button
                     type="button"
                     onClick={() => removeCategory(index)}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
+                    aria-label={`Remove ${category.name || "category"}`}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-text-secondary)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
                   >
                     <Icon name="x" size={14} />
                   </button>

@@ -41,13 +41,14 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
           {linkedPhotos.map((photo) => {
             const link = links.find((l) => l.site_photo_id === photo.id);
             return (
-             <div key={photo.id} className="group relative overflow-hidden rounded-[8px] border border-[var(--color-border)]">
+              <div key={photo.id} className="group relative overflow-hidden rounded-[8px] border border-[var(--color-border)]">
                 <img src={photo.photo_url} alt="" className="aspect-square w-full object-cover" />
                 {canManage && link ? (
                   <button
                     type="button"
                     onClick={() => deleteLink.mutate(link.id)}
-                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-trace-navy)]/70 text-white opacity-0 transition group-hover:opacity-100"
+                    aria-label="Remove this photo from evidence"
+                    className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-trace-navy)]/70 text-white opacity-0 outline-none transition focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] group-hover:opacity-100"
                   >
                     <Icon name="x" size={10} />
                   </button>

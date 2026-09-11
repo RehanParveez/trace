@@ -44,7 +44,7 @@ export function ExpenseForm({ projectId, onClose }: ExpenseFormProps) {
             <input required className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="e.g. Site transport" />
           </Field>
           <Field label="Amount (PKR)">
-            <input type="number" step="any" min="0" required className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} />
+            <input type="number" step="any" min="0.01" required className={inputClass} value={amount} onChange={(e) => setAmount(e.target.value)} />
           </Field>
         </div>
 

@@ -6,12 +6,14 @@ import type {ProcurementCreateRequest, ProcurementListParams, ProcurementStatusU
 export const procurementKeys = {
   all: ["procurement"] as const,
   list: (params: ProcurementListParams) => [...procurementKeys.all, "list", params] as const,
+  organizationSummary: () => [...procurementKeys.all, "organization-summary"] as const,
 };
 
-export function useProcurementRequests(params: ProcurementListParams = {}) {
+export function useProcurementRequests(params: ProcurementListParams = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: procurementKeys.list(params),
     queryFn: () => procurementApi.listRequests(params),
+    enabled: options?.enabled,
   });
 }
 
@@ -38,5 +40,13 @@ export function useUpdateProcurementStatus() {
     mutationFn: ({ requestId, payload }: { requestId: string; payload: ProcurementStatusUpdateRequest }) =>
       procurementApi.updateStatus(requestId, payload),
     onSuccess: () => invalidateProcurementLists(queryClient),
+  });
+}
+
+export function useProcurementOrganizationSummary(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: procurementKeys.organizationSummary(),
+    queryFn: procurementApi.getOrganizationSummary,
+    enabled: options?.enabled,
   });
 }

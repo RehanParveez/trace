@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {ProcurementCreateRequest, ProcurementListParams, ProcurementRequest, ProcurementStatusUpdateRequest,
+import type {ProcurementCreateRequest, ProcurementListParams, ProcurementOrganizationSummary, ProcurementRequest, ProcurementStatusUpdateRequest,
 } from "../types/procurement.types";
 
 export const procurementApi = {
@@ -25,4 +25,13 @@ export const procurementApi = {
     const response = await apiClient.patch<ProcurementRequest>(`/procurement/requests/${requestId}/status`, payload);
     return response.data;
   },
+  
+  async getOrganizationSummary(): Promise<ProcurementOrganizationSummary> {
+    const response = await apiClient.get<ProcurementOrganizationSummary>(
+      "/procurement/organization-summary",
+    );
+
+    return response.data;
+  },
+
 };

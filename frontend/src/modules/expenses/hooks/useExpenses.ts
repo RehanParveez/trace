@@ -5,12 +5,14 @@ import type { ExpenseCreateRequest, ExpenseListParams, ExpenseReviewRequest } fr
 export const expenseKeys = {
   all: ["expenses"] as const,
   list: (params: ExpenseListParams) => [...expenseKeys.all, "list", params] as const,
+  organizationSummary: () => [...expenseKeys.all, "organization-summary"] as const,
 };
 
-export function useExpenses(params: ExpenseListParams = {}) {
+export function useExpenses(params: ExpenseListParams = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: expenseKeys.list(params),
     queryFn: () => expensesApi.listExpenses(params),
+    enabled: options?.enabled,
   });
 }
 
@@ -47,5 +49,13 @@ export function useRejectExpense() {
     mutationFn: ({ expenseId, payload }: { expenseId: string; payload: ExpenseReviewRequest }) =>
       expensesApi.rejectExpense(expenseId, payload),
     onSuccess: () => invalidateExpenseLists(queryClient),
+  });
+}
+
+export function useExpenseOrganizationSummary(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: expenseKeys.organizationSummary(),
+    queryFn: expensesApi.getOrganizationSummary,
+    enabled: options?.enabled,
   });
 }

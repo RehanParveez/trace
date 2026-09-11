@@ -1,6 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {
-  Expense, ExpenseCreateRequest, ExpenseListParams, ExpenseReviewRequest,
+import type {Expense, ExpenseCreateRequest, ExpenseListParams, ExpenseOrganizationSummary, ExpenseReviewRequest,
 } from "../types/expense.types";
 
 export const expensesApi = {
@@ -29,6 +28,14 @@ export const expensesApi = {
 
   async rejectExpense(expenseId: string, payload: ExpenseReviewRequest): Promise<Expense> {
     const response = await apiClient.post<Expense>(`/expenses/${expenseId}/reject`, payload);
+    return response.data;
+  },
+
+  async getOrganizationSummary(): Promise<ExpenseOrganizationSummary> {
+    const response = await apiClient.get<ExpenseOrganizationSummary>(
+      "/expenses/organization-summary",
+    );
+
     return response.data;
   },
 };

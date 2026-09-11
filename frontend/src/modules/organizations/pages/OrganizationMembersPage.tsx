@@ -76,6 +76,7 @@ export function OrganizationMembersPage() {
               onChange={(event) => setQuery(event.target.value)}
               className="w-[170px] bg-transparent text-[13px] outline-none placeholder:text-[var(--color-text-muted)]"
               placeholder="Filter members"
+              aria-label="Filter members by name, email or role"
             />
           </div>
         }

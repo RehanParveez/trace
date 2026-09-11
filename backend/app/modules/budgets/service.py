@@ -23,6 +23,11 @@ class BudgetService:
     await self._ensure_project(organization_id, project_id)
     return await self.repo.list_by_project(project_id, organization_id)
 
+  async def get_organization_summary(
+    self, organization_id: UUID,
+  ) -> dict:
+    return await self.repo.get_organization_summary(organization_id)
+
   async def save_budget(
     self, organization_id: UUID, payload: BudgetSaveRequest,
   ) -> Budget:

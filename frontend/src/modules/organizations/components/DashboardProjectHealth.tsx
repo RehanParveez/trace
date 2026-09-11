@@ -4,6 +4,7 @@ import {Badge, Icon, Panel, PanelHeader, ProgressBar,
 import {formatProjectStatus, getProjectStatusTone, useProjectMilestones,
 } from "../../projects";
 import type { Project, ProjectStatus } from "../../projects";
+import { useSitePhotos } from "../../whatsapp";
 
 const STATUS_PRIORITY: Record<ProjectStatus, number> = {
   ACTIVE: 0,
@@ -79,19 +80,23 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
   return (
     <Link
       to={`/app/projects/${project.id}`}
-      className="flex flex-col gap-3 px-5 py-4 transition hover:bg-[var(--color-surface-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-6"
+      className="flex flex-col gap-3 px-5 py-4 outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-trace-gold)] sm:flex-row sm:items-center sm:justify-between sm:px-6"
     >
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="truncate font-[Archivo] text-[14.5px] font-bold text-[var(--color-text-primary)]">
-            {project.name}
-          </span>
-          <Badge tone={getProjectStatusTone(project.status)}>{formatProjectStatus(project.status)}</Badge>
-        </div>
+      <div className="flex min-w-0 items-center gap-3">
+        <DashboardProjectThumbnail projectId={project.id} />
 
-        <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
-          {clientName ?? "No client"}
-          {project.location ? ` · ${project.location}` : ""}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="truncate font-[Archivo] text-[14.5px] font-bold text-[var(--color-text-primary)]">
+              {project.name}
+            </span>
+            <Badge tone={getProjectStatusTone(project.status)}>{formatProjectStatus(project.status)}</Badge>
+          </div>
+
+          <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
+            {clientName ?? "No client"}
+            {project.location ? ` · ${project.location}` : ""}
+          </div>
         </div>
       </div>
 
@@ -109,5 +114,31 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
         )}
       </div>
     </Link>
+  );
+}
+
+function DashboardProjectThumbnail({ projectId }: { projectId: string }) {
+  // Assumes /whatsapp/photos returns most-recent-first, matching every other
+  // list endpoint in this app (claims, procurement, expenses, site logs all
+  // order by date/created_at descending). If the backend orders differently,
+  // this shows an arbitrary photo instead of the latest one for the project.
+  const photosQuery = useSitePhotos({ projectId, limit: 1 });
+  const photo = (photosQuery.data ?? [])[0];
+
+  if (!photo) {
+    return (
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]">
+        <Icon name="site" size={16} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={photo.photo_url}
+      alt=""
+      className="h-12 w-12 shrink-0 rounded-[9px] border border-[var(--color-border)] object-cover"
+      loading="lazy"
+    />
   );
 }

@@ -261,7 +261,8 @@ export function SitePhotoDetailDialog({
                             ),
                         });
                       }}
-                      className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
+                      aria-label={`Remove tag ${tag.tag}`}
+                      className="rounded-full text-[var(--color-text-muted)] outline-none transition hover:text-[var(--color-danger)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
                     >
                       <Icon name="x" size={9} />
                     </button>

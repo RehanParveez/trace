@@ -26,6 +26,11 @@ class ExpenseService:
     return await self.repo.list_expenses(
       organization_id, project_id, status, skip, limit,
     )
+    
+  async def get_organization_summary(
+    self, organization_id: UUID,
+  ) -> dict:
+    return await self.repo.get_organization_summary(organization_id)
 
   async def create_expense(
     self,

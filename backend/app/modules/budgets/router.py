@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.budgets.service import BudgetService
-from app.modules.budgets.schemas import BudgetResponse, BudgetSaveRequest
+from app.modules.budgets.schemas import BudgetOrganizationSummaryResponse, BudgetResponse, BudgetSaveRequest
 from uuid import UUID
 from app.modules.identity.models import User
 from fastapi import APIRouter, Depends, Query
@@ -22,6 +22,14 @@ async def list_budgets(
 ):
   org_id = current_user.active_membership.organization_id
   return await _service(session).list_budgets(org_id, project_id)
+
+@router.get("/organization-summary", response_model=BudgetOrganizationSummaryResponse)
+async def get_organization_summary(
+  current_user: User = Depends(require_permission(PermissionKey.BUDGET_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).get_organization_summary(org_id)
 
 @router.put("/project/{project_id}", response_model=BudgetResponse)
 async def save_budget(

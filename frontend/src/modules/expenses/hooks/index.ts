@@ -1,3 +1,2 @@
-export {
-  expenseKeys, useApproveExpense, useCreateExpense, useExpenses, useRejectExpense,
+export {expenseKeys, useApproveExpense, useCreateExpense, useExpenseOrganizationSummary, useExpenses, useRejectExpense,
 } from "./useExpenses";

@@ -55,3 +55,17 @@ body {
   background: var(--color-workspace);
   color: var(--color-text-primary);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-trace-gold);
+  outline-offset: 2px;
+}

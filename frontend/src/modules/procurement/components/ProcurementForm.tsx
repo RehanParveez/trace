@@ -49,7 +49,7 @@ export function ProcurementForm({ projectId, onClose }: ProcurementFormProps) {
 
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Quantity">
-            <input type="number" step="any" min="0" required className={inputClass} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <input type="number" step="any" min="0.01" required className={inputClass} value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           </Field>
           <Field label="Unit">
             <input required className={inputClass} value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="bags" />

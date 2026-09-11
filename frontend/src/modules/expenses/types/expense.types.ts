@@ -33,3 +33,8 @@ export interface ExpenseListParams {
   skip?: number;
   limit?: number;
 }
+
+export interface ExpenseOrganizationSummary {
+  total_approved_amount: number | string;
+  expense_count: number;
+}

@@ -7,6 +7,8 @@ import { DashboardGreeting } from "../components/DashboardGreeting";
 import { DashboardProjectHealth } from "../components/DashboardProjectHealth";
 import { DashboardAttentionFeed } from "../components/DashboardAttentionFeed";
 import { DashboardActivityFeed } from "../components/DashboardActivityFeed";
+import { DashboardSitePhotos } from "../components/DashboardSitePhotos";
+import { DashboardFinancialSummary } from "../components/DashboardFinancialSummary";
 import {ErrorState, LoadingState, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 
@@ -107,6 +109,19 @@ export function DashboardPage() {
             tone={organization.ai_enabled ? "green" : "gold"}
           />
         </div>
+      </section>
+
+      <section>
+        <SectionDivider
+          title="Portfolio financials"
+          description="Approved budget, committed procurement and approved spend across every project."
+        />
+
+        <DashboardFinancialSummary />
+      </section>
+
+      <section>
+        <DashboardSitePhotos />
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1.3fr_1fr]">

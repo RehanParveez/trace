@@ -5,6 +5,7 @@ import type { BudgetSaveRequest } from "../types/budget.types";
 export const budgetKeys = {
   all: ["budgets"] as const,
   forProject: (projectId: string) => [...budgetKeys.all, "project", projectId] as const,
+  organizationSummary: () => [...budgetKeys.all, "organization-summary"] as const,
 };
 
 export function useProjectBudget(projectId: string | undefined) {
@@ -26,5 +27,13 @@ export function useSaveBudget() {
     onSuccess: (budget) => {
       queryClient.setQueryData(budgetKeys.forProject(budget.project_id), budget);
     },
+  });
+}
+
+export function useBudgetOrganizationSummary(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: budgetKeys.organizationSummary(),
+    queryFn: budgetsApi.getOrganizationSummary,
+    enabled: options?.enabled,
   });
 }

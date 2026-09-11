@@ -1,8 +1,4 @@
-import {
-  type ButtonHTMLAttributes,
-  type HTMLAttributes,
-  type ReactNode,
-  useEffect, useRef, useState,
+import {type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode, useEffect, useId, useRef, useState,
 } from "react";
 import type { OrganizationIconName } from "../types/organization.types";
 
@@ -332,7 +328,7 @@ export function Button({
   return (
     <button
       {...props}
-      className={`inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
     >
       {children}
     </button>
@@ -484,7 +480,7 @@ export function StatCard({
       }
       className={`relative overflow-hidden p-5 ${
         isActionable
-          ? "cursor-pointer text-left transition hover:border-[var(--color-border-strong)] hover:shadow-[0_4px_14px_rgba(25,20,16,0.08)] focus:outline-none focus:ring-2 focus:ring-[var(--color-trace-gold)]/30"
+          ? "cursor-pointer text-left transition hover:border-[var(--color-border-strong)] hover:shadow-[0_4px_14px_rgba(25,20,16,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]/30"
           : ""
       }`}
     >
@@ -623,7 +619,7 @@ export function Toggle({
       aria-label={label}
       disabled={disabled}
       onClick={onChange}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50 ${
         checked
           ? "border-[var(--color-trace-gold-dark)] bg-[var(--color-trace-gold)]"
           : "border-[var(--color-border)] bg-[var(--color-border)]"
@@ -655,11 +651,15 @@ export function DropdownMenu({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   useEffect(() => {
     if (!open) {
       return;
     }
+
+    itemRefs.current[0]?.focus();
 
     function handleClick(event: MouseEvent) {
       if (ref.current && !ref.current.contains(event.target as Node)) {
@@ -670,6 +670,40 @@ export function DropdownMenu({
     function handleKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setOpen(false);
+        triggerRef.current?.focus();
+        return;
+      }
+
+      const enabledIndexes = items
+        .map((item, index) => (item.disabled ? -1 : index))
+        .filter((index) => index !== -1);
+
+      if (enabledIndexes.length === 0) {
+        return;
+      }
+
+      const currentIndex = itemRefs.current.findIndex(
+        (element) => element === document.activeElement,
+      );
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        const currentPosition = enabledIndexes.indexOf(currentIndex);
+        const nextIndex =
+          enabledIndexes[(currentPosition + 1 + enabledIndexes.length) % enabledIndexes.length];
+        itemRefs.current[nextIndex]?.focus();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        const currentPosition = enabledIndexes.indexOf(currentIndex);
+        const previousIndex =
+          enabledIndexes[(currentPosition - 1 + enabledIndexes.length) % enabledIndexes.length];
+        itemRefs.current[previousIndex]?.focus();
+      } else if (event.key === "Home") {
+        event.preventDefault();
+        itemRefs.current[enabledIndexes[0]]?.focus();
+      } else if (event.key === "End") {
+        event.preventDefault();
+        itemRefs.current[enabledIndexes[enabledIndexes.length - 1]]?.focus();
       }
     }
 
@@ -680,17 +714,18 @@ export function DropdownMenu({
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKey);
     };
-  }, [open]);
+  }, [open, items]);
 
   return (
     <div ref={ref} className="relative inline-block text-left">
       <button
+        ref={triggerRef}
         type="button"
         aria-label="More actions"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
+        className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-text-secondary)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
       >
         <Icon name="more" size={15} />
       </button>
@@ -702,9 +737,12 @@ export function DropdownMenu({
             align === "end" ? "right-0" : "left-0"
           }`}
         >
-          {items.map((item) => (
+          {items.map((item, index) => (
             <button
               key={item.label}
+              ref={(element) => {
+                itemRefs.current[index] = element;
+              }}
               type="button"
               role="menuitem"
               disabled={item.disabled}
@@ -712,10 +750,10 @@ export function DropdownMenu({
                 setOpen(false);
                 item.onSelect();
               }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium outline-none transition disabled:cursor-not-allowed disabled:opacity-50 ${
                 item.tone === "danger"
-                  ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)]"
-                  : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]"
+                  ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-bg)] focus-visible:bg-[var(--color-danger-bg)]"
+                  : "text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] focus-visible:bg-[var(--color-surface-muted)]"
               }`}
             >
               {item.icon ? <Icon name={item.icon} size={13} /> : null}
@@ -741,16 +779,67 @@ export function Modal({
   onClose: () => void;
   wide?: boolean;
 }) {
+  const titleId = useId();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key !== "Tab" || !dialogRef.current) {
+        return;
+      }
+
+      const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+      if (focusable.length === 0) {
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [onClose]);
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--color-trace-navy)]/70 p-4 backdrop-blur-[2px]">
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className={`w-full overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] shadow-[0_24px_70px_rgba(8,13,24,0.35)] ${
           wide ? "max-w-2xl" : "max-w-md"
         }`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-[var(--color-border)] px-5 py-4">
           <div>
-            <h2 className="font-[Archivo] text-[17px] font-bold text-[var(--color-text-primary)]">
+            <h2 id={titleId} className="font-[Archivo] text-[17px] font-bold text-[var(--color-text-primary)]">
               {title}
             </h2>
 
@@ -762,10 +851,11 @@ export function Modal({
           </div>
 
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-[var(--color-text-secondary)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
           >
             <Icon name="x" size={16} />
           </button>

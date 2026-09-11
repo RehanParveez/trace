@@ -33,3 +33,8 @@ class BudgetResponse(BaseModel):
   categories: list[BudgetCategoryResponse] = Field(default_factory=list)
   created_at: datetime
   updated_at: datetime
+
+class BudgetOrganizationSummaryResponse(BaseModel):
+  total_approved_amount: Decimal
+  budget_count: int
+  currency: str = "PKR"

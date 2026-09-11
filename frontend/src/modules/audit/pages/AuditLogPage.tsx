@@ -38,7 +38,8 @@ export function AuditLogPage() {
 
       <div className="flex flex-wrap gap-2">
         <select
-          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-trace-gold-dark)] focus:ring-2 focus:ring-[var(--color-trace-gold)]/20"
+          aria-label="Filter by entity type"
+          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none transition focus-visible:border-[var(--color-trace-gold-dark)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]/20"
           value={entityType}
           onChange={(e) => setEntityType(e.target.value as AuditEntityType | "")}
         >
@@ -47,7 +48,8 @@ export function AuditLogPage() {
         </select>
 
         <select
-          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-trace-gold-dark)] focus:ring-2 focus:ring-[var(--color-trace-gold)]/20"
+          aria-label="Filter by action"
+          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none transition focus-visible:border-[var(--color-trace-gold-dark)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]/20"
           value={action}
           onChange={(e) => setAction(e.target.value as AuditAction | "")}
         >

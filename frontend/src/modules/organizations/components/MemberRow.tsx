@@ -51,7 +51,7 @@ export function MemberRow({
         <button
           type="button"
           onClick={() => onView?.(member)}
-          className="flex min-w-[220px] items-center gap-3 text-left"
+          className="flex min-w-[220px] items-center gap-3 rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
         >
           <Avatar initials={getMemberInitials(member)} size="sm" />
 

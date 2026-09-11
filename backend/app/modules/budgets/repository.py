@@ -2,7 +2,7 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.modules.budgets.models import Budget, BudgetCategory
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 class BudgetRepository:
@@ -45,3 +45,20 @@ class BudgetRepository:
     for category in list(budget.categories):
       await self.session.delete(category)
     await self.session.flush()
+  
+  async def get_organization_summary(
+    self, organization_id: UUID,
+  ) -> dict:
+    result = await self.session.execute(
+      select(
+        func.coalesce(func.sum(Budget.approved_amount), 0).label(
+          "total_approved_amount",
+        ),
+        func.count(Budget.id).label("budget_count"),
+      ).where(Budget.organization_id == organization_id)
+    )
+    row = result.one()
+    return {
+      "total_approved_amount": row.total_approved_amount,
+      "budget_count": row.budget_count,
+    }

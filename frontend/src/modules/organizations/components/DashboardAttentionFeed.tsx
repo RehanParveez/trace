@@ -38,7 +38,7 @@ export function DashboardAttentionFeed({
             <Link
               key={item.key}
               to={item.to}
-              className="flex items-center justify-between gap-3 px-5 py-4 transition hover:bg-[var(--color-surface-muted)] sm:px-6"
+              className="flex items-center justify-between gap-3 px-5 py-4 outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-trace-gold)] sm:px-6"
             >
               <div className="flex min-w-0 items-center gap-3">
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">

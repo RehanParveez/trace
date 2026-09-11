@@ -35,3 +35,8 @@ export interface ProcurementListParams {
   skip?: number;
   limit?: number;
 }
+
+export interface ProcurementOrganizationSummary {
+  total_committed_amount: number | string;
+  request_count: number;
+}

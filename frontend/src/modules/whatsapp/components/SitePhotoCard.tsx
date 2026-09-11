@@ -13,7 +13,7 @@ export function SitePhotoCard({ photo, projectName, onClick }: SitePhotoCardProp
     <button
       type="button"
       onClick={onClick}
-      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] text-left transition hover:border-[var(--color-border-strong)] hover:shadow-[0_8px_22px_rgba(90,70,40,0.08)]"
+      className="group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] text-left outline-none transition hover:border-[var(--color-border-strong)] hover:shadow-[0_8px_22px_rgba(90,70,40,0.08)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] focus-visible:ring-offset-2"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--color-surface-muted)]">
         <img src={photo.photo_url} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" loading="lazy" />

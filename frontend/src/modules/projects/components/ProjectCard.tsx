@@ -4,6 +4,7 @@ import type { MenuAction } from "../../organizations/components/OrganizationUi";
 import { formatRelativeTime } from "../../organizations/utils/organization.utils";
 import { useBOQVersions, useBOQSummary } from "../../drawings_boq";
 import { AUDIT_PERMISSIONS, useEntityAuditLog } from "../../audit";
+import { BUDGET_PERMISSIONS, formatBudgetAmount, useProjectBudget } from "../../budgets";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useProjectMilestones } from "../hooks";
 import type { Project } from "../types/project.types";
@@ -32,8 +33,10 @@ export function ProjectCard({
 
   const canViewBoq = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
   const canViewActivity = permissions.includes(AUDIT_PERMISSIONS.AUDIT_LOG_READ);
+  const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
 
   const milestonesQuery = useProjectMilestones(project.id);
+  const budgetQuery = useProjectBudget(canViewBudget ? project.id : undefined);
   const boqVersionsQuery = useBOQVersions(canViewBoq ? project.id : "");
   const latestVersionId = boqVersionsQuery.data?.[0]?.id;
   const boqSummaryQuery = useBOQSummary(latestVersionId);
@@ -74,7 +77,11 @@ export function ProjectCard({
         </div>
       ) : null}
 
-      <button type="button" onClick={() => onOpen(project)} className="block w-full text-left">
+      <button
+        type="button"
+        onClick={() => onOpen(project)}
+        className="block w-full rounded-[var(--radius-md)] text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] focus-visible:ring-offset-2"
+      >
         <div className="pr-8">
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate font-[Archivo] text-[16px] font-bold text-[var(--color-text-primary)]">
@@ -110,7 +117,13 @@ export function ProjectCard({
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
               Budget
             </span>
-            <span className="text-[12px] text-[var(--color-text-muted)]">Not tracked yet</span>
+            <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
+              {!canViewBudget
+                ? "—"
+                : budgetQuery.data
+                  ? formatBudgetAmount(budgetQuery.data.approved_amount, budgetQuery.data.currency)
+                  : "Not set"}
+            </span>
           </div>
 
           <div className="flex items-center justify-between gap-3">

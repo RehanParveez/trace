@@ -27,3 +27,9 @@ export interface BudgetSaveRequest {
   notes?: string | null;
   categories?: BudgetCategoryInput[];
 }
+
+export interface BudgetOrganizationSummary {
+  total_approved_amount: number | string;
+  budget_count: number;
+  currency: string;
+}

@@ -2,7 +2,7 @@ from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.expenses.models import Expense, ExpenseStatus
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 class ExpenseRepository:
   def __init__(self, session: AsyncSession):
@@ -41,3 +41,23 @@ class ExpenseRepository:
     self.session.add(expense)
     await self.session.flush()
     return expense
+
+  async def get_organization_summary(
+    self, organization_id: UUID,
+  ) -> dict:
+    result = await self.session.execute(
+      select(
+        func.coalesce(func.sum(Expense.amount), 0).label(
+          "total_approved_amount",
+        ),
+        func.count(Expense.id).label("expense_count"),
+      ).where(
+        Expense.organization_id == organization_id,
+        Expense.status == ExpenseStatus.APPROVED,
+      )
+    )
+    row = result.one()
+    return {
+      "total_approved_amount": row.total_approved_amount,
+      "expense_count": row.expense_count,
+    }

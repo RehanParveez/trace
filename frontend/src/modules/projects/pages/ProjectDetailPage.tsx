@@ -11,6 +11,7 @@ import { ProjectMembers } from "../components/ProjectMembers";
 import { MilestoneTable } from "../components/MilestoneTable";
 import { DrawingsBoqSection } from "../../drawings_boq";
 import { VerificationSection } from "../../verification";
+import { ProjectFinancialSummary } from "../../budgets";
 
 export function ProjectDetailPage() {
   const navigate = useNavigate();
@@ -166,7 +167,16 @@ export function ProjectDetailPage() {
                 ?.scrollIntoView({ behavior: "smooth", block: "start" })
             }
           />
-        </div>
+       </div>
+      </section>
+
+      <section>
+        <SectionDivider
+          title="Project financials"
+          description="Approved budget against approved expenses for this project."
+        />
+
+        <ProjectFinancialSummary projectId={project.id} />
       </section>
 
       <section id="project-milestones">

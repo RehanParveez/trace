@@ -32,3 +32,7 @@ class ProcurementResponse(BaseModel):
   requested_by: UUID | None
   created_at: datetime
   updated_at: datetime
+
+class ProcurementOrganizationSummaryResponse(BaseModel):
+  total_committed_amount: Decimal
+  request_count: int

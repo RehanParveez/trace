@@ -147,7 +147,7 @@ function SidebarLink({ item }: { item: NavItem }) {
         [
           "group relative flex min-h-[40px] items-center gap-3 rounded-[9px] border px-3",
           "text-[13px] font-medium transition-all duration-150",
-          "focus:outline-none focus:ring-2 focus:ring-[#d9a441]/40",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9a441]/40",
           isActive
             ? "border-[#d9a441]/30 !bg-[#172239] !text-white shadow-[inset_0_0_0_1px_rgba(217,164,65,0.06)]"
             : "border-transparent !text-[#cbd5e1] hover:!border-[#263657] hover:!bg-[#121c30] hover:!text-white",
@@ -224,8 +224,15 @@ export function OrganizationShell({
   const projectsNav = buildProjectsNav();
   const intelligenceNav = buildIntelligenceNav(isPlatformAdmin);
 
-  return (
+    return (
     <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
+      
+       <a href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-[8px] focus:bg-[var(--color-trace-gold)] focus:px-4 focus:py-2.5 focus:text-[13px] focus:font-semibold focus:text-[var(--color-trace-navy)] focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-hidden !border-r !border-[#24314d] !bg-[var(--color-trace-navy)] !text-[#cbd5e1] lg:flex">
         <div className="relative flex h-[94px] shrink-0 items-center overflow-hidden !border-b !border-[#24314d] !bg-[var(--color-trace-navy)] px-5">
           <div className="pointer-events-none absolute inset-0 opacity-[0.22] [background-image:linear-gradient(#53617a_1px,transparent_1px),linear-gradient(90deg,#53617a_1px,transparent_1px)] [background-size:18px_18px]" />
@@ -348,7 +355,7 @@ export function OrganizationShell({
   </div>
 </header>
 
-        <main className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-7 lg:px-8">
+        <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-7 lg:px-8 focus:outline-none">
           {children ?? <Outlet />}
         </main>
       </div>

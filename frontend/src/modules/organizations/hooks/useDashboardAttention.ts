@@ -4,6 +4,8 @@ import { useInvitations } from "./useInvitations";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useProgressClaims, VERIFICATION_PERMISSIONS } from "../../verification";
 import { useSitePhotos } from "../../whatsapp";
+import { EXPENSE_PERMISSIONS, useExpenses } from "../../expenses";
+import { PROCUREMENT_PERMISSIONS, useProcurementRequests } from "../../procurement";
 
 export function useDashboardAttention(): {
   items: DashboardAttentionItem[];
@@ -17,13 +19,29 @@ export function useDashboardAttention(): {
   const canReviewClaims = permissions.includes(
     VERIFICATION_PERMISSIONS.PROGRESS_CLAIM_REVIEW,
   );
+    
   const canManagePhotos = permissions.includes(
     IDENTITY_PERMISSIONS.SITE_PHOTO_MANAGE,
+  );
+
+  const canApproveExpenses = permissions.includes(
+    EXPENSE_PERMISSIONS.EXPENSE_APPROVE,
+  );
+  const canManageProcurement = permissions.includes(
+    PROCUREMENT_PERMISSIONS.PROCUREMENT_MANAGE,
   );
 
   const invitationsQuery = useInvitations(0, 100, { enabled: canManageMembers });
   const submittedClaimsQuery = useProgressClaims(undefined, "SUBMITTED");
   const unassignedPhotosQuery = useSitePhotos({ unassignedOnly: true });
+  const pendingExpensesQuery = useExpenses(
+    { status: "PENDING" },
+    { enabled: canApproveExpenses },
+  );
+  const pendingProcurementQuery = useProcurementRequests(
+    { status: "REQUESTED" },
+    { enabled: canManageProcurement },
+  );
 
   const items: DashboardAttentionItem[] = [];
 
@@ -71,10 +89,40 @@ export function useDashboardAttention(): {
     }
   }
 
+  if (canApproveExpenses) {
+    const pendingExpenseCount = (pendingExpensesQuery.data ?? []).length;
+
+    if (pendingExpenseCount > 0) {
+      items.push({
+        key: "expenses",
+        icon: "expenses",
+        label: `${pendingExpenseCount} expense${pendingExpenseCount === 1 ? "" : "s"} awaiting approval`,
+        count: pendingExpenseCount,
+        to: "/app/expenses",
+      });
+    }
+  }
+
+  if (canManageProcurement) {
+    const pendingProcurementCount = (pendingProcurementQuery.data ?? []).length;
+
+    if (pendingProcurementCount > 0) {
+      items.push({
+        key: "procurement",
+        icon: "procurement",
+        label: `${pendingProcurementCount} procurement request${pendingProcurementCount === 1 ? "" : "s"} awaiting approval`,
+        count: pendingProcurementCount,
+        to: "/app/procurement",
+      });
+    }
+  }
+
   const isLoading =
     (canManageMembers && invitationsQuery.isLoading) ||
     (canReviewClaims && submittedClaimsQuery.isLoading) ||
-    (canManagePhotos && unassignedPhotosQuery.isLoading);
+    (canManagePhotos && unassignedPhotosQuery.isLoading) ||
+    (canApproveExpenses && pendingExpensesQuery.isLoading) ||
+    (canManageProcurement && pendingProcurementQuery.isLoading);
 
   return { items, isLoading };
 }

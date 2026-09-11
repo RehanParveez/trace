@@ -30,3 +30,7 @@ class ExpenseResponse(BaseModel):
   review_note: str | None
   created_at: datetime
   updated_at: datetime
+  
+class ExpenseOrganizationSummaryResponse(BaseModel):
+  total_approved_amount: Decimal
+  expense_count: int

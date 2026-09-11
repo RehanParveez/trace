@@ -19,6 +19,8 @@ export * from "./components/DashboardGreeting";
 export * from "./components/DashboardProjectHealth";
 export * from "./components/DashboardAttentionFeed";
 export * from "./components/DashboardActivityFeed";
+export * from "./components/DashboardSitePhotos";
+export * from "./components/DashboardFinancialSummary";
 
 export * from "./hooks";
 

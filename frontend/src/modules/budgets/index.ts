@@ -1,6 +1,7 @@
 export * from "./api/budgets.api";
 export * from "./components/BudgetForm";
 export * from "./components/BudgetOverview";
+export * from "./components/ProjectFinancialSummary";
 export * from "./hooks";
 export * from "./pages/BudgetsPage";
 export * from "./permissions";
