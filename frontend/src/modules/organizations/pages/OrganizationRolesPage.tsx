@@ -6,11 +6,13 @@ import { RoleTable } from "../components/RoleTable";
 import {Button, ErrorState, Icon, Modal, PageHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 export function OrganizationRolesPage() {
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
-
+  
+  const { t } = useTranslation();
   const rolesQuery = useRoles();
   const deleteRole = useDeleteRole();
 
@@ -25,7 +27,7 @@ export function OrganizationRolesPage() {
   if (rolesQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load organization roles"
+        title={t("roles.loadError")}
         onRetry={() => void rolesQuery.refetch()}
       />
     );
@@ -34,8 +36,8 @@ export function OrganizationRolesPage() {
   return (
     <div>
       <PageHeader
-        title="Roles & access"
-        description="Shape organization access around the responsibilities people actually perform inside the construction workflow."
+        title={t("roles.pageTitle")}
+        description={t("roles.pageDescription")}
         actions={
           canManage ? (
             <Button
@@ -43,7 +45,7 @@ export function OrganizationRolesPage() {
               onClick={() => navigate("/app/organization/roles/new")}
             >
               <Icon name="plus" size={13} />
-              Create role
+              {t("roles.create")}
             </Button>
           ) : null
         }
@@ -51,33 +53,33 @@ export function OrganizationRolesPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Roles"
+          label={t("roles.count")}
           value={roles.length}
-          note="Available access profiles"
+          note={t("roles.countNote")}
           icon="shield"
           tone="gold"
         />
 
         <StatCard
-          label="System"
+          label={t("roles.system")}
           value={roles.filter((role) => role.is_system).length}
-          note="Platform-managed"
+          note={t("roles.systemNote")}
           icon="lock"
           tone="blue"
         />
 
         <StatCard
-          label="Custom"
+          label={t("roles.custom")}
           value={roles.filter((role) => !role.is_system).length}
-          note="Organization-managed"
+          note={t("roles.customNote")}
           icon="settings"
           tone="green"
         />
       </div>
 
       <SectionDivider
-        title="Organization roles"
-        description="System roles are protected; custom roles can be tailored to your operating model."
+        title={t("roles.sectionTitle")}
+        description={t("roles.sectionDesc")}
       />
 
       <RoleTable
@@ -89,13 +91,13 @@ export function OrganizationRolesPage() {
 
       {deletingRole ? (
         <Modal
-          title="Delete role"
-          description="This removes the custom role definition. System roles cannot be deleted."
+          title={t("roles.deleteTitle")}
+          description={t("roles.deleteDesc")}
           onClose={() => setDeletingRole(null)}
         >
           <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
             <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-              Role
+              {t("roles.roleLabel")}
             </div>
 
             <div className="mt-1 text-[14px] font-semibold text-[var(--color-text-primary)]">
@@ -105,7 +107,7 @@ export function OrganizationRolesPage() {
 
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setDeletingRole(null)}>
-              Cancel
+              {t("roles.cancel")}
             </Button>
 
             <Button
@@ -117,7 +119,7 @@ export function OrganizationRolesPage() {
                 })
               }
             >
-              {deleteRole.isPending ? "Deleting…" : "Delete role"}
+              {deleteRole.isPending ? t("roles.deleting") : t("roles.deleteConfirm")}
             </Button>
           </div>
         </Modal>

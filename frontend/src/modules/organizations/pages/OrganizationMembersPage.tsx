@@ -9,6 +9,7 @@ import { MemberTable } from "../components/MemberTable";
 import {ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys, useAuthStore } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 20;
 
@@ -16,6 +17,8 @@ export function OrganizationMembersPage() {
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
   const currentUser = useAuthStore((state) => state.user);
+
+  const { t } = useTranslation();
 
   const [roleMember, setRoleMember] = useState<Member | null>(null);
   const [statusMember, setStatusMember] = useState<Member | null>(null);
@@ -53,7 +56,7 @@ export function OrganizationMembersPage() {
   if (membersQuery.isError || rolesQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load organization members"
+        title={t("members.loadError")}
         onRetry={() => {
           void membersQuery.refetch();
           void rolesQuery.refetch();
@@ -65,8 +68,8 @@ export function OrganizationMembersPage() {
   return (
     <div>
       <PageHeader
-        title="Members"
-        description="Manage the people who operate this organization and control their access without leaving the main workspace."
+        title={t("members.pageTitle")}
+        description={t("members.pageDescription")}
         actions={
           <div className="flex h-9 items-center gap-2 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3">
             <Icon name="search" size={14} className="text-[var(--color-text-muted)]" />
@@ -75,7 +78,7 @@ export function OrganizationMembersPage() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-[170px] bg-transparent text-[13px] outline-none placeholder:text-[var(--color-text-muted)]"
-              placeholder="Filter members"
+              placeholder={t("members.filterPlaceholder")}
               aria-label="Filter members by name, email or role"
             />
           </div>
@@ -84,15 +87,15 @@ export function OrganizationMembersPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Total members"
+          label={t("members.total")}
           value={totalMembers}
-          note="Organization users"
+          note={t("members.totalNote")}
           icon="users"
           tone="blue"
         />
 
         <StatCard
-          label="Active"
+          label={t("members.active")}
           value={members.filter((member) => member.is_active).length}
           note="On this page"
           icon="check"
@@ -100,7 +103,7 @@ export function OrganizationMembersPage() {
         />
 
         <StatCard
-          label="Verified"
+          label={t("members.verified")}
           value={members.filter((member) => member.is_verified).length}
           note="On this page"
           icon="shield"
@@ -109,8 +112,8 @@ export function OrganizationMembersPage() {
       </div>
 
       <SectionDivider
-        title="Access directory"
-        description={`${filteredMembers.length} visible member${filteredMembers.length === 1 ? "" : "s"}.`}
+        title={t("members.accessDirectory")}
+        description={`${filteredMembers.length} {t("members.visibleCount", { count: filteredMembers.length })}`}
       />
 
       <MemberTable

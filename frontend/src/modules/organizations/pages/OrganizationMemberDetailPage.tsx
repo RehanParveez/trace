@@ -4,22 +4,23 @@ import {Avatar, Badge, Button, ErrorState, Icon, LoadingState, PageHeader, Panel
 } from "../components/OrganizationUi";
 import {formatDateTime, getMemberFullName, getMemberInitials, humanizePermission,
 } from "../utils/organization.utils";
+import { useTranslation } from "react-i18next";
 
 export function OrganizationMemberDetailPage() {
   const navigate = useNavigate();
   const { userId } = useParams<{ userId: string }>();
-
+  const { t } = useTranslation();
   const memberQuery = useMember(userId);
 
   if (memberQuery.isLoading) {
-    return <LoadingState label="Loading member…" />;
+    return <LoadingState label={t("memberDetail.loading")} />;
   }
 
   if (memberQuery.isError || !memberQuery.data) {
     return (
       <ErrorState
-        title="Member not found"
-        description="The member record could not be loaded for this organization."
+        title={t("memberDetail.notFound")}
+        description={t("memberDetail.notFoundDesc")}
         onRetry={() => void memberQuery.refetch()}
       />
     );
@@ -28,16 +29,16 @@ export function OrganizationMemberDetailPage() {
   const member = memberQuery.data;
 
   const details: Array<[string, string]> = [
-    ["Role", member.role.name],
-    ["Role type", member.role.is_system ? "System role" : "Custom role"],
-    ["Verification", member.is_verified ? "Verified" : "Unverified"],
-    ["Last login", formatDateTime(member.last_login_at)],
+    [t("memberDetail.role"), member.role.name],
+    [t("memberDetail.roleType"), member.role.is_system ? t("memberDetail.systemRole") : t("memberDetail.customRole")],
+    [t("memberDetail.verification"), member.is_verified ? t("memberDetail.verified") : t("memberDetail.unverified")],
+    [t("memberDetail.lastLogin"), formatDateTime(member.last_login_at)],
   ];
 
   return (
     <div>
       <PageHeader
-        eyebrow="MEMBER DETAIL"
+        eyebrow={t("memberDetail.eyebrow")}
         title={getMemberFullName(member)}
         description={member.email}
         actions={
@@ -46,7 +47,7 @@ export function OrganizationMemberDetailPage() {
             onClick={() => navigate("/app/organization/members")}
           >
             <Icon name="arrow" size={13} />
-            Back to members
+            {t("memberDetail.back")}
           </Button>
         }
       />
@@ -54,9 +55,9 @@ export function OrganizationMemberDetailPage() {
       <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
         <Panel>
           <PanelHeader
-            eyebrow="IDENTITY & ACCESS"
-            title="Member profile"
-            description="The organization-level identity and access state returned by the API."
+            eyebrow={t("memberDetail.identityAccess")}
+            title={t("memberDetail.profile")}
+            description={t("memberDetail.profileDesc")}
           />
 
           <div className="flex items-center gap-4 border-b border-[#e1d5bc] p-5">
@@ -73,7 +74,7 @@ export function OrganizationMemberDetailPage() {
 
               <div className="mt-2 flex flex-wrap gap-2">
                 <Badge tone={member.is_active ? "green" : "slate"}>
-                  {member.is_active ? "Active" : "Inactive"}
+                  member.is_active ? t("memberDetail.active") : t("memberDetail.inactive")
                 </Badge>
 
                 <Badge tone={member.is_verified ? "blue" : "gold"}>
@@ -99,12 +100,12 @@ export function OrganizationMemberDetailPage() {
         </Panel>
 
         <Panel>
-          <PanelHeader eyebrow="ROLE BOUNDARY" title="Granted permissions" />
+          <PanelHeader eyebrow={t("memberDetail.roleBoundary")} title={t("memberDetail.grantedPermissions")} />
 
           <div className="space-y-2 p-5">
             {member.role.permissions.length === 0 ? (
               <div className="text-[12px] text-[var(--color-text-secondary)]">
-                No permissions are attached to this role.
+                {t("memberDetail.noPermissions")}
               </div>
             ) : (
               member.role.permissions.map((permission) => {

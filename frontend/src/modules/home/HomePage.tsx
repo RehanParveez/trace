@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "../../shared/components/LanguageSwitcher";
 import "../home/landing.css";
 
 function Icon({
@@ -236,6 +238,8 @@ function DashboardMockup() {
 }
 
 export function HomePage() {
+  const { t } = useTranslation();
+
   return (
     <main className="lp-page">
       <nav className="lp-nav">
@@ -245,31 +249,33 @@ export function HomePage() {
             <span>Trace</span>
           </Link>
 
-          <div className="lp-nav-links">
-            <a href="#product">Product</a>
-            <a href="#workflow">Workflow</a>
-            <a href="#teams">Teams</a>
-            <a href="#principles">Why Trace</a>
+            <div className="lp-nav-links">
+            <a href="#product">{t("nav.product")}</a>
+            <a href="#workflow">{t("nav.workflow")}</a>
+            <a href="#teams">{t("nav.teams")}</a>
+            <a href="#principles">{t("nav.why")}</a>
           </div>
 
           <div className="lp-nav-actions">
             <span className="lp-live">
               <i />
-              Operational workspace
+              {t("nav.operational")}
             </span>
+
+            <LanguageSwitcher variant="compact" className="mr-2" />
 
             <Link
               to="/login"
               className="lp-btn lp-btn-ghost"
             >
-              Sign in
+              {t("nav.signIn")}
             </Link>
 
             <Link
               to="/register"
               className="lp-btn lp-btn-primary"
             >
-              Get started
+              {t("nav.getStarted")}
             </Link>
           </div>
         </div>
@@ -279,18 +285,15 @@ export function HomePage() {
         <div className="lp-wrap lp-hero-grid">
           <div className="lp-hero-copy">
             <p className="lp-eyebrow">
-              CONSTRUCTION INTELLIGENCE · ONE RECORD OF TRUTH
+              {t("hero.eyebrow")}
             </p>
 
             <h1>
-              Keep the work moving when the{" "}
-              <em>record stays clear.</em>
+              {t("hero.title")}
             </h1>
 
             <p className="lp-hero-sub">
-              Trace connects budgets, physical progress, materials,
-              procurement, deliveries and expenses into one operational
-              picture for construction teams.
+              {t("hero.sub")}
             </p>
 
             <div className="lp-actions">
@@ -298,7 +301,7 @@ export function HomePage() {
                 to="/register"
                 className="lp-btn lp-btn-primary lp-btn-large"
               >
-                Build with Trace
+                {t("hero.ctaPrimary")}
                 <Icon name="arrow" />
               </Link>
 
@@ -306,24 +309,24 @@ export function HomePage() {
                 href="#product"
                 className="lp-btn lp-btn-ghost lp-btn-large"
               >
-                See how it works
+                {t("hero.ctaSecondary")}
               </a>
             </div>
 
             <div className="lp-proof">
               <span>
                 <Icon name="lock" />
-                Permission-aware
+                {t("hero.proof.permission")}
               </span>
 
               <span>
                 <Icon name="flow" />
-                Workflow-first
+                {t("hero.proof.workflow")}
               </span>
 
               <span>
                 <Icon name="chart" />
-                Backend-authoritative
+                {t("hero.proof.backend")}
               </span>
             </div>
           </div>
@@ -693,8 +696,7 @@ export function HomePage() {
 
             <div>
               <small>LANGUAGE</small>
-              <button type="button">English</button>
-              <button type="button">اردو</button>
+              <LanguageSwitcher />
             </div>
 
             <div>
@@ -709,11 +711,11 @@ export function HomePage() {
 
           <div className="lp-foot-bottom">
             <span>
-              © {new Date().getFullYear()} Trace. Construction Intelligence.
+              {t("footer.copyright", { year: new Date().getFullYear() })}
             </span>
 
             <span>
-              EN / UR ready
+              {t("footer.ready")}
             </span>
           </div>
         </div>

@@ -5,12 +5,14 @@ import type { RoleCreateRequest } from "../types/organization.types";
 import { RoleForm } from "../components/RoleForm";
 import {Button, ErrorState, Icon, LoadingState, PageHeader,
 } from "../components/OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 export function OrganizationRoleDetailPage() {
   const navigate = useNavigate();
   const { roleId } = useParams<{ roleId: string }>();
 
   const isNew = roleId === "new";
+  const { t } = useTranslation();
 
   const roleQuery = useRole(isNew ? undefined : roleId);
   const permissionsQuery = usePermissions();
@@ -21,7 +23,7 @@ export function OrganizationRoleDetailPage() {
   if (permissionsQuery.isLoading || (!isNew && roleQuery.isLoading)) {
     return (
       <LoadingState
-        label={isNew ? "Preparing role editor…" : "Loading role…"}
+        label={isNew ? t("roleDetail.loadingNew") : t("roleDetail.loading")}
       />
     );
   }
@@ -29,7 +31,7 @@ export function OrganizationRoleDetailPage() {
   if (permissionsQuery.isError || (!isNew && roleQuery.isError)) {
     return (
       <ErrorState
-        title="We couldn't load the role editor"
+        title={t("roleDetail.loadError")}
         onRetry={() => {
           void permissionsQuery.refetch();
 
@@ -46,21 +48,16 @@ export function OrganizationRoleDetailPage() {
   return (
     <div>
       <PageHeader
-        eyebrow={isNew ? "NEW ROLE" : "ROLE DETAIL"}
+        eyebrow={isNew ? t("roleDetail.newEyebrow") : t("roleDetail.detailEyebrow")}
         title={isNew ? "Create role" : (role?.name ?? "Role")}
-        description={
-          isNew
-            ? "Create a focused access profile for a construction workflow responsibility."
-            : (role?.description ??
-              "Review and manage the role's access boundary.")
-        }
+        description={isNew ? t("roleDetail.createDesc") : (role?.description ?? "")}
         actions={
           <Button
             variant="ghost"
             onClick={() => navigate("/app/organization/roles")}
           >
             <Icon name="arrow" size={13} />
-            Back to roles
+            {t("roleDetail.back")}
           </Button>
         }
       />

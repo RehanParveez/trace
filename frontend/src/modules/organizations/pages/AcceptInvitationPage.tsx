@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAcceptInvitation } from "../hooks";
 import {BrandMark, Button, Field, Icon, inputClass, PageHeader, Panel, PanelHeader,
 } from "../components/OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 function BrandBar() {
   return (
@@ -26,6 +27,8 @@ function BrandBar() {
 export function AcceptInvitationPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  const { t } = useTranslation();
 
   const acceptInvitation = useAcceptInvitation();
 
@@ -63,7 +66,7 @@ export function AcceptInvitationPage() {
           </div>
 
           <h1 className="font-['Fraunces',serif] text-[26px] font-semibold italic tracking-[-0.01em] text-[#191410]">
-            Invitation accepted
+            {t("accept.successTitle")}
           </h1>
 
           <p className="mt-2 max-w-md text-[13px] leading-5 text-[var(--color-text-secondary)]">
@@ -73,14 +76,14 @@ export function AcceptInvitationPage() {
           <div className="mt-6">
             <Panel>
               <PanelHeader
-                eyebrow="WORKSPACE ACCESS"
-                title="Membership created"
+                eyebrow={t("accept.workspaceAccess")}
+                title={t("accept.membershipCreated")}
               />
 
               <div className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 <div className="p-5">
                   <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-                    Organization
+                    {t("accept.organization")}
                   </div>
 
                   <div className="mt-1.5 text-[13px] font-semibold text-[var(--color-text-primary)]">
@@ -90,7 +93,7 @@ export function AcceptInvitationPage() {
 
                 <div className="p-5">
                   <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
-                    Role
+                    {t("accept.role")}
                   </div>
 
                   <div className="mt-1.5 text-[13px] font-semibold text-[var(--color-text-primary)]">
@@ -101,7 +104,7 @@ export function AcceptInvitationPage() {
 
               <div className="border-t border-[var(--color-border)] p-5">
                 <Button variant="primary" onClick={() => navigate("/app")}>
-                  Continue to workspace
+                  {t("accept.continue")}
                   <Icon name="arrow" size={13} />
                 </Button>
               </div>
@@ -118,18 +121,18 @@ export function AcceptInvitationPage() {
         <BrandBar />
 
         <PageHeader
-          eyebrow="ACCESS INVITATION"
-          title="Accept invitation"
-          description="Enter the invitation token you received. The server remains authoritative for acceptance and role assignment."
+          eyebrow={t("accept.eyebrow")}
+          title={t("accept.title")}
+          description={t("accept.description")}
         />
 
         <Panel>
-          <PanelHeader eyebrow="SECURE ACCESS" title="Invitation token" />
+          <PanelHeader eyebrow={t("accept.secureAccess")} title={t("accept.tokenTitle")} />
 
           <form onSubmit={handleSubmit} className="space-y-4 p-5">
             <Field
-              label="Token"
-              hint="Paste the complete invitation token exactly as received."
+              label={t("accept.tokenLabel")}
+              hint={t("accept.tokenHint")}
             >
               <textarea
                 value={token}
@@ -143,8 +146,7 @@ export function AcceptInvitationPage() {
             {acceptInvitation.isError ? (
               <div className="flex items-center gap-2 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
                 <Icon name="alert" size={13} className="shrink-0" />
-                Unable to accept this invitation. The token may be invalid,
-                expired or already used.
+                {t("accept.error")}
               </div>
             ) : null}
 
@@ -156,9 +158,7 @@ export function AcceptInvitationPage() {
               >
                 <Icon name="check" size={13} />
 
-                {acceptInvitation.isPending
-                  ? "Accepting…"
-                  : "Accept invitation"}
+                {acceptInvitation.isPending ? t("accept.accepting") : t("accept.submit")}
               </Button>
             </div>
           </form>

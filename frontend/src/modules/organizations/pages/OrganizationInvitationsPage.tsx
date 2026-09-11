@@ -9,6 +9,7 @@ import {Button, ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 import { getInvitationStatus } from "../utils/organization.utils";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 20;
 
@@ -19,6 +20,8 @@ export function OrganizationInvitationsPage() {
   const [revokeInvitation, setRevokeInvitation] =
     useState<Invitation | null>(null);
   const [page, setPage] = useState(0);
+
+  const { t } = useTranslation();
 
   const invitationsQuery = useInvitations(page * PAGE_SIZE, PAGE_SIZE);
   const rolesQuery = useRoles();
@@ -50,7 +53,7 @@ export function OrganizationInvitationsPage() {
   if (invitationsQuery.isError || rolesQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load invitations"
+        title={t("invitations.loadError")}
         onRetry={() => {
           void invitationsQuery.refetch();
           void rolesQuery.refetch();
@@ -62,8 +65,8 @@ export function OrganizationInvitationsPage() {
   return (
     <div>
       <PageHeader
-        title="Invitations"
-        description="Control who is entering the organization workspace, which role they receive and which pending access requests remain outstanding."
+        title={t("invitations.pageTitle")}
+        description={t("invitations.pageDescription")}
         actions={
           canManage ? (
             <Button
@@ -71,7 +74,7 @@ export function OrganizationInvitationsPage() {
               onClick={() => setShowForm((current) => !current)}
             >
               <Icon name={showForm ? "x" : "plus"} size={13} />
-              {showForm ? "Close" : "Invite member"}
+              {showForm ? t("invitations.close") : t("invitations.invite")}
             </Button>
           ) : null
         }
@@ -79,15 +82,15 @@ export function OrganizationInvitationsPage() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
-          label="Pending"
+          label={t("invitations.pending")}
           value={pending}
-          note="Awaiting acceptance"
+          note={t("invitations.pendingNote")}
           icon="mail"
           tone="gold"
         />
 
         <StatCard
-          label="Accepted"
+          label={t("invitations.accepted")}
           value={accepted}
           note="Successfully joined"
           icon="check"
@@ -95,9 +98,9 @@ export function OrganizationInvitationsPage() {
         />
 
         <StatCard
-          label="Expired"
+          label={t("invitations.expired")}
           value={expired}
-          note="No longer usable"
+          note={t("invitations.acceptedNote")}
           icon="lock"
           tone="blue"
         />
@@ -105,7 +108,7 @@ export function OrganizationInvitationsPage() {
 
       {showForm ? (
         <>
-          <SectionDivider title="Invite a member" />
+          <SectionDivider title={t("invitations.inviteSection")} />
 
           <InvitationForm
             roles={roles}
@@ -122,8 +125,8 @@ export function OrganizationInvitationsPage() {
       ) : null}
 
       <SectionDivider
-        title="Organization invitations"
-        description={`${invitations.length} invitation${invitations.length === 1 ? "" : "s"} returned by the organization API.`}
+        title={t("invitations.sectionTitle")}
+        description={t("invitations.sectionDesc", { count: invitations.length })}
       />
 
       <InvitationTable

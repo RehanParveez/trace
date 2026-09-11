@@ -1,8 +1,10 @@
 import { NavLink, Outlet } from "react-router-dom";
 import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
 import { BrandMark, Icon, LivePip } from "./OrganizationUi";
 import type { OrganizationIconName } from "../types/organization.types";
 import { NotificationBell } from "../../notifications";
+import { LanguageSwitcher } from "../../../shared/components/LanguageSwitcher";
 import { IDENTITY_PERMISSIONS, useAuthStore, usePermissionKeys } from "../../identity";
 import { useOrganization, useInvitations } from "../hooks";
 import { getInvitationStatus } from "../utils/organization.utils";
@@ -15,10 +17,10 @@ interface NavItem {
   badge?: number;
 }
 
-function buildWorkspaceNav(): NavItem[] {
+function buildWorkspaceNav(t: (key: string) => string): NavItem[] {
   return [
     {
-      label: "Overview",
+      label: t("nav.overview"),
       to: "/app/organization",
       icon: "dashboard",
       exact: true,
@@ -27,109 +29,113 @@ function buildWorkspaceNav(): NavItem[] {
 }
 
 function buildOrganizationNav(
+  t: (key: string) => string,
   pendingInvitationCount?: number,
 ): NavItem[] {
   return [
     {
-      label: "Settings",
+      label: t("nav.settings"),
       to: "/app/organization/settings",
       icon: "settings",
     },
     {
-      label: "Members",
+      label: t("nav.members"),
       to: "/app/organization/members",
       icon: "users",
     },
     {
-      label: "Roles & access",
+      label: t("nav.rolesAccess"),
       to: "/app/organization/roles",
       icon: "shield",
     },
     {
-      label: "Invitations",
+      label: t("nav.invitations"),
       to: "/app/organization/invitations",
       icon: "mail",
       badge: pendingInvitationCount,
     },
     {
-      label: "Subscription",
+      label: t("nav.subscription"),
       to: "/app/subscription",
       icon: "budget",
     },
     {
-      label: "Material library",
+      label: t("nav.materialLibrary"),
       to: "/app/drawings_boq",
       icon: "materials",
     },
     {
-      label: "Labour rates",
+      label: t("nav.labourRates"),
       to: "/app/drawings_boq/labour-rates",
       icon: "budget",
     },
     {
-      label: "WhatsApp connection",
+      label: t("nav.whatsappConnection"),
       to: "/app/whatsapp-settings",
       icon: "external",
     },
   ];
 }
 
-function buildProjectsNav(): NavItem[] {
+function buildProjectsNav(t: (key: string) => string): NavItem[] {
   return [
     {
-      label: "Projects",
+      label: t("nav.projects"),
       to: "/app/projects",
       icon: "projects",
     },
     {
-      label: "Budgets",
+      label: t("nav.budgets"),
       to: "/app/budgets",
       icon: "budget",
     },
     {
-      label: "Progress review",
+      label: t("nav.progressReview"),
       to: "/app/progress-review",
       icon: "check",
     },
     {
-      label: "Site photos",
+      label: t("nav.sitePhotos"),
       to: "/app/site-photos",
       icon: "spark",
     },
     {
-      label: "Site progress",
+      label: t("nav.siteProgress"),
       to: "/app/site-logs",
       icon: "site",
     },
     {
-      label: "Procurement",
+      label: t("nav.procurement"),
       to: "/app/procurement",
       icon: "procurement",
     },
     {
-      label: "Expenses",
+      label: t("nav.expenses"),
       to: "/app/expenses",
       icon: "expenses",
     },
   ];
 }
 
-function buildIntelligenceNav(isPlatformAdmin: boolean): NavItem[] {
+function buildIntelligenceNav(
+  t: (key: string) => string,
+  isPlatformAdmin: boolean,
+): NavItem[] {
   return [
     {
-      label: "AI activity",
+      label: t("nav.aiActivity"),
       to: "/app/ai-activity",
       icon: "spark",
     },
     {
-      label: "Audit log",
+      label: t("nav.auditLog"),
       to: "/app/audit-log",
       icon: "shield",
     },
     ...(isPlatformAdmin
       ? [
           {
-            label: "All subscriptions",
+            label: t("nav.allSubscriptions"),
             to: "/app/platform-admin/subscriptions",
             icon: "shield" as OrganizationIconName,
           },
@@ -198,6 +204,7 @@ export function OrganizationShell({
 }: {
   children?: ReactNode;
 }) {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const isPlatformAdmin = useAuthStore(
     (state) => state.user?.is_platform_admin ?? false,
@@ -211,7 +218,8 @@ export function OrganizationShell({
     enabled: canManageMembers,
   });
 
-  const organizationName = organizationQuery.data?.name ?? "Current organization";
+  const organizationName =
+    organizationQuery.data?.name ?? t("shell.currentOrganization");
   const organizationSlug = organizationQuery.data?.slug;
   const pendingInvitationCount = canManageMembers
     ? invitationsQuery.data?.items.filter(
@@ -219,10 +227,10 @@ export function OrganizationShell({
       ).length
     : undefined;
 
-  const workspaceNav = buildWorkspaceNav();
-  const organizationNav = buildOrganizationNav(pendingInvitationCount);
-  const projectsNav = buildProjectsNav();
-  const intelligenceNav = buildIntelligenceNav(isPlatformAdmin);
+  const workspaceNav = buildWorkspaceNav(t);
+  const organizationNav = buildOrganizationNav(t, pendingInvitationCount);
+  const projectsNav = buildProjectsNav(t);
+  const intelligenceNav = buildIntelligenceNav(t, isPlatformAdmin);
 
     return (
     <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
@@ -230,7 +238,7 @@ export function OrganizationShell({
        <a href="#main-content"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:rounded-[8px] focus:bg-[var(--color-trace-gold)] focus:px-4 focus:py-2.5 focus:text-[13px] focus:font-semibold focus:text-[var(--color-trace-navy)] focus:shadow-lg"
       >
-        Skip to main content
+        {t("shell.skipToMain")}
       </a>
 
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[248px] flex-col overflow-hidden !border-r !border-[#24314d] !bg-[var(--color-trace-navy)] !text-[#cbd5e1] lg:flex">
@@ -256,7 +264,7 @@ export function OrganizationShell({
 
         <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-6">
           <div className="mb-3 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
-            Workspace
+            {t("shell.workspace")}
           </div>
 
           <div className="space-y-1">
@@ -266,7 +274,7 @@ export function OrganizationShell({
           </div>
 
           <div className="mb-3 mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
-            Organization
+            {t("shell.organization")}
           </div>
 
           <div className="space-y-1">
@@ -276,7 +284,7 @@ export function OrganizationShell({
           </div>
 
           <div className="mb-3 mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
-            Projects
+            {t("shell.projects")}
           </div>
 
           <div className="space-y-1">
@@ -286,7 +294,7 @@ export function OrganizationShell({
           </div>
 
           <div className="mb-3 mt-7 px-2 text-[9px] font-bold uppercase tracking-[0.18em] !text-[#78869c]">
-            Intelligence
+            {t("shell.intelligence")}
           </div>
 
           <div className="space-y-1">
@@ -298,7 +306,7 @@ export function OrganizationShell({
 
         <div className="shrink-0 !border-t !border-[#24314d] !bg-[var(--color-trace-navy)] p-4">
           <div className="mb-3 px-1">
-            <LivePip label="All systems synced" />
+            <LivePip label={t("shell.allSystemsSynced")} />
           </div>
 
           <div className="flex items-center gap-3 rounded-[10px] !border !border-[#202d46] !bg-[var(--color-trace-navy-soft)] p-2.5">
@@ -312,7 +320,7 @@ export function OrganizationShell({
               </div>
 
               <div className="mt-0.5 truncate text-[10px] !text-[#8d9bb0]">
-                {organizationSlug ?? "Organization workspace"}
+                {organizationSlug ?? t("shell.organizationWorkspace")}
               </div>
             </div>
           </div>
@@ -330,7 +338,7 @@ export function OrganizationShell({
 
       <div className="hidden h-10 max-w-[380px] flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-[var(--color-text-muted)] md:flex">
        <Icon name="search" size={15} />
-       <span className="text-[13px]">Search organization workspace</span>
+       <span className="text-[13px]">{t("shell.searchPlaceholder")}</span>
        <span className="ml-auto rounded border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">
          ⌘K
        </span>
@@ -341,18 +349,21 @@ export function OrganizationShell({
         <span className="relative flex h-1.5 w-1.5">
          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-success)] opacity-60" />
          <span className="relative h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
-      </span>
-      Workspace operational
-    </div>
-    <NotificationBell />
-    <button
-      type="button"
-      className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-      aria-label="Organization settings"
-    >
-      <Icon name="settings" size={16} />
-    </button>
-  </div>
+        </span>
+        {t("shell.workspaceOperational")}
+       </div>
+
+       <LanguageSwitcher variant="compact" />
+
+       <NotificationBell />
+       <button
+         type="button"
+         className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
+         aria-label={t("shell.organizationSettings")}
+       >
+         <Icon name="settings" size={16} />
+       </button>
+      </div>
 </header>
 
         <main id="main-content" tabIndex={-1} className="mx-auto w-full max-w-[1440px] px-4 py-7 sm:px-7 lg:px-8 focus:outline-none">

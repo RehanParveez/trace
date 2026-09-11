@@ -8,6 +8,7 @@ import { OrganizationHeader } from "../components/OrganizationHeader";
 import {ErrorState, LoadingState, PageHeader, Panel, PanelHeader, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 export function OrganizationPage() {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ export function OrganizationPage() {
 
   const updateOrganization = useUpdateOrganization();
   const updateAISettings = useUpdateAISettings();
+
+  const { t } = useTranslation();
 
   const canManage = permissions.includes(
     IDENTITY_PERMISSIONS.ORGANIZATION_MANAGE,
@@ -52,8 +55,8 @@ export function OrganizationPage() {
     <div className="space-y-7">
 
       <PageHeader
-        title="Organization control"
-        description="Manage workspace identity, access and governance across the Trace operating environment."
+        title={t("org.pageTitle")}
+        description={t("org.pageDescription")}
       />
 
       <OrganizationHeader
@@ -64,47 +67,43 @@ export function OrganizationPage() {
 
       <section>
         <SectionDivider
-          title="Workspace pulse"
-          description="Current access and operating status across this organization."
+          title={t("org.workspacePulse")}
+          description={t("org.workspacePulseDesc")}
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Members"
+            label={t("org.members")}
             value={memberCount}
-            note={`${activeMemberCount} active`}
+            note={t("org.membersActive", { count: activeMemberCount })}
             icon="users"
             tone="blue"
-            actionLabel="Manage members"
+            actionLabel={t("org.manageMembers")}
             onAction={() => navigate("/app/organization/members")}
           />
 
           <StatCard
-            label="Roles"
+            label={t("org.roles")}
             value={roleCount}
-            note="System + custom access"
+            note={t("org.rolesNote")}
             icon="shield"
             tone="gold"
-            actionLabel="Manage roles"
+            actionLabel={t("org.manageRoles")}
             onAction={() => navigate("/app/organization/roles")}
           />
 
           <StatCard
-            label="Organization"
-            value={organization.is_active ? "Live" : "Paused"}
-            note={
-              organization.is_active
-                ? "Workspace operational"
-                : "Workspace restricted"
-            }
+            label={t("org.organization")}
+            value={organization.is_active ? t("org.live") : t("org.paused")}
+            note={organization.is_active ? t("org.workspaceOperational") : t("org.workspaceRestricted")}
             icon="building"
             tone={organization.is_active ? "green" : "red"}
           />
 
           <StatCard
-            label="AI"
-            value={aiEnabled ? "On" : "Off"}
-            note="Assistive capability"
+            label={t("org.ai")}
+            value={aiEnabled ? t("org.aiOn") : t("org.aiOff")}
+            note={t("org.aiNote")}
             icon="spark"
             tone={aiEnabled ? "green" : "gold"}
           />
@@ -113,8 +112,8 @@ export function OrganizationPage() {
 
       <section>
         <SectionDivider
-          title="AI governance"
-          description="Organization-level control for Trace's assistive intelligence."
+          title={t("org.aiGovernance")}
+          description={t("org.aiGovernanceDesc")}
         />
 
         <AISettingsCard
@@ -129,21 +128,21 @@ export function OrganizationPage() {
 
       <section>
         <SectionDivider
-          title="Workspace identity"
-          description="The tenant identity used throughout the Trace workspace."
+          title={t("org.workspaceIdentity")}
+          description={t("org.workspaceIdentityDesc")}
         />
 
         <Panel>
           <PanelHeader
-            eyebrow="TENANT DETAILS"
-            title="Organization details"
-            description="Core workspace identifiers and operating status."
+            eyebrow={t("org.tenantDetails")}
+            title={t("org.organizationDetails")}
+            description={t("org.organizationDetailsDesc")}
           />
 
           <div className="grid gap-0 divide-y divide-[var(--color-border)] md:grid-cols-2 md:divide-x md:divide-y-0">
             <div className="min-w-0 p-5 sm:p-6">
               <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-                Organization name
+                {t("org.organizationName")}
               </div>
 
               <div className="mt-2 truncate text-[15px] font-semibold text-[var(--color-text-primary)]">
@@ -151,13 +150,13 @@ export function OrganizationPage() {
               </div>
 
               <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
-                Primary workspace identity
+                {t("org.primaryIdentity")}
               </div>
             </div>
 
             <div className="min-w-0 p-5 sm:p-6">
               <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-                Workspace slug
+                {t("org.workspaceSlug")}
               </div>
 
               <div className="mt-2 min-w-0 truncate font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">
@@ -165,7 +164,7 @@ export function OrganizationPage() {
               </div>
 
               <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
-                Stable workspace identifier
+                {t("org.stableIdentifier")}
               </div>
             </div>
           </div>
