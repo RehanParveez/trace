@@ -1,21 +1,24 @@
 import { getPasswordChecks } from "../utils/identity.password";
+import { useTranslation } from "react-i18next";
 
 type PasswordStrengthProps = {
   password: string;
 };
 
 const checks = [
-  ["length", "12–128 characters"],
-  ["uppercase", "Uppercase letter"],
-  ["lowercase", "Lowercase letter"],
-  ["number", "Number"],
-  ["special", "Special character"],
-  ["notCommon", "Not a common password"],
+  ["length", "auth.password.length"],
+  ["uppercase", "auth.password.uppercase"],
+  ["lowercase", "auth.password.lowercase"],
+  ["number", "auth.password.number"],
+  ["special", "auth.password.special"],
+  ["notCommon", "auth.password.notCommon"],
 ] as const;
 
 export function PasswordStrength({
   password,
 }: PasswordStrengthProps) {
+  const { t } = useTranslation();
+
   const result = getPasswordChecks(password);
 
   const passed = Object.values(result).filter(Boolean).length;
@@ -29,7 +32,7 @@ export function PasswordStrength({
     <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
       <div className="mb-3 flex items-center justify-between">
         <span className="text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-secondary)]">
-          Password strength
+          {t("auth.passwordStrength")}
         </span>
 
         <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
@@ -47,7 +50,7 @@ export function PasswordStrength({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-2.5">
-        {checks.map(([key, label]) => {
+        {checks.map(([key, labelKey]) => {
           const valid = result[key];
 
           return (
@@ -70,7 +73,7 @@ export function PasswordStrength({
                  : "text-[var(--color-text-muted)]"
                 }
               >
-                {label}
+                {t(labelKey)}
               </span>
             </div>
           );

@@ -3,6 +3,7 @@ import {Badge, Icon, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import { formatPrice, formatQuota,
 } from "../utils/subscription.utils";
+import { useTranslation } from "react-i18next";
 
 interface CurrentPlanCardProps {
   plan: Plan;
@@ -19,6 +20,8 @@ const quotaOrder = [
 export function CurrentPlanCard({
   plan,
 }: CurrentPlanCardProps) {
+  const { t } = useTranslation();
+
   const quotas = quotaOrder.filter(
     (metric) =>
       Object.prototype.hasOwnProperty.call(
@@ -34,33 +37,31 @@ export function CurrentPlanCard({
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="PLAN CONFIGURATION"
+        eyebrow={t("subscription.planCard.eyebrow")}
         title={plan.name}
         description={
           plan.description ??
-          "Current plan capabilities and limits."
+          t("subscription.planCard.fallbackDescription")
         }
         action={
           <Badge tone="blue">
-            {formatPrice(
-              plan.price_monthly,
-              plan.currency,
-            )}
-            {" / month"}
+            {formatPrice(plan.price_monthly, plan.currency)}
+            {" "}
+            {t("subscription.planCard.perMonth")}
           </Badge>
         }
       />
 
       <div className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
         <div className="p-5 sm:p-6">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-            Quotas
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+            {t("subscription.planCard.quotas")}
           </div>
 
           <div className="mt-4 space-y-2.5">
             {quotas.length === 0 ? (
-              <div className="rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-[12px] text-[var(--color-text-secondary)]">
-                No quota configuration supplied.
+              <div className="rounded-[9px] border border-[#e1d5bc] bg-white px-3.5 py-3 text-[11px] text-[#6b6152]">
+                {t("subscription.planCard.noQuotas")}
               </div>
             ) : (
               quotas.map((metric) => (
@@ -100,14 +101,14 @@ export function CurrentPlanCard({
         </div>
 
         <div className="p-5 sm:p-6">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-            Included capabilities
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+            {t("subscription.planCard.capabilities")}
           </div>
 
           <div className="mt-4 space-y-2.5">
             {features.length === 0 ? (
-              <div className="rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-3 text-[12px] text-[var(--color-text-secondary)]">
-                No feature configuration supplied.
+              <div className="rounded-[9px] border border-[#e1d5bc] bg-white px-3.5 py-3 text-[11px] text-[#6b6152]">
+                {t("subscription.planCard.noFeatures")}
               </div>
             ) : (
               features.map(([feature, enabled]) => (

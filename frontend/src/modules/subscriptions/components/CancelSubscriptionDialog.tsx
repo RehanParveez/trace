@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {Button, Icon, Modal,
 } from "../../organizations/components/OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface CancelSubscriptionDialogProps {
   isSubmitting?: boolean;
@@ -16,12 +17,14 @@ export function CancelSubscriptionDialog({
   onConfirm,
   onClose,
 }: CancelSubscriptionDialogProps) {
+  const { t } = useTranslation();
+
   const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
 
   return (
     <Modal
-      title="Cancel subscription"
-      description="Choose when the organization's subscription should become inactive."
+      title={t("subscription.cancel.title")}
+      description={t("subscription.cancel.description")}
       onClose={onClose}
     >
       <div className="space-y-3.5">
@@ -40,15 +43,15 @@ export function CancelSubscriptionDialog({
             />
           </div>
 
+
           <div className="min-w-0">
             <div className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">
-              Cancel at period end
+              {t("subscription.cancel.atPeriodEnd")}
             </div>
 
+
             <div className="mt-1 text-[12px] leading-4 text-[var(--color-text-secondary)]">
-              The organization keeps access through
-              the current billing period, then the
-              subscription is marked for cancellation.
+              {t("subscription.cancel.atPeriodEndDesc")}
             </div>
           </div>
         </button>
@@ -70,13 +73,11 @@ export function CancelSubscriptionDialog({
 
           <div className="min-w-0">
             <div className="text-[13.5px] font-semibold text-[var(--color-danger)]">
-              Cancel immediately
+              {t("subscription.cancel.immediately")}
             </div>
 
             <div className="mt-1 text-[12px] leading-4 text-[var(--color-text-secondary)]">
-              The subscription becomes cancelled
-              immediately and access to subscription-
-              controlled operations may stop.
+              {t("subscription.cancel.immediatelyDesc")}
             </div>
           </div>
         </button>
@@ -87,7 +88,7 @@ export function CancelSubscriptionDialog({
             onClick={onClose}
             disabled={isSubmitting}
           >
-            Keep subscription
+            {t("subscription.cancel.keep")}
           </Button>
         </div>
       </div>

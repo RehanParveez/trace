@@ -6,6 +6,7 @@ import { AuthShell } from "../components/AuthShell";
 import { PasswordStrength, isPasswordStrong } from "../components/PasswordStrength";
 import { useRegister } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
+import { useTranslation } from "react-i18next";
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export function RegisterPage() {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const passwordsMatch = password === confirmation;
+  const { t } = useTranslation();
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -50,26 +52,26 @@ export function RegisterPage() {
 
   return (
     <AuthShell
-      eyebrow="Create workspace"
+      eyebrow={t("auth.register.eyebrow")}
       title={
-        <>
-          Start with a
-          <br />
-          clear
-          <em className="text-[var(--color-trace-gold-dark)]">
-            record.
-          </em>
-        </>
+       <>
+        {t("auth.register.titleLine1")}
+        <br />
+        {t("auth.register.titleLine2")}
+        <em className="text-[var(--color-trace-gold-dark)]">
+          {t("auth.register.titleEm")}
+        </em>
+       </>
       }
-      description="Create your Trace workspace and bring your project information into one operational system."
+      description={t("auth.register.description")}
       footer={
         <p className="text-center text-[12px] text-[#6B6152]">
-          Already have an account?{" "}
+          {t("auth.register.hasAccount")}{" "}
           <Link
             to="/login"
             className="font-bold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-          Sign in
+          {t("auth.register.signIn")}
           </Link>
         </p>
       }
@@ -90,7 +92,7 @@ export function RegisterPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           <AuthField
             id="first_name"
-            label="First name"
+            label={t("auth.register.firstName")}
             placeholder="First name"
             autoComplete="given-name"
             value={firstName}
@@ -102,7 +104,7 @@ export function RegisterPage() {
 
           <AuthField
             id="last_name"
-            label="Last name"
+            label={t("auth.register.lastName")}
             placeholder="Last name"
             autoComplete="family-name"
             value={lastName}
@@ -116,7 +118,7 @@ export function RegisterPage() {
         <AuthField
           id="email"
           type="email"
-          label="Work email"
+          label={t("auth.register.email")}
           placeholder="you@company.com"
           autoComplete="email"
           value={email}
@@ -128,7 +130,7 @@ export function RegisterPage() {
 
         <AuthField
           id="organization_name"
-          label="Organization"
+          label={t("auth.register.organization")}
           placeholder="Your construction company"
           value={organizationName}
           onChange={(event) =>
@@ -140,7 +142,7 @@ export function RegisterPage() {
         <AuthField
           id="password"
           type="password"
-          label="Password"
+          label={t("auth.register.password")}
           placeholder="Create a strong password"
           autoComplete="new-password"
           value={password}
@@ -159,7 +161,7 @@ export function RegisterPage() {
         <AuthField
           id="password_confirmation"
           type="password"
-          label="Confirm password"
+          label={t("auth.register.confirm")}
           placeholder="Repeat your password"
           autoComplete="new-password"
           value={confirmation}
@@ -167,9 +169,9 @@ export function RegisterPage() {
             setConfirmation(event.target.value)
           }
           error={
-            confirmation && !passwordsMatch
-              ? "Passwords do not match."
-              : undefined
+           confirmation && !passwordsMatch
+            ? t("auth.password.mismatch")
+            : undefined
           }
           required
         />
@@ -187,8 +189,8 @@ export function RegisterPage() {
           }
           className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
           {register.isPending
-            ? "Creating workspace…"
-            : "Create Trace workspace"}
+           ? t("auth.register.submitting")
+           : t("auth.register.submit")}
         </button>
       </form>
     </AuthShell>

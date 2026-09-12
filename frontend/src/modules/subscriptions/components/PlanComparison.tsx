@@ -4,6 +4,7 @@ import {Badge, Button, Icon, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import {formatPrice, formatQuota,
 } from "../utils/subscription.utils";
+import { useTranslation } from "react-i18next";
 
 interface PlanComparisonProps {
   plans: Plan[];
@@ -36,17 +37,19 @@ export function PlanComparison({
   canManage,
   onChangePlan,
 }: PlanComparisonProps) {
+  const { t } = useTranslation();
+
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="PLAN CATALOG"
-        title="Available plans"
-        description="Compare the public plans configured by the subscription service."
+        eyebrow={t("subscription.comparison.eyebrow")}
+        title={t("subscription.comparison.title")}
+        description={t("subscription.comparison.description")}
         action={
           <Badge tone="gold">
             {billingInterval === "YEARLY"
-              ? "Yearly"
-              : "Monthly"}
+              ? t("subscription.interval.yearly")
+              : t("subscription.interval.monthly")}
           </Badge>
         }
       />
@@ -88,7 +91,7 @@ export function PlanComparison({
 
                 {current ? (
                   <Badge tone="green">
-                    Current
+                    {t("subscription.changePlan.current")}
                   </Badge>
                 ) : null}
               </div>
@@ -102,19 +105,17 @@ export function PlanComparison({
                 </span>
 
                 {numericPrice !== 0 ? (
-                  <span className="ml-1.5 text-[11px] text-[var(--color-text-secondary)]">
-                    /
-                    {billingInterval ===
-                    "YEARLY"
-                      ? " year"
-                      : " month"}
+                  <span className="ml-1.5 text-[10px] text-[#7c7060]">
+                    {billingInterval === "YEARLY"
+                      ? t("subscription.comparison.perYear")
+                      : t("subscription.comparison.perMonth")}
                   </span>
                 ) : null}
               </div>
 
               <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-                  Resource limits
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+                  {t("subscription.comparison.resourceLimits")}
                 </div>
 
                 <div className="mt-3 space-y-2.5">
@@ -146,8 +147,8 @@ export function PlanComparison({
               </div>
 
               <div className="mt-5 border-t border-[var(--color-border)] pt-4">
-                <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-                  Included capabilities
+                <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+                  {t("subscription.comparison.includedCapabilities")}
                 </div>
 
                 <div className="mt-3 space-y-2.5">
@@ -189,25 +190,19 @@ export function PlanComparison({
 
               <div className="mt-auto pt-6">
                 {current ? (
-                  <Button
-                    variant="ghost"
-                    disabled
-                    className="w-full"
-                  >
-                    Current plan
+                  <Button variant="ghost" disabled className="w-full">
+                    {t("subscription.comparison.currentPlan")}
                   </Button>
                 ) : (
                   <Button
                     variant="primary"
                     disabled={!canManage}
-                    onClick={() =>
-                      onChangePlan(plan)
-                    }
+                    onClick={() => onChangePlan(plan)}
                     className="w-full"
                   >
                     {canManage
-                      ? "Select plan"
-                      : "No permission"}
+                      ? t("subscription.comparison.selectPlan")
+                      : t("subscription.comparison.noPermission")}
                   </Button>
                 )}
               </div>

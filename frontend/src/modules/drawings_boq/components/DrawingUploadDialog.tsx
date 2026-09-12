@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Button, Icon, Modal } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
+import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import { useUploadDrawing } from "../hooks";
 import { formatFileSize } from "../utils/drawings-boq.utils";
 
@@ -11,6 +12,7 @@ interface DrawingUploadDialogProps {
 
 export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogProps) {
   const upload = useUploadDrawing(projectId);
+  const drawingQuota = useQuotaStatus("drawings");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef(crypto.randomUUID());
@@ -45,6 +47,12 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
   return (
     <Modal title="Upload drawing" description="Upload an IFC drawing to generate a draft bill of quantities." onClose={onClose}>
       <div className="space-y-4">
+        {drawingQuota.isAtLimit ? (
+          <QuotaLimitNotice
+            message={`You've reached your plan's limit of ${drawingQuota.limit} drawing${drawingQuota.limit === 1 ? "" : "s"}. Upgrade to upload more.`}
+          />
+        ) : null}
+
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
@@ -63,7 +71,7 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button variant="ghost" onClick={onClose} disabled={upload.isPending}>Cancel</Button>
-          <Button variant="primary" onClick={submit} disabled={!file || upload.isPending}>
+          <Button variant="primary" onClick={submit} disabled={!file || upload.isPending || drawingQuota.isAtLimit}>
             {upload.isPending ? "Uploading…" : "Upload & parse"}
           </Button>
         </div>

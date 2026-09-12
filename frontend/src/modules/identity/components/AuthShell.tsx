@@ -1,6 +1,7 @@
 import type {PropsWithChildren, ReactNode,
 } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 type AuthShellProps =
   PropsWithChildren<{
@@ -17,6 +18,8 @@ export function AuthShell({
   footer,
   children,
 }: AuthShellProps) {
+  const { t } = useTranslation();
+
   return (
     <main className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)]">
       <div className="grid min-h-screen lg:grid-cols-[0.92fr_1.08fr]">
@@ -59,7 +62,7 @@ export function AuthShell({
                 </span>
 
                 <span className="block text-[10px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-                  Construction Intelligence
+                  {t("auth.shell.constructionIntelligence")}
                 </span>
               </span>
             </Link>
@@ -67,27 +70,25 @@ export function AuthShell({
 
           <div className="relative max-w-md">
             <p className="mb-4 font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-trace-gold)]">
-              One record of truth
+              {t("auth.shell.oneRecord")}
             </p>
 
             <h2 className="font-['Fraunces'] text-4xl leading-[1.08] text-white xl:text-5xl">
-              The work stays moving when the record stays clear.
+              {t("auth.shell.headline")}
             </h2>
 
             <p className="mt-4 max-w-sm text-[15px] leading-7 text-[var(--color-text-muted)]">
-              Drawings, quantities, site progress,
-              procurement and project intelligence
-              connected in one workspace.
+              {t("auth.shell.sub")}
             </p>
           </div>
 
           <div className="relative flex items-center justify-between border-t border-white/10 pt-4">
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-              TRACE / IDENTITY
+              {t("auth.shell.traceIdentity")}
             </span>
 
             <span className="font-mono text-[10px] text-[var(--color-text-muted)]">
-              SECURE WORKSPACE
+              {t("auth.shell.secureWorkspace")}
             </span>
           </div>
         </aside>

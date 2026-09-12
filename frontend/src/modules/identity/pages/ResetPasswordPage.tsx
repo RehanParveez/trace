@@ -8,12 +8,15 @@ import { AuthShell } from "../components/AuthShell";
 import { PasswordStrength, isPasswordStrong } from "../components/PasswordStrength";
 import { useResetPassword } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
+import { useTranslation } from "react-i18next";
 
 export function ResetPasswordPage() {
   const navigate = useNavigate();
 
   const [params] =
     useSearchParams();
+
+  const { t } = useTranslation();
 
   const reset =
     useResetPassword();
@@ -70,16 +73,16 @@ export function ResetPasswordPage() {
   if (!token) {
     return (
       <AuthShell
-        eyebrow="Password recovery"
+        eyebrow={t("auth.reset.eyebrow")}
         title={
-          <>
-            Reset link
-            <br />
-            <em className="text-[var(--color-trace-gold-dark)]">
-              unavailable.
-            </em>
-          </>
-        }
+         <>
+         {t("auth.reset.titleLine1")}
+         <br />
+         <em className="text-[var(--color-trace-gold-dark)]">
+          {t("auth.reset.titleEm")}
+         </em>
+        </>
+      }
         description="The password-reset link is missing or incomplete."
       >
         <AuthNotice tone="error">
@@ -91,7 +94,7 @@ export function ResetPasswordPage() {
           to="/forgot-password"
           className="mt-5 block text-center text-[12px] font-bold text-[var(--color-trace-gold-dark)]"
         >
-          Request another link
+          {t("auth.reset.requestAnother")}
         </Link>
       </AuthShell>
     );
@@ -99,24 +102,24 @@ export function ResetPasswordPage() {
 
   return (
     <AuthShell
-      eyebrow="Password recovery"
+      eyebrow={t("auth.reset.eyebrow")}
       title={
-        <>
-          Create a new
-          <br />
-          <em className="text-[var(--color-trace-gold-dark)]">
-            password.
-          </em>
-        </>
-      }
-      description="Choose a strong password that protects your Trace workspace."
+       <>
+        {t("auth.reset.titleLine1")}
+        <br />
+        <em className="text-[var(--color-trace-gold-dark)]">
+         {t("auth.reset.titleEm")}
+        </em>
+      </>
+    }
+      description={t("auth.reset.description")}
       footer={
         <p className="text-center text-[12px] text-[#6B6152]">
           <Link
             to="/login"
             className="font-bold text-[var(--color-trace-gold-dark)]"
           >
-            Return to sign in
+            {t("auth.reset.return")}
           </Link>
         </p>
       }
@@ -129,7 +132,7 @@ export function ResetPasswordPage() {
           <AuthNotice tone="error">
             {getApiErrorMessage(
               reset.error,
-              "The reset link is invalid or expired.",
+              t("auth.reset.error"),
             )}
           </AuthNotice>
         )}
@@ -137,7 +140,7 @@ export function ResetPasswordPage() {
         <AuthField
           id="password"
           type="password"
-          label="New password"
+          label={t("auth.reset.newPassword")}
           placeholder="Create a strong password"
           autoComplete="new-password"
           value={password}
@@ -158,7 +161,7 @@ export function ResetPasswordPage() {
         <AuthField
           id="password_confirmation"
           type="password"
-          label="Confirm password"
+          label={t("auth.reset.confirm")}
           placeholder="Repeat your password"
           autoComplete="new-password"
           value={confirmation}
@@ -170,7 +173,7 @@ export function ResetPasswordPage() {
           error={
             confirmation &&
             !matches
-              ? "Passwords do not match."
+              ? t("auth.password.mismatch")
               : undefined
           }
           required
@@ -185,8 +188,8 @@ export function ResetPasswordPage() {
           }
           className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
           {reset.isPending
-            ? "Updating password…"
-            : "Set new password"}
+            ? t("auth.reset.submitting")
+            : t("auth.reset.submit")}
         </button>
       </form>
     </AuthShell>

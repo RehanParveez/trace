@@ -6,6 +6,7 @@ import {useClients, useCreateProject, useDeleteProject, useProjects,
 } from "../hooks";
 import type { Project, ProjectStatus } from "../types/project.types";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import { ClientTable } from "../components/ClientTable";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectCard } from "../components/ProjectCard";
@@ -27,6 +28,9 @@ export function ProjectsPage() {
   const canCreate = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_CREATE);
   const canUpdate = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_UPDATE);
   const canDelete = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_DELETE);
+
+  const projectQuota = useQuotaStatus("projects");
+  const blockedByQuota = projectQuota.isAtLimit;
 
   const projects = projectsQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
@@ -113,12 +117,23 @@ export function ProjectsPage() {
         description="Manage construction projects, clients, project teams and delivery milestones."
         actions={
           canCreate ? (
-            <Button variant="primary" onClick={openCreate}>
+            <Button
+              variant="primary"
+              onClick={openCreate}
+              disabled={blockedByQuota}
+              title={blockedByQuota ? "You've reached your plan's project limit" : undefined}
+            >
               Create project
             </Button>
           ) : null
         }
       />
+
+      {canCreate && blockedByQuota ? (
+        <QuotaLimitNotice
+          message={`You've reached your plan's limit of ${projectQuota.limit} project${projectQuota.limit === 1 ? "" : "s"}. Upgrade to add more.`}
+        />
+      ) : null}
 
       <section>
         <SectionDivider

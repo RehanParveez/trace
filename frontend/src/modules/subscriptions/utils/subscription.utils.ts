@@ -1,25 +1,21 @@
 import type {BillingInterval, SubscriptionStatus,
 } from "../types/subscription.types";
+import i18n from "../../../i18n";
 
 export function formatSubscriptionStatus(
   status: SubscriptionStatus,
 ): string {
   switch (status) {
     case "TRIALING":
-      return "Trialing";
-
+      return i18n.t("subscription.status.trialing");
     case "ACTIVE":
-      return "Active";
-
+      return i18n.t("subscription.status.active");
     case "PAST_DUE":
-      return "Past due";
-
+      return i18n.t("subscription.status.pastDue");
     case "CANCELLED":
-      return "Cancelled";
-
+      return i18n.t("subscription.status.cancelled");
     case "EXPIRED":
-      return "Expired";
-
+      return i18n.t("subscription.status.expired");
     default:
       return status;
   }
@@ -48,7 +44,9 @@ export function getSubscriptionStatusTone(
 export function formatBillingInterval(
   interval: BillingInterval,
 ): string {
-  return interval === "YEARLY" ? "Yearly" : "Monthly";
+  return interval === "YEARLY"
+    ? i18n.t("subscription.interval.yearly")
+    : i18n.t("subscription.interval.monthly");
 }
 
 export function formatPrice(
@@ -59,7 +57,7 @@ export function formatPrice(
     typeof price === "string" ? Number(price) : price;
 
   if (!Number.isFinite(numericPrice) || numericPrice === 0) {
-    return "Free";
+    return i18n.t("subscription.free");
   }
   return new Intl.NumberFormat("en-PK", {
     style: "currency",
@@ -111,7 +109,7 @@ export function formatQuota(
   value: number | null,
 ): string {
   if (value === null) {
-    return "Unlimited";
+    return i18n.t("subscription.unlimited");
   }
 
   if (metric === "storage_bytes") {
@@ -126,27 +124,22 @@ export function formatMetricLabel(
 ): string {
   switch (metric) {
     case "projects":
-      return "Projects";
-
+      return i18n.t("subscription.metric.projects");
     case "storage_bytes":
-      return "Storage";
-
+      return i18n.t("subscription.metric.storage");
     case "site_photos":
-      return "Site photos";
-
+      return i18n.t("subscription.metric.sitePhotos");
     case "drawings":
-      return "Drawings";
-
+      return i18n.t("subscription.metric.drawings");
     case "ai_requests":
-      return "AI requests";
-
+      return i18n.t("subscription.metric.aiRequests");
     default:
       return metric
         .replaceAll("_", " ")
         .replace(/\b\w/g, (letter) =>
           letter.toUpperCase(),
       );
-   }
+  }
 }
 
 export function createIdempotencyKey(): string {

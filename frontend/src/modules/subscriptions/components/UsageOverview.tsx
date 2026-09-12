@@ -3,6 +3,7 @@ import {Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import {formatMetricLabel, formatQuota,
 } from "../utils/subscription.utils";
+import { useTranslation } from "react-i18next";
 
 interface UsageOverviewProps {
   metrics: UsageMetric[];
@@ -11,18 +12,20 @@ interface UsageOverviewProps {
 export function UsageOverview({
   metrics,
 }: UsageOverviewProps) {
+  const { t } = useTranslation();
+
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="CURRENT PERIOD"
-        title="Usage"
-        description="Usage reported by the subscription service for the current billing period."
+        eyebrow={t("subscription.usage.eyebrow")}
+        title={t("subscription.usage.title")}
+        description={t("subscription.usage.description")}
       />
 
       <div className="divide-y divide-[var(--color-border)] bg-[var(--color-surface-muted)]">
         {metrics.length === 0 ? (
-          <div className="p-5 sm:p-6 text-[12px] text-[var(--color-text-secondary)]">
-            No usage metrics have been reported for this period.
+          <div className="p-5 sm:p-6 text-[11px] text-[#756957]">
+            {t("subscription.usage.empty")}
           </div>
         ) : (
           metrics.map((metric) => {
@@ -56,15 +59,15 @@ export function UsageOverview({
                       )}
                     </div>
 
-                    <div className="mt-1.5 text-[12px] text-[var(--color-text-secondary)]">
+                    <div className="mt-1.5 text-[10.5px] text-[#756957]">
                       {metric.limit === null
-                        ? `${metric.used.toLocaleString("en-PK")} used`
-                        : `${metric.used.toLocaleString(
-                            "en-PK",
-                          )} of ${formatQuota(
-                            metric.metric,
-                            metric.limit,
-                          )}`}
+                        ? t("subscription.usage.used", {
+                            used: metric.used.toLocaleString("en-PK"),
+                          })
+                        : t("subscription.usage.usedOf", {
+                            used: metric.used.toLocaleString("en-PK"),
+                            limit: formatQuota(metric.metric, metric.limit),
+                          })}
                     </div>
                   </div>
 
@@ -79,18 +82,15 @@ export function UsageOverview({
                       }`}
                     >
                       {metric.limit === null
-                        ? "Unlimited"
-                        : `${Math.round(
-                            percentage ?? 0,
-                          )}%`}
+                        ? t("subscription.usage.unlimited")
+                        : `${Math.round(percentage ?? 0)}%`}
                     </div>
 
                     {metric.remaining !== null ? (
-                      <div className="mt-1 font-mono text-[11px] text-[var(--color-text-muted)]">
-                        {metric.remaining.toLocaleString(
-                          "en-PK",
-                        )}{" "}
-                        remaining
+                      <div className="mt-1 font-mono text-[9.5px] text-[#9a8c75]">
+                        {t("subscription.usage.remaining", {
+                          count: metric.remaining.toLocaleString("en-PK"),
+                        })}
                       </div>
                     ) : null}
                   </div>

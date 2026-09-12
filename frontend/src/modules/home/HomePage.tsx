@@ -135,100 +135,111 @@ const roles = [
 function DashboardMockup() {
   return (
     <div className="lp-dashboard">
-      <div className="lp-dash-top">
-        <div className="lp-dash-brand">
+      <aside className="lp-dash-nav">
+        <div className="lp-dash-nav-brand">
           <span className="lp-mini-mark">T</span>
           <span>Trace</span>
         </div>
 
-        <span className="lp-dash-user">
-          Company Admin · EN
-        </span>
-      </div>
-
-      <div className="lp-dash-body">
-        <aside className="lp-dash-side">
+        <div className="lp-dash-nav-group">
+          <small>WORKSPACE</small>
           <span className="active">Overview</span>
+        </div>
+
+        <div className="lp-dash-nav-group">
+          <small>PROJECTS</small>
           <span>Projects</span>
           <span>Budgets</span>
-          <span>Site reports</span>
           <span>Procurement</span>
           <span>Expenses</span>
-        </aside>
+        </div>
 
-        <div className="lp-dash-main">
-          <div className="lp-dash-heading">
-            <div>
-              <small>PROJECT CONTROL</small>
-              <strong>Good morning, Trace</strong>
-            </div>
+        <div className="lp-dash-nav-group">
+          <small>INTELLIGENCE</small>
+          <span>AI activity</span>
+          <span>Audit log</span>
+        </div>
+      </aside>
 
-            <span className="lp-demo-pill">
-              LIVE WORKSPACE
-            </span>
+      <div className="lp-dash-main">
+        <div className="lp-dash-heading">
+          <div>
+            <small>GOOD MORNING</small>
+            <strong>Metro Builders</strong>
           </div>
 
-          <div className="lp-kpis">
-            <div>
-              <small>ACTIVE PROJECTS</small>
-              <b>08</b>
-              <em>+2 this month</em>
+          <span className="lp-demo-pill">
+            LIVE WORKSPACE
+          </span>
+        </div>
+
+        <div className="lp-kpis">
+          <div>
+            <small>APPROVED BUDGET</small>
+            <b>Rs 84.6M</b>
+          </div>
+
+          <div>
+            <small>COMMITTED</small>
+            <b>Rs 12.4M</b>
+          </div>
+
+          <div>
+            <small>SPENT</small>
+            <b>Rs 38.9M</b>
+          </div>
+
+          <div>
+            <small>REMAINING</small>
+            <b className="lp-kpi-good">Rs 33.3M</b>
+          </div>
+        </div>
+
+        <div className="lp-dash-grid">
+          <div className="lp-project-card">
+            <div className="lp-card-head">
+              <b>Project health</b>
+              <span>6 active</span>
             </div>
 
-            <div>
-              <small>APPROVED BUDGET</small>
-              <b>Rs 84.6M</b>
-              <em>91% allocated</em>
+            <div className="lp-project-row">
+              <span>Shopping Plaza</span>
+              <div className="lp-mini-bar"><i style={{ width: "72%" }} /></div>
+              <b>72%</b>
             </div>
 
-            <div>
-              <small>PROJECT PROGRESS</small>
-              <b>67%</b>
-              <em>+4.8% this month</em>
+            <div className="lp-project-row">
+              <span>Faisalabad Warehouse</span>
+              <div className="lp-mini-bar"><i style={{ width: "41%" }} /></div>
+              <b>41%</b>
+            </div>
+
+            <div className="lp-project-row">
+              <span>Gulberg Residential</span>
+              <div className="lp-mini-bar"><i style={{ width: "88%" }} /></div>
+              <b>88%</b>
             </div>
           </div>
 
-          <div className="lp-dash-grid">
-            <div className="lp-chart-card">
-              <div className="lp-card-head">
-                <b>Project cost & progress</b>
-                <span>Last 6 months</span>
-              </div>
-
-              <div className="lp-chart">
-                <i />
-                <i />
-                <i />
-                <i />
-                <i />
-                <i />
-                <div className="lp-chart-line" />
-              </div>
+          <div className="lp-attention-card">
+            <div className="lp-card-head">
+              <b>Needs attention</b>
+              <span>4 open</span>
             </div>
 
-            <div className="lp-project-card">
-              <div className="lp-card-head">
-                <b>Projects needing attention</b>
-                <span>View all</span>
-              </div>
+            <div className="lp-attention-row">
+              <i className="lp-dot-gold" />
+              3 progress claims awaiting review
+            </div>
 
-              <div className="lp-project-row">
-                <span>Highland Business Park</span>
-                <b>72%</b>
-                <small>Budget watch</small>
-              </div>
+            <div className="lp-attention-row">
+              <i className="lp-dot-gold" />
+              7 material mappings need attention
+            </div>
 
-              <div className="lp-project-row">
-                <span>Riverside Mall</span>
-                <b>41%</b>
-                <small>2 pending receipts</small>
-              </div>
-
-              <div className="lp-project-row">
-                <span>North Avenue Villas</span>
-                <b>88%</b>
-                <small>On track</small>
-              </div>
+            <div className="lp-attention-row">
+              <i className="lp-dot-gold" />
+              2 procurement requests pending
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { ErrorState, LoadingState, Panel } from "../../organizations/components/
 import { useBOQVersions, useDrawings } from "../hooks";
 import type { BOQVersion, Drawing } from "../types/drawings-boq.types";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useQuotaStatus } from "../../subscriptions";
 import { DrawingTable } from "./DrawingTable";
 import { DrawingUploadDialog } from "./DrawingUploadDialog";
 import { DrawingElementsDialog } from "./DrawingElementsDialog";
@@ -33,6 +34,7 @@ export function DrawingsBoqSection({ projectId }: DrawingsBoqSectionProps) {
   const canApproveBOQ = permissions.includes(IDENTITY_PERMISSIONS.BOQ_APPROVE);
   const canCreateItem = permissions.includes(IDENTITY_PERMISSIONS.BOQ_ITEM_CREATE);
   const canExport = permissions.includes(IDENTITY_PERMISSIONS.BOQ_EXPORT);
+  const drawingQuota = useQuotaStatus("drawings");
 
   const boqVersions = boqVersionsQuery.data ?? [];
   const selectedVersion: BOQVersion | undefined = boqVersions.find((v) => v.id === selectedVersionId);
@@ -56,7 +58,13 @@ export function DrawingsBoqSection({ projectId }: DrawingsBoqSectionProps) {
 
   return (
     <div className="space-y-5">
-      <DrawingTable drawings={drawingsQuery.data ?? []} canUpload={canUpload} onUpload={() => setUploadOpen(true)} onView={setViewingDrawing} />
+      <DrawingTable 
+        drawings={drawingsQuery.data ?? []}
+        canUpload={canUpload}
+        quotaBlocked={drawingQuota.isAtLimit}
+        onUpload={() => setUploadOpen(true)}
+        onView={setViewingDrawing}
+      />
 
       {boqVersions.length > 0 ? (
         <Panel className="overflow-hidden">

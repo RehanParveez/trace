@@ -14,8 +14,10 @@ import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import {formatBillingInterval, formatDate, formatSubscriptionStatus,
 } from "../utils/subscription.utils";
+import { useTranslation } from "react-i18next";
 
 export function SubscriptionPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const [changePlanOpen, setChangePlanOpen] =
     useState(false);
@@ -58,8 +60,8 @@ export function SubscriptionPage() {
   if (!canRead && permissions.length > 0) {
     return (
       <ErrorState
-        title="Subscription access unavailable"
-        description="You do not have permission to view this organization's subscription."
+        title={t("subscription.accessUnavailable.title")}
+        description={t("subscription.accessUnavailable.description")}
       />
     );
   }
@@ -82,8 +84,8 @@ export function SubscriptionPage() {
   ) {
     return (
       <ErrorState
-        title="We couldn't load subscription details"
-        description="The subscription, plans or usage information could not be loaded."
+        title={t("subscription.loadError.title")}
+        description={t("subscription.loadError.description")}
         onRetry={() => {
           void subscriptionSummaryQuery.refetch();
           void plansQuery.refetch();
@@ -170,9 +172,9 @@ export function SubscriptionPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="SUBSCRIPTION & BILLING"
-        title="Subscription control"
-        description="Manage the organization's Trace plan, billing interval and current-period usage."
+        eyebrow={t("subscription.page.eyebrow")}
+        title={t("subscription.page.title")}
+        description={t("subscription.page.description")}
       />
 
       <SubscriptionHeader
@@ -190,15 +192,15 @@ export function SubscriptionPage() {
 
       <section>
         <SectionDivider
-          title="Subscription pulse"
-          description="Current plan state and resource consumption across this organization."
+          title={t("subscription.pulse.title")}
+          description={t("subscription.pulse.description")}
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Plan"
+            label={t("subscription.stat.plan")}
             value={currentPlan.name}
-            note="Current subscription"
+            note={t("subscription.stat.planNote")}
             icon="building"
             tone="blue"
             actionLabel={canManage ? "Change plan" : undefined}
@@ -206,14 +208,14 @@ export function SubscriptionPage() {
           />
 
           <StatCard
-            label="Status"
+            label={t("subscription.stat.status")}
             value={formatSubscriptionStatus(
               subscription.status,
             )}
             note={
               subscription.cancel_at_period_end
-                ? "Cancellation scheduled"
-                : "Subscription state"
+                ? t("subscription.stat.statusNoteScheduled")
+                : t("subscription.stat.statusNote")
             }
             icon="check"
             tone={
@@ -227,28 +229,28 @@ export function SubscriptionPage() {
           />
 
           <StatCard
-            label="Billing"
+            label={t("subscription.stat.billing")}
             value={formatBillingInterval(
               subscription.billing_interval,
             )}
-            note={`Through ${formatDate(
-              subscription.current_period_end,
-            )}`}
+            note={t("subscription.stat.billingNote", {
+              date: formatDate(subscription.current_period_end),
+            })}
             icon="settings"
             tone="gold"
           />
 
           <StatCard
-            label="Usage"
+            label={t("subscription.stat.usage")}
             value={totalUsed}
             note={
               nearLimitCount > 0
-                ? `${nearLimitCount} metric${
-                    nearLimitCount === 1
-                      ? ""
-                      : "s"
-                  } near limit`
-                : `${activeFeatures} enabled plan capabilities`
+                ? t("subscription.stat.usageNearLimit", {
+                    count: nearLimitCount,
+                  })
+                : t("subscription.stat.usageCapabilities", {
+                    count: activeFeatures,
+                  })
             }
             icon="shield"
             tone={
@@ -268,12 +270,11 @@ export function SubscriptionPage() {
 
       <section id="usage-overview">
         <SectionDivider
-          title="Current-period usage"
-          description={`Usage from ${formatDate(
-            usage.period_start,
-          )} through ${formatDate(
-            usage.period_end,
-          )}.`}
+          title={t("subscription.usageSection.title")}
+          description={t("subscription.usageSection.description", {
+            start: formatDate(usage.period_start),
+            end: formatDate(usage.period_end),
+          })}
         />
 
         <UsageOverview
@@ -283,8 +284,8 @@ export function SubscriptionPage() {
 
       <section>
         <SectionDivider
-          title="Current plan"
-          description="Capabilities and quotas attached to the organization's active plan."
+          title={t("subscription.currentPlanSection.title")}
+          description={t("subscription.currentPlanSection.description")}
         />
 
         <CurrentPlanCard
@@ -294,8 +295,8 @@ export function SubscriptionPage() {
 
       <section>
         <SectionDivider
-          title="Available plans"
-          description="Compare the plans currently published by the Trace subscription service."
+          title={t("subscription.availablePlansSection.title")}
+          description={t("subscription.availablePlansSection.description")}
         />
 
         <PlanComparison

@@ -6,6 +6,7 @@ export * from "./components/CurrentPlanCard";
 export * from "./components/PlanComparison";
 export * from "./components/SubscriptionHeader";
 export * from "./components/UsageOverview";
+export * from "./components/QuotaLimitNotice";
 
 export * from "./hooks";
 

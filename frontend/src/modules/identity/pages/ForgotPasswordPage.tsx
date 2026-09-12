@@ -7,6 +7,7 @@ import { AuthNotice } from "../components/AuthNotice";
 import { AuthShell } from "../components/AuthShell";
 import { useForgotPassword } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
+import { useTranslation } from "react-i18next";
 
 export function ForgotPasswordPage() {
   const forgot =
@@ -14,6 +15,8 @@ export function ForgotPasswordPage() {
 
   const [email, setEmail] =
     useState("");
+  
+  const { t } = useTranslation();
 
   function submit(
     event: React.FormEvent,
@@ -27,34 +30,32 @@ export function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      eyebrow="Account recovery"
+      eyebrow={t("auth.forgot.eyebrow")}
       title={
-        <>
-          Find your way
-          <br />
-          <em className="text-[var(--color-trace-gold-dark)]">
-            back.
-          </em>
-        </>
-      }
-      description="Enter your work email and Trace will send a secure password-reset link if the account is eligible."
+      <>
+       {t("auth.forgot.titleLine1")}
+       <br />
+       <em className="text-[var(--color-trace-gold-dark)]">
+         {t("auth.forgot.titleEm")}
+       </em>
+      </>
+     }
+      description={t("auth.forgot.description")}
       footer={
         <p className="text-center text-[12px] text-[#6B6152]">
-          Remember your password?{" "}
+          {t("auth.forgot.remember")}{" "}
           <Link
             to="/login"
             className="font-bold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-           Return to sign in
+           {t("auth.forgot.return")}
           </Link>
         </p>
       }
     >
       {forgot.isSuccess ? (
         <AuthNotice tone="success">
-          If an account exists for that email,
-          a password-reset message has been
-          sent.
+          {t("auth.forgot.success")}
         </AuthNotice>
       ) : (
         <form
@@ -64,7 +65,7 @@ export function ForgotPasswordPage() {
           {forgot.isError && (
             <AuthNotice tone="error">
               {getApiErrorMessage(
-                forgot.error,
+                t("auth.register.error"),
               )}
             </AuthNotice>
           )}

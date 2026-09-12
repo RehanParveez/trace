@@ -6,6 +6,7 @@ import { AuthNotice } from "../components/AuthNotice";
 import { AuthShell } from "../components/AuthShell";
 import { useResendVerification, useVerifyEmail } from "../hooks/useIdentity";
 import { getApiErrorMessage } from "../utils/api-error";
+import { useTranslation } from "react-i18next";
 
 export function VerifyEmailPage() {
   const [params] =
@@ -13,6 +14,8 @@ export function VerifyEmailPage() {
 
   const autoVerificationAttempted = 
     useRef(false);
+
+  const { t } = useTranslation();
 
   const verify =
     useVerifyEmail();
@@ -50,24 +53,24 @@ export function VerifyEmailPage() {
 
   return (
     <AuthShell
-      eyebrow="Email verification"
+      eyebrow={t("auth.verify.eyebrow")}
       title={
         <>
-          Confirm your
+          {t("auth.verify.title").split(" ").slice(0, 2).join(" ")}
           <br />
           <em className="text-[var(--color-trace-gold-dark)]">
-            email.
+            {t("auth.verify.title").split(" ").slice(2).join(" ")}
           </em>
         </>
       }
-      description="Email verification protects workspace access and keeps your organization record trustworthy."
+      description={t("auth.verify.description")}
       footer={
         <p className="text-center text-[12px] text-[#6B6152]">
           <Link
             to="/login"
             className="font-bold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-           Continue to sign in
+            {t("auth.verify.continue")}
           </Link>
         </p>
       }
@@ -75,15 +78,14 @@ export function VerifyEmailPage() {
       {verify.isSuccess ? (
         <div className="space-y-4">
           <AuthNotice tone="success">
-            Your email has been verified.
-            You can now sign in normally.
+            {t("auth.verify.success")}
           </AuthNotice>
 
           <Link
             to="/login"
             className="flex h-12 items-center justify-center rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)]"
           >
-            Continue to sign in
+            {t("auth.verify.continue")}
           </Link>
         </div>
       ) : (
@@ -95,7 +97,7 @@ export function VerifyEmailPage() {
             <AuthNotice tone="error">
               {getApiErrorMessage(
                 verify.error,
-                "The verification link is invalid or expired.",
+                t("auth.verify.error"),
               )}
             </AuthNotice>
           )}
@@ -104,12 +106,12 @@ export function VerifyEmailPage() {
             <div className="space-y-2 rounded-[9px] border border-[#E1D5BC] bg-[#F8F3E9] p-3.5">
               {resend.isSuccess ? (
                 <AuthNotice tone="success">
-                  If that account exists and isn't verified yet, a new link has been sent.
+                  {t("auth.verify.resendSuccess")}
                 </AuthNotice>
               ) : (
                 <>
                   <p className="text-[11.5px] text-[#6B6152]">
-                    Link expired? Request a new one.
+                    {t("auth.verify.expired")}
                   </p>
 
                   <div className="flex gap-2">
@@ -129,7 +131,7 @@ export function VerifyEmailPage() {
                       }
                       className="h-10 shrink-0 rounded-[8px] bg-[#0D1424] px-3.5 text-[11.5px] font-bold text-white disabled:opacity-50"
                     >
-                      {resend.isPending ? "Sending…" : "Resend"}
+                      {resend.isPending ? t("auth.verify.sending") : t("auth.verify.resend")}
                     </button>
                   </div>
                 </>
@@ -139,7 +141,7 @@ export function VerifyEmailPage() {
 
           <label className="block">
             <span className="mb-2 block text-[12px] font-semibold text-[#332A21]">
-              Verification token
+              {t("auth.verify.token")}
             </span>
 
             <textarea
@@ -172,8 +174,8 @@ export function VerifyEmailPage() {
             }
             className="h-12 w-full rounded-[var(--radius-sm)] bg-[var(--color-trace-gold)] text-[14px] font-semibold text-[var(--color-trace-navy)] transition hover:bg-[var(--color-trace-gold-dark)] disabled:cursor-not-allowed disabled:opacity-50">
             {verify.isPending
-              ? "Verifying…"
-              : "Verify email"}
+              ? t("auth.verify.submitting")
+              : t("auth.verify.submit")}
           </button>
         </form>
       )}

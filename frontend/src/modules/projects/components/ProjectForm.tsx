@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import {Button, Field, inputClass, Modal,
 } from "../../organizations/components/OrganizationUi";
+import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import {useCreateProject, useUpdateProject,
 } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
@@ -32,6 +33,8 @@ export function ProjectForm({
   const updateProject = useUpdateProject();
 
   const editing = Boolean(project);
+  const projectQuota = useQuotaStatus("projects");
+  const blockedByQuota = !editing && projectQuota.isAtLimit;
 
   const [name, setName] = useState(project?.name ?? "");
   const [code, setCode] = useState(project?.code ?? "");
@@ -222,6 +225,12 @@ export function ProjectForm({
           ) : null}
         </div>
 
+        {blockedByQuota ? (
+          <QuotaLimitNotice
+            message={`You've reached your plan's limit of ${projectQuota.limit} project${projectQuota.limit === 1 ? "" : "s"}. Upgrade to create more.`}
+          />
+        ) : null}
+
         {error ? (
           <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
             {error}
@@ -233,7 +242,7 @@ export function ProjectForm({
             Cancel
           </Button>
 
-          <Button type="submit" variant="primary" disabled={isSubmitting || !name.trim()}>
+          <Button type="submit" variant="primary" disabled={isSubmitting || !name.trim() || blockedByQuota}>
             {isSubmitting ? "Saving…" : editing ? "Save changes" : "Create project"}
           </Button>
         </div>

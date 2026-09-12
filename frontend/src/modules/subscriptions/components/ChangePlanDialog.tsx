@@ -4,6 +4,7 @@ import type { BillingInterval, Plan,
 import {Badge, Button, Field, Icon, Modal,
 } from "../../organizations/components/OrganizationUi";
 import { formatPrice } from "../utils/subscription.utils";
+import { useTranslation } from "react-i18next";
 
 interface ChangePlanDialogProps {
   plans: Plan[];
@@ -26,6 +27,8 @@ export function ChangePlanDialog({
   onSubmit,
   onClose,
 }: ChangePlanDialogProps) {
+  const { t } = useTranslation();
+
   const [planId, setPlanId] = useState(
     initialPlan?.id ??
       plans.find(
@@ -38,6 +41,7 @@ export function ChangePlanDialog({
     useState<BillingInterval>("MONTHLY");
   const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
 
+
   useEffect(() => {
     setPlanId(
       initialPlan?.id ??
@@ -48,14 +52,15 @@ export function ChangePlanDialog({
     );
   }, [initialPlan, currentPlanId, plans]);
 
+
   const selectedPlan = plans.find(
     (plan) => plan.id === planId,
   );
 
   return (
     <Modal
-      title="Change subscription plan"
-      description="Choose the plan and billing interval to apply to this organization."
+      title={t("subscription.changePlan.title")}
+      description={t("subscription.changePlan.description")}
       onClose={onClose}
     >
       <form
@@ -74,7 +79,7 @@ export function ChangePlanDialog({
         }}
       >
         <div className="space-y-5">
-          <Field label="Plan">
+          <Field label={t("subscription.changePlan.plan")}>
             <div className="space-y-2.5">
               {plans.map((plan) => {
                 const selected =
@@ -122,7 +127,7 @@ export function ChangePlanDialog({
                         {plan.id ===
                         currentPlanId ? (
                           <Badge tone="green">
-                            Current
+                            {t("subscription.changePlan.current")}
                           </Badge>
                         ) : null}
                       </div>
@@ -146,8 +151,8 @@ export function ChangePlanDialog({
                       <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
                         {billingInterval ===
                         "YEARLY"
-                          ? "per year"
-                          : "per month"}
+                          ? t("subscription.changePlan.perYear")
+                          : t("subscription.changePlan.perMonth")}
                       </div>
                     </div>
                   </label>
@@ -156,7 +161,7 @@ export function ChangePlanDialog({
             </div>
           </Field>
 
-          <Field label="Billing interval">
+          <Field label={t("subscription.changePlan.billingInterval")}>
             <div className="grid grid-cols-2 gap-2.5">
               {(
                 [
@@ -190,14 +195,14 @@ export function ChangePlanDialog({
                       }`}
                     >
                       {interval === "YEARLY"
-                        ? "Yearly"
-                        : "Monthly"}
+                        ? t("subscription.changePlan.yearly")
+                        : t("subscription.changePlan.monthly")}
                     </div>
 
                     <div className="mt-1 text-[11px] text-[var(--color-text-secondary)]">
                       {interval === "YEARLY"
-                        ? "Annual billing"
-                        : "Monthly billing"}
+                        ? t("subscription.changePlan.yearlyBilling")
+                        : t("subscription.changePlan.monthlyBilling")}
                     </div>
                   </button>
                 );
@@ -216,12 +221,9 @@ export function ChangePlanDialog({
                 </div>
 
                 <div className="text-[12px] leading-5 text-[var(--color-info)]">
-                  Changing to{" "}
-                  <strong className="font-semibold">
-                    {selectedPlan.name}
-                  </strong>{" "}
-                  will update the organization's
-                  subscription plan.
+                  {t("subscription.changePlan.changingTo", {
+                    name: selectedPlan.name,
+                  })}
                 </div>
               </div>
             </div>
@@ -233,7 +235,7 @@ export function ChangePlanDialog({
               variant="ghost"
               onClick={onClose}
             >
-              Cancel
+              {t("subscription.changePlan.cancel")}
             </Button>
 
             <Button
@@ -246,8 +248,8 @@ export function ChangePlanDialog({
               }
             >
               {isSubmitting
-                ? "Saving…"
-                : "Save plan"}
+                ? t("subscription.changePlan.saving")
+                : t("subscription.changePlan.save")}
             </Button>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import {Navigate, Outlet, useLocation,
 } from "react-router-dom";
 import { useAuthStore } from "../store/auth.store";
+import { useTranslation } from "react-i18next";
 
 export function ProtectedRoute() {
   const user = useAuthStore(
@@ -12,6 +13,8 @@ export function ProtectedRoute() {
       (state) => state.isHydrating,
     );
 
+  const { t } = useTranslation();
+
   const location =
     useLocation();
 
@@ -22,7 +25,7 @@ export function ProtectedRoute() {
           <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-2 border-[#D9A441] border-t-transparent" />
 
           <p className="font-mono text-[10px] uppercase tracking-[.14em] text-[#8B806F]">
-            Restoring session
+            {t("auth.loading.restoring")}
           </p>
         </div>
       </div>

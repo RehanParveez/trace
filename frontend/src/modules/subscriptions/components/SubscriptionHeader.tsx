@@ -3,6 +3,7 @@ import {Badge, Button, Icon, Panel,
 } from "../../organizations/components/OrganizationUi";
 import {formatBillingInterval, formatDate, formatSubscriptionStatus, getSubscriptionStatusTone,
 } from "../utils/subscription.utils";
+import { useTranslation } from "react-i18next";
 
 interface SubscriptionHeaderProps {
   subscription: Subscription;
@@ -21,6 +22,8 @@ export function SubscriptionHeader({
   onChangePlan,
   onCancel,
 }: SubscriptionHeaderProps) {
+  const { t } = useTranslation();
+
   return (
     <Panel className="overflow-hidden">
       <div className="relative bg-[linear-gradient(120deg,var(--color-trace-navy)_0%,var(--color-trace-navy-soft)_60%,var(--color-trace-navy-mid)_100%)] p-6 text-white sm:p-7">
@@ -32,8 +35,8 @@ export function SubscriptionHeader({
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8f9bb0]">
-                  Current subscription
+                <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#8f9bb0]">
+                  {t("subscription.header.eyebrow")}
                 </span>
 
                 <Badge
@@ -51,24 +54,18 @@ export function SubscriptionHeader({
                 {plan.name}
               </h2>
 
-              <p className="mt-2 max-w-[700px] text-[13px] leading-5 text-[#b9c5d5]">
+              <p className="mt-2 max-w-[700px] text-[12px] leading-5 text-[#b9c5d5]">
                 {plan.description ??
-                  "Your organization's current Trace subscription."}
+                  t("subscription.header.fallbackDescription")}
               </p>
             </div>
 
             {(canManage || canManageBilling) && (
               <div className="flex shrink-0 flex-wrap gap-2">
                 {canManage ? (
-                  <Button
-                    variant="primary"
-                    onClick={onChangePlan}
-                  >
-                    <Icon
-                      name="settings"
-                      size={13}
-                    />
-                    Change plan
+                  <Button variant="primary" onClick={onChangePlan}>
+                    <Icon name="settings" size={13} />
+                    {t("subscription.header.changePlan")}
                   </Button>
                 ) : null}
 
@@ -80,7 +77,7 @@ export function SubscriptionHeader({
                     onClick={onCancel}
                     className="border-[#34415f] bg-[#141c30] text-white hover:border-[#465576] hover:bg-[#1b2540]"
                   >
-                    Cancel subscription
+                    {t("subscription.header.cancel")}
                   </Button>
                 ) : null}
               </div>
@@ -93,8 +90,8 @@ export function SubscriptionHeader({
 
       <div className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         <div className="p-5 sm:p-6">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-            Billing
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+            {t("subscription.header.billing")}
           </div>
 
           <div className="mt-2 text-[15px] font-semibold text-[var(--color-text-primary)]">
@@ -103,14 +100,16 @@ export function SubscriptionHeader({
             )}
           </div>
 
-          <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
-            Provider: {subscription.provider}
+          <div className="mt-1 text-[11px] text-[#7c7060]">
+            {t("subscription.header.provider", {
+              provider: subscription.provider,
+            })}
           </div>
         </div>
 
         <div className="p-5 sm:p-6">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-            Period started
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+            {t("subscription.header.periodStarted")}
           </div>
 
           <div className="mt-2 font-mono text-[14px] font-semibold text-[var(--color-text-primary)]">
@@ -119,14 +118,14 @@ export function SubscriptionHeader({
             )}
           </div>
 
-          <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
-            Current billing period
+          <div className="mt-1 text-[11px] text-[#7c7060]">
+            {t("subscription.header.currentPeriod")}
           </div>
         </div>
 
         <div className="p-5 sm:p-6">
-          <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">
-            Period ends
+          <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
+            {t("subscription.header.periodEnds")}
           </div>
 
           <div className="mt-2 font-mono text-[14px] font-semibold text-[var(--color-text-primary)]">
@@ -135,10 +134,10 @@ export function SubscriptionHeader({
             )}
           </div>
 
-          <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
+          <div className="mt-1 text-[11px] text-[#7c7060]">
             {subscription.cancel_at_period_end
-              ? "Scheduled for cancellation"
-              : "Renews normally"}
+              ? t("subscription.header.scheduledCancel")
+              : t("subscription.header.renewsNormally")}
           </div>
         </div>
       </div>

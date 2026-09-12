@@ -8,3 +8,5 @@ export {
   useSubscriptionSummary,
   useSubscriptionUsage,
 } from "./useSubscription";
+
+export { useQuotaStatus } from "./useQuotaStatus";

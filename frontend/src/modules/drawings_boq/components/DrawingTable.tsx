@@ -5,18 +5,32 @@ import { formatDrawingStatus, formatFileSize, getDrawingStatusTone, isDrawingInP
 interface DrawingTableProps {
   drawings: Drawing[];
   canUpload: boolean;
+  quotaBlocked?: boolean;
   onUpload: () => void;
   onView: (drawing: Drawing) => void;
 }
 
-export function DrawingTable({ drawings, canUpload, onUpload, onView }: DrawingTableProps) {
+export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUpload, onView }: DrawingTableProps) {
   return (
     <Panel>
       <PanelHeader
         eyebrow="BIM INGESTION"
         title="Drawings"
         description="IFC drawings uploaded for this project and their parsing status."
-        action={canUpload ? <Button variant="primary" size="sm" onClick={onUpload}><Icon name="plus" size={13} />Upload drawing</Button> : null}
+        action={
+          canUpload ? (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onUpload}
+              disabled={quotaBlocked}
+              title={quotaBlocked ? "You've reached your plan's drawing limit" : undefined}
+            >
+              <Icon name="plus" size={13} />
+              Upload drawing
+            </Button>
+          ) : null
+        }
       />
 
       {drawings.length === 0 ? (
@@ -24,7 +38,19 @@ export function DrawingTable({ drawings, canUpload, onUpload, onView }: DrawingT
           icon="building"
           title="No drawings yet"
           description="Upload an IFC file to generate a draft bill of quantities for this project."
-          action={canUpload ? <Button variant="primary" size="sm" onClick={onUpload}>Upload drawing</Button> : undefined}
+          action={
+            canUpload ? (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onUpload}
+                disabled={quotaBlocked}
+                title={quotaBlocked ? "You've reached your plan's drawing limit" : undefined}
+              >
+                Upload drawing
+              </Button>
+            ) : undefined
+          }
         />
       ) : (
         <TableShell>
