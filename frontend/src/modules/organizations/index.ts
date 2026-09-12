@@ -2,6 +2,8 @@ export * from "./api/organizations.api";
 
 export * from "./components/OrganizationUi";
 export * from "./components/OrganizationShell";
+export * from "./components/SidebarNav";
+export * from "./components/MobileNavDrawer";
 export * from "./components/OrganizationForm";
 export * from "./components/OrganizationHeader";
 export * from "./components/AISettingsCard";

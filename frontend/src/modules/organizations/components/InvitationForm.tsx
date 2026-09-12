@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import type { Role } from "../types/organization.types";
 import {Badge, Button, Field, Icon, inputClass, Panel, PanelHeader,
 } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface InvitationFormProps {
   roles: Role[];
@@ -17,6 +18,7 @@ export function InvitationForm({
   onSubmit,
   onCancel,
 }: InvitationFormProps) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [roleId, setRoleId] = useState(roles[0]?.id ?? "");
 
@@ -31,28 +33,28 @@ export function InvitationForm({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="ACCESS REQUEST"
-        title="Invite a team member"
-        description="Send an organization invitation and assign the intended access role before the user joins."
+       eyebrow={t("invitations.formEyebrow")}
+       title={t("invitations.formTitle")}
+       description={t("invitations.formDesc")}
       />
 
       <form
         onSubmit={handleSubmit}
         className="grid gap-4 p-5 md:grid-cols-[1.4fr_1fr_auto] md:items-end"
       >
-        <Field label="Email address">
+        <Field label={t("invitations.emailLabel")}>
           <input
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             required
             className={inputClass}
-            placeholder="name@company.com"
+            placeholder={t("invitations.emailPlaceholder")}
             autoFocus
           />
         </Field>
 
-        <Field label="Role">
+        <Field label={t("invitations.roleLabel")}>
           <select
             value={roleId}
             onChange={(event) => setRoleId(event.target.value)}
@@ -70,7 +72,7 @@ export function InvitationForm({
         <div className="flex justify-end gap-2">
           {onCancel ? (
             <Button type="button" variant="ghost" onClick={onCancel}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           ) : null}
 
@@ -81,23 +83,23 @@ export function InvitationForm({
           >
             <Icon name="mail" size={13} />
 
-            {isSubmitting ? "Sending…" : "Send invitation"}
+            {isSubmitting ? t("invitations.sending") : t("invitations.send")}
           </Button>
         </div>
 
         {selectedRole ? (
           <div className="flex items-center gap-2 md:col-span-3">
             <span className="text-[12px] text-[var(--color-text-secondary)]">
-              This invitation grants:
+              {t("invitations.grants")}
             </span>
 
             <Badge tone={selectedRole.is_system ? "blue" : "slate"}>
               {selectedRole.name} ·{" "}
-              {selectedRole.is_system ? "System" : "Custom"}
+              {selectedRole.is_system ? t("roles.system") : t("roles.custom")}
             </Badge>
 
             <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
-              {selectedRole.permissions.length} permissions
+              {t("roles.permissionsCount", { count: selectedRole.permissions.length })}
             </span>
           </div>
         ) : null}

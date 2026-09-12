@@ -2,6 +2,7 @@ import type { Organization } from "../types/organization.types";
 import { getOrganizationInitials } from "../utils/organization.utils";
 import {Badge, Button, GlassChip, Icon, LivePip,
 } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface OrganizationHeaderProps {
   organization: Organization;
@@ -14,6 +15,7 @@ export function OrganizationHeader({
   onEdit,
   canManage = false,
 }: OrganizationHeaderProps) {
+  const { t } = useTranslation();
   return (
     <section className="overflow-hidden rounded-[var(--radius-lg)] border border-[#263356] bg-[linear-gradient(120deg,var(--color-trace-navy)_0%,var(--color-trace-navy-soft)_60%,var(--color-trace-navy-mid)_100%)] text-white shadow-[0_12px_32px_rgba(8,13,24,0.14)]">
       <div className="relative p-5 sm:p-6">
@@ -33,11 +35,11 @@ export function OrganizationHeader({
               <div className="min-w-0">
                 <div className="mb-1.5 flex flex-wrap items-center gap-2.5">
                   <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8f9bb0]">
-                    Organization workspace
+                    {t("org.header.workspace")}
                   </span>
 
                   {organization.is_active ? (
-                    <LivePip label="Active" />
+                    <LivePip label={t("common.active")} />
                   ) : null}
                 </div>
 
@@ -53,7 +55,7 @@ export function OrganizationHeader({
                   <span className="text-[#4b5871]">·</span>
 
                   <Badge tone={organization.is_active ? "green" : "red"}>
-                    {organization.is_active ? "Active" : "Inactive"}
+                    {organization.is_active ? t("common.active") : t("common.inactive")}
                   </Badge>
                 </div>
               </div>
@@ -67,7 +69,7 @@ export function OrganizationHeader({
                 className="self-start border-[#34415f] bg-[#141c30] text-white hover:border-[#465576] hover:bg-[#1b2540]"
               >
                 <Icon name="edit" size={13} />
-                Edit organization
+                {t("org.header.edit")}
               </Button>
             ) : null}
           </div>
@@ -76,23 +78,29 @@ export function OrganizationHeader({
             <div className="grid gap-2.5 sm:grid-cols-3">
               <GlassChip
                 icon="building"
-                label="Workspace status"
+                label={t("org.header.workspaceStatus")}
                 value={
-                  organization.is_active ? "Operational" : "Restricted"
+                 organization.is_active
+                  ? t("org.header.operational")
+                  : t("org.header.restricted")
                 }
               />
 
               <GlassChip
                 icon="spark"
-                label="AI controls"
-                value={organization.ai_enabled ? "Enabled" : "Disabled"}
+                label={t("org.header.aiControls")}
+                value={
+                organization.ai_enabled
+                ? t("org.header.enabled")
+                : t("org.header.disabled")
+                }
               />
 
               <div className="min-w-0">
                 <GlassChip
-                  icon="key"
-                  label="Workspace ID"
-                  value={organization.id}
+                 icon="key"
+                 label={t("org.header.workspaceId")}
+                 value={organization.id}
                 />
               </div>
             </div>

@@ -5,6 +5,7 @@ import {formatProjectStatus, getProjectStatusTone, useProjectMilestones,
 } from "../../projects";
 import type { Project, ProjectStatus } from "../../projects";
 import { useSitePhotos } from "../../whatsapp";
+import { useTranslation } from "react-i18next";
 
 const STATUS_PRIORITY: Record<ProjectStatus, number> = {
   ACTIVE: 0,
@@ -23,6 +24,7 @@ export function DashboardProjectHealth({
   projects,
   clientNameById,
 }: DashboardProjectHealthProps) {
+  const { t } = useTranslation();
   const visibleProjects = [...projects]
     .filter((project) => project.status !== "CANCELLED")
     .sort((a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status])
@@ -31,14 +33,14 @@ export function DashboardProjectHealth({
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="PROJECT HEALTH"
-        title="Active work"
-        description="Delivery status across your current project portfolio."
+        eyebrow={t("dashboard.projectHealth.eyebrow")}
+        title={t("dashboard.projectHealth.title")}
+        description={t("dashboard.projectHealth.description")}
       />
 
       {visibleProjects.length === 0 ? (
         <div className="px-5 py-10 text-center text-[13px] text-[var(--color-text-secondary)] sm:px-6">
-          No active projects yet. Create a project to see it tracked here.
+          {t("dashboard.projectHealth.empty")}
         </div>
       ) : (
         <div className="divide-y divide-[var(--color-border)]">
@@ -57,7 +59,7 @@ export function DashboardProjectHealth({
           to="/app/projects"
           className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
         >
-          View all projects
+          {t("dashboard.projectHealth.viewAll")}
           <Icon name="arrow" size={12} />
         </Link>
       </div>
@@ -71,6 +73,7 @@ interface DashboardProjectRowProps {
 }
 
 function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) {
+  const { t } = useTranslation();
   const milestonesQuery = useProjectMilestones(project.id);
   const milestones = milestonesQuery.data ?? [];
   const completed = milestones.filter((milestone) => milestone.completed_at !== null).length;
@@ -94,7 +97,7 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
           </div>
 
           <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
-            {clientName ?? "No client"}
+            {clientName ?? t("dashboard.projectHealth.noClient")}
             {project.location ? ` · ${project.location}` : ""}
           </div>
         </div>
@@ -102,11 +105,11 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
 
       <div className="flex shrink-0 items-center gap-3 sm:w-[180px]">
         {percentage === null ? (
-          <span className="text-[11.5px] text-[var(--color-text-muted)]">No milestones set</span>
+          <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("dashboard.projectHealth.noMilestones")}</span>
         ) : (
           <div className="w-full">
             <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[var(--color-text-secondary)]">
-              <span>{completed}/{total} milestones</span>
+              <span>{t("dashboard.projectHealth.milestones", { completed, total })}</span>
               <span>{percentage}%</span>
             </div>
             <ProgressBar value={percentage} tone={percentage === 100 ? "green" : "gold"} size="sm" />
@@ -118,10 +121,6 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
 }
 
 function DashboardProjectThumbnail({ projectId }: { projectId: string }) {
-  // Assumes /whatsapp/photos returns most-recent-first, matching every other
-  // list endpoint in this app (claims, procurement, expenses, site logs all
-  // order by date/created_at descending). If the backend orders differently,
-  // this shows an arbitrary photo instead of the latest one for the project.
   const photosQuery = useSitePhotos({ projectId, limit: 1 });
   const photo = (photosQuery.data ?? [])[0];
 

@@ -1,6 +1,7 @@
 import type { Role } from "../types/organization.types";
 import {Badge, DropdownMenu, EmptyState, type MenuAction, Panel, PanelHeader, TableShell,
 } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface RoleTableProps {
   roles: Role[];
@@ -20,20 +21,14 @@ function RoleActions({
   onView?: (role: Role) => void;
   onDelete?: (role: Role) => void;
 }) {
+  const { t } = useTranslation();
   const actions: MenuAction[] = [
-    {
-      label: "View role",
-      icon: "edit",
-      onSelect: () => onView?.(role),
-    },
+    { label: t("roles.viewRole"), icon: "edit", onSelect: () => onView?.(role) },
   ];
 
   if (canManage && !role.is_system) {
     actions.push({
-      label: "Delete role",
-      icon: "x",
-      tone: "danger",
-      onSelect: () => onDelete?.(role),
+     label: t("roles.deleteRole"), icon: "x", tone: "danger", onSelect: () => onDelete?.(role),
     });
   }
 
@@ -46,12 +41,13 @@ export function RoleTable({
   onView,
   onDelete,
 }: RoleTableProps) {
+  const { t } = useTranslation();
   return (
     <Panel>
       <PanelHeader
-        eyebrow="ACCESS CATALOG"
-        title="Roles"
-        description="System roles are protected; custom roles can be tailored to your operating model."
+        eyebrow={t("roles.catalogEyebrow")}
+        title={t("roles.tableTitle")}
+        description={t("roles.tableDesc")}
         action={
           <span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">
             {roles.length}
@@ -61,19 +57,19 @@ export function RoleTable({
 
       {roles.length === 0 ? (
         <EmptyState
-          icon="shield"
-          title="No roles found"
-          description="The organization does not currently expose any role records."
+         icon="shield"
+         title={t("roles.emptyTitle")}
+         description={t("roles.emptyDesc")}
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[700px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Access</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("roles.colRole")}</th>
+                <th className="px-4 py-3">{t("roles.colType")}</th>
+                <th className="px-4 py-3">{t("roles.colAccess")}</th>
+                <th className="px-4 py-3 text-right">{t("roles.colActions")}</th>
               </tr>
             </thead>
 
@@ -103,13 +99,13 @@ export function RoleTable({
 
                   <td className="px-4 py-3.5">
                     <Badge tone={role.is_system ? "blue" : "slate"}>
-                      {role.is_system ? "System" : "Custom"}
+                      {role.is_system ? t("roles.system") : t("roles.custom")}
                     </Badge>
                   </td>
 
                   <td className="px-4 py-3.5">
                     <span className="font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">
-                      {role.permissions.length} permissions
+                      {t("roles.permissionsCount", { count: role.permissions.length })}
                     </span>
                   </td>
 

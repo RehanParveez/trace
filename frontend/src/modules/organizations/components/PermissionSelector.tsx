@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { Permission } from "../types/organization.types";
 import { humanizePermission } from "../utils/organization.utils";
 import { Icon } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface PermissionSelectorProps {
   permissions: Permission[];
@@ -21,6 +22,7 @@ export function PermissionSelector({
   disabled = false,
   onChange,
 }: PermissionSelectorProps) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [showRawKeys, setShowRawKeys] = useState(false);
 
@@ -87,22 +89,21 @@ export function PermissionSelector({
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">
-            Access matrix
+            {t("permissions.accessMatrix")}
           </div>
 
           <h3 className="mt-1 font-[Archivo] text-[15px] font-bold text-[var(--color-text-primary)]">
-            What this role can do
+            {t("permissions.whatRoleCanDo")}
           </h3>
 
           <p className="mt-1 max-w-md text-[12.5px] leading-5 text-[var(--color-text-secondary)]">
-            Grouped by the part of Trace each permission controls. Turn on
-            everything this role needs to do its job.
-          </p>
+            {t("permissions.whatRoleCanDoDesc")}
+</p>
         </div>
 
         <div className="flex items-center gap-3">
           <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
-            {selectedIds.length}/{permissions.length} selected
+           {t("permissions.selectedCount", { selected: selectedIds.length, total: permissions.length })}
           </span>
 
           <button
@@ -110,7 +111,7 @@ export function PermissionSelector({
             onClick={() => setShowRawKeys((value) => !value)}
             className="text-[11.5px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
           >
-            {showRawKeys ? "Hide permission keys" : "Show permission keys"}
+            {showRawKeys ? t("permissions.hideKeys") : t("permissions.showKeys")}
           </button>
         </div>
       </div>
@@ -120,14 +121,14 @@ export function PermissionSelector({
         <input
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Filter permissions"
+          placeholder={t("permissions.filterPlaceholder")}
           className="w-full bg-transparent text-[13px] outline-none placeholder:text-[var(--color-text-muted)]"
         />
       </div>
 
       {filteredGroups.length === 0 ? (
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-6 text-center text-[12.5px] text-[var(--color-text-secondary)]">
-          No permissions match "{query}".
+          {t("permissions.noMatch", { query })}
         </div>
       ) : (
         <div className="space-y-5">
@@ -146,7 +147,7 @@ export function PermissionSelector({
 
                     {someSelected && !allSelected ? (
                       <span className="rounded-full bg-[var(--color-warning-bg)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-warning)]">
-                        Partial
+                        {t("permissions.partial")}
                       </span>
                     ) : null}
                   </div>
@@ -157,7 +158,7 @@ export function PermissionSelector({
                     onClick={() => toggleGroup(items)}
                     className="text-[11px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    {allSelected ? "Clear group" : "Select all"}
+                    {allSelected ? t("permissions.clearGroup") : t("permissions.selectAll")}
                   </button>
                 </div>
 

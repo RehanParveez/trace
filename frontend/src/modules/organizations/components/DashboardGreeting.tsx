@@ -1,17 +1,11 @@
 import { LivePip } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
-function getGreeting(date: Date): string {
+function getGreeting(date: Date, t: (key: string) => string): string {
   const hour = date.getHours();
-
-  if (hour < 12) {
-    return "Good morning";
-  }
-
-  if (hour < 18) {
-    return "Good afternoon";
-  }
-
-  return "Good evening";
+  if (hour < 12) return t("dashboard.greeting.morning");
+  if (hour < 18) return t("dashboard.greeting.afternoon");
+  return t("dashboard.greeting.evening");
 }
 
 interface DashboardGreetingProps {
@@ -19,8 +13,9 @@ interface DashboardGreetingProps {
 }
 
 export function DashboardGreeting({ organizationName }: DashboardGreetingProps) {
+  const { t } = useTranslation();
   const now = new Date();
-  const greeting = getGreeting(now);
+  const greeting = getGreeting(now, t);
 
   const dateLabel = new Intl.DateTimeFormat("en-PK", {
     weekday: "long",
@@ -47,11 +42,11 @@ export function DashboardGreeting({ organizationName }: DashboardGreetingProps) 
             </h1>
 
             <p className="mt-2 max-w-xl text-[13px] leading-5 text-[#c7ced7]">
-              Here's what's moving across your projects today.
+              {t("dashboard.greeting.subtitle")}
             </p>
           </div>
 
-          <LivePip label="Workspace operational" />
+          <LivePip label={t("shell.workspaceOperational")} />
         </div>
       </div>
     </section>

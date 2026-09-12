@@ -2,6 +2,7 @@ import type { Member } from "../types/organization.types";
 import {formatDateTime, formatRelativeTime, getMemberFullName, getMemberInitials,
 } from "../utils/organization.utils";
 import { Avatar, Badge, DropdownMenu, type MenuAction } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface MemberRowProps {
   member: Member;
@@ -20,16 +21,17 @@ export function MemberRow({
   onStatusChange,
   onView,
 }: MemberRowProps) {
+  const { t } = useTranslation();
   const isSelf = member.id === currentUserId;
 
   const actions: MenuAction[] = [
     {
-      label: "View member",
+      label: t("members.viewMember"),
       icon: "user",
       onSelect: () => onView?.(member),
     },
     {
-      label: "Change role",
+      label: t("members.changeRole"),
       icon: "shield",
       onSelect: () => onRoleChange?.(member),
     },
@@ -37,7 +39,7 @@ export function MemberRow({
       ? []
       : [
           {
-            label: member.is_active ? "Deactivate member" : "Activate member",
+            label: member.is_active ? t("members.deactivateMember") : t("members.activateMember"),
             icon: member.is_active ? "lock" : "check",
             tone: member.is_active ? "danger" : "default",
             onSelect: () => onStatusChange?.(member),
@@ -73,13 +75,13 @@ export function MemberRow({
             {member.role.name}
           </span>
 
-          {member.role.is_system ? <Badge tone="blue">System</Badge> : null}
+          {member.role.is_system ? <Badge tone="blue">{t("members.systemBadge")}</Badge> : null}
         </div>
       </td>
 
       <td className="px-4 py-3.5">
         <Badge tone={member.is_active ? "green" : "slate"}>
-          {member.is_active ? "Active" : "Inactive"}
+          {member.is_active ? t("members.active") : t("members.inactive")}
         </Badge>
       </td>
 

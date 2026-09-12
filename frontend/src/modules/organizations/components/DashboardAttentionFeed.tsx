@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Icon, Panel, PanelHeader } from "./OrganizationUi";
 import type { DashboardAttentionItem } from "../types/organization.types";
+import { useTranslation } from "react-i18next";
 
 interface DashboardAttentionFeedProps {
   items: DashboardAttentionItem[];
@@ -11,17 +12,18 @@ export function DashboardAttentionFeed({
   items,
   isLoading = false,
 }: DashboardAttentionFeedProps) {
+  const { t } = useTranslation();
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="NEEDS YOUR ATTENTION"
-        title="Attention required"
-        description="Open items that are waiting on a decision."
+        eyebrow={t("dashboard.attention.eyebrow")}
+        title={t("dashboard.attention.title")}
+        description={t("dashboard.attention.description")}
       />
 
       {isLoading ? (
         <div className="px-5 py-8 text-[13px] text-[var(--color-text-secondary)] sm:px-6">
-          Checking for open items…
+          {t("dashboard.attention.loading")}
         </div>
       ) : items.length === 0 ? (
         <div className="flex items-center gap-3 px-5 py-8 sm:px-6">
@@ -29,7 +31,7 @@ export function DashboardAttentionFeed({
             <Icon name="check" size={16} />
           </div>
           <p className="text-[13px] text-[var(--color-text-secondary)]">
-            Nothing needs your attention right now.
+            {t("dashboard.attention.empty")}
           </p>
         </div>
       ) : (

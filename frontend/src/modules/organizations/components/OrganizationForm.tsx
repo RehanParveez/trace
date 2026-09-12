@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import type {Organization, OrganizationUpdateRequest,
 } from "../types/organization.types";
 import { Button, Field, Icon, inputClass, Modal } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface OrganizationFormProps {
   organization: Organization;
@@ -25,6 +26,7 @@ export function OrganizationForm({
   onSubmit,
   onCancel,
 }: OrganizationFormProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(organization.name);
   const [slug, setSlug] = useState(organization.slug);
 
@@ -46,14 +48,14 @@ export function OrganizationForm({
 
   return (
     <Modal
-      title="Edit organization"
-      description="Update the workspace identity used across Trace."
+      title={t("org.editTitle")}
+      description={t("org.editDesc")}
       onClose={() => onCancel?.()}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Field
-          label="Organization name"
-          hint="Use the official operating name your team recognizes."
+         label={t("org.nameLabel")}
+         hint={t("org.nameHint")}
         >
           <input
             value={name}
@@ -67,8 +69,8 @@ export function OrganizationForm({
         </Field>
 
         <Field
-          label="Workspace slug"
-          hint="Lowercase, URL-safe identifier used in shared links."
+         label={t("org.slugLabel")}
+         hint={t("org.slugHint")}
         >
           <input
             value={slug}
@@ -88,7 +90,7 @@ export function OrganizationForm({
 
           {slugChanged ? (
             <span className="ml-auto shrink-0 rounded-full bg-[var(--color-warning-bg)] px-2 py-0.5 text-[10px] font-sans font-semibold text-[var(--color-warning)]">
-              Changing this may break shared links
+              {t("org.slugWarning")}
             </span>
           ) : null}
         </div>
@@ -96,7 +98,7 @@ export function OrganizationForm({
         <div className="flex items-center justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           {onCancel ? (
             <Button type="button" variant="ghost" onClick={onCancel}>
-              Cancel
+              {t("common.cancel")}
             </Button>
           ) : null}
 
@@ -107,7 +109,7 @@ export function OrganizationForm({
               <Icon name="check" size={13} />
             )}
 
-            {isSubmitting ? "Saving…" : "Save changes"}
+            {isSubmitting ? t("org.saving") : t("org.saveChanges")}
           </Button>
         </div>
       </form>

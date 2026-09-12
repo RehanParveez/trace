@@ -3,8 +3,10 @@ import { Icon, Panel, PanelHeader } from "./OrganizationUi";
 import { formatRelativeTime } from "../utils/organization.utils";
 import { useSitePhotos } from "../../whatsapp";
 import { useProjects } from "../../projects";
+import { useTranslation } from "react-i18next";
 
 export function DashboardSitePhotos() {
+  const { t } = useTranslation();
   const photosQuery = useSitePhotos({ limit: 8 });
   const projectsQuery = useProjects();
 
@@ -15,14 +17,14 @@ export function DashboardSitePhotos() {
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="FROM THE FIELD"
-        title="Recent site photos"
-        description="The latest photos sent in from site over WhatsApp, filed automatically by Trace."
+        eyebrow={t("dashboard.sitePhotos.eyebrow")}
+        title={t("dashboard.sitePhotos.title")}
+        description={t("dashboard.sitePhotos.description")}
       />
 
       {photosQuery.isLoading ? (
         <div className="px-5 py-8 text-[13px] text-[var(--color-text-secondary)] sm:px-6">
-          Loading recent photos…
+         {t("dashboard.sitePhotos.loading")}
         </div>
       ) : photos.length === 0 ? (
         <div className="flex items-center gap-3 px-5 py-8 sm:px-6">
@@ -30,7 +32,7 @@ export function DashboardSitePhotos() {
             <Icon name="site" size={16} />
           </div>
           <p className="text-[13px] text-[var(--color-text-secondary)]">
-            No site photos yet. Connect a WhatsApp number so field teams can start sending progress photos.
+            {t("dashboard.sitePhotos.empty")}
           </p>
         </div>
       ) : (
@@ -50,7 +52,9 @@ export function DashboardSitePhotos() {
 
               <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-[linear-gradient(0deg,rgba(8,13,24,0.75),transparent)] p-2">
                 <span className="block truncate text-[10.5px] font-semibold text-white">
-                  {photo.project_id ? (projectNameById.get(photo.project_id) ?? "Unknown project") : "Unassigned"}
+                  {photo.project_id
+                    ? (projectNameById.get(photo.project_id) ?? t("dashboard.sitePhotos.unknownProject"))
+                    : t("dashboard.sitePhotos.unassigned")}
                 </span>
                 <span className="block text-[9px] text-white/70">
                   {formatRelativeTime(photo.created_at)}
@@ -59,7 +63,7 @@ export function DashboardSitePhotos() {
 
               {!photo.project_id ? (
                 <span className="absolute right-1.5 top-1.5 rounded-full bg-[var(--color-danger)] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.04em] text-white">
-                  Needs project
+                  {t("dashboard.sitePhotos.needsProject")}
                 </span>
               ) : null}
             </Link>
@@ -72,7 +76,7 @@ export function DashboardSitePhotos() {
           to="/app/site-photos"
           className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
         >
-          View all site photos
+          {t("dashboard.sitePhotos.viewAll")}
           <Icon name="arrow" size={12} />
         </Link>
       </div>

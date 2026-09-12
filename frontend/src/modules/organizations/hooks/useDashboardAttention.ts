@@ -6,11 +6,13 @@ import { useProgressClaims, VERIFICATION_PERMISSIONS } from "../../verification"
 import { useSitePhotos } from "../../whatsapp";
 import { EXPENSE_PERMISSIONS, useExpenses } from "../../expenses";
 import { PROCUREMENT_PERMISSIONS, useProcurementRequests } from "../../procurement";
+import { useTranslation } from "react-i18next";
 
 export function useDashboardAttention(): {
   items: DashboardAttentionItem[];
   isLoading: boolean;
 } {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
 
   const canManageMembers = permissions.includes(
@@ -54,7 +56,7 @@ export function useDashboardAttention(): {
       items.push({
         key: "invitations",
         icon: "mail",
-        label: `${pendingCount} invitation${pendingCount === 1 ? "" : "s"} awaiting acceptance`,
+        label: t("dashboard.attention.invitations", { count: pendingCount }),
         count: pendingCount,
         to: "/app/organization/invitations",
       });
@@ -68,7 +70,7 @@ export function useDashboardAttention(): {
       items.push({
         key: "claims",
         icon: "check",
-        label: `${submittedCount} progress claim${submittedCount === 1 ? "" : "s"} awaiting review`,
+        label: t("dashboard.attention.claims", { count: submittedCount }),
         count: submittedCount,
         to: "/app/progress-review",
       });
@@ -82,7 +84,7 @@ export function useDashboardAttention(): {
       items.push({
         key: "photos",
         icon: "spark",
-        label: `${unassignedCount} site photo${unassignedCount === 1 ? "" : "s"} need a project`,
+        label: t("dashboard.attention.photos", { count: unassignedCount }),
         count: unassignedCount,
         to: "/app/site-photos",
       });
@@ -96,7 +98,7 @@ export function useDashboardAttention(): {
       items.push({
         key: "expenses",
         icon: "expenses",
-        label: `${pendingExpenseCount} expense${pendingExpenseCount === 1 ? "" : "s"} awaiting approval`,
+        label: t("dashboard.attention.expenses", { count: pendingExpenseCount }),
         count: pendingExpenseCount,
         to: "/app/expenses",
       });
@@ -110,7 +112,7 @@ export function useDashboardAttention(): {
       items.push({
         key: "procurement",
         icon: "procurement",
-        label: `${pendingProcurementCount} procurement request${pendingProcurementCount === 1 ? "" : "s"} awaiting approval`,
+        label: t("dashboard.attention.procurement", { count: pendingProcurementCount }),
         count: pendingProcurementCount,
         to: "/app/procurement",
       });

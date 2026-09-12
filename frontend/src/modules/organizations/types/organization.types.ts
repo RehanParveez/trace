@@ -118,6 +118,7 @@ export type OrganizationIconName =
   | "edit"
   | "plus"
   | "search"
+  | "menu"
   | "more"
   | "user"
   | "lock"

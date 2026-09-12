@@ -78,6 +78,11 @@ const iconPaths: Record<OrganizationIconName, ReactNode> = {
       <path d="m20 20-4-4" />
     </>
   ),
+  menu: (
+    <>
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </>
+  ),
   more: (
     <>
       <circle cx="5" cy="12" r="1" />

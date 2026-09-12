@@ -1,21 +1,17 @@
+import { useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import type { ReactNode } from "react";
-import { useTranslation } from "react-i18next";
 import { BrandMark, Icon, LivePip } from "./OrganizationUi";
+import { SidebarLink } from "./SidebarNav";
+import type { NavItem } from "./SidebarNav";
+import { MobileNavDrawer } from "./MobileNavDrawer";
+import { useTranslation } from "react-i18next";
 import type { OrganizationIconName } from "../types/organization.types";
 import { NotificationBell } from "../../notifications";
 import { LanguageSwitcher } from "../../../shared/components/LanguageSwitcher";
 import { IDENTITY_PERMISSIONS, useAuthStore, usePermissionKeys } from "../../identity";
 import { useOrganization, useInvitations } from "../hooks";
 import { getInvitationStatus } from "../utils/organization.utils";
-
-interface NavItem {
-  label: string;
-  to: string;
-  icon: OrganizationIconName;
-  exact?: boolean;
-  badge?: number;
-}
 
 function buildWorkspaceNav(t: (key: string) => string): NavItem[] {
   return [
@@ -144,61 +140,6 @@ function buildIntelligenceNav(
   ];
 }
 
-function SidebarLink({ item }: { item: NavItem }) {
-  return (
-    <NavLink
-      to={item.to}
-      end={item.exact}
-      className={({ isActive }) =>
-        [
-          "group relative flex min-h-[40px] items-center gap-3 rounded-[9px] border px-3",
-          "text-[13px] font-medium transition-all duration-150",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#d9a441]/40",
-          isActive
-            ? "border-[#d9a441]/30 !bg-[#172239] !text-white shadow-[inset_0_0_0_1px_rgba(217,164,65,0.06)]"
-            : "border-transparent !text-[#cbd5e1] hover:!border-[#263657] hover:!bg-[#121c30] hover:!text-white",
-        ].join(" ")
-      }
-    >
-      {({ isActive }) => (
-        <>
-          {isActive ? (
-            <span className="absolute -left-[1px] top-[7px] bottom-[7px] w-[3px] rounded-r-full bg-[#d9a441]" />
-          ) : null}
-
-          <span
-            className={[
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] transition-colors",
-              isActive
-                ? "bg-[#d9a441]/12 text-[#e3b65a]"
-                : "bg-transparent !text-[#9eacc1] group-hover:!text-[#dbe4f0]",
-            ].join(" ")}
-          >
-            <Icon name={item.icon} size={16} />
-          </span>
-
-          <span className="min-w-0 flex-1 truncate">
-            {item.label}
-          </span>
-
-          {typeof item.badge === "number" && item.badge > 0 ? (
-            <span
-              className={[
-                "min-w-[20px] rounded-full px-1.5 py-0.5 text-center font-mono text-[10px]",
-                isActive
-                  ? "bg-[#d9a441]/15 text-[#e3b65a]"
-                  : "bg-[#202c45] text-[#b7c3d5]",
-              ].join(" ")}
-            >
-              {item.badge}
-            </span>
-          ) : null}
-        </>
-      )}
-    </NavLink>
-  );
-}
-
 export function OrganizationShell({
   children,
 }: {
@@ -232,6 +173,14 @@ export function OrganizationShell({
   const projectsNav = buildProjectsNav(t);
   const intelligenceNav = buildIntelligenceNav(t, isPlatformAdmin);
 
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  const mobileNavGroups = [
+    { label: "Workspace", items: workspaceNav },
+    { label: "Organization", items: organizationNav },
+    { label: "Projects", items: projectsNav },
+    { label: "Intelligence", items: intelligenceNav },
+  ];
     return (
     <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
       
@@ -329,6 +278,15 @@ export function OrganizationShell({
 
       <div className="min-h-screen lg:pl-[248px]">
         <header className="sticky top-0 z-30 flex min-h-[64px] items-center gap-3 border-b border-[var(--color-border)] bg-white/95 px-4 backdrop-blur sm:px-7">
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            aria-label="Open navigation"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] lg:hidden"
+          >
+            <Icon name="menu" size={17} />
+          </button>
+
           <div className="flex min-w-0 items-center gap-2.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2 shadow-sm">
             <Icon name="building" size={15} className="text-[var(--color-text-muted)]" />
             <span className="max-w-[220px] truncate text-[13px] font-semibold text-[var(--color-text-primary)]">
@@ -370,6 +328,14 @@ export function OrganizationShell({
           {children ?? <Outlet />}
         </main>
       </div>
+
+      <MobileNavDrawer
+        open={mobileNavOpen}
+        onClose={() => setMobileNavOpen(false)}
+        organizationName={organizationName}
+        organizationSlug={organizationSlug}
+        navGroups={mobileNavGroups}
+      />
     </div>
   );
 }

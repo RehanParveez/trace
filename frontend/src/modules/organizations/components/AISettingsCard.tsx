@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {Badge, Button, Icon, Modal, Panel, PanelHeader, Toggle,
 } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface AISettingsCardProps {
   enabled: boolean;
@@ -10,9 +11,9 @@ interface AISettingsCardProps {
 }
 
 const AI_CAPABILITIES = [
-  "Drawing tagging",
-  "BOQ line suggestions",
-  "Progress note summaries",
+  "dashboard.ai.cap.drawing",
+  "dashboard.ai.cap.boq",
+  "dashboard.ai.cap.progress",
 ];
 
 export function AISettingsCard({
@@ -21,6 +22,7 @@ export function AISettingsCard({
   canManage = false,
   onChange,
 }: AISettingsCardProps) {
+  const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
 
   const nextEnabled = !enabled;
@@ -42,15 +44,15 @@ export function AISettingsCard({
     <>
       <Panel>
         <PanelHeader
-          eyebrow="AI GOVERNANCE"
-          title="Assistive intelligence"
-          description="AI is controlled at organization level. It remains assistive and never becomes an authority for project or financial state."
-          action={
-            <Badge tone={enabled ? "green" : "slate"}>
-              {enabled ? "Enabled" : "Disabled"}
-            </Badge>
-          }
-        />
+         eyebrow={t("dashboard.ai.eyebrow")}
+         title={t("dashboard.ai.title")}
+         description={t("dashboard.ai.description")}
+         action={
+          <Badge tone={enabled ? "green" : "slate"}>
+           {enabled ? t("org.header.enabled") : t("org.header.disabled")}
+          </Badge>
+         }
+      />
 
         <div className="grid gap-5 p-5 md:grid-cols-[1fr_auto] md:items-center">
           <div className="flex gap-3">
@@ -60,7 +62,7 @@ export function AISettingsCard({
 
             <div className="min-w-0">
               <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
-                {enabled ? "AI features are available" : "AI features are off"}
+                {enabled ? t("dashboard.ai.available") : t("dashboard.ai.off")}
               </div>
 
               <p className="mt-1 max-w-2xl text-[12.5px] leading-5 text-[var(--color-text-secondary)]">
@@ -88,33 +90,28 @@ export function AISettingsCard({
 
           <div className="flex items-center gap-3 md:justify-end">
             <span className="text-[11px] font-semibold text-[#6b6152] md:hidden">
-              {isUpdating ? "Updating…" : enabled ? "Enabled" : "Disabled"}
+              {isUpdating ? t("dashboard.ai.updating") : enabled ? t("org.header.enabled") : t("org.header.disabled")}
             </span>
 
             <Toggle
               checked={enabled}
               onChange={requestChange}
               disabled={!canManage || isUpdating}
-              label="Toggle organization AI features"
+              label={t("dashboard.ai.toggleLabel")}
             />
           </div>
         </div>
 
         {!canManage ? (
           <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)] px-5 py-3 text-[12px] text-[var(--color-text-secondary)]">
-            You can view the organization setting, but only users with
-            organization management permission can change it.
+            {t("dashboard.ai.viewOnly")}
           </div>
         ) : null}
       </Panel>
 
       {confirming ? (
         <Modal
-          title={
-            nextEnabled
-              ? "Enable AI for this organization?"
-              : "Disable AI for this organization?"
-          }
+          title={ nextEnabled ? t("dashboard.ai.enableTitle") : t("dashboard.ai.disableTitle") }
           onClose={() => setConfirming(false)}
         >
           <div className="flex h-9 w-9 items-center justify-center rounded-[9px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
@@ -122,21 +119,19 @@ export function AISettingsCard({
           </div>
 
           <p className="mt-4 text-[13px] leading-5 text-[var(--color-text-secondary)]">
-            {nextEnabled
-              ? "This enables the organization-level AI path. Keep in mind that AI output remains assistive and must not be treated as approved business state."
-              : "This stops organization-level AI features. Existing records are not deleted by this setting change."}
+            {nextEnabled ? t("dashboard.ai.enableBody") : t("dashboard.ai.disableBody")}
           </p>
 
           <div className="mt-5 flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setConfirming(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
 
             <Button
               variant={nextEnabled ? "primary" : "danger"}
               onClick={confirmChange}
             >
-              {nextEnabled ? "Enable AI" : "Disable AI"}
+              {nextEnabled ? t("dashboard.ai.enableConfirm") : t("dashboard.ai.disableConfirm")}
             </Button>
           </div>
         </Modal>

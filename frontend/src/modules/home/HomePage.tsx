@@ -4,19 +4,17 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "../../shared/components/LanguageSwitcher";
 import "../home/landing.css";
 
-function Icon({
-  name,
-}: {
-  name:
-    | "flow"
-    | "budget"
-    | "site"
-    | "materials"
-    | "lock"
-    | "arrow"
-    | "chart"
-    | "team";
-}) {
+type IconName =
+  | "flow"
+  | "budget"
+  | "site"
+  | "materials"
+  | "lock"
+  | "arrow"
+  | "chart"
+  | "team";
+
+function Icon({ name }: { name: IconName }) {
   const common = {
     viewBox: "0 0 24 24",
     fill: "none",
@@ -26,7 +24,7 @@ function Icon({
     strokeLinejoin: "round" as const,
   };
 
-  const paths: Record<string, ReactNode> = {
+  const paths: Record<IconName, ReactNode> = {
     flow: (
       <>
         <path d="M4 6h6v5H4zM14 13h6v5h-6z" />
@@ -86,51 +84,19 @@ function Icon({
   return <svg {...common}>{paths[name]}</svg>;
 }
 
-const capabilities = [
-  [
-    "budget",
-    "Budget control",
-    "Connect approved budgets to actual project activity without turning the frontend into an accounting engine.",
-  ],
-  [
-    "site",
-    "Site progress",
-    "Capture daily progress, blockers, workforce and delivery context from the field.",
-  ],
-  [
-    "materials",
-    "Materials & procurement",
-    "Move from material request to purchase order to goods receipt with one operational trail.",
-  ],
-  [
-    "chart",
-    "Project cost visibility",
-    "Bring progress, commitments, receipts and approved expenses into one project picture.",
-  ],
-] as const;
+const capabilityKeys = [
+  ["budget", "budgetControl"],
+  ["site", "siteProgress"],
+  ["materials", "procurement"],
+  ["chart", "costVisibility"],
+] as const satisfies ReadonlyArray<readonly [IconName, string]>;
 
-const roles = [
-  [
-    "team",
-    "Company leadership",
-    "See where projects stand and where cost, progress or procurement needs attention.",
-  ],
-  [
-    "site",
-    "Site teams",
-    "Record the work happening on site while the details are still fresh.",
-  ],
-  [
-    "materials",
-    "Procurement & stores",
-    "Keep requests, orders and received materials connected.",
-  ],
-  [
-    "budget",
-    "Finance & control",
-    "Follow approved budgets, commitments and actual project cost.",
-  ],
-] as const;
+const roleKeys = [
+  ["team", "leadership"],
+  ["site", "siteTeams"],
+  ["materials", "procurement"],
+  ["budget", "finance"],
+] as const satisfies ReadonlyArray<readonly [IconName, string]>;
 
 function DashboardMockup() {
   return (
@@ -204,19 +170,25 @@ function DashboardMockup() {
 
             <div className="lp-project-row">
               <span>Shopping Plaza</span>
-              <div className="lp-mini-bar"><i style={{ width: "72%" }} /></div>
+              <div className="lp-mini-bar">
+                <i style={{ width: "72%" }} />
+              </div>
               <b>72%</b>
             </div>
 
             <div className="lp-project-row">
               <span>Faisalabad Warehouse</span>
-              <div className="lp-mini-bar"><i style={{ width: "41%" }} /></div>
+              <div className="lp-mini-bar">
+                <i style={{ width: "41%" }} />
+              </div>
               <b>41%</b>
             </div>
 
             <div className="lp-project-row">
               <span>Gulberg Residential</span>
-              <div className="lp-mini-bar"><i style={{ width: "88%" }} /></div>
+              <div className="lp-mini-bar">
+                <i style={{ width: "88%" }} />
+              </div>
               <b>88%</b>
             </div>
           </div>
@@ -260,7 +232,7 @@ export function HomePage() {
             <span>Trace</span>
           </Link>
 
-            <div className="lp-nav-links">
+          <div className="lp-nav-links">
             <a href="#product">{t("nav.product")}</a>
             <a href="#workflow">{t("nav.workflow")}</a>
             <a href="#teams">{t("nav.teams")}</a>
@@ -273,7 +245,10 @@ export function HomePage() {
               {t("nav.operational")}
             </span>
 
-            <LanguageSwitcher variant="compact" className="mr-2" />
+            <LanguageSwitcher
+              variant="compact"
+              className="mr-2"
+            />
 
             <Link
               to="/login"
@@ -371,38 +346,37 @@ export function HomePage() {
       <section className="lp-stat" id="principles">
         <div className="lp-wrap">
           <div className="lp-stat-num">
-            One connected operational chain.
+            {t("stat.heading")}
           </div>
 
           <p>
-            From approved BOQ and budget to site progress, procurement,
-            delivery, expenses and project-cost visibility.
+            {t("stat.description")}
           </p>
 
           <div className="lp-tags">
             <span>
               <Icon name="budget" />
-              Budget
+              {t("stat.tags.budget")}
             </span>
 
             <span>
               <Icon name="site" />
-              Progress
+              {t("stat.tags.progress")}
             </span>
 
             <span>
               <Icon name="materials" />
-              Procurement
+              {t("stat.tags.procurement")}
             </span>
 
             <span>
               <Icon name="materials" />
-              Receipts
+              {t("stat.tags.receipts")}
             </span>
 
             <span>
               <Icon name="chart" />
-              Cost
+              {t("stat.tags.cost")}
             </span>
           </div>
 
@@ -410,10 +384,7 @@ export function HomePage() {
             <b>T</b>
 
             <p>
-              Trace is designed around the real construction workflow rather
-              than a collection of disconnected CRUD screens. The system
-              keeps the backend authoritative, permissions explicit and
-              important operational changes traceable.
+              {t("stat.origin")}
             </p>
           </div>
         </div>
@@ -423,12 +394,11 @@ export function HomePage() {
         <div className="lp-wrap">
           <div className="lp-section-head">
             <p className="lp-eyebrow">
-              THE PRODUCT
+              {t("product.eyebrow")}
             </p>
 
             <h2>
-              See the whole project, without losing the details that make it
-              real.
+              {t("product.heading")}
             </h2>
           </div>
 
@@ -437,55 +407,98 @@ export function HomePage() {
               <DashboardMockup />
 
               <div className="lp-tour-cap">
-                <b>Project control dashboard</b>
+                <b>
+                  {t("product.tour.main.title")}
+                </b>
+
                 <span>
-                  Progress · budget · commitments · attention points
+                  {t("product.tour.main.caption")}
                 </span>
               </div>
             </div>
 
             <div className="lp-tour-small">
               <div className="lp-mini-panel">
-                <small>APPROVED BUDGET</small>
-                <strong>Rs 42.8M</strong>
+                <small>
+                  {t("product.tour.financial.label")}
+                </small>
+
+                <strong>
+                  {t("product.tour.financial.amount")}
+                </strong>
 
                 <div className="lp-meter">
-                  <i style={{ width: "68%" }} />
+                  <i
+                    style={{
+                      width: `${t(
+                        "product.tour.financial.progress",
+                      )}%`,
+                    }}
+                  />
                 </div>
 
-                <span>68% committed</span>
+                <span>
+                  {t("product.tour.financial.status")}
+                </span>
               </div>
 
               <div className="lp-tour-cap">
-                <b>Financial control</b>
+                <b>
+                  {t("product.tour.financial.title")}
+                </b>
+
                 <span>
-                  Backend-calculated project values
+                  {t("product.tour.financial.caption")}
                 </span>
               </div>
             </div>
 
             <div className="lp-tour-small">
               <div className="lp-mini-panel">
-                <small>MATERIAL REQUEST</small>
-                <strong>MR-0248</strong>
+                <small>
+                  {t("product.tour.workflow.label")}
+                </small>
+
+                <strong>
+                  {t("product.tour.workflow.requestId")}
+                </strong>
 
                 <div className="lp-flow">
-                  <span>Requested</span>
+                  <span>
+                    {t(
+                      "product.tour.workflow.steps.requested",
+                    )}
+                  </span>
+
                   <b>→</b>
-                  <span>Approved</span>
+
+                  <span>
+                    {t(
+                      "product.tour.workflow.steps.approved",
+                    )}
+                  </span>
+
                   <b>→</b>
-                  <span>PO</span>
+
+                  <span>
+                    {t(
+                      "product.tour.workflow.steps.purchaseOrder",
+                    )}
+                  </span>
                 </div>
 
                 <span>
-                  12 items · required Friday
+                  {t("product.tour.workflow.items")}
                 </span>
               </div>
 
               <div className="lp-tour-cap">
-                <b>Operational workflow</b>
+                <b>
+                  {t("product.tour.workflow.title")}
+                </b>
+
                 <span>
-                  Request → approval → purchase → receipt
+                  {t("product.tour.workflow.caption")}
                 </span>
               </div>
             </div>
@@ -500,57 +513,72 @@ export function HomePage() {
         <div className="lp-wrap">
           <div className="lp-section-head">
             <p className="lp-eyebrow">
-              THE WORKFLOW
+              {t("workflow.eyebrow")}
             </p>
 
             <h2>
-              Every module earns its place by moving the project forward.
+              {t("workflow.heading")}
             </h2>
           </div>
 
           <div className="lp-flowline">
             <div>
               <span>01</span>
-              <b>Plan</b>
+
+              <b>
+                {t("workflow.steps.plan.title")}
+              </b>
+
               <p>
-                Organization, projects, clients, milestones and approved
-                budget.
+                {t("workflow.steps.plan.description")}
               </p>
             </div>
 
             <div>
               <span>02</span>
-              <b>Execute</b>
+
+              <b>
+                {t("workflow.steps.execute.title")}
+              </b>
+
               <p>
-                Daily site reports turn physical work into a reliable
-                progress record.
+                {t("workflow.steps.execute.description")}
               </p>
             </div>
 
             <div>
               <span>03</span>
-              <b>Source</b>
+
+              <b>
+                {t("workflow.steps.source.title")}
+              </b>
+
               <p>
-                Material requests and approvals connect operational need to
-                procurement.
+                {t("workflow.steps.source.description")}
               </p>
             </div>
 
             <div>
               <span>04</span>
-              <b>Receive</b>
+
+              <b>
+                {t("workflow.steps.receive.title")}
+              </b>
+
               <p>
-                Goods receipts establish what actually arrived and was
-                accepted.
+                {t("workflow.steps.receive.description")}
               </p>
             </div>
 
             <div>
               <span>05</span>
-              <b>Control</b>
+
+              <b>
+                {t("workflow.steps.control.title")}
+              </b>
+
               <p>
-                Approved expenses and commitments reveal the project-cost
-                picture.
+                {t("workflow.steps.control.description")}
               </p>
             </div>
           </div>
@@ -561,27 +589,31 @@ export function HomePage() {
         <div className="lp-wrap">
           <div className="lp-section-head">
             <p className="lp-eyebrow">
-              BUILT FOR THE PEOPLE DOING THE WORK
+              {t("teams.eyebrow")}
             </p>
 
             <h2>
-              One system, different views of the same project.
+              {t("teams.heading")}
             </h2>
           </div>
 
           <div className="lp-role-grid">
-            {roles.map(([icon, title, desc]) => (
+            {roleKeys.map(([icon, key]) => (
               <article
                 className="lp-role"
-                key={title}
+                key={key}
               >
                 <span className="lp-role-icon">
                   <Icon name={icon} />
                 </span>
 
-                <h3>{title}</h3>
+                <h3>
+                  {t(`teams.roles.${key}.title`)}
+                </h3>
 
-                <p>{desc}</p>
+                <p>
+                  {t(`teams.roles.${key}.description`)}
+                </p>
               </article>
             ))}
           </div>
@@ -592,27 +624,33 @@ export function HomePage() {
         <div className="lp-wrap">
           <div className="lp-section-head">
             <p className="lp-eyebrow">
-              CORE CAPABILITIES
+              {t("capabilities.eyebrow")}
             </p>
 
             <h2>
-              Focused enough to stay usable. Connected enough to matter.
+              {t("capabilities.heading")}
             </h2>
           </div>
 
           <div className="lp-cap-grid">
-            {capabilities.map(([icon, title, desc]) => (
+            {capabilityKeys.map(([icon, key]) => (
               <article
                 className="lp-cap"
-                key={title}
+                key={key}
               >
                 <span className="lp-role-icon">
                   <Icon name={icon} />
                 </span>
 
-                <h3>{title}</h3>
+                <h3>
+                  {t(`capabilities.items.${key}.title`)}
+                </h3>
 
-                <p>{desc}</p>
+                <p>
+                  {t(
+                    `capabilities.items.${key}.description`,
+                  )}
+                </p>
               </article>
             ))}
           </div>
@@ -622,16 +660,15 @@ export function HomePage() {
       <section className="lp-cta">
         <div className="lp-wrap">
           <p className="lp-eyebrow">
-            START WITH A CLEAR RECORD
+            {t("cta.eyebrow")}
           </p>
 
           <h2>
-            Build the project picture from the ground up.
+            {t("cta.heading")}
           </h2>
 
           <p>
-            Set up your organization, bring your team in and start connecting
-            the work.
+            {t("cta.description")}
           </p>
 
           <div className="lp-actions lp-actions-center">
@@ -639,7 +676,7 @@ export function HomePage() {
               to="/register"
               className="lp-btn lp-btn-primary lp-btn-large"
             >
-              Get started with Trace
+              {t("cta.ctaPrimary")}
               <Icon name="arrow" />
             </Link>
 
@@ -647,7 +684,7 @@ export function HomePage() {
               to="/login"
               className="lp-btn lp-btn-ghost lp-btn-large"
             >
-              Sign in
+              {t("nav.signIn")}
             </Link>
           </div>
         </div>
@@ -666,24 +703,30 @@ export function HomePage() {
               </Link>
 
               <p>
-                Construction intelligence for a clearer project record.
+                {t("footer.tagline")}
               </p>
             </div>
 
             <div className="lp-newsletter">
               <span>
-                Keep up with the build
+                {t("footer.newsletter.label")}
               </span>
 
               <div>
                 <input
-                  aria-label="Email"
-                  placeholder="Work email"
+                  aria-label={t(
+                    "footer.newsletter.emailLabel",
+                  )}
+                  placeholder={t(
+                    "footer.newsletter.placeholder",
+                  )}
                 />
 
                 <button
                   type="button"
-                  aria-label="Submit"
+                  aria-label={t(
+                    "footer.newsletter.submitLabel",
+                  )}
                 >
                   <Icon name="arrow" />
                 </button>
@@ -693,36 +736,62 @@ export function HomePage() {
 
           <div className="lp-foot-cols">
             <div>
-              <small>PRODUCT</small>
-              <a href="#product">Overview</a>
-              <a href="#workflow">Workflow</a>
-              <a href="#teams">Teams</a>
+              <small>
+                {t("footer.columns.product.label")}
+              </small>
+
+              <a href="#product">
+                {t("footer.columns.product.overview")}
+              </a>
+
+              <a href="#workflow">
+                {t("nav.workflow")}
+              </a>
+
+              <a href="#teams">
+                {t("nav.teams")}
+              </a>
             </div>
 
             <div>
-              <small>ACCESS</small>
-              <Link to="/login">Sign in</Link>
-              <Link to="/register">Get started</Link>
+              <small>
+                {t("footer.columns.access.label")}
+              </small>
+
+              <Link to="/login">
+                {t("nav.signIn")}
+              </Link>
+
+              <Link to="/register">
+                {t("footer.columns.access.getStarted")}
+              </Link>
             </div>
 
             <div>
-              <small>LANGUAGE</small>
+              <small>
+                {t("footer.columns.language.label")}
+              </small>
+
               <LanguageSwitcher />
             </div>
 
             <div>
-              <small>STATUS</small>
+              <small>
+                {t("footer.columns.status.label")}
+              </small>
 
               <span className="lp-status">
                 <i />
-                Core platform
+                {t("footer.columns.status.value")}
               </span>
             </div>
           </div>
 
           <div className="lp-foot-bottom">
             <span>
-              {t("footer.copyright", { year: new Date().getFullYear() })}
+              {t("footer.copyright", {
+                year: new Date().getFullYear(),
+              })}
             </span>
 
             <span>

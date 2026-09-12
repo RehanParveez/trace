@@ -2,6 +2,7 @@ import type { Member } from "../types/organization.types";
 import { Avatar, Badge, Button, Icon, Modal } from "./OrganizationUi";
 import { getMemberFullName, getMemberInitials } from "../utils/organization.utils";
 import { getApiErrorMessage } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 interface MemberStatusDialogProps {
   member: Member;
@@ -18,22 +19,23 @@ export function MemberStatusDialog({
   onConfirm,
   onClose,
 }: MemberStatusDialogProps) {
+  const { t } = useTranslation();
   const activating = !member.is_active;
 
   return (
     <Modal
-      title={activating ? "Activate member" : "Deactivate member"}
+      title={activating ? t("members.activateTitle") : t("members.deactivateTitle")}
       description={
         activating
-          ? "Restore this member's access to the organization."
-          : "Remove this member's active access without deleting the member record."
+        ? t("members.activateDesc")
+        : t("members.deactivateDesc") 
       }
       onClose={onClose}
     >
       {error ? (
         <div className="mb-3 flex items-center gap-2 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
           <Icon name="alert" size={13} className="shrink-0" />
-          {getApiErrorMessage(error, "Couldn't update this member's status.")}
+          {getApiErrorMessage(error, t("members.statusError"))}
         </div>
       ) : null}
 
@@ -51,7 +53,7 @@ export function MemberStatusDialog({
         </div>
 
         <Badge tone={member.is_active ? "green" : "slate"}>
-          {member.is_active ? "Active" : "Inactive"}
+          {member.is_active ? t("members.active") : t("members.inactive")}
         </Badge>
       </div>
 
@@ -73,15 +75,13 @@ export function MemberStatusDialog({
         </div>
 
         <p className="text-[12.5px] leading-5 text-[var(--color-text-primary)]">
-          {activating
-            ? "The member will become active again and regain workspace access immediately."
-            : "The member will no longer be treated as an active organization user and loses workspace access immediately."}
+          {activating ? t("members.activateBody") : t("members.deactivateBody")}
         </p>
       </div>
 
       <div className="mt-5 flex justify-end gap-2">
         <Button variant="ghost" onClick={onClose}>
-          Cancel
+         {t("common.cancel")}
         </Button>
 
         <Button
@@ -90,10 +90,10 @@ export function MemberStatusDialog({
           disabled={isSubmitting}
         >
           {isSubmitting
-            ? "Saving…"
+            ? t("members.activating")
             : activating
-              ? "Activate member"
-              : "Deactivate member"}
+            ? t("members.activateConfirm")
+            : t("members.deactivateConfirm")}
         </Button>
       </div>
     </Modal>

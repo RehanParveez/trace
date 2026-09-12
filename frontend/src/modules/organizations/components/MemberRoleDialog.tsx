@@ -6,6 +6,7 @@ import {Avatar, Badge, Button, Icon, Modal,
 import {getMemberFullName, getMemberInitials,
 } from "../utils/organization.utils";
 import { getApiErrorMessage } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 interface MemberRoleDialogProps {
   member: Member;
@@ -24,6 +25,7 @@ export function MemberRoleDialog({
   onSubmit,
   onClose,
 }: MemberRoleDialogProps) {
+  const { t } = useTranslation();
   const [roleId, setRoleId] = useState(member.role.id);
 
   useEffect(() => {
@@ -38,15 +40,15 @@ export function MemberRoleDialog({
 
   return (
     <Modal
-      title="Change member role"
-      description={`Update the access role assigned to ${member.email}.`}
+      title={t("members.roleDialog.title")}
+      description={t("members.roleDialog.description", { email: member.email })}
       onClose={onClose}
     >
      <form onSubmit={handleSubmit} className="space-y-4">
         {error ? (
           <div className="flex items-center gap-2 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
             <Icon name="alert" size={13} className="shrink-0" />
-            {getApiErrorMessage(error, "Couldn't change this member's role.")}
+            {getApiErrorMessage(error, t("members.roleDialog.error"))}
           </div>
         ) : null}
 
@@ -59,7 +61,7 @@ export function MemberRoleDialog({
             </div>
 
             <div className="mt-0.5 text-[12px] text-[var(--color-text-secondary)]">
-              Currently{" "}
+              {t("members.roleDialog.currently")}{" "}
               <span className="font-semibold text-[var(--color-text-primary)]">
                 {member.role.name}
               </span>
@@ -69,7 +71,7 @@ export function MemberRoleDialog({
 
         <div>
           <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[0.04em] text-[var(--color-text-secondary)]">
-            Organization role
+            {t("members.roleDialog.roleLabel")}
           </span>
 
           <div className="max-h-64 space-y-2 overflow-y-auto pr-0.5">
@@ -112,13 +114,12 @@ export function MemberRoleDialog({
                       </span>
 
                       <Badge tone={role.is_system ? "blue" : "slate"}>
-                        {role.is_system ? "System" : "Custom"}
+                        {role.is_system ? t("roles.system") : t("roles.custom")}
                       </Badge>
                     </span>
 
                     <span className="mt-0.5 block font-mono text-[11px] text-[var(--color-text-muted)]">
-                      {role.permissions.length} permission
-                      {role.permissions.length === 1 ? "" : "s"}
+                      {t("roles.permissionsCount", { count: role.permissions.length })}
                     </span>
                   </span>
                 </label>
@@ -129,7 +130,7 @@ export function MemberRoleDialog({
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button

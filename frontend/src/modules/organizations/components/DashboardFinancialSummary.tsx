@@ -3,8 +3,10 @@ import { usePermissionKeys } from "../../identity";
 import { BUDGET_PERMISSIONS, formatBudgetAmount, useBudgetOrganizationSummary } from "../../budgets";
 import { EXPENSE_PERMISSIONS, useExpenseOrganizationSummary } from "../../expenses";
 import { PROCUREMENT_PERMISSIONS, useProcurementOrganizationSummary } from "../../procurement";
+import { useTranslation } from "react-i18next";
 
 export function DashboardFinancialSummary() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
 
   const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
@@ -44,62 +46,76 @@ export function DashboardFinancialSummary() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
-        label="Approved budget"
-        value={
+        label={t("dashboard.financial.approvedBudget")}
+         value={
           !canViewBudget
-            ? "No access"
+            ? t("dashboard.financial.noAccess")
             : isLoading
-              ? "…"
-              : approvedTotal === null
-                ? "Not set"
-                : formatBudgetAmount(approvedTotal, currency)
-        }
-        note={
-          canViewBudget
-            ? `Across ${budgetSummaryQuery.data?.budget_count ?? 0} project${(budgetSummaryQuery.data?.budget_count ?? 0) === 1 ? "" : "s"}`
-            : "Requires budget permission"
-        }
+             ? "…"
+             : approvedTotal === null
+        ? t("dashboard.financial.notSet")
+        : formatBudgetAmount(approvedTotal, currency)
+      }  
+    note={
+      canViewBudget
+      ? t("dashboard.financial.acrossProjects", { count: budgetSummaryQuery.data?.budget_count ?? 0 })
+      : t("dashboard.financial.requiresBudget")
+    }
         icon="budget"
         tone="blue"
       />
 
       <StatCard
-        label="Committed"
+        label={t("dashboard.financial.committed")}
         value={
-          !canViewProcurement
-            ? "No access"
-            : isLoading
-              ? "…"
-              : formatBudgetAmount(committedTotal ?? 0, currency)
+         !canViewProcurement
+          ? t("dashboard.financial.noAccess")
+          : isLoading
+            ? "…"
+            : formatBudgetAmount(committedTotal ?? 0, currency)
+           }
+        note={
+          canViewProcurement
+           ? t("dashboard.financial.committedNote")
+           : t("dashboard.financial.requiresProcurement")
         }
-        note={canViewProcurement ? "Approved or ordered procurement" : "Requires procurement permission"}
         icon="procurement"
         tone="gold"
       />
 
       <StatCard
-        label="Spent to date"
+        label={t("dashboard.financial.spent")}
         value={
           !canViewExpenses
-            ? "No access"
+            ? t("dashboard.financial.noAccess")
             : isLoading
-              ? "…"
-              : formatBudgetAmount(spentTotal ?? 0, currency)
-        }
-        note={canViewExpenses ? "Approved expenses" : "Requires expense permission"}
+             ? "…"
+             : formatBudgetAmount(spentTotal ?? 0, currency)
+           }
+      note={
+        canViewExpenses
+          ? t("dashboard.financial.spentNote")
+          : t("dashboard.financial.requiresExpense")
+      }
         icon="expenses"
         tone="gold"
       />
 
       <StatCard
-        label="Remaining"
-        value={isLoading ? "…" : remainingTotal === null ? "—" : formatBudgetAmount(remainingTotal, currency)}
+        label={t("dashboard.financial.remaining")}
+        value={
+          isLoading
+           ? "…"
+           : remainingTotal === null
+            ? "—"
+            : formatBudgetAmount(remainingTotal, currency)
+          }
         note={
-          remainingTotal === null
-            ? "Set project budgets to see remaining"
-            : remainingTotal < 0
-              ? "Over budget across portfolio"
-              : "Available across your portfolio"
+         remainingTotal === null
+          ? t("dashboard.financial.remainingNotSet")
+          : remainingTotal < 0
+           ? t("dashboard.financial.overBudget")
+           : t("dashboard.financial.available")
         }
         icon="check"
         tone={remainingTotal === null ? "blue" : remainingTotal < 0 ? "red" : "green"}

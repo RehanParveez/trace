@@ -3,6 +3,7 @@ import {formatDate, getInvitationStatus, getInvitationStatusTone,
 } from "../utils/organization.utils";
 import {Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell,
 } from "./OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface InvitationTableProps {
   invitations: Invitation[];
@@ -17,6 +18,7 @@ export function InvitationTable({
   canManage = false,
   onRevoke,
 }: InvitationTableProps) {
+  const { t } = useTranslation();
   function roleLabel(roleId: string): string {
     return roles.find((role) => role.id === roleId)?.name ?? roleId;
   }
@@ -24,9 +26,9 @@ export function InvitationTable({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="ACCESS HISTORY"
-        title="Invitations"
-        description="Pending, accepted and expired invitations for this organization."
+        eyebrow={t("invitations.tableEyebrow")}
+        title={t("invitations.tableTitle")}
+        description={t("invitations.tableDesc")}
         action={
           <span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">
             {invitations.length}
@@ -37,19 +39,19 @@ export function InvitationTable({
       {invitations.length === 0 ? (
         <EmptyState
           icon="mail"
-          title="No invitations"
-          description="There are no pending or historical organization invitations to show."
+          title={t("invitations.emptyTitle")}
+          description={t("invitations.emptyDesc")}
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Invitee</th>
-                <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Expires</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("invitations.colInvitee")}</th>
+                <th className="px-4 py-3">{t("invitations.colRole")}</th>
+                <th className="px-4 py-3">{t("invitations.colStatus")}</th>
+                <th className="px-4 py-3">{t("invitations.colExpires")}</th>
+                <th className="px-4 py-3 text-right">{t("invitations.colActions")}</th>
               </tr>
             </thead>
 
@@ -80,7 +82,7 @@ export function InvitationTable({
 
                     <td className="px-4 py-3.5">
                       <Badge tone={getInvitationStatusTone(status)}>
-                        {status}
+                        {t(`invitations.status.${status}`)}
                       </Badge>
                     </td>
 
@@ -96,7 +98,7 @@ export function InvitationTable({
                           size="sm"
                           onClick={() => onRevoke?.(invitation)}
                         >
-                          Revoke
+                          {t("invitations.revoke")}
                         </Button>
                       ) : (
                         <span className="text-[11px] text-[var(--color-text-muted)]">—</span>
