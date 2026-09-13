@@ -5,6 +5,7 @@ import {Button, Field, inputClass, Modal,
 import { useAddProjectMember } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import type { ProjectMemberRole } from "../types/project.types";
+import { useTranslation } from "react-i18next";
 
 const roles: ProjectMemberRole[] = [
   "MANAGER",
@@ -23,6 +24,7 @@ export function ProjectMemberDialog({
   projectId,
   onClose,
 }: ProjectMemberDialogProps) {
+  const { t } = useTranslation();
   const addMember = useAddProjectMember();
 
   const [userId, setUserId] = useState("");
@@ -44,29 +46,29 @@ export function ProjectMemberDialog({
       {
         onSuccess: onClose,
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "Couldn't add this member. Check the user ID and try again.")),
+          setError(getApiErrorMessage(mutationError, t("projects.members.addError")))
       },
     );
   }
 
   return (
     <Modal
-      title="Add project member"
-      description="Assign a user to this project's team with a project-level role."
+      title={t("projects.members.addTitle")}
+      description={t("projects.members.addDescription")}
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-5">
-        <Field label="User ID" hint="Paste the user's UUID from the organization member directory.">
+        <Field label={t("projects.members.userId")} hint={t("projects.members.userIdHint")}>
           <input
             value={userId}
             onChange={(event) => setUserId(event.target.value)}
-            placeholder="User UUID"
+            placeholder={t("projects.members.userIdPlaceholder")}
             required
             className={`${inputClass} font-mono`}
           />
         </Field>
 
-        <Field label="Project role">
+        <Field label={t("projects.members.role")}>
           <select
             value={role}
             onChange={(event) => setRole(event.target.value as ProjectMemberRole)}
@@ -88,11 +90,11 @@ export function ProjectMemberDialog({
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={addMember.isPending}>
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button type="submit" variant="primary" disabled={addMember.isPending || !userId.trim()}>
-            {addMember.isPending ? "Adding…" : "Add member"}
+            {addMember.isPending ? t("projects.members.adding") : t("projects.members.addButton")}
           </Button>
         </div>
       </form>

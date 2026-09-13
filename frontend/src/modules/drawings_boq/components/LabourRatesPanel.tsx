@@ -5,12 +5,14 @@ import { useCreateLabourRate, useLabourRates, useUpdateLabourRate } from "../hoo
 import { getApiErrorMessage } from "../../identity";
 import { formatCurrency } from "../utils/drawings-boq.utils";
 import type { LabourRate } from "../types/drawings-boq.types";
+import { useTranslation } from "react-i18next";
 
 interface LabourRatesPanelProps {
   canManage: boolean;
 }
 
 export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
+  const { t } = useTranslation();
   const ratesQuery = useLabourRates();
   const createRate = useCreateLabourRate();
   const updateRate = useUpdateLabourRate();
@@ -33,7 +35,7 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
       {
         onSuccess: () => { setTrade(""); setUnit("Sft"); setRate(""); setFormOpen(false); },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "A rate for this trade may already exist.")),
+          setError(getApiErrorMessage(mutationError, t("labour.createError"))),
       },
     );
   }
@@ -41,45 +43,45 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
   return (
     <Panel>
       <PanelHeader
-        eyebrow="LABOUR COSTING"
-        title="Labour rates"
-        description="Per-unit trade rates used to auto-generate labour line items against a BOQ's covered area."
-        action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen((v) => !v)}>{formOpen ? "Close" : "Add rate"}</Button> : null}
+        eyebrow={t("labour.eyebrow")}
+        title={t("labour.title")}
+        description={t("labour.description")}
+        action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen((v) => !v)}>{formOpen ? t("common.close") : t("labour.add")}</Button> : null}
       />
 
       {formOpen ? (
         <form onSubmit={submit} className="grid gap-3 border-b border-[#e1d5bc] p-5 sm:grid-cols-3">
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Trade *</span>
-            <input className={cls} required value={trade} onChange={(e) => setTrade(e.target.value)} placeholder="Labour Contractor — grey structure" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("labour.trade")} *</span>
+            <input className={cls} required value={trade} onChange={(e) => setTrade(e.target.value)} placeholder={t("labour.tradePlaceholder")} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Unit *</span>
-            <input className={cls} required value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Sft" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("labour.unit")} *</span>
+            <input className={cls} required value={unit} onChange={(e) => setUnit(e.target.value)} placeholder={t("labour.unitPlaceholder")} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Rate (PKR) *</span>
-            <input className={cls} required type="number" step="any" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="550" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("labour.rate")} *</span>
+            <input className={cls} required type="number" step="any" value={rate} onChange={(e) => setRate(e.target.value)} placeholder={t("labour.ratePlaceholder")} />
           </label>
           {error ? <div className="sm:col-span-3 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
           <div className="sm:col-span-3 flex justify-end">
-            <Button type="submit" variant="primary" disabled={createRate.isPending}>{createRate.isPending ? "Saving…" : "Save rate"}</Button>
+            <Button type="submit" variant="primary" disabled={createRate.isPending}>{createRate.isPending ? t("common.saving") : t("labour.save")}</Button>
           </div>
         </form>
       ) : null}
 
       {ratesQuery.isLoading ? (
-        <LoadingState label="Loading labour rates…" />
+        <LoadingState label={t("labour.loading")} />
       ) : ratesQuery.isError ? (
-        <ErrorState title="We couldn't load labour rates" onRetry={() => void ratesQuery.refetch()} />
+        <ErrorState title={t("labour.loadError")} onRetry={() => void ratesQuery.refetch()} />
       ) : rates.length === 0 ? (
-        <EmptyState icon="info" title="No labour rates yet" description="Add trade rates here to auto-generate labour costs on any BOQ version." />
+        <EmptyState icon="info" title={t("labour.emptyTitle")} description={t("labour.emptyDesc")} />
       ) : (
         <TableShell>
           <table className="w-full min-w-[420px] text-left">
             <thead className="bg-[#f5efe3]">
               <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
-                <th className="px-4 py-3">Trade</th><th className="px-4 py-3">Unit</th><th className="px-4 py-3 text-right">Rate</th>
+                <th className="px-4 py-3">{t("labour.colTrade")}</th><th className="px-4 py-3">{t("labour.colUnit")}</th><th className="px-4 py-3 text-right">{t("labour.colRate")}</th>
               </tr>
             </thead>
             <tbody>

@@ -1,8 +1,7 @@
 import {useMutation, useQuery, useQueryClient,
 } from "@tanstack/react-query";
 import { subscriptionsApi } from "../api/subscriptions.api";
-import type {
-  AdminSubscriptionListParams, CancelSubscriptionRequest, ChangePlanRequest,
+import type {AdminSubscriptionListParams, CancelSubscriptionRequest, ChangePlanRequest,
 } from "../types/subscription.types";
 
 export const subscriptionKeys = {

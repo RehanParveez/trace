@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Button, Modal } from "../../organizations/components/OrganizationUi";
 import { useAddCustomBOQItem } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
+import { useTranslation } from "react-i18next";
 
 interface AddCustomBOQItemDialogProps {
   boqVersionId: string;
@@ -10,6 +11,7 @@ interface AddCustomBOQItemDialogProps {
 }
 
 export function AddCustomBOQItemDialog({ boqVersionId, onClose }: AddCustomBOQItemDialogProps) {
+  const { t } = useTranslation();
   const addItem = useAddCustomBOQItem(boqVersionId);
 
   const [materialName, setMaterialName] = useState("");
@@ -36,43 +38,50 @@ export function AddCustomBOQItemDialog({ boqVersionId, onClose }: AddCustomBOQIt
       {
         onSuccess: onClose,
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "Couldn't add this line item. Please try again.")),
+          setError(getApiErrorMessage(mutationError, t("boq.addItem.error")))
       },
     );
   }
 
   return (
-    <Modal title="Add line item" description="Add scope not covered by the automated categories." onClose={onClose}>
+    <Modal title={t("boq.addItem.title")} description={t("boq.addItem.description")} onClose={onClose}>
       <form onSubmit={submit} className="space-y-3">
         <label className="block">
-          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Description *</span>
-          <input className={cls} required value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder="Description of work" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.addItem.descriptionLabel")} *</span>
+          <input className={cls} required value={materialName} onChange={(e) => setMaterialName(e.target.value)} placeholder={t("boq.addItem.descriptionPlaceholder")} />
         </label>
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Category</span>
-            <input className={cls} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Optional" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.addItem.category")}</span>
+            <input className={cls} value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t("boq.addItem.optional")} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Unit *</span>
-            <input className={cls} required value={unit} onChange={(e) => setUnit(e.target.value)} placeholder="Sft" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.addItem.unit")} *</span>
+            <input className={cls} required value={unit} onChange={(e) => setUnit(e.target.value)} placeholder={t("boq.addItem.optional")} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Quantity *</span>
-            <input className={cls} required type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">
+              {t("boq.addItem.quantity")} *
+            </span>
+            <input className={cls} required type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)}/>
           </label>
+
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Rate (PKR)</span>
-            <input className={cls} type="number" step="any" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} placeholder="Optional" />
+           <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">
+             {t("boq.addItem.rate")}
+           </span>
+           <input
+            className={cls} type="number" step="any" value={unitRate} onChange={(e) => setUnitRate(e.target.value)}
+              placeholder={t("boq.addItem.optional")}/>
           </label>
         </div>
 
         {error ? <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
 
         <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
-          <Button variant="ghost" onClick={onClose} disabled={addItem.isPending}>Cancel</Button>
+          <Button variant="ghost" onClick={onClose} disabled={addItem.isPending}>{t("common.cancel")}</Button>
           <Button type="submit" variant="primary" disabled={addItem.isPending || !materialName.trim() || !unit.trim() || quantity === ""}>
-            {addItem.isPending ? "Adding…" : "Add item"}
+            {addItem.isPending ? t("boq.addItem.adding") : t("boq.addItem.add")}
           </Button>
         </div>
       </form>

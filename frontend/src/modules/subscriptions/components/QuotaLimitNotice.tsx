@@ -1,11 +1,13 @@
 import { Link } from "react-router-dom";
 import { Icon } from "../../organizations/components/OrganizationUi";
+import { useTranslation } from "react-i18next";
 
 interface QuotaLimitNoticeProps {
   message: string;
 }
 
 export function QuotaLimitNotice({ message }: QuotaLimitNoticeProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start gap-3 rounded-[var(--radius-md)] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-4 py-3">
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[var(--color-surface)] text-[var(--color-warning)]">
@@ -18,7 +20,7 @@ export function QuotaLimitNotice({ message }: QuotaLimitNoticeProps) {
           to="/app/subscription"
           className="mt-1 inline-block text-[12.5px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
         >
-          View plans and upgrade
+          {t("subscription.quota.viewPlans")}
         </Link>
       </div>
     </div>

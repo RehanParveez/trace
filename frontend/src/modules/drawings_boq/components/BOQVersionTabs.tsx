@@ -1,4 +1,5 @@
 import type { BOQVersion } from "../types/drawings-boq.types";
+import { useTranslation } from "react-i18next";
 
 interface BOQVersionTabsProps {
   versions: BOQVersion[];
@@ -7,6 +8,7 @@ interface BOQVersionTabsProps {
 }
 
 export function BOQVersionTabs({ versions, selectedId, onSelect }: BOQVersionTabsProps) {
+  const { t } = useTranslation();
   if (versions.length === 0) return null;
 
   return (

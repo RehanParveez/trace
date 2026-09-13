@@ -8,6 +8,7 @@ import {
 } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import type { Milestone } from "../types/project.types";
+import { useTranslation } from "react-i18next";
 
 interface MilestoneFormProps {
   projectId: string;
@@ -20,6 +21,7 @@ export function MilestoneForm({
   milestone,
   onClose,
 }: MilestoneFormProps) {
+  const { t } = useTranslation();
   const createMilestone = useCreateMilestone();
   const updateMilestone = useUpdateMilestone();
 
@@ -53,7 +55,7 @@ export function MilestoneForm({
         {
           onSuccess: onClose,
           onError: (mutationError) =>
-            setError(getApiErrorMessage(mutationError, "Couldn't save this milestone. Please try again.")),
+            setError(getApiErrorMessage(mutationError, t("milestones.form.saveError")))
         },
       );
 
@@ -72,39 +74,39 @@ export function MilestoneForm({
       {
         onSuccess: onClose,
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "Couldn't add this milestone. Please try again.")),
+          setError(getApiErrorMessage(mutationError, t("milestones.form.createError")))
       },
     );
   }
 
   return (
     <Modal
-      title={editing ? "Edit milestone" : "Add milestone"}
-      description="Delivery checkpoint tracked against this project's timeline."
+      title={editing ? t("milestones.form.editTitle") : t("milestones.form.addTitle")}
+      description={t("milestones.form.description")}
       onClose={onClose}
     >
       <form onSubmit={submit} className="space-y-5">
-        <Field label="Milestone name">
+        <Field label={t("milestones.form.name")}>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
             required
-            placeholder="Foundation complete"
+            placeholder={t("milestones.form.namePlaceholder")}
             className={inputClass}
           />
         </Field>
 
-        <Field label="Description">
+        <Field label={t("milestones.form.descriptionLabel")}>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={4}
-            placeholder="Milestone details"
+            placeholder={t("milestones.form.descriptionPlaceholder")}
             className={`${inputClass} resize-y`}
           />
         </Field>
 
-        <Field label="Due date">
+        <Field label={t("milestones.form.dueDate")}>
           <input
             type="date"
             value={dueDate}
@@ -121,7 +123,9 @@ export function MilestoneForm({
               onChange={(event) => setCompleted(event.target.checked)}
               className="h-4 w-4 accent-[var(--color-trace-gold)]"
             />
-            <span className="text-[13px] text-[var(--color-text-primary)]">Mark as completed</span>
+            <span className="text-[13px] text-[var(--color-text-primary)]">
+              {t("milestones.form.markCompleted")}
+            </span>
           </label>
         ) : null}
 
@@ -133,11 +137,15 @@ export function MilestoneForm({
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button type="submit" variant="primary" disabled={isSubmitting || !name.trim()}>
-            {isSubmitting ? "Saving…" : editing ? "Save changes" : "Add milestone"}
+            {isSubmitting
+              ? t("common.saving")
+              : editing
+                ? t("common.saveChanges")
+                : t("milestones.form.addButton")}
           </Button>
         </div>
       </form>

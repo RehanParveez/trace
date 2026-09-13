@@ -1,4 +1,4 @@
-import {type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode, useEffect, useId, useRef, useState,
+import {type ButtonHTMLAttributes, type HTMLAttributes, type ReactNode, createContext, useCallback, useContext, useEffect, useId, useRef, useState,
 } from "react";
 import type { OrganizationIconName } from "../types/organization.types";
 
@@ -1008,5 +1008,134 @@ export function Pager({
         </Button>
       </div>
     </div>
+  );
+}
+
+export type ToastTone = "success" | "error" | "info";
+
+export interface ToastOptions {
+  tone?: ToastTone;
+  title: string;
+  description?: string;
+  durationMs?: number;
+}
+
+interface ToastRecord {
+  id: string;
+  tone: ToastTone;
+  title: string;
+  description?: string;
+}
+
+interface ToastContextValue {
+  showToast: (options: ToastOptions) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export function useToast(): ToastContextValue {
+  const context = useContext(ToastContext);
+
+  if (!context) {
+    throw new Error("useToast must be used within a ToastProvider");
+  }
+
+  return context;
+}
+
+const TOAST_STYLES: Record<
+  ToastTone,
+  { icon: OrganizationIconName; iconClass: string; borderClass: string }
+> = {
+  success: {
+    icon: "check",
+    iconClass: "bg-[var(--color-success-bg)] text-[var(--color-success)]",
+    borderClass: "border-[var(--color-success)]/25",
+  },
+  error: {
+    icon: "alert",
+    iconClass: "bg-[var(--color-danger-bg)] text-[var(--color-danger)]",
+    borderClass: "border-[var(--color-danger)]/25",
+  },
+  info: {
+    icon: "info",
+    iconClass: "bg-[var(--color-info-bg)] text-[var(--color-info)]",
+    borderClass: "border-[var(--color-info)]/25",
+  },
+};
+
+function ToastCard({
+  toast,
+  onDismiss,
+}: {
+  toast: ToastRecord;
+  onDismiss: () => void;
+}) {
+  const style = TOAST_STYLES[toast.tone];
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={`pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-[var(--radius-lg)] border ${style.borderClass} bg-[var(--color-surface)] p-4 shadow-[0_16px_40px_rgba(8,13,24,0.18)]`}
+    >
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] ${style.iconClass}`}>
+        <Icon name={style.icon} size={15} />
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">{toast.title}</div>
+        {toast.description ? (
+          <div className="mt-0.5 text-[12.5px] leading-5 text-[var(--color-text-secondary)]">
+            {toast.description}
+          </div>
+        ) : null}
+      </div>
+
+      <button
+        type="button"
+        onClick={onDismiss}
+        aria-label="Dismiss notification"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] text-[var(--color-text-muted)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
+      >
+        <Icon name="x" size={12} />
+      </button>
+    </div>
+  );
+}
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<ToastRecord[]>([]);
+
+  const dismiss = useCallback((id: string) => {
+    setToasts((current) => current.filter((toast) => toast.id !== id));
+  }, []);
+
+  const showToast = useCallback(
+    (options: ToastOptions) => {
+      const id = crypto.randomUUID();
+      const tone = options.tone ?? "info";
+      const durationMs = options.durationMs ?? (tone === "error" ? 6000 : 4000);
+
+      setToasts((current) => [
+        ...current,
+        { id, tone, title: options.title, description: options.description },
+      ]);
+
+      window.setTimeout(() => dismiss(id), durationMs);
+    },
+    [dismiss],
+  );
+
+  return (
+    <ToastContext.Provider value={{ showToast }}>
+      {children}
+
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[110] flex flex-col items-center gap-2 p-4 sm:inset-x-auto sm:bottom-6 sm:right-6 sm:items-end">
+        {toasts.map((toast) => (
+          <ToastCard key={toast.id} toast={toast} onDismiss={() => dismiss(toast.id)} />
+        ))}
+      </div>
+    </ToastContext.Provider>
   );
 }

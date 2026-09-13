@@ -1,7 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {
-  AdminSubscriptionListParams, CancelSubscriptionRequest, ChangePlanRequest, Plan,
-  Subscription, SubscriptionListResponse, SubscriptionSummary, UsageResponse,
+import type {AdminSubscriptionListParams, CancelSubscriptionRequest, ChangePlanRequest, Plan, Subscription, SubscriptionListResponse, SubscriptionSummary, UsageResponse,
 } from "../types/subscription.types";
 
 export const subscriptionsApi = {

@@ -9,6 +9,7 @@ import type {Milestone,
 import {formatProjectDate,
 } from "../utils/project.utils";
 import { MilestoneForm } from "./MilestoneForm";
+import { useTranslation } from "react-i18next";
 
 interface MilestoneTableProps {
   projectId: string;
@@ -21,6 +22,7 @@ export function MilestoneTable({
   milestones,
   canUpdate,
 }: MilestoneTableProps) {
+  const { t } = useTranslation();
   const [formOpen, setFormOpen] =
     useState(false);
 
@@ -49,22 +51,21 @@ export function MilestoneTable({
     <>
       <Panel className="overflow-hidden">
         <PanelHeader
-          eyebrow="DELIVERY TRACK"
-          title="Milestones"
-          description="Major delivery checkpoints tracked against this project's timeline."
+          eyebrow={t("milestones.table.eyebrow")}
+          title={t("milestones.table.title")}
+          description={t("milestones.table.description")}
           action={
-            canUpdate ? (
-              <Button variant="primary" onClick={openCreate}>
-                Add milestone
-              </Button>
-            ) : undefined
+           canUpdate ? (
+            <Button variant="primary" onClick={openCreate}>
+              {t("milestones.table.add")}
+            </Button>
+           ) : undefined
           }
         />
 
         {milestones.length === 0 ? (
           <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
-            No milestones have been configured
-            for this project.
+            {t("milestones.table.empty")}
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
@@ -106,7 +107,7 @@ export function MilestoneTable({
                         ) : null}
 
                         <div className="mt-1.5 text-[11px] text-[var(--color-text-muted)]">
-                          Due:{" "}
+                          {t("milestones.table.due")}:{" "}
                           {formatProjectDate(
                             milestone.due_date,
                           )}
@@ -131,7 +132,7 @@ export function MilestoneTable({
                             })
                           }
                         >
-                          {completed ? "Reopen" : "Complete"}
+                          {completed ? t("milestones.table.reopen") : t("milestones.table.complete")}
                         </Button>
 
                         <Button
@@ -142,7 +143,7 @@ export function MilestoneTable({
                             )
                           }
                         >
-                          Edit
+                          {t("common.edit")}
                         </Button>
 
                         <Button
@@ -151,11 +152,7 @@ export function MilestoneTable({
                             deleteMilestone.isPending
                           }
                           onClick={() => {
-                            if (
-                              !window.confirm(
-                                `Delete "${milestone.name}"?`,
-                              )
-                            ) {
+                            if (!window.confirm(t("milestones.table.deleteConfirm", { name: milestone.name }))) {
                               return;
                             }
 
@@ -167,12 +164,12 @@ export function MilestoneTable({
                               },
                               {
                                 onError: (error) =>
-                                  window.alert(getApiErrorMessage(error, "Couldn't delete this milestone.")),
+                                 window.alert(getApiErrorMessage(error, t("milestones.table.deleteError")))
                               },
                             );
                           }}
                         >
-                          Delete
+                          {t("common.delete")}
                         </Button>
                       </div>
                     ) : null}

@@ -2,6 +2,7 @@ import { EmptyState, ErrorState, LoadingState, Modal } from "../../organizations
 import { useDrawingElements } from "../hooks";
 import type { Drawing } from "../types/drawings-boq.types";
 import { formatQuantity } from "../utils/drawings-boq.utils";
+import { useTranslation } from "react-i18next";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -9,6 +10,7 @@ interface DrawingElementsDialogProps {
 }
 
 export function DrawingElementsDialog({ drawing, onClose }: DrawingElementsDialogProps) {
+  const { t } = useTranslation();
   const elementsQuery = useDrawingElements(drawing.id);
 
   return (

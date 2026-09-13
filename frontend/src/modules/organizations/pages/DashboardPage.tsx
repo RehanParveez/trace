@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useOrganization, useMembers } from "../hooks";
 import { useDashboardAttention } from "../hooks/useDashboardAttention";
 import { useClients, useProjects } from "../../projects";
@@ -13,6 +14,7 @@ import {ErrorState, LoadingState, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
 
 export function DashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
 
@@ -27,7 +29,7 @@ export function DashboardPage() {
   );
 
   if (organizationQuery.isLoading || projectsQuery.isLoading || clientsQuery.isLoading) {
-    return <LoadingState label="Loading your workspace…" />;
+    return <LoadingState label={t("dashboard.loading")} />;
   }
 
   if (
@@ -40,7 +42,7 @@ export function DashboardPage() {
   ) {
     return (
       <ErrorState
-        title="We couldn't load your dashboard"
+        title={t("dashboard.loadError")}
         onRetry={() => {
           void organizationQuery.refetch();
           void projectsQuery.refetch();
@@ -66,45 +68,57 @@ export function DashboardPage() {
 
       <section>
         <SectionDivider
-          title="Workspace pulse"
-          description="Where things stand across your organization right now."
+          title={t("dashboard.pulse.title")}
+          description={t("dashboard.pulse.description")}
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Active projects"
+            label={t("dashboard.stat.activeProjects")}
             value={activeProjectCount}
-            note={`${projects.length} total projects`}
+            note={t("dashboard.stat.totalProjects", { count: projects.length })}
             icon="projects"
             tone="blue"
-            actionLabel="View projects"
+            actionLabel={t("dashboard.stat.viewProjects")}
             onAction={() => navigate("/app/projects")}
           />
 
           <StatCard
-            label="Team"
+            label={t("dashboard.stat.team")}
             value={memberCount}
-            note="Organization members"
+            note={t("dashboard.stat.organizationMembers")}
             icon="users"
             tone="blue"
-            actionLabel={canManageMembers ? "Manage members" : undefined}
-            onAction={canManageMembers ? () => navigate("/app/organization/members") : undefined}
+            actionLabel={canManageMembers ? t("dashboard.stat.manageMembers") : undefined}
+            onAction={
+              canManageMembers
+                ? () => navigate("/app/organization/members")
+                : undefined
+            }
           />
 
           <StatCard
-            label="Needs attention"
+            label={t("dashboard.stat.needsAttention")}
             value={attention.isLoading ? "…" : attentionCount}
-            note={attentionCount > 0 ? "Open items across your workspace" : "You're all caught up"}
+            note={
+              attentionCount > 0
+                ? t("dashboard.stat.openItems")
+                : t("dashboard.stat.allCaughtUp")
+            }
             icon="alert"
             tone={attentionCount > 0 ? "gold" : "green"}
-            actionLabel={attentionCount > 0 ? "Review" : undefined}
-            onAction={attentionCount > 0 ? () => navigate(attention.items[0].to) : undefined}
+            actionLabel={attentionCount > 0 ? t("dashboard.stat.review") : undefined}
+            onAction={
+              attentionCount > 0
+                ? () => navigate(attention.items[0].to)
+                : undefined
+            }
           />
 
           <StatCard
-            label="AI"
-            value={organization.ai_enabled ? "On" : "Off"}
-            note="Assistive capability"
+            label={t("dashboard.stat.ai")}
+            value={organization.ai_enabled ? t("org.aiOn") : t("org.aiOff")}
+            note={t("org.aiNote")}
             icon="spark"
             tone={organization.ai_enabled ? "green" : "gold"}
           />
@@ -113,10 +127,9 @@ export function DashboardPage() {
 
       <section>
         <SectionDivider
-          title="Portfolio financials"
-          description="Approved budget, committed procurement and approved spend across every project."
+          title={t("dashboard.financialSection.title")}
+          description={t("dashboard.financialSection.description")}
         />
-
         <DashboardFinancialSummary />
       </section>
 
@@ -126,12 +139,18 @@ export function DashboardPage() {
 
       <section className="grid gap-5 xl:grid-cols-[1.3fr_1fr]">
         <div className="space-y-5">
-          <DashboardProjectHealth projects={projects} clientNameById={clientNameById} />
+          <DashboardProjectHealth
+            projects={projects}
+            clientNameById={clientNameById}
+          />
           <DashboardActivityFeed />
         </div>
 
         <div className="space-y-5">
-          <DashboardAttentionFeed items={attention.items} isLoading={attention.isLoading} />
+          <DashboardAttentionFeed
+            items={attention.items}
+            isLoading={attention.isLoading}
+          />
         </div>
       </section>
     </div>

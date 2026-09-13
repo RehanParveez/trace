@@ -4,6 +4,7 @@ import type { Project } from "../types/project.types";
 import {formatProjectDate,
 } from "../utils/project.utils";
 import { ProjectStatusBadge } from "./ProjectStatusBadge";
+import { useTranslation } from "react-i18next";
 
 interface ProjectHeaderProps {
   project: Project;
@@ -20,6 +21,7 @@ export function ProjectHeader({
   onEdit,
   onDelete,
 }: ProjectHeaderProps) {
+  const { t } = useTranslation();
   return (
     <div className="overflow-hidden rounded-[var(--radius-lg)] border border-[#263356] bg-[linear-gradient(120deg,var(--color-trace-navy)_0%,var(--color-trace-navy-soft)_60%,var(--color-trace-navy-mid)_100%)] shadow-[0_12px_32px_rgba(8,13,24,0.14)]">
       <div className="relative p-6 sm:p-7">
@@ -34,7 +36,7 @@ export function ProjectHeader({
           <div className="min-w-0">
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Badge tone="gold">
-                PROJECT
+               {t("projects.header.badge")}
               </Badge>
 
               <ProjectStatusBadge
@@ -49,7 +51,7 @@ export function ProjectHeader({
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[12px] text-[#bfc8d3]">
               {project.code ? (
                 <span>
-                  Code:{" "}
+                  {t("projects.header.code")}:{" "}
                   <span className="font-mono text-[#e5c77d]">
                     {project.code}
                   </span>
@@ -80,7 +82,7 @@ export function ProjectHeader({
                   name="settings"
                   size={12}
                 />
-                Edit project
+                {t("projects.header.edit")}
               </Button>
             ) : null}
 
@@ -89,7 +91,7 @@ export function ProjectHeader({
                 variant="ghost"
                 onClick={onDelete}
               >
-                Delete
+                {t("common.delete")}
               </Button>
             ) : null}
           </div>
@@ -98,7 +100,7 @@ export function ProjectHeader({
         <div className="mt-7 grid gap-px overflow-hidden rounded-[9px] border border-white/10 bg-white/10 sm:grid-cols-3">
           <div className="bg-[var(--color-trace-navy-soft)] p-4">
             <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8291a4]">
-              Start date
+              {t("projects.header.startDate")}
             </div>
             <div className="mt-1.5 text-[13px] font-semibold text-white">
               {formatProjectDate(
@@ -109,7 +111,7 @@ export function ProjectHeader({
 
           <div className="bg-[var(--color-trace-navy-soft)] p-4">
             <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8291a4]">
-              Expected completion
+              {t("projects.header.expectedCompletion")}
             </div>
             <div className="mt-1.5 text-[13px] font-semibold text-white">
               {formatProjectDate(
@@ -120,7 +122,7 @@ export function ProjectHeader({
 
           <div className="bg-[var(--color-trace-navy-soft)] p-4">
             <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-[#8291a4]">
-              Actual completion
+              {t("projects.header.actualCompletion")}
             </div>
             <div className="mt-1.5 text-[13px] font-semibold text-white">
               {formatProjectDate(

@@ -4,6 +4,7 @@ import { Button, Modal } from "../../organizations/components/OrganizationUi";
 import { useUpdateBOQVersion } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import type { BOQVersion } from "../types/drawings-boq.types";
+import { useTranslation } from "react-i18next";
 
 interface BOQVersionMetaDialogProps {
   projectId: string;
@@ -12,6 +13,7 @@ interface BOQVersionMetaDialogProps {
 }
 
 export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersionMetaDialogProps) {
+  const { t } = useTranslation();
   const updateVersion = useUpdateBOQVersion(projectId);
   const meta = version.export_meta ?? {};
 
@@ -52,52 +54,52 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
       {
         onSuccess: onClose,
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "Couldn't save these details. Please try again.")),
+          setError(getApiErrorMessage(mutationError, t("boq.meta.saveError")))
       },
     );
   }
 
   return (
-    <Modal title="BOQ details" description="Shown on the printed and exported Bill of Quantities." onClose={onClose} wide>
+    <Modal title={t("boq.meta.title")} description={t("boq.meta.description")} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Your company name</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.companyName")}</span>
             <input className={cls} value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Shown on this BOQ" />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Client / owner</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.clientName")}</span>
             <input className={cls} value={clientName} onChange={(e) => setClientName(e.target.value)} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Project title</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.projectTitle")}</span>
             <input className={cls} value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Double Story Residential" />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Location</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.location")}</span>
             <input className={cls} value={location} onChange={(e) => setLocation(e.target.value)} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Plot size</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.plotSize")}</span>
             <input className={cls} value={plotSize} onChange={(e) => setPlotSize(e.target.value)} placeholder="8 Marla (30' x 60')" />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Storeys</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.storeys")}</span>
             <input className={cls} value={storeys} onChange={(e) => setStoreys(e.target.value)} placeholder="G + 1 + Mumty" />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Covered area (Sft)</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.coveredArea")}</span>
             <input className={cls} type="number" step="any" value={coveredArea} onChange={(e) => setCoveredArea(e.target.value)} />
           </label>
         </div>
 
         <div className="grid grid-cols-2 gap-3 border-t border-[#e1d5bc] pt-3">
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Prepared by</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.preparedBy")}</span>
             <input className={cls} value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">Checked by</span>
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.checkedBy")}</span>
             <input className={cls} value={checkedBy} onChange={(e) => setCheckedBy(e.target.value)} />
           </label>
         </div>

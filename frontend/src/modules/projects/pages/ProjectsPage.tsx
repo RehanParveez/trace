@@ -10,8 +10,10 @@ import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import { ClientTable } from "../components/ClientTable";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectCard } from "../components/ProjectCard";
+import { useTranslation } from "react-i18next";
 
 export function ProjectsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
 
@@ -68,7 +70,7 @@ export function ProjectsPage() {
 
   function handleDelete(project: Project) {
     const confirmed = window.confirm(
-      `Delete "${project.name}"? This action cannot be undone.`,
+      t("projects.detail.deleteConfirm", { name: project.name }),
     );
 
     if (!confirmed) {
@@ -81,8 +83,8 @@ export function ProjectsPage() {
   if (!canRead && permissions.length > 0) {
     return (
       <ErrorState
-        title="Project access unavailable"
-        description="You do not have permission to view this organization's projects."
+        title={t("projects.page.accessUnavailable")}
+        description={t("projects.page.accessUnavailableDesc")}
       />
     );
   }
@@ -99,8 +101,8 @@ export function ProjectsPage() {
   ) {
     return (
       <ErrorState
-        title="We couldn't load projects"
-        description="The projects or client information could not be loaded."
+        title={t("projects.page.loadError")}
+        description={t("projects.page.loadErrorDesc")}
         onRetry={() => {
           void projectsQuery.refetch();
           void clientsQuery.refetch();
@@ -112,73 +114,76 @@ export function ProjectsPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="PROJECT MANAGEMENT"
-        title="Projects"
-        description="Manage construction projects, clients, project teams and delivery milestones."
+        eyebrow={t("projects.page.eyebrow")}
+        title={t("projects.page.title")}
+        description={t("projects.page.description")}
         actions={
-          canCreate ? (
-            <Button
-              variant="primary"
-              onClick={openCreate}
-              disabled={blockedByQuota}
-              title={blockedByQuota ? "You've reached your plan's project limit" : undefined}
-            >
-              Create project
-            </Button>
-          ) : null
-        }
-      />
+         canCreate ? (
+          <Button
+            variant="primary"
+            onClick={openCreate}
+            disabled={blockedByQuota}
+            title={blockedByQuota ? t("projects.page.quotaTitle") : undefined}
+          >
+            {t("projects.page.create")}
+          </Button>
+         ) : null
+       }
+    />
 
       {canCreate && blockedByQuota ? (
         <QuotaLimitNotice
-          message={`You've reached your plan's limit of ${projectQuota.limit} project${projectQuota.limit === 1 ? "" : "s"}. Upgrade to add more.`}
+          message={t("projects.form.quotaLimit", {
+           count: projectQuota.limit,
+           limit: projectQuota.limit,
+          })}
         />
       ) : null}
 
       <section>
         <SectionDivider
-          title="Project pulse"
-          description="Current project portfolio across this organization."
+          title={t("projects.page.pulseTitle")}
+          description={t("projects.page.pulseDesc")}
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Total"
+            label={t("projects.page.statTotal")}
             value={projects.length}
-            note="Organization projects"
+            note={t("projects.page.statTotalNote")}
             icon="building"
             tone="blue"
-            actionLabel={statusFilter !== "ALL" ? "Clear filter" : undefined}
+            actionLabel={statusFilter !== "ALL" ? t("projects.page.clearFilter") : undefined}
             onAction={statusFilter !== "ALL" ? () => setStatusFilter("ALL") : undefined}
           />
 
           <StatCard
-            label="Active"
+            label={t("projects.page.statActive")}
             value={activeCount}
-            note="Currently underway"
+            note={t("projects.page.statActiveNote")}
             icon="check"
             tone="green"
-            actionLabel="View active"
+            actionLabel={t("projects.page.viewActive")}
             onAction={() => setStatusFilter("ACTIVE")}
           />
 
           <StatCard
-            label="Planning"
+            label={t("projects.page.statPlanning")}
             value={planningCount}
-            note="Not yet underway"
+            note={t("projects.page.statPlanningNote")}
             icon="settings"
             tone="gold"
-            actionLabel="View planning"
+            actionLabel={t("projects.page.viewPlanning")}
             onAction={() => setStatusFilter("PLANNING")}
           />
 
           <StatCard
-            label="Completed"
+            label={t("projects.page.statCompleted")}
             value={completedCount}
-            note="Finished projects"
+            note={t("projects.page.statCompletedNote")}
             icon="shield"
             tone="blue"
-            actionLabel="View completed"
+            actionLabel={t("projects.page.viewCompleted")}
             onAction={() => setStatusFilter("COMPLETED")}
           />
         </div>
@@ -186,20 +191,20 @@ export function ProjectsPage() {
 
             <section>
         <SectionDivider
-          title="Project register"
-          description="Organization-scoped project records returned by the Projects service."
+          title={t("projects.page.registerTitle")}
+          description={t("projects.page.registerDesc")}
         />
 
         <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4">
           <div className="flex flex-wrap items-center gap-2">
             {(
               [
-                ["ALL", "All"],
-                ["PLANNING", "Planning"],
-                ["ACTIVE", "Active"],
-                ["ON_HOLD", "On hold"],
-                ["COMPLETED", "Completed"],
-                ["CANCELLED", "Cancelled"],
+                ["ALL", t("projects.status.all")],
+                ["PLANNING", t("projects.status.planning")],
+                ["ACTIVE", t("projects.status.active")],
+                ["ON_HOLD", t("projects.status.onHold")],
+                ["COMPLETED", t("projects.status.completed")],
+                ["CANCELLED", t("projects.status.cancelled")]
               ] as const
             ).map(([value, label]) => (
               <button
@@ -220,7 +225,7 @@ export function ProjectsPage() {
 
         {filteredProjects.length === 0 ? (
           <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-8 text-center text-[12px] text-[var(--color-text-secondary)]">
-            No projects match this filter.
+            {t("projects.page.emptyFilter")}
           </div>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -244,8 +249,8 @@ export function ProjectsPage() {
 
       <section>
         <SectionDivider
-          title="Client directory"
-          description="Clients that can be linked to projects in this organization."
+          title={t("projects.page.clientsTitle")}
+          description={t("projects.page.clientsDesc")}
         />
 
         <ClientTable

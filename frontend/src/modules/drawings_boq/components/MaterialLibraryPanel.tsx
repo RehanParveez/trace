@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../identity";
 import { useCreateMaterialLibraryEntry, useMaterialLibrary, useUpdateMaterialLibraryEntry } from "../hooks";
 import { formatCurrency } from "../utils/drawings-boq.utils";
 import type { MaterialLibraryEntry } from "../types/drawings-boq.types";
+import { useTranslation } from "react-i18next";
 
 interface MaterialLibraryPanelProps {
   canManage: boolean;
@@ -17,6 +18,7 @@ interface MaterialLibraryRowProps {
 }
 
 export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
+  const { t } = useTranslation();
   const libraryQuery = useMaterialLibrary();
   const createEntry = useCreateMaterialLibraryEntry();
 
@@ -55,7 +57,7 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
       {
         onSuccess: () => { setRawText(""); setNormalizedName(""); setCategory(""); setDefaultUnit(""); setDefaultRate(""); setFormOpen(false); },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "A mapping for this text may already exist.")),
+          setError(getApiErrorMessage(mutationError, t("materials.createError"))),
       },
     );
   }
@@ -63,52 +65,52 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
   return (
     <Panel>
       <PanelHeader
-        eyebrow="MATERIAL NORMALIZATION"
-        title="Material library"
-        description="Trace converts messy construction language on drawings into your organization's standard materials — reused across every project."
-        action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen((v) => !v)}>{formOpen ? "Close" : "Add mapping"}</Button> : null}
+        eyebrow={t("materials.eyebrow")}
+        title={t("materials.title")}
+        description={t("materials.description")}
+        action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen((v) => !v)}>{formOpen ? t("common.close") : t("materials.add")}</Button> : null}
       />
 
       {entries.length > 0 ? (
         <div className="flex flex-wrap gap-6 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)] px-5 py-4 sm:px-6">
           <div>
             <div className="font-[Archivo] text-[22px] font-bold tracking-[-0.02em] text-[var(--color-text-primary)]">{stats.total}</div>
-            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">Mappings</div>
+            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">{t("materials.statMappings")}</div>
           </div>
 
           <div>
             <div className="font-[Archivo] text-[22px] font-bold tracking-[-0.02em] text-[var(--color-text-primary)]">
               {stats.total === 0 ? "—" : `${Math.round((stats.priced / stats.total) * 100)}%`}
             </div>
-            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">Priced automatically</div>
+            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">{t("materials.statPriced")}</div>
           </div>
 
           <div>
             <div className="font-[Archivo] text-[22px] font-bold tracking-[-0.02em] text-[var(--color-text-primary)]">{stats.categories}</div>
-            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">Categories</div>
+            <div className="mt-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">{t("materials.statCategories")}</div>
           </div>
         </div>
       ) : null}
 
       {formOpen ? (
         <form onSubmit={submit} className="grid gap-4 border-b border-[var(--color-border)] p-5 sm:grid-cols-2">
-          <Field label="Raw text">
+          <Field label={t("materials.rawText")}>
             <input className={inputClass} required value={rawText} onChange={(e) => setRawText(e.target.value)} placeholder="concrete gr45" />
           </Field>
 
-          <Field label="Normalized name">
+          <Field label={t("materials.normalizedName")}>
             <input className={inputClass} required value={normalizedName} onChange={(e) => setNormalizedName(e.target.value)} placeholder="Concrete Grade 45 (M45)" />
           </Field>
 
-          <Field label="Category">
+          <Field label={t("materials.category")}>
             <input className={inputClass} value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Concrete" />
           </Field>
 
-          <Field label="Default unit">
+          <Field label={t("materials.defaultUnit")}>
             <input className={inputClass} value={defaultUnit} onChange={(e) => setDefaultUnit(e.target.value)} placeholder="m3" />
           </Field>
 
-          <Field label="Default rate (PKR)">
+          <Field label={t("materials.defaultRate")}>
             <input className={inputClass} type="number" step="any" value={defaultRate} onChange={(e) => setDefaultRate(e.target.value)} placeholder="18500" />
           </Field>
 
@@ -117,27 +119,27 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
           ) : null}
 
           <div className="sm:col-span-2 flex justify-end">
-            <Button type="submit" variant="primary" disabled={createEntry.isPending}>{createEntry.isPending ? "Saving…" : "Save mapping"}</Button>
+            <Button type="submit" variant="primary" disabled={createEntry.isPending}>{createEntry.isPending ? t("common.saving") : t("materials.save")}</Button>
           </div>
         </form>
       ) : null}
 
       {libraryQuery.isLoading ? (
-        <LoadingState label="Loading material library…" />
+        <LoadingState label={t("materials.loading")} />
       ) : libraryQuery.isError ? (
-        <ErrorState title="We couldn't load the material library" onRetry={() => void libraryQuery.refetch()} />
+        <ErrorState title={t("materials.loadError")} onRetry={() => void libraryQuery.refetch()} />
       ) : entries.length === 0 ? (
-        <EmptyState icon="info" title="No mappings yet" description="Add entries here to speed up material normalization during parsing." />
+        <EmptyState icon="info" title={t("materials.emptyTitle")} description={t("materials.emptyDesc")} />
       ) : (
         <TableShell>
           <table className="w-full min-w-[560px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Raw drawing text</th>
-                <th className="px-4 py-3">Trace material</th>
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Unit</th>
-                <th className="px-4 py-3 text-right">Default rate</th>
+                <th className="px-4 py-3">{t("materials.colRaw")}</th>
+                <th className="px-4 py-3">{t("materials.colNormalized")}</th>
+                <th className="px-4 py-3">{t("materials.colCategory")}</th>
+                <th className="px-4 py-3">{t("materials.colUnit")}</th>
+                <th className="px-4 py-3 text-right">{t("materials.colRate")}</th>
               </tr>
             </thead>
             <tbody>

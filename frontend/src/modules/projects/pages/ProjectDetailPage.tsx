@@ -12,8 +12,10 @@ import { MilestoneTable } from "../components/MilestoneTable";
 import { DrawingsBoqSection } from "../../drawings_boq";
 import { VerificationSection } from "../../verification";
 import { ProjectFinancialSummary } from "../../budgets";
+import { useTranslation } from "react-i18next";
 
 export function ProjectDetailPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
 
@@ -34,8 +36,8 @@ export function ProjectDetailPage() {
   if (!canRead && permissions.length > 0) {
     return (
       <ErrorState
-        title="Project access unavailable"
-        description="You do not have permission to view this project."
+       title={t("projects.detail.accessUnavailable")}
+       description={t("projects.detail.accessUnavailableDesc")}
       />
     );
   }
@@ -62,8 +64,8 @@ export function ProjectDetailPage() {
   ) {
     return (
       <ErrorState
-        title="We couldn't load this project"
-        description="The project, team or milestone information could not be loaded."
+        title={t("projects.detail.loadError")}
+        description={t("projects.detail.loadErrorDesc")}
         onRetry={() => {
           void projectQuery.refetch();
           void clientsQuery.refetch();
@@ -87,7 +89,7 @@ export function ProjectDetailPage() {
 
   function handleDelete() {
     const confirmed = window.confirm(
-      `Delete "${project.name}"? This action cannot be undone.`,
+      t("projects.detail.deleteConfirm", { name: project.name }),
     );
 
     if (!confirmed) {
@@ -104,9 +106,9 @@ export function ProjectDetailPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        eyebrow="PROJECT WORKSPACE"
-        title="Project details"
-        description="Project context, delivery milestones and assigned project team."
+        eyebrow={t("projects.detail.eyebrow")}
+        title={t("projects.detail.title")}
+        description={t("projects.detail.description")}
       />
 
       <ProjectHeader
@@ -119,34 +121,34 @@ export function ProjectDetailPage() {
 
       <section>
         <SectionDivider
-          title="Project pulse"
-          description="Core delivery information for this project."
+          title={t("projects.detail.pulseTitle")}
+          description={t("projects.detail.pulseDesc")}
         />
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Status"
+            label={t("projects.detail.statStatus")}
             value={project.status}
-            note="Current project state"
+            note={t("projects.detail.statStatusNote")}
             icon="check"
             tone="green"
           />
 
           <StatCard
-            label="Client"
-            value={client?.name ?? "No client"}
-            note="Assigned client"
+            label={t("projects.detail.statClient")}
+            value={client?.name ?? t("projects.card.noClient")}
+            note={t("projects.detail.statClientNote")}
             icon="building"
             tone="blue"
           />
 
           <StatCard
-            label="Team"
+            label={t("projects.detail.statTeam")}
             value={members.length}
-            note="Assigned project members"
+            note={t("projects.detail.statTeamNote")}
             icon="shield"
             tone="gold"
-            actionLabel="View team"
+            actionLabel={t("projects.detail.viewTeam")}
             onAction={() =>
               document
                 .getElementById("project-team")
@@ -155,12 +157,12 @@ export function ProjectDetailPage() {
           />
 
           <StatCard
-            label="Milestones"
+            label={t("projects.detail.statMilestones")}
             value={milestones.length}
-            note={`${completedMilestones} completed`}
+            note={t("projects.detail.statMilestonesNote", { count: completedMilestones })}
             icon="check"
             tone="blue"
-            actionLabel="View milestones"
+            actionLabel={t("projects.detail.viewMilestones")}
             onAction={() =>
               document
                 .getElementById("project-milestones")
@@ -172,8 +174,8 @@ export function ProjectDetailPage() {
 
       <section>
         <SectionDivider
-          title="Project financials"
-          description="Approved budget against approved expenses for this project."
+          title={t("projects.detail.financialsTitle")}
+          description={t("projects.detail.financialsDesc")}
         />
 
         <ProjectFinancialSummary projectId={project.id} />
@@ -181,8 +183,8 @@ export function ProjectDetailPage() {
 
       <section id="project-milestones">
         <SectionDivider
-          title="Delivery milestones"
-          description="Track the major delivery checkpoints attached to this project."
+          title={t("projects.detail.milestonesTitle")}
+          description={t("projects.detail.milestonesDesc")}
         />
 
         <MilestoneTable
@@ -194,16 +196,16 @@ export function ProjectDetailPage() {
 
       <section>
         <SectionDivider
-          title="Drawings & BOQ"
-          description="Upload IFC drawings and manage the auto-generated bill of quantities."
+          title={t("projects.detail.drawingsTitle")}
+          description={t("projects.detail.drawingsDesc")}
         />
         <DrawingsBoqSection projectId={project.id} />
       </section>
 
       <section>
         <SectionDivider
-          title="Progress verification"
-          description="Claims of physical progress, backed by photo evidence, against approved BOQ items."
+          title={t("projects.detail.verificationTitle")}
+          description={t("projects.detail.verificationDesc")}
         />
         <VerificationSection
           projectId={project.id}
@@ -213,8 +215,8 @@ export function ProjectDetailPage() {
 
       <section id="project-team">
         <SectionDivider
-          title="Project team"
-          description="Users assigned to this project and their project-level responsibilities."
+          title={t("projects.detail.teamTitle")}
+          description={t("projects.detail.teamDesc")}
         />
 
         <ProjectMembers

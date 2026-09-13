@@ -8,6 +8,7 @@ import {useCreateProject, useUpdateProject,
 import { getApiErrorMessage } from "../../identity";
 import type {Client, Project, ProjectStatus,
 } from "../types/project.types";
+import { useTranslation } from "react-i18next";
 
 interface ProjectFormProps {
   project?: Project;
@@ -29,6 +30,7 @@ export function ProjectForm({
   clients,
   onClose,
 }: ProjectFormProps) {
+  const { t } = useTranslation();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
 
@@ -88,7 +90,7 @@ export function ProjectForm({
         {
           onSuccess: onClose,
           onError: (mutationError) =>
-            setError(getApiErrorMessage(mutationError, "Couldn't save this project. Please try again.")),
+            setError(getApiErrorMessage(mutationError, t("projects.form.saveError")))
         },
       );
 
@@ -108,58 +110,58 @@ export function ProjectForm({
       {
         onSuccess: onClose,
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, "Couldn't create this project. The code may already be in use.")),
+          setError(getApiErrorMessage(mutationError, t("projects.form.createError")))
       },
     );
   }
 
   return (
     <Modal
-      title={editing ? "Edit project" : "Create project"}
-      description="Core project identity, delivery timeline and client assignment."
+      title={editing ? t("projects.form.editTitle") : t("projects.form.createTitle")}
+      description={t("projects.form.description")}
       onClose={onClose}
       wide
     >
       <form onSubmit={submit} className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Project name">
+          <Field label={t("projects.form.name")}>
             <input
               value={name}
               onChange={(event) => setName(event.target.value)}
               required
-              placeholder="Main construction project"
+              placeholder={t("projects.form.namePlaceholder")}
               className={inputClass}
             />
           </Field>
 
-          <Field label="Project code">
+          <Field label={t("projects.form.code")}>
             <input
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="PRJ-001"
+              placeholder={t("projects.form.codePlaceholder")}
               className={inputClass}
             />
           </Field>
         </div>
 
-        <Field label="Description">
+        <Field label={t("projects.form.descriptionLabel")}>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             rows={4}
-            placeholder="Project description"
+            placeholder={t("projects.form.descriptionPlaceholder")}
             className={`${inputClass} resize-y`}
           />
         </Field>
 
         <div className={`grid gap-4 ${editing ? "sm:grid-cols-2" : "sm:grid-cols-1"}`}>
-          <Field label="Client">
+          <Field label={t("projects.form.client")}>
             <select
               value={clientId}
               onChange={(event) => setClientId(event.target.value)}
               className={inputClass}
             >
-              <option value="">No client</option>
+              <option value="">{t("projects.form.noClient")}</option>
               {clients.map((client) => (
                 <option key={client.id} value={client.id}>
                   {client.name}
@@ -169,7 +171,7 @@ export function ProjectForm({
           </Field>
 
           {editing ? (
-            <Field label="Status">
+            <Field label={t("projects.form.status")}>
               <select
                 value={status}
                 onChange={(event) => setStatus(event.target.value as ProjectStatus)}
@@ -185,17 +187,17 @@ export function ProjectForm({
           ) : null}
         </div>
 
-        <Field label="Location">
+        <Field label={t("projects.form.location")}>
           <input
             value={location}
             onChange={(event) => setLocation(event.target.value)}
-            placeholder="Project location"
+            placeholder={t("projects.form.locationPlaceholder")}
             className={inputClass}
           />
         </Field>
 
         <div className={`grid gap-4 ${editing ? "sm:grid-cols-3" : "sm:grid-cols-2"}`}>
-          <Field label="Start date">
+          <Field label={t("projects.form.startDate")}>
             <input
               type="date"
               value={startDate}
@@ -204,7 +206,7 @@ export function ProjectForm({
             />
           </Field>
 
-          <Field label="Expected end">
+          <Field label={t("projects.form.expectedEnd")}>
             <input
               type="date"
               value={expectedEndDate}
@@ -214,7 +216,7 @@ export function ProjectForm({
           </Field>
 
           {editing ? (
-            <Field label="Actual end">
+            <Field label={t("projects.form.actualEnd")}>
               <input
                 type="date"
                 value={actualEndDate}
@@ -227,7 +229,7 @@ export function ProjectForm({
 
         {blockedByQuota ? (
           <QuotaLimitNotice
-            message={`You've reached your plan's limit of ${projectQuota.limit} project${projectQuota.limit === 1 ? "" : "s"}. Upgrade to create more.`}
+            message={t("projects.form.quotaLimit", { count: projectQuota.limit, limit: projectQuota.limit })}
           />
         ) : null}
 
@@ -239,11 +241,15 @@ export function ProjectForm({
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-5">
           <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
-            Cancel
+            {t("common.cancel")}
           </Button>
 
           <Button type="submit" variant="primary" disabled={isSubmitting || !name.trim() || blockedByQuota}>
-            {isSubmitting ? "Saving…" : editing ? "Save changes" : "Create project"}
+            {isSubmitting
+             ? t("common.saving")
+             : editing
+               ? t("common.saveChanges")
+               : t("projects.form.createButton")}
           </Button>
         </div>
       </form>

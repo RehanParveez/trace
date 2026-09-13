@@ -1,6 +1,7 @@
 import { Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
 import type { Drawing } from "../types/drawings-boq.types";
 import { formatDrawingStatus, formatFileSize, getDrawingStatusTone, isDrawingInProgress } from "../utils/drawings-boq.utils";
+import { useTranslation } from "react-i18next";
 
 interface DrawingTableProps {
   drawings: Drawing[];
@@ -11,12 +12,13 @@ interface DrawingTableProps {
 }
 
 export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUpload, onView }: DrawingTableProps) {
+  const { t } = useTranslation();
   return (
     <Panel>
       <PanelHeader
-        eyebrow="BIM INGESTION"
-        title="Drawings"
-        description="IFC drawings uploaded for this project and their parsing status."
+        eyebrow={t("drawings.table.eyebrow")}
+        title={t("drawings.table.title")}
+        description={t("drawings.table.description")}
         action={
           canUpload ? (
             <Button
@@ -24,10 +26,10 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
               size="sm"
               onClick={onUpload}
               disabled={quotaBlocked}
-              title={quotaBlocked ? "You've reached your plan's drawing limit" : undefined}
+              title={quotaBlocked ? t("drawings.table.quotaTitle") : undefined}
             >
               <Icon name="plus" size={13} />
-              Upload drawing
+              {t("drawings.table.upload")}
             </Button>
           ) : null
         }
@@ -36,8 +38,8 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
       {drawings.length === 0 ? (
         <EmptyState
           icon="building"
-          title="No drawings yet"
-          description="Upload an IFC file to generate a draft bill of quantities for this project."
+          title={t("drawings.table.emptyTitle")}
+          description={t("drawings.table.emptyDesc")}
           action={
             canUpload ? (
               <Button
@@ -47,7 +49,7 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
                 disabled={quotaBlocked}
                 title={quotaBlocked ? "You've reached your plan's drawing limit" : undefined}
               >
-                Upload drawing
+                {t("drawings.table.upload")}
               </Button>
             ) : undefined
           }
@@ -57,11 +59,11 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
           <table className="w-full min-w-[640px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">File</th>
-                <th className="px-4 py-3">Format</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Size</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("drawings.table.colFile")}</th>
+                <th className="px-4 py-3">{t("drawings.table.colFormat")}</th>
+                <th className="px-4 py-3">{t("drawings.table.colStatus")}</th>
+                <th className="px-4 py-3">{t("drawings.table.colSize")}</th>
+                <th className="px-4 py-3 text-right">{t("drawings.table.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -87,7 +89,7 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
                   <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{formatFileSize(drawing.file_size_bytes)}</td>
                   <td className="px-4 py-3.5 text-right">
                     <Button variant="ghost" size="sm" disabled={drawing.status !== "PARSED"} onClick={() => onView(drawing)}>
-                      View elements
+                      {t("drawings.table.viewElements")}
                     </Button>
                   </td>
                 </tr>

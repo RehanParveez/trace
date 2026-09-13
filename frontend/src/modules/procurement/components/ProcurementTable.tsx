@@ -1,6 +1,6 @@
-import {
-  Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell,
+import {Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import type { ProcurementRequest } from "../types/procurement.types";
 import {formatNextProcurementActionLabel, formatProcurementAmount, formatProcurementDate, formatProcurementStatus, getProcurementStatusTone, PROCUREMENT_NEXT_STATUS,
 } from "../utils/procurement.utils";
@@ -15,6 +15,7 @@ interface ProcurementTableProps {
 
 export function ProcurementTable({ requests, canCreate, canManage, onCreate }: ProcurementTableProps) {
   const updateStatus = useUpdateProcurementStatus();
+  const { showToast } = useToast();
 
   return (
     <Panel>
@@ -60,7 +61,7 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{formatProcurementAmount(request.estimated_amount)}</td>
                     <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{formatProcurementDate(request.needed_by_date)}</td>
                     <td className="px-4 py-3.5"><Badge tone={getProcurementStatusTone(request.status)}>{formatProcurementStatus(request.status)}</Badge></td>
-                    {canManage ? (
+                                        {canManage ? (
                       <td className="px-4 py-3.5 text-right">
                         <div className="flex justify-end gap-2">
                           {nextStatus && nextLabel ? (
@@ -68,7 +69,27 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
                               variant="secondary"
                               size="sm"
                               disabled={updateStatus.isPending}
-                              onClick={() => updateStatus.mutate({ requestId: request.id, payload: { status: nextStatus } })}
+                              onClick={() =>
+                                updateStatus.mutate(
+                                  { requestId: request.id, payload: { status: nextStatus } },
+                                  {
+                                    onSuccess: () =>
+                                      showToast({
+                                        tone: "success",
+                                        title: `${request.material_name} marked as ${formatProcurementStatus(nextStatus).toLowerCase()}`,
+                                      }),
+                                    onError: (error) =>
+                                      showToast({
+                                        tone: "error",
+                                        title: "Couldn't update this request",
+                                        description: getApiErrorMessage(
+                                          error,
+                                          "It may have already moved to a different status. Refresh and try again.",
+                                        ),
+                                      }),
+                                  },
+                                )
+                              }
                             >
                               {nextLabel}
                             </Button>
@@ -78,7 +99,27 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
                               variant="danger"
                               size="sm"
                               disabled={updateStatus.isPending}
-                              onClick={() => updateStatus.mutate({ requestId: request.id, payload: { status: "CANCELLED" } })}
+                              onClick={() =>
+                                updateStatus.mutate(
+                                  { requestId: request.id, payload: { status: "CANCELLED" } },
+                                  {
+                                    onSuccess: () =>
+                                      showToast({
+                                        tone: "success",
+                                        title: `${request.material_name} cancelled`,
+                                      }),
+                                    onError: (error) =>
+                                      showToast({
+                                        tone: "error",
+                                        title: "Couldn't cancel this request",
+                                        description: getApiErrorMessage(
+                                          error,
+                                          "It may have already moved to a different status. Refresh and try again.",
+                                        ),
+                                      }),
+                                  },
+                                )
+                              }
                             >
                               Cancel
                             </Button>

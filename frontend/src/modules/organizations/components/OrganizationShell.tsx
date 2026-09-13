@@ -176,10 +176,10 @@ export function OrganizationShell({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   const mobileNavGroups = [
-    { label: "Workspace", items: workspaceNav },
-    { label: "Organization", items: organizationNav },
-    { label: "Projects", items: projectsNav },
-    { label: "Intelligence", items: intelligenceNav },
+    { label: t("shell.workspace"), items: workspaceNav },
+    { label: t("shell.organization"), items: organizationNav },
+    { label: t("shell.projects"), items: projectsNav },
+    { label: t("shell.intelligence"), items: intelligenceNav },
   ];
     return (
     <div className="min-h-screen bg-[var(--color-workspace)] text-[var(--color-text-primary)] [font-family:Inter,system-ui,sans-serif]">
@@ -281,7 +281,7 @@ export function OrganizationShell({
           <button
             type="button"
             onClick={() => setMobileNavOpen(true)}
-            aria-label="Open navigation"
+            aria-label={t("shell.openNavigation")}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] lg:hidden"
           >
             <Icon name="menu" size={17} />

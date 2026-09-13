@@ -1,6 +1,8 @@
 import { Fragment, useState } from "react";
-import {Badge, Button, EmptyState, Field, inputClass, Panel, PanelHeader, TableShell,
+import {
+  Badge, Button, EmptyState, Field, inputClass, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import type { Expense } from "../types/expense.types";
 import { formatExpenseAmount, formatExpenseDate, formatExpenseStatus, getExpenseStatusTone } from "../utils/expense.utils";
 import { useApproveExpense, useRejectExpense } from "../hooks";
@@ -15,6 +17,7 @@ interface ExpenseTableProps {
 export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: ExpenseTableProps) {
   const approveExpense = useApproveExpense();
   const rejectExpense = useRejectExpense();
+  const { showToast } = useToast();
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
@@ -82,7 +85,7 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                             placeholder="Optional"
                           />
                         </Field>
-                        <div className="mt-3 flex justify-end gap-2">
+                                                <div className="mt-3 flex justify-end gap-2">
                           <Button
                             variant="danger"
                             size="sm"
@@ -90,7 +93,22 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                             onClick={() =>
                               rejectExpense.mutate(
                                 { expenseId: expense.id, payload: { note: reviewNote.trim() || null } },
-                                { onSuccess: () => { setReviewingId(null); setReviewNote(""); } },
+                                {
+                                  onSuccess: () => {
+                                    setReviewingId(null);
+                                    setReviewNote("");
+                                    showToast({ tone: "success", title: `${expense.category} rejected` });
+                                  },
+                                  onError: (error) =>
+                                    showToast({
+                                      tone: "error",
+                                      title: "Couldn't reject this expense",
+                                      description: getApiErrorMessage(
+                                        error,
+                                        "It may have already been reviewed by someone else. Refresh and try again.",
+                                      ),
+                                    }),
+                                },
                               )
                             }
                           >
@@ -103,7 +121,22 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                             onClick={() =>
                               approveExpense.mutate(
                                 { expenseId: expense.id, payload: { note: reviewNote.trim() || null } },
-                                { onSuccess: () => { setReviewingId(null); setReviewNote(""); } },
+                                {
+                                  onSuccess: () => {
+                                    setReviewingId(null);
+                                    setReviewNote("");
+                                    showToast({ tone: "success", title: `${expense.category} approved` });
+                                  },
+                                  onError: (error) =>
+                                    showToast({
+                                      tone: "error",
+                                      title: "Couldn't approve this expense",
+                                      description: getApiErrorMessage(
+                                        error,
+                                        "It may have already been reviewed by someone else. Refresh and try again.",
+                                      ),
+                                    }),
+                                },
                               )
                             }
                           >

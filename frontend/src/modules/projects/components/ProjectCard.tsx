@@ -9,6 +9,7 @@ import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useProjectMilestones } from "../hooks";
 import type { Project } from "../types/project.types";
 import { ProjectStatusBadge } from "./ProjectStatusBadge";
+import { useTranslation } from "react-i18next";
 
 interface ProjectCardProps {
   project: Project;
@@ -29,6 +30,7 @@ export function ProjectCard({
   onEdit,
   onDelete,
 }: ProjectCardProps) {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
 
   const canViewBoq = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
@@ -57,16 +59,16 @@ export function ProjectCard({
     ? "—"
     : latestActivity
       ? formatRelativeTime(latestActivity.created_at)
-      : "No activity yet";
+      : t("projects.card.noActivity");
 
   const actions: MenuAction[] = [];
 
   if (canUpdate) {
-    actions.push({ label: "Edit project", icon: "edit", onSelect: () => onEdit(project) });
+    actions.push({ label: t("projects.card.edit"), icon: "edit", onSelect: () => onEdit(project) });
   }
 
   if (canDelete) {
-    actions.push({ label: "Delete project", icon: "x", tone: "danger", onSelect: () => onDelete(project) });
+    actions.push({ label: t("projects.card.delete"), icon: "x", tone: "danger", onSelect: () => onDelete(project) });
   }
 
   return (
@@ -91,7 +93,7 @@ export function ProjectCard({
           </div>
 
           <div className="mt-1 truncate text-[12px] text-[var(--color-text-secondary)]">
-            {clientName ?? "No client"}
+            {clientName ?? t("projects.card.noClient")}
             {project.location ? ` · ${project.location}` : ""}
           </div>
         </div>
@@ -100,7 +102,7 @@ export function ProjectCard({
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-3">
               <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-                Progress
+               {t("projects.card.progress")}
               </span>
               <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
                 {percentage === null ? "—" : `${percentage}%`}
@@ -109,26 +111,26 @@ export function ProjectCard({
             {percentage !== null ? (
               <ProgressBar value={percentage} tone={percentage === 100 ? "green" : "gold"} size="sm" />
             ) : (
-              <div className="text-[11.5px] text-[var(--color-text-muted)]">No milestones set</div>
+              <div className="text-[11.5px] text-[var(--color-text-muted)]">{t("projects.card.noMilestones")}</div>
             )}
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-              Budget
+             {t("projects.card.budget")}
             </span>
             <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
               {!canViewBudget
                 ? "—"
                 : budgetQuery.data
                   ? formatBudgetAmount(budgetQuery.data.approved_amount, budgetQuery.data.currency)
-                  : "Not set"}
+                  : t("projects.card.notSet")}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-              BOQ items
+             {t("projects.card.boqItems")}
             </span>
             <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
               {boqItemCount === null ? "—" : boqItemCount}
@@ -137,14 +139,14 @@ export function ProjectCard({
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-              Last activity
+              {t("projects.card.lastActivity")}
             </span>
             <span className="text-[12px] text-[var(--color-text-secondary)]">{lastActivityLabel}</span>
           </div>
         </div>
 
         <div className="mt-4 flex items-center gap-1.5 text-[12.5px] font-semibold text-[var(--color-trace-gold-dark)]">
-          Open project
+          {t("projects.card.open")}
           <Icon name="arrow" size={12} />
         </div>
       </button>

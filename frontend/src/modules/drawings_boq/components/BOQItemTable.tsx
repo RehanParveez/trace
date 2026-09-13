@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../identity";
 import { useApproveBOQItem, useBOQItems, useUpdateBOQItem } from "../hooks";
 import type { BOQItem } from "../types/drawings-boq.types";
 import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity } from "../utils/drawings-boq.utils";
+import { useTranslation } from "react-i18next";
 
 interface BOQItemTableProps {
   boqVersionId: string;
@@ -13,6 +14,7 @@ interface BOQItemTableProps {
 }
 
 export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTableProps) {
+  const { t } = useTranslation();
   const itemsQuery = useBOQItems(boqVersionId);
   const updateItem = useUpdateBOQItem(boqVersionId);
   const approveItem = useApproveBOQItem(boqVersionId);
@@ -23,7 +25,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
   const items = itemsQuery.data ?? [];
 
   function handleConflict() {
-    setNotice("Someone else edited this item first. It's been refreshed with the latest version — review and try again.");
+    setNotice(t("boq.items.conflict"))
     void itemsQuery.refetch();
     setEditingId(null);
   }
@@ -31,9 +33,9 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
   return (
     <Panel>
       <PanelHeader
-        eyebrow="BILL OF QUANTITIES"
-        title="BOQ items"
-        description="Draft line items generated from the drawing. Approve only once quantities and rates are confirmed."
+        eyebrow={t("boq.items.eyebrow")}
+        title={t("boq.items.title")}
+        description={t("boq.items.description")}
         action={<span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">{items.length}</span>}
       />
 
@@ -42,24 +44,24 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
       ) : null}
 
       {itemsQuery.isLoading ? (
-        <LoadingState label="Loading BOQ items…" />
+        <LoadingState label={t("boq.items.loading")} />
       ) : itemsQuery.isError ? (
-        <ErrorState title="We couldn't load BOQ items" onRetry={() => void itemsQuery.refetch()} />
+        <ErrorState title={t("boq.items.loadError")} onRetry={() => void itemsQuery.refetch()} />
       ) : items.length === 0 ? (
-        <EmptyState icon="building" title="No BOQ items yet" description="Items appear here once a drawing has finished parsing." />
+        <EmptyState icon="building" title={t("boq.items.emptyTitle")} description={t("boq.items.emptyDesc")} />
       ) : (
         <TableShell>
           <table className="w-full min-w-[800px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Material</th>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Unit</th>
-                <th className="px-4 py-3 text-right">Quantity</th>
-                <th className="px-4 py-3 text-right">Rate</th>
-                <th className="px-4 py-3 text-right">Total</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("boq.items.colMaterial")}</th>
+                <th className="px-4 py-3">{t("boq.items.colType")}</th>
+                <th className="px-4 py-3">{t("boq.items.colUnit")}</th>
+                <th className="px-4 py-3 text-right">{t("boq.items.colQuantity")}</th>
+                <th className="px-4 py-3 text-right">{t("boq.items.colRate")}</th>
+                <th className="px-4 py-3 text-right">{t("boq.items.colTotal")}</th>
+                <th className="px-4 py-3">{t("boq.items.colStatus")}</th>
+                <th className="px-4 py-3 text-right">{t("boq.items.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -80,7 +82,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                               handleConflict();
                               return;
                             }
-                            setNotice(getApiErrorMessage(error, "Couldn't save this item. Please try again."));
+                            setNotice(getApiErrorMessage(error, t("boq.items.saveError")))
                           },
                         },
                       )
@@ -106,7 +108,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                       <div className="flex justify-end gap-2">
                         {canUpdate && item.status === "DRAFT" ? (
                           <Button variant="ghost" size="sm" onClick={() => setEditingId(item.id)}>
-                            <Icon name="edit" size={12} />Edit
+                            <Icon name="edit" size={12} />{t("common.edit")}
                           </Button>
                         ) : null}
                         {canApprove && item.status === "DRAFT" ? (
@@ -114,9 +116,9 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                             variant="primary"
                             size="sm"
                             disabled={approveItem.isPending}
-                            onClick={() => approveItem.mutate(item.id, { onError: (error) => setNotice(getApiErrorMessage(error, "Couldn't approve this item. Please try again.")) })}
+                            onClick={() => approveItem.mutate(item.id, { onError: (error) => setNotice(getApiErrorMessage(error, t("boq.items.approveError"))) })}
                           >
-                            Approve
+                            {t("boq.items.approve")}
                           </Button>
                         ) : null}
                       </div>
@@ -140,6 +142,7 @@ interface BOQItemEditRowProps {
 }
 
 function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProps) {
+  const { t } = useTranslation();
   const [materialName, setMaterialName] = useState(item.material_name);
   const [category, setCategory] = useState(item.category ?? "");
   const [unit, setUnit] = useState(item.unit);
@@ -152,7 +155,7 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
     <tr className="border-t border-[var(--color-border)] bg-[var(--color-warning-bg)]">
       <td className="px-4 py-3">
         <input className={cls} value={materialName} onChange={(e) => setMaterialName(e.target.value)} />
-        <input className={`${cls} mt-1.5`} placeholder="Category" value={category} onChange={(e) => setCategory(e.target.value)} />
+        <input className={`${cls} mt-1.5`} placeholder={t("boq.items.categoryPlaceholder")} value={category} onChange={(e) => setCategory(e.target.value)} />
       </td>
       <td className="px-4 py-3 text-[12px] text-[var(--color-text-muted)]">{formatBOQItemType(item.item_type)}</td>
       <td className="px-4 py-3"><input className={cls} value={unit} onChange={(e) => setUnit(e.target.value)} /></td>
@@ -164,7 +167,7 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
       <td className="px-4 py-3" />
       <td className="px-4 py-3">
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving}>Cancel</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving}>{t("common.cancel")}</Button>
           <Button
             variant="primary"
             size="sm"
@@ -179,7 +182,7 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
               })
             }
           >
-            {isSaving ? "Saving…" : "Save"}
+            {isSaving ? t("common.saving") : t("common.save")}
           </Button>
         </div>
       </td>

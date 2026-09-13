@@ -1,11 +1,9 @@
 import { useState } from "react";
-import {Button, Panel, PanelHeader
-} from "../../organizations/components/OrganizationUi";
-import {useDeleteClient,
-} from "../hooks";
-import type {Client,
-} from "../types/project.types";
+import { Button, Panel, PanelHeader } from "../../organizations/components/OrganizationUi";
+import { useDeleteClient } from "../hooks";
+import type { Client } from "../types/project.types";
 import { ClientForm } from "./ClientForm";
+import { useTranslation } from "react-i18next";
 
 interface ClientTableProps {
   clients: Client[];
@@ -18,22 +16,18 @@ export function ClientTable({
   canUpdate,
   canDelete,
 }: ClientTableProps) {
-  const [formOpen, setFormOpen] =
-    useState(false);
-
-  const [editingClient, setEditingClient] =
-    useState<Client | undefined>();
-
-  const deleteClient =
-    useDeleteClient();
+  const { t } = useTranslation();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingClient, setEditingClient] = useState<Client | undefined>();
+  const deleteClient = useDeleteClient();
 
   return (
     <>
       <Panel className="overflow-hidden">
         <PanelHeader
-          eyebrow="CLIENT DIRECTORY"
-          title="Clients"
-          description="Client records that can be linked to any project in this organization."
+          eyebrow={t("clients.table.eyebrow")}
+          title={t("clients.table.title")}
+          description={t("clients.table.description")}
           action={
             canUpdate ? (
               <Button
@@ -43,7 +37,7 @@ export function ClientTable({
                   setFormOpen(true);
                 }}
               >
-                Add client
+                {t("clients.table.add")}
               </Button>
             ) : undefined
           }
@@ -51,7 +45,7 @@ export function ClientTable({
 
         {clients.length === 0 ? (
           <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
-            No clients have been created yet.
+            {t("clients.table.empty")}
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
@@ -66,64 +60,42 @@ export function ClientTable({
                   </div>
 
                   <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-[var(--color-text-secondary)]">
-                    {client.contact_name ? (
-                      <span>
-                        {client.contact_name}
-                      </span>
-                    ) : null}
-
-                    {client.email ? (
-                      <span>
-                        {client.email}
-                      </span>
-                    ) : null}
-
-                    {client.phone ? (
-                      <span>
-                        {client.phone}
-                      </span>
-                    ) : null}
+                    {client.contact_name ? <span>{client.contact_name}</span> : null}
+                    {client.email ? <span>{client.email}</span> : null}
+                    {client.phone ? <span>{client.phone}</span> : null}
                   </div>
                 </div>
 
-                {canUpdate ||
-                canDelete ? (
+                {canUpdate || canDelete ? (
                   <div className="flex gap-2">
                     {canUpdate ? (
                       <Button
                         variant="ghost"
                         onClick={() => {
-                          setEditingClient(
-                            client,
-                          );
+                          setEditingClient(client);
                           setFormOpen(true);
                         }}
                       >
-                        Edit
+                        {t("common.edit")}
                       </Button>
                     ) : null}
 
                     {canDelete ? (
                       <Button
                         variant="ghost"
-                        disabled={
-                          deleteClient.isPending
-                        }
+                        disabled={deleteClient.isPending}
                         onClick={() => {
                           if (
                             !window.confirm(
-                              `Delete "${client.name}"?`,
+                              t("clients.table.deleteConfirm", { name: client.name }),
                             )
                           ) {
                             return;
                           }
-
-                          deleteClient.mutate(
-                            client.id,
-                          );
+                          deleteClient.mutate(client.id);
                         }}
                       >
-                        Delete
+                        {t("common.delete")}
                       </Button>
                     ) : null}
                   </div>
@@ -137,9 +109,7 @@ export function ClientTable({
       {formOpen ? (
         <ClientForm
           client={editingClient}
-          onClose={() =>
-            setFormOpen(false)
-          }
+          onClose={() => setFormOpen(false)}
         />
       ) : null}
     </>

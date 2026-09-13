@@ -8,6 +8,7 @@ import type {ProjectMember,
 import {formatProjectMemberRole, getProjectMemberName,
 } from "../utils/project.utils";
 import { ProjectMemberDialog } from "./ProjectMemberDialog";
+import { useTranslation } from "react-i18next";
 
 interface ProjectMembersProps {
   projectId: string;
@@ -20,6 +21,7 @@ export function ProjectMembers({
   members,
   canUpdate,
 }: ProjectMembersProps) {
+  const { t } = useTranslation();
   const [dialogOpen, setDialogOpen] =
     useState(false);
 
@@ -30,22 +32,21 @@ export function ProjectMembers({
     <>
       <Panel className="overflow-hidden">
         <PanelHeader
-          eyebrow="PROJECT TEAM"
-          title="Assigned members"
-          description="Users with access to this project and their project-level role."
+          eyebrow={t("projects.members.eyebrow")}
+          title={t("projects.members.title")}
+          description={t("projects.members.description")}
           action={
-            canUpdate ? (
-              <Button variant="primary" onClick={() => setDialogOpen(true)}>
-                Add member
-              </Button>
-            ) : undefined
+           canUpdate ? (
+            <Button variant="primary" onClick={() => setDialogOpen(true)}>
+             {t("projects.members.add")}
+            </Button>
+           ) : undefined
           }
         />
 
         {members.length === 0 ? (
           <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
-            No members have been assigned to
-            this project yet.
+            {t("projects.members.empty")}
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
@@ -93,7 +94,7 @@ export function ProjectMembers({
                       onClick={() => {
                         const confirmed =
                           window.confirm(
-                            "Remove this member from the project?",
+                            t("projects.members.removeConfirm"),
                           );
 
                         if (!confirmed) {
@@ -107,7 +108,7 @@ export function ProjectMembers({
                         });
                       }}
                     >
-                      Remove
+                      {t("projects.members.remove")}
                     </Button>
                   ) : null}
                 </div>

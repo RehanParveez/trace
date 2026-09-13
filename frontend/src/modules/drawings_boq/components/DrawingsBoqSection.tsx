@@ -12,12 +12,14 @@ import { BOQItemTable } from "./BOQItemTable";
 import { BOQSummaryPanel } from "./BOQSummaryPanel";
 import { AddCustomBOQItemDialog } from "./AddCustomBOQItemDialog";
 import { BOQVersionMetaDialog } from "./BOQVersionMetaDialog";
+import { useTranslation } from "react-i18next";
 
 interface DrawingsBoqSectionProps {
   projectId: string;
 }
 
 export function DrawingsBoqSection({ projectId }: DrawingsBoqSectionProps) {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [viewingDrawing, setViewingDrawing] = useState<Drawing | null>(null);
@@ -45,12 +47,12 @@ export function DrawingsBoqSection({ projectId }: DrawingsBoqSectionProps) {
 
   if (!canRead) return null;
 
-  if (drawingsQuery.isLoading || boqVersionsQuery.isLoading) return <LoadingState label="Loading drawings…" />;
+  if (drawingsQuery.isLoading || boqVersionsQuery.isLoading) return <LoadingState label={t("drawings.section.loading")} />;
 
   if (drawingsQuery.isError || boqVersionsQuery.isError) {
     return (
       <ErrorState
-        title="We couldn't load drawings for this project"
+        title={t("drawings.section.loadError")}
         onRetry={() => { void drawingsQuery.refetch(); void boqVersionsQuery.refetch(); }}
       />
     );
