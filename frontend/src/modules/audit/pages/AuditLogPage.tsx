@@ -5,6 +5,7 @@ import { useAuditLog } from "../hooks";
 import type { AuditAction, AuditEntityType } from "../types/audit.types";
 import { AUDIT_PERMISSIONS } from "../permissions";
 import { AuditLogTable } from "../components/AuditLogTable";
+import { useTranslation } from "react-i18next";
 
 const ENTITY_TYPES: AuditEntityType[] = [
   "ORGANIZATION", "ROLE", "MEMBER", "INVITATION", "SUBSCRIPTION",
@@ -14,6 +15,7 @@ const ENTITY_TYPES: AuditEntityType[] = [
 const ACTIONS: AuditAction[] = ["CREATE", "UPDATE", "DELETE", "APPROVE", "REJECT", "STATUS_CHANGE"];
 
 export function AuditLogPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(AUDIT_PERMISSIONS.AUDIT_LOG_READ);
 
@@ -26,34 +28,34 @@ export function AuditLogPage() {
   });
 
   if (!canRead) {
-    return <ErrorState title="Audit log unavailable" description="You don't have permission to view this organization's audit log." />;
+    return <ErrorState title={t("audit.page.accessUnavailable")} description={t("audit.page.accessUnavailableDesc")} />;
   }
 
-  if (auditQuery.isLoading) return <LoadingState label="Loading audit log…" />;
-  if (auditQuery.isError) return <ErrorState title="Couldn't load the audit log" onRetry={() => void auditQuery.refetch()} />;
+  if (auditQuery.isLoading) return <LoadingState label={t("audit.page.loading")} />;
+  if (auditQuery.isError) return <ErrorState title={t("audit.page.loadError")} onRetry={() => void auditQuery.refetch()} />;
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Audit log" description="A permanent, unmodifiable record of activity across this organization." />
+      <PageHeader title={t("audit.page.title")} description={t("audit.page.description")} />
 
       <div className="flex flex-wrap gap-2">
         <select
-          aria-label="Filter by entity type"
+          aria-label={t("audit.page.filterEntityAria")}
           className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none transition focus-visible:border-[var(--color-trace-gold-dark)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]/20"
           value={entityType}
           onChange={(e) => setEntityType(e.target.value as AuditEntityType | "")}
         >
-          <option value="">All entity types</option>
+          <option value="">{t("audit.page.allEntityTypes")}</option>
           {ENTITY_TYPES.map((type) => <option key={type} value={type}>{type.replaceAll("_", " ")}</option>)}
         </select>
 
         <select
-          aria-label="Filter by action"
+          aria-label={t("audit.page.filterActionAria")}
           className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5 text-[13px] text-[var(--color-text-primary)] outline-none transition focus-visible:border-[var(--color-trace-gold-dark)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]/20"
           value={action}
           onChange={(e) => setAction(e.target.value as AuditAction | "")}
         >
-          <option value="">All actions</option>
+          <option value="">{t("audit.page.allActions")}</option>
           {ACTIONS.map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
         </select>
       </div>

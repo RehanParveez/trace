@@ -4,6 +4,7 @@ import { Button, Field, Modal, inputClass } from "../../organizations/components
 import { useBOQVersions, useBOQItems } from "../../drawings_boq";
 import { useCreateProgressClaim } from "../hooks";
 import { formatClaimQuantity } from "../utils/verification.utils";
+import { useTranslation } from "react-i18next";
 
 interface ProgressClaimFormProps {
   projectId: string;
@@ -11,6 +12,7 @@ interface ProgressClaimFormProps {
 }
 
 export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps) {
+  const { t } = useTranslation();
   const boqVersionsQuery = useBOQVersions(projectId);
   const latestVersionId = boqVersionsQuery.data?.[0]?.id;
   const boqItemsQuery = useBOQItems(latestVersionId);
@@ -40,17 +42,17 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
         claimed_percentage: Number(claimedPercentage),
         notes: notes.trim() || null,
       },
-      { onSuccess: onClose, onError: () => setError("Couldn't create this claim. Check the values and try again.") },
+      { onSuccess: onClose, onError: () => setError(t("verification.form.createError")) },
     );
   }
 
   return (
-    <Modal title="New progress claim" description="Record work completed against an approved BOQ item." onClose={onClose} wide>
+    <Modal title={t("verification.form.title")} description={t("verification.form.description")} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-4">
-        <Field label="BOQ item" hint="Only approved BOQ items can be claimed against.">
+        <Field label={t("verification.form.boqItem")} hint={t("verification.form.boqItemHint")}>
           <select className={inputClass} required value={boqItemId} onChange={(e) => setBoqItemId(e.target.value)}>
             <option value="" disabled>
-              {boqItemsQuery.isLoading ? "Loading approved items…" : approvedItems.length === 0 ? "No approved BOQ items yet" : "Select an item…"}
+              {boqItemsQuery.isLoading ? t("verification.form.loadingItems") : approvedItems.length === 0 ? t("verification.form.noApprovedItems") : t("verification.form.selectItem")}
             </option>
             {approvedItems.map((item) => (
               <option key={item.id} value={item.id}>{item.material_name} ({item.unit})</option>
@@ -60,33 +62,33 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
 
         {selectedItem ? (
           <div className="rounded-[8px] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-3.5 py-2.5 text-[12px] text-[var(--color-info)]">
-            Contracted quantity: {formatClaimQuantity(selectedItem.quantity, selectedItem.unit)}
+            {t("verification.form.contractedQuantity")}: {formatClaimQuantity(selectedItem.quantity, selectedItem.unit)}
           </div>
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Claim date">
+          <Field label={t("verification.form.claimDate")}>
             <input type="date" className={inputClass} required value={claimDate} onChange={(e) => setClaimDate(e.target.value)} />
           </Field>
-          <Field label="Claimed quantity">
+          <Field label={t("verification.form.claimedQuantity")}>
             <input type="number" step="any" min="0" className={inputClass} required value={claimedQuantity} onChange={(e) => setClaimedQuantity(e.target.value)} />
           </Field>
         </div>
 
-        <Field label="Claimed percentage" hint="Overall completion percentage for this BOQ item as of this claim.">
+        <Field label={t("verification.form.claimedPercentage")} hint={t("verification.form.claimedPercentageHint")}>
           <input type="number" step="any" min="0" max="100" className={inputClass} required value={claimedPercentage} onChange={(e) => setClaimedPercentage(e.target.value)} />
         </Field>
 
-        <Field label="Notes">
-          <textarea className={`${inputClass} resize-y`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional context for this claim" />
+        <Field label={t("verification.form.notes")}>
+          <textarea className={`${inputClass} resize-y`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("verification.form.notesPlaceholder")}/>
         </Field>
 
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={createClaim.isPending}>Cancel</Button>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={createClaim.isPending}>{t("common.cancel")}</Button>
           <Button type="submit" variant="primary" disabled={createClaim.isPending || !boqItemId || !claimedQuantity || !claimedPercentage}>
-            {createClaim.isPending ? "Saving…" : "Create claim"}
+            {createClaim.isPending ? t("common.saving") : t("verification.form.create")}
           </Button>
         </div>
       </form>

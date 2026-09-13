@@ -3,6 +3,7 @@ import { Badge, Button, Field, LoadingState, Modal, inputClass } from "../../org
 import { useApproveProgressClaim, useProgressClaim, useRejectProgressClaim, useSubmitProgressClaim } from "../hooks";
 import { formatClaimDate, formatClaimPercentage, formatClaimStatus, getClaimStatusTone } from "../utils/verification.utils";
 import { PhotoEvidencePicker } from "./PhotoEvidencePicker";
+import { useTranslation } from "react-i18next";
 
 interface ProgressClaimDetailDialogProps {
   claimId: string;
@@ -13,6 +14,7 @@ interface ProgressClaimDetailDialogProps {
 }
 
 export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canReview, onClose }: ProgressClaimDetailDialogProps) {
+  const { t } = useTranslation();
   const claimQuery = useProgressClaim(claimId);
   const submitClaim = useSubmitProgressClaim();
   const approveClaim = useApproveProgressClaim();
@@ -24,8 +26,8 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
 
   if (!claim) {
     return (
-      <Modal title="Progress claim" onClose={onClose}>
-        <LoadingState label="Loading claim…" />
+      <Modal title={t("verification.detail.title")} onClose={onClose}>
+        <LoadingState label={t("verification.detail.loading")} />
       </Modal>
     );
   }
@@ -35,12 +37,12 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
     const mutation = action === "approve" ? approveClaim : rejectClaim;
     mutation.mutate(
       { claimId, payload: { version: claim!.version, note: reviewNote.trim() || null } },
-      { onError: () => setError("Someone else may have already reviewed this claim — reload and try again.") },
+      { onError: () => setError(t("verification.detail.reviewConflict")) },
     );
   }
 
   return (
-    <Modal title="Progress claim" description={formatClaimDate(claim.claim_date)} onClose={onClose} wide>
+    <Modal title={t("verification.detail.title")} description={formatClaimDate(claim.claim_date)} onClose={onClose} wide>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <Badge tone={getClaimStatusTone(claim.status)}>{formatClaimStatus(claim.status)}</Badge>
@@ -51,7 +53,7 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
 
         {claim.review_note ? (
           <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2.5 text-[12px] text-[var(--color-text-secondary)]">
-            <span className="font-semibold text-[var(--color-text-primary)]">Review note: </span>{claim.review_note}
+            <span className="font-semibold text-[var(--color-text-primary)]">{t("verification.detail.reviewNoteLabel")} </span>{claim.review_note}
           </div>
         ) : null}
 
@@ -62,19 +64,19 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
         {claim.status === "DRAFT" && canSubmit ? (
           <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
             <Button variant="primary" disabled={submitClaim.isPending} onClick={() => submitClaim.mutate(claim.id)}>
-              {submitClaim.isPending ? "Submitting…" : "Submit for review"}
+              {submitClaim.isPending ? t("verification.detail.submitting") : t("verification.detail.submit")}
             </Button>
           </div>
         ) : null}
 
         {claim.status === "SUBMITTED" && canReview ? (
           <div className="space-y-2 border-t border-[var(--color-border)] pt-4">
-            <Field label="Review note">
-              <textarea className={`${inputClass} resize-y`} rows={2} value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} placeholder="Optional" />
+            <Field label={t("verification.detail.reviewNote")}>
+              <textarea className={`${inputClass} resize-y`} rows={2} value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} placeholder={t("verification.detail.reviewNotePlaceholder")} />
             </Field>
             <div className="flex justify-end gap-2">
-              <Button variant="danger" disabled={rejectClaim.isPending} onClick={() => handleReview("reject")}>Reject</Button>
-              <Button variant="primary" disabled={approveClaim.isPending} onClick={() => handleReview("approve")}>Approve</Button>
+              <Button variant="danger" disabled={rejectClaim.isPending} onClick={() => handleReview("reject")}>{t("verification.detail.reject")}</Button>
+              <Button variant="primary" disabled={approveClaim.isPending} onClick={() => handleReview("approve")}>{t("verification.detail.approve")}</Button>
             </div>
           </div>
         ) : null}

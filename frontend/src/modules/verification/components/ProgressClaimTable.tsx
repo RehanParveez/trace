@@ -1,6 +1,7 @@
 import { Badge, Button, EmptyState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
 import type { ProgressClaim } from "../types/verification.types";
 import { formatClaimDate, formatClaimPercentage, formatClaimStatus, getClaimStatusTone } from "../utils/verification.utils";
+import { useTranslation } from "react-i18next";
 
 interface ProgressClaimTableProps {
   claims: ProgressClaim[];
@@ -10,30 +11,31 @@ interface ProgressClaimTableProps {
 }
 
 export function ProgressClaimTable({ claims, canCreate, onCreate, onView }: ProgressClaimTableProps) {
+  const { t } = useTranslation();
   return (
     <Panel>
       <PanelHeader
-        eyebrow="PROGRESS VERIFICATION"
-        title="Progress claims"
-        description="Claims of physical progress against approved BOQ items, backed by photo evidence."
+        eyebrow={t("verification.table.eyebrow")}
+        title={t("verification.table.title")}
+        description={t("verification.table.description")}
         action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>New claim</Button> : null}
       />
 
       {claims.length === 0 ? (
         <EmptyState
           icon="check"
-          title="No progress claims yet"
-          description="Progress claims appear here once BOQ items are approved and site teams start reporting physical progress against them."
+          title={t("verification.table.emptyTitle")}
+          description={t("verification.table.emptyDesc")}
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[600px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3 text-right">Percentage</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">{t("verification.table.colDate")}</th>
+                <th className="px-4 py-3 text-right">{t("verification.table.colPercentage")}</th>
+                <th className="px-4 py-3">{t("verification.table.colStatus")}</th>
+                <th className="px-4 py-3 text-right">{t("verification.table.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -43,7 +45,7 @@ export function ProgressClaimTable({ claims, canCreate, onCreate, onView }: Prog
                   <td className="px-4 py-3.5 text-right font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">{formatClaimPercentage(claim.claimed_percentage)}</td>
                   <td className="px-4 py-3.5"><Badge tone={getClaimStatusTone(claim.status)}>{formatClaimStatus(claim.status)}</Badge></td>
                   <td className="px-4 py-3.5 text-right">
-                    <Button variant="ghost" size="sm" onClick={() => onView(claim)}>View</Button>
+                    <Button variant="ghost" size="sm" onClick={() => onView(claim)}>{t("verification.table.view")}</Button>
                   </td>
                 </tr>
               ))}

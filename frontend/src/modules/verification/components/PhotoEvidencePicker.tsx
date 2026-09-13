@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button, Icon } from "../../organizations/components/OrganizationUi";
 import { useSitePhotos } from "../../whatsapp";
 import { useCreatePhotoBOQLink, useDeletePhotoBOQLink, usePhotoBOQLinks } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface PhotoEvidencePickerProps {
   claimId: string;
@@ -11,6 +12,7 @@ interface PhotoEvidencePickerProps {
 }
 
 export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }: PhotoEvidencePickerProps) {
+  const { t } = useTranslation();
   const linksQuery = usePhotoBOQLinks(claimId);
   const photosQuery = useSitePhotos({ projectId });
   const createLink = useCreatePhotoBOQLink(claimId);
@@ -26,16 +28,18 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
   return (
     <div>
      <div className="mb-2 flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">Photo evidence</span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--color-text-muted)]">{t("verification.photoEvidence.label")}</span>
         {canManage ? (
           <button type="button" onClick={() => setPicking((v) => !v)} className="text-[12px] font-semibold text-[var(--color-trace-gold-dark)] hover:text-[var(--color-warning)]">
-            {picking ? "Done" : "Attach photo"}
+            {picking ? t("verification.photoEvidence.done") : t("verification.photoEvidence.attach")}
           </button>
         ) : null}
       </div>
 
       {linkedPhotos.length === 0 ? (
-        <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-[12px] text-[var(--color-text-secondary)]">No photos attached yet.</div>
+        <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5 text-[12px] text-[var(--color-text-secondary)]">
+          {t("verification.photoEvidence.empty")}
+        </div>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {linkedPhotos.map((photo) => {
@@ -47,7 +51,7 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
                   <button
                     type="button"
                     onClick={() => deleteLink.mutate(link.id)}
-                    aria-label="Remove this photo from evidence"
+                    aria-label={t("verification.photoEvidence.removeAria")}
                     className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-trace-navy)]/70 text-white opacity-0 outline-none transition focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] group-hover:opacity-100"
                   >
                     <Icon name="x" size={10} />
@@ -62,7 +66,7 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
       {picking ? (
         <div className="mt-3 max-h-56 overflow-y-auto rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
           {availablePhotos.length === 0 ? (
-            <div className="p-2 text-[12px] text-[var(--color-text-muted)]">No unattached photos found for this project.</div>
+            <div className="p-2 text-[12px] text-[var(--color-text-muted)]">{t("verification.photoEvidence.noAvailable")}</div>
           ) : (
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
               {availablePhotos.map((photo) => (
