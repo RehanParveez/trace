@@ -40,6 +40,21 @@ export const drawingsBoqApi = {
     return response.data;
   },
 
+  async createBOQVersion(projectId: string, label: string): Promise<BOQVersion> {
+    const response = await apiClient.post<BOQVersion>(
+      `/drawings-boq/projects/${projectId}/boq-versions`,
+      { label },
+    );
+    return response.data;
+  },
+
+  async getDrawingFile(drawingId: string): Promise<Blob> {
+    const response = await apiClient.get(`/drawings-boq/drawings/${drawingId}/file`, {
+      responseType: "blob",
+    });
+    return response.data;
+  },
+
   async listBOQItems(boqVersionId: string): Promise<BOQItem[]> {
     const response = await apiClient.get<BOQItem[]>(`/drawings-boq/boq-versions/${boqVersionId}/items`);
     return response.data;

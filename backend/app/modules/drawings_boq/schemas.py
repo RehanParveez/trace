@@ -149,6 +149,9 @@ class BOQCustomItemCreateRequest(BaseModel):
 class BOQVersionUpdateRequest(BaseModel):
   covered_area_sqft: Decimal | None = None
   export_meta: dict | None = None
+  
+class BOQVersionCreateRequest(BaseModel):
+  label: str = Field(min_length=1, max_length=200)
 
 class BOQSummaryResponse(BaseModel):
   boq_version_id: UUID

@@ -1,4 +1,4 @@
-export type DrawingFormat = "IFC" | "DWG" | "DXF" | "RVT";
+export type DrawingFormat = "IFC" | "PDF" | "DWG" | "DXF" | "RVT";
 export type DrawingStatus = "UPLOADED" | "PROCESSING" | "PARSED" | "FAILED";
 export type BOQItemStatus = "DRAFT" | "APPROVED";
 export type BOQItemType = "MATERIAL" | "LABOUR" | "CUSTOM";

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { drawingsBoqApi } from "../api/drawings-boq.api";
-import { isDrawingInProgress, triggerBlobDownload } from "../utils/drawings-boq.utils";
+import { isDrawingInProgress, openBlobInNewTab, triggerBlobDownload } from "../utils/drawings-boq.utils";
 import type {BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQVersion, BOQVersionUpdateRequest, Drawing, LabourRate, LabourRateCreateRequest,
   LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest,
 } from "../types/drawings-boq.types";
@@ -48,6 +48,20 @@ export function useBOQVersions(projectId: string) {
     queryKey: drawingsBoqKeys.boqVersions(projectId),
     queryFn: () => drawingsBoqApi.listBOQVersions(projectId),
     enabled: Boolean(projectId),
+  });
+}
+
+export function useCreateBOQVersion(projectId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (label: string) =>
+      drawingsBoqApi.createBOQVersion(projectId, label),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: drawingsBoqKeys.boqVersions(projectId),
+      });
+    },
   });
 }
 
@@ -185,6 +199,15 @@ export function useExportBOQ(boqVersionId: string, label: string) {
         ? await drawingsBoqApi.exportBOQPdf(boqVersionId)
         : await drawingsBoqApi.exportBOQXlsx(boqVersionId);
       triggerBlobDownload(blob, `BOQ-${label.replace(/\s+/g, "_")}.${format}`);
+    },
+  });
+}
+
+export function useViewDrawingFile() {
+  return useMutation({
+    mutationFn: async (drawingId: string) => {
+      const blob = await drawingsBoqApi.getDrawingFile(drawingId);
+      openBlobInNewTab(blob);
     },
   });
 }

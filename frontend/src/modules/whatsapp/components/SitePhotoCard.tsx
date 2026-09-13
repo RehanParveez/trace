@@ -1,6 +1,7 @@
 import { Badge, Icon } from "../../organizations/components/OrganizationUi";
 import type { SitePhoto } from "../types/whatsapp.types";
 import { formatPhotoDate } from "../utils/whatsapp.utils";
+import { useTranslation } from "react-i18next";
 
 interface SitePhotoCardProps {
   photo: SitePhoto;
@@ -9,6 +10,7 @@ interface SitePhotoCardProps {
 }
 
 export function SitePhotoCard({ photo, projectName, onClick }: SitePhotoCardProps) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -19,14 +21,14 @@ export function SitePhotoCard({ photo, projectName, onClick }: SitePhotoCardProp
         <img src={photo.photo_url} alt="" className="h-full w-full object-cover transition group-hover:scale-[1.03]" loading="lazy" />
         {!photo.project_id ? (
           <span className="absolute left-2 top-2 rounded-full bg-[var(--color-danger)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
-            Needs project
+            {t("whatsapp.photo.needsProject")}
           </span>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5 p-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-[12.5px] font-semibold text-[var(--color-text-primary)]">{projectName ?? "Unassigned"}</span>
+          <span className="truncate text-[12.5px] font-semibold text-[var(--color-text-primary)]">{projectName ?? t("whatsapp.photo.unassigned")}</span>
           <span className="shrink-0 text-[11px] text-[var(--color-text-muted)]">{formatPhotoDate(photo.photo_date)}</span>
         </div>
 

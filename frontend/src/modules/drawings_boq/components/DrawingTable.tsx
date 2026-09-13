@@ -1,7 +1,9 @@
 import { Badge, Button, EmptyState, Icon, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
 import type { Drawing } from "../types/drawings-boq.types";
 import { formatDrawingStatus, formatFileSize, getDrawingStatusTone, isDrawingInProgress } from "../utils/drawings-boq.utils";
+import { useViewDrawingFile } from "../hooks";
 import { useTranslation } from "react-i18next";
+
 
 interface DrawingTableProps {
   drawings: Drawing[];
@@ -11,8 +13,10 @@ interface DrawingTableProps {
   onView: (drawing: Drawing) => void;
 }
 
+
 export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUpload, onView }: DrawingTableProps) {
   const { t } = useTranslation();
+  const viewFile = useViewDrawingFile();
   return (
     <Panel>
       <PanelHeader
@@ -34,6 +38,7 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
           ) : null
         }
       />
+
 
       {drawings.length === 0 ? (
         <EmptyState
@@ -67,33 +72,62 @@ export function DrawingTable({ drawings, canUpload, quotaBlocked = false, onUplo
               </tr>
             </thead>
             <tbody>
-              {drawings.map((drawing) => (
-                <tr key={drawing.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
-                  <td className="px-4 py-3.5">
-                    <button type="button" onClick={() => onView(drawing)} className="text-left">
-                      <span className="block truncate text-[14px] font-semibold text-[var(--color-text-primary)]">{drawing.original_filename}</span>
-                      {drawing.error_message ? (
-                        <span className="mt-0.5 block max-w-[320px] truncate text-[12px] text-[var(--color-danger)]">{drawing.error_message}</span>
-                      ) : null}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3.5 font-mono text-[12px] text-[var(--color-text-secondary)]">{drawing.format}</td>
-                  <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-2">
-                      <Badge tone={getDrawingStatusTone(drawing.status)}>{formatDrawingStatus(drawing.status)}</Badge>
-                      {isDrawingInProgress(drawing.status) ? (
-                        <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-trace-gold)]" />
-                      ) : null}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{formatFileSize(drawing.file_size_bytes)}</td>
-                  <td className="px-4 py-3.5 text-right">
-                    <Button variant="ghost" size="sm" disabled={drawing.status !== "PARSED"} onClick={() => onView(drawing)}>
-                      {t("drawings.table.viewElements")}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
+              {drawings.map((drawing) => {
+                const isReference = drawing.format === "PDF";
+
+                return (
+                  <tr key={drawing.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
+                    <td className="px-4 py-3.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (isReference) {
+                            viewFile.mutate(drawing.id);
+                            return;
+                          }
+                          onView(drawing);
+                        }}
+                        className="text-left"
+                      >
+                        <span className="block truncate text-[14px] font-semibold text-[var(--color-text-primary)]">{drawing.original_filename}</span>
+                        {drawing.error_message ? (
+                          <span className="mt-0.5 block max-w-[320px] truncate text-[12px] text-[var(--color-danger)]">{drawing.error_message}</span>
+                        ) : null}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3.5 font-mono text-[12px] text-[var(--color-text-secondary)]">{drawing.format}</td>
+                    <td className="px-4 py-3.5">
+                      {isReference ? (
+                        <Badge tone="blue">Reference</Badge>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Badge tone={getDrawingStatusTone(drawing.status)}>{formatDrawingStatus(drawing.status)}</Badge>
+                          {isDrawingInProgress(drawing.status) ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-trace-gold)]" />
+                          ) : null}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{formatFileSize(drawing.file_size_bytes)}</td>
+                    <td className="px-4 py-3.5 text-right">
+                      {isReference ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={viewFile.isPending}
+                          onClick={() => viewFile.mutate(drawing.id)}
+                        >
+                          {viewFile.isPending ? "Opening…" : "View PDF"}
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" disabled={drawing.status !== "PARSED"} onClick={() => onView(drawing)}>
+                          {t("drawings.table.viewElements")}
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </TableShell>

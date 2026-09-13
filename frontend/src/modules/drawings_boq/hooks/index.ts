@@ -1,8 +1,9 @@
 export {
   drawingsBoqKeys, useAddCustomBOQItem, useApproveBOQItem, useBOQItems,
-  useBOQSummary, useBOQVersions, useCreateLabourRate,
+  useBOQSummary, useBOQVersions, useCreateBOQVersion, useCreateLabourRate,
   useCreateMaterialLibraryEntry, useDrawingElements, useDrawings,
   useExportBOQ, useGenerateLabourItems, useLabourRates,
   useMaterialLibrary, useUpdateBOQItem, useUpdateBOQVersion,
   useUpdateLabourRate, useUpdateMaterialLibraryEntry, useUploadDrawing,
+  useViewDrawingFile,
 } from "./useDrawingsBoq";

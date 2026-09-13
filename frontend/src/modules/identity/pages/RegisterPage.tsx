@@ -78,7 +78,7 @@ export function RegisterPage() {
     >
       <form
         onSubmit={submit}
-        className="space-y-3"
+        className="space-y-2"
       >
         {register.isError && (
           <AuthNotice tone="error">
@@ -89,7 +89,7 @@ export function RegisterPage() {
           </AuthNotice>
         )}
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <AuthField
             id="first_name"
             label={t("auth.register.firstName")}

@@ -7,6 +7,7 @@ import {useAddPhotoTag, useAssignProject, useRemovePhotoTag, useSitePhoto, useUp
 import type { Project } from "../../projects";
 import {formatCapturedAt, formatPhoneNumber, formatPhotoDate, getCaptionField,
 } from "../utils/whatsapp.utils";
+import { useTranslation } from "react-i18next";
 
 interface SitePhotoDetailDialogProps {
   photoId: string;
@@ -21,6 +22,7 @@ export function SitePhotoDetailDialog({
   canManage,
   onClose,
 }: SitePhotoDetailDialogProps) {
+  const { t } = useTranslation();
   const photoQuery = useSitePhoto(photoId);
   const assignProject = useAssignProject();
   const updatePhoto = useUpdateSitePhoto();
@@ -43,21 +45,16 @@ export function SitePhotoDetailDialog({
       {
         onSuccess: () => setNewTag(""),
         onError: (mutationError) =>
-          setError(
-            getApiErrorMessage(
-              mutationError,
-              "Couldn't add this tag. Please try again.",
-            ),
-          ),
+          setError(getApiErrorMessage(mutationError, t("whatsapp.photo.addTagError")))
       },
     );
   }
 
   if (photoQuery.isLoading || !photo) {
     return (
-      <Modal title="Site photo" onClose={onClose}>
+      <Modal title={t("whatsapp.photo.title")} onClose={onClose}>
         <div className="py-8 text-center text-[12.5px] text-[var(--color-text-secondary)]">
-          Loading…
+          {t("common.loading")}
         </div>
       </Modal>
     );
@@ -68,7 +65,7 @@ export function SitePhotoDetailDialog({
 
   return (
     <Modal
-      title="Site photo"
+      title={t("whatsapp.photo.title")}
       description={formatCapturedAt(photo.created_at)}
       onClose={onClose}
       wide
@@ -88,7 +85,7 @@ export function SitePhotoDetailDialog({
 
         <div className="space-y-4">
           <div>
-            <SectionLabel>Sender</SectionLabel>
+            <SectionLabel>{t("whatsapp.photo.sender")}</SectionLabel>
             <div className="mt-1 text-[13.5px] font-semibold text-[var(--color-text-primary)]">
               {formatPhoneNumber(photo.sender_phone_number)}
             </div>
@@ -96,20 +93,20 @@ export function SitePhotoDetailDialog({
 
           {photo.caption_raw ? (
             <div>
-              <SectionLabel>Caption</SectionLabel>
+              <SectionLabel>{t("whatsapp.photo.caption")}</SectionLabel>
               <div className="mt-1 text-[13px] leading-5 text-[var(--color-text-primary)]">
                 {photo.caption_raw}
               </div>
               {noteText ? (
                 <div className="mt-1 text-[12px] italic text-[var(--color-text-secondary)]">
-                  AI notes: {noteText}
+                  {t("whatsapp.photo.aiNotes")}: {noteText}
                 </div>
               ) : null}
             </div>
           ) : null}
 
           <div>
-            <SectionLabel>Project</SectionLabel>
+            <SectionLabel>{t("whatsapp.photo.project")}</SectionLabel>
             {canManage ? (
               <select
                 className={`mt-1.5 ${inputClass}`}
@@ -124,7 +121,7 @@ export function SitePhotoDetailDialog({
                         setError(
                           getApiErrorMessage(
                             mutationError,
-                            "Couldn't assign this photo to a project.",
+                            t("whatsapp.photo.assignError")
                           ),
                         ),
                     },
@@ -132,7 +129,7 @@ export function SitePhotoDetailDialog({
                 }}
               >
                 <option value="" disabled>
-                  Select a project…
+                 {t("whatsapp.photo.selectProject")}
                 </option>
                 {projects.map((project) => (
                   <option key={project.id} value={project.id}>
@@ -150,13 +147,13 @@ export function SitePhotoDetailDialog({
 
           {canManage ? (
             <div>
-              <SectionLabel>Location</SectionLabel>
+              <SectionLabel>{t("whatsapp.photo.location")}</SectionLabel>
               <div className="mt-1.5 flex gap-2">
                 <input
                   className={inputClass}
                   value={location}
                   onChange={(e) => setLocationDraft(e.target.value)}
-                  placeholder="e.g. Block C, Level 3"
+                  placeholder={t("whatsapp.photo.locationPlaceholder")}
                 />
                 <Button
                   variant="secondary"
@@ -172,20 +169,20 @@ export function SitePhotoDetailDialog({
                           setError(
                             getApiErrorMessage(
                               mutationError,
-                              "Couldn't update the location. Please try again.",
+                              t("whatsapp.photo.locationError")
                             ),
                           ),
                       },
                     );
                   }}
                 >
-                  Save
+                  {t("common.save")}
                 </Button>
               </div>
             </div>
           ) : photo.location_text ? (
             <div>
-              <SectionLabel>Location</SectionLabel>
+              <SectionLabel>{t("whatsapp.photo.location")}</SectionLabel>
               <div className="mt-1 text-[13px] text-[var(--color-text-primary)]">
                 {photo.location_text}
               </div>
@@ -194,7 +191,7 @@ export function SitePhotoDetailDialog({
 
           {canManage ? (
             <div>
-              <SectionLabel>Captured date</SectionLabel>
+              <SectionLabel>{t("whatsapp.photo.capturedDate")}</SectionLabel>
               <div className="mt-1.5 flex gap-2">
                 <input
                   type="date"
@@ -216,20 +213,20 @@ export function SitePhotoDetailDialog({
                           setError(
                             getApiErrorMessage(
                               mutationError,
-                              "Couldn't update the date. Please try again.",
+                              t("whatsapp.photo.dateError")
                             ),
                           ),
                       },
                     );
                   }}
                 >
-                  Save
+                  {t("whatsapp.photo.tags")}
                 </Button>
               </div>
             </div>
           ) : photo.photo_date ? (
             <div>
-              <SectionLabel>Captured date</SectionLabel>
+              <SectionLabel>{t("whatsapp.photo.capturedDate")}</SectionLabel>
               <div className="mt-1 text-[13px] text-[var(--color-text-primary)]">
                 {formatPhotoDate(photo.photo_date)}
               </div>
@@ -237,7 +234,7 @@ export function SitePhotoDetailDialog({
           ) : null}
 
           <div>
-            <SectionLabel>Tags</SectionLabel>
+            <SectionLabel>{t("whatsapp.photo.tags")}</SectionLabel>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {photo.tags.map((tag) => (
                 <span
@@ -256,7 +253,7 @@ export function SitePhotoDetailDialog({
                             setError(
                               getApiErrorMessage(
                                 mutationError,
-                                "Couldn't remove this tag. Please try again.",
+                                t("whatsapp.photo.removeTagError")
                               ),
                             ),
                         });
@@ -270,7 +267,7 @@ export function SitePhotoDetailDialog({
                 </span>
               ))}
               {photo.tags.length === 0 ? (
-                <span className="text-[12px] text-[var(--color-text-muted)]">No tags yet.</span>
+                <span className="text-[12px] text-[var(--color-text-muted)]">{t("whatsapp.photo.noTags")}</span>
               ) : null}
             </div>
 
@@ -280,7 +277,7 @@ export function SitePhotoDetailDialog({
                   className={`${inputClass} py-1.5`}
                   value={newTag}
                   onChange={(e) => setNewTag(e.target.value)}
-                  placeholder="Add a tag"
+                  placeholder={t("whatsapp.photo.addTagPlaceholder")}
                 />
                 <Button
                   type="submit"
@@ -288,7 +285,7 @@ export function SitePhotoDetailDialog({
                   size="sm"
                   disabled={!newTag.trim() || addTag.isPending}
                 >
-                  Add
+                  {t("whatsapp.photo.addTag")}
                 </Button>
               </form>
             ) : null}

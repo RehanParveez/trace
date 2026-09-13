@@ -5,12 +5,14 @@ import {Badge, Button, ErrorState, Icon, LoadingState, Modal, Panel, PanelHeader
 import { getApiErrorMessage } from "../../identity";
 import { useChannel, useDisconnectChannel } from "../hooks";
 import { ChannelConnectDialog } from "./ChannelConnectDialog";
+import { useTranslation } from "react-i18next";
 
 interface ChannelStatusCardProps {
   canManage: boolean;
 }
 
 export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
+  const { t } = useTranslation();
   const channelQuery = useChannel();
   const disconnect = useDisconnectChannel();
   const [connecting, setConnecting] = useState(false);
@@ -26,13 +28,13 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
     <>
       <Panel>
         <PanelHeader
-          eyebrow="MESSAGING CHANNEL"
-          title="WhatsApp connection"
-          description="Site engineers send progress photos to this number; Trace tags and files them automatically."
+          eyebrow={t("whatsapp.status.eyebrow")}
+          title={t("whatsapp.status.title")}
+          description={t("whatsapp.status.description")}
           action={
             channel ? (
               <Badge tone={channel.is_active ? "green" : "slate"}>
-                {channel.is_active ? "Connected" : "Disconnected"}
+                {channel.is_active ? t("whatsapp.status.connected") : t("whatsapp.status.disconnected")}
               </Badge>
             ) : null
           }
@@ -40,10 +42,10 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
 
         <div className="p-5">
           {channelQuery.isLoading ? (
-            <LoadingState label="Checking connection…" />
+            <LoadingState label={t("whatsapp.status.checking")} />
           ) : channelQuery.isError && !channelNotFound ? (
             <ErrorState
-              title="We couldn't check the WhatsApp connection"
+              title={t("whatsapp.status.checkError")}
               onRetry={() => void channelQuery.refetch()}
             />
           ) : !channel || !channel.is_active ? (
@@ -54,16 +56,16 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
                 </div>
                 <div>
                   <div className="text-[14px] font-semibold text-[var(--color-text-primary)]">
-                    No WhatsApp number connected
+                    {t("whatsapp.status.noNumber")}
                   </div>
                   <div className="mt-0.5 text-[12px] text-[var(--color-text-secondary)]">
-                    Connect a Business number to start receiving site photos.
+                    {t("whatsapp.status.noNumberDesc")}
                   </div>
                 </div>
               </div>
               {canManage ? (
                 <Button variant="primary" onClick={() => setConnecting(true)}>
-                  Connect number
+                  {t("whatsapp.status.connect")}
                 </Button>
               ) : null}
             </div>
@@ -94,8 +96,7 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
 
         {!canManage ? (
           <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)] px-5 py-3 text-[12px] text-[var(--color-text-secondary)]">
-            You can view the connection status, but only users with channel
-            management permission can connect or disconnect it.
+            {t("whatsapp.status.viewOnly")}
           </div>
         ) : null}
       </Panel>
@@ -106,8 +107,8 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
 
       {confirmingDisconnect ? (
         <Modal
-          title="Disconnect WhatsApp number"
-          description="Site engineers will no longer be able to send photos to this number through Trace."
+          title={t("whatsapp.disconnect.title")}
+          description={t("whatsapp.disconnect.description")}
           onClose={() => setConfirmingDisconnect(false)}
         >
           <div className="space-y-3">
@@ -121,7 +122,7 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
                 variant="ghost"
                 onClick={() => setConfirmingDisconnect(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="danger"
@@ -133,13 +134,13 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
                       setDisconnectError(
                         getApiErrorMessage(
                           error,
-                          "Couldn't disconnect this number. Please try again.",
+                          t("whatsapp.disconnect.error"),
                         ),
                       ),
                   })
                 }
               >
-                {disconnect.isPending ? "Disconnecting…" : "Disconnect"}
+                {disconnect.isPending ? t("whatsapp.disconnect.disconnecting") : t("whatsapp.status.disconnect")}
               </Button>
             </div>
           </div>

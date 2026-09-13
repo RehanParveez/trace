@@ -76,3 +76,9 @@ export function triggerBlobDownload(blob: Blob, filename: string): void {
   link.remove();
   window.URL.revokeObjectURL(url);
 }
+
+export function openBlobInNewTab(blob: Blob): void {
+  const url = window.URL.createObjectURL(blob);
+  window.open(url, "_blank", "noopener,noreferrer");
+  window.setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+}

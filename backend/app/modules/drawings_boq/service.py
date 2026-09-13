@@ -1,6 +1,8 @@
 from __future__ import annotations
 import asyncio
 import hashlib
+import os
+import tempfile
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import PurePosixPath
@@ -10,11 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, BOQItemRateSource
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, LabourRateRepository, MaterialLibraryRepository, MaterialNormalizationCacheRepository
-from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
+from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionCreateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
 from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
 from app.shared.idempotency import get_cached_response, store_response
-from app.shared.storage import build_storage_key, upload_fileobj
+from app.shared.storage import build_storage_key, download_to_path, upload_fileobj
 from sqlalchemy import select
 from app.modules.drawings_boq.export import build_boq_pdf, build_boq_xlsx
 from app.modules.drawings_boq.words import rupees_in_words
@@ -25,13 +27,26 @@ from decimal import Decimal
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
+REFERENCE_ONLY_FORMATS = {".pdf": DrawingFormat.PDF}
+
+FILE_MEDIA_TYPES = {
+  ".pdf": "application/pdf",
+}
+
 UNSUPPORTED_FORMAT_GUIDANCE = {
   ".rvt": (
     "RVT files can't be parsed directly. Export an IFC file from Revit "
-    "(File > Export > IFC) and upload that instead."
+    "(File > Export > IFC) for automatic BOQ generation, or upload a PDF "
+    "to keep this drawing as a reference."
   ),
-  ".dwg": "DWG support isn't available yet — export to IFC if possible.",
-  ".dxf": "DXF support isn't available yet — export to IFC if possible.",
+  ".dwg": (
+    "DWG isn't parsed automatically yet — export to IFC for automatic "
+    "BOQ generation, or upload a PDF to keep this drawing as a reference."
+  ),
+  ".dxf": (
+    "DXF isn't parsed automatically yet — export to IFC for automatic "
+    "BOQ generation, or upload a PDF to keep this drawing as a reference."
+  ),
 }
 
 class DrawingBOQService:
@@ -95,35 +110,41 @@ class DrawingBOQService:
         code="UNSUPPORTED_DRAWING_FORMAT",
       )
 
-    drawing_format = SUPPORTED_UPLOAD_FORMATS.get(suffix)
+    drawing_format = SUPPORTED_UPLOAD_FORMATS.get(suffix) or REFERENCE_ONLY_FORMATS.get(suffix)
     if drawing_format is None:
       raise TraceException(
-        "Unrecognized file type. Upload an .ifc file.",
+        "Unrecognized file type. Upload an .ifc file for automatic BOQ "
+        "generation, or a .pdf to keep as a reference drawing.",
         status_code=422,
         code="UNSUPPORTED_DRAWING_FORMAT",
       )
+
+    is_auto_parsed = suffix in SUPPORTED_UPLOAD_FORMATS
 
     await self.subscriptions.check_quota(organization_id, "drawings")
 
     contents = await file.read()
     storage_key = build_storage_key(
-      organization_id, project_id, file.filename or "drawing.ifc"
+      organization_id, project_id, file.filename or f"drawing{suffix}"
     )
 
     await asyncio.to_thread(
       upload_fileobj, storage_key, BytesIO(contents), file.content_type
     )
 
+    now = datetime.now(timezone.utc)
+
     drawing = Drawing(
       id=uuid4(),
       organization_id=organization_id,
       project_id=project_id,
       uploaded_by_user_id=user_id,
-      original_filename=file.filename or "drawing.ifc",
+      original_filename=file.filename or f"drawing{suffix}",
       storage_key=storage_key,
       format=drawing_format,
-      status=DrawingStatus.UPLOADED,
+      status=DrawingStatus.UPLOADED if is_auto_parsed else DrawingStatus.PARSED,
       file_size_bytes=len(contents),
+      parsed_at=None if is_auto_parsed else now,
     )
 
     drawing = await self.drawings.create(drawing)
@@ -147,9 +168,10 @@ class DrawingBOQService:
         {"drawing_id": str(drawing.id)},
       )
 
-    parse_drawing_task.apply_async(
-      args=[str(drawing.id)], queue="bim_parsing"
-    )
+    if is_auto_parsed:
+      parse_drawing_task.apply_async(
+        args=[str(drawing.id)], queue="bim_parsing"
+      )
 
     return drawing
 
@@ -185,6 +207,24 @@ class DrawingBOQService:
     await self.get_drawing(organization_id, drawing_id)
     return await self.elements.list_by_drawing(drawing_id)
 
+  async def get_drawing_file(
+    self,
+    organization_id: UUID,
+    drawing_id: UUID,
+  ) -> tuple[bytes, str, str]:
+    drawing = await self.get_drawing(organization_id, drawing_id)
+
+    suffix = PurePosixPath(drawing.original_filename or "").suffix.lower()
+    media_type = FILE_MEDIA_TYPES.get(suffix, "application/octet-stream")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      local_path = os.path.join(tmp_dir, f"drawing{suffix}")
+      await asyncio.to_thread(download_to_path, drawing.storage_key, local_path)
+      with open(local_path, "rb") as handle:
+        contents = handle.read()
+
+    return contents, media_type, drawing.original_filename
+
   async def list_boq_versions(
     self,
     organization_id: UUID,
@@ -192,6 +232,25 @@ class DrawingBOQService:
   ) -> list[BOQVersion]:
     await self._require_project(organization_id, project_id)
     return await self.boq_versions.list_by_project(organization_id, project_id)
+
+  async def create_boq_version(
+    self,
+    organization_id: UUID,
+    project_id: UUID,
+    payload: BOQVersionCreateRequest,
+  ) -> BOQVersion:
+    await self._require_project(organization_id, project_id)
+
+    version = BOQVersion(
+      id=uuid4(),
+      organization_id=organization_id,
+      project_id=project_id,
+      drawing_id=None,
+      label=payload.label.strip() or "Manual BOQ",
+    )
+    version = await self.boq_versions.create(version)
+    await self.session.commit()
+    return version
 
   async def list_boq_items(
     self,

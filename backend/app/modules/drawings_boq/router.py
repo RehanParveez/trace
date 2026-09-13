@@ -4,7 +4,9 @@ from fastapi import APIRouter, Depends, File, Header, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
-from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionResponse, BOQVersionUpdateRequest, DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest
+from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
+  DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest, 
+)
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
@@ -94,6 +96,25 @@ async def list_drawing_elements(
     drawing_id,
   )
 
+@router.get("/drawings/{drawing_id}/file")
+async def get_drawing_file(
+  drawing_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  contents, media_type, filename = await service.get_drawing_file(
+    current_user.active_membership.organization_id,
+    drawing_id,
+  )
+  return Response(
+    content=contents,
+    media_type=media_type,
+    headers={"Content-Disposition": f'inline; filename="{filename}"'},
+  )
+
 @router.get(
   "/projects/{project_id}/boq-versions",
   response_model=list[BOQVersionResponse],
@@ -109,6 +130,26 @@ async def list_boq_versions(
   return await service.list_boq_versions(
     current_user.active_membership.organization_id,
     project_id,
+  )
+
+@router.post(
+  "/projects/{project_id}/boq-versions",
+  response_model=BOQVersionResponse,
+  status_code=201,
+)
+async def create_boq_version(
+  project_id: UUID,
+  payload: BOQVersionCreateRequest,
+  current_user: User = Depends(
+    require_permission(PermissionKey.BOQ_ITEM_CREATE)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.create_boq_version(
+    current_user.active_membership.organization_id,
+    project_id,
+    payload,
   )
 
 @router.get(

@@ -12,6 +12,7 @@ from app.shared.mixins import TimestampMixin
 
 class DrawingFormat(str, enum.Enum):
   IFC = "IFC"
+  PDF = "PDF"
   DWG = "DWG"
   DXF = "DXF"
   RVT = "RVT"

@@ -3,12 +3,14 @@ import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useConnectChannel } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface ChannelConnectDialogProps {
   onClose: () => void;
 }
 
 export function ChannelConnectDialog({ onClose }: ChannelConnectDialogProps) {
+  const { t } = useTranslation();
   const connect = useConnectChannel();
   const [phoneNumberId, setPhoneNumberId] = useState("");
   const [businessAccountId, setBusinessAccountId] = useState("");
@@ -30,38 +32,33 @@ export function ChannelConnectDialog({ onClose }: ChannelConnectDialogProps) {
   {
     onSuccess: onClose,
     onError: (mutationError) =>
-      setError(
-        getApiErrorMessage(
-          mutationError,
-          "Couldn't connect this number — it may already be connected elsewhere.",
-        ),
-      ),
+      setError(getApiErrorMessage(mutationError, t("whatsapp.connect.error")))
   },
 );
 }
 
   return (
-    <Modal title="Connect WhatsApp Business number" description="Connect this organization's WhatsApp Business Cloud API credentials." onClose={onClose} wide>
+    <Modal title={t("whatsapp.connect.title")} description={t("whatsapp.connect.description")} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-4">
-        <Field label="Phone number ID" hint="From your Meta WhatsApp Business Platform app.">
+        <Field label={t("whatsapp.connect.phoneNumberId")} hint={t("whatsapp.connect.phoneNumberIdHint")}>
           <input className={inputClass} required value={phoneNumberId} onChange={(e) => setPhoneNumberId(e.target.value)} />
         </Field>
-        <Field label="Business account ID">
+        <Field label={t("whatsapp.connect.businessAccountId")}>
           <input className={inputClass} required value={businessAccountId} onChange={(e) => setBusinessAccountId(e.target.value)} />
         </Field>
-        <Field label="Access token" hint="Stored securely and used only to send/receive messages on this number.">
+        <Field label={t("whatsapp.connect.accessToken")} hint={t("whatsapp.connect.accessTokenHint")}>
           <input className={inputClass} required type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} />
         </Field>
-        <Field label="Display phone number" hint="Optional — shown in the UI, e.g. +92 300 1234567">
+        <Field label={t("whatsapp.connect.displayPhone")} hint={t("whatsapp.connect.displayPhoneHint")}>
           <input className={inputClass} value={displayPhoneNumber} onChange={(e) => setDisplayPhoneNumber(e.target.value)} />
         </Field>
 
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={connect.isPending}>Cancel</Button>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={connect.isPending}>{t("common.cancel")}</Button>
           <Button type="submit" variant="primary" disabled={connect.isPending}>
-            {connect.isPending ? "Connecting…" : "Connect number"}
+            {connect.isPending ? t("whatsapp.connect.connecting") : t("whatsapp.connect.submit")}
           </Button>
         </div>
       </form>

@@ -93,7 +93,7 @@ export function AuthShell({
           </div>
         </aside>
 
-        <section className="flex min-h-screen items-center justify-center overflow-y-auto px-5 py-8 sm:px-8 lg:px-10 lg:py-6 xl:px-14">
+        <section className="flex min-h-screen items-center justify-center overflow-y-auto px-5 py-6 sm:px-8 lg:px-10 lg:py-5 xl:px-14">
           <div className="w-full max-w-[480px]">
             <div className="mb-6 lg:hidden">
               <Link to="/" className="inline-flex items-center gap-2.5">
@@ -109,16 +109,16 @@ export function AuthShell({
               </Link>
             </div>
 
-            <div className="mb-6">
-              <p className="mb-2 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-trace-gold-dark)]">
+            <div className="mb-4">
+              <p className="mb-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-trace-gold-dark)]">
                 {eyebrow}
               </p>
 
-              <h1 className="font-['Fraunces'] text-[36px] leading-[1.05] tracking-[-0.02em] text-[var(--color-text-primary)] sm:text-[42px]">
+              <h1 className="font-['Fraunces'] text-[32px] leading-[1.05] tracking-[-0.02em] text-[var(--color-text-primary)] sm:text-[36px]">
                 {title}
               </h1>
 
-              <p className="mt-3 max-w-[430px] text-[15px] leading-6 text-[var(--color-text-secondary)]">
+              <p className="mt-3 max-w-[430px] text-[14px] leading-5 text-[var(--color-text-secondary)]">
                 {description}
               </p>
             </div>
