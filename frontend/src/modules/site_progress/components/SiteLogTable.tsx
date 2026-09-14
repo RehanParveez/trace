@@ -4,6 +4,7 @@ import { getApiErrorMessage } from "../../identity";
 import type { SiteLogEntry } from "../types/site-progress.types";
 import { formatLogDate } from "../utils/site-progress.utils";
 import { useDeleteSiteLog } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface SiteLogTableProps {
   logs: SiteLogEntry[];
@@ -13,36 +14,37 @@ interface SiteLogTableProps {
 }
 
 export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTableProps) {
+  const { t } = useTranslation();
   const deleteLog = useDeleteSiteLog();
   const { showToast } = useToast();
 
   return (
     <Panel>
       <PanelHeader
-        eyebrow="SITE DIARY"
-        title="Site progress logs"
-        description="Daily reports from the field — workforce, weather and blockers."
-        action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}><Icon name="plus" size={13} />New log</Button> : null}
+        eyebrow={t("siteProgress.table.eyebrow")}
+        title={t("siteProgress.table.title")}
+        description={t("siteProgress.table.description")}
+        action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}><Icon name="plus" size={13} />{t("siteProgress.table.new")}</Button> : null}
       />
 
       {logs.length === 0 ? (
         <EmptyState
           icon="site"
-          title="No site logs yet"
-          description="Site logs will appear here once the field team starts recording daily progress."
-          action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>New log</Button> : undefined}
+          title={t("siteProgress.table.emptyTitle")}
+          description={t("siteProgress.table.emptyDesc")}
+          action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>{t("siteProgress.table.new")}</Button> : undefined}
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[680px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Workforce</th>
-                <th className="px-4 py-3">Weather</th>
-                <th className="px-4 py-3">Blockers</th>
-                <th className="px-4 py-3">Notes</th>
-                {canManage ? <th className="px-4 py-3 text-right">Actions</th> : null}
+                <th className="px-4 py-3">{t("siteProgress.table.colDate")}</th>
+                <th className="px-4 py-3">{t("siteProgress.table.colWorkforce")}</th>
+                <th className="px-4 py-3">{t("siteProgress.table.colWeather")}</th>
+                <th className="px-4 py-3">{t("siteProgress.table.colBlockers")}</th>
+                <th className="px-4 py-3">{t("siteProgress.table.colNotes")}</th>
+                {canManage ? <th className="px-4 py-3 text-right">{t("siteProgress.table.colActions")}</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -60,20 +62,20 @@ export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTa
                         size="sm"
                         disabled={deleteLog.isPending}
                         onClick={() => {
-                          if (window.confirm("Delete this site log?")) {
+                          if (window.confirm(t("siteProgress.table.deleteConfirm"))) {
                             deleteLog.mutate(log.id, {
-                              onSuccess: () => showToast({ tone: "success", title: "Site log deleted" }),
+                              onSuccess: () => showToast({ tone: "success", title: t("siteProgress.table.deleted") }),
                               onError: (error) =>
                                 showToast({
                                   tone: "error",
-                                  title: "Couldn't delete this site log",
-                                  description: getApiErrorMessage(error, "Please try again."),
+                                  title: t("siteProgress.table.deleteError"),
+                                  description: getApiErrorMessage(error, t("common.retry")),
                                 }),
                             });
                           }
                         }}
                       >
-                        Delete
+                        {t("common.delete")}
                       </Button>
                     </td>
                   ) : null}

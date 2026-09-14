@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateSiteLog } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface SiteLogFormProps {
   projectId: string;
@@ -9,6 +10,7 @@ interface SiteLogFormProps {
 }
 
 export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
+  const { t } = useTranslation();
   const createLog = useCreateSiteLog();
   const { showToast } = useToast();
 
@@ -35,43 +37,43 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
       {
         onSuccess: () => {
           onClose();
-          showToast({ tone: "success", title: "Site log saved" });
+          showToast({ tone: "success", title: t("siteProgress.form.saved") });
         },
-        onError: () => setError("Couldn't save this site log. Please try again."),
+        onError: () => setError(t("siteProgress.form.saveError")),
       },
     );
   }
 
   return (
-    <Modal title="New site log" description="Record today's progress, workforce and any blockers from the field." onClose={onClose} wide>
+    <Modal title={t("siteProgress.form.title")} description={t("siteProgress.form.description")} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Log date">
+          <Field label={t("siteProgress.form.logDate")}>
             <input type="date" required className={inputClass} value={logDate} onChange={(e) => setLogDate(e.target.value)} />
           </Field>
-          <Field label="Workforce on site">
-            <input type="number" min="0" className={inputClass} value={workforceCount} onChange={(e) => setWorkforceCount(e.target.value)} placeholder="e.g. 24" />
+           <Field label={t("siteProgress.form.workforce")}>
+            <input type="number" min="0" className={inputClass} value={workforceCount} onChange={(e) => setWorkforceCount(e.target.value)} placeholder={t("siteProgress.form.workforcePlaceholder")} />
           </Field>
         </div>
 
-        <Field label="Weather">
-          <input className={inputClass} value={weather} onChange={(e) => setWeather(e.target.value)} placeholder="e.g. Clear, no delays" />
+        <Field label={t("siteProgress.form.weather")}>
+          <input className={inputClass} value={weather} onChange={(e) => setWeather(e.target.value)} placeholder={t("siteProgress.form.weatherPlaceholder")} />
         </Field>
 
-        <Field label="Blockers">
-          <textarea className={`${inputClass} resize-y`} rows={2} value={blockers} onChange={(e) => setBlockers(e.target.value)} placeholder="Anything holding up work today" />
+        <Field label={t("siteProgress.form.blockers")}>
+          <textarea className={`${inputClass} resize-y`} rows={2} value={blockers} onChange={(e) => setBlockers(e.target.value)} placeholder={t("siteProgress.form.blockersPlaceholder")} />
         </Field>
 
-        <Field label="Notes">
-          <textarea className={`${inputClass} resize-y`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="General progress notes" />
+        <Field label={t("siteProgress.form.notes")}>
+          <textarea className={`${inputClass} resize-y`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("siteProgress.form.notesPlaceholder")} />
         </Field>
 
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={createLog.isPending}>Cancel</Button>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={createLog.isPending}>{t("common.cancel")}</Button>
           <Button type="submit" variant="primary" disabled={createLog.isPending || !logDate}>
-            {createLog.isPending ? "Saving…" : "Save log"}
+            {createLog.isPending ? t("common.saving") : t("siteProgress.form.save")}
           </Button>
         </div>
       </form>

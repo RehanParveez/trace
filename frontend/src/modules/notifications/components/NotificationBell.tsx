@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "../../organizations/components/OrganizationUi";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadCount } from "../hooks";
 import { formatNotificationTime, getNotificationIcon } from "../utils/notification.utils";
+import { useTranslation } from "react-i18next";
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const unreadCountQuery = useUnreadCount();
   const notificationsQuery = useNotifications();
@@ -37,7 +39,7 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Notifications"
+        aria-label={t("notifications.bell.aria")}
         className="relative flex h-9 w-9 items-center justify-center rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
       >
         <Icon name="mail" size={15} />
@@ -51,17 +53,17 @@ export function NotificationBell() {
       {open ? (
         <div className="absolute right-0 top-[calc(100%+8px)] z-40 w-[340px] overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_16px_40px_rgba(8,13,24,0.14)]">
           <div className="flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
-            <span className="text-[13px] font-bold text-[var(--color-text-primary)]">Notifications</span>
+            <span className="text-[13px] font-bold text-[var(--color-text-primary)]">{t("notifications.bell.title")}</span>
               {unreadCount > 0 ? (
                <button type="button" onClick={() => markAllRead.mutate()} className="text-[12px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline">
-                 Mark all read
+                 {t("notifications.bell.markAllRead")}
                </button>
             ) : null}
 </div>
 
           <div className="max-h-[380px] overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-6 text-center text-[13px] text-[var(--color-text-secondary)]">You're all caught up.</div>
+              <div className="p-6 text-center text-[13px] text-[var(--color-text-secondary)]">{t("notifications.bell.empty")}</div>
             ) : (
               notifications.map((notification) => (
                 <button

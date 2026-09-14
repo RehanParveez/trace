@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge, Button, ErrorState, Icon, Panel } from "../../organizations/components/OrganizationUi";
+import { Badge, Button, ErrorState, Icon, Panel, useToast } from "../../organizations/components/OrganizationUi";
 import { useBOQSummary, useExportBOQ, useGenerateLabourItems } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import type { BOQVersion } from "../types/drawings-boq.types";
@@ -20,6 +20,7 @@ export function BOQSummaryPanel({ version, canUpdate, canAddItem, canExport, onE
   const summaryQuery = useBOQSummary(version.id);
   const generateLabour = useGenerateLabourItems(version.id);
   const exportBOQ = useExportBOQ(version.id, version.label);
+  const { showToast } = useToast();
   const [actionError, setActionError] = useState<string | null>(null);
 
   const summary = summaryQuery.data;
@@ -62,8 +63,18 @@ export function BOQSummaryPanel({ version, canUpdate, canAddItem, canExport, onE
               onClick={() => {
                 setActionError(null);
                 generateLabour.mutate(undefined, {
+                  onSuccess: (items) =>
+                    showToast({
+                      tone: "success",
+                      title:
+                        items.length > 0
+                          ? t("boq.summary.generateSuccess", { count: items.length })
+                          : t("boq.summary.generateUpToDate"),
+                    }),
                   onError: (error) =>
-                    setActionError(getApiErrorMessage(error, t("boq.summary.generateError")))
+                    setActionError(
+                      getApiErrorMessage(error, t("boq.summary.generateError")),
+                    ),
                 });
               }}
             >
@@ -79,8 +90,15 @@ export function BOQSummaryPanel({ version, canUpdate, canAddItem, canExport, onE
                 onClick={() => {
                   setActionError(null);
                   exportBOQ.mutate("pdf", {
+                    onSuccess: () =>
+                      showToast({
+                        tone: "success",
+                        title: t("boq.summary.exportPdfSuccess"),
+                      }),
                     onError: (error) =>
-                      setActionError(getApiErrorMessage(error, t("boq.summary.exportPdfError")))
+                      setActionError(
+                        getApiErrorMessage(error, t("boq.summary.exportPdfError")),
+                      ),
                   });
                 }}
               >
@@ -93,8 +111,15 @@ export function BOQSummaryPanel({ version, canUpdate, canAddItem, canExport, onE
                 onClick={() => {
                   setActionError(null);
                   exportBOQ.mutate("xlsx", {
+                    onSuccess: () =>
+                      showToast({
+                        tone: "success",
+                        title: t("boq.summary.exportExcelSuccess"),
+                      }),
                     onError: (error) =>
-                      setActionError(getApiErrorMessage(error, t("boq.summary.exportExcelError")))
+                      setActionError(
+                        getApiErrorMessage(error, t("boq.summary.exportExcelError")),
+                      ),
                   });
                 }}
               >

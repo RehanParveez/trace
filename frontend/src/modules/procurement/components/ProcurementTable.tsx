@@ -5,6 +5,7 @@ import type { ProcurementRequest } from "../types/procurement.types";
 import {formatNextProcurementActionLabel, formatProcurementAmount, formatProcurementDate, formatProcurementStatus, getProcurementStatusTone, PROCUREMENT_NEXT_STATUS,
 } from "../utils/procurement.utils";
 import { useUpdateProcurementStatus } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface ProcurementTableProps {
   requests: ProcurementRequest[];
@@ -14,36 +15,37 @@ interface ProcurementTableProps {
 }
 
 export function ProcurementTable({ requests, canCreate, canManage, onCreate }: ProcurementTableProps) {
+  const { t } = useTranslation();
   const updateStatus = useUpdateProcurementStatus();
   const { showToast } = useToast();
 
   return (
     <Panel>
       <PanelHeader
-        eyebrow="MATERIAL PROCUREMENT"
-        title="Procurement requests"
-        description="Request → approval → purchase → receipt, tracked in one place."
-        action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}><Icon name="plus" size={13} />New request</Button> : null}
+        eyebrow={t("procurement.table.eyebrow")}
+        title={t("procurement.table.title")}
+        description={t("procurement.table.description")}
+        action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}><Icon name="plus" size={13} />{t("procurement.table.new")}</Button> : null}
       />
 
       {requests.length === 0 ? (
         <EmptyState
           icon="procurement"
-          title="No procurement requests yet"
-          description="Material requests raised for this project will appear here."
-          action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>New request</Button> : undefined}
+          title={t("procurement.table.emptyTitle")}
+          description={t("procurement.table.emptyDesc")}
+          action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>{t("procurement.table.new")}</Button> : undefined}
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Material</th>
-                <th className="px-4 py-3 text-right">Quantity</th>
-                <th className="px-4 py-3 text-right">Est. cost</th>
-                <th className="px-4 py-3">Needed by</th>
-                <th className="px-4 py-3">Status</th>
-                {canManage ? <th className="px-4 py-3 text-right">Actions</th> : null}
+                <th className="px-4 py-3">{t("procurement.table.colMaterial")}</th>
+                <th className="px-4 py-3 text-right">{t("procurement.table.colQuantity")}</th>
+                <th className="px-4 py-3 text-right">{t("procurement.table.colEstCost")}</th>
+                <th className="px-4 py-3">{t("procurement.table.colNeededBy")}</th>
+                <th className="px-4 py-3">{t("procurement.table.colStatus")}</th>
+                {canManage ? <th className="px-4 py-3 text-right">{t("procurement.table.colActions")}</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -76,15 +78,18 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
                                     onSuccess: () =>
                                       showToast({
                                         tone: "success",
-                                        title: `${request.material_name} marked as ${formatProcurementStatus(nextStatus).toLowerCase()}`,
+                                        title: t("procurement.table.statusUpdated", {
+                                          name: request.material_name,
+                                          status: formatProcurementStatus(nextStatus).toLowerCase(),
+                                        }),
                                       }),
                                     onError: (error) =>
                                       showToast({
                                         tone: "error",
-                                        title: "Couldn't update this request",
+                                        title: t("procurement.table.updateError"),
                                         description: getApiErrorMessage(
                                           error,
-                                          "It may have already moved to a different status. Refresh and try again.",
+                                          t("procurement.table.updateErrorDesc"),
                                         ),
                                       }),
                                   },
@@ -106,22 +111,19 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
                                     onSuccess: () =>
                                       showToast({
                                         tone: "success",
-                                        title: `${request.material_name} cancelled`,
+                                        title: t("procurement.table.cancelled", { name: request.material_name }),
                                       }),
                                     onError: (error) =>
                                       showToast({
                                         tone: "error",
-                                        title: "Couldn't cancel this request",
-                                        description: getApiErrorMessage(
-                                          error,
-                                          "It may have already moved to a different status. Refresh and try again.",
-                                        ),
+                                        title: t("procurement.table.cancelError"),
+                                        description: getApiErrorMessage(error, t("procurement.table.updateErrorDesc")),
                                       }),
                                   },
                                 )
                               }
                             >
-                              Cancel
+                              {t("common.cancel")}
                             </Button>
                           ) : null}
                         </div>

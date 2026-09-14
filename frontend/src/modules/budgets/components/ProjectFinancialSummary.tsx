@@ -5,12 +5,14 @@ import { PROCUREMENT_PERMISSIONS, useProcurementRequests } from "../../procureme
 import { BUDGET_PERMISSIONS } from "../permissions";
 import { useProjectBudget } from "../hooks";
 import { formatBudgetAmount } from "../utils/budget.utils";
+import { useTranslation } from "react-i18next";
 
 interface ProjectFinancialSummaryProps {
   projectId: string;
 }
 
 export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryProps) {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
 
   const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
@@ -62,23 +64,23 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <StatCard
-        label="Approved budget"
+        label={t("dashboard.financial.approvedBudget")}
         value={
           !canViewBudget
-            ? "No access"
+            ? t("dashboard.financial.noAccess")
             : isLoadingFinancials
               ? "…"
               : approvedAmount === null
-                ? "Not set"
+                ? t("dashboard.financial.notSet")
                 : formatBudgetAmount(approvedAmount, currency)
         }
-        note={canViewBudget ? "Set for this project" : "Requires budget permission"}
+        note={canViewBudget ? t("budgets.financial.setForProject") : t("dashboard.financial.requiresBudget")}
         icon="budget"
         tone="blue"
       />
 
       <StatCard
-        label="Committed"
+        label={t("dashboard.financial.committed")}
         value={
           !canViewProcurement
             ? "No access"
@@ -86,13 +88,13 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
               ? "…"
               : formatBudgetAmount(committedAmount ?? 0, currency)
         }
-        note={canViewProcurement ? "Approved or ordered procurement" : "Requires procurement permission"}
+        note={canViewProcurement ? t("dashboard.financial.committedNote") : t("dashboard.financial.requiresProcurement")}
         icon="procurement"
         tone="gold"
       />
 
       <StatCard
-        label="Spent to date"
+        label={t("dashboard.financial.spent")}
         value={
           !canViewExpenses
             ? "No access"
@@ -100,13 +102,13 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
               ? "…"
               : formatBudgetAmount(spentAmount ?? 0, currency)
         }
-        note={canViewExpenses ? "Approved expenses" : "Requires expense permission"}
+        note={canViewExpenses ? t("dashboard.financial.spentNote") : t("dashboard.financial.requiresExpense")}
         icon="expenses"
         tone="gold"
       />
 
       <StatCard
-        label="Remaining"
+        label={t("dashboard.financial.remaining")}
         value={
           isLoadingFinancials
             ? "…"
@@ -116,10 +118,10 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
         }
         note={
           remainingAmount === null
-            ? "Set a budget to see remaining"
+            ? t("dashboard.financial.remainingNotSet")
             : remainingAmount < 0
-              ? "Over budget"
-              : "Available after commitments and spend"
+              ? t("budgets.financial.overBudget")
+              : t("budgets.financial.available")
         }
         icon="check"
         tone={remainingAmount === null ? "blue" : remainingAmount < 0 ? "red" : "green"}

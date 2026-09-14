@@ -7,10 +7,12 @@ import { SITE_PROGRESS_PERMISSIONS } from "../permissions";
 import { useSiteLogs } from "../hooks";
 import { SiteLogTable } from "../components/SiteLogTable";
 import { SiteLogForm } from "../components/SiteLogForm";
+import { useTranslation } from "react-i18next";
 
 export function SiteProgressPage() {
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(SITE_PROGRESS_PERMISSIONS.SITE_LOG_READ);
+  const { t } = useTranslation();
   const canCreate = permissions.includes(SITE_PROGRESS_PERMISSIONS.SITE_LOG_CREATE);
   const canManage = permissions.includes(SITE_PROGRESS_PERMISSIONS.SITE_LOG_MANAGE);
 
@@ -24,15 +26,15 @@ export function SiteProgressPage() {
   const logsQuery = useSiteLogs({ projectId: activeProjectId || undefined });
 
   if (!canRead && permissions.length > 0) {
-    return <ErrorState title="Site progress unavailable" description="You don't have permission to view site progress logs." />;
+    return <ErrorState title={t("siteProgress.page.accessUnavailable")} description={t("siteProgress.page.accessUnavailableDesc")} />;
   }
 
   if (projectsQuery.isLoading) {
-    return <LoadingState label="Loading projects…" />;
+    return <LoadingState label={t("common.loading")} />;
   }
 
   if (projectsQuery.isError || !projectsQuery.data) {
-    return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+    return <ErrorState title={t("projects.page.loadError")} onRetry={() => void projectsQuery.refetch()} />;
   }
 
   const logs = logsQuery.data ?? [];
@@ -40,13 +42,13 @@ export function SiteProgressPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Site progress" description="Daily field reports capturing workforce, weather and blockers for each project." />
+      <PageHeader title={t("siteProgress.page.title")} description={t("siteProgress.page.description")} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first to start logging site progress." />
+        <ErrorState title={t("siteProgress.page.noProjects")} description={t("siteProgress.page.noProjectsDesc")} />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("siteProgress.page.project")}>
             <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
@@ -55,26 +57,26 @@ export function SiteProgressPage() {
           </Field>
 
           <section>
-            <SectionDivider title="Latest snapshot" description="Most recent reported figures for this project." />
+            <SectionDivider title={t("siteProgress.page.snapshotTitle")} description={t("siteProgress.page.snapshotDesc")} />
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <StatCard label="Logs recorded" value={logs.length} note="Total site logs" icon="site" tone="blue" />
-              <StatCard label="Latest workforce" value={latestWorkforce ?? "—"} note="Reported on last log" icon="users" tone="gold" />
+              <StatCard label={t("siteProgress.page.logsRecorded")} value={logs.length} note={t("siteProgress.page.logsRecordedNote")} icon="site" tone="blue" />
+              <StatCard label={t("siteProgress.page.latestWorkforce")} value={latestWorkforce ?? "—"} note={t("siteProgress.page.latestWorkforceNote")} icon="users" tone="gold" />
               <StatCard
-                label="Latest report"
-                value={logs[0] ? "Filed" : "None yet"}
-                note={logs[0] ? "Most recent log entry" : "No logs recorded yet"}
+                label={t("siteProgress.page.latestReport")}
+                value={logs[0] ? t("siteProgress.page.filed") : t("siteProgress.page.noneYet")}
+                note={logs[0] ? "Most recent log entry" : t("siteProgress.page.noneYet")}
                 icon="clock"
                 tone={logs[0] ? "green" : "gold"}
               />
             </div>
           </section>
 
-          <SectionDivider title="Site log history" description={`${logs.length} log${logs.length === 1 ? "" : "s"} recorded for this project.`} />
+          <SectionDivider title={t("siteProgress.page.historyTitle")} description={t("siteProgress.page.historyDesc", { count: logs.length })} />
 
           {logsQuery.isLoading ? (
-            <LoadingState label="Loading site logs…" />
+            <LoadingState label={t("siteProgress.page.loadingLogs")} />
           ) : logsQuery.isError ? (
-            <ErrorState title="Couldn't load site logs" onRetry={() => void logsQuery.refetch()} />
+            <ErrorState title={t("siteProgress.page.loadError")} onRetry={() => void logsQuery.refetch()} />
           ) : (
             <SiteLogTable
               logs={logs}

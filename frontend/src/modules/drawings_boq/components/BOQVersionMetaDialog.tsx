@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Modal } from "../../organizations/components/OrganizationUi";
+import { Button, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useUpdateBOQVersion } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import type { BOQVersion } from "../types/drawings-boq.types";
@@ -15,6 +15,7 @@ interface BOQVersionMetaDialogProps {
 export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersionMetaDialogProps) {
   const { t } = useTranslation();
   const updateVersion = useUpdateBOQVersion(projectId);
+  const { showToast } = useToast();
   const meta = version.export_meta ?? {};
 
   const [coveredArea, setCoveredArea] = useState(version.covered_area_sqft !== null ? String(version.covered_area_sqft) : "");
@@ -52,9 +53,15 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
         },
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({
+            tone: "success",
+            title: t("boq.meta.savedToast"),
+          });
+        },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, t("boq.meta.saveError")))
+          setError(getApiErrorMessage(mutationError, t("boq.meta.saveError"))),
       },
     );
   }
@@ -65,7 +72,7 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
         <div className="grid grid-cols-2 gap-3">
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.companyName")}</span>
-            <input className={cls} value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Shown on this BOQ" />
+            <input className={cls} value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder={t("boq.meta.companyNamePlaceholder")} />
           </label>
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.clientName")}</span>
@@ -73,7 +80,7 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
           </label>
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.projectTitle")}</span>
-            <input className={cls} value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder="Double Story Residential" />
+            <input className={cls} value={projectTitle} onChange={(e) => setProjectTitle(e.target.value)} placeholder={t("boq.meta.projectTitlePlaceholder")} />
           </label>
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.location")}</span>
@@ -81,11 +88,11 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
           </label>
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.plotSize")}</span>
-            <input className={cls} value={plotSize} onChange={(e) => setPlotSize(e.target.value)} placeholder="8 Marla (30' x 60')" />
+            <input className={cls} value={plotSize} onChange={(e) => setPlotSize(e.target.value)} placeholder={t("boq.meta.plotSizePlaceholder")} />
           </label>
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.storeys")}</span>
-            <input className={cls} value={storeys} onChange={(e) => setStoreys(e.target.value)} placeholder="G + 1 + Mumty" />
+            <input className={cls} value={storeys} onChange={(e) => setStoreys(e.target.value)} placeholder={t("boq.meta.storeysPlaceholder")} />
           </label>
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("boq.meta.coveredArea")}</span>
@@ -107,8 +114,12 @@ export function BOQVersionMetaDialog({ projectId, version, onClose }: BOQVersion
         {error ? <div className="rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
 
         <div className="flex justify-end gap-2 border-t border-[#e1d5bc] pt-4">
-          <Button variant="ghost" onClick={onClose} disabled={updateVersion.isPending}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={updateVersion.isPending}>{updateVersion.isPending ? "Saving…" : "Save"}</Button>
+          <Button variant="ghost" onClick={onClose} disabled={updateVersion.isPending}>
+            {t("common.cancel")}
+          </Button>
+          <Button type="submit" variant="primary" disabled={updateVersion.isPending}>
+            {updateVersion.isPending ? t("common.saving") : t("common.save")}
+          </Button>
         </div>
       </form>
     </Modal>

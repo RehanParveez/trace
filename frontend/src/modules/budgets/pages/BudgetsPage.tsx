@@ -1,6 +1,5 @@
 import { useState } from "react";
-import {
-  ErrorState, Field, inputClass, LoadingState, PageHeader,
+import {ErrorState, Field, inputClass, LoadingState, PageHeader,
 } from "../../organizations/components/OrganizationUi";
 import { useProjects } from "../../projects";
 import { usePermissionKeys } from "../../identity";
@@ -8,9 +7,11 @@ import { BUDGET_PERMISSIONS } from "../permissions";
 import { useProjectBudget } from "../hooks";
 import { BudgetOverview } from "../components/BudgetOverview";
 import { BudgetForm } from "../components/BudgetForm";
+import { useTranslation } from "react-i18next";
 
 export function BudgetsPage() {
   const permissions = usePermissionKeys();
+  const { t } = useTranslation();
   const canRead = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
   const canManage = permissions.includes(BUDGET_PERMISSIONS.BUDGET_MANAGE);
 
@@ -26,29 +27,29 @@ export function BudgetsPage() {
   if (!canRead && permissions.length > 0) {
     return (
       <ErrorState
-        title="Budget access unavailable"
-        description="You don't have permission to view project budgets."
+        title={t("budgets.page.accessUnavailable")}
+        description={t("budgets.page.accessUnavailableDesc")}
       />
     );
   }
 
   if (projectsQuery.isLoading) {
-    return <LoadingState label="Loading projects…" />;
+    return <LoadingState label={t("common.loading")} />;
   }
 
   if (projectsQuery.isError || !projectsQuery.data) {
-    return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+    return <ErrorState title={t("projects.page.loadError")} onRetry={() => void projectsQuery.refetch()} />;
   }
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Budgets" description="Approved budget and category allocation for each project." />
+      <PageHeader title={t("budgets.page.title")} description={t("budgets.page.description")} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first to set its approved budget." />
+        <ErrorState title={t("budgets.page.noProjects")} description={t("budgets.page.noProjectsDesc")} />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("budgets.page.project")}>
             <select
               className={inputClass}
               value={activeProjectId}
@@ -63,9 +64,9 @@ export function BudgetsPage() {
           </Field>
 
           {budgetQuery.isLoading ? (
-            <LoadingState label="Loading budget…" />
+            <LoadingState label={t("budgets.page.loadingBudget")} />
           ) : budgetQuery.isError ? (
-            <ErrorState title="Couldn't load this project's budget" onRetry={() => void budgetQuery.refetch()} />
+            <ErrorState title={t("budgets.page.loadError")} onRetry={() => void budgetQuery.refetch()} />
           ) : (
             <BudgetOverview
               budget={budgetQuery.data ?? null}

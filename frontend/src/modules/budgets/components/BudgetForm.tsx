@@ -4,6 +4,7 @@ import {Button, Field, Icon, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { useSaveBudget } from "../hooks";
 import type { Budget, BudgetCategoryInput } from "../types/budget.types";
+import { useTranslation } from "react-i18next";
 
 interface BudgetFormProps {
   projectId: string;
@@ -12,6 +13,7 @@ interface BudgetFormProps {
 }
 
 export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
+  const { t } = useTranslation();
   const saveBudget = useSaveBudget();
   const { showToast } = useToast();
 
@@ -53,23 +55,23 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
       {
         onSuccess: () => {
           onClose();
-          showToast({ tone: "success", title: budget ? "Budget updated" : "Budget set" });
+          showToast({ tone: "success", title: budget ? t("budgets.form.updated") : t("budgets.form.set") });
         },
-        onError: () => setError("Couldn't save this budget. Please try again."),
+        onError: () => setError(t("budgets.form.saveError")),
       },
     );
   }
 
   return (
     <Modal
-      title={budget ? "Edit budget" : "Set project budget"}
-      description="The approved budget used to track this project's committed and spent amounts."
+      title={budget ? t("budgets.form.editTitle") : t("budgets.form.createTitle")}
+      description={t("budgets.form.description")}
       onClose={onClose}
       wide
     >
       <form onSubmit={submit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Approved amount">
+          <Field label={t("budgets.form.approvedAmount")}>
             <input
               type="number"
               step="any"
@@ -81,7 +83,7 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
             />
           </Field>
 
-          <Field label="Currency" hint="Exactly 3 letters, e.g. PKR">
+          <Field label={t("budgets.form.currency")} hint={t("budgets.form.currencyHint")}>
             <input
               className={inputClass}
               value={currency}
@@ -93,20 +95,20 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
           </Field>
         </div>
 
-        <Field label="Notes">
+        <Field label={t("budgets.form.notes")}>
           <textarea
             className={`${inputClass} resize-y`}
             rows={3}
             value={notes}
             onChange={(event) => setNotes(event.target.value)}
-            placeholder="Optional context for this budget"
+            placeholder={t("budgets.form.notesPlaceholder")}
           />
         </Field>
 
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[12px] font-semibold uppercase tracking-[0.04em] text-[var(--color-text-secondary)]">
-              Category breakdown
+              {t("budgets.form.categoryBreakdown")}
             </span>
 
             <button
@@ -114,13 +116,13 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
               onClick={() => setCategories((current) => [...current, { name: "", allocated_amount: 0 }])}
               className="text-[12px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
             >
-              Add category
+              {t("budgets.form.addCategory")}
             </button>
           </div>
 
           {categories.length === 0 ? (
             <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2.5 text-[12px] text-[var(--color-text-secondary)]">
-              No category breakdown yet — the full approved amount will be tracked as one total.
+              {t("budgets.form.noCategories")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -128,7 +130,7 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
                 <div key={index} className="flex gap-2">
                   <input
                     className={inputClass}
-                    placeholder="Category name"
+                    placeholder={t("budgets.form.categoryNamePlaceholder")}
                     value={category.name}
                     onChange={(event) => updateCategory(index, { name: event.target.value })}
                   />
@@ -137,7 +139,7 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
                     step="any"
                     min="0"
                     className={`${inputClass} w-40`}
-                    placeholder="Amount"
+                    placeholder={t("budgets.form.amountPlaceholder")}
                     value={category.allocated_amount || ""}
                     onChange={(event) =>
                       updateCategory(index, { allocated_amount: Number(event.target.value) })
@@ -146,7 +148,7 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
                   <button
                     type="button"
                     onClick={() => removeCategory(index)}
-                    aria-label={`Remove ${category.name || "category"}`}
+                    aria-label={t("budgets.form.removeCategory", { name: category.name || t("budgets.form.categoryFallback") })}
                     className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] text-[var(--color-text-secondary)] outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)]"
                   >
                     <Icon name="x" size={14} />
@@ -165,10 +167,10 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={saveBudget.isPending}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button type="submit" variant="primary" disabled={saveBudget.isPending || !approvedAmount}>
-            {saveBudget.isPending ? "Saving…" : "Save budget"}
+            {saveBudget.isPending ? t("common.saving") : t("budgets.form.save")}
           </Button>
         </div>
       </form>

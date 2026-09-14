@@ -3,6 +3,7 @@ import {
 } from "../../organizations/components/OrganizationUi";
 import type { Budget } from "../types/budget.types";
 import { formatBudgetAmount, sumCategoryAllocations } from "../utils/budget.utils";
+import { useTranslation } from "react-i18next";
 
 interface BudgetOverviewProps {
   budget: Budget | null;
@@ -11,19 +12,20 @@ interface BudgetOverviewProps {
 }
 
 export function BudgetOverview({ budget, canManage, onEdit }: BudgetOverviewProps) {
+  const { t } = useTranslation();
   if (!budget) {
     return (
       <Panel>
         <PanelHeader
-          eyebrow="PROJECT BUDGET"
-          title="No budget set"
-          description="Set an approved budget to start tracking this project's financial envelope."
+          eyebrow={t("budgets.overview.eyebrow")}
+          title={t("budgets.overview.noBudgetTitle")}
+          description={t("budgets.overview.noBudgetDesc")}
         />
         <EmptyState
           icon="budget"
-          title="No budget for this project yet"
-          description="Once you set an approved amount, it appears here alongside any category breakdown."
-          action={canManage ? <Button variant="primary" onClick={onEdit}>Set budget</Button> : undefined}
+          title={t("budgets.overview.emptyTitle")}
+          description={t("budgets.overview.emptyDesc")}
+          action={canManage ? <Button variant="primary" onClick={onEdit}>{t("budgets.overview.setBudget")}</Button> : undefined}
         />
       </Panel>
     );
@@ -36,13 +38,13 @@ export function BudgetOverview({ budget, canManage, onEdit }: BudgetOverviewProp
   return (
     <Panel className="overflow-hidden">
       <PanelHeader
-        eyebrow="PROJECT BUDGET"
+        eyebrow={t("budgets.overview.eyebrow")}
         title={formatBudgetAmount(budget.approved_amount, budget.currency)}
-        description={budget.notes ?? "Approved budget for this project."}
+        description={budget.notes ?? t("budgets.overview.defaultDesc")}
         action={canManage ? (
           <Button variant="secondary" size="sm" onClick={onEdit}>
             <Icon name="edit" size={13} />
-            Edit budget
+             {t("budgets.overview.edit")}
           </Button>
         ) : undefined}
       />
@@ -50,8 +52,8 @@ export function BudgetOverview({ budget, canManage, onEdit }: BudgetOverviewProp
       {budget.categories.length > 0 ? (
         <div className="p-5 sm:p-6">
           <div className="mb-3 flex items-center justify-between text-[12px] font-semibold text-[var(--color-text-secondary)]">
-            <span>Category allocation</span>
-            <span>{categoryShare}% of budget allocated</span>
+            <span>{t("budgets.overview.categoryAllocation")}</span>
+            <span>{t("budgets.overview.allocatedPercent", { percent: categoryShare })}</span>
           </div>
           <ProgressBar value={categoryShare} tone={categoryShare > 100 ? "red" : "gold"} />
 
@@ -71,7 +73,7 @@ export function BudgetOverview({ budget, canManage, onEdit }: BudgetOverviewProp
         </div>
       ) : (
         <div className="p-5 text-[12.5px] text-[var(--color-text-secondary)] sm:p-6">
-          No category breakdown has been added for this budget.
+          {t("budgets.overview.noCategories")}
         </div>
       )}
     </Panel>

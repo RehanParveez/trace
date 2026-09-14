@@ -4,21 +4,23 @@ import { useAIRequestLog } from "../hooks";
 import { AI_REQUEST_PERMISSIONS } from "../permissions";
 import { AIRequestTable } from "../components/AIRequestTable";
 import { AIUsageSummaryCards } from "../components/AIUsageSummaryCards";
+import { useTranslation } from "react-i18next";
 
 export function AIRequestsPage() {
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(AI_REQUEST_PERMISSIONS.AI_REQUEST_READ);
+  const { t } = useTranslation();
   const requestsQuery = useAIRequestLog();
 
   if (!canRead) {
-    return <ErrorState title="AI request log unavailable" description="You don't have permission to view this organization's AI activity." />;
+    return <ErrorState title={t("ai.page.accessUnavailable")} description={t("ai.page.accessUnavailableDesc")} />;
   }
-  if (requestsQuery.isLoading) return <LoadingState label="Loading AI requests…" />;
-  if (requestsQuery.isError) return <ErrorState title="Couldn't load AI requests" onRetry={() => void requestsQuery.refetch()} />;
+  if (requestsQuery.isLoading) return <LoadingState label={t("ai.page.loading")} />;
+  if (requestsQuery.isError) return <ErrorState title={t("ai.page.loadError")} onRetry={() => void requestsQuery.refetch()} />;
 
   return (
     <div className="space-y-7">
-      <PageHeader eyebrow="INTELLIGENCE" title="AI activity" description="Every AI call made on behalf of this organization — material normalization, caption parsing, and their outcomes."
+      <PageHeader eyebrow={t("ai.page.eyebrow")} title={t("ai.page.title")} description={t("ai.page.description")}
     />
       <AIUsageSummaryCards />
       <AIRequestTable entries={requestsQuery.data ?? []} />

@@ -1,11 +1,11 @@
 import { Fragment, useState } from "react";
-import {
-  Badge, Button, EmptyState, Field, inputClass, Panel, PanelHeader, TableShell, useToast,
+import {Badge, Button, EmptyState, Field, inputClass, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import type { Expense } from "../types/expense.types";
 import { formatExpenseAmount, formatExpenseDate, formatExpenseStatus, getExpenseStatusTone } from "../utils/expense.utils";
 import { useApproveExpense, useRejectExpense } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface ExpenseTableProps {
   expenses: Expense[];
@@ -15,6 +15,7 @@ interface ExpenseTableProps {
 }
 
 export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: ExpenseTableProps) {
+  const { t } = useTranslation();
   const approveExpense = useApproveExpense();
   const rejectExpense = useRejectExpense();
   const { showToast } = useToast();
@@ -24,29 +25,29 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
   return (
     <Panel>
       <PanelHeader
-        eyebrow="PROJECT EXPENSES"
-        title="Expenses"
-        description="Costs logged against this project, pending or approved."
-        action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>Record expense</Button> : null}
+        eyebrow={t("expenses.table.eyebrow")}
+        title={t("expenses.table.title")}
+        description={t("expenses.table.description")}
+        action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>{t("expenses.table.record")}</Button> : null}
       />
 
       {expenses.length === 0 ? (
         <EmptyState
           icon="expenses"
-          title="No expenses recorded yet"
-          description="Project expenses will appear here once someone logs one."
-          action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>Record expense</Button> : undefined}
+          title={t("expenses.table.emptyTitle")}
+          description={t("expenses.table.description")}
+          action={canCreate ? <Button variant="primary" size="sm" onClick={onCreate}>{t("expenses.table.record")}</Button> : null}
         />
       ) : (
         <TableShell>
           <table className="w-full min-w-[700px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3 text-right">Amount</th>
-                <th className="px-4 py-3">Status</th>
-                {canApprove ? <th className="px-4 py-3 text-right">Actions</th> : null}
+                <th className="px-4 py-3">{t("expenses.table.colCategory")}</th>
+                <th className="px-4 py-3">{t("expenses.table.colDate")}</th>
+                <th className="px-4 py-3 text-right">{t("expenses.table.colAmount")}</th>
+                <th className="px-4 py-3">{t("expenses.table.colActions")}</th>
+                {canApprove ? <th className="px-4 py-3 text-right">{t("expenses.table.colActions")}</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -64,7 +65,7 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                       <td className="px-4 py-3.5 text-right">
                         {expense.status === "PENDING" ? (
                           <Button variant="secondary" size="sm" onClick={() => setReviewingId(reviewingId === expense.id ? null : expense.id)}>
-                            Review
+                            {t("expenses.table.review")}
                           </Button>
                         ) : (
                           <span className="text-[11px] text-[var(--color-text-muted)]">—</span>
@@ -76,16 +77,16 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                   {reviewingId === expense.id ? (
                     <tr className="border-t border-[var(--color-border)] bg-[var(--color-warning-bg)]">
                       <td colSpan={canApprove ? 5 : 4} className="px-4 py-4">
-                        <Field label="Review note">
+                        <Field label={t("expenses.table.reviewNote")}>
                           <textarea
                             className={`${inputClass} resize-y`}
                             rows={2}
                             value={reviewNote}
                             onChange={(e) => setReviewNote(e.target.value)}
-                            placeholder="Optional"
+                            placeholder={t("expenses.table.reviewNotePlaceholder")}
                           />
                         </Field>
-                                                <div className="mt-3 flex justify-end gap-2">
+                          <div className="mt-3 flex justify-end gap-2">
                           <Button
                             variant="danger"
                             size="sm"
@@ -97,22 +98,19 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                                   onSuccess: () => {
                                     setReviewingId(null);
                                     setReviewNote("");
-                                    showToast({ tone: "success", title: `${expense.category} rejected` });
+                                    showToast({ tone: "success", title: t("expenses.table.rejected", { category: expense.category }) });
                                   },
                                   onError: (error) =>
                                     showToast({
                                       tone: "error",
-                                      title: "Couldn't reject this expense",
-                                      description: getApiErrorMessage(
-                                        error,
-                                        "It may have already been reviewed by someone else. Refresh and try again.",
-                                      ),
+                                      title: t("expenses.table.rejectError"),
+                                      description: getApiErrorMessage(error, t("expenses.table.conflictDesc")),
                                     }),
                                 },
                               )
                             }
                           >
-                            Reject
+                            {t("expenses.table.reject")}
                           </Button>
                           <Button
                             variant="primary"
@@ -125,22 +123,19 @@ export function ExpenseTable({ expenses, canCreate, canApprove, onCreate }: Expe
                                   onSuccess: () => {
                                     setReviewingId(null);
                                     setReviewNote("");
-                                    showToast({ tone: "success", title: `${expense.category} approved` });
+                                    showToast({ tone: "success", title: t("expenses.table.approved", { category: expense.category }) });
                                   },
                                   onError: (error) =>
                                     showToast({
                                       tone: "error",
-                                      title: "Couldn't approve this expense",
-                                      description: getApiErrorMessage(
-                                        error,
-                                        "It may have already been reviewed by someone else. Refresh and try again.",
-                                      ),
+                                      title: t("expenses.table.approveError"),
+                                      description: getApiErrorMessage(error, t("expenses.table.conflictDesc")),
                                     }),
                                 },
                               )
                             }
                           >
-                            Approve
+                            {t("expenses.table.approve")}
                           </Button>
                         </div>
                       </td>

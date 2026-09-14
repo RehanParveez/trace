@@ -21,7 +21,7 @@ export const whatsappApi = {
     const response = await apiClient.get<SitePhoto[]>("/whatsapp/photos", {
       params: {
         project_id: params.projectId,
-        photo_date_from: params.photoDateFrom,
+        photo_date_afrom: params.photoDateFrom,
         photo_date_to: params.photoDateTo,
         tag: params.tag,
         unassigned_only: params.unassignedOnly,

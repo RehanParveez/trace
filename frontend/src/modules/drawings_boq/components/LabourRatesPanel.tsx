@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, EmptyState, ErrorState, LoadingState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { Button, EmptyState, ErrorState, LoadingState, Panel, PanelHeader, TableShell, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateLabourRate, useLabourRates, useUpdateLabourRate } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import { formatCurrency } from "../utils/drawings-boq.utils";
@@ -22,6 +22,7 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
   const [unit, setUnit] = useState("Sft");
   const [rate, setRate] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   const rates = ratesQuery.data ?? [];
   const cls = "mt-1.5 w-full rounded-[8px] border border-[#d9ceb9] bg-white px-3 py-2 text-[11px] text-[#191410] outline-none focus:border-[#c39a38]";
@@ -33,7 +34,16 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
     createRate.mutate(
       { trade: trade.trim(), unit: unit.trim(), rate: Number(rate) },
       {
-        onSuccess: () => { setTrade(""); setUnit("Sft"); setRate(""); setFormOpen(false); },
+        onSuccess: () => {
+          setTrade("");
+          setUnit("Sft");
+          setRate("");
+          setFormOpen(false);
+          showToast({
+            tone: "success",
+            title: t("labour.createdToast"),
+          });
+        },
         onError: (mutationError) =>
           setError(getApiErrorMessage(mutationError, t("labour.createError"))),
       },
@@ -90,7 +100,27 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
                   key={r.id}
                   rate={r}
                   canManage={canManage}
-                  onSave={(newRate) => updateRate.mutate({ rateId: r.id, payload: { rate: newRate } })}
+                  onSave={(newRate) =>
+                    updateRate.mutate(
+                      { rateId: r.id, payload: { rate: newRate } },
+                      {
+                        onSuccess: () =>
+                          showToast({
+                            tone: "success",
+                            title: t("labour.rateUpdatedToast", { trade: r.trade }),
+                          }),
+                        onError: (error) =>
+                          showToast({
+                            tone: "error",
+                            title: t("labour.rateErrorTitle"),
+                            description: getApiErrorMessage(
+                              error,
+                              t("labour.rateErrorFallback"),
+                            ),
+                          }),
+                      },
+                    )
+                  }
                 />
               ))}
             </tbody>

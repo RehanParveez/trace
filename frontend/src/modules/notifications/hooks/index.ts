@@ -1,4 +1,2 @@
-export {
-  notificationKeys, useMarkAllNotificationsRead, useMarkNotificationRead,
-  useNotifications, useUnreadCount,
+export {notificationKeys, useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications, useUnreadCount,
 } from "./useNotifications";

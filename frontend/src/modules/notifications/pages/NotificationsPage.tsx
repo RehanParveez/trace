@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Badge, EmptyState, ErrorState, Icon, LoadingState, PageHeader, Panel } from "../../organizations/components/OrganizationUi";
 import { useMarkAllNotificationsRead, useMarkNotificationRead, useNotifications } from "../hooks";
 import { formatNotificationTime, getNotificationIcon } from "../utils/notification.utils";
+import { useTranslation } from "react-i18next";
 
 export function NotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false);
@@ -10,20 +11,21 @@ export function NotificationsPage() {
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
-  if (notificationsQuery.isLoading) return <LoadingState label="Loading notifications…" />;
-  if (notificationsQuery.isError) return <ErrorState title="Couldn't load notifications" onRetry={() => void notificationsQuery.refetch()} />;
+  if (notificationsQuery.isLoading) return <LoadingState label={t("notifications.page.loading")} />;
+  if (notificationsQuery.isError) return <ErrorState title={t("notifications.page.loadError")} onRetry={() => void notificationsQuery.refetch()} />;
 
   const notifications = notificationsQuery.data ?? [];
 
   return (
     <div className="space-y-7">
       <PageHeader
-        title="Notifications"
-        description="Updates across your projects — drawing parsing, BOQ approvals, progress claims and account activity."
+        title={t("notifications.page.title")}
+        description={t("notifications.page.description")}
         actions={
           <button type="button" onClick={() => markAllRead.mutate()} className="text-[13px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline">
-            Mark all read
+            {t("notifications.page.markAllRead")}
           </button>
         }
       />
@@ -40,14 +42,14 @@ export function NotificationsPage() {
                : "border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]"
               }`}
           >
-            {value ? "Unread" : "All"}
+            {value ? t("notifications.page.unread") : t("notifications.page.all")}
           </button>
         ))}
       </div>
 
       <Panel className="overflow-hidden">
         {notifications.length === 0 ? (
-          <EmptyState icon="mail" title="Nothing here" description="You're fully caught up." />
+          <EmptyState icon="mail" title={t("notifications.page.emptyTitle")} description={t("notifications.page.emptyDesc")} />
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
             {notifications.map((notification) => (
@@ -66,7 +68,7 @@ export function NotificationsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                    <span className="text-[14px] font-semibold text-[var(--color-text-primary)]">{notification.title}</span>
-                   {!notification.is_read ? <Badge tone="gold">New</Badge> : null}
+                   {!notification.is_read ? <Badge tone="gold">{t("notifications.page.new")}</Badge> : null}
                   </div>
                    {notification.body ? <div className="mt-1 text-[13px] text-[var(--color-text-secondary)]">{notification.body}</div> : null}
                   <div className="mt-1.5 text-[12px] text-[var(--color-text-muted)]">{formatNotificationTime(notification.created_at)}</div>

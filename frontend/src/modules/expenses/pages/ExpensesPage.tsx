@@ -8,12 +8,15 @@ import { useExpenses } from "../hooks";
 import { ExpenseTable } from "../components/ExpenseTable";
 import { ExpenseForm } from "../components/ExpenseForm";
 import { formatExpenseAmount } from "../utils/expense.utils";
+import { useTranslation } from "react-i18next";
 
 export function ExpensesPage() {
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_READ);
   const canCreate = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_CREATE);
   const canApprove = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_APPROVE);
+  const { t } = useTranslation();
+
 
   const projectsQuery = useProjects();
   const [projectId, setProjectId] = useState("");
@@ -25,15 +28,15 @@ export function ExpensesPage() {
   const expensesQuery = useExpenses({ projectId: activeProjectId || undefined });
 
   if (!canRead && permissions.length > 0) {
-    return <ErrorState title="Expenses unavailable" description="You don't have permission to view project expenses." />;
+    return <ErrorState title={t("expenses.page.accessUnavailable")} description={t("expenses.page.accessUnavailableDesc")} />;
   }
 
   if (projectsQuery.isLoading) {
-    return <LoadingState label="Loading projects…" />;
+    return <LoadingState label={t("common.loading")} />;
   }
 
   if (projectsQuery.isError || !projectsQuery.data) {
-    return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+    return <ErrorState title={t("projects.page.loadError")} onRetry={() => void projectsQuery.refetch()} />;
   }
 
   const expenses = expensesQuery.data ?? [];
@@ -42,13 +45,13 @@ export function ExpensesPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Expenses" description="Costs logged and approved against each project." />
+      <PageHeader title={t("expenses.page.title")} description={t("expenses.page.description")} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first to start recording expenses." />
+        <ErrorState title={t("expenses.page.noProjects")} description={t("expenses.page.noProjectsDesc")} />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("expenses.page.project")}>
             <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
@@ -57,20 +60,20 @@ export function ExpensesPage() {
           </Field>
 
           <section>
-            <SectionDivider title="Expense pulse" description="Current spend for this project." />
+            <SectionDivider title={t("expenses.page.pulseTitle")} description={t("expenses.page.pulseDesc")} />
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard label="Recorded" value={expenses.length} note="Total expense entries" icon="expenses" tone="blue" />
-              <StatCard label="Pending" value={formatExpenseAmount(pendingTotal)} note="Awaiting approval" icon="mail" tone="gold" />
-              <StatCard label="Approved" value={formatExpenseAmount(approvedTotal)} note="Confirmed project spend" icon="check" tone="green" />
+              <StatCard label={t("expenses.page.recorded")} value={expenses.length} note={t("expenses.page.recordedNote")} icon="expenses" tone="blue" />
+              <StatCard label={t("expenses.page.pending")} value={formatExpenseAmount(pendingTotal)} note={t("expenses.page.pendingNote")} icon="mail" tone="gold" />
+              <StatCard label={t("expenses.page.approved")} value={formatExpenseAmount(approvedTotal)} note={t("expenses.page.approvedNote")} icon="check" tone="green" />
             </div>
           </section>
 
-          <SectionDivider title="Expense entries" description={`${expenses.length} entr${expenses.length === 1 ? "y" : "ies"} for this project.`} />
+          <SectionDivider title={t("expenses.page.entriesTitle")} description={t("expenses.page.entriesDesc", { count: expenses.length })} />
 
           {expensesQuery.isLoading ? (
-            <LoadingState label="Loading expenses…" />
+            <LoadingState label={t("expenses.page.loading")} />
           ) : expensesQuery.isError ? (
-            <ErrorState title="Couldn't load expenses" onRetry={() => void expensesQuery.refetch()} />
+            <ErrorState title={t("expenses.page.loadError")} onRetry={() => void expensesQuery.refetch()} />
           ) : (
             <ExpenseTable
               expenses={expenses}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Modal } from "../../organizations/components/OrganizationUi";
+import { Button, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useAddCustomBOQItem } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import { useTranslation } from "react-i18next";
@@ -13,6 +13,7 @@ interface AddCustomBOQItemDialogProps {
 export function AddCustomBOQItemDialog({ boqVersionId, onClose }: AddCustomBOQItemDialogProps) {
   const { t } = useTranslation();
   const addItem = useAddCustomBOQItem(boqVersionId);
+  const { showToast } = useToast();
 
   const [materialName, setMaterialName] = useState("");
   const [category, setCategory] = useState("");
@@ -36,12 +37,18 @@ export function AddCustomBOQItemDialog({ boqVersionId, onClose }: AddCustomBOQIt
         unit_rate: unitRate === "" ? null : Number(unitRate),
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({
+            tone: "success",
+            title: t("boq.addItem.successToast", { name: materialName.trim() }),
+          });
+        },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, t("boq.addItem.error")))
-      },
-    );
-  }
+         setError(getApiErrorMessage(mutationError, t("boq.addItem.error"))),
+        },
+      );
+    }
 
   return (
     <Modal title={t("boq.addItem.title")} description={t("boq.addItem.description")} onClose={onClose}>

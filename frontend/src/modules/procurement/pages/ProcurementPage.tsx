@@ -7,6 +7,7 @@ import { PROCUREMENT_PERMISSIONS } from "../permissions";
 import { useProcurementRequests } from "../hooks";
 import { ProcurementTable } from "../components/ProcurementTable";
 import { ProcurementForm } from "../components/ProcurementForm";
+import { useTranslation } from "react-i18next";
 
 export function ProcurementPage() {
   const permissions = usePermissionKeys();
@@ -15,6 +16,7 @@ export function ProcurementPage() {
   const canManage = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_MANAGE);
 
   const projectsQuery = useProjects();
+  const { t } = useTranslation();
   const [projectId, setProjectId] = useState("");
   const [formOpen, setFormOpen] = useState(false);
 
@@ -24,15 +26,15 @@ export function ProcurementPage() {
   const requestsQuery = useProcurementRequests({ projectId: activeProjectId || undefined });
 
   if (!canRead && permissions.length > 0) {
-    return <ErrorState title="Procurement unavailable" description="You don't have permission to view procurement requests." />;
+    return <ErrorState title={t("procurement.page.accessUnavailable")} description={t("procurement.page.accessUnavailableDesc")} />;
   }
 
   if (projectsQuery.isLoading) {
-    return <LoadingState label="Loading projects…" />;
+    return <LoadingState label={t("common.loading")} />;
   }
 
   if (projectsQuery.isError || !projectsQuery.data) {
-    return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+    return <ErrorState title={t("projects.page.loadError")} onRetry={() => void projectsQuery.refetch()} />;
   }
 
   const requests = requestsQuery.data ?? [];
@@ -42,13 +44,13 @@ export function ProcurementPage() {
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Procurement" description="Material requests, approvals and receipts for each project." />
+      <PageHeader title={t("procurement.page.title")} description={t("procurement.page.description")} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first to start requesting materials." />
+        <ErrorState title={t("procurement.page.noProjects")} description={t("procurement.page.noProjectsDesc")} />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("procurement.page.project")}>
             <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>{project.name}</option>
@@ -57,20 +59,20 @@ export function ProcurementPage() {
           </Field>
 
           <section>
-            <SectionDivider title="Procurement pulse" description="Current request pipeline for this project." />
+            <SectionDivider title={t("procurement.page.pulseTitle")} description={t("procurement.page.pulseDesc")} />
             <div className="grid gap-3 sm:grid-cols-3">
-              <StatCard label="Awaiting approval" value={pendingCount} note="Requested, not yet approved" icon="mail" tone="gold" />
-              <StatCard label="In progress" value={inFlightCount} note="Approved or ordered" icon="procurement" tone="blue" />
-              <StatCard label="Received" value={receivedCount} note="Delivered to site" icon="check" tone="green" />
+              <StatCard label={t("procurement.page.awaiting")} value={pendingCount} note={t("procurement.page.awaitingNote")} icon="mail" tone="gold" />
+              <StatCard label={t("procurement.page.inProgress")} value={inFlightCount} note={t("procurement.page.inProgressNote")} icon="procurement" tone="blue" />
+              <StatCard label={t("procurement.page.received")} value={receivedCount} note={t("procurement.page.receivedNote")} icon="check" tone="green" />
             </div>
           </section>
 
-          <SectionDivider title="Requests" description={`${requests.length} request${requests.length === 1 ? "" : "s"} for this project.`} />
+          <SectionDivider title={t("procurement.page.requestsTitle")} description={t("procurement.page.requestsDesc", { count: requests.length })} />
 
           {requestsQuery.isLoading ? (
             <LoadingState label="Loading procurement requests…" />
           ) : requestsQuery.isError ? (
-            <ErrorState title="Couldn't load procurement requests" onRetry={() => void requestsQuery.refetch()} />
+            <ErrorState title={t("procurement.page.loadError")} onRetry={() => void requestsQuery.refetch()} />
           ) : (
             <ProcurementTable
               requests={requests}
