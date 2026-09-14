@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useDeleteRole, useRoles } from "../hooks";
 import type { Role } from "../types/organization.types";
 import { RoleTable } from "../components/RoleTable";
-import {Button, ErrorState, Icon, Modal, PageHeader, SectionDivider, StatCard,
-} from "../components/OrganizationUi";
+import {Button, ErrorState, Icon, Modal, PageHeader, SectionDivider, StatCard, useToast,
+} from "../components/OrganizationUi";  
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useTranslation } from "react-i18next";
 
 export function OrganizationRolesPage() {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const permissions = usePermissionKeys();
   
   const { t } = useTranslation();
@@ -115,7 +116,13 @@ export function OrganizationRolesPage() {
               disabled={deleteRole.isPending}
               onClick={() =>
                 deleteRole.mutate(deletingRole.id, {
-                  onSuccess: () => setDeletingRole(null),
+                  onSuccess: () => {
+                    showToast({
+                      tone: "success",
+                      title: t("roles.deletedToast", { name: deletingRole.name }),
+                    });
+                    setDeletingRole(null);
+                  },
                 })
               }
             >

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { Badge, Button, EmptyState, ErrorState, Icon, LoadingState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { Badge, Button, EmptyState, ErrorState, Icon, LoadingState, Panel, PanelHeader, TableShell, useToast } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useApproveBOQItem, useBOQItems, useUpdateBOQItem } from "../hooks";
 import type { BOQItem } from "../types/drawings-boq.types";
@@ -18,6 +18,7 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
   const itemsQuery = useBOQItems(boqVersionId);
   const updateItem = useUpdateBOQItem(boqVersionId);
   const approveItem = useApproveBOQItem(boqVersionId);
+  const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -76,7 +77,14 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                       updateItem.mutate(
                         { itemId: item.id, payload: { ...payload, version: item.version } },
                         {
-                          onSuccess: () => { setEditingId(null); setNotice(null); },
+                          onSuccess: () => {
+                            setEditingId(null);
+                            setNotice(null);
+                            showToast({
+                              tone: "success",
+                              title: t("boq.items.savedToast"),
+                            });
+                          },
                           onError: (error) => {
                             if (axios.isAxiosError(error) && error.response?.status === 409) {
                               handleConflict();
@@ -116,7 +124,21 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                             variant="primary"
                             size="sm"
                             disabled={approveItem.isPending}
-                            onClick={() => approveItem.mutate(item.id, { onError: (error) => setNotice(getApiErrorMessage(error, t("boq.items.approveError"))) })}
+                            onClick={() =>
+                              approveItem.mutate(item.id, {
+                                onSuccess: () =>
+                                  showToast({
+                                    tone: "success",
+                                    title: t("boq.items.approvedToast", {
+                                      name: item.material_name,
+                                    }),
+                                  }),
+                                onError: (error) =>
+                                  setNotice(
+                                    getApiErrorMessage(error, t("boq.items.approveError")),
+                                  ),
+                              })
+                            }
                           >
                             {t("boq.items.approve")}
                           </Button>

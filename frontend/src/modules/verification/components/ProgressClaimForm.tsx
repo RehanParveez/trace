@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Field, Modal, inputClass } from "../../organizations/components/OrganizationUi";
+import { Button, Field, Modal, inputClass, useToast} from "../../organizations/components/OrganizationUi";
 import { useBOQVersions, useBOQItems } from "../../drawings_boq";
 import { useCreateProgressClaim } from "../hooks";
 import { formatClaimQuantity } from "../utils/verification.utils";
@@ -15,6 +15,7 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
   const { t } = useTranslation();
   const boqVersionsQuery = useBOQVersions(projectId);
   const latestVersionId = boqVersionsQuery.data?.[0]?.id;
+  const { showToast } = useToast();
   const boqItemsQuery = useBOQItems(latestVersionId);
   const createClaim = useCreateProgressClaim();
 
@@ -42,7 +43,13 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
         claimed_percentage: Number(claimedPercentage),
         notes: notes.trim() || null,
       },
-      { onSuccess: onClose, onError: () => setError(t("verification.form.createError")) },
+      {
+       onSuccess: () => {
+        onClose();
+        showToast({ tone: "success", title: t("verification.form.createSuccess") }); 
+      },
+        onError: () => setError(t("verification.form.createError")),
+    },
     );
   }
 

@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {Button, ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
+import {Button, ErrorState, LoadingState, PageHeader, SectionDivider, StatCard, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useClients, useCreateProject, useDeleteProject, useProjects,
 } from "../hooks";
 import type { Project, ProjectStatus } from "../types/project.types";
-import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { IDENTITY_PERMISSIONS, getApiErrorMessage, usePermissionKeys } from "../../identity";
 import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import { ClientTable } from "../components/ClientTable";
 import { ProjectForm } from "../components/ProjectForm";
@@ -16,6 +16,7 @@ export function ProjectsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
+  const { showToast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | undefined>();
@@ -77,7 +78,19 @@ export function ProjectsPage() {
       return;
     }
 
-    deleteProject.mutate(project.id);
+    deleteProject.mutate(project.id, {
+      onSuccess: () =>
+        showToast({
+          tone: "success",
+          title: t("projects.page.deletedToast", { name: project.name }),
+        }),
+      onError: (error) =>
+        showToast({
+          tone: "error",
+          title: t("projects.page.deleteErrorTitle"),
+          description: getApiErrorMessage(error, t("projects.page.deleteErrorFallback")),
+        }),
+    });
   }
 
   if (!canRead && permissions.length > 0) {

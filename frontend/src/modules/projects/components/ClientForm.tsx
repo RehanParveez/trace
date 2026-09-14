@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import {Button, Field, inputClass, Modal,
+import {Button, Field, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useCreateClient, useUpdateClient,
 } from "../hooks";
@@ -20,6 +20,7 @@ export function ClientForm({
   const { t } = useTranslation();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
+  const { showToast } = useToast();
 
   const editing = Boolean(client);
 
@@ -50,9 +51,12 @@ export function ClientForm({
       updateClient.mutate(
         { clientId: client.id, payload },
         {
-          onSuccess: onClose,
+          onSuccess: () => {
+            onClose();
+            showToast({ tone: "success", title: t("clients.form.updatedToast") });
+          },
           onError: (mutationError) =>
-            setError(getApiErrorMessage(mutationError, t("clients.form.saveError")))
+            setError(getApiErrorMessage(mutationError, t("clients.form.saveError"))),
         },
       );
 
@@ -60,9 +64,12 @@ export function ClientForm({
     }
 
     createClient.mutate(payload, {
-      onSuccess: onClose,
+      onSuccess: () => {
+        onClose();
+        showToast({ tone: "success", title: t("clients.form.createdToast") });
+      },
       onError: (mutationError) =>
-        setError(getApiErrorMessage(mutationError, t("clients.form.createError")))
+        setError(getApiErrorMessage(mutationError, t("clients.form.createError"))),
     });
   }
 

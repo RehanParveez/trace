@@ -5,7 +5,7 @@ import type { Invitation } from "../types/organization.types";
 import { InvitationForm } from "../components/InvitationForm";
 import { InvitationTable } from "../components/InvitationTable";
 import { RevokeInvitationDialog } from "../components/RevokeInvitationDialog";
-import {Button, ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard,
+import {Button, ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard, useToast,
 } from "../components/OrganizationUi";
 import { getInvitationStatus } from "../utils/organization.utils";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 const PAGE_SIZE = 20;
 
 export function OrganizationInvitationsPage() {
+  const { showToast } = useToast();
   const permissions = usePermissionKeys();
 
   const [showForm, setShowForm] = useState(false);
@@ -116,7 +117,15 @@ export function OrganizationInvitationsPage() {
             onSubmit={(email, roleId) =>
               createInvitation.mutate(
                 { email, role_id: roleId },
-                { onSuccess: () => setShowForm(false) },
+                {
+                  onSuccess: () => {
+                    setShowForm(false);
+                    showToast({
+                      tone: "success",
+                      title: t("invitations.sentToast", { email }),
+                    });
+                  },
+                },
               )
             }
             onCancel={() => setShowForm(false)}
@@ -151,7 +160,15 @@ export function OrganizationInvitationsPage() {
           onClose={() => setRevokeInvitation(null)}
           onConfirm={() =>
             revoke.mutate(revokeInvitation.id, {
-              onSuccess: () => setRevokeInvitation(null),
+              onSuccess: () => {
+                setRevokeInvitation(null);
+                showToast({
+                  tone: "success",
+                  title: t("invitations.revokedToast", {
+                    email: revokeInvitation.email,
+                  }),
+                });
+              },
             })
           }
         />

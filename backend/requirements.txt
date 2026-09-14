@@ -20,3 +20,4 @@ email-validator
 ifcopenshell
 reportlab
 openpyxl
+pypdf

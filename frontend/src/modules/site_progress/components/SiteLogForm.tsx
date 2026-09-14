@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Field, inputClass, Modal } from "../../organizations/components/OrganizationUi";
+import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateSiteLog } from "../hooks";
 
 interface SiteLogFormProps {
@@ -10,6 +10,7 @@ interface SiteLogFormProps {
 
 export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
   const createLog = useCreateSiteLog();
+  const { showToast } = useToast();
 
   const [logDate, setLogDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [workforceCount, setWorkforceCount] = useState("");
@@ -32,7 +33,10 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
         notes: notes.trim() || null,
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: "Site log saved" });
+        },
         onError: () => setError("Couldn't save this site log. Please try again."),
       },
     );

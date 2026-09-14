@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
+import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useClients, useDeleteProject, useProject, useProjectMembers, useProjectMilestones,
 } from "../hooks";
-import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { IDENTITY_PERMISSIONS, getApiErrorMessage, usePermissionKeys } from "../../identity";
 import { ProjectHeader } from "../components/ProjectHeader";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectMembers } from "../components/ProjectMembers";
@@ -18,6 +18,7 @@ export function ProjectDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const permissions = usePermissionKeys();
+  const { showToast } = useToast();
 
   const { projectId } = useParams<{ projectId: string }>();
 
@@ -99,7 +100,17 @@ export function ProjectDetailPage() {
     deleteProject.mutate(project.id, {
       onSuccess: () => {
         navigate("/app/projects");
+        showToast({
+          tone: "success",
+          title: t("projects.page.deletedToast", { name: project.name }),
+        });
       },
+      onError: (error) =>
+        showToast({
+          tone: "error",
+          title: t("projects.page.deleteErrorTitle"),
+          description: getApiErrorMessage(error, t("projects.page.deleteErrorFallback")),
+        }),
     });
   }
 

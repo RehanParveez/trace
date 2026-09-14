@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Badge, Button, Field, LoadingState, Modal, inputClass } from "../../organizations/components/OrganizationUi";
+import { Badge, Button, Field, LoadingState, Modal, inputClass, useToast } from "../../organizations/components/OrganizationUi";
 import { useApproveProgressClaim, useProgressClaim, useRejectProgressClaim, useSubmitProgressClaim } from "../hooks";
 import { formatClaimDate, formatClaimPercentage, formatClaimStatus, getClaimStatusTone } from "../utils/verification.utils";
 import { PhotoEvidencePicker } from "./PhotoEvidencePicker";
@@ -17,6 +17,7 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
   const { t } = useTranslation();
   const claimQuery = useProgressClaim(claimId);
   const submitClaim = useSubmitProgressClaim();
+  const { showToast } = useToast();
   const approveClaim = useApproveProgressClaim();
   const rejectClaim = useRejectProgressClaim();
   const [reviewNote, setReviewNote] = useState("");
@@ -37,7 +38,18 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
     const mutation = action === "approve" ? approveClaim : rejectClaim;
     mutation.mutate(
       { claimId, payload: { version: claim!.version, note: reviewNote.trim() || null } },
-      { onError: () => setError(t("verification.detail.reviewConflict")) },
+      {
+        onSuccess: () => {
+          showToast({
+            tone: "success",
+            title:
+              action === "approve"
+                ? t("verification.detail.approveSuccess")
+                : t("verification.detail.rejectSuccess"),
+          });
+        },
+        onError: () => setError(t("verification.detail.reviewConflict")),
+      },
     );
   }
 
@@ -63,8 +75,23 @@ export function ProgressClaimDetailDialog({ claimId, projectId, canSubmit, canRe
 
         {claim.status === "DRAFT" && canSubmit ? (
           <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
-            <Button variant="primary" disabled={submitClaim.isPending} onClick={() => submitClaim.mutate(claim.id)}>
-              {submitClaim.isPending ? t("verification.detail.submitting") : t("verification.detail.submit")}
+           <Button
+              variant="primary"
+              disabled={submitClaim.isPending}
+              onClick={() =>
+                submitClaim.mutate(claim.id, {
+                  onSuccess: () =>
+                    showToast({
+                      tone: "success",
+                      title: t("verification.detail.submitSuccess"),
+                    }),
+                  onError: () => setError(t("verification.detail.submitError")),
+                })
+              }
+            >
+              {submitClaim.isPending
+                ? t("verification.detail.submitting")
+                : t("verification.detail.submit")}
             </Button>
           </div>
         ) : null}

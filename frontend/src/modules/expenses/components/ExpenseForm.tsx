@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Field, inputClass, Modal } from "../../organizations/components/OrganizationUi";
+import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateExpense } from "../hooks";
 
 interface ExpenseFormProps {
@@ -10,6 +10,7 @@ interface ExpenseFormProps {
 
 export function ExpenseForm({ projectId, onClose }: ExpenseFormProps) {
   const createExpense = useCreateExpense();
+  const { showToast } = useToast();
 
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
@@ -30,7 +31,10 @@ export function ExpenseForm({ projectId, onClose }: ExpenseFormProps) {
         expense_date: expenseDate,
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: "Expense recorded" });
+        },
         onError: () => setError("Couldn't record this expense. Please try again."),
       },
     );

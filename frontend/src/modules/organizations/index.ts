@@ -26,6 +26,7 @@ export * from "./components/DashboardFinancialSummary";
 
 export * from "./hooks";
 
+export * from "./components/CommandPalette";
 export * from "./pages/DashboardPage";
 export * from "./pages/OrganizationPage";
 export * from "./pages/OrganizationMembersPage";

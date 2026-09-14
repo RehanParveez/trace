@@ -10,7 +10,10 @@ from uuid import UUID, uuid4
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
+from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
+from app.modules.ai_requests.service import AIOrchestratorService
 from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, BOQItemRateSource
+from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, LabourRateRepository, MaterialLibraryRepository, MaterialNormalizationCacheRepository
 from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionCreateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
 from app.modules.projects.repository import ProjectRepository
@@ -24,7 +27,6 @@ from app.modules.identity.models import Organization
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from decimal import Decimal
-
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
 REFERENCE_ONLY_FORMATS = {".pdf": DrawingFormat.PDF}
@@ -251,6 +253,134 @@ class DrawingBOQService:
     version = await self.boq_versions.create(version)
     await self.session.commit()
     return version
+  
+  async def suggest_items_from_pdf(
+    self,
+    organization_id: UUID,
+    drawing_id: UUID,
+    user_id: UUID,
+  ) -> dict:
+    drawing = await self.get_drawing(organization_id, drawing_id)
+
+    if drawing.format != DrawingFormat.PDF:
+      raise TraceException(
+        "AI line-item suggestions are only available for PDF drawings.",
+        status_code=422,
+        code="DRAWING_NOT_PDF",
+      )
+    await self.subscriptions.check_quota(organization_id, "ai_requests")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+      local_path = os.path.join(tmp_dir, "drawing.pdf")
+      await asyncio.to_thread(download_to_path, drawing.storage_key, local_path)
+      with open(local_path, "rb") as handle:
+        contents = handle.read()
+
+    drawing_text = await asyncio.to_thread(extract_pdf_text, contents)
+    existing_versions = await self.boq_versions.list_by_project(
+      organization_id, drawing.project_id
+    )
+    version = next(
+      (candidate for candidate in existing_versions if candidate.drawing_id == drawing.id),
+      None,
+    )
+
+    if version is None:
+      version = await self.boq_versions.create(
+        BOQVersion(
+          id=uuid4(),
+          organization_id=organization_id,
+          project_id=drawing.project_id,
+          drawing_id=drawing.id,
+          label=f"{drawing.original_filename} — AI-assisted",
+        )
+      )
+      await self.session.flush()
+
+    if not drawing_text:
+      await self.session.commit()
+      return {"boq_version_id": version.id, "created_item_count": 0, "items": []}
+
+    orchestrator = AIOrchestratorService(self.session)
+    result = await orchestrator.run(
+      organization_id=organization_id,
+      purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION,
+      entity_type=AIEntityType.DRAWING,
+      entity_id=drawing.id,
+      prompt=build_schedule_extraction_prompt(drawing_text),
+    )
+
+    await self.subscriptions.increment_usage(organization_id, "ai_requests")
+
+    if not result.success or not result.parsed_output:
+      await self.session.commit()
+      return {"boq_version_id": version.id, "created_item_count": 0, "items": []}
+
+    rows = parse_schedule_extraction_response(result.parsed_output)
+
+    created_items: list[BOQItem] = []
+
+    for row in rows:
+      normalized_name, category, _matched = await self.normalize_material(
+        organization_id, row["description"],
+      )
+      default_rate = await self.get_material_default_rate(
+        organization_id, row["description"],
+      )
+
+      drawing_element = DrawingElement(
+        id=uuid4(),
+        drawing_id=drawing.id,
+        organization_id=organization_id,
+        ifc_global_id=None,
+        ifc_type="PDF_SCHEDULE_ROW",
+        name=row["description"],
+        raw_material_text=row["description"],
+        unit=row["unit"],
+        quantity=row["quantity"],
+        properties={
+          "source": "pdf_ai_extraction",
+          "confidence": row.get("confidence"),
+          "category": row.get("category"),
+        },
+      )
+      await self.elements.bulk_create([drawing_element])
+
+      created_items.append(
+        BOQItem(
+          id=uuid4(),
+          organization_id=organization_id,
+          boq_version_id=version.id,
+          drawing_element_id=drawing_element.id,
+          material_name=normalized_name,
+          category=category or row.get("category"),
+          unit=row["unit"],
+          quantity=row["quantity"],
+          unit_rate=default_rate,
+          rate_source=BOQItemRateSource.LIBRARY if default_rate is not None else None,
+          item_type=BOQItemType.CUSTOM,
+          created_by_user_id=user_id,
+        )
+      )
+
+    if created_items:
+      await self.boq_items.bulk_create(created_items)
+    await self.session.commit()
+
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.DRAWING,
+      drawing.id,
+      AuditAction.CREATE,
+      f'AI-suggested {len(created_items)} draft BOQ item(s) from "{drawing.original_filename}"',
+    )
+
+    return {
+      "boq_version_id": version.id,
+      "created_item_count": len(created_items),
+      "items": created_items,
+    }
 
   async def list_boq_items(
     self,

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Button, EmptyState, ErrorState, Field, inputClass, LoadingState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
+import { Button, EmptyState, ErrorState, Field, inputClass, LoadingState, Panel, PanelHeader, TableShell, useToast } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useCreateMaterialLibraryEntry, useMaterialLibrary, useUpdateMaterialLibraryEntry } from "../hooks";
 import { formatCurrency } from "../utils/drawings-boq.utils";
@@ -21,6 +21,7 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
   const { t } = useTranslation();
   const libraryQuery = useMaterialLibrary();
   const createEntry = useCreateMaterialLibraryEntry();
+  const { showToast } = useToast();
 
   const [formOpen, setFormOpen] = useState(false);
   const [rawText, setRawText] = useState("");
@@ -55,7 +56,18 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
         default_rate: defaultRate === "" ? null : Number(defaultRate),
       },
       {
-        onSuccess: () => { setRawText(""); setNormalizedName(""); setCategory(""); setDefaultUnit(""); setDefaultRate(""); setFormOpen(false); },
+        onSuccess: () => {
+          setRawText("");
+          setNormalizedName("");
+          setCategory("");
+          setDefaultUnit("");
+          setDefaultRate("");
+          setFormOpen(false);
+          showToast({
+            tone: "success",
+            title: t("materials.savedToast"),
+          });
+        },
         onError: (mutationError) =>
           setError(getApiErrorMessage(mutationError, t("materials.createError"))),
       },
@@ -148,7 +160,27 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
                   key={entry.id}
                   entry={entry}
                   canManage={canManage}
-                  onSaveRate={(rate) => updateEntry.mutate({ entryId: entry.id, payload: { default_rate: rate } })}
+                  onSaveRate={(rate) =>
+                    updateEntry.mutate(
+                      { entryId: entry.id, payload: { default_rate: rate } },
+                      {
+                        onSuccess: () =>
+                          showToast({
+                            tone: "success",
+                            title: t("materials.rateUpdatedToast"),
+                          }),
+                        onError: (error) =>
+                          showToast({
+                            tone: "error",
+                            title: t("materials.rateErrorTitle"),
+                            description: getApiErrorMessage(
+                              error,
+                              t("materials.rateErrorFallback"),
+                            ),
+                          }),
+                      },
+                    )
+                  }
                 />
               ))}
             </tbody>

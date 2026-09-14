@@ -1,6 +1,6 @@
 import { apiClient } from "../../../shared/api/client";
 import type {BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQSummary, BOQVersion, BOQVersionUpdateRequest, Drawing, DrawingElement, LabourRate,
-  LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest,
+  LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, PDFExtractionResult
 } from "../types/drawings-boq.types";
 
 export const drawingsBoqApi = {
@@ -52,6 +52,13 @@ export const drawingsBoqApi = {
     const response = await apiClient.get(`/drawings-boq/drawings/${drawingId}/file`, {
       responseType: "blob",
     });
+    return response.data;
+  },
+
+  async suggestItemsFromPdf(drawingId: string): Promise<PDFExtractionResult> {
+    const response = await apiClient.post<PDFExtractionResult>(
+      `/drawings-boq/drawings/${drawingId}/suggest-items`,
+    );
     return response.data;
   },
 

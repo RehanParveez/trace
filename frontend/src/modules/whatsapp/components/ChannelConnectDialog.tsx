@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Field, inputClass, Modal } from "../../organizations/components/OrganizationUi";
+import { Button, Field, inputClass, Modal,useToast } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useConnectChannel } from "../hooks";
 import { useTranslation } from "react-i18next";
@@ -12,6 +12,7 @@ interface ChannelConnectDialogProps {
 export function ChannelConnectDialog({ onClose }: ChannelConnectDialogProps) {
   const { t } = useTranslation();
   const connect = useConnectChannel();
+  const { showToast } = useToast();
   const [phoneNumberId, setPhoneNumberId] = useState("");
   const [businessAccountId, setBusinessAccountId] = useState("");
   const [accessToken, setAccessToken] = useState("");
@@ -29,10 +30,16 @@ export function ChannelConnectDialog({ onClose }: ChannelConnectDialogProps) {
     access_token: accessToken.trim(),
     display_phone_number: displayPhoneNumber.trim() || null,
   },
-  {
-    onSuccess: onClose,
+    {
+    onSuccess: () => {
+      onClose();
+      showToast({
+        tone: "success",
+        title: t("whatsapp.connect.successToast"),
+      });
+    },
     onError: (mutationError) =>
-      setError(getApiErrorMessage(mutationError, t("whatsapp.connect.error")))
+      setError(getApiErrorMessage(mutationError, t("whatsapp.connect.error"))),
   },
 );
 }

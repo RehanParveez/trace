@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import {Badge, Button, ErrorState, Icon, LoadingState, Modal, Panel, PanelHeader,
+import {Badge, Button, ErrorState, Icon, LoadingState, Modal, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useChannel, useDisconnectChannel } from "../hooks";
@@ -15,6 +15,7 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
   const { t } = useTranslation();
   const channelQuery = useChannel();
   const disconnect = useDisconnectChannel();
+  const { showToast } = useToast();
   const [connecting, setConnecting] = useState(false);
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
@@ -129,7 +130,13 @@ export function ChannelStatusCard({ canManage }: ChannelStatusCardProps) {
                 disabled={disconnect.isPending}
                 onClick={() =>
                   disconnect.mutate(undefined, {
-                    onSuccess: () => setConfirmingDisconnect(false),
+                    onSuccess: () => {
+                      setConfirmingDisconnect(false);
+                      showToast({
+                        tone: "success",
+                        title: t("whatsapp.disconnect.successToast"),
+                      });
+                    },
                     onError: (error) =>
                       setDisconnectError(
                         getApiErrorMessage(

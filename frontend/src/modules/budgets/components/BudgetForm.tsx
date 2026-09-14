@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import {Button, Field, Icon, inputClass, Modal,
+import {Button, Field, Icon, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { useSaveBudget } from "../hooks";
 import type { Budget, BudgetCategoryInput } from "../types/budget.types";
@@ -13,6 +13,7 @@ interface BudgetFormProps {
 
 export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
   const saveBudget = useSaveBudget();
+  const { showToast } = useToast();
 
   const [approvedAmount, setApprovedAmount] = useState(
     budget ? String(budget.approved_amount) : "",
@@ -50,7 +51,10 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
         categories: categories.filter((category) => category.name.trim()),
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: budget ? "Budget updated" : "Budget set" });
+        },
         onError: () => setError("Couldn't save this budget. Please try again."),
       },
     );

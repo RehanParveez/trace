@@ -60,12 +60,15 @@ export function DrawingsBoqSection({ projectId }: DrawingsBoqSectionProps) {
 
   return (
     <div className="space-y-5">
-      <DrawingTable 
+      <DrawingTable
+        projectId={projectId}
         drawings={drawingsQuery.data ?? []}
         canUpload={canUpload}
+        canSuggestItems={canCreateItem}
         quotaBlocked={drawingQuota.isAtLimit}
         onUpload={() => setUploadOpen(true)}
         onView={setViewingDrawing}
+        onItemsSuggested={(versionId) => setSelectedVersionId(versionId)}
       />
 
       {boqVersions.length > 0 ? (

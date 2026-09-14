@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Icon } from "../../organizations/components/OrganizationUi";
+import { Button, Icon, useToast } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useSitePhotos } from "../../whatsapp";
 import { useCreatePhotoBOQLink, useDeletePhotoBOQLink, usePhotoBOQLinks } from "../hooks";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,7 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
   const photosQuery = useSitePhotos({ projectId });
   const createLink = useCreatePhotoBOQLink(claimId);
   const deleteLink = useDeletePhotoBOQLink(claimId);
+  const { showToast } = useToast();
   const [picking, setPicking] = useState(false);
 
   const links = linksQuery.data ?? [];
@@ -50,7 +52,21 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
                 {canManage && link ? (
                   <button
                     type="button"
-                    onClick={() => deleteLink.mutate(link.id)}
+                    onClick={() =>
+                      deleteLink.mutate(link.id, {
+                        onSuccess: () =>
+                          showToast({
+                            tone: "success",
+                            title: t("verification.photoEvidence.removeSuccess"),
+                          }),
+                        onError: (error) =>
+                          showToast({
+                            tone: "error",
+                            title: t("verification.photoEvidence.removeError"),
+                            description: getApiErrorMessage(error, t("common.retry")),
+                          }),
+                      })
+                    }
                     aria-label={t("verification.photoEvidence.removeAria")}
                     className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-trace-navy)]/70 text-white opacity-0 outline-none transition focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-[var(--color-trace-gold)] group-hover:opacity-100"
                   >
@@ -74,7 +90,22 @@ export function PhotoEvidencePicker({ claimId, projectId, boqItemId, canManage }
                   key={photo.id}
                   type="button"
                   onClick={() =>
-                    createLink.mutate({ progress_claim_id: claimId, site_photo_id: photo.id, boq_item_id: boqItemId })
+                    createLink.mutate(
+                      { progress_claim_id: claimId, site_photo_id: photo.id, boq_item_id: boqItemId },
+                      {
+                        onSuccess: () =>
+                          showToast({
+                            tone: "success",
+                            title: t("verification.photoEvidence.attachSuccess"),
+                          }),
+                        onError: (error) =>
+                          showToast({
+                            tone: "error",
+                            title: t("verification.photoEvidence.attachError"),
+                            description: getApiErrorMessage(error, t("common.retry")),
+                          }),
+                      },
+                    )
                   }
                   className="overflow-hidden rounded-[6px] border border-[var(--color-border)] transition hover:border-[var(--color-trace-gold-dark)]"
                 >

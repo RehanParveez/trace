@@ -143,3 +143,9 @@ export interface LabourRateUpdateRequest {
   unit?: string;
   rate?: number;
 }
+
+export interface PDFExtractionResult {
+  boq_version_id: string;
+  created_item_count: number;
+  items: BOQItem[];
+}

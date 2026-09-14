@@ -64,3 +64,31 @@ export function SidebarLink({ item }: { item: NavItem }) {
     </NavLink>
   );
 }
+
+export interface SearchDestination {
+  label: string;
+  to: string;
+  icon: OrganizationIconName;
+  group: string;
+}
+
+export const NAV_SEARCH_DESTINATIONS: SearchDestination[] = [
+  { label: "Overview", to: "/app/organization", icon: "dashboard", group: "Workspace" },
+  { label: "Settings", to: "/app/organization/settings", icon: "settings", group: "Organization" },
+  { label: "Members", to: "/app/organization/members", icon: "users", group: "Organization" },
+  { label: "Roles & access", to: "/app/organization/roles", icon: "shield", group: "Organization" },
+  { label: "Invitations", to: "/app/organization/invitations", icon: "mail", group: "Organization" },
+  { label: "Subscription", to: "/app/subscription", icon: "budget", group: "Organization" },
+  { label: "Material library", to: "/app/drawings_boq", icon: "materials", group: "Organization" },
+  { label: "Labour rates", to: "/app/drawings_boq/labour-rates", icon: "budget", group: "Organization" },
+  { label: "WhatsApp connection", to: "/app/whatsapp-settings", icon: "external", group: "Organization" },
+  { label: "Projects", to: "/app/projects", icon: "projects", group: "Projects" },
+  { label: "Budgets", to: "/app/budgets", icon: "budget", group: "Projects" },
+  { label: "Progress review", to: "/app/progress-review", icon: "check", group: "Projects" },
+  { label: "Site photos", to: "/app/site-photos", icon: "spark", group: "Projects" },
+  { label: "Site progress", to: "/app/site-logs", icon: "site", group: "Projects" },
+  { label: "Procurement", to: "/app/procurement", icon: "procurement", group: "Projects" },
+  { label: "Expenses", to: "/app/expenses", icon: "expenses", group: "Projects" },
+  { label: "AI activity", to: "/app/ai-activity", icon: "spark", group: "Intelligence" },
+  { label: "Audit log", to: "/app/audit-log", icon: "shield", group: "Intelligence" },
+];

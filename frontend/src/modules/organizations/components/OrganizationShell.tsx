@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 import type { ReactNode } from "react";
 import { BrandMark, Icon, LivePip } from "./OrganizationUi";
 import { SidebarLink } from "./SidebarNav";
 import type { NavItem } from "./SidebarNav";
 import { MobileNavDrawer } from "./MobileNavDrawer";
+import { CommandPalette } from "./CommandPalette";
 import { useTranslation } from "react-i18next";
 import type { OrganizationIconName } from "../types/organization.types";
 import { NotificationBell } from "../../notifications";
@@ -174,6 +175,19 @@ export function OrganizationShell({
   const intelligenceNav = buildIntelligenceNav(t, isPlatformAdmin);
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandPaletteOpen((current) => !current);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const mobileNavGroups = [
     { label: t("shell.workspace"), items: workspaceNav },
@@ -293,14 +307,16 @@ export function OrganizationShell({
               {organizationName}
             </span>
           </div>
-
-      <div className="hidden h-10 max-w-[380px] flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-[var(--color-text-muted)] md:flex">
+      <button
+        type="button"
+        onClick={() => setCommandPaletteOpen(true)}
+          className="hidden h-10 max-w-[380px] flex-1 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 text-[var(--color-text-muted)] md:flex">
        <Icon name="search" size={15} />
        <span className="text-[13px]">{t("shell.searchPlaceholder")}</span>
        <span className="ml-auto rounded border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">
          ⌘K
        </span>
-      </div>
+      </button>
 
       <div className="ml-auto flex items-center gap-3">
        <div className="hidden items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-success)] sm:flex">
@@ -336,6 +352,8 @@ export function OrganizationShell({
         organizationSlug={organizationSlug}
         navGroups={mobileNavGroups}
       />
+
+      {commandPaletteOpen ? <CommandPalette onClose={() => setCommandPaletteOpen(false)} /> : null}
     </div>
   );
 }

@@ -6,7 +6,7 @@ import type { Member } from "../types/organization.types";
 import { MemberRoleDialog } from "../components/MemberRoleDialog";
 import { MemberStatusDialog } from "../components/MemberStatusDialog";
 import { MemberTable } from "../components/MemberTable";
-import {ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard,
+import {ErrorState, Icon, PageHeader, Pager, SectionDivider, StatCard, useToast,
 } from "../components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys, useAuthStore } from "../../identity";
 import { useTranslation } from "react-i18next";
@@ -19,6 +19,7 @@ export function OrganizationMembersPage() {
   const currentUser = useAuthStore((state) => state.user);
 
   const { t } = useTranslation();
+  const { showToast } = useToast();
 
   const [roleMember, setRoleMember] = useState<Member | null>(null);
   const [statusMember, setStatusMember] = useState<Member | null>(null);
@@ -145,10 +146,19 @@ export function OrganizationMembersPage() {
             updateRole.reset();
             setRoleMember(null);
           }}
+
           onSubmit={(roleId) =>
             updateRole.mutate(
               { userId: roleMember.id, payload: { role_id: roleId } },
-              { onSuccess: () => setRoleMember(null) },
+              {
+                onSuccess: () => {
+                  setRoleMember(null);
+                  showToast({
+                    tone: "success",
+                    title: t("members.roleUpdatedToast"),
+                  });
+                },
+              },
             )
           }
         />
@@ -163,13 +173,25 @@ export function OrganizationMembersPage() {
             updateStatus.reset();
             setStatusMember(null);
           }}
+          
           onConfirm={() =>
             updateStatus.mutate(
               {
                 userId: statusMember.id,
                 payload: { is_active: !statusMember.is_active },
               },
-              { onSuccess: () => setStatusMember(null) },
+              {
+                onSuccess: () => {
+                  const wasActive = statusMember.is_active;
+                  setStatusMember(null);
+                  showToast({
+                    tone: "success",
+                    title: wasActive
+                      ? t("members.deactivatedToast")
+                      : t("members.activatedToast"),
+                  });
+                },
+              },
             )
           }
         />

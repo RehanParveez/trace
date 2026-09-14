@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
-  DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest, 
+  DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest, PDFExtractionResultResponse,
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.identity.enums import PermissionKey
@@ -77,6 +77,24 @@ async def get_drawing(
   return await service.get_drawing(
     current_user.active_membership.organization_id,
     drawing_id,
+  )
+  
+@router.post(
+  "/drawings/{drawing_id}/suggest-items",
+  response_model=PDFExtractionResultResponse,
+)
+async def suggest_boq_items_from_pdf(
+  drawing_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.BOQ_ITEM_CREATE)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.suggest_items_from_pdf(
+    current_user.active_membership.organization_id,
+    drawing_id,
+    current_user.id,
   )
 
 @router.get(

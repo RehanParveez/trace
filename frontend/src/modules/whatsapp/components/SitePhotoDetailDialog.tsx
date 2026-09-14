@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Badge, Button, Icon, inputClass, Modal, SectionLabel } from "../../organizations/components/OrganizationUi";
+import { Badge, Button, Icon, inputClass, Modal, SectionLabel, useToast } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
-import {useAddPhotoTag, useAssignProject, useRemovePhotoTag, useSitePhoto, useUpdateSitePhoto,
+import {useAddPhotoTag, useAssignProject, useRemovePhotoTag, useSitePhoto, useUpdateSitePhoto, 
 } from "../hooks";
 import type { Project } from "../../projects";
 import {formatCapturedAt, formatPhoneNumber, formatPhotoDate, getCaptionField,
@@ -28,6 +28,7 @@ export function SitePhotoDetailDialog({
   const updatePhoto = useUpdateSitePhoto();
   const addTag = useAddPhotoTag(photoId);
   const removeTag = useRemovePhotoTag(photoId);
+  const { showToast } = useToast();
 
   const [newTag, setNewTag] = useState("");
   const [locationDraft, setLocationDraft] = useState<string | null>(null);
@@ -43,9 +44,15 @@ export function SitePhotoDetailDialog({
     addTag.mutate(
       { tag: newTag.trim() },
       {
-        onSuccess: () => setNewTag(""),
+        onSuccess: () => {
+          setNewTag("");
+          showToast({
+            tone: "success",
+            title: t("whatsapp.photo.tagAddedToast"),
+          });
+        },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, t("whatsapp.photo.addTagError")))
+          setError(getApiErrorMessage(mutationError, t("whatsapp.photo.addTagError"))),
       },
     );
   }
@@ -117,11 +124,16 @@ export function SitePhotoDetailDialog({
                   assignProject.mutate(
                     { photoId, payload: { project_id: event.target.value } },
                     {
+                      onSuccess: () =>
+                        showToast({
+                          tone: "success",
+                          title: t("whatsapp.photo.assignedToast"),
+                        }),
                       onError: (mutationError) =>
                         setError(
                           getApiErrorMessage(
                             mutationError,
-                            t("whatsapp.photo.assignError")
+                            t("whatsapp.photo.assignError"),
                           ),
                         ),
                     },
@@ -164,12 +176,18 @@ export function SitePhotoDetailDialog({
                     updatePhoto.mutate(
                       { photoId, payload: { location_text: location || null } },
                       {
-                        onSuccess: () => setLocationDraft(null),
+                        onSuccess: () => {
+                          setLocationDraft(null);
+                          showToast({
+                            tone: "success",
+                            title: t("whatsapp.photo.locationUpdatedToast"),
+                          });
+                        },
                         onError: (mutationError) =>
                           setError(
                             getApiErrorMessage(
                               mutationError,
-                              t("whatsapp.photo.locationError")
+                              t("whatsapp.photo.locationError"),
                             ),
                           ),
                       },
@@ -208,12 +226,18 @@ export function SitePhotoDetailDialog({
                     updatePhoto.mutate(
                       { photoId, payload: { photo_date: photoDate || null } },
                       {
-                        onSuccess: () => setDateDraft(null),
+                        onSuccess: () => {
+                          setDateDraft(null);
+                          showToast({
+                            tone: "success",
+                            title: t("whatsapp.photo.dateUpdatedToast"),
+                          });
+                        },
                         onError: (mutationError) =>
                           setError(
                             getApiErrorMessage(
                               mutationError,
-                              t("whatsapp.photo.dateError")
+                              t("whatsapp.photo.dateError"),
                             ),
                           ),
                       },
@@ -249,11 +273,16 @@ export function SitePhotoDetailDialog({
                       onClick={() => {
                         setError(null);
                         removeTag.mutate(tag.id, {
+                          onSuccess: () =>
+                            showToast({
+                              tone: "success",
+                              title: t("whatsapp.photo.tagRemovedToast"),
+                            }),
                           onError: (mutationError) =>
                             setError(
                               getApiErrorMessage(
                                 mutationError,
-                                t("whatsapp.photo.removeTagError")
+                                t("whatsapp.photo.removeTagError"),
                               ),
                             ),
                         });

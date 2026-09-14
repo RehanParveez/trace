@@ -1,5 +1,6 @@
-import {Button, EmptyState, Icon, Panel, PanelHeader, TableShell,
+import { Button, EmptyState, Icon, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import type { SiteLogEntry } from "../types/site-progress.types";
 import { formatLogDate } from "../utils/site-progress.utils";
 import { useDeleteSiteLog } from "../hooks";
@@ -13,6 +14,7 @@ interface SiteLogTableProps {
 
 export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTableProps) {
   const deleteLog = useDeleteSiteLog();
+  const { showToast } = useToast();
 
   return (
     <Panel>
@@ -59,7 +61,15 @@ export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTa
                         disabled={deleteLog.isPending}
                         onClick={() => {
                           if (window.confirm("Delete this site log?")) {
-                            deleteLog.mutate(log.id);
+                            deleteLog.mutate(log.id, {
+                              onSuccess: () => showToast({ tone: "success", title: "Site log deleted" }),
+                              onError: (error) =>
+                                showToast({
+                                  tone: "error",
+                                  title: "Couldn't delete this site log",
+                                  description: getApiErrorMessage(error, "Please try again."),
+                                }),
+                            });
                           }
                         }}
                       >

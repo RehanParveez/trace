@@ -115,6 +115,11 @@ class MaterialLibraryResponse(BaseModel):
   default_unit: str | None
   default_rate: Decimal | None
   
+class PDFExtractionResultResponse(BaseModel):
+  boq_version_id: UUID
+  created_item_count: int
+  items: list[BOQItemResponse]
+  
 class MaterialLibraryUpdateRequest(BaseModel):
   normalized_name: str | None = Field(default=None, min_length=1, max_length=300)
   category: str | None = Field(default=None, max_length=150)

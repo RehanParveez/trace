@@ -5,7 +5,7 @@ import {useAISettings, useMembers, useOrganization, useRoles, useUpdateAISetting
 import { AISettingsCard } from "../components/AISettingsCard";
 import { OrganizationForm } from "../components/OrganizationForm";
 import { OrganizationHeader } from "../components/OrganizationHeader";
-import {ErrorState, LoadingState, PageHeader, Panel, PanelHeader, SectionDivider, StatCard,
+import {ErrorState, LoadingState, PageHeader, Panel, PanelHeader, SectionDivider, StatCard, useToast
 } from "../components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useTranslation } from "react-i18next";
@@ -14,6 +14,7 @@ export function OrganizationPage() {
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const permissions = usePermissionKeys();
+  const { showToast } = useToast();
 
   const organizationQuery = useOrganization();
   const aiSettingsQuery = useAISettings();
@@ -121,7 +122,24 @@ export function OrganizationPage() {
           canManage={canManage}
           isUpdating={updateAISettings.isPending}
           onChange={(enabled) =>
-            updateAISettings.mutate({ ai_enabled: enabled })
+            updateAISettings.mutate(
+              { ai_enabled: enabled },
+              {
+                onSuccess: () =>
+                  showToast({
+                    tone: "success",
+                    title: enabled
+                      ? t("org.aiEnabledToast")
+                      : t("org.aiDisabledToast"),
+                  }),
+                onError: () =>
+                  showToast({
+                    tone: "error",
+                    title: t("org.aiUpdateErrorTitle"),
+                    description: t("org.aiUpdateErrorFallback"),
+                  }),
+              },
+            )
           }
         />
       </section>
@@ -177,7 +195,19 @@ export function OrganizationPage() {
           isSubmitting={updateOrganization.isPending}
           onSubmit={(payload) =>
             updateOrganization.mutate(payload, {
-              onSuccess: () => setEditing(false),
+              onSuccess: () => {
+                setEditing(false);
+                showToast({
+                  tone: "success",
+                  title: t("org.updatedToast"),
+                });
+              },
+              onError: () =>
+                showToast({
+                  tone: "error",
+                  title: t("org.updateErrorTitle"),
+                  description: t("org.updateErrorFallback"),
+                }),
             })
           }
           onCancel={() => setEditing(false)}

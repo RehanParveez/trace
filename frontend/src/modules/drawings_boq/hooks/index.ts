@@ -3,7 +3,7 @@ export {
   useBOQSummary, useBOQVersions, useCreateBOQVersion, useCreateLabourRate,
   useCreateMaterialLibraryEntry, useDrawingElements, useDrawings,
   useExportBOQ, useGenerateLabourItems, useLabourRates,
-  useMaterialLibrary, useUpdateBOQItem, useUpdateBOQVersion,
+  useMaterialLibrary, useSuggestItemsFromPdf, useUpdateBOQItem, useUpdateBOQVersion,
   useUpdateLabourRate, useUpdateMaterialLibraryEntry, useUploadDrawing,
   useViewDrawingFile,
 } from "./useDrawingsBoq";

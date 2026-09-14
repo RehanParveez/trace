@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Button, Panel, PanelHeader } from "../../organizations/components/OrganizationUi";
+import { useTranslation } from "react-i18next"; 
+import { Button, Panel, PanelHeader, useToast } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useDeleteClient } from "../hooks";
 import type { Client } from "../types/project.types";
 import { ClientForm } from "./ClientForm";
-import { useTranslation } from "react-i18next";
 
 interface ClientTableProps {
   clients: Client[];
@@ -20,6 +21,7 @@ export function ClientTable({
   const [formOpen, setFormOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | undefined>();
   const deleteClient = useDeleteClient();
+  const { showToast } = useToast();
 
   return (
     <>
@@ -92,7 +94,22 @@ export function ClientTable({
                           ) {
                             return;
                           }
-                          deleteClient.mutate(client.id);
+                          deleteClient.mutate(client.id, {
+                            onSuccess: () =>
+                              showToast({
+                                tone: "success",
+                                title: t("clients.table.deletedToast", { name: client.name }),
+                              }),
+                            onError: (error) =>
+                              showToast({
+                                tone: "error",
+                                title: t("clients.table.deleteErrorTitle"),
+                                description: getApiErrorMessage(
+                                  error,
+                                  t("clients.table.deleteErrorFallback"),
+                                ),
+                              }),
+                          });
                         }}
                       >
                         {t("common.delete")}

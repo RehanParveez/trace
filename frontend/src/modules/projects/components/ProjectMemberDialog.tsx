@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import {Button, Field, inputClass, Modal,
+import {Button, Field, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { useAddProjectMember } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
@@ -24,6 +24,7 @@ export function ProjectMemberDialog({
   projectId,
   onClose,
 }: ProjectMemberDialogProps) {
+  const { showToast } = useToast();
   const { t } = useTranslation();
   const addMember = useAddProjectMember();
 
@@ -44,9 +45,12 @@ export function ProjectMemberDialog({
         },
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: t("projects.members.addedToast") });
+        },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, t("projects.members.addError")))
+          setError(getApiErrorMessage(mutationError, t("projects.members.addError"))),
       },
     );
   }

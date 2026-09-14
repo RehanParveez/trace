@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import {Button, Field, inputClass, Modal,
+import {Button, Field, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import {useCreateProject, useUpdateProject,
@@ -33,6 +33,7 @@ export function ProjectForm({
   const { t } = useTranslation();
   const createProject = useCreateProject();
   const updateProject = useUpdateProject();
+  const { showToast } = useToast();
 
   const editing = Boolean(project);
   const projectQuota = useQuotaStatus("projects");
@@ -88,9 +89,12 @@ export function ProjectForm({
           },
         },
         {
-          onSuccess: onClose,
+          onSuccess: () => {
+            onClose();
+            showToast({ tone: "success", title: t("projects.form.updatedToast") });
+          },
           onError: (mutationError) =>
-            setError(getApiErrorMessage(mutationError, t("projects.form.saveError")))
+            setError(getApiErrorMessage(mutationError, t("projects.form.saveError"))),
         },
       );
 
@@ -108,9 +112,12 @@ export function ProjectForm({
         expected_end_date: expectedEndDate || null,
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: t("projects.form.createdToast") });
+        },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, t("projects.form.createError")))
+          setError(getApiErrorMessage(mutationError, t("projects.form.createError"))),
       },
     );
   }

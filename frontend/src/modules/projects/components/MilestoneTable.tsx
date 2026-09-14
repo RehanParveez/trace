@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Button, Panel, PanelHeader,
+import {Button, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useDeleteMilestone, useUpdateMilestone,
 } from "../hooks";
@@ -32,8 +32,10 @@ export function MilestoneTable({
   const deleteMilestone =
     useDeleteMilestone();
 
-    const updateMilestone =
+  const updateMilestone =
     useUpdateMilestone();
+  
+  const { showToast } = useToast();
 
   function openCreate() {
     setEditingMilestone(undefined);
@@ -121,15 +123,35 @@ export function MilestoneTable({
                           variant="ghost"
                           disabled={updateMilestone.isPending}
                           onClick={() =>
-                            updateMilestone.mutate({
-                              projectId,
-                              milestoneId: milestone.id,
-                              payload: {
-                                completed_at: completed
-                                  ? null
-                                  : new Date().toISOString().slice(0, 10),
+                            updateMilestone.mutate(
+                              {
+                                projectId,
+                                milestoneId: milestone.id,
+                                payload: {
+                                  completed_at: completed
+                                    ? null
+                                    : new Date().toISOString().slice(0, 10),
+                                },
                               },
-                            })
+                              {
+                                onSuccess: () =>
+                                  showToast({
+                                    tone: "success",
+                                    title: completed
+                                      ? t("milestones.table.reopenedToast", { name: milestone.name })
+                                      : t("milestones.table.completedToast", { name: milestone.name }),
+                                  }),
+                                onError: (error) =>
+                                  showToast({
+                                    tone: "error",
+                                    title: t("milestones.table.updateErrorTitle"),
+                                    description: getApiErrorMessage(
+                                      error,
+                                      t("milestones.table.updateErrorFallback"),
+                                    ),
+                                  }),
+                              },
+                            )
                           }
                         >
                           {completed ? t("milestones.table.reopen") : t("milestones.table.complete")}
@@ -163,8 +185,20 @@ export function MilestoneTable({
                                   milestone.id,
                               },
                               {
+                                onSuccess: () =>
+                                  showToast({
+                                    tone: "success",
+                                    title: t("milestones.table.deletedToast", { name: milestone.name }),
+                                  }),
                                 onError: (error) =>
-                                 window.alert(getApiErrorMessage(error, t("milestones.table.deleteError")))
+                                  showToast({
+                                    tone: "error",
+                                    title: t("milestones.table.deleteErrorTitle"),
+                                    description: getApiErrorMessage(
+                                      error,
+                                      t("milestones.table.deleteErrorFallback"),
+                                    ),
+                                  }),
                               },
                             );
                           }}

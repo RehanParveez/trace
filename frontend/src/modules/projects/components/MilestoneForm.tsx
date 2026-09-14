@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import {
-  Button, Field, inputClass, Modal,
+  Button, Field, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {
   useCreateMilestone, useUpdateMilestone,
@@ -24,6 +24,7 @@ export function MilestoneForm({
   const { t } = useTranslation();
   const createMilestone = useCreateMilestone();
   const updateMilestone = useUpdateMilestone();
+  const { showToast } = useToast();
 
   const [name, setName] = useState(milestone?.name ?? "");
   const [description, setDescription] = useState(milestone?.description ?? "");
@@ -53,9 +54,12 @@ export function MilestoneForm({
           },
         },
         {
-          onSuccess: onClose,
+          onSuccess: () => {
+            onClose();
+            showToast({ tone: "success", title: t("milestones.form.updatedToast") });
+          },
           onError: (mutationError) =>
-            setError(getApiErrorMessage(mutationError, t("milestones.form.saveError")))
+            setError(getApiErrorMessage(mutationError, t("milestones.form.saveError"))),
         },
       );
 
@@ -72,9 +76,12 @@ export function MilestoneForm({
         },
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: t("milestones.form.createdToast") });
+        },
         onError: (mutationError) =>
-          setError(getApiErrorMessage(mutationError, t("milestones.form.createError")))
+          setError(getApiErrorMessage(mutationError, t("milestones.form.createError"))),
       },
     );
   }

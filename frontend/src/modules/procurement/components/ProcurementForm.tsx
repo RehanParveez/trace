@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Button, Field, inputClass, Modal } from "../../organizations/components/OrganizationUi";
+import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateProcurementRequest } from "../hooks";
 
 interface ProcurementFormProps {
@@ -10,6 +10,7 @@ interface ProcurementFormProps {
 
 export function ProcurementForm({ projectId, onClose }: ProcurementFormProps) {
   const createRequest = useCreateProcurementRequest();
+  const { showToast } = useToast();
 
   const [materialName, setMaterialName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -34,7 +35,10 @@ export function ProcurementForm({ projectId, onClose }: ProcurementFormProps) {
         notes: notes.trim() || null,
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          onClose();
+          showToast({ tone: "success", title: "Procurement request submitted" });
+        },
         onError: () => setError("Couldn't create this request. Please try again."),
       },
     );

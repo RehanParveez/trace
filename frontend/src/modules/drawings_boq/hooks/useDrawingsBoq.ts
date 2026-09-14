@@ -211,3 +211,14 @@ export function useViewDrawingFile() {
     },
   });
 }
+
+export function useSuggestItemsFromPdf(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (drawingId: string) => drawingsBoqApi.suggestItemsFromPdf(drawingId),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: drawingsBoqKeys.boqVersions(projectId) });
+      void queryClient.invalidateQueries({ queryKey: drawingsBoqKeys.boqItems(result.boq_version_id) });
+    },
+  });
+}
