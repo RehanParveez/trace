@@ -4,6 +4,7 @@ import { useOrganization, useMembers } from "../hooks";
 import { useDashboardAttention } from "../hooks/useDashboardAttention";
 import { useClients, useMilestonesSummary, useProjects } from "../../projects";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useLatestPhotoByProject } from "../../whatsapp";
 import { DashboardGreeting } from "../components/DashboardGreeting";
 import { DashboardProjectHealth } from "../components/DashboardProjectHealth";
 import { DashboardAttentionFeed } from "../components/DashboardAttentionFeed";
@@ -12,6 +13,7 @@ import { DashboardSitePhotos } from "../components/DashboardSitePhotos";
 import { DashboardFinancialSummary } from "../components/DashboardFinancialSummary";
 import {ErrorState, LoadingState, SectionDivider, StatCard,
 } from "../components/OrganizationUi";
+import { OnboardingChecklist } from "../components/OnboardingChecklist";
 
 export function DashboardPage() {
   const { t } = useTranslation();
@@ -28,6 +30,8 @@ export function DashboardPage() {
   const canManageMembers = permissions.includes(
     IDENTITY_PERMISSIONS.ORGANIZATION_MEMBERS_MANAGE,
   );
+  const canViewPhotos = permissions.includes(IDENTITY_PERMISSIONS.SITE_PHOTO_READ);
+  const photoSummaryQuery = useLatestPhotoByProject({ enabled: canViewPhotos });
 
   if (organizationQuery.isLoading || projectsQuery.isLoading || clientsQuery.isLoading) {
     return <LoadingState label={t("dashboard.loading")} />;
@@ -66,13 +70,19 @@ export function DashboardPage() {
     ]),
   );
 
+  const photoUrlByProject = new Map(
+    (photoSummaryQuery.data ?? []).map((row) => [row.project_id, row.photo_url]),
+  );
+
   const activeProjectCount = projects.filter((project) => project.status === "ACTIVE").length;
   const memberCount = membersQuery.data?.total ?? 0;
   const attentionCount = attention.items.length;
 
   return (
     <div className="space-y-7">
-      <DashboardGreeting organizationName={organization.name} />
+     <DashboardGreeting organizationName={organization.name} />
+
+      <OnboardingChecklist organizationId={organization.id} />
 
       <section>
         <SectionDivider
@@ -151,6 +161,7 @@ export function DashboardPage() {
             projects={projects}
             clientNameById={clientNameById}
             milestoneSummaryByProject={milestoneSummaryByProject}
+            photoUrlByProject={photoUrlByProject}
           />
           <DashboardActivityFeed />
         </div>

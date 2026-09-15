@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {Channel, ChannelConnectRequest, PhotoTag, PhotoTagCreateRequest, SitePhoto, SitePhotoAssignProjectRequest, SitePhotoListParams, SitePhotoUpdateRequest,
+import type {Channel, ChannelConnectRequest, PhotoTag, PhotoTagCreateRequest, ProjectPhotoThumbnail, SitePhoto, SitePhotoAssignProjectRequest, SitePhotoListParams, SitePhotoUpdateRequest,
 } from "../types/whatsapp.types";
 
 export const whatsappApi = {
@@ -21,7 +21,7 @@ export const whatsappApi = {
     const response = await apiClient.get<SitePhoto[]>("/whatsapp/photos", {
       params: {
         project_id: params.projectId,
-        photo_date_afrom: params.photoDateFrom,
+        photo_date_from: params.photoDateFrom,
         photo_date_to: params.photoDateTo,
         tag: params.tag,
         unassigned_only: params.unassignedOnly,
@@ -29,6 +29,11 @@ export const whatsappApi = {
         limit: params.limit ?? 100,
       },
     });
+    return response.data;
+  },
+
+  async getLatestPhotoByProject(): Promise<ProjectPhotoThumbnail[]> {
+    const response = await apiClient.get<ProjectPhotoThumbnail[]>("/whatsapp/photos/latest-by-project");
     return response.data;
   },
 

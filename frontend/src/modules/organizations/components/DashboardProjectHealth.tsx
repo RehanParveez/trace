@@ -1,10 +1,9 @@
 import { Link } from "react-router-dom";
-import {Badge, Icon, Panel, PanelHeader, ProgressBar,
+import {Badge, Icon,  Panel, PanelHeader, ProgressBar,
 } from "./OrganizationUi";
 import {formatProjectStatus, getProjectStatusTone,
 } from "../../projects";
 import type { Project, ProjectStatus } from "../../projects";
-import { useSitePhotos } from "../../whatsapp";
 import { useTranslation } from "react-i18next";
 
 const STATUS_PRIORITY: Record<ProjectStatus, number> = {
@@ -24,12 +23,14 @@ interface DashboardProjectHealthProps {
   projects: Project[];
   clientNameById: Map<string, string>;
   milestoneSummaryByProject?: Map<string, MilestoneSummary>;
+  photoUrlByProject?: Map<string, string>;
 }
 
 export function DashboardProjectHealth({
   projects,
   clientNameById,
   milestoneSummaryByProject,
+  photoUrlByProject,
 }: DashboardProjectHealthProps) {
   const { t } = useTranslation();
 
@@ -62,6 +63,7 @@ export function DashboardProjectHealth({
                   : undefined
               }
               milestoneSummary={milestoneSummaryByProject?.get(project.id)}
+              photoUrl={photoUrlByProject?.get(project.id)}
             />
           ))}
         </div>
@@ -84,12 +86,14 @@ interface DashboardProjectRowProps {
   project: Project;
   clientName?: string;
   milestoneSummary?: MilestoneSummary;
+  photoUrl?: string;
 }
 
 function DashboardProjectRow({
   project,
   clientName,
   milestoneSummary,
+  photoUrl,
 }: DashboardProjectRowProps) {
   const { t } = useTranslation();
 
@@ -104,7 +108,18 @@ function DashboardProjectRow({
       className="flex flex-col gap-3 px-5 py-4 outline-none transition hover:bg-[var(--color-surface-muted)] focus-visible:bg-[var(--color-surface-muted)] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-trace-gold)] sm:flex-row sm:items-center sm:justify-between sm:px-6"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <DashboardProjectThumbnail projectId={project.id} />
+        {photoUrl ? (
+          <img
+            src={photoUrl}
+            alt=""
+            className="h-12 w-12 shrink-0 rounded-[9px] border border-[var(--color-border)] object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]">
+            <Icon name="site" size={16} />
+          </div>
+        )}
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -148,27 +163,5 @@ function DashboardProjectRow({
         )}
       </div>
     </Link>
-  );
-}
-
-function DashboardProjectThumbnail({ projectId }: { projectId: string }) {
-  const photosQuery = useSitePhotos({ projectId, limit: 1 });
-  const photo = (photosQuery.data ?? [])[0];
-
-  if (!photo) {
-    return (
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]">
-        <Icon name="site" size={16} />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={photo.photo_url}
-      alt=""
-      className="h-12 w-12 shrink-0 rounded-[9px] border border-[var(--color-border)] object-cover"
-      loading="lazy"
-    />
   );
 }

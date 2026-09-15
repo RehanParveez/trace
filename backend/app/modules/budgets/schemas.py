@@ -14,6 +14,10 @@ class BudgetSaveRequest(BaseModel):
   currency: str = Field(default="PKR", min_length=3, max_length=3)
   notes: str | None = None
   categories: list[BudgetCategoryInput] = Field(default_factory=list)
+  version: int | None = Field(
+    default=None,
+    description="Required when updating an existing budget; omit when creating the first budget for a project.",
+  )
 
 class BudgetCategoryResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -30,6 +34,7 @@ class BudgetResponse(BaseModel):
   approved_amount: Decimal
   currency: str
   notes: str | None
+  version: int
   categories: list[BudgetCategoryResponse] = Field(default_factory=list)
   created_at: datetime
   updated_at: datetime

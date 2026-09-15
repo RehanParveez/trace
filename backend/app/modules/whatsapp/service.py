@@ -17,7 +17,7 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
 from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
 from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository
-from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, PhotoTagResponse
+from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, PhotoTagResponse
 from app.shared.storage import build_site_photo_storage_key, generate_presigned_url, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
 from app.modules.notifications.service import NotificationService
@@ -433,6 +433,7 @@ class WhatsAppService:
         caption_parsed=caption_parsed,
         location_text=caption_parsed.get("location"),
         photo_date=photo_date,
+        is_ai_tagged=bool(caption_parsed),
       )
       await self.photos.create(photo)
       await self.subscriptions.increment_usage(
@@ -579,7 +580,21 @@ class WhatsAppService:
       limit=limit,
     )
     return [_to_photo_response(photo) for photo in photos]
-  
+
+  async def get_latest_photo_by_project(
+    self,
+    organization_id: UUID,
+  ) -> list[ProjectPhotoThumbnailResponse]:
+    photos = await self.photos.get_latest_by_project(organization_id)
+    return [
+      ProjectPhotoThumbnailResponse(
+        project_id=photo.project_id,
+        photo_url=generate_presigned_url(photo.storage_key),
+      )
+      for photo in photos
+      if photo.project_id is not None
+    ]
+
   async def _get_photo_model(
     self,
     organization_id: UUID,

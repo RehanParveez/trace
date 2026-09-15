@@ -154,3 +154,7 @@ export interface ProjectBOQCount {
   project_id: string;
   latest_boq_item_count: number;
 }
+
+export interface DrawingOrganizationSummary {
+  drawing_count: number;
+}

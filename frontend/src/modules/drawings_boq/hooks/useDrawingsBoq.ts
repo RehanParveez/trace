@@ -230,3 +230,11 @@ export function useBOQItemCounts(options?: { enabled?: boolean }) {
     enabled: options?.enabled,
   });
 }
+
+export function useDrawingOrganizationSummary(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.all, "organization-summary"] as const,
+    queryFn: drawingsBoqApi.getOrganizationSummary,
+    enabled: options?.enabled,
+  });
+}

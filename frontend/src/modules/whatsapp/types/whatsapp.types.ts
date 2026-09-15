@@ -60,3 +60,8 @@ export interface SitePhotoListParams {
   skip?: number;
   limit?: number;
 }
+
+export interface ProjectPhotoThumbnail {
+  project_id: string;
+  photo_url: string;
+}

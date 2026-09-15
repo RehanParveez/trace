@@ -197,6 +197,21 @@ class SitePhotoRepository:
     result = await self.session.execute(query)
     return list(result.scalars().unique())
 
+  async def get_latest_by_project(
+    self,
+    organization_id: UUID,
+  ) -> list[SitePhoto]:
+    result = await self.session.execute(
+      select(SitePhoto)
+      .distinct(SitePhoto.project_id)
+      .where(
+        SitePhoto.organization_id == organization_id,
+        SitePhoto.project_id.is_not(None),
+      )
+      .order_by(SitePhoto.project_id, SitePhoto.created_at.desc())
+    )
+    return list(result.scalars().unique())
+
   async def update(
     self,
     photo: SitePhoto,

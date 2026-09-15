@@ -870,6 +870,8 @@ const resources = {
       "projects.page.deleteErrorTitle": "Couldn't delete this project",
       "projects.page.deleteErrorFallback": "Please try again.",
       "projects.members.addedToast": "Member added to project",
+      "projects.page.emptyTitle": "No projects yet",
+      "projects.page.emptyDesc": "Projects are where budgets, drawings, progress claims and procurement all come together. Create your first one to get started.",
 
       "budgets.form.updated": "Budget updated",
       "budgets.form.set": "Budget set",
@@ -2346,6 +2348,8 @@ const resources = {
       "projects.page.deletedToast": "\"{{name}}\" حذف ہو گیا",
       "projects.page.deleteErrorTitle": "یہ پروجیکٹ حذف نہیں ہو سکا",
       "projects.page.deleteErrorFallback": "براہ کرم دوبارہ کوشش کریں۔",
+      "projects.page.emptyTitle": "ابھی تک کوئی پروجیکٹ نہیں",
+      "projects.page.emptyDesc": "پروجیکٹس وہ جگہ ہیں جہاں بجٹ، ڈرائنگز، پروگریس کلیمز اور خریداری سب اکٹھے ہوتے ہیں۔ شروع کرنے کے لیے اپنا پہلا پروجیکٹ بنائیں۔",
 
       "budgets.form.updated": "بجٹ اپ ڈیٹ ہو گیا",
       "budgets.form.set": "بجٹ سیٹ ہو گیا",

@@ -1,2 +1,3 @@
-export {whatsappKeys, useAddPhotoTag, useAssignProject, useChannel, useConnectChannel, useDisconnectChannel, useRemovePhotoTag, useSitePhoto, useSitePhotos, useUpdateSitePhoto,
+export {whatsappKeys, useAddPhotoTag, useAssignProject, useChannel, useConnectChannel, useDisconnectChannel, useLatestPhotoByProject, useRemovePhotoTag,
+   useSitePhoto, useSitePhotos, useUpdateSitePhoto,
 } from "./useWhatsapp";

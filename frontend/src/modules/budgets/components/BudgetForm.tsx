@@ -51,13 +51,19 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
         currency,
         notes: notes.trim() || null,
         categories: categories.filter((category) => category.name.trim()),
+        version: budget ? budget.version : undefined,
       },
       {
         onSuccess: () => {
           onClose();
-          showToast({ tone: "success", title: budget ? t("budgets.form.updated") : t("budgets.form.set") });
+          showToast({ tone: "success", title: budget ? "Budget updated" : "Budget set" });
         },
-        onError: () => setError(t("budgets.form.saveError")),
+        onError: () =>
+          setError(
+            budget
+              ? "This budget was changed by someone else. Close this dialog, reopen it and try again."
+              : "Couldn't save this budget. Please try again.",
+          ),
       },
     );
   }

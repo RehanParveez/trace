@@ -38,3 +38,4 @@ export * from "./pages/AcceptInvitationPage";
 
 export * from "./types/organization.types";
 export * from "./utils/organization.utils";
+export * from "./components/OnboardingChecklist";

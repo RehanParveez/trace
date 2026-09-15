@@ -1,7 +1,7 @@
 from __future__ import annotations
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
-from sqlalchemy import UniqueConstraint, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy import UniqueConstraint, ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -39,6 +39,10 @@ class Budget(Base, TimestampMixin):
     String(3), nullable=False, default="PKR", server_default="PKR",
   )
   notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+  version: Mapped[int] = mapped_column(
+    Integer, nullable=False, default=1, server_default="1",
+  )
 
   categories: Mapped[list["BudgetCategory"]] = relationship(
     "BudgetCategory",

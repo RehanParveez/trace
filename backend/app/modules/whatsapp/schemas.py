@@ -72,3 +72,7 @@ class SitePhotoUpdateRequest(BaseModel):
     max_length=500,
   )
   photo_date: date | None = None
+  
+class ProjectPhotoThumbnailResponse(BaseModel):
+  project_id: UUID
+  photo_url: str

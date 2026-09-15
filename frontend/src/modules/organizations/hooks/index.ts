@@ -34,4 +34,5 @@ export {
 } from "./useInvitations";
 
 export { useDashboardAttention } from "./useDashboardAttention";
+export { useOnboardingStatus } from "./useOnboardingStatus";
  

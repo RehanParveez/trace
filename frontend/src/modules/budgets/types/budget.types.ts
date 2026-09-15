@@ -10,6 +10,7 @@ export interface Budget {
   approved_amount: number | string;
   currency: string;
   notes: string | null;
+  version: number;
   categories: BudgetCategory[];
   created_at: string;
   updated_at: string;
@@ -26,6 +27,7 @@ export interface BudgetSaveRequest {
   currency?: string;
   notes?: string | null;
   categories?: BudgetCategoryInput[];
+  version?: number | null;
 }
 
 export interface BudgetOrganizationSummary {

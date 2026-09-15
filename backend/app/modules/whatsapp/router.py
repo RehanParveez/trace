@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
-from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse, PhotoTagCreateRequest, PhotoTagResponse, SitePhotoAssignProjectRequest,
+from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse, PhotoTagCreateRequest, PhotoTagResponse, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest,
  SitePhotoResponse, SitePhotoUpdateRequest,
 )
 from app.modules.whatsapp.service import WhatsAppService
@@ -114,6 +114,21 @@ async def list_photos(
     unassigned_only=unassigned_only,
     skip=skip,
     limit=limit,
+  )
+
+@router.get(
+  "/photos/latest-by-project",
+  response_model=list[ProjectPhotoThumbnailResponse],
+)
+async def get_latest_photo_by_project(
+  current_user: User = Depends(
+    require_permission(PermissionKey.SITE_PHOTO_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.get_latest_photo_by_project(
+    current_user.active_membership.organization_id,
   )
 
 @router.get("/photos/{photo_id}", response_model=SitePhotoResponse)

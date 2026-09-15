@@ -41,6 +41,14 @@ export function useSitePhotos(params: SitePhotoListParams = {}) {
   });
 }
 
+export function useLatestPhotoByProject(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...whatsappKeys.all, "latest-by-project"] as const,
+    queryFn: whatsappApi.getLatestPhotoByProject,
+    enabled: options?.enabled,
+  });
+}
+
 export function useSitePhoto(photoId: string | undefined) {
   return useQuery({
     queryKey: whatsappKeys.photo(photoId ?? ""),

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {Button, ErrorState, LoadingState, PageHeader, SectionDivider, StatCard, useToast,
+import {Button, ErrorState, LoadingState, PageHeader, SectionDivider, StatCard, useToast, EmptyState,
 } from "../../organizations/components/OrganizationUi";
 import {
   useClients, useCreateProject, useDeleteProject, useMilestonesSummary, useProjects,
@@ -273,7 +273,29 @@ export function ProjectsPage() {
           </div>
         </div>
 
-        {filteredProjects.length === 0 ? (
+        {projects.length === 0 ? (
+          <EmptyState
+            icon="projects"
+            title={t("projects.page.emptyTitle")}
+            description={t("projects.page.emptyDesc")}
+            action={
+              canCreate ? (
+                <Button
+                  variant="primary"
+                  onClick={openCreate}
+                  disabled={blockedByQuota}
+                  title={
+                    blockedByQuota
+                      ? t("projects.page.quotaTitle")
+                      : undefined
+                  }
+                >
+                  {t("projects.page.create")}
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : filteredProjects.length === 0 ? (
           <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-8 text-center text-[12px] text-[var(--color-text-secondary)]">
             {t("projects.page.emptyFilter")}
           </div>

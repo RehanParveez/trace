@@ -1,6 +1,6 @@
 import { apiClient } from "../../../shared/api/client";
 import type {BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQSummary, BOQVersion, BOQVersionUpdateRequest, Drawing, DrawingElement, LabourRate,
-  LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, PDFExtractionResult, ProjectBOQCount
+  LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, PDFExtractionResult, ProjectBOQCount, DrawingOrganizationSummary
 } from "../types/drawings-boq.types";
 
 export const drawingsBoqApi = {
@@ -27,6 +27,13 @@ export const drawingsBoqApi = {
 
   async listDrawings(projectId: string): Promise<Drawing[]> {
     const response = await apiClient.get<Drawing[]>(`/drawings-boq/projects/${projectId}/drawings`);
+    return response.data;
+  },
+
+  async getOrganizationSummary(): Promise<DrawingOrganizationSummary> {
+    const response = await apiClient.get<DrawingOrganizationSummary>(
+      "/drawings-boq/organization-summary",
+    );
     return response.data;
   },
 
@@ -141,7 +148,7 @@ export const drawingsBoqApi = {
     return response.data;
   },
 
-  async getBOQItemCounts(): Promise<ProjectBOQCount[]> {
+    async getBOQItemCounts(): Promise<ProjectBOQCount[]> {
     const response = await apiClient.get<ProjectBOQCount[]>("/drawings-boq/boq-item-counts");
     return response.data;
   },

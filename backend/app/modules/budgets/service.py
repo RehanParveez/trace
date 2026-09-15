@@ -87,7 +87,7 @@ class BudgetService:
       ) from exc
 
     reloaded = await self.repo.get_by_project(payload.project_id, organization_id)
-    return reloaded  
+    return reloaded
 
   async def _ensure_project(self, organization_id: UUID, project_id: UUID) -> None:
     project = await self.projects.get_by_id_and_org(project_id, organization_id)
