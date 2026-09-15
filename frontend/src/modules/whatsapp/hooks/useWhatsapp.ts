@@ -34,10 +34,11 @@ export function useDisconnectChannel() {
   });
 }
 
-export function useSitePhotos(params: SitePhotoListParams = {}) {
+export function useSitePhotos(params: SitePhotoListParams = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: whatsappKeys.photos(params),
     queryFn: () => whatsappApi.listPhotos(params),
+    enabled: options?.enabled,
   });
 }
 

@@ -12,6 +12,7 @@ import { MilestoneTable } from "../components/MilestoneTable";
 import { DrawingsBoqSection } from "../../drawings_boq";
 import { VerificationSection } from "../../verification";
 import { ProjectFinancialSummary } from "../../budgets";
+import { ProjectActivityFeed } from "../components/ProjectActivityFeed";
 import { useTranslation } from "react-i18next";
 
 export function ProjectDetailPage() {
@@ -122,13 +123,15 @@ export function ProjectDetailPage() {
         description={t("projects.detail.description")}
       />
 
-      <ProjectHeader
+     <ProjectHeader
         project={project}
         canUpdate={canUpdate}
         canDelete={canDelete}
         onEdit={() => setEditOpen(true)}
         onDelete={handleDelete}
       />
+
+      <ProjectActivityFeed projectId={project.id} />
 
       <section>
         <SectionDivider

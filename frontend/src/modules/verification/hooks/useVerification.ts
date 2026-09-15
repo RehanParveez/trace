@@ -11,10 +11,15 @@ export const verificationKeys = {
   links: (claimId: string) => [...verificationKeys.all, "links", claimId] as const,
 };
 
-export function useProgressClaims(projectId?: string, status?: ProgressClaimStatus) {
+export function useProgressClaims(
+  projectId?: string,
+  status?: ProgressClaimStatus,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: verificationKeys.claims(projectId, status),
     queryFn: () => verificationApi.listClaims({ projectId, status }),
+    enabled: options?.enabled,
   });
 }
 
