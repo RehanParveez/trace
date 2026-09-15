@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useOrganization, useMembers } from "../hooks";
 import { useDashboardAttention } from "../hooks/useDashboardAttention";
-import { useClients, useProjects } from "../../projects";
+import { useClients, useMilestonesSummary, useProjects } from "../../projects";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { DashboardGreeting } from "../components/DashboardGreeting";
 import { DashboardProjectHealth } from "../components/DashboardProjectHealth";
@@ -22,6 +22,7 @@ export function DashboardPage() {
   const projectsQuery = useProjects();
   const clientsQuery = useClients();
   const membersQuery = useMembers(0, 100);
+  const milestonesSummaryQuery = useMilestonesSummary();
   const attention = useDashboardAttention();
 
   const canManageMembers = permissions.includes(
@@ -57,6 +58,13 @@ export function DashboardPage() {
   const clients = clientsQuery.data;
 
   const clientNameById = new Map(clients.map((client) => [client.id, client.name]));
+
+  const milestoneSummaryByProject = new Map(
+    (milestonesSummaryQuery.data ?? []).map((row) => [
+      row.project_id,
+      { total: row.milestone_total, completed: row.milestone_completed },
+    ]),
+  );
 
   const activeProjectCount = projects.filter((project) => project.status === "ACTIVE").length;
   const memberCount = membersQuery.data?.total ?? 0;
@@ -142,6 +150,7 @@ export function DashboardPage() {
           <DashboardProjectHealth
             projects={projects}
             clientNameById={clientNameById}
+            milestoneSummaryByProject={milestoneSummaryByProject}
           />
           <DashboardActivityFeed />
         </div>

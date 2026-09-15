@@ -825,6 +825,9 @@ class DrawingBOQService:
       select(Organization.name).where(Organization.id == organization_id)
     )
     return result.scalar_one_or_none() or "Your Company"
+  
+  async def get_project_boq_counts(self, organization_id: UUID) -> list[dict]:
+    return await self.boq_items.get_latest_item_counts_by_project(organization_id)
 
   async def export_boq_pdf(
     self,

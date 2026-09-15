@@ -249,3 +249,26 @@ class MilestoneRepository:
   ) -> None:
     await self.session.delete(milestone)
     await self.session.flush()
+    
+  async def get_organization_summary(
+    self,
+    organization_id: UUID,
+  ) -> list[dict]:
+    result = await self.session.execute(
+      select(
+        Milestone.project_id,
+        func.count(Milestone.id).label("milestone_total"),
+        func.count(Milestone.completed_at).label("milestone_completed"),
+      )
+      .join(Project, Project.id == Milestone.project_id)
+      .where(Project.organization_id == organization_id)
+      .group_by(Milestone.project_id)
+    )
+    return [
+      {
+        "project_id": row.project_id,
+        "milestone_total": row.milestone_total,
+        "milestone_completed": row.milestone_completed,
+      }
+      for row in result.all()
+    ]

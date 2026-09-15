@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import type { Member } from "../types/organization.types";
-import { EmptyState, Panel, PanelHeader, TableShell } from "./OrganizationUi";
+import { Button, EmptyState, Panel, PanelHeader, TableShell } from "./OrganizationUi";
 import { MemberRow } from "./MemberRow";
 import { useTranslation } from "react-i18next";
 
@@ -31,9 +32,16 @@ export function MemberTable(props: MemberTableProps) {
 
       {members.length === 0 ? (
         <EmptyState
-         icon="users"
-         title={t("members.emptyTitle")}
-         description={t("members.emptyDesc")}
+          icon="users"
+          title={t("members.emptyTitle")}
+          description={t("members.emptyDesc")}
+          action={
+            <Link to="/app/organization/invitations">
+              <Button variant="primary" size="sm">
+                {t("members.emptyInvite")}
+              </Button>
+            </Link>
+          }
         />
       ) : (
         <TableShell>

@@ -190,3 +190,8 @@ class MilestoneResponse(BaseModel):
   completed_at: date | None
   created_at: datetime
   updated_at: datetime
+  
+class ProjectMilestoneSummaryResponse(BaseModel):
+  project_id: UUID
+  milestone_total: int
+  milestone_completed: int

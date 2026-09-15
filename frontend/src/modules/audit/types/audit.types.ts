@@ -28,3 +28,10 @@ export interface AuditLogListParams {
   skip?: number;
   limit?: number;
 }
+
+export interface EntityActivitySummary {
+  entity_id: string;
+  last_action: AuditAction;
+  last_summary: string;
+  last_created_at: string;
+}

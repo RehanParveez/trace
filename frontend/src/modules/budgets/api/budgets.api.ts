@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type { Budget, BudgetOrganizationSummary, BudgetSaveRequest } from "../types/budget.types";
+import type { Budget, BudgetOrganizationSummary, BudgetSaveRequest, BudgetProjectSummary } from "../types/budget.types";
 
 export const budgetsApi = {
   async listBudgets(projectId?: string): Promise<Budget[]> {
@@ -16,6 +16,11 @@ export const budgetsApi = {
       payload,
     );
 
+    return response.data;
+  },
+
+  async listBudgetsByOrg(): Promise<BudgetProjectSummary[]> {
+    const response = await apiClient.get<BudgetProjectSummary[]>("/budgets/list-by-project");
     return response.data;
   },
 

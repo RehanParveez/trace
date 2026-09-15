@@ -69,3 +69,20 @@ class AuditLogRepository:
       .order_by(AuditLog.created_at.desc())
     )
     return list(result.scalars().unique())
+  
+  async def list_latest_by_entity_type(
+    self,
+    organization_id: UUID,
+    entity_type: AuditEntityType,
+  ) -> list[AuditLog]:
+    result = await self.session.execute(
+      select(AuditLog)
+      .distinct(AuditLog.entity_id)
+      .where(
+        AuditLog.organization_id == organization_id,
+        AuditLog.entity_type == entity_type,
+        AuditLog.entity_id.is_not(None),
+      )
+      .order_by(AuditLog.entity_id, AuditLog.created_at.desc())
+    )
+    return list(result.scalars().unique())

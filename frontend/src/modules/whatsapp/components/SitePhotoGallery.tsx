@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { EmptyState, ErrorState, LoadingState } from "../../organizations/components/OrganizationUi";
+import { Link } from "react-router-dom";
+import { Button, EmptyState, ErrorState, LoadingState } from "../../organizations/components/OrganizationUi";
 import { useProjects } from "../../projects";
 import { useSitePhotos } from "../hooks";
 import type { SitePhotoListParams } from "../types/whatsapp.types";
@@ -70,7 +71,18 @@ export function SitePhotoGallery({ projectId, canManage }: SitePhotoGalleryProps
       ) : photosQuery.isError ? (
         <ErrorState title={t("whatsapp.gallery.loadError")} onRetry={() => void photosQuery.refetch()} />
       ) : (photosQuery.data ?? []).length === 0 ? (
-        <EmptyState icon="site" title={t("whatsapp.gallery.emptyTitle")} description={t("whatsapp.gallery.emptyDesc")} />
+        <EmptyState
+          icon="site"
+          title={t("whatsapp.gallery.emptyTitle")}
+          description={t("whatsapp.gallery.emptyDesc")}
+          action={
+            <Link to="/app/whatsapp-settings">
+              <Button variant="primary" size="sm">
+                {t("whatsapp.gallery.checkConnection")}
+              </Button>
+            </Link>
+          }
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {(photosQuery.data ?? []).map((photo) => (

@@ -37,3 +37,11 @@ export function useBudgetOrganizationSummary(options?: { enabled?: boolean }) {
     enabled: options?.enabled,
   });
 }
+
+export function useBudgetsByOrg(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...budgetKeys.all, "list-by-org"] as const,
+    queryFn: budgetsApi.listBudgetsByOrg,
+    enabled: options?.enabled,
+  });
+}

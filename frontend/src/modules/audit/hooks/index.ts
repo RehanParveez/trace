@@ -1,1 +1,1 @@
-export { auditKeys, useAuditLog, useEntityAuditLog } from "./useAudit";
+export { auditKeys, useAuditLog, useEntityAuditLog, useLatestByEntityType } from "./useAudit";

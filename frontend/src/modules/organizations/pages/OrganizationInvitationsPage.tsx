@@ -143,6 +143,7 @@ export function OrganizationInvitationsPage() {
         roles={roles}
         canManage={canManage}
         onRevoke={setRevokeInvitation}
+        onInvite={() => setShowForm(true)}
       />
 
       <Pager

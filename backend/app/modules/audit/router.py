@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.audit.models import AuditAction, AuditEntityType
-from app.modules.audit.schemas import AuditLogResponse
+from app.modules.audit.schemas import AuditLogResponse, EntityActivitySummaryResponse
 from app.modules.audit.service import AuditLogService
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
@@ -46,6 +46,31 @@ async def list_audit_log(
     skip=skip,
     limit=limit,
   )
+  
+@router.get(
+  "/latest-by-entity-type",
+  response_model=list[EntityActivitySummaryResponse],
+)
+async def get_latest_by_entity_type(
+  entity_type: AuditEntityType = Query(...),
+  current_user: User = Depends(
+    require_permission(PermissionKey.AUDIT_LOG_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  entries = await service.list_latest_by_entity_type(
+    current_user.active_membership.organization_id, entity_type,
+  )
+  return [
+    {
+      "entity_id": entry.entity_id,
+      "last_action": entry.action,
+      "last_summary": entry.summary,
+      "last_created_at": entry.created_at,
+    }
+    for entry in entries
+  ]
 
 @router.get(
   "/entity/{entity_type}/{entity_id}",

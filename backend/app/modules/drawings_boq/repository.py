@@ -1,8 +1,8 @@
 from __future__ import annotations
 from uuid import UUID
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.drawings_boq.models import BOQItem, BOQItemType, BOQVersionStatus, BOQVersion, LabourRate, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache
+from app.modules.drawings_boq.models import BOQItem, BOQVersionStatus, BOQVersion, LabourRate, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache
 
 class DrawingRepository:
   def __init__(self, session: AsyncSession):
@@ -304,3 +304,37 @@ class LabourRateRepository:
     self.session.add(rate)
     await self.session.flush()
     return rate
+  
+  async def get_latest_item_counts_by_project(
+    self,
+    organization_id: UUID,
+  ) -> list[dict]:
+    ranked = (
+      select(
+        BOQVersion.id,
+        BOQVersion.project_id,
+        func.row_number()
+          .over(
+            partition_by=BOQVersion.project_id,
+            order_by=BOQVersion.created_at.desc(),
+          )
+          .label("rn"),
+      )
+      .where(BOQVersion.organization_id == organization_id)
+      .subquery()
+    )
+
+    result = await self.session.execute(
+      select(
+        ranked.c.project_id,
+        func.count(BOQItem.id).label("item_count"),
+      )
+      .select_from(ranked)
+      .outerjoin(BOQItem, BOQItem.boq_version_id == ranked.c.id)
+      .where(ranked.c.rn == 1)
+      .group_by(ranked.c.project_id)
+    )
+    return [
+      {"project_id": row.project_id, "latest_boq_item_count": row.item_count}
+      for row in result.all()
+    ]

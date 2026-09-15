@@ -73,3 +73,12 @@ class AuditLogService:
     return await self.repository.list_for_entity(
       organization_id, entity_type, entity_id
     )
+    
+  async def list_latest_by_entity_type(
+    self,
+    organization_id: UUID,
+    entity_type: AuditEntityType,
+  ) -> list[AuditLog]:
+    return await self.repository.list_latest_by_entity_type(
+      organization_id, entity_type,
+    )

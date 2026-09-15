@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next"; 
-import { Button, Panel, PanelHeader, useToast } from "../../organizations/components/OrganizationUi";
+import { Button, Panel, PanelHeader, useToast, EmptyState } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useDeleteClient } from "../hooks";
 import type { Client } from "../types/project.types";
@@ -46,9 +46,25 @@ export function ClientTable({
         />
 
         {clients.length === 0 ? (
-          <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
-            {t("clients.table.empty")}
-          </div>
+          <EmptyState
+            icon="user"
+            title={t("clients.table.emptyTitle")}
+            description={t("clients.table.emptyDesc")}
+            action={
+              canUpdate ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => {
+                    setEditingClient(undefined);
+                    setFormOpen(true);
+                  }}
+                >
+                  {t("clients.table.add")}
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="divide-y divide-[var(--color-border)]">
             {clients.map((client) => (

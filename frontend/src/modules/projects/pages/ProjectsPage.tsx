@@ -2,11 +2,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {Button, ErrorState, LoadingState, PageHeader, SectionDivider, StatCard, useToast,
 } from "../../organizations/components/OrganizationUi";
-import {useClients, useCreateProject, useDeleteProject, useProjects,
+import {
+  useClients, useCreateProject, useDeleteProject, useMilestonesSummary, useProjects,
 } from "../hooks";
 import type { Project, ProjectStatus } from "../types/project.types";
-import { IDENTITY_PERMISSIONS, getApiErrorMessage, usePermissionKeys } from "../../identity";
+import { getApiErrorMessage, IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
+import { AUDIT_PERMISSIONS, useLatestByEntityType } from "../../audit";
+import { useBOQItemCounts } from "../../drawings_boq";
+import { BUDGET_PERMISSIONS, useBudgetsByOrg } from "../../budgets";
 import { ClientTable } from "../components/ClientTable";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectCard } from "../components/ProjectCard";
@@ -31,6 +35,14 @@ export function ProjectsPage() {
   const canCreate = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_CREATE);
   const canUpdate = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_UPDATE);
   const canDelete = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_DELETE);
+  const canViewBoq = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
+  const canViewActivity = permissions.includes(AUDIT_PERMISSIONS.AUDIT_LOG_READ);
+  const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
+
+  const milestonesSummaryQuery = useMilestonesSummary({ enabled: canRead });
+  const boqCountsQuery = useBOQItemCounts({ enabled: canViewBoq });
+  const activitySummaryQuery = useLatestByEntityType("PROJECT", { enabled: canViewActivity });
+  const budgetsQuery = useBudgetsByOrg({ enabled: canViewBudget });
 
   const projectQuota = useQuotaStatus("projects");
   const blockedByQuota = projectQuota.isAtLimit;
@@ -57,6 +69,31 @@ export function ProjectsPage() {
 
   const clientMap = new Map(
     clients.map((client) => [client.id, client.name]),
+  );
+
+  const milestoneSummaryByProject = new Map(
+    (milestonesSummaryQuery.data ?? []).map((row) => [
+      row.project_id,
+      { total: row.milestone_total, completed: row.milestone_completed },
+    ]),
+  );
+
+  const boqCountByProject = new Map(
+    (boqCountsQuery.data ?? []).map((row) => [row.project_id, row.latest_boq_item_count]),
+  );
+
+  const activityByProject = new Map(
+    (activitySummaryQuery.data ?? []).map((row) => [
+      row.entity_id,
+      { summary: row.last_summary, createdAt: row.last_created_at },
+    ]),
+  );
+
+  const budgetByProject = new Map(
+    (budgetsQuery.data ?? []).map((row) => [
+      row.project_id,
+      { approvedAmount: row.approved_amount, currency: row.currency },
+    ]),
   );
 
   function openCreate() {
@@ -251,6 +288,12 @@ export function ProjectsPage() {
                 }
                 canUpdate={canUpdate}
                 canDelete={canDelete}
+                milestoneSummary={
+                  canRead ? (milestoneSummaryByProject.get(project.id) ?? { total: 0, completed: 0 }) : undefined
+                }
+                boqItemCount={canViewBoq ? (boqCountByProject.get(project.id) ?? 0) : undefined}
+                budgetSummary={canViewBudget ? (budgetByProject.get(project.id) ?? null) : undefined}
+                lastActivity={canViewActivity ? (activityByProject.get(project.id) ?? null) : undefined}
                 onOpen={(item) => navigate(`/app/projects/${item.id}`)}
                 onEdit={openEdit}
                 onDelete={handleDelete}

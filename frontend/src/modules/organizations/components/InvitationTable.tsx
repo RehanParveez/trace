@@ -10,6 +10,7 @@ interface InvitationTableProps {
   roles?: Role[];
   canManage?: boolean;
   onRevoke?: (invitation: Invitation) => void;
+  onInvite?: () => void;
 }
 
 export function InvitationTable({
@@ -17,6 +18,7 @@ export function InvitationTable({
   roles = [],
   canManage = false,
   onRevoke,
+  onInvite,
 }: InvitationTableProps) {
   const { t } = useTranslation();
   function roleLabel(roleId: string): string {
@@ -41,6 +43,13 @@ export function InvitationTable({
           icon="mail"
           title={t("invitations.emptyTitle")}
           description={t("invitations.emptyDesc")}
+          action={
+            canManage && onInvite ? (
+              <Button variant="primary" size="sm" onClick={onInvite}>
+                {t("invitations.invite")}
+              </Button>
+            ) : undefined
+          }
         />
       ) : (
         <TableShell>

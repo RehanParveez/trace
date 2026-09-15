@@ -222,3 +222,11 @@ export function useSuggestItemsFromPdf(projectId: string) {
     },
   });
 }
+
+export function useBOQItemCounts(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.all, "boq-item-counts"] as const,
+    queryFn: drawingsBoqApi.getBOQItemCounts,
+    enabled: options?.enabled,
+  });
+}

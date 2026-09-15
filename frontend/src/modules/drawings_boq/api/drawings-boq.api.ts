@@ -1,6 +1,6 @@
 import { apiClient } from "../../../shared/api/client";
 import type {BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQSummary, BOQVersion, BOQVersionUpdateRequest, Drawing, DrawingElement, LabourRate,
-  LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, PDFExtractionResult
+  LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, PDFExtractionResult, ProjectBOQCount
 } from "../types/drawings-boq.types";
 
 export const drawingsBoqApi = {
@@ -138,6 +138,11 @@ export const drawingsBoqApi = {
     const response = await apiClient.get(`/drawings-boq/boq-versions/${boqVersionId}/export/xlsx`, {
       responseType: "blob",
     });
+    return response.data;
+  },
+
+  async getBOQItemCounts(): Promise<ProjectBOQCount[]> {
+    const response = await apiClient.get<ProjectBOQCount[]>("/drawings-boq/boq-item-counts");
     return response.data;
   },
 };

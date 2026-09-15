@@ -2,20 +2,35 @@ import {DropdownMenu, Icon, ProgressBar,
 } from "../../organizations/components/OrganizationUi";
 import type { MenuAction } from "../../organizations/components/OrganizationUi";
 import { formatRelativeTime } from "../../organizations/utils/organization.utils";
-import { useBOQVersions, useBOQSummary } from "../../drawings_boq";
-import { AUDIT_PERMISSIONS, useEntityAuditLog } from "../../audit";
-import { BUDGET_PERMISSIONS, formatBudgetAmount, useProjectBudget } from "../../budgets";
-import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
-import { useProjectMilestones } from "../hooks";
+import { formatBudgetAmount } from "../../budgets";
 import type { Project } from "../types/project.types";
 import { ProjectStatusBadge } from "./ProjectStatusBadge";
 import { useTranslation } from "react-i18next";
+
+interface ProjectCardMilestoneSummary {
+  total: number;
+  completed: number;
+}
+
+interface ProjectCardBudgetSummary {
+  approvedAmount: number | string;
+  currency: string;
+}
+
+interface ProjectCardActivitySummary {
+  summary: string;
+  createdAt: string;
+}
 
 interface ProjectCardProps {
   project: Project;
   clientName?: string;
   canUpdate: boolean;
   canDelete: boolean;
+  milestoneSummary?: ProjectCardMilestoneSummary;
+  boqItemCount?: number | null;
+  budgetSummary?: ProjectCardBudgetSummary | null;
+  lastActivity?: ProjectCardActivitySummary | null;
   onOpen: (project: Project) => void;
   onEdit: (project: Project) => void;
   onDelete: (project: Project) => void;
@@ -26,49 +41,41 @@ export function ProjectCard({
   clientName,
   canUpdate,
   canDelete,
+  milestoneSummary,
+  boqItemCount,
+  budgetSummary,
+  lastActivity,
   onOpen,
   onEdit,
   onDelete,
 }: ProjectCardProps) {
   const { t } = useTranslation();
-  const permissions = usePermissionKeys();
 
-  const canViewBoq = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
-  const canViewActivity = permissions.includes(AUDIT_PERMISSIONS.AUDIT_LOG_READ);
-  const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
-
-  const milestonesQuery = useProjectMilestones(project.id);
-  const budgetQuery = useProjectBudget(canViewBudget ? project.id : undefined);
-  const boqVersionsQuery = useBOQVersions(canViewBoq ? project.id : "");
-  const latestVersionId = boqVersionsQuery.data?.[0]?.id;
-  const boqSummaryQuery = useBOQSummary(latestVersionId);
-  const activityQuery = useEntityAuditLog(
-    "PROJECT",
-    canViewActivity ? project.id : undefined,
-  );
-
-  const milestones = milestonesQuery.data ?? [];
-  const completed = milestones.filter((milestone) => milestone.completed_at !== null).length;
-  const total = milestones.length;
-  const percentage = total === 0 ? null : Math.round((completed / total) * 100);
-
-  const boqItemCount = boqSummaryQuery.data?.item_count ?? null;
-
-  const latestActivity = activityQuery.data?.[0];
-  const lastActivityLabel = !canViewActivity
-    ? "—"
-    : latestActivity
-      ? formatRelativeTime(latestActivity.created_at)
-      : t("projects.card.noActivity");
+  const hasMilestoneData = Boolean(milestoneSummary);
+  const percentage =
+    milestoneSummary && milestoneSummary.total > 0
+      ? Math.round(
+          (milestoneSummary.completed / milestoneSummary.total) * 100,
+        )
+      : null;
 
   const actions: MenuAction[] = [];
 
   if (canUpdate) {
-    actions.push({ label: t("projects.card.edit"), icon: "edit", onSelect: () => onEdit(project) });
+    actions.push({
+      label: t("projects.card.edit"),
+      icon: "edit",
+      onSelect: () => onEdit(project),
+    });
   }
 
   if (canDelete) {
-    actions.push({ label: t("projects.card.delete"), icon: "x", tone: "danger", onSelect: () => onDelete(project) });
+    actions.push({
+      label: t("projects.card.delete"),
+      icon: "x",
+      tone: "danger",
+      onSelect: () => onDelete(project),
+    });
   }
 
   return (
@@ -102,38 +109,53 @@ export function ProjectCard({
           <div>
             <div className="mb-1.5 flex items-center justify-between gap-3">
               <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-               {t("projects.card.progress")}
+                {t("projects.card.progress")}
               </span>
               <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
-                {percentage === null ? "—" : `${percentage}%`}
+                {!hasMilestoneData || percentage === null
+                  ? "—"
+                  : `${percentage}%`}
               </span>
             </div>
-            {percentage !== null ? (
-              <ProgressBar value={percentage} tone={percentage === 100 ? "green" : "gold"} size="sm" />
+            {hasMilestoneData && percentage !== null ? (
+              <ProgressBar
+                value={percentage}
+                tone={percentage === 100 ? "green" : "gold"}
+                size="sm"
+              />
             ) : (
-              <div className="text-[11.5px] text-[var(--color-text-muted)]">{t("projects.card.noMilestones")}</div>
+              <div className="text-[11.5px] text-[var(--color-text-muted)]">
+                {hasMilestoneData
+                  ? t("projects.card.noMilestones")
+                  : "—"}
+              </div>
             )}
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-             {t("projects.card.budget")}
+              {t("projects.card.budget")}
             </span>
             <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
-              {!canViewBudget
+              {budgetSummary === undefined
                 ? "—"
-                : budgetQuery.data
-                  ? formatBudgetAmount(budgetQuery.data.approved_amount, budgetQuery.data.currency)
-                  : t("projects.card.notSet")}
+                : budgetSummary === null
+                  ? t("projects.card.notSet")
+                  : formatBudgetAmount(
+                      budgetSummary.approvedAmount,
+                      budgetSummary.currency,
+                    )}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-3">
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
-             {t("projects.card.boqItems")}
+              {t("projects.card.boqItems")}
             </span>
             <span className="font-mono text-[12.5px] font-semibold text-[var(--color-text-primary)]">
-              {boqItemCount === null ? "—" : boqItemCount}
+              {boqItemCount === undefined || boqItemCount === null
+                ? "—"
+                : boqItemCount}
             </span>
           </div>
 
@@ -141,7 +163,13 @@ export function ProjectCard({
             <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-[var(--color-text-muted)]">
               {t("projects.card.lastActivity")}
             </span>
-            <span className="text-[12px] text-[var(--color-text-secondary)]">{lastActivityLabel}</span>
+            <span className="text-[12px] text-[var(--color-text-secondary)]">
+              {lastActivity === undefined
+                ? "—"
+                : lastActivity === null
+                  ? t("projects.card.noActivity")
+                  : formatRelativeTime(lastActivity.createdAt)}
+            </span>
           </div>
         </div>
 

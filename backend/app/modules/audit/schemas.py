@@ -17,3 +17,9 @@ class AuditLogResponse(BaseModel):
   summary: str
   changes: dict
   created_at: datetime
+  
+class EntityActivitySummaryResponse(BaseModel):
+  entity_id: UUID
+  last_action: AuditAction
+  last_summary: str
+  last_created_at: datetime

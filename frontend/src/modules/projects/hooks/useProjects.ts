@@ -374,3 +374,11 @@ export function useDeleteMilestone() {
     },
   });
 }
+
+export function useMilestonesSummary(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...projectKeys.all, "milestones-summary"] as const,
+    queryFn: projectsApi.getMilestonesSummary,
+    enabled: options?.enabled,
+  });
+}

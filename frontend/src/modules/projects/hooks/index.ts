@@ -18,4 +18,5 @@ export {
   useUpdateMilestone,
   useUpdateProject,
   useUpdateProjectMember,
+  useMilestonesSummary
 } from "./useProjects";

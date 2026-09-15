@@ -583,6 +583,7 @@ const resources = {
       "members.activateMember": "Activate member",
       "members.systemBadge": "System",
       "members.inactive": "Inactive",
+      "members.emptyInvite": "Invite a member",
 
       "dashboard.projectHealth.eyebrow": "PROJECT HEALTH",
       "dashboard.projectHealth.title": "Active work",
@@ -700,6 +701,8 @@ const resources = {
       "clients.table.deletedToast": "\"{{name}}\" deleted",
       "clients.table.deleteErrorTitle": "Couldn't delete this client",
       "clients.table.deleteErrorFallback": "Please try again.",
+      "clients.table.emptyTitle": "No clients yet",
+      "clients.table.emptyDesc": "Add the clients you build for so you can link them to projects and keep contact details in one place.",
 
       "milestones.form.editTitle": "Edit milestone",
       "milestones.form.addTitle": "Add milestone",
@@ -1031,6 +1034,8 @@ const resources = {
       "drawings.suggest.successDesc": "Review and price these before approving them.",
       "drawings.suggest.errorTitle": "Couldn't read this PDF",
       "drawings.suggest.errorFallback": "Please try again.",
+      "drawings.upload.storageAtLimit": "You've used all of your plan's storage. Upgrade or free up space to upload more files.",
+      "drawings.upload.storageOverage": "This file is {{fileSize}}, but only {{remaining}} of storage is left on your plan. Choose a smaller file or upgrade.",
 
       "labour.eyebrow": "LABOUR COSTING",
       "labour.title": "Labour rates",
@@ -1165,6 +1170,7 @@ const resources = {
       "whatsapp.status.pageDescription": "Connect the organization's WhatsApp Business number so site engineers can send progress photos directly to Trace.",
       "whatsapp.connect.successToast": "WhatsApp number connected",
       "whatsapp.disconnect.successToast": "WhatsApp number disconnected",
+      "whatsapp.gallery.checkConnection": "Check WhatsApp connection",
 
       "siteProgress.form.saved": "Site log saved",
       "siteProgress.form.saveError": "Couldn't save this site log. Please try again.",
@@ -2056,6 +2062,7 @@ const resources = {
       "members.activateMember": "ممبر فعال کریں",
       "members.systemBadge": "سسٹم",
       "members.inactive": "غیر فعال",
+      "members.emptyInvite": "ممبر مدعو کریں",
 
       "dashboard.projectHealth.eyebrow": "پروجیکٹ ہیلتھ",
       "dashboard.projectHealth.title": "فعال کام",
@@ -2173,6 +2180,8 @@ const resources = {
       "clients.table.deletedToast": "\"{{name}}\" حذف ہو گیا",
       "clients.table.deleteErrorTitle": "یہ کلائنٹ حذف نہیں ہو سکا",
       "clients.table.deleteErrorFallback": "براہ کرم دوبارہ کوشش کریں۔",
+      "clients.table.emptyTitle": "ابھی کوئی کلائنٹ نہیں",
+      "clients.table.emptyDesc": "جن کلائنٹس کے لیے آپ تعمیر کرتے ہیں انہیں شامل کریں تاکہ انہیں پروجیکٹس سے جوڑا جا سکے اور رابطے کی تفصیلات ایک جگہ محفوظ رہیں۔",
 
       "milestones.form.editTitle": "سنگ میل میں ترمیم",
       "milestones.form.addTitle": "سنگ میل شامل کریں",
@@ -2609,6 +2618,8 @@ const resources = {
       "drawings.suggest.successDesc": "منظور کرنے سے پہلے ان کا جائزہ لیں اور قیمت لگائیں۔",
       "drawings.suggest.errorTitle": "یہ پی ڈی ایف نہیں پڑھی جا سکی",
       "drawings.suggest.errorFallback": "براہ کرم دوبارہ کوشش کریں۔",
+      "drawings.upload.storageAtLimit": "آپ نے اپنے پلان کی تمام اسٹوریج استعمال کر لی ہے۔ مزید فائلیں اپ لوڈ کرنے کے لیے اپ گریڈ کریں یا جگہ خالی کریں۔",
+      "drawings.upload.storageOverage": "یہ فائل {{fileSize}} ہے، لیکن آپ کے پلان پر صرف {{remaining}} اسٹوریج باقی ہے۔ چھوٹی فائل منتخب کریں یا اپ گریڈ کریں۔",
 
       "labour.eyebrow": "لیبر لاگت",
       "labour.title": "لیبر ریٹس",
@@ -2790,6 +2801,7 @@ const resources = {
       "whatsapp.status.pageDescription": "آرگنائزیشن کا واٹس ایپ بزنس نمبر جوڑیں تاکہ سائٹ انجینئرز براہ راست ٹریس کو پروگریس فوٹوز بھیج سکیں۔",
       "whatsapp.connect.successToast": "واٹس ایپ نمبر جڑ گیا",
       "whatsapp.disconnect.successToast": "واٹس ایپ نمبر منقطع ہو گیا",
+      "whatsapp.gallery.checkConnection": "Check WhatsApp connection",
 
       "verification.form.createSuccess": "پروگریس کلیم بن گیا",
       "verification.photoEvidence.label": "فوٹو شواہد",

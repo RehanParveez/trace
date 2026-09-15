@@ -22,3 +22,11 @@ export function useEntityAuditLog(entityType: AuditEntityType, entityId: string 
     enabled: Boolean(entityId),
   });
 }
+
+export function useLatestByEntityType(entityType: AuditEntityType, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...auditKeys.all, "latest-by-entity-type", entityType] as const,
+    queryFn: () => auditApi.getLatestByEntityType(entityType),
+    enabled: options?.enabled,
+  });
+}

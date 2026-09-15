@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type { AuditEntityType, AuditLogEntry, AuditLogListParams } from "../types/audit.types";
+import type { AuditEntityType, AuditLogEntry, AuditLogListParams, EntityActivitySummary } from "../types/audit.types";
 
 export const auditApi = {
   async listAuditLog(params: AuditLogListParams = {}): Promise<AuditLogEntry[]> {
@@ -16,6 +16,13 @@ export const auditApi = {
 
   async listForEntity(entityType: AuditEntityType, entityId: string): Promise<AuditLogEntry[]> {
     const response = await apiClient.get<AuditLogEntry[]>(`/audit-log/entity/${entityType}/${entityId}`);
+    return response.data;
+  },
+
+  async getLatestByEntityType(entityType: AuditEntityType): Promise<EntityActivitySummary[]> {
+    const response = await apiClient.get<EntityActivitySummary[]>("/audit-log/latest-by-entity-type", {
+      params: { entity_type: entityType },
+    });
     return response.data;
   },
 };

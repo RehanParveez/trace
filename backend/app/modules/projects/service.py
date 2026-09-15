@@ -563,3 +563,10 @@ class ProjectService:
 
     await self.milestones.delete(milestone)
     await self.session.commit()
+    
+  
+  async def get_milestone_summary(
+    self,
+    organization_id: UUID,
+  ) -> list[dict]:
+    return await self.milestones.get_organization_summary(organization_id)

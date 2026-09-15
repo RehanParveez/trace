@@ -149,3 +149,8 @@ export interface PDFExtractionResult {
   created_item_count: number;
   items: BOQItem[];
 }
+
+export interface ProjectBOQCount {
+  project_id: string;
+  latest_boq_item_count: number;
+}

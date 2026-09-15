@@ -7,7 +7,7 @@ from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from app.modules.projects.schemas import (ClientCreate, ClientResponse, ClientUpdate, MilestoneCreate, MilestoneResponse, MilestoneUpdate, ProjectCreate, ProjectMemberCreate, ProjectMemberResponse,
-  ProjectMemberUpdate, ProjectResponse, ProjectUpdate,
+  ProjectMemberUpdate, ProjectResponse, ProjectUpdate, ProjectMilestoneSummaryResponse,
 )
 from app.modules.projects.service import ProjectService
 
@@ -154,8 +154,26 @@ async def list_projects(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-
   return await service.list_projects(
+    current_user.active_membership.organization_id,
+  )
+
+@router.get(
+  "/milestones-summary",
+  response_model=list[ProjectMilestoneSummaryResponse],
+)
+
+async def get_milestones_summary(
+  current_user: User = Depends(
+    require_permission(
+      PermissionKey.PROJECT_READ
+    )
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+
+  return await service.get_milestone_summary(
     current_user.active_membership.organization_id,
   )
 

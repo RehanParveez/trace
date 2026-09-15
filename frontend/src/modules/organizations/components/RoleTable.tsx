@@ -1,5 +1,6 @@
+import { Link } from "react-router-dom";
 import type { Role } from "../types/organization.types";
-import {Badge, DropdownMenu, EmptyState, type MenuAction, Panel, PanelHeader, TableShell,
+import {Badge, Button, DropdownMenu, EmptyState, type MenuAction, Panel, PanelHeader, TableShell,
 } from "./OrganizationUi";
 import { useTranslation } from "react-i18next";
 
@@ -57,9 +58,18 @@ export function RoleTable({
 
       {roles.length === 0 ? (
         <EmptyState
-         icon="shield"
-         title={t("roles.emptyTitle")}
-         description={t("roles.emptyDesc")}
+          icon="shield"
+          title={t("roles.emptyTitle")}
+          description={t("roles.emptyDesc")}
+          action={
+            canManage ? (
+              <Link to="/app/organization/roles/new">
+                <Button variant="primary" size="sm">
+                  {t("roles.create")}
+                </Button>
+              </Link>
+            ) : undefined
+          }
         />
       ) : (
         <TableShell>

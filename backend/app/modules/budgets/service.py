@@ -22,6 +22,9 @@ class BudgetService:
       return []
     await self._ensure_project(organization_id, project_id)
     return await self.repo.list_by_project(project_id, organization_id)
+  
+  async def list_budgets_by_org(self, organization_id: UUID) -> list[Budget]:
+    return await self.repo.list_by_org(organization_id)
 
   async def get_organization_summary(
     self, organization_id: UUID,

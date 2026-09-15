@@ -85,7 +85,22 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
       ) : ratesQuery.isError ? (
         <ErrorState title={t("labour.loadError")} onRetry={() => void ratesQuery.refetch()} />
       ) : rates.length === 0 ? (
-        <EmptyState icon="info" title={t("labour.emptyTitle")} description={t("labour.emptyDesc")} />
+        <EmptyState
+          icon="info"
+          title={t("labour.emptyTitle")}
+          description={t("labour.emptyDesc")}
+          action={
+            canManage ? (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setFormOpen(true)}
+              >
+                {t("labour.add")}
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <TableShell>
           <table className="w-full min-w-[420px] text-left">

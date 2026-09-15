@@ -33,3 +33,9 @@ export interface BudgetOrganizationSummary {
   budget_count: number;
   currency: string;
 }
+
+export interface BudgetProjectSummary {
+  project_id: string;
+  approved_amount: number | string;
+  currency: string;
+}

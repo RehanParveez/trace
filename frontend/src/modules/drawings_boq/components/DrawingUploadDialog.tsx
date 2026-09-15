@@ -15,10 +15,28 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
   const { t } = useTranslation();
   const upload = useUploadDrawing(projectId);
   const drawingQuota = useQuotaStatus("drawings");
+  const storageQuota = useQuotaStatus("storage_bytes");
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const idempotencyKeyRef = useRef(crypto.randomUUID());
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const fileExceedsRemainingStorage =
+    file !== null &&
+    storageQuota.limit !== null &&
+    storageQuota.remaining !== null &&
+    file.size > storageQuota.remaining;
+
+  const storageOverageMessage =
+    file && storageQuota.remaining !== null
+      ? t("drawings.upload.storageOverage", {
+          fileSize: formatFileSize(file.size),
+          remaining: formatFileSize(storageQuota.remaining),
+        })
+      : "";
+
+  const blockedByStorage =
+    storageQuota.isAtLimit || fileExceedsRemainingStorage;
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
@@ -51,8 +69,17 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
       <div className="space-y-4">
         {drawingQuota.isAtLimit ? (
           <QuotaLimitNotice
-            message={t("drawings.upload.quotaLimit", { count: drawingQuota.limit, limit: drawingQuota.limit })}
+            message={t("drawings.upload.quotaLimit", {
+              count: drawingQuota.limit,
+              limit: drawingQuota.limit,
+            })}
           />
+        ) : null}
+
+        {storageQuota.isAtLimit ? (
+          <QuotaLimitNotice message={t("drawings.upload.storageAtLimit")} />
+        ) : fileExceedsRemainingStorage ? (
+          <QuotaLimitNotice message={storageOverageMessage} />
         ) : null}
 
         <button
@@ -73,7 +100,11 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button variant="ghost" onClick={onClose} disabled={upload.isPending}>{t("common.cancel")}</Button>
-          <Button variant="primary" onClick={submit} disabled={!file || upload.isPending || drawingQuota.isAtLimit}>
+          <Button
+            variant="primary"
+            onClick={submit}
+            disabled={!file || upload.isPending || drawingQuota.isAtLimit || blockedByStorage}
+          >
             {upload.isPending ? t("drawings.upload.uploading") : t("drawings.upload.submit")}
           </Button>
         </div>

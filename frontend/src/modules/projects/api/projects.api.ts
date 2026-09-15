@@ -1,6 +1,6 @@
 import { apiClient } from "../../../shared/api/client";
 import type {Client, ClientCreateRequest, ClientUpdateRequest, Milestone, MilestoneCreateRequest, MilestoneUpdateRequest, Project, ProjectCreateRequest, ProjectMember,
-  ProjectMemberCreateRequest, ProjectMemberUpdateRequest, ProjectUpdateRequest,
+  ProjectMemberCreateRequest, ProjectMemberUpdateRequest, ProjectUpdateRequest, ProjectMilestoneSummary
 } from "../types/project.types";
 
 export const projectsApi = {
@@ -19,6 +19,11 @@ export const projectsApi = {
       `/projects/clients/${clientId}`,
     );
 
+    return response.data;
+  },
+
+  async getMilestonesSummary(): Promise<ProjectMilestoneSummary[]> {
+    const response = await apiClient.get<ProjectMilestoneSummary[]>("/projects/milestones-summary");
     return response.data;
   },
 

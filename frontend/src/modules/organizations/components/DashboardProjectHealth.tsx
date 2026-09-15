@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import {Badge, Icon, Panel, PanelHeader, ProgressBar,
 } from "./OrganizationUi";
-import {formatProjectStatus, getProjectStatusTone, useProjectMilestones,
+import {formatProjectStatus, getProjectStatusTone,
 } from "../../projects";
 import type { Project, ProjectStatus } from "../../projects";
 import { useSitePhotos } from "../../whatsapp";
@@ -15,16 +15,24 @@ const STATUS_PRIORITY: Record<ProjectStatus, number> = {
   CANCELLED: 4,
 };
 
+interface MilestoneSummary {
+  total: number;
+  completed: number;
+}
+
 interface DashboardProjectHealthProps {
   projects: Project[];
   clientNameById: Map<string, string>;
+  milestoneSummaryByProject?: Map<string, MilestoneSummary>;
 }
 
 export function DashboardProjectHealth({
   projects,
   clientNameById,
+  milestoneSummaryByProject,
 }: DashboardProjectHealthProps) {
   const { t } = useTranslation();
+
   const visibleProjects = [...projects]
     .filter((project) => project.status !== "CANCELLED")
     .sort((a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status])
@@ -48,7 +56,12 @@ export function DashboardProjectHealth({
             <DashboardProjectRow
               key={project.id}
               project={project}
-              clientName={project.client_id ? clientNameById.get(project.client_id) : undefined}
+              clientName={
+                project.client_id
+                  ? clientNameById.get(project.client_id)
+                  : undefined
+              }
+              milestoneSummary={milestoneSummaryByProject?.get(project.id)}
             />
           ))}
         </div>
@@ -70,15 +83,20 @@ export function DashboardProjectHealth({
 interface DashboardProjectRowProps {
   project: Project;
   clientName?: string;
+  milestoneSummary?: MilestoneSummary;
 }
 
-function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) {
+function DashboardProjectRow({
+  project,
+  clientName,
+  milestoneSummary,
+}: DashboardProjectRowProps) {
   const { t } = useTranslation();
-  const milestonesQuery = useProjectMilestones(project.id);
-  const milestones = milestonesQuery.data ?? [];
-  const completed = milestones.filter((milestone) => milestone.completed_at !== null).length;
-  const total = milestones.length;
-  const percentage = total === 0 ? null : Math.round((completed / total) * 100);
+
+  const total = milestoneSummary?.total ?? 0;
+  const completed = milestoneSummary?.completed ?? 0;
+  const percentage =
+    total === 0 ? null : Math.round((completed / total) * 100);
 
   return (
     <Link
@@ -93,7 +111,9 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
             <span className="truncate font-[Archivo] text-[14.5px] font-bold text-[var(--color-text-primary)]">
               {project.name}
             </span>
-            <Badge tone={getProjectStatusTone(project.status)}>{formatProjectStatus(project.status)}</Badge>
+            <Badge tone={getProjectStatusTone(project.status)}>
+              {formatProjectStatus(project.status)}
+            </Badge>
           </div>
 
           <div className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
@@ -105,14 +125,25 @@ function DashboardProjectRow({ project, clientName }: DashboardProjectRowProps) 
 
       <div className="flex shrink-0 items-center gap-3 sm:w-[180px]">
         {percentage === null ? (
-          <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("dashboard.projectHealth.noMilestones")}</span>
+          <span className="text-[11.5px] text-[var(--color-text-muted)]">
+            {t("dashboard.projectHealth.noMilestones")}
+          </span>
         ) : (
           <div className="w-full">
             <div className="mb-1 flex items-center justify-between text-[11px] font-semibold text-[var(--color-text-secondary)]">
-              <span>{t("dashboard.projectHealth.milestones", { completed, total })}</span>
+              <span>
+                {t("dashboard.projectHealth.milestones", {
+                  completed,
+                  total,
+                })}
+              </span>
               <span>{percentage}%</span>
             </div>
-            <ProgressBar value={percentage} tone={percentage === 100 ? "green" : "gold"} size="sm" />
+            <ProgressBar
+              value={percentage}
+              tone={percentage === 100 ? "green" : "gold"}
+              size="sm"
+            />
           </div>
         )}
       </div>

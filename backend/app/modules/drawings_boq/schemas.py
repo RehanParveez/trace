@@ -41,6 +41,10 @@ class BOQVersionResponse(BaseModel):
   status: BOQVersionStatus
   covered_area_sqft: Decimal | None
   export_meta: dict
+  
+class ProjectBOQCountResponse(BaseModel):
+  project_id: UUID
+  latest_boq_item_count: int
 
 class BOQItemResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
-from app.modules.budgets.models import Budget, BudgetCategory
+from app.modules.budgets.models import Budget
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
@@ -45,6 +45,12 @@ class BudgetRepository:
     for category in list(budget.categories):
       await self.session.delete(category)
     await self.session.flush()
+    
+  async def list_by_org(self, organization_id: UUID) -> list[Budget]:
+    result = await self.session.execute(
+      select(Budget).where(Budget.organization_id == organization_id)
+    )
+    return list(result.scalars().all())
   
   async def get_organization_summary(
     self, organization_id: UUID,

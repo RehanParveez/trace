@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.budgets.service import BudgetService
-from app.modules.budgets.schemas import BudgetOrganizationSummaryResponse, BudgetResponse, BudgetSaveRequest
+from app.modules.budgets.schemas import BudgetOrganizationSummaryResponse, BudgetProjectSummaryResponse, BudgetResponse, BudgetSaveRequest
 from uuid import UUID
 from app.modules.identity.models import User
 from fastapi import APIRouter, Depends, Query
@@ -43,3 +43,11 @@ async def save_budget(
     payload = payload.model_copy(update={"project_id": project_id})
   org_id = current_user.active_membership.organization_id
   return await _service(session).save_budget(org_id, payload)
+
+@router.get("/list-by-project", response_model=list[BudgetProjectSummaryResponse])
+async def list_budgets_by_project(
+  current_user: User = Depends(require_permission(PermissionKey.BUDGET_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).list_budgets_by_org(org_id)

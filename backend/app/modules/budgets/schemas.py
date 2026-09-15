@@ -38,3 +38,10 @@ class BudgetOrganizationSummaryResponse(BaseModel):
   total_approved_amount: Decimal
   budget_count: int
   currency: str = "PKR"
+  
+class BudgetProjectSummaryResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  project_id: UUID
+  approved_amount: Decimal
+  currency: str

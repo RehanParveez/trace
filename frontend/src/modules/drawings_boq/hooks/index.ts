@@ -5,5 +5,5 @@ export {
   useExportBOQ, useGenerateLabourItems, useLabourRates,
   useMaterialLibrary, useSuggestItemsFromPdf, useUpdateBOQItem, useUpdateBOQVersion,
   useUpdateLabourRate, useUpdateMaterialLibraryEntry, useUploadDrawing,
-  useViewDrawingFile,
+  useViewDrawingFile, useBOQItemCounts
 } from "./useDrawingsBoq";

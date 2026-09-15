@@ -5,7 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
-  DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest, PDFExtractionResultResponse,
+  DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
+   PDFExtractionResultResponse, ProjectBOQCountResponse
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.identity.enums import PermissionKey
@@ -318,6 +319,21 @@ async def update_labour_rate(
   service = _service(session)
   return await service.update_labour_rate(
     current_user.active_membership.organization_id, rate_id, payload,
+  )
+  
+@router.get(
+  "/boq-item-counts",
+  response_model=list[ProjectBOQCountResponse],
+)
+async def get_boq_item_counts(
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.get_project_boq_counts(
+    current_user.active_membership.organization_id,
   )
 
 @router.post(

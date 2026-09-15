@@ -130,3 +130,9 @@ export interface MilestoneUpdateRequest {
   due_date?: string | null;
   completed_at?: string | null;
 }
+
+export interface ProjectMilestoneSummary {
+  project_id: string;
+  milestone_total: number;
+  milestone_completed: number;
+}
