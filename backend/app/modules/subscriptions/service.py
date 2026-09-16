@@ -14,9 +14,28 @@ from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
+from app.shared.storage import format_bytes
 import logging
 
 logger = logging.getLogger("trace.subscriptions")
+
+BYTE_METRICS = {"storage_bytes"}
+
+METRIC_LABELS = {
+  "storage_bytes": "Storage",
+  "drawings": "Drawings",
+  "projects": "Projects",
+  "ai_requests": "AI requests",
+  "site_photos": "Site photos",
+}
+
+def _metric_label(metric: str) -> str:
+  return METRIC_LABELS.get(metric, metric.replace("_", " ").capitalize())
+
+def _format_quantity(metric: str, value: int | None) -> str:
+  if metric in BYTE_METRICS:
+    return format_bytes(value)
+  return "unlimited" if value is None else str(value)
 
 class SubscriptionService:
   def __init__(self, session: AsyncSession):
@@ -471,8 +490,11 @@ class SubscriptionService:
     )
 
     if current_quantity + quantity > int(limit):
+      remaining = max(int(limit) - current_quantity, 0)
       raise TraceException(
-        f"Usage limit exceeded for '{metric}'.",
+        f"{_metric_label(metric)} limit reached. Your plan allows "
+        f"{_format_quantity(metric, int(limit))} and "
+        f"{_format_quantity(metric, remaining)} is left this period.",
         status_code=402,
         code="USAGE_LIMIT_EXCEEDED",
       )
@@ -483,10 +505,25 @@ class SubscriptionService:
     metric: str,
     quantity: int = 1,
   ) -> UsageCounter:
-    if quantity <= 0:
-      raise ValueError(
-        "Quantity must be greater than zero."
-      )
+    counters = await self.increment_usage_many(
+      organization_id,
+      {metric: quantity},
+    )
+    return counters[metric]
+
+  async def increment_usage_many(
+    self,
+    organization_id: UUID,
+    amounts: dict[str, int],
+  ) -> dict[str, UsageCounter]:
+    if not amounts:
+      return {}
+
+    for metric, quantity in amounts.items():
+      if quantity <= 0:
+        raise ValueError(
+          f"Quantity for '{metric}' must be greater than zero."
+        )
 
     subscription = await self.get_subscription(
       organization_id
@@ -503,59 +540,74 @@ class SubscriptionService:
       )
 
     quotas = subscription.plan.quotas or {}
-    limit = quotas.get(metric)
+    counters: dict[str, UsageCounter] = {}
+    warnings: list[tuple[str, int, int]] = []
 
-    counter = await self.repository.get_usage_counter(
-      organization_id,
-      metric,
-      subscription.current_period_start,
-      subscription.current_period_end,
-    )
+    for metric, quantity in amounts.items():
+      limit = quotas.get(metric)
 
-    if counter is None:
-      counter = UsageCounter(
-        id=uuid4(),
-        organization_id=organization_id,
-        metric=metric,
-        period=UsagePeriod.MONTH,
-        period_start=subscription.current_period_start,
-        period_end=subscription.current_period_end,
-        quantity=0,
+      counter = await self.repository.get_usage_counter(
+        organization_id,
+        metric,
+        subscription.current_period_start,
+        subscription.current_period_end,
       )
 
-      counter = await self.repository.create_usage_counter(
-        counter
-      )
+      if counter is None:
+        counter = UsageCounter(
+          id=uuid4(),
+          organization_id=organization_id,
+          metric=metric,
+          period=UsagePeriod.MONTH,
+          period_start=subscription.current_period_start,
+          period_end=subscription.current_period_end,
+          quantity=0,
+        )
 
-    if limit is not None:
-      if counter.quantity + quantity > int(limit):
+        counter = await self.repository.create_usage_counter(
+          counter
+        )
+
+      if limit is not None and counter.quantity + quantity > int(limit):
         await self.session.rollback()
 
+        remaining = max(int(limit) - counter.quantity, 0)
         raise TraceException(
-          f"Usage limit exceeded for '{metric}'.",
+          f"{_metric_label(metric)} limit reached. Your plan allows "
+          f"{_format_quantity(metric, int(limit))} and "
+          f"{_format_quantity(metric, remaining)} is left this period.",
           status_code=402,
           code="USAGE_LIMIT_EXCEEDED",
         )
 
-    previous_quantity = counter.quantity
-    counter.quantity += quantity
+      previous_quantity = counter.quantity
+      counter.quantity += quantity
+      counters[metric] = counter
+
+      if limit is not None and int(limit) > 0:
+        previous_ratio = previous_quantity / int(limit)
+        new_ratio = counter.quantity / int(limit)
+        if previous_ratio < 0.8 <= new_ratio:
+          warnings.append((metric, counter.quantity, int(limit)))
+
     await self.session.flush()
 
-    if limit is not None:
-      previous_ratio = previous_quantity / int(limit)
-      new_ratio = counter.quantity / int(limit)
-      if previous_ratio < 0.8 <= new_ratio:
-       await self.notifications.notify_by_permission(
+    for metric, used, limit in warnings:
+      await self.notifications.notify_by_permission(
         organization_id,
         str(PermissionKey.ORGANIZATION_MANAGE),
         NotificationType.SUBSCRIPTION_USAGE_WARNING,
-        f"{metric.replace('_', ' ').title()} usage is near your plan limit",
-        body=f"{counter.quantity} of {limit} used this billing period.",
+        f"{_metric_label(metric)} usage is near your plan limit",
+        body=(
+          f"{_format_quantity(metric, used)} of "
+          f"{_format_quantity(metric, limit)} used this billing period."
+        ),
         link_path="/app/subscription",
         commit=False,
       )
+
     await self.session.commit()
-    return counter
+    return counters
 
   @staticmethod
   def _advance_period(value: datetime, interval: BillingInterval) -> datetime:

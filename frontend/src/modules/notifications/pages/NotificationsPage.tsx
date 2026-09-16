@@ -60,7 +60,7 @@ export function NotificationsPage() {
                   if (!notification.is_read) markRead.mutate(notification.id);
                   if (notification.link_path) navigate(notification.link_path);
                 }}
-                className={`flex w-full items-start gap-3.5 p-4 text-left transition hover:bg-[var(--color-surface trans-muted)] ${notification.is_read ? "" : "bg-[var(--color-warning-bg)]"}`}
+                className={`flex w-full items-start gap-3.5 p-4 text-left transition hover:bg-[var(--color-surface-muted)] ${notification.is_read ? "" : "bg-[var(--color-warning-bg)]"}`}
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[9px] bg-[var(--color-warning-bg)] text-[var(--color-warning)]">
                   <Icon name={getNotificationIcon(notification.type)} size={15} />

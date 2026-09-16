@@ -59,7 +59,7 @@ export function NotificationBell() {
                  {t("notifications.bell.markAllRead")}
                </button>
             ) : null}
-</div>
+          </div>
 
           <div className="max-h-[380px] overflow-y-auto">
             {notifications.length === 0 ? (
@@ -85,6 +85,17 @@ export function NotificationBell() {
               ))
             )}
           </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate("/app/notifications");
+            }}
+            className="block w-full border-t border-[var(--color-border)] px-4 py-2.5 text-center text-[12.5px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline"
+          >
+            {t("notifications.bell.viewAll")}
+          </button>
         </div>
       ) : null}
     </div>

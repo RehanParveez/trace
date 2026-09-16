@@ -8,19 +8,25 @@ import { MobileNavDrawer } from "./MobileNavDrawer";
 import { CommandPalette } from "./CommandPalette";
 import { useTranslation } from "react-i18next";
 import type { OrganizationIconName } from "../types/organization.types";
-import { NotificationBell } from "../../notifications";
+import { NotificationBell, useUnreadCount } from "../../notifications";
 import { LanguageSwitcher } from "../../../shared/components/LanguageSwitcher";
 import { IDENTITY_PERMISSIONS, useAuthStore, usePermissionKeys } from "../../identity";
 import { useOrganization, useInvitations } from "../hooks";
 import { getInvitationStatus } from "../utils/organization.utils";
 
-function buildWorkspaceNav(t: (key: string) => string): NavItem[] {
+function buildWorkspaceNav(t: (key: string) => string, unreadCount?: number): NavItem[] {
   return [
     {
       label: t("nav.overview"),
       to: "/app/organization",
       icon: "dashboard",
       exact: true,
+    },
+    {
+      label: t("nav.notifications"),
+      to: "/app/notifications",
+      icon: "mail",
+      badge: unreadCount,
     },
   ];
 }
@@ -156,6 +162,7 @@ export function OrganizationShell({
   );
 
   const organizationQuery = useOrganization();
+  const unreadCountQuery = useUnreadCount();
   const invitationsQuery = useInvitations(0, 100, {
     enabled: canManageMembers,
   });
@@ -169,7 +176,7 @@ export function OrganizationShell({
       ).length
     : undefined;
 
-  const workspaceNav = buildWorkspaceNav(t);
+  const workspaceNav = buildWorkspaceNav(t, unreadCountQuery.data?.unread_count);
   const organizationNav = buildOrganizationNav(t, pendingInvitationCount);
   const projectsNav = buildProjectsNav(t);
   const intelligenceNav = buildIntelligenceNav(t, isPlatformAdmin);

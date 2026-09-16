@@ -19,7 +19,7 @@ from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItem
 from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
 from app.shared.idempotency import get_cached_response, store_response
-from app.shared.storage import build_storage_key, download_to_path, upload_fileobj
+from app.shared.storage import MAX_UPLOAD_BYTES, build_storage_key, delete_object, download_to_path, format_bytes, upload_fileobj
 from sqlalchemy import select
 from app.modules.drawings_boq.export import build_boq_pdf, build_boq_xlsx
 from app.modules.drawings_boq.words import rupees_in_words
@@ -126,6 +126,27 @@ class DrawingBOQService:
     await self.subscriptions.check_quota(organization_id, "drawings")
 
     contents = await file.read()
+    file_size_bytes = len(contents)
+
+    if file_size_bytes == 0:
+      raise TraceException(
+        "The uploaded file is empty.",
+        status_code=422,
+        code="EMPTY_UPLOAD",
+      )
+
+    if file_size_bytes > MAX_UPLOAD_BYTES:
+      raise TraceException(
+        f"File is too large. The maximum upload size is "
+        f"{format_bytes(MAX_UPLOAD_BYTES)}.",
+        status_code=413,
+        code="FILE_TOO_LARGE",
+      )
+
+    await self.subscriptions.check_quota(
+      organization_id, "storage_bytes", file_size_bytes
+    )
+
     storage_key = build_storage_key(
       organization_id, project_id, file.filename or f"drawing{suffix}"
     )
@@ -145,12 +166,20 @@ class DrawingBOQService:
       storage_key=storage_key,
       format=drawing_format,
       status=DrawingStatus.UPLOADED if is_auto_parsed else DrawingStatus.PARSED,
-      file_size_bytes=len(contents),
+      file_size_bytes=file_size_bytes,
       parsed_at=None if is_auto_parsed else now,
     )
 
     drawing = await self.drawings.create(drawing)
-    await self.subscriptions.increment_usage(organization_id, "drawings")
+    try:
+      await self.subscriptions.increment_usage_many(
+        organization_id,
+        {"drawings": 1, "storage_bytes": file_size_bytes},
+      )
+    except Exception:
+      await asyncio.to_thread(delete_object, storage_key)
+      raise
+
     await self.session.commit()
     
     await self.audit.log(

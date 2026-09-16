@@ -73,7 +73,7 @@ export interface SearchDestination {
 }
 
 export const NAV_SEARCH_DESTINATIONS: SearchDestination[] = [
-  { label: "Overview", to: "/app/organization", icon: "dashboard", group: "Workspace" },
+  { label: "Notifications", to: "/app/notifications", icon: "mail", group: "Workspace" },
   { label: "Settings", to: "/app/organization/settings", icon: "settings", group: "Organization" },
   { label: "Members", to: "/app/organization/members", icon: "users", group: "Organization" },
   { label: "Roles & access", to: "/app/organization/roles", icon: "shield", group: "Organization" },

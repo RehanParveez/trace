@@ -18,7 +18,7 @@ from app.modules.subscriptions.service import SubscriptionService
 from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
 from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository
 from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, PhotoTagResponse
-from app.shared.storage import build_site_photo_storage_key, generate_presigned_url, upload_fileobj
+from app.shared.storage import build_site_photo_storage_key, delete_object, generate_presigned_url, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
@@ -347,9 +347,20 @@ class WhatsAppService:
       await self.session.commit()
       return
 
+    existing_photo = await self.photos.get_by_whatsapp_message_id(message.id)
+    if existing_photo is not None:
+      message.status = WhatsAppMessageStatus.PROCESSED
+      message.processed_at = datetime.now(timezone.utc)
+      await self.messages.update(message)
+      await self.session.commit()
+      return
+
     try:
       await self.subscriptions.check_quota(
         message.organization_id, "site_photos"
+      )
+      await self.subscriptions.check_quota(
+        message.organization_id, "storage_bytes", 1
       )
     except TraceException as exc:
       message.status = WhatsAppMessageStatus.FAILED
@@ -372,6 +383,32 @@ class WhatsAppService:
       await self.messages.update(message)
       await self.session.commit()
       return
+
+    photo_size_bytes = len(media_bytes)
+
+    try:
+      await self.subscriptions.check_quota(
+        message.organization_id, "storage_bytes", photo_size_bytes
+      )
+    except TraceException as exc:
+      message.status = WhatsAppMessageStatus.FAILED
+      message.error_message = str(exc)[:2000]
+      await self.messages.update(message)
+      await self.session.commit()
+      await self.notifications.notify_by_permission(
+        message.organization_id,
+        str(PermissionKey.ORGANIZATION_MANAGE),
+        NotificationType.SUBSCRIPTION_USAGE_WARNING,
+        "A site photo was rejected — storage is full",
+        body=(
+          "Incoming WhatsApp photos are being dropped because your plan's "
+          "storage limit is reached. Upgrade or free up space to resume."
+        ),
+        link_path="/app/subscription",
+      )
+      return
+
+    storage_key: str | None = None
 
     try:
       mime_type = mime_type.strip().lower()
@@ -413,15 +450,6 @@ class WhatsAppService:
           project_name_guess,
         )
 
-      existing_photo = await self.photos.get_by_whatsapp_message_id(message.id)
-      if existing_photo is not None:
-       message.status = WhatsAppMessageStatus.PROCESSED
-       message.processed_at = datetime.now(timezone.utc)
-       await self.messages.update(message)
-       await self.session.commit()
-
-       return
-
       photo = SitePhoto(
         id=uuid4(),
         organization_id=message.organization_id,
@@ -436,11 +464,18 @@ class WhatsAppService:
         is_ai_tagged=bool(caption_parsed),
       )
       await self.photos.create(photo)
-      await self.subscriptions.increment_usage(
-        message.organization_id, "site_photos"
+      await self.subscriptions.increment_usage_many(
+        message.organization_id,
+        {"site_photos": 1, "storage_bytes": photo_size_bytes},
       )
     except Exception as exc:
      await self.session.rollback()
+
+     if storage_key is not None:
+       try:
+         await asyncio.to_thread(delete_object, storage_key)
+       except Exception:
+         pass
 
      failed_message = await self.messages.get_by_id(message_id)
      if failed_message is None:

@@ -5,6 +5,18 @@ from app.core.config import settings
 import uuid
 from uuid import UUID
 
+MAX_UPLOAD_BYTES = 200 * 1024 * 1024
+
+def format_bytes(value: int | None) -> str:
+  if value is None:
+    return "unlimited"
+  size = float(value)
+  for unit in ("B", "KB", "MB", "GB"):
+    if size < 1024:
+      return f"{int(size)} B" if unit == "B" else f"{size:.1f} {unit}"
+    size /= 1024
+  return f"{size:.1f} TB"
+
 def get_s3_client():
   scheme = "https" if settings.minio_secure else "http"
   endpoint = f"{scheme}://{settings.minio_endpoint}"
@@ -36,6 +48,10 @@ def upload_fileobj(key: str, fileobj, content_type: str | None = None) -> None:
   client = get_s3_client()
   extra_args = {"ContentType": content_type} if content_type else {}
   client.upload_fileobj(fileobj, settings.minio_bucket, key, ExtraArgs=extra_args)
+
+def delete_object(key: str) -> None:
+  client = get_s3_client()
+  client.delete_object(Bucket=settings.minio_bucket, Key=key)
 
 def download_to_path(key: str, destination_path: str) -> None:
   client = get_s3_client()
