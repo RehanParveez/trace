@@ -9,16 +9,18 @@ import { CurrentPlanCard } from "../components/CurrentPlanCard";
 import { PlanComparison } from "../components/PlanComparison";
 import { SubscriptionHeader } from "../components/SubscriptionHeader";
 import { UsageOverview } from "../components/UsageOverview";
-import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard,
+import {ErrorState, LoadingState, PageHeader, SectionDivider, StatCard, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import {formatBillingInterval, formatDate, formatSubscriptionStatus,
 } from "../utils/subscription.utils";
 import { useTranslation } from "react-i18next";
+import { getApiErrorMessage } from "../../identity/utils/api-error";
 
 export function SubscriptionPage() {
   const { t } = useTranslation();
   const permissions = usePermissionKeys();
+  const { showToast } = useToast();
   const [changePlanOpen, setChangePlanOpen] =
     useState(false);
 
@@ -129,45 +131,67 @@ export function SubscriptionPage() {
   }
 
     function handleChangePlan(
-    planId: string,
-    billingInterval: BillingInterval,
-    idempotencyKey: string,
-  ) {
-    changePlan.mutate(
+     planId: string,
+     billingInterval: BillingInterval,
+     idempotencyKey: string,
+    ) {
+     changePlan.mutate(
       {
-        payload: {
-          plan_id: planId,
-          billing_interval: billingInterval,
-        },
-        idempotencyKey,
+       payload: {
+         plan_id: planId,
+         billing_interval: billingInterval,
+       },
+      idempotencyKey,
       },
       {
-        onSuccess: () => {
-          setChangePlanOpen(false);
-          setSelectedPlan(undefined);
-        },
+       onSuccess: () => {
+         setChangePlanOpen(false);
+         setSelectedPlan(undefined);
+         showToast({
+          tone: "success",
+          title: t("subscription.changePlan.successTitle"),
+        });
       },
-    );
-  }
+      onError: (error) => {
+        showToast({
+          tone: "error",
+          title: t("subscription.changePlan.errorTitle"),
+          description: getApiErrorMessage(error),
+        });
+      },
+    },
+  );
+}
 
-  function handleCancel(
-    cancelAtPeriodEnd: boolean,
-    idempotencyKey: string,
-  ) {
-    cancelSubscription.mutate(
-      {
-        payload: {
-          cancel_at_period_end: cancelAtPeriodEnd,
-        },
-        idempotencyKey,
+    function handleCancel(
+     cancelAtPeriodEnd: boolean,
+     idempotencyKey: string,
+    ) {
+     cancelSubscription.mutate(
+    {
+      payload: {
+        cancel_at_period_end: cancelAtPeriodEnd,
       },
-      {
-        onSuccess: () => {
-          setCancelOpen(false);
-        },
+      idempotencyKey,
+    },
+    {
+      onSuccess: () => {
+        setCancelOpen(false);
+        showToast({
+          tone: "success",
+          title: t("subscription.cancel.successTitle"),
+        });
       },
-    );
-  }
+      onError: (error) => {
+        showToast({
+          tone: "error",
+          title: t("subscription.cancel.errorTitle"),
+          description: getApiErrorMessage(error),
+        });
+      },
+    },
+  );
+}
 
   return (
     <div className="space-y-7">

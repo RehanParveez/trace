@@ -34,3 +34,8 @@ class ExpenseResponse(BaseModel):
 class ExpenseOrganizationSummaryResponse(BaseModel):
   total_approved_amount: Decimal
   expense_count: int
+  
+class ExpenseStatusSummaryResponse(BaseModel):
+  totals: dict[str, Decimal]
+  
+  

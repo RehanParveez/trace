@@ -7,7 +7,7 @@ from app.dependencies.permissions import require_permission
 from app.core.database import get_db
 from app.modules.identity.models import User
 from app.modules.identity.enums import PermissionKey
-from app.modules.expenses.schemas import ExpenseCreateRequest, ExpenseOrganizationSummaryResponse, ExpenseResponse, ExpenseReviewRequest
+from app.modules.expenses.schemas import ExpenseCreateRequest, ExpenseOrganizationSummaryResponse, ExpenseResponse, ExpenseReviewRequest, ExpenseStatusSummaryResponse
 from app.modules.expenses.service import ExpenseService
 
 router = APIRouter(prefix="/expenses", tags=["Expenses"])
@@ -36,6 +36,18 @@ async def get_organization_summary(
 ):
   org_id = current_user.active_membership.organization_id
   return await _service(session).get_organization_summary(org_id)
+
+@router.get("/status-summary", response_model=ExpenseStatusSummaryResponse)
+async def get_status_summary(
+  project_id: UUID | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.EXPENSE_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  totals = await _service(session).get_status_totals(org_id, project_id)
+  return ExpenseStatusSummaryResponse(
+    totals={status.value: total for status, total in totals.items()}
+  )
 
 @router.post("", response_model=ExpenseResponse, status_code=201)
 async def create_expense(

@@ -32,11 +32,22 @@ export interface ProcurementStatusUpdateRequest {
 export interface ProcurementListParams {
   projectId?: string;
   status?: ProcurementStatus;
-  skip?: number;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ProcurementOrganizationSummary {
   total_committed_amount: number | string;
   request_count: number;
+}
+
+export interface ProcurementStatusSummary {
+  counts: Partial<Record<ProcurementStatus, number>>;
+}
+
+export interface ProcurementListResponse {
+  items: ProcurementRequest[];
+  total: number;
+  page: number;
+  page_size: number;
 }

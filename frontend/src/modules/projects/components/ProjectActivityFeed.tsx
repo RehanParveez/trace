@@ -81,7 +81,7 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
       });
     }
 
-    for (const request of procurementQuery.data ?? []) {
+    for (const request of procurementQuery.data?.items ?? []) {
       const procurementMeta: Record<string, { title: string; tone: FeedTone }> = {
         REQUESTED: { title: `Material requested: ${request.material_name}`, tone: "gold" },
         APPROVED: { title: `Procurement approved: ${request.material_name}`, tone: "blue" },
@@ -104,7 +104,7 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
       });
     }
 
-    for (const expense of expensesQuery.data ?? []) {
+    for (const expense of expensesQuery.data?.items ?? []) {
       const expenseMeta: Record<string, { title: string; tone: FeedTone }> = {
         PENDING: { title: `Expense recorded: ${expense.category}`, tone: "gold" },
         APPROVED: { title: `Expense approved: ${expense.category}`, tone: "green" },

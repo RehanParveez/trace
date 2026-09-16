@@ -92,7 +92,7 @@ export function useDashboardAttention(): {
   }
 
   if (canApproveExpenses) {
-    const pendingExpenseCount = (pendingExpensesQuery.data ?? []).length;
+    const pendingExpenseCount = (pendingExpensesQuery.data?.items ?? []).length;
 
     if (pendingExpenseCount > 0) {
       items.push({
@@ -106,7 +106,7 @@ export function useDashboardAttention(): {
   }
 
   if (canManageProcurement) {
-    const pendingProcurementCount = (pendingProcurementQuery.data ?? []).length;
+    const pendingProcurementCount = (pendingProcurementQuery.data?.items ?? []).length;
 
     if (pendingProcurementCount > 0) {
       items.push({

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.procurement.service import ProcurementService
-from app.modules.procurement.schemas import ProcurementCreateRequest, ProcurementOrganizationSummaryResponse, ProcurementResponse, ProcurementStatusUpdateRequest
+from app.modules.procurement.schemas import ProcurementCreateRequest, ProcurementOrganizationSummaryResponse, ProcurementResponse, ProcurementStatusSummaryResponse, ProcurementStatusUpdateRequest
 from app.modules.procurement.models import ProcurementStatus
 from app.modules.identity.models import User
 from app.modules.identity.enums import PermissionKey
@@ -36,6 +36,18 @@ async def get_organization_summary(
 ):
   org_id = current_user.active_membership.organization_id
   return await _service(session).get_organization_summary(org_id)
+
+@router.get("/status-summary", response_model=ProcurementStatusSummaryResponse)
+async def get_status_summary(
+  project_id: UUID | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.PROCUREMENT_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  counts = await _service(session).get_status_counts(org_id, project_id)
+  return ProcurementStatusSummaryResponse(
+    counts={status.value: count for status, count in counts.items()}
+  )
 
 @router.post("/requests", response_model=ProcurementResponse, status_code=201)
 async def create_request(

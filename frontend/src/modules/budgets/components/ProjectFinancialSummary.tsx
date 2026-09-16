@@ -39,8 +39,8 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
     (canViewProcurement && procurementQuery.isLoading);
 
   const budget = budgetQuery.data ?? null;
-  const approvedExpenses = expensesQuery.data ?? [];
-  const procurementRequests = procurementQuery.data ?? [];
+  const approvedExpenses = expensesQuery.data?.items ?? [];
+  const procurementRequests = procurementQuery.data?.items ?? [];
 
   const approvedAmount = budget ? Number(budget.approved_amount) : null;
 

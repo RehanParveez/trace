@@ -7,6 +7,7 @@ export const procurementKeys = {
   all: ["procurement"] as const,
   list: (params: ProcurementListParams) => [...procurementKeys.all, "list", params] as const,
   organizationSummary: () => [...procurementKeys.all, "organization-summary"] as const,
+  statusSummary: (projectId?: string) => [...procurementKeys.all, "status-summary", projectId] as const,  // ← ADD this line
 };
 
 export function useProcurementRequests(params: ProcurementListParams = {}, options?: { enabled?: boolean }) {
@@ -20,7 +21,7 @@ export function useProcurementRequests(params: ProcurementListParams = {}, optio
 function invalidateProcurementLists(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({
     queryKey: procurementKeys.all,
-    predicate: (query) => query.queryKey[1] === "list",
+    predicate: (query) => query.queryKey[1] === "list" || query.queryKey[1] === "status-summary",
   });
 }
 
@@ -48,5 +49,12 @@ export function useProcurementOrganizationSummary(options?: { enabled?: boolean 
     queryKey: procurementKeys.organizationSummary(),
     queryFn: procurementApi.getOrganizationSummary,
     enabled: options?.enabled,
+  });
+}
+
+export function useProcurementStatusSummary(projectId?: string) {
+  return useQuery({
+    queryKey: procurementKeys.statusSummary(projectId),
+    queryFn: () => procurementApi.getStatusSummary({ projectId }),
   });
 }

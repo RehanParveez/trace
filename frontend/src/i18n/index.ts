@@ -431,6 +431,10 @@ const resources = {
       "subscription.admin.list.next": "Next",
       "subscription.admin.list.provider": "Provider: {{provider}}",
       "subscription.quota.viewPlans": "View plans and upgrade",
+      "subscription.changePlan.successTitle": "Plan updated",
+      "subscription.changePlan.errorTitle": "Couldn't change plan",
+      "subscription.cancel.successTitle": "Subscription updated",
+      "subscription.cancel.errorTitle": "Couldn't cancel subscription",
 
 
       "stat.heading": "One connected operational chain.",
@@ -1920,6 +1924,11 @@ const resources = {
       "subscription.admin.list.next": "اگلا",
       "subscription.admin.list.provider": "پرووائیڈر: {{provider}}",
       "subscription.quota.viewPlans": "پلانز دیکھیں اور اپ گریڈ کریں",
+
+      "subscription.changePlan.successTitle": "پلان اپ ڈیٹ ہو گیا",
+      "subscription.changePlan.errorTitle": "پلان تبدیل نہیں ہو سکا",
+      "subscription.cancel.successTitle": "سبسکرپشن اپ ڈیٹ ہو گئی",
+      "subscription.cancel.errorTitle": "سبسکرپشن منسوخ نہیں ہو سکی",
       
       "stat.heading": "ایک جڑی ہوئی آپریشنل چین۔",
       "stat.description": "منظور شدہ بی او کیو اور بجٹ سے لے کر سائٹ کی پیش رفت، خریداری، ترسیل، اخراجات اور پراجیکٹ لاگت کی مکمل نظر تک۔",

@@ -6,6 +6,7 @@ export const expenseKeys = {
   all: ["expenses"] as const,
   list: (params: ExpenseListParams) => [...expenseKeys.all, "list", params] as const,
   organizationSummary: () => [...expenseKeys.all, "organization-summary"] as const,
+  statusSummary: (projectId?: string) => [...expenseKeys.all, "status-summary", projectId] as const,
 };
 
 export function useExpenses(params: ExpenseListParams = {}, options?: { enabled?: boolean }) {
@@ -19,7 +20,7 @@ export function useExpenses(params: ExpenseListParams = {}, options?: { enabled?
 function invalidateExpenseLists(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({
     queryKey: expenseKeys.all,
-    predicate: (query) => query.queryKey[1] === "list",
+    predicate: (query) => query.queryKey[1] === "list" || query.queryKey[1] === "status-summary",
   });
 }
 
@@ -57,5 +58,12 @@ export function useExpenseOrganizationSummary(options?: { enabled?: boolean }) {
     queryKey: expenseKeys.organizationSummary(),
     queryFn: expensesApi.getOrganizationSummary,
     enabled: options?.enabled,
+  });
+}
+
+export function useExpenseStatusSummary(projectId?: string) {
+  return useQuery({
+    queryKey: expenseKeys.statusSummary(projectId),
+    queryFn: () => expensesApi.getStatusSummary({ projectId }),
   });
 }

@@ -6,6 +6,7 @@ from uuid import UUID, uuid4
 from app.modules.expenses.models import Expense, ExpenseStatus
 from app.modules.expenses.schemas import ExpenseCreateRequest, ExpenseReviewRequest
 from app.core.exceptions import TraceException
+from decimal import Decimal
 
 class ExpenseService:
   def __init__(self, session: AsyncSession):
@@ -31,6 +32,16 @@ class ExpenseService:
     self, organization_id: UUID,
   ) -> dict:
     return await self.repo.get_organization_summary(organization_id)
+  
+  async def get_status_totals(
+    self,
+    organization_id: UUID,
+    project_id: UUID | None = None,
+  ) -> dict[ExpenseStatus, Decimal]:
+    
+    if project_id is not None:
+      await self._ensure_project(organization_id, project_id)
+    return await self.repo.get_status_totals(organization_id, project_id)
 
   async def create_expense(
     self,
@@ -107,3 +118,5 @@ class ExpenseService:
       raise TraceException(
         "Project not found.", status_code=404, code="PROJECT_NOT_FOUND",
       )
+      
+  

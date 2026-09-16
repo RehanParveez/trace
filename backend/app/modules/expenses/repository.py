@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.expenses.models import Expense, ExpenseStatus
 from uuid import UUID
 from sqlalchemy import select, func
+from decimal import Decimal
 
 class ExpenseRepository:
   def __init__(self, session: AsyncSession):
@@ -61,3 +62,19 @@ class ExpenseRepository:
       "total_approved_amount": row.total_approved_amount,
       "expense_count": row.expense_count,
     }
+    
+  async def get_status_totals(
+    self,
+    organization_id: UUID,
+    project_id: UUID | None = None,
+  ) -> dict[ExpenseStatus, Decimal]:
+    filters = [Expense.organization_id == organization_id]
+    if project_id is not None:
+      filters.append(Expense.project_id == project_id)
+
+    result = await self.session.execute(
+      select(Expense.status, func.coalesce(func.sum(Expense.amount), 0))
+      .where(*filters)
+      .group_by(Expense.status)
+    )
+    return {status: total for status, total in result.all()}

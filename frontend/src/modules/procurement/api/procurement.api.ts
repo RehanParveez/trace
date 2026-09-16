@@ -1,15 +1,15 @@
 import { apiClient } from "../../../shared/api/client";
-import type {ProcurementCreateRequest, ProcurementListParams, ProcurementOrganizationSummary, ProcurementRequest, ProcurementStatusUpdateRequest,
+import type {ProcurementCreateRequest, ProcurementListParams, ProcurementOrganizationSummary, ProcurementRequest, ProcurementStatusUpdateRequest, ProcurementStatusSummary, ProcurementListResponse,
 } from "../types/procurement.types";
 
 export const procurementApi = {
-  async listRequests(params: ProcurementListParams = {}): Promise<ProcurementRequest[]> {
-    const response = await apiClient.get<ProcurementRequest[]>("/procurement/requests", {
+  async listRequests(params: ProcurementListParams = {}): Promise<ProcurementListResponse> {
+    const response = await apiClient.get<ProcurementListResponse>("/procurement/requests", {
       params: {
         project_id: params.projectId,
         status: params.status,
-        skip: params.skip ?? 0,
-        limit: params.limit ?? 100,
+        page: params.page ?? 1,
+        page_size: params.pageSize ?? 20,
       },
     });
 
@@ -30,6 +30,14 @@ export const procurementApi = {
     const response = await apiClient.get<ProcurementOrganizationSummary>(
       "/procurement/organization-summary",
     );
+
+    return response.data;
+  },
+
+  async getStatusSummary(params: { projectId?: string } = {}): Promise<ProcurementStatusSummary> {
+    const response = await apiClient.get<ProcurementStatusSummary>("/procurement/status-summary", {
+      params: { project_id: params.projectId },
+    });
 
     return response.data;
   },

@@ -1,15 +1,15 @@
 import { apiClient } from "../../../shared/api/client";
-import type {Expense, ExpenseCreateRequest, ExpenseListParams, ExpenseOrganizationSummary, ExpenseReviewRequest,
+import type {Expense, ExpenseCreateRequest, ExpenseListParams, ExpenseOrganizationSummary, ExpenseReviewRequest, ExpenseStatusSummary, ExpenseListResponse,
 } from "../types/expense.types";
 
 export const expensesApi = {
-  async listExpenses(params: ExpenseListParams = {}): Promise<Expense[]> {
-    const response = await apiClient.get<Expense[]>("/expenses", {
+  async listExpenses(params: ExpenseListParams = {}): Promise<ExpenseListResponse> {
+    const response = await apiClient.get<ExpenseListResponse>("/expenses", {
       params: {
         project_id: params.projectId,
         status: params.status,
-        skip: params.skip ?? 0,
-        limit: params.limit ?? 100,
+        page: params.page ?? 1,
+        page_size: params.pageSize ?? 20,
       },
     });
 
@@ -35,6 +35,14 @@ export const expensesApi = {
     const response = await apiClient.get<ExpenseOrganizationSummary>(
       "/expenses/organization-summary",
     );
+
+    return response.data;
+  },
+
+  async getStatusSummary(params: { projectId?: string } = {}): Promise<ExpenseStatusSummary> {
+    const response = await apiClient.get<ExpenseStatusSummary>("/expenses/status-summary", {
+      params: { project_id: params.projectId },
+    });
 
     return response.data;
   },

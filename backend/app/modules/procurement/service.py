@@ -99,3 +99,12 @@ class ProcurementService:
       raise TraceException(
         "Project not found.", status_code=404, code="PROJECT_NOT_FOUND",
       )
+  
+  async def get_status_counts(
+    self,
+    organization_id: UUID,
+    project_id: UUID | None = None,
+  ) -> dict[ProcurementStatus, int]:
+    if project_id is not None:
+      await self._ensure_project(organization_id, project_id)
+    return await self.repo.get_status_counts(organization_id, project_id)

@@ -30,11 +30,22 @@ export interface ExpenseReviewRequest {
 export interface ExpenseListParams {
   projectId?: string;
   status?: ExpenseStatus;
-  skip?: number;
-  limit?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface ExpenseOrganizationSummary {
   total_approved_amount: number | string;
   expense_count: number;
+}
+
+export interface ExpenseStatusSummary {
+  totals: Partial<Record<ExpenseStatus, number | string>>;
+}
+
+export interface ExpenseListResponse {
+  items: Expense[];
+  total: number;
+  page: number;
+  page_size: number;
 }

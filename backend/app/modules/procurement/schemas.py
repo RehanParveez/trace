@@ -36,3 +36,6 @@ class ProcurementResponse(BaseModel):
 class ProcurementOrganizationSummaryResponse(BaseModel):
   total_committed_amount: Decimal
   request_count: int
+  
+class ProcurementStatusSummaryResponse(BaseModel):
+  counts: dict[str, int]

@@ -65,3 +65,19 @@ class ProcurementRepository:
       "total_committed_amount": row.total_committed_amount,
       "request_count": row.request_count,
     }
+    
+  async def get_status_counts(
+    self,
+    organization_id: UUID,
+    project_id: UUID | None = None,
+  ) -> dict[ProcurementStatus, int]:
+    filters = [ProcurementRequest.organization_id == organization_id]
+    if project_id is not None:
+      filters.append(ProcurementRequest.project_id == project_id)
+
+    result = await self.session.execute(
+      select(ProcurementRequest.status, func.count(ProcurementRequest.id))
+      .where(*filters)
+      .group_by(ProcurementRequest.status)
+    )
+    return {status: count for status, count in result.all()}
