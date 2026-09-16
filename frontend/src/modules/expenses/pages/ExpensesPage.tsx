@@ -1,22 +1,22 @@
 import { useState } from "react";
-import {ErrorState, Field, inputClass, LoadingState, PageHeader, SectionDivider, StatCard, Pager,
+import {ErrorState, Field, LoadingState, PageHeader, SectionDivider, StatCard, Pager,
 } from "../../organizations/components/OrganizationUi";
-import { useProjects } from "../../projects";
-import { usePermissionKeys } from "../../identity";
-import { EXPENSE_PERMISSIONS } from "../permissions";
+import { useProjects, ProjectCombobox, } from "../../projects";
+import { usePermissionKeys, IDENTITY_PERMISSIONS, } from "../../identity";
 import { useExpenses, useExpenseStatusSummary } from "../hooks";
 import { ExpenseTable } from "../components/ExpenseTable";
 import { ExpenseForm } from "../components/ExpenseForm";
 import { formatExpenseAmount } from "../utils/expense.utils";
 import { useTranslation } from "react-i18next";
 
+
 const EXPENSES_PAGE_SIZE = 20;
 
 export function ExpensesPage() {
   const permissions = usePermissionKeys();
-  const canRead = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_READ);
-  const canCreate = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_CREATE);
-  const canApprove = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_APPROVE);
+  const canRead = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
+  const canCreate = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_CREATE);
+  const canApprove = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_APPROVE);
   const { t } = useTranslation();
 
 
@@ -63,11 +63,14 @@ export function ExpensesPage() {
       ) : (
         <>
           <Field label={t("expenses.page.project")}>
-            <select className={inputClass} value={activeProjectId} onChange={(e) => {setProjectId(e.target.value); setPage(0);}}>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
+            <ProjectCombobox
+              projects={projects}
+              value={activeProjectId}
+              onChange={(nextProjectId) => {
+                setProjectId(nextProjectId);
+                setPage(0);
+              }}
+            />
           </Field>
 
           <section>

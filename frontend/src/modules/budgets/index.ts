@@ -4,6 +4,5 @@ export * from "./components/BudgetOverview";
 export * from "./components/ProjectFinancialSummary";
 export * from "./hooks";
 export * from "./pages/BudgetsPage";
-export * from "./permissions";
 export * from "./types/budget.types";
 export * from "./utils/budget.utils";

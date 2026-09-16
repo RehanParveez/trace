@@ -4,8 +4,8 @@ import { useInvitations } from "./useInvitations";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useProgressClaims, VERIFICATION_PERMISSIONS } from "../../verification";
 import { useSitePhotos } from "../../whatsapp";
-import { EXPENSE_PERMISSIONS, useExpenses } from "../../expenses";
-import { PROCUREMENT_PERMISSIONS, useProcurementRequests } from "../../procurement";
+import { useExpenses } from "../../expenses";
+import { useProcurementRequests } from "../../procurement";
 import { useTranslation } from "react-i18next";
 
 export function useDashboardAttention(): {
@@ -27,10 +27,10 @@ export function useDashboardAttention(): {
   );
 
   const canApproveExpenses = permissions.includes(
-    EXPENSE_PERMISSIONS.EXPENSE_APPROVE,
+    IDENTITY_PERMISSIONS.EXPENSE_APPROVE,
   );
   const canManageProcurement = permissions.includes(
-    PROCUREMENT_PERMISSIONS.PROCUREMENT_MANAGE,
+    IDENTITY_PERMISSIONS.PROCUREMENT_MANAGE,
   );
 
   const invitationsQuery = useInvitations(0, 100, { enabled: canManageMembers });

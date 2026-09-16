@@ -876,6 +876,9 @@ const resources = {
       "projects.members.addedToast": "Member added to project",
       "projects.page.emptyTitle": "No projects yet",
       "projects.page.emptyDesc": "Projects are where budgets, drawings, progress claims and procurement all come together. Create your first one to get started.",
+      "projects.combobox.search": "Search projects…",
+      "projects.combobox.noMatch": "No projects match \"{{query}}\"",
+      "projects.combobox.placeholder": "Select a project",
 
       "budgets.form.updated": "Budget updated",
       "budgets.form.set": "Budget set",
@@ -2359,6 +2362,9 @@ const resources = {
       "projects.page.deleteErrorFallback": "براہ کرم دوبارہ کوشش کریں۔",
       "projects.page.emptyTitle": "ابھی تک کوئی پروجیکٹ نہیں",
       "projects.page.emptyDesc": "پروجیکٹس وہ جگہ ہیں جہاں بجٹ، ڈرائنگز، پروگریس کلیمز اور خریداری سب اکٹھے ہوتے ہیں۔ شروع کرنے کے لیے اپنا پہلا پروجیکٹ بنائیں۔",
+      "projects.combobox.search": "پروجیکٹس تلاش کریں…",
+      "projects.combobox.noMatch": "کوئی پروجیکٹ مماثل نہیں \"{{query}}\"",
+      "projects.combobox.placeholder": "پروجیکٹ منتخب کریں",
 
       "budgets.form.updated": "بجٹ اپ ڈیٹ ہو گیا",
       "budgets.form.set": "بجٹ سیٹ ہو گیا",

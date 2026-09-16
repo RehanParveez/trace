@@ -1,9 +1,8 @@
 import { useState } from "react";
 import {ErrorState, Field, inputClass, LoadingState, PageHeader,
 } from "../../organizations/components/OrganizationUi";
-import { useProjects } from "../../projects";
-import { usePermissionKeys } from "../../identity";
-import { BUDGET_PERMISSIONS } from "../permissions";
+import { useProjects, ProjectCombobox, } from "../../projects";
+import { usePermissionKeys, IDENTITY_PERMISSIONS } from "../../identity";
 import { useProjectBudget } from "../hooks";
 import { BudgetOverview } from "../components/BudgetOverview";
 import { BudgetForm } from "../components/BudgetForm";
@@ -12,8 +11,8 @@ import { useTranslation } from "react-i18next";
 export function BudgetsPage() {
   const permissions = usePermissionKeys();
   const { t } = useTranslation();
-  const canRead = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
-  const canManage = permissions.includes(BUDGET_PERMISSIONS.BUDGET_MANAGE);
+  const canRead = permissions.includes(IDENTITY_PERMISSIONS.BUDGET_READ);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.BUDGET_MANAGE);
 
   const projectsQuery = useProjects();
   const [projectId, setProjectId] = useState("");
@@ -50,17 +49,11 @@ export function BudgetsPage() {
       ) : (
         <>
           <Field label={t("budgets.page.project")}>
-            <select
-              className={inputClass}
+            <ProjectCombobox
+              projects={projects}
               value={activeProjectId}
-              onChange={(event) => setProjectId(event.target.value)}
-            >
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
-            </select>
+              onChange={setProjectId}
+            />
           </Field>
 
           {budgetQuery.isLoading ? (

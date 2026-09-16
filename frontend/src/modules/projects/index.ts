@@ -11,6 +11,7 @@ export * from "./components/ProjectMemberDialog";
 export * from "./components/ProjectMembers";
 export * from "./components/ProjectStatusBadge";
 export * from "./components/ProjectActivityFeed";
+export * from "./components/ProjectCombobox";
 
 export * from "./hooks";
 

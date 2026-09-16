@@ -5,8 +5,8 @@ import { formatRelativeTime } from "../../organizations/utils/organization.utils
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useSitePhotos } from "../../whatsapp";
 import { VERIFICATION_PERMISSIONS, useProgressClaims, formatClaimPercentage } from "../../verification";
-import { PROCUREMENT_PERMISSIONS, useProcurementRequests } from "../../procurement";
-import { EXPENSE_PERMISSIONS, useExpenses, formatExpenseAmount } from "../../expenses";
+import { useProcurementRequests } from "../../procurement";
+import { useExpenses, formatExpenseAmount } from "../../expenses";
 
 type FeedTone = "green" | "red" | "blue" | "gold" | "slate";
 
@@ -31,8 +31,8 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
 
   const canViewPhotos = permissions.includes(IDENTITY_PERMISSIONS.SITE_PHOTO_READ);
   const canViewClaims = permissions.includes(VERIFICATION_PERMISSIONS.PROGRESS_CLAIM_READ);
-  const canViewProcurement = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_READ);
-  const canViewExpenses = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_READ);
+  const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
+  const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
 
   const photosQuery = useSitePhotos({ projectId }, { enabled: canViewPhotos });
   const claimsQuery = useProgressClaims(projectId, undefined, { enabled: canViewClaims });

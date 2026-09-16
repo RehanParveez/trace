@@ -1,8 +1,7 @@
 import { StatCard } from "../../organizations/components/OrganizationUi";
-import { usePermissionKeys } from "../../identity";
-import { EXPENSE_PERMISSIONS, useExpenses } from "../../expenses";
-import { PROCUREMENT_PERMISSIONS, useProcurementRequests } from "../../procurement";
-import { BUDGET_PERMISSIONS } from "../permissions";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { useExpenses } from "../../expenses";
+import { useProcurementRequests } from "../../procurement";
 import { useProjectBudget } from "../hooks";
 import { formatBudgetAmount } from "../utils/budget.utils";
 import { useTranslation } from "react-i18next";
@@ -15,9 +14,9 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
   const { t } = useTranslation();
   const permissions = usePermissionKeys();
 
-  const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
-  const canViewExpenses = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_READ);
-  const canViewProcurement = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_READ);
+  const canViewBudget = permissions.includes(IDENTITY_PERMISSIONS.BUDGET_READ);
+  const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
+  const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
 
   const budgetQuery = useProjectBudget(canViewBudget ? projectId : undefined);
   const expensesQuery = useExpenses(
@@ -83,7 +82,7 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
         label={t("dashboard.financial.committed")}
         value={
           !canViewProcurement
-            ? "No access"
+            ? t("dashboard.financial.noAccess")
             : isLoadingFinancials
               ? "…"
               : formatBudgetAmount(committedAmount ?? 0, currency)

@@ -10,7 +10,7 @@ import { getApiErrorMessage, IDENTITY_PERMISSIONS, usePermissionKeys } from "../
 import { QuotaLimitNotice, useQuotaStatus } from "../../subscriptions";
 import { AUDIT_PERMISSIONS, useLatestByEntityType } from "../../audit";
 import { useBOQItemCounts } from "../../drawings_boq";
-import { BUDGET_PERMISSIONS, useBudgetsByOrg } from "../../budgets";
+import { useBudgetsByOrg } from "../../budgets";
 import { ClientTable } from "../components/ClientTable";
 import { ProjectForm } from "../components/ProjectForm";
 import { ProjectCard } from "../components/ProjectCard";
@@ -37,7 +37,7 @@ export function ProjectsPage() {
   const canDelete = permissions.includes(IDENTITY_PERMISSIONS.PROJECT_DELETE);
   const canViewBoq = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
   const canViewActivity = permissions.includes(AUDIT_PERMISSIONS.AUDIT_LOG_READ);
-  const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
+  const canViewBudget = permissions.includes(IDENTITY_PERMISSIONS.BUDGET_READ);
 
   const milestonesSummaryQuery = useMilestonesSummary({ enabled: canRead });
   const boqCountsQuery = useBOQItemCounts({ enabled: canViewBoq });

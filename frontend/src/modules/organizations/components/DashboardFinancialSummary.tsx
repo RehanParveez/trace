@@ -1,17 +1,17 @@
 import { StatCard } from "./OrganizationUi";
-import { usePermissionKeys } from "../../identity";
-import { BUDGET_PERMISSIONS, formatBudgetAmount, useBudgetOrganizationSummary } from "../../budgets";
-import { EXPENSE_PERMISSIONS, useExpenseOrganizationSummary } from "../../expenses";
-import { PROCUREMENT_PERMISSIONS, useProcurementOrganizationSummary } from "../../procurement";
+import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
+import { formatBudgetAmount, useBudgetOrganizationSummary } from "../../budgets";
+import { useExpenseOrganizationSummary } from "../../expenses";
+import { useProcurementOrganizationSummary } from "../../procurement";
 import { useTranslation } from "react-i18next";
 
 export function DashboardFinancialSummary() {
   const { t } = useTranslation();
   const permissions = usePermissionKeys();
 
-  const canViewBudget = permissions.includes(BUDGET_PERMISSIONS.BUDGET_READ);
-  const canViewExpenses = permissions.includes(EXPENSE_PERMISSIONS.EXPENSE_READ);
-  const canViewProcurement = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_READ);
+  const canViewBudget = permissions.includes(IDENTITY_PERMISSIONS.BUDGET_READ);
+  const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
+  const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
 
   const budgetSummaryQuery = useBudgetOrganizationSummary({ enabled: canViewBudget });
   const expenseSummaryQuery = useExpenseOrganizationSummary({ enabled: canViewExpenses });

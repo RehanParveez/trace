@@ -1,9 +1,8 @@
 import { useState } from "react";
 import {ErrorState, Field, inputClass, LoadingState, PageHeader, SectionDivider, StatCard,
 } from "../../organizations/components/OrganizationUi";
-import { useProjects } from "../../projects";
-import { usePermissionKeys } from "../../identity";
-import { SITE_PROGRESS_PERMISSIONS } from "../permissions";
+import { useProjects, ProjectCombobox } from "../../projects";
+import { usePermissionKeys, IDENTITY_PERMISSIONS } from "../../identity";
 import { useSiteLogs } from "../hooks";
 import { SiteLogTable } from "../components/SiteLogTable";
 import { SiteLogForm } from "../components/SiteLogForm";
@@ -11,10 +10,10 @@ import { useTranslation } from "react-i18next";
 
 export function SiteProgressPage() {
   const permissions = usePermissionKeys();
-  const canRead = permissions.includes(SITE_PROGRESS_PERMISSIONS.SITE_LOG_READ);
   const { t } = useTranslation();
-  const canCreate = permissions.includes(SITE_PROGRESS_PERMISSIONS.SITE_LOG_CREATE);
-  const canManage = permissions.includes(SITE_PROGRESS_PERMISSIONS.SITE_LOG_MANAGE);
+  const canRead = permissions.includes(IDENTITY_PERMISSIONS.SITE_LOG_READ);
+  const canCreate = permissions.includes(IDENTITY_PERMISSIONS.SITE_LOG_CREATE);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.SITE_LOG_MANAGE);
 
   const projectsQuery = useProjects();
   const [projectId, setProjectId] = useState("");
@@ -49,11 +48,11 @@ export function SiteProgressPage() {
       ) : (
         <>
           <Field label={t("siteProgress.page.project")}>
-            <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
+            <ProjectCombobox
+              projects={projects}
+              value={activeProjectId}
+              onChange={setProjectId}
+            />
           </Field>
 
           <section>

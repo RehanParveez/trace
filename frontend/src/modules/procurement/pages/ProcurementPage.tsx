@@ -1,9 +1,8 @@
 import { useState } from "react";
-import {ErrorState, Field, inputClass, LoadingState, PageHeader, SectionDivider, StatCard, Pager,
+import {ErrorState, Field, LoadingState, PageHeader, SectionDivider, StatCard, Pager,
 } from "../../organizations/components/OrganizationUi";
-import { useProjects } from "../../projects";
-import { usePermissionKeys } from "../../identity";
-import { PROCUREMENT_PERMISSIONS } from "../permissions";
+import { useProjects,  ProjectCombobox, } from "../../projects";
+import { usePermissionKeys, IDENTITY_PERMISSIONS, } from "../../identity";
 import { useProcurementRequests, useProcurementStatusSummary } from "../hooks";
 import { ProcurementTable } from "../components/ProcurementTable";
 import { ProcurementForm } from "../components/ProcurementForm";
@@ -13,9 +12,9 @@ const PROCUREMENT_PAGE_SIZE = 20;
 
 export function ProcurementPage() {
   const permissions = usePermissionKeys();
-  const canRead = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_READ);
-  const canCreate = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_CREATE);
-  const canManage = permissions.includes(PROCUREMENT_PERMISSIONS.PROCUREMENT_MANAGE);
+  const canRead = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
+  const canCreate = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_CREATE);
+  const canManage = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_MANAGE);
 
   const projectsQuery = useProjects();
   const { t } = useTranslation();
@@ -63,11 +62,14 @@ export function ProcurementPage() {
       ) : (
         <>
           <Field label={t("procurement.page.project")}>
-            <select className={inputClass} value={activeProjectId} onChange={(e) => {setProjectId(e.target.value); setPage(0);}}>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>{project.name}</option>
-              ))}
-            </select>
+            <ProjectCombobox
+              projects={projects}
+              value={activeProjectId}
+              onChange={(nextProjectId) => {
+                setProjectId(nextProjectId);
+                setPage(0);
+              }}
+            />
           </Field>
 
           <section>

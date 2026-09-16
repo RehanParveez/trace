@@ -34,6 +34,17 @@ export const IDENTITY_PERMISSIONS = {
   NOTIFICATION_READ: "notification:read",
   AUDIT_LOG_READ: "audit_log:read",
   AI_REQUEST_READ: "ai_request:read",
+  BUDGET_READ: "budget:read",
+  BUDGET_MANAGE: "budget:manage",
+  EXPENSE_READ: "expense:read",
+  EXPENSE_CREATE: "expense:create",
+  EXPENSE_APPROVE: "expense:approve",
+  PROCUREMENT_READ: "procurement:read",
+  PROCUREMENT_CREATE: "procurement:create",
+  PROCUREMENT_MANAGE: "procurement:manage",
+  SITE_LOG_READ: "site_log:read",
+  SITE_LOG_CREATE: "site_log:create",
+  SITE_LOG_MANAGE: "site_log:manage",
 } as const;
 
 export type IdentityPermission =
@@ -74,4 +85,11 @@ export function hasAllPermissions(
   return permissions.every((permission) =>
     hasPermission(user, permission),
   );
+}
+
+export function hasIdentityPermission(
+  permissions: string[] | undefined,
+  permission: IdentityPermission,
+): boolean {
+  return permissions?.includes(permission) ?? false;
 }
