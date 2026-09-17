@@ -20,6 +20,7 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.models import NotificationType
 from app.modules.audit.service import AuditLogService
+from app.modules.budgets.repository import BudgetRepository
 
 SLUG_PATTERN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -31,6 +32,7 @@ class OrganizationService:
     self.email_service = email_service or EmailService()
     self.notifications = NotificationService(session)
     self.audit = AuditLogService(session)
+    self.budgets = BudgetRepository(session)
 
   async def get_organization(self, organization_id: UUID) -> Organization:
     organization = await self.repository.get_organization(organization_id)
@@ -70,23 +72,34 @@ class OrganizationService:
           code="ORGANIZATION_SLUG_ALREADY_EXISTS",
         )
       organization.slug = slug
-    if payload.ai_enabled is not None:
-      organization.ai_enabled = payload.ai_enabled
+      
+      if payload.ai_enabled is not None:
+       organization.ai_enabled = payload.ai_enabled
+
+    if payload.currency is not None and payload.currency != organization.currency:
+      existing_budgets = await self.budgets.list_by_org(organization_id)
+      if existing_budgets:
+        raise TraceException(
+          "Cannot change operating currency while budgets already exist.",
+          status_code=409,
+          code="ORGANIZATION_CURRENCY_LOCKED",
+        )
+      organization.currency = payload.currency
 
     try:
-      await self.repository.update_organization(organization)
-      await self.session.commit()
+     await self.repository.update_organization(organization)
+     await self.session.commit()
     except IntegrityError as exc:
-      await self.session.rollback()
-      raise TraceException(
-        "Unable to update organization.",
-        status_code=409,
-        code="ORGANIZATION_UPDATE_CONFLICT",
-      ) from exc
+     await self.session.rollback()
+     raise TraceException(
+      "Unable to update organization.",
+      status_code=409,
+      code="ORGANIZATION_UPDATE_CONFLICT",
+    ) from exc
 
     await self.audit.log(
       organization_id,
-      None,
+      actor_user_id,
       AuditEntityType.ORGANIZATION,
       organization_id,
       AuditAction.UPDATE,

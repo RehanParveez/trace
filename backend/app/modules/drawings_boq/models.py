@@ -477,3 +477,10 @@ class MaterialNormalizationCache(Base, TimestampMixin):
     nullable=False,
     default="dictionary",
   )
+  
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=True,          
+    index=True,
+  )

@@ -101,12 +101,14 @@ class PhotoBOQLinkRepository:
 
   async def get_existing(
     self,
+    organization_id: UUID,
     progress_claim_id: UUID,
     site_photo_id: UUID,
     boq_item_id: UUID,
   ) -> PhotoBOQLink | None:
     result = await self.session.execute(
       select(PhotoBOQLink).where(
+        PhotoBOQLink.organization_id == organization_id,
         PhotoBOQLink.progress_claim_id == progress_claim_id,
         PhotoBOQLink.site_photo_id == site_photo_id,
         PhotoBOQLink.boq_item_id == boq_item_id,

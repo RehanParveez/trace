@@ -233,7 +233,7 @@ async def revoke_invitation(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  await service.revoke_invitation(current_user.organization_id, invitation_id, actor_user_id=current_user.id)
+  await service.revoke_invitation(current_user.active_membership.organization_id, invitation_id, actor_user_id=current_user.id)
 
 @router.post(
   "/invitations/accept",

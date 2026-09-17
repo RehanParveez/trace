@@ -12,6 +12,7 @@ from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse
 )
 from app.modules.whatsapp.service import WhatsAppService
 from datetime import date
+from app.dependencies.rate_limit import rate_limit_webhook
 
 router = APIRouter(
   prefix="/whatsapp",
@@ -35,6 +36,7 @@ async def verify_webhook(
 async def receive_webhook(
   request: Request,
   session: AsyncSession = Depends(get_db),
+  _rate_limit: None = Depends(rate_limit_webhook()),
 ):
   raw_body = await request.body()
   signature = request.headers.get("X-Hub-Signature-256")
@@ -221,3 +223,4 @@ async def remove_tag(
     tag_id,
     current_user.id,
   )
+  

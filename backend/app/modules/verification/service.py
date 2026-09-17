@@ -415,6 +415,7 @@ class VerificationService:
     )
 
    existing = await self.photo_boq_links.get_existing(
+    organization_id, 
     claim.id,
     payload.site_photo_id,
     payload.boq_item_id,

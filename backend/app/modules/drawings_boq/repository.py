@@ -65,15 +65,19 @@ class DrawingElementRepository:
     return elements
 
   async def list_by_drawing(
-    self,
-    drawing_id: UUID,
+   self,
+   drawing_id: UUID,
+   organization_id: UUID,
   ) -> list[DrawingElement]:
-    result = await self.session.execute(
-      select(DrawingElement)
-      .where(DrawingElement.drawing_id == drawing_id)
-      .order_by(DrawingElement.ifc_type.asc())
+   result = await self.session.execute(
+    select(DrawingElement)
+    .where(
+      DrawingElement.drawing_id == drawing_id,
+      DrawingElement.organization_id == organization_id,
     )
-    return list(result.scalars().all())
+    .order_by(DrawingElement.ifc_type.asc())
+  )
+   return list(result.scalars().all())
 
 class BOQVersionRepository:
   def __init__(self, session: AsyncSession):
@@ -167,10 +171,13 @@ class BOQItemRepository:
   async def list_by_version(
     self,
     boq_version_id: UUID,
+    organization_id: UUID,
   ) -> list[BOQItem]:
     result = await self.session.execute(
       select(BOQItem)
-      .where(BOQItem.boq_version_id == boq_version_id)
+      .where(BOQItem.boq_version_id == boq_version_id,
+        BOQItem.organization_id == organization_id,
+      )
       .order_by(BOQItem.material_name.asc())
     )
     return list(result.scalars().all())
@@ -241,12 +248,16 @@ class MaterialNormalizationCacheRepository:
   async def get_by_hash(
     self,
     input_hash: str,
+    organization_id: UUID | None = None, 
   ) -> MaterialNormalizationCache | None:
-    result = await self.session.execute(
-      select(MaterialNormalizationCache).where(
-        MaterialNormalizationCache.input_hash == input_hash
-      )
-    )
+    stmt = select(MaterialNormalizationCache).where(
+    MaterialNormalizationCache.input_hash == input_hash
+  )
+    if organization_id is not None:
+     stmt = stmt.where(
+       MaterialNormalizationCache.organization_id == organization_id
+     )
+    result = await self.session.execute(stmt)
     return result.scalar_one_or_none()
 
   async def create(

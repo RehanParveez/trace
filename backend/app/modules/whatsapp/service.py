@@ -477,7 +477,7 @@ class WhatsAppService:
        except Exception:
          pass
 
-     failed_message = await self.messages.get_by_id(message_id)
+     failed_message = await self.messages.get_by_id(message_id, message.organization_id)
      if failed_message is None:
         return
 
@@ -746,6 +746,7 @@ class WhatsAppService:
 
     tag = PhotoTag(
       id=uuid4(),
+      organization_id=organization_id,
       site_photo_id=photo.id,
       tag=tag_value,
       source=PhotoTagSource.MANUAL,

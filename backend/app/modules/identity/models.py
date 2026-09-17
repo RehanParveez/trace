@@ -84,6 +84,12 @@ class Organization(TimestampMixin, Base):
     cascade="all, delete-orphan",
     )
   
+  currency: Mapped[str] = mapped_column(
+    String(3), nullable=False,
+    default="PKR", 
+    server_default="PKR",
+  )
+  
 class OrganizationInvitation(TimestampMixin, Base):
   __tablename__ = "organization_invitations"
 

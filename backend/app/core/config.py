@@ -1,6 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
   app_name: str = "Trace"
@@ -10,6 +9,7 @@ class Settings(BaseSettings):
   backend_host: str = "0.0.0.0"
   backend_port: int = 8015
   database_url: str
+  migrations_database_url: str
   
   redis_url: str
   celery_broker_url: str
@@ -38,6 +38,8 @@ class Settings(BaseSettings):
   registration_rate_limit_attempts: int = 5
   registration_rate_limit_window_seconds: int = 3600
   rate_limit_auth_per_minute: int = 10
+  rate_limit_ai_per_org_per_minute: int = 20
+  rate_limit_webhook_per_minute: int = 120
   
   email_enabled: bool = False
   smtp_host: str = ""

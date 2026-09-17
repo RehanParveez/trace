@@ -12,6 +12,7 @@ class OrganizationResponse(BaseModel):
   slug: str
   is_active: bool
   ai_enabled: bool
+  currency: str   
   created_at: datetime
   updated_at: datetime
 
@@ -23,6 +24,17 @@ class OrganizationUpdateRequest(BaseModel):
     default=None, min_length=2, max_length=100
   )
   ai_enabled: bool | None = None
+  currency: str | None = Field(default=None, min_length=3, max_length=3)
+  
+  @field_validator("currency")
+  @classmethod
+  def normalize_currency(cls, value: str | None) -> str | None:
+    if value is None:
+      return None
+    value = value.strip().upper()
+    if len(value) != 3 or not value.isalpha():
+      raise ValueError("Currency must be a 3-letter code (e.g. PKR, USD).")
+    return value
 
   @field_validator("name")
   @classmethod

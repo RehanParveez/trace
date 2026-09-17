@@ -82,10 +82,12 @@ class WhatsAppMessageRepository:
   async def get_by_id(
     self,
     message_id: UUID,
+    organization_id: UUID,
   ) -> WhatsAppMessage | None:
     result = await self.session.execute(
       select(WhatsAppMessage).where(
-        WhatsAppMessage.id == message_id
+       WhatsAppMessage.id == message_id,
+       WhatsAppMessage.organization_id == organization_id,
       )
     )
     return result.scalar_one_or_none()
@@ -93,10 +95,13 @@ class WhatsAppMessageRepository:
   async def get_by_id_for_update(
     self,
     message_id: UUID,
+    organization_id: UUID,
   ) -> WhatsAppMessage | None:
    result = await self.session.execute(
     select(WhatsAppMessage)
-    .where(WhatsAppMessage.id == message_id)
+    .where(WhatsAppMessage.id == message_id,
+      WhatsAppMessage.organization_id == organization_id,       
+    )
     .with_for_update()
   )
 
@@ -105,10 +110,12 @@ class WhatsAppMessageRepository:
   async def get_by_prompt_wa_message_id(
     self,
     prompt_wa_message_id: str,
+    organization_id: UUID,
   ) -> WhatsAppMessage | None:
     result = await self.session.execute(
       select(WhatsAppMessage).where(
         WhatsAppMessage.prompt_wa_message_id == prompt_wa_message_id,
+        WhatsAppMessage.organization_id == organization_id,
       )
     )
     return result.scalar_one_or_none()
@@ -151,10 +158,12 @@ class SitePhotoRepository:
   async def get_by_whatsapp_message_id(
     self,
     whatsapp_message_id: UUID,
+    organization_id: UUID,
   ) -> SitePhoto | None:
     result = await self.session.execute(
       select(SitePhoto).where(
         SitePhoto.whatsapp_message_id == whatsapp_message_id,
+        SitePhoto.organization_id == organization_id,
       )
     )
     return result.scalar_one_or_none()

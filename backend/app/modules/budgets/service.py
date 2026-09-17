@@ -8,12 +8,14 @@ from app.core.exceptions import TraceException
 from decimal import Decimal
 from uuid import UUID, uuid4
 from sqlalchemy.exc import IntegrityError
+from app.modules.organizations.repository import OrganizationRepository
 
 class BudgetService:
   def __init__(self, session: AsyncSession):
     self.session = session
     self.repo = BudgetRepository(session)
     self.projects = ProjectRepository(session)
+    self.organizations = OrganizationRepository(session) 
 
   async def list_budgets(
     self, organization_id: UUID, project_id: UUID | None = None,
@@ -28,20 +30,41 @@ class BudgetService:
 
   async def get_organization_summary(
     self, organization_id: UUID,
-  ) -> dict:
-    return await self.repo.get_organization_summary(organization_id)
+) -> dict:
+    organization = await self.organizations.get_organization(organization_id)
+    summary = await self.repo.get_organization_summary(organization_id)
+    summary["currency"] = organization.currency if organization else "PKR"
+    return summary
 
   async def save_budget(
     self, organization_id: UUID, payload: BudgetSaveRequest,
   ) -> Budget:
-    await self._ensure_project(organization_id, payload.project_id)
+    await self._ensure_project(organization_id, payload.project_id) 
 
-    currency = (payload.currency or "PKR").upper().strip()
-    if len(currency) != 3:
-      raise TraceException(
+    organization = await self.organizations.get_organization(organization_id)
+    if organization is None:
+     raise TraceException(
+        "Organization not found.",
+        status_code=404,
+        code="ORGANIZATION_NOT_FOUND",
+    )
+
+    requested_currency = (payload.currency or organization.currency).upper().strip()
+    if len(requested_currency) != 3:
+     raise TraceException(
         "Currency must be a 3-letter code.",
-        status_code=422, code="INVALID_CURRENCY",
-      )
+        status_code=422,
+        code="INVALID_CURRENCY",
+    )
+     
+    if requested_currency != organization.currency:
+     raise TraceException(
+        f"This organization's operating currency is {organization.currency}. "
+        f"Budgets cannot be created in {requested_currency}.",
+        status_code=422,
+        code="CURRENCY_MISMATCH",
+    )
+    currency = organization.currency
 
     budget = await self.repo.get_by_project(payload.project_id, organization_id)
 

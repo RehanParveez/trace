@@ -27,6 +27,11 @@ from app.modules.identity.models import Organization
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from decimal import Decimal
+from app.core.redis import redis_client
+from app.modules.identity.rate_limit import RateLimiter
+from app.core.config import settings
+
+
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
 REFERENCE_ONLY_FORMATS = {".pdf": DrawingFormat.PDF}
@@ -51,6 +56,10 @@ UNSUPPORTED_FORMAT_GUIDANCE = {
   ),
 }
 
+def _looks_like_ifc(contents: bytes) -> bool:
+  header = contents[:200].lstrip(b"\xef\xbb\xbf \t\r\n")
+  return header.startswith(b"ISO-10303-21;")
+
 class DrawingBOQService:
   def __init__(self, session: AsyncSession):
     self.session = session
@@ -64,6 +73,7 @@ class DrawingBOQService:
     self.projects = ProjectRepository(session)
     self.subscriptions = SubscriptionService(session)
     self.audit = AuditLogService(session)
+    self.rate_limiter = RateLimiter(redis_client)
 
   async def _require_project(
     self,
@@ -125,8 +135,27 @@ class DrawingBOQService:
 
     await self.subscriptions.check_quota(organization_id, "drawings")
 
-    contents = await file.read()
-    file_size_bytes = len(contents)
+    CHUNK_SIZE = 1024 * 1024  
+
+    chunks: list[bytes] = []
+    total_size = 0
+
+    while True:
+      chunk = await file.read(CHUNK_SIZE)
+      if not chunk:
+        break
+      total_size += len(chunk)
+      if total_size > MAX_UPLOAD_BYTES:
+        raise TraceException(
+          f"File is too large. The maximum upload size is "
+          f"{format_bytes(MAX_UPLOAD_BYTES)}.",
+          status_code=413,
+          code="FILE_TOO_LARGE",
+        )
+      chunks.append(chunk)
+
+    contents = b"".join(chunks)
+    file_size_bytes = total_size
 
     if file_size_bytes == 0:
       raise TraceException(
@@ -135,12 +164,11 @@ class DrawingBOQService:
         code="EMPTY_UPLOAD",
       )
 
-    if file_size_bytes > MAX_UPLOAD_BYTES:
+    if drawing_format == SUPPORTED_UPLOAD_FORMATS.get(suffix) and not _looks_like_ifc(contents):
       raise TraceException(
-        f"File is too large. The maximum upload size is "
-        f"{format_bytes(MAX_UPLOAD_BYTES)}.",
-        status_code=413,
-        code="FILE_TOO_LARGE",
+        "This file doesn't look like a valid IFC file. It may be corrupted or mislabeled.",
+        status_code=422,
+        code="INVALID_IFC_CONTENT",
       )
 
     await self.subscriptions.check_quota(
@@ -298,6 +326,11 @@ class DrawingBOQService:
         code="DRAWING_NOT_PDF",
       )
     await self.subscriptions.check_quota(organization_id, "ai_requests")
+    await self.rate_limiter.check(
+      key=f"ai_per_org:{organization_id}",
+      limit=settings.rate_limit_ai_per_org_per_minute,
+      window_seconds=60,
+    )
 
     with tempfile.TemporaryDirectory() as tmp_dir:
       local_path = os.path.join(tmp_dir, "drawing.pdf")
@@ -425,7 +458,7 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
       )
-    return await self.boq_items.list_by_version(boq_version_id)
+    return await self.boq_items.list_by_version(boq_version_id, organization_id)
 
   async def update_boq_item(
     self,
@@ -775,7 +808,7 @@ class DrawingBOQService:
         code="NO_LABOUR_RATES",
       )
 
-    existing = await self.boq_items.list_by_version(boq_version_id)
+    existing = await self.boq_items.list_by_version(boq_version_id, organization_id)
     approved_trades = {
       item.material_name for item in existing
       if item.item_type == BOQItemType.LABOUR and item.status == BOQItemStatus.APPROVED
@@ -816,7 +849,7 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
       )
-    items = await self.boq_items.list_by_version(boq_version_id)
+    items = await self.boq_items.list_by_version(boq_version_id, organization_id)
 
     def _total(kind: BOQItemType) -> Decimal:
       return sum(
@@ -870,7 +903,7 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
       )
-    items = await self.boq_items.list_by_version(boq_version_id)
+    items = await self.boq_items.list_by_version(boq_version_id, organization_id)
     organization_name = await self._get_organization_name(organization_id)
     safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     pdf_bytes = build_boq_pdf(version, items, organization_name)
@@ -888,7 +921,7 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
       )
-    items = await self.boq_items.list_by_version(boq_version_id)
+    items = await self.boq_items.list_by_version(boq_version_id, organization_id)
     organization_name = await self._get_organization_name(organization_id)
     safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     xlsx_bytes = build_boq_xlsx(version, items, organization_name)
@@ -904,7 +937,7 @@ class DrawingBOQService:
       normalized_input.encode("utf-8")
     ).hexdigest()
 
-    cached = await self.material_cache.get_by_hash(input_hash)
+    cached = await self.material_cache.get_by_hash(input_hash, organization_id)
     if cached is not None:
       return cached.normalized_name, cached.category, True
 
@@ -915,6 +948,7 @@ class DrawingBOQService:
       await self.material_cache.create(
         MaterialNormalizationCache(
           id=uuid4(),
+          organization_id=organization_id,
           input_hash=input_hash,
           normalized_name=dictionary_entry.normalized_name,
           category=dictionary_entry.category,
@@ -928,6 +962,7 @@ class DrawingBOQService:
 
   async def store_ai_normalization(
     self,
+    organization_id: UUID,
     raw_text: str,
     normalized_name: str,
     category: str | None,
@@ -945,6 +980,7 @@ class DrawingBOQService:
         id=uuid4(),
         input_hash=input_hash,
         normalized_name=normalized_name,
+        organization_id=organization_id,
         category=category,
         source="ai",
       )

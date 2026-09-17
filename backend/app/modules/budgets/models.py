@@ -73,3 +73,9 @@ class BudgetCategory(Base, TimestampMixin):
   budget: Mapped["Budget"] = relationship(
     "Budget", back_populates="categories",
   )
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False, index=True,
+)

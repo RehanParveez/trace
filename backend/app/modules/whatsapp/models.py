@@ -332,3 +332,10 @@ class PhotoTag(Base, TimestampMixin):
     "SitePhoto",
     back_populates="tags",
   )
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
