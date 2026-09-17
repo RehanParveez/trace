@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
-from app.core.redis import IdentityTokenStore, get_redis
+from app.core.redis import get_redis
+from app.modules.identity.token_store import IdentityTokenStore
 from app.dependencies.auth import get_current_user
 from app.modules.identity.models import User
-from app.modules.identity.schemas import ChangePasswordRequest, CurrentUserResponse, ForgotPasswordRequest, LoginRequest, LoginResponse, LogoutRequest, MessageResponse, RefreshRequest, RegisterRequest, RegistrationResponse, ResendVerificationRequest, ResetPasswordRequest, TokenResponse, VerifyEmailRequest
+from app.modules.identity.schemas import (ChangePasswordRequest, CurrentUserResponse, ForgotPasswordRequest, LoginRequest, LoginResponse, LogoutRequest, MessageResponse, RefreshRequest, RegisterRequest, RegistrationResponse, ResendVerificationRequest, ResetPasswordRequest,
+  TokenResponse, VerifyEmailRequest, SwitchOrganizationRequest)
 from app.modules.identity.service import IdentityService
 from fastapi import APIRouter, Depends, Request
 from app.core.config import settings
@@ -266,3 +268,12 @@ async def change_password(
   return MessageResponse(
     message="Password changed successfully."
   )
+  
+@router.post("/switch-organization", response_model=LoginResponse)
+async def switch_organization(
+  payload: SwitchOrganizationRequest,
+  current_user: User = Depends(get_current_user),
+  session: AsyncSession = Depends(get_db),
+):
+  service = IdentityService(session=session, token_store=...)
+  return await service.switch_organization(current_user, payload.organization_id)

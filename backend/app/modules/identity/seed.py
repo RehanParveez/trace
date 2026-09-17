@@ -274,6 +274,7 @@ async def seed_identity() -> None:
 
     if platform_admin is None:
       platform_admin = PlatformAdmin(
+        
         user_id=user.id,
       )
       session.add(platform_admin)

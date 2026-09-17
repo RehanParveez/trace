@@ -87,10 +87,6 @@ apiClient.interceptors.response.use(
         refresh_token: refreshToken,
       })
       .then(({ data }) => {
-        console.log('Refresh response data:', data);
-        console.log('data.access_token:', data.access_token);
-        console.log('data.tokens?.access_token:', data.tokens?.access_token);
-        
         const accessToken = data.access_token || data.tokens?.access_token;
         const refreshToken = data.refresh_token || data.tokens?.refresh_token;
         

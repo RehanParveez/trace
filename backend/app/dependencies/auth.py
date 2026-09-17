@@ -5,7 +5,8 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.exceptions import TraceException
-from app.core.redis import IdentityTokenStore, redis_client
+from app.core.redis import redis_client
+from app.modules.identity.token_store import IdentityTokenStore
 from app.core.security import decode_token
 from app.dependencies.tenancy import scope_session_to_org
 from app.modules.identity.enums import TokenType
@@ -78,6 +79,13 @@ async def get_current_user(
     user_id=user_id,
     organization_id=token_organization_id,
   )
+  
+  if not user.is_verified:
+   raise TraceException(
+     "Please verify your email address before continuing.",
+     status_code=403,
+     code="EMAIL_NOT_VERIFIED",
+   ) 
 
   return user
 

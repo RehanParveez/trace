@@ -223,3 +223,6 @@ class RegistrationResponse(BaseModel):
   user: UserResponse
   verification_required: bool
   message: str
+  
+class SwitchOrganizationRequest(BaseModel):
+  organization_id: UUID

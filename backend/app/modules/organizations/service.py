@@ -73,8 +73,8 @@ class OrganizationService:
         )
       organization.slug = slug
       
-      if payload.ai_enabled is not None:
-       organization.ai_enabled = payload.ai_enabled
+    if payload.ai_enabled is not None:
+      organization.ai_enabled = payload.ai_enabled
 
     if payload.currency is not None and payload.currency != organization.currency:
       existing_budgets = await self.budgets.list_by_org(organization_id)

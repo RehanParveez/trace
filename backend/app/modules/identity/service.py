@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
-from app.core.redis import IdentityTokenStore
+from app.modules.identity.token_store import IdentityTokenStore
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.modules.identity.enums import TokenType
 from app.modules.identity.models import RefreshToken, User, Organization, OrganizationMembership
@@ -140,6 +140,13 @@ class IdentityService:
         "User account is inactive.",
         status_code=403,
         code="USER_INACTIVE",
+      )
+
+    if not user.is_verified:
+      raise TraceException(
+        "Please verify your email address before logging in.",
+        status_code=403,
+        code="EMAIL_NOT_VERIFIED",
       )
 
     if not user.organization.is_active:
@@ -276,7 +283,6 @@ class IdentityService:
       status_code=500,
       code="REGISTRATION_USER_LOAD_FAILED",
     )
-   await SubscriptionService(self.session).create_initial_subscription(organization)
 
    verification_token = await self.create_email_verification_token(user)
    await self.email_service.send(
@@ -296,6 +302,38 @@ class IdentityService:
       "Please verify your email."
     ),
   )
+   
+  async def switch_organization(
+    self,
+    user: User,
+    organization_id: UUID,
+  ) -> LoginResponse:
+    membership = await self.repository.get_membership(
+    user_id=user.id,
+    organization_id=organization_id,
+  )
+
+    if membership is None or not membership.is_active:
+      raise TraceException(
+      "You do not have an active membership in this organization.",
+      status_code=403,
+      code="NO_ACTIVE_MEMBERSHIP",
+    )
+
+    if not membership.organization.is_active:
+      raise TraceException(
+      "Organization is inactive.",
+      status_code=403,
+      code="ORGANIZATION_INACTIVE",
+    )
+
+    tokens = await self.issue_tokens(user, membership)
+    await self.session.commit()
+
+    return LoginResponse(
+      user=await self.build_user_response(user, membership),
+      tokens=tokens,
+    )
 
   async def create_email_verification_token(
     self,
@@ -659,12 +697,16 @@ class IdentityService:
       organization_id=stored_token.organization_id,
     )
 
-    if membership is None or not membership.organization.is_active:
+    if (
+      membership is None
+      or not membership.is_active
+      or not membership.organization.is_active
+    ):
       raise TraceException(
-        "Organization membership is no longer active.",
-        status_code=403,
-        code="ORGANIZATION_MEMBERSHIP_INACTIVE",
-      )
+      "Organization membership is no longer active.",
+      status_code=403,
+      code="ORGANIZATION_MEMBERSHIP_INACTIVE",
+    )
 
     new_access_token = create_access_token(
       subject=str(user.id), organization_id=str(stored_token.organization_id),
@@ -682,25 +724,44 @@ class IdentityService:
     return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token)
   
   async def get_current_user_in_organization(
-    self, user_id: UUID, organization_id: UUID,
+    self,
+    user_id: UUID,
+    organization_id: UUID,
   ) -> User:
     user = await self.repository.get_user_by_id(user_id)
 
     if user is None:
-      raise TraceException("User not found.", status_code=401, code="USER_NOT_FOUND")
+        raise TraceException(
+            "User not found.",
+            status_code=401,
+            code="USER_NOT_FOUND",
+        )
+
     if not user.is_active:
-      raise TraceException("User account is inactive.", status_code=403, code="USER_INACTIVE")
+        raise TraceException(
+            "User account is inactive.",
+            status_code=403,
+            code="USER_INACTIVE",
+        )
 
     membership = await self.repository.get_membership(
-      user_id=user_id, organization_id=organization_id,
+        user_id=user_id,
+        organization_id=organization_id,
     )
 
-    if membership is None:
-      raise TraceException(
-        "Authentication context mismatch.", status_code=401, code="AUTHENTICATION_CONTEXT_MISMATCH",
-      )
+    if membership is None or not membership.is_active:
+        raise TraceException(
+            "No active membership in this organization.",
+            status_code=403,
+            code="NO_ACTIVE_MEMBERSHIP",
+        )
+
     if not membership.organization.is_active:
-      raise TraceException("Organization is inactive.", status_code=403, code="ORGANIZATION_INACTIVE")
+        raise TraceException(
+            "Organization is inactive.",
+            status_code=403,
+            code="ORGANIZATION_INACTIVE",
+        )
 
     user.active_membership = membership
     return user
