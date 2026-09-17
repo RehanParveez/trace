@@ -121,6 +121,13 @@ class AIResponse(Base):
     default=uuid.uuid4,
   )
 
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+
   ai_request_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("ai_requests.id", ondelete="CASCADE"),

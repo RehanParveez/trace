@@ -88,6 +88,7 @@ class AIOrchestratorService:
     await self.responses.create(
       AIResponse(
         id=uuid4(),
+        organization_id=organization_id,
         ai_request_id=ai_request.id,
         status=AIResponseStatus.SUCCEEDED,
         raw_response=raw_response,
@@ -106,6 +107,7 @@ class AIOrchestratorService:
     await self.responses.create(
       AIResponse(
         id=uuid4(),
+        organization_id=organization_id,
         ai_request_id=ai_request.id,
         status=AIResponseStatus.FAILED,
         error_message=str(exc)[:2000],

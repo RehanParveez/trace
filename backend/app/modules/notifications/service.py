@@ -76,25 +76,27 @@ class NotificationService:
   async def list_notifications(
     self,
     user_id: UUID,
+    organization_id: UUID,
     *,
-    organization_id: UUID | None = None,
     unread_only: bool = False,
     skip: int = 0,
     limit: int = 50,
   ) -> list[Notification]:
     return await self.repository.list_by_user(
-      user_id, organization_id=organization_id, unread_only=unread_only, skip=skip, limit=limit,
+      user_id, organization_id, unread_only=unread_only, skip=skip, limit=limit,
     )
 
   async def get_unread_count(
-    self, user_id: UUID, *, organization_id: UUID | None = None
+    self, user_id: UUID, organization_id: UUID,
   ) -> int:
-    return await self.repository.count_unread(user_id, organization_id=organization_id)
+    return await self.repository.count_unread(user_id, organization_id)
 
   async def mark_read(
-    self, user_id: UUID, notification_id: UUID,
+    self, user_id: UUID, notification_id: UUID, organization_id: UUID,
   ) -> Notification:
-    notification = await self.repository.get_by_id_and_user(notification_id, user_id)
+    notification = await self.repository.get_by_id_and_user(
+      notification_id, user_id, organization_id,
+    )
     if notification is None:
       raise TraceException("Notification not found.", status_code=404, code="NOTIFICATION_NOT_FOUND")
     if not notification.is_read:
@@ -104,7 +106,7 @@ class NotificationService:
     return notification
 
   async def mark_all_read(
-    self, user_id: UUID, *, organization_id: UUID | None = None
+    self, user_id: UUID, organization_id: UUID,
   ) -> None:
-    await self.repository.mark_all_read(user_id, datetime.now(timezone.utc), organization_id=organization_id)
+    await self.repository.mark_all_read(user_id, organization_id, datetime.now(timezone.utc))
     await self.session.commit()
