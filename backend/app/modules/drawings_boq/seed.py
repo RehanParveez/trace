@@ -74,23 +74,23 @@ LABOUR_RATE_ENTRIES = [
   },
 ]
 
-PERMISSIONS = [
-  PermissionKey.DRAWING_READ,
-  PermissionKey.DRAWING_CREATE,
-  PermissionKey.DRAWING_DELETE,
-  PermissionKey.BOQ_UPDATE,
-  PermissionKey.BOQ_APPROVE,
-  PermissionKey.BOQ_ITEM_CREATE,
-  PermissionKey.BOQ_EXPORT,
-  PermissionKey.MATERIAL_LIBRARY_MANAGE,
-  PermissionKey.LABOUR_RATE_MANAGE,
-]
+DRAWINGS_BOQ_PERMISSIONS = {
+  PermissionKey.DRAWING_READ: "View drawings and BOQ documents",
+  PermissionKey.DRAWING_CREATE: "Create new drawings and BOQs",
+  PermissionKey.DRAWING_DELETE: "Delete drawings and BOQ documents",
+  PermissionKey.BOQ_UPDATE: "Update BOQ quantities and items",
+  PermissionKey.BOQ_APPROVE: "Approve BOQ submissions",
+  PermissionKey.BOQ_ITEM_CREATE: "Add new items to BOQ",
+  PermissionKey.BOQ_EXPORT: "Export BOQ to external formats",
+  PermissionKey.MATERIAL_LIBRARY_MANAGE: "Manage material library entries",
+  PermissionKey.LABOUR_RATE_MANAGE: "Manage labour rate configurations",
+}
 
 async def seed_permissions(
   session: AsyncSession,
 ) -> dict[PermissionKey, Permission]:
   permissions: dict[PermissionKey, Permission] = {}
-  for key in PERMISSIONS:
+  for key, description in DRAWINGS_BOQ_PERMISSIONS.items(): 
     result = await session.execute(
       select(Permission).where(Permission.key == str(key))
     )
@@ -99,12 +99,12 @@ async def seed_permissions(
       permission = Permission(
         id=uuid4(),
         key=str(key),
-        description=key.value,
+        description=description, 
       )
       session.add(permission)
       await session.flush()
-    permissions[key] = permission
-  return permissions
+      permissions[key] = permission
+    return permissions
 
 async def grant_permissions_to_admin_roles(
   session: AsyncSession,

@@ -438,3 +438,21 @@ async def export_boq_xlsx(
     media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     headers={"Content-Disposition": f'attachment; filename="{filename}"'},
   )
+  
+@router.delete(
+  "/drawings/{drawing_id}",
+  status_code=204,
+)
+async def delete_drawing(
+  drawing_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_DELETE)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  await service.delete_drawing(
+    current_user.active_membership.organization_id,
+    drawing_id,
+    current_user.id,
+  )

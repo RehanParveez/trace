@@ -20,6 +20,10 @@ from app.modules.audit.service import AuditLogService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult
 from app.shared.storage import download_bytes
+import logging
+from app.modules.identity.enums import PermissionKey
+
+logger = logging.getLogger(__name__)
 
 _MIME_BY_EXTENSION = {
   ".jpg": "image/jpeg",
@@ -151,145 +155,155 @@ class VerificationService:
     claim_id: UUID,
     payload: ProgressClaimUpdateRequest,
   ) -> ProgressClaim:
-    claim = await self.get_claim(
-      organization_id,
-      claim_id,
+   claim = await self.claims.get_by_id_and_org_for_update(
+    claim_id,
+    organization_id,
+   )
+   if claim is None:
+    raise TraceException(
+      "Progress claim not found.",
+      status_code=404,
+      code="PROGRESS_CLAIM_NOT_FOUND",
     )
 
-    if claim.status != ProgressClaimStatus.DRAFT:
-      raise TraceException(
-        "Only draft progress claims can be updated.",
-        status_code=409,
-        code="PROGRESS_CLAIM_NOT_DRAFT",
-      )
+   if claim.status != ProgressClaimStatus.DRAFT:
+    raise TraceException(
+      "Only draft progress claims can be updated.",
+      status_code=409,
+      code="PROGRESS_CLAIM_NOT_DRAFT",
+    )
+   if claim.version != payload.version:
+    raise TraceException(
+      "The progress claim was modified by another user.",
+      status_code=409,
+      code="CONCURRENT_MODIFICATION",
+    )
 
-    if claim.version != payload.version:
-      raise TraceException(
-        "The progress claim was modified by another user.",
-        status_code=409,
-        code="CONCURRENT_MODIFICATION",
-      )
+   if payload.claimed_quantity is not None:
+    claim.claimed_quantity = payload.claimed_quantity
+   if payload.claimed_percentage is not None:
+    claim.claimed_percentage = payload.claimed_percentage
+   if payload.claim_date is not None:
+    claim.claim_date = payload.claim_date
+   if payload.notes is not None:
+    claim.notes = payload.notes
 
-    if payload.claimed_quantity is not None:
-      claim.claimed_quantity = payload.claimed_quantity
-
-    if payload.claimed_percentage is not None:
-      claim.claimed_percentage = payload.claimed_percentage
-
-    if payload.claim_date is not None:
-      claim.claim_date = payload.claim_date
-
-    if payload.notes is not None:
-      claim.notes = payload.notes
-
-    claim.version += 1
-
-    await self.claims.update(claim)
-    await self.session.commit()
-    await self.session.refresh(claim)
-
-    return claim
+   claim.version += 1
+   await self.claims.update(claim)
+   await self.session.commit()
+   await self.session.refresh(claim)
+   return claim
 
   async def submit_claim(
-    self,
-    organization_id: UUID,
-    claim_id: UUID,
-    user_id: UUID,
+   self,
+   organization_id: UUID,
+   claim_id: UUID,
+   user_id: UUID,
   ) -> ProgressClaim:
-    claim = await self.get_claim(
-      organization_id,
-      claim_id,
+   claim = await self.claims.get_by_id_and_org_for_update(
+    claim_id,
+    organization_id,
+  )
+   if claim is None:
+    raise TraceException(
+      "Progress claim not found.",
+      status_code=404,
+      code="PROGRESS_CLAIM_NOT_FOUND",
     )
 
-    if claim.status != ProgressClaimStatus.DRAFT:
-      raise TraceException(
-        "Only draft progress claims can be submitted.",
-        status_code=409,
-        code="PROGRESS_CLAIM_NOT_DRAFT",
-      )
-
-    claim.status = ProgressClaimStatus.SUBMITTED
-    claim.submitted_by = user_id
-    claim.submitted_at = datetime.now(timezone.utc)
-    claim.version += 1
-
-    await self.claims.update(claim)
-    await self.session.commit()
-    await self.session.refresh(claim)
-
-    await self.notifications.notify_by_permission(
-     organization_id,
-     "progress_claim:review",
-     NotificationType.PROGRESS_CLAIM_SUBMITTED,
-     "A progress claim was submitted for review",
-     body=f"Claim dated {claim.claim_date.isoformat()} is awaiting review.",
-     link_path=f"/app/projects/{claim.project_id}",
-     exclude_user_id=user_id,
+   if claim.status != ProgressClaimStatus.DRAFT:
+    raise TraceException(
+      "Only draft progress claims can be submitted.",
+      status_code=409,
+      code="PROGRESS_CLAIM_NOT_DRAFT",
     )
 
-    return claim
+   claim.status = ProgressClaimStatus.SUBMITTED
+   claim.submitted_by = user_id
+   claim.submitted_at = datetime.now(timezone.utc)
+   claim.version += 1
+
+   await self.claims.update(claim)
+   await self.session.commit()
+   await self.session.refresh(claim)
+
+   await self.notifications.notify_by_permission(
+    organization_id,
+    str(PermissionKey.PROGRESS_CLAIM_REVIEW),
+    NotificationType.PROGRESS_CLAIM_SUBMITTED,
+    "A progress claim was submitted for review",
+    body=f"Claim dated {claim.claim_date.isoformat()} is awaiting review.",
+    link_path=f"/app/projects/{claim.project_id}",
+    exclude_user_id=user_id,
+  )
+
+   return claim
 
   async def approve_claim(
-    self,
-    organization_id: UUID,
-    claim_id: UUID,
-    user_id: UUID,
-    payload: ProgressClaimReviewRequest,
+   self,
+   organization_id: UUID,
+   claim_id: UUID,
+   user_id: UUID,
+   payload: ProgressClaimReviewRequest,
   ) -> ProgressClaim:
-    claim = await self.get_claim(
-      organization_id,
-      claim_id,
+   claim = await self.claims.get_by_id_and_org_for_update(
+    claim_id,
+    organization_id,
+   )
+   if claim is None:
+    raise TraceException(
+      "Progress claim not found.",
+      status_code=404,
+      code="PROGRESS_CLAIM_NOT_FOUND",
+     )
+
+   if claim.status != ProgressClaimStatus.SUBMITTED:
+    raise TraceException(
+      "Only submitted progress claims can be approved.",
+      status_code=409,
+      code="PROGRESS_CLAIM_NOT_SUBMITTED",
+    )
+   if claim.version != payload.version:
+    raise TraceException(
+      "The progress claim was modified by another user.",
+      status_code=409,
+      code="CONCURRENT_MODIFICATION",
     )
 
-    if claim.status != ProgressClaimStatus.SUBMITTED:
-      raise TraceException(
-        "Only submitted progress claims can be approved.",
-        status_code=409,
-        code="PROGRESS_CLAIM_NOT_SUBMITTED",
-      )
+   claim.status = ProgressClaimStatus.APPROVED
+   claim.reviewed_by = user_id
+   claim.reviewed_at = datetime.now(timezone.utc)
+   claim.review_note = payload.note
+   claim.version += 1
 
-    if claim.version != payload.version:
-      raise TraceException(
-        "The progress claim was modified by another user.",
-        status_code=409,
-        code="CONCURRENT_MODIFICATION",
-      )
-
-    claim.status = ProgressClaimStatus.APPROVED
-    claim.reviewed_by = user_id
-    claim.reviewed_at = datetime.now(timezone.utc)
-    claim.review_note = payload.note
-    claim.version += 1
-
-    await self.claims.update(claim)
-    await self.session.commit()
-    await self.session.refresh(claim)
-
-    await self.audit.log(
+   await self.claims.update(claim)
+   await self.session.commit()
+   await self.session.refresh(claim)
+   await self.audit.log(
+    organization_id,
+    user_id,
+    AuditEntityType.PROGRESS_CLAIM,
+    claim.id,
+    AuditAction.APPROVE,
+    f"Approved progress claim dated {claim.claim_date.isoformat()}",
+    changes={
+      "status": {
+        "old": "SUBMITTED",
+        "new": claim.status.value,
+      }
+    },
+  )
+   if claim.submitted_by is not None:
+    await self.notifications.notify_user(
       organization_id,
-      user_id,
-      AuditEntityType.PROGRESS_CLAIM,
-      claim.id,
-      AuditAction.APPROVE,
-      f"Approved progress claim dated {claim.claim_date.isoformat()}",
-      changes={
-        "status": {
-          "old": "SUBMITTED",
-          "new": claim.status.value,
-        }
-      },
+      claim.submitted_by,
+      NotificationType.PROGRESS_CLAIM_APPROVED,
+      "Your progress claim was approved",
+      body=f"Claim dated {claim.claim_date.isoformat()} was approved.",
+      link_path=f"/app/projects/{claim.project_id}",
     )
-    
-    if claim.submitted_by is not None:
-      await self.notifications.notify_user(
-        organization_id, claim.submitted_by,
-        NotificationType.PROGRESS_CLAIM_APPROVED,
-        "Your progress claim was approved",
-        body=f"Claim dated {claim.claim_date.isoformat()} was approved.",
-        link_path=f"/app/projects/{claim.project_id}",
-      )
 
-    return claim
+   return claim
 
   async def reject_claim(
     self,
@@ -298,60 +312,68 @@ class VerificationService:
     user_id: UUID,
     payload: ProgressClaimReviewRequest,
   ) -> ProgressClaim:
-    claim = await self.get_claim(
-      organization_id,
-      claim_id,
+   claim = await self.claims.get_by_id_and_org_for_update(
+     claim_id,
+     organization_id,
+   )
+   if claim is None:
+    raise TraceException(
+      "Progress claim not found.",
+      status_code=404,
+      code="PROGRESS_CLAIM_NOT_FOUND",
     )
 
-    if claim.status != ProgressClaimStatus.SUBMITTED:
-      raise TraceException(
-        "Only submitted progress claims can be rejected.",
-        status_code=409,
-        code="PROGRESS_CLAIM_NOT_SUBMITTED",
-      )
-
-    if claim.version != payload.version:
-      raise TraceException(
-        "The progress claim was modified by another user.",
-        status_code=409,
-        code="CONCURRENT_MODIFICATION",
-      )
-
-    claim.status = ProgressClaimStatus.REJECTED
-    claim.reviewed_by = user_id
-    claim.reviewed_at = datetime.now(timezone.utc)
-    claim.review_note = payload.note
-    claim.version += 1
-
-    await self.claims.update(claim)
-    await self.session.commit()
-    await self.session.refresh(claim)
-
-    await self.audit.log(
-      organization_id,
-      user_id,
-      AuditEntityType.PROGRESS_CLAIM,
-      claim.id,
-      AuditAction.REJECT,
-      f"Rejected progress claim dated {claim.claim_date.isoformat()}",
-      changes={
-        "status": {
-          "old": "SUBMITTED",
-          "new": claim.status.value,
-        }
-      },
+   if claim.status != ProgressClaimStatus.SUBMITTED:
+    raise TraceException(
+      "Only submitted progress claims can be rejected.",
+      status_code=409,
+      code="PROGRESS_CLAIM_NOT_SUBMITTED",
     )
-    
-    if claim.submitted_by is not None:
-      await self.notifications.notify_user(
-        organization_id, claim.submitted_by,
-        NotificationType.PROGRESS_CLAIM_REJECTED,
-        "Your progress claim was rejected",
-        body=f"Claim dated {claim.claim_date.isoformat()} was rejected." + (f" Note: {payload.note}" if payload.note else ""),
-        link_path=f"/app/projects/{claim.project_id}",
-      )
 
-    return claim
+   if claim.version != payload.version:
+    raise TraceException(
+      "The progress claim was modified by another user.",
+      status_code=409,
+      code="CONCURRENT_MODIFICATION",
+    )
+   claim.status = ProgressClaimStatus.REJECTED
+   claim.reviewed_by = user_id
+   claim.reviewed_at = datetime.now(timezone.utc)
+   claim.review_note = payload.note
+   claim.version += 1
+
+   await self.claims.update(claim)
+   await self.session.commit()
+   await self.session.refresh(claim)
+   await self.audit.log(
+    organization_id,
+    user_id,
+    AuditEntityType.PROGRESS_CLAIM,
+    claim.id,
+    AuditAction.REJECT,
+    f"Rejected progress claim dated {claim.claim_date.isoformat()}",
+    changes={
+      "status": {
+        "old": "SUBMITTED",
+        "new": claim.status.value,
+      }
+    },
+  )
+
+   if claim.submitted_by is not None:
+    await self.notifications.notify_user(
+      organization_id,
+      claim.submitted_by,
+      NotificationType.PROGRESS_CLAIM_REJECTED,
+      "Your progress claim was rejected",
+      body=(
+        f"Claim dated {claim.claim_date.isoformat()} was rejected."
+        + (f" Note: {payload.note}" if payload.note else "")
+      ),
+      link_path=f"/app/projects/{claim.project_id}",
+    )
+
+   return claim
 
   async def list_claims(
     self,
@@ -371,125 +393,139 @@ class VerificationService:
     )
 
   async def create_photo_boq_link(
-   self,
-   organization_id: UUID,
-   user_id: UUID,
-   payload: PhotoBOQLinkCreateRequest,
+    self,
+    organization_id: UUID,
+    user_id: UUID,
+    payload: PhotoBOQLinkCreateRequest,
   ) -> PhotoBOQLink:
-   claim = await self.get_claim(
-    organization_id,
-    payload.progress_claim_id,
-   )
+    claim = await self.get_claim(
+      organization_id,
+      payload.progress_claim_id,
+    )
 
-   if claim.project_id is None:
-    raise TraceException(
-      "Progress claim has no project.",
+    if claim.project_id is None:
+      raise TraceException(
+        "Progress claim has no project.",
+        status_code=409,
+        code="PROGRESS_CLAIM_PROJECT_MISSING",
+      )
+      
+    if claim.status not in (
+      ProgressClaimStatus.DRAFT,
+      ProgressClaimStatus.SUBMITTED,
+    ):
+     raise TraceException(
+       "Photo links can only be added to draft or submitted progress claims.",
       status_code=409,
-      code="PROGRESS_CLAIM_PROJECT_MISSING",
+      code="PROGRESS_CLAIM_NOT_EDITABLE",
+     )
+
+    if claim.boq_item_id != payload.boq_item_id:
+      raise TraceException(
+        "The BOQ item must match the progress claim.",
+        status_code=400,
+        code="BOQ_ITEM_MISMATCH",
+      )
+
+    boq_item = await self._get_boq_item(
+      organization_id,
+      claim.project_id,
+      payload.boq_item_id,
     )
 
-   if claim.boq_item_id != payload.boq_item_id:
-    raise TraceException(
-      "The BOQ item must match the progress claim.",
-      status_code=400,
-      code="BOQ_ITEM_MISMATCH",
+    photo = await self._get_site_photo(
+      organization_id,
+      claim.project_id,
+      payload.site_photo_id,
     )
 
-   boq_item = await self._get_boq_item(    
-    organization_id,
-    claim.project_id,
-    payload.boq_item_id,
-  )
+    if photo.project_id is not None and photo.project_id != claim.project_id:
+      raise TraceException(
+        "Site photo belongs to another project.",
+        status_code=400,
+        code="SITE_PHOTO_PROJECT_MISMATCH",
+      )
 
-   photo = await self._get_site_photo(
-    organization_id,
-    claim.project_id,
-    payload.site_photo_id,
-  )
-
-   if photo.project_id is not None and photo.project_id != claim.project_id:
-    raise TraceException(
-      "Site photo belongs to another project.",
-      status_code=400,
-      code="SITE_PHOTO_PROJECT_MISMATCH",
+    existing = await self.photo_boq_links.get_existing(
+      organization_id,
+      claim.id,
+      payload.site_photo_id,
+      payload.boq_item_id,
     )
 
-   existing = await self.photo_boq_links.get_existing(
-    organization_id, 
-    claim.id,
-    payload.site_photo_id,
-    payload.boq_item_id,
-  )
+    if existing is not None:
+      raise TraceException(
+        "This photo is already linked to this BOQ item for the claim.",
+        status_code=409,
+        code="PHOTO_BOQ_LINK_ALREADY_EXISTS",
+      )
 
-   if existing is not None:
-    raise TraceException(
-      "This photo is already linked to this BOQ item for the claim.",
-      status_code=409,
-      code="PHOTO_BOQ_LINK_ALREADY_EXISTS",
+    prompt = (
+      "You are reviewing a construction site photo submitted as evidence for "
+      "a progress claim. Based on what is visible in the photo, identify "
+      "tags describing the construction work, materials, or stage shown, "
+      "and note whether the photo appears visually consistent with the "
+      "claim below. Respond with strict JSON only, no other text: "
+      '{"tags": [{"tag": "short-label", "confidence": 0.0}], '
+      '"visually_consistent_with_claim": true or false, "notes": "..."}. '
+      f"Claimed BOQ item: {boq_item.material_name}"
+      + (f" ({boq_item.category})" if boq_item.category else "")
+      + f", unit {boq_item.unit}. "
+      f"Claimed quantity: {claim.claimed_quantity} {boq_item.unit} "
+      f"({claim.claimed_percentage}% of total). "
+      f"Claim date: {claim.claim_date.isoformat()}. "
+      f"Photo note (if any): {payload.note or 'none'}."
     )
 
-   prompt = (
-    "You are reviewing a construction site photo submitted as evidence for "
-    "a progress claim. Based on what is visible in the photo, identify "
-    "tags describing the construction work, materials, or stage shown, "
-    "and note whether the photo appears visually consistent with the "
-    "claim below. Respond with strict JSON only, no other text: "
-    '{"tags": [{"tag": "short-label", "confidence": 0.0}], '
-    '"visually_consistent_with_claim": true or false, "notes": "..."}. '
-    f"Claimed BOQ item: {boq_item.material_name}"
-    + (f" ({boq_item.category})" if boq_item.category else "")
-    + f", unit {boq_item.unit}. "
-    f"Claimed quantity: {claim.claimed_quantity} {boq_item.unit} "
-    f"({claim.claimed_percentage}% of total). "
-    f"Claim date: {claim.claim_date.isoformat()}. "
-    f"Photo note (if any): {payload.note or 'none'}."
-  )
-
-   image_bytes: bytes | None = None
-   image_mime_type: str | None = None
-   try:
-    image_bytes = await asyncio.to_thread(download_bytes, photo.storage_key)
-    image_mime_type = _guess_mime_type(photo.storage_key)
-   except Exception as exc:
-    print(">>> PHOTO DOWNLOAD FAILED:", repr(exc), flush=True)
-    image_bytes = None
-    image_mime_type = None
-   
-   print(">>> BEFORE AI TAGGING", flush=True)
-
-   ai_result = await self._run_photo_tagging(
-    organization_id=organization_id,
-    site_photo_id=payload.site_photo_id,
-    user_id=user_id,
-    prompt=prompt,
-    image_bytes=image_bytes,
-    image_mime_type=image_mime_type,
-   )
-   print(">>> AFTER AI TAGGING", flush=True)
-   print(">>> AI RESULT:", ai_result.success, "| error:", ai_result.error_message)
-
-   if ai_result.success and ai_result.parsed_output:
+    image_bytes: bytes | None = None
+    image_mime_type: str | None = None
     try:
-      await self._apply_ai_tags(photo, ai_result.parsed_output)
+      image_bytes = await asyncio.to_thread(download_bytes, photo.storage_key)
+      image_mime_type = _guess_mime_type(photo.storage_key)
     except Exception:
-      pass
+      logger.warning(
+        "Failed to download site photo %s for AI tagging",
+        photo.id,
+        exc_info=True,
+      )
+      image_bytes = None
+      image_mime_type = None
 
-   link = PhotoBOQLink(
-    id=uuid4(),
-    organization_id=organization_id,
-    project_id=claim.project_id,
-    progress_claim_id=claim.id,
-    site_photo_id=payload.site_photo_id,
-    boq_item_id=payload.boq_item_id,
-    note=payload.note,
-    created_by=user_id,
-   )
+    ai_result = await self._run_photo_tagging(
+      organization_id=organization_id,
+      site_photo_id=payload.site_photo_id,
+      user_id=user_id,
+      prompt=prompt,
+      image_bytes=image_bytes,
+      image_mime_type=image_mime_type,
+    )
 
-   link = await self.photo_boq_links.create(link)
-   await self.session.commit()
-   await self.session.refresh(link)
+    if ai_result.success and ai_result.parsed_output:
+      try:
+        await self._apply_ai_tags(photo, ai_result.parsed_output)
+      except Exception:
+        logger.warning(
+          "Failed to apply AI tags to site photo %s",
+          photo.id,
+          exc_info=True,
+        )
 
-   return link
+    link = PhotoBOQLink(
+      id=uuid4(),
+      organization_id=organization_id,
+      project_id=claim.project_id,
+      progress_claim_id=claim.id,
+      site_photo_id=payload.site_photo_id,
+      boq_item_id=payload.boq_item_id,
+      note=payload.note,
+      created_by=user_id,
+    )
+
+    link = await self.photo_boq_links.create(link)
+    await self.session.commit()
+    await self.session.refresh(link)
+
+    return link
 
   async def _apply_ai_tags(
     self,

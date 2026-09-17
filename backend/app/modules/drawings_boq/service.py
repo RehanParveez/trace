@@ -320,11 +320,26 @@ class DrawingBOQService:
     drawing = await self.get_drawing(organization_id, drawing_id)
 
     if drawing.format != DrawingFormat.PDF:
-      raise TraceException(
-        "AI line-item suggestions are only available for PDF drawings.",
-        status_code=422,
-        code="DRAWING_NOT_PDF",
-      )
+     raise TraceException(
+      "AI line-item suggestions are only available for PDF drawings.",
+      status_code=422,
+      code="DRAWING_NOT_PDF",
+    )
+    existing_elements = await self.elements.list_by_drawing(
+    drawing_id, organization_id
+    )
+
+    if any(
+     e.properties.get("source") == "pdf_ai_extraction"
+     for e in existing_elements
+    ):
+     raise TraceException(
+      "Items have already been suggested for this drawing. "
+      "Delete the existing draft items first if you want to re-run extraction.",
+      status_code=409,
+      code="PDF_ITEMS_ALREADY_SUGGESTED",
+    )
+
     await self.subscriptions.check_quota(organization_id, "ai_requests")
     await self.rate_limiter.check(
       key=f"ai_per_org:{organization_id}",
@@ -788,53 +803,75 @@ class DrawingBOQService:
   ) -> list[BOQItem]:
     version = await self.boq_versions.get_by_id_and_org(boq_version_id, organization_id)
     if version is None:
-      raise TraceException(
-        "BOQ version not found.",
-        status_code=404,
-        code="BOQ_VERSION_NOT_FOUND",
-      )
+     raise TraceException(
+      "BOQ version not found.",
+      status_code=404,
+      code="BOQ_VERSION_NOT_FOUND",
+    )
     if not version.covered_area_sqft or version.covered_area_sqft <= 0:
-      raise TraceException(
-        "Set covered_area_sqft on this BOQ version before generating labour costs.",
-        status_code=422,
-        code="COVERED_AREA_REQUIRED",
-      )
+     raise TraceException(
+      "Set covered_area_sqft on this BOQ version before generating labour costs.",
+      status_code=422,
+      code="COVERED_AREA_REQUIRED",
+    )
 
     rates = await self.labour_rates.list_by_org(organization_id)
     if not rates:
+     raise TraceException(
+       "No labour rates configured for this organization.",
+       status_code=422,
+       code="NO_LABOUR_RATES",
+     )
+
+    AREA_UNITS = {"sft", "sq ft", "sqft", "m2", "sqm", "square feet"}
+
+    area_rates = [
+       r for r in rates
+       if r.unit.strip().lower() in AREA_UNITS
+    ]
+    skipped = [
+       r for r in rates
+       if r.unit.strip().lower() not in AREA_UNITS
+    ]
+
+    if not area_rates:
       raise TraceException(
-        "No labour rates configured for this organization.",
-        status_code=422,
-        code="NO_LABOUR_RATES",
+       "No area-based (Sft/m²) labour rates configured.",
+       status_code=422,
+       code="NO_AREA_LABOUR_RATES",
       )
 
     existing = await self.boq_items.list_by_version(boq_version_id, organization_id)
     approved_trades = {
-      item.material_name for item in existing
+      item.material_name
+      for item in existing
       if item.item_type == BOQItemType.LABOUR and item.status == BOQItemStatus.APPROVED
     }
+
     for item in existing:
-      if item.item_type == BOQItemType.LABOUR and item.status == BOQItemStatus.DRAFT:
-        await self.session.delete(item)
+     if item.item_type == BOQItemType.LABOUR and item.status == BOQItemStatus.DRAFT:
+      await self.session.delete(item)
     await self.session.flush()
 
     new_items = [
-      BOQItem(
-        organization_id=organization_id,
-        boq_version_id=boq_version_id,
-        material_name=rate.trade,
-        category="Labour",
-        unit=rate.unit,
-        quantity=version.covered_area_sqft,
-        unit_rate=rate.rate,
-        item_type=BOQItemType.LABOUR,
-      )
-      for rate in rates
-      if rate.trade not in approved_trades
+     BOQItem(
+      organization_id=organization_id,
+      boq_version_id=boq_version_id,
+      material_name=rate.trade,
+      category="Labour",
+      unit=rate.unit,
+      quantity=version.covered_area_sqft,
+      unit_rate=rate.rate,
+      item_type=BOQItemType.LABOUR,
+    )
+     for rate in area_rates
+     if rate.trade not in approved_trades
     ]
+
     if new_items:
-      await self.boq_items.bulk_create(new_items)
+     await self.boq_items.bulk_create(new_items)
     await self.session.commit()
+
     return new_items
 
   async def get_boq_summary(
@@ -853,7 +890,13 @@ class DrawingBOQService:
 
     def _total(kind: BOQItemType) -> Decimal:
       return sum(
-        (i.quantity * i.unit_rate for i in items if i.item_type == kind and i.unit_rate is not None),
+        (
+          i.quantity * i.unit_rate
+          for i in items
+          if i.item_type == kind
+          and i.status == BOQItemStatus.APPROVED
+          and i.unit_rate is not None
+        ),
         Decimal("0"),
       )
 
@@ -904,6 +947,14 @@ class DrawingBOQService:
         code="BOQ_VERSION_NOT_FOUND",
       )
     items = await self.boq_items.list_by_version(boq_version_id, organization_id)
+
+    if any(i.status == BOQItemStatus.DRAFT for i in items):
+      raise TraceException(
+        "Cannot export BOQ while draft items still exist. Please approve or remove them first.",
+        status_code=409,
+        code="BOQ_HAS_DRAFT_ITEMS",
+      )
+
     organization_name = await self._get_organization_name(organization_id)
     safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     pdf_bytes = build_boq_pdf(version, items, organization_name)
@@ -922,6 +973,14 @@ class DrawingBOQService:
         code="BOQ_VERSION_NOT_FOUND",
       )
     items = await self.boq_items.list_by_version(boq_version_id, organization_id)
+
+    if any(i.status == BOQItemStatus.DRAFT for i in items):
+      raise TraceException(
+        "Cannot export BOQ while draft items still exist. Please approve or remove them first.",
+        status_code=409,
+        code="BOQ_HAS_DRAFT_ITEMS",
+      )
+
     organization_name = await self._get_organization_name(organization_id)
     safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     xlsx_bytes = build_boq_xlsx(version, items, organization_name)
@@ -986,3 +1045,30 @@ class DrawingBOQService:
       )
     )
     await self.session.commit()
+    
+  async def delete_drawing(
+    self,
+    organization_id: UUID,
+    drawing_id: UUID,
+    user_id: UUID | None = None,
+  ) -> None:
+    drawing = await self.get_drawing(organization_id, drawing_id)
+    storage_key = drawing.storage_key
+
+    await self.session.delete(drawing)
+    await self.session.commit()
+
+    try:
+     await asyncio.to_thread(delete_object, storage_key)
+    except Exception:
+     pass
+   
+    if user_id is not None:
+     await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.DRAWING,
+      drawing_id,
+      AuditAction.DELETE,
+      f'Deleted drawing "{drawing.original_filename}"',
+    )

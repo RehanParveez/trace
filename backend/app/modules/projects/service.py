@@ -141,10 +141,17 @@ class ProjectService:
     organization_id: UUID,
     client_id: UUID,
   ) -> None:
-    client = await self.get_client(
-      organization_id,
-      client_id,
-    )
+    client = await self.get_client(organization_id, client_id)
+
+    projects = await self.projects.list_by_org(organization_id)
+    linked = [p for p in projects if p.client_id == client_id]
+
+    if linked:
+      raise TraceException(
+        "Cannot delete client while projects are still linked to it.",
+        status_code=409,
+        code="CLIENT_HAS_PROJECTS",
+      )
 
     await self.clients.delete(client)
     await self.session.commit()
@@ -311,13 +318,20 @@ class ProjectService:
     if payload.actual_end_date is not None:
       project.actual_end_date = payload.actual_end_date
 
-    if (
-      project.start_date is not None
-      and project.expected_end_date is not None
-      and project.expected_end_date < project.start_date
-    ):
-      raise TraceException(
+    start = project.start_date
+    expected = project.expected_end_date
+    actual = project.actual_end_date
+
+    if start and expected and expected < start:
+     raise TraceException(
         "Expected end date cannot be before start date.",
+        status_code=422,
+        code="INVALID_PROJECT_DATES",
+      )
+
+    if start and actual and actual < start:
+      raise TraceException(
+        "Actual end date cannot be before start date.",
         status_code=422,
         code="INVALID_PROJECT_DATES",
       )
@@ -331,12 +345,22 @@ class ProjectService:
     organization_id: UUID,
     project_id: UUID,
   ) -> None:
+    
     project = await self.get_project(
       organization_id,
       project_id,
     )
 
+    project_organization_id = project.organization_id
     await self.projects.delete(project)
+
+    await SubscriptionService(
+      self.session
+    ).decrement_usage(
+      organization_id=project_organization_id,
+      metric="projects",
+      amount=1,
+    )
     await self.session.commit()
 
   async def add_member(

@@ -510,7 +510,39 @@ class SubscriptionService:
       {metric: quantity},
     )
     return counters[metric]
+  
+  async def decrement_usage(
+    self,
+    organization_id: UUID,
+    metric: str,
+    amount: int = 1,
+  ) -> UsageCounter | None:
+    
+    if amount <= 0:
+      raise ValueError(
+        "Amount must be positive."
+      )
 
+    subscription = await self.get_subscription(
+      organization_id
+    )
+    counter = await self.repository.get_usage_counter(
+      organization_id,
+      metric,
+      subscription.current_period_start,
+      subscription.current_period_end,
+    )
+
+    if counter is None:
+      return None
+    counter.quantity = max(
+      counter.quantity - amount,
+      0,
+    )
+
+    await self.session.commit()
+    return counter
+  
   async def increment_usage_many(
     self,
     organization_id: UUID,

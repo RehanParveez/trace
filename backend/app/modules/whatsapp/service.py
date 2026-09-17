@@ -26,6 +26,9 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
 from app.modules.identity.enums import PermissionKey
+import logging
+
+logger = logging.getLogger(__name__)
 
 GRAPH_API_BASE = (
   f"https://graph.facebook.com/{settings.whatsapp_graph_api_version}"
@@ -163,7 +166,8 @@ class WhatsAppService:
 
     provided = signature_header.removeprefix("sha256=")
     return hmac.compare_digest(expected, provided)
-
+  
+  
   async def handle_webhook_payload(
     self,
     payload: dict,
@@ -184,6 +188,10 @@ class WhatsAppService:
           phone_number_id
         )
         if channel is None:
+          logger.warning(
+            "whatsapp_webhook_unknown_or_inactive_channel",
+            extra={"phone_number_id": phone_number_id},
+          )
           continue
         await scope_session_to_org(
           self.session,
@@ -360,7 +368,9 @@ class WhatsAppService:
         message.organization_id, "site_photos"
       )
       await self.subscriptions.check_quota(
-        message.organization_id, "storage_bytes", 1
+        message.organization_id,
+        "storage_bytes",
+        settings.whatsapp_max_photo_bytes,
       )
     except TraceException as exc:
       message.status = WhatsAppMessageStatus.FAILED
@@ -516,7 +526,9 @@ class WhatsAppService:
     normalized_guess = name_guess.strip().lower()
 
     matches = [
-      p for p in projects if p.name.strip().lower() == normalized_guess
+      p for p in projects
+      if p.status == ProjectStatus.ACTIVE
+      and p.name.strip().lower() == normalized_guess
     ]
     return matches[0].id if len(matches) == 1 else None
 
@@ -524,11 +536,11 @@ class WhatsAppService:
     self,
     channel: WhatsAppChannel,
     message: WhatsAppMessage,
-) -> None:
+  ) -> None:
     projects = await self.projects.list_by_org(message.organization_id)
     active_projects = [
-        p for p in projects if p.status == ProjectStatus.ACTIVE
-    ][:MAX_QUICK_REPLY_PROJECTS]
+      p for p in projects if p.status == ProjectStatus.ACTIVE
+    ]
 
     if not active_projects:
       await self.notifications.notify_by_permission(
@@ -544,27 +556,55 @@ class WhatsAppService:
       )
       return
 
-    body = {
-      "messaging_product": "whatsapp",
-      "to": message.from_phone_number,
-      "type": "interactive",
-      "interactive": {
-        "type": "button",
-        "body": {"text": "Which project is this photo for?"},
-        "action": {
-          "buttons": [
-            {
-              "type": "reply",
-              "reply": {
-                "id": str(project.id),
-                "title": project.name[:20],
-              },
-            }
-            for project in active_projects
-          ]
+    if len(active_projects) <= 3:
+      body = {
+        "messaging_product": "whatsapp",
+        "to": message.from_phone_number,
+        "type": "interactive",
+        "interactive": {
+          "type": "button",
+          "body": {"text": "Which project is this photo for?"},
+          "action": {
+            "buttons": [
+              {
+                "type": "reply",
+                "reply": {
+                  "id": str(project.id),
+                  "title": project.name[:20],
+                },
+              }
+              for project in active_projects
+            ]
+          },
         },
-      },
-    }
+      }
+    else:
+    
+      body = {
+        "messaging_product": "whatsapp",
+        "to": message.from_phone_number,
+        "type": "interactive",
+        "interactive": {
+          "type": "list",
+          "body": {"text": "Which project is this photo for?"},
+          "action": {
+            "button": "Select Project",
+            "sections": [
+              {
+                "title": "Active Projects",
+                "rows": [
+                  {
+                    "id": str(project.id),
+                    "title": project.name[:24],
+                    "description": (project.code or "")[:72] if hasattr(project, "code") else "",
+                  }
+                  for project in active_projects[:10]
+                ],
+              }
+            ],
+          },
+        },
+      }
 
     try:
       prompt_wa_message_id = await _send_whatsapp_message(
