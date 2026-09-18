@@ -20,3 +20,9 @@ def rate_limit_webhook():
       window_seconds=60,
     )
   return _check
+
+def pipeline(self):
+  return self
+
+async def execute(self):
+  return []
