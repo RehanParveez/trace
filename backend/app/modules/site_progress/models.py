@@ -22,12 +22,12 @@ class SiteLogEntry(Base, TimestampMixin):
   organization_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("organizations.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   project_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("projects.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   log_date: Mapped[date] = mapped_column(Date, nullable=False)
   workforce_count: Mapped[int | None] = mapped_column(Integer, nullable=True)

@@ -10,6 +10,8 @@ from app.modules.drawings_boq.models import LabourRate, MaterialLibrary
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import Organization, Permission, Role
 from datetime import datetime, timezone
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.drawings_boq.permissions import DRAWINGS_BOQ_PERMISSIONS
 
 MATERIAL_ENTRIES = [
   {
@@ -193,8 +195,7 @@ async def seed_labour_rates(session: AsyncSession) -> None:
 
 async def main():
   async with AsyncSessionLocal() as session:
-    permissions = await seed_permissions(session)
-    await grant_permissions_to_admin_roles(session, permissions)
+    await seed_module_permissions(session, DRAWINGS_BOQ_PERMISSIONS)
     await seed_material_library(session)
     await seed_labour_rates(session)
     await session.commit()

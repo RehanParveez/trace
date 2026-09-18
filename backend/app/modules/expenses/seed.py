@@ -9,8 +9,11 @@ from decimal import Decimal
 from uuid import uuid4
 from app.core.database import AsyncSessionLocal
 import asyncio
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.expenses.permissions import EXPENSE_PERMISSIONS
 
 async def seed_expenses(session: AsyncSession) -> None:
+  await seed_module_permissions(session, EXPENSE_PERMISSIONS)
   org = (
     await session.execute(
       select(Organization).order_by(Organization.created_at.asc()).limit(1)

@@ -95,7 +95,7 @@ class ExpenseService:
     payload: ExpenseReviewRequest,
     new_status: ExpenseStatus,
   ) -> Expense:
-    expense = await self.repo.get_by_id(expense_id, organization_id)
+    expense = await self.repo.get_by_id_for_update(expense_id, organization_id)
     if expense is None:
       raise TraceException(
         "Expense not found.", status_code=404, code="EXPENSE_NOT_FOUND",

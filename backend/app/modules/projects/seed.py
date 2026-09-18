@@ -6,10 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.modules.identity.models import Organization
 from app.modules.projects.models import Client, Milestone, Project, ProjectStatus
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.projects.permissions import PROJECT_PERMISSIONS
 
 async def seed_projects(
   session: AsyncSession,
 ) -> None:
+  await seed_module_permissions(session, PROJECT_PERMISSIONS)
   organization_result = await session.execute(
     select(Organization)
     .order_by(Organization.created_at.asc())

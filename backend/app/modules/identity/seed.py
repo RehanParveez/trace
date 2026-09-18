@@ -47,109 +47,20 @@ async def seed_identity() -> None:
     )
 
     permission_definitions = {
-      PermissionKey.IDENTITY_READ: (
-        "View identity information."
-      ),
-      PermissionKey.IDENTITY_MANAGE: (
-        "Manage identity information."
-      ),
-      PermissionKey.ORGANIZATION_READ: (
-        "View organization information."
-      ),
-      PermissionKey.ORGANIZATION_MANAGE: (
-        "Manage organization settings."
-      ),
-      PermissionKey.ORGANIZATION_MEMBERS_MANAGE: (
-        "Manage organization members."
-      ),
+      PermissionKey.IDENTITY_READ: "View identity information.",
+      PermissionKey.IDENTITY_MANAGE: "Manage identity information.",
+      PermissionKey.ORGANIZATION_READ: "View organization information.",
+      PermissionKey.ORGANIZATION_MANAGE: "Manage organization settings.",
+      PermissionKey.ORGANIZATION_MEMBERS_MANAGE: "Manage organization members.",
+      PermissionKey.ORGANIZATION_INVITATIONS_MANAGE: "Invite, view, and revoke organization invitations.",
       PermissionKey.SUBSCRIPTION_READ: "Read access to subscription data.",
       PermissionKey.SUBSCRIPTION_MANAGE: "Manage subscription plan.",
       PermissionKey.SUBSCRIPTION_BILLING_MANAGE: "Manage subscription billing.",
-      
-      PermissionKey.PROJECT_READ: (
-        "View projects, clients, members, and milestones."
-      ),
-      PermissionKey.PROJECT_CREATE: (
-        "Create projects and clients."
-      ),
-      PermissionKey.PROJECT_UPDATE: (
-        "Update projects, clients, members, and milestones."
-      ),
-      PermissionKey.PROJECT_DELETE: (
-        "Delete projects, clients, members, and milestones."
-      ),
-      
-      PermissionKey.DRAWING_READ: (
-        "View drawings and parsed BOQ data."
-      ),
-      PermissionKey.DRAWING_CREATE: (
-        "Create drawings."
-      ),
-      PermissionKey.DRAWING_DELETE: (
-        "Delete drawings."
-      ),
-      PermissionKey.BOQ_UPDATE: (
-        "Update BOQ data."
-      ),
-      PermissionKey.BOQ_APPROVE: (
-        "Approve BOQ data."
-      ),
-      PermissionKey.MATERIAL_LIBRARY_MANAGE: (
-        "Manage material library."
-      ),
-      PermissionKey.AUDIT_LOG_READ: (
-        "View the organization's audit trail."
-      ),
-      
-      PermissionKey.AI_REQUEST_READ: (
-        "View the organization's AI request and response log."
-      ), 
-      
-      PermissionKey.BUDGET_READ: (
-        "View project budgets and category allocations."
-      ),
-      
-      PermissionKey.BUDGET_MANAGE: (
-        "Create and update project budgets."
-      ),
-      
-      PermissionKey.SITE_LOG_READ: (
-        "View site progress logs."
-      ),
-      
-      PermissionKey.SITE_LOG_CREATE: (
-        "Create site progress logs."
-      ),
-      
-      PermissionKey.SITE_LOG_MANAGE: (
-        "Update and delete site progress logs."
-      ),
-      
-      PermissionKey.PROCUREMENT_READ: (
-        "View procurement requests."
-      ),
-      
-      PermissionKey.PROCUREMENT_CREATE: (
-        "Create procurement requests."
-      ),
-      
-      PermissionKey.PROCUREMENT_MANAGE: (
-        "Approve, order, receive or cancel procurement requests."
-      ),
-      
-      PermissionKey.EXPENSE_READ: (
-        "View project expenses."
-      ),
-      
-      PermissionKey.EXPENSE_CREATE: (
-        "Record project expenses."
-      ),
-      
-      PermissionKey.EXPENSE_APPROVE: (
-        "Approve or reject project expenses."
-      ),
-      
-     }
+      PermissionKey.PROJECT_READ: "View projects, clients, members, and milestones.",
+      PermissionKey.PROJECT_CREATE: "Create projects and clients.",
+      PermissionKey.PROJECT_UPDATE: "Update projects, clients, members, and milestones.",
+      PermissionKey.PROJECT_DELETE: "Delete projects, clients, members, and milestones.",
+    }
 
     permissions: dict[str, Permission] = {}
     for key, description in permission_definitions.items():

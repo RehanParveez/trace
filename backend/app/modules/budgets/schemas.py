@@ -11,7 +11,12 @@ class BudgetCategoryInput(BaseModel):
 class BudgetSaveRequest(BaseModel):
   project_id: UUID
   approved_amount: Decimal = Field(ge=0)
-  currency: str = Field(default="PKR", min_length=3, max_length=3)
+  currency: str | None = Field(
+    default=None,
+    min_length=3,
+    max_length=3,
+    description="Omit to use the organization's operating currency. If provided, it must match it.",
+  )
   notes: str | None = None
   categories: list[BudgetCategoryInput] = Field(default_factory=list)
   version: int | None = Field(

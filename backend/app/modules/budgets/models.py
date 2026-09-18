@@ -25,12 +25,12 @@ class Budget(Base, TimestampMixin):
   organization_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("organizations.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   project_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("projects.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   approved_amount: Mapped[Decimal] = mapped_column(
     Numeric(18, 2), nullable=False,
@@ -63,7 +63,7 @@ class BudgetCategory(Base, TimestampMixin):
   budget_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("budgets.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   name: Mapped[str] = mapped_column(String(200), nullable=False)
   allocated_amount: Mapped[Decimal] = mapped_column(

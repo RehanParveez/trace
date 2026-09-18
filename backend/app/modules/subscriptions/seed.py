@@ -4,10 +4,11 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
-from app.modules.identity.enums import PermissionKey
-from app.modules.identity.models import Permission, Organization
+from app.modules.identity.models import Organization
 from app.modules.subscriptions.models import Plan
 from app.modules.subscriptions.service import SubscriptionService
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.subscriptions.permissions import SUBSCRIPTION_PERMISSIONS
 
 PLANS = [
   {
@@ -76,33 +77,6 @@ PLANS = [
   },
 ]
 
-PERMISSIONS = [
-  PermissionKey.SUBSCRIPTION_READ,
-  PermissionKey.SUBSCRIPTION_MANAGE,
-  PermissionKey.SUBSCRIPTION_BILLING_MANAGE,
-]
-
-async def seed_subscription_permissions(
-  session: AsyncSession,
-) -> None:
-  for key in PERMISSIONS:
-    result = await session.execute(
-      select(Permission).where(
-        Permission.key == str(key)
-      )
-    )
-    permission = result.scalar_one_or_none()
-
-    if permission is None:
-      permission = Permission(
-        id=uuid4(),
-        key=str(key),
-        description=key.value,
-      )
-      session.add(permission)
-
-  await session.flush()
-
 async def seed_plans(
   session: AsyncSession,
 ) -> None:
@@ -156,7 +130,7 @@ async def seed_default_subscriptions(
 
 async def main():
   async with AsyncSessionLocal() as session:
-    await seed_subscription_permissions(session)
+    await seed_module_permissions(session, SUBSCRIPTION_PERMISSIONS)
     await seed_plans(session)
 
   print("Subscription module seeding completed successfully.")

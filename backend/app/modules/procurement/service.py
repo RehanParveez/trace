@@ -76,7 +76,7 @@ class ProcurementService:
     request_id: UUID,
     payload: ProcurementStatusUpdateRequest,
   ) -> ProcurementRequest:
-    req = await self.repo.get_by_id(request_id, organization_id)
+    req = await self.repo.get_by_id_for_update(request_id, organization_id)
     if req is None:
       raise TraceException(
         "Procurement request not found.",

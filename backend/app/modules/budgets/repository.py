@@ -36,6 +36,20 @@ class BudgetRepository:
     )
     return result.scalar_one_or_none()
 
+  async def get_by_project_for_update(
+    self, project_id: UUID, organization_id: UUID,
+  ) -> Budget | None:
+    result = await self.session.execute(
+      select(Budget)
+      .where(
+        Budget.project_id == project_id,
+        Budget.organization_id == organization_id,
+      )
+      .options(selectinload(Budget.categories))
+      .with_for_update()
+    )
+    return result.scalar_one_or_none()
+
   async def create(self, budget: Budget) -> Budget:
     self.session.add(budget)
     await self.session.flush()

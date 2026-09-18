@@ -38,6 +38,19 @@ class ExpenseRepository:
     )
     return result.scalar_one_or_none()
 
+  async def get_by_id_for_update(
+    self, expense_id: UUID, organization_id: UUID,
+  ) -> Expense | None:
+    result = await self.session.execute(
+      select(Expense)
+      .where(
+        Expense.id == expense_id,
+        Expense.organization_id == organization_id,
+      )
+      .with_for_update()
+    )
+    return result.scalar_one_or_none()
+
   async def create(self, expense: Expense) -> Expense:
     self.session.add(expense)
     await self.session.flush()

@@ -8,8 +8,11 @@ from uuid import uuid4
 from datetime import date, timedelta
 from app.core.database import AsyncSessionLocal
 import asyncio
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.site_progress.permissions import SITE_PROGRESS_PERMISSIONS
 
 async def seed_site_progress(session: AsyncSession) -> None:
+  await seed_module_permissions(session, SITE_PROGRESS_PERMISSIONS)
   org = (
     await session.execute(
       select(Organization).order_by(Organization.created_at.asc()).limit(1)

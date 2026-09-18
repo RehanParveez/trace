@@ -29,12 +29,12 @@ class Expense(Base, TimestampMixin):
   organization_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("organizations.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   project_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("projects.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   category: Mapped[str] = mapped_column(String(150), nullable=False)
   description: Mapped[str | None] = mapped_column(Text, nullable=True)

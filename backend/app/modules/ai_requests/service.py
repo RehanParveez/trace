@@ -53,7 +53,12 @@ class AIOrchestratorService:
       success=False,
       error_message=f"AI provider {provider.value} is not yet implemented.",
     )
-
+    
+   if provider == AIProvider.ANTHROPIC and not settings.ai_api_key:
+      return AIRunResult(
+        success=False,
+        error_message="AI_API_KEY is not configured for the Anthropic provider.",
+      )
    try:
     await self.subscriptions.check_quota(organization_id, "ai_requests")
    except Exception as exc:
@@ -61,7 +66,7 @@ class AIOrchestratorService:
 
    resolved_model = model or (
     settings.ollama_model if provider == AIProvider.OLLAMA else settings.ai_model
-  )
+   )
 
    ai_request = await self.requests.create(
     AIRequest(
@@ -75,7 +80,7 @@ class AIOrchestratorService:
       prompt_text=prompt,
       requested_by=requested_by,
     )
-  )
+   )
    await self.session.commit()
 
    started_at = time.monotonic()

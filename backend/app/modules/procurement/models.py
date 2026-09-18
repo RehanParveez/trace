@@ -31,12 +31,12 @@ class ProcurementRequest(Base, TimestampMixin):
   organization_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("organizations.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   project_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     ForeignKey("projects.id", ondelete="CASCADE"),
-    nullable=False, index=True,
+    nullable=False,
   )
   material_name: Mapped[str] = mapped_column(String(300), nullable=False)
   quantity: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)

@@ -4,6 +4,9 @@ from uuid import UUID, uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.audit.models import AuditAction, AuditEntityType, AuditLog
 from app.modules.audit.repository import AuditLogRepository
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AuditLogService:
   def __init__(self, session: AsyncSession):
@@ -12,17 +15,18 @@ class AuditLogService:
 
   async def log(
     self,
-    organization_id: UUID,
-    actor_user_id: UUID | None,
-    entity_type: AuditEntityType,
-    entity_id: UUID | None,
-    action: AuditAction,
-    summary: str,
-    changes: dict | None = None,
-    ip_address: str | None = None,
-    *,
-    commit: bool = True,
-  ) -> AuditLog:
+        organization_id: UUID,
+        actor_user_id: UUID | None,
+        entity_type: AuditEntityType,
+        entity_id: UUID | None,
+        action: AuditAction,
+        summary: str,
+        changes: dict | None = None,
+        ip_address: str | None = None,
+        *,
+        commit: bool = True,
+  ) -> AuditLog | None:
+    
     entry = AuditLog(
       id=uuid4(),
       organization_id=organization_id,
@@ -34,10 +38,23 @@ class AuditLogService:
       changes=changes or {},
       ip_address=ip_address,
     )
-    entry = await self.repository.create(entry)
-    if commit:
-      await self.session.commit()
-    return entry
+    try:
+      entry = await self.repository.create(entry)
+      if commit:
+        await self.session.commit()
+      return entry
+    
+    except Exception:
+      logger.exception(
+        "Audit log write failed (org=%s, entity_type=%s, entity_id=%s, action=%s)",
+          organization_id,
+          entity_type,
+          entity_id,
+          action,
+      )
+      if commit:
+        await self.session.rollback()
+      return None
 
   async def list_logs(
     self,

@@ -66,7 +66,7 @@ class BudgetService:
     )
     currency = organization.currency
 
-    budget = await self.repo.get_by_project(payload.project_id, organization_id)
+    budget = await self.repo.get_by_project_for_update(payload.project_id, organization_id)
 
     if budget is None:
       budget = Budget(
@@ -79,9 +79,16 @@ class BudgetService:
       )
       await self.repo.create(budget)
     else:
+      if payload.version is None or payload.version != budget.version:
+        raise TraceException(
+          "This budget was changed by someone else. Reload and try again.",
+          status_code=409, code="BUDGET_VERSION_CONFLICT",
+        )
+
       budget.approved_amount = payload.approved_amount
       budget.currency = currency
       budget.notes = payload.notes.strip() if payload.notes else None
+      budget.version += 1
       await self.repo.delete_categories(budget)
 
     await self.session.flush()
@@ -93,6 +100,7 @@ class BudgetService:
       self.session.add(
        BudgetCategory(
        id=uuid4(),
+       organization_id=organization_id,
        budget_id=budget.id,
        name=name,
        allocated_amount=Decimal(cat.allocated_amount),

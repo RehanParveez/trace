@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import AsyncSessionLocal
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import Organization, OrganizationInvitation, OrganizationMembership, Permission, PlatformAdmin, Role, User
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.organizations.permissions import ORGANIZATION_PERMISSIONS
 
 ORGANIZATION_NAME = "Acme Corp"
 ORGANIZATION_SLUG = "acme-corp"
@@ -34,33 +36,6 @@ USER_2_PASSWORD_HASH = "$argon2id$v=19$m=65536,t=3,p=4$..."
 USER_2_FIRST_NAME = "Saif"
 USER_2_LAST_NAME = "ur-Rehman"
 
-async def seed_permissions(session: AsyncSession) -> dict[PermissionKey, Permission]:
-  permission_keys = [
-    PermissionKey.ORGANIZATION_READ,
-    PermissionKey.ORGANIZATION_MANAGE,
-    PermissionKey.ORGANIZATION_MEMBERS_MANAGE,
-  ]
-
-  permissions: dict[PermissionKey, Permission] = {}
-
-  for key in permission_keys:
-    result = await session.execute(
-      select(Permission).where(Permission.key == str(key))
-    )
-    perm = result.scalar_one_or_none()
-    if perm is None:
-      perm = Permission(
-        id=uuid4(),
-        key=str(key),
-        description=key.value,
-      )
-      session.add(perm)
-      await session.flush()
-    permissions[key] = perm
-
-  await session.commit()
-  return permissions
-
 async def seed_organization(
   session: AsyncSession,
 ) -> Organization:
@@ -81,6 +56,16 @@ async def seed_organization(
     await session.flush()
     await session.commit()
   return org
+
+async def load_permissions_map(session: AsyncSession) -> dict[PermissionKey, Permission]:
+  result = await session.execute(select(Permission))
+  all_perms: list[Permission] = result.scalars().all()
+  permissions: dict[PermissionKey, Permission] = {}
+  for p in all_perms:
+    key = PermissionKey(p.key)
+    permissions[key] = p
+
+  return permissions
 
 async def seed_roles(
   session: AsyncSession,
@@ -184,15 +169,20 @@ async def seed_users_and_memberships(
     session.add(user_admin)
     await session.flush()
 
-    membership_admin = OrganizationMembership(
+    membership1 = OrganizationMembership(
       id=uuid4(),
       user_id=user_admin.id,
       organization_id=organization.id,
       role_id=roles[ADMIN_ROLE_NAME].id,
       is_active=True,
     )
-    session.add(membership_admin)
-    users.append(user_admin)
+    session.add(membership1)
+  else:
+    user_admin.organization_id = organization.id
+    user_admin.role_id = roles[ADMIN_ROLE_NAME].id
+    await session.flush()
+  
+  users.append(user_admin)
 
   result = await session.execute(
     select(User).where(func.lower(User.email) == func.lower(USER_1_EMAIL))
@@ -221,7 +211,12 @@ async def seed_users_and_memberships(
       is_active=True,
     )
     session.add(membership1)
-    users.append(user1)
+    
+  else:
+    user1.organization_id = organization.id
+    user1.role_id = roles[ADMIN_ROLE_NAME].id
+    await session.flush()
+  users.append(user1)
 
   result = await session.execute(
     select(User).where(func.lower(User.email) == func.lower(USER_2_EMAIL))
@@ -250,7 +245,12 @@ async def seed_users_and_memberships(
       is_active=True,
     )
     session.add(membership2)
-    users.append(user2)
+  else:
+
+    user2.organization_id = organization.id
+    user2.role_id = roles[MEMBER_ROLE_NAME].id
+    await session.flush()
+  users.append(user2)
 
   await session.commit()
   return users
@@ -301,11 +301,11 @@ async def seed_sample_invitation(
 
 async def main():
   async with AsyncSessionLocal() as session:
-    permissions = await seed_permissions(session)
+    await seed_module_permissions(session, ORGANIZATION_PERMISSIONS)
+    permissions = await load_permissions_map(session)
     organization = await seed_organization(session)
     roles = await seed_roles(session, organization, permissions)
     users = await seed_users_and_memberships(session, organization, roles)
-
     await seed_platform_admin(session, users[0])
     await seed_sample_invitation(session, organization, roles, users[0])
     print("Seeding completed successfully.")

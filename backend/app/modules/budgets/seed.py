@@ -8,8 +8,11 @@ from uuid import uuid4
 import asyncio
 from decimal import Decimal
 from app.core.database import AsyncSessionLocal
+from app.shared.seed_utils import seed_module_permissions
+from app.modules.budgets.permissions import BUDGET_PERMISSIONS
 
 async def seed_budgets(session: AsyncSession) -> None:
+  await seed_module_permissions(session, BUDGET_PERMISSIONS)
   org = (
     await session.execute(
       select(Organization).order_by(Organization.created_at.asc()).limit(1)
@@ -59,24 +62,28 @@ async def seed_budgets(session: AsyncSession) -> None:
     [
       BudgetCategory(
         id=uuid4(),
+        organization_id=org.id,
         budget_id=budget.id,
         name="Civil works",
         allocated_amount=Decimal("6500000.00"),
       ),
       BudgetCategory(
         id=uuid4(),
+        organization_id=org.id,
         budget_id=budget.id,
         name="MEP",
         allocated_amount=Decimal("3200000.00"),
       ),
       BudgetCategory(
         id=uuid4(),
+        organization_id=org.id,
         budget_id=budget.id,
         name="Finishes",
         allocated_amount=Decimal("1800000.00"),
       ),
       BudgetCategory(
         id=uuid4(),
+        organization_id=org.id,
         budget_id=budget.id,
         name="Contingency",
         allocated_amount=Decimal("1000000.00"),
