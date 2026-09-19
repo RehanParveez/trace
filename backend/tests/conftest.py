@@ -37,6 +37,18 @@ from app.core.security import hash_password
 from app.modules.identity.service import IdentityService
 from app.modules.identity.token_store import IdentityTokenStore
 from app.modules.identity.router import enforce_auth_rate_limit
+from app.modules.organizations.service import OrganizationService
+from app.modules.organizations.permissions import ORGANIZATION_PERMISSIONS
+from app.modules.identity.enums import PermissionKey
+from sqlalchemy import select
+from sqlalchemy.orm.attributes import set_committed_value
+from app.modules.subscriptions.models import Subscription, SubscriptionStatus, Plan, BillingInterval, UsageCounter, UsagePeriod
+from datetime import timedelta
+from decimal import Decimal
+from app.modules.subscriptions.service import SubscriptionService
+from app.modules.projects.models import Client, Project, ProjectMember, Milestone, ProjectStatus, ProjectMemberRole
+from app.modules.projects.service import ProjectService
+from datetime import date
 
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
@@ -193,13 +205,43 @@ async def make_role(db_session: AsyncSession):
   return _factory
 
 @pytest_asyncio.fixture
+async def user(
+  organization,
+  make_role,
+  make_user,
+  make_membership,
+):
+  role = await make_role(
+    organization=organization,
+    name="Member",
+    is_system=False,
+  )
+  u = await make_user(
+    organization=organization,
+    role=role,
+    email=f"member-{uuid4().hex[:6]}@example.com",
+  )
+  m = await make_membership(
+    user=u,
+    organization=organization,
+    role=role,
+    is_active=True,
+  )
+  u.active_membership = m
+  return u
+
+@pytest_asyncio.fixture
+async def membership(user):
+  return user.active_membership
+
+@pytest_asyncio.fixture
 async def make_user(db_session: AsyncSession):
   async def _factory(
     *,
     organization: Organization,
     role: Role,
     email: str | None = None,
-    password: str = "SecurePass123!",
+    password: str = "admin12312!#1",
     is_active: bool = True,
     is_verified: bool = True,
     failed_login_attempts: int = 0,
@@ -209,7 +251,7 @@ async def make_user(db_session: AsyncSession):
       id=uuid4(),
       organization_id=organization.id,
       role_id=role.id,
-      email=(email or f"user-{uuid4().hex[:8]}@example.com").strip().lower(),
+      email=(email or f"user-{uuid4().hex[:8]}@gmail.com").strip().lower(),
       password_hash=hash_password(password),
       first_name="Test",
       last_name="User",
@@ -245,6 +287,14 @@ async def make_membership(db_session: AsyncSession):
   return _factory
 
 @pytest_asyncio.fixture
+async def organization(make_organization) -> Organization:
+  return await make_organization(name="Check Org")
+
+@pytest_asyncio.fixture
+async def other_organization(make_organization) -> Organization:
+  return await make_organization(name="Other Org")
+
+@pytest_asyncio.fixture
 async def identity_service(
   db_session: AsyncSession,
   fake_redis: FakeRedis,
@@ -253,3 +303,326 @@ async def identity_service(
     session=db_session,
     token_store=IdentityTokenStore(fake_redis),
   )
+  
+@pytest_asyncio.fixture
+async def seed_org_permissions(db_session: AsyncSession) -> dict[str, Permission]:
+  existing = {}
+  for key, description in ORGANIZATION_PERMISSIONS.items():
+    key_str = str(key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def organization_service(
+  db_session: AsyncSession,
+) -> OrganizationService:
+  return OrganizationService(session=db_session)
+
+@pytest_asyncio.fixture
+async def admin_context(
+  db_session: AsyncSession,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_org_permissions,
+):
+  org = await make_organization(name="Acme Test", slug=f"acme-{uuid4().hex[:6]}")
+  perms = list(seed_org_permissions.values())
+
+  role = await make_role(
+    organization=org,
+    name="Admin",
+    is_system=True,
+  )
+  set_committed_value(role, "permissions", perms)
+  await db_session.flush()
+
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"admin-{uuid4().hex[:6]}@gmail.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user,
+    organization=org,
+    role=role,
+    is_active=True,
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def member_context(
+  db_session: AsyncSession,
+  admin_context,
+  make_role,
+  make_user,
+  make_membership,
+  seed_org_permissions,
+):
+  org = admin_context.organization
+  read_perm = seed_org_permissions[str(PermissionKey.ORGANIZATION_READ)]
+
+  role = await make_role(
+    organization=org,
+    name="Viewer",
+    is_system=False,
+  )
+  set_committed_value(role, "permissions", [read_perm])
+  await db_session.flush()
+
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"viewer-{uuid4().hex[:6]}@gmail.com",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user,
+    organization=org,
+    role=role,
+    is_active=True,
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def make_plan(db_session: AsyncSession):
+  async def _factory(
+    *,
+    name: str | None = None,
+    slug: str | None = None,
+    price_monthly: Decimal = Decimal("0"),
+    price_yearly: Decimal = Decimal("0"),
+    is_active: bool = True,
+    is_public: bool = True,
+    features: dict | None = None,
+    quotas: dict | None = None,
+  ) -> Plan:
+    plan = Plan(
+      id=uuid4(),
+      name=name or f"Plan {uuid4().hex[:6]}",
+      slug=slug or f"plan-{uuid4().hex[:8]}",
+      description="Test plan",
+      price_monthly=price_monthly,
+      price_yearly=price_yearly,
+      currency="PKR",
+      is_active=is_active,
+      is_public=is_public,
+      features=features or {"projects": True, "site_logs": True},
+      quotas=quotas or {
+        "projects": 5,
+        "storage_bytes": 1_073_741_824,
+        "ai_requests": 50,
+        "drawings": 10,
+        "site_photos": 200,
+      },
+    )
+    db_session.add(plan)
+    await db_session.flush()
+    return plan
+  return _factory
+
+@pytest_asyncio.fixture
+async def make_subscription(db_session: AsyncSession, make_plan):
+  async def _factory(
+    *,
+    organization: Organization,
+    plan: Plan | None = None,
+    status: SubscriptionStatus = SubscriptionStatus.ACTIVE,
+    billing_interval: BillingInterval = BillingInterval.MONTHLY,
+    cancel_at_period_end: bool = False,
+    period_start: datetime | None = None,
+    period_end: datetime | None = None,
+    started_at: datetime | None = None,
+    trial_ends_at: datetime | None = None,
+  ) -> Subscription:
+    if plan is None:
+      plan = await make_plan()
+    now = datetime.now(timezone.utc)
+    start = period_start or now
+    end = period_end or (start + timedelta(days=30))
+    sub = Subscription(
+      id=uuid4(),
+      organization_id=organization.id,
+      plan_id=plan.id,
+      status=status,
+      billing_interval=billing_interval,
+      started_at=started_at or start,
+      current_period_start=start,
+      current_period_end=end,
+      trial_ends_at=trial_ends_at,
+      cancel_at_period_end=cancel_at_period_end,
+      provider="manual",
+    )
+    db_session.add(sub)
+    await db_session.flush()
+    await db_session.refresh(sub, attribute_names=["plan"])
+    return sub
+  return _factory
+
+@pytest_asyncio.fixture
+async def subscription_service(db_session) -> SubscriptionService:
+  return SubscriptionService(session=db_session)
+
+@pytest_asyncio.fixture
+async def seeded_free_plan(make_plan):
+    
+  return await make_plan(
+    name="Free",
+    slug="free",
+    quotas={
+      "projects": 3,
+      "storage_bytes": 1_073_741_824,
+      "site_photos": 100,
+      "drawings": 3,
+      "ai_requests": 10,
+    },
+  )
+
+@pytest_asyncio.fixture
+async def make_usage_counter(db_session: AsyncSession):
+  async def _factory(
+    *,
+    organization,
+    metric: str,
+    period_start: datetime,
+    period_end: datetime,
+    quantity: int = 0,
+    period: UsagePeriod = UsagePeriod.MONTH,
+  ) -> UsageCounter:
+    counter = UsageCounter(
+      id=uuid4(),
+      organization_id=organization.id,
+      metric=metric,
+      period=period,
+      period_start=period_start,
+      period_end=period_end,
+      quantity=quantity,
+    )
+    db_session.add(counter)
+    await db_session.flush()
+    return counter
+  return _factory
+
+@pytest.fixture
+async def project_service(db_session: AsyncSession) -> ProjectService:
+  return ProjectService(db_session)
+
+@pytest.fixture
+async def client_factory(db_session: AsyncSession, organization: Organization):
+  async def _create(**kwargs) -> Client:
+    data = {
+      "id": uuid4(),
+      "organization_id": organization.id,
+      "name": f"Client-{uuid4().hex[:8]}",
+      "contact_name": "Test Contact",
+      "email": "client@example.com",
+      "phone": "+1234567890",
+      "address": "Test Address",
+      "notes": "Test notes",
+      **kwargs,
+    }
+    client = Client(**data)
+    db_session.add(client)
+    await db_session.flush()
+    return client
+  return _create
+
+@pytest.fixture
+async def project_factory(db_session: AsyncSession, organization: Organization, client_factory):
+  async def _create(client: Client | None = None, **kwargs) -> Project:
+    if client is None:
+      client = await client_factory()
+    data = {
+      "id": uuid4(),
+      "organization_id": organization.id,
+      "client_id": client.id if client else None,
+      "name": f"Project-{uuid4().hex[:8]}",
+      "code": f"PRJ-{uuid4().hex[:6].upper()}",
+      "description": "Test project",
+      "location": "Test Location",
+      "status": ProjectStatus.PLANNING,
+      "start_date": date.today(),
+      "expected_end_date": date.today() + timedelta(days=90),
+      **kwargs,
+    }
+    project = Project(**data)
+    db_session.add(project)
+    await db_session.flush()
+    return project
+  return _create
+
+@pytest.fixture
+async def member_factory(db_session: AsyncSession, project_factory, user: User):
+  async def _create(
+    project: Project | None = None,
+    target_user: User | None = None,
+    role=ProjectMemberRole.MEMBER,
+  ) -> ProjectMember:
+    if project is None:
+      project = await project_factory()
+    if target_user is None:
+      target_user = user
+    member = ProjectMember(
+      id=uuid4(),
+      project_id=project.id,
+      user_id=target_user.id,
+      role=role,
+    )
+    db_session.add(member)
+    await db_session.flush()
+    await db_session.refresh(member, attribute_names=["user"])
+    return member
+  return _create
+
+@pytest.fixture
+async def milestone_factory(db_session: AsyncSession, project_factory):
+  async def _create(project: Project | None = None, **kwargs) -> Milestone:
+    if project is None:
+      project = await project_factory()
+    data = {
+      "id": uuid4(),
+      "project_id": project.id,
+      "name": f"Milestone-{uuid4().hex[:6]}",
+      "description": "Test milestone",
+      "due_date": date.today() + timedelta(days=30),
+      **kwargs,
+    }
+    ms = Milestone(**data)
+    db_session.add(ms)
+    await db_session.flush()
+    return ms
+  return _create
+

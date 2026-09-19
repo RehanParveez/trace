@@ -601,8 +601,6 @@ class SubscriptionService:
         )
 
       if limit is not None and counter.quantity + quantity > int(limit):
-        await self.session.rollback()
-
         remaining = max(int(limit) - counter.quantity, 0)
         raise TraceException(
           f"{_metric_label(metric)} limit reached. Your plan allows "
