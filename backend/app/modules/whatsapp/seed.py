@@ -2,9 +2,7 @@ from __future__ import annotations
 import asyncio
 from uuid import uuid4
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from app.core.database import AsyncSessionLocal
-from app.modules.identity.models import Permission, Role
 from app.modules.whatsapp.permissions import WHATSAPP_PERMISSIONS
 from uuid import UUID, uuid4
 from app.modules.whatsapp.models import WhatsAppChannel

@@ -78,6 +78,17 @@ class WhatsAppMessageRepository:
       return None
 
     return message
+  
+  async def get_by_id_unscoped(
+    self,
+    message_id: UUID,
+  ) -> WhatsAppMessage | None:
+    result = await self.session.execute(
+      select(WhatsAppMessage).where(
+        WhatsAppMessage.id == message_id,
+      )
+    )
+    return result.scalar_one_or_none()
 
   async def get_by_id(
     self,
@@ -255,3 +266,4 @@ class PhotoTagRepository:
   ) -> None:
     await self.session.delete(tag)
     await self.session.flush()
+    

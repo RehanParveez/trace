@@ -16,6 +16,8 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from app.shared.storage import format_bytes
 import logging
+from datetime import timedelta
+from decimal import Decimal
 
 logger = logging.getLogger("trace.subscriptions")
 
@@ -99,18 +101,27 @@ class SubscriptionService:
 
     now = datetime.now(timezone.utc)
     billing_interval = BillingInterval.MONTHLY
-
     period_end = self._advance_period(now, billing_interval)
+
+    trial_ends_at = None
+    status = SubscriptionStatus.ACTIVE
+    if plan.trial_days and plan.trial_days > 0 and plan.slug != "free":
+      trial_ends_at = now + timedelta(days=plan.trial_days)
+      status = SubscriptionStatus.TRIALING
+      period_end = trial_ends_at
 
     subscription = Subscription(
       id=uuid4(),
       organization_id=organization.id,
       plan_id=plan.id,
-      status=SubscriptionStatus.ACTIVE,
+      status=status,
       billing_interval=billing_interval,
+      quantity=1,
       started_at=now,
       current_period_start=now,
       current_period_end=period_end,
+      trial_ends_at=trial_ends_at,
+      next_billing_at=period_end,
       provider="manual",
     )
 
@@ -172,6 +183,9 @@ class SubscriptionService:
     interval_changed = subscription.billing_interval != payload.billing_interval
     subscription.plan_id = plan.id
     subscription.billing_interval = payload.billing_interval
+    
+    subscription.quantity = getattr(subscription, "quantity", 1) or 1
+    subscription.next_billing_at = subscription.current_period_end
 
     if interval_changed:
       subscription.current_period_end = self._advance_period(
@@ -212,6 +226,8 @@ class SubscriptionService:
     organization_id: UUID,
     cancel_at_period_end: bool,
     actor_user_id: UUID,
+    reason: str | None = None,
+    feedback: str | None = None,
   ) -> Subscription:
     subscription = await self.repository.get_subscription_for_update(
       organization_id
@@ -235,10 +251,15 @@ class SubscriptionService:
 
     if cancel_at_period_end:
       subscription.cancel_at_period_end = True
+      subscription.cancellation_reason = reason
+      subscription.cancellation_feedback = feedback
+    
     else:
       subscription.cancel_at_period_end = False
       subscription.cancelled_at = datetime.now(timezone.utc)
       subscription.status = SubscriptionStatus.CANCELLED
+      subscription.cancellation_reason = reason
+      subscription.cancellation_feedback = feedback
 
     await self.session.flush()
     await self.session.commit()
@@ -332,11 +353,21 @@ class SubscriptionService:
     if subscription.cancel_at_period_end:
       subscription.status = SubscriptionStatus.CANCELLED
       subscription.cancelled_at = now
+    elif subscription.status == SubscriptionStatus.TRIALING:
+      if (subscription.plan.price_monthly or Decimal("0")) > 0 or (subscription.plan.price_yearly or Decimal("0")) > 0:
+        subscription.status = SubscriptionStatus.PAST_DUE
+        subscription.grace_period_ends_at = now + timedelta(days=7)
+      else:
+        subscription.status = SubscriptionStatus.EXPIRED
+    elif subscription.status == SubscriptionStatus.PAST_DUE:
+      if subscription.grace_period_ends_at and now > subscription.grace_period_ends_at:
+        subscription.status = SubscriptionStatus.EXPIRED
     else:
       subscription.current_period_start = subscription.current_period_end
       subscription.current_period_end = self._advance_period(
         subscription.current_period_start, subscription.billing_interval,
       )
+      subscription.next_billing_at = subscription.current_period_end
       if subscription.status == SubscriptionStatus.TRIALING:
         subscription.status = SubscriptionStatus.ACTIVE
 

@@ -264,7 +264,7 @@ class DrawingBOQService:
     drawing_id: UUID,
   ) -> list[DrawingElement]:
     await self.get_drawing(organization_id, drawing_id)
-    return await self.elements.list_by_drawing(drawing_id)
+    return await self.elements.list_by_drawing(drawing_id, organization_id)
 
   async def get_drawing_file(
     self,

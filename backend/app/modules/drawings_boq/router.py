@@ -112,7 +112,7 @@ async def list_drawing_elements(
   service = _service(session)
   return await service.list_elements(
     current_user.active_membership.organization_id,
-    drawing_id,
+    drawing_id
   )
 
 @router.get("/drawings/{drawing_id}/file")

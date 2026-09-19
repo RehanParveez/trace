@@ -294,7 +294,7 @@ class WhatsAppService:
     return
 
    pending_message = await self.messages.get_by_prompt_wa_message_id(
-    context_id
+    context_id, interactive_message.organization_id,
    )
 
    if pending_message is None:
@@ -326,7 +326,7 @@ class WhatsAppService:
     message: WhatsAppMessage,
     project_id: UUID,
   ) -> None:
-    photo = await self.photos.get_by_whatsapp_message_id(message.id)
+    photo = await self.photos.get_by_whatsapp_message_id(message.id, message.organization_id)
     if photo is None:
       return
 
@@ -340,12 +340,17 @@ class WhatsAppService:
     await self.session.commit()
 
   async def process_photo_message(self, message_id: UUID) -> None:
-    message = await self.messages.get_by_id_for_update(message_id)
+    message = await self.messages.get_by_id_unscoped(message_id)
     if message is None:
-     return
-
+      return
+    message = await self.messages.get_by_id_for_update(
+      message_id,
+      message.organization_id,
+    )
+    if message is None:
+      return
     if message.status != WhatsAppMessageStatus.RECEIVED:
-     return
+      return
 
     channel = await self.channels.get_by_organization(message.organization_id)
     if channel is None or not channel.is_active:
@@ -355,7 +360,10 @@ class WhatsAppService:
       await self.session.commit()
       return
 
-    existing_photo = await self.photos.get_by_whatsapp_message_id(message.id)
+    existing_photo = await self.photos.get_by_whatsapp_message_id(
+      message.id,
+      message.organization_id,        
+    )
     if existing_photo is not None:
       message.status = WhatsAppMessageStatus.PROCESSED
       message.processed_at = datetime.now(timezone.utc)

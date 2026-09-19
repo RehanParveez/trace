@@ -49,6 +49,10 @@ from app.modules.subscriptions.service import SubscriptionService
 from app.modules.projects.models import Client, Project, ProjectMember, Milestone, ProjectStatus, ProjectMemberRole
 from app.modules.projects.service import ProjectService
 from datetime import date
+from uuid import uuid4, UUID
+from app.modules.whatsapp.models import SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
+from app.modules.whatsapp.permissions import WHATSAPP_PERMISSIONS
+from app.modules.whatsapp.service import WhatsAppService
 
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
@@ -626,3 +630,153 @@ async def milestone_factory(db_session: AsyncSession, project_factory):
     return ms
   return _create
 
+@pytest_asyncio.fixture
+async def seed_whatsapp_permissions(db_session: AsyncSession) -> dict[str, Permission]:
+  existing: dict[str, Permission] = {}
+  for key, description in WHATSAPP_PERMISSIONS.items():
+    key_str = str(key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def whatsapp_service(db_session: AsyncSession) -> WhatsAppService:
+  return WhatsAppService(db_session)
+
+@pytest_asyncio.fixture
+async def make_whatsapp_channel(db_session: AsyncSession):
+  async def _factory(
+    *,
+    organization: Organization,
+    phone_number_id: str | None = None,
+    business_account_id: str = "biz-acc-1",
+    display_phone_number: str | None = "+923001234567",
+    access_token: str = "test-access-token",
+    is_active: bool = True,
+  ) -> WhatsAppChannel:
+    channel = WhatsAppChannel(
+      id=uuid4(),
+      organization_id=organization.id,
+      phone_number_id=phone_number_id or f"phone-{uuid4().hex[:10]}",
+      business_account_id=business_account_id,
+      display_phone_number=display_phone_number,
+      access_token=access_token,
+      is_active=is_active,
+    )
+    db_session.add(channel)
+    await db_session.flush()
+    return channel
+  return _factory
+
+@pytest_asyncio.fixture
+async def make_whatsapp_message(db_session: AsyncSession):
+  async def _factory(
+    *,
+    organization: Organization,
+    channel: WhatsAppChannel,
+    message_type: WhatsAppMessageType = WhatsAppMessageType.IMAGE,
+    status: WhatsAppMessageStatus = WhatsAppMessageStatus.RECEIVED,
+    media_id: str | None = "media-123",
+    caption_text: str | None = None,
+    from_phone_number: str = "923009998877",
+    wa_message_id: str | None = None,
+    prompt_wa_message_id: str | None = None,
+    raw_payload: dict | None = None,
+    received_at: datetime | None = None,
+  ) -> WhatsAppMessage:
+    msg = WhatsAppMessage(
+      id=uuid4(),
+      organization_id=organization.id,
+      channel_id=channel.id,
+      wa_message_id=wa_message_id or f"wamid.{uuid4().hex}",
+      from_phone_number=from_phone_number,
+      message_type=message_type,
+      caption_text=caption_text,
+      media_id=media_id,
+      status=status,
+      received_at=received_at or datetime.now(timezone.utc),
+      raw_payload=raw_payload or {},
+      prompt_wa_message_id=prompt_wa_message_id,
+    )
+    db_session.add(msg)
+    await db_session.flush()
+    return msg
+  return _factory
+
+@pytest_asyncio.fixture
+async def make_site_photo(db_session: AsyncSession):
+  async def _factory(
+    *,
+    organization: Organization,
+    project_id: UUID | None = None,
+    whatsapp_message_id: UUID | None = None,
+    storage_key: str | None = None,
+    sender_phone_number: str | None = "923009998877",
+    caption_raw: str | None = None,
+    caption_parsed: dict | None = None,
+    location_text: str | None = None,
+    photo_date: date | None = None,
+    is_ai_tagged: bool = False,
+  ) -> SitePhoto:
+    photo = SitePhoto(
+      id=uuid4(),
+      organization_id=organization.id,
+      project_id=project_id,
+      whatsapp_message_id=whatsapp_message_id,
+      storage_key=storage_key or f"{organization.id}/photos/{uuid4().hex}.jpg",
+      sender_phone_number=sender_phone_number,
+      caption_raw=caption_raw,
+      caption_parsed=caption_parsed or {},
+      location_text=location_text,
+      photo_date=photo_date or date.today(),
+      is_ai_tagged=is_ai_tagged,
+    )
+    db_session.add(photo)
+    await db_session.flush()
+    return photo
+  return _factory
+
+@pytest_asyncio.fixture
+async def whatsapp_admin_context(
+  db_session: AsyncSession,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_whatsapp_permissions,
+  seed_org_permissions,
+):
+  org = await make_organization(name="WA Test Org", slug=f"wa-{uuid4().hex[:6]}")
+  all_perms = list(seed_whatsapp_permissions.values()) + list(seed_org_permissions.values())
+  role = await make_role(organization=org, name="WA Admin", is_system=True)
+  set_committed_value(role, "permissions", all_perms)
+  await db_session.flush()
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"wa-admin-{uuid4().hex[:6]}@gmail.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
