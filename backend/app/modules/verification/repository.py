@@ -65,7 +65,7 @@ class ProgressClaimRepository:
     result = await self.session.execute(query)
 
     return list(result.scalars().all())
-
+ 
   async def update(
     self,
     claim: ProgressClaim,
@@ -73,6 +73,21 @@ class ProgressClaimRepository:
     self.session.add(claim)
     await self.session.flush()
     return claim
+  
+  async def get_by_id_and_org_for_update(
+    self,
+    claim_id: UUID,
+    organization_id: UUID,
+    ) -> ProgressClaim | None:
+    result = await self.session.execute(
+      select(ProgressClaim)
+      .where(
+        ProgressClaim.id == claim_id,
+        ProgressClaim.organization_id == organization_id,
+      )
+      .with_for_update()
+      )
+    return result.scalar_one_or_none()
 
 class PhotoBOQLinkRepository:
   def __init__(self, session: AsyncSession):
@@ -97,21 +112,6 @@ class PhotoBOQLinkRepository:
         PhotoBOQLink.organization_id == organization_id,
       )
     )
-    return result.scalar_one_or_none()
-  
-  async def get_by_id_and_org_for_update(
-    self,
-    claim_id: UUID,
-    organization_id: UUID,
-  ) -> ProgressClaim | None:
-    result = await self.session.execute(
-      select(ProgressClaim)
-      .where(
-        ProgressClaim.id == claim_id,
-        ProgressClaim.organization_id == organization_id,
-      )
-       .with_for_update()
-      )
     return result.scalar_one_or_none()
 
   async def get_existing(

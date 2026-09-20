@@ -53,6 +53,14 @@ from uuid import uuid4, UUID
 from app.modules.whatsapp.models import SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
 from app.modules.whatsapp.permissions import WHATSAPP_PERMISSIONS
 from app.modules.whatsapp.service import WhatsAppService
+from app.modules.verification.service import VerificationService
+from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQVersion, BOQVersionStatus
+from app.modules.verification.permissions import VERIFICATION_PERMISSIONS
+from app.modules.verification.models import ProgressClaim, ProgressClaimStatus
+from app.modules.notifications.service import NotificationService
+from app.modules.notifications.permissions import NOTIFICATION_PERMISSIONS
+from app.modules.notifications.models import NotificationType, Notification
+from sqlalchemy.orm import selectinload
 
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
@@ -768,6 +776,276 @@ async def whatsapp_admin_context(
   )
   membership = await make_membership(
     user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def seed_verification_permissions(db_session) -> dict[str, Permission]:
+  existing: dict[str, Permission] = {}
+  for key, description in VERIFICATION_PERMISSIONS.items():
+    key_str = str(key.value if hasattr(key, "value") else key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def verification_admin_context(
+  db_session,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_verification_permissions,
+  seed_org_permissions,
+):
+  """User with full verification + org permissions."""
+  org = await make_organization(name="Verif Org", slug=f"verif-{uuid4().hex[:6]}")
+  all_perms = (
+    list(seed_verification_permissions.values())
+    + list(seed_org_permissions.values())
+  )
+  role = await make_role(organization=org, name="Verif Admin", is_system=True)
+  set_committed_value(role, "permissions", all_perms)
+  await db_session.flush()
+
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"verif-admin-{uuid4().hex[:6]}@gmail.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def make_boq_version(db_session: AsyncSession):
+  async def _factory(
+    *,
+    organization_id: UUID,
+    project_id: UUID,
+    drawing_id: UUID | None = None,
+    label: str | None = None,
+    status: BOQVersionStatus = BOQVersionStatus.ACTIVE,
+    covered_area_sqft: Decimal | None = None,
+    export_meta: dict | None = None,
+  ) -> BOQVersion:
+    version = BOQVersion(
+      id=uuid4(),
+      organization_id=organization_id,
+      project_id=project_id,
+      drawing_id=drawing_id,
+      label=label or f"BOQ v{uuid4().hex[:4]}",
+      status=status,
+      covered_area_sqft=covered_area_sqft,
+      export_meta=export_meta or {},
+    )
+    db_session.add(version)
+    await db_session.flush()
+    return version
+  return _factory
+
+@pytest_asyncio.fixture
+async def make_boq_item(db_session, make_boq_version):
+  async def _factory(
+    *,
+    organization_id: UUID,
+    project_id: UUID,
+    status: BOQItemStatus = BOQItemStatus.APPROVED,
+    material_name: str = "Concrete C30",
+    unit: str = "m3",
+    category: str | None = "Structural",
+    quantity: Decimal = Decimal("100.0000"),
+  ) -> BOQItem:
+    version = await make_boq_version(
+      organization_id=organization_id,
+      project_id=project_id,
+    )
+    item = BOQItem(
+      id=uuid4(),
+      organization_id=organization_id,
+      boq_version_id=version.id,
+      material_name=material_name,
+      unit=unit,
+      category=category,
+      quantity=quantity,
+      status=status,
+    )
+    db_session.add(item)
+    await db_session.flush()
+    return item
+  return _factory
+
+@pytest_asyncio.fixture
+async def make_progress_claim(db_session):
+
+  async def _factory(
+    *,
+    organization_id: UUID,
+    project_id: UUID,
+    boq_item_id: UUID,
+    status: ProgressClaimStatus = ProgressClaimStatus.DRAFT,
+    claimed_quantity: Decimal = Decimal("10.0000"),
+    claimed_percentage: Decimal = Decimal("10.0000"),
+    claim_date: date | None = None,
+    version: int = 1,
+    submitted_by: UUID | None = None,
+    notes: str | None = None,
+  ) -> ProgressClaim:
+    claim = ProgressClaim(
+      id=uuid4(),
+      organization_id=organization_id,
+      project_id=project_id,
+      boq_item_id=boq_item_id,
+      claim_date=claim_date or date.today(),
+      claimed_quantity=claimed_quantity,
+      claimed_percentage=claimed_percentage,
+      notes=notes,
+      status=status,
+      version=version,
+      submitted_by=submitted_by,
+    )
+    db_session.add(claim)
+    await db_session.flush()
+    return claim
+  return _factory
+
+@pytest_asyncio.fixture
+async def verification_service(db_session) -> VerificationService:
+  return VerificationService(db_session)
+
+@pytest_asyncio.fixture
+async def notification_service(
+  db_session: AsyncSession,
+) -> NotificationService:
+  return NotificationService(db_session)
+
+@pytest_asyncio.fixture
+async def seed_notification_permissions(
+  db_session: AsyncSession,
+) -> dict[str, Permission]:
+  existing: dict[str, Permission] = {}
+  for key, description in NOTIFICATION_PERMISSIONS.items():
+    key_str = str(key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def make_notification(
+  db_session: AsyncSession,
+):
+  async def _factory(
+    *,
+    organization: Organization,
+    user: User,
+    type: NotificationType = NotificationType.MEMBER_JOINED,
+    title: str = "Test notification",
+    body: str | None = "Body",
+    link_path: str | None = "/some/path",
+    is_read: bool = False,
+    read_at: datetime | None = None,
+  ) -> Notification:
+    n = Notification(
+      id=uuid4(),
+      organization_id=organization.id,
+      user_id=user.id,
+      type=type,
+      title=title,
+      body=body,
+      link_path=link_path,
+      is_read=is_read,
+      read_at=read_at,
+    )
+    db_session.add(n)
+    await db_session.flush()
+    return n
+
+  return _factory
+
+@pytest_asyncio.fixture
+async def notifications_admin_context(
+  db_session: AsyncSession,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_notification_permissions,
+  seed_org_permissions,
+):
+  org = await make_organization(
+    name="Notif Org",
+    slug=f"notif-{uuid4().hex[:6]}",
+  )
+  all_perms = list(seed_notification_permissions.values()) + list(
+    seed_org_permissions.values()
+  )
+
+  role = await make_role(
+    organization=org,
+    name="Notif Admin",
+    is_system=True,
+  )
+
+  result = await db_session.execute(
+    select(Role)
+    .where(Role.id == role.id)
+    .options(selectinload(Role.permissions))
+  )
+  role = result.scalar_one()
+  role.permissions = list(all_perms)
+  await db_session.flush()
+
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"notif-admin-{uuid4().hex[:6]}@gmail.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user,
+    organization=org,
+    role=role,
+    is_active=True,
   )
   user.active_membership = membership
 
