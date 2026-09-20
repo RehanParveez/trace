@@ -61,6 +61,14 @@ from app.modules.notifications.service import NotificationService
 from app.modules.notifications.permissions import NOTIFICATION_PERMISSIONS
 from app.modules.notifications.models import NotificationType, Notification
 from sqlalchemy.orm import selectinload
+from app.modules.audit.service import AuditLogService
+from app.modules.audit.models import AuditLog, AuditAction, AuditEntityType
+from app.modules.audit.permissions import AUDIT_PERMISSIONS
+from app.modules.ai_requests.permissions import AI_REQUEST_PERMISSIONS
+from app.modules.ai_requests.service import AIOrchestratorService
+from app.modules.budgets.service import BudgetService
+from app.modules.budgets.models import Budget, BudgetCategory
+from app.modules.budgets.permissions import BUDGET_PERMISSIONS
 
 @pytest.fixture(scope="session")
 def anyio_backend() -> str:
@@ -1058,3 +1066,297 @@ async def notifications_admin_context(
   ctx.user = user
   ctx.membership = membership
   return ctx
+
+@pytest_asyncio.fixture
+async def seed_audit_permissions(db_session) -> dict[str, Permission]:
+  existing: dict[str, Permission] = {}
+  for key, description in AUDIT_PERMISSIONS.items():
+    key_str = str(key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def audit_service(db_session) -> AuditLogService:
+  return AuditLogService(db_session)
+
+@pytest_asyncio.fixture
+async def make_audit_log(db_session):
+  async def _factory(
+    *,
+    organization: Organization,
+    actor_user_id=None,
+    entity_type: AuditEntityType = AuditEntityType.PROJECT,
+    entity_id=None,
+    action: AuditAction = AuditAction.CREATE,
+    summary: str = "Test audit entry",
+    changes: dict | None = None,
+    ip_address: str | None = "127.0.0.1",
+    created_at: datetime | None = None,
+  ) -> AuditLog:
+    entry = AuditLog(
+      id=uuid4(),
+      organization_id=organization.id,
+      actor_user_id=actor_user_id,
+      entity_type=entity_type,
+      entity_id=entity_id or uuid4(),
+      action=action,
+      summary=summary,
+      changes=changes or {},
+      ip_address=ip_address,
+    )
+    if created_at is not None:
+      entry.created_at = created_at
+    db_session.add(entry)
+    await db_session.flush()
+    return entry
+  return _factory
+
+@pytest_asyncio.fixture
+async def audit_admin_context(
+  db_session,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_audit_permissions,
+  seed_org_permissions,
+):
+  org = await make_organization(name="Audit Test Org", slug=f"audit-{uuid4().hex[:6]}")
+  all_perms = list(seed_audit_permissions.values()) + list(seed_org_permissions.values())
+  role = await make_role(organization=org, name="Audit Admin", is_system=True)
+  set_committed_value(role, "permissions", all_perms)
+  await db_session.flush()
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"audit-admin-{uuid4().hex[:6]}@example.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def audit_viewer_context(
+  db_session,
+  audit_admin_context,
+  make_role,
+  make_user,
+  make_membership,
+  seed_audit_permissions,
+):
+  org = audit_admin_context.organization
+  read_perm = seed_audit_permissions[str(PermissionKey.AUDIT_LOG_READ)]
+  role = await make_role(organization=org, name="Audit Viewer", is_system=False)
+  set_committed_value(role, "permissions", [read_perm])
+  await db_session.flush()
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"audit-viewer-{uuid4().hex[:6]}@gmail.com",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def seed_ai_permissions(db_session: AsyncSession) -> dict[str, Permission]:
+  existing: dict[str, Permission] = {}
+  for key, description in AI_REQUEST_PERMISSIONS.items():
+    key_str = str(key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def ai_admin_context(
+  db_session: AsyncSession,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_ai_permissions,
+  seed_org_permissions,
+):
+  org = await make_organization(name="AI Check Org", slug=f"ai-{uuid4().hex[:6]}")
+  org.ai_enabled = True
+  await db_session.flush()
+  all_perms = list(seed_ai_permissions.values()) + list(seed_org_permissions.values())
+  role = await make_role(organization=org, name="AI Admin", is_system=True)
+  set_committed_value(role, "permissions", all_perms)
+  await db_session.flush()
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"ai-admin-{uuid4().hex[:6]}@gmail.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.user = user
+  return ctx
+
+@pytest_asyncio.fixture
+async def ai_service(db_session: AsyncSession) -> AIOrchestratorService:
+  return AIOrchestratorService(db_session)
+
+@pytest_asyncio.fixture
+async def seed_budget_permissions(db_session: AsyncSession) -> dict[str, Permission]:
+  existing: dict[str, Permission] = {}
+  for key, description in BUDGET_PERMISSIONS.items():
+    key_str = str(key)
+    result = await db_session.execute(
+      select(Permission).where(Permission.key == key_str)
+    )
+    perm = result.scalar_one_or_none()
+    if perm is None:
+      perm = Permission(id=uuid4(), key=key_str, description=description)
+      db_session.add(perm)
+      await db_session.flush()
+    existing[key_str] = perm
+  return existing
+
+@pytest_asyncio.fixture
+async def budget_admin_context(
+  db_session: AsyncSession,
+  make_organization,
+  make_role,
+  make_user,
+  make_membership,
+  seed_budget_permissions,
+  seed_org_permissions,
+):
+  org = await make_organization(
+    name="Budget Org",
+    slug=f"budget-{uuid4().hex[:6]}",
+  )
+  if not getattr(org, "currency", None):
+    org.currency = "PKR"
+    await db_session.flush()
+  all_perms = (
+    list(seed_budget_permissions.values())
+    + list(seed_org_permissions.values())
+  )
+  role = await make_role(organization=org, name="Budget Admin", is_system=True)
+  set_committed_value(role, "permissions", all_perms)
+  await db_session.flush()
+  user = await make_user(
+    organization=org,
+    role=role,
+    email=f"budget-admin-{uuid4().hex[:6]}@gmail.com",
+    password="admin12312!#1",
+    is_active=True,
+    is_verified=True,
+  )
+  membership = await make_membership(
+    user=user, organization=org, role=role, is_active=True
+  )
+  user.active_membership = membership
+
+  class Ctx:
+    pass
+
+  ctx = Ctx()
+  ctx.organization = org
+  ctx.role = role
+  ctx.user = user
+  ctx.membership = membership
+  return ctx
+
+@pytest_asyncio.fixture
+async def budget_service(db_session: AsyncSession) -> BudgetService:
+  return BudgetService(db_session)
+
+@pytest_asyncio.fixture
+async def make_budget(db_session: AsyncSession):
+  async def _factory(
+    *,
+    organization: Organization,
+    project: Project,
+    approved_amount: Decimal = Decimal("1000000.00"),
+    currency: str = "PKR",
+    notes: str | None = None,
+    version: int = 1,
+    categories: list[tuple[str, Decimal]] | None = None,
+  ) -> Budget:
+    budget = Budget(
+      id=uuid4(),
+      organization_id=organization.id,
+      project_id=project.id,
+      approved_amount=approved_amount,
+      currency=currency,
+      notes=notes,
+      version=version,
+    )
+    db_session.add(budget)
+    await db_session.flush()
+    if categories:
+      for name, amount in categories:
+        db_session.add(
+          BudgetCategory(
+            id=uuid4(),
+            organization_id=organization.id,
+            budget_id=budget.id,
+            name=name,
+            allocated_amount=amount,
+          )
+        )
+      await db_session.flush()
+    result = await db_session.execute(
+      select(Budget)
+      .where(Budget.id == budget.id)
+      .options(selectinload(Budget.categories))
+    )
+    return result.scalar_one()
+  return _factory

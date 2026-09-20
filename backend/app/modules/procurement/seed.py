@@ -1,4 +1,6 @@
 from __future__ import annotations
+import asyncio
+import random
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.modules.identity.models import Organization, User
@@ -11,6 +13,55 @@ from app.core.database import AsyncSessionLocal
 import asyncio
 from app.shared.seed_utils import seed_module_permissions
 from app.modules.procurement.permissions import PROCUREMENT_PERMISSIONS
+
+PROCUREMENT_MATERIAL_POOL = [
+  ("Cement OPC 43", "bags", (300, 800), (400_000, 950_000)),
+  ("TMT Rebar 12mm", "tons", (5, 20), (750_000, 3_000_000)),
+  ("Ready-mix Concrete M25", "m3", (30, 150), (350_000, 1_800_000)),
+  ("Burnt Clay Bricks", "units", (5000, 20000), (125_000, 500_000)),
+  ("Structural Steel Sections", "tons", (2, 10), (600_000, 3_000_000)),
+  ("Sand (fine)", "m3", (50, 300), (75_000, 450_000)),
+  ("Crushed Stone Aggregate", "m3", (50, 300), (100_000, 600_000)),
+]
+
+STATUS_WEIGHTS = [
+  (ProcurementStatus.REQUESTED, 35),
+  (ProcurementStatus.APPROVED, 25),
+  (ProcurementStatus.ORDERED, 20),
+  (ProcurementStatus.RECEIVED, 15),
+  (ProcurementStatus.CANCELLED, 5),
+]
+
+def _random_procurement_requests(
+  *,
+  organization_id,
+  project_id,
+  requested_by,
+  count: int,
+) -> list[ProcurementRequest]:
+  today = date.today()
+  chosen = random.sample(
+    PROCUREMENT_MATERIAL_POOL, k=min(count, len(PROCUREMENT_MATERIAL_POOL))
+  )
+  statuses, weights = zip(*STATUS_WEIGHTS)
+  requests = []
+  for material_name, unit, quantity_range, amount_range in chosen:
+    requests.append(
+      ProcurementRequest(
+        id=uuid4(),
+        organization_id=organization_id,
+        project_id=project_id,
+        material_name=material_name,
+        quantity=Decimal(random.randint(*quantity_range)),
+        unit=unit,
+        estimated_amount=Decimal(random.randint(*amount_range)).quantize(Decimal("0.01")),
+        status=random.choices(statuses, weights=weights, k=1)[0],
+        needed_by_date=today + timedelta(days=random.randint(-5, 21)),
+        notes=random.choice([None, "Seed-generated sample request."]),
+        requested_by=requested_by,
+      )
+    )
+  return requests
 
 async def seed_procurement(session: AsyncSession) -> None:
   await seed_module_permissions(session, PROCUREMENT_PERMISSIONS)
@@ -44,63 +95,18 @@ async def seed_procurement(session: AsyncSession) -> None:
     )
   ).scalar_one_or_none()
 
-  existing = (
-    await session.execute(
-      select(ProcurementRequest).where(
-        ProcurementRequest.project_id == project.id,
-        ProcurementRequest.organization_id == org.id,
-      )
-    )
-  ).scalars().all()
-  if existing:
-    print(f"Procurement requests already exist for project {project.code or project.name}.")
-    return
-
-  today = date.today()
-  samples = [
-    ProcurementRequest(
-      id=uuid4(),
-      organization_id=org.id,
-      project_id=project.id,
-      material_name="Cement OPC 43",
-      quantity=Decimal("500"),
-      unit="bags",
-      estimated_amount=Decimal("575000.00"),
-      status=ProcurementStatus.REQUESTED,
-      needed_by_date=today + timedelta(days=7),
-      notes="For foundation and slab pours.",
-      requested_by=user.id if user else None,
-    ),
-    ProcurementRequest(
-      id=uuid4(),
-      organization_id=org.id,
-      project_id=project.id,
-      material_name="TMT Rebar 12mm",
-      quantity=Decimal("12.5"),
-      unit="tons",
-      estimated_amount=Decimal("1875000.00"),
-      status=ProcurementStatus.APPROVED,
-      needed_by_date=today + timedelta(days=5),
-      notes="Approved by PM.",
-      requested_by=user.id if user else None,
-    ),
-    ProcurementRequest(
-      id=uuid4(),
-      organization_id=org.id,
-      project_id=project.id,
-      material_name="Ready-mix Concrete M25",
-      quantity=Decimal("80"),
-      unit="m3",
-      estimated_amount=Decimal("960000.00"),
-      status=ProcurementStatus.ORDERED,
-      needed_by_date=today + timedelta(days=3),
-      notes=None,
-      requested_by=user.id if user else None,
-    ),
-  ]
+  samples = _random_procurement_requests(
+    organization_id=org.id,
+    project_id=project.id,
+    requested_by=user.id if user else None,
+    count=random.randint(1, 3),
+  )
   session.add_all(samples)
   await session.commit()
-  print(f"Procurement seed completed ({len(samples)} requests) for project {project.code or project.name}.")
+  print(
+    f"Procurement seed added {len(samples)} request(s) "
+    f"for project {project.code or project.name}."
+  )
 
 async def main() -> None:
   async with AsyncSessionLocal() as session:
