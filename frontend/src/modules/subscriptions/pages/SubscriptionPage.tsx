@@ -131,29 +131,31 @@ export function SubscriptionPage() {
   }
 
     function handleChangePlan(
-     planId: string,
-     billingInterval: BillingInterval,
-     idempotencyKey: string,
-    ) {
-     changePlan.mutate(
-      {
-       payload: {
-         plan_id: planId,
-         billing_interval: billingInterval,
+      planId: string,
+      billingInterval: BillingInterval,
+      idempotencyKey: string,
+      quantity?: number,
+    ){
+      changePlan.mutate(
+       {
+        payload: {
+        plan_id: planId,
+        billing_interval: billingInterval,
+        quantity: quantity ?? 1,
        },
-      idempotencyKey,
-      },
-      {
-       onSuccess: () => {
-         setChangePlanOpen(false);
-         setSelectedPlan(undefined);
-         showToast({
+        idempotencyKey,
+       },
+       {
+        onSuccess: () => {
+        setChangePlanOpen(false);
+        setSelectedPlan(undefined);
+        showToast({
           tone: "success",
           title: t("subscription.changePlan.successTitle"),
         });
-      },
-      onError: (error) => {
-        showToast({
+       },
+        onError: (error) => {
+         showToast({
           tone: "error",
           title: t("subscription.changePlan.errorTitle"),
           description: getApiErrorMessage(error),
@@ -162,15 +164,18 @@ export function SubscriptionPage() {
     },
   );
 }
-
     function handleCancel(
      cancelAtPeriodEnd: boolean,
      idempotencyKey: string,
+     reason?: string | null,
+     feedback?: string | null,
     ) {
      cancelSubscription.mutate(
-    {
-      payload: {
+      {
+       payload: {
         cancel_at_period_end: cancelAtPeriodEnd,
+        reason: reason ?? null,
+        feedback: feedback ?? null,
       },
       idempotencyKey,
     },

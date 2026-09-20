@@ -97,21 +97,46 @@ export function PlanComparison({
               </div>
 
               <div className="mt-5">
+               <div className="flex items-baseline gap-2">
                 <span className="font-[Archivo] text-[28px] font-bold tracking-[-0.02em] text-[var(--color-text-primary)]">
-                  {formatPrice(
-                    price,
-                    plan.currency,
-                  )}
+                  {formatPrice(price, plan.currency)}
                 </span>
-
-                {numericPrice !== 0 ? (
-                  <span className="ml-1.5 text-[10px] text-[#7c7060]">
-                    {billingInterval === "YEARLY"
-                      ? t("subscription.comparison.perYear")
-                      : t("subscription.comparison.perMonth")}
-                  </span>
-                ) : null}
+                {(() => {
+                 const original =
+                 billingInterval === "YEARLY"
+                  ? plan.price_yearly_original
+                  : plan.price_monthly_original;
+                 if (original && Number(original) > Number(price)) {
+                  return (
+                    <span className="text-[14px] text-[var(--color-text-muted)] line-through">
+                      {formatPrice(original, plan.currency)}
+                    </span>
+                  );
+                 }
+                 return null;
+                })()}
               </div>
+
+              {numericPrice !== 0 ? (
+                <span className="ml-0.5 text-[10px] text-[#7c7060]">
+                  {billingInterval === "YEARLY"
+                    ? t("subscription.comparison.perYear")
+                    : t("subscription.comparison.perMonth")}
+                </span>
+              ) : null}
+  
+              {plan.offer_label ? (
+                <div className="mt-2">
+                  <Badge tone="gold">{plan.offer_label}</Badge>
+                </div>
+              ) : null}
+
+              {plan.trial_days && plan.trial_days > 0 ? (
+               <div className="mt-1.5 text-[11px] font-medium text-[var(--color-success)]">
+                 {plan.trial_days}-day free trial
+               </div>
+              ) : null}
+            </div>
 
               <div className="mt-5 border-t border-[var(--color-border)] pt-4">
                 <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">

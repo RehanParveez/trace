@@ -124,6 +124,8 @@ async def seed_plans(
     else:
       plan.name = data["name"]
       plan.description = data["description"]
+      plan.price_monthly = data["price_monthly"]
+      plan.price_yearly = data["price_yearly"]
       plan.trial_days = data.get("trial_days", plan.trial_days)
       plan.sort_order = data.get("sort_order", plan.sort_order)
       plan.is_default = data.get("is_default", plan.is_default)

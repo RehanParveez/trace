@@ -17,12 +17,20 @@ export interface Plan {
   price_monthly: number | string;
   price_yearly: number | string;
   currency: string;
+  price_monthly_original?: number | string | null;
+  price_yearly_original?: number | string | null;
+  offer_label?: string | null;
+  offer_ends_at?: string | null;
+  version?: number;
+  trial_days?: number;
+  sort_order?: number;
+  is_default?: boolean;
+  limit_policy?: Record<string, "soft" | "hard">;
   is_active: boolean;
   is_public: boolean;
   features: Record<string, boolean>;
   quotas: Record<string, number | null>;
 }
-
 export interface Subscription {
   id: string;
   organization_id: string;
@@ -60,10 +68,13 @@ export interface UsageResponse {
 export interface ChangePlanRequest {
   plan_id: string;
   billing_interval: BillingInterval;
+  quantity?: number;
 }
 
 export interface CancelSubscriptionRequest {
   cancel_at_period_end: boolean;
+  reason?: string | null;
+  feedback?: string | null;
 }
 
 export interface SubscriptionListResponse {

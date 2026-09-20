@@ -18,6 +18,7 @@ from app.shared.storage import format_bytes
 import logging
 from datetime import timedelta
 from decimal import Decimal
+from app.modules.subscriptions.models import Invoice, InvoiceStatus, Plan
 
 logger = logging.getLogger("trace.subscriptions")
 
@@ -65,7 +66,7 @@ class SubscriptionService:
       )
 
     return subscription
-
+  
   async def get_subscription_summary(
     self,
     organization_id: UUID,
@@ -75,6 +76,67 @@ class SubscriptionService:
     )
 
     return subscription
+  
+  def _get_effective_price(self, plan: "Plan", interval: BillingInterval) -> Decimal:
+   now = datetime.now(timezone.utc)
+   if interval == BillingInterval.YEARLY:
+    if plan.offer_ends_at and plan.offer_ends_at > now and plan.price_yearly_original is not None:
+      return plan.price_yearly  
+    return plan.price_yearly
+   else:
+    if plan.offer_ends_at and plan.offer_ends_at > now and plan.price_monthly_original is not None:
+      return plan.price_monthly
+    return plan.price_monthly
+  
+  async def create_invoice_for_subscription(
+    self,
+    organization_id: UUID,
+    *,
+    period_start: datetime | None = None,
+    period_end: datetime | None = None,
+    force: bool = False,
+  ) -> "Invoice":
+
+    subscription = await self.get_subscription(organization_id)
+    plan = subscription.plan
+    start = period_start or subscription.current_period_start
+    end = period_end or subscription.current_period_end
+
+    unit_price = self._get_effective_price(plan, subscription.billing_interval)
+    quantity = subscription.quantity or 1
+    subtotal = (unit_price * quantity).quantize(Decimal("0.01"))
+    tax = Decimal("0") 
+    total = subtotal + tax
+
+    invoice = Invoice(
+      id=uuid4(),
+      organization_id=organization_id,
+      subscription_id=subscription.id,
+      plan_id=plan.id,
+      status=InvoiceStatus.DRAFT,
+      currency=plan.currency or "PKR",
+      subtotal=subtotal,
+      tax=tax,
+      total=total,
+      amount_paid=Decimal("0"),
+      amount_due=total,
+      period_start=start,
+      period_end=end,
+      due_date=end,
+      provider="manual",
+      line_items=[
+       {
+        "description": f"{plan.name} ({subscription.billing_interval.value})",
+        "quantity": quantity,
+        "unit_price": str(unit_price),
+        "amount": str(subtotal),
+       }
+      ],
+        metadata_={},
+    )
+    self.session.add(invoice)
+    await self.session.flush()
+    return invoice
 
   async def create_initial_subscription(
     self,
@@ -150,51 +212,53 @@ class SubscriptionService:
     actor_user_id: UUID,
   ) -> Subscription:
     subscription = await self.repository.get_subscription_for_update(
-      organization_id
+     organization_id
     )
-
     if subscription is None:
-      raise TraceException(
-        "Subscription not found.",
-        status_code=404,
-        code="SUBSCRIPTION_NOT_FOUND",
-      )
-
+     raise TraceException(
+      "Subscription not found.",
+      status_code=404,
+      code="SUBSCRIPTION_NOT_FOUND",
+     )
     plan = await self.repository.get_plan(payload.plan_id)
-
     if plan is None or not plan.is_active:
-      raise TraceException(
-        "Plan not found or inactive.",
-        status_code=404,
-        code="PLAN_NOT_AVAILABLE",
-      )
-
+     raise TraceException(
+      "Plan not found or inactive.",
+      status_code=404,
+      code="PLAN_NOT_AVAILABLE",
+    )
     if subscription.status in {
       SubscriptionStatus.CANCELLED,
       SubscriptionStatus.EXPIRED,
     }:
       raise TraceException(
-        "Cancelled or expired subscriptions cannot be changed.",
+       "Cancelled or expired subscriptions cannot be changed.",
         status_code=409,
         code="SUBSCRIPTION_NOT_CHANGEABLE",
       )
-
+      
     old_plan_id = subscription.plan_id
-    interval_changed = subscription.billing_interval != payload.billing_interval
+    old_interval = subscription.billing_interval
+    old_quantity = subscription.quantity
+    interval_changed = old_interval != payload.billing_interval
+    quantity = getattr(payload, "quantity", None) or subscription.quantity or 1
+    now = datetime.now(timezone.utc)
+    total_seconds = (subscription.current_period_end - subscription.current_period_start).total_seconds()
+    remaining_seconds = max((subscription.current_period_end - now).total_seconds(), 0)
+    proration_factor = remaining_seconds / total_seconds if total_seconds > 0 else 0
+  
+    old_price = self._get_effective_price(subscription.plan, old_interval)
+    new_price = self._get_effective_price(plan, payload.billing_interval)
+ 
+    proration_credit = (old_price * old_quantity * Decimal(str(proration_factor))).quantize(Decimal("0.01"))
+    proration_charge = (new_price * quantity * Decimal(str(proration_factor))).quantize(Decimal("0.01"))
     subscription.plan_id = plan.id
     subscription.billing_interval = payload.billing_interval
-    
-    subscription.quantity = getattr(subscription, "quantity", 1) or 1
-    subscription.next_billing_at = subscription.current_period_end
-
-    if interval_changed:
-      subscription.current_period_end = self._advance_period(
-        subscription.current_period_start, payload.billing_interval,
-      )
-
-    await self.repository.update_subscription(
-      subscription
-    )
+    subscription.quantity = quantity
+    if interval_changed or quantity != old_quantity:
+     subscription.next_billing_at = subscription.current_period_end
+     
+    await self.repository.update_subscription(subscription)
     await self.session.commit()
     await self.audit.log(
       organization_id,
@@ -204,19 +268,21 @@ class SubscriptionService:
       AuditAction.UPDATE,
       f"Changed subscription plan to {plan.name}",
       changes={
-        "plan_id": {
-          "old": str(old_plan_id),
-          "new": str(plan.id),
-        }
+        "plan_id": {"old": str(old_plan_id), "new": str(plan.id)},
+        "billing_interval": {"old": old_interval.value, "new": payload.billing_interval.value},
+        "quantity": {"old": old_quantity, "new": quantity},
+        "proration_credit": str(proration_credit),
+        "proration_charge": str(proration_charge),
       },
     )
-
+    
     logger.info(
-      "subscription.plan_changed",
+     "subscription.plan_changed",
       extra={
-        "organization_id": str(organization_id),
-        "new_plan_id": str(plan.id),
-        "billing_interval": payload.billing_interval.value,
+       "organization_id": str(organization_id),
+       "new_plan_id": str(plan.id),
+       "billing_interval": payload.billing_interval.value,
+       "quantity": quantity,
       },
     )
     return subscription
@@ -270,9 +336,12 @@ class SubscriptionService:
       AuditEntityType.SUBSCRIPTION,
       subscription.id,
       AuditAction.UPDATE,
-      "Subscription cancelled at period end"
-      if cancel_at_period_end
-      else "Subscription cancelled immediately",
+      "Subscription cancelled at period end" if cancel_at_period_end else "Subscription cancelled immediately",
+      changes={
+        "cancel_at_period_end": cancel_at_period_end,
+        "reason": reason,
+        "feedback": feedback,
+      },
     )
     logger.info(
       "subscription.cancelled",
@@ -341,45 +410,143 @@ class SubscriptionService:
     now: datetime | None = None,
   ) -> Subscription | None:
     now = now or datetime.now(timezone.utc)
-    subscription = await self.repository.get_subscription_for_update(organization_id)
+    subscription = await self.repository.get_subscription_for_update(
+    organization_id
+  )
 
     if subscription is None:
-      return None
-    if subscription.status in {SubscriptionStatus.CANCELLED, SubscriptionStatus.EXPIRED}:
-      return None
-    if subscription.current_period_end > now:
-      return None
+     return None
+    if subscription.status in {
+     SubscriptionStatus.CANCELLED,
+     SubscriptionStatus.EXPIRED,
+    }:
+     return None
 
+    if subscription.current_period_end > now:
+     return None
     if subscription.cancel_at_period_end:
       subscription.status = SubscriptionStatus.CANCELLED
       subscription.cancelled_at = now
-    elif subscription.status == SubscriptionStatus.TRIALING:
-      if (subscription.plan.price_monthly or Decimal("0")) > 0 or (subscription.plan.price_yearly or Decimal("0")) > 0:
+    if subscription.status == SubscriptionStatus.TRIALING:
+      plan = subscription.plan
+      if (plan.price_monthly or 0) > 0 or (plan.price_yearly or 0) > 0:
         subscription.status = SubscriptionStatus.PAST_DUE
         subscription.grace_period_ends_at = now + timedelta(days=7)
+        subscription.next_billing_at = now
       else:
+       subscription.status = SubscriptionStatus.EXPIRED
+
+      if subscription.status == SubscriptionStatus.PAST_DUE:
+       if subscription.grace_period_ends_at and now > subscription.grace_period_ends_at:
         subscription.status = SubscriptionStatus.EXPIRED
-    elif subscription.status == SubscriptionStatus.PAST_DUE:
-      if subscription.grace_period_ends_at and now > subscription.grace_period_ends_at:
-        subscription.status = SubscriptionStatus.EXPIRED
-    else:
+
       subscription.current_period_start = subscription.current_period_end
       subscription.current_period_end = self._advance_period(
-        subscription.current_period_start, subscription.billing_interval,
-      )
+      subscription.current_period_start, subscription.billing_interval
+     )
       subscription.next_billing_at = subscription.current_period_end
       if subscription.status == SubscriptionStatus.TRIALING:
         subscription.status = SubscriptionStatus.ACTIVE
+      await self.repository.update_subscription(subscription)
+      await self.session.commit()
+
+      logger.info(
+        "subscription.period_rolled",
+         extra={"organization_id": str(organization_id), "new_status": subscription.status.value},
+      )
+
+      return subscription
+
+  async def apply_provider_event(
+    self,
+    organization_id: UUID,
+    *,
+    status: SubscriptionStatus,
+    provider_subscription_id: str | None = None,
+    provider_customer_id: str | None = None,
+  ) -> Subscription:
+    subscription = await self.repository.get_subscription_for_update(organization_id)
+
+
+    if subscription is None:
+      raise TraceException("Subscription not found.", status_code=404, code="SUBSCRIPTION_NOT_FOUND")
+
+
+    subscription.status = status
+    if provider_subscription_id is not None:
+      subscription.provider_subscription_id = provider_subscription_id
+    if provider_customer_id is not None:
+      subscription.provider_customer_id = provider_customer_id
+
 
     await self.repository.update_subscription(subscription)
     await self.session.commit()
 
+
     logger.info(
-      "subscription.period_rolled",
-      extra={"organization_id": str(organization_id), "new_status": subscription.status.value},
+      "subscription.provider_event_applied",
+      extra={"organization_id": str(organization_id), "status": status.value},
     )
 
+
     return subscription
+
+
+  async def get_usage(
+    self,
+    organization_id: UUID,
+  ) -> UsageResponse:
+    subscription = await self.get_subscription(
+      organization_id
+    )
+    counters = await self.repository.list_usage_counters(
+      organization_id,
+      subscription.current_period_start,
+      subscription.current_period_end,
+    )
+
+    quotas = subscription.plan.quotas or {}
+    metrics: list[UsageMetricResponse] = []
+    for metric, limit in quotas.items():
+      counter = next(
+        (
+          item
+          for item in counters
+          if item.metric == metric
+        ),
+        None,
+      )
+      used = counter.quantity if counter else 0
+
+      if limit is None:
+        remaining = None
+        percentage = None
+      else:
+        remaining = max(int(limit) - used, 0)
+        percentage = (
+          100.0
+          if int(limit) <= 0 and used > 0
+          else (
+            (used / int(limit)) * 100
+            if int(limit) > 0
+            else 0.0
+          )
+        )
+
+      metrics.append(
+        UsageMetricResponse(
+          metric=metric,
+          used=used,
+          limit=int(limit) if limit is not None else None,
+          remaining=remaining,
+          percentage=percentage,
+        )
+      )
+    return UsageResponse(
+      period_start=subscription.current_period_start,
+      period_end=subscription.current_period_end,
+      metrics=metrics,
+    )
 
   async def apply_provider_event(
     self,
@@ -503,9 +670,10 @@ class SubscriptionService:
       return
 
     limit = quotas[metric]
-
     if limit is None:
       return
+    
+    limit_policy = (subscription.plan.limit_policy or {}).get(metric, "hard")
 
     counter = await self.repository.get_usage_counter(
       organization_id,
@@ -522,13 +690,14 @@ class SubscriptionService:
 
     if current_quantity + quantity > int(limit):
       remaining = max(int(limit) - current_quantity, 0)
-      raise TraceException(
+      if limit_policy == "hard":
+       raise TraceException(
         f"{_metric_label(metric)} limit reached. Your plan allows "
         f"{_format_quantity(metric, int(limit))} and "
         f"{_format_quantity(metric, remaining)} is left this period.",
         status_code=402,
         code="USAGE_LIMIT_EXCEEDED",
-      )
+    )
 
   async def increment_usage(
     self,
@@ -608,6 +777,7 @@ class SubscriptionService:
 
     for metric, quantity in amounts.items():
       limit = quotas.get(metric)
+      limit_policy = (quotas and (subscription.plan.limit_policy or {}).get(metric, "hard")) or "hard"
 
       counter = await self.repository.get_usage_counter(
         organization_id,
@@ -632,14 +802,15 @@ class SubscriptionService:
         )
 
       if limit is not None and counter.quantity + quantity > int(limit):
-        remaining = max(int(limit) - counter.quantity, 0)
+       remaining = max(int(limit) - counter.quantity, 0)
+       if limit_policy == "hard":
         raise TraceException(
-          f"{_metric_label(metric)} limit reached. Your plan allows "
-          f"{_format_quantity(metric, int(limit))} and "
-          f"{_format_quantity(metric, remaining)} is left this period.",
-          status_code=402,
-          code="USAGE_LIMIT_EXCEEDED",
-        )
+         f"{_metric_label(metric)} limit reached. Your plan allows "
+         f"{_format_quantity(metric, int(limit))} and "
+         f"{_format_quantity(metric, remaining)} is left this period.",
+         status_code=402,
+         code="USAGE_LIMIT_EXCEEDED",
+      )
 
       previous_quantity = counter.quantity
       counter.quantity += quantity

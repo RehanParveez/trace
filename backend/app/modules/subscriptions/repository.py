@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from app.modules.subscriptions.models import Plan, Subscription, SubscriptionStatus, UsageCounter
+from app.modules.subscriptions.models import Invoice, InvoiceStatus
 
 class SubscriptionRepository:
   def __init__(self, session: AsyncSession):
@@ -175,3 +176,31 @@ class SubscriptionRepository:
     total_result = await self.session.execute(count_query)
 
     return list(items_result.scalars().all()), total_result.scalar_one()
+  
+  async def create_invoice(self, invoice: "Invoice") -> "Invoice":
+    self.session.add(invoice)
+    await self.session.flush()
+    return invoice
+
+  async def get_invoice(self, invoice_id: UUID) -> "Invoice | None":
+    result = await self.session.execute(select(Invoice).where(Invoice.id == invoice_id))
+    return result.scalar_one_or_none()
+
+  async def list_invoices_for_org(
+    self,
+    organization_id: UUID,
+    *,
+    status: "InvoiceStatus | None" = None,
+    limit: int = 20,
+    offset: int = 0,
+  ) -> tuple[list["Invoice"], int]:
+   
+    query = select(Invoice).where(Invoice.organization_id == organization_id)
+    count_query = select(func.count()).select_from(Invoice).where(Invoice.organization_id == organization_id)
+    if status is not None:
+     query = query.where(Invoice.status == status)
+     count_query = count_query.where(Invoice.status == status)
+    query = query.order_by(Invoice.created_at.desc()).limit(limit).offset(offset)
+    items = list((await self.session.execute(query)).scalars().all())
+    total = (await self.session.execute(count_query)).scalar_one()
+    return items, total

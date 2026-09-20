@@ -80,6 +80,7 @@ class UsageResponse(BaseModel):
 class ChangePlanRequest(BaseModel):
   plan_id: UUID
   billing_interval: BillingInterval = BillingInterval.MONTHLY
+  quantity: int = Field(default=1, ge=1)
 
 class CancelSubscriptionRequest(BaseModel):
   cancel_at_period_end: bool = True

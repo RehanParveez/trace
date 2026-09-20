@@ -15,6 +15,7 @@ interface ChangePlanDialogProps {
     planId: string,
     billingInterval: BillingInterval,
     idempotencyKey: string,
+    quantity?: number,
   ) => void;
   onClose: () => void;
 }
@@ -40,7 +41,7 @@ export function ChangePlanDialog({
   const [billingInterval, setBillingInterval] =
     useState<BillingInterval>("MONTHLY");
   const idempotencyKey = useMemo(() => crypto.randomUUID(), []);
-
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     setPlanId(
@@ -75,6 +76,7 @@ export function ChangePlanDialog({
             planId,
             billingInterval,
             idempotencyKey,
+            quantity,
           );
         }}
       >
@@ -140,20 +142,42 @@ export function ChangePlanDialog({
                     <div className="shrink-0 text-right">
                       <div className="font-mono text-[12px] font-semibold text-[var(--color-text-primary)]">
                         {formatPrice(
-                          billingInterval ===
-                            "YEARLY"
-                            ? plan.price_yearly
-                            : plan.price_monthly,
+                          billingInterval === "YEARLY"
+                           ? plan.price_yearly
+                           : plan.price_monthly,
                           plan.currency,
                         )}
                       </div>
 
-                      <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
-                        {billingInterval ===
-                        "YEARLY"
-                          ? t("subscription.changePlan.perYear")
-                          : t("subscription.changePlan.perMonth")}
-                      </div>
+ 
+                      {(() => {
+                       const original =
+                       billingInterval === "YEARLY"
+                        ? plan.price_yearly_original
+                        : plan.price_monthly_original;
+                       if (original && Number(original) > Number(
+                        billingInterval === "YEARLY" ? plan.price_yearly : plan.price_monthly
+                       )) {
+                       return (
+                        <div className="text-[10px] text-[var(--color-text-muted)] line-through">
+                          {formatPrice(original, plan.currency)}
+                        </div>
+                        );
+                       }
+                       return null;
+                      })()}
+
+                     <div className="mt-0.5 text-[10px] text-[var(--color-text-muted)]">
+                      {billingInterval === "YEARLY"
+                        ? t("subscription.changePlan.perYear")
+                        : t("subscription.changePlan.perMonth")}
+                     </div>
+
+                     {plan.trial_days && plan.trial_days > 0 && (
+                        <div className="mt-0.5 text-[10px] font-medium text-[var(--color-success)]">
+                         {plan.trial_days}-day trial
+                        </div>
+                      )}
                     </div>
                   </label>
                 );
@@ -208,6 +232,43 @@ export function ChangePlanDialog({
                 );
               })}
             </div>
+          </Field>
+
+          <Field label={t("subscription.changePlan.quantity", "Quantity / Seats")}>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={quantity <= 1 || isSubmitting}
+                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                className="flex h-9 w-9 items-center justify-center rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)] disabled:opacity-40"
+              >
+                −
+              </button>
+
+            <input
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10);
+                if (!isNaN(val) && val >= 1) setQuantity(val);
+              }}
+              className="w-20 rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-center text-[14px] font-semibold outline-none focus:border-[var(--color-trace-gold)]"
+            />
+
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => setQuantity((q) => q + 1)}
+              className="flex h-9 w-9 items-center justify-center rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] hover:bg-[var(--color-surface-muted)]"
+            >
+             +
+            </button>
+
+            <span className="text-[12px] text-[var(--color-text-secondary)]">
+              {t("subscription.changePlan.seatsHint", "Number of seats / licenses")}
+            </span>
+           </div>
           </Field>
 
           {selectedPlan ? (

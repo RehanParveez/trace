@@ -44,14 +44,19 @@ export function CurrentPlanCard({
           t("subscription.planCard.fallbackDescription")
         }
         action={
-          <Badge tone="blue">
-            {formatPrice(plan.price_monthly, plan.currency)}
-            {" "}
-            {t("subscription.planCard.perMonth")}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+           <Badge tone="blue">
+             {formatPrice(plan.price_monthly, plan.currency)}{" "}
+             {t("subscription.planCard.perMonth")}
+           </Badge>
+           {plan.trial_days && plan.trial_days > 0 ? (
+            <span className="text-[10px] font-medium text-[var(--color-success)]">
+              {plan.trial_days}-day trial available
+            </span>
+          ) : null}
+        </div>
         }
-      />
-
+      ></PanelHeader>
       <div className="grid gap-0 divide-y divide-[var(--color-border)] sm:grid-cols-2 sm:divide-x sm:divide-y-0">
         <div className="p-5 sm:p-6">
           <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#a2957c]">
