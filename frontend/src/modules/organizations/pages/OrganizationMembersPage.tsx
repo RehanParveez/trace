@@ -113,8 +113,8 @@ export function OrganizationMembersPage() {
       </div>
 
       <SectionDivider
-        title={t("members.accessDirectory")}
-        description={`${filteredMembers.length} {t("members.visibleCount", { count: filteredMembers.length })}`}
+       title={t("members.accessDirectory")}
+       description={t("members.visibleCount", { count: filteredMembers.length })}
       />
 
       <MemberTable
@@ -173,7 +173,7 @@ export function OrganizationMembersPage() {
             updateStatus.reset();
             setStatusMember(null);
           }}
-          
+
           onConfirm={() =>
             updateStatus.mutate(
               {

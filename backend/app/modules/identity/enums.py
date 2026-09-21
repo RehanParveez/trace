@@ -72,3 +72,7 @@ class PermissionKey(StrEnum):
   EXPENSE_READ = "expense:read"
   EXPENSE_CREATE = "expense:create"
   EXPENSE_APPROVE = "expense:approve"
+  
+  RUNNING_BILL_READ = "running_bill:read"
+  RUNNING_BILL_CREATE = "running_bill:create"
+  RUNNING_BILL_ISSUE = "running_bill:issue"

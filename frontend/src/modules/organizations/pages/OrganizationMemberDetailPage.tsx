@@ -74,7 +74,7 @@ export function OrganizationMemberDetailPage() {
 
               <div className="mt-2 flex flex-wrap gap-2">
                 <Badge tone={member.is_active ? "green" : "slate"}>
-                  member.is_active ? t("memberDetail.active") : t("memberDetail.inactive")
+                  {member.is_active ? t("memberDetail.active") : t("memberDetail.inactive")}
                 </Badge>
 
                 <Badge tone={member.is_verified ? "blue" : "gold"}>

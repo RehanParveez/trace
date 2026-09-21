@@ -22,6 +22,7 @@ import { BudgetsPage } from "../modules/budgets";
 import { SiteProgressPage } from "../modules/site_progress";
 import { ProcurementPage } from "../modules/procurement";
 import { ExpensesPage } from "../modules/expenses";
+import { RunningBillsPage } from "../modules/running_bills";
 
 export const router = createBrowserRouter([
   {
@@ -296,6 +297,14 @@ export const router = createBrowserRouter([
       index: true,
       element: <AdminSubscriptionsPage />,
     },
+  ],
+},
+
+{
+  path: "running-bills",
+  element: <OrganizationShell />,
+  children: [
+    { index: true, element: <RunningBillsPage /> },
   ],
 },
 

@@ -19,6 +19,7 @@ from app.modules.budgets import models as budgets_models
 from app.modules.site_progress import models as site_progress_models
 from app.modules.procurement import models as procurement_models
 from app.modules.expenses import models as expenses_models
+from app.modules.running_bills import models as running_models
 
 config = context.config
 

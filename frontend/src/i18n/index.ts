@@ -530,6 +530,20 @@ const resources = {
       "invitations.invitee": "Invitee",
       "invitations.revoking": "Revoking…",
       "invitations.revokeConfirm": "Revoke invitation",
+      "invitations.tableEyebrow": "ORGANIZATION INVITATIONS",
+      "invitations.tableTitle": "Invitations",
+      "invitations.tableDesc": "Pending, accepted and expired invitations for this organization.",
+      "invitations.colInvitee": "Invitee",
+      "invitations.colRole": "Role",
+      "invitations.colStatus": "Status",
+      "invitations.colExpires": "Expires",
+      "invitations.colActions": "Actions",
+      "invitations.status.pending": "Pending",
+      "invitations.status.accepted": "Accepted",
+      "invitations.status.expired": "Expired",
+      "invitations.revoke": "Revoke",
+      "invitations.emptyTitle": "No invitations yet",
+      "invitations.emptyDesc": "Invite team members to join this organization workspace.",
 
       "roles.configEyebrow": "ROLE CONFIGURATION",
       "roles.newEyebrow": "NEW ACCESS ROLE",
@@ -692,6 +706,15 @@ const resources = {
       "dashboard.stat.ai": "AI",
       "dashboard.financialSection.title": "Portfolio financials",
       "dashboard.financialSection.description": "Approved budget, committed procurement and approved spend across every project.",
+      "dashboard.sitePhotos.eyebrow": "SITE EVIDENCE",
+      "dashboard.sitePhotos.title": "Recent site photos",
+      "dashboard.sitePhotos.description": "Latest photos captured from the field.",
+      "dashboard.sitePhotos.loading": "Loading site photos…",
+      "dashboard.sitePhotos.empty": "No site photos have been uploaded yet.",
+      "dashboard.sitePhotos.unknownProject": "Unknown project",
+      "dashboard.sitePhotos.unassigned": "Unassigned",
+      "dashboard.sitePhotos.needsProject": "Needs project",
+      "dashboard.sitePhotos.viewAll": "View all site photos",
 
       "clients.form.editTitle": "Edit client",
       "clients.form.addTitle": "Add client",
@@ -1112,7 +1135,7 @@ const resources = {
       "materials.rateUpdatedToast": "Default rate updated",
       "materials.rateErrorTitle": "Couldn't update the rate",
       "materials.rateErrorFallback": "Please try again.",
-
+      
       "labour.page.title": "Labour rates",
       "labour.page.description": "Per-trade labour rates used to auto-generate labour costs on any project's BOQ.",
 
@@ -1362,7 +1385,8 @@ const resources = {
       "verification.photoEvidence.removeError": "Couldn't remove this photo",
       "verification.photoEvidence.attachSuccess": "Photo attached as evidence",
       "verification.photoEvidence.attachError": "Couldn't attach this photo",
-
+      "verification.review.pageTitle": "Progress review",
+    
       "expenses.form.recorded": "Expense recorded",
       "expenses.form.createError": "Couldn't record this expense. Please try again.",
       "expenses.form.title": "Record expense",
@@ -1461,6 +1485,7 @@ const resources = {
       "notifications.page.emptyTitle": "Nothing here",
       "notifications.page.emptyDesc": "You're fully caught up.",
       "notifications.page.new": "New",
+      "nav.notifications": "Notifications",
 
       "ai.table.eyebrow": "AI ORCHESTRATOR",
       "ai.table.title": "AI requests",
@@ -1494,6 +1519,8 @@ const resources = {
       "ai.page.description": "Every AI call made on behalf of this organization — material normalization, caption parsing, and their outcomes.",
 
       "common.close": "Close",
+
+      "runningBills": "Running bills",
 
 
       "footer.tagline": "Construction intelligence for a clearer project record.",
@@ -1689,6 +1716,20 @@ const resources = {
       "invitations.sectionDesc": "آرگنائزیشن اے پی آئی سے {{count}} دعوت نامہ موصول ہوا۔",
       "invitations.sectionDesc_plural": "آرگنائزیشن اے پی آئی سے {{count}} دعوت نامے موصول ہوئے۔",
       "invitations.loadError": "دعوت نامے لوڈ نہیں ہو سکے",
+      "invitations.tableEyebrow": "تنظیمی دعوت نامے",
+      "invitations.tableTitle": "دعوت نامے",
+      "invitations.tableDesc": "اس تنظیم کے زیر التوا، قبول شدہ اور ختم شدہ دعوت نامے۔",
+      "invitations.colInvitee": "مدعو",
+      "invitations.colRole": "کردار",
+      "invitations.colStatus": "حیثیت",
+      "invitations.colExpires": "میعاد ختم",
+      "invitations.colActions": "اقدامات",
+      "invitations.status.pending": "زیر التوا",
+      "invitations.status.accepted": "قبول شدہ",
+      "invitations.status.expired": "ختم شدہ",
+      "invitations.revoke": "منسوخ کریں",
+      "invitations.emptyTitle": "ابھی کوئی دعوت نامہ نہیں",
+      "invitations.emptyDesc": "اس تنظیمی ورک اسپیس میں شامل ہونے کے لیے ٹیم کے ارکان کو مدعو کریں۔",
  
       "accept.eyebrow": "رسائی دعوت",
       "accept.title": "دعوت قبول کریں",
@@ -2194,6 +2235,15 @@ const resources = {
       "dashboard.stat.ai": "اے آئی",
       "dashboard.financialSection.title": "پورٹ فولیو فنانشلز",
       "dashboard.financialSection.description": "ہر پروجیکٹ میں منظور شدہ بجٹ، کمٹڈ پروکیورمنٹ اور منظور شدہ اخراجات۔",
+      "dashboard.sitePhotos.eyebrow": "سائٹ کے ثبوت",
+      "dashboard.sitePhotos.title": "حالیہ سائٹ تصاویر",
+      "dashboard.sitePhotos.description": "میدان سے لی گئی تازہ ترین تصاویر۔",
+      "dashboard.sitePhotos.loading": "سائٹ تصاویر لوڈ ہو رہی ہیں…",
+      "dashboard.sitePhotos.empty": "ابھی تک کوئی سائٹ تصویر اپ لوڈ نہیں کی گئی۔",
+      "dashboard.sitePhotos.unknownProject": "نامعلوم منصوبہ",
+      "dashboard.sitePhotos.unassigned": "غیر تفویض شدہ",
+      "dashboard.sitePhotos.needsProject": "منصوبے کی ضرورت",
+      "dashboard.sitePhotos.viewAll": "تمام سائٹ تصاویر دیکھیں",
 
       "clients.form.editTitle": "کلائنٹ میں ترمیم",
       "clients.form.addTitle": "کلائنٹ شامل کریں",
@@ -2926,6 +2976,7 @@ const resources = {
       "notifications.page.emptyTitle": "یہاں کچھ نہیں",
       "notifications.page.emptyDesc": "آپ مکمل طور پر اپ ٹو ڈیٹ ہیں۔",
       "notifications.page.new": "نیا",
+      "nav.notifications": "اطلاعات",
 
       "audit.table.eyebrow": "سرگرمی ریکارڈ",
       "audit.table.title": "آڈٹ لاگ",
@@ -2987,6 +3038,8 @@ const resources = {
       "ai.page.description": "اس آرگنائزیشن کی طرف سے کی گئی ہر اے آئی کال — میٹریل نارملائزیشن، کیپشن پارسنگ اور ان کے نتائج۔",
 
       "common.close": "بند کریں",
+
+      "runningBills": "جاری بلز / آئی پی سی",
 
       "footer.tagline": "واضح پراجیکٹ ریکارڈ کے لیے تعمیراتی ذہانت۔",
       "footer.newsletter.label": "تعمیر کے ساتھ اپ ڈیٹ رہیں",

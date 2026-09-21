@@ -1,0 +1,12 @@
+﻿{
+  "project_id": "28f8bc29-1b47-47d2-89ce-3858486ad00f",
+  "boq_version_id": "ad26537e-592f-4e22-b9dd-24c316fd201a",
+  "period_start": "2026-09-01",
+  "period_end": "2026-09-15",
+  "retention_percentage": 10,
+  "retention_cap_percentage": null,
+  "advance_recovery_amount": 0,
+  "other_deductions_amount": 0,
+  "other_deductions_note": null,
+  "notes": "IPC-1 check draft"
+}
