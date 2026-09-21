@@ -76,3 +76,7 @@ class PermissionKey(StrEnum):
   RUNNING_BILL_READ = "running_bill:read"
   RUNNING_BILL_CREATE = "running_bill:create"
   RUNNING_BILL_ISSUE = "running_bill:issue"
+  
+  LABOUR_READ = "labour:read"
+  LABOUR_MANAGE = "labour:manage"
+  LABOUR_PAYMENT_MANAGE = "labour:payment_manage"

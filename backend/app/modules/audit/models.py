@@ -23,6 +23,7 @@ class AuditEntityType(str, enum.Enum):
   MATERIAL_LIBRARY = "MATERIAL_LIBRARY"
   SITE_PHOTO = "SITE_PHOTO"
   RUNNING_BILL = "RUNNING_BILL"
+  LABOUR = "labour"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"

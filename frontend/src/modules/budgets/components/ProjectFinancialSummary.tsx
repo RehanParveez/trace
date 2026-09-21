@@ -2,6 +2,7 @@ import { StatCard } from "../../organizations/components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { useExpenses } from "../../expenses";
 import { useProcurementRequests } from "../../procurement";
+import { LABOUR_PERMISSIONS, useLabourSummary } from "../../labour";
 import { useProjectBudget } from "../hooks";
 import { formatBudgetAmount } from "../utils/budget.utils";
 import { useTranslation } from "react-i18next";
@@ -17,6 +18,7 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
   const canViewBudget = permissions.includes(IDENTITY_PERMISSIONS.BUDGET_READ);
   const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
   const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
+  const canViewLabour = permissions.includes(LABOUR_PERMISSIONS.LABOUR_READ);
 
   const budgetQuery = useProjectBudget(canViewBudget ? projectId : undefined);
   const expensesQuery = useExpenses(
@@ -28,16 +30,30 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
     { enabled: canViewProcurement },
   );
 
-  if (!canViewBudget && !canViewExpenses && !canViewProcurement) {
+  const budget = budgetQuery.data ?? null; 
+
+  const labourPeriodStart = budget?.created_at
+    ? budget.created_at.slice(0, 10)
+    : "2000-01-01";
+  const labourPeriodEnd = new Date().toISOString().slice(0, 10);
+
+  const labourSummaryQuery = useLabourSummary(
+    projectId,
+    labourPeriodStart,
+    labourPeriodEnd,
+    { enabled: canViewLabour },
+  );
+
+  if (!canViewBudget && !canViewExpenses && !canViewProcurement && !canViewLabour) {
     return null;
   }
 
   const isLoadingFinancials =
     (canViewBudget && budgetQuery.isLoading) ||
     (canViewExpenses && expensesQuery.isLoading) ||
-    (canViewProcurement && procurementQuery.isLoading);
+    (canViewProcurement && procurementQuery.isLoading) ||
+    (canViewLabour && labourSummaryQuery.isLoading);
 
-  const budget = budgetQuery.data ?? null;
   const approvedExpenses = expensesQuery.data?.items ?? [];
   const procurementRequests = procurementQuery.data?.items ?? [];
 
@@ -53,15 +69,39 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
         .reduce((sum, request) => sum + Number(request.estimated_amount ?? 0), 0)
     : null;
 
+  const labourAmount =
+    canViewLabour && labourSummaryQuery.data
+      ? Number(labourSummaryQuery.data.total_accrued_cost)
+      : null;
+
   const remainingAmount =
     approvedAmount !== null
-      ? approvedAmount - (spentAmount ?? 0) - (committedAmount ?? 0)
+      ? approvedAmount - (spentAmount ?? 0) - (committedAmount ?? 0) - (labourAmount ?? 0)
       : null;
 
   const currency = budget?.currency ?? "PKR";
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+
+      <StatCard
+        label={t("dashboard.financial.labour")}         
+        value={
+          !canViewLabour
+            ? t("dashboard.financial.noAccess")
+            : isLoadingFinancials
+              ? "…"
+              : formatBudgetAmount(labourAmount ?? 0, currency)
+        }
+        note={
+        canViewLabour
+          ? t("dashboard.financial.labourNote")    
+          : t("dashboard.financial.requiresLabour")
+        }
+        icon="users"
+        tone="gold"
+      />
+
       <StatCard
         label={t("dashboard.financial.approvedBudget")}
         value={

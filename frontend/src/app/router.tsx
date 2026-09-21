@@ -23,6 +23,7 @@ import { SiteProgressPage } from "../modules/site_progress";
 import { ProcurementPage } from "../modules/procurement";
 import { ExpensesPage } from "../modules/expenses";
 import { RunningBillsPage } from "../modules/running_bills";
+import { LabourPage } from "../modules/labour";
 
 export const router = createBrowserRouter([
   {
@@ -306,6 +307,15 @@ export const router = createBrowserRouter([
   children: [
     { index: true, element: <RunningBillsPage /> },
   ],
+},
+
+{
+  path: "labour",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+     element: <LabourPage /> }
+   ],
 },
 
   ],

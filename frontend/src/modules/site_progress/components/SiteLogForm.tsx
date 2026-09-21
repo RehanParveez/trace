@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateSiteLog } from "../hooks";
 import { useTranslation } from "react-i18next";
+import { LabourDayCrossCheck } from "./LabourDayCrossCheck";
 
 interface SiteLogFormProps {
   projectId: string;
@@ -34,6 +35,7 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
         blockers: blockers.trim() || null,
         notes: notes.trim() || null,
       },
+    
       {
         onSuccess: () => {
           onClose();
@@ -67,6 +69,10 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
         <Field label={t("siteProgress.form.notes")}>
           <textarea className={`${inputClass} resize-y`} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t("siteProgress.form.notesPlaceholder")} />
         </Field>
+
+        {logDate ? (
+         <LabourDayCrossCheck projectId={projectId} date={logDate} />
+        ) : null}
 
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
