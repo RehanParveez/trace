@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 PASSWORD_MIN_LENGTH = 12
 PASSWORD_MAX_LENGTH = 128
@@ -43,9 +43,15 @@ class RegisterRequest(BaseModel):
     max_length=100,
   )
 
-  organization_name: str = Field(
+  organization_name: str | None = Field(
+    default = None,
     min_length=2,
     max_length=255,
+  )
+  
+  invitation_token: str | None = Field(
+    default=None,
+    description="If set, the new user joins this invitation's organization/role instead of creating one.",
   )
 
   @field_validator("email")
@@ -66,6 +72,12 @@ class RegisterRequest(BaseModel):
       raise ValueError("Passwords do not match.")
 
     return value
+  
+  @model_validator(mode="after")
+  def _require_org_name_unless_invited(self) -> "RegisterRequest":
+    if self.invitation_token is None and not self.organization_name:
+      raise ValueError("organization_name is required when no invitation_token is provided.")
+    return self
 
 class RefreshRequest(BaseModel):
   refresh_token: str = Field(
@@ -223,6 +235,11 @@ class RegistrationResponse(BaseModel):
   user: UserResponse
   verification_required: bool
   message: str
+  
+class InvitationPreviewResponse(BaseModel):
+  organization_name: str
+  email: str
+  role_name: str
   
 class SwitchOrganizationRequest(BaseModel):
   organization_id: UUID

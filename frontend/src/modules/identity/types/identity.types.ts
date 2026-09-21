@@ -70,7 +70,14 @@ export type RegisterPayload = {
   password_confirmation: string;
   first_name: string;
   last_name: string;
+  organization_name?: string;
+  invitation_token?: string;
+};
+
+export type InvitationPreview = {
   organization_name: string;
+  email: string;
+  role_name: string;
 };
 
 export type ForgotPasswordPayload = {

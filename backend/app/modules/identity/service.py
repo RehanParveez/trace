@@ -9,13 +9,14 @@ from app.core.exceptions import TraceException
 from app.modules.identity.token_store import IdentityTokenStore
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.modules.identity.enums import TokenType
-from app.modules.identity.models import RefreshToken, User, Organization, OrganizationMembership
+from app.modules.identity.models import RefreshToken, User, Organization, OrganizationMembership, OrganizationInvitation
 from app.modules.identity.password_policy import validate_password
 from app.modules.identity.repository import IdentityRepository
-from app.modules.identity.schemas import LoginResponse, RegistrationResponse, TokenResponse, UserResponse, RoleResponse, OrganizationResponse
+from app.modules.identity.schemas import LoginResponse, RegistrationResponse, TokenResponse, UserResponse, RoleResponse, OrganizationResponse, InvitationPreviewResponse
 from app.core.config import settings
 from app.modules.identity.email import EmailService
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from app.modules.subscriptions.service import SubscriptionService
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
@@ -23,7 +24,6 @@ LOCKOUT_MINUTES = 15
 
 EMAIL_VERIFICATION_TTL_SECONDS = 60 * 60 * 24
 PASSWORD_RESET_TTL_SECONDS = 60 * 15
-
 
 class IdentityService:
   def __init__(
@@ -70,6 +70,10 @@ class IdentityService:
     slug = slug.strip("-")
 
     return slug
+  
+  @staticmethod
+  def hash_invitation_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
   async def authenticate(
     self,
@@ -167,7 +171,7 @@ class IdentityService:
     )
     return result.scalar_one_or_none()
   
-  async def register(self, email: str, password: str, first_name: str, last_name: str, organization_name: str, password_confirmation: str,
+  async def register(self, email: str, password: str, first_name: str, last_name: str, organization_name: str | None, password_confirmation: str, invitation_token: str | None = None,
 ) -> RegistrationResponse:
 
    email = self.normalize_email(email)
@@ -191,63 +195,70 @@ class IdentityService:
       status_code=409,
       code="EMAIL_ALREADY_REGISTERED",
     )
+   invitation: OrganizationInvitation | None = None
+   
+   if invitation_token is not None:
+    invitation = await self._resolve_invitation(invitation_token, email)
+    organization_id = invitation.organization_id
+    role_id = invitation.role_id
+   else: 
+   
+     organization_name = organization_name.strip()
 
-   organization_name = organization_name.strip()
-
-   if not organization_name:
-    raise TraceException(
+     if not organization_name:
+      raise TraceException(
       "Organization name is required.",
       status_code=422,
       code="ORGANIZATION_NAME_REQUIRED",
-    )
+     )
 
-   organization = await self.repository.get_organization_by_name(
-    organization_name
-   )
+     organization = await self.repository.get_organization_by_name(
+     organization_name
+     )
 
-   if organization is not None:
-    raise TraceException(
-      "An organization with this name already exists.",
-      status_code=409,
-      code="ORGANIZATION_ALREADY_EXISTS",
-    )
+     if organization is not None:
+      raise TraceException(
+       "An organization with this name already exists.",
+       status_code=409,
+       code="ORGANIZATION_ALREADY_EXISTS",
+      )
 
-   organization_slug = self.generate_organization_slug(
-    organization_name
-   )
+     organization_slug = self.generate_organization_slug(
+      organization_name
+     )
 
-   if await self.repository.get_organization_by_slug(organization_slug) is not None:
-    organization_slug = f"{organization_slug}-{secrets.token_hex(3)}"
+     if await self.repository.get_organization_by_slug(organization_slug) is not None:
+      organization_slug = f"{organization_slug}-{secrets.token_hex(3)}"
 
-   organization = await self.repository.create_organization(
-    name=organization_name,
-    slug=organization_slug,
-  )
+     organization = await self.repository.create_organization(
+      name=organization_name,
+      slug=organization_slug,
+     )
 
-   role = await self.repository.get_role_by_name(
-    organization_id=organization.id,
-    name="Company Admin",
-   )
-
-   if role is None:
-    role = await self.repository.create_role(
+     role = await self.repository.get_role_by_name(
       organization_id=organization.id,
       name="Company Admin",
-      description=(
-        "Full administrative access to the organization."
-      ),
-      is_system=True,
-    )
+     )
 
-    await self.session.flush()
-    all_permissions = await self.repository.get_all_permissions()
-    role.permissions = all_permissions
+     if role is None:
+      role = await self.repository.create_role(
+       organization_id=organization.id,
+       name="Company Admin",
+       description=(
+         "Full administrative access to the organization."
+       ),
+       is_system=True,
+      )
+
+      await self.session.flush()
+      all_permissions = await self.repository.get_all_permissions()
+      role.permissions = all_permissions
     
-    await self.session.flush()
+      await self.session.flush()
 
    user = await self.repository.create_user(
-    organization_id=organization.id,
-    role_id=role.id,
+    organization_id=organization_id,
+    role_id=role_id,
     email=email,
     password_hash=hash_password(password),
     first_name=first_name.strip(),
@@ -259,17 +270,23 @@ class IdentityService:
    self.session.add(
     OrganizationMembership(
       user_id=user.id,
-      organization_id=organization.id,
-      role_id=role.id,
+      organization_id=organization_id,
+      role_id=role_id,
       is_active=True,
     )
   )
-   subscription_service = SubscriptionService(self.session)
+   
+   if invitation is not None:
+    invitation.accepted_at = datetime.now(timezone.utc)
+    invitation.accepted_by_user_id = user.id
+   else:
+    subscription_service = SubscriptionService(self.session)
+    organization = await self.repository.get_organization_by_id(organization_id)
 
-   await subscription_service.create_initial_subscription(
-     organization,
-     plan_slug="free",
-   )
+    await subscription_service.create_initial_subscription(
+      organization,
+      plan_slug="free",
+    )
    
    await self.session.commit()
 
@@ -302,6 +319,83 @@ class IdentityService:
       "Please verify your email."
     ),
   )
+   
+  async def _resolve_invitation(
+    self,
+    token: str,
+    registering_email: str,
+  ) -> OrganizationInvitation:
+    token_hash = self.hash_invitation_token(token)
+
+    result = await self.session.execute(
+    select(OrganizationInvitation).where(
+      OrganizationInvitation.token_hash == token_hash
+    )
+  )
+    invitation = result.scalar_one_or_none()
+
+    if invitation is None:
+      raise TraceException(
+        "This invitation link is invalid.",
+        status_code=404,
+        code="INVITATION_NOT_FOUND",
+      )
+
+    if invitation.is_accepted:
+      raise TraceException(
+        "This invitation has already been used.",
+        status_code=409,
+        code="INVITATION_ALREADY_ACCEPTED",
+      )
+
+    if invitation.is_revoked:
+      raise TraceException(
+        "This invitation has been revoked.",
+        status_code=409,
+        code="INVITATION_REVOKED",
+      )
+
+    if invitation.is_expired:
+      raise TraceException(
+        "This invitation has expired. Ask an admin to send a new one.",
+        status_code=409,
+        code="INVITATION_EXPIRED",
+      )
+
+    if invitation.email.strip().lower() != registering_email.strip().lower():
+      raise TraceException(
+        "This invitation was sent to a different email address.",
+        status_code=403,
+        code="INVITATION_EMAIL_MISMATCH",
+      )
+
+    return invitation
+
+  async def preview_invitation(self, token: str) -> InvitationPreviewResponse:
+    token_hash = self.hash_invitation_token(token)
+
+    result = await self.session.execute(
+     select(OrganizationInvitation)
+     .where(OrganizationInvitation.token_hash == token_hash)
+     .options(
+       selectinload(OrganizationInvitation.organization),
+       selectinload(OrganizationInvitation.role),
+      )
+    )
+    invitation = result.scalar_one_or_none()
+
+    if invitation is None or not invitation.is_pending:
+     raise TraceException(
+       "This invitation link is invalid or no longer active.",
+       status_code=404,
+       code="INVITATION_NOT_FOUND",
+      )
+
+    return InvitationPreviewResponse(
+      organization_name=invitation.organization.name,
+      email=invitation.email,
+      role_name=invitation.role.name,
+    )
    
   async def switch_organization(
     self,

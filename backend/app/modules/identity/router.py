@@ -8,7 +8,7 @@ from app.modules.identity.token_store import IdentityTokenStore
 from app.dependencies.auth import get_current_user
 from app.modules.identity.models import User
 from app.modules.identity.schemas import (ChangePasswordRequest, CurrentUserResponse, ForgotPasswordRequest, LoginRequest, LoginResponse, LogoutRequest, MessageResponse, RefreshRequest, RegisterRequest, RegistrationResponse, ResendVerificationRequest, ResetPasswordRequest,
-  TokenResponse, VerifyEmailRequest, SwitchOrganizationRequest)
+  TokenResponse, VerifyEmailRequest, SwitchOrganizationRequest, InvitationPreviewResponse)
 from app.modules.identity.service import IdentityService
 from fastapi import APIRouter, Depends, Request
 from app.core.config import settings
@@ -62,7 +62,20 @@ async def register(
     organization_name=payload.organization_name,
     password=payload.password,
     password_confirmation=payload.password_confirmation,
+    invitation_token=payload.invitation_token,
   )
+  
+@router.get(
+  "/invitations/{token}/preview",
+  response_model=InvitationPreviewResponse,
+)
+async def preview_invitation(
+  token: str,
+  session: AsyncSession = Depends(get_db),
+  redis: Redis = Depends(get_redis),
+) -> InvitationPreviewResponse:
+  service = build_identity_service(session, redis)
+  return await service.preview_invitation(token)
 
 @router.post(
   "/login",

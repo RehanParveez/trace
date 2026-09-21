@@ -1,6 +1,6 @@
 import { apiClient } from "../../../shared/api/client";
 import type {ChangePasswordPayload, CurrentUserResponse, ForgotPasswordPayload, LoginPayload, LoginResponse, MessageResponse, RegisterPayload, RegistrationResponse, ResendVerificationPayload, ResetPasswordPayload,
-  TokenResponse, VerifyEmailPayload,
+  TokenResponse, VerifyEmailPayload, InvitationPreview
 } from "../types/identity.types";
 
 export const identityApi = {
@@ -71,6 +71,13 @@ export const identityApi = {
         payload,
       );
 
+    return data;
+  },
+
+  async previewInvitation(token: string): Promise<InvitationPreview> {
+    const { data } = await apiClient.get<InvitationPreview>(
+      `/auth/invitations/${token}/preview`,
+    );
     return data;
   },
 

@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AuthField } from "../components/AuthField";
 import { AuthNotice } from "../components/AuthNotice";
 import { AuthShell } from "../components/AuthShell";
 import { PasswordStrength, isPasswordStrong } from "../components/PasswordStrength";
 import { useRegister } from "../hooks/useIdentity";
+import { useInvitationPreview } from "../hooks/useInvitationPreview";
 import { getApiErrorMessage } from "../utils/api-error";
 import { useTranslation } from "react-i18next";
 
@@ -19,6 +20,10 @@ export function RegisterPage() {
   const [confirmation, setConfirmation] = useState("");
   const passwordsMatch = password === confirmation;
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const invitationToken = searchParams.get("token");
+  const invitationPreview = useInvitationPreview(invitationToken);
+  const isJoiningExistingOrg = Boolean(invitationToken && invitationPreview.data);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -35,9 +40,12 @@ export function RegisterPage() {
         first_name: firstName.trim(),
         last_name: lastName.trim(),
         email: email.trim().toLowerCase(),
-        organization_name: organizationName.trim(),
+        organization_name: isJoiningExistingOrg
+          ? undefined
+          : organizationName.trim(),
         password,
         password_confirmation: confirmation,
+        invitation_token: invitationToken ?? undefined,
       });
 
       navigate("/login", {
@@ -128,16 +136,25 @@ export function RegisterPage() {
           required
         />
 
-        <AuthField
-          id="organization_name"
-          label={t("auth.register.organization")}
-          placeholder="Your construction company"
-          value={organizationName}
-          onChange={(event) =>
-            setOrganizationName(event.target.value)
-          }
-          required
-        />
+        {isJoiningExistingOrg ? (
+         <div className="rounded-[8px] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-3.5 py-3 text-[13px] text-[var(--color-info)]">
+          You're joining{" "}
+          <strong>{invitationPreview.data?.organization_name}</strong>
+          {invitationPreview.data?.role_name
+            ? ` as ${invitationPreview.data.role_name}`
+            : ""}
+          .
+         </div>
+        ) : (
+         <AuthField
+           id="organization_name"
+           label={t("auth.register.organization")}
+           placeholder="Your construction company"
+           value={organizationName}
+           onChange={(event) => setOrganizationName(event.target.value)}
+           required
+          />
+        )}
 
         <AuthField
           id="password"
@@ -173,17 +190,26 @@ export function RegisterPage() {
             ? t("auth.password.mismatch")
             : undefined
           }
+
           required
         />
 
+          {invitationToken && invitationPreview.isError && (
+            <AuthNotice tone="error">
+              This invitation link is invalid or has expired.
+            </AuthNotice>
+          )}
+          
         <button
           type="submit"
           disabled={
             register.isPending ||
+            invitationPreview.isLoading ||
+            (Boolean(invitationToken) && invitationPreview.isError) ||
             !firstName.trim() ||
             !lastName.trim() ||
             !email.trim() ||
-            !organizationName.trim() ||
+            (!isJoiningExistingOrg && !organizationName.trim()) ||
             !isPasswordStrong(password) ||
             !passwordsMatch
           }
