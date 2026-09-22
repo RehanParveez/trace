@@ -21,6 +21,7 @@ from app.modules.procurement import models as procurement_models
 from app.modules.expenses import models as expenses_models
 from app.modules.running_bills import models as running_models
 from app.modules.labour import models as labour_models
+from app.modules.subcontractors import models as subcontractors_models
 
 config = context.config
 

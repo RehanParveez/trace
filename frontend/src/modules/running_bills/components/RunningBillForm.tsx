@@ -5,6 +5,7 @@ import {Button, Field, inputClass, Modal, useToast,
 import { getApiErrorMessage } from "../../identity";
 import { useBOQVersions } from "../../drawings_boq";
 import { useCreateRunningBill } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface RunningBillFormProps {
   projectId: string;
@@ -12,6 +13,7 @@ interface RunningBillFormProps {
 }
 
 export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
+  const { t } = useTranslation();
   const boqVersionsQuery = useBOQVersions(projectId);
   const createBill = useCreateRunningBill();
   const { showToast } = useToast();
@@ -58,14 +60,14 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
           onClose();
           showToast({
             tone: "success",
-            title: "Running bill generated as a draft",
+            title: t("runningBills.form.createdDraftToast"),
           });
         },
         onError: (mutationError) =>
           setError(
             getApiErrorMessage(
               mutationError,
-              "Couldn't generate this bill. Please try again.",
+              t("runningBills.form.createErrorFallback"),
             ),
           ),
       },
@@ -74,13 +76,13 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
 
   return (
     <Modal
-      title="Generate running bill"
-      description="Pulls approved progress claims for this BOQ version into a client-billable running bill / IPC."
+      title={t("runningBills.form.modalTitle")}
+      description={t("runningBills.form.modalDescription")}
       onClose={onClose}
       wide
     >
       <form onSubmit={submit} className="space-y-4">
-        <Field label="BOQ version">
+        <Field label={t("runningBills.form.boqVersion")}>
           <select
             className={inputClass}
             value={activeBoqVersionId}
@@ -98,7 +100,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
         </Field>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Period start">
+           <Field label={t("runningBills.form.periodStart")}>
             <input
               type="date"
               required
@@ -107,7 +109,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
               onChange={(e) => setPeriodStart(e.target.value)}
             />
           </Field>
-          <Field label="Period end">
+          <Field label={t("runningBills.form.periodEnd")}>
             <input
               type="date"
               required
@@ -119,7 +121,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Retention %" hint="Standard practice is 5-10%">
+          <Field label={t("runningBills.form.retentionLabel")} hint={t("runningBills.form.retentionHint")}>
             <input
               type="number"
               step="0.01"
@@ -132,8 +134,8 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
             />
           </Field>
           <Field
-            label="Retention cap % (optional)"
-            hint="Stop deducting once cumulative retention hits this % of contract value"
+            label={t("runningBills.form.retentionCapLabel")}
+            hint={t("runningBills.form.retentionCapHint")}
           >
             <input
               type="number"
@@ -149,7 +151,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Advance recovery (PKR)">
+          <Field label={t("runningBills.form.advanceRecoveryLabel")}>
             <input
               type="number"
               step="any"
@@ -159,7 +161,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
               onChange={(e) => setAdvanceRecovery(e.target.value)}
             />
           </Field>
-          <Field label="Other deductions (PKR)">
+          <Field label={t("runningBills.form.otherDeductionsLabel")}>
             <input
               type="number"
               step="any"
@@ -172,7 +174,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
         </div>
 
         {Number(otherDeductions) > 0 ? (
-          <Field label="Other deductions note">
+          <Field label={t("runningBills.form.otherDeductionsNoteLabel")}>
             <input
               className={inputClass}
               value={otherDeductionsNote}
@@ -182,7 +184,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
           </Field>
         ) : null}
 
-        <Field label="Notes">
+        <Field label={t("runningBills.form.notesLabel")}>
           <textarea
             className={`${inputClass} resize-y`}
             rows={2}
@@ -204,7 +206,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
             onClick={onClose}
             disabled={createBill.isPending}
           >
-            Cancel
+            {t("runningBills.form.cancel")}
           </Button>
           <Button
             type="submit"
@@ -216,7 +218,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
               !periodEnd
             }
           >
-            {createBill.isPending ? "Generating…" : "Generate bill (draft)"}
+            {createBill.isPending ? t("runningBills.form.generating") : t("runningBills.form.generateDraft")}
           </Button>
         </div>
       </form>

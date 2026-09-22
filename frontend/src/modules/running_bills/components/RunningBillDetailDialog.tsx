@@ -6,6 +6,7 @@ import {useCancelRunningBill, useIssueRunningBill, useRunningBill,
 import { runningBillsApi } from "../api/running-bills.api";
 import {formatBillDate, formatBillMoney, formatRunningBillStatus, getRunningBillStatusTone, openBlobDownload,
 } from "../utils/running-bill.utils";
+import { useTranslation } from "react-i18next";
 
 interface RunningBillDetailDialogProps {
   billId: string;
@@ -18,6 +19,7 @@ export function RunningBillDetailDialog({
   canIssue,
   onClose,
 }: RunningBillDetailDialogProps) {
+  const { t } = useTranslation();
   const billQuery = useRunningBill(billId);
   const issueBill = useIssueRunningBill();
   const cancelBill = useCancelRunningBill();
@@ -36,15 +38,15 @@ export function RunningBillDetailDialog({
     } catch (error) {
       showToast({
         tone: "error",
-        title: "Couldn't download this file",
-        description: getApiErrorMessage(error, "Please try again."),
+        title: t("runningBills.detail.downloadError"),
+        description: getApiErrorMessage(error, t("org.aiUpdateErrorFallback")),
       });
     }
   }
 
   return (
     <Modal
-      title={bill ? `Running bill #${bill.bill_number}` : "Running bill"}
+      title={bill ? t("runningBills.detail.title", { number: bill.bill_number }) : t("runningBills.detail.titleFallback")}
       description={
         bill
           ? `${formatBillDate(bill.period_start)} – ${formatBillDate(bill.period_end)}`
@@ -54,10 +56,10 @@ export function RunningBillDetailDialog({
       wide
     >
       {billQuery.isLoading ? (
-        <LoadingState label="Loading bill…" />
+        <LoadingState label={t("runningBills.detail.loading")} />
       ) : billQuery.isError || !bill ? (
         <ErrorState
-          title="Couldn't load this bill"
+          title={t("runningBills.detail.loadError")}
           onRetry={() => void billQuery.refetch()}
         />
       ) : (
@@ -73,7 +75,7 @@ export function RunningBillDetailDialog({
                 onClick={() => void handleDownload("pdf")}
               >
                 <Icon name="download" size={13} />
-                PDF
+                {t("runningBills.detail.pdf")}
               </Button>
               <Button
                 variant="ghost"
@@ -81,7 +83,7 @@ export function RunningBillDetailDialog({
                 onClick={() => void handleDownload("xlsx")}
               >
                 <Icon name="download" size={13} />
-                Excel
+                {t("runningBills.detail.excel")}
               </Button>
             </div>
           </div>
@@ -90,11 +92,11 @@ export function RunningBillDetailDialog({
             <table className="w-full min-w-[720px] text-left">
               <thead className="bg-[var(--color-surface-muted)]">
                 <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                  <th className="px-3 py-2.5">Item</th>
-                  <th className="px-3 py-2.5 text-right">Cum. %</th>
-                  <th className="px-3 py-2.5 text-right">This period qty</th>
-                  <th className="px-3 py-2.5 text-right">Rate</th>
-                  <th className="px-3 py-2.5 text-right">This period value</th>
+                  <th className="px-3 py-2.5">{t("runningBills.detail.colItem")}</th>
+                  <th className="px-3 py-2.5 text-right">{t("runningBills.detail.colCumPercent")}</th>
+                  <th className="px-3 py-2.5 text-right">{t("runningBills.detail.colThisPeriodQty")}</th>
+                  <th className="px-3 py-2.5 text-right">{t("runningBills.detail.colRate")}</th>
+                  <th className="px-3 py-2.5 text-right">{t("runningBills.detail.colThisPeriodValue")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -127,16 +129,19 @@ export function RunningBillDetailDialog({
           <div className="space-y-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-[13px]">
             <div className="flex justify-between">
               <span className="text-[var(--color-text-secondary)]">
-                Gross value this period
+                {t("runningBills.detail.grossThisPeriod")}
               </span>
               <span className="font-semibold text-[var(--color-text-primary)]">
                 {formatBillMoney(bill.gross_value_this_period, bill.currency)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--color-text-secondary)]">
-                Retention ({Number(bill.retention_percentage)}%)
+              <span>
+                {t("runningBills.detail.retention", {
+                  percent: Number(bill.retention_percentage),
+                })}
               </span>
+
               <span className="text-[var(--color-danger)]">
                 - {formatBillMoney(bill.retention_this_period, bill.currency)}
               </span>
@@ -144,7 +149,7 @@ export function RunningBillDetailDialog({
             {Number(bill.advance_recovery_amount) > 0 ? (
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">
-                  Advance recovery
+                  {t("runningBills.detail.advanceRecovery")}
                 </span>
                 <span className="text-[var(--color-danger)]">
                   -{" "}
@@ -158,7 +163,7 @@ export function RunningBillDetailDialog({
             {Number(bill.other_deductions_amount) > 0 ? (
               <div className="flex justify-between">
                 <span className="text-[var(--color-text-secondary)]">
-                  {bill.other_deductions_note || "Other deductions"}
+                  {bill.other_deductions_note || t("runningBills.detail.otherDeductions")}
                 </span>
                 <span className="text-[var(--color-danger)]">
                   -{" "}
@@ -170,7 +175,7 @@ export function RunningBillDetailDialog({
               </div>
             ) : null}
             <div className="mt-2 flex justify-between border-t border-[var(--color-border)] pt-2 text-[14px] font-bold text-[var(--color-text-primary)]">
-              <span>Net payable</span>
+              <span>{t("runningBills.detail.netPayable")}</span>
               <span>
                 {formatBillMoney(bill.net_payable, bill.currency)}
               </span>
@@ -189,22 +194,23 @@ export function RunningBillDetailDialog({
                       onSuccess: () =>
                         showToast({
                           tone: "success",
-                          title: `Bill #${bill.bill_number} cancelled`,
+                          title: t("runningBills.detail.cancelledToast", {
+                           number: bill.bill_number,
+                          }),
                         }),
                       onError: (error) =>
                         showToast({
                           tone: "error",
-                          title: "Couldn't cancel this bill",
+                          title: t("runningBills.detail.cancelError"),
                           description: getApiErrorMessage(
-                            error,
-                            "Please try again.",
+                            getApiErrorMessage(error, t("common.retry")),
                           ),
                         }),
                     },
                   )
                 }
               >
-                Cancel bill
+                {t("runningBills.detail.cancelBill")}
               </Button>
               <Button
                 variant="primary"
@@ -221,17 +227,17 @@ export function RunningBillDetailDialog({
                       onError: (error) =>
                         showToast({
                           tone: "error",
-                          title: "Couldn't issue this bill",
+                          title: t("runningBills.detail.issueError"),
                           description: getApiErrorMessage(
                             error,
-                            "Please try again.",
+                            getApiErrorMessage(error, t("common.retry")),
                           ),
                         }),
                     },
                   )
                 }
               >
-                {issueBill.isPending ? "Issuing…" : "Issue to client"}
+                {issueBill.isPending ? t("runningBills.detail.issuing") : t("runningBills.detail.issueToClient")}
               </Button>
             </div>
           ) : null}

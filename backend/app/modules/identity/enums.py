@@ -80,3 +80,7 @@ class PermissionKey(StrEnum):
   LABOUR_READ = "labour:read"
   LABOUR_MANAGE = "labour:manage"
   LABOUR_PAYMENT_MANAGE = "labour:payment_manage"
+  
+  SUBCONTRACTOR_READ = "subcontractor:read"
+  SUBCONTRACTOR_MANAGE = "subcontractor:manage"
+  SUBCONTRACTOR_PAYMENT_MANAGE = "subcontractor:payment_manage"

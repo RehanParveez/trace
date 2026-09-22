@@ -24,6 +24,7 @@ import { ProcurementPage } from "../modules/procurement";
 import { ExpensesPage } from "../modules/expenses";
 import { RunningBillsPage } from "../modules/running_bills";
 import { LabourPage } from "../modules/labour";
+import { SubcontractorsPage } from "../modules/subcontractors";
 
 export const router = createBrowserRouter([
   {
@@ -317,6 +318,15 @@ export const router = createBrowserRouter([
      element: <LabourPage /> }
    ],
 },
+
+{
+  path: "subcontractors",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+      element: <SubcontractorsPage /> }
+    ],
+  },
 
   ],
  },

@@ -6,6 +6,7 @@ import { LABOUR_PERMISSIONS, useLabourSummary } from "../../labour";
 import { useProjectBudget } from "../hooks";
 import { formatBudgetAmount } from "../utils/budget.utils";
 import { useTranslation } from "react-i18next";
+import { SUBCONTRACTOR_PERMISSIONS, useProjectSubcontractCost } from "../../subcontractors";
 
 interface ProjectFinancialSummaryProps {
   projectId: string;
@@ -19,6 +20,8 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
   const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
   const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
   const canViewLabour = permissions.includes(LABOUR_PERMISSIONS.LABOUR_READ);
+  const canViewSubcontractors = permissions.includes(SUBCONTRACTOR_PERMISSIONS.SUBCONTRACTOR_READ);
+  const subcontractCostQuery = useProjectSubcontractCost(projectId, { enabled: canViewSubcontractors });
 
   const budgetQuery = useProjectBudget(canViewBudget ? projectId : undefined);
   const expensesQuery = useExpenses(
@@ -52,7 +55,12 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
     (canViewBudget && budgetQuery.isLoading) ||
     (canViewExpenses && expensesQuery.isLoading) ||
     (canViewProcurement && procurementQuery.isLoading) ||
-    (canViewLabour && labourSummaryQuery.isLoading);
+    (canViewLabour && labourSummaryQuery.isLoading) ||
+    (canViewSubcontractors && subcontractCostQuery.isLoading);
+
+  const subcontractedAmount = canViewSubcontractors && subcontractCostQuery.data
+    ? Number(subcontractCostQuery.data.total_billed)
+    : null;
 
   const approvedExpenses = expensesQuery.data?.items ?? [];
   const procurementRequests = procurementQuery.data?.items ?? [];
@@ -101,6 +109,14 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
         icon="users"
         tone="gold"
       />
+
+    <StatCard
+      label="Subcontracted"
+      value={!canViewSubcontractors ? "No access" : isLoadingFinancials ? "…" : formatBudgetAmount(subcontractedAmount ?? 0, currency)}
+      note={canViewSubcontractors ? "Issued subcontractor bills" : "Requires subcontractor permission"}
+      icon="procurement"
+      tone="gold"
+     />
 
       <StatCard
         label={t("dashboard.financial.approvedBudget")}

@@ -9,8 +9,10 @@ import { RunningBillTable } from "../components/RunningBillTable";
 import { RunningBillForm } from "../components/RunningBillForm";
 import { RunningBillDetailDialog } from "../components/RunningBillDetailDialog";
 import type { RunningBill } from "../types/running-bill.types";
+import { useTranslation } from "react-i18next";
 
 export function RunningBillsPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(
     RUNNING_BILL_PERMISSIONS.RUNNING_BILL_READ,
@@ -35,20 +37,20 @@ export function RunningBillsPage() {
   if (!canRead && permissions.length > 0) {
     return (
       <ErrorState
-        title="Running bills unavailable"
-        description="You don't have permission to view running bills."
+        title={t("runningBills.page.accessUnavailable")}
+        description={t("runningBills.page.accessUnavailableDesc")}
       />
     );
   }
 
   if (projectsQuery.isLoading) {
-    return <LoadingState label="Loading projects…" />;
+    return <LoadingState label={t("runningBills.page.loadingProjects")} />;
   }
 
   if (projectsQuery.isError || !projectsQuery.data) {
     return (
       <ErrorState
-        title="We couldn't load projects"
+        title={t("runningBills.page.loadProjectsError")}
         onRetry={() => void projectsQuery.refetch()}
       />
     );
@@ -57,18 +59,18 @@ export function RunningBillsPage() {
   return (
     <div className="space-y-7">
       <PageHeader
-        title="Running bills"
-        description="Client billing generated from approved progress claims — measured work, retention and net payable per project."
+        title={t("runningBills.page.title")}
+        description={t("runningBills.page.description")}
       />
 
       {projects.length === 0 ? (
         <ErrorState
-          title="No projects yet"
-          description="Create a project first to start billing against it."
+          title={t("runningBills.page.noProjects")}
+          description={t("runningBills.page.noProjectsDesc")}
         />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("runningBills.page.project")}>
             <select
               className={inputClass}
               value={activeProjectId}
@@ -83,10 +85,10 @@ export function RunningBillsPage() {
           </Field>
 
           {billsQuery.isLoading ? (
-            <LoadingState label="Loading running bills…" />
+            <LoadingState label={t("runningBills.page.loadingBills")} />
           ) : billsQuery.isError ? (
             <ErrorState
-              title="Couldn't load running bills"
+              title={t("runningBills.page.loadBillsError")}
               onRetry={() => void billsQuery.refetch()}
             />
           ) : (
