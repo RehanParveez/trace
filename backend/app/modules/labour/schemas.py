@@ -4,18 +4,21 @@ from app.modules.labour.models import LabourSourceType, LabourDeploymentStatus
 from uuid import UUID
 from decimal import Decimal
 from datetime import date
+from app.modules.withholding_tax.models import WHTCategory
 
 class LabourSourceCreateRequest(BaseModel):
   name: str = Field(min_length=1, max_length=200)
   source_type: LabourSourceType
   contact_name: str | None = None
   contact_phone: str | None = None
+  is_active_taxpayer: bool = False
   notes: str | None = None
 
 class LabourSourceUpdateRequest(BaseModel):
   name: str | None = Field(default=None, min_length=1, max_length=200)
   contact_name: str | None = None
   contact_phone: str | None = None
+  is_active_taxpayer: bool | None = None
   is_active: bool | None = None
   notes: str | None = None
 
@@ -26,6 +29,7 @@ class LabourSourceResponse(BaseModel):
   source_type: LabourSourceType
   contact_name: str | None
   contact_phone: str | None
+  is_active_taxpayer: bool
   is_active: bool
   notes: str | None
 
@@ -124,6 +128,7 @@ class LabourPaymentCreateRequest(BaseModel):
   period_end: date
   gross_wage_amount: Decimal = Field(ge=0)
   advance_recovered_amount: Decimal = Field(default=Decimal("0"), ge=0)
+  wht_category: "WHTCategory | None" = None
   payment_date: date
   notes: str | None = None
 
@@ -142,6 +147,9 @@ class LabourPaymentResponse(BaseModel):
   period_end: date
   gross_wage_amount: Decimal
   advance_recovered_amount: Decimal
+  wht_category: str | None
+  wht_rate_percentage: Decimal | None
+  wht_deducted_amount: Decimal
   net_paid_amount: Decimal
   payment_date: date
   notes: str | None

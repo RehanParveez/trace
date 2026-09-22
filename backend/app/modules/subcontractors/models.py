@@ -42,6 +42,7 @@ class Subcontractor(Base, TimestampMixin):
   contact_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
   contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
   ntn_or_cnic: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  is_active_taxpayer: Mapped[bool] = mapped_column(nullable=False, default=False)
   is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
   notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -233,7 +234,6 @@ class SubcontractorBill(Base, TimestampMixin):
   issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
-
   line_items: Mapped[list["SubcontractorBillLineItem"]] = relationship(
     "SubcontractorBillLineItem",
     back_populates="bill",
@@ -340,6 +340,15 @@ class SubcontractorPayment(Base, TimestampMixin):
   advance_recovered_amount: Mapped[Decimal] = mapped_column(
     Numeric(16, 2),
     nullable=False,
+    default=Decimal("0"),
+  )
+  
+  wht_category: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  wht_rate_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+  
+  wht_deducted_amount: Mapped[Decimal] = mapped_column(
+    Numeric(16, 2),
+    nullable=False, 
     default=Decimal("0"),
   )
   

@@ -18,6 +18,8 @@ from app.modules.subcontractors.schemas import (SubcontractAgreementCreateReques
   SubcontractorPaymentCreateRequest, SubcontractorUpdateRequest,
 )
 from app.modules.projects.repository import ProjectRepository
+from app.modules.withholding_tax.models import WHTSourceType
+from app.modules.withholding_tax.service import WithholdingTaxService
 
 class SubcontractorService:
   def __init__(self, session: AsyncSession):
@@ -25,12 +27,14 @@ class SubcontractorService:
     self.repo = SubcontractorRepository(session)
     self.projects = ProjectRepository(session)
     self.audit = AuditLogService(session)
+    self.withholding_tax = WithholdingTaxService(session)
 
   async def create_subcontractor(self, organization_id: UUID, payload: SubcontractorCreateRequest) -> Subcontractor:
     subcontractor = Subcontractor(
       id=uuid4(), organization_id=organization_id, name=payload.name.strip(),
       trade_specialization=payload.trade_specialization.strip(), contact_name=payload.contact_name,
-      contact_phone=payload.contact_phone, ntn_or_cnic=payload.ntn_or_cnic, notes=payload.notes,
+      contact_phone=payload.contact_phone, ntn_or_cnic=payload.ntn_or_cnic,
+      is_active_taxpayer=payload.is_active_taxpayer, notes=payload.notes,
     )
     await self.repo.create(subcontractor)
     await self.session.commit()
@@ -42,7 +46,7 @@ class SubcontractorService:
     subcontractor = await self.repo.get(subcontractor_id, organization_id)
     if subcontractor is None:
       raise TraceException("Subcontractor not found.", status_code=404, code="SUBCONTRACTOR_NOT_FOUND")
-    for field in ("name", "trade_specialization", "contact_name", "contact_phone", "ntn_or_cnic", "is_active", "notes"):
+    for field in ("name", "trade_specialization", "contact_name", "contact_phone", "ntn_or_cnic", "is_active_taxpayer", "is_active", "notes"):
       value = getattr(payload, field)
       if value is not None:
         setattr(subcontractor, field, value.strip() if isinstance(value, str) else value)
@@ -322,6 +326,7 @@ class SubcontractorService:
     self, organization_id: UUID, agreement_id: UUID, payload: SubcontractorPaymentCreateRequest, actor_user_id: UUID,
   ) -> SubcontractorPayment:
     agreement = await self.get_agreement(organization_id, agreement_id)
+    subcontractor = await self.repo.get(agreement.subcontractor_id, organization_id)
 
     if payload.advance_recovered_amount > 0:
       _billed, _paid, total_advances, total_recovered = await self.repo.get_ledger_totals(organization_id, agreement.id)
@@ -332,19 +337,33 @@ class SubcontractorService:
           status_code=409, code="ADVANCE_RECOVERY_EXCEEDS_BALANCE",
         )
 
-    net_paid = payload.gross_amount - payload.advance_recovered_amount
+    payment_id = uuid4()
+    wht_rate_percentage: Decimal | None = None
+    wht_deducted_amount = Decimal("0")
 
+    if payload.wht_category is not None and subcontractor is not None:
+      wht_rate_percentage, wht_deducted_amount = await self.withholding_tax.calculate_and_record(
+        organization_id=organization_id, project_id=agreement.project_id, category=payload.wht_category,
+        gross_amount=payload.gross_amount, is_filer=subcontractor.is_active_taxpayer,
+        payee_name=subcontractor.name, payee_ntn_or_cnic=subcontractor.ntn_or_cnic,
+        source_type=WHTSourceType.SUBCONTRACTOR_PAYMENT, source_id=payment_id, actor_user_id=actor_user_id,
+      )
+
+    net_paid = payload.gross_amount - payload.advance_recovered_amount - wht_deducted_amount
     payment = SubcontractorPayment(
-      id=uuid4(), organization_id=organization_id, project_id=agreement.project_id, agreement_id=agreement.id,
+      id=payment_id, organization_id=organization_id, project_id=agreement.project_id, agreement_id=agreement.id,
       bill_id=payload.bill_id, gross_amount=payload.gross_amount,
-      advance_recovered_amount=payload.advance_recovered_amount, net_paid_amount=net_paid,
+      advance_recovered_amount=payload.advance_recovered_amount,
+      wht_category=payload.wht_category.value if payload.wht_category else None,
+      wht_rate_percentage=wht_rate_percentage, wht_deducted_amount=wht_deducted_amount, net_paid_amount=net_paid,
       payment_date=payload.payment_date, notes=payload.notes, created_by_user_id=actor_user_id,
     )
     await self.repo.create_payment(payment)
     await self.session.commit()
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.SUBCONTRACTOR, payment.id, AuditAction.CREATE,
-      f"Paid {net_paid} net to subcontractor for agreement {agreement.id}.",
+      f"Paid {net_paid} net to subcontractor for agreement {agreement.id}"
+      + (f" (WHT: {wht_deducted_amount})" if wht_deducted_amount > 0 else "") + ".",
     )
     return payment
 

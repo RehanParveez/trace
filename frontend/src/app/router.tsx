@@ -25,6 +25,8 @@ import { ExpensesPage } from "../modules/expenses";
 import { RunningBillsPage } from "../modules/running_bills";
 import { LabourPage } from "../modules/labour";
 import { SubcontractorsPage } from "../modules/subcontractors";
+import { WithholdingTaxPage } from "../modules/withholding_tax";
+import { MaterialStockPage } from "../modules/material_stock";
 
 export const router = createBrowserRouter([
   {
@@ -324,9 +326,30 @@ export const router = createBrowserRouter([
   element: <OrganizationShell />,
   children: [
     { index: true,
-      element: <SubcontractorsPage /> }
-    ],
-  },
+      element: <SubcontractorsPage />
+    }
+  ],
+},
+
+{
+  path: "withholding-tax",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+      element: <WithholdingTaxPage />
+    }
+  ],
+},
+
+{
+  path: "material-stock",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+      element: <MaterialStockPage /> 
+    }
+  ],
+},
 
   ],
  },

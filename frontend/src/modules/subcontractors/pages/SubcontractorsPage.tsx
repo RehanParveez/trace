@@ -27,6 +27,7 @@ export function SubcontractorsPage() {
   const agreementsQuery = useAgreements(activeProjectId);
 
   const subNameById = new Map((subsQuery.data ?? []).map((s) => [s.id, s.name]));
+  const subcontractorById = new Map((subsQuery.data ?? []).map((s) => [s.id, s]));
 
   if (!canRead && permissions.length > 0) {
     return <ErrorState title="Subcontractors unavailable" description="You don't have permission to view subcontractor records." />;
@@ -67,7 +68,7 @@ export function SubcontractorsPage() {
 
           {agreementFormOpen ? <AgreementForm projectId={activeProjectId} onClose={() => setAgreementFormOpen(false)} /> : null}
           {viewingAgreement ? (
-            <AgreementDetailPanel agreement={viewingAgreement} canManage={canManage} canManagePayments={canManagePayments} onClose={() => setViewingAgreement(null)} />
+            <AgreementDetailPanel agreement={viewingAgreement} subcontractor={subcontractorById.get(viewingAgreement.subcontractor_id) ?? { is_active_taxpayer: false }} canManage={canManage} canManagePayments={canManagePayments} onClose={() => setViewingAgreement(null)} />
           ) : null}
         </>
       )}

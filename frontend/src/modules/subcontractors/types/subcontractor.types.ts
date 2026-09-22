@@ -4,7 +4,7 @@ export type SubcontractorBillStatus = "DRAFT" | "ISSUED" | "CANCELLED";
 export interface Subcontractor {
   id: string; name: string; trade_specialization: string;
   contact_name: string | null; contact_phone: string | null; ntn_or_cnic: string | null;
-  is_active: boolean; notes: string | null;
+  is_active_taxpayer: boolean; is_active: boolean; notes: string | null;
 }
 
 export interface AgreementItem { id: string; description: string; unit: string; quantity: number | string; rate: number | string; }
@@ -40,7 +40,8 @@ export interface SubcontractorBillDetail extends SubcontractorBill { line_items:
 export interface SubcontractorAdvance { id: string; amount: number | string; advance_date: string; notes: string | null; }
 export interface SubcontractorPayment {
   id: string; bill_id: string | null; gross_amount: number | string; advance_recovered_amount: number | string;
-  net_paid_amount: number | string; payment_date: string; notes: string | null;
+  net_paid_amount: number | string; payment_date: string; notes: string | null; wht_category?: string | null;
+  wht_deducted_amount?: number | string;
 }
 
 export interface SubcontractorLedger {

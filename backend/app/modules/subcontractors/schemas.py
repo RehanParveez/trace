@@ -4,6 +4,7 @@ from uuid import UUID
 from decimal import Decimal
 from datetime import date, datetime
 from app.modules.subcontractors.models import SubcontractAgreementStatus, SubcontractorBillStatus
+from app.modules.withholding_tax.models import WHTCategory
 
 class SubcontractorCreateRequest(BaseModel):
   name: str = Field(min_length=1, max_length=200)
@@ -11,6 +12,7 @@ class SubcontractorCreateRequest(BaseModel):
   contact_name: str | None = None
   contact_phone: str | None = None
   ntn_or_cnic: str | None = None
+  is_active_taxpayer: bool = False
   notes: str | None = None
 
 class SubcontractorUpdateRequest(BaseModel):
@@ -19,6 +21,7 @@ class SubcontractorUpdateRequest(BaseModel):
   contact_name: str | None = None
   contact_phone: str | None = None
   ntn_or_cnic: str | None = None
+  is_active_taxpayer: bool = False
   is_active: bool | None = None
   notes: str | None = None
 
@@ -30,6 +33,7 @@ class SubcontractorResponse(BaseModel):
   contact_name: str | None
   contact_phone: str | None
   ntn_or_cnic: str | None
+  is_active_taxpayer: bool = False
   is_active: bool
   notes: str | None
 
@@ -171,6 +175,7 @@ class SubcontractorPaymentCreateRequest(BaseModel):
   bill_id: UUID | None = None
   gross_amount: Decimal = Field(gt=0)
   advance_recovered_amount: Decimal = Field(default=Decimal("0"), ge=0)
+  wht_category: "WHTCategory | None" = None
   payment_date: date
   notes: str | None = None
 
@@ -180,6 +185,9 @@ class SubcontractorPaymentResponse(BaseModel):
   bill_id: UUID | None
   gross_amount: Decimal
   advance_recovered_amount: Decimal
+  wht_category: str | None
+  wht_rate_percentage: Decimal | None
+  wht_deducted_amount: Decimal
   net_paid_amount: Decimal
   payment_date: date
   notes: str | None

@@ -8,9 +8,12 @@ import {useAdvances, useBills, useCancelBill, useCreateAdvance, useCreateBill, u
 import { subcontractorsApi } from "../api/subcontractors.api";
 import type { SubcontractAgreementDetail, SubcontractorBill } from "../types/subcontractor.types";
 import { formatDate, formatMoney, getBillStatusTone, openBlobDownload } from "../utils/subcontractor.utils";
+import { useWHTPreview } from "../../withholding_tax"; 
+import type { WHTCategory } from "../../withholding_tax";
+import { formatWHTMoney } from "../../withholding_tax";
 
-export function AgreementDetailPanel({ agreement, canManage, canManagePayments, onClose }: {
-  agreement: SubcontractAgreementDetail; canManage: boolean; canManagePayments: boolean; onClose: () => void;
+export function AgreementDetailPanel({ agreement, subcontractor, canManage, canManagePayments, onClose }: {
+  agreement: SubcontractAgreementDetail; subcontractor: { is_active_taxpayer: boolean }; canManage: boolean; canManagePayments: boolean; onClose: () => void;
 }) {
   const billsQuery = useBills(agreement.id);
   const ledgerQuery = useLedger(agreement.id);
@@ -80,7 +83,7 @@ export function AgreementDetailPanel({ agreement, canManage, canManagePayments, 
 
       {billFormOpen ? <BillGenerationForm agreement={agreement} onClose={() => setBillFormOpen(false)} /> : null}
       {advanceFormOpen ? <AdvanceForm agreementId={agreement.id} onClose={() => setAdvanceFormOpen(false)} /> : null}
-      {paymentFormOpen ? <PaymentForm agreementId={agreement.id} onClose={() => setPaymentFormOpen(false)} /> : null}
+      {paymentFormOpen ? <PaymentForm agreementId={agreement.id} subcontractor={subcontractor} onClose={() => setPaymentFormOpen(false)} /> : null}
       {viewingBillId ? <BillDetailDialog billId={viewingBillId} agreementId={agreement.id} canManage={canManage} onClose={() => setViewingBillId(null)} /> : null}
     </Modal>
   );
@@ -165,18 +168,37 @@ function AdvanceForm({ agreementId, onClose }: { agreementId: string; onClose: (
   );
 }
 
-function PaymentForm({ agreementId, onClose }: { agreementId: string; onClose: () => void }) {
+function PaymentForm({agreementId, subcontractor, onClose,  
+}: {
+  agreementId: string;
+  subcontractor: { is_active_taxpayer: boolean };
+  onClose: () => void;
+}) {
   const createPayment = useCreatePayment(agreementId);
   const { showToast } = useToast();
   const [gross, setGross] = useState("");
+  const [whtCategory, setWhtCategory] = useState<WHTCategory | "">("");
   const [advanceRecovered, setAdvanceRecovered] = useState("0");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [error, setError] = useState<string | null>(null);
+
+  const whtPreview = useWHTPreview(
+    whtCategory || null,
+    Number(gross) || 0,
+    subcontractor.is_active_taxpayer,
+    { enabled: Boolean(whtCategory) && Number(gross) > 0 },
+  );
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    createPayment.mutate({ gross_amount: Number(gross), advance_recovered_amount: Number(advanceRecovered), payment_date: date }, {
-      onSuccess: () => { onClose(); showToast({ tone: "success", title: "Payment recorded" }); },
-    });
+    setError(null);
+    createPayment.mutate(
+      { gross_amount: Number(gross), advance_recovered_amount: Number(advanceRecovered), wht_category: whtCategory || undefined, payment_date: paymentDate },
+      {
+        onSuccess: () => { onClose(); showToast({ tone: "success", title: "Payment recorded" }); },
+        onError: (e) => setError(getApiErrorMessage(e, "Couldn't record this payment.")),
+      },
+    );
   }
 
   return (
@@ -184,7 +206,24 @@ function PaymentForm({ agreementId, onClose }: { agreementId: string; onClose: (
       <form onSubmit={submit} className="space-y-4">
         <Field label="Gross amount (PKR)"><input type="number" min="0.01" step="any" required className={inputClass} value={gross} onChange={(e) => setGross(e.target.value)} /></Field>
         <Field label="Advance recovered (PKR)"><input type="number" min="0" step="any" className={inputClass} value={advanceRecovered} onChange={(e) => setAdvanceRecovered(e.target.value)} /></Field>
-        <Field label="Payment date"><input type="date" required className={inputClass} value={date} onChange={(e) => setDate(e.target.value)} /></Field>
+        <Field label="Withholding tax (optional)">
+          <select className={inputClass} value={whtCategory} onChange={(e) => setWhtCategory(e.target.value as WHTCategory | "")}>
+            <option value="">No WHT deduction</option>
+            <option value="GOODS_SUPPLY">Supply of goods</option>
+            <option value="SERVICES">Rendering of services</option>
+            <option value="CONTRACTS_EXECUTION">Execution of contracts</option>
+          </select>
+        </Field>
+        {whtCategory && whtPreview.data ? (
+          <div className="rounded-[8px] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-3 py-2.5 text-[12px] text-[var(--color-info)]">
+            {Number(whtPreview.data.rate_percentage)}% WHT ({subcontractor.is_active_taxpayer ? "filer" : "non-filer"} rate) = {formatWHTMoney(whtPreview.data.deducted_amount)} deducted. Net after WHT: {formatWHTMoney(whtPreview.data.net_after_wht)}.
+          </div>
+        ) : null}
+        {whtCategory && whtPreview.isError ? (
+          <div className="rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-warning)]">{getApiErrorMessage(whtPreview.error, "No rate configured for this category yet.")}</div>
+        ) : null}
+        <Field label="Payment date"><input type="date" required className={inputClass} value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></Field>
+        {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={createPayment.isPending}>Cancel</Button>
           <Button type="submit" variant="primary" disabled={createPayment.isPending || !gross}>{createPayment.isPending ? "Saving…" : "Record payment"}</Button>

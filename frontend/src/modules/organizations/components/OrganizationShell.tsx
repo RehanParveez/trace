@@ -113,6 +113,16 @@ function buildProjectsNav(t: (key: string) => string): NavItem[] {
       icon: "procurement",
     },
     {
+      label: "Withholding tax",
+      to: "/app/withholding-tax",
+      icon: "budget",
+    },
+    {
+      label: "Material stock",
+      to: "/app/material-stock",
+      icon: "materials",
+    },
+    {
       label: t("nav.sitePhotos"),
       to: "/app/site-photos",
       icon: "spark",

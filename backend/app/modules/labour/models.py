@@ -41,6 +41,7 @@ class LabourSource(Base, TimestampMixin):
   
   contact_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
   contact_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  is_active_taxpayer: Mapped[bool] = mapped_column(nullable=False, default=False)
   is_active: Mapped[bool] = mapped_column(nullable=False, default=True)
   notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -252,6 +253,14 @@ class LabourPayment(Base, TimestampMixin):
     Numeric(14, 2),
     nullable=False,
     default=Decimal("0"),
+  )
+  
+  wht_category: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  wht_rate_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+  
+  wht_deducted_amount: Mapped[Decimal] = mapped_column(
+    Numeric(14, 2),
+    nullable=False, default=Decimal("0"),
   )
   
   net_paid_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)

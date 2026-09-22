@@ -84,3 +84,9 @@ class PermissionKey(StrEnum):
   SUBCONTRACTOR_READ = "subcontractor:read"
   SUBCONTRACTOR_MANAGE = "subcontractor:manage"
   SUBCONTRACTOR_PAYMENT_MANAGE = "subcontractor:payment_manage"
+  
+  WITHHOLDING_TAX_READ = "withholding_tax:read"
+  WITHHOLDING_TAX_MANAGE = "withholding_tax:manage"
+
+  MATERIAL_STOCK_READ = "material_stock:read"
+  MATERIAL_STOCK_MANAGE = "material_stock:manage"

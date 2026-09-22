@@ -14,6 +14,8 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.identity.models import Organization
 from sqlalchemy import select
 from app.modules.projects.repository import ProjectRepository
+from app.modules.withholding_tax.models import WHTSourceType
+from app.modules.withholding_tax.service import WithholdingTaxService
 
 class LabourService:
   def __init__(self, session: AsyncSession):
@@ -21,12 +23,13 @@ class LabourService:
     self.repo = LabourRepository(session)
     self.projects = ProjectRepository(session)
     self.audit = AuditLogService(session)
+    self.withholding_tax = WithholdingTaxService(session)
 
   async def create_source(self, organization_id: UUID, payload: LabourSourceCreateRequest) -> LabourSource:
     source = LabourSource(
       id=uuid4(), organization_id=organization_id, name=payload.name.strip(),
       source_type=payload.source_type, contact_name=payload.contact_name, contact_phone=payload.contact_phone,
-      notes=payload.notes,
+      is_active_taxpayer=payload.is_active_taxpayer, notes=payload.notes,
     )
     await self.repo.create_source(source)
     await self.session.commit()
@@ -44,6 +47,8 @@ class LabourService:
       source.contact_name = payload.contact_name
     if payload.contact_phone is not None:
       source.contact_phone = payload.contact_phone
+    if payload.is_active_taxpayer is not None:
+      source.is_active_taxpayer = payload.is_active_taxpayer
     if payload.is_active is not None:
       source.is_active = payload.is_active
     if payload.notes is not None:
@@ -232,6 +237,12 @@ class LabourService:
     if source is None:
       raise TraceException("Labour source not found.", status_code=404, code="LABOUR_SOURCE_NOT_FOUND")
 
+    if payload.wht_category is not None and source.source_type != LabourSourceType.CONTRACTOR:
+      raise TraceException(
+        "Withholding tax here applies to contractor-sourced labour payments only, not direct employees.",
+        status_code=422, code="WHT_NOT_APPLICABLE_TO_DIRECT_LABOUR",
+      )
+
     if payload.advance_recovered_amount > 0:
       total_advances, total_recovered = await self.repo.get_advance_balance(
         organization_id, project_id, payload.source_id, payload.worker_id,
@@ -243,12 +254,26 @@ class LabourService:
           status_code=409, code="ADVANCE_RECOVERY_EXCEEDS_BALANCE",
         )
 
-    net_paid = payload.gross_wage_amount - payload.advance_recovered_amount
+    payment_id = uuid4()
+    wht_rate_percentage: Decimal | None = None
+    wht_deducted_amount = Decimal("0")
+
+    if payload.wht_category is not None:
+      wht_rate_percentage, wht_deducted_amount = await self.withholding_tax.calculate_and_record(
+        organization_id=organization_id, project_id=project_id, category=payload.wht_category,
+        gross_amount=payload.gross_wage_amount, is_filer=source.is_active_taxpayer,
+        payee_name=source.name, payee_ntn_or_cnic=None,
+        source_type=WHTSourceType.LABOUR_PAYMENT, source_id=payment_id, actor_user_id=actor_user_id,
+      )
+
+    net_paid = payload.gross_wage_amount - payload.advance_recovered_amount - wht_deducted_amount
 
     payment = LabourPayment(
-      id=uuid4(), organization_id=organization_id, project_id=project_id, source_id=payload.source_id,
+      id=payment_id, organization_id=organization_id, project_id=project_id, source_id=payload.source_id,
       worker_id=payload.worker_id, period_start=payload.period_start, period_end=payload.period_end,
       gross_wage_amount=payload.gross_wage_amount, advance_recovered_amount=payload.advance_recovered_amount,
+      wht_category=payload.wht_category.value if payload.wht_category else None,
+      wht_rate_percentage=wht_rate_percentage, wht_deducted_amount=wht_deducted_amount,
       net_paid_amount=net_paid, payment_date=payload.payment_date, notes=payload.notes,
       created_by_user_id=actor_user_id,
     )
@@ -257,7 +282,8 @@ class LabourService:
 
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.LABOUR, payment.id, AuditAction.CREATE,
-      f"Paid {net_paid} net wages to {source.name} for {payload.period_start} to {payload.period_end}.",
+      f"Paid {net_paid} net wages to {source.name} for {payload.period_start} to {payload.period_end}"
+      + (f" (WHT: {wht_deducted_amount})" if wht_deducted_amount > 0 else "") + ".",
     )
     return payment
 

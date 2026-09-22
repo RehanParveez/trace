@@ -9,10 +9,12 @@ import { LabourAttendanceSheet } from "../components/LabourAttendanceSheet";
 import { LabourDeploymentDialog } from "../components/LabourDeploymentDialog";
 import { LabourFinancePanel } from "../components/LabourFinancePanel";
 import { formatLabourMoney } from "../utils/labour.utils";
+import { useTranslation } from "react-i18next";
 
 const TABS = ["Roster", "Attendance", "Finance"] as const;
 
 export function LabourPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(LABOUR_PERMISSIONS.LABOUR_READ);
   const canManage = permissions.includes(LABOUR_PERMISSIONS.LABOUR_MANAGE);
@@ -33,30 +35,30 @@ export function LabourPage() {
   const summaryQuery = useLabourSummary(activeProjectId, periodStart, periodEnd, { enabled: canRead && Boolean(activeProjectId) });
 
   if (!canRead && permissions.length > 0) {
-    return <ErrorState title="Labour unavailable" description="You don't have permission to view labour records." />;
+    return <ErrorState  title={t("labour.page.accessUnavailable")} description={t("labour.page.accessUnavailableDescription")} />;
   }
 
-  if (projectsQuery.isLoading) return <LoadingState label="Loading projects…" />;
-  if (projectsQuery.isError || !projectsQuery.data) return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+  if (projectsQuery.isLoading) return <LoadingState label={t("labour.page.loadingProjects")} />;
+  if (projectsQuery.isError || !projectsQuery.data) return <ErrorState title={t("labour.page.projectsLoadError")} onRetry={() => void projectsQuery.refetch()} />;
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Labour" description="Attendance, wages and advances for site workforce — named workers and headcount categories both." />
+      <PageHeader title={t("labour.page.title")} description={t("labour.page.description")} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first to start tracking labour." />
+        <ErrorState title={t("labour.page.noProjectsTitle")} description={t("labour.page.noProjectsDescription")} />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("labour.page.project")}>
             <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
               {projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
             </select>
           </Field>
 
           <div className="grid gap-3 sm:grid-cols-3">
-            <StatCard label="Cost this month" value={summaryQuery.data ? formatLabourMoney(summaryQuery.data.total_accrued_cost, summaryQuery.data.currency) : "…"} note="Accrued from attendance" icon="budget" tone="gold" />
-            <StatCard label="Advances given" value={summaryQuery.data ? formatLabourMoney(summaryQuery.data.total_advances_given, summaryQuery.data.currency) : "…"} note="Total this project" icon="expenses" tone="blue" />
-            <StatCard label="Outstanding balance" value={summaryQuery.data ? formatLabourMoney(summaryQuery.data.outstanding_advance_balance, summaryQuery.data.currency) : "…"} note="Advances not yet recovered" icon="alert" tone={Number(summaryQuery.data?.outstanding_advance_balance ?? 0) > 0 ? "gold" : "green"} />
+            <StatCard label={t("labour.page.costThisMonth")} value={summaryQuery.data ? formatLabourMoney(summaryQuery.data.total_accrued_cost, summaryQuery.data.currency) : "…"} note={t("labour.page.accruedFromAttendance")} icon="budget" tone="gold" />
+            <StatCard label={t("labour.page.advancesGiven")} value={summaryQuery.data ? formatLabourMoney(summaryQuery.data.total_advances_given, summaryQuery.data.currency) : "…"} note={t("labour.page.totalThisProject")} icon="expenses" tone="blue" />
+            <StatCard label={t("labour.page.outstandingBalance")} value={summaryQuery.data ? formatLabourMoney(summaryQuery.data.outstanding_advance_balance, summaryQuery.data.currency) : "…"} note={t("labour.page.advancesNotRecovered")} icon="alert" tone={Number(summaryQuery.data?.outstanding_advance_balance ?? 0) > 0 ? "gold" : "green"} />
           </div>
 
           <div className="flex gap-2 border-b border-[var(--color-border)]">

@@ -22,6 +22,8 @@ from app.modules.expenses import models as expenses_models
 from app.modules.running_bills import models as running_models
 from app.modules.labour import models as labour_models
 from app.modules.subcontractors import models as subcontractors_models
+from app.modules.withholding_tax import models as withholding_tax_models
+from app.modules.material_stock import models as material_stock_models
 
 config = context.config
 

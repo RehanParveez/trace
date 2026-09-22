@@ -55,7 +55,7 @@ export const subcontractorsApi = {
   async listAdvances(agreementId: string): Promise<SubcontractorAdvance[]> {
     return (await apiClient.get<SubcontractorAdvance[]>(`/subcontractors/agreements/${agreementId}/advances`)).data;
   },
-  async recordPayment(agreementId: string, payload: { bill_id?: string | null; gross_amount: number; advance_recovered_amount?: number; payment_date: string; notes?: string | null }): Promise<SubcontractorPayment> {
+  async recordPayment(agreementId: string, payload: { bill_id?: string | null; gross_amount: number; advance_recovered_amount?: number; payment_date: string; wht_category?: string | null; notes?: string | null }): Promise<SubcontractorPayment> {
     return (await apiClient.post<SubcontractorPayment>(`/subcontractors/agreements/${agreementId}/payments`, payload)).data;
   },
   async listPayments(agreementId: string): Promise<SubcontractorPayment[]> {

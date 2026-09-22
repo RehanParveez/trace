@@ -3,6 +3,7 @@ import {Button, EmptyState, Field, inputClass, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useBulkRecordAttendance, useLabourDeployments } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 interface LabourAttendanceSheetProps {
   projectId: string;
@@ -11,6 +12,7 @@ interface LabourAttendanceSheetProps {
 }
 
 export function LabourAttendanceSheet({ projectId, canManage, onDeploy }: LabourAttendanceSheetProps) {
+  const { t } = useTranslation();
   const deploymentsQuery = useLabourDeployments(projectId);
   const bulkAttendance = useBulkRecordAttendance(projectId);
   const { showToast } = useToast();
@@ -30,40 +32,46 @@ export function LabourAttendanceSheet({ projectId, canManage, onDeploy }: Labour
       .map((d) => ({ deployment_id: d.id, attendance_date: date, units_present: Number(values[d.id]) }));
 
     if (entries.length === 0) {
-      showToast({ tone: "info", title: "Nothing to save", description: "Enter attendance for at least one deployment." });
+      showToast({ tone: "info", title: t("labour.attendance.nothingToSaveTitle"), description: t("labour.attendance.nothingToSaveDescription"), });
       return;
     }
 
-    bulkAttendance.mutate(entries, {
-      onSuccess: (result) => showToast({ tone: "success", title: `Attendance saved (${result.created} new, ${result.updated} updated)` }),
-      onError: (error) => showToast({ tone: "error", title: "Couldn't save attendance", description: getApiErrorMessage(error, "Please try again.") }),
-    });
+    bulkAttendance.mutate(entries, {onSuccess: (result) => showToast({tone: "success", title: t("labour.attendance.saved", {created: result.created, updated: result.updated,
+     }),
+   }),
+      onError: (error) => showToast({tone: "error", title: t("labour.attendance.saveErrorTitle"), description: getApiErrorMessage(error, t("common.tryAgain")),
+     }),
+   });
   }
 
   return (
     <Panel>
       <PanelHeader
-        eyebrow="DAILY ATTENDANCE"
-        title="Mark attendance"
-        description="For a named worker: 1 = present, 0.5 = half day, 0 = absent. For a headcount category, enter the number present."
-        action={canManage ? <Button variant="secondary" size="sm" onClick={onDeploy}>Deploy worker / category</Button> : null}
+        eyebrow={t("labour.attendance.eyebrow")}
+        title={t("labour.attendance.title")}
+        description={t("labour.attendance.description")}
+        action={canManage ? <Button variant="secondary" size="sm" onClick={onDeploy}>{t("labour.attendance.deploy")}</Button> : null}
       />
 
       <div className="p-5 sm:p-6">
-        <Field label="Date">
+        <Field label={t("labour.attendance.date")}>
           <input type="date" className={`${inputClass} max-w-[200px]`} value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
 
         {activeDeployments.length === 0 ? (
           <div className="mt-4">
-            <EmptyState icon="users" title="No active deployments" description="Deploy a worker or a headcount category to this project to start marking attendance." />
+            <EmptyState icon="users" title={t("labour.attendance.noDeploymentsTitle")} description={t("labour.attendance.noDeploymentsDescription")} />
           </div>
         ) : (
           <div className="mt-4 space-y-2">
             {activeDeployments.map((deployment) => (
               <div key={deployment.id} className="flex items-center justify-between gap-3 rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5">
                 <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
-                  {deployment.trade}{deployment.worker_id ? "" : " (headcount)"} — Rs {deployment.daily_rate}/day
+                  {deployment.trade}
+                  {deployment.worker_id ? "" : ` ${t("labour.attendance.headcountSuffix")}`}
+                  {" — "}
+                  {t("labour.attendance.ratePerDay", {rate: deployment.daily_rate,
+                })}
                 </span>
                 <input
                   type="number"
@@ -83,7 +91,9 @@ export function LabourAttendanceSheet({ projectId, canManage, onDeploy }: Labour
         {canManage && activeDeployments.length > 0 ? (
           <div className="mt-5 flex justify-end border-t border-[var(--color-border)] pt-4">
             <Button variant="primary" disabled={bulkAttendance.isPending} onClick={submit}>
-              {bulkAttendance.isPending ? "Saving…" : "Save attendance"}
+              {bulkAttendance.isPending
+                ? t("common.saving")
+                : t("labour.attendance.save")}
             </Button>
           </div>
         ) : null}
