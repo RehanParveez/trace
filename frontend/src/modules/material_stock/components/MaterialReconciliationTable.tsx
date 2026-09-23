@@ -1,20 +1,22 @@
 import { Badge, EmptyState, Panel, PanelHeader, TableShell } from "../../organizations/components/OrganizationUi";
 import type { MaterialStockLine } from "../types/material-stock.types";
+import { useTranslation } from "react-i18next";
 
 export function MaterialReconciliationTable({ lines, currency }: { lines: MaterialStockLine[]; currency: string }) {
+  const { t } = useTranslation();
   return (
     <Panel>
-      <PanelHeader eyebrow="SITE RECONCILIATION" title="Material stock" description="Received minus issued minus wastage, per material for this project." />
+      <PanelHeader eyebrow={t("materialStock.recon.eyebrow")} title={t("materialStock.recon.title")} description={t("materialStock.recon.description")}/>
       {lines.length === 0 ? (
-        <EmptyState icon="materials" title="No material data yet" description="This fills in automatically once materials are received via Procurement and issue/wastage entries are recorded." />
+        <EmptyState icon="materials" title={t("materialStock.recon.emptyTitle")} description={t("materialStock.recon.emptyDesc")} />
       ) : (
         <TableShell>
           <table className="w-full min-w-[760px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-                <th className="px-4 py-3">Material</th><th className="px-4 py-3 text-right">Received</th>
-                <th className="px-4 py-3 text-right">Issued</th><th className="px-4 py-3 text-right">Wastage</th>
-                <th className="px-4 py-3 text-right">Balance</th><th className="px-4 py-3 text-right">Wastage %</th>
+                <th className="px-4 py-3">{t("materialStock.recon.colMaterial")}</th><th className="px-4 py-3 text-right">{t("materialStock.recon.colReceived")}</th>
+                <th className="px-4 py-3 text-right">{t("materialStock.recon.colIssued")}</th><th className="px-4 py-3 text-right">{t("materialStock.recon.colWastage")}</th>
+                <th className="px-4 py-3 text-right">{t("materialStock.recon.colBalance")}</th><th className="px-4 py-3 text-right">{t("materialStock.recon.colWastagePct")}</th>
               </tr>
             </thead>
             <tbody>

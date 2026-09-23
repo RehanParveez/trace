@@ -6,8 +6,10 @@ import { WITHHOLDING_TAX_PERMISSIONS } from "../permissions";
 import { useWHTDeductions, useWHTRates, useWHTRegisterSummary } from "../hooks";
 import { WHTRateForm } from "../components/WHTRateForm";
 import { formatWHTCategory, formatWHTMoney } from "../utils/withholding-tax.utils";
+import { useTranslation } from "react-i18next";
 
 export function WithholdingTaxPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(WITHHOLDING_TAX_PERMISSIONS.WITHHOLDING_TAX_READ);
   const canManage = permissions.includes(WITHHOLDING_TAX_PERMISSIONS.WITHHOLDING_TAX_MANAGE);
@@ -22,33 +24,33 @@ export function WithholdingTaxPage() {
   const deductionsQuery = useWHTDeductions(periodStart, periodEnd);
 
   if (!canRead && permissions.length > 0) {
-    return <EmptyState icon="alert" title="Withholding tax unavailable" description="You don't have permission to view this." />;
+    return <EmptyState icon="alert" title={t("wht.page.accessUnavailable")} description={t("wht.page.accessUnavailableDesc")} />;
   }
 
   return (
     <div className="space-y-7">
       <PageHeader
-        title="Withholding tax"
-        description="Configure your organization's current WHT rates and view the deduction register for FBR filing. Rates are never assumed — set your own current, FBR-notified rates below."
+        title={t("wht.page.title")}
+        description={t("wht.page.description")}
       />
 
-      <StatCard label="Deducted this month" value={summaryQuery.data ? formatWHTMoney(summaryQuery.data.total_deducted_amount, summaryQuery.data.currency) : "…"} note="Across all categories" icon="budget" tone="gold" />
+      <StatCard label={t("wht.stat.deductedThisMonth")} value={summaryQuery.data ? formatWHTMoney(summaryQuery.data.total_deducted_amount, summaryQuery.data.currency) : "…"} note={t("wht.stat.acrossCategories")} icon="budget" tone="gold" />
 
       <Panel>
-        <PanelHeader eyebrow="RATE CONFIGURATION" title="Rates" description="One active rate per category. Setting a new rate replaces the previous one." action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>Set rate</Button> : null} />
-        {ratesQuery.isLoading ? <LoadingState label="Loading rates…" /> : (ratesQuery.data ?? []).length === 0 ? (
-          <EmptyState icon="budget" title="No rates configured yet" description="Add a rate for each category you make taxable payments under before recording any deductions." action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>Set rate</Button> : undefined} />
+        <PanelHeader eyebrow={t("wht.rates.eyebrow")} title={t("wht.rates.title")} description={t("wht.rates.description")} action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>{t("wht.rates.setRate")}</Button> : null} />
+        {ratesQuery.isLoading ? <LoadingState label={t("wht.rates.loading")} /> : (ratesQuery.data ?? []).length === 0 ? (
+          <EmptyState icon="budget" title={t("wht.rates.emptyTitle")} description={t("wht.rates.emptyDesc")} action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>Set rate</Button> : undefined} />
         ) : (
           <TableShell>
             <table className="w-full min-w-[560px] text-left">
-              <thead className="bg-[var(--color-surface-muted)]"><tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]"><th className="px-4 py-3">Category</th><th className="px-4 py-3 text-right">Filer</th><th className="px-4 py-3 text-right">Non-filer</th><th className="px-4 py-3">Status</th></tr></thead>
+              <thead className="bg-[var(--color-surface-muted)]"><tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]"><th className="px-4 py-3">{t("wht.rates.colCategory")}</th><th className="px-4 py-3 text-right">{t("wht.rates.colFiler")}</th><th className="px-4 py-3 text-right">{t("wht.rates.colNonFiler")}</th><th className="px-4 py-3">{t("wht.rates.colStatus")}</th></tr></thead>
               <tbody>
                 {(ratesQuery.data ?? []).map((rate) => (
                   <tr key={rate.id} className="border-t border-[var(--color-border)]">
                     <td className="px-4 py-3.5 text-[13.5px] font-semibold text-[var(--color-text-primary)]">{formatWHTCategory(rate.category)}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[13px] text-[var(--color-text-primary)]">{Number(rate.filer_rate_percentage)}%</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[13px] text-[var(--color-text-primary)]">{Number(rate.non_filer_rate_percentage)}%</td>
-                    <td className="px-4 py-3.5"><Badge tone={rate.is_active ? "green" : "slate"}>{rate.is_active ? "Active" : "Superseded"}</Badge></td>
+                    <td className="px-4 py-3.5"><Badge tone={rate.is_active ? "green" : "slate"}>{rate.is_active ? t("common.active") : t("wht.rates.superseded")}</Badge></td>
                   </tr>
                 ))}
               </tbody>
@@ -58,13 +60,13 @@ export function WithholdingTaxPage() {
       </Panel>
 
       <Panel>
-        <PanelHeader eyebrow="DEDUCTION REGISTER" title="This month's deductions" description="For your quarterly WHT statement filing with FBR." />
+        <PanelHeader eyebrow={t("wht.deductions.eyebrow")} title={t("wht.deductions.title")} description={t("wht.deductions.description")} />
         {deductionsQuery.isLoading ? <LoadingState label="Loading deductions…" /> : (deductionsQuery.data ?? []).length === 0 ? (
-          <EmptyState icon="budget" title="No deductions this month" description="Deductions recorded from subcontractor and labour payments will appear here." />
+          <EmptyState icon="budget" title={t("wht.deductions.emptyTitle")} description={t("wht.deductions.emptyDesc")} />
         ) : (
           <TableShell>
             <table className="w-full min-w-[680px] text-left">
-              <thead className="bg-[var(--color-surface-muted)]"><tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]"><th className="px-4 py-3">Payee</th><th className="px-4 py-3">Category</th><th className="px-4 py-3 text-right">Gross</th><th className="px-4 py-3 text-right">Rate</th><th className="px-4 py-3 text-right">Deducted</th></tr></thead>
+              <thead className="bg-[var(--color-surface-muted)]"><tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]"><th className="px-4 py-3">{t("wht.deductions.colPayee")}</th><th className="px-4 py-3">{t("wht.deductions.colCategory")}</th><th className="px-4 py-3 text-right">{t("wht.deductions.colGross")}</th><th className="px-4 py-3 text-right">{t("wht.deductions.colRate")}</th><th className="px-4 py-3 text-right">{t("wht.deductions.colDeducted")}</th></tr></thead>
               <tbody>
                 {(deductionsQuery.data ?? []).map((d) => (
                   <tr key={d.id} className="border-t border-[var(--color-border)]">
