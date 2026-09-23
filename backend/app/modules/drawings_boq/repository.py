@@ -349,3 +349,11 @@ class LabourRateRepository:
       {"project_id": row.project_id, "latest_boq_item_count": row.item_count}
       for row in result.all()
     ]
+  
+  async def list_by_revision_group(self, organization_id: UUID, revision_group_id: UUID) -> list[Drawing]:
+    result = await self.session.execute(
+      select(Drawing)
+      .where(Drawing.organization_id == organization_id, Drawing.revision_group_id == revision_group_id)
+      .order_by(Drawing.created_at.asc())
+    )
+    return list(result.scalars().all())

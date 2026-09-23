@@ -14,6 +14,10 @@ export interface Drawing {
   error_message: string | null;
   parsed_at: string | null;
   created_at: string;
+  revision_group_id: string;
+  revision_label: string | null;
+  is_current_revision: boolean;
+  superseded_at: string | null;
 }
 
 export interface DrawingElement {

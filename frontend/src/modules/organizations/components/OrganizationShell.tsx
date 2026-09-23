@@ -113,6 +113,11 @@ function buildProjectsNav(t: (key: string) => string): NavItem[] {
       icon: "procurement",
     },
     {
+      label: "Retention",
+      to: "/app/retention",
+      icon: "budget",
+    },
+    {
       label: "Withholding tax",
       to: "/app/withholding-tax",
       icon: "budget",

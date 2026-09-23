@@ -4,6 +4,7 @@ import { formatBudgetAmount, useBudgetOrganizationSummary } from "../../budgets"
 import { useExpenseOrganizationSummary } from "../../expenses";
 import { useProcurementOrganizationSummary } from "../../procurement";
 import { useTranslation } from "react-i18next";
+import { RETENTION_PERMISSIONS, useOrganizationRetentionSummary } from "../../retention";
 
 export function DashboardFinancialSummary() {
   const { t } = useTranslation();
@@ -16,17 +17,20 @@ export function DashboardFinancialSummary() {
   const budgetSummaryQuery = useBudgetOrganizationSummary({ enabled: canViewBudget });
   const expenseSummaryQuery = useExpenseOrganizationSummary({ enabled: canViewExpenses });
   const procurementSummaryQuery = useProcurementOrganizationSummary({ enabled: canViewProcurement });
+  const canViewRetention = permissions.includes(RETENTION_PERMISSIONS.RETENTION_READ);
+  const retentionSummaryQuery = useOrganizationRetentionSummary({ enabled: canViewRetention });
 
-  if (!canViewBudget && !canViewExpenses && !canViewProcurement) {
+  if (!canViewBudget && !canViewExpenses && !canViewProcurement && !canViewRetention) {
     return null;
   }
 
   const isLoading =
     (canViewBudget && budgetSummaryQuery.isLoading) ||
     (canViewExpenses && expenseSummaryQuery.isLoading) ||
-    (canViewProcurement && procurementSummaryQuery.isLoading);
+    (canViewProcurement && procurementSummaryQuery.isLoading) ||
+    (canViewRetention && retentionSummaryQuery.isLoading);
 
-  const currency = budgetSummaryQuery.data?.currency ?? "PKR";
+  const currency = budgetSummaryQuery.data?.currency ?? retentionSummaryQuery.data?.currency ?? "PKR";
 
   const approvedTotal = budgetSummaryQuery.data
     ? Number(budgetSummaryQuery.data.total_approved_amount)
@@ -44,7 +48,7 @@ export function DashboardFinancialSummary() {
       : null;
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
       <StatCard
         label={t("dashboard.financial.approvedBudget")}
          value={
@@ -119,6 +123,48 @@ export function DashboardFinancialSummary() {
         }
         icon="check"
         tone={remainingTotal === null ? "blue" : remainingTotal < 0 ? "red" : "green"}
+      />
+
+      <StatCard
+        label={t("dashboard.financial.clientRetentionHeld")}
+        value={
+          !canViewRetention
+            ? t("dashboard.financial.noAccess")
+            : isLoading
+              ? "…"
+              : formatBudgetAmount(
+                  retentionSummaryQuery.data?.client_retention_held ?? 0,
+                  retentionSummaryQuery.data?.currency ?? currency
+                )
+        }
+        note={
+          canViewRetention
+            ? t("dashboard.financial.retentionOutstanding")
+            : t("dashboard.financial.requiresRetention")
+        }
+        icon="budget"
+        tone="gold"
+      />
+
+      <StatCard
+        label={t("dashboard.financial.subcontractorRetentionHeld")}
+        value={
+          !canViewRetention
+            ? t("dashboard.financial.noAccess")
+            : isLoading
+              ? "…"
+              : formatBudgetAmount(
+                  retentionSummaryQuery.data?.subcontractor_retention_held ?? 0,
+                  retentionSummaryQuery.data?.currency ?? currency
+                )
+        }
+        note={
+          canViewRetention
+            ? t("dashboard.financial.retentionOutstanding")
+            : t("dashboard.financial.requiresRetention")
+        }
+        icon="procurement"
+        tone="gold"
       />
     </div>
   );

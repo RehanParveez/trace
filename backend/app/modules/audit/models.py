@@ -25,6 +25,7 @@ class AuditEntityType(str, enum.Enum):
   RUNNING_BILL = "RUNNING_BILL"
   LABOUR = "labour"
   SUBCONTRACTOR = "subcontractor"
+  RETENTION = "retention"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"

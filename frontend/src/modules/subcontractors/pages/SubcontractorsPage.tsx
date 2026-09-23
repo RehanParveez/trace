@@ -9,8 +9,10 @@ import { AgreementForm } from "../components/AgreementForm";
 import { AgreementCard } from "../components/AgreementCard";
 import { AgreementDetailPanel } from "../components/AgreementDetailPanel";
 import type { SubcontractAgreementDetail } from "../types/subcontractor.types";
+import { useTranslation } from "react-i18next";
 
 export function SubcontractorsPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(SUBCONTRACTOR_PERMISSIONS.SUBCONTRACTOR_READ);
   const canManage = permissions.includes(SUBCONTRACTOR_PERMISSIONS.SUBCONTRACTOR_MANAGE);
@@ -30,34 +32,34 @@ export function SubcontractorsPage() {
   const subcontractorById = new Map((subsQuery.data ?? []).map((s) => [s.id, s]));
 
   if (!canRead && permissions.length > 0) {
-    return <ErrorState title="Subcontractors unavailable" description="You don't have permission to view subcontractor records." />;
+    return <ErrorState title={t("subcontractors.page.accessUnavailable")} description="You don't have permission to view subcontractor records." />;
   }
-  if (projectsQuery.isLoading) return <LoadingState label="Loading projects…" />;
-  if (projectsQuery.isError || !projectsQuery.data) return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+  if (projectsQuery.isLoading) return <LoadingState label={t("subcontractors.page.loadingProjects")} />;
+  if (projectsQuery.isError || !projectsQuery.data) return <ErrorState title={t("subcontractors.page.loadProjectsError")} onRetry={() => void projectsQuery.refetch()} />;
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Subcontractors" description="Trade packages subcontracted out, with running bills, retention and payables tracked per agreement." />
+      <PageHeader title={t("subcontractors.page.title")} description={t("subcontractors.page.description")} />
 
       <SubcontractorRegistryPanel canManage={canManage} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first to subcontract work on it." />
+        <ErrorState title={t("subcontractors.page.noProjects")} description={t("subcontractors.page.noProjectsDesc")} />
       ) : (
         <>
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <Field label="Project">
+            <Field label={t("subcontractors.page.project")}>
               <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
                 {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </Field>
-            {canManage ? <Button variant="primary" onClick={() => setAgreementFormOpen(true)}>New agreement</Button> : null}
+            {canManage ? <Button variant="primary" onClick={() => setAgreementFormOpen(true)}>{t("subcontractors.page.newAgreement")}</Button> : null}
           </div>
 
           {agreementsQuery.isLoading ? (
-            <LoadingState label="Loading agreements…" />
+            <LoadingState label={t("subcontractors.page.loadingAgreements")} />
           ) : (agreementsQuery.data ?? []).length === 0 ? (
-            <ErrorState title="No subcontract agreements yet" description="Create one to start billing a subcontractor for this project." />
+            <ErrorState title={t("subcontractors.page.noAgreements")} description={t("subcontractors.page.noAgreementsDesc")} />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {(agreementsQuery.data ?? []).map((agreement) => (

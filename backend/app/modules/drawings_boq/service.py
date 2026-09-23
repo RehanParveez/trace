@@ -184,6 +184,7 @@ class DrawingBOQService:
     )
 
     now = datetime.now(timezone.utc)
+    drawing_id = uuid4()
 
     drawing = Drawing(
       id=uuid4(),
@@ -196,6 +197,9 @@ class DrawingBOQService:
       status=DrawingStatus.UPLOADED if is_auto_parsed else DrawingStatus.PARSED,
       file_size_bytes=file_size_bytes,
       parsed_at=None if is_auto_parsed else now,
+      revision_group_id=drawing_id,
+      revision_label=None,
+      is_current_revision=True,
     )
 
     drawing = await self.drawings.create(drawing)
@@ -1072,3 +1076,44 @@ class DrawingBOQService:
       AuditAction.DELETE,
       f'Deleted drawing "{drawing.original_filename}"',
     )
+  
+  async def create_revision(
+    self,
+    organization_id: UUID,
+    project_id: UUID,
+    previous_drawing_id: UUID,
+    user_id: UUID,
+    file: UploadFile,
+    revision_label: str | None,
+    idempotency_key: str | None,
+  ) -> Drawing:
+    previous = await self.get_drawing(organization_id, previous_drawing_id)
+    if previous.project_id != project_id:
+      raise TraceException(
+        "This drawing does not belong to this project.", status_code=404, code="DRAWING_NOT_FOUND",
+      )
+    if not previous.is_current_revision:
+      raise TraceException(
+        "This drawing has already been superseded by a newer revision. Revise the current revision instead.",
+        status_code=409, code="DRAWING_NOT_CURRENT_REVISION",
+      )
+
+    new_drawing = await self.upload_drawing(organization_id, project_id, user_id, file, idempotency_key)
+
+    new_drawing.revision_group_id = previous.revision_group_id
+    new_drawing.revision_label = (revision_label or "").strip() or None
+    previous.is_current_revision = False
+    previous.superseded_at = datetime.now(timezone.utc)
+    await self.session.commit()
+
+    await self.audit.log(
+      organization_id, user_id, AuditEntityType.DRAWING, new_drawing.id, AuditAction.CREATE,
+      f'Uploaded a new revision of "{previous.original_filename}"'
+      + (f" ({revision_label})" if revision_label else "") + ", superseding the previous revision.",
+    )
+
+    return new_drawing
+
+  async def list_revisions(self, organization_id: UUID, drawing_id: UUID) -> list[Drawing]:
+    drawing = await self.get_drawing(organization_id, drawing_id)
+    return await self.drawings.list_by_revision_group(organization_id, drawing.revision_group_id)

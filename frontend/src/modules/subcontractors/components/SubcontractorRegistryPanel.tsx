@@ -3,8 +3,10 @@ import type { FormEvent } from "react";
 import {Button, Field, inputClass, Modal, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { useCreateSubcontractor, useSubcontractors } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 export function SubcontractorRegistryPanel({ canManage }: { canManage: boolean }) {
+  const { t } = useTranslation();
   const subsQuery = useSubcontractors();
   const createSub = useCreateSubcontractor();
   const { showToast } = useToast();
@@ -13,16 +15,16 @@ export function SubcontractorRegistryPanel({ canManage }: { canManage: boolean }
   return (
     <Panel>
       <PanelHeader
-        eyebrow="SUBCONTRACTOR REGISTRY"
-        title="Subcontractors"
-        description="Companies you subcontract trade packages to — electrical, plumbing, tiling, glazing and similar."
-        action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>Add subcontractor</Button> : null}
+        eyebrow={t("subcontractors.registry.eyebrow")}
+        title={t("subcontractors.registry.title")}
+        description={t("subcontractors.registry.description")}
+        action={canManage ? <Button variant="primary" size="sm" onClick={() => setFormOpen(true)}>{t("subcontractors.registry.add")}</Button> : null}
       />
       <TableShell>
         <table className="w-full min-w-[600px] text-left">
           <thead className="bg-[var(--color-surface-muted)]">
             <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
-              <th className="px-4 py-3">Name</th><th className="px-4 py-3">Trade</th><th className="px-4 py-3">Contact</th>
+              <th className="px-4 py-3">{t("subcontractors.registry.colName")}</th><th className="px-4 py-3">{t("subcontractors.registry.colTrade")}</th><th className="px-4 py-3">{t("subcontractors.registry.colContact")}</th>
             </tr>
           </thead>
           <tbody>
@@ -38,9 +40,9 @@ export function SubcontractorRegistryPanel({ canManage }: { canManage: boolean }
       </TableShell>
 
       {formOpen ? (
-        <Modal title="Add subcontractor" onClose={() => setFormOpen(false)}>
+        <Modal title={t("subcontractors.registry.formTitle")} onClose={() => setFormOpen(false)}>
           <SubcontractorForm onSubmit={(payload) => createSub.mutate(payload, {
-            onSuccess: () => { setFormOpen(false); showToast({ tone: "success", title: "Subcontractor added" }); },
+            onSuccess: () => { setFormOpen(false); showToast({ tone: "success", title: t("subcontractors.registry.addedToast") }); },
           })} isPending={createSub.isPending} />
         </Modal>
       ) : null}
@@ -49,6 +51,7 @@ export function SubcontractorRegistryPanel({ canManage }: { canManage: boolean }
 }
 
 function SubcontractorForm({ onSubmit, isPending }: { onSubmit: (payload: any) => void; isPending: boolean }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [trade, setTrade] = useState("");
   const [contactName, setContactName] = useState("");
@@ -62,13 +65,13 @@ function SubcontractorForm({ onSubmit, isPending }: { onSubmit: (payload: any) =
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <Field label="Company / contractor name"><input required className={inputClass} value={name} onChange={(e) => setName(e.target.value)} /></Field>
-      <Field label="Trade specialization"><input required className={inputClass} value={trade} onChange={(e) => setTrade(e.target.value)} placeholder="e.g. Electrical, Plumbing, Tiling" /></Field>
-      <Field label="Contact name"><input className={inputClass} value={contactName} onChange={(e) => setContactName(e.target.value)} /></Field>
-      <Field label="Contact phone"><input className={inputClass} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} /></Field>
-      <Field label="NTN / CNIC (optional)"><input className={inputClass} value={ntn} onChange={(e) => setNtn(e.target.value)} /></Field>
+      <Field label={t("subcontractors.registry.name")}><input required className={inputClass} value={name} onChange={(e) => setName(e.target.value)} /></Field>
+      <Field label={t("subcontractors.registry.trade")}><input required className={inputClass} value={trade} onChange={(e) => setTrade(e.target.value)} placeholder={t("subcontractors.registry.tradePlaceholder")} /></Field>
+      <Field label={t("subcontractors.registry.contactName")}><input className={inputClass} value={contactName} onChange={(e) => setContactName(e.target.value)} /></Field>
+      <Field label={t("subcontractors.registry.contactPhone")}><input className={inputClass} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} /></Field>
+      <Field label={t("subcontractors.registry.ntn")}><input className={inputClass} value={ntn} onChange={(e) => setNtn(e.target.value)} /></Field>
       <div className="flex justify-end border-t border-[var(--color-border)] pt-4">
-        <Button type="submit" variant="primary" disabled={isPending || !name.trim() || !trade.trim()}>{isPending ? "Saving…" : "Add subcontractor"}</Button>
+        <Button type="submit" variant="primary" disabled={isPending || !name.trim() || !trade.trim()}>{isPending ? t("subcontractors.registry.saving") : t("subcontractors.registry.submit")}</Button>
       </div>
     </form>
   );

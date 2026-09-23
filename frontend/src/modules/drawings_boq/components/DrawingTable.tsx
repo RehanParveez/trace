@@ -4,6 +4,8 @@ import type { Drawing } from "../types/drawings-boq.types";
 import { formatDrawingStatus, formatFileSize, getDrawingStatusTone, isDrawingInProgress } from "../utils/drawings-boq.utils";
 import { useSuggestItemsFromPdf, useViewDrawingFile } from "../hooks";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import { DrawingRevisionDialog } from "./DrawingRevisionDialog";
 
 interface DrawingTableProps {
   projectId: string;
@@ -27,6 +29,8 @@ export function DrawingTable({
   onItemsSuggested,
 }: DrawingTableProps) {
   const { t } = useTranslation();
+  const [historyDrawingId, setHistoryDrawingId] = useState<string | null>(null);
+  const currentDrawings = drawings.filter((d) => d.is_current_revision !== false);
   const viewFile = useViewDrawingFile();
   const suggestItems = useSuggestItemsFromPdf(projectId);
   const { showToast } = useToast();
@@ -87,7 +91,7 @@ export function DrawingTable({
       />
 
 
-      {drawings.length === 0 ? (
+      {currentDrawings.length === 0 ? (
         <EmptyState
           icon="building"
           title={t("drawings.table.emptyTitle")}
@@ -108,18 +112,19 @@ export function DrawingTable({
         />
       ) : (
         <TableShell>
-          <table className="w-full min-w-[640px] text-left">
+          <table className="w-full min-w-[780px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">{t("drawings.table.colFile")}</th>
                 <th className="px-4 py-3">{t("drawings.table.colFormat")}</th>
+                <th className="px-4 py-3">{t("drawings.table.colRevision")}</th>
                 <th className="px-4 py-3">{t("drawings.table.colStatus")}</th>
                 <th className="px-4 py-3">{t("drawings.table.colSize")}</th>
                 <th className="px-4 py-3 text-right">{t("drawings.table.colActions")}</th>
               </tr>
             </thead>
             <tbody>
-              {drawings.map((drawing) => {
+              {currentDrawings.map((drawing) => {
                 const isReference = drawing.format === "PDF";
 
                 return (
@@ -143,6 +148,17 @@ export function DrawingTable({
                       </button>
                     </td>
                     <td className="px-4 py-3.5 font-mono text-[12px] text-[var(--color-text-secondary)]">{drawing.format}</td>
+
+                    <td className="px-4 py-3.5">
+                      {drawing.revision_label ? (
+                        <Badge tone="blue">{drawing.revision_label}</Badge>
+                      ) : (
+                        <span className="text-[12px] text-[var(--color-text-muted)]">
+                          {t("drawings.table.original")}
+                        </span>
+                      )}
+                    </td>
+
                     <td className="px-4 py-3.5">
                       {isReference ? (
                         <Badge tone="blue">{t("drawings.table.reference")}</Badge>
@@ -156,43 +172,76 @@ export function DrawingTable({
                       )}
                     </td>
                     <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{formatFileSize(drawing.file_size_bytes)}</td>
+
                     <td className="px-4 py-3.5 text-right">
-                      {isReference ? (
-                       <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
-                          disabled={viewFile.isPending}
-                          onClick={() => viewFile.mutate(drawing.id)}
+                          onClick={() => setHistoryDrawingId(drawing.id)}
                         >
-                          {viewFile.isPending ? t("drawings.table.opening") : t("drawings.table.viewPdf")}
+                          {t("drawings.table.history")}
                         </Button>
-                        {canSuggestItems ? (
+
+                        {isReference ? (
+                          <>
                             <Button
-                              variant="secondary"
+                              variant="ghost"
                               size="sm"
-                              disabled={suggestItems.isPending}
-                              onClick={() => handleSuggestItems(drawing)}
-                              title={t("drawings.suggest.buttonTitle")}
+                              disabled={viewFile.isPending}
+                              onClick={() => viewFile.mutate(drawing.id)}
                             >
-                              <Icon name="spark" size={12} />
-                              {suggestItems.isPending ? t("drawings.suggest.reading") : t("drawings.suggest.button")}
+                              {viewFile.isPending
+                                ? t("drawings.table.opening")
+                                : t("drawings.table.viewPdf")}
                             </Button>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <Button variant="ghost" size="sm" disabled={drawing.status !== "PARSED"} onClick={() => onView(drawing)}>
-                          {t("drawings.table.viewElements")}
-                        </Button>
-                      )}
+                            {canSuggestItems ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                disabled={suggestItems.isPending}
+                                onClick={() => handleSuggestItems(drawing)}
+                                title={t("drawings.suggest.buttonTitle")}
+                              >
+                                <Icon name="spark" size={12} />
+                                {suggestItems.isPending
+                                  ? t("drawings.suggest.reading")
+                                  : t("drawings.suggest.button")}
+                              </Button>
+                            ) : null}
+                          </>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={drawing.status !== "PARSED"}
+                            onClick={() => onView(drawing)}
+                          >
+                            {t("drawings.table.viewElements")}
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
+                  
                 );
               })}
             </tbody>
           </table>
         </TableShell>
       )}
+      {historyDrawingId ? (
+        <DrawingRevisionDialog
+          drawingId={historyDrawingId}
+          projectId={projectId}
+          canUpload={canUpload}
+          onClose={() => setHistoryDrawingId(null)}
+          onViewElements={(drawing) => {
+            setHistoryDrawingId(null);
+            onView(drawing);
+          }}
+        />
+      ) : null}
     </Panel>
   );
 }

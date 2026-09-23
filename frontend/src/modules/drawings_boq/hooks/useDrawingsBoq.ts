@@ -238,3 +238,20 @@ export function useDrawingOrganizationSummary(options?: { enabled?: boolean }) {
     enabled: options?.enabled,
   });
 }
+
+export function useDrawingRevisions(drawingId: string | undefined) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.all, "revisions", drawingId] as const,
+    queryFn: () => drawingsBoqApi.listDrawingRevisions(drawingId as string),
+    enabled: Boolean(drawingId),
+  });
+}
+
+export function useReviseDrawing(projectId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ drawingId, file, revisionLabel }: { drawingId: string; file: File; revisionLabel: string | null }) =>
+      drawingsBoqApi.reviseDrawing(drawingId, file, revisionLabel, crypto.randomUUID()),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: drawingsBoqKeys.all }),
+  });
+}

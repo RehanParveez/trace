@@ -24,6 +24,7 @@ from app.modules.labour.router import router as labour_router
 from app.modules.subcontractors.router import router as subcontractor_router
 from app.modules.withholding_tax.router import router as withholding_tax_router
 from app.modules.material_stock.router import router as material_stock_router
+from app.modules.retention.router import router as retention_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -88,6 +89,8 @@ app.include_router(subcontractor_router, prefix=settings.api_v1_prefix)
 app.include_router(withholding_tax_router, prefix=settings.api_v1_prefix)
 
 app.include_router(material_stock_router, prefix=settings.api_v1_prefix)
+
+app.include_router(retention_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:

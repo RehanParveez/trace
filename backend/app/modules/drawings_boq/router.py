@@ -1,6 +1,6 @@
 from __future__ import annotations
 from uuid import UUID
-from fastapi import APIRouter, Depends, File, Header, UploadFile
+from fastapi import APIRouter, Depends, File, Header, UploadFile, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
@@ -456,3 +456,28 @@ async def delete_drawing(
     drawing_id,
     current_user.id,
   )
+  
+@router.post("/drawings/{drawing_id}/revise", response_model=DrawingResponse, status_code=201)
+async def revise_drawing(
+  drawing_id: UUID,
+  file: UploadFile = File(...),
+  revision_label: str | None = Form(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_CREATE)),
+  session: AsyncSession = Depends(get_db),
+  idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+):
+  service = _service(session)
+  previous = await service.get_drawing(current_user.active_membership.organization_id, drawing_id)
+  return await service.create_revision(
+    current_user.active_membership.organization_id, previous.project_id, drawing_id,
+    current_user.id, file, revision_label, idempotency_key,
+  )
+
+@router.get("/drawings/{drawing_id}/revisions", response_model=list[DrawingResponse])
+async def list_drawing_revisions(
+  drawing_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.list_revisions(current_user.active_membership.organization_id, drawing_id)

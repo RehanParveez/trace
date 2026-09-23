@@ -90,3 +90,6 @@ class PermissionKey(StrEnum):
 
   MATERIAL_STOCK_READ = "material_stock:read"
   MATERIAL_STOCK_MANAGE = "material_stock:manage"
+  
+  RETENTION_READ = "retention:read"
+  RETENTION_MANAGE = "retention:manage"

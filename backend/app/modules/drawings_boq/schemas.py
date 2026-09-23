@@ -17,6 +17,10 @@ class DrawingResponse(BaseModel):
   error_message: str | None
   parsed_at: datetime | None
   created_at: datetime
+  revision_group_id: UUID
+  revision_label: str | None
+  is_current_revision: bool
+  superseded_at: datetime | None
 
 class DrawingElementResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

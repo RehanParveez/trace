@@ -152,4 +152,19 @@ export const drawingsBoqApi = {
     const response = await apiClient.get<ProjectBOQCount[]>("/drawings-boq/boq-item-counts");
     return response.data;
   },
+
+  async reviseDrawing(drawingId: string, file: File, revisionLabel: string | null, idempotencyKey: string): Promise<Drawing> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (revisionLabel) formData.append("revision_label", revisionLabel);
+    const response = await apiClient.post<Drawing>(`/drawings-boq/drawings/${drawingId}/revise`, formData, {
+      headers: { "Content-Type": "multipart/form-data", "Idempotency-Key": idempotencyKey },
+    });
+    return response.data;
+  },
+
+  async listDrawingRevisions(drawingId: string): Promise<Drawing[]> {
+    const response = await apiClient.get<Drawing[]>(`/drawings-boq/drawings/${drawingId}/revisions`);
+    return response.data;
+  },
 };

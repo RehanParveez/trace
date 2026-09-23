@@ -3,8 +3,10 @@ import type { FormEvent } from "react";
 import { Button, Field, Icon, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useCreateAgreement, useSubcontractors } from "../hooks";
+import { useTranslation } from "react-i18next";
 
 export function AgreementForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
+  const { t } = useTranslation();
   const subsQuery = useSubcontractors();
   const createAgreement = useCreateAgreement(projectId);
   const { showToast } = useToast();
@@ -38,7 +40,7 @@ export function AgreementForm({ projectId, onClose }: { projectId: string; onClo
     }
 
     createAgreement.mutate(payload, {
-      onSuccess: () => { onClose(); showToast({ tone: "success", title: "Subcontract agreement created" }); },
+      onSuccess: () => { onClose(); showToast({ tone: "success", title: t("subcontractors.agreementForm.title") }); },
       onError: (mutationError) => setError(getApiErrorMessage(mutationError, "Couldn't create this agreement.")),
     });
   }

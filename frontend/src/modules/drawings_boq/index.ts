@@ -15,3 +15,5 @@ export * from "./pages/LabourRatesPage";
 export * from "./pages/MaterialLibraryPage";
 export * from "./types/drawings-boq.types";
 export * from "./utils/drawings-boq.utils";
+export * from "./components/DrawingRevisionDialog";
+export * from "./components/DrawingReviseDialog";

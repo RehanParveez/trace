@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
@@ -122,6 +122,17 @@ class Drawing(Base, TimestampMixin):
     "BOQVersion",
     back_populates="drawing",
     cascade="all, delete-orphan",
+  )
+  
+  is_current_revision: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=True,
+  )
+  
+  superseded_at: Mapped[datetime | None] = mapped_column(
+    DateTime(timezone=True),
+    nullable=True,
   )
 
 class DrawingElement(Base, TimestampMixin):

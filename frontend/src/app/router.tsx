@@ -27,6 +27,7 @@ import { LabourPage } from "../modules/labour";
 import { SubcontractorsPage } from "../modules/subcontractors";
 import { WithholdingTaxPage } from "../modules/withholding_tax";
 import { MaterialStockPage } from "../modules/material_stock";
+import { RetentionPage } from "../modules/retention";
 
 export const router = createBrowserRouter([
   {
@@ -347,6 +348,16 @@ export const router = createBrowserRouter([
   children: [
     { index: true,
       element: <MaterialStockPage /> 
+    }
+  ],
+},
+
+{
+  path: "retention",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+      element: <RetentionPage /> 
     }
   ],
 },
