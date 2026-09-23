@@ -569,3 +569,9 @@ Index(
   RefreshToken.user_id,
   RefreshToken.revoked_at,
 )
+
+# watcher test
+
+# notes-sync watcher test 01:09:49
+
+# notes-sync test 01:11:52

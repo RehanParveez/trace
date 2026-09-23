@@ -55,3 +55,4 @@ class EmailService:
           settings.smtp_password,
         )
         smtp.send_message(message)
+# notes-sync watcher test
