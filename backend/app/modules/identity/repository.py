@@ -146,6 +146,15 @@ class IdentityRepository:
       select(Organization).where(Organization.slug == slug.strip().lower())
     )
     return result.scalar_one_or_none()
+  
+  async def get_organization_by_id(
+    self,
+    organization_id: UUID,
+  ) -> Organization | None:
+    result = await self.session.execute(
+    select(Organization).where(Organization.id == organization_id)
+    )
+    return result.scalar_one_or_none()
 
   async def get_all_permissions(self) -> list[Permission]:
     result = await self.session.execute(select(Permission))

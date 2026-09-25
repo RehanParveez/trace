@@ -7,6 +7,7 @@ import { useSitePhotos } from "../../whatsapp";
 import { VERIFICATION_PERMISSIONS, useProgressClaims, formatClaimPercentage } from "../../verification";
 import { useProcurementRequests } from "../../procurement";
 import { useExpenses, formatExpenseAmount } from "../../expenses";
+import { CHANGE_ORDER_PERMISSIONS, useChangeOrders, formatChangeOrderMoney } from "../../change_orders";
 
 type FeedTone = "green" | "red" | "blue" | "gold" | "slate";
 
@@ -33,7 +34,9 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
   const canViewClaims = permissions.includes(VERIFICATION_PERMISSIONS.PROGRESS_CLAIM_READ);
   const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
   const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
+  const canViewChangeOrders = permissions.includes(CHANGE_ORDER_PERMISSIONS.CHANGE_ORDER_READ);
 
+  const changeOrdersQuery = useChangeOrders(canViewChangeOrders ? projectId : "");
   const photosQuery = useSitePhotos({ projectId }, { enabled: canViewPhotos });
   const claimsQuery = useProgressClaims(projectId, undefined, { enabled: canViewClaims });
   const procurementQuery = useProcurementRequests({ projectId }, { enabled: canViewProcurement });
@@ -43,9 +46,10 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
     (canViewPhotos && photosQuery.isLoading) ||
     (canViewClaims && claimsQuery.isLoading) ||
     (canViewProcurement && procurementQuery.isLoading) ||
-    (canViewExpenses && expensesQuery.isLoading);
+    (canViewExpenses && expensesQuery.isLoading) ||
+    (canViewChangeOrders && changeOrdersQuery.isLoading);
 
-  const hasAnyAccess = canViewPhotos || canViewClaims || canViewProcurement || canViewExpenses;
+  const hasAnyAccess = canViewPhotos || canViewClaims || canViewProcurement || canViewExpenses || canViewChangeOrders;
 
   const items = useMemo<ActivityFeedItem[]>(() => {
     const feed: ActivityFeedItem[] = [];
@@ -125,10 +129,33 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
       });
     }
 
+    for (const co of changeOrdersQuery.data ?? []) {
+      const coMeta: Record<string, { title: string; tone: FeedTone }> = {
+        DRAFT: { title: `Change order drafted: ${co.title}`, tone: "gold" },
+        APPROVED: { title: `Change order approved: ${co.title}`, tone: "green" },
+        REJECTED: { title: `Change order rejected: ${co.title}`, tone: "red" },
+        CANCELLED: { title: `Change order cancelled: ${co.title}`, tone: "slate" },
+      };
+
+      const meta = coMeta[co.status] ?? {
+        title: `Change order updated: ${co.title}`,
+        tone: "slate" as FeedTone,
+      };
+
+      feed.push({
+        key: `change-order:${co.id}`,
+        timestamp: co.approved_at ?? co.rejected_at ?? co.created_at,
+        icon: "budget",
+        tone: meta.tone,
+        title: meta.title,
+        description: `#${co.change_order_number} · ${formatChangeOrderMoney(co.value_impact, co.currency)}`,
+      });
+    }
+
     return feed
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, MAX_VISIBLE_ITEMS);
-  }, [photosQuery.data, claimsQuery.data, procurementQuery.data, expensesQuery.data]);
+  }, [photosQuery.data, claimsQuery.data, procurementQuery.data, expensesQuery.data, changeOrdersQuery.data,]);
 
   if (!hasAnyAccess) {
     return null;
@@ -139,14 +166,14 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
       <PanelHeader
         eyebrow="ONE OPERATIONAL RECORD"
         title="Project activity"
-        description="Site photos, progress claims, procurement and expenses for this project, in one timeline."
+        description="Site photos, progress claims, procurement, expenses and change orders for this project, in one timeline."
       />
 
       {isLoading ? (
         <LoadingState label="Loading project activity…" />
       ) : items.length === 0 ? (
         <div className="px-5 py-8 text-[13px] text-[var(--color-text-secondary)] sm:px-6">
-          Nothing recorded for this project yet. Activity will appear here as photos, claims, procurement and expenses come in.
+          Nothing recorded for this project yet. Activity will appear here as photos, claims, procurement, expenses and change orders come in.
         </div>
       ) : (
         <div className="divide-y divide-[var(--color-border)]">

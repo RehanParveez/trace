@@ -196,6 +196,7 @@ class IdentityService:
       code="EMAIL_ALREADY_REGISTERED",
     )
    invitation: OrganizationInvitation | None = None
+   organization: Organization | None = None
    
    if invitation_token is not None:
     invitation = await self._resolve_invitation(invitation_token, email)
@@ -253,8 +254,10 @@ class IdentityService:
       await self.session.flush()
       all_permissions = await self.repository.get_all_permissions()
       role.permissions = all_permissions
-    
       await self.session.flush()
+      
+     organization_id = organization.id
+     role_id = role.id
 
    user = await self.repository.create_user(
     organization_id=organization_id,
@@ -281,7 +284,8 @@ class IdentityService:
     invitation.accepted_by_user_id = user.id
    else:
     subscription_service = SubscriptionService(self.session)
-    organization = await self.repository.get_organization_by_id(organization_id)
+    if organization is None:  
+      organization = await self.repository.get_organization_by_id(organization_id)
 
     await subscription_service.create_initial_subscription(
       organization,

@@ -124,6 +124,17 @@ class Drawing(Base, TimestampMixin):
     cascade="all, delete-orphan",
   )
   
+  revision_group_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    nullable=False,
+    index=True,
+  )
+
+  revision_label: Mapped[str | None] = mapped_column(
+    String(100),
+    nullable=True,
+  )
+  
   is_current_revision: Mapped[bool] = mapped_column(
     Boolean,
     nullable=False,

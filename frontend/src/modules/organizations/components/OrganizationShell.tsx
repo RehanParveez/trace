@@ -98,6 +98,11 @@ function buildProjectsNav(t: (key: string) => string): NavItem[] {
       icon: "check",
     },
     {
+      label: "Change orders",
+      to: "/app/change-orders",
+      icon: "budget",
+    },
+    {
       label: t("nav.runningBills"),
       to: "/app/running-bills",
       icon: "budget",

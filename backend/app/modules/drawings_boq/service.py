@@ -187,7 +187,7 @@ class DrawingBOQService:
     drawing_id = uuid4()
 
     drawing = Drawing(
-      id=uuid4(),
+      id=drawing_id,
       organization_id=organization_id,
       project_id=project_id,
       uploaded_by_user_id=user_id,
