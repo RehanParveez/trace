@@ -8,8 +8,10 @@ import { ChangeOrderForm } from "../components/ChangeOrderForm";
 import { ChangeOrderTable } from "../components/ChangeOrderTable";
 import { ChangeOrderDetailDialog } from "../components/ChangeOrderDetailDialog";
 import type { ChangeOrder } from "../types/change-order.types";
+import { useTranslation } from "react-i18next";
 
 export function ChangeOrdersPage() {
+  const { t } = useTranslation();
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(CHANGE_ORDER_PERMISSIONS.CHANGE_ORDER_READ);
   const canCreate = permissions.includes(CHANGE_ORDER_PERMISSIONS.CHANGE_ORDER_CREATE);
@@ -27,27 +29,27 @@ export function ChangeOrdersPage() {
   const summaryQuery = useChangeOrderSummary(activeProjectId, { enabled: Boolean(activeProjectId) });
 
   if (!canRead && permissions.length > 0) {
-    return <ErrorState title="Change orders unavailable" description="You don't have permission to view change orders." />;
+    return <ErrorState title={t("changeOrders.page.accessUnavailable")} description={t("changeOrders.page.accessUnavailableDesc")} />;
   }
-  if (projectsQuery.isLoading) return <LoadingState label="Loading projects…" />;
-  if (projectsQuery.isError || !projectsQuery.data) return <ErrorState title="We couldn't load projects" onRetry={() => void projectsQuery.refetch()} />;
+  if (projectsQuery.isLoading) return <LoadingState label={t("changeOrders.page.loadingProjects")} />;
+  if (projectsQuery.isError || !projectsQuery.data) return <ErrorState title={t("changeOrders.page.loadProjectsError")} onRetry={() => void projectsQuery.refetch()} />;
 
   return (
     <div className="space-y-7">
-      <PageHeader title="Change orders" description="Scope changes — additions, omissions and variations — priced, approved, and applied directly to the BOQ." />
+      <PageHeader title={t("changeOrders.page.title")} description={t("changeOrders.page.description")} />
 
       {projects.length === 0 ? (
-        <ErrorState title="No projects yet" description="Create a project first." />
+        <ErrorState title={t("changeOrders.page.noProjects")} description={t("changeOrders.page.noProjectsDesc")} />
       ) : (
         <>
-          <Field label="Project">
+          <Field label={t("changeOrders.page.project")}>
             <select className={inputClass} value={activeProjectId} onChange={(e) => setProjectId(e.target.value)}>
               {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </Field>
 
           {changeOrdersQuery.isLoading ? (
-            <LoadingState label="Loading change orders…" />
+            <LoadingState label={t("changeOrders.page.loading")} />
           ) : (
             <ChangeOrderTable
               changeOrders={changeOrdersQuery.data ?? []}
