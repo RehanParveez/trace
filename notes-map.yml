@@ -2,6 +2,7 @@ mappings:
   - pattern: "backend/app/modules/identity/**/*.py"
     notes_file: "notes/identity.md"
     section: "identity"
+    review: true
   - pattern: "backend/app/modules/site_progress/**/*.py"
     notes_file: "notes/site_progress.md"
     section: "site-progress"

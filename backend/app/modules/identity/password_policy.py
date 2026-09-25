@@ -82,3 +82,6 @@ def validate_password(
       status_code=422,
       code = "WEAK_PASSWORD",
     )
+    
+    
+  ##

@@ -570,5 +570,3 @@ Index(
   RefreshToken.revoked_at,
 )
 
-## notes testing
-## notes trace

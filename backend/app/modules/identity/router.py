@@ -290,3 +290,6 @@ async def switch_organization(
 ):
   service = IdentityService(session=session, token_store=...)
   return await service.switch_organization(current_user, payload.organization_id)
+
+
+##

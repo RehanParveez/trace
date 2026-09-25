@@ -29,6 +29,7 @@ import { WithholdingTaxPage } from "../modules/withholding_tax";
 import { MaterialStockPage } from "../modules/material_stock";
 import { RetentionPage } from "../modules/retention";
 import { ChangeOrdersPage } from "../modules/change_orders";
+import { SchedulingPage } from "../modules/scheduling";
 
 export const router = createBrowserRouter([
   {
@@ -369,6 +370,16 @@ export const router = createBrowserRouter([
   children: [
     { index: true,
       element: <ChangeOrdersPage />
+    }
+  ],
+},
+
+{
+  path: "schedule",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+      element: <SchedulingPage />
     }
   ],
 },

@@ -8,6 +8,7 @@ import { VERIFICATION_PERMISSIONS, useProgressClaims, formatClaimPercentage } fr
 import { useProcurementRequests } from "../../procurement";
 import { useExpenses, formatExpenseAmount } from "../../expenses";
 import { CHANGE_ORDER_PERMISSIONS, useChangeOrders, formatChangeOrderMoney } from "../../change_orders";
+import { SCHEDULING_PERMISSIONS, useProjectSchedule } from "../../scheduling";
 
 type FeedTone = "green" | "red" | "blue" | "gold" | "slate";
 
@@ -35,7 +36,9 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
   const canViewProcurement = permissions.includes(IDENTITY_PERMISSIONS.PROCUREMENT_READ);
   const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
   const canViewChangeOrders = permissions.includes(CHANGE_ORDER_PERMISSIONS.CHANGE_ORDER_READ);
+  const canViewSchedule = permissions.includes(SCHEDULING_PERMISSIONS.SCHEDULE_READ);
 
+  const scheduleQuery = useProjectSchedule(canViewSchedule ? projectId : "");
   const changeOrdersQuery = useChangeOrders(canViewChangeOrders ? projectId : "");
   const photosQuery = useSitePhotos({ projectId }, { enabled: canViewPhotos });
   const claimsQuery = useProgressClaims(projectId, undefined, { enabled: canViewClaims });
