@@ -100,3 +100,6 @@ class PermissionKey(StrEnum):
   
   SCHEDULE_READ = "schedule:read"
   SCHEDULE_MANAGE = "schedule:manage"
+  
+  PUNCH_LIST_READ = "punch_list:read"
+  PUNCH_LIST_MANAGE = "punch_list:manage"

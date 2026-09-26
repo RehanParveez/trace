@@ -1,6 +1,6 @@
 from __future__ import annotations
 import enum
-from sqlalchemy import Enum, Date, ForeignKey, Index, Numeric, String
+from sqlalchemy import Enum, Date, ForeignKey, Index, Numeric, String, Boolean
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
 from sqlalchemy.orm import Mapped, mapped_column
@@ -53,6 +53,7 @@ class RetentionRelease(Base, TimestampMixin):
   
   amount: Mapped[Decimal] = mapped_column(Numeric(16, 2), nullable=False)
   release_date: Mapped[date] = mapped_column(Date, nullable=False)
+  is_final_release: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
   
   notes: Mapped[str | None] = mapped_column(String(300), nullable=True)
   

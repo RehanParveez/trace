@@ -30,6 +30,7 @@ import { MaterialStockPage } from "../modules/material_stock";
 import { RetentionPage } from "../modules/retention";
 import { ChangeOrdersPage } from "../modules/change_orders";
 import { SchedulingPage } from "../modules/scheduling";
+import { PunchListsPage } from "../modules/punch_lists";
 
 export const router = createBrowserRouter([
   {
@@ -380,6 +381,16 @@ export const router = createBrowserRouter([
   children: [
     { index: true,
       element: <SchedulingPage />
+    }
+  ],
+},
+
+{
+  path: "punch-lists",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+     element: <PunchListsPage /> 
     }
   ],
 },

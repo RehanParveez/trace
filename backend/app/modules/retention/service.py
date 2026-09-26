@@ -12,6 +12,7 @@ from app.modules.identity.models import Organization
 from decimal import Decimal
 from app.modules.drawings_boq.models import BOQVersion
 from app.modules.subcontractors.models import SubcontractAgreement, Subcontractor
+from app.modules.punch_lists.service import PunchListService
 
 class RetentionService:
   def __init__(self, session: AsyncSession):
@@ -19,6 +20,7 @@ class RetentionService:
     self.repo = RetentionRepository(session)
     self.projects = ProjectRepository(session)
     self.audit = AuditLogService(session)
+    self.punch_lists = PunchListService(session)
 
   async def record_release(
     self, organization_id: UUID, payload: RetentionReleaseCreateRequest, actor_user_id: UUID,
@@ -28,9 +30,18 @@ class RetentionService:
     if payload.holder_type == RetentionHolderType.CLIENT:
       outstanding = await self._get_client_outstanding(organization_id, payload.boq_version_id)
       label = "client-held retention"
+      if payload.is_final_release:
+        await self.punch_lists.assert_project_clear_for_final_release(organization_id, payload.project_id)
     else:
       outstanding = await self._get_subcontractor_outstanding(organization_id, payload.agreement_id)
       label = "subcontractor retention"
+      if payload.is_final_release:
+        agreement = await self.session.get(SubcontractAgreement, payload.agreement_id)
+        
+        if agreement is not None:
+          await self.punch_lists.assert_subcontractor_clear_for_final_release(
+            organization_id, payload.project_id, agreement.subcontractor_id,
+          )
 
     if payload.amount > outstanding:
       raise TraceException(
@@ -41,15 +52,16 @@ class RetentionService:
     release = RetentionRelease(
       id=uuid4(), organization_id=organization_id, project_id=payload.project_id,
       holder_type=payload.holder_type, boq_version_id=payload.boq_version_id, agreement_id=payload.agreement_id,
-      amount=payload.amount, release_date=payload.release_date, notes=payload.notes,
-      created_by_user_id=actor_user_id,
+      amount=payload.amount, release_date=payload.release_date,
+      is_final_release=payload.is_final_release, created_by_user_id=actor_user_id,
     )
     await self.repo.create_release(release)
     await self.session.commit()
 
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.RETENTION, release.id, AuditAction.CREATE,
-      f"Released {payload.amount} of {label} for {project.name}.",
+      f"Released {payload.amount} of {label} for {project.name}"
+      + (" (final release)" if payload.is_final_release else "") + ".",
     )
     return release
 

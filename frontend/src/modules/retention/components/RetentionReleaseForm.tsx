@@ -22,6 +22,7 @@ export function RetentionReleaseForm({ projectId, onClose }: { projectId: string
   const [releaseDate, setReleaseDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isFinalRelease, setIsFinalRelease] = useState(false);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -31,7 +32,7 @@ export function RetentionReleaseForm({ projectId, onClose }: { projectId: string
         holder_type: holderType, project_id: projectId,
         boq_version_id: holderType === "CLIENT" ? boqVersionId : null,
         agreement_id: holderType === "SUBCONTRACTOR" ? agreementId : null,
-        amount: Number(amount), release_date: releaseDate, notes: notes.trim() || null,
+        amount: Number(amount), is_final_release: isFinalRelease, release_date: releaseDate, notes: notes.trim() || null,
       },
       {
         onSuccess: () => { onClose(); showToast({ tone: "success", title: t("retention.release.successToast") }); },
@@ -70,6 +71,17 @@ export function RetentionReleaseForm({ projectId, onClose }: { projectId: string
         </div>
         <Field label={t("retention.release.notes")}><textarea className={`${inputClass} resize-y`} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
 
+        <label className="flex items-start gap-2.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <input type="checkbox" checked={isFinalRelease} onChange={(e) => setIsFinalRelease(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--color-trace-gold)]" />
+          <span className="text-[12.5px] text-[var(--color-text-primary)]">
+            This is the <strong>final</strong> retention release
+            <span className="mt-1 block text-[11.5px] text-[var(--color-text-secondary)]">
+              {holderType === "CLIENT"
+                ? "Requires every punch list for this project to be closed."
+                : "Requires every punch list item assigned to this subcontractor to be resolved or waived."}
+            </span>
+          </span>
+        </label>
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">

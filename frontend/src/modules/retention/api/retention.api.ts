@@ -7,7 +7,7 @@ export const retentionApi = {
     return (await apiClient.get<RetentionRelease[]>("/retention/releases", { params: { project_id: projectId } })).data;
   },
   async recordRelease(payload: {
-    holder_type: RetentionHolderType; project_id: string; boq_version_id?: string | null;
+    holder_type: RetentionHolderType; project_id: string; boq_version_id?: string | null; is_final_release: boolean;
     agreement_id?: string | null; amount: number; release_date: string; notes?: string | null;
   }): Promise<RetentionRelease> {
     return (await apiClient.post<RetentionRelease>("/retention/releases", payload)).data;

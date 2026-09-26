@@ -12,6 +12,7 @@ class RetentionReleaseCreateRequest(BaseModel):
   agreement_id: UUID | None = None
   amount: Decimal = Field(gt=0)
   release_date: date
+  is_final_release: bool = False
   notes: str | None = None
 
   @model_validator(mode="after")
@@ -37,6 +38,7 @@ class RetentionReleaseResponse(BaseModel):
   agreement_id: UUID | None
   amount: Decimal
   release_date: date
+  is_final_release: bool
   notes: str | None
   created_at: datetime
 

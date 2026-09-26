@@ -9,6 +9,7 @@ import { useProcurementRequests } from "../../procurement";
 import { useExpenses, formatExpenseAmount } from "../../expenses";
 import { CHANGE_ORDER_PERMISSIONS, useChangeOrders, formatChangeOrderMoney } from "../../change_orders";
 import { SCHEDULING_PERMISSIONS, useProjectSchedule } from "../../scheduling";
+import { PUNCH_LIST_PERMISSIONS, usePunchLists } from "../../punch_lists";
 
 type FeedTone = "green" | "red" | "blue" | "gold" | "slate";
 
@@ -37,7 +38,9 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
   const canViewExpenses = permissions.includes(IDENTITY_PERMISSIONS.EXPENSE_READ);
   const canViewChangeOrders = permissions.includes(CHANGE_ORDER_PERMISSIONS.CHANGE_ORDER_READ);
   const canViewSchedule = permissions.includes(SCHEDULING_PERMISSIONS.SCHEDULE_READ);
+  const canViewPunchLists = permissions.includes(PUNCH_LIST_PERMISSIONS.PUNCH_LIST_READ);
 
+  const punchListsQuery = usePunchLists(canViewPunchLists ? projectId : "");
   const scheduleQuery = useProjectSchedule(canViewSchedule ? projectId : "");
   const changeOrdersQuery = useChangeOrders(canViewChangeOrders ? projectId : "");
   const photosQuery = useSitePhotos({ projectId }, { enabled: canViewPhotos });
@@ -155,10 +158,33 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
       });
     }
 
+    for (const list of punchListsQuery.data ?? []) {
+      if (list.status === "CLOSED" && list.closed_at) {
+        feed.push({
+          key: `punch-list:${list.id}`,
+          timestamp: list.closed_at,
+          icon: "check",
+          tone: "green",
+          title: `Punch list closed: ${list.title}`,
+        });
+      }
+      for (const item of list.items) {
+        if (item.status === "RESOLVED" || item.status === "WAIVED") {
+          feed.push({
+            key: `punch-item:${item.id}`,
+            timestamp: item.resolved_at ?? new Date().toISOString(),
+            icon: "check",
+            tone: item.status === "RESOLVED" ? "green" : "slate",
+            title: `Snag item ${item.status === "WAIVED" ? "waived" : "resolved"}: ${item.location}`,
+          });
+        }
+      }
+    }
+
     return feed
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, MAX_VISIBLE_ITEMS);
-  }, [photosQuery.data, claimsQuery.data, procurementQuery.data, expensesQuery.data, changeOrdersQuery.data,]);
+  }, [photosQuery.data, claimsQuery.data, procurementQuery.data, expensesQuery.data, changeOrdersQuery.data, punchListsQuery.data,]);
 
   if (!hasAnyAccess) {
     return null;

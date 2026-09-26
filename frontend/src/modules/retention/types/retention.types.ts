@@ -2,7 +2,7 @@ export type RetentionHolderType = "CLIENT" | "SUBCONTRACTOR";
 
 export interface RetentionRelease {
   id: string; project_id: string; holder_type: RetentionHolderType;
-  boq_version_id: string | null; agreement_id: string | null;
+  boq_version_id: string | null; agreement_id: string | null; is_final_release: boolean;
   amount: number | string; release_date: string; notes: string | null; created_at: string;
 }
 

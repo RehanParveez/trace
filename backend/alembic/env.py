@@ -27,6 +27,7 @@ from app.modules.material_stock import models as material_stock_models
 from app.modules.retention import models as retention_models
 from app.modules.change_orders import models as change_orders_models
 from app.modules.scheduling import models as scheduling_models
+from app.modules.punch_lists import models as punch_lists
 
 config = context.config
 

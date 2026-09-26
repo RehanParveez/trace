@@ -28,6 +28,7 @@ class AuditEntityType(str, enum.Enum):
   RETENTION = "retention"
   CHANGE_ORDER = "CHANGE_ORDER"
   SCHEDULE_TASK = "SCHEDULE_TASK"
+  PUNCH_LIST = "PUNCH_LIST"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"

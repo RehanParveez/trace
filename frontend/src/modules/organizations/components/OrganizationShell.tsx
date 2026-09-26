@@ -128,6 +128,11 @@ function buildProjectsNav(t: (key: string) => string): NavItem[] {
       icon: "budget",
     },
     {
+      label: "Punch lists",
+      to: "/app/punch-lists",
+      icon: "check",
+    },
+    {
       label: "Withholding tax",
       to: "/app/withholding-tax",
       icon: "budget",
