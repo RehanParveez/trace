@@ -333,6 +333,9 @@ const resources = {
       "auth.forgot.titleEm": "back.",
       "auth.reset.titleLine1": "Create a new",
       "auth.reset.titleEm": "password.",
+
+      "hero.sitePhotoAlt": "An active building construction site",
+      "hero.sitePhotoCaption": "Project work, recorded as it happens.",
  
       "subscription.page.eyebrow": "SUBSCRIPTION & BILLING",
       "subscription.page.title": "Subscription control",
@@ -945,6 +948,19 @@ const resources = {
       "projects.combobox.search": "Search projects…",
       "projects.combobox.noMatch": "No projects match \"{{query}}\"",
       "projects.combobox.placeholder": "Select a project",
+
+      "product.preview.projectRecordAlt": "Trace project record and activity view",
+      "product.preview.projectRecordEyebrow": "PROJECT RECORD", 
+      "product.preview.projectRecordTitle": "Keep project activity in context",
+      "product.preview.projectRecordDescription": "See project details and recorded activity together, including progress claims, change orders and site updates.",
+      "product.preview.boqAlt": "Trace bill of quantities review table",
+      "product.preview.boqEyebrow": "QUANTITIES & RATES",
+      "product.preview.boqTitle": "Review the details behind the work",
+      "product.preview.boqDescription": "Inspect BOQ items, quantities, rates and approval status in the project workflow.",
+      "product.preview.rolesAlt": "Trace organization roles and access screen",
+      "product.preview.rolesEyebrow": "ROLES & ACCESS",
+      "product.preview.rolesTitle": "Match access to team responsibilities",
+      "product.preview.rolesDescription": "View system and custom roles for the people who coordinate projects, review quantities and work on site.",
 
       "budgets.form.updated": "Budget updated",
       "budgets.form.set": "Budget set",

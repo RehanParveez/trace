@@ -255,3 +255,11 @@ export function useReviseDrawing(projectId: string) {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: drawingsBoqKeys.all }),
   });
 }
+
+export function useBOQItemSourceElements(boqItemId: string | undefined) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.all, "source-elements", boqItemId] as const,
+    queryFn: () => drawingsBoqApi.getBOQItemSourceElements(boqItemId as string),
+    enabled: Boolean(boqItemId),
+  });
+}

@@ -30,7 +30,9 @@ from decimal import Decimal
 from app.core.redis import redis_client
 from app.modules.identity.rate_limit import RateLimiter
 from app.core.config import settings
-
+from app.modules.drawings_boq.ifc_extraction import aggregate_drawing_elements, extract_quantity, resolve_material_name
+from app.modules.drawings_boq.ifc_types import TARGET_IFC_TYPES
+from app.modules.drawings_boq.models import BOQItemSourceElement
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
@@ -237,6 +239,89 @@ class DrawingBOQService:
       )
 
     return drawing
+  
+  async def extract_and_generate_boq(
+    self,
+    organization_id: UUID,
+    drawing: Drawing,
+    ifc_file,
+    boq_version_id: UUID,
+    actor_user_id: UUID,
+  ) -> dict:
+    created_elements: list[DrawingElement] = []
+    skipped_zero_or_missing_quantity = 0
+
+    for ifc_type in TARGET_IFC_TYPES:
+      for element in ifc_file.by_type(ifc_type):
+        quantity_result = extract_quantity(element)
+        if quantity_result is None:
+          skipped_zero_or_missing_quantity += 1
+          continue
+        quantity, unit = quantity_result
+
+        material_name, is_generic_fallback = resolve_material_name(element)
+
+        drawing_element = DrawingElement(
+          id=uuid4(),
+          organization_id=organization_id,
+          drawing_id=drawing.id,
+          ifc_global_id=getattr(element, "GlobalId", None),
+          ifc_type=element.is_a(),
+          name=getattr(element, "Name", None),
+          raw_material_text=material_name,
+          unit=unit,
+          quantity=quantity,
+          properties={"is_generic_fallback": is_generic_fallback},
+        )
+        self.session.add(drawing_element)
+        created_elements.append(drawing_element)
+
+    await self.session.flush()
+
+    groups = aggregate_drawing_elements(created_elements)
+    boq_items_created = 0
+
+    for group in groups:
+      normalized_name, category, _matched = await self.normalize_material(
+        organization_id, group.raw_material_text,
+      )
+      default_rate = await self.get_material_default_rate(
+        organization_id, group.raw_material_text,
+      )
+
+      boq_item = BOQItem(
+        id=uuid4(),
+        organization_id=organization_id,
+        boq_version_id=boq_version_id,
+        material_name=normalized_name,
+        category=category,
+        unit=group.unit,
+        quantity=group.total_quantity,
+        unit_rate=default_rate,
+        rate_source=BOQItemRateSource.LIBRARY if default_rate is not None else None,
+        item_type=BOQItemType.MATERIAL,
+        status=BOQItemStatus.DRAFT,
+        created_by_user_id=actor_user_id,
+      )
+      self.session.add(boq_item)
+      await self.session.flush()
+      boq_items_created += 1
+
+      self.session.add_all([
+        BOQItemSourceElement(
+          id=uuid4(), organization_id=organization_id, boq_item_id=boq_item.id,
+          drawing_element_id=element_id, quantity_contributed=group.element_quantities[element_id],
+        )
+        for element_id in group.element_ids
+      ])
+
+    await self.session.commit()
+
+    return {
+      "elements_extracted": len(created_elements),
+      "elements_skipped_zero_or_missing_quantity": skipped_zero_or_missing_quantity,
+      "boq_items_created": boq_items_created,
+    }
 
   async def get_drawing(
     self,
@@ -1117,3 +1202,17 @@ class DrawingBOQService:
   async def list_revisions(self, organization_id: UUID, drawing_id: UUID) -> list[Drawing]:
     drawing = await self.get_drawing(organization_id, drawing_id)
     return await self.drawings.list_by_revision_group(organization_id, drawing.revision_group_id)
+  
+  async def list_boq_item_source_elements(
+    self, organization_id: UUID, boq_item_id: UUID,
+  ) -> list[DrawingElement]:
+    result = await self.session.execute(
+      select(DrawingElement)
+      .join(BOQItemSourceElement, BOQItemSourceElement.drawing_element_id == DrawingElement.id)
+      .where(
+        BOQItemSourceElement.organization_id == organization_id,
+        BOQItemSourceElement.boq_item_id == boq_item_id,
+      )
+      .order_by(DrawingElement.ifc_global_id.asc())
+    )
+    return list(result.scalars().unique())

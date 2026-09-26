@@ -21,12 +21,13 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
   const { showToast } = useToast();
 
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const items = itemsQuery.data ?? [];
 
   function handleConflict() {
-    setNotice(t("boq.items.conflict"))
+    setNotice(t("boq.items.conflict"));
     void itemsQuery.refetch();
     setEditingId(null);
   }
@@ -37,11 +38,17 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
         eyebrow={t("boq.items.eyebrow")}
         title={t("boq.items.title")}
         description={t("boq.items.description")}
-        action={<span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">{items.length}</span>}
+        action={
+          <span className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] font-semibold text-[var(--color-text-secondary)]">
+            {items.length}
+          </span>
+        }
       />
 
       {notice ? (
-      <div className="border-b border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-5 py-3 text-[12px] text-[var(--color-info)]">{notice}</div>
+        <div className="border-b border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-5 py-3 text-[12px] text-[var(--color-info)]">
+          {notice}
+        </div>
       ) : null}
 
       {itemsQuery.isLoading ? (
@@ -90,62 +97,100 @@ export function BOQItemTable({ boqVersionId, canUpdate, canApprove }: BOQItemTab
                               handleConflict();
                               return;
                             }
-                            setNotice(getApiErrorMessage(error, t("boq.items.saveError")))
+                            setNotice(getApiErrorMessage(error, t("boq.items.saveError")));
                           },
                         },
                       )
                     }
                   />
                 ) : (
-                  <tr key={item.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
-                    <td className="px-4 py-3.5">
-                      <span className="block text-[14px] font-semibold text-[var(--color-text-primary)]">{item.material_name}</span>
-                      {item.category ? <span className="mt-0.5 block text-[12px] text-[var(--color-text-secondary)]">{item.category}</span> : null}
-                    </td>
-                    <td className="px-4 py-3.5 text-[12px] text-[var(--color-text-secondary)]">{formatBOQItemType(item.item_type)}</td>
-                    <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{item.unit}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{formatQuantity(item.quantity)}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{formatCurrency(item.unit_rate)}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
-                      {formatCurrency(computeLineTotal(item.quantity, item.unit_rate))}
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <Badge tone={item.status === "APPROVED" ? "green" : "slate"}>{formatBOQItemStatus(item.status)}</Badge>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <div className="flex justify-end gap-2">
-                        {canUpdate && item.status === "DRAFT" ? (
-                          <Button variant="ghost" size="sm" onClick={() => setEditingId(item.id)}>
-                            <Icon name="edit" size={12} />{t("common.edit")}
-                          </Button>
+                  <>
+                    <tr key={item.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
+                      <td className="px-4 py-3.5">
+                        <span className="block text-[14px] font-semibold text-[var(--color-text-primary)]">
+                          {item.material_name}
+                        </span>
+                        {item.category ? (
+                          <span className="mt-0.5 block text-[12px] text-[var(--color-text-secondary)]">
+                            {item.category}
+                          </span>
                         ) : null}
-                        {canApprove && item.status === "DRAFT" ? (
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            disabled={approveItem.isPending}
-                            onClick={() =>
-                              approveItem.mutate(item.id, {
-                                onSuccess: () =>
-                                  showToast({
-                                    tone: "success",
-                                    title: t("boq.items.approvedToast", {
-                                      name: item.material_name,
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setExpandedItemId(expandedItemId === item.id ? null : item.id)
+                          }
+                          className="mt-1 text-[11px] text-[var(--color-text-muted)] hover:text-[var(--color-trace-gold-dark)] hover:underline"
+                        >
+                          {expandedItemId === item.id ? "Hide source elements" : "View source elements"}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3.5 text-[12px] text-[var(--color-text-secondary)]">
+                        {formatBOQItemType(item.item_type)}
+                      </td>
+                      <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">
+                        {item.unit}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">
+                        {formatQuantity(item.quantity)}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">
+                        {formatCurrency(item.unit_rate)}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
+                        {formatCurrency(computeLineTotal(item.quantity, item.unit_rate))}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <Badge tone={item.status === "APPROVED" ? "green" : "slate"}>
+                          {formatBOQItemStatus(item.status)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <div className="flex justify-end gap-2">
+                          {canUpdate && item.status === "DRAFT" ? (
+                            <Button variant="ghost" size="sm" onClick={() => setEditingId(item.id)}>
+                              <Icon name="edit" size={12} />
+                              {t("common.edit")}
+                            </Button>
+                          ) : null}
+                          {canApprove && item.status === "DRAFT" ? (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              disabled={approveItem.isPending}
+                              onClick={() =>
+                                approveItem.mutate(item.id, {
+                                  onSuccess: () =>
+                                    showToast({
+                                      tone: "success",
+                                      title: t("boq.items.approvedToast", {
+                                        name: item.material_name,
+                                      }),
                                     }),
-                                  }),
-                                onError: (error) =>
-                                  setNotice(
-                                    getApiErrorMessage(error, t("boq.items.approveError")),
-                                  ),
-                              })
-                            }
-                          >
-                            {t("boq.items.approve")}
-                          </Button>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
+                                  onError: (error) =>
+                                    setNotice(
+                                      getApiErrorMessage(error, t("boq.items.approveError")),
+                                    ),
+                                })
+                              }
+                            >
+                              {t("boq.items.approve")}
+                            </Button>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedItemId === item.id ? (
+                      <tr
+                        key={`${item.id}-sources`}
+                        className="border-t border-[var(--color-border)] bg-[var(--color-surface-muted)]"
+                      >
+                        <td colSpan={8} className="px-4 py-3">
+                          {/* source elements content */}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </>
                 ),
               )}
             </tbody>
@@ -160,7 +205,13 @@ interface BOQItemEditRowProps {
   item: BOQItem;
   isSaving: boolean;
   onCancel: () => void;
-  onSave: (payload: { material_name: string; category: string | null; unit: string; quantity: number; unit_rate: number | null }) => void;
+  onSave: (payload: {
+    material_name: string;
+    category: string | null;
+    unit: string;
+    quantity: number;
+    unit_rate: number | null;
+  }) => void;
 }
 
 function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProps) {
@@ -171,25 +222,58 @@ function BOQItemEditRow({ item, isSaving, onCancel, onSave }: BOQItemEditRowProp
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [unitRate, setUnitRate] = useState(item.unit_rate !== null ? String(item.unit_rate) : "");
 
-  const cls = "w-full rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[12.5px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]";
+  const cls =
+    "w-full rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[12.5px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]";
 
   return (
     <tr className="border-t border-[var(--color-border)] bg-[var(--color-warning-bg)]">
       <td className="px-4 py-3">
-        <input className={cls} value={materialName} onChange={(e) => setMaterialName(e.target.value)} />
-        <input className={`${cls} mt-1.5`} placeholder={t("boq.items.categoryPlaceholder")} value={category} onChange={(e) => setCategory(e.target.value)} />
+        <input
+          className={cls}
+          value={materialName}
+          onChange={(e) => setMaterialName(e.target.value)}
+        />
+        <input
+          className={`${cls} mt-1.5`}
+          placeholder={t("boq.items.categoryPlaceholder")}
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
       </td>
-      <td className="px-4 py-3 text-[12px] text-[var(--color-text-muted)]">{formatBOQItemType(item.item_type)}</td>
-      <td className="px-4 py-3"><input className={cls} value={unit} onChange={(e) => setUnit(e.target.value)} /></td>
-      <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} /></td>
-      <td className="px-4 py-3"><input className={`${cls} text-right`} type="number" step="any" placeholder="—" value={unitRate} onChange={(e) => setUnitRate(e.target.value)} /></td>
+      <td className="px-4 py-3 text-[12px] text-[var(--color-text-muted)]">
+        {formatBOQItemType(item.item_type)}
+      </td>
+      <td className="px-4 py-3">
+        <input className={cls} value={unit} onChange={(e) => setUnit(e.target.value)} />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          className={`${cls} text-right`}
+          type="number"
+          step="any"
+          value={quantity}
+          onChange={(e) => setQuantity(e.target.value)}
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          className={`${cls} text-right`}
+          type="number"
+          step="any"
+          placeholder="—"
+          value={unitRate}
+          onChange={(e) => setUnitRate(e.target.value)}
+        />
+      </td>
       <td className="px-4 py-3 text-right font-mono text-[12.5px] text-[var(--color-text-muted)]">
         {formatCurrency(computeLineTotal(quantity, unitRate === "" ? null : unitRate))}
       </td>
       <td className="px-4 py-3" />
       <td className="px-4 py-3">
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving}>{t("common.cancel")}</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={isSaving}>
+            {t("common.cancel")}
+          </Button>
           <Button
             variant="primary"
             size="sm"

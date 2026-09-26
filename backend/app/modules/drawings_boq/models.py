@@ -506,3 +506,36 @@ class MaterialNormalizationCache(Base, TimestampMixin):
     nullable=True,          
     index=True,
   )
+  
+class BOQItemSourceElement(Base):
+  __tablename__ = "boq_item_source_elements"
+
+  __table_args__ = (
+    UniqueConstraint("boq_item_id", "drawing_element_id", name="uq_boq_item_source_element"),
+  )
+
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"), 
+    nullable=False,
+  )
+  
+  boq_item_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("boq_items.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  drawing_element_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawing_elements.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  quantity_contributed: Mapped[Decimal] = mapped_column(Numeric(18, 3), nullable=False)

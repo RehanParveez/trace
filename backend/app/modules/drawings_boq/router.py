@@ -481,3 +481,17 @@ async def list_drawing_revisions(
 ):
   service = _service(session)
   return await service.list_revisions(current_user.active_membership.organization_id, drawing_id)
+
+@router.get(
+  "/boq-items/{boq_item_id}/source-elements",
+  response_model=list[DrawingElementResponse],
+)
+async def list_boq_item_source_elements(
+  boq_item_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.list_boq_item_source_elements(
+    current_user.active_membership.organization_id, boq_item_id,
+  )

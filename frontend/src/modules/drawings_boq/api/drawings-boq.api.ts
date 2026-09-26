@@ -167,4 +167,9 @@ export const drawingsBoqApi = {
     const response = await apiClient.get<Drawing[]>(`/drawings-boq/drawings/${drawingId}/revisions`);
     return response.data;
   },
+
+  async getBOQItemSourceElements(boqItemId: string): Promise<DrawingElement[]> {
+    const response = await apiClient.get<DrawingElement[]>(`/drawings-boq/boq-items/${boqItemId}/source-elements`);
+    return response.data;
+  },
 };

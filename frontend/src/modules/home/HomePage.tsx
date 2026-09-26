@@ -345,10 +345,16 @@ export function HomePage() {
           </div>
 
           <div className="lp-hero-stage">
-            <p className="lp-preview-note">{t("preview.sampleNote")}</p>
-            <div className="lp-hero-canvas">
-              <DashboardMockup />
-            </div>
+           <figure className="lp-hero-photo-frame">
+          <img
+            className="lp-hero-photo"
+            src="/images/landing/site-progress.webp"
+            alt={t("hero.sitePhotoAlt")}
+          />
+            <figcaption className="lp-hero-photo-caption">
+              {t("hero.sitePhotoCaption")}
+            </figcaption>
+           </figure>
           </div>
         </div>
       </section>
