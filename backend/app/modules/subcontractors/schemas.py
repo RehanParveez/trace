@@ -5,6 +5,7 @@ from decimal import Decimal
 from datetime import date, datetime
 from app.modules.subcontractors.models import SubcontractAgreementStatus, SubcontractorBillStatus
 from app.modules.withholding_tax.models import WHTCategory
+from app.modules.sales_tax.models import SalesTaxAuthority
 
 class SubcontractorCreateRequest(BaseModel):
   name: str = Field(min_length=1, max_length=200)
@@ -104,6 +105,7 @@ class SubcontractorBillCreateRequest(BaseModel):
   retention_cap_percentage: Decimal | None = Field(default=None, ge=0, le=100)
   other_deductions_amount: Decimal = Field(default=Decimal("0"), ge=0)
   other_deductions_note: str | None = Field(default=None, max_length=500)
+  sales_tax_authority: SalesTaxAuthority | None = None
   notes: str | None = None
   measurements: list[BillMeasurementInput] = Field(min_length=1)
 
@@ -150,6 +152,10 @@ class SubcontractorBillResponse(BaseModel):
   other_deductions_amount: Decimal
   other_deductions_note: str | None
   net_payable: Decimal
+  sales_tax_authority: str | None
+  sales_tax_rate_percentage: Decimal | None
+  sales_tax_amount: Decimal
+  total_amount_due: Decimal = Decimal("0")
   currency: str
   notes: str | None
   version: int

@@ -15,12 +15,16 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.projects.models import Client, Project
 from app.modules.drawings_boq.models import BOQVersion
 from app.modules.running_bills.export import build_running_bill_pdf, build_running_bill_xlsx
+from app.modules.sales_tax.models import SalesTaxSourceType
+from app.modules.sales_tax.service import SalesTaxService
+from app.modules.sales_tax.models import SalesTaxAuthority
 
 class RunningBillService:
   def __init__(self, session: AsyncSession):
     self.session = session
     self.repo = RunningBillRepository(session)
     self.audit = AuditLogService(session)
+    self.sales_tax = SalesTaxService(session)
 
   async def list_bills(self, organization_id: UUID, project_id: UUID) -> list[RunningBill]:
     await self._require_project(organization_id, project_id)
@@ -133,6 +137,13 @@ class RunningBillService:
       - payload.advance_recovery_amount - payload.other_deductions_amount
     )
 
+    sales_tax_rate_estimate: Decimal | None = None
+    sales_tax_amount_estimate = Decimal("0")
+    if payload.sales_tax_authority is not None:
+      sales_tax_rate_estimate, sales_tax_amount_estimate = await self.sales_tax.calculate_preview(
+        organization_id, payload.sales_tax_authority, gross_this_period,
+      )
+
     organization = await self.session.get(Organization, organization_id)
 
     conflict: Exception | None = None
@@ -158,6 +169,9 @@ class RunningBillService:
         other_deductions_amount=payload.other_deductions_amount,
         other_deductions_note=payload.other_deductions_note,
         net_payable=net_payable,
+        sales_tax_authority=payload.sales_tax_authority.value if payload.sales_tax_authority else None,
+        sales_tax_rate_percentage=sales_tax_rate_estimate,
+        sales_tax_amount=sales_tax_amount_estimate,
         currency=organization.currency if organization else "PKR",
         notes=payload.notes,
         created_by_user_id=actor_user_id,
@@ -190,9 +204,7 @@ class RunningBillService:
 
     return await self.get_bill(organization_id, bill.id)
 
-  async def issue_bill(
-    self, organization_id: UUID, bill_id: UUID, expected_version: int, actor_user_id: UUID,
-  ) -> RunningBill:
+  async def issue_bill(self, organization_id: UUID, bill_id: UUID, expected_version: int, actor_user_id: UUID) -> RunningBill:
     bill = await self.repo.get_by_id_for_update(bill_id, organization_id)
     if bill is None:
       raise TraceException("Running bill not found.", status_code=404, code="RUNNING_BILL_NOT_FOUND")
@@ -204,6 +216,16 @@ class RunningBillService:
     if bill.status != RunningBillStatus.DRAFT:
       raise TraceException("Only draft bills can be issued.", status_code=409, code="RUNNING_BILL_NOT_DRAFT")
 
+    if bill.sales_tax_authority is not None:
+      rate_percentage, tax_amount = await self.sales_tax.calculate_and_record(
+        organization_id=organization_id, project_id=bill.project_id,
+        authority=SalesTaxAuthority(bill.sales_tax_authority), taxable_amount=bill.gross_value_this_period,
+        source_type=SalesTaxSourceType.RUNNING_BILL, source_id=bill.id,
+        charge_date=datetime.now(timezone.utc).date(), actor_user_id=actor_user_id,
+      )
+      bill.sales_tax_rate_percentage = rate_percentage
+      bill.sales_tax_amount = tax_amount
+
     bill.status = RunningBillStatus.ISSUED
     bill.issued_at = datetime.now(timezone.utc)
     bill.version += 1
@@ -211,7 +233,8 @@ class RunningBillService:
 
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.RUNNING_BILL, bill.id, AuditAction.UPDATE,
-      f"Issued running bill #{bill.bill_number}, net payable {bill.net_payable} {bill.currency}.",
+      f"Issued running bill #{bill.bill_number}, net payable {bill.net_payable} {bill.currency}"
+      + (f", plus {bill.sales_tax_amount} sales tax" if bill.sales_tax_amount > 0 else "") + ".",
     )
     return bill
 

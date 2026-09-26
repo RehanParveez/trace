@@ -31,6 +31,7 @@ import { RetentionPage } from "../modules/retention";
 import { ChangeOrdersPage } from "../modules/change_orders";
 import { SchedulingPage } from "../modules/scheduling";
 import { PunchListsPage } from "../modules/punch_lists";
+import { SalesTaxPage } from "../modules/salex_tax";
 
 export const router = createBrowserRouter([
   {
@@ -391,6 +392,16 @@ export const router = createBrowserRouter([
   children: [
     { index: true,
      element: <PunchListsPage /> 
+    }
+  ],
+},
+
+{
+  path: "sales-tax",
+  element: <OrganizationShell />,
+  children: [
+    { index: true, 
+      element: <SalesTaxPage />
     }
   ],
 },

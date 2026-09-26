@@ -44,6 +44,10 @@ export interface RunningBill {
 
 export interface RunningBillDetail extends RunningBill {
   line_items: RunningBillLineItem[];
+  sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT";
+  sales_tax_rate_percentage: number | string | null;
+  sales_tax_amount: number | string;
+  total_amount_due: number | string;
 }
 
 export interface RunningBillCreateRequest {
@@ -57,4 +61,5 @@ export interface RunningBillCreateRequest {
   other_deductions_amount?: number;
   other_deductions_note?: string | null;
   notes?: string | null;
+  sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT";
 }

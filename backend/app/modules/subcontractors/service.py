@@ -20,6 +20,9 @@ from app.modules.subcontractors.schemas import (SubcontractAgreementCreateReques
 from app.modules.projects.repository import ProjectRepository
 from app.modules.withholding_tax.models import WHTSourceType
 from app.modules.withholding_tax.service import WithholdingTaxService
+from app.modules.sales_tax.models import SalesTaxSourceType
+from app.modules.sales_tax.service import SalesTaxService
+
 
 class SubcontractorService:
   def __init__(self, session: AsyncSession):
@@ -28,6 +31,7 @@ class SubcontractorService:
     self.projects = ProjectRepository(session)
     self.audit = AuditLogService(session)
     self.withholding_tax = WithholdingTaxService(session)
+    self.sales_tax = SalesTaxService(session)
 
   async def create_subcontractor(self, organization_id: UUID, payload: SubcontractorCreateRequest) -> Subcontractor:
     subcontractor = Subcontractor(
@@ -202,6 +206,13 @@ class SubcontractorService:
 
     net_payable = gross_this_period - retention_this_period - payload.other_deductions_amount
 
+    sales_tax_rate_estimate: Decimal | None = None
+    sales_tax_amount_estimate = Decimal("0")
+    if payload.sales_tax_authority is not None:
+      sales_tax_rate_estimate, sales_tax_amount_estimate = await self.sales_tax.calculate_preview(
+        organization_id, payload.sales_tax_authority, gross_this_period,
+      )
+
     organization = await self.session.get(Organization, organization_id)
 
     bill: SubcontractorBill | None = None
@@ -215,7 +226,10 @@ class SubcontractorService:
         retention_percentage=retention_percentage, retention_cap_percentage=retention_cap_percentage,
         retention_this_period=retention_this_period, retention_cumulative=retention_cumulative,
         other_deductions_amount=payload.other_deductions_amount, other_deductions_note=payload.other_deductions_note,
-        net_payable=net_payable, currency=organization.currency if organization else "PKR",
+        net_payable=net_payable,
+        sales_tax_authority=payload.sales_tax_authority.value if payload.sales_tax_authority else None,
+        sales_tax_rate_percentage=sales_tax_rate_estimate, sales_tax_amount=sales_tax_amount_estimate,
+        currency=organization.currency if organization else "PKR",
         notes=payload.notes, created_by_user_id=actor_user_id,
       )
       try:

@@ -6,6 +6,8 @@ import { getApiErrorMessage } from "../../identity";
 import { useBOQVersions } from "../../drawings_boq";
 import { useCreateRunningBill } from "../hooks";
 import { useTranslation } from "react-i18next";
+import type { SalesTaxAuthority } from "../../salex_tax";
+import { formatSalesTaxAuthority, formatSalesTaxMoney } from "../../salex_tax";
 
 interface RunningBillFormProps {
   projectId: string;
@@ -25,6 +27,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
   const [periodEnd, setPeriodEnd] = useState(() =>
     new Date().toISOString().slice(0, 10),
   );
+  const [salesTaxAuthority, setSalesTaxAuthority] = useState<SalesTaxAuthority | "">("");
   const [retentionPercentage, setRetentionPercentage] = useState("10");
   const [retentionCapPercentage, setRetentionCapPercentage] = useState("");
   const [advanceRecovery, setAdvanceRecovery] = useState("0");
@@ -50,6 +53,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
           retentionCapPercentage === ""
             ? null
             : Number(retentionCapPercentage),
+        sales_tax_authority: salesTaxAuthority || undefined,
         advance_recovery_amount: Number(advanceRecovery),
         other_deductions_amount: Number(otherDeductions),
         other_deductions_note: otherDeductionsNote.trim() || null,
@@ -173,15 +177,25 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
           </Field>
         </div>
 
-        {Number(otherDeductions) > 0 ? (
-          <Field label={t("runningBills.form.otherDeductionsNoteLabel")}>
-            <input
-              className={inputClass}
-              value={otherDeductionsNote}
-              onChange={(e) => setOtherDeductionsNote(e.target.value)}
-              placeholder="e.g. WHT @ 7%"
-            />
-          </Field>
+        <Field label="Provincial sales tax on services (optional)">
+          <select
+            className={inputClass}
+            value={salesTaxAuthority}
+            onChange={(e) =>
+              setSalesTaxAuthority(e.target.value as SalesTaxAuthority | "")
+            }
+          >
+            <option value="">Not applicable</option>
+            <option value="PRA">Punjab (PRA)</option>
+            <option value="SRB">Sindh (SRB)</option>
+            <option value="KPRA">Khyber Pakhtunkhwa (KPRA)</option>
+            <option value="BRA">Balochistan (BRA)</option>
+            <option value="ICT">Islamabad Capital Territory (ICT)</option>
+          </select>
+        </Field>
+
+        {salesTaxAuthority ? (
+          <RunningBillSalesTaxPreview authority={salesTaxAuthority} />
         ) : null}
 
         <Field label={t("runningBills.form.notesLabel")}>
@@ -223,5 +237,19 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
         </div>
       </form>
     </Modal>
+  );
+}
+
+function RunningBillSalesTaxPreview({
+  authority,
+}: {
+  authority: SalesTaxAuthority;
+}) {
+  return (
+    <div className="rounded-[8px] border border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-3 py-2.5 text-[12px] text-[var(--color-info)]">
+      Sales tax for {formatSalesTaxAuthority(authority)} will be calculated on
+      this period's actual gross value once the draft is generated, and
+      finalized against the rate active when the bill is issued.
+    </div>
   );
 }

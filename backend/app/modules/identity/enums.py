@@ -103,3 +103,6 @@ class PermissionKey(StrEnum):
   
   PUNCH_LIST_READ = "punch_list:read"
   PUNCH_LIST_MANAGE = "punch_list:manage"
+  
+  SALES_TAX_READ = "sales_tax:read"
+  SALES_TAX_MANAGE = "sales_tax:manage"

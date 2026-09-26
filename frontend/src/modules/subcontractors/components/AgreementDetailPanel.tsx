@@ -98,6 +98,7 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [percentages, setPercentages] = useState<Record<string, string>>({});
+  const [salesTaxAuthority, setSalesTaxAuthority] = useState<"PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | "">("");
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -108,7 +109,7 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
       .map((item) => ({ agreement_item_id: item.id, cumulative_percentage: Number(percentages[item.id]) }));
 
     createBill.mutate(
-      { period_start: periodStart, period_end: periodEnd, measurements },
+      { period_start: periodStart, period_end: periodEnd, measurements, sales_tax_authority: salesTaxAuthority || undefined },
       {
         onSuccess: () => { onClose(); showToast({ tone: "success", title: t("subcontractors.billForm.generatedToast") }); },
         onError: (mutationError) => setError(getApiErrorMessage(mutationError, t("subcontractors.billForm.generateError"))),
@@ -120,24 +121,58 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
     <Modal title={t("subcontractors.billForm.title")} description={t("subcontractors.billForm.description")} onClose={onClose} wide>
       <form onSubmit={submit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={t("subcontractors.billForm.periodStart")}><input type="date" required className={inputClass} value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></Field>
-          <Field label={t("subcontractors.billForm.periodEnd")}><input type="date" required className={inputClass} value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></Field>
+          <Field label={t("subcontractors.billForm.periodStart")}>
+            <input type="date" required className={inputClass} value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+          </Field>
+          <Field label={t("subcontractors.billForm.periodEnd")}>
+            <input type="date" required className={inputClass} value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+          </Field>
         </div>
 
         <div className="space-y-2">
           {agreement.items.map((item) => (
             <div key={item.id} className="flex items-center justify-between gap-3 rounded-[9px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3.5 py-2.5">
-              <span className="text-[13px] font-medium text-[var(--color-text-primary)]">{item.description} <span className="text-[var(--color-text-muted)]">({item.unit})</span></span>
-              <input type="number" min="0" max="100" step="0.1" className="w-24 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-right text-[13px] outline-none focus:border-[var(--color-trace-gold-dark)]" placeholder="Cum. %" value={percentages[item.id] ?? ""} onChange={(e) => setPercentages((cur) => ({ ...cur, [item.id]: e.target.value }))} />
+              <span className="text-[13px] font-medium text-[var(--color-text-primary)]">
+                {item.description} <span className="text-[var(--color-text-muted)]">({item.unit})</span>
+              </span>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                className="w-24 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-right text-[13px] outline-none focus:border-[var(--color-trace-gold-dark)]"
+                placeholder="Cum. %"
+                value={percentages[item.id] ?? ""}
+                onChange={(e) => setPercentages((cur) => ({ ...cur, [item.id]: e.target.value }))}
+              />
             </div>
           ))}
         </div>
 
-        {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
+        <Field label={t("subcontractors.billForm.salesTaxAuthority")}>
+          <select className={inputClass} value={salesTaxAuthority} onChange={(e) => setSalesTaxAuthority(e.target.value as "PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | "")}>
+            <option value="">{t("subcontractors.billForm.noSalesTax")}</option>
+            <option value="PRA">PRA</option>
+            <option value="SRB">SRB</option>
+            <option value="KPRA">KPRA</option>
+            <option value="BRA">BRA</option>
+            <option value="ICT">ICT</option>
+          </select>
+        </Field>
+
+        {error ? (
+          <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">
+            {error}
+          </div>
+        ) : null}
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-          <Button type="button" variant="ghost" onClick={onClose} disabled={createBill.isPending}>{t("subcontractors.advanceForm.cancel")}</Button>
-          <Button type="submit" variant="primary" disabled={createBill.isPending || !periodStart || !periodEnd}>{createBill.isPending ? t("subcontractors.billForm.generating") : t("subcontractors.billForm.generate")}</Button>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={createBill.isPending}>
+            {t("subcontractors.advanceForm.cancel")}
+          </Button>
+          <Button type="submit" variant="primary" disabled={createBill.isPending || !periodStart || !periodEnd}>
+            {createBill.isPending ? t("subcontractors.billForm.generating") : t("subcontractors.billForm.generate")}
+          </Button>
         </div>
       </form>
     </Modal>
@@ -269,7 +304,18 @@ function BillDetailDialog({ billId, agreementId, canManage, onClose }: { billId:
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-[13px]">
           <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t("subcontractors.billDetail.grossThisPeriod")}</span><span className="font-semibold">{formatMoney(bill.gross_value_this_period, bill.currency)}</span></div>
           <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t("subcontractors.billDetail.retention", { percent: Number(bill.retention_percentage) })} ({Number(bill.retention_percentage)}%)</span><span className="text-[var(--color-danger)]">- {formatMoney(bill.retention_this_period, bill.currency)}</span></div>
-          <div className="mt-2 flex justify-between border-t border-[var(--color-border)] pt-2 text-[14px] font-bold"><span>{t("subcontractors.billDetail.netPayable")}</span><span>{formatMoney(bill.net_payable, bill.currency)}</span></div>
+          <div className="mt-2 flex justify-between border-t border-[var(--color-border)] pt-2 text-[14px] font-bold text-[var(--color-text-primary)]"><span>Net payable (work value)</span><span>{formatMoney(bill.net_payable, bill.currency)}</span></div>
+          {bill.sales_tax_authority ? (
+           <div className="flex justify-between text-[13px] text-[var(--color-text-secondary)]">
+             <span>+ Sales tax ({bill.sales_tax_authority}, {Number(bill.sales_tax_rate_percentage)}%)</span>
+              <span>{formatMoney(bill.sales_tax_amount, bill.currency)}</span>
+            </div>
+            ) : null}
+           {bill.sales_tax_authority ? (
+            <div className="flex justify-between border-t border-[var(--color-border)] pt-2 text-[15px] font-bold text-[var(--color-trace-gold-dark)]">
+             <span>Total amount due</span><span>{formatMoney(bill.total_amount_due, bill.currency)}</span>
+             </div>
+            ) : null}
         </div>
         {canManage && bill.status === "DRAFT" ? (
           <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">

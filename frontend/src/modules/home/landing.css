@@ -1443,4 +1443,325 @@ html {
   .lp-tour {
     grid-template-rows: 420px 240px 240px;
   }
+
+  :root {
+  --lpa: #d9a441;
+  --lpa2: #b98626;
+}
+
+.lp-hero-grid {
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  gap: clamp(32px, 5vw, 64px);
+}
+
+.lp-hero h1 {
+  max-width: 560px;
+  font-size: clamp(44px, 5vw, 60px);
+  line-height: 1.05;
+}
+
+.lp-hero h1 em {
+  color: var(--lpa);
+}
+
+.lp-hero-stage {
+  height: auto;
+  min-width: 0;
+}
+
+.lp-preview-note {
+  margin: 0 0 10px;
+  color: var(--lpm);
+  font: 10px var(--lpm);
+  text-align: right;
+}
+
+.lp-hero-canvas {
+  position: relative;
+  inset: auto;
+  overflow: hidden;
+  padding: 10px;
+  border: 1px solid var(--lpborder2);
+  border-radius: 20px;
+  background: linear-gradient(145deg, #172840, #0d1424);
+  box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.7);
+}
+
+.lp-dashboard {
+  min-height: 390px;
+  grid-template-columns: 132px minmax(0, 1fr);
+  overflow: hidden;
+  border-radius: 12px;
+  font-size: 10px;
+}
+
+.lp-dash-nav {
+  gap: 18px;
+  padding: 16px 12px;
+}
+
+.lp-dash-nav-brand {
+  gap: 7px;
+  font-size: 11px;
+}
+
+.lp-mini-mark {
+  width: 22px;
+  height: 22px;
+  font-size: 10px;
+}
+
+.lp-dash-nav-group {
+  gap: 7px;
+}
+
+.lp-dash-nav-group small {
+  font-size: 8px;
+}
+
+.lp-dash-nav-group span {
+  font-size: 9px;
+}
+
+.lp-dash-main {
+  min-width: 0;
+  padding: 18px;
+}
+
+.lp-dash-heading small,
+.lp-kpis small {
+  font-size: 8px;
+}
+
+.lp-dash-heading strong {
+  font-size: 15px;
+}
+
+.lp-demo-pill {
+  font-size: 8px;
+}
+
+.lp-kpis {
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.lp-kpis > div,
+.lp-project-card,
+.lp-attention-card {
+  padding: 10px;
+  border-radius: 9px;
+}
+
+.lp-kpis b {
+  font-size: 13px;
+}
+
+.lp-dash-grid {
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lp-card-head {
+  font-size: 8px;
+}
+
+.lp-card-head b {
+  font-size: 10px;
+}
+
+.lp-project-row {
+  grid-template-columns: minmax(0, 1fr) 52px 30px;
+  gap: 8px;
+  padding: 9px 0;
+}
+
+.lp-project-row span,
+.lp-project-row b,
+.lp-attention-row {
+  font-size: 8px;
+}
+
+.lp-mini-bar {
+  height: 5px;
+}
+
+.lp-attention-row {
+  gap: 7px;
+  padding: 8px 0;
+}
+
+.lp-dot-gold {
+  width: 6px;
+  height: 6px;
+}
+
+.lp-workflow-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 18px;
+  padding: 30px 30px 96px;
+  background: var(--lp0);
+  color: var(--lpt);
+}
+
+.lp-workflow-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.lp-workflow-preview-head small,
+.lp-workflow-preview-head strong {
+  display: block;
+}
+
+.lp-workflow-preview-head small {
+  margin-bottom: 7px;
+  color: var(--lpa);
+  font: 9px var(--lpm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.lp-workflow-preview-head strong {
+  font: 24px/1.15 var(--lpserif);
+}
+
+.lp-workflow-steps {
+  display: grid;
+  gap: 8px;
+}
+
+.lp-workflow-step {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--lpborder);
+  border-radius: 10px;
+  background: rgba(237, 231, 214, 0.04);
+}
+
+.lp-workflow-number {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(217, 164, 65, 0.14);
+  color: var(--lpa);
+  font: 10px var(--lpm);
+}
+
+.lp-workflow-step strong,
+.lp-workflow-step div span {
+  display: block;
+}
+
+.lp-workflow-step strong {
+  font-size: 11px;
+}
+
+.lp-workflow-step div span {
+  margin-top: 3px;
+  color: var(--lpm);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.lp-workflow-note {
+  margin: 0;
+  color: var(--lpm);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.lp-sample-note {
+  margin: -25px 0 24px;
+  color: var(--lpm);
+  font: 10px var(--lpm);
+  text-align: center;
+}
+
+.lp-footer-actions {
+  display: flex;
+  align-items: center;
+}
+
+.lp-footer-actions .lp-btn {
+  white-space: nowrap;
+}
+
+@media (max-width: 1000px) {
+  .lp-hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-hero-stage {
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 640px) {
+  .lp-hero-stage {
+    width: 100%;
+  }
+
+  .lp-hero-canvas {
+    padding: 6px;
+  }
+
+  .lp-dashboard {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+
+  .lp-dash-nav {
+    display: none;
+  }
+
+  .lp-dash-main {
+    padding: 12px;
+  }
+
+  .lp-dash-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-project-row {
+    grid-template-columns: minmax(0, 1fr) 42px 28px;
+  }
+
+  .lp-workflow-preview {
+    gap: 10px;
+    padding: 18px 16px 86px;
+  }
+
+  .lp-workflow-preview-head strong {
+    font-size: 20px;
+  }
+
+  .lp-workflow-step {
+    padding: 8px;
+  }
+
+  .lp-workflow-step div span {
+    font-size: 8px;
+  }
+
+  .lp-sample-note {
+    margin-top: -8px;
+  }
+
+  .lp-footer-actions {
+    margin-top: 22px;
+  }
+}
+
 }

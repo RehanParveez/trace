@@ -138,6 +138,11 @@ function buildProjectsNav(t: (key: string) => string): NavItem[] {
       icon: "budget",
     },
     {
+      label: "Sales tax",
+      to: "/app/sales-tax",
+      icon: "budget",
+    },
+    {
       label: "Material stock",
       to: "/app/material-stock",
       icon: "materials",

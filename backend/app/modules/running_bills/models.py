@@ -102,6 +102,10 @@ class RunningBill(Base, TimestampMixin):
     nullable=False, default=Decimal("0"),
   )
   
+  sales_tax_authority: Mapped[str | None] = mapped_column(String(10), nullable=True)
+  sales_tax_rate_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+  sales_tax_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+  
   currency: Mapped[str] = mapped_column(String(3), nullable=False, default="PKR")
 
   notes: Mapped[str | None] = mapped_column(Text, nullable=True)

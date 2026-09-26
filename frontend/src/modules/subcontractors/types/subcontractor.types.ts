@@ -33,6 +33,10 @@ export interface SubcontractorBill {
   retention_this_period: number | string; retention_cumulative: number | string;
   other_deductions_amount: number | string; other_deductions_note: string | null;
   net_payable: number | string; currency: string; notes: string | null;
+  sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT";
+  sales_tax_rate_percentage: number | string | null;
+  sales_tax_amount: number | string;
+  total_amount_due: number | string;
   version: number; issued_at: string | null; created_at: string;
 }
 export interface SubcontractorBillDetail extends SubcontractorBill { line_items: BillLineItem[]; }

@@ -4,6 +4,7 @@ from uuid import UUID
 from decimal import Decimal
 from datetime import date, datetime
 from app.modules.running_bills.models import RunningBillStatus
+from app.modules.sales_tax.models import SalesTaxAuthority
 
 class RunningBillLineItemResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -43,11 +44,20 @@ class RunningBillResponse(BaseModel):
   other_deductions_amount: Decimal
   other_deductions_note: str | None
   net_payable: Decimal
+  sales_tax_authority: str | None
+  sales_tax_rate_percentage: Decimal | None
+  sales_tax_amount: Decimal
+  total_amount_due: Decimal = Decimal("0")
   currency: str
   notes: str | None
   version: int
   issued_at: datetime | None
   created_at: datetime
+
+  @model_validator(mode="after")
+  def _compute_total_amount_due(self) -> "RunningBillResponse":
+    self.total_amount_due = self.net_payable + self.sales_tax_amount
+    return self
 
 class RunningBillDetailResponse(RunningBillResponse):
   line_items: list[RunningBillLineItemResponse] = Field(default_factory=list)
@@ -62,6 +72,7 @@ class RunningBillCreateRequest(BaseModel):
   advance_recovery_amount: Decimal = Field(default=Decimal("0"), ge=0)
   other_deductions_amount: Decimal = Field(default=Decimal("0"), ge=0)
   other_deductions_note: str | None = Field(default=None, max_length=500)
+  sales_tax_authority: SalesTaxAuthority | None = None
   notes: str | None = None
 
   @model_validator(mode="after")

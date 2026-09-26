@@ -99,123 +99,149 @@ const roleKeys = [
 ] as const satisfies ReadonlyArray<readonly [IconName, string]>;
 
 function DashboardMockup() {
+  const { t } = useTranslation();
+
+  const projects = [
+    ["Riverside Residences", 72],
+    ["North District Clinic", 41],
+    ["Central Plaza", 88],
+  ] as const;
+
   return (
-    <div className="lp-dashboard">
-      <aside className="lp-dash-nav">
+    <div className="lp-dashboard" aria-label={t("preview.dashboardTitle")}>
+      <aside className="lp-dash-nav" aria-hidden="true">
         <div className="lp-dash-nav-brand">
           <span className="lp-mini-mark">T</span>
           <span>Trace</span>
         </div>
 
         <div className="lp-dash-nav-group">
-          <small>WORKSPACE</small>
-          <span className="active">Overview</span>
+          <small>{t("shell.workspace")}</small>
+          <span className="active">{t("nav.overview")}</span>
+          <span>{t("nav.notifications")}</span>
         </div>
 
         <div className="lp-dash-nav-group">
-          <small>PROJECTS</small>
-          <span>Projects</span>
-          <span>Budgets</span>
-          <span>Procurement</span>
-          <span>Expenses</span>
+          <small>{t("shell.projects")}</small>
+          <span>{t("nav.projects")}</span>
+          <span>{t("nav.budgets")}</span>
+          <span>{t("nav.procurement")}</span>
         </div>
 
         <div className="lp-dash-nav-group">
-          <small>INTELLIGENCE</small>
-          <span>AI activity</span>
-          <span>Audit log</span>
+          <small>{t("shell.intelligence")}</small>
+          <span>{t("nav.aiActivity")}</span>
+          <span>{t("nav.auditLog")}</span>
         </div>
       </aside>
 
       <div className="lp-dash-main">
         <div className="lp-dash-heading">
           <div>
-            <small>GOOD MORNING</small>
-            <strong>Metro Builders</strong>
+            <small>{t("preview.dashboardTitle")}</small>
+            <strong>{t("preview.demoWorkspace")}</strong>
           </div>
-
-          <span className="lp-demo-pill">
-            LIVE WORKSPACE
-          </span>
+          <span className="lp-demo-pill">{t("preview.sampleData")}</span>
         </div>
 
         <div className="lp-kpis">
           <div>
-            <small>APPROVED BUDGET</small>
+            <small>{t("preview.activeProjects")}</small>
+            <b>08</b>
+          </div>
+          <div>
+            <small>{t("preview.approvedBudget")}</small>
             <b>Rs 84.6M</b>
           </div>
-
           <div>
-            <small>COMMITTED</small>
-            <b>Rs 12.4M</b>
+            <small>{t("preview.reviewsDue")}</small>
+            <b>07</b>
           </div>
-
           <div>
-            <small>SPENT</small>
-            <b>Rs 38.9M</b>
-          </div>
-
-          <div>
-            <small>REMAINING</small>
-            <b className="lp-kpi-good">Rs 33.3M</b>
+            <small>{t("preview.teamMembers")}</small>
+            <b>32</b>
           </div>
         </div>
 
         <div className="lp-dash-grid">
           <div className="lp-project-card">
             <div className="lp-card-head">
-              <b>Project health</b>
-              <span>6 active</span>
+              <b>{t("preview.projectHealth")}</b>
+              <span>08 {t("preview.active")}</span>
             </div>
 
-            <div className="lp-project-row">
-              <span>Shopping Plaza</span>
-              <div className="lp-mini-bar">
-                <i style={{ width: "72%" }} />
+            {projects.map(([name, progress]) => (
+              <div className="lp-project-row" key={name}>
+                <span>{name}</span>
+                <div
+                  className="lp-mini-bar"
+                  role="img"
+                  aria-label={`${progress}%`}
+                >
+                  <i style={{ width: `${progress}%` }} />
+                </div>
+                <b>{progress}%</b>
               </div>
-              <b>72%</b>
-            </div>
-
-            <div className="lp-project-row">
-              <span>Faisalabad Warehouse</span>
-              <div className="lp-mini-bar">
-                <i style={{ width: "41%" }} />
-              </div>
-              <b>41%</b>
-            </div>
-
-            <div className="lp-project-row">
-              <span>Gulberg Residential</span>
-              <div className="lp-mini-bar">
-                <i style={{ width: "88%" }} />
-              </div>
-              <b>88%</b>
-            </div>
+            ))}
           </div>
 
           <div className="lp-attention-card">
             <div className="lp-card-head">
-              <b>Needs attention</b>
-              <span>4 open</span>
+              <b>{t("preview.needsAttention")}</b>
+              <span>07</span>
             </div>
-
             <div className="lp-attention-row">
               <i className="lp-dot-gold" />
-              3 progress claims awaiting review
+              {t("preview.reviewClaims")}
             </div>
-
             <div className="lp-attention-row">
               <i className="lp-dot-gold" />
-              7 material mappings need attention
+              {t("preview.unassignedPhotos")}
             </div>
-
             <div className="lp-attention-row">
               <i className="lp-dot-gold" />
-              2 procurement requests pending
+              {t("preview.procurementRequests")}
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function WorkflowPreview() {
+  const { t } = useTranslation();
+
+  const steps = [
+    ["01", "preview.stageDrawing", "preview.stageDrawingDesc"],
+    ["02", "preview.stageBoq", "preview.stageBoqDesc"],
+    ["03", "preview.stageReview", "preview.stageReviewDesc"],
+    ["04", "preview.stageApproved", "preview.stageApprovedDesc"],
+  ] as const;
+
+  return (
+    <div className="lp-workflow-preview">
+      <div className="lp-workflow-preview-head">
+        <div>
+          <small>{t("preview.workflowLabel")}</small>
+          <strong>{t("preview.workflowTitle")}</strong>
+        </div>
+        <span className="lp-demo-pill">{t("preview.sampleData")}</span>
+      </div>
+
+      <div className="lp-workflow-steps">
+        {steps.map(([number, titleKey, descriptionKey]) => (
+          <div className="lp-workflow-step" key={number}>
+            <span className="lp-workflow-number">{number}</span>
+            <div>
+              <strong>{t(titleKey)}</strong>
+              <span>{t(descriptionKey)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <p className="lp-workflow-note">{t("preview.approvalNote")}</p>
     </div>
   );
 }
@@ -275,7 +301,8 @@ export function HomePage() {
             </p>
 
             <h1>
-              {t("hero.title")}
+              {t("hero.titleStart")}{" "}
+              <em>{t("hero.titleEm")}</em>
             </h1>
 
             <p className="lp-hero-sub">
@@ -318,26 +345,9 @@ export function HomePage() {
           </div>
 
           <div className="lp-hero-stage">
+            <p className="lp-preview-note">{t("preview.sampleNote")}</p>
             <div className="lp-hero-canvas">
-              <div className="lp-grid-bg" />
-
-              <div className="lp-shot lp-shot-back">
-                <DashboardMockup />
-              </div>
-
-              <div className="lp-shot lp-shot-front">
-                <DashboardMockup />
-              </div>
-
-              <div className="lp-glass lp-glass-one">
-                <b>67%</b>
-                <span>project progress</span>
-              </div>
-
-              <div className="lp-glass lp-glass-two">
-                <b>Rs 84.6M</b>
-                <span>approved budget</span>
-              </div>
+              <DashboardMockup />
             </div>
           </div>
         </div>

@@ -175,14 +175,25 @@ export function RunningBillDetailDialog({
               </div>
             ) : null}
             <div className="mt-2 flex justify-between border-t border-[var(--color-border)] pt-2 text-[14px] font-bold text-[var(--color-text-primary)]">
-              <span>{t("runningBills.detail.netPayable")}</span>
+              <span>Net payable (work value)</span><span>{formatBillMoney(bill.net_payable, bill.currency)}</span>
+            </div>
+            {bill.sales_tax_authority ? (
+              <div className="flex justify-between text-[13px] text-[var(--color-text-secondary)]">
+                <span>+ Sales tax ({bill.sales_tax_authority}, {Number(bill.sales_tax_rate_percentage)}%)</span>
+                <span>{formatBillMoney(bill.sales_tax_amount, bill.currency)}</span>
+              </div>
+            ) : null}
+            {bill.sales_tax_authority ? (
+              <div className="flex justify-between border-t border-[var(--color-border)] pt-2 text-[15px] font-bold text-[var(--color-trace-gold-dark)]">
+                <span>Total amount due</span><span>{formatBillMoney(bill.total_amount_due, bill.currency)}</span>
+              </div>
+            ) : null}
               <span>
                 {formatBillMoney(bill.net_payable, bill.currency)}
               </span>
-            </div>
           </div>
 
-          {canIssue && bill.status === "DRAFT" ? (
+          {canIssue && bill && bill.status === "DRAFT" ? (
             <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
               <Button
                 variant="danger"
