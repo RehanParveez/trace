@@ -212,6 +212,30 @@ function DashboardMockup() {
 export function HomePage() {
   const { t } = useTranslation();
 
+  const previewStages = [
+    {
+      image: "/images/landing/project-record.webp",
+      alt: "product.preview.projectRecordAlt",
+      eyebrow: "product.preview.projectRecordEyebrow",
+      title: "product.preview.projectRecordTitle",
+      description: "product.preview.projectRecordDescription",
+    },
+    {
+      image: "/images/landing/boq-review.webp",
+      alt: "product.preview.boqAlt",
+      eyebrow: "product.preview.boqEyebrow",
+      title: "product.preview.boqTitle",
+      description: "product.preview.boqDescription",
+    },
+    {
+      image: "/images/landing/roles-access.webp",
+      alt: "product.preview.rolesAlt",
+      eyebrow: "product.preview.rolesEyebrow",
+      title: "product.preview.rolesTitle",
+      description: "product.preview.rolesDescription",
+    },
+  ] as const;
+
   return (
     <main className="lp-page">
       <nav className="lp-nav">
@@ -308,16 +332,16 @@ export function HomePage() {
           </div>
 
           <div className="lp-hero-stage">
-           <figure className="lp-hero-photo-frame">
-          <img
-            className="lp-hero-photo"
-            src="/images/landing/site-progress.webp"
-            alt={t("hero.sitePhotoAlt")}
-          />
-            <figcaption className="lp-hero-photo-caption">
-              {t("hero.sitePhotoCaption")}
-            </figcaption>
-           </figure>
+            <figure className="lp-hero-photo-frame">
+              <img
+                className="lp-hero-photo"
+                src="/images/landing/site-progress.webp"
+                alt={t("hero.sitePhotoAlt")}
+              />
+              <figcaption className="lp-hero-photo-caption">
+                {t("hero.sitePhotoCaption")}
+              </figcaption>
+            </figure>
           </div>
         </div>
       </section>
@@ -381,57 +405,31 @@ export function HomePage() {
             </h2>
           </div>
 
-          <div className="lp-tour">
-            <article className="lp-tour-card">
-              <div className="lp-tour-visual">
-                <img
-                  src="/images/landing/project-record.webp"
-                  alt={t("product.preview.projectRecordAlt")}
-                  loading="lazy"
-                />
-              </div>
-              <div className="lp-tour-copy">
-                <p className="lp-eyebrow">
-                  {t("product.preview.projectRecordEyebrow")}
-                </p>
-                <h3>{t("product.preview.projectRecordTitle")}</h3>
-                <p>{t("product.preview.projectRecordDescription")}</p>
-              </div>
-            </article>
+          <div className="lp-product-story">
+            {previewStages.map((stage, index) => (
+              <article
+                key={stage.image}
+                className={
+                  index % 2 === 1
+                    ? "lp-product-step lp-product-step-reverse"
+                    : "lp-product-step"
+                }
+              >
+                <div className="lp-product-step-visual">
+                  <img
+                    src={stage.image}
+                    alt={t(stage.alt)}
+                    loading={index === 0 ? "eager" : "lazy"}
+                  />
+                </div>
 
-            <article className="lp-tour-card">
-              <div className="lp-tour-visual">
-                <img
-                  src="/images/landing/boq-review.webp"
-                  alt={t("product.preview.boqAlt")}
-                  loading="lazy"
-                />
-              </div>
-              <div className="lp-tour-copy">
-                <p className="lp-eyebrow">
-                  {t("product.preview.boqEyebrow")}
-                </p>
-                <h3>{t("product.preview.boqTitle")}</h3>
-                <p>{t("product.preview.boqDescription")}</p>
-              </div>
-            </article>
-
-            <article className="lp-tour-card">
-              <div className="lp-tour-visual">
-                <img
-                  src="/images/landing/roles-access.webp"
-                  alt={t("product.preview.rolesAlt")}
-                  loading="lazy"
-                />
-              </div>
-              <div className="lp-tour-copy">
-                <p className="lp-eyebrow">
-                  {t("product.preview.rolesEyebrow")}
-                </p>
-                <h3>{t("product.preview.rolesTitle")}</h3>
-                <p>{t("product.preview.rolesDescription")}</p>
-              </div>
-            </article>
+                <div className="lp-product-step-copy">
+                  <p className="lp-eyebrow">{t(stage.eyebrow)}</p>
+                  <h3>{t(stage.title)}</h3>
+                  <p>{t(stage.description)}</p>
+                </div>
+              </article>
+            ))}
           </div>
         </div>
       </section>

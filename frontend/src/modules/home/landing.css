@@ -797,56 +797,79 @@ html {
   font-size: 36px;
 }
 
-.lp-tour {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
-  gap: 20px;
+.lp-product-story {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(48px, 8vh, 96px);
 }
 
-.lp-tour-card {
-  overflow: hidden;
-  border: 1px solid var(--lpborder);
-  border-radius: 17px;
-  background: #fff;
-  box-shadow: 0 16px 34px -18px rgba(4, 8, 14, 0.35);
+.lp-product-step {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 80px);
+  min-height: 55vh;
 }
 
-.lp-tour-visual {
+.lp-product-step-reverse {
+  grid-template-columns: minmax(300px, 0.85fr) minmax(0, 1.15fr);
+}
+
+.lp-product-step-reverse .lp-product-step-visual {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.lp-product-step-reverse .lp-product-step-copy {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.lp-product-step-visual {
   display: grid;
-  min-height: 230px;
+  height: clamp(280px, 42vh, 460px);
   place-items: center;
   overflow: hidden;
-  padding: 12px;
+  padding: 18px;
+  border: 1px solid var(--lpborder);
+  border-radius: 18px;
   background: #f3eee4;
 }
 
-.lp-tour-visual img {
+.lp-product-step-visual img {
   display: block;
   width: 100%;
-  max-height: 310px;
+  height: 100%;
   object-fit: contain;
-  object-position: top center;
 }
 
-.lp-tour-copy {
-  padding: 22px;
+.lp-product-step-copy h3 {
+  color: #f3ecdd;
 }
 
-.lp-tour-copy .lp-eyebrow {
-  margin: 0 0 9px;
+.lp-product-step-copy > p:last-child {
+  max-width: 460px;
+  color: #c3cfdb;
+  line-height: 1.75;
 }
 
-.lp-tour-copy h3 {
-  margin: 0 0 9px;
-  font: 600 21px var(--lpserif);
-}
+@media (max-width: 760px) {
+  .lp-product-step,
+  .lp-product-step-reverse {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    min-height: 0;
+  }
 
-.lp-tour-copy > p:last-child {
-  margin: 0;
-  color: var(--lpm);
-  font-size: 13px;
-  line-height: 1.65;
+  .lp-product-step-reverse .lp-product-step-visual,
+  .lp-product-step-reverse .lp-product-step-copy {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .lp-product-step-visual {
+    height: 280px;
+  }
 }
 
 .lp-mini-panel {
@@ -909,25 +932,6 @@ html {
   background: #eaf5f8;
 }
 
-.lp-tour-cap {
-  position: absolute;
-
-  right: 0;
-  bottom: 0;
-  left: 0;
-
-  padding: 18px;
-
-  color: #fff;
-
-  background:
-    linear-gradient(
-      0deg,
-      rgba(4, 8, 14, 0.9),
-      transparent
-    );
-}
-
 .lp-tour-cap b {
   display: block;
 
@@ -952,23 +956,39 @@ html {
 
 .lp-flowline > div {
   position: relative;
-
-  padding: 20px;
-
-  border-top: 1px solid var(--lpborder2);
+  min-height: 220px;
+  padding: 24px 20px;
+  border: 1px solid var(--lpborder);
+  border-radius: 16px;
+  background: linear-gradient(
+    150deg,
+    rgba(237, 231, 214, 0.075),
+    rgba(237, 231, 214, 0.025)
+  );
 }
 
-.lp-flowline > div:not(:last-child)::after {
-  content: "→";
-
-  position: absolute;
-
-  top: 15px;
-  right: -6px;
-
+.lp-flowline > div > span:first-child {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--lpborder2);
+  border-radius: 50%;
   color: var(--lpa);
+  font: 600 12px var(--lpm);
+}
 
-  font-size: 16px;
+.lp-flowline > div > b {
+  display: block;
+  margin-top: 25px;
+  color: #f3ecdd;
+  font: 600 17px var(--lpserif);
+}
+
+.lp-flowline p {
+  color: #c3cfdb;
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .lp-flowline span {
@@ -1264,18 +1284,6 @@ html {
 
   .lp-flowline > div:not(:last-child)::after {
     display: none;
-  }
-
-  .lp-tour {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-  .lp-tour-main {
-    grid-row: auto;
-  }
-
-  .lp-tour-small {
-    min-height: 240px;
   }
 }
 
