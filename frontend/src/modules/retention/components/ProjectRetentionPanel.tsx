@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {Button, EmptyState, LoadingState, Panel, PanelHeader, StatCard, TableShell,
+import {Button, EmptyState, LoadingState, Panel, PanelHeader, StatCard, TableShell, Badge
 } from "../../organizations/components/OrganizationUi";
 import { useProjectRetentionSummary } from "../hooks";
 import { RetentionReleaseForm } from "./RetentionReleaseForm";
@@ -37,7 +37,11 @@ export function ProjectRetentionPanel({ projectId, canManage }: { projectId: str
                     <td className="px-4 py-3.5 text-[13.5px] font-semibold text-[var(--color-text-primary)]">{line.boq_version_label}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatRetentionMoney(line.retention_held, summary!.currency)}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatRetentionMoney(line.retention_released, summary!.currency)}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">{formatRetentionMoney(line.retention_outstanding, summary!.currency)}</td>
+                    <td className="px-4 py-3.5 text-right"> {line.is_secured_by_guarantee ? ( <Badge tone="blue">Secured by guarantee</Badge>
+                    ) : (
+                     <span className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">{formatRetentionMoney(line.retention_outstanding, summary!.currency)}</span>
+                    )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -60,7 +64,11 @@ export function ProjectRetentionPanel({ projectId, canManage }: { projectId: str
                     <td className="px-4 py-3.5 text-[13.5px] font-semibold text-[var(--color-text-primary)]">{line.subcontractor_name}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatRetentionMoney(line.retention_held, summary!.currency)}</td>
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatRetentionMoney(line.retention_released, summary!.currency)}</td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">{formatRetentionMoney(line.retention_outstanding, summary!.currency)}</td>
+                    <td className="px-4 py-3.5 text-right">{line.is_secured_by_guarantee ? (<Badge tone="blue">Secured by guarantee</Badge>
+                     ) : (
+                     <span className="font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">{formatRetentionMoney(line.retention_outstanding, summary!.currency)}</span>
+                     )}
+                    </td>
                   </tr>
                 ))}
               </tbody>

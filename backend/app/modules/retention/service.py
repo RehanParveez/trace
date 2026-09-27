@@ -84,6 +84,7 @@ class RetentionService:
         "boq_version_id": bill.boq_version_id,
         "boq_version_label": boq_version.label if boq_version else "BOQ",
         "retention_held": bill.retention_cumulative, "retention_released": released, "retention_outstanding": outstanding,
+        "is_secured_by_guarantee": bool(getattr(bill, "retention_secured_by_guarantee", False)),
       })
 
     subcontractor_lines = []
@@ -97,6 +98,7 @@ class RetentionService:
       subcontractor_lines.append({
         "agreement_id": bill.agreement_id, "subcontractor_name": subcontractor.name if subcontractor else "—",
         "retention_held": bill.retention_cumulative, "retention_released": released, "retention_outstanding": outstanding,
+        "is_secured_by_guarantee": bool(getattr(bill, "retention_secured_by_guarantee", False)),
       })
 
     return {

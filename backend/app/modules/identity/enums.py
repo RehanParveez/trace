@@ -106,3 +106,7 @@ class PermissionKey(StrEnum):
   
   SALES_TAX_READ = "sales_tax:read"
   SALES_TAX_MANAGE = "sales_tax:manage"
+  
+  BANK_GUARANTEE_READ = "bank_guarantee:read"
+  BANK_GUARANTEE_MANAGE = "bank_guarantee:manage"
+  BANK_GUARANTEE_RELEASE = "bank_guarantee:release"

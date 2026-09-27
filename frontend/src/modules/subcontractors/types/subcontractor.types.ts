@@ -31,6 +31,7 @@ export interface SubcontractorBill {
   gross_value_this_period: number | string; gross_value_cumulative: number | string;
   retention_percentage: number | string; retention_cap_percentage: number | string | null;
   retention_this_period: number | string; retention_cumulative: number | string;
+  retention_secured_by_guarantee: boolean;
   other_deductions_amount: number | string; other_deductions_note: string | null;
   net_payable: number | string; currency: string; notes: string | null;
   sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT";

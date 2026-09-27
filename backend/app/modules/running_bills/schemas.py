@@ -44,6 +44,7 @@ class RunningBillResponse(BaseModel):
   other_deductions_amount: Decimal
   other_deductions_note: str | None
   net_payable: Decimal
+  retention_secured_by_guarantee: bool
   sales_tax_authority: str | None
   sales_tax_rate_percentage: Decimal | None
   sales_tax_amount: Decimal
@@ -72,6 +73,7 @@ class RunningBillCreateRequest(BaseModel):
   advance_recovery_amount: Decimal = Field(default=Decimal("0"), ge=0)
   other_deductions_amount: Decimal = Field(default=Decimal("0"), ge=0)
   other_deductions_note: str | None = Field(default=None, max_length=500)
+  retention_secured_by_guarantee: bool = False
   sales_tax_authority: SalesTaxAuthority | None = None
   notes: str | None = None
 

@@ -34,6 +34,7 @@ export interface RunningBill {
   advance_recovery_amount: number | string;
   other_deductions_amount: number | string;
   other_deductions_note: string | null;
+  retention_secured_by_guarantee: boolean;
   net_payable: number | string;
   currency: string;
   notes: string | null;
@@ -62,4 +63,5 @@ export interface RunningBillCreateRequest {
   other_deductions_note?: string | null;
   notes?: string | null;
   sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT";
+  retention_secured_by_guarantee: boolean; 
 }

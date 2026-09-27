@@ -18,6 +18,7 @@ from app.modules.running_bills.export import build_running_bill_pdf, build_runni
 from app.modules.sales_tax.models import SalesTaxSourceType
 from app.modules.sales_tax.service import SalesTaxService
 from app.modules.sales_tax.models import SalesTaxAuthority
+from app.modules.bank_guarantees.service import BankGuaranteeService
 
 class RunningBillService:
   def __init__(self, session: AsyncSession):
@@ -25,6 +26,7 @@ class RunningBillService:
     self.repo = RunningBillRepository(session)
     self.audit = AuditLogService(session)
     self.sales_tax = SalesTaxService(session)
+    self.bank_guarantees = BankGuaranteeService(session)
 
   async def list_bills(self, organization_id: UUID, project_id: UUID) -> list[RunningBill]:
     await self._require_project(organization_id, project_id)
@@ -132,10 +134,16 @@ class RunningBillService:
       contract_total_value=contract_total_value,
     )
 
-    net_payable = (
-      gross_this_period - retention_this_period
-      - payload.advance_recovery_amount - payload.other_deductions_amount
-    )
+    if payload.retention_secured_by_guarantee:
+      await self.bank_guarantees.require_adequate_guarantee_for_boq_version(
+        organization_id, payload.boq_version_id, retention_cumulative,
+      )
+      net_payable = gross_this_period - payload.advance_recovery_amount - payload.other_deductions_amount
+    else:
+      net_payable = (
+        gross_this_period - retention_this_period
+        - payload.advance_recovery_amount - payload.other_deductions_amount
+      )
 
     sales_tax_rate_estimate: Decimal | None = None
     sales_tax_amount_estimate = Decimal("0")
@@ -169,6 +177,7 @@ class RunningBillService:
         other_deductions_amount=payload.other_deductions_amount,
         other_deductions_note=payload.other_deductions_note,
         net_payable=net_payable,
+        retention_secured_by_guarantee=payload.retention_secured_by_guarantee,
         sales_tax_authority=payload.sales_tax_authority.value if payload.sales_tax_authority else None,
         sales_tax_rate_percentage=sales_tax_rate_estimate,
         sales_tax_amount=sales_tax_amount_estimate,
@@ -215,6 +224,11 @@ class RunningBillService:
       )
     if bill.status != RunningBillStatus.DRAFT:
       raise TraceException("Only draft bills can be issued.", status_code=409, code="RUNNING_BILL_NOT_DRAFT")
+
+    if bill.retention_secured_by_guarantee:
+      await self.bank_guarantees.require_adequate_guarantee_for_boq_version(
+        organization_id, bill.boq_version_id, bill.retention_cumulative,
+      )
 
     if bill.sales_tax_authority is not None:
       rate_percentage, tax_amount = await self.sales_tax.calculate_and_record(

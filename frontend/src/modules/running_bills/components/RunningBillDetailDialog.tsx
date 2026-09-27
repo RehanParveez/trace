@@ -136,14 +136,11 @@ export function RunningBillDetailDialog({
               </span>
             </div>
             <div className="flex justify-between">
-              <span>
-                {t("runningBills.detail.retention", {
-                  percent: Number(bill.retention_percentage),
-                })}
+              <span className="text-[var(--color-text-secondary)]">
+                Retention ({Number(bill.retention_percentage)}%){bill.retention_secured_by_guarantee ? " — secured by bank guarantee, not deducted" : ""}
               </span>
-
-              <span className="text-[var(--color-danger)]">
-                - {formatBillMoney(bill.retention_this_period, bill.currency)}
+              <span className={bill.retention_secured_by_guarantee ? "text-[var(--color-text-muted)]" : "text-[var(--color-danger)]"}>
+                {bill.retention_secured_by_guarantee ? formatBillMoney(0, bill.currency) : `- ${formatBillMoney(bill.retention_this_period, bill.currency)}`}
               </span>
             </div>
             {Number(bill.advance_recovery_amount) > 0 ? (

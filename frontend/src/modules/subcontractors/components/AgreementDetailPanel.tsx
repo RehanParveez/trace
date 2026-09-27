@@ -99,6 +99,7 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
   const [periodEnd, setPeriodEnd] = useState(() => new Date().toISOString().slice(0, 10));
   const [percentages, setPercentages] = useState<Record<string, string>>({});
   const [salesTaxAuthority, setSalesTaxAuthority] = useState<"PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | "">("");
+  const [retentionSecuredByGuarantee, setRetentionSecuredByGuarantee] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -109,7 +110,7 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
       .map((item) => ({ agreement_item_id: item.id, cumulative_percentage: Number(percentages[item.id]) }));
 
     createBill.mutate(
-      { period_start: periodStart, period_end: periodEnd, measurements, sales_tax_authority: salesTaxAuthority || undefined },
+      { period_start: periodStart, period_end: periodEnd, measurements, sales_tax_authority: salesTaxAuthority || undefined, retention_secured_by_guarantee: retentionSecuredByGuarantee },
       {
         onSuccess: () => { onClose(); showToast({ tone: "success", title: t("subcontractors.billForm.generatedToast") }); },
         onError: (mutationError) => setError(getApiErrorMessage(mutationError, t("subcontractors.billForm.generateError"))),
@@ -148,6 +149,14 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
             </div>
           ))}
         </div>
+
+        <label className="flex items-start gap-2.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <input type="checkbox" checked={retentionSecuredByGuarantee} onChange={(e) => setRetentionSecuredByGuarantee(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--color-trace-gold)]" />
+          <span className="text-[12.5px] text-[var(--color-text-primary)]">
+            Retention is secured by a bank guarantee — pay in full, don't deduct retention
+            <span className="mt-1 block text-[11.5px] text-[var(--color-text-secondary)]">Requires an active, adequately-valued guarantee already recorded for this BOQ version.</span>
+          </span>
+        </label>
 
         <Field label={t("subcontractors.billForm.salesTaxAuthority")}>
           <select className={inputClass} value={salesTaxAuthority} onChange={(e) => setSalesTaxAuthority(e.target.value as "PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | "")}>
@@ -303,7 +312,14 @@ function BillDetailDialog({ billId, agreementId, canManage, onClose }: { billId:
         </div>
         <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-[13px]">
           <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t("subcontractors.billDetail.grossThisPeriod")}</span><span className="font-semibold">{formatMoney(bill.gross_value_this_period, bill.currency)}</span></div>
-          <div className="flex justify-between"><span className="text-[var(--color-text-secondary)]">{t("subcontractors.billDetail.retention", { percent: Number(bill.retention_percentage) })} ({Number(bill.retention_percentage)}%)</span><span className="text-[var(--color-danger)]">- {formatMoney(bill.retention_this_period, bill.currency)}</span></div>
+          <div className="flex justify-between">
+            <span className="text-[var(--color-text-secondary)]">
+              Retention ({Number(bill.retention_percentage)}%){bill.retention_secured_by_guarantee ? " — secured by bank guarantee, not deducted" : ""}
+            </span>
+            <span className={bill.retention_secured_by_guarantee ? "text-[var(--color-text-muted)]" : "text-[var(--color-danger)]"}>
+              {bill.retention_secured_by_guarantee ? formatMoney(0, bill.currency) : `- ${formatMoney(bill.retention_this_period, bill.currency)}`}
+            </span>
+          </div>
           <div className="mt-2 flex justify-between border-t border-[var(--color-border)] pt-2 text-[14px] font-bold text-[var(--color-text-primary)]"><span>Net payable (work value)</span><span>{formatMoney(bill.net_payable, bill.currency)}</span></div>
           {bill.sales_tax_authority ? (
            <div className="flex justify-between text-[13px] text-[var(--color-text-secondary)]">

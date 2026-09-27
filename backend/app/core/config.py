@@ -1,5 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+from dotenv import load_dotenv
+from pathlib import Path
+
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(_env_path)
 
 class Settings(BaseSettings):
   app_name: str = "Trace"
@@ -70,7 +75,7 @@ class Settings(BaseSettings):
   default_timezone: str = "Asia/Karachi"
   cors_origins: str = "http://localhost:5094"
   model_config = SettingsConfigDict(
-    env_file=".env",
+    env_file=str(_env_path),
     extra="ignore",
     case_sensitive=False,
   )

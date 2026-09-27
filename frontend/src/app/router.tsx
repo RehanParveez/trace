@@ -32,6 +32,7 @@ import { ChangeOrdersPage } from "../modules/change_orders";
 import { SchedulingPage } from "../modules/scheduling";
 import { PunchListsPage } from "../modules/punch_lists";
 import { SalesTaxPage } from "../modules/salex_tax";
+import { BankGuaranteesPage } from "../modules/bank_guarantees";
 
 export const router = createBrowserRouter([
   {
@@ -402,6 +403,16 @@ export const router = createBrowserRouter([
   children: [
     { index: true, 
       element: <SalesTaxPage />
+    }
+  ],
+},
+
+{
+  path: "bank-guarantees",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+       element: <BankGuaranteesPage /> 
     }
   ],
 },

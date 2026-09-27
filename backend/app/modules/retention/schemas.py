@@ -48,6 +48,7 @@ class ClientRetentionLineResponse(BaseModel):
   retention_held: Decimal
   retention_released: Decimal
   retention_outstanding: Decimal
+  is_secured_by_guarantee: bool
 
 class SubcontractorRetentionLineResponse(BaseModel):
   agreement_id: UUID
@@ -55,7 +56,8 @@ class SubcontractorRetentionLineResponse(BaseModel):
   retention_held: Decimal
   retention_released: Decimal
   retention_outstanding: Decimal
-
+  is_secured_by_guarantee: bool
+  
 class ProjectRetentionSummaryResponse(BaseModel):
   project_id: UUID
   client_lines: list[ClientRetentionLineResponse]

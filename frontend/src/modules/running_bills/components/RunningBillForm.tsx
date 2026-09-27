@@ -25,8 +25,8 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
   const [boqVersionId, setBoqVersionId] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState(() =>
-    new Date().toISOString().slice(0, 10),
-  );
+  new Date().toISOString().slice(0, 10),
+);
   const [salesTaxAuthority, setSalesTaxAuthority] = useState<SalesTaxAuthority | "">("");
   const [retentionPercentage, setRetentionPercentage] = useState("10");
   const [retentionCapPercentage, setRetentionCapPercentage] = useState("");
@@ -34,6 +34,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
   const [otherDeductions, setOtherDeductions] = useState("0");
   const [otherDeductionsNote, setOtherDeductionsNote] = useState("");
   const [notes, setNotes] = useState("");
+  const [retentionSecuredByGuarantee, setRetentionSecuredByGuarantee] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const activeBoqVersionId = boqVersionId || boqVersions[0]?.id || "";
@@ -58,6 +59,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
         other_deductions_amount: Number(otherDeductions),
         other_deductions_note: otherDeductionsNote.trim() || null,
         notes: notes.trim() || null,
+        retention_secured_by_guarantee: retentionSecuredByGuarantee,
       },
       {
         onSuccess: () => {
@@ -176,6 +178,14 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
             />
           </Field>
         </div>
+
+        <label className="flex items-start gap-2.5 rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
+          <input type="checkbox" checked={retentionSecuredByGuarantee} onChange={(e) => setRetentionSecuredByGuarantee(e.target.checked)} className="mt-0.5 h-4 w-4 accent-[var(--color-trace-gold)]" />
+          <span className="text-[12.5px] text-[var(--color-text-primary)]">
+            Retention is secured by a bank guarantee — pay in full, don't deduct retention
+            <span className="mt-1 block text-[11.5px] text-[var(--color-text-secondary)]">Requires an active, adequately-valued guarantee already recorded for this BOQ version.</span>
+          </span>
+        </label>
 
         <Field label="Provincial sales tax on services (optional)">
           <select

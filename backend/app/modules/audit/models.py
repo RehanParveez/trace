@@ -29,6 +29,7 @@ class AuditEntityType(str, enum.Enum):
   CHANGE_ORDER = "CHANGE_ORDER"
   SCHEDULE_TASK = "SCHEDULE_TASK"
   PUNCH_LIST = "PUNCH_LIST"
+  BANK_GUARANTEE = "BANK_GUARANTEE"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"

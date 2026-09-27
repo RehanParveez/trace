@@ -10,6 +10,7 @@ import { useExpenses, formatExpenseAmount } from "../../expenses";
 import { CHANGE_ORDER_PERMISSIONS, useChangeOrders, formatChangeOrderMoney } from "../../change_orders";
 import { SCHEDULING_PERMISSIONS, useProjectSchedule } from "../../scheduling";
 import { PUNCH_LIST_PERMISSIONS, usePunchLists } from "../../punch_lists";
+import { BANK_GUARANTEE_PERMISSIONS, useBankGuarantees } from "../../bank_guarantees";
 
 type FeedTone = "green" | "red" | "blue" | "gold" | "slate";
 
@@ -39,7 +40,9 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
   const canViewChangeOrders = permissions.includes(CHANGE_ORDER_PERMISSIONS.CHANGE_ORDER_READ);
   const canViewSchedule = permissions.includes(SCHEDULING_PERMISSIONS.SCHEDULE_READ);
   const canViewPunchLists = permissions.includes(PUNCH_LIST_PERMISSIONS.PUNCH_LIST_READ);
+  const canViewBankGuarantees = permissions.includes(BANK_GUARANTEE_PERMISSIONS.BANK_GUARANTEE_READ);
 
+  const bankGuaranteesQuery = useBankGuarantees(canViewBankGuarantees ? projectId : "");
   const punchListsQuery = usePunchLists(canViewPunchLists ? projectId : "");
   const scheduleQuery = useProjectSchedule(canViewSchedule ? projectId : "");
   const changeOrdersQuery = useChangeOrders(canViewChangeOrders ? projectId : "");
@@ -53,9 +56,10 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
     (canViewClaims && claimsQuery.isLoading) ||
     (canViewProcurement && procurementQuery.isLoading) ||
     (canViewExpenses && expensesQuery.isLoading) ||
-    (canViewChangeOrders && changeOrdersQuery.isLoading);
+    (canViewChangeOrders && changeOrdersQuery.isLoading) ||
+    (canViewBankGuarantees && bankGuaranteesQuery.isLoading);
 
-  const hasAnyAccess = canViewPhotos || canViewClaims || canViewProcurement || canViewExpenses || canViewChangeOrders;
+    const hasAnyAccess = canViewPhotos || canViewClaims || canViewProcurement || canViewExpenses || canViewChangeOrders || canViewBankGuarantees;
 
   const items = useMemo<ActivityFeedItem[]>(() => {
     const feed: ActivityFeedItem[] = [];
@@ -181,10 +185,22 @@ export function ProjectActivityFeed({ projectId }: ProjectActivityFeedProps) {
       }
     }
 
+    for (const g of bankGuaranteesQuery.data ?? []) {
+      if (g.status === "RELEASED" || g.status === "RENEWED" || g.status === "CALLED") {
+        const meta: Record<string, { title: string; tone: FeedTone }> = {
+          RELEASED: { title: `Bank guarantee released: ${g.guarantee_number}`, tone: "green" },
+          RENEWED: { title: `Bank guarantee renewed: ${g.guarantee_number}`, tone: "blue" },
+          CALLED: { title: `Bank guarantee called: ${g.guarantee_number}`, tone: "red" },
+        };
+        const m = meta[g.status];
+        feed.push({ key: `guarantee:${g.id}`, timestamp: g.released_at ?? g.superseded_at ?? g.created_at, icon: "budget", tone: m.tone, title: m.title });
+      }
+    }
+
     return feed
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, MAX_VISIBLE_ITEMS);
-  }, [photosQuery.data, claimsQuery.data, procurementQuery.data, expensesQuery.data, changeOrdersQuery.data, punchListsQuery.data,]);
+    }, [photosQuery.data, claimsQuery.data, procurementQuery.data, expensesQuery.data, changeOrdersQuery.data, punchListsQuery.data, bankGuaranteesQuery.data,]);
 
   if (!hasAnyAccess) {
     return null;

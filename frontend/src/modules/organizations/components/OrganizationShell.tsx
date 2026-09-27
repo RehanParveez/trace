@@ -128,6 +128,11 @@ function buildProjectsNav(t: (key: string) => string): NavItem[] {
       icon: "budget",
     },
     {
+      label: "Bank guarantees",
+      to: "/app/bank-guarantees",
+      icon: "budget",
+    },
+    {
       label: "Punch lists",
       to: "/app/punch-lists",
       icon: "check",

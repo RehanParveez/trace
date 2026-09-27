@@ -19,9 +19,10 @@ from app.modules.subcontractors.schemas import (SubcontractAgreementCreateReques
 )
 from app.modules.projects.repository import ProjectRepository
 from app.modules.withholding_tax.models import WHTSourceType
+from datetime import datetime, timezone
 from app.modules.withholding_tax.service import WithholdingTaxService
-from app.modules.sales_tax.models import SalesTaxSourceType
 from app.modules.sales_tax.service import SalesTaxService
+from app.modules.bank_guarantees.service import BankGuaranteeService
 
 
 class SubcontractorService:
@@ -32,6 +33,7 @@ class SubcontractorService:
     self.audit = AuditLogService(session)
     self.withholding_tax = WithholdingTaxService(session)
     self.sales_tax = SalesTaxService(session)
+    self.bank_guarantees = BankGuaranteeService(session)
 
   async def create_subcontractor(self, organization_id: UUID, payload: SubcontractorCreateRequest) -> Subcontractor:
     subcontractor = Subcontractor(
@@ -171,7 +173,7 @@ class SubcontractorService:
     for index, item in enumerate(agreement.items):
       previous_line = previous_by_item.get(item.id)
       previous_percentage = previous_line.cumulative_percentage if previous_line is not None else Decimal("0")
-      cumulative_percentage = measurement_by_item.get(item.id, previous_percentage)  # carry forward if unmeasured
+      cumulative_percentage = measurement_by_item.get(item.id, previous_percentage)  
 
       cumulative_value = (item.quantity * item.rate * cumulative_percentage / Decimal("100")).quantize(Decimal("0.01"))
       previous_value = previous_line.cumulative_value if previous_line is not None else Decimal("0")
@@ -204,7 +206,13 @@ class SubcontractorService:
       contract_total_value=agreement.contract_value,
     )
 
-    net_payable = gross_this_period - retention_this_period - payload.other_deductions_amount
+    if payload.retention_secured_by_guarantee:
+      await self.bank_guarantees.require_adequate_guarantee_for_agreement(
+        organization_id, agreement.id, retention_cumulative,
+      )
+      net_payable = gross_this_period - payload.other_deductions_amount
+    else:
+      net_payable = gross_this_period - retention_this_period - payload.other_deductions_amount
 
     sales_tax_rate_estimate: Decimal | None = None
     sales_tax_amount_estimate = Decimal("0")
@@ -227,6 +235,7 @@ class SubcontractorService:
         retention_this_period=retention_this_period, retention_cumulative=retention_cumulative,
         other_deductions_amount=payload.other_deductions_amount, other_deductions_note=payload.other_deductions_note,
         net_payable=net_payable,
+        retention_secured_by_guarantee=payload.retention_secured_by_guarantee,
         sales_tax_authority=payload.sales_tax_authority.value if payload.sales_tax_authority else None,
         sales_tax_rate_percentage=sales_tax_rate_estimate, sales_tax_amount=sales_tax_amount_estimate,
         currency=organization.currency if organization else "PKR",
@@ -257,7 +266,7 @@ class SubcontractorService:
     return await self.get_bill(organization_id, bill.id)
 
   async def issue_bill(self, organization_id: UUID, bill_id: UUID, expected_version: int, actor_user_id: UUID) -> SubcontractorBill:
-    from datetime import datetime, timezone
+   
     bill = await self.repo.get_bill_for_update(bill_id, organization_id)
     if bill is None:
       raise TraceException("Bill not found.", status_code=404, code="SUBCONTRACTOR_BILL_NOT_FOUND")
@@ -265,9 +274,17 @@ class SubcontractorService:
       raise TraceException("This bill was changed by someone else. Reload and try again.", status_code=409, code="SUBCONTRACTOR_BILL_VERSION_CONFLICT")
     if bill.status != SubcontractorBillStatus.DRAFT:
       raise TraceException("Only draft bills can be issued.", status_code=409, code="SUBCONTRACTOR_BILL_NOT_DRAFT")
-    bill.status = SubcontractorBillStatus.ISSUED
-    bill.issued_at = datetime.now(timezone.utc)
-    bill.version += 1
+
+    if bill.retention_secured_by_guarantee:
+      await self.bank_guarantees.require_adequate_guarantee_for_agreement(
+        organization_id, bill.agreement_id, bill.retention_cumulative,
+      )
+
+    if bill.sales_tax_authority is not None:
+    
+     bill.status = SubcontractorBillStatus.ISSUED
+     bill.issued_at = datetime.now(timezone.utc)
+     bill.version += 1
     await self.session.commit()
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.SUBCONTRACTOR, bill.id, AuditAction.UPDATE,

@@ -105,6 +105,7 @@ class SubcontractorBillCreateRequest(BaseModel):
   retention_cap_percentage: Decimal | None = Field(default=None, ge=0, le=100)
   other_deductions_amount: Decimal = Field(default=Decimal("0"), ge=0)
   other_deductions_note: str | None = Field(default=None, max_length=500)
+  retention_secured_by_guarantee: bool = False
   sales_tax_authority: SalesTaxAuthority | None = None
   notes: str | None = None
   measurements: list[BillMeasurementInput] = Field(min_length=1)
@@ -152,6 +153,7 @@ class SubcontractorBillResponse(BaseModel):
   other_deductions_amount: Decimal
   other_deductions_note: str | None
   net_payable: Decimal
+  retention_secured_by_guarantee: bool
   sales_tax_authority: str | None
   sales_tax_rate_percentage: Decimal | None
   sales_tax_amount: Decimal

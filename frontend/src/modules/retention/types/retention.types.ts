@@ -8,11 +8,11 @@ export interface RetentionRelease {
 
 export interface ClientRetentionLine {
   boq_version_id: string; boq_version_label: string;
-  retention_held: number | string; retention_released: number | string; retention_outstanding: number | string;
+  retention_held: number | string; retention_released: number | string; retention_outstanding: number | string; is_secured_by_guarantee: boolean;
 }
 export interface SubcontractorRetentionLine {
   agreement_id: string; subcontractor_name: string;
-  retention_held: number | string; retention_released: number | string; retention_outstanding: number | string;
+  retention_held: number | string; retention_released: number | string; retention_outstanding: number | string; is_secured_by_guarantee: boolean;
 }
 export interface ProjectRetentionSummary {
   project_id: string; client_lines: ClientRetentionLine[]; client_total_outstanding: number | string;

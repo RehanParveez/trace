@@ -31,7 +31,7 @@ export const subcontractorsApi = {
     period_start: string; period_end: string; retention_percentage?: number | null;
     retention_cap_percentage?: number | null; other_deductions_amount?: number; other_deductions_note?: string | null;
     notes?: string | null; measurements: { agreement_item_id: string; cumulative_percentage: number }[];
-    sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | null;
+    sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | null; retention_secured_by_guarantee: boolean;
   }): Promise<SubcontractorBillDetail> {
     return (await apiClient.post<SubcontractorBillDetail>(`/subcontractors/agreements/${agreementId}/bills`, payload)).data;
   },
