@@ -209,43 +209,6 @@ function DashboardMockup() {
   );
 }
 
-function WorkflowPreview() {
-  const { t } = useTranslation();
-
-  const steps = [
-    ["01", "preview.stageDrawing", "preview.stageDrawingDesc"],
-    ["02", "preview.stageBoq", "preview.stageBoqDesc"],
-    ["03", "preview.stageReview", "preview.stageReviewDesc"],
-    ["04", "preview.stageApproved", "preview.stageApprovedDesc"],
-  ] as const;
-
-  return (
-    <div className="lp-workflow-preview">
-      <div className="lp-workflow-preview-head">
-        <div>
-          <small>{t("preview.workflowLabel")}</small>
-          <strong>{t("preview.workflowTitle")}</strong>
-        </div>
-        <span className="lp-demo-pill">{t("preview.sampleData")}</span>
-      </div>
-
-      <div className="lp-workflow-steps">
-        {steps.map(([number, titleKey, descriptionKey]) => (
-          <div className="lp-workflow-step" key={number}>
-            <span className="lp-workflow-number">{number}</span>
-            <div>
-              <strong>{t(titleKey)}</strong>
-              <span>{t(descriptionKey)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <p className="lp-workflow-note">{t("preview.approvalNote")}</p>
-    </div>
-  );
-}
-
 export function HomePage() {
   const { t } = useTranslation();
 
@@ -419,105 +382,56 @@ export function HomePage() {
           </div>
 
           <div className="lp-tour">
-            <div className="lp-tour-main">
-              <DashboardMockup />
-
-              <div className="lp-tour-cap">
-                <b>
-                  {t("product.tour.main.title")}
-                </b>
-
-                <span>
-                  {t("product.tour.main.caption")}
-                </span>
+            <article className="lp-tour-card">
+              <div className="lp-tour-visual">
+                <img
+                  src="/images/landing/project-record.webp"
+                  alt={t("product.preview.projectRecordAlt")}
+                  loading="lazy"
+                />
               </div>
-            </div>
-
-            <div className="lp-tour-small">
-              <div className="lp-mini-panel">
-                <small>
-                  {t("product.tour.financial.label")}
-                </small>
-
-                <strong>
-                  {t("product.tour.financial.amount")}
-                </strong>
-
-                <div className="lp-meter">
-                  <i
-                    style={{
-                      width: `${t(
-                        "product.tour.financial.progress",
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                <span>
-                  {t("product.tour.financial.status")}
-                </span>
+              <div className="lp-tour-copy">
+                <p className="lp-eyebrow">
+                  {t("product.preview.projectRecordEyebrow")}
+                </p>
+                <h3>{t("product.preview.projectRecordTitle")}</h3>
+                <p>{t("product.preview.projectRecordDescription")}</p>
               </div>
+            </article>
 
-              <div className="lp-tour-cap">
-                <b>
-                  {t("product.tour.financial.title")}
-                </b>
-
-                <span>
-                  {t("product.tour.financial.caption")}
-                </span>
+            <article className="lp-tour-card">
+              <div className="lp-tour-visual">
+                <img
+                  src="/images/landing/boq-review.webp"
+                  alt={t("product.preview.boqAlt")}
+                  loading="lazy"
+                />
               </div>
-            </div>
-
-            <div className="lp-tour-small">
-              <div className="lp-mini-panel">
-                <small>
-                  {t("product.tour.workflow.label")}
-                </small>
-
-                <strong>
-                  {t("product.tour.workflow.requestId")}
-                </strong>
-
-                <div className="lp-flow">
-                  <span>
-                    {t(
-                      "product.tour.workflow.steps.requested",
-                    )}
-                  </span>
-
-                  <b>→</b>
-
-                  <span>
-                    {t(
-                      "product.tour.workflow.steps.approved",
-                    )}
-                  </span>
-
-                  <b>→</b>
-
-                  <span>
-                    {t(
-                      "product.tour.workflow.steps.purchaseOrder",
-                    )}
-                  </span>
-                </div>
-
-                <span>
-                  {t("product.tour.workflow.items")}
-                </span>
+              <div className="lp-tour-copy">
+                <p className="lp-eyebrow">
+                  {t("product.preview.boqEyebrow")}
+                </p>
+                <h3>{t("product.preview.boqTitle")}</h3>
+                <p>{t("product.preview.boqDescription")}</p>
               </div>
+            </article>
 
-              <div className="lp-tour-cap">
-                <b>
-                  {t("product.tour.workflow.title")}
-                </b>
-
-                <span>
-                  {t("product.tour.workflow.caption")}
-                </span>
+            <article className="lp-tour-card">
+              <div className="lp-tour-visual">
+                <img
+                  src="/images/landing/roles-access.webp"
+                  alt={t("product.preview.rolesAlt")}
+                  loading="lazy"
+                />
               </div>
-            </div>
+              <div className="lp-tour-copy">
+                <p className="lp-eyebrow">
+                  {t("product.preview.rolesEyebrow")}
+                </p>
+                <h3>{t("product.preview.rolesTitle")}</h3>
+                <p>{t("product.preview.rolesDescription")}</p>
+              </div>
+            </article>
           </div>
         </div>
       </section>

@@ -30,6 +30,7 @@ from app.modules.scheduling.router import router as scheduling_router
 from app.modules.punch_lists.router import router as punch_lists_router
 from app.modules.sales_tax.router import router as salex_tax_router
 from app.modules.bank_guarantees.router import router as bank_guarantees_router
+from app.modules.cash_flow.router import router as cash_flow_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -106,6 +107,8 @@ app.include_router(punch_lists_router, prefix=settings.api_v1_prefix)
 app.include_router(salex_tax_router, prefix=settings.api_v1_prefix)
 
 app.include_router(bank_guarantees_router, prefix=settings.api_v1_prefix)
+
+app.include_router(cash_flow_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:

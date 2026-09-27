@@ -327,6 +327,38 @@ html {
   height: 470px;
 }
 
+.lp-hero-photo-frame {
+  position: relative;
+  height: 100%;
+  min-height: 420px;
+  overflow: hidden;
+  margin: 0;
+  border: 1px solid var(--lpborder);
+  border-radius: 22px;
+  background: #101e30;
+  box-shadow: 0 26px 60px -24px rgba(4, 8, 14, 0.5);
+}
+
+.lp-hero-photo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.lp-hero-photo-caption {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 36px 20px 18px;
+  color: #fff;
+  font-size: 13px;
+  background: linear-gradient(transparent, rgba(4, 8, 14, 0.78));
+}
+
 .lp-hero-canvas {
   position: absolute;
 
@@ -352,47 +384,6 @@ html {
 
   box-shadow:
     0 30px 70px -20px rgba(4, 8, 14, 0.55);
-}
-
-.lp-grid-bg {
-  position: absolute;
-  inset: 0;
-
-  opacity: 0.35;
-
-  background-image:
-    linear-gradient(
-      rgba(237, 231, 214, 0.05) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(237, 231, 214, 0.05) 1px,
-      transparent 1px
-    );
-
-  background-size: 26px 26px;
-
-  mask-image:
-    radial-gradient(
-      ellipse 70% 80% at 60% 30%,
-      black 25%,
-      transparent 82%
-    );
-}
-
-.lp-shot {
-  position: absolute;
-
-  width: 78%;
-
-  overflow: hidden;
-
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
-
-  box-shadow:
-    0 30px 70px -20px rgba(4, 8, 14, 0.7);
 }
 
 .lp-shot-back {
@@ -421,24 +412,6 @@ html {
     rotateY(-9deg)
     rotateX(3deg)
     rotate(1deg);
-}
-
-.lp-glass {
-  position: absolute;
-  z-index: 3;
-
-  padding: 10px 14px;
-
-  border: 1px solid rgba(237, 231, 214, 0.22);
-  border-radius: 12px;
-
-  background: rgba(237, 231, 214, 0.1);
-
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-
-  box-shadow:
-    0 10px 26px rgba(4, 8, 14, 0.4);
 }
 
 .lp-glass b {
@@ -825,52 +798,55 @@ html {
 }
 
 .lp-tour {
-  height: 560px;
-
   display: grid;
-
-  grid-template-columns: 1.3fr 1fr;
-  grid-template-rows: 1fr 1fr;
-
-  gap: 15px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 20px;
 }
 
-.lp-tour > div {
-  position: relative;
-
+.lp-tour-card {
   overflow: hidden;
-
   border: 1px solid var(--lpborder);
   border-radius: 17px;
-
-  background: #0c1520;
-
-  box-shadow:
-    0 16px 34px -18px rgba(4, 8, 14, 0.45);
+  background: #fff;
+  box-shadow: 0 16px 34px -18px rgba(4, 8, 14, 0.35);
 }
 
-.lp-tour-main {
-  grid-row: 1 / 3;
+.lp-tour-visual {
+  display: grid;
+  min-height: 230px;
+  place-items: center;
+  overflow: hidden;
+  padding: 12px;
+  background: #f3eee4;
 }
 
-.lp-tour-main > .lp-dashboard {
-  position: absolute;
-
-  inset: 0;
-
-  transform: scale(1.01);
-  transform-origin: top left;
+.lp-tour-visual img {
+  display: block;
+  width: 100%;
+  max-height: 310px;
+  object-fit: contain;
+  object-position: top center;
 }
 
-.lp-tour-small {
-  padding: 18px;
+.lp-tour-copy {
+  padding: 22px;
+}
 
-  background:
-    linear-gradient(
-      150deg,
-      #18324d,
-      #102338
-    ) !important;
+.lp-tour-copy .lp-eyebrow {
+  margin: 0 0 9px;
+}
+
+.lp-tour-copy h3 {
+  margin: 0 0 9px;
+  font: 600 21px var(--lpserif);
+}
+
+.lp-tour-copy > p:last-child {
+  margin: 0;
+  color: var(--lpm);
+  font-size: 13px;
+  line-height: 1.65;
 }
 
 .lp-mini-panel {
@@ -1291,11 +1267,8 @@ html {
   }
 
   .lp-tour {
-    height: auto;
-
-    grid-template-columns: 1fr;
-    grid-template-rows: 420px 240px 240px;
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
 
   .lp-tour-main {
     grid-row: auto;
@@ -1342,16 +1315,16 @@ html {
   .lp-hero-stage {
     height: 300px;
   }
+   
+  .lp-hero-stage {
+  height: 300px;
+}
 
-  .lp-hero-canvas {
-    inset: -10px -15px -20px 0;
-
-    border-radius: 20px;
-  }
-
-  .lp-shot {
-    width: 90%;
-  }
+  .lp-hero-photo-frame,
+  .lp-hero-photo {
+  min-height: 280px;
+}
+  
 
   .lp-shot-front {
     top: 23%;
@@ -1360,10 +1333,6 @@ html {
 
   .lp-shot-back {
     left: -10%;
-  }
-
-  .lp-glass {
-    transform: scale(0.86);
   }
 
   .lp-glass-one {
@@ -1441,8 +1410,9 @@ html {
   }
 
   .lp-tour {
-    grid-template-rows: 420px 240px 240px;
-  }
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
 
   :root {
   --lpa: #d9a441;
@@ -1465,8 +1435,9 @@ html {
 }
 
 .lp-hero-stage {
-  height: auto;
+  position: relative;
   min-width: 0;
+  height: 470px;
 }
 
 .lp-preview-note {
@@ -1474,17 +1445,6 @@ html {
   color: var(--lpm);
   font: 10px var(--lpm);
   text-align: right;
-}
-
-.lp-hero-canvas {
-  position: relative;
-  inset: auto;
-  overflow: hidden;
-  padding: 10px;
-  border: 1px solid var(--lpborder2);
-  border-radius: 20px;
-  background: linear-gradient(145deg, #172840, #0d1424);
-  box-shadow: 0 28px 70px -28px rgba(0, 0, 0, 0.7);
 }
 
 .lp-dashboard {

@@ -56,4 +56,9 @@ export const runningBillsApi = {
     );
     return response.data;
   },
+
+  async recordCollection(billId: string, amount: number, collectionDate: string): Promise<RunningBill> {
+    const response = await apiClient.post<RunningBill>(`/running-bills/${billId}/record-collection`, { amount, collection_date: collectionDate });
+    return response.data;
+  },
 };

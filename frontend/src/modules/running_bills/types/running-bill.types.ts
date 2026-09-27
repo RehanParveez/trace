@@ -35,6 +35,8 @@ export interface RunningBill {
   other_deductions_amount: number | string;
   other_deductions_note: string | null;
   retention_secured_by_guarantee: boolean;
+  collected_amount: number | string;
+  fully_collected_at: string | null;
   net_payable: number | string;
   currency: string;
   notes: string | null;
@@ -48,6 +50,8 @@ export interface RunningBillDetail extends RunningBill {
   sales_tax_authority?: "PRA" | "SRB" | "KPRA" | "BRA" | "ICT";
   sales_tax_rate_percentage: number | string | null;
   sales_tax_amount: number | string;
+  collected_amount: number | string;
+  fully_collected_at: string | null;
   total_amount_due: number | string;
 }
 

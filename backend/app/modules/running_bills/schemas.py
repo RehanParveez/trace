@@ -45,6 +45,8 @@ class RunningBillResponse(BaseModel):
   other_deductions_note: str | None
   net_payable: Decimal
   retention_secured_by_guarantee: bool
+  collected_amount: Decimal
+  fully_collected_at: datetime | None
   sales_tax_authority: str | None
   sales_tax_rate_percentage: Decimal | None
   sales_tax_amount: Decimal
@@ -88,3 +90,7 @@ class RunningBillIssueRequest(BaseModel):
 
 class RunningBillCancelRequest(BaseModel):
   version: int
+  
+class RunningBillRecordCollectionRequest(BaseModel):
+  amount: Decimal = Field(gt=0)
+  collection_date: date

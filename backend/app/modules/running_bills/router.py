@@ -4,7 +4,7 @@ from uuid import UUID
 from app.modules.identity.models import User
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.running_bills.service import RunningBillService
-from app.modules.running_bills.schemas import RunningBillCancelRequest, RunningBillCreateRequest, RunningBillDetailResponse, RunningBillIssueRequest, RunningBillResponse
+from app.modules.running_bills.schemas import RunningBillCancelRequest, RunningBillCreateRequest, RunningBillDetailResponse, RunningBillIssueRequest, RunningBillResponse, RunningBillRecordCollectionRequest
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
@@ -83,4 +83,15 @@ async def export_running_bill_xlsx(
   return Response(
     content=xlsx_bytes, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+  )
+  
+@router.post("/{bill_id}/record-collection", response_model=RunningBillResponse)
+async def record_collection(
+  bill_id: UUID,
+  payload: RunningBillRecordCollectionRequest,
+  current_user: User = Depends(require_permission(PermissionKey.RUNNING_BILL_ISSUE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).record_collection(
+    current_user.active_membership.organization_id, bill_id, payload.amount, payload.collection_date, current_user.id,
   )

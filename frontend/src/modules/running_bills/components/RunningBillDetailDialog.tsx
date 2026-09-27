@@ -7,6 +7,8 @@ import { runningBillsApi } from "../api/running-bills.api";
 import {formatBillDate, formatBillMoney, formatRunningBillStatus, getRunningBillStatusTone, openBlobDownload,
 } from "../utils/running-bill.utils";
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
+import type { RunningBillDetail } from "../types/running-bill.types";
 
 interface RunningBillDetailDialogProps {
   billId: string;
@@ -185,10 +187,14 @@ export function RunningBillDetailDialog({
                 <span>Total amount due</span><span>{formatBillMoney(bill.total_amount_due, bill.currency)}</span>
               </div>
             ) : null}
-              <span>
-                {formatBillMoney(bill.net_payable, bill.currency)}
-              </span>
           </div>
+
+          {bill.status === "ISSUED" && !bill.fully_collected_at ? (
+            <RunningBillCollectionForm
+              bill={bill}
+              onRecorded={() => void billQuery.refetch()}
+            />
+          ) : null}
 
           {canIssue && bill && bill.status === "DRAFT" ? (
             <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
@@ -252,5 +258,76 @@ export function RunningBillDetailDialog({
         </div>
       )}
     </Modal>
+  );
+}
+
+function RunningBillCollectionForm({
+  bill,
+  onRecorded,
+}: {
+  bill: RunningBillDetail;
+  onRecorded: () => void;
+}) {
+  const [amount, setAmount] = useState("");
+  const [date, setDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const { showToast } = useToast();
+
+  const outstanding =
+    Number(bill.net_payable) +
+    Number(bill.sales_tax_amount) -
+    Number(bill.collected_amount);
+
+  return (
+    <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">
+      <div className="mb-2 text-[12px] text-[var(--color-text-secondary)]">
+        {formatBillMoney(bill.collected_amount, bill.currency)} collected of{" "}
+        {formatBillMoney(
+          Number(bill.net_payable) + Number(bill.sales_tax_amount),
+          bill.currency,
+        )}{" "}
+        — {formatBillMoney(outstanding, bill.currency)} outstanding.
+      </div>
+
+      <div className="flex gap-2">
+        <input
+          type="number"
+          step="any"
+          min="0.01"
+          placeholder="Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          className="w-32 rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[12.5px] outline-none"
+        />
+
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="rounded-[6px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[12px] outline-none"
+        />
+
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={!amount}
+          onClick={() =>
+            runningBillsApi
+              .recordCollection(bill.id, Number(amount), date)
+              .then(() => {
+                onRecorded();
+                showToast({
+                  tone: "success",
+                  title: "Collection recorded",
+                });
+                setAmount("");
+              })
+          }
+        >
+          Record collection
+        </Button>
+      </div>
+    </div>
   );
 }

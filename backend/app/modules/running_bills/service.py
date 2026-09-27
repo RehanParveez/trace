@@ -335,3 +335,34 @@ class RunningBillService:
       client = (await self.session.execute(select(Client).where(Client.id == project.client_id))).scalar_one_or_none()
     organization = await self.session.get(Organization, organization_id)
     return project, client, organization
+  
+  async def record_collection(
+    self, organization_id: UUID, bill_id: UUID, amount: Decimal, collection_date, actor_user_id: UUID,
+  ) -> RunningBill:
+    bill = await self.repo.get_by_id_for_update(bill_id, organization_id)
+    if bill is None:
+      raise TraceException("Running bill not found.", status_code=404, code="RUNNING_BILL_NOT_FOUND")
+    if bill.status != RunningBillStatus.ISSUED:
+      raise TraceException(
+        "Only an issued bill can have collections recorded against it.", status_code=409, code="RUNNING_BILL_NOT_ISSUED",
+      )
+
+    total_due = bill.net_payable + bill.sales_tax_amount
+    new_collected = bill.collected_amount + amount
+    if new_collected > total_due:
+      raise TraceException(
+        f"Cannot record {amount} — only {total_due - bill.collected_amount} is still outstanding on this bill.",
+        status_code=409, code="COLLECTION_EXCEEDS_OUTSTANDING",
+      )
+
+    bill.collected_amount = new_collected
+    if new_collected >= total_due:
+      bill.fully_collected_at = datetime.now(timezone.utc)
+    await self.session.commit()
+
+    await self.audit.log(
+      organization_id, actor_user_id, AuditEntityType.RUNNING_BILL, bill.id, AuditAction.UPDATE,
+      f"Recorded {amount} collected from client against running bill #{bill.bill_number}"
+      + (" (fully collected)." if new_collected >= total_due else "."),
+    )
+    return bill

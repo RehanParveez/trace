@@ -30,6 +30,7 @@ from app.modules.scheduling import models as scheduling_models
 from app.modules.punch_lists import models as punch_lists_models
 from app.modules.sales_tax import models as sales_tax_models
 from app.modules.bank_guarantees import models as bank_guarantees_models
+from app.modules.cash_flow import models as cash_flow_models
 
 config = context.config
 

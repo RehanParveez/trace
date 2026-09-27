@@ -33,6 +33,7 @@ import { SchedulingPage } from "../modules/scheduling";
 import { PunchListsPage } from "../modules/punch_lists";
 import { SalesTaxPage } from "../modules/salex_tax";
 import { BankGuaranteesPage } from "../modules/bank_guarantees";
+import { CashFlowPage } from "../modules/cash_flow";
 
 export const router = createBrowserRouter([
   {
@@ -413,6 +414,16 @@ export const router = createBrowserRouter([
   children: [
     { index: true,
        element: <BankGuaranteesPage /> 
+    }
+  ],
+},
+
+{
+  path: "cash-flow",
+  element: <OrganizationShell />,
+  children: [
+    { index: true,
+       element: <CashFlowPage /> 
     }
   ],
 },

@@ -1,0 +1,1 @@
+export const CASH_FLOW_PERMISSIONS = { CASH_FLOW_READ: "cash_flow:read", CASH_FLOW_MANAGE: "cash_flow:manage" } as const;

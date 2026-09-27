@@ -186,6 +186,11 @@ function buildIntelligenceNav(
       icon: "spark",
     },
     {
+      label: "Cash flow",
+      to: "/app/cash-flow",
+      icon: "budget",
+    },
+    {
       label: t("nav.auditLog"),
       to: "/app/audit-log",
       icon: "shield",

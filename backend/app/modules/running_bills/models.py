@@ -103,6 +103,9 @@ class RunningBill(Base, TimestampMixin):
   )
   retention_secured_by_guarantee: Mapped[bool] = mapped_column(nullable=False, default=False)
   
+  collected_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, default=Decimal("0"))
+  fully_collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
   sales_tax_authority: Mapped[str | None] = mapped_column(String(10), nullable=True)
   sales_tax_rate_percentage: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
   sales_tax_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False, default=Decimal("0"))

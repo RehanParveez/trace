@@ -110,3 +110,6 @@ class PermissionKey(StrEnum):
   BANK_GUARANTEE_READ = "bank_guarantee:read"
   BANK_GUARANTEE_MANAGE = "bank_guarantee:manage"
   BANK_GUARANTEE_RELEASE = "bank_guarantee:release"
+  
+  CASH_FLOW_READ = "cash_flow:read"
+  CASH_FLOW_MANAGE = "cash_flow:manage"
