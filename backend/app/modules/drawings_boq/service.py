@@ -12,9 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
-from app.modules.drawings_boq.models import BOQItem, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, BOQItemRateSource
+from app.modules.drawings_boq.models import (AssemblyRecipeComponent, BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
+  DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ModelAuditResult
+)
 from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response
-from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, LabourRateRepository, MaterialLibraryRepository, MaterialNormalizationCacheRepository
+from app.modules.drawings_boq.repository import ( AssemblyRecipeRepository, BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, ElementTypeMappingRepository, LabourRateRepository,
+  MaterialLibraryRepository, MaterialNormalizationCacheRepository, MeasurementRuleSetRepository, ModelAuditResultRepository,
+)
 from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionCreateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
 from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
@@ -32,7 +36,7 @@ from app.modules.identity.rate_limit import RateLimiter
 from app.core.config import settings
 from app.modules.drawings_boq.ifc_extraction import aggregate_drawing_elements, extract_quantity, resolve_material_name
 from app.modules.drawings_boq.ifc_types import TARGET_IFC_TYPES
-from app.modules.drawings_boq.models import BOQItemSourceElement
+from app.modules.drawings_boq.ifc_extraction import AggregatedGroup, aggregate_drawing_elements
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
@@ -76,6 +80,10 @@ class DrawingBOQService:
     self.subscriptions = SubscriptionService(session)
     self.audit = AuditLogService(session)
     self.rate_limiter = RateLimiter(redis_client)
+    self.rule_sets = MeasurementRuleSetRepository(session)
+    self.element_mappings = ElementTypeMappingRepository(session)
+    self.recipes = AssemblyRecipeRepository(session)
+    self.model_audits = ModelAuditResultRepository(session)
 
   async def _require_project(
     self,
@@ -278,51 +286,37 @@ class DrawingBOQService:
 
     await self.session.flush()
 
-    groups = aggregate_drawing_elements(created_elements)
-    boq_items_created = 0
+    boq_version = await self.boq_versions.get_by_id_and_org(
+      boq_version_id,
+      organization_id,
+    )
 
-    for group in groups:
-      normalized_name, category, _matched = await self.normalize_material(
-        organization_id, group.raw_material_text,
-      )
-      default_rate = await self.get_material_default_rate(
-        organization_id, group.raw_material_text,
+    if boq_version is None:
+      raise TraceException(
+        "BOQ version not found.",
+        status_code=404,
+        code="BOQ_VERSION_NOT_FOUND",
       )
 
-      boq_item = BOQItem(
-        id=uuid4(),
-        organization_id=organization_id,
-        boq_version_id=boq_version_id,
-        material_name=normalized_name,
-        category=category,
-        unit=group.unit,
-        quantity=group.total_quantity,
-        unit_rate=default_rate,
-        rate_source=BOQItemRateSource.LIBRARY if default_rate is not None else None,
-        item_type=BOQItemType.MATERIAL,
-        status=BOQItemStatus.DRAFT,
-        created_by_user_id=actor_user_id,
-      )
-      self.session.add(boq_item)
-      await self.session.flush()
-      boq_items_created += 1
+    result = await self.generate_boq_from_elements(
+      organization_id=organization_id,
+      drawing=drawing,
+      elements=created_elements,
+      boq_version=boq_version,
+      actor_user_id=actor_user_id,
+    )
 
-      self.session.add_all([
-        BOQItemSourceElement(
-          id=uuid4(), organization_id=organization_id, boq_item_id=boq_item.id,
-          drawing_element_id=element_id, quantity_contributed=group.element_quantities[element_id],
-        )
-        for element_id in group.element_ids
-      ])
+    result.update({
+      "elements_extracted": len(created_elements),
+      "elements_skipped_zero_or_missing_quantity": (
+        skipped_zero_or_missing_quantity
+      ),
+    })
 
     await self.session.commit()
+    return result
 
-    return {
-      "elements_extracted": len(created_elements),
-      "elements_skipped_zero_or_missing_quantity": skipped_zero_or_missing_quantity,
-      "boq_items_created": boq_items_created,
-    }
-
+  
   async def get_drawing(
     self,
     organization_id: UUID,
@@ -532,7 +526,6 @@ class DrawingBOQService:
     if created_items:
       await self.boq_items.bulk_create(created_items)
     await self.session.commit()
-
     await self.audit.log(
       organization_id,
       user_id,
@@ -580,14 +573,12 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_ITEM_NOT_FOUND",
       )
-
     if item.status == BOQItemStatus.APPROVED:
       raise TraceException(
         "Approved BOQ items cannot be edited.",
         status_code=409,
         code="BOQ_ITEM_APPROVED",
       )
-
     if item.version != payload.version:
       raise TraceException(
         "This item was modified by someone else. Reload and try again.",
@@ -627,7 +618,6 @@ class DrawingBOQService:
           else:
             existing_entry.default_rate = payload.unit_rate
             await self.material_library.update(existing_entry)
-
     item.version += 1
 
     await self.boq_items.update(item)
@@ -911,7 +901,6 @@ class DrawingBOQService:
        status_code=422,
        code="NO_LABOUR_RATES",
      )
-
     AREA_UNITS = {"sft", "sq ft", "sqft", "m2", "sqm", "square feet"}
 
     area_rates = [
@@ -922,7 +911,6 @@ class DrawingBOQService:
        r for r in rates
        if r.unit.strip().lower() not in AREA_UNITS
     ]
-
     if not area_rates:
       raise TraceException(
        "No area-based (Sft/m²) labour rates configured.",
@@ -956,7 +944,6 @@ class DrawingBOQService:
      for rate in area_rates
      if rate.trade not in approved_trades
     ]
-
     if new_items:
      await self.boq_items.bulk_create(new_items)
     await self.session.commit()
@@ -988,7 +975,6 @@ class DrawingBOQService:
         ),
         Decimal("0"),
       )
-
     materials_total = _total(BOQItemType.MATERIAL)
     labour_total = _total(BOQItemType.LABOUR)
     custom_total = _total(BOQItemType.CUSTOM)
@@ -1216,3 +1202,457 @@ class DrawingBOQService:
       .order_by(DrawingElement.ifc_global_id.asc())
     )
     return list(result.scalars().unique())
+
+  async def run_model_readiness_audit(
+    self,
+    organization_id: UUID,
+    drawing_id: UUID,
+  ) -> ModelAuditResult:
+    drawing = await self.get_drawing(
+      organization_id,
+      drawing_id,
+    )
+
+    elements = await self.elements.list_by_drawing(
+      drawing_id,
+      organization_id,
+    )
+
+    issues: list[dict] = []
+    missing_material = 0
+    zero_quantity = 0
+    unclassified_proxy = 0
+    missing_qto = 0
+    no_storey = 0
+
+    for element in elements:
+      properties = element.properties or {}
+      element_label = element.ifc_global_id or element.id
+
+      if (
+        not element.raw_material_text
+        or element.raw_material_text.strip() == ""
+      ):
+        missing_material += 1
+        issues.append({
+          "code": "MISSING_MATERIAL",
+          "severity": "warning",
+          "message": (
+            f"Element {element_label} has no material text"
+          ),
+          "element_ids": [str(element.id)],
+        })
+
+      if element.quantity is None or element.quantity <= 0:
+        zero_quantity += 1
+        issues.append({
+          "code": "ZERO_QUANTITY",
+          "severity": "warning",
+          "message": (
+            f"Element {element_label} has zero/missing quantity"
+          ),
+          "element_ids": [str(element.id)],
+        })
+
+      if properties.get("is_generic_fallback") is True:
+        unclassified_proxy += 1
+        issues.append({
+          "code": "UNCLASSIFIED_PROXY",
+          "severity": "info",
+          "message": (
+            f"Element {element_label} used generic type name as material"
+          ),
+          "element_ids": [str(element.id)],
+        })
+
+      has_qto = (
+        any(key.startswith("Qto_") for key in properties.keys())
+        if isinstance(properties, dict)
+        else False
+      )
+
+      if not has_qto and element.quantity == 0:
+        missing_qto += 1
+        issues.append({
+          "code": "MISSING_QTO",
+          "severity": "warning",
+          "message": (
+            f"Element {element_label} has no Qto quantities"
+          ),
+          "element_ids": [str(element.id)],
+        })
+
+      properties_text = str(properties).lower()
+
+      if (
+        "storey" not in properties_text
+        and "ifcbuildingstorey" not in properties_text
+      ):
+        no_storey += 1
+
+    score = Decimal("100.00")
+    score -= Decimal(missing_material) * Decimal("3")
+    score -= Decimal(zero_quantity) * Decimal("4")
+    score -= Decimal(unclassified_proxy) * Decimal("1.5")
+    score -= Decimal(missing_qto) * Decimal("2")
+    score = max(score, Decimal("0"))
+
+    audit = ModelAuditResult(
+      id=uuid4(),
+      organization_id=organization_id,
+      drawing_id=drawing_id,
+      overall_score=score,
+      issues=issues,
+      element_count=len(elements),
+      missing_material_count=missing_material,
+      zero_quantity_count=zero_quantity,
+      unclassified_proxy_count=unclassified_proxy,
+      extra_stats={
+        "missing_qto_count": missing_qto,
+        "no_storey_hint_count": no_storey,
+      },
+    )
+
+    audit = await self.model_audits.create(audit)
+    drawing.latest_audit_id = audit.id
+    await self.drawings.update(drawing)
+
+    await self.session.flush()
+    return audit
+
+  async def get_active_rule_set(
+    self,
+    organization_id: UUID,
+    preferred_code: str | None = None,
+  ) -> MeasurementRuleSet:
+    code = preferred_code or "PUNJAB_CSR"
+
+    rule_set = await self.rule_sets.get_by_code_and_org(
+      code,
+      organization_id,
+    )
+    if rule_set is not None:
+      return rule_set
+    rule_set = await self.rule_sets.get_system_default(code)
+
+    if rule_set is not None:
+      return rule_set
+    rule_set = await self.rule_sets.get_system_default(
+      "GENERIC_METRIC",
+    )
+
+    if rule_set is not None:
+      return rule_set
+    raise TraceException(
+      "No active measurement rule set found. "
+      "Seed PUNJAB_CSR or GENERIC_METRIC.",
+      status_code=500,
+      code="NO_RULE_SET",
+    )
+
+  async def expand_with_assemblies(
+    self,
+    organization_id: UUID,
+    boq_version_id: UUID,
+    aggregated_groups: list[AggregatedGroup],
+    base_items_by_group_key: dict[tuple, BOQItem],
+    rule_set: MeasurementRuleSet,
+    actor_user_id: UUID | None,
+  ) -> list[BOQItem]:
+    created: list[BOQItem] = []
+
+    for group in aggregated_groups:
+      sample_properties = {}
+
+      matching_recipes = await self.recipes.get_matching_recipes(
+        organization_id,
+        group.ifc_type,
+        sample_properties,
+      )
+      if not matching_recipes:
+        continue
+
+      parent_item = base_items_by_group_key.get(
+        (
+          group.ifc_type,
+          (group.raw_material_text or "").strip().lower(),
+          group.unit,
+        )
+      )
+      if parent_item is None:
+        continue
+      for recipe in matching_recipes:
+        components_result = await self.session.execute(
+          select(AssemblyRecipeComponent)
+          .where(
+            AssemblyRecipeComponent.recipe_id == recipe.id
+          )
+          .order_by(
+            AssemblyRecipeComponent.sequence.asc()
+          )
+        )
+        components = list(components_result.scalars().all())
+        for component in components:
+          parent_quantity = parent_item.quantity or Decimal("0")
+
+          quantity = (
+            parent_quantity
+            * component.quantity_factor
+            * component.waste_factor
+          )
+          if quantity <= 0:
+            continue
+
+          formula = (
+            f"{parent_item.quantity} × "
+            f"{component.quantity_factor} × "
+            f"{component.waste_factor} "
+            f"(recipe={recipe.code}, "
+            f"component={component.description_template})"
+          )
+
+          item = BOQItem(
+            id=uuid4(),
+            organization_id=organization_id,
+            boq_version_id=boq_version_id,
+            material_name=component.description_template.replace(
+              "{material}",
+              parent_item.material_name,
+            ),
+            category=component.category or parent_item.category,
+            unit=component.unit,
+            quantity=quantity.quantize(Decimal("0.0001")),
+            unit_rate=None,
+            rate_source=None,
+            item_type=component.item_type,
+            status=BOQItemStatus.DRAFT,
+            created_by_user_id=actor_user_id,
+            work_item_code=component.work_item_code,
+            description=component.description_template,
+            calculation_formula=formula,
+            confidence=Decimal("0.80"),
+            rule_set_id=rule_set.id,
+            recipe_id=recipe.id,
+            gross_quantity=quantity,
+            net_quantity=quantity,
+            waste_factor_applied=component.waste_factor,
+            source_element_count=len(group.element_ids),
+          )
+
+          self.session.add(item)
+          await self.session.flush()
+
+          for element_id, contribution in group.element_quantities.items():
+            self.session.add(
+              BOQItemSourceElement(
+                id=uuid4(),
+                organization_id=organization_id,
+                boq_item_id=item.id,
+                drawing_element_id=element_id,
+                quantity_contributed=(
+                  contribution
+                  * component.quantity_factor
+                  * component.waste_factor
+                ).quantize(Decimal("0.001")),
+                formula_snippet=formula,
+                contribution_type="recipe_component",
+              )
+            )
+
+          created.append(item)
+
+    await self.session.flush()
+    return created
+
+  async def generate_boq_from_elements(
+    self,
+    organization_id: UUID,
+    drawing: Drawing,
+    elements: list[DrawingElement],
+    boq_version: BOQVersion,
+    actor_user_id: UUID | None = None,
+    preferred_rule_code: str | None = None,
+  ) -> dict:
+    audit = await self.run_model_readiness_audit(
+      organization_id,
+      drawing.id,
+    )
+
+    rule_set = await self.get_active_rule_set(
+      organization_id,
+      preferred_rule_code,
+    )
+
+    mappings = await self.element_mappings.list_by_rule_set(
+      rule_set.id,
+    )
+
+    mapping_by_ifc = {
+      mapping.ifc_type: mapping
+      for mapping in mappings
+    }
+
+    groups = aggregate_drawing_elements(elements)
+
+    base_items: list[BOQItem] = []
+    base_items_by_key: dict[tuple, BOQItem] = {}
+    generation_meta = {
+      "rule_set_id": str(rule_set.id),
+      "rule_set_code": rule_set.code,
+      "audit_score": float(audit.overall_score),
+      "audit_id": str(audit.id),
+      "warnings": [
+        issue
+        for issue in audit.issues
+        if issue.get("severity") in ("warning", "error")
+      ],
+    }
+    waste_factors = rule_set.waste_factors or {}
+    net_preference = (
+      rule_set.net_vs_gross_preference or "net"
+    ).lower()
+
+    for group in groups:
+      mapping = mapping_by_ifc.get(group.ifc_type)
+
+      unit = (
+        mapping.unit_override
+        if mapping and mapping.unit_override
+        else group.unit
+      ) or "unit"
+
+      confidence = (
+        mapping.confidence_base
+        if mapping
+        else Decimal("0.70")
+      )
+
+      work_item_code = (
+        mapping.work_item_code
+        if mapping
+        else None
+      )
+
+      category = (
+        mapping.default_category
+        if mapping
+        else None
+      )
+
+      waste_key = (
+        group.raw_material_text
+        or group.ifc_type
+        or ""
+      ).lower()
+
+      waste = Decimal(
+        str(
+          waste_factors.get(
+            waste_key,
+            waste_factors.get("default", 1.0),
+          )
+        )
+      )
+      gross = group.total_quantity
+      net = gross
+      if net_preference == "net":
+        final_quantity = net * waste
+      else:
+        final_quantity = gross * waste
+
+      formula = (
+        f"{gross} (gross) × "
+        f"{waste} (waste) → "
+        f"{final_quantity} [{rule_set.code}]"
+      )
+      normalized_name, normalized_category, _ = (
+        await self.normalize_material(
+          organization_id,
+          group.raw_material_text or group.ifc_type,
+        )
+      )
+
+      if category is None:
+        category = normalized_category
+      default_rate = await self.get_material_default_rate(
+        organization_id,
+        group.raw_material_text or group.ifc_type,
+      )
+
+      item = BOQItem(
+        id=uuid4(),
+        organization_id=organization_id,
+        boq_version_id=boq_version.id,
+        material_name=normalized_name,
+        category=category,
+        unit=unit,
+        quantity=final_quantity.quantize(Decimal("0.0001")),
+        unit_rate=default_rate,
+        rate_source=(
+          BOQItemRateSource.LIBRARY
+          if default_rate is not None
+          else None
+        ),
+        item_type=BOQItemType.MATERIAL,
+        status=BOQItemStatus.DRAFT,
+        created_by_user_id=actor_user_id,
+        work_item_code=work_item_code,
+        description=normalized_name,
+        calculation_formula=formula,
+        confidence=confidence,
+        rule_set_id=rule_set.id,
+        recipe_id=None,
+        gross_quantity=gross,
+        net_quantity=net,
+        waste_factor_applied=waste,
+        source_element_count=len(group.element_ids),
+      )
+
+      self.session.add(item)
+      await self.session.flush()
+
+      for element_id, contribution in group.element_quantities.items():
+        self.session.add(
+          BOQItemSourceElement(
+            id=uuid4(),
+            organization_id=organization_id,
+            boq_item_id=item.id,
+            drawing_element_id=element_id,
+            quantity_contributed=contribution,
+            formula_snippet=formula,
+            contribution_type="base",
+          )
+        )
+
+      key = (
+        group.ifc_type,
+        (group.raw_material_text or "").strip().lower(),
+        group.unit,
+      )
+
+      base_items_by_key[key] = item
+      base_items.append(item)
+
+    recipe_items = await self.expand_with_assemblies(
+      organization_id=organization_id,
+      boq_version_id=boq_version.id,
+      aggregated_groups=groups,
+      base_items_by_group_key=base_items_by_key,
+      rule_set=rule_set,
+      actor_user_id=actor_user_id,
+    )
+
+    boq_version.rule_set_id = rule_set.id
+    boq_version.audit_score = audit.overall_score
+    boq_version.generation_meta = generation_meta
+
+    await self.boq_versions.update(boq_version)
+    await self.session.flush()
+
+    return {
+      "elements_used": len(elements),
+      "base_items_created": len(base_items),
+      "recipe_items_created": len(recipe_items),
+      "audit_score": float(audit.overall_score),
+      "rule_set_code": rule_set.code,
+    }

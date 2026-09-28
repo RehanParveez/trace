@@ -4,11 +4,11 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean
-from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 class DrawingFormat(str, enum.Enum):
   IFC = "IFC"
@@ -145,6 +145,12 @@ class Drawing(Base, TimestampMixin):
     DateTime(timezone=True),
     nullable=True,
   )
+  
+  latest_audit_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("model_audit_results.id", ondelete="SET NULL", name="fk_drawings_latest_audit_id", use_alter=True),
+    nullable=True,
+  )
 
 class DrawingElement(Base, TimestampMixin):
   __tablename__ = "drawing_elements"
@@ -271,6 +277,25 @@ class BOQVersion(Base, TimestampMixin):
     default=dict,
   )
 
+  rule_set_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL",
+      name="fk_boq_versions_rule_set_id"),
+      nullable=True,
+    )
+
+  audit_score: Mapped[Decimal | None] = mapped_column(
+    Numeric(5, 2),
+    nullable=True,
+  )
+
+  generation_meta: Mapped[dict] = mapped_column(
+    JSON,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'"),
+  )
+
   drawing: Mapped["Drawing | None"] = relationship(
     "Drawing",
     back_populates="boq_versions",
@@ -281,6 +306,15 @@ class BOQVersion(Base, TimestampMixin):
     back_populates="boq_version",
     cascade="all, delete-orphan",
   )
+  
+  rule_set_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  audit_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
+  generation_meta: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
 class BOQItem(Base, TimestampMixin):
   __tablename__ = "boq_items"
@@ -387,6 +421,33 @@ class BOQItem(Base, TimestampMixin):
   boq_version: Mapped["BOQVersion"] = relationship(
     "BOQVersion",
     back_populates="items",
+  )
+  
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True) 
+  calculation_formula: Mapped[str | None] = mapped_column(String(500), nullable=True)
+  confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
+  
+  rule_set_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL", name="fk_boq_items_rule_set_id"),
+    nullable=True,
+  )
+  
+  recipe_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL", name="fk_boq_items_rule_set_id"),
+    nullable=True,
+  )
+  
+  gross_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+  net_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+  waste_factor_applied: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
+  source_element_count: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default=text("0"),
   )
 
 class MaterialLibrary(Base, TimestampMixin):
@@ -539,3 +600,167 @@ class BOQItemSourceElement(Base):
   )
   
   quantity_contributed: Mapped[Decimal] = mapped_column(Numeric(18, 3), nullable=False)
+  
+  formula_snippet: Mapped[str | None] = mapped_column(String(300), nullable=True)
+  contribution_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  
+class MeasurementRuleSet(Base, TimestampMixin):
+  __tablename__ = "measurement_rule_sets"
+  __table_args__ = (
+    UniqueConstraint("organization_id", "code", name="uq_measurement_rule_sets_org_code"),
+    Index("ix_measurement_rule_sets_org", "organization_id"),
+  )
+  
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
+  
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id",
+      ondelete="CASCADE"),
+      nullable=True, index=True,
+    )  
+  
+  code: Mapped[str] = mapped_column(String(50), nullable=False)  
+  name: Mapped[str] = mapped_column(String(200), nullable=False)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True)
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+ 
+  opening_deduction_threshold_m2: Mapped[Decimal] = mapped_column(
+    Numeric(10, 4),
+    nullable=False,
+    default=Decimal("0.5"),
+  )
+  
+  wall_measurement_method: Mapped[str] = mapped_column(
+    String(30),
+    nullable=False,
+    default="centre_line",
+  ) 
+ 
+  preferred_units: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)  
+  waste_factors: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)  
+  net_vs_gross_preference: Mapped[str] = mapped_column(String(10), nullable=False, default="net")  
+  extra_config: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+class ElementTypeMapping(Base, TimestampMixin):
+  __tablename__ = "element_type_mappings"
+  __table_args__ = (
+    UniqueConstraint("rule_set_id", "ifc_type", name="uq_element_type_mappings_rule_ifc"),
+    Index("ix_element_type_mappings_rule", "rule_set_id"),
+  )
+  
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  rule_set_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="CASCADE"),
+    nullable=False
+  )
+  
+  ifc_type: Mapped[str] = mapped_column(String(100), nullable=False)
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)  
+  default_category: Mapped[str | None] = mapped_column(String(150), nullable=True)
+  
+  quantity_source_preference: Mapped[str] = mapped_column(
+    String(30),
+    nullable=False,
+    default="qto_first"
+  )  
+  
+  unit_override: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  confidence_base: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4), 
+    nullable=False, 
+    default=Decimal("0.85"),
+  )
+  
+  extra_mapping: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+
+class AssemblyRecipe(Base, TimestampMixin):
+  __tablename__ = "assembly_recipes"
+  __table_args__ = (
+    UniqueConstraint("organization_id", "code", name="uq_assembly_recipes_org_code"),
+    Index("ix_assembly_recipes_org", "organization_id"),
+  )
+  
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=True,
+    index=True,
+  )
+  
+  code: Mapped[str] = mapped_column(String(80), nullable=False)  
+  name: Mapped[str] = mapped_column(String(200), nullable=False)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True)
+  trigger_ifc_types: Mapped[list] = mapped_column(JSON, nullable=False, default=list)  
+  trigger_conditions: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)  
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  
+  components: Mapped[list["AssemblyRecipeComponent"]] = relationship("AssemblyRecipeComponent", back_populates="recipe", cascade="all, delete-orphan")
+
+class AssemblyRecipeComponent(Base, TimestampMixin):
+  __tablename__ = "assembly_recipe_components"
+  __table_args__ = (Index("ix_assembly_recipe_components_recipe", "recipe_id"),)
+  
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  recipe_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True), 
+    ForeignKey("assembly_recipes.id", ondelete="SET NULL", name="fk_boq_items_recipe_id"),
+    nullable=False,
+  )
+  
+  sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  description_template: Mapped[str] = mapped_column(String(500), nullable=False)  
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  quantity_factor: Mapped[Decimal] = mapped_column(Numeric(12, 6), nullable=False, default=Decimal("1.0"))  
+  quantity_formula: Mapped[str | None] = mapped_column(String(300), nullable=True) 
+  category: Mapped[str | None] = mapped_column(String(150), nullable=True)
+  
+  item_type: Mapped[BOQItemType] = mapped_column(
+    Enum(BOQItemType, name="boq_item_type"), 
+      nullable=False,
+      default=BOQItemType.MATERIAL,
+    )
+  
+  waste_factor: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=Decimal("1.0"))
+  is_optional: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  recipe: Mapped["AssemblyRecipe"] = relationship("AssemblyRecipe", back_populates="components")
+
+class ModelAuditResult(Base, TimestampMixin):
+  __tablename__ = "model_audit_results"
+  __table_args__ = (Index("ix_model_audit_results_drawing", "drawing_id"),)
+  
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id",
+      ondelete="CASCADE"),
+      nullable=False,
+      index=True,
+    )
+  
+  drawing_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True), 
+    ForeignKey("drawings.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  overall_score: Mapped[Decimal] = mapped_column(Numeric(5, 2), nullable=False) 
+  issues: Mapped[list] = mapped_column(JSON, nullable=False, default=list)  
+  element_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  missing_material_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  zero_quantity_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  unclassified_proxy_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  extra_stats: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
