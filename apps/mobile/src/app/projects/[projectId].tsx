@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, Link } from "expo-router";
 import { restoreSession } from "../../api/client";
 import { getProject, listClients } from "../../api/projects";
 import {
@@ -239,6 +239,21 @@ export default function ProjectDetailScreen() {
           value={formatDate(project.actual_end_date)}
         />
       </View>
+
+      <Link
+        href={{
+          pathname: "/projects/[projectId]/manage",
+          params: { projectId: project.id },
+        }}
+        asChild
+      >
+        <Pressable
+          style={styles.secondaryButton}
+          accessibilityRole="button"
+        >
+          <Text style={styles.secondaryButtonText}>Manage project</Text>
+        </Pressable>
+      </Link>
 
       <SectionHeading
         title="Drawings"

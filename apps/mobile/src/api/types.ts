@@ -106,6 +106,85 @@ export type ProjectCreatePayload = {
   expected_end_date?: string | null;
 };
 
+export type ProjectMemberRole =
+  | "MANAGER"
+  | "ENGINEER"
+  | "SUPERVISOR"
+  | "SITE_MANAGER"
+  | "MEMBER";
+
+export type ProjectMember = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  role: ProjectMemberRole;
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+  };
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrganizationMember = {
+  id: string;
+  organization_id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_active: boolean;
+  is_verified: boolean;
+  last_login_at: string | null;
+  role: AuthRole;
+};
+
+export type ProjectUpdatePayload = {
+  name?: string;
+  code?: string | null;
+  description?: string | null;
+  location?: string | null;
+  client_id?: string | null;
+  status?: ProjectStatus;
+  start_date?: string | null;
+  expected_end_date?: string | null;
+  actual_end_date?: string | null;
+};
+
+export type ClientPayload = {
+  name: string;
+  contact_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  notes?: string | null;
+};
+
+export type Milestone = {
+  id: string;
+  project_id: string;
+  name: string;
+  description: string | null;
+  due_date: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type MilestonePayload = {
+  name: string;
+  description?: string | null;
+  due_date?: string | null;
+};
+
+export type MilestoneUpdatePayload = {
+  name?: string;
+  description?: string | null;
+  due_date?: string | null;
+  completed_at?: string | null;
+};
+
 export type Client = {
   id: string;
   organization_id: string;
