@@ -624,6 +624,16 @@ export function OrganizationModuleScreen({
           <ActivityIndicator color="#183153" style={styles.spinner} />
         ) : null}
       </ScrollView>
+
+      <Link href="/organization/subscription" asChild>
+       <Pressable style={styles.card} accessibilityRole="button">
+         <Text style={styles.itemTitle}>Subscription</Text>
+         <Text style={styles.muted}>
+           Plans, usage, and billing ›
+         </Text>
+       </Pressable>
+      </Link>
+      
     </KeyboardAvoidingView>
   );
 }

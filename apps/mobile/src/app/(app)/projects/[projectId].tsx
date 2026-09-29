@@ -193,6 +193,18 @@ export default function ProjectDetailScreen() {
         </Pressable>
       </Link>
 
+      <Link
+        href={{
+          pathname: "/projects/[projectId]/site-progress",
+          params: { projectId: project.id },
+        }}
+        asChild
+      >
+       <Pressable style={styles.secondaryButton} accessibilityRole="button">
+         <Text style={styles.secondaryButtonText}>Site Progress</Text>
+        </Pressable>
+      </Link>
+
       <Pressable
         style={styles.secondaryButton}
         onPress={() => setAttempt((v) => v + 1)}

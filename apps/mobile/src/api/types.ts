@@ -375,3 +375,118 @@ export type ProgressClaimReviewPayload = {
   version: number;
   note?: string | null;
 };
+
+export type BillingInterval = "MONTHLY" | "YEARLY";
+
+export type SubscriptionStatus =
+  | "TRIALING"
+  | "ACTIVE"
+  | "PAST_DUE"
+  | "CANCELLED"
+  | "EXPIRED";
+
+export type UsagePeriod = "MONTH" | "LIFETIME";
+
+export type Plan = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  price_monthly: string | number;
+  price_yearly: string | number;
+  currency: string;
+  price_monthly_original: string | number | null;
+  price_yearly_original: string | number | null;
+  offer_label: string | null;
+  offer_ends_at: string | null;
+  version: number;
+  trial_days: number;
+  sort_order: number;
+  is_default: boolean;
+  is_active: boolean;
+  is_public: boolean;
+  features: Record<string, boolean | unknown>;
+  quotas: Record<string, number | null>;
+  limit_policy: Record<string, string>;
+};
+
+export type Subscription = {
+  id: string;
+  organization_id: string;
+  plan_id: string;
+  status: SubscriptionStatus;
+  billing_interval: BillingInterval;
+  quantity: number;
+  started_at: string;
+  current_period_start: string;
+  current_period_end: string;
+  trial_ends_at: string | null;
+  cancelled_at: string | null;
+  cancel_at_period_end: boolean;
+  grace_period_ends_at: string | null;
+  cancellation_reason: string | null;
+  last_payment_at: string | null;
+  next_billing_at: string | null;
+  provider: string;
+};
+
+export type SubscriptionSummary = {
+  subscription: Subscription;
+  plan: Plan;
+};
+
+export type UsageMetric = {
+  metric: string;
+  used: number;
+  limit: number | null;
+  remaining: number | null;
+  percentage: number | null;
+};
+
+export type Usage = {
+  period_start: string;
+  period_end: string;
+  metrics: UsageMetric[];
+};
+
+export type ChangePlanPayload = {
+  plan_id: string;
+  billing_interval: BillingInterval;
+  quantity: number;
+};
+
+export type CancelSubscriptionPayload = {
+  cancel_at_period_end: boolean;
+  reason?: string | null;
+  feedback?: string | null;
+};
+
+export interface SiteLog {
+  id: string;
+  project_id: string;
+  log_date: string;              
+  workforce_count: number | null;
+  weather: string | null;
+  blockers: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SiteLogCreatePayload {
+  project_id: string;
+  log_date: string;              
+  workforce_count?: number | null;
+  weather?: string | null;
+  blockers?: string | null;
+  notes?: string | null;
+}
+
+export interface SiteLogUpdatePayload {
+  log_date?: string;
+  workforce_count?: number | null;
+  weather?: string | null;
+  blockers?: string | null;
+  notes?: string | null;
+}
