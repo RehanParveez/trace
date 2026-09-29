@@ -490,3 +490,71 @@ export interface SiteLogUpdatePayload {
   blockers?: string | null;
   notes?: string | null;
 }
+
+export type PhotoTagSource = "MANUAL" | "AI";
+
+export type PhotoTag = {
+  id: string;
+  tag: string;
+  confidence: number | null;
+  source: PhotoTagSource;
+};
+
+export type SitePhoto = {
+  id: string;
+  project_id: string | null;
+  storage_key: string;
+  photo_url: string;
+  sender_phone_number: string | null;
+  caption_raw: string | null;
+  caption_parsed: Record<string, unknown>;
+  location_text: string | null;
+  photo_date: string | null;
+  is_ai_tagged: boolean;
+  tags: PhotoTag[];
+  created_at: string;
+};
+
+export type SitePhotoUpdatePayload = {
+  location_text?: string | null;
+  photo_date?: string | null; 
+};
+
+export type SitePhotoAssignProjectPayload = {
+  project_id: string;
+};
+
+export type PhotoTagCreatePayload = {
+  tag: string;
+};
+
+export type ProjectPhotoThumbnail = {
+  project_id: string;
+  photo_url: string;
+};
+
+export type WhatsAppChannel = {
+  id: string;
+  phone_number_id: string;
+  business_account_id: string;
+  display_phone_number: string | null;
+  is_active: boolean;
+  created_at: string;
+};
+
+export type ChannelConnectPayload = {
+  phone_number_id: string;
+  business_account_id: string;
+  access_token: string;
+  display_phone_number?: string | null;
+};
+
+export type ListSitePhotosFilters = {
+  project_id?: string;
+  tag?: string;
+  photo_date_from?: string; 
+  photo_date_to?: string;
+  unassigned_only?: boolean;
+  skip?: number;
+  limit?: number; 
+};
