@@ -305,3 +305,73 @@ export type InvitationAcceptance = {
   role_id: string;
   role_name: string;
 };
+
+export type BOQVersionCreatePayload = {
+  label: string;
+};
+
+export type BOQCustomItemCreatePayload = {
+  material_name: string;
+  category?: string | null;
+  unit: string;
+  quantity: number;
+  unit_rate?: number | null;
+};
+
+export type BOQItemUpdatePayload = {
+  version: number;
+  material_name?: string;
+  category?: string | null;
+  unit?: string;
+  quantity?: number;
+  unit_rate?: number | null;
+  save_as_library_default?: boolean;
+};
+
+export type ProgressClaimStatus =
+  | "DRAFT"
+  | "SUBMITTED"
+  | "APPROVED"
+  | "REJECTED";
+
+export type ProgressClaim = {
+  id: string;
+  organization_id: string;
+  project_id: string;
+  boq_item_id: string;
+  claim_date: string;
+  claimed_quantity: number | string;
+  claimed_percentage: number | string;
+  notes: string | null;
+  status: ProgressClaimStatus;
+  submitted_by: string | null;
+  submitted_at: string | null;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  review_note: string | null;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProgressClaimCreatePayload = {
+  project_id: string;
+  boq_item_id: string;
+  claim_date: string;
+  claimed_quantity: number;
+  claimed_percentage: number;
+  notes?: string | null;
+};
+
+export type ProgressClaimUpdatePayload = {
+  version: number;
+  claim_date?: string;
+  claimed_quantity?: number;
+  claimed_percentage?: number;
+  notes?: string | null;
+};
+
+export type ProgressClaimReviewPayload = {
+  version: number;
+  note?: string | null;
+};

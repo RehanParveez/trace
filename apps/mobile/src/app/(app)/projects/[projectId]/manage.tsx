@@ -1,22 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import {ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text,
-  TextInput, View,
+import {ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { restoreSession } from "../../../../api/client";
-import {addProjectMember, createClient, createMilestone, deleteClient, deleteMilestone, deleteProject, deleteProjectMember, getProject, listClients, listMilestones,
-  listOrganizationMembers, listProjectMembers, updateClient, updateMilestone, updateProject, updateProjectMember,
+import {createClient, deleteClient, deleteProject, getProject, listClients, updateClient, updateProject,
 } from "../../../../api/projects";
-import type {Client, Milestone, OrganizationMember, Project, ProjectMember, ProjectMemberRole, ProjectStatus,
-} from "../../../../api/types";
-
-const roles: ProjectMemberRole[] = [
-  "MANAGER",
-  "ENGINEER",
-  "SUPERVISOR",
-  "SITE_MANAGER",
-  "MEMBER",
-];
+import type { Client, Project, ProjectStatus } from "../../../../api/types";
 
 const statuses: ProjectStatus[] = [
   "PLANNING",
@@ -35,8 +24,10 @@ function validDate(value: string): boolean {
   if (!value) return true;
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === value;
+  return (
+    !Number.isNaN(date.getTime()) &&
+    date.toISOString().slice(0, 10) === value
+  );
 }
 
 export default function ManageProjectScreen() {
@@ -47,11 +38,6 @@ export default function ManageProjectScreen() {
 
   const [project, setProject] = useState<Project | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
-  const [organizationMembers, setOrganizationMembers] = useState<
-    OrganizationMember[]
-  >([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -73,17 +59,8 @@ export default function ManageProjectScreen() {
   const [clientPhone, setClientPhone] = useState("");
   const [editingClientId, setEditingClientId] = useState("");
 
-  const [memberUserId, setMemberUserId] = useState("");
-  const [memberRole, setMemberRole] = useState<ProjectMemberRole>("MEMBER");
-
-  const [milestoneName, setMilestoneName] = useState("");
-  const [milestoneDescription, setMilestoneDescription] = useState("");
-  const [milestoneDueDate, setMilestoneDueDate] = useState("");
-  const [editingMilestoneId, setEditingMilestoneId] = useState("");
-
   const canUpdate = permissions.includes("project.update");
   const canDelete = permissions.includes("project.delete");
-  const canReadOrganization = permissions.includes("organization.read");
 
   const load = useCallback(async () => {
     if (!projectId) {
@@ -91,18 +68,15 @@ export default function ManageProjectScreen() {
       setLoading(false);
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
       const user = await restoreSession();
       if (!user) {
         router.replace("/");
         return;
       }
-
-      const granted = user.role.permissions.map((permission) => permission.key);
+      const granted = user.role.permissions.map((p) => p.key);
       setPermissions(granted);
 
       const projectResult = await getProject(projectId);
@@ -117,25 +91,10 @@ export default function ManageProjectScreen() {
       setStatus(projectResult.status);
       setClientId(projectResult.client_id ?? "");
 
-      const [clientResult, memberResult, milestoneResult] =
-        await Promise.allSettled([
-          listClients(),
-          listProjectMembers(projectId),
-          listMilestones(projectId),
-        ]);
-
-      if (clientResult.status === "fulfilled") setClients(clientResult.value);
-      if (memberResult.status === "fulfilled") setMembers(memberResult.value);
-      if (milestoneResult.status === "fulfilled") {
-        setMilestones(milestoneResult.value);
-      }
-
-      if (granted.includes("organization.read")) {
-        try {
-          const orgMembers = await listOrganizationMembers();
-          setOrganizationMembers(orgMembers.filter((member) => member.is_active));
-        } catch {
-        }
+      try {
+        setClients(await listClients());
+      } catch {
+        // optional
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load project.");
@@ -170,7 +129,6 @@ export default function ManageProjectScreen() {
       setError("Dates must be valid and use YYYY-MM-DD.");
       return;
     }
-
     await run(() =>
       updateProject(projectId, {
         name: name.trim(),
@@ -212,14 +170,12 @@ export default function ManageProjectScreen() {
       setError("Enter a client name.");
       return;
     }
-
     const payload = {
       name: clientName.trim(),
       contact_name: clean(clientContact),
       email: clean(clientEmail),
       phone: clean(clientPhone),
     };
-
     await run(async () => {
       if (editingClientId) {
         await updateClient(editingClientId, payload);
@@ -245,11 +201,7 @@ export default function ManageProjectScreen() {
   async function assignClient(id: string) {
     if (!projectId) return;
     setClientId(id);
-    await run(() =>
-      updateProject(projectId, {
-        client_id: id || null,
-      }),
-    );
+    await run(() => updateProject(projectId, { client_id: id || null }));
   }
 
   function confirmDeleteClient(client: Client) {
@@ -268,90 +220,6 @@ export default function ManageProjectScreen() {
           }),
       },
     ]);
-  }
-
-  async function addMember() {
-    if (!projectId || !memberUserId) {
-      setError("Choose an organization member first.");
-      return;
-    }
-    await run(() => addProjectMember(projectId, memberUserId, memberRole));
-    setMemberUserId("");
-  }
-
-  async function changeMemberRole(userId: string, role: ProjectMemberRole) {
-    if (!projectId) return;
-    await run(() => updateProjectMember(projectId, userId, role));
-  }
-
-  function confirmRemoveMember(member: ProjectMember) {
-    if (!projectId) return;
-    Alert.alert(
-      "Remove project member?",
-      `Remove ${member.user.first_name} ${member.user.last_name} from this project?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: () =>
-            void run(() => deleteProjectMember(projectId, member.user_id)),
-        },
-      ],
-    );
-  }
-
-  async function saveMilestone() {
-    if (!projectId || !milestoneName.trim()) {
-      setError("Enter a milestone name.");
-      return;
-    }
-    if (!validDate(milestoneDueDate)) {
-      setError("Milestone date must be a valid YYYY-MM-DD date.");
-      return;
-    }
-
-    await run(async () => {
-      const payload = {
-        name: milestoneName.trim(),
-        description: clean(milestoneDescription),
-        due_date: milestoneDueDate || null,
-      };
-
-      if (editingMilestoneId) {
-        await updateMilestone(projectId, editingMilestoneId, payload);
-      } else {
-        await createMilestone(projectId, payload);
-      }
-      setMilestoneName("");
-      setMilestoneDescription("");
-      setMilestoneDueDate("");
-      setEditingMilestoneId("");
-    });
-  }
-
-  function confirmDeleteMilestone(milestone: Milestone) {
-    if (!projectId) return;
-    Alert.alert("Delete milestone?", `Delete “${milestone.name}”?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () =>
-          void run(() => deleteMilestone(projectId, milestone.id)),
-      },
-    ]);
-  }
-
-  async function toggleMilestone(milestone: Milestone) {
-    if (!projectId) return;
-    await run(() =>
-      updateMilestone(projectId, milestone.id, {
-        completed_at: milestone.completed_at
-          ? null
-          : new Date().toISOString().slice(0, 10),
-      }),
-    );
   }
 
   if (loading) {
@@ -385,11 +253,6 @@ export default function ManageProjectScreen() {
     );
   }
 
-  const assignedIds = new Set(members.map((member) => member.user_id));
-  const availableMembers = organizationMembers.filter(
-    (member) => !assignedIds.has(member.id),
-  );
-
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -411,11 +274,7 @@ export default function ManageProjectScreen() {
             <Text style={styles.section}>Project details</Text>
             <Field label="Project name" value={name} onChangeText={setName} />
             <Field label="Project code" value={code} onChangeText={setCode} />
-            <Field
-              label="Location"
-              value={location}
-              onChangeText={setLocation}
-            />
+            <Field label="Location" value={location} onChangeText={setLocation} />
             <Field
               label="Description"
               value={description}
@@ -471,16 +330,8 @@ export default function ManageProjectScreen() {
         {canUpdate ? (
           <>
             <Text style={styles.section}>Clients</Text>
-            <Field
-              label="Client name"
-              value={clientName}
-              onChangeText={setClientName}
-            />
-            <Field
-              label="Contact name"
-              value={clientContact}
-              onChangeText={setClientContact}
-            />
+            <Field label="Client name" value={clientName} onChangeText={setClientName} />
+            <Field label="Contact name" value={clientContact} onChangeText={setClientContact} />
             <Field
               label="Email"
               value={clientEmail}
@@ -517,155 +368,8 @@ export default function ManageProjectScreen() {
                   {client.contact_name || client.email || client.phone || ""}
                 </Text>
                 <View style={styles.row}>
-                  <Action
-                    title="Edit"
-                    secondary
-                    onPress={() => beginEditClient(client)}
-                  />
-                  <Action
-                    title="Delete"
-                    danger
-                    onPress={() => confirmDeleteClient(client)}
-                  />
-                </View>
-              </View>
-            ))}
-          </>
-        ) : null}
-
-        {canUpdate ? (
-          <>
-            <Text style={styles.section}>Project team</Text>
-            {canReadOrganization ? (
-              <>
-                <Text style={styles.label}>Choose organization member</Text>
-                {availableMembers.map((member) => (
-                  <Chip
-                    key={member.id}
-                    label={`${member.first_name} ${member.last_name} · ${member.email}`}
-                    selected={memberUserId === member.id}
-                    onPress={() => setMemberUserId(member.id)}
-                  />
-                ))}
-                {availableMembers.length === 0 ? (
-                  <Text style={styles.muted}>
-                    No unassigned active organization members found.
-                  </Text>
-                ) : null}
-                <Text style={styles.label}>Project role</Text>
-                <View style={styles.chips}>
-                  {roles.map((role) => (
-                    <Chip
-                      key={role}
-                      label={role.replaceAll("_", " ")}
-                      selected={memberRole === role}
-                      onPress={() => setMemberRole(role)}
-                    />
-                  ))}
-                </View>
-                <Action title="Add to project" onPress={() => void addMember()} />
-              </>
-            ) : (
-              <Text style={styles.muted}>
-                Your role cannot read organization members, so you cannot add
-                project members.
-              </Text>
-            )}
-
-            {members.map((member) => (
-              <View key={member.id} style={styles.card}>
-                <Text style={styles.itemTitle}>
-                  {member.user.first_name} {member.user.last_name}
-                </Text>
-                <Text style={styles.muted}>{member.user.email}</Text>
-                <Text style={styles.label}>Role: {member.role}</Text>
-                <View style={styles.chips}>
-                  {roles.map((role) => (
-                    <Chip
-                      key={role}
-                      label={role.replaceAll("_", " ")}
-                      selected={member.role === role}
-                      onPress={() => void changeMemberRole(member.user_id, role)}
-                    />
-                  ))}
-                </View>
-                <Action
-                  title="Remove member"
-                  danger
-                  onPress={() => confirmRemoveMember(member)}
-                />
-              </View>
-            ))}
-          </>
-        ) : null}
-
-        {canUpdate ? (
-          <>
-            <Text style={styles.section}>Milestones</Text>
-            <Field
-              label="Milestone name"
-              value={milestoneName}
-              onChangeText={setMilestoneName}
-            />
-            <Field
-              label="Description"
-              value={milestoneDescription}
-              onChangeText={setMilestoneDescription}
-              multiline
-            />
-            <Field
-              label="Due date (YYYY-MM-DD)"
-              value={milestoneDueDate}
-              onChangeText={setMilestoneDueDate}
-            />
-            <Action
-              title={editingMilestoneId ? "Save milestone changes" : "Add milestone"}
-              onPress={() => void saveMilestone()}
-            />
-            {editingMilestoneId ? (
-              <Action
-                title="Cancel milestone edit"
-                secondary
-                onPress={() => {
-                  setEditingMilestoneId("");
-                  setMilestoneName("");
-                  setMilestoneDescription("");
-                  setMilestoneDueDate("");
-                }}
-              />
-            ) : null}
-            {milestones.map((milestone) => (
-              <View key={milestone.id} style={styles.card}>
-                <Text style={styles.itemTitle}>{milestone.name}</Text>
-                <Text style={styles.muted}>
-                  {milestone.completed_at
-                    ? `Completed ${milestone.completed_at}`
-                    : `Due ${milestone.due_date || "date not set"}`}
-                </Text>
-                {milestone.description ? (
-                  <Text style={styles.muted}>{milestone.description}</Text>
-                ) : null}
-                <View style={styles.row}>
-                  <Action
-                    title="Edit"
-                    secondary
-                    onPress={() => {
-                      setEditingMilestoneId(milestone.id);
-                      setMilestoneName(milestone.name);
-                      setMilestoneDescription(milestone.description ?? "");
-                      setMilestoneDueDate(milestone.due_date ?? "");
-                    }}
-                  />
-                  <Action
-                    title={milestone.completed_at ? "Reopen" : "Complete"}
-                    secondary
-                    onPress={() => void toggleMilestone(milestone)}
-                  />
-                  <Action
-                    title="Delete"
-                    danger
-                    onPress={() => confirmDeleteMilestone(milestone)}
-                  />
+                  <Action title="Edit" secondary onPress={() => beginEditClient(client)} />
+                  <Action title="Delete" danger onPress={() => confirmDeleteClient(client)} />
                 </View>
               </View>
             ))}
@@ -675,11 +379,7 @@ export default function ManageProjectScreen() {
         {canDelete ? (
           <>
             <Text style={styles.section}>Danger zone</Text>
-            <Action
-              title="Delete project"
-              danger
-              onPress={confirmDeleteProject}
-            />
+            <Action title="Delete project" danger onPress={confirmDeleteProject} />
           </>
         ) : null}
 
@@ -781,25 +481,25 @@ function Action({
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: "#F4F6F8" },
-  page: { flexGrow: 1, padding: 22, paddingTop: 52, paddingBottom: 48, backgroundColor: "#F4F6F8" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8" },
-  title: { color: "#17212F", fontSize: 28, fontWeight: "700", marginVertical: 18 },
-  section: { color: "#17212F", fontSize: 20, fontWeight: "700", marginTop: 32, marginBottom: 8 },
-  label: { color: "#344054", fontSize: 14, fontWeight: "600", marginTop: 14, marginBottom: 7 },
-  input: { backgroundColor: "white", borderColor: "#D0D5DD", borderWidth: 1, borderRadius: 10, padding: 14, fontSize: 16, color: "#17212F" },
+  page: {flexGrow: 1, padding: 22, paddingTop: 52, paddingBottom: 48, backgroundColor: "#F4F6F8",},
+  center: {flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8",},
+  title: {color: "#17212F", fontSize: 28, fontWeight: "700", marginVertical: 18,},
+  section: {color: "#17212F", fontSize: 20, fontWeight: "700", marginTop: 32, marginBottom: 8,},
+  label: {color: "#344054", fontSize: 14, fontWeight: "600", marginTop: 14, marginBottom: 7,},
+  input: {backgroundColor: "white", borderColor: "#D0D5DD", borderWidth: 1, borderRadius: 10, padding: 14, fontSize: 16, color: "#17212F",},
   multiline: { minHeight: 86 },
-  card: { backgroundColor: "white", borderRadius: 12, borderWidth: 1, borderColor: "#E4E7EC", padding: 15, marginTop: 10 },
+  card: {backgroundColor: "white", borderRadius: 12, borderWidth: 1, borderColor: "#E4E7EC", padding: 15, marginTop: 10,},
   itemTitle: { color: "#17212F", fontSize: 16, fontWeight: "700" },
   muted: { color: "#667085", marginTop: 6, lineHeight: 20 },
   error: { color: "#B42318", marginVertical: 12, lineHeight: 20 },
   link: { color: "#183153", fontWeight: "700", fontSize: 15 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
-  chip: { borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 20, backgroundColor: "white", paddingHorizontal: 12, paddingVertical: 9, marginTop: 6 },
+  chip: {borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 20, backgroundColor: "white", paddingHorizontal: 12, paddingVertical: 9, marginTop: 6,},
   chipSelected: { borderColor: "#183153", backgroundColor: "#E8EEF5" },
   chipText: { color: "#344054", fontSize: 13, fontWeight: "600" },
   chipTextSelected: { color: "#183153" },
-  action: { backgroundColor: "#183153", borderRadius: 10, alignItems: "center", padding: 13, marginTop: 10 },
-  actionSecondary: { backgroundColor: "white", borderWidth: 1, borderColor: "#D0D5DD" },
+  action: {backgroundColor: "#183153", borderRadius: 10, alignItems: "center", padding: 13, marginTop: 10,},
+  actionSecondary: {backgroundColor: "white", borderWidth: 1, borderColor: "#D0D5DD",},
   actionDanger: { backgroundColor: "#B42318" },
   actionText: { color: "white", fontWeight: "700" },
   actionSecondaryText: { color: "#183153" },
