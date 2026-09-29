@@ -3,12 +3,12 @@ import {ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Scr
   TextInput, View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { restoreSession } from "../../../api/client";
+import { restoreSession } from "../../../../api/client";
 import {addProjectMember, createClient, createMilestone, deleteClient, deleteMilestone, deleteProject, deleteProjectMember, getProject, listClients, listMilestones,
   listOrganizationMembers, listProjectMembers, updateClient, updateMilestone, updateProject, updateProjectMember,
-} from "../../../api/projects";
+} from "../../../../api/projects";
 import type {Client, Milestone, OrganizationMember, Project, ProjectMember, ProjectMemberRole, ProjectStatus,
-} from "../../../api/types";
+} from "../../../../api/types";
 
 const roles: ProjectMemberRole[] = [
   "MANAGER",

@@ -1,29 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { router, useLocalSearchParams, Link } from "expo-router";
-import { restoreSession } from "../../api/client";
-import { getProject, listClients } from "../../api/projects";
-import {
-  getBOQSummary,
-  listBOQItems,
-  listProjectBOQVersions,
-  listProjectDrawings,
-} from "../../api/drawingsBoq";
-import type {
-  BOQItem,
-  BOQSummary,
-  BOQVersion,
-  Client,
-  Drawing,
-  Project,
-} from "../../api/types";
+import { restoreSession } from "../../../api/client";
+import { getProject, listClients } from "../../../api/projects";
+import {getBOQSummary, listBOQItems, listProjectBOQVersions, listProjectDrawings,
+} from "../../../api/drawingsBoq";
+import type {BOQItem, BOQSummary, BOQVersion, Client, Drawing, Project,
+} from "../../../api/types";
 
 function formatDate(value: string | null): string {
   if (!value) return "Not set";

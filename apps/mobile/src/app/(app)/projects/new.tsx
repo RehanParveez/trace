@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import {ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { router } from "expo-router";
-import { restoreSession } from "../../api/client";
-import { createProject, listClients } from "../../api/projects";
-import type { Client } from "../../api/types";
+import { restoreSession } from "../../../api/client";
+import { createProject, listClients } from "../../../api/projects";
+import type { Client } from "../../../api/types";
 
 export default function NewProjectScreen() {
   const [checkingAccess, setCheckingAccess] = useState(true);

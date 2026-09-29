@@ -1,17 +1,5 @@
 import { authenticatedRequest } from "./client";
-import type {
-  Client,
-  ClientPayload,
-  Milestone,
-  MilestonePayload,
-  MilestoneUpdatePayload,
-  OrganizationMember,
-  Project,
-  ProjectCreatePayload,
-  ProjectMember,
-  ProjectMemberRole,
-  ProjectStatus,
-  ProjectUpdatePayload,
+import type {Client, ClientPayload, Milestone, MilestonePayload, MilestoneUpdatePayload, OrganizationMember, Project, ProjectCreatePayload, ProjectMember, ProjectMemberRole, ProjectStatus, ProjectUpdatePayload,
 } from "./types";
 
 function jsonBody(value: unknown): string {

@@ -253,3 +253,55 @@ export type BOQSummary = {
   unapproved_item_count: number;
   item_count: number;
 };
+
+export type Organization = {
+  id: string;
+  name: string;
+  slug: string;
+  is_active: boolean;
+  ai_enabled: boolean;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type OrganizationUpdatePayload = {
+  name?: string;
+  slug?: string;
+  ai_enabled?: boolean;
+  currency?: string;
+};
+
+export type OrganizationRole = {
+  id: string;
+  name: string;
+  description: string | null;
+  is_system: boolean;
+  permissions: AuthPermission[];
+};
+
+export type OrganizationInvitation = {
+  id: string;
+  email: string;
+  role_id: string;
+  invited_by_user_id: string;
+  accepted_by_user_id: string | null;
+  expires_at: string;
+  accepted_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+};
+
+export type RolePayload = {
+  name: string;
+  description?: string | null;
+  permission_ids: string[];
+};
+
+export type InvitationAcceptance = {
+  message: string;
+  organization_id: string;
+  organization_name: string;
+  role_id: string;
+  role_name: string;
+};

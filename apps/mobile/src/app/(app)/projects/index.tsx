@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { Link, router } from "expo-router";
-import { restoreSession, signOut } from "../../api/client";
-import { listProjects } from "../../api/projects";
-import type { Project } from "../../api/types";
+import { restoreSession, signOut } from "../../../api/client";
+import { listProjects } from "../../../api/projects";
+import type { Project } from "../../../api/types";
 
 export default function ProjectsScreen() {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -76,6 +76,13 @@ export default function ProjectsScreen() {
           <Text style={styles.subtitle}>Your organization’s active work</Text>
         </View>
 
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+        <Link href="/organization" asChild>
+          <Pressable accessibilityRole="button">
+            <Text style={styles.link}>Organization</Text>
+          </Pressable>
+        </Link>
+
         <Pressable
           onPress={handleSignOut}
           disabled={busy}
@@ -85,6 +92,7 @@ export default function ProjectsScreen() {
             {busy ? "Signing out…" : "Sign out"}
           </Text>
         </Pressable>
+      </View>
       </View>
 
       {canCreate ? (
