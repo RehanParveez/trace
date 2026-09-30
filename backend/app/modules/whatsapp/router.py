@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from uuid import UUID
-from fastapi import APIRouter, Depends, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status, Form, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
@@ -117,6 +117,26 @@ async def list_photos(
     skip=skip,
     limit=limit,
   )
+  
+@router.post(
+  "/photos/upload",
+  response_model=SitePhotoResponse,
+  status_code=status.HTTP_201_CREATED,
+)
+async def upload_photo(
+  project_id: UUID = Form(...),
+  file: UploadFile = File(...),
+  current_user: User = Depends(
+    require_permission(PermissionKey.SITE_PHOTO_MANAGE)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).upload_photo(
+    organization_id=current_user.active_membership.organization_id,
+    project_id=project_id,
+    user_id=current_user.id,
+    file=file,
+  )
 
 @router.get(
   "/photos/latest-by-project",
@@ -223,4 +243,3 @@ async def remove_tag(
     tag_id,
     current_user.id,
   )
-  

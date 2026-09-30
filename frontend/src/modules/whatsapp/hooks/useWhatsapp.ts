@@ -96,3 +96,27 @@ export function useRemovePhotoTag(photoId: string) {
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: whatsappKeys.photo(photoId) }),
   });
 }
+
+export function useUploadSitePhoto() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      projectId,
+      file,
+    }: {
+      projectId: string;
+      file: File;
+    }) => whatsappApi.uploadPhoto(projectId, file),
+
+    onSuccess: (photo) => {
+      queryClient.setQueryData(whatsappKeys.photo(photo.id), photo);
+      void queryClient.invalidateQueries({
+        queryKey: [...whatsappKeys.all, "photos"],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...whatsappKeys.all, "latest-by-project"],
+      });
+    },
+  });
+}

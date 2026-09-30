@@ -2,6 +2,7 @@
 import { authenticatedRequest } from "./client";
 import type {ListSitePhotosFilters, PhotoTag, PhotoTagCreatePayload, ProjectPhotoThumbnail, SitePhoto, SitePhotoAssignProjectPayload, SitePhotoUpdatePayload, WhatsAppChannel, ChannelConnectPayload,
 } from "./types";
+import { File as ExpoFile } from "expo-file-system";
 
 function buildPhotoQuery(filters: ListSitePhotosFilters = {}): string {
   const params = new URLSearchParams();
@@ -134,5 +135,26 @@ export async function disconnectWhatsAppChannel(): Promise<void> {
   await authenticatedRequest<void>(
     "/whatsapp/channel",
     { method: "DELETE" },
+  );
+}
+
+export async function uploadSitePhoto(
+  projectId: string,
+  asset: {
+    uri: string;
+    fileName?: string | null;
+    mimeType?: string | null;
+  },
+): Promise<SitePhoto> {
+  const formData = new FormData();
+  formData.append("project_id", projectId);
+  formData.append("file", new ExpoFile(asset.uri));
+
+  return authenticatedRequest<SitePhoto>(
+    "/whatsapp/photos/upload",
+    {
+      method: "POST",
+      body: formData,
+    },
   );
 }

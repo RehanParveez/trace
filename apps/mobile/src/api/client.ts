@@ -1,6 +1,7 @@
 import type {ApiErrorBody, AuthTokens, AuthUser, CurrentUserResponse, LoginResponse, RegisterPayload, MessageResponse, RegistrationResponse,
 } from "./types";
 import { clearTokens, loadTokens, saveTokens } from "../auth/tokenStore";
+import { fetch as expoFetch } from "expo/fetch";
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
 
@@ -21,20 +22,48 @@ async function readBody<T>(response: Response): Promise<T> {
   try {
     body = text ? JSON.parse(text) : undefined;
   } catch {
-    body = { detail: text };
+    body = undefined;
   }
 
   if (!response.ok) {
-    const errorBody = body as ApiErrorBody | undefined;
-    const detail = errorBody?.detail;
-    const message =
-      typeof detail === "string"
-        ? detail
-        : Array.isArray(detail)
-          ? detail.map((item) => item.msg ?? "Invalid request").join(", ")
-          : errorBody?.message;
+    const record =
+      body && typeof body === "object"
+        ? (body as Record<string, unknown>)
+        : undefined;
+    const detail = record?.detail;
+    let message: string | undefined;
 
-    throw new Error(message ?? `Request failed (${response.status})`);
+    if (typeof detail === "string") {
+      message = detail;
+    } else if (Array.isArray(detail)) {
+      message = detail
+        .map((entry) => {
+          if (!entry || typeof entry !== "object") return "";
+          const item = entry as Record<string, unknown>;
+          const msg = typeof item.msg === "string" ? item.msg : "Invalid request";
+          const loc = Array.isArray(item.loc)
+            ? item.loc.filter((part) => part !== "body").join(".")
+            : "";
+          return loc ? `${loc}: ${msg}` : msg;
+        })
+        .filter(Boolean)
+        .join(", ");
+    } else if (detail && typeof detail === "object") {
+      const detailRecord = detail as Record<string, unknown>;
+      message =
+        (typeof detailRecord.message === "string" && detailRecord.message) ||
+        (typeof detailRecord.msg === "string" && detailRecord.msg) ||
+        undefined;
+    }
+
+    if (!message && typeof record?.message === "string") {
+      message = record.message;
+    }
+    if (!message && typeof record?.error === "string") {
+      message = record.error;
+    }
+
+    throw new Error(message || text.trim() || `Request failed (${response.status})`);
   }
 
   return body as T;
@@ -54,7 +83,11 @@ async function rawRequest(
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(`${getBaseUrl()}${path}`, { ...init, headers });
+  const isFormData =
+    typeof FormData !== "undefined" && init.body instanceof FormData;
+  const requestFetch = isFormData ? expoFetch : fetch;
+
+  return requestFetch(`${getBaseUrl()}${path}`, { ...init, headers });
 }
 
 async function refreshAccessToken(): Promise<string | null> {
@@ -103,6 +136,26 @@ export async function authenticatedRequest<T>(
   }
 
   return readBody<T>(response);
+}
+
+export async function authenticatedResponse(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  let response = await rawRequest(path, init, accessToken);
+
+  if (response.status === 401) {
+    const nextToken = await refreshAccessToken();
+    if (nextToken) {
+      response = await rawRequest(path, init, nextToken);
+    }
+  }
+
+  if (!response.ok) {
+    await readBody<unknown>(response.clone());
+  }
+
+  return response;
 }
 
 export async function signIn(email: string, password: string): Promise<AuthUser> {

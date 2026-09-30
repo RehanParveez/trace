@@ -3,10 +3,11 @@ import {ActivityIndicator, FlatList, Image, Modal, Pressable, RefreshControl, St
 } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
 import { useFocusEffect } from "expo-router";
-import {listSitePhotos, getSitePhoto, updateSitePhoto, addPhotoTag, removePhotoTag,
+import {listSitePhotos, getSitePhoto, updateSitePhoto, addPhotoTag, removePhotoTag, uploadSitePhoto,
 } from "../../../../api/sitePhotos";
 import type { AuthUser, SitePhoto, PhotoTag } from "../../../../api/types";
 import { restoreSession } from "../../../../api/client";
+import * as ImagePicker from "expo-image-picker";
 
 function hasPermission(
   user: AuthUser | null,
@@ -27,6 +28,8 @@ export default function ProjectSitePhotosScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<SitePhoto | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const canManage = hasPermission(user, "site_photo.manage");
@@ -35,11 +38,9 @@ export default function ProjectSitePhotosScreen() {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-
       const restore = async () => {
         try {
           const restoredUser = await restoreSession();
-
           if (!cancelled) {
             setUser(restoredUser);
             setAuthLoading(false);
@@ -51,7 +52,6 @@ export default function ProjectSitePhotosScreen() {
           }
         }
       };
-
       restore();
 
       return () => {
@@ -63,15 +63,12 @@ export default function ProjectSitePhotosScreen() {
   const load = useCallback(
     async (isRefresh = false) => {
       if (!projectId || !canRead) return;
-
       if (isRefresh) {
         setRefreshing(true);
       } else {
         setLoading(true);
       }
-
       setError(null);
-
       try {
         const data = await listSitePhotos({
           project_id: projectId,
@@ -114,7 +111,6 @@ export default function ProjectSitePhotosScreen() {
   const onImageError = async (photo: SitePhoto) => {
     try {
       const fresh = await getSitePhoto(photo.id);
-
       setPhotos((prev) =>
         prev.map((p) => (p.id === photo.id ? fresh : p))
       );
@@ -126,6 +122,51 @@ export default function ProjectSitePhotosScreen() {
     }
   };
 
+  const handleUploadPhoto = async () => {
+    if (!projectId || uploading) return;
+    setUploadError(null);
+
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: false,
+        quality: 0.85,
+      });
+
+      if (result.canceled || !result.assets?.length) return;
+      const asset = result.assets[0];
+      const mimeType = asset.mimeType ?? "";
+      if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) {
+        setUploadError("Choose a JPEG, PNG, or WebP image.");
+        return;
+      }
+      if (asset.fileSize && asset.fileSize > 10 * 1024 * 1024) {
+        setUploadError("The image must be 10 MB or smaller.");
+        return;
+      }
+      setUploading(true);
+
+      const uploaded = await uploadSitePhoto(projectId, {
+        uri: asset.uri,
+        fileName: asset.fileName,
+        mimeType: asset.mimeType,
+      });
+
+      setPhotos((current) => [
+        uploaded,
+        ...current.filter((photo) => photo.id !== uploaded.id),
+      ]);
+    } catch (error) {
+      setUploadError(
+        error instanceof Error
+          ? error.message
+          : "Could not upload the photo.",
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <View style={styles.centered}>
@@ -133,7 +174,6 @@ export default function ProjectSitePhotosScreen() {
       </View>
     );
   }
-
   if (!canRead) {
     return (
       <View style={styles.centered}>
@@ -141,10 +181,32 @@ export default function ProjectSitePhotosScreen() {
       </View>
     );
   }
-
   return (
     <>
       <Stack.Screen options={{ title: "Site Photos" }} />
+
+      {canManage ? (
+        <Pressable
+          style={[
+            styles.button,
+            { marginHorizontal: 12, marginBottom: 8 },
+            uploading && styles.disabled,
+          ]}
+          onPress={() => void handleUploadPhoto()}
+          disabled={uploading}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>
+            {uploading ? "Uploading…" : "Upload photo"}
+          </Text>
+        </Pressable>
+      ) : null}
+
+      {uploadError ? (
+        <Text style={[styles.error, { marginHorizontal: 12 }]}>
+          {uploadError}
+        </Text>
+      ) : null}
 
       {loading ? (
         <View style={styles.centered}>
@@ -288,7 +350,6 @@ function PhotoDetailModal({
       setErr(null);
     }
   }, [photo?.id]);
-
   if (!photo) {
     return null;
   }
@@ -302,7 +363,6 @@ function PhotoDetailModal({
         location_text: location.trim() || null,
         photo_date: photoDate.trim() || null,
       });
-
       onUpdated(updated);
     } catch (e: any) {
       setErr(e?.message ?? "Update failed");
@@ -313,19 +373,15 @@ function PhotoDetailModal({
 
   const addTag = async () => {
     const tag = newTag.trim();
-
     if (!tag) {
       return;
     }
-
     setSaving(true);
     setErr(null);
 
     try {
       await addPhotoTag(photo.id, tag);
-
       const fresh = await getSitePhoto(photo.id);
-
       onUpdated(fresh);
       setNewTag("");
     } catch (e: any) {
@@ -338,10 +394,8 @@ function PhotoDetailModal({
   const removeTag = async (tag: PhotoTag) => {
     setSaving(true);
     setErr(null);
-
     try {
       await removePhotoTag(photo.id, tag.id);
-
       const fresh = await getSitePhoto(photo.id);
 
       onUpdated(fresh);

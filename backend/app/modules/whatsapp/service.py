@@ -27,6 +27,7 @@ from app.modules.audit.service import AuditLogService
 from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
 from app.modules.identity.enums import PermissionKey
 import logging
+from fastapi import UploadFile
 
 logger = logging.getLogger(__name__)
 
@@ -320,6 +321,126 @@ class WhatsAppService:
     pending_message,
     project.id,
   )
+   
+  async def upload_photo(
+    self,
+    organization_id: UUID,
+    project_id: UUID,
+    user_id: UUID,
+    file: UploadFile,
+    *,
+    location_text: str | None = None,
+    photo_date: date | None = None,
+  ) -> SitePhotoResponse:
+    project = await self.projects.get_by_id_and_org(
+    project_id,
+    organization_id,
+  )
+    if project is None:
+      raise TraceException(
+       "Project not found in this organization.",
+        status_code=404,
+        code="PROJECT_NOT_FOUND",
+      )
+
+    mime_type = (file.content_type or "").strip().lower()
+    try:
+      extension = _extension_for_mime_type(mime_type)
+    except ValueError as exc:
+      raise TraceException(
+        "Upload a JPEG, PNG, or WebP image.",
+        status_code=415,
+        code="UNSUPPORTED_PHOTO_TYPE",
+        ) from exc
+
+    max_bytes = settings.whatsapp_max_photo_bytes
+    contents = await file.read(max_bytes + 1)
+
+    if not contents:
+      raise TraceException(
+        "The uploaded image is empty.",
+        status_code=422,
+        code="EMPTY_UPLOAD",
+      )
+
+    if len(contents) > max_bytes:
+      raise TraceException(
+        "The image exceeds the maximum upload size.",
+        status_code=413,
+        code="PHOTO_TOO_LARGE",
+      )
+
+    await self.subscriptions.check_quota(
+      organization_id,
+      "site_photos",
+    )
+    await self.subscriptions.check_quota(
+      organization_id,
+      "storage_bytes",
+      len(contents),
+    )
+
+    storage_key = build_site_photo_storage_key(
+      organization_id,
+      f"{uuid4().hex}{extension}",
+    )
+    try:
+      await asyncio.to_thread(
+        upload_fileobj,
+        storage_key,
+        BytesIO(contents),
+        mime_type,
+      )
+
+      photo = SitePhoto(
+        id=uuid4(),
+        organization_id=organization_id,
+        project_id=project_id,
+        whatsapp_message_id=None,
+        storage_key=storage_key,
+        sender_phone_number=None,
+        caption_raw=None,
+        caption_parsed={},
+        location_text=location_text.strip() if location_text else None,
+        photo_date=photo_date,
+        is_ai_tagged=False,
+      )
+
+      await self.photos.create(photo)
+      await self.subscriptions.increment_usage_many(
+        organization_id,
+        {
+          "site_photos": 1,
+          "storage_bytes": len(contents),
+        },
+      )
+      await self.session.commit()
+    except Exception:
+      await self.session.rollback()
+      try:
+        await asyncio.to_thread(delete_object, storage_key)
+      except Exception:
+        pass
+      raise
+
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.SITE_PHOTO,
+      photo.id,
+      AuditAction.CREATE,
+      f"Uploaded site photo {photo.id}",
+    )
+
+    photo = await self.photos.get_by_id_and_org(photo.id, organization_id)
+    if photo is None:
+      raise TraceException(
+        "Uploaded photo could not be reloaded.",
+        status_code=500,
+        code="SITE_PHOTO_RESPONSE_LOAD_FAILED",
+    )
+
+    return _to_photo_response(photo)
 
   async def _finalize_photo_for_message(
     self,

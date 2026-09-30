@@ -60,4 +60,17 @@ export const whatsappApi = {
   async removeTag(photoId: string, tagId: string): Promise<void> {
     await apiClient.delete(`/whatsapp/photos/${photoId}/tags/${tagId}`);
   },
+
+  async uploadPhoto(projectId: string, file: File): Promise<SitePhoto> {
+    const formData = new FormData();
+    formData.append("project_id", projectId);
+    formData.append("file", file);
+
+    const response = await apiClient.post<SitePhoto>(
+      "/whatsapp/photos/upload",
+      formData,
+    );
+    return response.data;
+  },
+  
 };

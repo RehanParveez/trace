@@ -195,6 +195,18 @@ export default function ProjectDetailScreen() {
 
       <Link
         href={{
+          pathname: "/projects/[projectId]/site-photos",
+          params: { projectId: project.id },
+        }}
+        asChild
+      >
+        <Pressable style={styles.secondaryButton} accessibilityRole="button">
+          <Text style={styles.secondaryButtonText}>Site Photos</Text>
+        </Pressable>
+      </Link>
+
+      <Link
+        href={{
           pathname: "/projects/[projectId]/site-progress",
           params: { projectId: project.id },
         }}
@@ -202,6 +214,18 @@ export default function ProjectDetailScreen() {
       >
        <Pressable style={styles.secondaryButton} accessibilityRole="button">
          <Text style={styles.secondaryButtonText}>Site Progress</Text>
+        </Pressable>
+      </Link>
+
+      <Link
+        href={{
+          pathname: "/projects/[projectId]/subcontractors",
+          params: { projectId: project.id },
+        }}
+        asChild
+      >
+        <Pressable style={styles.secondaryButton} accessibilityRole="button">
+          <Text style={styles.secondaryButtonText}>Subcontractors</Text>
         </Pressable>
       </Link>
 
