@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
-from app.modules.drawings_boq.models import (AssemblyRecipeComponent, BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
+from app.modules.drawings_boq.models import (AssemblyRecipeComponent, BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQVersionStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
   DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ModelAuditResult
 )
 from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response
@@ -585,6 +585,22 @@ class DrawingBOQService:
         status_code=409,
         code="CONCURRENT_MODIFICATION",
       )
+      
+    version = await self.boq_versions.get_by_id_and_org(
+    item.boq_version_id, organization_id
+    )
+    if version is None:
+      raise TraceException(
+        "BOQ version not found.",
+        status_code=404,
+        code="BOQ_VERSION_NOT_FOUND",
+      )
+    if version.status == BOQVersionStatus.SUPERSEDED:
+     raise TraceException(
+      "Cannot edit items on a superseded BOQ version.",
+      status_code=409,
+      code="BOQ_VERSION_SUPERSEDED",
+    )
 
     if payload.material_name is not None:
       item.material_name = payload.material_name
@@ -667,6 +683,22 @@ class DrawingBOQService:
     item.approved_by_user_id = user_id
     item.approved_at = datetime.now(timezone.utc)
     item.version += 1
+    
+    version = await self.boq_versions.get_by_id_and_org(
+      item.boq_version_id, organization_id
+    )
+    if version is None:
+      raise TraceException(
+        "BOQ version not found.",
+        status_code=404,
+        code="BOQ_VERSION_NOT_FOUND",
+      )
+    if version.status == BOQVersionStatus.SUPERSEDED:
+      raise TraceException(
+       "Cannot edit items on a superseded BOQ version.",
+       status_code=409,
+       code="BOQ_VERSION_SUPERSEDED",
+      )
     
     await self.boq_items.update(item)
     await self.session.commit()
@@ -831,6 +863,12 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
       )
+    if version.status == BOQVersionStatus.SUPERSEDED:
+      raise TraceException(
+       "Cannot add items to a superseded BOQ version.",
+       status_code=409,
+       code="BOQ_VERSION_SUPERSEDED",
+      )
     item = BOQItem(
       organization_id=organization_id,
       boq_version_id=boq_version_id,
@@ -887,6 +925,14 @@ class DrawingBOQService:
       status_code=404,
       code="BOQ_VERSION_NOT_FOUND",
     )
+     
+    if version.status == BOQVersionStatus.SUPERSEDED:
+      raise TraceException(
+        "Cannot generate labour items on a superseded BOQ version.",
+        status_code=409,
+        code="BOQ_VERSION_SUPERSEDED",
+      )
+      
     if not version.covered_area_sqft or version.covered_area_sqft <= 0:
      raise TraceException(
       "Set covered_area_sqft on this BOQ version before generating labour costs.",
@@ -949,6 +995,48 @@ class DrawingBOQService:
     await self.session.commit()
 
     return new_items
+  
+  async def delete_boq_item(
+    self,
+    organization_id: UUID,
+    item_id: UUID,
+    user_id: UUID,
+  ) -> None:
+    item = await self.boq_items.get_by_id_and_org_for_update(item_id, organization_id)
+    if item is None:
+      raise TraceException(
+        "BOQ item not found.",
+        status_code=404,
+        code="BOQ_ITEM_NOT_FOUND",
+      )
+    if item.status == BOQItemStatus.APPROVED:
+      raise TraceException(
+       "Approved BOQ items cannot be deleted.",
+       status_code=409,
+       code="BOQ_ITEM_APPROVED",
+      )
+
+    version = await self.boq_versions.get_by_id_and_org(
+     item.boq_version_id, organization_id
+    )
+    if version is not None and version.status == BOQVersionStatus.SUPERSEDED:
+      raise TraceException(
+        "Cannot delete items on a superseded BOQ version.",
+        status_code=409,
+        code="BOQ_VERSION_SUPERSEDED",
+      )
+
+    material_name = item.material_name
+    await self.boq_items.delete(item)
+    await self.session.commit()
+    await self.audit.log(
+      organization_id,
+      user_id,
+      AuditEntityType.BOQ_ITEM,
+      item_id,
+      AuditAction.DELETE,
+      f'Deleted draft BOQ item "{material_name}"',
+    )
 
   async def get_boq_summary(
     self,
@@ -1089,7 +1177,6 @@ class DrawingBOQService:
           source="dictionary",
         )
       )
-      await self.session.commit()
       return dictionary_entry.normalized_name, dictionary_entry.category, True
 
     return raw_text.strip(), None, False
@@ -1106,7 +1193,7 @@ class DrawingBOQService:
       normalized_input.encode("utf-8")
     ).hexdigest()
 
-    if await self.material_cache.get_by_hash(input_hash) is not None:
+    if await self.material_cache.get_by_hash(input_hash, organization_id) is not None:
       return
 
     await self.material_cache.create(
@@ -1119,7 +1206,6 @@ class DrawingBOQService:
         source="ai",
       )
     )
-    await self.session.commit()
     
   async def delete_drawing(
     self,
@@ -1129,24 +1215,33 @@ class DrawingBOQService:
   ) -> None:
     drawing = await self.get_drawing(organization_id, drawing_id)
     storage_key = drawing.storage_key
+    file_size_bytes = drawing.file_size_bytes or 0
 
     await self.session.delete(drawing)
-    await self.session.commit()
 
     try:
-     await asyncio.to_thread(delete_object, storage_key)
+      await self.subscriptions.increment_usage(organization_id, "drawings", delta=-1)
+      if file_size_bytes > 0:
+        await self.subscriptions.increment_usage(
+          organization_id, "storage_bytes", delta=-file_size_bytes
+        )
     except Exception:
-     pass
-   
+     pass  
+    await self.session.commit()
+    try:
+      await asyncio.to_thread(delete_object, storage_key)
+    except Exception:
+      pass
+
     if user_id is not None:
-     await self.audit.log(
-      organization_id,
-      user_id,
-      AuditEntityType.DRAWING,
-      drawing_id,
-      AuditAction.DELETE,
-      f'Deleted drawing "{drawing.original_filename}"',
-    )
+      await self.audit.log(
+        organization_id,
+        user_id,
+        AuditEntityType.DRAWING,
+        drawing_id,
+        AuditAction.DELETE,
+        f'Deleted drawing "{drawing.original_filename}"',
+      )
   
   async def create_revision(
     self,

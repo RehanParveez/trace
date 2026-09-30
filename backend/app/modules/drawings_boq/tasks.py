@@ -8,7 +8,7 @@ from uuid import UUID
 import ifcopenshell
 import ifcopenshell.util.element
 from app.core.database import WorkerSessionLocal, dispose_worker_engine
-from app.modules.drawings_boq.models import BOQItem, BOQVersion, DrawingElement, DrawingStatus, BOQItemRateSource
+from app.modules.drawings_boq.models import BOQItem, BOQVersion, Drawing, DrawingElement, DrawingStatus, BOQItemRateSource
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.service import DrawingBOQService
@@ -17,6 +17,7 @@ from app.modules.notifications.models import NotificationType
 from app.modules.notifications.service import NotificationService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
+from sqlalchemy import select
 
 TARGET_IFC_TYPES = [
   "IfcWall",
@@ -54,27 +55,41 @@ def parse_drawing_task(drawing_id: str) -> str:
   return "parsed"
 
 async def _parse_drawing(drawing_id: UUID) -> None:
+  organization_id: UUID | None = None
+  storage_key: str | None = None
 
   async with WorkerSessionLocal() as session:
     drawings = DrawingRepository(session)
-    drawing = await drawings.get_by_id(drawing_id)
+
+    result = await session.execute(
+      select(Drawing)
+      .where(
+        Drawing.id == drawing_id,
+        Drawing.status.in_([DrawingStatus.UPLOADED, DrawingStatus.FAILED]),
+      )
+      .with_for_update(skip_locked=True)
+    )
+    drawing = result.scalar_one_or_none()
     if drawing is None:
       return
-    if drawing.status == DrawingStatus.PARSED:  
-      return
+
+    organization_id = drawing.organization_id
+    storage_key = drawing.storage_key
+
     drawing.status = DrawingStatus.PROCESSING
+    drawing.error_message = None
     await drawings.update(drawing)
     await session.commit()
 
   with tempfile.TemporaryDirectory() as tmp_dir:
     local_path = os.path.join(tmp_dir, "drawing.ifc")
     try:
-      download_to_path(drawing.storage_key, local_path)
+      download_to_path(storage_key, local_path)
       elements_data = _extract_ifc_elements(local_path)
     except Exception as exc:
       async with WorkerSessionLocal() as session:
         drawings = DrawingRepository(session)
-        failed = await drawings.get_by_id(drawing_id)
+        failed = await drawings.get_by_id_and_org(drawing_id, organization_id)
         if failed is not None:
           failed.status = DrawingStatus.FAILED
           failed.error_message = str(exc)[:2000]
@@ -90,7 +105,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
               commit=False,
             )
         await session.commit()
-      return  
+      return
 
   async with WorkerSessionLocal() as session:
     drawings = DrawingRepository(session)
@@ -99,12 +114,11 @@ async def _parse_drawing(drawing_id: UUID) -> None:
     boq_items_repo = BOQItemRepository(session)
     service = DrawingBOQService(session)
 
-    current_drawing = await drawings.get_by_id(drawing_id)
+    current_drawing = await drawings.get_by_id_and_org(drawing_id, organization_id)
     if current_drawing is None:
       return
     if current_drawing.status == DrawingStatus.PARSED:
       return
-
     try:
       drawing_elements = [
         DrawingElement(
@@ -177,6 +191,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
               except Exception:
                 pass
             await service.store_ai_normalization(
+              current_drawing.organization_id,
               raw_text,
               normalized_name,
               category,

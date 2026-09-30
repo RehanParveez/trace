@@ -26,6 +26,10 @@ export default function AuthenticatedLayout() {
         name="organization"
         options={{ title: "Organization", drawerLabel: "Organization" }}
       />
+      <Drawer.Screen
+        name="labour"
+        options={{ title: "Labour directory", drawerLabel: "Labour" }}
+       />
     </Drawer>
   );
 }
@@ -37,6 +41,7 @@ function ModuleMenu() {
       <Text style={styles.caption}>WORKSPACE</Text>
 
       <MenuLink href="/projects" label="Projects" />
+      <MenuLink href="/labour" label="Labour directory" />
 
       <Text style={styles.caption}>ORGANIZATION</Text>
       <MenuLink href="/organization" label="Organization overview" />
@@ -55,7 +60,7 @@ function MenuLink({
   href,
   label,
 }: {
-  href: "/projects" | "/organization";
+  href: "/projects" | "/organization"  | "/labour";
   label: string;
 }) {
   return (

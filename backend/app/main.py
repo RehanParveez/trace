@@ -88,8 +88,6 @@ app.include_router(running_router, prefix=settings.api_v1_prefix)
 
 app.include_router(labour_router, prefix=settings.api_v1_prefix)
 
-app.include_router(labour_router, prefix=settings.api_v1_prefix)
-
 app.include_router(subcontractor_router, prefix=settings.api_v1_prefix)
 
 app.include_router(withholding_tax_router, prefix=settings.api_v1_prefix)

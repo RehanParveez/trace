@@ -46,6 +46,21 @@ class DrawingRepository:
       .order_by(Drawing.created_at.desc())
     )
     return list(result.scalars().all())
+  
+  async def list_by_revision_group(
+    self,
+    organization_id: UUID,
+    revision_group_id: UUID,
+  ) -> list[Drawing]:
+    result = await self.session.execute(
+      select(Drawing)
+      .where(
+        Drawing.organization_id == organization_id,
+        Drawing.revision_group_id == revision_group_id,
+      )
+      .order_by(Drawing.created_at.asc())
+    )
+    return list(result.scalars().all())
 
   async def update(self, drawing: Drawing) -> Drawing:
     self.session.add(drawing)
@@ -167,6 +182,40 @@ class BOQItemRepository:
       .with_for_update()
     )
     return result.scalar_one_or_none()
+  
+  async def get_latest_item_counts_by_project(
+      self,
+      organization_id: UUID,
+    ) -> list[dict]:
+      ranked = (
+        select(
+          BOQVersion.id,
+          BOQVersion.project_id,
+          func.row_number()
+            .over(
+              partition_by=BOQVersion.project_id,
+              order_by=BOQVersion.created_at.desc(),
+            )
+            .label("rn"),
+        )
+        .where(BOQVersion.organization_id == organization_id)
+        .subquery()
+      )
+  
+      result = await self.session.execute(
+        select(
+          ranked.c.project_id,
+          func.count(BOQItem.id).label("item_count"),
+        )
+        .select_from(ranked)
+        .outerjoin(BOQItem, BOQItem.boq_version_id == ranked.c.id)
+        .where(ranked.c.rn == 1)
+        .group_by(ranked.c.project_id)
+      )
+      return [
+        {"project_id": row.project_id, "latest_boq_item_count": row.item_count}
+        for row in result.all()
+      ]
 
   async def list_by_version(
     self,
@@ -186,6 +235,29 @@ class BOQItemRepository:
     self.session.add(item)
     await self.session.flush()
     return item
+  
+  async def delete(self, item: BOQItem) -> None:
+    await self.session.delete(item)
+    await self.session.flush()
+  
+  async def list_by_version_filtered(
+    self,
+    boq_version_id: UUID,
+    organization_id: UUID,
+    recipe_id: UUID | None = None,
+    rule_set_id: UUID | None = None,
+  ) -> list[BOQItem]:
+    stmt = select(BOQItem).where(
+      BOQItem.boq_version_id == boq_version_id,
+      BOQItem.organization_id == organization_id,
+    )
+    if recipe_id is not None:
+      stmt = stmt.where(BOQItem.recipe_id == recipe_id)
+    if rule_set_id is not None:
+      stmt = stmt.where(BOQItem.rule_set_id == rule_set_id)
+    stmt = stmt.order_by(BOQItem.material_name.asc())
+    result = await self.session.execute(stmt)
+    return list(result.scalars().all())
 
 class MaterialLibraryRepository:
   def __init__(self, session: AsyncSession):
@@ -257,6 +329,8 @@ class MaterialNormalizationCacheRepository:
      stmt = stmt.where(
        MaterialNormalizationCache.organization_id == organization_id
      )
+    else:
+      stmt = stmt.where(MaterialNormalizationCache.organization_id.is_(None))
     result = await self.session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -315,48 +389,6 @@ class LabourRateRepository:
     self.session.add(rate)
     await self.session.flush()
     return rate
-  
-  async def get_latest_item_counts_by_project(
-    self,
-    organization_id: UUID,
-  ) -> list[dict]:
-    ranked = (
-      select(
-        BOQVersion.id,
-        BOQVersion.project_id,
-        func.row_number()
-          .over(
-            partition_by=BOQVersion.project_id,
-            order_by=BOQVersion.created_at.desc(),
-          )
-          .label("rn"),
-      )
-      .where(BOQVersion.organization_id == organization_id)
-      .subquery()
-    )
-
-    result = await self.session.execute(
-      select(
-        ranked.c.project_id,
-        func.count(BOQItem.id).label("item_count"),
-      )
-      .select_from(ranked)
-      .outerjoin(BOQItem, BOQItem.boq_version_id == ranked.c.id)
-      .where(ranked.c.rn == 1)
-      .group_by(ranked.c.project_id)
-    )
-    return [
-      {"project_id": row.project_id, "latest_boq_item_count": row.item_count}
-      for row in result.all()
-    ]
-  
-  async def list_by_revision_group(self, organization_id: UUID, revision_group_id: UUID) -> list[Drawing]:
-    result = await self.session.execute(
-      select(Drawing)
-      .where(Drawing.organization_id == organization_id, Drawing.revision_group_id == revision_group_id)
-      .order_by(Drawing.created_at.asc())
-    )
-    return list(result.scalars().all())
   
 class MeasurementRuleSetRepository:
   def __init__(self, session: AsyncSession):
@@ -567,21 +599,3 @@ class ModelAuditResultRepository:
       .limit(1)
     )
     return result.scalar_one_or_none()
-
-async def list_by_version_filtered(
-  self,
-  boq_version_id: UUID,
-  organization_id: UUID,
-  recipe_id: UUID | None = None,
-  rule_set_id: UUID | None = None,
-) -> list[BOQItem]:
-  stmt = select(BOQItem).where(
-    BOQItem.boq_version_id == boq_version_id,
-    BOQItem.organization_id == organization_id,
-  )
-  if recipe_id is not None:
-    stmt = stmt.where(BOQItem.recipe_id == recipe_id)
-  if rule_set_id is not None:
-    stmt = stmt.where(BOQItem.rule_set_id == rule_set_id)
-  result = await self.session.execute(stmt.order_by(BOQItem.material_name.asc()))
-  return list(result.scalars().all())

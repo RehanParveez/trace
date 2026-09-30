@@ -773,3 +773,194 @@ export type ProjectSubcontractCost = {
   total_billed: number | string;
   currency: string;
 };
+
+export type LabourSourceType = "DIRECT" | "CONTRACTOR";
+export type LabourDeploymentStatus = "ACTIVE" | "ENDED";
+export type LabourWhtCategory =
+  | "GOODS_SUPPLY"
+  | "SERVICES"
+  | "CONTRACTS_EXECUTION";
+
+export type LabourSource = {
+  id: string;
+  name: string;
+  source_type: LabourSourceType;
+  contact_name: string | null;
+  contact_phone: string | null;
+  is_active_taxpayer: boolean;
+  is_active: boolean;
+  notes: string | null;
+};
+
+export type LabourSourceCreatePayload = {
+  name: string;
+  source_type: LabourSourceType;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  is_active_taxpayer?: boolean;
+  notes?: string | null;
+};
+
+export type LabourSourceUpdatePayload = {
+  name?: string;
+  contact_name?: string | null;
+  contact_phone?: string | null;
+  is_active_taxpayer?: boolean;
+  is_active?: boolean;
+  notes?: string | null;
+};
+
+export type LabourWorker = {
+  id: string;
+  source_id: string;
+  name: string;
+  trade: string;
+  cnic: string | null;
+  phone: string | null;
+  default_daily_rate: number | string | null;
+  is_active: boolean;
+};
+
+export type LabourWorkerCreatePayload = {
+  source_id: string;
+  name: string;
+  trade: string;
+  cnic?: string | null;
+  phone?: string | null;
+  default_daily_rate?: number | null;
+};
+
+export type LabourWorkerUpdatePayload = {
+  name?: string;
+  trade?: string;
+  cnic?: string | null;
+  phone?: string | null;
+  default_daily_rate?: number | null;
+  is_active?: boolean;
+};
+
+export type LabourDeployment = {
+  id: string;
+  project_id: string;
+  source_id: string;
+  worker_id: string | null;
+  trade: string;
+  daily_rate: number | string;
+  start_date: string;
+  end_date: string | null;
+  status: LabourDeploymentStatus;
+};
+
+export type LabourDeploymentCreatePayload = {
+  source_id: string;
+  worker_id?: string | null;
+  trade: string;
+  daily_rate: number;
+  start_date: string;
+};
+
+export type LabourDeploymentUpdatePayload = {
+  end_date?: string;
+  status?: LabourDeploymentStatus;
+};
+
+export type LabourAttendance = {
+  id: string;
+  deployment_id: string;
+  attendance_date: string;
+  units_present: number | string;
+  notes: string | null;
+};
+
+export type LabourAttendanceEntry = {
+  deployment_id: string;
+  attendance_date: string;
+  units_present: number;
+  notes?: string | null;
+};
+
+export type LabourAttendanceBulkResult = {
+  created: number;
+  updated: number;
+  items: LabourAttendance[];
+};
+
+export type LabourTradeValue = {
+  trade: string;
+  cost: number | string;
+};
+
+export type LabourDayAttendanceSummary = {
+  attendance_date: string;
+  total_present: number | string;
+  by_trade: LabourTradeValue[];
+};
+
+export type LabourAdvance = {
+  id: string;
+  source_id: string;
+  worker_id: string | null;
+  amount: number | string;
+  advance_date: string;
+  notes: string | null;
+};
+
+export type LabourAdvanceCreatePayload = {
+  source_id: string;
+  worker_id?: string | null;
+  amount: number;
+  advance_date: string;
+  notes?: string | null;
+};
+
+export type LabourPayment = {
+  id: string;
+  source_id: string;
+  worker_id: string | null;
+  period_start: string;
+  period_end: string;
+  gross_wage_amount: number | string;
+  advance_recovered_amount: number | string;
+  wht_category: string | null;
+  wht_rate_percentage: number | string | null;
+  wht_deducted_amount: number | string;
+  net_paid_amount: number | string;
+  payment_date: string;
+  notes: string | null;
+};
+
+export type LabourPaymentCreatePayload = {
+  source_id: string;
+  worker_id?: string | null;
+  period_start: string;
+  period_end: string;
+  gross_wage_amount: number;
+  advance_recovered_amount?: number;
+  wht_category?: LabourWhtCategory | null;
+  payment_date: string;
+  notes?: string | null;
+};
+
+export type LabourCost = {
+  period_start: string;
+  period_end: string;
+  total_cost: number | string;
+  currency: string;
+};
+
+export type LabourBalance = {
+  outstanding_advance_balance: number | string;
+  currency: string;
+};
+
+export type LabourSummary = {
+  project_id: string;
+  period_start: string;
+  period_end: string;
+  total_accrued_cost: number | string;
+  cost_by_trade: LabourTradeValue[];
+  total_advances_given: number | string;
+  total_payments_made: number | string;
+  outstanding_advance_balance: number | string;
+  currency: string;
+};

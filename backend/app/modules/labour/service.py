@@ -5,7 +5,7 @@ from app.modules.audit.service import AuditLogService
 from app.modules.labour.schemas import (LabourSourceCreateRequest, AttendanceBulkCreateRequest, LabourAdvanceCreateRequest, LabourDeploymentCreateRequest, LabourDeploymentUpdateRequest, LabourPaymentCreateRequest,
   LabourSourceUpdateRequest, LabourWorkerCreateRequest, LabourWorkerUpdateRequest,
 )
-from app.modules.labour.models import LabourSource, LabourAdvance, LabourAttendance, LabourDeployment, LabourDeploymentStatus, LabourPayment, LabourWorker
+from app.modules.labour.models import LabourSource, LabourAdvance, LabourAttendance, LabourDeployment, LabourDeploymentStatus, LabourPayment, LabourWorker, LabourSourceType
 from uuid import UUID, uuid4
 from decimal import Decimal
 from datetime import date

@@ -9,6 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
 
 class DrawingFormat(str, enum.Enum):
   IFC = "IFC"
@@ -121,7 +122,6 @@ class Drawing(Base, TimestampMixin):
   boq_versions: Mapped[list["BOQVersion"]] = relationship(
     "BOQVersion",
     back_populates="drawing",
-    cascade="all, delete-orphan",
   )
   
   revision_group_id: Mapped[UUID] = mapped_column(
@@ -290,10 +290,10 @@ class BOQVersion(Base, TimestampMixin):
   )
 
   generation_meta: Mapped[dict] = mapped_column(
-    JSON,
+    JSONB,
     nullable=False,
     default=dict,
-    server_default=text("'{}'"),
+    server_default=text("'{}'::jsonb"),
   )
 
   drawing: Mapped["Drawing | None"] = relationship(
@@ -306,15 +306,6 @@ class BOQVersion(Base, TimestampMixin):
     back_populates="boq_version",
     cascade="all, delete-orphan",
   )
-  
-  rule_set_id: Mapped[UUID | None] = mapped_column(
-    PGUUID(as_uuid=True),
-    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL"),
-    nullable=True,
-  )
-  
-  audit_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
-  generation_meta: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
 
 class BOQItem(Base, TimestampMixin):
   __tablename__ = "boq_items"
@@ -436,7 +427,7 @@ class BOQItem(Base, TimestampMixin):
   
   recipe_id: Mapped[UUID | None] = mapped_column(
     PGUUID(as_uuid=True),
-    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL", name="fk_boq_items_rule_set_id"),
+    ForeignKey("assembly_recipes.id", ondelete="SET NULL", name="fk_boq_items_recipe_id"),
     nullable=True,
   )
   
@@ -531,6 +522,22 @@ class LabourRate(Base, TimestampMixin):
 
 class MaterialNormalizationCache(Base, TimestampMixin):
   __tablename__ = "material_normalization_cache"
+  
+  __table_args__ = (
+    Index(
+      "uq_material_norm_cache_org_hash",
+      "organization_id",
+      "input_hash",
+      unique=True,
+      postgresql_where=text("organization_id IS NOT NULL"),
+    ),
+    Index(
+      "uq_material_norm_cache_system_hash",
+      "input_hash",
+      unique=True,
+      postgresql_where=text("organization_id IS NULL"),
+    ),
+  )
 
   id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
@@ -541,7 +548,6 @@ class MaterialNormalizationCache(Base, TimestampMixin):
   input_hash: Mapped[str] = mapped_column(
     String(64),
     nullable=False,
-    unique=True,
     index=True,
   )
 
@@ -715,7 +721,7 @@ class AssemblyRecipeComponent(Base, TimestampMixin):
   
   recipe_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True), 
-    ForeignKey("assembly_recipes.id", ondelete="SET NULL", name="fk_boq_items_recipe_id"),
+    ForeignKey("assembly_recipes.id", ondelete="CASCADE", name="fk_assembly_recipe_components_recipe_id"),
     nullable=False,
   )
   
