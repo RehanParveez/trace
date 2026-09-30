@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
-import { restoreSession } from "../../../api/client";
+import { restoreSession } from "../api/client";
 import {bulkRecordLabourAttendance, createLabourAdvance, createLabourDeployment, createLabourPayment, createLabourSource, createLabourWorker, getLabourBalance, getLabourDaySummary, getLabourSummary,
   listLabourAdvances,  listLabourAttendance, listLabourDeployments, listLabourPayments, listLabourSources, listLabourWorkers, updateLabourDeployment, updateLabourSource, updateLabourWorker,
-} from "../../../api/labour";
-import { getProject } from "../../../api/projects";
+} from "../api/labour";
+import { getProject } from "../api/projects";
 import type {LabourAdvance, LabourDayAttendanceSummary, LabourDeployment, LabourPayment, LabourSource, LabourSourceType, LabourSummary, LabourWhtCategory, LabourWorker, Project,
-} from "../../../api/types";
+} from "../api/types";
 
 type Section =
   | "directory"

@@ -1,4 +1,4 @@
-import { LabourScreen } from "./_LabourScreen";
+import { LabourScreen } from "../../../components/_LabourScreen";
 
 export default function LabourDirectoryRoute() {
   return <LabourScreen section="directory" />;

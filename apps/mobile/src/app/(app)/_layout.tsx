@@ -30,7 +30,16 @@ export default function AuthenticatedLayout() {
         name="labour"
         options={{ title: "Labour directory", drawerLabel: "Labour" }}
        />
-    </Drawer>
+      <Drawer.Screen
+        name="bank-guarantees"
+        options={{ title: "Bank guarantees", drawerLabel: "Bank guarantees" }}
+      />
+      <Drawer.Screen
+        name="change-orders"
+        options={{ title: "Change Orders", drawerLabel: "Change Orders" }}
+      />
+
+    </Drawer>  
   );
 }
 
@@ -42,6 +51,8 @@ function ModuleMenu() {
 
       <MenuLink href="/projects" label="Projects" />
       <MenuLink href="/labour" label="Labour directory" />
+      <MenuLink href="/bank-guarantees" label="Bank guarantees" />
+      <MenuLink href="/change-orders" label="Change Orders" />
 
       <Text style={styles.caption}>ORGANIZATION</Text>
       <MenuLink href="/organization" label="Organization overview" />
@@ -60,7 +71,7 @@ function MenuLink({
   href,
   label,
 }: {
-  href: "/projects" | "/organization"  | "/labour";
+  href: "/projects" | "/organization"  | "/labour" | "/bank-guarantees" | "/change-orders";
   label: string;
 }) {
   return (

@@ -964,3 +964,126 @@ export type LabourSummary = {
   outstanding_advance_balance: number | string;
   currency: string;
 };
+
+export type BankGuaranteeHolderType = "CLIENT" | "SUBCONTRACTOR";
+export type BankGuaranteePurpose = "RETENTION";
+export type BankGuaranteeStatus = "ACTIVE" | "RENEWED" | "RELEASED" | "CALLED";
+
+export type BankGuarantee = {
+  id: string;
+  project_id: string;
+  holder_type: BankGuaranteeHolderType;
+  boq_version_id: string | null;
+  agreement_id: string | null;
+  purpose: BankGuaranteePurpose;
+  guarantee_number: string;
+  issuing_bank: string;
+  amount: number | string;
+  currency: string;
+  issue_date: string;
+  expiry_date: string;
+  status: BankGuaranteeStatus;
+  renewed_from_guarantee_id: string | null;
+  is_expired: boolean;
+  is_expiring_soon: boolean;
+  notes: string | null;
+  created_at: string;
+};
+
+export type BankGuaranteeCreatePayload = {
+  holder_type: BankGuaranteeHolderType;
+  project_id: string;
+  boq_version_id?: string | null;
+  agreement_id?: string | null;
+  guarantee_number: string;
+  issuing_bank: string;
+  amount: number;
+  issue_date: string;
+  expiry_date: string;
+  notes?: string | null;
+};
+
+export type BankGuaranteeRenewPayload = {
+  guarantee_number: string;
+  issue_date: string;
+  expiry_date: string;
+  amount?: number;
+  notes?: string | null;
+};
+
+export type ProjectBankGuaranteeSummary = {
+  project_id: string;
+  active_count: number;
+  expiring_soon_count: number;
+  expired_count: number;
+  total_active_value: number | string;
+  currency: string;
+};
+
+export type ChangeOrderType = "ADDITION" | "OMISSION" | "VARIATION";
+
+export type ChangeOrderStatus =
+  | "DRAFT"
+  | "APPROVED"
+  | "REJECTED"
+  | "CANCELLED";
+
+export type ChangeOrderLineItem = {
+  id: string;
+  description: string;
+  unit: string;
+  boq_item_id: string | null;
+  quantity: number | string;
+  unit_rate: number | string | null;
+  realized_value_impact: number | string | null;
+  created_boq_item_id: string | null;
+};
+
+export type ChangeOrder = {
+  id: string;
+  project_id: string;
+  boq_version_id: string;
+  change_order_number: number;
+  change_type: ChangeOrderType;
+  status: ChangeOrderStatus;
+  title: string;
+  description: string | null;
+  client_reference: string | null;
+  value_impact: number | string;
+  currency: string;
+  approved_at: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  version: number;
+  created_at: string;
+};
+
+export type ChangeOrderDetail = ChangeOrder & {
+  line_items: ChangeOrderLineItem[];
+};
+
+export type ChangeOrderLineItemInput = {
+  description: string;
+  unit: string;
+  boq_item_id?: string | null;
+  quantity: number;
+  unit_rate?: number | null;
+};
+
+export type ChangeOrderCreatePayload = {
+  project_id: string;
+  boq_version_id: string;
+  change_type: ChangeOrderType;
+  title: string;
+  description?: string | null;
+  client_reference?: string | null;
+  line_items: ChangeOrderLineItemInput[];
+};
+
+export type ProjectChangeOrderSummary = {
+  project_id: string;
+  approved_count: number;
+  approved_net_value_impact: number | string;
+  draft_count: number;
+  currency: string;
+};
