@@ -5,10 +5,11 @@ import tempfile
 from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import UUID
-import ifcopenshell
-import ifcopenshell.util.element
 from app.core.database import WorkerSessionLocal, dispose_worker_engine
-from app.modules.drawings_boq.models import BOQItem, BOQVersion, Drawing, DrawingElement, DrawingStatus, BOQItemRateSource
+from uuid import uuid4
+from app.modules.drawings_boq.ifc_reader import ReadElement, read_ifc
+from app.modules.drawings_boq.ifc_types import READER_VERSION
+from app.modules.drawings_boq.models import BOQItem, BOQVersion, BuildingLevel, Drawing, DrawingElement, DrawingStatus, BOQItemRateSource
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.service import DrawingBOQService
@@ -18,25 +19,6 @@ from app.modules.notifications.service import NotificationService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
 from sqlalchemy import select
-
-TARGET_IFC_TYPES = [
-  "IfcWall",
-  "IfcSlab",
-  "IfcBeam",
-  "IfcColumn",
-  "IfcDoor",
-  "IfcWindow",
-  "IfcRoof",
-  "IfcStair",
-]
-
-QUANTITY_ATTRS = (
-  "NetVolume",
-  "GrossVolume",
-  "NetArea",
-  "GrossArea",
-  "Length",
-)
 
 @celery_app.task(
   name="app.modules.drawings_boq.tasks.parse_drawing_task",
@@ -53,6 +35,44 @@ def parse_drawing_task(drawing_id: str) -> str:
 
   asyncio.run(_run())
   return "parsed"
+
+def _build_drawing_element(drawing: Drawing, item: ReadElement, level_ids: dict) -> DrawingElement:
+  return DrawingElement(
+    drawing_id=drawing.id,
+    organization_id=drawing.organization_id,
+    ifc_global_id=item.global_id,
+    ifc_type=item.ifc_type,
+    name=item.name[:500] if item.name else None,
+    raw_material_text=item.raw_material_text,
+    unit=item.unit,
+    quantity=item.quantity,
+    properties=item.properties,
+    discipline=item.discipline,
+    structural_role=item.structural_role,
+    classification_source=item.classification_source,
+    classification_confidence=item.classification_confidence,
+    quantity_source=item.quantity_source,
+    level_id=level_ids.get(item.level_global_id),
+    length_mm=item.length_mm,
+    width_mm=item.width_mm,
+    height_mm=item.height_mm,
+    thickness_mm=item.thickness_mm,
+    elevation_base_mm=item.elevation_base_mm,
+    elevation_top_mm=item.elevation_top_mm,
+    area_mm2=item.area_mm2,
+    volume_mm3=item.volume_mm3,
+    bbox_min_x_mm=item.bbox_min_mm[0] if item.bbox_min_mm else None,
+    bbox_min_y_mm=item.bbox_min_mm[1] if item.bbox_min_mm else None,
+    bbox_min_z_mm=item.bbox_min_mm[2] if item.bbox_min_mm else None,
+    bbox_max_x_mm=item.bbox_max_mm[0] if item.bbox_max_mm else None,
+    bbox_max_y_mm=item.bbox_max_mm[1] if item.bbox_max_mm else None,
+    bbox_max_z_mm=item.bbox_max_mm[2] if item.bbox_max_mm else None,
+    geometry_kind=item.geometry_kind,
+    profile=item.profile,
+    placement=item.placement,
+    normalization_status=item.status,
+    normalization_issues=item.issues,
+  )
 
 async def _parse_drawing(drawing_id: UUID) -> None:
   organization_id: UUID | None = None
@@ -85,7 +105,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
     local_path = os.path.join(tmp_dir, "drawing.ifc")
     try:
       download_to_path(storage_key, local_path)
-      elements_data = _extract_ifc_elements(local_path)
+      read_result = read_ifc(local_path)
     except Exception as exc:
       async with WorkerSessionLocal() as session:
         drawings = DrawingRepository(session)
@@ -119,20 +139,32 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       return
     if current_drawing.status == DrawingStatus.PARSED:
       return
+    drawing_org_id = current_drawing.organization_id
+    drawing_project_id = current_drawing.project_id
+    drawing_filename = current_drawing.original_filename
+    uploader_id = current_drawing.uploaded_by_user_id
     try:
-      drawing_elements = [
-        DrawingElement(
-          drawing_id=current_drawing.id,
+      level_ids: dict[str, UUID] = {}
+      level_rows: list[BuildingLevel] = []
+      for level in read_result.levels:
+        row = BuildingLevel(
+          id=uuid4(),
           organization_id=current_drawing.organization_id,
-          ifc_global_id=item["global_id"],
-          ifc_type=item["ifc_type"],
-          name=item["name"],
-          raw_material_text=item["material_text"] or item["ifc_type"],
-          unit=item["unit"],
-          quantity=item["quantity"],
-          properties=item["properties"],
+          drawing_id=current_drawing.id,
+          name=level.name[:200],
+          elevation_mm=level.elevation_mm,
+          ifc_storey_id=level.global_id,
+          sequence=level.sequence,
         )
-        for item in elements_data
+        level_ids[level.global_id] = row.id
+        level_rows.append(row)
+      if level_rows:
+        session.add_all(level_rows)
+        await session.flush()
+
+      drawing_elements = [
+        _build_drawing_element(current_drawing, item, level_ids)
+        for item in read_result.elements
       ]
 
       if drawing_elements:
@@ -149,8 +181,12 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
       boq_items: list[BOQItem] = []
 
-      for element, drawing_element in zip(elements_data, drawing_elements):
-        raw_text = element["material_text"] or element["ifc_type"]
+      skipped_without_quantity = 0
+      for element, drawing_element in zip(read_result.elements, drawing_elements):
+        if element.quantity <= 0 or not element.unit:
+          skipped_without_quantity += 1
+          continue
+        raw_text = element.raw_material_text
         normalized_name, category, matched = await service.normalize_material(
           current_drawing.organization_id,
           raw_text,
@@ -204,8 +240,8 @@ async def _parse_drawing(drawing_id: UUID) -> None:
             drawing_element_id=drawing_element.id,
             material_name=normalized_name,
             category=category,
-            unit=element["unit"] or "unit",
-            quantity=element["quantity"],
+            unit=element.unit,
+            quantity=element.quantity,
             unit_rate=default_rate,
             rate_source=rate_source,
           )
@@ -220,11 +256,21 @@ async def _parse_drawing(drawing_id: UUID) -> None:
           current_drawing.uploaded_by_user_id,
           NotificationType.DRAWING_PARSED,
           f'"{current_drawing.original_filename}" finished parsing',
-          body=f"{len(boq_items)} draft BOQ items were generated.",
+          body=(
+            f"{len(boq_items)} draft BOQ items were generated"
+            + (f"; {skipped_without_quantity} element(s) had no usable quantity." if skipped_without_quantity else ".")
+          ),
           link_path=f"/app/projects/{current_drawing.project_id}",
           commit=False,
         )
 
+      current_drawing.ingestion_meta = {
+        "reader_version": READER_VERSION,
+        "ifc_schema": read_result.schema,
+        "length_unit_scale": read_result.length_unit_scale,
+        "model_issues": read_result.model_issues,
+        "stats": read_result.stats,
+      }
       current_drawing.status = DrawingStatus.PARSED
       current_drawing.parsed_at = datetime.now(timezone.utc)
       await drawings.update(current_drawing)
@@ -232,66 +278,19 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
     except Exception as exc:
       await session.rollback()
-      current_drawing.error_message = str(exc)[:2000]
-      current_drawing.status = DrawingStatus.FAILED
-      await drawings.update(current_drawing)
-      if current_drawing.uploaded_by_user_id is not None:
+      failed = await drawings.get_by_id_and_org(drawing_id, drawing_org_id)
+      if failed is not None:
+        failed.error_message = str(exc)[:2000]
+        failed.status = DrawingStatus.FAILED
+        await drawings.update(failed)
+      if uploader_id is not None:
         await NotificationService(session).notify_user(
-          current_drawing.organization_id,
-          current_drawing.uploaded_by_user_id,
+          drawing_org_id,
+          uploader_id,
           NotificationType.DRAWING_FAILED,
-          f'"{current_drawing.original_filename}" failed to parse',
+          f'"{drawing_filename}" failed to parse',
           body=str(exc)[:500],
-          link_path=f"/app/projects/{current_drawing.project_id}",
+          link_path=f"/app/projects/{drawing_project_id}",
           commit=False,
         )
       await session.commit()
-
-def _extract_ifc_elements(path: str) -> list[dict]:
-  model = ifcopenshell.open(path)
-  results: list[dict] = []
-
-  for ifc_type in TARGET_IFC_TYPES:
-    for element in model.by_type(ifc_type):
-      psets = ifcopenshell.util.element.get_psets(element) or {}
-      quantity, unit = _best_quantity(psets)
-      results.append(
-        {
-          "global_id": getattr(element, "GlobalId", None),
-          "ifc_type": ifc_type,
-          "name": getattr(element, "Name", None),
-          "material_text": _material_text(element),
-          "unit": unit,
-          "quantity": quantity,
-          "properties": dict(psets),
-        }
-      )
-
-  return results
-
-def _best_quantity(psets: dict) -> tuple[Decimal, str | None]:
-  for pset_name, pset_values in psets.items():
-    if not pset_name.startswith("Qto_"):
-      continue
-    for attr in QUANTITY_ATTRS:
-      if attr in pset_values and pset_values[attr] is not None:
-        unit = (
-          "m3"
-          if "Volume" in attr
-          else "m2"
-          if "Area" in attr
-          else "m"
-        )
-        return Decimal(str(pset_values[attr])), unit
-  return Decimal("0"), None
-
-def _material_text(element) -> str | None:
-  try:
-    material = ifcopenshell.util.element.get_material(element)
-    return (
-      getattr(material, "Name", None)
-      if material is not None
-      else None
-    )
-  except Exception:
-    return None

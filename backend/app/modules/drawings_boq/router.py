@@ -208,6 +208,24 @@ async def update_boq_item(
     payload,
   )
 
+@router.delete(
+  "/boq-items/{item_id}",
+  status_code=204,
+)
+async def delete_boq_item(
+  item_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.BOQ_UPDATE)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  await service.delete_boq_item(
+    current_user.active_membership.organization_id,
+    item_id,
+    current_user.id,
+  )
+
 @router.post(
   "/boq-items/{item_id}/approve",
   response_model=BOQItemResponse,

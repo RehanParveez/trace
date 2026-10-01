@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import BigInteger, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
@@ -151,12 +151,31 @@ class Drawing(Base, TimestampMixin):
     ForeignKey("model_audit_results.id", ondelete="SET NULL", name="fk_drawings_latest_audit_id", use_alter=True),
     nullable=True,
   )
+  
+  ingestion_meta: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
 
 class DrawingElement(Base, TimestampMixin):
   __tablename__ = "drawing_elements"
 
   __table_args__ = (
     Index("ix_drawing_elements_drawing", "drawing_id"),
+    Index("ix_drawing_elements_org_drawing_type", "organization_id", "drawing_id", "ifc_type"),
+    Index("ix_drawing_elements_drawing_level_role", "drawing_id", "level_id", "structural_role"),
+    Index("ix_drawing_elements_drawing_status", "drawing_id", "normalization_status"),
+    CheckConstraint(
+      "geometry_kind IS NULL OR geometry_kind IN "
+      "('EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPPORTED')",
+      name="ck_drawing_elements_geometry_kind",
+    ),
+    CheckConstraint(
+      "normalization_status IN ('PENDING','VALID','WARNING','INVALID')",
+      name="ck_drawing_elements_normalization_status",
+    ),
   )
 
   id: Mapped[UUID] = mapped_column(
@@ -215,11 +234,91 @@ class DrawingElement(Base, TimestampMixin):
     nullable=False,
     default=dict,
   )
+  
+  discipline: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  structural_role: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  classification_source: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  
+  classification_confidence: Mapped[Decimal | None] = mapped_column(
+    Numeric(5, 4),
+    nullable=True,
+  )
+  quantity_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  length_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  width_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  height_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  thickness_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  elevation_base_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  elevation_top_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  area_mm2: Mapped[Decimal | None] = mapped_column(Numeric(20, 3), nullable=True)
+  volume_mm3: Mapped[Decimal | None] = mapped_column(Numeric(24, 3), nullable=True)
+
+  bbox_min_x_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  bbox_min_y_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  bbox_min_z_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  bbox_max_x_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  bbox_max_y_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  bbox_max_z_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+
+  geometry_kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  profile: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  placement: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+  normalization_status: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default="PENDING",
+    server_default="PENDING",
+  )
+  normalization_issues: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  ) 
+   
   drawing: Mapped["Drawing"] = relationship(
     "Drawing",
     back_populates="elements",
   )
+
+class BuildingLevel(Base, TimestampMixin):
+  __tablename__ = "building_levels"
+  __table_args__ = (
+    UniqueConstraint("drawing_id", "ifc_storey_id", name="uq_building_levels_drawing_storey"),
+    Index("ix_building_levels_drawing_sequence", "drawing_id", "sequence"),
+  )
+
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
+
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+
+  drawing_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawings.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+
+  name: Mapped[str] = mapped_column(String(200), nullable=False)
+  elevation_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  ifc_storey_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 class BOQVersion(Base, TimestampMixin):
   __tablename__ = "boq_versions"
