@@ -1,12 +1,61 @@
 import { Drawer } from "expo-router/drawer";
 import { Link } from "expo-router";
-import {Pressable, ScrollView, StyleSheet, Text, View,
+import {Pressable, ScrollView, StyleSheet, Text, View, 
 } from "react-native";
+
+type NavigationRouteLike = {
+  params?: Record<string, unknown>;
+  state?: NavigationStateLike;
+};
+
+type NavigationStateLike = {
+  index?: number;
+  routes?:  NavigationRouteLike[];
+};
+
+const projectModuleLinks = [
+  ["Project overview", "/projects/[projectId]"],
+  ["Manage project", "/projects/[projectId]/manage"],
+  ["Project team", "/projects/[projectId]/team"],
+  ["Milestones", "/projects/[projectId]/milestones"],
+  ["Drawings & BOQ", "/projects/[projectId]/drawings-boq"],
+  ["Progress verification", "/projects/[projectId]/progress-verification"],
+  ["Site progress", "/projects/[projectId]/site-progress"],
+  ["Site photos", "/projects/[projectId]/site-photos"],
+  ["Labour", "/projects/[projectId]/labour"],
+  ["Subcontractors", "/projects/[projectId]/subcontractors"],
+  ["Bank guarantees", "/projects/[projectId]/bank-guarantees"],
+  ["Change Orders", "/projects/[projectId]/change-orders"],
+  ["Budget", "/projects/[projectId]/budgets"],
+] as const;
+
+function getActiveProjectId(
+  state: NavigationStateLike,
+): string | undefined {
+  let currentState: NavigationStateLike | undefined = state;
+  let projectId: unknown;
+
+  while (currentState?.routes?.length) {
+    const route: NavigationRouteLike | undefined =
+      currentState.routes[currentState.index ?? 0];
+    const candidate = route?.params?.projectId;
+
+    if (typeof candidate === "string") {
+      projectId = candidate;
+    }
+
+    currentState = route?.state;
+  }
+
+  return typeof projectId === "string" ? projectId : undefined;
+}
 
 export default function AuthenticatedLayout() {
   return (
     <Drawer
-      drawerContent={() => <ModuleMenu />}
+      drawerContent={(props) => (
+       <ModuleMenu navigationState={props.state as NavigationStateLike} /> 
+      )}
       screenOptions={{
         headerShown: true,
         headerTitle: "Trace",
@@ -38,40 +87,80 @@ export default function AuthenticatedLayout() {
         name="change-orders"
         options={{ title: "Change Orders", drawerLabel: "Change Orders" }}
       />
+      <Drawer.Screen
+        name="budgets"
+        options={{ title: "Budgets", drawerLabel: "Budgets" }}
+      />
+
+      <Drawer.Screen
+        name="expenses"
+        options={{ title: "Expenses", drawerLabel: "Expenses" }}
+      />
 
     </Drawer>  
   );
 }
 
-function ModuleMenu() {
+function ModuleMenu({
+  navigationState,
+}: {
+  navigationState: NavigationStateLike;
+}) {
+  const projectId = getActiveProjectId(navigationState);
+
   return (
     <ScrollView contentContainerStyle={styles.menu}>
       <Text style={styles.brand}>TRACE</Text>
-      <Text style={styles.caption}>WORKSPACE</Text>
 
+      <Text style={styles.caption}>WORKSPACE</Text>
       <MenuLink href="/projects" label="Projects" />
       <MenuLink href="/labour" label="Labour directory" />
-      <MenuLink href="/bank-guarantees" label="Bank guarantees" />
-      <MenuLink href="/change-orders" label="Change Orders" />
+
+      <Text style={styles.caption}>PROJECT MODULES</Text>
+
+      <MenuLink href="/bank-guarantees" label="Bank guarantees · all projects" />
+      <MenuLink href="/change-orders" label="Change Orders · all projects" />
+      <MenuLink href="/budgets" label="Budgets · all projects" />
+      <MenuLink href="/expenses" label="Expenses · all projects" />
+
+      {projectId ? (
+        projectModuleLinks.map(([label, pathname]) => (
+          <MenuLink
+            key={label}
+            href={{
+              pathname,
+              params: { projectId },
+            } as any}
+            label={label}
+          />
+        ))
+      ) : (
+        <View style={styles.note}>
+          <Text style={styles.noteText}>
+            Open a project to see its team, milestones, drawings, progress,
+            photos, labour, subcontractor, guarantee, change-order, and budget
+            screens here.
+          </Text>
+          <MenuLink href="/projects" label="Choose a project" />
+        </View>
+      )}
 
       <Text style={styles.caption}>ORGANIZATION</Text>
-      <MenuLink href="/organization" label="Organization overview" />
-
-      <View style={styles.note}>
-        <Text style={styles.noteText}>
-          Organization settings, members, roles, and invitations will each get
-          their own screen under this section.
-        </Text>
-      </View>
+      <MenuLink href="/organization" label="Overview" />
+      <MenuLink href="/organization/settings" label="Settings" />
+      <MenuLink href="/organization/members" label="Members" />
+      <MenuLink href="/organization/roles" label="Roles and access" />
+      <MenuLink href="/organization/invitations" label="Invitations" />
+      <MenuLink href="/organization/subscription" label="Subscription" />
     </ScrollView>
   );
-}
+};
 
 function MenuLink({
   href,
   label,
 }: {
-  href: "/projects" | "/organization"  | "/labour" | "/bank-guarantees" | "/change-orders";
+  href: any;
   label: string;
 }) {
   return (

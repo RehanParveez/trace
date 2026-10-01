@@ -1087,3 +1087,92 @@ export type ProjectChangeOrderSummary = {
   draft_count: number;
   currency: string;
 };
+
+export type BudgetCategory = {
+  id: string;
+  name: string;
+  allocated_amount: number | string;
+};
+
+export type Budget = {
+  id: string;
+  project_id: string;
+  approved_amount: number | string;
+  currency: string;
+  notes: string | null;
+  version: number;
+  categories: BudgetCategory[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type BudgetCategoryInput = {
+  name: string;
+  allocated_amount: number;
+};
+
+export type BudgetSavePayload = {
+  project_id: string;
+  approved_amount: number;
+  currency?: string;
+  notes?: string | null;
+  categories?: BudgetCategoryInput[];
+  version?: number | null;
+};
+
+export type BudgetOrganizationSummary = {
+  total_approved_amount: number | string;
+  budget_count: number;
+  currency: string;
+};
+
+export type BudgetProjectSummary = {
+  project_id: string;
+  approved_amount: number | string;
+  currency: string;
+};
+
+export type ExpenseStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type Expense = {
+  id: string;
+  project_id: string;
+  category: string;
+  description: string | null;
+  amount: number | string;
+  expense_date: string;
+  status: ExpenseStatus;
+  submitted_by: string | null;
+  reviewed_by: string | null;
+  review_note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExpenseCreatePayload = {
+  project_id: string;
+  category: string;
+  description?: string | null;
+  amount: number;
+  expense_date: string;
+};
+
+export type ExpenseReviewPayload = {
+  note?: string | null;
+};
+
+export type ExpenseOrganizationSummary = {
+  total_approved_amount: number | string;
+  expense_count: number;
+};
+
+export type ExpenseStatusSummary = {
+  totals: Partial<Record<ExpenseStatus, number | string>>;
+};
+
+export type ExpenseListParams = {
+  project_id?: string;
+  status?: ExpenseStatus;
+  skip?: number;
+  limit?: number;
+};

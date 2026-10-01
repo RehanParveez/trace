@@ -265,6 +265,30 @@ export default function ProjectDetailScreen() {
        </Pressable>
       </Link>
 
+      <Link
+        href={{
+          pathname: "/projects/[projectId]/budgets",
+          params: { projectId: project.id },
+        }}
+        asChild
+      >
+        <Pressable style={styles.secondaryButton} accessibilityRole="button">
+         <Text style={styles.secondaryButtonText}>Budget</Text>
+        </Pressable>
+      </Link>
+
+      <Link
+        href={{
+          pathname: "/projects/[projectId]/expenses",
+          params: { projectId: project.id },
+        }}
+        asChild
+      >
+        <Pressable style={styles.secondaryButton} accessibilityRole="button">
+         <Text style={styles.secondaryButtonText}>Expenses</Text>
+        </Pressable>
+      </Link>
+
       <Pressable
         style={styles.secondaryButton}
         onPress={() => setAttempt((v) => v + 1)}
