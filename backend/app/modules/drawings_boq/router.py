@@ -1,12 +1,13 @@
 from __future__ import annotations
 from uuid import UUID
-from fastapi import APIRouter, Depends, File, Header, UploadFile, Form
+from typing import Literal
+from fastapi import APIRouter, Depends, File, Header, Query, UploadFile, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
   DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
-   PDFExtractionResultResponse, ProjectBOQCountResponse
+   PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.identity.enums import PermissionKey
@@ -104,15 +105,67 @@ async def suggest_boq_items_from_pdf(
 )
 async def list_drawing_elements(
   drawing_id: UUID,
+  response: Response,
+  limit: int = Query(default=2000, ge=1, le=5000),
+  cursor: str | None = Query(default=None),
+  structural_role: str | None = Query(default=None, max_length=30),
+  discipline: str | None = Query(default=None, max_length=20),
+  level_id: UUID | None = Query(default=None),
+  normalization_status: Literal["PENDING", "VALID", "WARNING", "INVALID"] | None = Query(default=None),
+  ifc_type: str | None = Query(default=None, max_length=100),
   current_user: User = Depends(
     require_permission(PermissionKey.DRAWING_READ)
   ),
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
-  return await service.list_elements(
+  elements, next_cursor = await service.list_elements_page(
     current_user.active_membership.organization_id,
-    drawing_id
+    drawing_id,
+    limit=limit,
+    cursor=cursor,
+    structural_role=structural_role,
+    discipline=discipline,
+    level_id=level_id,
+    normalization_status=normalization_status,
+    ifc_type=ifc_type,
+  )
+  if next_cursor:
+    response.headers["X-Next-Cursor"] = next_cursor
+  return elements
+
+@router.get(
+  "/drawings/{drawing_id}/levels",
+  response_model=list[BuildingLevelResponse],
+)
+async def list_drawing_levels(
+  drawing_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.list_levels(
+    current_user.active_membership.organization_id,
+    drawing_id,
+  )
+
+@router.get(
+  "/drawings/{drawing_id}/audit",
+  response_model=ModelAuditResponse,
+)
+async def get_drawing_audit(
+  drawing_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.get_latest_audit(
+    current_user.active_membership.organization_id,
+    drawing_id,
   )
 
 @router.get("/drawings/{drawing_id}/file")

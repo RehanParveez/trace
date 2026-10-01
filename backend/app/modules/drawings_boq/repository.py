@@ -1,8 +1,8 @@
 from __future__ import annotations
 from uuid import UUID
-from sqlalchemy import select, func
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.drawings_boq.models import BOQItem, BOQVersionStatus, BOQVersion, LabourRate, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ElementTypeMapping, AssemblyRecipe, ModelAuditResult, BOQItem
+from app.modules.drawings_boq.models import BOQItem, BOQVersionStatus, BOQVersion, LabourRate, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ElementTypeMapping, AssemblyRecipe, ModelAuditResult, BOQItem, BuildingLevel
 
 class DrawingRepository:
   def __init__(self, session: AsyncSession):
@@ -93,7 +93,65 @@ class DrawingElementRepository:
     .order_by(DrawingElement.ifc_type.asc())
   )
    return list(result.scalars().all())
+ 
+  async def list_page(
+    self,
+    drawing_id: UUID,
+    organization_id: UUID,
+    *,
+    limit: int,
+    after: tuple[str, UUID] | None = None,
+    structural_role: str | None = None,
+    discipline: str | None = None,
+    level_id: UUID | None = None,
+    normalization_status: str | None = None,
+    ifc_type: str | None = None,
+  ) -> list[DrawingElement]:
+    stmt = select(DrawingElement).where(
+      DrawingElement.drawing_id == drawing_id,
+      DrawingElement.organization_id == organization_id,
+    )
+    if structural_role is not None:
+      stmt = stmt.where(DrawingElement.structural_role == structural_role)
+    if discipline is not None:
+      stmt = stmt.where(DrawingElement.discipline == discipline)
+    if level_id is not None:
+      stmt = stmt.where(DrawingElement.level_id == level_id)
+    if normalization_status is not None:
+      stmt = stmt.where(DrawingElement.normalization_status == normalization_status)
+    if ifc_type is not None:
+      stmt = stmt.where(DrawingElement.ifc_type == ifc_type)
+    if after is not None:
+      after_type, after_id = after
+      stmt = stmt.where(
+        or_(
+          DrawingElement.ifc_type > after_type,
+          and_(DrawingElement.ifc_type == after_type, DrawingElement.id > after_id),
+        )
+      )
+    stmt = stmt.order_by(DrawingElement.ifc_type.asc(), DrawingElement.id.asc()).limit(limit + 1)
+    result = await self.session.execute(stmt)
+    return list(result.scalars().all())
 
+class BuildingLevelRepository:
+  def __init__(self, session: AsyncSession):
+    self.session = session
+
+  async def list_by_drawing(
+    self,
+    drawing_id: UUID,
+    organization_id: UUID,
+  ) -> list[BuildingLevel]:
+    result = await self.session.execute(
+      select(BuildingLevel)
+      .where(
+        BuildingLevel.drawing_id == drawing_id,
+        BuildingLevel.organization_id == organization_id,
+      )
+      .order_by(BuildingLevel.sequence.asc())
+    )
+    return list(result.scalars().all())
+  
 class BOQVersionRepository:
   def __init__(self, session: AsyncSession):
     self.session = session

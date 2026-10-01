@@ -168,7 +168,6 @@ TARGET_IFC_TYPES: list[str] = [
     "IfcElement",
 ]
 
-
 OPTIONAL_IFC4X3_INFRASTRUCTURE_TYPES: list[str] = [
   "IfcEarthworksElement",
   "IfcEarthworksCut",
@@ -494,10 +493,11 @@ NAME_KEYWORD_ROLES: list[tuple[str, str]] = [
 
   ("slab", "SLAB"),
   ("floor", "SLAB"),
-  ("wall", "WALL"),
-  ("retaining", "WALL_RETAINING"),
   ("shear wall", "WALL_SHEAR"),
+  ("retaining", "WALL_RETAINING"),
   ("parapet", "WALL_PARAPET"),
+  ("curtain wall", "CURTAIN_WALL"),
+  ("wall", "WALL"),
 
   ("roof", "ROOF"),
   ("stair", "STAIR"),
@@ -508,7 +508,6 @@ NAME_KEYWORD_ROLES: list[tuple[str, str]] = [
   ("door", "DOOR"),
   ("gate", "GATE"),
   ("window", "WINDOW"),
-  ("curtain wall", "CURTAIN_WALL"),
 
   ("pipe", "PIPE"),
   ("plumbing", "PIPE"),
@@ -610,8 +609,11 @@ COUNT_ROLES = frozenset({"DOOR", "WINDOW", "FIXTURE", "FURNISHING", "TRANSPORT",
     "DUCT_FITTING", "DUCT_SILENCER", "AIR_TERMINAL", "AIR_TERMINAL_BOX", "DAMPER", "FAN", "FILTER", "COIL", "CHILLER", "CONDENSER", "COOLED_BEAM", "COOLING_TOWER", "EVAPORATIVE_COOLER", "EVAPORATOR", "HEAT_EXCHANGER",
     "HUMIDIFIER", "BOILER", "BURNER", "COMPRESSOR", "UNITARY_EQUIPMENT", "SPACE_HEATER", "HEAT_RECOVERY", "ENGINE",
 
-    "FIRE_TERMINAL", "ALARM", "AV_APPLIANCE", "COMMUNICATIONS_APPLIANCE", "SENSOR", "ACTUATOR", "CONTROLLER", "INSTRUMENT", "CONTROL_PANEL", "CONVEYOR",
-})
+    "FIRE_TERMINAL", "ALARM", "AV_APPLIANCE", "COMMUNICATIONS_APPLIANCE", "SENSOR", "ACTUATOR", "CONTROLLER", "INSTRUMENT", "CONTROL_PANEL", "TRACK_FROG", "TRACK_DERAILER", 
+      "TRACK_BLOCKING_DEVICE", "TRACK_VEHICLE_STOP", "MOORING_DEVICE", "NAVIGATION_ELEMENT",
+    }) | (
+     frozenset(role for role, disc in DISCIPLINE_BY_ROLE.items() if disc.startswith("MEP_")) - LENGTH_ROLES
+    )
 
 NO_LEGACY_BOQ_ROLES = frozenset({"REBAR", "REBAR_MESH", "TENDON", "ASSEMBLY", "FASTENER",})
 
@@ -634,6 +636,11 @@ MESH_FALLBACK_ROLES = (
     "COURSE",
     "KERB",
   }
+)
+
+MESH_FALLBACK_ROLES = frozenset(
+  role for role in MESH_FALLBACK_ROLES
+  if not DISCIPLINE_BY_ROLE.get(role, "").startswith("MEP_")
 )
  
 QUANTITY_PROPS_BY_KIND: dict[str, tuple[str, ...]] = {
@@ -674,8 +681,8 @@ QUANTITY_KIND_ORDER_BY_ROLE: dict[str, tuple[str, ...]] = {
   "CAISSON": ("volume", "length"),
   "PILE": ("length", "volume"),
   "COLUMN": ("volume", "length"),
-  "BEAM": ("length", "volume"),
-  "LINTEL": ("length", "volume"),
+  "BEAM": ("volume", "length"),
+  "LINTEL": ("volume", "length"),
   "MEMBER": ("length", "volume"),
   "SLAB": ("volume", "area"),
   "SLAB_FOUNDATION": ("volume", "area"),
@@ -686,7 +693,11 @@ QUANTITY_KIND_ORDER_BY_ROLE: dict[str, tuple[str, ...]] = {
   "WALL_RETAINING": ("volume", "area"),
   "WALL_PARAPET": ("volume", "area"),
   "WALL_SHEAR": ("volume", "area"),
+
+  "LANDSCAPE": ("area", "volume", "count"),
+  "TRACK": ("length", "count"),
 }
+
  
 REQUIRED_DIMENSIONS_BY_ROLE: dict[str, tuple[str, ...]] = {
   **{

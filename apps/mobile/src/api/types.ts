@@ -1176,3 +1176,121 @@ export type ExpenseListParams = {
   skip?: number;
   limit?: number;
 };
+
+export type AIRequestPurpose =
+  | "MATERIAL_NORMALIZATION"
+  | "CAPTION_PARSING"
+  | "PHOTO_TAGGING"
+  | "PDF_SCHEDULE_EXTRACTION";
+
+export type AIEntityType =
+  | "DRAWING_ELEMENT"
+  | "SITE_PHOTO"
+  | "WHATSAPP_MESSAGE"
+  | "DRAWING";
+
+export type AIProvider = "OLLAMA" | "ANTHROPIC";
+export type AIResponseStatus = "SUCCEEDED" | "FAILED";
+
+export type AIResponseSummary = {
+  status: AIResponseStatus;
+  parsed_output: Record<string, unknown> | null;
+  error_message: string | null;
+  latency_ms: number | null;
+};
+
+export type AIRequestRecord = {
+  id: string;
+  purpose: AIRequestPurpose;
+  entity_type: AIEntityType | null;
+  entity_id: string | null;
+  provider: AIProvider;
+  model: string;
+  requested_by: string | null;
+  created_at: string;
+  response: AIResponseSummary | null;
+};
+
+export type AIUsageSummary = {
+  total_requests: number;
+  succeeded: number;
+  failed: number;
+  average_latency_ms: number | null;
+};
+
+export type NotificationType =
+  | "DRAWING_PARSED"
+  | "DRAWING_FAILED"
+  | "BOQ_ITEM_APPROVED"
+  | "SITE_PHOTO_NEEDS_PROJECT"
+  | "PROGRESS_CLAIM_SUBMITTED"
+  | "PROGRESS_CLAIM_APPROVED"
+  | "PROGRESS_CLAIM_REJECTED"
+  | "SUBSCRIPTION_USAGE_WARNING"
+  | "MEMBER_JOINED"
+  | "ORGANIZATION_INVITATION_RECEIVED";
+
+export type AppNotification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  link_path: string | null;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type NotificationUnreadCount = {
+  unread_count: number;
+};
+
+export type AuditEntityType =
+  | "ORGANIZATION"
+  | "ROLE"
+  | "MEMBER"
+  | "INVITATION"
+  | "SUBSCRIPTION"
+  | "PROJECT"
+  | "BOQ_ITEM"
+  | "DRAWING"
+  | "PROGRESS_CLAIM"
+  | "WHATSAPP_CHANNEL"
+  | "MATERIAL_LIBRARY"
+  | "SITE_PHOTO"
+  | "RUNNING_BILL"
+  | "labour"
+  | "subcontractor"
+  | "retention"
+  | "CHANGE_ORDER"
+  | "SCHEDULE_TASK"
+  | "PUNCH_LIST"
+  | "BANK_GUARANTEE";
+
+export type AuditAction =
+  | "CREATE"
+  | "UPDATE"
+  | "DELETE"
+  | "APPROVE"
+  | "REJECT"
+  | "STATUS_CHANGE";
+
+export type AuditLogEntry = {
+  id: string;
+  actor_user_id: string | null;
+  actor_name: string | null;
+  actor_email: string | null;
+  entity_type: AuditEntityType;
+  entity_id: string | null;
+  action: AuditAction;
+  summary: string;
+  changes: Record<string, unknown>;
+  created_at: string;
+};
+
+export type EntityActivitySummary = {
+  entity_id: string;
+  last_action: AuditAction;
+  last_summary: string;
+  last_created_at: string;
+};

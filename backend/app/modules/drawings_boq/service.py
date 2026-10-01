@@ -17,7 +17,7 @@ from app.modules.drawings_boq.models import (AssemblyRecipeComponent, BOQItem, B
 )
 from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response
 from app.modules.drawings_boq.repository import ( AssemblyRecipeRepository, BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, ElementTypeMappingRepository, LabourRateRepository,
-  MaterialLibraryRepository, MaterialNormalizationCacheRepository, MeasurementRuleSetRepository, ModelAuditResultRepository,
+  MaterialLibraryRepository, MaterialNormalizationCacheRepository, MeasurementRuleSetRepository, ModelAuditResultRepository, BuildingLevelRepository
 )
 from app.modules.drawings_boq.schemas import BOQCustomItemCreateRequest, BOQItemUpdateRequest, BOQVersionCreateRequest, BOQVersionUpdateRequest, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryUpdateRequest
 from app.modules.projects.repository import ProjectRepository
@@ -37,6 +37,9 @@ from app.core.config import settings
 from app.modules.drawings_boq.ifc_extraction import aggregate_drawing_elements, extract_quantity, resolve_material_name
 from app.modules.drawings_boq.ifc_types import TARGET_IFC_TYPES
 from app.modules.drawings_boq.ifc_extraction import AggregatedGroup, aggregate_drawing_elements
+import base64
+import json
+from app.modules.drawings_boq.audit import summarize_audit
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
@@ -66,6 +69,18 @@ def _looks_like_ifc(contents: bytes) -> bool:
   header = contents[:200].lstrip(b"\xef\xbb\xbf \t\r\n")
   return header.startswith(b"ISO-10303-21;")
 
+def _encode_cursor(ifc_type: str, element_id: UUID) -> str:
+  return base64.urlsafe_b64encode(json.dumps([ifc_type, str(element_id)]).encode()).decode()
+
+def _decode_cursor(cursor: str | None) -> tuple[str, UUID] | None:
+  if not cursor:
+    return None
+  try:
+    ifc_type, element_id = json.loads(base64.urlsafe_b64decode(cursor.encode()))
+    return str(ifc_type), UUID(element_id)
+  except Exception:
+    raise TraceException("Invalid cursor.", status_code=422, code="INVALID_CURSOR")
+  
 class DrawingBOQService:
   def __init__(self, session: AsyncSession):
     self.session = session
@@ -84,6 +99,7 @@ class DrawingBOQService:
     self.element_mappings = ElementTypeMappingRepository(session)
     self.recipes = AssemblyRecipeRepository(session)
     self.model_audits = ModelAuditResultRepository(session)
+    self.levels = BuildingLevelRepository(session)
 
   async def _require_project(
     self,
@@ -348,6 +364,52 @@ class DrawingBOQService:
   ) -> list[DrawingElement]:
     await self.get_drawing(organization_id, drawing_id)
     return await self.elements.list_by_drawing(drawing_id, organization_id)
+  
+  async def list_elements_page(
+    self,
+    organization_id: UUID,
+    drawing_id: UUID,
+    *,
+    limit: int,
+    cursor: str | None,
+    structural_role: str | None = None,
+    discipline: str | None = None,
+    level_id: UUID | None = None,
+    normalization_status: str | None = None,
+    ifc_type: str | None = None,
+  ) -> tuple[list[DrawingElement], str | None]:
+    await self.get_drawing(organization_id, drawing_id)
+    rows = await self.elements.list_page(
+      drawing_id,
+      organization_id,
+      limit=limit,
+      after=_decode_cursor(cursor),
+      structural_role=structural_role,
+      discipline=discipline,
+      level_id=level_id,
+      normalization_status=normalization_status,
+      ifc_type=ifc_type,
+    )
+    next_cursor = None
+    if len(rows) > limit:
+      rows = rows[:limit]
+      next_cursor = _encode_cursor(rows[-1].ifc_type, rows[-1].id)
+    return rows, next_cursor
+
+  async def list_levels(self, organization_id: UUID, drawing_id: UUID):
+    await self.get_drawing(organization_id, drawing_id)
+    return await self.levels.list_by_drawing(drawing_id, organization_id)
+
+  async def get_latest_audit(self, organization_id: UUID, drawing_id: UUID) -> ModelAuditResult:
+    await self.get_drawing(organization_id, drawing_id)
+    audit = await self.model_audits.get_latest_by_drawing(drawing_id, organization_id)
+    if audit is None:
+      raise TraceException(
+        "No readiness audit exists for this drawing yet.",
+        status_code=404,
+        code="AUDIT_NOT_FOUND",
+      )
+    return audit
 
   async def get_drawing_file(
     self,
@@ -1302,116 +1364,27 @@ class DrawingBOQService:
     self,
     organization_id: UUID,
     drawing_id: UUID,
+    model_issues: list[dict] | None = None,
   ) -> ModelAuditResult:
-    drawing = await self.get_drawing(
-      organization_id,
-      drawing_id,
-    )
-
-    elements = await self.elements.list_by_drawing(
-      drawing_id,
-      organization_id,
-    )
-
-    issues: list[dict] = []
-    missing_material = 0
-    zero_quantity = 0
-    unclassified_proxy = 0
-    missing_qto = 0
-    no_storey = 0
-
-    for element in elements:
-      properties = element.properties or {}
-      element_label = element.ifc_global_id or element.id
-
-      if (
-        not element.raw_material_text
-        or element.raw_material_text.strip() == ""
-      ):
-        missing_material += 1
-        issues.append({
-          "code": "MISSING_MATERIAL",
-          "severity": "warning",
-          "message": (
-            f"Element {element_label} has no material text"
-          ),
-          "element_ids": [str(element.id)],
-        })
-
-      if element.quantity is None or element.quantity <= 0:
-        zero_quantity += 1
-        issues.append({
-          "code": "ZERO_QUANTITY",
-          "severity": "warning",
-          "message": (
-            f"Element {element_label} has zero/missing quantity"
-          ),
-          "element_ids": [str(element.id)],
-        })
-
-      if properties.get("is_generic_fallback") is True:
-        unclassified_proxy += 1
-        issues.append({
-          "code": "UNCLASSIFIED_PROXY",
-          "severity": "info",
-          "message": (
-            f"Element {element_label} used generic type name as material"
-          ),
-          "element_ids": [str(element.id)],
-        })
-
-      has_qto = (
-        any(key.startswith("Qto_") for key in properties.keys())
-        if isinstance(properties, dict)
-        else False
-      )
-
-      if not has_qto and element.quantity == 0:
-        missing_qto += 1
-        issues.append({
-          "code": "MISSING_QTO",
-          "severity": "warning",
-          "message": (
-            f"Element {element_label} has no Qto quantities"
-          ),
-          "element_ids": [str(element.id)],
-        })
-
-      properties_text = str(properties).lower()
-
-      if (
-        "storey" not in properties_text
-        and "ifcbuildingstorey" not in properties_text
-      ):
-        no_storey += 1
-
-    score = Decimal("100.00")
-    score -= Decimal(missing_material) * Decimal("3")
-    score -= Decimal(zero_quantity) * Decimal("4")
-    score -= Decimal(unclassified_proxy) * Decimal("1.5")
-    score -= Decimal(missing_qto) * Decimal("2")
-    score = max(score, Decimal("0"))
+    drawing = await self.get_drawing(organization_id, drawing_id)
+    elements = await self.elements.list_by_drawing(drawing_id, organization_id)
+    summary = summarize_audit(elements, model_issues)
 
     audit = ModelAuditResult(
       id=uuid4(),
       organization_id=organization_id,
       drawing_id=drawing_id,
-      overall_score=score,
-      issues=issues,
-      element_count=len(elements),
-      missing_material_count=missing_material,
-      zero_quantity_count=zero_quantity,
-      unclassified_proxy_count=unclassified_proxy,
-      extra_stats={
-        "missing_qto_count": missing_qto,
-        "no_storey_hint_count": no_storey,
-      },
+      overall_score=summary["overall_score"],
+      issues=summary["issues"],
+      element_count=summary["element_count"],
+      missing_material_count=summary["missing_material_count"],
+      zero_quantity_count=summary["zero_quantity_count"],
+      unclassified_proxy_count=summary["unclassified_proxy_count"],
+      extra_stats=summary["extra_stats"],
     )
-
     audit = await self.model_audits.create(audit)
     drawing.latest_audit_id = audit.id
     await self.drawings.update(drawing)
-
     await self.session.flush()
     return audit
 

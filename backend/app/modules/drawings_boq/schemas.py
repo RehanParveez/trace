@@ -21,6 +21,8 @@ class DrawingResponse(BaseModel):
   revision_label: str | None
   is_current_revision: bool
   superseded_at: datetime | None
+  ingestion_meta: dict
+  latest_audit_id: UUID | None
 
 class DrawingElementResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -33,6 +35,23 @@ class DrawingElementResponse(BaseModel):
   unit: str | None
   quantity: Decimal
   properties: dict
+  discipline: str | None = None
+  structural_role: str | None = None
+  classification_source: str | None = None
+  classification_confidence: Decimal | None = None
+  quantity_source: str | None = None
+  level_id: UUID | None = None
+  length_mm: Decimal | None = None
+  width_mm: Decimal | None = None
+  height_mm: Decimal | None = None
+  thickness_mm: Decimal | None = None
+  elevation_base_mm: Decimal | None = None
+  elevation_top_mm: Decimal | None = None
+  area_mm2: Decimal | None = None
+  volume_mm3: Decimal | None = None
+  geometry_kind: str | None = None
+  normalization_status: str = "PENDING"
+  normalization_issues: list[dict] = Field(default_factory=list)
 
 class BOQVersionResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -178,3 +197,26 @@ class BOQSummaryResponse(BaseModel):
   unpriced_item_count: int
   unapproved_item_count: int
   item_count: int
+  
+class BuildingLevelResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  name: str
+  elevation_mm: Decimal | None
+  ifc_storey_id: str | None
+  sequence: int
+
+class ModelAuditResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  drawing_id: UUID
+  overall_score: Decimal
+  issues: list[dict]
+  element_count: int
+  missing_material_count: int
+  zero_quantity_count: int
+  unclassified_proxy_count: int
+  extra_stats: dict
+  created_at: datetime

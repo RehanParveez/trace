@@ -2,6 +2,7 @@ import { Drawer } from "expo-router/drawer";
 import { Link } from "expo-router";
 import {Pressable, ScrollView, StyleSheet, Text, View, 
 } from "react-native";
+import { useState, type PropsWithChildren } from "react";
 
 type NavigationRouteLike = {
   params?: Record<string, unknown>;
@@ -97,6 +98,21 @@ export default function AuthenticatedLayout() {
         options={{ title: "Expenses", drawerLabel: "Expenses" }}
       />
 
+      <Drawer.Screen
+        name="ai_requests"
+        options={{ title: "AI Requests", drawerLabel: "AI Requests" }}
+      />
+
+      <Drawer.Screen
+        name="notifications"
+        options={{ title: "Notifications", drawerLabel: "Notifications" }}
+      />
+
+     <Drawer.Screen
+       name="audit"
+       options={{ title: "Audit Log", drawerLabel: "Audit Log" }}
+     />
+
     </Drawer>  
   );
 }
@@ -108,53 +124,113 @@ function ModuleMenu({
 }) {
   const projectId = getActiveProjectId(navigationState);
 
+  type MenuGroupKey = "workspace" | "projectModules" | "activity" | "organization";
+
+  const [expanded, setExpanded] = useState<Record<MenuGroupKey, boolean>>({
+    workspace: true,
+    projectModules: true,
+    activity: true,
+    organization: true,
+  });
+
+  function toggleGroup(group: MenuGroupKey) {
+    setExpanded((current) => ({ ...current, [group]: !current[group] }));
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.menu}>
       <Text style={styles.brand}>TRACE</Text>
 
-      <Text style={styles.caption}>WORKSPACE</Text>
-      <MenuLink href="/projects" label="Projects" />
-      <MenuLink href="/labour" label="Labour directory" />
+  <MenuGroup
+    title="WORKSPACE"
+    expanded={expanded.workspace}
+    onPress={() => toggleGroup("workspace")}
+  >
+    <MenuLink href="/projects" label="Projects" />
+    <MenuLink href="/labour" label="Labour directory" />
+    <MenuLink href="/subcontractors" label="Subcontractor directory" />
+  </MenuGroup>
 
-      <Text style={styles.caption}>PROJECT MODULES</Text>
+  <MenuGroup
+    title="PROJECT MODULES"
+    expanded={expanded.projectModules}
+    onPress={() => toggleGroup("projectModules")}
+  >
+    <MenuLink href="/bank-guarantees" label="Bank guarantees · all projects" />
+    <MenuLink href="/change-orders" label="Change Orders · all projects" />
+    <MenuLink href="/budgets" label="Budgets · all projects" />
+    <MenuLink href="/expenses" label="Expenses · all projects" />
 
-      <MenuLink href="/bank-guarantees" label="Bank guarantees · all projects" />
-      <MenuLink href="/change-orders" label="Change Orders · all projects" />
-      <MenuLink href="/budgets" label="Budgets · all projects" />
-      <MenuLink href="/expenses" label="Expenses · all projects" />
+    {projectId ? (
+      projectModuleLinks.map(([label, pathname]) => (
+       <MenuLink
+         key={label}
+         href={{ pathname, params: { projectId } } as any}
+         label={label}
+        />
+      ))
+    ) : (
+    <View style={styles.note}>
+      <Text style={styles.noteText}>
+        Open a project to see its team, milestones, drawings, progress, photos,
+        labour, subcontractor, guarantee, change-order, and budget screens here.
+      </Text>
+      <MenuLink href="/projects" label="Choose a project" />
+    </View>
+  )}
+</MenuGroup>
 
-      {projectId ? (
-        projectModuleLinks.map(([label, pathname]) => (
-          <MenuLink
-            key={label}
-            href={{
-              pathname,
-              params: { projectId },
-            } as any}
-            label={label}
-          />
-        ))
-      ) : (
-        <View style={styles.note}>
-          <Text style={styles.noteText}>
-            Open a project to see its team, milestones, drawings, progress,
-            photos, labour, subcontractor, guarantee, change-order, and budget
-            screens here.
-          </Text>
-          <MenuLink href="/projects" label="Choose a project" />
-        </View>
-      )}
+<MenuGroup
+  title="ACTIVITY"
+  expanded={expanded.activity}
+  onPress={() => toggleGroup("activity")}
+>
+  <MenuLink href="/ai_requests" label="AI Requests" />
+  <MenuLink href="/notifications" label="Notifications" />
+  <MenuLink href="/audit" label="Audit Log" />
+</MenuGroup>
 
-      <Text style={styles.caption}>ORGANIZATION</Text>
-      <MenuLink href="/organization" label="Overview" />
-      <MenuLink href="/organization/settings" label="Settings" />
-      <MenuLink href="/organization/members" label="Members" />
-      <MenuLink href="/organization/roles" label="Roles and access" />
-      <MenuLink href="/organization/invitations" label="Invitations" />
-      <MenuLink href="/organization/subscription" label="Subscription" />
-    </ScrollView>
+<MenuGroup
+  title="ORGANIZATION"
+  expanded={expanded.organization}
+  onPress={() => toggleGroup("organization")}
+>
+  <MenuLink href="/organization" label="Overview" />
+  <MenuLink href="/organization/settings" label="Settings" />
+  <MenuLink href="/organization/members" label="Members" />
+  <MenuLink href="/organization/roles" label="Roles and access" />
+  <MenuLink href="/organization/invitations" label="Invitations" />
+  <MenuLink href="/organization/subscription" label="Subscription" />
+</MenuGroup>
+</ScrollView>
   );
 };
+
+function MenuGroup({
+  title,
+  expanded,
+  onPress,
+  children,
+}: PropsWithChildren<{
+  title: string;
+  expanded: boolean;
+  onPress: () => void;
+}>) {
+  return (
+    <View style={styles.group}>
+      <Pressable
+        style={styles.groupHeader}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+      >
+        <Text style={styles.caption}>{title}</Text>
+        <Text style={styles.groupChevron}>{expanded ? "⌃" : "⌄"}</Text>
+      </Pressable>
+      {expanded ? <View>{children}</View> : null}
+    </View>
+  );
+}
 
 function MenuLink({
   href,
@@ -180,6 +256,9 @@ const styles = StyleSheet.create({
   menuItem: { minHeight: 48, borderRadius: 10, paddingHorizontal: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   menuItemText: { color: "#17212F", fontSize: 15, fontWeight: "600" },
   chevron: { color: "#8A7B67", fontSize: 22 },
-  note: { backgroundColor: "#F4F6F8", borderRadius: 10, padding: 12, marginTop: 16 },
+  group: { marginTop: 22 },
+  groupHeader: {minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between",},
+  groupChevron: { color: "#8A7B67", fontSize: 20, fontWeight: "700" },
+  note: { backgroundColor: "#F4F6F8", borderRadius: 10, padding: 12},
   noteText: { color: "#667085", fontSize: 12, lineHeight: 18 },
 });

@@ -8,8 +8,8 @@ from uuid import UUID
 from app.core.database import WorkerSessionLocal, dispose_worker_engine
 from uuid import uuid4
 from app.modules.drawings_boq.ifc_reader import ReadElement, read_ifc
-from app.modules.drawings_boq.ifc_types import READER_VERSION
-from app.modules.drawings_boq.models import BOQItem, BOQVersion, BuildingLevel, Drawing, DrawingElement, DrawingStatus, BOQItemRateSource
+from app.modules.drawings_boq.ifc_types import NO_LEGACY_BOQ_ROLES, READER_VERSION
+from app.modules.drawings_boq.models import BOQItem, BOQVersion, BuildingLevel, Drawing, DrawingElement, DrawingStatus, BOQItemRateSource, BOQItemSourceElement
 from app.modules.drawings_boq.repository import BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.service import DrawingBOQService
@@ -19,6 +19,8 @@ from app.modules.notifications.service import NotificationService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
 from sqlalchemy import select
+
+MAX_AI_NORMALIZATIONS_PER_PARSE = 50
 
 @celery_app.task(
   name="app.modules.drawings_boq.tasks.parse_drawing_task",
@@ -144,6 +146,8 @@ async def _parse_drawing(drawing_id: UUID) -> None:
     drawing_filename = current_drawing.original_filename
     uploader_id = current_drawing.uploaded_by_user_id
     try:
+      if not read_result.elements:
+        raise ValueError("No supported building elements were found in this IFC file.")
       level_ids: dict[str, UUID] = {}
       level_rows: list[BuildingLevel] = []
       for level in read_result.levels:
@@ -170,6 +174,12 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       if drawing_elements:
         await elements_repo.bulk_create(drawing_elements)
 
+      audit = await service.run_model_readiness_audit(
+        current_drawing.organization_id,
+        current_drawing.id,
+        model_issues=read_result.model_issues,
+      )
+
       boq_version = await boq_versions_repo.create(
         BOQVersion(
           organization_id=current_drawing.organization_id,
@@ -180,29 +190,28 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       )
 
       boq_items: list[BOQItem] = []
-
       skipped_without_quantity = 0
-      for element, drawing_element in zip(read_result.elements, drawing_elements):
-        if element.quantity <= 0 or not element.unit:
-          skipped_without_quantity += 1
-          continue
-        raw_text = element.raw_material_text
-        normalized_name, category, matched = await service.normalize_material(
-          current_drawing.organization_id,
-          raw_text,
-        )
-        default_rate = await service.get_material_default_rate(
-          current_drawing.organization_id, raw_text,
-        )
+      stored_only = 0
+      material_memo: dict[str, tuple] = {}
+      ai_calls_left = MAX_AI_NORMALIZATIONS_PER_PARSE
+      org_id = current_drawing.organization_id
+
+      async def _resolve_material(raw_text: str, element_row_id: UUID) -> tuple:
+        nonlocal ai_calls_left
+        memo = material_memo.get(raw_text)
+        if memo is not None:
+          return memo
+        normalized_name, category, matched = await service.normalize_material(org_id, raw_text)
+        default_rate = await service.get_material_default_rate(org_id, raw_text)
         rate_source = BOQItemRateSource.LIBRARY if default_rate is not None else None
 
-        if not matched:
-          orchestrator = AIOrchestratorService(session)
-          result = await orchestrator.run(
-            organization_id=current_drawing.organization_id,
+        if not matched and ai_calls_left > 0:
+          ai_calls_left -= 1
+          result = await AIOrchestratorService(session).run(
+            organization_id=org_id,
             purpose=AIRequestPurpose.MATERIAL_NORMALIZATION,
             entity_type=AIEntityType.DRAWING_ELEMENT,
-            entity_id=drawing_element.id,
+            entity_id=element_row_id,
             prompt=(
               "Normalize this construction material description extracted from a "
               "BIM/IFC drawing for Pakistan-market construction estimating. Respond "
@@ -212,11 +221,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
               "otherwise use null. Raw text: " + raw_text
             ),
           )
-          if (
-            result.success
-            and result.parsed_output
-            and result.parsed_output.get("normalized_name")
-          ):
+          if result.success and result.parsed_output and result.parsed_output.get("normalized_name"):
             normalized_name = result.parsed_output["normalized_name"]
             category = result.parsed_output.get("category")
             suggested_rate = result.parsed_output.get("suggested_rate_pkr")
@@ -226,19 +231,49 @@ async def _parse_drawing(drawing_id: UUID) -> None:
                 rate_source = BOQItemRateSource.AI_SUGGESTED
               except Exception:
                 pass
-            await service.store_ai_normalization(
-              current_drawing.organization_id,
-              raw_text,
-              normalized_name,
-              category,
-            )
+            await service.store_ai_normalization(org_id, raw_text, normalized_name, category)
+
+        resolved = (
+          str(normalized_name)[:300],
+          str(category)[:150] if category else None,
+          default_rate,
+          rate_source,
+        )
+        material_memo[raw_text] = resolved
+        return resolved
+
+      grouped: dict[tuple, dict] = {}
+      for element, drawing_element in zip(read_result.elements, drawing_elements):
+        if element.structural_role in NO_LEGACY_BOQ_ROLES:
+          stored_only += 1
+          continue
+        if element.quantity <= 0 or not element.unit:
+          skipped_without_quantity += 1
+          continue
+
+        name, category, default_rate, rate_source = await _resolve_material(
+          element.raw_material_text, drawing_element.id,
+        )
+
+        if element.discipline.startswith("MEP_"):
+          key = (element.structural_role, name, element.unit)
+          bucket = grouped.get(key)
+          if bucket is None:
+            bucket = {
+              "quantity": Decimal("0"), "category": category, "rate": default_rate,
+              "rate_source": rate_source, "generic": element.is_generic_fallback, "elements": [],
+            }
+            grouped[key] = bucket
+          bucket["quantity"] += element.quantity
+          bucket["elements"].append((drawing_element.id, element.quantity))
+          continue
 
         boq_items.append(
           BOQItem(
-            organization_id=current_drawing.organization_id,
+            organization_id=org_id,
             boq_version_id=boq_version.id,
             drawing_element_id=drawing_element.id,
-            material_name=normalized_name,
+            material_name=name,
             category=category,
             unit=element.unit,
             quantity=element.quantity,
@@ -247,8 +282,40 @@ async def _parse_drawing(drawing_id: UUID) -> None:
           )
         )
 
+      aggregated_links: list[BOQItemSourceElement] = []
+      for (role, name, unit), bucket in sorted(grouped.items(), key=lambda kv: kv[0]):
+        title = role.replace("_", " ").title()
+        label = name if bucket["generic"] else f"{title} - {name}"
+        item = BOQItem(
+          id=uuid4(),
+          organization_id=org_id,
+          boq_version_id=boq_version.id,
+          material_name=label[:300],
+          category=bucket["category"],
+          unit=unit,
+          quantity=bucket["quantity"],
+          unit_rate=bucket["rate"],
+          rate_source=bucket["rate_source"],
+        )
+        boq_items.append(item)
+        for element_row_id, contribution in bucket["elements"]:
+          aggregated_links.append(
+            BOQItemSourceElement(
+              id=uuid4(),
+              organization_id=org_id,
+              boq_item_id=item.id,
+              drawing_element_id=element_row_id,
+              quantity_contributed=contribution,
+              formula_snippet=f"sum of {len(bucket['elements'])} {role} elements",
+              contribution_type="legacy_group",
+            )
+          )
+
       if boq_items:
         await boq_items_repo.bulk_create(boq_items)
+      if aggregated_links:
+        session.add_all(aggregated_links)
+        await session.flush()
 
       if current_drawing.uploaded_by_user_id is not None:
         await NotificationService(session).notify_user(
@@ -257,7 +324,8 @@ async def _parse_drawing(drawing_id: UUID) -> None:
           NotificationType.DRAWING_PARSED,
           f'"{current_drawing.original_filename}" finished parsing',
           body=(
-            f"{len(boq_items)} draft BOQ items were generated"
+            f"{len(boq_items)} draft BOQ lines from {len(read_result.elements)} elements; "
+            f"model readiness {audit.overall_score}%"
             + (f"; {skipped_without_quantity} element(s) had no usable quantity." if skipped_without_quantity else ".")
           ),
           link_path=f"/app/projects/{current_drawing.project_id}",
