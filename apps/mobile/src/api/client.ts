@@ -1,9 +1,9 @@
-import type {ApiErrorBody, AuthTokens, AuthUser, CurrentUserResponse, LoginResponse, RegisterPayload, MessageResponse, RegistrationResponse,
+import type {ApiErrorBody, AuthTokens, AuthUser, CurrentUserResponse, LoginResponse, RegisterPayload, MessageResponse, RegistrationResponse, InvitationPreview, ChangePasswordPayload
 } from "./types";
 import { clearTokens, loadTokens, saveTokens } from "../auth/tokenStore";
 import { fetch as expoFetch } from "expo/fetch";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, "");
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/+$/, "")
 
 let accessToken: string | null = null;
 let refreshInFlight: Promise<string | null> | null = null;
@@ -220,6 +220,43 @@ export function register(payload: RegisterPayload) {
 
 export function verifyEmail(token: string) {
   return publicRequest<MessageResponse>("/auth/verify-email", { token });
+}
+
+export async function previewInvitation(
+  token: string,
+): Promise<InvitationPreview> {
+  const response = await rawRequest(
+    `/auth/invitations/${encodeURIComponent(token)}/preview`,
+  );
+  return readBody<InvitationPreview>(response);
+}
+
+export async function changePassword(
+  payload: ChangePasswordPayload,
+): Promise<MessageResponse> {
+  const result = await authenticatedRequest<MessageResponse>(
+    "/auth/change-password",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
+
+  accessToken = null;
+  await clearTokens();
+  return result;
+}
+
+export async function signOutAll(): Promise<MessageResponse> {
+  try {
+    return await authenticatedRequest<MessageResponse>(
+      "/auth/logout-all",
+      { method: "POST" },
+    );
+  } finally {
+    accessToken = null;
+    await clearTokens();
+  }
 }
 
 export function resendVerification(email: string) {

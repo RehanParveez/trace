@@ -18,6 +18,7 @@ from app.modules.identity.email import EmailService
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.modules.subscriptions.service import SubscriptionService
+from urllib.parse import quote
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
@@ -306,12 +307,21 @@ class IdentityService:
     )
 
    verification_token = await self.create_email_verification_token(user)
+   token_value = quote(verification_token, safe="")
+
+   web_link = (
+    f"{settings.frontend_base_url}/verify-email"
+    f"?token={token_value}" 
+   )
+   app_link = f"trace://verify-email?token={token_value}"
+   
    await self.email_service.send(
      recipient=user.email,
      subject="Verify your email address",
      body=(
-       "Welcome. Please verify your email address:\n\n"
-       f"{settings.frontend_base_url}/verify-email?token={verification_token}"
+      "Welcome. Please verify your email address:\n\n"
+      f"Web: {web_link}\n"
+      f"Open in Trace: {app_link}"
      ),
    )
 
@@ -498,11 +508,19 @@ class IdentityService:
     if user is None or user.is_verified:
       return None
     token = await self.create_email_verification_token(user)
+    
+    token_value = quote(token, safe="")
+    web_link = f"{settings.frontend_base_url}/verify-email?token={token_value}"
+    app_link = f"trace://verify-email?token={token_value}"
 
     await self.email_service.send(
       recipient=user.email,
       subject="Verify your email address",
-      body=f"Verify your email address: {settings.frontend_base_url}/verify-email?token={token}",
+      body=(
+        "Verify your email address:\n\n"
+        f"Web: {web_link}\n"
+        f"Open in Trace: {app_link}"
+      ),
     )
 
     return token
@@ -576,12 +594,26 @@ class IdentityService:
     user = await self.repository.get_user_by_email(email)
     if user is None:
       return None
+
     token = await self.create_password_reset_token(user)
+    token_value = quote(token, safe="")
+
+    web_link = (
+      f"{settings.frontend_base_url}/reset-password"
+      f"?token={token_value}"
+    )
+    app_link = f"trace://reset-password?token={token_value}"
+
     await self.email_service.send(
       recipient=user.email,
       subject="Reset your password",
-      body=f"Reset your password: {settings.frontend_base_url}/reset-password?token={token}",
+      body=(
+        "Reset your password:\n\n"
+        f"Web: {web_link}\n"
+        f"Open in Trace: {app_link}"
+      ),
     )
+
     return token
 
   async def reset_password(

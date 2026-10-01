@@ -1,10 +1,10 @@
 from __future__ import annotations
 import enum
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
@@ -41,6 +41,12 @@ class BOQItemRateSource(str, enum.Enum):
 class BOQVersionStatus(str, enum.Enum):
   ACTIVE = "ACTIVE"
   SUPERSEDED = "SUPERSEDED"
+  
+class RuleSetStatus(str, enum.Enum):
+  DRAFT = "DRAFT"
+  ACTIVE = "ACTIVE"
+  SUPERSEDED = "SUPERSEDED"
+  ARCHIVED = "ARCHIVED"
 
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -709,13 +715,85 @@ class BOQItemSourceElement(Base):
   formula_snippet: Mapped[str | None] = mapped_column(String(300), nullable=True)
   contribution_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
   
-class MeasurementRuleSet(Base, TimestampMixin):
-  __tablename__ = "measurement_rule_sets"
+class MeasurementConvention(Base, TimestampMixin):
+  __tablename__ = "measurement_conventions"
+  
   __table_args__ = (
-    UniqueConstraint("organization_id", "code", name="uq_measurement_rule_sets_org_code"),
-    Index("ix_measurement_rule_sets_org", "organization_id"),
+    UniqueConstraint("code", name="uq_measurement_conventions_code"),
+    Index("ix_measurement_conventions_active", "is_active"),
+  )
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  code: Mapped[str] = mapped_column(String(80), nullable=False) 
+  name: Mapped[str] = mapped_column(String(200), nullable=False)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True)
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  conserves_volume: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  
+  parameters: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
   )
   
+class MeasurementRuleSet(Base, TimestampMixin):
+  __tablename__ = "measurement_rule_sets"
+  
+  __table_args__ = (
+    
+    UniqueConstraint(
+      "organization_id", "code", "immutable_version",
+      name="uq_measurement_rule_sets_org_code_version",
+    ),
+  
+    Index(
+      "uq_measurement_rule_sets_system_code_version",
+      "code", "immutable_version",
+      unique=True,
+      postgresql_where=text("organization_id IS NULL"),
+    ),
+    
+    Index(
+      "uq_measurement_rule_sets_active_org",
+      "organization_id", "code",
+      unique=True,
+      postgresql_where=text("status = 'ACTIVE' AND organization_id IS NOT NULL"),
+    ),
+    Index(
+      "uq_measurement_rule_sets_active_system",
+      "code",
+      unique=True,
+      postgresql_where=text("status = 'ACTIVE' AND organization_id IS NULL"),
+    ),
+    
+    Index("ix_measurement_rule_sets_org", "organization_id"),
+    Index("ix_measurement_rule_sets_status", "status"),
+    
+    CheckConstraint(
+      "status IN ('DRAFT','ACTIVE','SUPERSEDED','ARCHIVED')",
+      name="ck_measurement_rule_sets_status",
+    ),
+    
+    CheckConstraint(
+      "net_vs_gross_preference IN ('net','gross')",
+      name="ck_measurement_rule_sets_net_gross",
+    ),
+    
+    CheckConstraint("immutable_version >= 1", name="ck_measurement_rule_sets_version_pos"),
+    
+    CheckConstraint(
+      "effective_from IS NULL OR effective_to IS NULL OR effective_to >= effective_from",
+      name="ck_measurement_rule_sets_effective_range",
+    ),
+    
+    CheckConstraint(
+      "status = 'DRAFT' OR published_at IS NOT NULL",
+      name="ck_measurement_rule_sets_published_at",
+    ),
+  )
+
   id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
     primary_key=True,
@@ -734,6 +812,52 @@ class MeasurementRuleSet(Base, TimestampMixin):
   description: Mapped[str | None] = mapped_column(Text, nullable=True)
   is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
   is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  
+  jurisdiction: Mapped[str | None] = mapped_column(String(50), nullable=True)      
+  province: Mapped[str | None] = mapped_column(String(50), nullable=True)        
+  city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  standard_name: Mapped[str | None] = mapped_column(String(100), nullable=True)    
+  standard_edition: Mapped[str | None] = mapped_column(String(50), nullable=True) 
+  effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+  effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+ 
+  convention_code: Mapped[str | None] = mapped_column(
+    String(80),
+    ForeignKey("measurement_conventions.code", ondelete="RESTRICT",
+      name="fk_measurement_rule_sets_convention_code"),
+      nullable=True,
+  )
+ 
+  status: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=RuleSetStatus.DRAFT.value, server_default="DRAFT",
+  )
+  
+  immutable_version: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=1,
+    server_default=text("1"),
+  )
+  
+  published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+  published_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL",
+      name="fk_measurement_rule_sets_published_by"),
+      nullable=True,
+  )
+  
+  content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True) 
+  
+  supersedes_rule_set_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL",
+      name="fk_measurement_rule_sets_supersedes"),
+      nullable=True,
+  )
  
   opening_deduction_threshold_m2: Mapped[Decimal] = mapped_column(
     Numeric(10, 4),
@@ -751,6 +875,192 @@ class MeasurementRuleSet(Base, TimestampMixin):
   waste_factors: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)  
   net_vs_gross_preference: Mapped[str] = mapped_column(String(10), nullable=False, default="net")  
   extra_config: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+  
+  opening_rules: Mapped[list["OpeningMeasurementRule"]] = relationship(
+    "OpeningMeasurementRule",
+    back_populates="rule_set",
+    cascade="all, delete-orphan",
+  )
+  
+  wastage_rules: Mapped[list["MaterialWastageRule"]] = relationship(
+    "MaterialWastageRule",
+    back_populates="rule_set",
+    cascade="all, delete-orphan",
+  )
+  
+  reinforcement_rules: Mapped[list["ReinforcementRule"]] = relationship(
+    "ReinforcementRule",
+    back_populates="rule_set",
+    cascade="all, delete-orphan",
+  )
+  
+  element_type_mappings: Mapped[list["ElementTypeMapping"]] = relationship(
+    "ElementTypeMapping",
+    back_populates="rule_set",
+    cascade="all, delete-orphan",
+  )
+  
+class OpeningMeasurementRule(Base, TimestampMixin):
+  __tablename__ = "opening_measurement_rules"
+  
+  __table_args__ = (
+    UniqueConstraint(
+      "rule_set_id", "element_scope", "lower_area_m2",
+      name="uq_opening_measurement_rules_scope_lower",
+    ),
+    
+    Index("ix_opening_measurement_rules_rule_set", "rule_set_id"),
+    CheckConstraint(
+      "deduction_behavior IN ('DEDUCT','IGNORE','PARTIAL')",
+      name="ck_opening_measurement_rules_deduction",
+    ),
+    
+    CheckConstraint("lower_area_m2 >= 0", name="ck_opening_measurement_rules_lower"),
+    
+    CheckConstraint(
+      "upper_area_m2 IS NULL OR upper_area_m2 > lower_area_m2",
+      name="ck_opening_measurement_rules_range",
+    ),
+    
+    CheckConstraint(
+      "deduction_fraction IS NULL OR (deduction_fraction >= 0 AND deduction_fraction <= 1)",
+      name="ck_opening_measurement_rules_fraction",
+    ),
+    
+    CheckConstraint(
+      "deduction_behavior <> 'PARTIAL' OR deduction_fraction IS NOT NULL",
+      name="ck_opening_measurement_rules_partial_needs_fraction",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  rule_set_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+ 
+  element_scope: Mapped[str] = mapped_column(String(50), nullable=False, default="ALL")  
+  
+  lower_area_m2: Mapped[Decimal] = mapped_column(
+    Numeric(10, 4),
+    nullable=False,
+    default=Decimal("0"),
+  )
+  upper_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True) 
+  
+  deduction_behavior: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default="DEDUCT",
+  )
+  
+  deduction_fraction: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)  
+  edge_behavior: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  
+  extra_config: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+  rule_set: Mapped["MeasurementRuleSet"] = relationship("MeasurementRuleSet", back_populates="opening_rules")
+  
+class ReinforcementRule(Base, TimestampMixin):
+  __tablename__ = "reinforcement_rules"
+  __table_args__ = (
+    UniqueConstraint(
+      "rule_set_id", "element_scope", "bar_role",
+      name="uq_reinforcement_rules_scope_role",
+    ),
+    Index("ix_reinforcement_rules_rule_set", "rule_set_id"),
+    CheckConstraint(
+      "lap_coefficient IS NULL OR lap_coefficient >= 0",
+      name="ck_reinforcement_rules_lap_coeff",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  rule_set_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+ 
+  element_scope: Mapped[str] = mapped_column(String(50), nullable=False, default="ALL")  
+  bar_role: Mapped[str] = mapped_column(String(50), nullable=False) 
+  lap_basis: Mapped[str | None] = mapped_column(String(30), nullable=True)  
+  lap_coefficient: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
+  
+  hook_rules: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  bend_rules: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  dev_length_method: Mapped[str | None] = mapped_column(String(40), nullable=True)
+  
+  splice_constraints: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, server_default=text("'{}'::jsonb"),
+  )
+  
+  extra_config: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+  rule_set: Mapped["MeasurementRuleSet"] = relationship(
+    "MeasurementRuleSet",
+    back_populates="reinforcement_rules",
+  )
+  
+class MaterialWastageRule(Base, TimestampMixin):
+  __tablename__ = "material_wastage_rules"
+  
+  __table_args__ = (
+    UniqueConstraint(
+      "rule_set_id", "material_class", "procurement_stage",
+      name="uq_material_wastage_rules_class_stage",
+    ),
+    
+    Index("ix_material_wastage_rules_rule_set", "rule_set_id"),
+    CheckConstraint("factor >= 1 AND factor <= 2", name="ck_material_wastage_rules_factor"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  rule_set_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+ 
+  material_class: Mapped[str] = mapped_column(String(80), nullable=False)  
+  procurement_stage: Mapped[str] = mapped_column(String(40), nullable=False, default="SITE")
+  factor: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=Decimal("1.0"))
+  unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  justification: Mapped[str | None] = mapped_column(Text, nullable=True)
+ 
+  rule_set: Mapped["MeasurementRuleSet"] = relationship(
+    "MeasurementRuleSet",
+    back_populates="wastage_rules",
+  )
+ 
 
 class ElementTypeMapping(Base, TimestampMixin):
   __tablename__ = "element_type_mappings"
@@ -759,7 +1069,11 @@ class ElementTypeMapping(Base, TimestampMixin):
     Index("ix_element_type_mappings_rule", "rule_set_id"),
   )
   
-  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
   
   rule_set_id: Mapped[UUID] = mapped_column(
     PGUUID(as_uuid=True),
@@ -785,12 +1099,76 @@ class ElementTypeMapping(Base, TimestampMixin):
   )
   
   extra_mapping: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+  
+  rule_set: Mapped["MeasurementRuleSet"] = relationship(
+    "MeasurementRuleSet",
+    back_populates="element_type_mappings",
+  )
+  
+class WorkItem(Base, TimestampMixin):
+  __tablename__ = "work_items"
+  __table_args__ = (
+    UniqueConstraint("organization_id", "code", name="uq_work_items_org_code"),
+    Index(
+      "uq_work_items_system_code", "code",
+      unique=True,
+      postgresql_where=text("organization_id IS NULL"),
+    ),
+    Index("ix_work_items_org", "organization_id"),
+    Index("ix_work_items_code", "code"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=True,
+    index=True,
+  )
+ 
+  code: Mapped[str] = mapped_column(String(50), nullable=False)
+  description: Mapped[str] = mapped_column(String(500), nullable=False)
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  trade: Mapped[str | None] = mapped_column(String(80), nullable=True)
+  wbs_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  specification: Mapped[str | None] = mapped_column(Text, nullable=True)
+  csr_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+  default_formula_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  
+  extra: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
 
 class AssemblyRecipe(Base, TimestampMixin):
   __tablename__ = "assembly_recipes"
   __table_args__ = (
-    UniqueConstraint("organization_id", "code", name="uq_assembly_recipes_org_code"),
+    
+    Index(
+      "uq_assembly_recipes_ruleset_code", "rule_set_id", "code",
+      unique=True,
+      postgresql_where=text("rule_set_id IS NOT NULL"),
+    ),
+    
+    Index(
+      "uq_assembly_recipes_org_code_unbound", "organization_id", "code",
+      unique=True,
+      postgresql_where=text("rule_set_id IS NULL AND organization_id IS NOT NULL"),
+    ),
+   
+    Index(
+      "uq_assembly_recipes_system_code_unbound", "code",
+      unique=True,
+      postgresql_where=text("rule_set_id IS NULL AND organization_id IS NULL"),
+    ),
+    
     Index("ix_assembly_recipes_org", "organization_id"),
+    Index("ix_assembly_recipes_rule_set", "rule_set_id"),
   )
   
   id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -802,6 +1180,12 @@ class AssemblyRecipe(Base, TimestampMixin):
     index=True,
   )
   
+  rule_set_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="CASCADE", name="fk_assembly_recipes_rule_set_id"),
+    nullable=True,
+  )
+  
   code: Mapped[str] = mapped_column(String(80), nullable=False)  
   name: Mapped[str] = mapped_column(String(200), nullable=False)
   description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -810,11 +1194,23 @@ class AssemblyRecipe(Base, TimestampMixin):
   is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
   is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
   
-  components: Mapped[list["AssemblyRecipeComponent"]] = relationship("AssemblyRecipeComponent", back_populates="recipe", cascade="all, delete-orphan")
+  components: Mapped[list["AssemblyRecipeComponent"]] = relationship(
+    "AssemblyRecipeComponent",
+    back_populates="recipe", cascade="all, delete-orphan",
+    order_by="AssemblyRecipeComponent.sequence",
+  )
 
 class AssemblyRecipeComponent(Base, TimestampMixin):
   __tablename__ = "assembly_recipe_components"
-  __table_args__ = (Index("ix_assembly_recipe_components_recipe", "recipe_id"),)
+  __table_args__ = (
+    Index("ix_assembly_recipe_components_recipe", "recipe_id"),
+    CheckConstraint(
+      "item_type IN ('MATERIAL','LABOUR','CUSTOM')",
+      name="ck_assembly_recipe_components_item_type",
+    ),
+    CheckConstraint("unit = output_unit", name="ck_assembly_recipe_components_unit_safe"),
+    CheckConstraint("waste_factor >= 1", name="ck_assembly_recipe_components_waste"),
+  )
   
   id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
   
@@ -828,18 +1224,31 @@ class AssemblyRecipeComponent(Base, TimestampMixin):
   work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
   description_template: Mapped[str] = mapped_column(String(500), nullable=False)  
   unit: Mapped[str] = mapped_column(String(20), nullable=False)
-  quantity_factor: Mapped[Decimal] = mapped_column(Numeric(12, 6), nullable=False, default=Decimal("1.0"))  
-  quantity_formula: Mapped[str | None] = mapped_column(String(300), nullable=True) 
+  
+  quantity_formula_code: Mapped[str] = mapped_column(String(80), nullable=False)
+  output_unit: Mapped[str] = mapped_column(String(20), nullable=False) 
+ 
+  quantity_factor: Mapped[Decimal | None] = mapped_column(
+    Numeric(12, 6), nullable=True, default=Decimal("1.0"), server_default="1.0",
+  )
+  quantity_formula: Mapped[str | None] = mapped_column(String(300), nullable=True)
+ 
   category: Mapped[str | None] = mapped_column(String(150), nullable=True)
+ 
+  item_type: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False, 
+    default=BOQItemType.MATERIAL.value,
+  )
+ 
+  waste_factor: Mapped[Decimal] = mapped_column(
+    Numeric(8, 4),
+    nullable=False,
+    default=Decimal("1.0"),
+  )
   
-  item_type: Mapped[BOQItemType] = mapped_column(
-    Enum(BOQItemType, name="boq_item_type"), 
-      nullable=False,
-      default=BOQItemType.MATERIAL,
-    )
-  
-  waste_factor: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=Decimal("1.0"))
   is_optional: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+ 
   recipe: Mapped["AssemblyRecipe"] = relationship("AssemblyRecipe", back_populates="components")
 
 class ModelAuditResult(Base, TimestampMixin):

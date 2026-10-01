@@ -9,7 +9,7 @@ from app.core.database import AsyncSessionLocal
 from app.modules.drawings_boq.models import LabourRate, MaterialLibrary, MeasurementRuleSet, AssemblyRecipe, AssemblyRecipeComponent, BOQItemType 
 from app.modules.identity.enums import PermissionKey 
 from app.modules.identity.models import Organization, Permission, Role 
-from datetime import datetime, timezone 
+from datetime import datetime, timezone
 from app.shared.seed_utils import seed_module_permissions 
 from app.modules.drawings_boq.permissions import DRAWINGS_BOQ_PERMISSIONS 
  

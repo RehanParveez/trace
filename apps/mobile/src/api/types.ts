@@ -73,6 +73,12 @@ export type RegistrationResponse = {
   message: string;
 };
 
+export type InvitationPreview = {
+  organization_name: string;
+  email: string;
+  role_name: string;
+};
+
 export type ProjectStatus =
   | "PLANNING"
   | "ACTIVE"
@@ -304,6 +310,12 @@ export type InvitationAcceptance = {
   organization_name: string;
   role_id: string;
   role_name: string;
+};
+
+export type ChangePasswordPayload = {
+  current_password: string;
+  new_password: string;
+  new_password_confirmation: string;
 };
 
 export type BOQVersionCreatePayload = {
