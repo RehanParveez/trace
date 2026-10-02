@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from "react-native";
 import { router, Stack, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { restoreSession } from "../api/client";
-import {bulkRecordLabourAttendance, createLabourAdvance, createLabourDeployment, createLabourPayment, createLabourSource, createLabourWorker, getLabourBalance, getLabourDaySummary, getLabourSummary,
-  listLabourAdvances,  listLabourAttendance, listLabourDeployments, listLabourPayments, listLabourSources, listLabourWorkers, updateLabourDeployment, updateLabourSource, updateLabourWorker,
+import {bulkRecordLabourAttendance, createLabourAdvance, createLabourDeployment, createLabourPayment, createLabourSource, createLabourWorker, getLabourBalance, getLabourDaySummary, getLabourSummary, listLabourAdvances,
+  listLabourAttendance, listLabourDeployments, listLabourPayments, listLabourSources, listLabourWorkers, updateLabourDeployment, updateLabourSource, updateLabourWorker,
 } from "../api/labour";
 import { getProject } from "../api/projects";
 import type {LabourAdvance, LabourDayAttendanceSummary, LabourDeployment, LabourPayment, LabourSource, LabourSourceType, LabourSummary, LabourWhtCategory, LabourWorker, Project,
@@ -52,6 +53,7 @@ function permissionsFor(user: Awaited<ReturnType<typeof restoreSession>>) {
 }
 
 export function LabourScreen({ section }: { section: Section }) {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ projectId?: string | string[] }>();
   const projectId = Array.isArray(params.projectId)
     ? params.projectId[0]
@@ -72,7 +74,7 @@ export function LabourScreen({ section }: { section: Section }) {
     Awaited<ReturnType<typeof listLabourAttendance>>
   >([]);
   const [daySummary, setDaySummary] = useState<LabourDayAttendanceSummary | null>(
-    null,
+    null
   );
   const [advances, setAdvances] = useState<LabourAdvance[]>([]);
   const [payments, setPayments] = useState<LabourPayment[]>([]);
@@ -82,9 +84,7 @@ export function LabourScreen({ section }: { section: Section }) {
   const [periodStart, setPeriodStart] = useState(firstOfMonth);
   const [periodEnd, setPeriodEnd] = useState(today);
   const [attendanceDate, setAttendanceDate] = useState(today);
-  const [attendanceValues, setAttendanceValues] = useState<
-    Record<string, string>
-  >({});
+  const [attendanceValues, setAttendanceValues] = useState<Record<string, string>>({});
 
   const [sourceModal, setSourceModal] = useState(false);
   const [workerModal, setWorkerModal] = useState(false);
@@ -113,6 +113,19 @@ export function LabourScreen({ section }: { section: Section }) {
   const canRead = permissions.includes("labour:read");
   const canManage = permissions.includes("labour:manage");
   const canManagePayments = permissions.includes("labour:payment_manage");
+
+  const titleKey =
+    section === "directory"
+      ? "labour.directoryTitle"
+      : section === "overview"
+      ? "labour.overviewTitle"
+      : section === "deployments"
+      ? "labour.deploymentsTitle"
+      : section === "attendance"
+      ? "labour.attendanceTitle"
+      : "labour.financeTitle";
+
+  const title = t(titleKey);
 
   const load = useCallback(
     async (refresh = false) => {
@@ -144,7 +157,7 @@ export function LabourScreen({ section }: { section: Section }) {
         }
 
         if (!projectId) {
-          setError("Project ID is missing from this route.");
+          setError(t("labour.projectIdMissing"));
           return;
         }
 
@@ -152,9 +165,7 @@ export function LabourScreen({ section }: { section: Section }) {
         setProject(projectResult);
 
         if (section === "overview") {
-          setSummary(
-            await getLabourSummary(projectId, periodStart, periodEnd),
-          );
+          setSummary(await getLabourSummary(projectId, periodStart, periodEnd));
           return;
         }
 
@@ -212,13 +223,13 @@ export function LabourScreen({ section }: { section: Section }) {
           setBalance(null);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not load Labour.");
+        setError(err instanceof Error ? err.message : t("labour.loadFailure"));
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [section, projectId, periodStart, periodEnd, attendanceDate, sourceId],
+    [section, projectId, periodStart, periodEnd, attendanceDate, sourceId, t]
   );
 
   useEffect(() => {
@@ -232,7 +243,7 @@ export function LabourScreen({ section }: { section: Section }) {
       await action();
       await load(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The action failed.");
+      setError(err instanceof Error ? err.message : t("labour.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -267,7 +278,7 @@ export function LabourScreen({ section }: { section: Section }) {
 
   async function saveSource() {
     if (!sourceForm?.name.trim()) {
-      setError("Source name is required.");
+      setError(t("labour.sourceNameRequired"));
       return;
     }
 
@@ -315,21 +326,15 @@ export function LabourScreen({ section }: { section: Section }) {
       cnic: worker.cnic ?? "",
       phone: worker.phone ?? "",
       default_daily_rate:
-        worker.default_daily_rate == null
-          ? ""
-          : String(worker.default_daily_rate),
+        worker.default_daily_rate == null ? "" : String(worker.default_daily_rate),
       is_active: worker.is_active,
     });
     setWorkerModal(true);
   }
 
   async function saveWorker() {
-    if (
-      !workerForm?.source_id ||
-      !workerForm.name.trim() ||
-      !workerForm.trade.trim()
-    ) {
-      setError("Choose a source and enter the worker name and trade.");
+    if (!workerForm?.source_id || !workerForm.name.trim() || !workerForm.trade.trim()) {
+      setError(t("labour.workerSourceNameTradeRequired"));
       return;
     }
 
@@ -370,7 +375,7 @@ export function LabourScreen({ section }: { section: Section }) {
       }));
 
     if (entries.length === 0) {
-      setError("Enter attendance for at least one deployment.");
+      setError(t("labour.attendanceAtLeastOne"));
       return;
     }
 
@@ -380,7 +385,7 @@ export function LabourScreen({ section }: { section: Section }) {
   async function submitAdvance() {
     if (!projectId || !canManagePayments || !sourceId) return;
     if (!advanceDate.match(/^\d{4}-\d{2}-\d{2}$/) || Number(advanceAmount) <= 0) {
-      setError("Enter a positive advance and a date in YYYY-MM-DD format.");
+      setError(t("labour.advancePositiveDate"));
       return;
     }
 
@@ -391,7 +396,7 @@ export function LabourScreen({ section }: { section: Section }) {
         amount: Number(advanceAmount),
         advance_date: advanceDate,
         notes: advanceNotes.trim() || null,
-      }),
+      })
     );
     setAdvanceAmount("");
     setAdvanceNotes("");
@@ -405,11 +410,11 @@ export function LabourScreen({ section }: { section: Section }) {
       !paymentDate.match(/^\d{4}-\d{2}-\d{2}$/) ||
       paymentPeriodEnd < paymentPeriodStart
     ) {
-      setError("Enter valid dates and ensure the period end is on or after its start.");
+      setError(t("labour.paymentValidDates"));
       return;
     }
     if (Number(grossWage) < 0 || Number(advanceRecovery) < 0) {
-      setError("Wage and advance recovery amounts cannot be negative.");
+      setError(t("labour.wageAdvanceNotNegative"));
       return;
     }
 
@@ -434,28 +439,20 @@ export function LabourScreen({ section }: { section: Section }) {
   }
 
   const activeDeployments = deployments.filter(
-    (deployment) => deployment.status === "ACTIVE",
+    (deployment) => deployment.status === "ACTIVE"
   );
   const activeSources = sources.filter((source) => source.is_active);
   const workersForSource = workers.filter(
-    (worker) => worker.source_id === sourceId && worker.is_active,
+    (worker) => worker.source_id === sourceId && worker.is_active
   );
-  const title =
-    section === "directory"
-      ? "Labour directory"
-      : section === "overview"
-        ? "Labour"
-        : section === "deployments"
-          ? "Deployments"
-          : section === "attendance"
-            ? "Attendance"
-            : "Labour finance";
 
   if (loading && !refreshing) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#183153" />
-        <Text style={styles.muted}>Loading {title.toLowerCase()}…</Text>
+        <Text style={styles.muted}>
+          {t("labour.loading", { section: title.toLowerCase() })}
+        </Text>
       </View>
     );
   }
@@ -464,9 +461,7 @@ export function LabourScreen({ section }: { section: Section }) {
     return (
       <View style={styles.page}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.error}>
-          Your organization role does not allow you to view Labour.
-        </Text>
+        <Text style={styles.error}>{t("labour.accessDenied")}</Text>
       </View>
     );
   }
@@ -483,7 +478,9 @@ export function LabourScreen({ section }: { section: Section }) {
       >
         <Pressable onPress={() => router.back()}>
           <Text style={styles.link}>
-            ‹  {section === "directory" ? "Back" : project?.name ?? "Project"}
+            ‹  {section === "directory"
+              ? t("labour.back")
+              : project?.name ?? t("labour.overviewTitle")}
           </Text>
         </Pressable>
 
@@ -493,15 +490,18 @@ export function LabourScreen({ section }: { section: Section }) {
 
         {section === "directory" ? (
           <>
-            <Section title="Labour sources">
+            <Section title={t("labour.sourcesSection")}>
               {canManage ? (
-                <Action label="＋ Add source" onPress={openNewSource} />
+                <Action label={t("labour.addSource")} onPress={openNewSource} />
               ) : null}
               {sources.map((source) => (
                 <View key={source.id} style={styles.card}>
                   <Text style={styles.itemTitle}>{source.name}</Text>
                   <Text style={styles.muted}>
-                    {source.source_type} · {source.is_active ? "Active" : "Inactive"}
+                    {source.source_type === "CONTRACTOR"
+                      ? t("labour.contractor")
+                      : t("labour.directWorkforce")}{" "}
+                    · {source.is_active ? t("labour.active") : t("labour.inactive")}
                   </Text>
                   {source.contact_name || source.contact_phone ? (
                     <Text style={styles.muted}>
@@ -511,16 +511,19 @@ export function LabourScreen({ section }: { section: Section }) {
                     </Text>
                   ) : null}
                   {canManage ? (
-                    <Action label="Edit source" onPress={() => openEditSource(source)} />
+                    <Action
+                      label={t("labour.editSource")}
+                      onPress={() => openEditSource(source)}
+                    />
                   ) : null}
                 </View>
               ))}
             </Section>
 
-            <Section title="Workers">
+            <Section title={t("labour.workersSection")}>
               {canManage ? (
                 <Action
-                  label="＋ Add worker"
+                  label={t("labour.addWorker")}
                   onPress={openNewWorker}
                   disabled={activeSources.length === 0}
                 />
@@ -531,16 +534,21 @@ export function LabourScreen({ section }: { section: Section }) {
                   <Text style={styles.muted}>
                     {worker.trade} ·{" "}
                     {sources.find((source) => source.id === worker.source_id)?.name ??
-                      "Source"}
+                      t("labour.sourceFallback")}
                   </Text>
                   <Text style={styles.muted}>
-                    {worker.is_active ? "Active" : "Inactive"}
+                    {worker.is_active ? t("labour.active") : t("labour.inactive")}
                     {worker.default_daily_rate == null
                       ? ""
-                      : ` · Daily rate ${worker.default_daily_rate}`}
+                      : ` · ${t("labour.dailyRateLabel", {
+                          rate: worker.default_daily_rate,
+                        })}`}
                   </Text>
                   {canManage ? (
-                    <Action label="Edit worker" onPress={() => openEditWorker(worker)} />
+                    <Action
+                      label={t("labour.editWorker")}
+                      onPress={() => openEditWorker(worker)}
+                    />
                   ) : null}
                 </View>
               ))}
@@ -550,35 +558,72 @@ export function LabourScreen({ section }: { section: Section }) {
 
         {section === "overview" ? (
           <>
-            <Section title="Summary period">
-              <Field label="Period start (YYYY-MM-DD)" value={periodStart}
-                onChangeText={setPeriodStart} />
-              <Field label="Period end (YYYY-MM-DD)" value={periodEnd}
-                onChangeText={setPeriodEnd} />
-              <Action label="Refresh summary" onPress={() => void load(true)} />
+            <Section title={t("labour.summaryPeriod")}>
+              <Field
+                label={t("labour.periodStart")}
+                value={periodStart}
+                onChangeText={setPeriodStart}
+              />
+              <Field
+                label={t("labour.periodEnd")}
+                value={periodEnd}
+                onChangeText={setPeriodEnd}
+              />
+              <Action
+                label={t("labour.refreshSummary")}
+                onPress={() => void load(true)}
+              />
             </Section>
             {summary ? (
-              <Section title="Labour summary">
-                <Info label="Accrued cost" value={`${summary.currency} ${summary.total_accrued_cost}`} />
-                <Info label="Advances given" value={`${summary.currency} ${summary.total_advances_given}`} />
-                <Info label="Advance recovered" value={`${summary.currency} ${summary.total_payments_made}`} />
-                <Info label="Outstanding advance balance" value={`${summary.currency} ${summary.outstanding_advance_balance}`} />
+              <Section title={t("labour.labourSummary")}>
+                <Info
+                  label={t("labour.accruedCost")}
+                  value={`${summary.currency} ${summary.total_accrued_cost}`}
+                />
+                <Info
+                  label={t("labour.advancesGiven")}
+                  value={`${summary.currency} ${summary.total_advances_given}`}
+                />
+                <Info
+                  label={t("labour.advanceRecovered")}
+                  value={`${summary.currency} ${summary.total_payments_made}`}
+                />
+                <Info
+                  label={t("labour.outstandingAdvance")}
+                  value={`${summary.currency} ${summary.outstanding_advance_balance}`}
+                />
                 {summary.cost_by_trade.map((row) => (
-                  <Info key={row.trade} label={`${row.trade} accrued`} value={`${summary.currency} ${row.cost}`} />
+                  <Info
+                    key={row.trade}
+                    label={t("labour.tradeAccrued", { trade: row.trade })}
+                    value={`${summary.currency} ${row.cost}`}
+                  />
                 ))}
               </Section>
             ) : null}
-            <RouteLink projectId={projectId} route="deployments" label="Deployments" />
-            <RouteLink projectId={projectId} route="attendance" label="Attendance" />
-            <RouteLink projectId={projectId} route="finance" label="Advances & payments" />
+            <RouteLink
+              projectId={projectId}
+              route="deployments"
+              label={t("labour.linkDeployments")}
+            />
+            <RouteLink
+              projectId={projectId}
+              route="attendance"
+              label={t("labour.linkAttendance")}
+            />
+            <RouteLink
+              projectId={projectId}
+              route="finance"
+              label={t("labour.linkFinance")}
+            />
           </>
         ) : null}
 
         {section === "deployments" ? (
           <>
             {canManage ? (
-              <Section title="Deploy labour">
-                <Text style={styles.label}>Source</Text>
+              <Section title={t("labour.deployLabour")}>
+                <Text style={styles.label}>{t("labour.source")}</Text>
                 <ChoiceList
                   values={activeSources.map((item) => [item.id, item.name])}
                   selected={sourceId}
@@ -587,23 +632,45 @@ export function LabourScreen({ section }: { section: Section }) {
                     setWorkerId("");
                   }}
                 />
-                <Text style={styles.label}>Named worker (optional; leave blank for headcount)</Text>
-                <Choice label="Headcount crew" selected={!workerId}
-                  onPress={() => setWorkerId("")} />
+                <Text style={styles.label}>{t("labour.namedWorkerOptional")}</Text>
+                <Choice
+                  label={t("labour.headcountCrew")}
+                  selected={!workerId}
+                  onPress={() => setWorkerId("")}
+                />
                 {workers
-                  .filter((worker) => worker.source_id === sourceId && worker.is_active)
+                  .filter(
+                    (worker) => worker.source_id === sourceId && worker.is_active
+                  )
                   .map((worker) => (
-                    <Choice key={worker.id} label={`${worker.name} · ${worker.trade}`}
-                      selected={worker.id === workerId} onPress={() => setWorkerId(worker.id)} />
+                    <Choice
+                      key={worker.id}
+                      label={`${worker.name} · ${worker.trade}`}
+                      selected={worker.id === workerId}
+                      onPress={() => setWorkerId(worker.id)}
+                    />
                   ))}
-                <Field label="Trade" value={trade} onChangeText={setTrade} />
-                <Field label="Daily rate" value={dailyRate} onChangeText={setDailyRate}
-                  keyboardType="decimal-pad" />
-                <Field label="Start date (YYYY-MM-DD)" value={deploymentStartDate}
-                  onChangeText={setDeploymentStartDate} />
+                <Field
+                  label={t("labour.trade")}
+                  value={trade}
+                  onChangeText={setTrade}
+                />
+                <Field
+                  label={t("labour.dailyRate")}
+                  value={dailyRate}
+                  onChangeText={setDailyRate}
+                  keyboardType="decimal-pad"
+                />
+                <Field
+                  label={t("labour.startDate")}
+                  value={deploymentStartDate}
+                  onChangeText={setDeploymentStartDate}
+                />
                 <Action
-                  label={busy ? "Saving…" : "Deploy"}
-                  disabled={busy || !sourceId || !trade.trim() || Number(dailyRate) <= 0}
+                  label={busy ? t("labour.saving") : t("labour.deploy")}
+                  disabled={
+                    busy || !sourceId || !trade.trim() || Number(dailyRate) <= 0
+                  }
                   onPress={() => {
                     if (!projectId) return;
                     void run(() =>
@@ -613,31 +680,41 @@ export function LabourScreen({ section }: { section: Section }) {
                         trade: trade.trim(),
                         daily_rate: Number(dailyRate),
                         start_date: deploymentStartDate,
-                      }),
+                      })
                     );
                   }}
                 />
               </Section>
             ) : null}
 
-            <Section title="Project deployments">
+            <Section title={t("labour.projectDeployments")}>
               {deployments.map((deployment) => (
                 <View key={deployment.id} style={styles.card}>
                   <Text style={styles.itemTitle}>{deployment.trade}</Text>
                   <Text style={styles.muted}>
-                    {sources.find((source) => source.id === deployment.source_id)?.name ??
-                      "Source"}
+                    {sources.find((source) => source.id === deployment.source_id)
+                      ?.name ?? t("labour.sourceFallback")}
                     {deployment.worker_id
-                      ? ` · ${workers.find((worker) => worker.id === deployment.worker_id)?.name ?? "Worker"}`
-                      : " · Headcount"}
+                      ? ` · ${
+                          workers.find((worker) => worker.id === deployment.worker_id)
+                            ?.name ?? t("labour.workerFallback")
+                        }`
+                      : ` · ${t("labour.headcount")}`}
                   </Text>
                   <Text style={styles.muted}>
-                    Rate {deployment.daily_rate} · {deployment.start_date} to{" "}
-                    {deployment.end_date ?? "current"} · {deployment.status}
+                    {t("labour.rateToCurrent", {
+                      rate: deployment.daily_rate,
+                      start: deployment.start_date,
+                      end: deployment.end_date ?? t("labour.current"),
+                      status:
+                        deployment.status === "ACTIVE"
+                          ? t("labour.active")
+                          : t("labour.inactive"),
+                    })}
                   </Text>
                   {canManage && deployment.status === "ACTIVE" ? (
                     <Action
-                      label="End today"
+                      label={t("labour.endToday")}
                       disabled={busy}
                       onPress={() =>
                         projectId
@@ -645,7 +722,7 @@ export function LabourScreen({ section }: { section: Section }) {
                               updateLabourDeployment(projectId, deployment.id, {
                                 status: "ENDED",
                                 end_date: today(),
-                              }),
+                              })
                             )
                           : undefined
                       }
@@ -654,7 +731,7 @@ export function LabourScreen({ section }: { section: Section }) {
                 </View>
               ))}
               {deployments.length === 0 ? (
-                <Text style={styles.muted}>No deployments for this project yet.</Text>
+                <Text style={styles.muted}>{t("labour.noDeployments")}</Text>
               ) : null}
             </Section>
           </>
@@ -662,37 +739,52 @@ export function LabourScreen({ section }: { section: Section }) {
 
         {section === "attendance" ? (
           <>
-            <Section title="Attendance date">
-              <Field label="Date (YYYY-MM-DD)" value={attendanceDate}
-                onChangeText={setAttendanceDate} />
-              <Action label="Load date" onPress={() => void load(true)} />
+            <Section title={t("labour.attendanceDate")}>
+              <Field
+                label={t("labour.date")}
+                value={attendanceDate}
+                onChangeText={setAttendanceDate}
+              />
+              <Action
+                label={t("labour.loadDate")}
+                onPress={() => void load(true)}
+              />
               {daySummary ? (
-                <Info label="Total present units" value={String(daySummary.total_present)} />
+                <Info
+                  label={t("labour.totalPresentUnits")}
+                  value={String(daySummary.total_present)}
+                />
               ) : null}
               {daySummary?.by_trade.map((row) => (
-                <Info key={row.trade} label={`${row.trade} present units`} value={String(row.cost)} />
+                <Info
+                  key={row.trade}
+                  label={t("labour.tradePresentUnits", { trade: row.trade })}
+                  value={String(row.cost)}
+                />
               ))}
             </Section>
 
-            <Section title="Record attendance">
+            <Section title={t("labour.recordAttendance")}>
               {activeDeployments.map((deployment) => {
                 const namedWorker = deployment.worker_id != null;
                 const workerName = workers.find(
-                  (worker) => worker.id === deployment.worker_id,
+                  (worker) => worker.id === deployment.worker_id
                 )?.name;
                 return (
                   <View key={deployment.id} style={styles.card}>
                     <Text style={styles.itemTitle}>
                       {deployment.trade}
-                      {namedWorker ? ` · ${workerName ?? "Worker"}` : " · Headcount"}
+                      {namedWorker
+                        ? ` · ${workerName ?? t("labour.workerFallback")}`
+                        : ` · ${t("labour.headcount")}`}
                     </Text>
                     <Text style={styles.muted}>
                       {namedWorker
-                        ? "Enter 0 (absent), 0.5 (half day), or 1 (present)."
-                        : "Enter headcount units from 0 to 9999."}
+                        ? t("labour.namedUnitsHelp")
+                        : t("labour.headcountUnitsHelp")}
                     </Text>
                     <Field
-                      label="Units present"
+                      label={t("labour.unitsPresent")}
                       value={attendanceValues[deployment.id] ?? ""}
                       onChangeText={(value) =>
                         setAttendanceValues((current) => ({
@@ -707,11 +799,13 @@ export function LabourScreen({ section }: { section: Section }) {
                 );
               })}
               {activeDeployments.length === 0 ? (
-                <Text style={styles.muted}>Create an active deployment first.</Text>
+                <Text style={styles.muted}>
+                  {t("labour.createActiveDeploymentFirst")}
+                </Text>
               ) : null}
               {canManage && activeDeployments.length > 0 ? (
                 <Action
-                  label={busy ? "Saving…" : "Save attendance"}
+                  label={busy ? t("labour.saving") : t("labour.saveAttendance")}
                   disabled={busy}
                   onPress={() => void submitAttendance()}
                 />
@@ -722,27 +816,55 @@ export function LabourScreen({ section }: { section: Section }) {
 
         {section === "finance" ? (
           <>
-            <Section title="Finance summary">
-              <Field label="Period start" value={periodStart} onChangeText={setPeriodStart} />
-              <Field label="Period end" value={periodEnd} onChangeText={setPeriodEnd} />
-              <Action label="Refresh finance" onPress={() => void load(true)} />
+            <Section title={t("labour.financeSummary")}>
+              <Field
+                label={t("labour.periodStartShort")}
+                value={periodStart}
+                onChangeText={setPeriodStart}
+              />
+              <Field
+                label={t("labour.periodEndShort")}
+                value={periodEnd}
+                onChangeText={setPeriodEnd}
+              />
+              <Action
+                label={t("labour.refreshFinance")}
+                onPress={() => void load(true)}
+              />
               {summary ? (
                 <>
-                  <Info label="Accrued labour cost" value={`${summary.currency} ${summary.total_accrued_cost}`} />
-                  <Info label="Advances given" value={`${summary.currency} ${summary.total_advances_given}`} />
-                  <Info label="Advance recovered" value={`${summary.currency} ${summary.total_payments_made}`} />
-                  <Info label="Outstanding advance balance" value={`${summary.currency} ${summary.outstanding_advance_balance}`} />
+                  <Info
+                    label={t("labour.accruedLabourCost")}
+                    value={`${summary.currency} ${summary.total_accrued_cost}`}
+                  />
+                  <Info
+                    label={t("labour.advancesGiven")}
+                    value={`${summary.currency} ${summary.total_advances_given}`}
+                  />
+                  <Info
+                    label={t("labour.advanceRecovered")}
+                    value={`${summary.currency} ${summary.total_payments_made}`}
+                  />
+                  <Info
+                    label={t("labour.outstandingAdvance")}
+                    value={`${summary.currency} ${summary.outstanding_advance_balance}`}
+                  />
                 </>
               ) : null}
               {balance != null ? (
-                <Info label={`Selected source balance (${summary?.currency ?? "PKR"})`} value={String(balance)} />
+                <Info
+                  label={t("labour.selectedSourceBalance", {
+                    currency: summary?.currency ?? "PKR",
+                  })}
+                  value={String(balance)}
+                />
               ) : null}
             </Section>
 
             {canManagePayments ? (
               <>
-                <Section title="Record advance">
-                  <Text style={styles.label}>Active source</Text>
+                <Section title={t("labour.recordAdvance")}>
+                  <Text style={styles.label}>{t("labour.activeSource")}</Text>
                   <ChoiceList
                     values={activeSources.map((item) => [item.id, item.name])}
                     selected={sourceId}
@@ -751,25 +873,46 @@ export function LabourScreen({ section }: { section: Section }) {
                       setWorkerId("");
                     }}
                   />
-                  <Text style={styles.label}>Worker (optional)</Text>
-                  <Choice label="Source level" selected={!workerId}
-                    onPress={() => setWorkerId("")} />
+                  <Text style={styles.label}>{t("labour.workerOptional")}</Text>
+                  <Choice
+                    label={t("labour.sourceLevel")}
+                    selected={!workerId}
+                    onPress={() => setWorkerId("")}
+                  />
                   {workersForSource.map((worker) => (
-                    <Choice key={worker.id} label={worker.name}
-                      selected={worker.id === workerId} onPress={() => setWorkerId(worker.id)} />
+                    <Choice
+                      key={worker.id}
+                      label={worker.name}
+                      selected={worker.id === workerId}
+                      onPress={() => setWorkerId(worker.id)}
+                    />
                   ))}
-                  <Field label="Positive amount" value={advanceAmount}
-                    onChangeText={setAdvanceAmount} keyboardType="decimal-pad" />
-                  <Field label="Advance date (YYYY-MM-DD)" value={advanceDate}
-                    onChangeText={setAdvanceDate} />
-                  <Field label="Notes" value={advanceNotes} onChangeText={setAdvanceNotes}
-                    multiline />
-                  <Action label="Record advance" disabled={busy || !sourceId || Number(advanceAmount) <= 0}
-                    onPress={() => void submitAdvance()} />
+                  <Field
+                    label={t("labour.positiveAmount")}
+                    value={advanceAmount}
+                    onChangeText={setAdvanceAmount}
+                    keyboardType="decimal-pad"
+                  />
+                  <Field
+                    label={t("labour.advanceDate")}
+                    value={advanceDate}
+                    onChangeText={setAdvanceDate}
+                  />
+                  <Field
+                    label={t("labour.notes")}
+                    value={advanceNotes}
+                    onChangeText={setAdvanceNotes}
+                    multiline
+                  />
+                  <Action
+                    label={t("labour.recordAdvance")}
+                    disabled={busy || !sourceId || Number(advanceAmount) <= 0}
+                    onPress={() => void submitAdvance()}
+                  />
                 </Section>
 
-                <Section title="Record wage payment">
-                  <Text style={styles.label}>Active source</Text>
+                <Section title={t("labour.recordWagePayment")}>
+                  <Text style={styles.label}>{t("labour.activeSource")}</Text>
                   <ChoiceList
                     values={activeSources.map((item) => [item.id, item.name])}
                     selected={sourceId}
@@ -779,102 +922,167 @@ export function LabourScreen({ section }: { section: Section }) {
                       setWhtCategory("");
                     }}
                   />
-                  <Text style={styles.label}>Worker (optional)</Text>
-                  <Choice label="Source level" selected={!workerId}
-                    onPress={() => setWorkerId("")} />
+                  <Text style={styles.label}>{t("labour.workerOptional")}</Text>
+                  <Choice
+                    label={t("labour.sourceLevel")}
+                    selected={!workerId}
+                    onPress={() => setWorkerId("")}
+                  />
                   {workersForSource.map((worker) => (
-                    <Choice key={worker.id} label={worker.name}
-                      selected={worker.id === workerId} onPress={() => setWorkerId(worker.id)} />
+                    <Choice
+                      key={worker.id}
+                      label={worker.name}
+                      selected={worker.id === workerId}
+                      onPress={() => setWorkerId(worker.id)}
+                    />
                   ))}
-                  <Field label="Period start (YYYY-MM-DD)" value={paymentPeriodStart}
-                    onChangeText={setPaymentPeriodStart} />
-                  <Field label="Period end (YYYY-MM-DD)" value={paymentPeriodEnd}
-                    onChangeText={setPaymentPeriodEnd} />
-                  <Field label="Gross wage amount" value={grossWage}
-                    onChangeText={setGrossWage} keyboardType="decimal-pad" />
-                  <Field label="Advance recovery" value={advanceRecovery}
-                    onChangeText={setAdvanceRecovery} keyboardType="decimal-pad" />
-                  <Field label="Payment date (YYYY-MM-DD)" value={paymentDate}
-                    onChangeText={setPaymentDate} />
+                  <Field
+                    label={t("labour.periodStartFull")}
+                    value={paymentPeriodStart}
+                    onChangeText={setPaymentPeriodStart}
+                  />
+                  <Field
+                    label={t("labour.periodEndFull")}
+                    value={paymentPeriodEnd}
+                    onChangeText={setPaymentPeriodEnd}
+                  />
+                  <Field
+                    label={t("labour.grossWageAmount")}
+                    value={grossWage}
+                    onChangeText={setGrossWage}
+                    keyboardType="decimal-pad"
+                  />
+                  <Field
+                    label={t("labour.advanceRecovery")}
+                    value={advanceRecovery}
+                    onChangeText={setAdvanceRecovery}
+                    keyboardType="decimal-pad"
+                  />
+                  <Field
+                    label={t("labour.paymentDate")}
+                    value={paymentDate}
+                    onChangeText={setPaymentDate}
+                  />
 
                   {sources.find((source) => source.id === sourceId)?.source_type ===
                   "CONTRACTOR" ? (
                     <>
-                      <Text style={styles.label}>Withholding tax category</Text>
-                      <Choice label="No WHT" selected={!whtCategory}
-                        onPress={() => setWhtCategory("")} />
-                      {(
-                        [
-                          "GOODS_SUPPLY",
-                          "SERVICES",
-                          "CONTRACTS_EXECUTION",
-                        ] as LabourWhtCategory[]
-                      ).map((category) => (
-                        <Choice key={category} label={category.replaceAll("_", " ")}
+                      <Text style={styles.label}>{t("labour.whtCategory")}</Text>
+                      <Choice
+                        label={t("labour.noWht")}
+                        selected={!whtCategory}
+                        onPress={() => setWhtCategory("")}
+                      />
+                      {([
+                        "GOODS_SUPPLY",
+                        "SERVICES",
+                        "CONTRACTS_EXECUTION",
+                      ] as LabourWhtCategory[]).map((category) => (
+                        <Choice
+                          key={category}
+                          label={t(`labour.whtCategories.${category}`)}
                           selected={whtCategory === category}
-                          onPress={() => setWhtCategory(category)} />
+                          onPress={() => setWhtCategory(category)}
+                        />
                       ))}
                     </>
                   ) : null}
 
-                  <Field label="Notes" value={paymentNotes}
-                    onChangeText={setPaymentNotes} multiline />
-                  <Action label="Record payment"
-                    disabled={busy || !sourceId || !paymentPeriodStart || !grossWage}
-                    onPress={() => void submitPayment()} />
+                  <Field
+                    label={t("labour.notes")}
+                    value={paymentNotes}
+                    onChangeText={setPaymentNotes}
+                    multiline
+                  />
+                  <Action
+                    label={t("labour.recordPayment")}
+                    disabled={
+                      busy || !sourceId || !paymentPeriodStart || !grossWage
+                    }
+                    onPress={() => void submitPayment()}
+                  />
                   {lastPayment ? (
                     <View style={styles.card}>
-                      <Text style={styles.itemTitle}>Payment recorded</Text>
-                      <Info label="WHT rate" value={lastPayment.wht_rate_percentage == null ? "None" : `${lastPayment.wht_rate_percentage}%`} />
-                      <Info label="WHT deducted" value={String(lastPayment.wht_deducted_amount)} />
-                      <Info label="Net paid" value={String(lastPayment.net_paid_amount)} />
+                      <Text style={styles.itemTitle}>
+                        {t("labour.paymentRecorded")}
+                      </Text>
+                      <Info
+                        label={t("labour.whtRate")}
+                        value={
+                          lastPayment.wht_rate_percentage == null
+                            ? t("labour.none")
+                            : `${lastPayment.wht_rate_percentage}%`
+                        }
+                      />
+                      <Info
+                        label={t("labour.whtDeducted")}
+                        value={String(lastPayment.wht_deducted_amount)}
+                      />
+                      <Info
+                        label={t("labour.netPaid")}
+                        value={String(lastPayment.net_paid_amount)}
+                      />
                     </View>
                   ) : null}
                 </Section>
               </>
             ) : (
-              <Text style={styles.muted}>
-                Your role cannot record Labour advances or wage payments.
-              </Text>
+              <Text style={styles.muted}>{t("labour.noPaymentPermission")}</Text>
             )}
 
-            <Section title="Advances">
+            <Section title={t("labour.advancesSection")}>
               {advances.map((item) => (
                 <View key={item.id} style={styles.card}>
                   <Text style={styles.itemTitle}>
                     {sources.find((source) => source.id === item.source_id)?.name ??
-                      "Source"}
+                      t("labour.sourceFallback")}
                   </Text>
                   <Text style={styles.muted}>
                     {item.advance_date} · {item.amount}
                   </Text>
-                  {item.notes ? <Text style={styles.muted}>{item.notes}</Text> : null}
+                  {item.notes ? (
+                    <Text style={styles.muted}>{item.notes}</Text>
+                  ) : null}
                 </View>
               ))}
               {advances.length === 0 ? (
-                <Text style={styles.muted}>No advances recorded for this project.</Text>
+                <Text style={styles.muted}>{t("labour.noAdvances")}</Text>
               ) : null}
             </Section>
 
-            <Section title="Payments">
+            <Section title={t("labour.paymentsSection")}>
               {payments.map((item) => (
                 <View key={item.id} style={styles.card}>
                   <Text style={styles.itemTitle}>
                     {sources.find((source) => source.id === item.source_id)?.name ??
-                      "Source"}
+                      t("labour.sourceFallback")}
                   </Text>
                   <Text style={styles.muted}>
                     {item.period_start} – {item.period_end}
                   </Text>
-                  <Info label="Gross wages" value={String(item.gross_wage_amount)} />
-                  <Info label="Advance recovered" value={String(item.advance_recovered_amount)} />
-                  <Info label="WHT deducted" value={String(item.wht_deducted_amount)} />
-                  <Info label="Net paid" value={String(item.net_paid_amount)} />
-                  {item.notes ? <Text style={styles.muted}>{item.notes}</Text> : null}
+                  <Info
+                    label={t("labour.grossWages")}
+                    value={String(item.gross_wage_amount)}
+                  />
+                  <Info
+                    label={t("labour.advanceRecovered")}
+                    value={String(item.advance_recovered_amount)}
+                  />
+                  <Info
+                    label={t("labour.whtDeducted")}
+                    value={String(item.wht_deducted_amount)}
+                  />
+                  <Info
+                    label={t("labour.netPaid")}
+                    value={String(item.net_paid_amount)}
+                  />
+                  {item.notes ? (
+                    <Text style={styles.muted}>{item.notes}</Text>
+                  ) : null}
                 </View>
               ))}
               {payments.length === 0 ? (
-                <Text style={styles.muted}>No wage payments recorded for this project.</Text>
+                <Text style={styles.muted}>{t("labour.noPayments")}</Text>
               ) : null}
             </Section>
           </>
@@ -902,7 +1110,10 @@ export function LabourScreen({ section }: { section: Section }) {
   );
 }
 
-function Section({ title, children }: React.PropsWithChildren<{ title: string }>) {
+function Section({
+  title,
+  children,
+}: React.PropsWithChildren<{ title: string }>) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -1061,40 +1272,79 @@ function EditSourceModal({
   onSave: () => void;
   busy: boolean;
 }) {
+  const { t } = useTranslation();
   if (!form) return null;
   const patch = (value: Partial<SourceForm>) =>
     setForm((current) => (current ? { ...current, ...value } : current));
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <ScrollView contentContainerStyle={styles.modal} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{form.id ? "Edit source" : "Add source"}</Text>
-        <Field label="Name" value={form.name} onChangeText={(name) => patch({ name })} />
+      <ScrollView
+        contentContainerStyle={styles.modal}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>
+          {form.id ? t("labour.editSourceTitle") : t("labour.addSourceTitle")}
+        </Text>
+        <Field
+          label={t("labour.name")}
+          value={form.name}
+          onChangeText={(name) => patch({ name })}
+        />
         {!form.id ? (
           <>
-            <Text style={styles.label}>Source type</Text>
-            <Choice label="Contractor" selected={form.source_type === "CONTRACTOR"}
-              onPress={() => patch({ source_type: "CONTRACTOR" })} />
-            <Choice label="Direct workforce" selected={form.source_type === "DIRECT"}
-              onPress={() => patch({ source_type: "DIRECT" })} />
+            <Text style={styles.label}>{t("labour.sourceType")}</Text>
+            <Choice
+              label={t("labour.contractor")}
+              selected={form.source_type === "CONTRACTOR"}
+              onPress={() => patch({ source_type: "CONTRACTOR" })}
+            />
+            <Choice
+              label={t("labour.directWorkforce")}
+              selected={form.source_type === "DIRECT"}
+              onPress={() => patch({ source_type: "DIRECT" })}
+            />
           </>
         ) : null}
-        <Field label="Contact name" value={form.contact_name}
-          onChangeText={(contact_name) => patch({ contact_name })} />
-        <Field label="Contact phone" value={form.contact_phone}
+        <Field
+          label={t("labour.contactName")}
+          value={form.contact_name}
+          onChangeText={(contact_name) => patch({ contact_name })}
+        />
+        <Field
+          label={t("labour.contactPhone")}
+          value={form.contact_phone}
           onChangeText={(contact_phone) => patch({ contact_phone })}
-          keyboardType="phone-pad" />
-        <Field label="Notes" value={form.notes} onChangeText={(notes) => patch({ notes })}
-          multiline />
-        <Toggle label="Active taxpayer" value={form.is_active_taxpayer}
-          onValueChange={(is_active_taxpayer) => patch({ is_active_taxpayer })} />
+          keyboardType="phone-pad"
+        />
+        <Field
+          label={t("labour.notes")}
+          value={form.notes}
+          onChangeText={(notes) => patch({ notes })}
+          multiline
+        />
+        <Toggle
+          label={t("labour.activeTaxpayer")}
+          value={form.is_active_taxpayer}
+          onValueChange={(is_active_taxpayer) => patch({ is_active_taxpayer })}
+        />
         {form.id ? (
-          <Toggle label="Source active" value={form.is_active}
-            onValueChange={(is_active) => patch({ is_active })} />
+          <Toggle
+            label={t("labour.sourceActive")}
+            value={form.is_active}
+            onValueChange={(is_active) => patch({ is_active })}
+          />
         ) : null}
-        <Action label={busy ? "Saving…" : "Save source"} disabled={busy || !form.name.trim()}
-          onPress={onSave} />
-        <Action label="Cancel" disabled={busy} onPress={onClose} />
+        <Action
+          label={busy ? t("labour.saving") : t("labour.saveSource")}
+          disabled={busy || !form.name.trim()}
+          onPress={onSave}
+        />
+        <Action
+          label={t("labour.cancel")}
+          disabled={busy}
+          onPress={onClose}
+        />
       </ScrollView>
     </Modal>
   );
@@ -1117,41 +1367,80 @@ function EditWorkerModal({
   onSave: () => void;
   busy: boolean;
 }) {
+  const { t } = useTranslation();
   if (!form) return null;
   const patch = (value: Partial<WorkerForm>) =>
     setForm((current) => (current ? { ...current, ...value } : current));
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <ScrollView contentContainerStyle={styles.modal} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{form.id ? "Edit worker" : "Add worker"}</Text>
+      <ScrollView
+        contentContainerStyle={styles.modal}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.title}>
+          {form.id ? t("labour.editWorkerTitle") : t("labour.addWorkerTitle")}
+        </Text>
         {!form.id ? (
           <>
-            <Text style={styles.label}>Source</Text>
+            <Text style={styles.label}>{t("labour.source")}</Text>
             {sources.map((source) => (
-              <Choice key={source.id} label={source.name}
+              <Choice
+                key={source.id}
+                label={source.name}
                 selected={form.source_id === source.id}
-                onPress={() => patch({ source_id: source.id })} />
+                onPress={() => patch({ source_id: source.id })}
+              />
             ))}
           </>
         ) : null}
-        <Field label="Name" value={form.name} onChangeText={(name) => patch({ name })} />
-        <Field label="Trade" value={form.trade} onChangeText={(trade) => patch({ trade })} />
-        <Field label="CNIC" value={form.cnic} onChangeText={(cnic) => patch({ cnic })}
-          keyboardType="number-pad" />
-        <Field label="Phone" value={form.phone} onChangeText={(phone) => patch({ phone })}
-          keyboardType="phone-pad" />
-        <Field label="Default daily rate (optional)" value={form.default_daily_rate}
+        <Field
+          label={t("labour.name")}
+          value={form.name}
+          onChangeText={(name) => patch({ name })}
+        />
+        <Field
+          label={t("labour.trade")}
+          value={form.trade}
+          onChangeText={(trade) => patch({ trade })}
+        />
+        <Field
+          label={t("labour.cnic")}
+          value={form.cnic}
+          onChangeText={(cnic) => patch({ cnic })}
+          keyboardType="number-pad"
+        />
+        <Field
+          label={t("labour.phone")}
+          value={form.phone}
+          onChangeText={(phone) => patch({ phone })}
+          keyboardType="phone-pad"
+        />
+        <Field
+          label={t("labour.defaultDailyRateOptional")}
+          value={form.default_daily_rate}
           onChangeText={(default_daily_rate) => patch({ default_daily_rate })}
-          keyboardType="decimal-pad" />
+          keyboardType="decimal-pad"
+        />
         {form.id ? (
-          <Toggle label="Worker active" value={form.is_active}
-            onValueChange={(is_active) => patch({ is_active })} />
+          <Toggle
+            label={t("labour.workerActive")}
+            value={form.is_active}
+            onValueChange={(is_active) => patch({ is_active })}
+          />
         ) : null}
-        <Action label={busy ? "Saving…" : "Save worker"}
-          disabled={busy || !form.source_id || !form.name.trim() || !form.trade.trim()}
-          onPress={onSave} />
-        <Action label="Cancel" disabled={busy} onPress={onClose} />
+        <Action
+          label={busy ? t("labour.saving") : t("labour.saveWorker")}
+          disabled={
+            busy || !form.source_id || !form.name.trim() || !form.trade.trim()
+          }
+          onPress={onSave}
+        />
+        <Action
+          label={t("labour.cancel")}
+          disabled={busy}
+          onPress={onClose}
+        />
       </ScrollView>
     </Modal>
   );
