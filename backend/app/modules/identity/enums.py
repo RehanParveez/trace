@@ -117,4 +117,6 @@ class PermissionKey(StrEnum):
   RULESET_MANAGE = "ruleset:manage"
   RULESET_PUBLISH = "ruleset:publish"
   
+  CALC_RUN = "calc:run"
+  
   

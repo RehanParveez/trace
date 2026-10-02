@@ -220,3 +220,71 @@ class ModelAuditResponse(BaseModel):
   unclassified_proxy_count: int
   extra_stats: dict
   created_at: datetime
+  
+class CalculationRunCreateRequest(BaseModel):
+  drawing_ids: list[UUID] | None = None
+  rule_set_code: str | None = Field(default=None, max_length=50)
+
+class CalculationRunResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  project_id: UUID
+  rule_set_id: UUID
+  convention_code: str | None
+  drawing_revision_ids: list[UUID]
+  engine_version: str
+  fingerprint: str
+  status: str
+  progress_pct: int
+  started_at: datetime | None
+  completed_at: datetime | None
+  error_code: str | None
+  error_message: str | None
+  stats: dict
+  created_at: datetime
+
+class RunStageResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  stage: str
+  status: str
+  attempt: int
+  started_at: datetime | None
+  finished_at: datetime | None
+  counts: dict
+  error: str | None
+
+class QuantitySolidResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  element_id: UUID | None
+  level_id: UUID | None
+  role: str
+  component_type: str
+  geometry_kind: str
+  gross_volume_m3: Decimal | None
+  gross_area_m2: Decimal | None
+  gross_length_m: Decimal | None
+  count: int | None
+  status: str
+  issues: list[dict]
+
+class LedgerRowResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  solid_id: UUID
+  element_id: UUID | None
+  level_id: UUID | None
+  work_item_code: str
+  quantity_net: Decimal
+  unit: str
+  material_grade: str | None
+  source_kind: str
+  confidence: Decimal
+  formula_code: str
+  trace: dict
+  warnings: list
+  engine_version: str

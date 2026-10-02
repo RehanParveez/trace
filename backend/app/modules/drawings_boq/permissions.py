@@ -12,4 +12,5 @@ DRAWINGS_BOQ_PERMISSIONS = {
   PermissionKey.LABOUR_RATE_MANAGE: "Manage the organization's labour rates.",
   PermissionKey.RULESET_MANAGE: "Create and edit draft rule sets, work items and recipes.",
   PermissionKey.RULESET_PUBLISH: "Publish (freeze) rule sets.",
+  PermissionKey.CALC_RUN: "Start measurement engine calculation runs.",
 }

@@ -10,6 +10,7 @@ import {bulkRecordLabourAttendance, createLabourAdvance, createLabourDeployment,
 import { getProject } from "../api/projects";
 import type {LabourAdvance, LabourDayAttendanceSummary, LabourDeployment, LabourPayment, LabourSource, LabourSourceType, LabourSummary, LabourWhtCategory, LabourWorker, Project,
 } from "../api/types";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 type Section =
   | "directory"
@@ -447,24 +448,26 @@ export function LabourScreen({ section }: { section: Section }) {
   );
 
   if (loading && !refreshing) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#183153" />
-        <Text style={styles.muted}>
-          {t("labour.loading", { section: title.toLowerCase() })}
-        </Text>
-      </View>
-    );
-  }
+  return (
+    <View style={styles.center}>
+      <LanguageSwitcher />
+      <ActivityIndicator size="large" color="#183153" />
+      <Text style={styles.muted}>
+        {t("labour.loading", { section: title.toLowerCase() })}
+      </Text>
+    </View>
+  );
+}
 
   if (sessionChecked && !canRead) {
-    return (
-      <View style={styles.page}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.error}>{t("labour.accessDenied")}</Text>
-      </View>
-    );
-  }
+  return (
+    <View style={styles.page}>
+      <LanguageSwitcher />
+      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.error}>{t("labour.accessDenied")}</Text>
+    </View>
+  );
+}
 
   return (
     <>
@@ -483,6 +486,10 @@ export function LabourScreen({ section }: { section: Section }) {
               : project?.name ?? t("labour.overviewTitle")}
           </Text>
         </Pressable>
+
+        <View style={{ alignItems: "flex-start", marginTop: 12 }}>
+          <LanguageSwitcher />
+        </View>
 
         <Text style={styles.title}>{title}</Text>
         {project ? <Text style={styles.muted}>{project.name}</Text> : null}

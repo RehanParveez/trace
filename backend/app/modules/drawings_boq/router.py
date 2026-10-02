@@ -10,6 +10,7 @@ from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQIt
    PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse
 )
 from app.modules.drawings_boq.service import DrawingBOQService
+from app.modules.drawings_boq.calc_service import CalculationService
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from fastapi.responses import Response
@@ -566,3 +567,81 @@ async def list_boq_item_source_elements(
   return await service.list_boq_item_source_elements(
     current_user.active_membership.organization_id, boq_item_id,
   )
+  
+@router.post(
+  "/projects/{project_id}/calculation-runs",
+  response_model=CalculationRunResponse,
+  status_code=202,
+)
+async def start_calculation_run(
+  project_id: UUID,
+  response: Response,
+  payload: CalculationRunCreateRequest | None = None,
+  current_user: User = Depends(require_permission(PermissionKey.CALC_RUN)),
+  session: AsyncSession = Depends(get_db),
+):
+  payload = payload or CalculationRunCreateRequest()
+  run, reused = await CalculationService(session).request_run(
+    current_user.active_membership.organization_id,
+    project_id,
+    current_user.id,
+    payload.drawing_ids,
+    payload.rule_set_code,
+  )
+  if reused:
+    response.status_code = 200
+  return run
+
+@router.get("/calculation-runs/{run_id}", response_model=CalculationRunResponse)
+async def get_calculation_run(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await CalculationService(session).get_run(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/stages", response_model=list[RunStageResponse])
+async def list_calculation_run_stages(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await CalculationService(session).list_stages(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/solids", response_model=list[QuantitySolidResponse])
+async def list_calculation_run_solids(
+  run_id: UUID,
+  response: Response,
+  limit: int = Query(default=500, ge=1, le=2000),
+  after: UUID | None = Query(default=None),
+  role: str | None = Query(default=None, max_length=30),
+  level_id: UUID | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  rows, next_cursor = await CalculationService(session).list_solids(
+    current_user.active_membership.organization_id, run_id,
+    limit=limit, after=after, role=role, level_id=level_id,
+  )
+  if next_cursor:
+    response.headers["X-Next-Cursor"] = str(next_cursor)
+  return rows
+
+@router.get("/calculation-runs/{run_id}/ledger", response_model=list[LedgerRowResponse])
+async def list_calculation_run_ledger(
+  run_id: UUID,
+  response: Response,
+  limit: int = Query(default=500, ge=1, le=2000),
+  after: UUID | None = Query(default=None),
+  work_item_code: str | None = Query(default=None, max_length=50),
+  level_id: UUID | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  rows, next_cursor = await CalculationService(session).list_ledger(
+    current_user.active_membership.organization_id, run_id,
+    limit=limit, after=after, work_item_code=work_item_code, level_id=level_id,
+  )
+  if next_cursor:
+    response.headers["X-Next-Cursor"] = str(next_cursor)
+  return rows

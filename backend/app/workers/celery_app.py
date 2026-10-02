@@ -10,6 +10,7 @@ celery_app = Celery(
     "app.modules.whatsapp.tasks",
     "app.modules.subscriptions.tasks",
     "app.modules.drawings_boq.tasks",
+    "app.modules.drawings_boq.calc_tasks",
   ],
 )
 
