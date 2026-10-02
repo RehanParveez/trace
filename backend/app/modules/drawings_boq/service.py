@@ -40,6 +40,11 @@ from app.modules.drawings_boq.ifc_extraction import AggregatedGroup, aggregate_d
 import base64
 import json
 from app.modules.drawings_boq.audit import summarize_audit
+from app.engine.measure.formulas import get_formula
+from app.engine.measure.profile import ResolvedRuleProfile
+from app.modules.drawings_boq.ifc_types import ROLE_BY_IFC_TYPE
+from app.modules.drawings_boq.standards.material_class import classify_material_class
+from app.modules.drawings_boq.standards.service import StandardsService
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
@@ -100,6 +105,7 @@ class DrawingBOQService:
     self.recipes = AssemblyRecipeRepository(session)
     self.model_audits = ModelAuditResultRepository(session)
     self.levels = BuildingLevelRepository(session)
+    self.standards = StandardsService(session)
 
   async def _require_project(
     self,
@@ -1426,17 +1432,21 @@ class DrawingBOQService:
     base_items_by_group_key: dict[tuple, BOQItem],
     rule_set: MeasurementRuleSet,
     actor_user_id: UUID | None,
+    profile: ResolvedRuleProfile,
+    warnings: list[dict],
   ) -> list[BOQItem]:
     created: list[BOQItem] = []
+    seen_warnings: set[tuple] = set()
+
+    def _warn(code: str, severity: str, message: str, *key) -> None:
+      marker = (code, *key)
+      if marker in seen_warnings:
+        return
+      seen_warnings.add(marker)
+      warnings.append({"code": code, "severity": severity, "message": message})
 
     for group in aggregated_groups:
-      sample_properties = {}
-
-      matching_recipes = await self.recipes.get_matching_recipes(
-        organization_id,
-        group.ifc_type,
-        sample_properties,
-      )
+      matching_recipes = profile.recipes_for(group.ifc_type)
       if not matching_recipes:
         continue
 
@@ -1449,34 +1459,42 @@ class DrawingBOQService:
       )
       if parent_item is None:
         continue
+      parent_net = parent_item.net_quantity or Decimal("0")
+      if parent_net <= 0:
+        continue
       for recipe in matching_recipes:
-        components_result = await self.session.execute(
-          select(AssemblyRecipeComponent)
-          .where(
-            AssemblyRecipeComponent.recipe_id == recipe.id
-          )
-          .order_by(
-            AssemblyRecipeComponent.sequence.asc()
-          )
-        )
-        components = list(components_result.scalars().all())
-        for component in components:
-          parent_quantity = parent_item.quantity or Decimal("0")
-
-          quantity = (
-            parent_quantity
-            * component.quantity_factor
-            * component.waste_factor
-          )
-          if quantity <= 0:
+        for component in recipe.components:
+          if component.work_item_code and component.work_item_code == parent_item.work_item_code:
             continue
 
+          spec = get_formula(component.formula_code)
+          if spec is None:
+            _warn("FORMULA_UNKNOWN", "error",
+              f"Recipe {recipe.code}: unknown formula '{component.formula_code}'.",
+              recipe.code, component.formula_code)
+            continue
+          if component.unit != spec.output_unit:
+            _warn("RECIPE_UNIT_MISMATCH", "error",
+              f"Recipe {recipe.code}: unit '{component.unit}' != formula output '{spec.output_unit}'.",
+              recipe.code, component.formula_code)
+            continue
+
+          net = spec.evaluate_group(parent_net, parent_item.unit)
+          if net is None:
+            _warn("FORMULA_NEEDS_KERNEL", "info",
+              f"{component.formula_code} ({recipe.code}) needs the measurement kernel; no quantity emitted.",
+              recipe.code, component.formula_code)
+            continue
+          if net <= 0:
+            continue
+
+          waste = profile.waste_factor(component.material_class or "DEFAULT")
+          gross = net * waste
+          ratio = net / parent_net
+
           formula = (
-            f"{parent_item.quantity} × "
-            f"{component.quantity_factor} × "
-            f"{component.waste_factor} "
-            f"(recipe={recipe.code}, "
-            f"component={component.description_template})"
+            f"{component.formula_code}({parent_net} {parent_item.unit}) = {net} (net) × {waste} (waste) → "
+            f"{gross} gross (recipe={recipe.code}, component={component.description_template})"
           )
 
           item = BOQItem(
@@ -1489,10 +1507,10 @@ class DrawingBOQService:
             ),
             category=component.category or parent_item.category,
             unit=component.unit,
-            quantity=quantity.quantize(Decimal("0.0001")),
+            quantity=net.quantize(Decimal("0.0001")),
             unit_rate=None,
             rate_source=None,
-            item_type=component.item_type,
+            item_type=BOQItemType(component.item_type),
             status=BOQItemStatus.DRAFT,
             created_by_user_id=actor_user_id,
             work_item_code=component.work_item_code,
@@ -1500,10 +1518,10 @@ class DrawingBOQService:
             calculation_formula=formula,
             confidence=Decimal("0.80"),
             rule_set_id=rule_set.id,
-            recipe_id=recipe.id,
-            gross_quantity=quantity,
-            net_quantity=quantity,
-            waste_factor_applied=component.waste_factor,
+            recipe_id=UUID(recipe.id),
+            gross_quantity=gross.quantize(Decimal("0.0001")),
+            net_quantity=net.quantize(Decimal("0.0001")),
+            waste_factor_applied=waste,
             source_element_count=len(group.element_ids),
           )
 
@@ -1517,11 +1535,7 @@ class DrawingBOQService:
                 organization_id=organization_id,
                 boq_item_id=item.id,
                 drawing_element_id=element_id,
-                quantity_contributed=(
-                  contribution
-                  * component.quantity_factor
-                  * component.waste_factor
-                ).quantize(Decimal("0.001")),
+                quantity_contributed=(contribution * ratio).quantize(Decimal("0.001")),
                 formula_snippet=formula,
                 contribution_type="recipe_component",
               )
@@ -1551,14 +1565,8 @@ class DrawingBOQService:
       preferred_rule_code,
     )
 
-    mappings = await self.element_mappings.list_by_rule_set(
-      rule_set.id,
-    )
-
-    mapping_by_ifc = {
-      mapping.ifc_type: mapping
-      for mapping in mappings
-    }
+    profile = await self.standards.profile_for_rule_set(rule_set.id)
+    mapping_by_ifc = {m.ifc_type: m for m in profile.mappings}
 
     groups = aggregate_drawing_elements(elements)
 
@@ -1567,6 +1575,9 @@ class DrawingBOQService:
     generation_meta = {
       "rule_set_id": str(rule_set.id),
       "rule_set_code": rule_set.code,
+      "rule_set_version": rule_set.immutable_version,
+      "rule_set_content_hash": rule_set.content_hash,
+      "profile_fingerprint": profile.fingerprint(),
       "audit_score": float(audit.overall_score),
       "audit_id": str(audit.id),
       "warnings": [
@@ -1575,10 +1586,6 @@ class DrawingBOQService:
         if issue.get("severity") in ("warning", "error")
       ],
     }
-    waste_factors = rule_set.waste_factors or {}
-    net_preference = (
-      rule_set.net_vs_gross_preference or "net"
-    ).lower()
 
     for group in groups:
       mapping = mapping_by_ifc.get(group.ifc_type)
@@ -1607,31 +1614,18 @@ class DrawingBOQService:
         else None
       )
 
-      waste_key = (
-        group.raw_material_text
-        or group.ifc_type
-        or ""
-      ).lower()
-
-      waste = Decimal(
-        str(
-          waste_factors.get(
-            waste_key,
-            waste_factors.get("default", 1.0),
-          )
-        )
+      material_class = classify_material_class(
+        mapping_material_class=mapping.material_class if mapping else None,
+        material_text=group.raw_material_text,
+        structural_role=ROLE_BY_IFC_TYPE.get(group.ifc_type),
       )
-      gross = group.total_quantity
-      net = gross
-      if net_preference == "net":
-        final_quantity = net * waste
-      else:
-        final_quantity = gross * waste
-
+      waste = profile.waste_factor(material_class)
+      net = group.total_quantity
+      contract_quantity = net
+      gross = net * waste
       formula = (
-        f"{gross} (gross) × "
-        f"{waste} (waste) → "
-        f"{final_quantity} [{rule_set.code}]"
+        f"{net} (net) × {waste} (waste, {material_class}) → "
+        f"{gross} gross [{rule_set.code} v{rule_set.immutable_version}]"
       )
       normalized_name, normalized_category, _ = (
         await self.normalize_material(
@@ -1654,7 +1648,7 @@ class DrawingBOQService:
         material_name=normalized_name,
         category=category,
         unit=unit,
-        quantity=final_quantity.quantize(Decimal("0.0001")),
+        quantity=contract_quantity.quantize(Decimal("0.0001")),
         unit_rate=default_rate,
         rate_source=(
           BOQItemRateSource.LIBRARY
@@ -1670,7 +1664,7 @@ class DrawingBOQService:
         confidence=confidence,
         rule_set_id=rule_set.id,
         recipe_id=None,
-        gross_quantity=gross,
+        gross_quantity=gross.quantize(Decimal("0.0001")),
         net_quantity=net,
         waste_factor_applied=waste,
         source_element_count=len(group.element_ids),
@@ -1701,6 +1695,7 @@ class DrawingBOQService:
       base_items_by_key[key] = item
       base_items.append(item)
 
+    recipe_warnings: list[dict] = []
     recipe_items = await self.expand_with_assemblies(
       organization_id=organization_id,
       boq_version_id=boq_version.id,
@@ -1708,7 +1703,10 @@ class DrawingBOQService:
       base_items_by_group_key=base_items_by_key,
       rule_set=rule_set,
       actor_user_id=actor_user_id,
+      profile=profile,
+      warnings=recipe_warnings,
     )
+    generation_meta["warnings"].extend(recipe_warnings)
 
     boq_version.rule_set_id = rule_set.id
     boq_version.audit_score = audit.overall_score

@@ -243,12 +243,12 @@ def upgrade() -> None:
   op.execute("UPDATE assembly_recipe_components SET output_unit = unit")
   for unit, code in UNIT_TO_FORMULA.items():
     conn.execute(sa.text("UPDATE assembly_recipe_components SET quantity_formula_code = :c WHERE unit = :u"),
-                 {"c": code, "u": unit})
-  missing = conn.execute(sa.text(
-    "SELECT DISTINCT unit FROM assembly_recipe_components WHERE quantity_formula_code IS NULL")).fetchall()
-  if missing:
-    raise RuntimeError(
-      "Unmapped component units – extend UNIT_TO_FORMULA: " + ", ".join(repr(r[0]) for r in missing))
+      {"c": code, "u": unit})
+  op.execute("UPDATE assembly_recipe_components SET quantity_formula_code = 'LEGACY_UNMAPPED' WHERE quantity_formula_code IS NULL")
+  op.execute("""
+    UPDATE assembly_recipes SET is_active = false
+     WHERE id IN (SELECT recipe_id FROM assembly_recipe_components WHERE quantity_formula_code = 'LEGACY_UNMAPPED')
+  """)
   op.alter_column(c, "quantity_formula_code", nullable=False)
   op.alter_column(c, "output_unit", nullable=False)
  

@@ -10,6 +10,7 @@ from app.modules.organizations.router import router as organizations_router
 from app.modules.subscriptions.router import router as subscriptions_router
 from app.modules.projects.router import router as projects_router
 from app.modules.drawings_boq.router import router as drawings_boq_router
+from app.modules.drawings_boq.standards.router import router as standards_router
 from app.modules.whatsapp.router import router as  whatsapp_router
 from app.modules.verification.router import router as verification_router
 from app.modules.notifications.router import router as notifications_router
@@ -65,6 +66,8 @@ app.include_router(subscriptions_router, prefix=settings.api_v1_prefix)
 app.include_router(projects_router, prefix=settings.api_v1_prefix)
 
 app.include_router(drawings_boq_router, prefix=settings.api_v1_prefix)
+
+app.include_router(standards_router, prefix=settings.api_v1_prefix)
 
 app.include_router(whatsapp_router, prefix=settings.api_v1_prefix)
 

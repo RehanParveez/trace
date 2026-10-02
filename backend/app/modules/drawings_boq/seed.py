@@ -12,6 +12,7 @@ from app.modules.identity.models import Organization, Permission, Role
 from datetime import datetime, timezone
 from app.shared.seed_utils import seed_module_permissions 
 from app.modules.drawings_boq.permissions import DRAWINGS_BOQ_PERMISSIONS 
+from app.modules.drawings_boq.standards.seed import seed_standards
  
 MATERIAL_ENTRIES = [ 
   { 
@@ -347,6 +348,7 @@ async def main():
     await seed_material_library(session) 
     await seed_labour_rates(session) 
     await seed_drawings_boq_rules(session) 
+    await seed_standards(session)
     await session.commit() 
   print( 
     "Drawings & BOQ module seeding completed successfully." 

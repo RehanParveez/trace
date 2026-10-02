@@ -113,3 +113,6 @@ class PermissionKey(StrEnum):
   
   CASH_FLOW_READ = "cash_flow:read"
   CASH_FLOW_MANAGE = "cash_flow:manage"
+  
+  RULESET_MANAGE = "RULESET_MANAGE"
+  RULESET_PUBLISH = "RULESET_PUBLISH"

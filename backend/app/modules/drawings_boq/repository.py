@@ -1,8 +1,15 @@
 from __future__ import annotations
+from datetime import date
 from uuid import UUID
 from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.drawings_boq.models import BOQItem, BOQVersionStatus, BOQVersion, LabourRate, Drawing, DrawingElement, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ElementTypeMapping, AssemblyRecipe, ModelAuditResult, BOQItem, BuildingLevel
+
+def _effective_window(as_of: date):
+  return (
+    or_(MeasurementRuleSet.effective_from.is_(None), MeasurementRuleSet.effective_from <= as_of),
+    or_(MeasurementRuleSet.effective_to.is_(None), MeasurementRuleSet.effective_to >= as_of),
+  )
 
 class DrawingRepository:
   def __init__(self, session: AsyncSession):
@@ -467,10 +474,12 @@ class MeasurementRuleSetRepository:
     self,
     code: str,
     organization_id: UUID | None,
+    as_of: date | None = None,
   ) -> MeasurementRuleSet | None:
     stmt = select(MeasurementRuleSet).where(
       MeasurementRuleSet.code == code,
-      MeasurementRuleSet.is_active.is_(True),
+      MeasurementRuleSet.status == "ACTIVE",
+      *_effective_window(as_of or date.today()),
     )
     if organization_id is not None:
       stmt = stmt.where(
@@ -483,7 +492,7 @@ class MeasurementRuleSetRepository:
     return result.scalars().first()
 
   async def list_active(self, organization_id: UUID | None = None) -> list[MeasurementRuleSet]:
-    stmt = select(MeasurementRuleSet).where(MeasurementRuleSet.is_active.is_(True))
+    stmt = select(MeasurementRuleSet).where(MeasurementRuleSet.status == "ACTIVE")
     if organization_id is not None:
       stmt = stmt.where(
         (MeasurementRuleSet.organization_id == organization_id)
@@ -500,18 +509,17 @@ class MeasurementRuleSetRepository:
         MeasurementRuleSet.code == preferred_code,
         MeasurementRuleSet.organization_id.is_(None),
         MeasurementRuleSet.is_system.is_(True),
-        MeasurementRuleSet.is_active.is_(True),
+        MeasurementRuleSet.status == "ACTIVE",
       )
     )
     rule = result.scalar_one_or_none()
     if rule is not None:
       return rule
-    # fallback
     result = await self.session.execute(
       select(MeasurementRuleSet).where(
         MeasurementRuleSet.organization_id.is_(None),
         MeasurementRuleSet.is_system.is_(True),
-        MeasurementRuleSet.is_active.is_(True),
+        MeasurementRuleSet.status == "ACTIVE",
       ).order_by(MeasurementRuleSet.created_at.asc()).limit(1)
     )
     return result.scalar_one_or_none()

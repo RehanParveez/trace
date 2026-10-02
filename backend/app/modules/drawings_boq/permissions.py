@@ -10,4 +10,6 @@ DRAWINGS_BOQ_PERMISSIONS = {
   PermissionKey.BOQ_EXPORT: "Generate priced BOQ PDF/Excel exports.",
   PermissionKey.MATERIAL_LIBRARY_MANAGE: "Manage the organization's material library.",
   PermissionKey.LABOUR_RATE_MANAGE: "Manage the organization's labour rates.",
+  PermissionKey.RULESET_MANAGE: "Create and edit draft rule sets, work items and recipes.",
+  PermissionKey.RULESET_PUBLISH: "Publish (freeze) rule sets.",
 }

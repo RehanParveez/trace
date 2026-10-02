@@ -1,151 +1,196 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View,
+import { useCallback, useEffect, useState } from "react";
+import {ActivityIndicator, Alert, LayoutAnimation, Platform, Pressable, RefreshControl, ScrollView, StyleProp, StyleSheet, Text, TextInput, UIManager, View, ViewStyle,
 } from "react-native";
-import { useRouter } from "expo-router";
-import {listSubscriptionPlans, getSubscriptionSummary, getSubscriptionUsage, changeSubscriptionPlan, cancelSubscription, reactivateSubscription,
+import { Link, router } from "expo-router";
+import {cancelSubscription, changeSubscriptionPlan,  getSubscriptionSummary, getSubscriptionUsage, listSubscriptionPlans, reactivateSubscription,
 } from "../../../api/subscriptions";
-import type {Plan, Subscription,  SubscriptionSummary,Usage, UsageMetric, BillingInterval, ChangePlanPayload, CancelSubscriptionPayload,
-} from "../../../api/types";
 import { restoreSession } from "../../../api/client";
-import type { AuthUser } from "../../../api/types";
+import type {BillingInterval, CancelSubscriptionPayload, ChangePlanPayload, Plan, Subscription, SubscriptionSummary, Usage, UsageMetric,
+} from "../../../api/types";
+import LanguageSwitcher from "../../../components/LanguageSwitcher";
+import i18n from "../../../i18n";
+import { useTranslation } from "react-i18next";
 
-const PERM = {
-  READ: "subscription.read",
-  MANAGE: "subscription.manage",
-  BILLING: "subscription.billing.manage",
+const C = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  navy: "#080D18",
+  navySoft: "#18283B",
+  text: "#191410",
+  secondary: "#5C5347",
+  muted: "#8C806E",
+  border: "#E4D9C4",
+  green: "#24744A",
+  greenBg: "#EAF4EC",
+  amber: "#8A5A0A",
+  amberBg: "#FFF3D8",
+  red: "#A33C32",
+  redBg: "#FBECE9",
 } as const;
 
-function useSubscriptionPermissions() {
-  const [user, setUser] = useState<AuthUser | null>(null);
+const PERMISSION = {
+  read: "subscription.read",
+  manage: "subscription.manage",
+  billing: "subscription.billing.manage",
+} as const;
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const u = await restoreSession();
-        if (!cancelled) setUser(u);
-      } catch {
-        if (!cancelled) setUser(null);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const keys = useMemo(() => {
-    const perms = user?.role?.permissions ?? [];
-    return new Set(
-      perms.map((p) => (p.key?.toLowerCase?.() ?? String(p.key)) as string)
-    );
-  }, [user]);
-
-  const has = (key: string) => {
-    const lower = key.toLowerCase();
-    const upperSnake = key.toUpperCase().replace(/\./g, "_");
-    return keys.has(lower) || keys.has(upperSnake) || keys.has(key);
-  };
-
-  return {
-    canRead: has("subscription.read") || has("SUBSCRIPTION_READ"),
-    canManage: has("subscription.manage") || has("SUBSCRIPTION_MANAGE"),
-    canBilling:
-      has("subscription.billing.manage") || has("SUBSCRIPTION_BILLING_MANAGE"),
-  };
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-function formatMoney(amount: string | number | null | undefined, currency = "PKR"): string {
+function hasPermission(keys: Set<string>, key: string) {
+  return (
+    keys.has(key) ||
+    keys.has(key.toUpperCase().replace(/\./g, "_"))
+  );
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message;
+  if (typeof error === "string" && error.trim()) return error;
+
+  if (error && typeof error === "object") {
+    const value = error as {
+      message?: unknown;
+      detail?: unknown;
+      body?: { message?: unknown; detail?: unknown };
+    };
+
+    const detail = value.body?.detail ?? value.detail;
+    const message = value.body?.message ?? value.message;
+
+    if (typeof detail === "string") return detail;
+    if (typeof message === "string") return message;
+
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) =>
+          item && typeof item === "object" && "msg" in item
+            ? String((item as { msg: unknown }).msg)
+            : "",
+        )
+        .filter(Boolean);
+
+      if (messages.length) return messages.join(", ");
+    }
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
+function isNotFoundError(error: unknown, message: string) {
+  const status =
+    error && typeof error === "object"
+      ? (error as { status?: number; statusCode?: number }).status ??
+        (error as { statusCode?: number }).statusCode
+      : undefined;
+
+  return (
+    status === 404 ||
+    /\b404\b|not found|subscription_not_found/i.test(message)
+  );
+}
+
+function formatMoney(
+  amount: string | number | null | undefined,
+  currency = "PKR",
+  locale = i18n.resolvedLanguage === "ur" ? "ur-PK" : "en-PK",
+) {
   if (amount == null) return "—";
-  const n = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (Number.isNaN(n)) return String(amount);
+
+  const number =
+    typeof amount === "number" ? amount : Number.parseFloat(amount);
+
+  if (!Number.isFinite(number)) return String(amount);
+
   try {
-    return new Intl.NumberFormat(undefined, {
+    return new Intl.NumberFormat(locale, {
       style: "currency",
       currency,
       maximumFractionDigits: 0,
-    }).format(n);
+    }).format(number);
   } catch {
-    return `${currency} ${n.toLocaleString()}`;
+    return `${currency} ${number.toLocaleString()}`;
   }
 }
 
-function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null) return "Unlimited";
-  if (bytes === 0) return "0 B";
+function formatBytes(bytes: number | null) {
+  if (bytes == null) return i18n.t("subscription.unlimited");
+  if (bytes <= 0) return "0 B";
+
   const units = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
-  const val = bytes / Math.pow(1024, i);
-  return `${val < 10 ? val.toFixed(1) : Math.round(val)} ${units[i]}`;
+  const index = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  const value = bytes / 1024 ** index;
+
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[index]}`;
 }
 
-function formatDate(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return iso;
-  }
+function formatDate(value: string | null | undefined, locale = i18n.resolvedLanguage === "ur" ? "ur-PK" : "en-PK") {
+  if (!value) return "—";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleDateString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
-function metricLabel(metric: string): string {
+function metricLabel(metric: string) {
   const labels: Record<string, string> = {
-    storage_bytes: "Storage",
-    drawings: "Drawings",
-    projects: "Projects",
-    ai_requests: "AI requests",
-    site_photos: "Site photos",
+    storage_bytes: i18n.t("subscription.metricStorage"),
+    drawings: i18n.t("subscription.metricDrawings"),
+    projects: i18n.t("subscription.metricProjects"),
+    ai_requests: i18n.t("subscription.metricAIRequests"),
+    site_photos: i18n.t("subscription.metricSitePhotos"),
   };
-  return labels[metric] ?? metric.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  return (
+    labels[metric] ??
+    metric.replace(/_/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
 }
 
-function formatMetricValue(metric: string, value: number | null): string {
-  if (value == null) return "Unlimited";
+function metricValue(metric: string, value: number | null) {
+  if (value == null) return i18n.t("subscription.unlimited");
   if (metric === "storage_bytes") return formatBytes(value);
   return value.toLocaleString();
 }
 
-function statusColor(status: string): string {
+function statusColors(status: string) {
   switch (status) {
     case "ACTIVE":
     case "TRIALING":
-      return "#16a34a";
+      return { text: C.green, background: C.greenBg };
     case "PAST_DUE":
-      return "#ca8a04";
+      return { text: C.amber, background: C.amberBg };
     case "CANCELLED":
     case "EXPIRED":
-      return "#dc2626";
+      return { text: C.red, background: C.redBg };
     default:
-      return "#64748b";
+      return { text: C.secondary, background: "#F1ECE3" };
   }
 }
 
-function extractErrorMessage(err: unknown): string {
-  if (!err || typeof err !== "object") return "Something went wrong.";
-  const e = err as {
-    message?: string;
-    detail?: string | Array<{ msg?: string }>;
-    body?: { detail?: string | Array<{ msg?: string }>; message?: string };
-    status?: number;
-    statusCode?: number;
-  };
-  const body = e.body ?? e;
-  const detail = body.detail ?? body.message ?? e.message;
-  if (typeof detail === "string") return detail;
-  if (Array.isArray(detail) && detail[0]?.msg) return detail[0].msg!;
-  return "Something went wrong.";
-}
-
 export default function SubscriptionScreen() {
-  const router = useRouter();
-  const { canRead, canManage, canBilling } = useSubscriptionPermissions();
-
+  const { i18n: activeI18n } = useTranslation();
+  const isUrdu = activeI18n.resolvedLanguage === "ur";
+  const locale = isUrdu ? "ur-PK" : "en-PK";
   const [plans, setPlans] = useState<Plan[]>([]);
   const [summary, setSummary] = useState<SubscriptionSummary | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
+
+  const [canRead, setCanRead] = useState(false);
+  const [canManage, setCanManage] = useState(false);
+  const [canManageBilling, setCanManageBilling] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -154,682 +199,1134 @@ export default function SubscriptionScreen() {
   const [subscriptionNotFound, setSubscriptionNotFound] = useState(false);
 
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
-  const [billingInterval, setBillingInterval] = useState<BillingInterval>("MONTHLY");
+  const [billingInterval, setBillingInterval] =
+    useState<BillingInterval>("MONTHLY");
   const [quantity, setQuantity] = useState("1");
+  const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
+  const [usageExpanded, setUsageExpanded] = useState(false);
 
-  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelFormOpen, setCancelFormOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [cancelFeedback, setCancelFeedback] = useState("");
-  const [cancelImmediate, setCancelImmediate] = useState(false);
+  const [cancelImmediately, setCancelImmediately] = useState(false);
 
-  const loadData = useCallback(
-    async (isRefresh = false) => {
-      if (isRefresh) setRefreshing(true);
-      else setLoading(true);
-      setError(null);
-      setSubscriptionNotFound(false);
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
 
-      try {
-        const planList = await listSubscriptionPlans();
-        setPlans([...planList].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)));
+    try {
+      const user = await restoreSession();
 
-        if (canRead) {
-          try {
-            const [sum, usg] = await Promise.all([
-              getSubscriptionSummary(),
-              getSubscriptionUsage(),
-            ]);
-            setSummary(sum);
-            setUsage(usg);
-            setSelectedPlanId(sum.subscription.plan_id);
-            setBillingInterval(sum.subscription.billing_interval);
-            setQuantity(String(sum.subscription.quantity || 1));
-          } catch (subErr: unknown) {
-            const msg = extractErrorMessage(subErr);
-            const status =
-              (subErr as { status?: number; statusCode?: number })?.status ??
-              (subErr as { status?: number; statusCode?: number })?.statusCode;
-            if (
-              status === 404 ||
-              /not found/i.test(msg) ||
-              /SUBSCRIPTION_NOT_FOUND/i.test(msg)
-            ) {
-              setSubscriptionNotFound(true);
-              setSummary(null);
-              setUsage(null);
-            } else if (status === 403) {
-              setError("You do not have permission to view subscription details.");
-            } else {
-              setError(msg);
-            }
-          }
-        }
-      } catch (err: unknown) {
-        setError(extractErrorMessage(err));
-      } finally {
-        setLoading(false);
-        setRefreshing(false);
+      if (!user) {
+        router.replace("/login");
+        return;
       }
-    },
-    [canRead]
-  );
+      const keys = new Set(
+        user.role?.permissions?.map((permission) =>
+          String(permission.key).toLowerCase(),
+        ) ?? [],
+      );
+
+      const readAllowed = hasPermission(keys, PERMISSION.read);
+      const manageAllowed = hasPermission(keys, PERMISSION.manage);
+      const billingAllowed = hasPermission(keys, PERMISSION.billing);
+
+      setCanRead(readAllowed);
+      setCanManage(manageAllowed);
+      setCanManageBilling(billingAllowed);
+
+      if (!readAllowed && !manageAllowed) {
+        setPlans([]);
+        setSummary(null);
+        setUsage(null);
+        setSubscriptionNotFound(false);
+        setError(i18n.t("subscription.accessDenied"));
+        return;
+      }
+
+      const requests: Promise<unknown>[] = [
+        listSubscriptionPlans(),
+      ];
+
+      if (readAllowed) {
+        requests.push(getSubscriptionSummary(), getSubscriptionUsage());
+      }
+
+      const results = await Promise.allSettled(requests);
+      const planResult = results[0];
+
+      if (planResult.status === "fulfilled") {
+        const planRows = planResult.value as Plan[];
+        setPlans(
+          [...planRows].sort(
+            (left, right) =>
+              (left.sort_order ?? 0) - (right.sort_order ?? 0),
+          ),
+        );
+      } else {
+        setPlans([]);
+        setError(getErrorMessage(planResult.reason));
+      }
+
+      if (!readAllowed) {
+        setSummary(null);
+        setUsage(null);
+        setSubscriptionNotFound(false);
+        return;
+      }
+
+      const summaryResult = results[1];
+      const usageResult = results[2];
+
+      if (summaryResult.status === "fulfilled") {
+        const loadedSummary = summaryResult.value as SubscriptionSummary;
+        setSummary(loadedSummary);
+        setSelectedPlanId(loadedSummary.subscription.plan_id);
+        setBillingInterval(loadedSummary.subscription.billing_interval);
+        setQuantity(String(loadedSummary.subscription.quantity || 1));
+        setSubscriptionNotFound(false);
+      } else {
+        const message = getErrorMessage(summaryResult.reason);
+
+        if (isNotFoundError(summaryResult.reason, message)) {
+          setSummary(null);
+          setSelectedPlanId(null);
+          setBillingInterval("MONTHLY");
+          setQuantity("1");
+          setSubscriptionNotFound(true);
+        } else {
+          setSummary(null);
+          setError((current) => current ?? message);
+        }
+      }
+
+      if (usageResult.status === "fulfilled") {
+        setUsage(usageResult.value as Usage);
+      } else {
+        const message = getErrorMessage(usageResult.reason);
+        setUsage(null);
+
+        if (!isNotFoundError(usageResult.reason, message)) {
+          setError((current) => current ?? message);
+        }
+      }
+    } catch (loadError) {
+      setError(getErrorMessage(loadError));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
-  const handleChangePlan = async () => {
-    if (!canManage) {
-      Alert.alert("Permission denied", "You need subscription.manage to change plans.");
-      return;
-    }
-    if (!selectedPlanId) {
-      Alert.alert("Select a plan", "Please select a plan first.");
-      return;
-    }
-    const qty = Math.max(1, parseInt(quantity, 10) || 1);
-    const payload: ChangePlanPayload = {
-      plan_id: selectedPlanId,
-      billing_interval: billingInterval,
-      quantity: qty,
-    };
+  const subscription: Subscription | null = summary?.subscription ?? null;
+  const currentPlan: Plan | null = summary?.plan ?? null;
+  const selectedPlan =
+    plans.find((plan) => plan.id === selectedPlanId) ?? null;
 
+  const canReactivate =
+    Boolean(subscription?.cancel_at_period_end) &&
+    !["CANCELLED", "EXPIRED"].includes(subscription?.status ?? "");
+
+  const canCancel =
+    Boolean(subscription) &&
+    !subscription?.cancel_at_period_end &&
+    !["CANCELLED", "EXPIRED"].includes(subscription?.status ?? "");
+
+  const runAction = async (
+    title: string,
+    action: () => Promise<unknown>,
+    successMessage: string,
+  ): Promise<boolean> => {
     setActionLoading(true);
+    setError(null);
+
     try {
-      await changeSubscriptionPlan(payload, `change-plan-${Date.now()}`);
-      Alert.alert("Success", "Subscription plan updated.");
+      await action();
+      Alert.alert(i18n.t("subscription.done"), successMessage);
       await loadData(true);
-    } catch (err: unknown) {
-      Alert.alert("Unable to change plan", extractErrorMessage(err));
+      return true;
+    } catch (actionError) {
+      Alert.alert(title, getErrorMessage(actionError));
+      return false;
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleCancel = async () => {
-    if (!canBilling) {
-      Alert.alert("Permission denied", "You need subscription.billing.manage to cancel.");
+  const confirmPlanChange = () => {
+    if (!canManage) {
+      Alert.alert(
+        i18n.t("subscription.permissionRequired"),
+        i18n.t("subscription.permissionManagePlan"),
+      );
       return;
     }
 
-    const confirmTitle = cancelImmediate ? "Cancel immediately?" : "Schedule cancellation?";
-    const confirmMsg = cancelImmediate
-      ? "This cancels right away. Access ends immediately."
-      : "Cancellation takes effect at the end of the current billing period. You keep access until then.";
+    if (!selectedPlanId) {
+      Alert.alert(i18n.t("subscription.choosePlan"), i18n.t("subscription.choosePlanDescription"));
+      return;
+    }
 
-    Alert.alert(confirmTitle, confirmMsg, [
-      { text: "Back", style: "cancel" },
-      {
-        text: cancelImmediate ? "Cancel now" : "Schedule cancellation",
-        style: "destructive",
-        onPress: async () => {
-          setActionLoading(true);
-          try {
-            const payload: CancelSubscriptionPayload = {
-              cancel_at_period_end: !cancelImmediate,
-              reason: cancelReason.trim() || null,
-              feedback: cancelFeedback.trim() || null,
-            };
-            await cancelSubscription(payload, `cancel-${Date.now()}`);
-            Alert.alert(
-              "Done",
-              cancelImmediate
-                ? "Subscription cancelled."
-                : "Cancellation scheduled for end of period."
+    const parsedQuantity = Number(quantity);
+    if (
+      !Number.isInteger(parsedQuantity) ||
+      !Number.isFinite(parsedQuantity) ||
+      parsedQuantity < 1
+    ) {
+      Alert.alert(i18n.t("subscription.checkQuantity"), i18n.t("subscription.quantityValidation"));
+      return;
+    }
+
+    const payload: ChangePlanPayload = {
+      plan_id: selectedPlanId,
+      billing_interval: billingInterval,
+      quantity: parsedQuantity,
+    };
+
+    Alert.alert(
+      i18n.t("subscription.confirmPlanChange"),
+      `${selectedPlan?.name ?? i18n.t("subscription.selectedPlanFallback")} · ${billingInterval.toLowerCase()} · quantity ${parsedQuantity}`,
+      [
+        { text: i18n.t("subscription.back"), style: "cancel" },
+        {
+          text: i18n.t("subscription.updatePlan"),
+          onPress: () => {
+            void runAction(
+              i18n.t("subscription.changePlanError"),
+              () =>
+                changeSubscriptionPlan(
+                  payload,
+                  `change-plan-${Date.now()}`,
+                ),
+              i18n.t("subscription.planUpdated"),
             );
-            setShowCancelForm(false);
-            setCancelReason("");
-            setCancelFeedback("");
-            setCancelImmediate(false);
-            await loadData(true);
-          } catch (err: unknown) {
-            Alert.alert("Unable to cancel", extractErrorMessage(err));
-          } finally {
-            setActionLoading(false);
-          }
+          },
+        },
+      ],
+    );
+  };
+
+  const confirmCancellation = () => {
+    if (!canManageBilling) {
+      Alert.alert(
+        i18n.t("subscription.permissionRequired"),
+        i18n.t("subscription.cancelPermission"),
+      );
+      return;
+    }
+
+    const immediate = cancelImmediately;
+    const title = immediate
+      ? i18n.t("subscription.cancelNowTitle")
+      : i18n.t("subscription.cancelAtEndTitle");
+    const message = immediate
+      ? i18n.t("subscription.cancelNowConfirm")
+      : i18n.t("subscription.cancelAtEndConfirm");
+
+    Alert.alert(title, message, [
+      { text: i18n.t("subscription.keepSubscription"), style: "cancel" },
+      {
+        text: immediate ? i18n.t("subscription.cancelNow") : i18n.t("subscription.scheduleCancellation"),
+        style: "destructive",
+        onPress: () => {
+          const payload: CancelSubscriptionPayload = {
+            cancel_at_period_end: !immediate,
+            reason: cancelReason.trim() || null,
+            feedback: cancelFeedback.trim() || null,
+          };
+
+          void (async () => {
+            const succeeded = await runAction(
+              i18n.t("subscription.cancelError"),
+              () =>
+                cancelSubscription(
+                  payload,
+                  `cancel-${Date.now()}`,
+                ),
+              immediate
+                ? i18n.t("subscription.cancelled")
+                : i18n.t("subscription.cancellationScheduledSuccess"),
+            );
+
+            if (succeeded) {
+              setCancelFormOpen(false);
+              setCancelReason("");
+              setCancelFeedback("");
+              setCancelImmediately(false);
+            }
+          })();
         },
       },
     ]);
   };
 
-  const handleReactivate = async () => {
-    if (!canBilling) {
-      Alert.alert("Permission denied", "You need subscription.billing.manage to reactivate.");
+  const confirmReactivation = () => {
+    if (!canManageBilling) {
+      Alert.alert(
+        i18n.t("subscription.permissionRequired"),
+        i18n.t("subscription.reactivatePermission"),
+      );
       return;
     }
-    setActionLoading(true);
-    try {
-      await reactivateSubscription();
-      Alert.alert("Success", "Subscription reactivated.");
-      await loadData(true);
-    } catch (err: unknown) {
-      Alert.alert("Unable to reactivate", extractErrorMessage(err));
-    } finally {
-      setActionLoading(false);
-    }
+
+    Alert.alert(
+      i18n.t("subscription.reactivateTitle"),
+      i18n.t("subscription.reactivateConfirm"),
+      [
+        { text: i18n.t("subscription.back"), style: "cancel" },
+        {
+          text: i18n.t("subscription.reactivate"),
+          onPress: () => {
+            void runAction(
+              i18n.t("subscription.reactivateError"),
+              reactivateSubscription,
+              i18n.t("subscription.reactivateSuccess"),
+            );
+          },
+        },
+      ],
+    );
   };
 
-  const subscription: Subscription | null = summary?.subscription ?? null;
-  const currentPlan: Plan | null = summary?.plan ?? null;
-  const canReactivate =
-    !!subscription &&
-    subscription.cancel_at_period_end &&
-    !["CANCELLED", "EXPIRED"].includes(subscription.status);
+  const togglePlanDetails = (planId: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setExpandedPlanId((current) => (current === planId ? null : planId));
+  };
+
+  const toggleUsage = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setUsageExpanded((current) => !current);
+  };
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#0f172a" />
-        <Text style={styles.muted}>Loading subscription…</Text>
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={C.navy} />
+        <Text style={styles.muted}>{i18n.t("subscription.loading")}</Text>
       </View>
     );
   }
 
   return (
     <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
+      style={[styles.screen, isUrdu && { direction: "rtl" }]} contentContainerStyle={[styles.content, isUrdu && { direction: "rtl" }]}
+      keyboardShouldPersistTaps="handled"
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => loadData(true)} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => void loadData(true)}
+          tintColor={C.navy}
+        />
       }
     >
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.back}>← Back</Text>
-        </Pressable>
-        <Text style={styles.title}>Subscription</Text>
-        <Text style={styles.subtitle}>Plans, usage, and billing for your organization</Text>
+      <View style={styles.topBar}>
+        <Link href="/organization" asChild>
+          <Pressable style={styles.backLink} accessibilityRole="button">
+           <Text style={styles.backText}>‹ {i18n.t("subscription.backOrganization")}</Text>
+          </Pressable>
+        </Link>
+
+        <LanguageSwitcher />
       </View>
 
+      <Text style={styles.pageTitle}>{i18n.t("subscription.pageTitle")}</Text>
+
       {error ? (
-        <View style={styles.errorBox}>
+        <View style={styles.errorCard} accessibilityRole="alert">
+          <Text style={styles.errorTitle}>{i18n.t("subscription.loadError")}</Text>
           <Text style={styles.errorText}>{error}</Text>
-          <Pressable style={styles.retryBtn} onPress={() => loadData()}>
-            <Text style={styles.retryBtnText}>Retry</Text>
+          <Pressable
+            onPress={() => void loadData()}
+            disabled={loading || refreshing}
+            style={styles.retryButton}
+            accessibilityRole="button"
+          >
+            <Text style={styles.retryText}>{i18n.t("subscription.retry")}</Text>
           </Pressable>
         </View>
       ) : null}
 
-      <Section title="Current subscription">
-        {subscriptionNotFound ? (
+      {!canRead && canManage ? (
+        <View style={styles.infoCard}>
+          <Text style={styles.infoTitle}>{i18n.t("subscription.planSelectionAccess")}</Text>
           <Text style={styles.muted}>
-            No subscription found for this organization. Plans are still available below
-            {canManage ? " — you can select one to get started." : "."}
+            {i18n.t("subscription.planSelectionReadOnly")}
           </Text>
-        ) : !canRead ? (
-          <Text style={styles.muted}>You do not have permission to view subscription details.</Text>
-        ) : !subscription ? (
-          <Text style={styles.muted}>No subscription data.</Text>
-        ) : (
-          <View style={styles.card}>
-            <Row label="Plan" value={currentPlan?.name ?? subscription.plan_id} />
-            <Row
-              label="Status"
-              value={
-                <Text
-                  style={[
-                    styles.badge,
-                    {
-                      backgroundColor: statusColor(subscription.status) + "22",
-                      color: statusColor(subscription.status),
-                    },
-                  ]}
-                >
-                  {subscription.status}
-                </Text>
-              }
-            />
-            <Row label="Billing interval" value={subscription.billing_interval} />
-            <Row label="Quantity" value={String(subscription.quantity)} />
-            <Row
-              label="Period"
-              value={`${formatDate(subscription.current_period_start)} → ${formatDate(subscription.current_period_end)}`}
-            />
-            {subscription.trial_ends_at ? (
-              <Row label="Trial ends" value={formatDate(subscription.trial_ends_at)} />
-            ) : null}
-            {subscription.next_billing_at ? (
-              <Row label="Next billing" value={formatDate(subscription.next_billing_at)} />
-            ) : null}
-            {subscription.cancel_at_period_end ? (
-              <View style={styles.notice}>
-                <Text style={styles.noticeText}>
-                  Cancellation is scheduled for the end of the current period (
-                  {formatDate(subscription.current_period_end)}).
-                </Text>
-              </View>
-            ) : null}
-            {subscription.cancellation_reason ? (
-              <Row label="Cancel reason" value={subscription.cancellation_reason} />
-            ) : null}
-          </View>
-        )}
-      </Section>
-
-      <Section title="Plans">
-        {plans.length === 0 ? (
-          <Text style={styles.muted}>No public plans available.</Text>
-        ) : (
-          plans.map((plan) => {
-            const isSelected = selectedPlanId === plan.id;
-            const isCurrent = subscription?.plan_id === plan.id;
-            return (
-              <Pressable
-                key={plan.id}
-                style={[
-                  styles.planCard,
-                  isSelected && styles.planCardSelected,
-                  isCurrent && styles.planCardCurrent,
-                ]}
-                onPress={() => {
-                  if (canManage) setSelectedPlanId(plan.id);
-                }}
-                disabled={!canManage || actionLoading}
-              >
-                <View style={styles.planHeader}>
-                  <Text style={styles.planName}>
-                    {plan.name}
-                    {isCurrent ? "  · current" : ""}
-                  </Text>
-                  {plan.offer_label ? (
-                    <Text style={styles.offerBadge}>{plan.offer_label}</Text>
-                  ) : null}
-                </View>
-                {plan.description ? (
-                  <Text style={styles.planDesc}>{plan.description}</Text>
-                ) : null}
-
-                <View style={styles.priceRow}>
-                  <PriceLine
-                    label="Monthly"
-                    price={plan.price_monthly}
-                    original={plan.price_monthly_original}
-                    currency={plan.currency}
-                  />
-                  <PriceLine
-                    label="Yearly"
-                    price={plan.price_yearly}
-                    original={plan.price_yearly_original}
-                    currency={plan.currency}
-                  />
-                </View>
-
-                {plan.offer_ends_at ? (
-                  <Text style={styles.mutedSmall}>Offer ends {formatDate(plan.offer_ends_at)}</Text>
-                ) : null}
-                {plan.trial_days > 0 ? (
-                  <Text style={styles.mutedSmall}>{plan.trial_days}-day trial</Text>
-                ) : null}
-
-                {plan.features && Object.keys(plan.features).length > 0 ? (
-                  <View style={styles.chipRow}>
-                    {Object.entries(plan.features).map(([k, v]) =>
-                      v ? (
-                        <View key={k} style={styles.chip}>
-                          <Text style={styles.chipText}>{k.replace(/_/g, " ")}</Text>
-                        </View>
-                      ) : null
-                    )}
-                  </View>
-                ) : null}
-
-                {plan.quotas && Object.keys(plan.quotas).length > 0 ? (
-                  <View style={styles.quotaBlock}>
-                    {Object.entries(plan.quotas).map(([metric, limit]) => (
-                      <Text key={metric} style={styles.quotaLine}>
-                        {metricLabel(metric)}:{" "}
-                        {formatMetricValue(metric, limit as number | null)}
-                        {plan.limit_policy?.[metric]
-                          ? ` (${plan.limit_policy[metric]})`
-                          : ""}
-                      </Text>
-                    ))}
-                  </View>
-                ) : null}
-              </Pressable>
-            );
-          })
-        )}
-
-        {canManage && plans.length > 0 ? (
-          <View style={styles.formCard}>
-            <Text style={styles.formTitle}>Change plan</Text>
-
-            <Text style={styles.label}>Billing interval</Text>
-            <View style={styles.segment}>
-              {(["MONTHLY", "YEARLY"] as BillingInterval[]).map((iv) => (
-                <Pressable
-                  key={iv}
-                  style={[styles.segmentBtn, billingInterval === iv && styles.segmentBtnActive]}
-                  onPress={() => setBillingInterval(iv)}
-                  disabled={actionLoading}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      billingInterval === iv && styles.segmentTextActive,
-                    ]}
-                  >
-                    {iv === "MONTHLY" ? "Monthly" : "Yearly"}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Quantity</Text>
-            <TextInput
-              style={styles.input}
-              value={quantity}
-              onChangeText={setQuantity}
-              keyboardType="number-pad"
-              editable={!actionLoading}
-            />
-
-            <Pressable
-              style={[
-                styles.primaryBtn,
-                (actionLoading || !selectedPlanId) && styles.btnDisabled,
-              ]}
-              onPress={handleChangePlan}
-              disabled={actionLoading || !selectedPlanId}
-            >
-              {actionLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.primaryBtnText}>Update plan</Text>
-              )}
-            </Pressable>
-            <Text style={styles.hint}>
-              Sends plan_id, billing_interval, and quantity. No checkout or invoice is started by
-              this endpoint.
-            </Text>
-          </View>
-        ) : null}
-      </Section>
-
-      {canRead ? (
-        <Section title="Usage">
-          {!usage ? (
-            <Text style={styles.muted}>
-              {subscriptionNotFound
-                ? "Usage is unavailable without a subscription."
-                : "No usage data."}
-            </Text>
-          ) : (
-            <View style={styles.card}>
-              <Text style={styles.mutedSmall}>
-                Period: {formatDate(usage.period_start)} → {formatDate(usage.period_end)}
-              </Text>
-              {usage.metrics.length === 0 ? (
-                <Text style={styles.muted}>No metrics for this period.</Text>
-              ) : (
-                usage.metrics.map((m: UsageMetric) => <UsageRow key={m.metric} metric={m} />)
-              )}
-            </View>
-          )}
-        </Section>
+        </View>
       ) : null}
 
-      {canBilling && subscription && !subscriptionNotFound ? (
-        <Section title="Billing actions">
-          {canReactivate ? (
-            <Pressable
-              style={[styles.secondaryBtn, actionLoading && styles.btnDisabled]}
-              onPress={handleReactivate}
+      {canRead ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{i18n.t("subscription.currentPlan")}</Text>
+
+          {subscriptionNotFound ? (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>{i18n.t("subscription.noSubscriptionTitle")}</Text>
+              <Text style={styles.muted}>
+                {canManage
+                  ? i18n.t("subscription.noSubscriptionManage")
+                  : i18n.t("subscription.noSubscriptionReadOnly")}
+              </Text>
+            </View>
+          ) : subscription ? (
+            <View style={styles.currentPlanCard}>
+              <View style={styles.currentPlanTop}>
+                <View style={styles.currentPlanCopy}>
+                  <Text style={styles.currentPlanName}>
+                    {currentPlan?.name ?? subscription.plan_id}
+                  </Text>
+                  <Text style={styles.currentPlanSubline}>
+                    {subscription.billing_interval === "YEARLY"
+                      ? i18n.t("subscription.billingYearly")
+                      : i18n.t("subscription.billingMonthly")}
+                    {" · "}
+                    {subscription.quantity}{" "}
+                    {subscription.quantity === 1 ? i18n.t("subscription.seatOne") : i18n.t("subscription.seatMany")}
+                  </Text>
+                </View>
+                <StatusBadge status={subscription.status} dark />
+              </View>
+
+              <View style={styles.darkDivider} />
+
+              <SummaryRow
+                label={i18n.t("subscription.currentPeriod")}
+                value={`${formatDate(subscription.current_period_start, locale)} – ${formatDate(subscription.current_period_end, locale)}`}
+                dark
+              />
+
+              {subscription.next_billing_at ? (
+                <SummaryRow
+                  label={i18n.t("subscription.nextBilling")}
+                  value={formatDate(subscription.next_billing_at, locale)}
+                  dark
+                />
+              ) : null}
+
+              {subscription.trial_ends_at ? (
+                <SummaryRow
+                  label={i18n.t("subscription.trialEnds")}
+                  value={formatDate(subscription.trial_ends_at, locale)}
+                  dark
+                />
+              ) : null}
+
+              {subscription.grace_period_ends_at ? (
+                <SummaryRow
+                  label={i18n.t("subscription.gracePeriodEnds")}
+                  value={formatDate(subscription.grace_period_ends_at, locale)}
+                  dark
+                />
+              ) : null}
+
+              {subscription.cancel_at_period_end ? (
+                <View style={styles.darkNotice}>
+                  <Text style={styles.darkNoticeText}>
+                    
+                    {i18n.t("subscription.cancelScheduled", { date: formatDate(subscription.current_period_end, locale) })}
+                  </Text>
+                </View>
+              ) : null}
+
+              {subscription.cancellation_reason ? (
+                <SummaryRow
+                  label={i18n.t("subscription.cancellationReason")}
+                  value={subscription.cancellation_reason}
+                  dark
+                />
+              ) : null}
+
+              {canManageBilling && canReactivate ? (
+                <PrimaryButton
+                  label={i18n.t("subscription.reactivate")}
+                  loading={actionLoading}
+                  onPress={confirmReactivation}
+                  style={styles.summaryAction}
+                />
+              ) : null}
+            </View>
+          ) : (
+            <View style={styles.infoCard}>
+              <Text style={styles.muted}>
+                {i18n.t("subscription.detailsUnavailable")}
+              </Text>
+            </View>
+          )}
+        </View>
+      ) : null}
+
+      {plans.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{i18n.t("subscription.plans")}</Text>
+
+          {plans.map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              selected={selectedPlanId === plan.id}
+              current={subscription?.plan_id === plan.id}
+              expanded={expandedPlanId === plan.id}
+              interval={billingInterval}
+              canSelect={canManage}
               disabled={actionLoading}
-            >
-              <Text style={styles.secondaryBtnText}>Reactivate subscription</Text>
-            </Pressable>
+              onSelect={() => {
+                if (canManage) setSelectedPlanId(plan.id);
+              }}
+              onToggleDetails={() => togglePlanDetails(plan.id)}
+            />
+          ))}
+
+          {canManage ? (
+            <View style={styles.actionCard}>
+              <Text style={styles.actionCardTitle}>{i18n.t("subscription.changePlan")}</Text>
+              <Text style={styles.actionCardDescription}>
+                {selectedPlan
+                  ? `${selectedPlan.name} · ${billingInterval.toLowerCase()}`
+                  : i18n.t("subscription.planSelectHint")}
+              </Text>
+
+              <Text style={styles.fieldLabel}>{i18n.t("subscription.billingInterval")}</Text>
+              <View style={styles.segment}>
+                {(["MONTHLY", "YEARLY"] as BillingInterval[]).map((interval) => {
+                  const selected = billingInterval === interval;
+
+                  return (
+                    <Pressable
+                      key={interval}
+                      onPress={() => setBillingInterval(interval)}
+                      disabled={actionLoading}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      style={[
+                        styles.segmentButton,
+                        selected && styles.segmentButtonSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          selected && styles.segmentTextSelected,
+                        ]}
+                      >
+                        {interval === "MONTHLY" ? i18n.t("subscription.billingMonthly") : i18n.t("subscription.billingYearly")}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.fieldLabel}>{i18n.t("subscription.quantity")}</Text>
+              <TextInput
+                style={styles.input}
+                value={quantity}
+                onChangeText={(value) =>
+                  setQuantity(value.replace(/[^\d]/g, ""))
+                }
+                keyboardType="number-pad"
+                editable={!actionLoading}
+                placeholder="1"
+                placeholderTextColor={C.muted}
+                accessibilityLabel={i18n.t("subscription.quantity")}
+              />
+
+              <PrimaryButton
+                label={i18n.t("subscription.reviewUpdatePlan")}
+                loading={actionLoading}
+                disabled={!selectedPlanId || !quantity}
+                onPress={confirmPlanChange}
+              />
+            </View>
           ) : null}
+        </View>
+      ) : !error ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{i18n.t("subscription.plans")}</Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.muted}>{i18n.t("subscription.noPublicPlans")}</Text>
+          </View>
+        </View>
+      ) : null}
 
-          {!subscription.cancel_at_period_end &&
-          !["CANCELLED", "EXPIRED"].includes(subscription.status) ? (
-            <>
-              {!showCancelForm ? (
-                <Pressable
-                  style={styles.dangerOutlineBtn}
-                  onPress={() => setShowCancelForm(true)}
+      {canRead ? (
+        <View style={styles.section}>
+          <Pressable
+            onPress={toggleUsage}
+            style={styles.accordionHeader}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: usageExpanded }}
+          >
+            <View style={styles.accordionCopy}>
+              <Text style={styles.sectionTitle}>{i18n.t("subscription.usage")}</Text>
+              {usage ? (
+                <Text style={styles.sectionSubtitle}>
+                  {formatDate(usage.period_start, locale)} – {formatDate(usage.period_end, locale)}
+                </Text>
+              ) : null}
+            </View>
+            <Text style={styles.accordionIcon}>
+              {usageExpanded ? "⌃" : "›"}
+            </Text>
+          </Pressable>
+
+          {usageExpanded ? (
+            !usage ? (
+              <View style={styles.infoCard}>
+                <Text style={styles.muted}>
+                  {subscriptionNotFound
+                    ? i18n.t("subscription.usageAfterSubscription")
+                    : i18n.t("subscription.noUsage")}
+                </Text>
+              </View>
+            ) : usage.metrics.length === 0 ? (
+              <View style={styles.infoCard}>
+                <Text style={styles.muted}>{i18n.t("subscription.noUsageMetrics")}</Text>
+              </View>
+            ) : (
+              <View style={styles.usageCard}>
+                {usage.metrics.map((metric) => (
+                  <UsageRow key={metric.metric} metric={metric} />
+                ))}
+              </View>
+            )
+          ) : null}
+        </View>
+      ) : null}
+
+      {canManageBilling && subscription ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{i18n.t("subscription.billingActions")}</Text>
+
+          {canCancel ? (
+            <View style={styles.actionCard}>
+              <Text style={styles.actionCardTitle}>{i18n.t("subscription.cancelSubscription")}</Text>
+
+              {!cancelFormOpen ? (
+                <SecondaryButton
+                  label={i18n.t("subscription.reviewCancellation")}
+                  onPress={() => setCancelFormOpen(true)}
                   disabled={actionLoading}
-                >
-                  <Text style={styles.dangerOutlineText}>Cancel subscription…</Text>
-                </Pressable>
+                />
               ) : (
-                <View style={styles.formCard}>
-                  <Text style={styles.formTitle}>Cancel subscription</Text>
+                <>
+                  <Text style={styles.fieldLabel}>{i18n.t("subscription.cancelWhen")}</Text>
+                  <View style={styles.segment}>
+                    <Pressable
+                      onPress={() => setCancelImmediately(false)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: !cancelImmediately }}
+                      style={[
+                        styles.segmentButton,
+                        !cancelImmediately && styles.segmentButtonSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          !cancelImmediately && styles.segmentTextSelected,
+                        ]}
+                      >
+                        At period end
+                      </Text>
+                    </Pressable>
 
-                  <Text style={styles.label}>Reason (optional)</Text>
+                    <Pressable
+                      onPress={() => setCancelImmediately(true)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: cancelImmediately }}
+                      style={[
+                        styles.segmentButton,
+                        cancelImmediately && styles.segmentButtonSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.segmentText,
+                          cancelImmediately && styles.segmentTextSelected,
+                        ]}
+                      >
+                        Immediately
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  <Text style={styles.fieldLabel}>{i18n.t("subscription.cancelReason")}</Text>
                   <TextInput
                     style={styles.input}
                     value={cancelReason}
                     onChangeText={setCancelReason}
-                    placeholder="Why are you cancelling?"
                     editable={!actionLoading}
+                    placeholder={i18n.t("subscription.cancelReasonPlaceholder")}
+                    placeholderTextColor={C.muted}
                   />
 
-                  <Text style={styles.label}>Feedback (optional)</Text>
+                  <Text style={styles.fieldLabel}>{i18n.t("subscription.cancelFeedback")}</Text>
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     value={cancelFeedback}
                     onChangeText={setCancelFeedback}
-                    placeholder="Any additional feedback"
-                    multiline
-                    numberOfLines={3}
                     editable={!actionLoading}
+                    placeholder={i18n.t("subscription.cancelFeedbackPlaceholder")}
+                    placeholderTextColor={C.muted}
+                    multiline
+                    textAlignVertical="top"
                   />
 
-                  <Pressable
-                    style={styles.checkRow}
-                    onPress={() => setCancelImmediate((v) => !v)}
-                    disabled={actionLoading}
-                  >
-                    <View
-                      style={[styles.checkbox, cancelImmediate && styles.checkboxChecked]}
-                    />
-                    <Text style={styles.checkLabel}>
-                      Cancel immediately (instead of at period end)
+                  <View style={styles.warningCard}>
+                    <Text style={styles.warningText}>
+                      {cancelImmediately
+                        ? i18n.t("subscription.immediateWarning")
+                        : i18n.t("subscription.periodEndWarning", { date: formatDate(subscription.current_period_end, locale) })}
                     </Text>
-                  </Pressable>
-
-                  <Text style={styles.hint}>
-                    Default is schedule cancellation for end of period (cancel_at_period_end:
-                    true). Immediate sets it to false and ends access now.
-                  </Text>
-
-                  <View style={styles.rowBtns}>
-                    <Pressable
-                      style={styles.ghostBtn}
-                      onPress={() => {
-                        setShowCancelForm(false);
-                        setCancelImmediate(false);
-                      }}
-                      disabled={actionLoading}
-                    >
-                      <Text style={styles.ghostBtnText}>Back</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.dangerBtn, actionLoading && styles.btnDisabled]}
-                      onPress={handleCancel}
-                      disabled={actionLoading}
-                    >
-                      {actionLoading ? (
-                        <ActivityIndicator color="#fff" />
-                      ) : (
-                        <Text style={styles.dangerBtnText}>
-                          {cancelImmediate ? "Cancel now" : "Schedule cancellation"}
-                        </Text>
-                      )}
-                    </Pressable>
                   </View>
-                </View>
+
+                  <PrimaryButton
+                    label={
+                      cancelImmediately
+                        ? i18n.t("subscription.continueCancelNow")
+                        : "Schedule cancellation"
+                    }
+                    loading={actionLoading}
+                    danger
+                    onPress={confirmCancellation}
+                  />
+
+                  <SecondaryButton
+                    label={i18n.t("subscription.keepSubscription")}
+                    onPress={() => {
+                      setCancelFormOpen(false);
+                      setCancelImmediately(false);
+                    }}
+                    disabled={actionLoading}
+                  />
+                </>
               )}
-            </>
+            </View>
+          ) : subscription.cancel_at_period_end ? (
+            <View style={styles.infoCard}>
+              <Text style={styles.infoTitle}>{i18n.t("subscription.cancellationScheduledTitle")}</Text>
+              {canReactivate ? (
+                <SecondaryButton
+                  label={i18n.t("subscription.reactivate")}
+                  onPress={confirmReactivation}
+                  disabled={actionLoading}
+                />
+              ) : null}
+            </View>
           ) : null}
-        </Section>
+        </View>
       ) : null}
 
-      <View style={{ height: 48 }} />
+      {(refreshing || actionLoading) && !loading ? (
+        <View style={styles.progressRow}>
+          <ActivityIndicator size="small" color={C.navy} />
+          <Text style={styles.progressText}>
+            {actionLoading ? i18n.t("subscription.updating") : i18n.t("subscription.refreshing")}
+          </Text>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Row({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      {typeof value === "string" || typeof value === "number" ? (
-        <Text style={styles.rowValue}>{value}</Text>
-      ) : (
-        value
-      )}
-    </View>
-  );
-}
-
-function PriceLine({
+function SummaryRow({
   label,
-  price,
-  original,
-  currency,
+  value,
+  dark = false,
 }: {
   label: string;
-  price: string | number;
-  original: string | number | null;
-  currency: string;
+  value: string;
+  dark?: boolean;
 }) {
-  const hasOffer =
-    original != null && parseFloat(String(original)) > parseFloat(String(price));
   return (
-    <View style={styles.priceLine}>
-      <Text style={styles.priceLabel}>{label}</Text>
-      <Text style={styles.priceValue}>
-        {formatMoney(price, currency)}
-        {hasOffer ? (
-          <Text style={styles.priceOriginal}> {formatMoney(original, currency)}</Text>
-        ) : null}
+    <View style={styles.summaryRow}>
+      <Text style={[styles.summaryLabel, dark && styles.summaryLabelDark]}>
+        {label}
+      </Text>
+      <Text style={[styles.summaryValue, dark && styles.summaryValueDark]}>
+        {value}
       </Text>
     </View>
   );
 }
 
-function UsageRow({ metric }: { metric: UsageMetric }) {
-  const isUnlimited = metric.limit == null;
-  const pct =
-    metric.percentage != null ? Math.min(100, Math.max(0, metric.percentage)) : null;
+function StatusBadge({
+  status,
+  dark = false,
+}: {
+  status: string;
+  dark?: boolean;
+}) {
+  const tone = statusColors(status);
 
   return (
-    <View style={styles.usageRow}>
-      <View style={styles.usageHeader}>
-        <Text style={styles.usageName}>{metricLabel(metric.metric)}</Text>
-        <Text style={styles.usageNums}>
-          {formatMetricValue(metric.metric, metric.used)}
-          {" / "}
-          {isUnlimited ? "Unlimited" : formatMetricValue(metric.metric, metric.limit)}
-        </Text>
-      </View>
-      {!isUnlimited && pct != null ? (
-        <>
-          <View style={styles.barTrack}>
-            <View
-              style={[
-                styles.barFill,
-                {
-                  width: `${pct}%`,
-                  backgroundColor: pct >= 100 ? "#dc2626" : pct >= 80 ? "#ca8a04" : "#16a34a",
-                },
-              ]}
-            />
+    <View
+      style={[
+        styles.statusBadge,
+        { backgroundColor: dark ? "#23374A" : tone.background },
+      ]}
+    >
+      <View style={[styles.statusDot, { backgroundColor: tone.text }]} />
+      <Text
+        style={[
+          styles.statusText,
+          { color: dark ? "#F6F0E6" : tone.text },
+        ]}
+      >
+        {i18n.t(`subscription.status.${status.toLowerCase()}`, { defaultValue: status.replace(/_/g, " ") })}
+      </Text>
+    </View>
+  );
+}
+
+function PlanCard({
+  plan,
+  selected,
+  current,
+  expanded,
+  interval,
+  canSelect,
+  disabled,
+  onSelect,
+  onToggleDetails,
+}: {
+  plan: Plan;
+  selected: boolean;
+  current: boolean;
+  expanded: boolean;
+  interval: BillingInterval;
+  canSelect: boolean;
+  disabled: boolean;
+  onSelect: () => void;
+  onToggleDetails: () => void;
+}) {
+  const price =
+    interval === "YEARLY" ? plan.price_yearly : plan.price_monthly;
+  const original =
+    interval === "YEARLY"
+      ? plan.price_yearly_original
+      : plan.price_monthly_original;
+
+  const hasOffer =
+    original != null && Number(original) > Number(price);
+
+  const features = Object.entries(plan.features ?? {}).filter(
+    ([, value]) => value === true,
+  );
+  const quotas = Object.entries(plan.quotas ?? {});
+
+  return (
+    <View
+      style={[
+        styles.planCard,
+        selected && styles.planCardSelected,
+        current && styles.planCardCurrent,
+      ]}
+    >
+      <Pressable
+        onPress={onSelect}
+        disabled={!canSelect || disabled}
+        accessibilityRole="button"
+        accessibilityState={{ selected, disabled: !canSelect || disabled }}
+        style={styles.planSelectArea}
+      >
+        <View style={styles.planTopRow}>
+          <View style={styles.planCopy}>
+            <View style={styles.planNameRow}>
+              <Text style={styles.planName}>{plan.name}</Text>
+              {current ? <Text style={styles.currentTag}>{i18n.t("subscription.planCurrent")}</Text> : null}
+            </View>
+            {plan.description ? (
+              <Text style={styles.planDescription}>{plan.description}</Text>
+            ) : null}
           </View>
-          <Text style={styles.mutedSmall}>
-            {metric.remaining != null
-              ? `${formatMetricValue(metric.metric, metric.remaining)} remaining`
-              : `${pct.toFixed(0)}% used`}
-          </Text>
-        </>
+          <View style={[styles.radio, selected && styles.radioSelected]}>
+            {selected ? <View style={styles.radioInner} /> : null}
+          </View>
+        </View>
+
+        <View style={styles.priceRow}>
+          <Text style={styles.price}>{formatMoney(price, plan.currency, i18n.resolvedLanguage === "ur" ? "ur-PK" : "en-PK")}</Text>
+          {hasOffer ? (
+            <Text style={styles.originalPrice}>
+              {formatMoney(original, plan.currency, i18n.resolvedLanguage === "ur" ? "ur-PK" : "en-PK")}
+            </Text>
+          ) : null}
+          {plan.offer_label ? (
+            <Text style={styles.offerTag}>{plan.offer_label}</Text>
+          ) : null}
+        </View>
+
+        <Text style={styles.priceCaption}>
+          {interval === "YEARLY" ? i18n.t("subscription.planPerYear") : i18n.t("subscription.planPerMonth")}
+          {plan.trial_days > 0 ? ` · ${plan.trial_days} ${i18n.t("subscription.dayTrial")}` : ""}
+        </Text>
+      </Pressable>
+
+      <Pressable
+        onPress={onToggleDetails}
+        style={styles.detailsToggle}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+      >
+        <Text style={styles.detailsToggleText}>
+          {expanded ? i18n.t("subscription.hidePlanDetails") : i18n.t("subscription.viewPlanDetails")}
+        </Text>
+        <Text style={styles.chevron}>{expanded ? "⌃" : "›"}</Text>
+      </Pressable>
+
+      {expanded ? (
+        <View style={styles.planDetails}>
+          {plan.offer_ends_at ? (
+            <SummaryRow label={i18n.t("subscription.offerEnds")} value={formatDate(plan.offer_ends_at, i18n.resolvedLanguage === "ur" ? "ur-PK" : "en-PK")} />
+          ) : null}
+
+          {features.length ? (
+            <View style={styles.detailGroup}>
+              <Text style={styles.detailGroupTitle}>{i18n.t("subscription.features")}</Text>
+              {features.map(([feature]) => (
+                <Text key={feature} style={styles.featureLine}>
+                  ✓ {feature.replace(/_/g, " ")}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+
+          {quotas.length ? (
+            <View style={styles.detailGroup}>
+              <Text style={styles.detailGroupTitle}>{i18n.t("subscription.limits")}</Text>
+              {quotas.map(([metric, limit]) => (
+                <SummaryRow
+                  key={metric}
+                  label={metricLabel(metric)}
+                  value={`${metricValue(metric, limit as number | null)}${
+                    plan.limit_policy?.[metric]
+                      ? ` · ${plan.limit_policy[metric]}`
+                      : ""
+                  }`}
+                />
+              ))}
+            </View>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
 }
 
+function UsageRow({ metric }: { metric: UsageMetric }) {
+  const unlimited = metric.limit == null;
+  const percentage =
+    metric.percentage == null
+      ? null
+      : Math.max(0, Math.min(100, metric.percentage));
+
+  const fillColor =
+    percentage != null && percentage >= 100
+      ? C.red
+      : percentage != null && percentage >= 80
+        ? C.amber
+        : C.green;
+
+  return (
+    <View style={styles.usageRow}>
+      <View style={styles.usageHeader}>
+        <Text style={styles.usageName}>{metricLabel(metric.metric)}</Text>
+        <Text style={styles.usageNumbers}>
+          {metricValue(metric.metric, metric.used)}
+          {" / "}
+          {unlimited ? i18n.t("subscription.unlimited") : metricValue(metric.metric, metric.limit)}
+        </Text>
+      </View>
+
+      {!unlimited && percentage != null ? (
+        <>
+          <View
+            style={styles.progressTrack}
+            accessibilityRole="progressbar"
+            accessibilityValue={{ min: 0, max: 100, now: percentage }}
+          >
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${percentage}%`, backgroundColor: fillColor },
+              ]}
+            />
+          </View>
+          <Text style={styles.usageFootnote}>
+            {metric.remaining != null
+              ? `${metricValue(metric.metric, metric.remaining)} remaining`
+              : `${percentage.toFixed(0)}% used`}
+          </Text>
+        </>
+      ) : (
+        <Text style={styles.usageFootnote}>
+          {unlimited ? i18n.t("subscription.noSetLimit") : i18n.t("subscription.percentUsed", { percent: percentage ?? 0 })}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function PrimaryButton({
+  label,
+  onPress,
+  loading = false,
+  disabled = false,
+  danger = false,
+  style,
+}: {
+  label: string;
+  onPress: () => void;
+  loading?: boolean;
+  disabled?: boolean;
+  danger?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.primaryButton,
+        danger && styles.dangerButton,
+        (disabled || loading) && styles.disabledButton,
+        pressed && !disabled && !loading && styles.pressedButton,
+        style,
+      ]}
+    >
+      {loading ? (
+        <ActivityIndicator color="#FFFFFF" />
+      ) : (
+        <Text style={styles.primaryButtonText}>{label}</Text>
+      )}
+    </Pressable>
+  );
+}
+
+function SecondaryButton({
+  label,
+  onPress,
+  disabled = false,
+}: {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      style={({ pressed }) => [
+        styles.secondaryButton,
+        disabled && styles.disabledButton,
+        pressed && !disabled && styles.pressedButton,
+      ]}
+    >
+      <Text style={styles.secondaryButtonText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f8fafc" },
-  content: { padding: 16, paddingBottom: 32 },
-  centered: {flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#f8fafc", gap: 12,},
-  header: { marginBottom: 16 },
-  back: { color: "#0f172a", fontSize: 15, marginBottom: 8 },
-  title: { fontSize: 24, fontWeight: "700", color: "#0f172a" },
-  subtitle: { fontSize: 14, color: "#64748b", marginTop: 4 },
+  screen: { flex: 1, backgroundColor: C.background },
+  content: { paddingHorizontal: 18, paddingTop: 21, paddingBottom: 40 },
+  loadingScreen: { flex: 1, alignItems: "center", justifyContent: "center", gap: 10, backgroundColor: C.background },
+  pageHeader: { marginBottom: 21 },
+  backLink: { alignSelf: "flex-start", paddingVertical: 7, paddingRight: 10, marginBottom: 10 },
+  backText: { color: C.navy, fontSize: 13, fontWeight: "700" },
+  pageTitle: { color: C.text, fontSize: 28, fontWeight: "800" },
   section: { marginBottom: 24 },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a", marginBottom: 10 },
-  card: {backgroundColor: "#fff", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#e2e8f0", gap: 8,},
-  row: {flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12,},
-  rowLabel: { fontSize: 13, color: "#64748b", flexShrink: 0 },
-  rowValue: {fontSize: 14, color: "#0f172a", fontWeight: "500", flex: 1, textAlign: "right",},
-  badge: {fontSize: 12, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, overflow: "hidden",},
-  notice: {backgroundColor: "#fef3c7", borderRadius: 8, padding: 10, marginTop: 4,},
-  noticeText: { color: "#92400e", fontSize: 13 },
-  planCard: {backgroundColor: "#fff", borderRadius: 12, padding: 14, borderWidth: 1.5, borderColor: "#e2e8f0", marginBottom: 10,},
-  planCardSelected: { borderColor: "#0f172a" },
-  planCardCurrent: { backgroundColor: "#f1f5f9" },
-  planHeader: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8,},
-  planName: { fontSize: 17, fontWeight: "700", color: "#0f172a" },
-  planDesc: { fontSize: 13, color: "#64748b", marginTop: 4 },
-  offerBadge: {backgroundColor: "#dcfce7", color: "#166534", fontSize: 11, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, overflow: "hidden",},
-  priceRow: { flexDirection: "row", gap: 16, marginTop: 10 },
-  priceLine: { flex: 1 },
-  priceLabel: { fontSize: 12, color: "#64748b" },
-  priceValue: { fontSize: 15, fontWeight: "600", color: "#0f172a" },
-  priceOriginal: {fontSize: 12, color: "#94a3b8", textDecorationLine: "line-through", fontWeight: "400",},
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 },
-  chip: {backgroundColor: "#e2e8f0", borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3,},
-  chipText: { fontSize: 11, color: "#334155", textTransform: "capitalize" },
-  quotaBlock: { marginTop: 8, gap: 2 },
-  quotaLine: { fontSize: 12, color: "#475569" },
-  formCard: {backgroundColor: "#fff", borderRadius: 12, padding: 14, borderWidth: 1, borderColor: "#e2e8f0", marginTop: 8, gap: 8,},
-  formTitle: { fontSize: 15, fontWeight: "700", color: "#0f172a", marginBottom: 4 },
-  label: { fontSize: 13, color: "#64748b", marginTop: 4 },
-  input: {borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: "#0f172a", backgroundColor: "#fff",},
-  textArea: { minHeight: 72, textAlignVertical: "top" },
+  sectionTitle: { color: C.text, fontSize: 18, fontWeight: "800", marginBottom: 11 },
+  sectionSubtitle: { color: C.secondary, fontSize: 11, marginTop: 4 },
+  currentPlanCard: { backgroundColor: C.navy, borderRadius: 17, padding: 17 },
+  currentPlanTop: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 10 },
+  currentPlanCopy: { flex: 1 },
+  currentPlanName: { color: "#FFFFFF", fontSize: 21, fontWeight: "800" },
+  currentPlanSubline: { color: "#C0C9D3", fontSize: 12, marginTop: 5 },
+  darkDivider: { height: 1, backgroundColor: "#334152", marginVertical: 13 },
+  summaryRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 12, paddingVertical: 7 },
+  summaryLabel: { flex: 1, color: C.muted, fontSize: 11 },
+  summaryValue: { flex: 1.4, color: C.text, fontSize: 11, fontWeight: "700", textAlign: "right" },
+  summaryLabelDark: { color: "#B7C1CE" },
+  summaryValueDark: { color: "#FFFFFF" },
+  statusBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 99, paddingHorizontal: 9, paddingVertical: 6 },
+  statusDot: { width: 7, height: 7, borderRadius: 4 },
+  statusText: { fontSize: 10, fontWeight: "800" },
+  darkNotice: { backgroundColor: "#263548", borderRadius: 10, padding: 10, marginTop: 9 },
+  darkNoticeText: { color: "#F2DDAE", fontSize: 11, lineHeight: 16 },
+  summaryAction: { marginTop: 10 },
+  planCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 15, padding: 14, marginBottom: 9 },
+  planCardSelected: { borderColor: C.navy, borderWidth: 2 },
+  planCardCurrent: { backgroundColor: "#FBF8F1" },
+  planSelectArea: { paddingBottom: 2 },
+  planTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
+  planCopy: { flex: 1 },
+  planNameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 7 },
+  planName: { color: C.text, fontSize: 16, fontWeight: "800" },
+  currentTag: { color: C.green, backgroundColor: C.greenBg, borderRadius: 99, paddingHorizontal: 7, paddingVertical: 3, fontSize: 9, fontWeight: "800" },
+  planDescription: { color: C.secondary, fontSize: 11, lineHeight: 16, marginTop: 4 },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: "#BDB2A2", alignItems: "center", justifyContent: "center" },
+  radioSelected: { borderColor: C.navy },
+  radioInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: C.navy },
+  priceRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 8, marginTop: 13 },
+  price: { color: C.navy, fontSize: 19, fontWeight: "800" },
+  originalPrice: { color: C.muted, fontSize: 12, textDecorationLine: "line-through" },
+  offerTag: { color: C.green, backgroundColor: C.greenBg, borderRadius: 99, paddingHorizontal: 8, paddingVertical: 4, fontSize: 10, fontWeight: "800" },
+  priceCaption: { color: C.muted, fontSize: 10, marginTop: 2 },
+  detailsToggle: { minHeight: 37, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderTopWidth: 1, borderTopColor: "#F0E9DC", marginTop: 12, paddingTop: 8 },
+  detailsToggleText: { color: C.navy, fontSize: 11, fontWeight: "700" },
+  chevron: { color: C.muted, fontSize: 21 },
+  planDetails: { borderTopWidth: 1, borderTopColor: "#F0E9DC", marginTop: 4, paddingTop: 7 },
+  detailGroup: { marginTop: 9 },
+  detailGroupTitle: { color: C.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase", letterSpacing: 0.7, marginBottom: 4 },
+  featureLine: { color: C.secondary, fontSize: 11, paddingVertical: 3, textTransform: "capitalize" },
+  actionCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 15, padding: 15, marginTop: 10 },
+  actionCardTitle: { color: C.text, fontSize: 15, fontWeight: "800" },
+  actionCardDescription: { color: C.secondary, fontSize: 11, lineHeight: 16, marginTop: 4 },
+  fieldLabel: { color: C.secondary, fontSize: 11, fontWeight: "700", marginTop: 13, marginBottom: 6 },
   segment: { flexDirection: "row", gap: 8 },
-  segmentBtn: {flex: 1, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: "#cbd5e1", alignItems: "center",},
-  segmentBtnActive: { backgroundColor: "#0f172a", borderColor: "#0f172a" },
-  segmentText: { fontSize: 14, color: "#0f172a", fontWeight: "600" },
-  segmentTextActive: { color: "#fff" },
-  primaryBtn: {backgroundColor: "#0f172a", borderRadius: 10, paddingVertical: 14, alignItems: "center", marginTop: 8,},
-  primaryBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  secondaryBtn: {backgroundColor: "#fff", borderRadius: 10, paddingVertical: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#0f172a", marginBottom: 10,},
-  secondaryBtnText: { color: "#0f172a", fontSize: 15, fontWeight: "700" },
-  dangerBtn: {backgroundColor: "#dc2626", borderRadius: 10, paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", flex: 1,},
-  dangerBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
-  dangerOutlineBtn: {borderRadius: 10, paddingVertical: 14, alignItems: "center", borderWidth: 1.5, borderColor: "#dc2626",},
-  dangerOutlineText: { color: "#dc2626", fontSize: 15, fontWeight: "700" },
-  ghostBtn: {borderRadius: 10, paddingVertical: 14, paddingHorizontal: 16, alignItems: "center", borderWidth: 1, borderColor: "#cbd5e1",},
-  ghostBtnText: { color: "#64748b", fontSize: 15, fontWeight: "600" },
-  btnDisabled: { opacity: 0.5 },
-  rowBtns: { flexDirection: "row", gap: 10, marginTop: 8 },
-  checkRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 },
-  checkbox: {width: 20, height: 20, borderRadius: 4, borderWidth: 1.5, borderColor: "#94a3b8",},
-  checkboxChecked: { backgroundColor: "#0f172a", borderColor: "#0f172a" },
-  checkLabel: { flex: 1, fontSize: 13, color: "#334155" },
-  hint: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
-  muted: { fontSize: 14, color: "#64748b" },
-  mutedSmall: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
-  usageRow: { marginTop: 12, gap: 4 },
-  usageHeader: {flexDirection: "row", justifyContent: "space-between", alignItems: "center",},
-  usageName: { fontSize: 14, fontWeight: "600", color: "#0f172a" },
-  usageNums: { fontSize: 13, color: "#475569" },
-  barTrack: {height: 6, backgroundColor: "#e2e8f0", borderRadius: 3, overflow: "hidden",},
-  barFill: { height: 6, borderRadius: 3 },
-  errorBox: {backgroundColor: "#fef2f2", borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: "#fecaca",},
-  errorText: { color: "#b91c1c", fontSize: 14 },
-  retryBtn: { marginTop: 8, alignSelf: "flex-start", paddingVertical: 6, paddingHorizontal: 12, backgroundColor: "#fff", borderRadius: 6, borderWidth: 1, borderColor: "#fecaca",},
-  retryBtnText: { color: "#b91c1c", fontWeight: "600", fontSize: 13 },
-});
+  segmentButton: { flex: 1, minHeight: 42, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, paddingHorizontal: 8 },
+  segmentButtonSelected: { backgroundColor: C.navy, borderColor: C.navy },
+  segmentText: { color: C.secondary, fontSize: 12, fontWeight: "700" },
+  segmentTextSelected: { color: "#FFFFFF" },
+  input: { minHeight: 46, borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, color: C.text, fontSize: 14, paddingHorizontal: 12, paddingVertical: 10 },
+  textArea: { minHeight: 76, textAlignVertical: "top" },
+  primaryButton: { minHeight: 47, alignItems: "center", justifyContent: "center", borderRadius: 11, backgroundColor: C.navy, paddingHorizontal: 14, paddingVertical: 12, marginTop: 13 },
+  dangerButton: { backgroundColor: C.red },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800", textAlign: "center" },
+  secondaryButton: { minHeight: 43, alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, paddingHorizontal: 12, paddingVertical: 10, marginTop: 9 },
+  secondaryButtonText: { color: C.navy, fontSize: 12, fontWeight: "800" },
+  disabledButton: { opacity: 0.5 },
+  pressedButton: { opacity: 0.75 },
+  accordionHeader: { flexDirection: "row", alignItems: "center", backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13 },
+  accordionCopy: { flex: 1 },
+  accordionIcon: { color: C.muted, fontSize: 23, marginLeft: 10 },
+  usageCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 4, marginTop: 8 },
+  usageRow: { paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: "#F0E9DC" },
+  usageHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  usageName: { color: C.text, fontSize: 12, fontWeight: "700" },
+  usageNumbers: { color: C.secondary, fontSize: 11, textAlign: "right" },
+  progressTrack: { height: 7, borderRadius: 5, backgroundColor: "#EEE8DD", overflow: "hidden", marginTop: 8 },
+  progressFill: { height: "100%", borderRadius: 5 },
+  usageFootnote: { color: C.muted, fontSize: 10, marginTop: 5 },
+  infoCard: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 13, padding: 14 },
+  infoTitle: { color: C.text, fontSize: 13, fontWeight: "800", marginBottom: 4 },
+  muted: { color: C.secondary, fontSize: 12, lineHeight: 18 },
+  errorCard: { backgroundColor: C.redBg, borderWidth: 1, borderColor: "#EAC6C0", borderRadius: 12, padding: 13, marginBottom: 14 },
+  errorTitle: { color: C.red, fontSize: 13, fontWeight: "800" },
+  errorText: {color: C.secondary, fontSize: 12, lineHeight: 18, marginTop: 4,},
+  retryButton: {alignSelf: "flex-start", backgroundColor: C.surface, borderWidth: 1, borderColor: "#EAC6C0", borderRadius: 9, paddingHorizontal: 12, paddingVertical: 8, marginTop: 10,},
+  retryText: { color: C.red, fontSize: 11, fontWeight: "800" },
+  warningCard: {backgroundColor: C.amberBg, borderRadius: 10, padding: 10, marginTop: 10,},
+  warningText: { color: C.amber, fontSize: 11, lineHeight: 16 },
+  progressRow: {flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 14,},
+  progressText: { color: C.muted, fontSize: 11 },
+  topBar: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10,},
+  });
