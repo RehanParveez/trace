@@ -221,3 +221,13 @@ class FormulaResponse(BaseModel):
   description: str
   input_unit: str | None
   needs_kernel: bool
+
+
+class ConventionResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+  id: UUID
+  code: str
+  name: str
+  description: str | None
+  conserves_volume: bool
+  parameters: dict

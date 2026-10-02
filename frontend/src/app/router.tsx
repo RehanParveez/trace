@@ -34,6 +34,7 @@ import { PunchListsPage } from "../modules/punch_lists";
 import { SalesTaxPage } from "../modules/salex_tax";
 import { BankGuaranteesPage } from "../modules/bank_guarantees";
 import { CashFlowPage } from "../modules/cash_flow";
+import { StandardsPage } from "../modules/drawings_boq/standards";
 
 export const router = createBrowserRouter([
   {
@@ -182,6 +183,10 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <MaterialLibraryPage />,
+    },
+    {
+      path: "standards",
+      element: <StandardsPage />
     },
     {
       path: "labour-rates",

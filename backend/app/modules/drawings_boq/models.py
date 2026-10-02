@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, date
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text, Date
+from sqlalchemy import BigInteger, CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, JSON, Numeric, String, Text, UniqueConstraint, Boolean, text, Date, ForeignKeyConstraint, ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
@@ -47,7 +47,42 @@ class RuleSetStatus(str, enum.Enum):
   ACTIVE = "ACTIVE"
   SUPERSEDED = "SUPERSEDED"
   ARCHIVED = "ARCHIVED"
-
+  
+class CalculationRunStatus(str, enum.Enum):
+  QUEUED = "QUEUED"
+  RUNNING = "RUNNING"
+  STAGED = "STAGED"
+  PROMOTED = "PROMOTED"
+  COMPLETED = "COMPLETED"
+  FAILED = "FAILED"
+  CANCELLED = "CANCELLED"
+  SUPERSEDED = "SUPERSEDED"
+ 
+class RunStageStatus(str, enum.Enum):
+  PENDING = "PENDING"
+  RUNNING = "RUNNING"
+  SUCCEEDED = "SUCCEEDED"
+  FAILED = "FAILED"
+  SKIPPED = "SKIPPED"
+ 
+class SolidStatus(str, enum.Enum):
+  OK = "OK"
+  REVIEW_REQUIRED = "REVIEW_REQUIRED"  
+  REJECTED = "REJECTED"                 
+ 
+class LedgerSourceKind(str, enum.Enum):
+  MODEL = "MODEL"
+  SCHEDULE_IMPORT = "SCHEDULE_IMPORT"  
+  MANUAL = "MANUAL"                     
+  ESTIMATE = "ESTIMATE"                 
+ 
+_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CANCELLED','SUPERSEDED'"
+_ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
+_SOLID_STATUSES = "'OK','REVIEW_REQUIRED','REJECTED'"
+_GEOMETRY_KINDS = "'EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPPORTED'"
+_LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE'"
+_CANONICAL_UNITS = "'m3','m2','m','kg','nos'"
+ 
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
 
@@ -1278,3 +1313,288 @@ class ModelAuditResult(Base, TimestampMixin):
   zero_quantity_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
   unclassified_proxy_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
   extra_stats: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+  
+class CalculationRun(Base, TimestampMixin):
+  __tablename__ = "calculation_runs"
+  
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_calculation_runs_id_org"),
+    Index("ix_calculation_runs_org_project_status", "organization_id", "project_id", "status"),
+    
+    Index(
+      "uq_calculation_runs_completed_fingerprint", "organization_id", "fingerprint",
+      unique=True, postgresql_where=text("status = 'COMPLETED'"),
+    ),
+  
+    Index(
+      "uq_calculation_runs_active_project", "project_id",
+      unique=True, postgresql_where=text(f"status IN ({_ACTIVE_RUN_STATUSES})"),
+    ),
+    
+    CheckConstraint(f"status IN ({_RUN_STATUSES})", name="ck_calculation_runs_status"),
+    CheckConstraint("progress_pct >= 0 AND progress_pct <= 100", name="ck_calculation_runs_progress"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  requested_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+ 
+  rule_set_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", name="fk_calculation_runs_rule_set_id"),
+    nullable=False,
+  )
+  
+  convention_code: Mapped[str | None] = mapped_column(String(80), nullable=True)  
+ 
+  drawing_revision_ids: Mapped[list[UUID]] = mapped_column(
+    ARRAY(PGUUID(as_uuid=True)),
+    nullable=False,
+    default=list,
+    server_default=text("'{}'::uuid[]"),
+  )
+ 
+  engine_version: Mapped[str] = mapped_column(String(30), nullable=False)  
+  fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)     
+ 
+  status: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=CalculationRunStatus.QUEUED.value, server_default="QUEUED",
+  )
+  progress_pct: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  error_code: Mapped[str | None] = mapped_column(String(60), nullable=True)
+  error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+ 
+  settings: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  stats: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  
+class RunStageLog(Base, TimestampMixin):
+  __tablename__ = "run_stage_log"
+  
+  __table_args__ = (
+    UniqueConstraint("run_id", "stage", name="uq_run_stage_log_run_stage"),
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_run_stage_log_run_tenant",
+    ),
+    
+    CheckConstraint("status IN ('PENDING','RUNNING','SUCCEEDED','FAILED','SKIPPED')", name="ck_run_stage_log_status"),
+    CheckConstraint("attempt >= 1", name="ck_run_stage_log_attempt"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+ 
+  stage: Mapped[str] = mapped_column(String(40), nullable=False)
+  status: Mapped[str] = mapped_column(
+    String(20), nullable=False, default=RunStageStatus.PENDING.value, server_default="PENDING",
+  )
+  attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+  started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+  counts: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, server_default=text("'{}'::jsonb"),
+  )
+  
+  error: Mapped[str | None] = mapped_column(Text, nullable=True)
+ 
+class _SolidColumns:
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+ 
+  element_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawing_elements.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+ 
+  role: Mapped[str] = mapped_column(String(30), nullable=False, default="UNKNOWN")   
+  component_type: Mapped[str] = mapped_column(String(30), nullable=False, default="BODY")  
+  
+  geometry_kind: Mapped[str] = mapped_column(String(20), nullable=False)
+  material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+ 
+  gross_volume_m3: Mapped[Decimal | None] = mapped_column(Numeric(20, 6), nullable=True)
+  gross_area_m2: Mapped[Decimal | None] = mapped_column(Numeric(20, 6), nullable=True)
+  gross_length_m: Mapped[Decimal | None] = mapped_column(Numeric(20, 6), nullable=True)
+  count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+ 
+  status: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=SolidStatus.OK.value, server_default="OK",
+  )
+  
+  issues: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+  engine_version: Mapped[str] = mapped_column(String(30), nullable=False)
+  
+class QuantitySolid(_SolidColumns, Base, TimestampMixin):
+  __tablename__ = "quantity_solids"
+  
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_quantity_solids_id_org"),
+    UniqueConstraint("run_id", "element_id", "component_type", name="uq_quantity_solids_run_element_component"),
+    
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_quantity_solids_run_tenant",
+    ),
+    
+    Index("ix_quantity_solids_run_level", "run_id", "level_id"),
+    Index("ix_quantity_solids_element", "element_id"),
+    CheckConstraint(f"status IN ({_SOLID_STATUSES})", name="ck_quantity_solids_status"),
+    CheckConstraint(f"geometry_kind IN ({_GEOMETRY_KINDS})", name="ck_quantity_solids_geometry_kind"),
+    CheckConstraint(
+      "(gross_volume_m3 IS NULL OR gross_volume_m3 >= 0) AND (gross_area_m2 IS NULL OR gross_area_m2 >= 0) "
+      "AND (gross_length_m IS NULL OR gross_length_m >= 0) AND (count IS NULL OR count >= 0)",
+      name="ck_quantity_solids_non_negative",
+    ),
+  )
+  
+class StagedQuantitySolid(_SolidColumns, Base, TimestampMixin):
+  __tablename__ = "staged_quantity_solids"
+  
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_staged_quantity_solids_id_org"),
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_staged_quantity_solids_run_tenant",
+    ),
+    
+    Index("ix_staged_quantity_solids_run_stage", "run_id", "stage"),
+    CheckConstraint(f"status IN ({_SOLID_STATUSES})", name="ck_staged_quantity_solids_status"),
+    CheckConstraint(f"geometry_kind IN ({_GEOMETRY_KINDS})", name="ck_staged_quantity_solids_geometry_kind"),
+  )
+ 
+  stage: Mapped[str] = mapped_column(String(40), nullable=False) 
+  
+class _LedgerColumns:
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  solid_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+ 
+  element_id: Mapped[UUID | None] = mapped_column(  
+    PGUUID(as_uuid=True),
+    ForeignKey("drawing_elements.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+ 
+  work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)  
+  quantity_net: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)             
+  material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+ 
+  source_kind: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=LedgerSourceKind.MODEL.value, server_default="MODEL",
+  )
+  
+  confidence: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False, default=Decimal("1"))
+  formula_code: Mapped[str] = mapped_column(String(80), nullable=False)
+  
+  trace: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False, 
+    default=dict, server_default=text("'{}'::jsonb"),
+  )
+  
+  warnings: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False, default=list, server_default=text("'[]'::jsonb"),
+  )
+  
+  engine_version: Mapped[str] = mapped_column(String(30), nullable=False)
+  
+class QuantityLedger(_LedgerColumns, Base, TimestampMixin):
+  __tablename__ = "quantity_ledger"
+  
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_quantity_ledger_id_org"),
+    UniqueConstraint("run_id", "solid_id", "work_item_code", name="uq_quantity_ledger_run_solid_work_item"),
+    
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_quantity_ledger_run_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["solid_id", "organization_id"], ["quantity_solids.id", "quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_quantity_ledger_solid_tenant",
+    ),
+    
+    Index("ix_quantity_ledger_run_work_item_level", "run_id", "work_item_code", "level_id"),
+    Index("ix_quantity_ledger_run_solid", "run_id", "solid_id"),
+    
+    CheckConstraint("quantity_net >= 0", name="ck_quantity_ledger_non_negative"),  
+    CheckConstraint(f"unit IN ({_CANONICAL_UNITS})", name="ck_quantity_ledger_unit"),  
+    CheckConstraint(f"source_kind IN ({_LEDGER_SOURCES})", name="ck_quantity_ledger_source_kind"),
+    CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_quantity_ledger_confidence"),
+  )
+  
+class StagedQuantityLedger(_LedgerColumns, Base, TimestampMixin):
+ 
+  __tablename__ = "staged_quantity_ledger"
+
+  __table_args__ = (
+  UniqueConstraint("run_id", "solid_id", "work_item_code", name="uq_staged_quantity_ledger_run_solid_work_item"),
+    
+  ForeignKeyConstraint(
+    ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_staged_quantity_ledger_run_tenant",
+    ),
+    
+  ForeignKeyConstraint(
+    ["solid_id", "organization_id"], ["staged_quantity_solids.id", "staged_quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_staged_quantity_ledger_solid_tenant",
+    ),
+    
+    Index("ix_staged_quantity_ledger_run_stage", "run_id", "stage"),
+    CheckConstraint("quantity_net >= 0", name="ck_staged_quantity_ledger_non_negative"),
+    CheckConstraint(f"unit IN ({_CANONICAL_UNITS})", name="ck_staged_quantity_ledger_unit"),
+    )
+ 
+  stage: Mapped[str] = mapped_column(String(40), nullable=False)

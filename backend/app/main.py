@@ -67,7 +67,7 @@ app.include_router(projects_router, prefix=settings.api_v1_prefix)
 
 app.include_router(drawings_boq_router, prefix=settings.api_v1_prefix)
 
-app.include_router(standards_router, prefix=settings.api_v1_prefix)
+app.include_router(standards_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(whatsapp_router, prefix=settings.api_v1_prefix)
 

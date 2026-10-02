@@ -131,6 +131,9 @@ class StandardsService:
   async def list_rule_sets(self, organization_id: UUID) -> list[MeasurementRuleSet]:
     return await self.repo.list_rule_sets(organization_id)
 
+  async def list_conventions(self):
+    return sorted((await self.repo.conventions_by_code()).values(), key=lambda c: c.code)
+
   async def get_detail(self, organization_id: UUID, rule_set_id: UUID) -> RuleSetBundle:
     await self._visible(organization_id, rule_set_id)
     return await self.repo.load_bundle(rule_set_id)

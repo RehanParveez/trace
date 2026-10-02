@@ -68,6 +68,11 @@ function buildOrganizationNav(
       icon: "materials",
     },
     {
+      label: "nav.standards",
+      to: "/app/drawings_boq/standards",
+      icon: "budget",
+    },
+    {
       label: t("nav.labourRates"),
       to: "/app/drawings_boq/labour-rates",
       icon: "budget",

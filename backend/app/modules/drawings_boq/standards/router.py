@@ -7,7 +7,7 @@ from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.identity.models import User
 from uuid import UUID
 from app.modules.identity.enums import PermissionKey
-from app.modules.drawings_boq.standards.schemas import (RuleSetCreateRequest, FormulaResponse, PublishResponse, RecipeUpsertRequest, RuleSetDetailResponse, RuleSetDraftUpdateRequest, RuleSetResponse, 
+from app.modules.drawings_boq.standards.schemas import (RuleSetCreateRequest, ConventionResponse, FormulaResponse, PublishResponse, RecipeUpsertRequest, RuleSetDetailResponse, RuleSetDraftUpdateRequest, RuleSetResponse, 
   ValidationResponse, WorkItemCreateRequest, WorkItemResponse, WorkItemUpdateRequest,
 )
 from typing import Any
@@ -117,6 +117,13 @@ async def list_formulas(
      "input_unit": f.input_unit, "needs_kernel": f.needs_kernel}
     for f in FORMULAS.values()
   ]
+
+@router.get("/conventions", response_model=list[ConventionResponse])
+async def list_conventions(
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _svc(session).list_conventions()
 
 @router.get("/work-items", response_model=list[WorkItemResponse])
 async def list_work_items(
