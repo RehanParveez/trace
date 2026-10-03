@@ -402,6 +402,26 @@ def _dims_from_extrusion(role: str, px: float, py: float, depth: float, vertical
     return {"length": long_, "width": short, "height": depth}
   height, width = _closest_dim(px, py, zext)
   return {"length": depth, "width": width, "height": height}
+
+def _convex_hull_2d(points) -> list[tuple[float, float]]:
+  pts = sorted({(round(float(x), 3), round(float(y), 3)) for x, y in points})
+  if len(pts) <= 2:
+    return pts
+
+  def cross(o, a, b):
+    return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+
+  lower: list[tuple[float, float]] = []
+  for p in pts:
+    while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+      lower.pop()
+    lower.append(p)
+  upper: list[tuple[float, float]] = []
+  for p in reversed(pts):
+    while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+      upper.pop()
+    upper.append(p)
+  return lower[:-1] + upper[:-1]
  
 def _extruded_geometry(element, role: str, scales: _Scales) -> _Geometry | None:
   items = _body_items(element)
@@ -466,11 +486,19 @@ def _extruded_geometry(element, role: str, scales: _Scales) -> _Geometry | None:
     ),
   }
   origin = (matrix @ np.array([0.0, 0.0, 0.0, 1.0]))[:3] * mm
+  plan_pts = (
+    [(float(x), float(y)) for x, y in base_world[:, :2]]
+    if vertical
+    else _convex_hull_2d(all_world[:, :2])
+  )
   geometry.placement = {
     "origin_mm": [round(float(v), 3) for v in origin],
     "extrusion_dir": [round(float(v), 6) for v in direction_world],
     "depth_mm": round(depth_mm, 3),
     "vertical": vertical,
+    "plan_mm": [[round(x, 3), round(y, 3)] for x, y in plan_pts[:500]],
+    "z_min_mm": round(float(all_world[:, 2].min()), 3),
+    "z_max_mm": round(float(all_world[:, 2].max()), 3),
   }
   if clipped:
     geometry.issues.append(_issue("GEOMETRY_CLIPPED", "info", "Solid has a boolean clipping; dimensions are those of the unclipped solid."))

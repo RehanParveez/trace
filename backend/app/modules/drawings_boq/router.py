@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
   DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
-   PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse
+   PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse, DeductionResponse
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.drawings_boq.calc_service import CalculationService
@@ -587,6 +587,7 @@ async def start_calculation_run(
     current_user.id,
     payload.drawing_ids,
     payload.rule_set_code,
+    payload.convention_code,
   )
   if reused:
     response.status_code = 200
@@ -641,6 +642,26 @@ async def list_calculation_run_ledger(
   rows, next_cursor = await CalculationService(session).list_ledger(
     current_user.active_membership.organization_id, run_id,
     limit=limit, after=after, work_item_code=work_item_code, level_id=level_id,
+  )
+  if next_cursor:
+    response.headers["X-Next-Cursor"] = str(next_cursor)
+  return rows
+
+@router.get("/calculation-runs/{run_id}/deductions", response_model=list[DeductionResponse])
+async def list_calculation_run_deductions(
+  run_id: UUID,
+  response: Response,
+  limit: int = Query(default=500, ge=1, le=2000),
+  after: UUID | None = Query(default=None),
+  from_solid_id: UUID | None = Query(default=None),
+  deduction_type: Literal["OVERLAP_ALLOCATION", "EXTENT_TRIMMING", "VOID_DEDUCTION",
+    "MATERIAL_SUBSTITUTION", "MEASUREMENT_CONVENTION"] | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  rows, next_cursor = await CalculationService(session).list_deductions(
+    current_user.active_membership.organization_id, run_id,
+    limit=limit, after=after, from_solid_id=from_solid_id, deduction_type=deduction_type,
   )
   if next_cursor:
     response.headers["X-Next-Cursor"] = str(next_cursor)

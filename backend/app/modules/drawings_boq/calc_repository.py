@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.drawings_boq.models import CalculationRun, QuantityLedger, QuantitySolid, RunStageLog, StagedQuantityLedger, StagedQuantitySolid
+from app.modules.drawings_boq.models import CalculationRun, QuantityLedger, QuantitySolid, RunStageLog, StagedQuantityLedger, StagedQuantitySolid, LedgerDeduction, StagedLedgerDeduction
 from uuid import UUID
 from sqlalchemy import delete, func, insert, select, update
 
@@ -124,6 +124,7 @@ class CalculationRunRepository:
     return list(result.scalars().all())
 
   async def clear_staged(self, run_id: UUID) -> None:
+    await self.session.execute(delete(StagedLedgerDeduction).where(StagedLedgerDeduction.run_id == run_id))
     await self.session.execute(delete(StagedQuantityLedger).where(StagedQuantityLedger.run_id == run_id))
     await self.session.execute(delete(StagedQuantitySolid).where(StagedQuantitySolid.run_id == run_id))
 
@@ -134,6 +135,10 @@ class CalculationRunRepository:
   async def stage_ledger(self, rows: list[dict]) -> None:
     for i in range(0, len(rows), _CHUNK):
       await self.session.execute(insert(StagedQuantityLedger), rows[i:i + _CHUNK])
+
+  async def stage_deductions(self, rows: list[dict]) -> None:
+    for i in range(0, len(rows), _CHUNK):
+      await self.session.execute(insert(StagedLedgerDeduction), rows[i:i + _CHUNK])
 
   async def promote(self, run_id: UUID) -> dict:
     solid_cols = [c.name for c in QuantitySolid.__table__.columns]
@@ -147,11 +152,19 @@ class CalculationRunRepository:
       insert(QuantityLedger.__table__).from_select(
         ledger_cols, select(*[l_src.c[n] for n in ledger_cols]).where(l_src.c.run_id == run_id))
     )
+    ded_cols = [c.name for c in LedgerDeduction.__table__.columns]
+    d_src = StagedLedgerDeduction.__table__
+    await self.session.execute(
+      insert(LedgerDeduction.__table__).from_select(
+        ded_cols, select(*[d_src.c[n] for n in ded_cols]).where(d_src.c.run_id == run_id))
+    )
+    deductions = (await self.session.execute(
+      select(func.count()).select_from(LedgerDeduction).where(LedgerDeduction.run_id == run_id))).scalar_one()
     solids = (await self.session.execute(
       select(func.count()).select_from(QuantitySolid).where(QuantitySolid.run_id == run_id))).scalar_one()
     ledger = (await self.session.execute(
       select(func.count()).select_from(QuantityLedger).where(QuantityLedger.run_id == run_id))).scalar_one()
-    return {"solids": solids, "ledger_rows": ledger}
+    return {"solids": solids, "ledger_rows": ledger, "deductions": deductions}
 
   async def list_solids(self, run_id: UUID, organization_id: UUID, *, limit: int, after: UUID | None = None,
     role: str | None = None, level_id: UUID | None = None) -> list[QuantitySolid]:
@@ -175,4 +188,17 @@ class CalculationRunRepository:
     if after:
       stmt = stmt.where(QuantityLedger.id > after)
     result = await self.session.execute(stmt.order_by(QuantityLedger.id.asc()).limit(limit + 1))
+    return list(result.scalars().all())
+
+  async def list_deductions(self, run_id: UUID, organization_id: UUID, *, limit: int, after: UUID | None = None,
+    from_solid_id: UUID | None = None, deduction_type: str | None = None) -> list[LedgerDeduction]:
+    stmt = select(LedgerDeduction).where(
+      LedgerDeduction.run_id == run_id, LedgerDeduction.organization_id == organization_id)
+    if from_solid_id:
+      stmt = stmt.where(LedgerDeduction.from_solid_id == from_solid_id)
+    if deduction_type:
+      stmt = stmt.where(LedgerDeduction.deduction_type == deduction_type)
+    if after:
+      stmt = stmt.where(LedgerDeduction.id > after)
+    result = await self.session.execute(stmt.order_by(LedgerDeduction.id.asc()).limit(limit + 1))
     return list(result.scalars().all())

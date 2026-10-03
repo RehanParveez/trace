@@ -1,12 +1,16 @@
 from __future__ import annotations
-from .units import Unit, mm3_to_m3, q4, q6
+from app.engine.measure.units import Unit, mm3_to_m3, q4, q6
 from decimal import Decimal
 from uuid import uuid5
-from .geometry import bbox_volume_mm3, extrusion_volume_mm3
-from .models import CalculationContext, CalculationResult, LedgerEntry, ModelElement, Rejected, Solid
-from .formulas import get_formula
+from app.engine.measure.geometry import bbox_volume_mm3, extrusion_volume_mm3
+from app.engine.measure.models import CalculationContext, CalculationResult, LedgerEntry, ModelElement, Rejected, Solid, AllocationResult
+from app.engine.measure.formulas import get_formula
+from app.engine.measure.allocate import allocate as _allocate
+from app.engine.measure.conventions import get_convention
+from app.engine.measure.intersect import find_overlaps
+from app.engine.measure.spatial import build_spatial_index
 
-ENGINE_VERSION = "2026.10.1"
+ENGINE_VERSION = "2026.10.2"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -28,6 +32,7 @@ COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
 FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
 QTO_ONLY_FACTOR = Decimal("0.9")
+AABB_CONFIDENCE_FACTOR = Decimal("0.8")
 QTO_MISMATCH_TOLERANCE = 0.02
 
 class InvariantViolation(Exception):
@@ -124,10 +129,15 @@ def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
   solids.sort(key=lambda s: (s.role, str(s.level_id), str(s.element_id)))
   return solids, dict(sorted(skipped.items()))
 
-def measure(ctx: CalculationContext, solids: list[Solid]):
+def measure(ctx: CalculationContext, solids: list[Solid], alloc):
   by_ifc = {m.ifc_type: m for m in ctx.mappings}
+  deds_by_solid: dict = {}
+  for d in getattr(alloc, "deductions", ()) or ():
+    deds_by_solid.setdefault(d.from_solid_id, []).append(d)
+
   ledger: list[LedgerEntry] = []
   unmapped: dict[str, int] = {}
+
   for s in solids:
     mapping = by_ifc.get(s.ifc_type)
     if mapping is None or not mapping.work_item_code:
@@ -135,40 +145,70 @@ def measure(ctx: CalculationContext, solids: list[Solid]):
       continue
 
     warnings = [i["code"] for i in s.issues if i.get("severity") == "warning"]
+
     if s.count is not None:
       formula, unit, quantity = "OPENING_COUNT", Unit.NOS.value, Decimal(s.count)
       inputs = {"count": s.count}
       steps = [{"op": "count", "nos": str(s.count)}]
       net = {"nos": str(quantity)}
     elif s.gross_volume_m3 is not None:
-      formula, unit, quantity = "SOLID_NET_VOLUME", Unit.M3.value, q6(s.gross_volume_m3)
-      inputs = {"geometry_kind": s.geometry_kind}
+      gross = q6(s.gross_volume_m3)
+      solid_deds = deds_by_solid.get(s.id, [])
+      total_ded = q6(sum((d.quantity for d in solid_deds), Decimal("0")))
+      quantity = q6(gross - total_ded)
+      if quantity < 0:
+        quantity = Decimal("0")
+
+      formula, unit = "SOLID_NET_VOLUME", Unit.M3.value
+      inputs = {"geometry_kind": s.geometry_kind, "gross_m3": str(gross)}
       steps = [
-        {"op": "gross_volume", "m3": str(s.gross_volume_m3)},
-        {"op": "allocation", "status": "not_applied", "note": "overlap allocation arrives in Phase 4"},
+        {"op": "gross_volume", "m3": str(gross)},
       ]
+      for d in solid_deds:
+        steps.append({
+          "op": "deduction",
+          "type": d.deduction_type,
+          "m3": str(d.quantity),
+          "rule": getattr(d, "rule_code", None),
+          "to_solid_id": str(d.to_solid_id) if d.to_solid_id else None,
+        })
+      steps.append({"op": "net_volume", "m3": str(quantity)})
       net = {"m3": str(quantity)}
-      if s.role.startswith("WALL"):
+
+      if s.role.startswith("WALL") and not any(d.deduction_type == "VOID_DEDUCTION" for d in solid_deds):
         warnings.append("OPENINGS_NOT_DEDUCTED")
     else:
       continue
+
     if quantity <= 0:
       continue
 
     confidence = q4(min(mapping.confidence_base, s.classification_confidence) * s.confidence_factor)
     confidence = max(Decimal("0"), min(Decimal("1"), confidence))
+
     ledger.append(LedgerEntry(
-      solid_id=s.id, element_id=s.element_id, level_id=s.level_id,
-      work_item_code=mapping.work_item_code, quantity=quantity, unit=unit,
-      material_grade=s.material_grade, confidence=confidence, formula_code=formula,
+      solid_id=s.id,
+      element_id=s.element_id,
+      level_id=s.level_id,
+      work_item_code=mapping.work_item_code,
+      quantity=quantity,
+      unit=unit,
+      material_grade=s.material_grade,
+      confidence=confidence,
+      formula_code=formula,
       trace={
-        "formula_code": formula, "engine_version": ctx.engine_version,
+        "formula_code": formula,
+        "engine_version": ctx.engine_version,
         "convention": ctx.convention_code,
         "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
-        "inputs": inputs, "steps": steps, "net": net, "rounding": "half_up,6dp",
+        "inputs": inputs,
+        "steps": steps,
+        "net": net,
+        "rounding": "half_up,6dp",
       },
       warnings=tuple(warnings),
     ))
+
   ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
   return ledger, dict(sorted(unmapped.items()))
 
@@ -178,12 +218,25 @@ def _expected_unit(formula_code: str) -> str | None:
     return spec.output_unit
   return FORMULA_UNITS.get(formula_code)
 
-def self_check(solids: list[Solid], ledger: list[LedgerEntry]) -> None:
+def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: AllocationResult | None = None) -> None:
+  alloc = alloc or AllocationResult.empty()
   failures: list[str] = []
-  gross = {s.id: s for s in solids}
+  by_id = {s.id: s for s in solids}
+
+  ded_total: dict = {}
+  for d in alloc.deductions:
+    if d.from_solid_id not in by_id or (d.to_solid_id is not None and d.to_solid_id not in by_id):
+      failures.append("deduction references unknown solid")
+      continue
+    if d.quantity < 0:
+      failures.append(f"negative deduction on solid {d.from_solid_id}")
+    if d.deduction_type == "OVERLAP_ALLOCATION" and d.to_solid_id is None:
+      failures.append(f"overlap deduction without owner on solid {d.from_solid_id}")
+    ded_total[d.from_solid_id] = ded_total.get(d.from_solid_id, Decimal("0")) + d.quantity
+
   seen: set = set()
   for row in ledger:
-    solid = gross.get(row.solid_id)
+    solid = by_id.get(row.solid_id)
     if solid is None:
       failures.append(f"ledger row references unknown solid {row.solid_id}")
       continue
@@ -197,17 +250,34 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry]) -> None:
     seen.add(key)
     if not row.trace or "formula_code" not in row.trace:
       failures.append(f"missing trace on solid {row.solid_id}")
-      
-    if row.formula_code == "SOLID_NET_VOLUME" and solid.gross_volume_m3 is not None \
-        and row.quantity != q6(solid.gross_volume_m3):
-      failures.append(f"net volume != gross volume on solid {row.solid_id}")
+    if row.formula_code == "SOLID_NET_VOLUME" and solid.gross_volume_m3 is not None:
+      expected = q6(max(Decimal("0"), solid.gross_volume_m3 - ded_total.get(row.solid_id, Decimal("0"))))
+      if row.quantity != expected:
+        failures.append(f"net volume != gross - deductions on solid {row.solid_id}")
+
+  failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
+
+def spatial_index(ctx: CalculationContext, convention, solids: list[Solid], elements: list[ModelElement]):
+  return build_spatial_index(ctx, convention, solids, elements)
+
+def find_relations(ctx: CalculationContext, index):
+  return find_overlaps(ctx, index)
+
+def allocate(ctx: CalculationContext, convention, solids: list[Solid], index, overlaps):
+  return _allocate(ctx, convention, solids, index, overlaps)
 
 def run(ctx: CalculationContext, elements: list[ModelElement]) -> CalculationResult:
   accepted, rejected = validate_input(ctx, elements)
   solids, skipped = build_solids(ctx, accepted)
-  ledger, unmapped = measure(ctx, solids)
-  self_check(solids, ledger)
-  return CalculationResult(solids=solids, ledger=ledger, rejected=rejected,
-    skipped_by_role=skipped, unmapped_by_type=unmapped)
+  convention = get_convention(ctx.convention_code)
+  if convention is None:
+    alloc = AllocationResult.empty()
+  else:
+    index = spatial_index(ctx, convention, solids, accepted)
+    alloc = allocate(ctx, convention, solids, index, find_relations(ctx, index))
+  ledger, unmapped = measure(ctx, solids, alloc)
+  self_check(solids, ledger, alloc)
+  return CalculationResult(solids=solids, ledger=ledger, rejected=rejected, skipped_by_role=skipped,
+    unmapped_by_type=unmapped, deductions=alloc.deductions)

@@ -224,6 +224,7 @@ class ModelAuditResponse(BaseModel):
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None
   rule_set_code: str | None = Field(default=None, max_length=50)
+  convention_code: str | None = Field(default=None, max_length=80)
 
 class CalculationRunResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -287,4 +288,19 @@ class LedgerRowResponse(BaseModel):
   formula_code: str
   trace: dict
   warnings: list
+  engine_version: str
+  
+class DeductionResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  from_solid_id: UUID
+  to_solid_id: UUID | None
+  deduction_type: str
+  quantity: Decimal
+  unit: str
+  rule_code: str
+  rule_version: str | None
+  geometry: dict
+  explanation: str | None
   engine_version: str

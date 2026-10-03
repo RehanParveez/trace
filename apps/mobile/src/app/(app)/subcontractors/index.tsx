@@ -1,33 +1,16 @@
 import { useCallback, useState } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  View,
+import {ActivityIndicator, Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Switch, Text, TextInput, View,
 } from "react-native";
 import { Stack, router, useFocusEffect } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { restoreSession } from "../../../api/client";
-import {
-  createSubcontractor,
-  listSubcontractors,
-  updateSubcontractor,
+import {createSubcontractor, listSubcontractors, updateSubcontractor,
 } from "../../../api/subcontractors";
-import type {
-  AuthUser,
-  Subcontractor,
-  SubcontractorCreatePayload,
-  SubcontractorUpdatePayload,
+import type {AuthUser, Subcontractor, SubcontractorCreatePayload, SubcontractorUpdatePayload,
 } from "../../../api/types";
 import LanguageSwitcher from "../../../components/LanguageSwitcher";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 3;
 
 const C = {
   background: "#F3EEE4",

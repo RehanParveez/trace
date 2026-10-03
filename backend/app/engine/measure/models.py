@@ -33,6 +33,7 @@ class CalculationContext:
   rule_set_code: str
   rule_set_version: int
   mappings: tuple[MappingInput, ...]
+  convention_params: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class Solid:
@@ -81,3 +82,49 @@ class CalculationResult:
   rejected: list[Rejected]
   skipped_by_role: dict = field(default_factory=dict)
   unmapped_by_type: dict = field(default_factory=dict)
+  deductions: list = field(default_factory=list)
+  
+@dataclass(frozen=True)
+class Prism:
+  plan: tuple
+  z0: float
+  z1: float
+  exact: bool
+
+@dataclass(frozen=True)
+class SpatialIndex:
+  prisms: dict
+  polys: dict
+  candidates: list
+  unallocated: frozenset
+
+@dataclass(frozen=True)
+class Overlap:
+  a: UUID
+  b: UUID
+  volume_mm3: float
+
+@dataclass(frozen=True)
+class Deduction:
+  from_solid_id: UUID
+  to_solid_id: UUID | None
+  deduction_type: str
+  quantity: Decimal
+  unit: str
+  rule_code: str
+  geometry: dict
+  explanation: str
+
+@dataclass(frozen=True)
+class AllocationResult:
+  deductions: list = field(default_factory=list)
+  approximate_solids: frozenset = frozenset()
+  unallocated_solids: frozenset = frozenset()
+  solid_warnings: dict = field(default_factory=dict)
+  conservation_failures: tuple = ()
+  applied: bool = False
+  stats: dict = field(default_factory=dict)
+
+  @classmethod
+  def empty(cls) -> "AllocationResult":
+    return cls()

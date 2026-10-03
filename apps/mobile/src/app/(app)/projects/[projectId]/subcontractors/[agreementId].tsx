@@ -3,8 +3,10 @@ import {ActivityIndicator, Alert, Modal, Pressable, RefreshControl, ScrollView, 
 } from "react-native";
 import {Stack, router, useFocusEffect, useLocalSearchParams,
 } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { File, Paths } from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import LanguageSwitcher from "../../../../../components/LanguageSwitcher";
 import { restoreSession } from "../../../../../api/client";
 import { getProject } from "../../../../../api/projects";
 import {cancelSubcontractorBill, createAgreementAdvance, createAgreementBill, createAgreementPayment, downloadSubcontractorBillPdf, downloadSubcontractorBillXlsx, getAgreement, getAgreementLedger,
@@ -14,12 +16,35 @@ import type {AuthUser, Project, SubcontractAgreementDetail, SubcontractAgreement
   SubcontractorPayment,
 } from "../../../../../api/types";
 
+const PAGE_SIZE = 3;
+
+const C = {
+  background: "#F3EEE4",
+  surface: "#FFFEFB",
+  surfaceMuted: "#F7F1E7",
+  navy: "#080D18",
+  text: "#17212F",
+  secondary: "#5C5347",
+  muted: "#82796C",
+  border: "#E5DCCB",
+  gold: "#D9A441",
+  green: "#26734D",
+  greenBg: "#E8F2E9",
+  amber: "#A96516",
+  amberBg: "#F8EDDA",
+  red: "#A33A32",
+  redBg: "#F9E9E5",
+};
+
 type FormName = "agreement" | "bill" | "advance" | "payment" | null;
 type Percentages = Record<string, string>;
 
 const today = () => new Date().toISOString().slice(0, 10);
 
 export default function SubcontractAgreementScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   const params = useLocalSearchParams<{
     projectId?: string;
     agreementId?: string;
@@ -49,6 +74,10 @@ export default function SubcontractAgreementScreen() {
   const [sharingBillId, setSharingBillId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<FormName>(null);
+
+  const [billsPage, setBillsPage] = useState(1);
+  const [advancesPage, setAdvancesPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
 
   const [agreementEndDate, setAgreementEndDate] = useState("");
   const [agreementStatus, setAgreementStatus] =
@@ -84,97 +113,105 @@ export default function SubcontractAgreementScreen() {
     "subcontractor:payment_manage",
   );
 
-  const load = useCallback(async (refresh = false) => {
-    try {
-      if (refresh) setRefreshing(true);
-      else setLoading(true);
-      setError(null);
+  const load = useCallback(
+    async (refresh = false) => {
+      try {
+        if (refresh) setRefreshing(true);
+        else setLoading(true);
+        setError(null);
 
-      if (!projectId || !agreementId) {
-        throw new Error("Project or agreement ID is missing.");
-      }
+        if (!projectId || !agreementId) {
+          throw new Error(t("subcontractAgreement.idsMissing"));
+        }
 
-      const currentUser = await restoreSession();
-      if (!currentUser) {
-        router.replace("/");
-        return;
-      }
-      setUser(currentUser);
+        const currentUser = await restoreSession();
+        if (!currentUser) {
+          router.replace("/");
+          return;
+        }
+        setUser(currentUser);
 
-      if (
-        !currentUser.role.permissions.some(
-          (permission) => permission.key === "subcontractor:read",
-        )
-      ) {
-        setAgreement(null);
-        setProject(null);
-        setBills([]);
-        setAdvances([]);
-        setPayments([]);
-        setLedger(null);
-        return;
-      }
+        if (
+          !currentUser.role.permissions.some(
+            (permission) => permission.key === "subcontractor:read",
+          )
+        ) {
+          setAgreement(null);
+          setProject(null);
+          setBills([]);
+          setAdvances([]);
+          setPayments([]);
+          setLedger(null);
+          return;
+        }
 
-      const [
-        agreementResult,
-        billRows,
-        advanceRows,
-        paymentRows,
-        ledgerResult,
-        projectResult,
-      ] = await Promise.all([
-        getAgreement(agreementId),
-        listAgreementBills(agreementId),
-        listAgreementAdvances(agreementId),
-        listAgreementPayments(agreementId),
-        getAgreementLedger(agreementId),
-        getProject(projectId),
-      ]);
+        const [
+          agreementResult,
+          billRows,
+          advanceRows,
+          paymentRows,
+          ledgerResult,
+          projectResult,
+        ] = await Promise.all([
+          getAgreement(agreementId),
+          listAgreementBills(agreementId),
+          listAgreementAdvances(agreementId),
+          listAgreementPayments(agreementId),
+          getAgreementLedger(agreementId),
+          getProject(projectId),
+        ]);
 
-      if (agreementResult.project_id !== projectId) {
-        throw new Error("This agreement does not belong to the selected project.");
-      }
+        if (agreementResult.project_id !== projectId) {
+          throw new Error(t("subcontractAgreement.projectMismatch"));
+        }
 
-      setAgreement(agreementResult);
-      setProject(projectResult);
-      setBills(billRows);
-      setAdvances(advanceRows);
-      setPayments(paymentRows);
-      setLedger(ledgerResult);
-      setAgreementStatus(agreementResult.status);
-      setAgreementRetention(
-        String(agreementResult.default_retention_percentage),
-      );
+        setAgreement(agreementResult);
+        setProject(projectResult);
+        setBills(billRows);
+        setAdvances(advanceRows);
+        setPayments(paymentRows);
+        setLedger(ledgerResult);
+        setAgreementStatus(agreementResult.status);
+        setAgreementRetention(
+          String(agreementResult.default_retention_percentage),
+        );
+        setBillsPage(1);
+        setAdvancesPage(1);
+        setPaymentsPage(1);
 
-      const latestIssued = billRows
-        .filter((bill) => bill.status === "ISSUED")
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+        const latestIssued = billRows
+          .filter((bill) => bill.status === "ISSUED")
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 
-      if (latestIssued) {
-        const latestDetail = await getSubcontractorBill(latestIssued.id);
-        const nextPercentages: Percentages = {};
-        for (const line of latestDetail.line_items) {
-          nextPercentages[line.agreement_item_id] = String(
-            line.cumulative_percentage,
+        if (latestIssued) {
+          const latestDetail = await getSubcontractorBill(latestIssued.id);
+          const nextPercentages: Percentages = {};
+          for (const line of latestDetail.line_items) {
+            nextPercentages[line.agreement_item_id] = String(
+              line.cumulative_percentage,
+            );
+          }
+          setPercentages(nextPercentages);
+        } else {
+          setPercentages(
+            Object.fromEntries(
+              agreementResult.items.map((item) => [item.id, "0"]),
+            ),
           );
         }
-        setPercentages(nextPercentages);
-      } else {
-        setPercentages(
-          Object.fromEntries(
-            agreementResult.items.map((item) => [item.id, "0"]),
-          ),
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("subcontractAgreement.loadFailure"),
         );
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Could not load this agreement.",
-      );
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [projectId, agreementId]);
+    },
+    [projectId, agreementId, t],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -217,14 +254,14 @@ export default function SubcontractAgreementScreen() {
       retentionValue < 0 ||
       retentionValue > 100
     ) {
-      setError("Retention must be between 0 and 100.");
+      setError(t("subcontractAgreement.retentionRange"));
       return;
     }
     if (
       agreementEndDate &&
       !/^\d{4}-\d{2}-\d{2}$/.test(agreementEndDate)
     ) {
-      setError("Enter the end date as YYYY-MM-DD.");
+      setError(t("subcontractAgreement.endDateFormat"));
       return;
     }
 
@@ -243,7 +280,7 @@ export default function SubcontractAgreementScreen() {
       setError(
         err instanceof Error
           ? err.message
-          : "Could not update the agreement. Reload and retry if it changed.",
+          : t("subcontractAgreement.updateFailure"),
       );
     } finally {
       setSaving(false);
@@ -258,11 +295,11 @@ export default function SubcontractAgreementScreen() {
       !/^\d{4}-\d{2}-\d{2}$/.test(periodEnd) ||
       periodEnd < periodStart
     ) {
-      setError("Enter a valid bill period; the end date must not precede the start date.");
+      setError(t("subcontractAgreement.billPeriodInvalid"));
       return;
     }
     if (!agreement.items.length) {
-      setError("This agreement has no billable items.");
+      setError(t("subcontractAgreement.noBillableItems"));
       return;
     }
 
@@ -279,7 +316,7 @@ export default function SubcontractAgreementScreen() {
           measurement.cumulative_percentage > 100,
       )
     ) {
-      setError("Each cumulative percentage must be between 0 and 100.");
+      setError(t("subcontractAgreement.cumulativePercentageRange"));
       return;
     }
 
@@ -295,7 +332,7 @@ export default function SubcontractAgreementScreen() {
         (optionalRetention < 0 || optionalRetention > 100)) ||
       (optionalCap !== null && (optionalCap < 0 || optionalCap > 100))
     ) {
-      setError("Retention and retention cap must be between 0 and 100.");
+      setError(t("subcontractAgreement.retentionAndCapRange"));
       return;
     }
 
@@ -313,8 +350,8 @@ export default function SubcontractAgreementScreen() {
         : null,
       notes: billNotes.trim() || null,
       measurements: agreement.items.map((item) => ({
-       agreement_item_id: item.id,
-       cumulative_percentage: Number(percentages[item.id] ?? 0),
+        agreement_item_id: item.id,
+        cumulative_percentage: Number(percentages[item.id] ?? 0),
       })),
     };
 
@@ -322,7 +359,7 @@ export default function SubcontractAgreementScreen() {
       !Number.isFinite(payload.other_deductions_amount) ||
       payload.other_deductions_amount < 0
     ) {
-      setError("Other deductions must be zero or greater.");
+      setError(t("subcontractAgreement.deductionsRange"));
       return;
     }
 
@@ -335,7 +372,9 @@ export default function SubcontractAgreementScreen() {
       await load(true);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Could not generate the draft bill.",
+        err instanceof Error
+          ? err.message
+          : t("subcontractAgreement.billCreateFailure"),
       );
     } finally {
       setSaving(false);
@@ -346,14 +385,15 @@ export default function SubcontractAgreementScreen() {
     bill: SubcontractorBill,
     action: "issue" | "cancel",
   ) {
-    const actionLabel = action === "issue" ? "Issue" : "Cancel";
+    const actionLabel = t(`subcontractAgreement.billAction.${action}`);
     Alert.alert(
-      `${actionLabel} bill #${bill.bill_number}?`,
-      action === "issue"
-        ? "This will issue the current draft bill."
-        : "This will cancel this bill.",
+      t("subcontractAgreement.billActionTitle", {
+        action: actionLabel,
+        number: bill.bill_number,
+      }),
+      t(`subcontractAgreement.billActionMessage.${action}`),
       [
-        { text: "Keep", style: "cancel" },
+        { text: t("subcontractAgreement.keep"), style: "cancel" },
         {
           text: actionLabel,
           style: action === "cancel" ? "destructive" : "default",
@@ -381,7 +421,7 @@ export default function SubcontractAgreementScreen() {
       setError(
         err instanceof Error
           ? err.message
-          : "The bill changed or the action could not be completed. Reload and retry.",
+          : t("subcontractAgreement.billActionFailure"),
       );
     } finally {
       setSaving(false);
@@ -393,7 +433,11 @@ export default function SubcontractAgreementScreen() {
     try {
       setSelectedBill(await getSubcontractorBill(billId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load bill details.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("subcontractAgreement.billDetailFailure"),
+      );
     }
   }
 
@@ -409,16 +453,15 @@ export default function SubcontractAgreementScreen() {
           ? await downloadSubcontractorBillPdf(billId)
           : await downloadSubcontractorBillXlsx(billId);
 
-      const extension = format;
       const file = new File(
         Paths.cache,
-        `subcontractor-bill-${billId}.${extension}`,
+        `subcontractor-bill-${billId}.${format}`,
       );
       file.create({ overwrite: true });
       file.write(new Uint8Array(bytes));
 
       if (!(await Sharing.isAvailableAsync())) {
-        throw new Error("File sharing is not available on this device.");
+        throw new Error(t("subcontractAgreement.sharingUnavailable"));
       }
 
       await Sharing.shareAsync(file.uri, {
@@ -426,10 +469,16 @@ export default function SubcontractAgreementScreen() {
           format === "pdf"
             ? "application/pdf"
             : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        dialogTitle: `Share bill ${extension.toUpperCase()}`,
+        dialogTitle: t("subcontractAgreement.shareBillTitle", {
+          format: format.toUpperCase(),
+        }),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not export this bill.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("subcontractAgreement.exportFailure"),
+      );
     } finally {
       setSharingBillId(null);
     }
@@ -439,11 +488,11 @@ export default function SubcontractAgreementScreen() {
     if (!agreement) return;
     const amount = Number(advanceAmount);
     if (!Number.isFinite(amount) || amount <= 0) {
-      setError("Advance amount must be greater than zero.");
+      setError(t("subcontractAgreement.advanceAmountPositive"));
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(advanceDate)) {
-      setError("Enter the advance date as YYYY-MM-DD.");
+      setError(t("subcontractAgreement.advanceDateFormat"));
       return;
     }
 
@@ -458,7 +507,11 @@ export default function SubcontractAgreementScreen() {
       setForm(null);
       await load(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not record advance.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("subcontractAgreement.advanceFailure"),
+      );
     } finally {
       setSaving(false);
     }
@@ -469,15 +522,15 @@ export default function SubcontractAgreementScreen() {
     const gross = Number(grossAmount);
     const recovered = Number(advanceRecovered || 0);
     if (!Number.isFinite(gross) || gross <= 0) {
-      setError("Gross payment must be greater than zero.");
+      setError(t("subcontractAgreement.grossPaymentPositive"));
       return;
     }
     if (!Number.isFinite(recovered) || recovered < 0) {
-      setError("Advance recovery must be zero or greater.");
+      setError(t("subcontractAgreement.advanceRecoveryRange"));
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
-      setError("Enter the payment date as YYYY-MM-DD.");
+      setError(t("subcontractAgreement.paymentDateFormat"));
       return;
     }
 
@@ -489,7 +542,10 @@ export default function SubcontractAgreementScreen() {
         gross_amount: gross,
         advance_recovered_amount: recovered,
         wht_category: whtCategory
-          ? (whtCategory as "GOODS_SUPPLY" | "SERVICES" | "CONTRACTS_EXECUTION")
+          ? (whtCategory as
+              | "GOODS_SUPPLY"
+              | "SERVICES"
+              | "CONTRACTS_EXECUTION")
           : null,
         payment_date: paymentDate,
         notes: paymentNotes.trim() || null,
@@ -498,33 +554,79 @@ export default function SubcontractAgreementScreen() {
       setForm(null);
       await load(true);
       Alert.alert(
-        "Payment recorded",
-        `WHT deducted: ${result.wht_deducted_amount} · Net paid: ${result.net_paid_amount}`,
+        t("subcontractAgreement.paymentRecorded"),
+        t("subcontractAgreement.paymentResult", {
+          deducted: result.wht_deducted_amount,
+          net: result.net_paid_amount,
+        }),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not record payment.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("subcontractAgreement.paymentFailure"),
+      );
     } finally {
       setSaving(false);
     }
   }
 
+  const billsTotalPages = Math.ceil(bills.length / PAGE_SIZE);
+  const advancesTotalPages = Math.ceil(advances.length / PAGE_SIZE);
+  const paymentsTotalPages = Math.ceil(payments.length / PAGE_SIZE);
+  const visibleBills = bills.slice(
+    (billsPage - 1) * PAGE_SIZE,
+    billsPage * PAGE_SIZE,
+  );
+  const visibleAdvances = advances.slice(
+    (advancesPage - 1) * PAGE_SIZE,
+    advancesPage * PAGE_SIZE,
+  );
+  const visiblePayments = payments.slice(
+    (paymentsPage - 1) * PAGE_SIZE,
+    paymentsPage * PAGE_SIZE,
+  );
+
+  const currentFormTitle = form
+    ? t(`subcontractAgreement.formTitle.${form}`)
+    : "";
+
   if (loading) {
     return (
-      <View style={styles.center}>
-        <Stack.Screen options={{ title: "Subcontract agreement" }} />
-        <ActivityIndicator size="large" color="#183153" />
-        <Text style={styles.muted}>Loading agreement…</Text>
+      <View style={[styles.page, isUrdu && styles.rtlPage]}>
+        <Stack.Screen
+          options={{ title: t("subcontractAgreement.screenTitle") }}
+        />
+        <View style={[styles.topBar, isUrdu && styles.rtlRow]}>
+          <Text style={[styles.title, isUrdu && styles.rtlText]}>
+            {t("subcontractAgreement.screenTitle")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.navy} />
+          <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+            {t("subcontractAgreement.loading")}
+          </Text>
+        </View>
       </View>
     );
   }
 
   if (!canRead) {
     return (
-      <View style={styles.center}>
-        <Stack.Screen options={{ title: "Subcontract agreement" }} />
-        <Text style={styles.title}>Access unavailable</Text>
-        <Text style={styles.muted}>
-          Your role cannot view subcontractor agreements.
+      <View style={[styles.page, isUrdu && styles.rtlPage]}>
+        <Stack.Screen
+          options={{ title: t("subcontractAgreement.screenTitle") }}
+        />
+        <View style={[styles.topBar, isUrdu && styles.rtlRow]}>
+          <Text style={[styles.title, isUrdu && styles.rtlText]}>
+            {t("subcontractAgreement.screenTitle")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+        <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+          {t("subcontractAgreement.accessDenied")}
         </Text>
       </View>
     );
@@ -532,10 +634,21 @@ export default function SubcontractAgreementScreen() {
 
   if (error && !agreement) {
     return (
-      <View style={styles.page}>
-        <Stack.Screen options={{ title: "Subcontract agreement" }} />
-        <Text style={styles.error}>{error}</Text>
-        <Action label="Try again" onPress={() => void load()} />
+      <View style={[styles.page, isUrdu && styles.rtlPage]}>
+        <Stack.Screen
+          options={{ title: t("subcontractAgreement.screenTitle") }}
+        />
+        <View style={[styles.topBar, isUrdu && styles.rtlRow]}>
+          <Text style={[styles.title, isUrdu && styles.rtlText]}>
+            {t("subcontractAgreement.screenTitle")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+        <Text style={[styles.error, isUrdu && styles.rtlText]}>{error}</Text>
+        <Action
+          label={t("subcontractAgreement.tryAgain")}
+          onPress={() => void load()}
+        />
       </View>
     );
   }
@@ -547,181 +660,368 @@ export default function SubcontractAgreementScreen() {
       <Stack.Screen
         options={{
           title: project?.name
-            ? `${project.name} · Subcontract`
-            : "Subcontract agreement",
+            ? t("subcontractAgreement.stackTitle", { name: project.name })
+            : t("subcontractAgreement.screenTitle"),
         }}
       />
 
       <ScrollView
-        contentContainerStyle={styles.page}
+        contentContainerStyle={[
+          styles.page,
+          isUrdu && styles.rtlPage,
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => void load(true)}
+            tintColor={C.navy}
+            colors={[C.navy]}
           />
         }
       >
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>‹  Project subcontractors</Text>
-        </Pressable>
+        <View style={[styles.topBar, isUrdu && styles.rtlRow]}>
+          <Pressable onPress={() => router.back()}>
+            <Text style={styles.link}>
+              {t("subcontractAgreement.backToProject")}
+            </Text>
+          </Pressable>
+          <LanguageSwitcher />
+        </View>
 
-        <Text style={styles.eyebrow}>{project?.name ?? "PROJECT"}</Text>
-        <Text style={styles.title}>{agreement.scope_description}</Text>
-        <Text style={styles.status}>{agreement.status.replaceAll("_", " ")}</Text>
+        <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
+          {project?.name ?? t("subcontractAgreement.project")}
+        </Text>
+        <Text style={[styles.title, isUrdu && styles.rtlText]}>
+          {agreement.scope_description}
+        </Text>
+        <Text style={styles.status}>
+          {t(`subcontractAgreement.agreementStatus.${agreement.status.toLowerCase()}`, {
+            defaultValue: agreement.status.replaceAll("_", " "),
+          })}
+        </Text>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <Text style={[styles.error, isUrdu && styles.rtlText]}>{error}</Text>
+        ) : null}
 
-        <Card title="Agreement">
-          <Info label="Contract value" value={money(agreement.contract_value, ledger?.currency)} />
-          <Info label="Start date" value={agreement.start_date} />
-          <Info label="End date" value={agreement.end_date ?? "Not set"} />
-          <Info label="Default retention" value={`${agreement.default_retention_percentage}%`} />
-          <Info label="Items" value={String(agreement.items.length)} />
-          {agreement.notes ? <Text style={styles.muted}>{agreement.notes}</Text> : null}
+        <Card title={t("subcontractAgreement.agreement")}>
+          <Info
+            label={t("subcontractAgreement.contractValue")}
+            value={money(agreement.contract_value, ledger?.currency)}
+          />
+          <Info
+            label={t("subcontractAgreement.startDate")}
+            value={agreement.start_date}
+          />
+          <Info
+            label={t("subcontractAgreement.endDate")}
+            value={
+              agreement.end_date ?? t("subcontractAgreement.notSet")
+            }
+          />
+          <Info
+            label={t("subcontractAgreement.defaultRetention")}
+            value={`${agreement.default_retention_percentage}%`}
+          />
+          <Info
+            label={t("subcontractAgreement.items")}
+            value={String(agreement.items.length)}
+          />
+          {agreement.notes ? (
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {agreement.notes}
+            </Text>
+          ) : null}
           {canManage ? (
-            <Action label="Edit agreement settings" onPress={openAgreementForm} />
+            <Action
+              label={t("subcontractAgreement.editSettings")}
+              onPress={openAgreementForm}
+            />
           ) : null}
         </Card>
 
-        <Card title="Ledger">
-          <Info label="Total billed" value={money(ledger?.total_billed, ledger?.currency)} />
-          <Info label="Total paid" value={money(ledger?.total_paid, ledger?.currency)} />
-          <Info label="Outstanding bill balance" value={money(ledger?.outstanding_bill_balance, ledger?.currency)} />
-          <Info label="Advances given" value={money(ledger?.total_advances_given, ledger?.currency)} />
-          <Info label="Outstanding advance balance" value={money(ledger?.outstanding_advance_balance, ledger?.currency)} />
+        <Card title={t("subcontractAgreement.ledger")}>
+          <Info
+            label={t("subcontractAgreement.totalBilled")}
+            value={money(ledger?.total_billed, ledger?.currency)}
+          />
+          <Info
+            label={t("subcontractAgreement.totalPaid")}
+            value={money(ledger?.total_paid, ledger?.currency)}
+          />
+          <Info
+            label={t("subcontractAgreement.outstandingBillBalance")}
+            value={money(ledger?.outstanding_bill_balance, ledger?.currency)}
+          />
+          <Info
+            label={t("subcontractAgreement.advancesGiven")}
+            value={money(ledger?.total_advances_given, ledger?.currency)}
+          />
+          <Info
+            label={t("subcontractAgreement.outstandingAdvanceBalance")}
+            value={money(
+              ledger?.outstanding_advance_balance,
+              ledger?.currency,
+            )}
+          />
         </Card>
 
-        <Card title="Contract items">
+        <Card title={t("subcontractAgreement.contractItems")}>
           {agreement.items.map((item) => (
             <View key={item.id} style={styles.item}>
-              <Text style={styles.cardTitle}>{item.description}</Text>
-              <Text style={styles.muted}>
-                {item.quantity} {item.unit} · Rate {money(item.rate, ledger?.currency)}
+              <Text style={[styles.cardTitle, isUrdu && styles.rtlText]}>
+                {item.description}
+              </Text>
+              <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                {t("subcontractAgreement.itemRate", {
+                  quantity: item.quantity,
+                  unit: item.unit,
+                  rate: money(item.rate, ledger?.currency),
+                })}
               </Text>
             </View>
           ))}
         </Card>
 
-        <Card title="Bills">
+        <Card title={t("subcontractAgreement.bills")}>
           {canManage ? (
-            <Action label="Generate draft bill" primary onPress={openBillForm} />
+            <Action
+              label={t("subcontractAgreement.generateDraftBill")}
+              primary
+              onPress={openBillForm}
+            />
           ) : null}
           {bills.length === 0 ? (
-            <Text style={styles.muted}>No bills for this agreement.</Text>
-          ) : bills.map((bill) => (
-            <View key={bill.id} style={styles.item}>
-              <Text style={styles.cardTitle}>
-                Bill #{bill.bill_number} · {bill.status}
-              </Text>
-              <Text style={styles.muted}>
-                {bill.period_start} to {bill.period_end}
-              </Text>
-              <Info label="Gross this period" value={money(bill.gross_value_this_period, bill.currency)} />
-              <Info label="Retention" value={money(bill.retention_this_period, bill.currency)} />
-              <Info label="Net payable" value={money(bill.net_payable, bill.currency)} />
-              <Info label="Tax" value={money(bill.sales_tax_amount, bill.currency)} />
-              <Info label="Total due" value={money(bill.total_amount_due, bill.currency)} />
-              <Action label="View bill details" onPress={() => void openBill(bill.id)} />
-              <View style={styles.buttonRow}>
-                <Action
-                  label={sharingBillId === bill.id ? "Preparing PDF…" : "Share PDF"}
-                  disabled={sharingBillId !== null}
-                  onPress={() => void shareBillExport(bill.id, "pdf")}
-                />
-                <Action
-                  label={sharingBillId === bill.id ? "Preparing Excel…" : "Share Excel"}
-                  disabled={sharingBillId !== null}
-                  onPress={() => void shareBillExport(bill.id, "xlsx")}
-                />
-              </View>
-              {canManage && bill.status === "DRAFT" ? (
-                <Action
-                  label="Issue bill"
-                  primary
-                  disabled={saving}
-                  onPress={() => confirmBillAction(bill, "issue")}
-                />
-              ) : null}
-              {canManage && bill.status !== "CANCELLED" ? (
-                <Action
-                  label="Cancel bill"
-                  danger
-                  disabled={saving}
-                  onPress={() => confirmBillAction(bill, "cancel")}
-                />
-              ) : null}
-            </View>
-          ))}
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("subcontractAgreement.noBills")}
+            </Text>
+          ) : (
+            <>
+              {visibleBills.map((bill) => (
+                <View key={bill.id} style={styles.item}>
+                  <Text style={[styles.cardTitle, isUrdu && styles.rtlText]}>
+                    {t("subcontractAgreement.billTitle", {
+                      number: bill.bill_number,
+                      status: t(
+                        `subcontractAgreement.billStatus.${bill.status.toLowerCase()}`,
+                        { defaultValue: bill.status },
+                      ),
+                    })}
+                  </Text>
+                  <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                    {t("subcontractAgreement.billPeriod", {
+                      start: bill.period_start,
+                      end: bill.period_end,
+                    })}
+                  </Text>
+                  <Info
+                    label={t("subcontractAgreement.grossThisPeriod")}
+                    value={money(bill.gross_value_this_period, bill.currency)}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.retention")}
+                    value={money(bill.retention_this_period, bill.currency)}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.netPayable")}
+                    value={money(bill.net_payable, bill.currency)}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.tax")}
+                    value={money(bill.sales_tax_amount, bill.currency)}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.totalDue")}
+                    value={money(bill.total_amount_due, bill.currency)}
+                  />
+                  <Action
+                    label={t("subcontractAgreement.viewBillDetails")}
+                    onPress={() => void openBill(bill.id)}
+                  />
+                  <View style={[styles.buttonRow, isUrdu && styles.rtlRow]}>
+                    <Action
+                      label={
+                        sharingBillId === bill.id
+                          ? t("subcontractAgreement.preparingPdf")
+                          : t("subcontractAgreement.sharePdf")
+                      }
+                      disabled={sharingBillId !== null}
+                      onPress={() => void shareBillExport(bill.id, "pdf")}
+                    />
+                    <Action
+                      label={
+                        sharingBillId === bill.id
+                          ? t("subcontractAgreement.preparingExcel")
+                          : t("subcontractAgreement.shareExcel")
+                      }
+                      disabled={sharingBillId !== null}
+                      onPress={() => void shareBillExport(bill.id, "xlsx")}
+                    />
+                  </View>
+                  {canManage && bill.status === "DRAFT" ? (
+                    <Action
+                      label={t("subcontractAgreement.issueBill")}
+                      primary
+                      disabled={saving}
+                      onPress={() => confirmBillAction(bill, "issue")}
+                    />
+                  ) : null}
+                  {canManage && bill.status !== "CANCELLED" ? (
+                    <Action
+                      label={t("subcontractAgreement.cancelBill")}
+                      danger
+                      disabled={saving}
+                      onPress={() => confirmBillAction(bill, "cancel")}
+                    />
+                  ) : null}
+                </View>
+              ))}
+              <Pagination
+                page={billsPage}
+                totalPages={billsTotalPages}
+                onPageChange={setBillsPage}
+              />
+            </>
+          )}
         </Card>
 
         {selectedBill ? (
-          <Card title={`Bill #${selectedBill.bill_number} details`}>
-            <Info label="Status" value={selectedBill.status} />
+          <Card
+            title={t("subcontractAgreement.billDetailsTitle", {
+              number: selectedBill.bill_number,
+            })}
+          >
+            <Info
+              label={t("subcontractAgreement.status")}
+              value={t(
+                `subcontractAgreement.billStatus.${selectedBill.status.toLowerCase()}`,
+                { defaultValue: selectedBill.status },
+              )}
+            />
             {selectedBill.line_items.map((line) => (
               <View key={line.id} style={styles.item}>
-                <Text style={styles.cardTitle}>{line.description}</Text>
+                <Text style={[styles.cardTitle, isUrdu && styles.rtlText]}>
+                  {line.description}
+                </Text>
                 <Info
-                  label="Cumulative progress"
+                  label={t("subcontractAgreement.cumulativeProgress")}
                   value={`${line.cumulative_percentage}%`}
                 />
                 <Info
-                  label="This period"
+                  label={t("subcontractAgreement.thisPeriod")}
                   value={money(line.this_period_value, selectedBill.currency)}
                 />
                 <Info
-                  label="Cumulative value"
+                  label={t("subcontractAgreement.cumulativeValue")}
                   value={money(line.cumulative_value, selectedBill.currency)}
                 />
               </View>
             ))}
-            <Action label="Close details" onPress={() => setSelectedBill(null)} />
+            <Action
+              label={t("subcontractAgreement.closeDetails")}
+              onPress={() => setSelectedBill(null)}
+            />
           </Card>
         ) : null}
 
-        <Card title="Advances">
+        <Card title={t("subcontractAgreement.advances")}>
           {canManagePayments ? (
-            <Action label="Record advance" onPress={() => {
-              setAdvanceAmount("");
-              setAdvanceDate(today());
-              setAdvanceNotes("");
-              setError(null);
-              setForm("advance");
-            }} />
+            <Action
+              label={t("subcontractAgreement.recordAdvance")}
+              onPress={() => {
+                setAdvanceAmount("");
+                setAdvanceDate(today());
+                setAdvanceNotes("");
+                setError(null);
+                setForm("advance");
+              }}
+            />
           ) : null}
           {advances.length === 0 ? (
-            <Text style={styles.muted}>No advances recorded.</Text>
-          ) : advances.map((advance) => (
-            <View key={advance.id} style={styles.item}>
-              <Info label={advance.advance_date} value={money(advance.amount, ledger?.currency)} />
-              {advance.notes ? <Text style={styles.muted}>{advance.notes}</Text> : null}
-            </View>
-          ))}
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("subcontractAgreement.noAdvances")}
+            </Text>
+          ) : (
+            <>
+              {visibleAdvances.map((advance) => (
+                <View key={advance.id} style={styles.item}>
+                  <Info
+                    label={advance.advance_date}
+                    value={money(advance.amount, ledger?.currency)}
+                  />
+                  {advance.notes ? (
+                    <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                      {advance.notes}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+              <Pagination
+                page={advancesPage}
+                totalPages={advancesTotalPages}
+                onPageChange={setAdvancesPage}
+              />
+            </>
+          )}
         </Card>
 
-        <Card title="Payments">
+        <Card title={t("subcontractAgreement.payments")}>
           {canManagePayments ? (
-            <Action label="Record payment" onPress={() => {
-              setPaymentBillId("");
-              setGrossAmount("");
-              setAdvanceRecovered("0");
-              setWhtCategory("");
-              setPaymentDate(today());
-              setPaymentNotes("");
-              setError(null);
-              setForm("payment");
-            }} />
+            <Action
+              label={t("subcontractAgreement.recordPayment")}
+              onPress={() => {
+                setPaymentBillId("");
+                setGrossAmount("");
+                setAdvanceRecovered("0");
+                setWhtCategory("");
+                setPaymentDate(today());
+                setPaymentNotes("");
+                setError(null);
+                setForm("payment");
+              }}
+            />
           ) : null}
           {payments.length === 0 ? (
-            <Text style={styles.muted}>No payments recorded.</Text>
-          ) : payments.map((payment) => (
-            <View key={payment.id} style={styles.item}>
-              <Info label={payment.payment_date} value={money(payment.net_paid_amount, ledger?.currency)} />
-              <Info label="Gross" value={money(payment.gross_amount, ledger?.currency)} />
-              <Info label="Advance recovered" value={money(payment.advance_recovered_amount, ledger?.currency)} />
-              <Info label="WHT deducted" value={money(payment.wht_deducted_amount, ledger?.currency)} />
-              {payment.notes ? <Text style={styles.muted}>{payment.notes}</Text> : null}
-            </View>
-          ))}
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("subcontractAgreement.noPayments")}
+            </Text>
+          ) : (
+            <>
+              {visiblePayments.map((payment) => (
+                <View key={payment.id} style={styles.item}>
+                  <Info
+                    label={payment.payment_date}
+                    value={money(payment.net_paid_amount, ledger?.currency)}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.gross")}
+                    value={money(payment.gross_amount, ledger?.currency)}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.advanceRecovered")}
+                    value={money(
+                      payment.advance_recovered_amount,
+                      ledger?.currency,
+                    )}
+                  />
+                  <Info
+                    label={t("subcontractAgreement.whtDeducted")}
+                    value={money(payment.wht_deducted_amount, ledger?.currency)}
+                  />
+                  {payment.notes ? (
+                    <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                      {payment.notes}
+                    </Text>
+                  ) : null}
+                </View>
+              ))}
+              <Pagination
+                page={paymentsPage}
+                totalPages={paymentsTotalPages}
+                onPageChange={setPaymentsPage}
+              />
+            </>
+          )}
         </Card>
       </ScrollView>
 
@@ -730,33 +1030,56 @@ export default function SubcontractAgreementScreen() {
         animationType="slide"
         onRequestClose={() => setForm(null)}
       >
-        <ScrollView contentContainerStyle={styles.page}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.page,
+            isUrdu && styles.rtlPage,
+          ]}
+        >
+          <View style={[styles.topBar, isUrdu && styles.rtlRow]}>
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {currentFormTitle}
+            </Text>
+            <LanguageSwitcher />
+          </View>
+
           {form === "agreement" ? (
             <>
-              <Text style={styles.title}>Agreement settings</Text>
               <Field
-                label="End date (YYYY-MM-DD, leave blank to keep current)"
+                label={t("subcontractAgreement.endDateHelp")}
                 value={agreementEndDate}
                 onChangeText={setAgreementEndDate}
               />
-              <Text style={styles.label}>Status</Text>
-              <View style={styles.buttonRow}>
-                {(["ACTIVE", "COMPLETED", "TERMINATED"] as const).map((value) => (
-                  <Action
-                    key={value}
-                    label={agreementStatus === value ? `✓ ${value}` : value}
-                    onPress={() => setAgreementStatus(value)}
-                  />
-                ))}
+              <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                {t("subcontractAgreement.status")}
+              </Text>
+              <View style={[styles.buttonRow, isUrdu && styles.rtlRow]}>
+                {(["ACTIVE", "COMPLETED", "TERMINATED"] as const).map(
+                  (value) => (
+                    <Action
+                      key={value}
+                      label={t(
+                        `subcontractAgreement.agreementStatus.${value.toLowerCase()}`,
+                        { defaultValue: value },
+                      )}
+                      selected={agreementStatus === value}
+                      onPress={() => setAgreementStatus(value)}
+                    />
+                  ),
+                )}
               </View>
               <Field
-                label="Default retention percentage"
+                label={t("subcontractAgreement.defaultRetentionPercentage")}
                 value={agreementRetention}
                 onChangeText={setAgreementRetention}
                 keyboardType="decimal-pad"
               />
               <Action
-                label={saving ? "Saving…" : "Save agreement"}
+                label={
+                  saving
+                    ? t("subcontractAgreement.saving")
+                    : t("subcontractAgreement.saveAgreement")
+                }
                 primary
                 disabled={saving}
                 onPress={() => void saveAgreementChanges()}
@@ -766,50 +1089,105 @@ export default function SubcontractAgreementScreen() {
 
           {form === "bill" ? (
             <>
-              <Text style={styles.title}>Generate draft bill</Text>
-              <Field label="Period start (YYYY-MM-DD)" value={periodStart} onChangeText={setPeriodStart} />
-              <Field label="Period end (YYYY-MM-DD)" value={periodEnd} onChangeText={setPeriodEnd} />
+              <Field
+                label={t("subcontractAgreement.periodStart")}
+                value={periodStart}
+                onChangeText={setPeriodStart}
+              />
+              <Field
+                label={t("subcontractAgreement.periodEnd")}
+                value={periodEnd}
+                onChangeText={setPeriodEnd}
+              />
 
-              <Text style={styles.sectionTitle}>Cumulative progress by item</Text>
+              <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
+                {t("subcontractAgreement.cumulativeProgressByItem")}
+              </Text>
               {agreement.items.map((item) => (
                 <Field
                   key={item.id}
-                  label={`${item.description} (%)`}
+                  label={t("subcontractAgreement.itemPercentage", {
+                    name: item.description,
+                  })}
                   value={percentages[item.id] ?? "0"}
                   onChangeText={(value) =>
-                    setPercentages((current) => ({ ...current, [item.id]: value }))
+                    setPercentages((current) => ({
+                      ...current,
+                      [item.id]: value,
+                    }))
                   }
                   keyboardType="decimal-pad"
                 />
               ))}
 
-              <Field label="Retention override % (optional)" value={billRetention} onChangeText={setBillRetention} keyboardType="decimal-pad" />
-              <Field label="Retention cap % (optional)" value={billRetentionCap} onChangeText={setBillRetentionCap} keyboardType="decimal-pad" />
-              <Field label="Other deductions" value={deductions} onChangeText={setDeductions} keyboardType="decimal-pad" />
-              <Field label="Deduction note (optional)" value={deductionNote} onChangeText={setDeductionNote} multiline />
+              <Field
+                label={t("subcontractAgreement.retentionOverride")}
+                value={billRetention}
+                onChangeText={setBillRetention}
+                keyboardType="decimal-pad"
+              />
+              <Field
+                label={t("subcontractAgreement.retentionCap")}
+                value={billRetentionCap}
+                onChangeText={setBillRetentionCap}
+                keyboardType="decimal-pad"
+              />
+              <Field
+                label={t("subcontractAgreement.otherDeductions")}
+                value={deductions}
+                onChangeText={setDeductions}
+                keyboardType="decimal-pad"
+              />
+              <Field
+                label={t("subcontractAgreement.deductionNote")}
+                value={deductionNote}
+                onChangeText={setDeductionNote}
+                multiline
+              />
 
-              <View style={styles.switchRow}>
-                <Text style={styles.body}>Retention secured by guarantee</Text>
+              <View style={[styles.switchRow, isUrdu && styles.rtlRow]}>
+                <Text style={[styles.body, isUrdu && styles.rtlText]}>
+                  {t("subcontractAgreement.retentionSecuredByGuarantee")}
+                </Text>
                 <Switch
                   value={retentionByGuarantee}
                   onValueChange={setRetentionByGuarantee}
+                  trackColor={{ false: C.border, true: C.gold }}
+                  thumbColor={retentionByGuarantee ? C.navy : C.surface}
                 />
               </View>
 
-              <Text style={styles.label}>Sales-tax authority (optional)</Text>
-              <View style={styles.buttonRow}>
-                {["", "PRA", "SRB", "KPRA", "BRA", "ICT"].map((value) => (
-                  <Action
-                    key={value || "none"}
-                    label={salesTaxAuthority === value ? `✓ ${value || "None"}` : value || "None"}
-                    onPress={() => setSalesTaxAuthority(value)}
-                  />
-                ))}
+              <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                {t("subcontractAgreement.salesTaxAuthority")}
+              </Text>
+              <View style={[styles.buttonRow, isUrdu && styles.rtlRow]}>
+                {["", "PRA", "SRB", "KPRA", "BRA", "ICT"].map((value) => {
+                  const optionLabel = value
+                    ? value
+                    : t("subcontractAgreement.none");
+                  return (
+                    <Action
+                      key={value || "none"}
+                      label={optionLabel}
+                      selected={salesTaxAuthority === value}
+                      onPress={() => setSalesTaxAuthority(value)}
+                    />
+                  );
+                })}
               </View>
 
-              <Field label="Bill notes (optional)" value={billNotes} onChangeText={setBillNotes} multiline />
+              <Field
+                label={t("subcontractAgreement.billNotes")}
+                value={billNotes}
+                onChangeText={setBillNotes}
+                multiline
+              />
               <Action
-                label={saving ? "Generating…" : "Generate draft"}
+                label={
+                  saving
+                    ? t("subcontractAgreement.generating")
+                    : t("subcontractAgreement.generateDraft")
+                }
                 primary
                 disabled={saving}
                 onPress={() => void saveDraftBill()}
@@ -819,51 +1197,126 @@ export default function SubcontractAgreementScreen() {
 
           {form === "advance" ? (
             <>
-              <Text style={styles.title}>Record advance</Text>
-              <Field label="Amount" value={advanceAmount} onChangeText={setAdvanceAmount} keyboardType="decimal-pad" />
-              <Field label="Date (YYYY-MM-DD)" value={advanceDate} onChangeText={setAdvanceDate} />
-              <Field label="Notes (optional)" value={advanceNotes} onChangeText={setAdvanceNotes} multiline />
-              <Action label={saving ? "Saving…" : "Record advance"} primary disabled={saving} onPress={() => void saveAdvance()} />
+              <Field
+                label={t("subcontractAgreement.amount")}
+                value={advanceAmount}
+                onChangeText={setAdvanceAmount}
+                keyboardType="decimal-pad"
+              />
+              <Field
+                label={t("subcontractAgreement.advanceDate")}
+                value={advanceDate}
+                onChangeText={setAdvanceDate}
+              />
+              <Field
+                label={t("subcontractAgreement.notesOptional")}
+                value={advanceNotes}
+                onChangeText={setAdvanceNotes}
+                multiline
+              />
+              <Action
+                label={
+                  saving
+                    ? t("subcontractAgreement.saving")
+                    : t("subcontractAgreement.recordAdvance")
+                }
+                primary
+                disabled={saving}
+                onPress={() => void saveAdvance()}
+              />
             </>
           ) : null}
 
           {form === "payment" ? (
             <>
-              <Text style={styles.title}>Record payment</Text>
-              <Text style={styles.label}>Bill (optional)</Text>
-              <Action label={paymentBillId ? "Clear selected bill" : "No bill selected"} onPress={() => setPaymentBillId("")} />
-              {bills.filter((bill) => bill.status === "ISSUED").map((bill) => (
-                <Action
-                  key={bill.id}
-                  label={paymentBillId === bill.id ? `✓ Bill #${bill.bill_number}` : `Bill #${bill.bill_number}`}
-                  onPress={() => setPaymentBillId(bill.id)}
-                />
-              ))}
-              <Field label="Gross amount" value={grossAmount} onChangeText={setGrossAmount} keyboardType="decimal-pad" />
-              <Field label="Advance recovery" value={advanceRecovered} onChangeText={setAdvanceRecovered} keyboardType="decimal-pad" />
-              <Text style={styles.label}>Withholding category (optional)</Text>
-              <View style={styles.buttonRow}>
+              <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                {t("subcontractAgreement.billOptional")}
+              </Text>
+              <Action
+                label={
+                  paymentBillId
+                    ? t("subcontractAgreement.clearSelectedBill")
+                    : t("subcontractAgreement.noBillSelected")
+                }
+                selected={!paymentBillId}
+                onPress={() => setPaymentBillId("")}
+              />
+              {bills
+                .filter((bill) => bill.status === "ISSUED")
+                .map((bill) => (
+                  <Action
+                    key={bill.id}
+                    label={t("subcontractAgreement.billNumber", {
+                      number: bill.bill_number,
+                    })}
+                    selected={paymentBillId === bill.id}
+                    onPress={() => setPaymentBillId(bill.id)}
+                  />
+                ))}
+              <Field
+                label={t("subcontractAgreement.grossAmount")}
+                value={grossAmount}
+                onChangeText={setGrossAmount}
+                keyboardType="decimal-pad"
+              />
+              <Field
+                label={t("subcontractAgreement.advanceRecovery")}
+                value={advanceRecovered}
+                onChangeText={setAdvanceRecovered}
+                keyboardType="decimal-pad"
+              />
+              <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                {t("subcontractAgreement.withholdingCategory")}
+              </Text>
+              <View style={[styles.buttonRow, isUrdu && styles.rtlRow]}>
                 {[
-                  ["", "None"],
-                  ["GOODS_SUPPLY", "Goods"],
-                  ["SERVICES", "Services"],
-                  ["CONTRACTS_EXECUTION", "Contracts"],
-                ].map(([value, label]) => (
+                  ["", t("subcontractAgreement.none")],
+                  ["GOODS_SUPPLY", t("subcontractAgreement.goods")],
+                  ["SERVICES", t("subcontractAgreement.services")],
+                  ["CONTRACTS_EXECUTION", t("subcontractAgreement.contracts")],
+                ].map(([value, optionLabel]) => (
                   <Action
                     key={value || "none"}
-                    label={whtCategory === value ? `✓ ${label}` : label}
+                    label={optionLabel}
+                    selected={whtCategory === value}
                     onPress={() => setWhtCategory(value)}
                   />
                 ))}
               </View>
-              <Field label="Payment date (YYYY-MM-DD)" value={paymentDate} onChangeText={setPaymentDate} />
-              <Field label="Notes (optional)" value={paymentNotes} onChangeText={setPaymentNotes} multiline />
-              <Action label={saving ? "Saving…" : "Record payment"} primary disabled={saving} onPress={() => void savePayment()} />
+              <Field
+                label={t("subcontractAgreement.paymentDate")}
+                value={paymentDate}
+                onChangeText={setPaymentDate}
+              />
+              <Field
+                label={t("subcontractAgreement.notesOptional")}
+                value={paymentNotes}
+                onChangeText={setPaymentNotes}
+                multiline
+              />
+              <Action
+                label={
+                  saving
+                    ? t("subcontractAgreement.saving")
+                    : t("subcontractAgreement.recordPayment")
+                }
+                primary
+                disabled={saving}
+                onPress={() => void savePayment()}
+              />
             </>
           ) : null}
 
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <Action label="Close" disabled={saving} onPress={() => setForm(null)} />
+          {error ? (
+            <Text style={[styles.error, isUrdu && styles.rtlText]}>
+              {error}
+            </Text>
+          ) : null}
+          <Action
+            label={t("subcontractAgreement.close")}
+            disabled={saving}
+            onPress={() => setForm(null)}
+          />
         </ScrollView>
       </Modal>
     </>
@@ -876,19 +1329,31 @@ function money(value: number | string | null | undefined, currency?: string) {
 }
 
 function Card(props: { title: string; children: React.ReactNode }) {
+  const { i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   return (
     <View style={styles.card}>
-      <Text style={styles.sectionTitle}>{props.title}</Text>
+      <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
+        {props.title}
+      </Text>
       {props.children}
     </View>
   );
 }
 
 function Info(props: { label: string; value: string }) {
+  const { i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.muted}>{props.label}</Text>
-      <Text style={styles.body}>{props.value}</Text>
+    <View style={[styles.infoRow, isUrdu && styles.rtlRow]}>
+      <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+        {props.label}
+      </Text>
+      <Text style={[styles.body, isUrdu && styles.rtlText]}>
+        {props.value}
+      </Text>
     </View>
   );
 }
@@ -900,15 +1365,26 @@ function Field(props: {
   keyboardType?: "default" | "decimal-pad";
   multiline?: boolean;
 }) {
+  const { i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{props.label}</Text>
+      <Text style={[styles.label, isUrdu && styles.rtlText]}>
+        {props.label}
+      </Text>
       <TextInput
-        style={[styles.input, props.multiline && styles.multiline]}
+        style={[
+          styles.input,
+          props.multiline && styles.multiline,
+          isUrdu && styles.rtlText,
+        ]}
         value={props.value}
         onChangeText={props.onChangeText}
         keyboardType={props.keyboardType ?? "default"}
         multiline={props.multiline}
+        textAlign={isUrdu ? "right" : "left"}
+        placeholderTextColor={C.muted}
       />
     </View>
   );
@@ -920,16 +1396,23 @@ function Action(props: {
   primary?: boolean;
   danger?: boolean;
   disabled?: boolean;
+  selected?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={
+        props.selected === undefined
+          ? undefined
+          : { selected: props.selected }
+      }
       disabled={props.disabled}
       onPress={props.onPress}
       style={[
         styles.button,
         props.primary && styles.primaryButton,
         props.danger && styles.dangerButton,
+        props.selected && styles.choiceSelected,
         props.disabled && styles.disabled,
       ]}
     >
@@ -938,6 +1421,7 @@ function Action(props: {
           styles.buttonText,
           props.primary && styles.primaryText,
           props.danger && styles.dangerText,
+          props.selected && styles.choiceTextSelected,
         ]}
       >
         {props.label}
@@ -946,32 +1430,117 @@ function Action(props: {
   );
 }
 
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+  const visiblePages = Array.from(
+    { length: totalPages },
+    (_, index) => index + 1,
+  ).filter((value) => Math.abs(value - page) <= 2);
+
+  if (totalPages <= 1) return null;
+
+  return (
+    <View style={[styles.pagination, isUrdu && styles.rtlRow]}>
+      <Pressable
+        style={[styles.pageNavButton, page === 1 && styles.disabled]}
+        disabled={page === 1}
+        onPress={() => onPageChange(Math.max(1, page - 1))}
+        accessibilityRole="button"
+      >
+        <Text style={styles.pageNavText}>{t("subcontractAgreement.previous")}</Text>
+      </Pressable>
+
+      <View style={[styles.pageNumbers, isUrdu && styles.rtlRow]}>
+        {visiblePages.map((value) => (
+          <Pressable
+            key={value}
+            style={[
+              styles.pageNumber,
+              value === page && styles.pageNumberSelected,
+            ]}
+            disabled={value === page}
+            onPress={() => onPageChange(value)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: value === page }}
+          >
+            <Text
+              style={[
+                styles.pageNumberText,
+                value === page && styles.pageNumberTextSelected,
+              ]}
+            >
+              {value}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Pressable
+        style={[
+          styles.pageNavButton,
+          page === totalPages && styles.disabled,
+        ]}
+        disabled={page === totalPages}
+        onPress={() => onPageChange(Math.min(totalPages, page + 1))}
+        accessibilityRole="button"
+      >
+        <Text style={styles.pageNavText}>{t("subcontractAgreement.next")}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: 18, gap: 12, backgroundColor: "#F4F6F8" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 10, backgroundColor: "#F4F6F8" },
-  eyebrow: { color: "#8A7B67", fontSize: 11, fontWeight: "800", letterSpacing: 1 },
-  title: { color: "#17212F", fontSize: 22, fontWeight: "800" },
-  sectionTitle: { color: "#17212F", fontSize: 17, fontWeight: "800", marginBottom: 4 },
-  cardTitle: { color: "#17212F", fontSize: 15, fontWeight: "800" },
-  status: { color: "#183153", fontSize: 12, fontWeight: "800" },
-  body: { color: "#17212F", fontSize: 14 },
-  muted: { color: "#667085", fontSize: 13 },
-  label: { color: "#344054", fontSize: 13, fontWeight: "700" },
-  link: { color: "#183153", fontWeight: "700" },
-  error: { color: "#B42318", fontSize: 14, paddingVertical: 5 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 13, borderWidth: 1, borderColor: "#D8DEE6", padding: 15, gap: 9 },
-  item: { borderTopWidth: 1, borderTopColor: "#EAECF0", paddingTop: 10, gap: 7 },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10 },
-  field: { gap: 5 },
-  input: { minHeight: 43, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 9, backgroundColor: "#FFFFFF", paddingHorizontal: 11, color: "#17212F" },
-  multiline: { minHeight: 74, textAlignVertical: "top", paddingTop: 9 },
-  buttonRow: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
-  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
-  button: { minHeight: 41, borderWidth: 1, borderColor: "#D0D5DD", backgroundColor: "#FFFFFF", borderRadius: 9, alignItems: "center", justifyContent: "center", paddingHorizontal: 12 },
-  buttonText: { color: "#183153", fontSize: 13, fontWeight: "700" },
-  primaryButton: { backgroundColor: "#183153", borderColor: "#183153" },
-  primaryText: { color: "#FFFFFF" },
-  dangerButton: { borderColor: "#FDA29B" },
-  dangerText: { color: "#B42318" },
+  page: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40, gap: 12, backgroundColor: C.background },
+  rtlPage: { direction: "rtl" },
+  rtlRow: { flexDirection: "row-reverse" },
+  rtlText: { textAlign: "right" },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 12, backgroundColor: C.background },
+  eyebrow: { color: C.muted, fontSize: 11, fontWeight: "800", letterSpacing: 1.4 },
+  title: { color: C.text, fontSize: 23, fontWeight: "800" },
+  sectionTitle: { color: C.text, fontSize: 17, fontWeight: "800", marginBottom: 5 },
+  cardTitle: { color: C.text, fontSize: 15, fontWeight: "800" },
+  status: { color: C.navy, backgroundColor: C.surfaceMuted, alignSelf: "flex-start", overflow: "hidden", borderRadius: 99, paddingHorizontal: 10, paddingVertical: 6, fontSize: 11, fontWeight: "800" },
+  body: { color: C.text, fontSize: 14, lineHeight: 20, flex: 1, textAlign: "right" },
+  muted: { color: C.secondary, fontSize: 13, lineHeight: 19, flex: 1 },
+  label: { color: C.secondary, fontSize: 13, fontWeight: "700" },
+  link: { color: C.navy, fontSize: 13, fontWeight: "800" },
+  error: { color: C.red, backgroundColor: C.redBg, borderWidth: 1, borderColor: "#EAC6C0", borderRadius: 11, fontSize: 13, lineHeight: 19, padding: 12 },
+  notice: { color: C.green, backgroundColor: C.greenBg, borderWidth: 1, borderColor: "#CEE1D2", borderRadius: 11, fontSize: 13, lineHeight: 19, padding: 12 },
+  warning: { color: C.amber, backgroundColor: C.amberBg, borderRadius: 10, fontSize: 13, lineHeight: 19, padding: 11, marginTop: 10 },
+  card: { backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, borderTopWidth: 2, borderTopColor: C.gold, padding: 16, gap: 10 },
+  item: { borderTopWidth: 1, borderTopColor: C.border, paddingTop: 12, gap: 8 },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10, borderTopWidth: 1, borderTopColor: C.border, paddingVertical: 8 },
+  field: { gap: 6, marginTop: 6 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, paddingHorizontal: 12, color: C.text, fontSize: 14 },
+  multiline: { minHeight: 74, textAlignVertical: "top", paddingTop: 10 },
+  buttonRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  switchRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginTop: 12 },
+  button: { minHeight: 42, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, borderRadius: 10, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, paddingVertical: 9, marginTop: 4 },
+  buttonText: { color: C.navy, fontSize: 13, fontWeight: "800", textAlign: "center" },
+  primaryButton: { backgroundColor: C.navy, borderColor: C.navy },
+  primaryText: { color: C.surface },
+  dangerButton: { borderColor: "#EAC6C0", backgroundColor: C.redBg },
+  dangerText: { color: C.red },
+  choiceSelected: { backgroundColor: C.surfaceMuted, borderColor: C.navy },
+  choiceTextSelected: { color: C.navy },
   disabled: { opacity: 0.5 },
+  pagination: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10, padding: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 13 },
+  pageNavButton: { minHeight: 38, justifyContent: "center", paddingHorizontal: 10, borderRadius: 9, backgroundColor: C.surfaceMuted },
+  pageNavText: { color: C.navy, fontSize: 12, fontWeight: "800" },
+  pageNumbers: { flexDirection: "row", alignItems: "center", gap: 5 },
+  pageNumber: { minWidth: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 9, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
+  pageNumberSelected: { backgroundColor: C.navy, borderColor: C.navy },
+  pageNumberText: { color: C.secondary, fontSize: 13, fontWeight: "700" },
+  pageNumberTextSelected: { color: C.surface },
 });

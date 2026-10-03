@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import * as DocumentPicker from "expo-document-picker";
 import { restoreSession } from "../../../../api/client";
 import { getProject } from "../../../../api/projects";
@@ -9,18 +10,37 @@ import {addCustomBOQItem, approveBOQItem, createBOQVersion, getBOQSummary, listB
 } from "../../../../api/drawingsBoq";
 import type {BOQItem, BOQSummary, BOQVersion, Drawing, Project,
 } from "../../../../api/types";
+import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 
-function formatDate(value: string | null): string {
-  if (!value) return "Not set";
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+const PAGE_SIZE = 20;
+
+function pageCount(total: number) {
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
 }
 
-function formatMoney(value: number | string | null): string {
-  if (value === null) return "Not available";
+function paginate<T>(items: T[], page: number) {
+  const start = (page - 1) * PAGE_SIZE;
+  return items.slice(start, start + PAGE_SIZE);
+}
+
+function formatDate(value: string | null, locale: string, notSet: string) {
+  if (!value) return notSet;
+  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString(locale);
+}
+
+function formatMoney(
+  value: number | string | null,
+  locale: string,
+  notAvailable: string,
+) {
+  if (value === null) return notAvailable;
   const amount = Number(value);
   if (!Number.isFinite(amount)) return String(value);
-  return new Intl.NumberFormat("en-PK", {
+
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "PKR",
     maximumFractionDigits: 0,
@@ -28,6 +48,10 @@ function formatMoney(value: number | string | null): string {
 }
 
 export default function DrawingsBoqScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+  const locale = isUrdu ? "ur-PK" : "en-PK";
+
   const params = useLocalSearchParams<{ projectId?: string }>();
   const projectId = Array.isArray(params.projectId)
     ? params.projectId[0]
@@ -43,6 +67,9 @@ export default function DrawingsBoqScreen() {
   const [drawingsError, setDrawingsError] = useState("");
   const [boqError, setBoqError] = useState("");
 
+  const [drawingsPage, setDrawingsPage] = useState(1);
+  const [versionsPage, setVersionsPage] = useState(1);
+  const [itemsPage, setItemsPage] = useState(1);
   const [expandedVersion, setExpandedVersion] = useState("");
   const [boqLoading, setBoqLoading] = useState(false);
   const [boqItems, setBoqItems] = useState<BOQItem[]>([]);
@@ -56,30 +83,45 @@ export default function DrawingsBoqScreen() {
   const [itemCategory, setItemCategory] = useState("");
   const [itemRate, setItemRate] = useState("");
   const [editingItemId, setEditingItemId] = useState("");
-  const [editingItemVersion, setEditingItemVersion] = useState<number | null>(null);
+  const [editingItemVersion, setEditingItemVersion] = useState<number | null>(
+    null,
+  );
 
   const canUpload = permissions.includes("drawing:create");
   const canCreateItem = permissions.includes("boq_item_create");
   const canUpdateItem = permissions.includes("boq:update");
   const canApprove = permissions.includes("boq:approve");
 
+  const currentDrawings = drawings.filter(
+    (drawing) => drawing.is_current_revision,
+  );
+  const drawingsPages = pageCount(currentDrawings.length);
+  const versionsPages = pageCount(versions.length);
+  const itemsPages = pageCount(boqItems.length);
+  const visibleDrawings = paginate(currentDrawings, drawingsPage);
+  const visibleVersions = paginate(versions, versionsPage);
+  const visibleItems = paginate(boqItems, itemsPage);
+
   const load = useCallback(async () => {
     if (!projectId) {
-      setError("Project not found.");
+      setError(t("drawingsBoq.projectNotFound"));
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setError("");
     setDrawingsError("");
     setBoqError("");
+
     try {
       const user = await restoreSession();
       if (!user) {
         router.replace("/");
         return;
       }
-      setPermissions(user.role.permissions.map((p) => p.key));
+
+      setPermissions(user.role.permissions.map((permission) => permission.key));
       setProject(await getProject(projectId));
 
       const [drawingResult, versionResult] = await Promise.allSettled([
@@ -89,29 +131,35 @@ export default function DrawingsBoqScreen() {
 
       if (drawingResult.status === "fulfilled") {
         setDrawings(drawingResult.value);
+        setDrawingsPage(1);
       } else {
         setDrawingsError(
           drawingResult.reason instanceof Error
             ? drawingResult.reason.message
-            : "Could not load drawings.",
+            : t("drawingsBoq.drawingsLoadFailure"),
         );
       }
 
       if (versionResult.status === "fulfilled") {
         setVersions(versionResult.value);
+        setVersionsPage(1);
       } else {
         setBoqError(
           versionResult.reason instanceof Error
             ? versionResult.reason.message
-            : "Could not load BOQ versions.",
+            : t("drawingsBoq.versionsLoadFailure"),
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load project.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("drawingsBoq.projectLoadFailure"),
+      );
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, t]);
 
   useEffect(() => {
     void load();
@@ -120,11 +168,14 @@ export default function DrawingsBoqScreen() {
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
     setError("");
+
     try {
       await action();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The action failed.");
+      setError(
+        err instanceof Error ? err.message : t("drawingsBoq.actionFailure"),
+      );
     } finally {
       setBusy(false);
     }
@@ -135,6 +186,9 @@ export default function DrawingsBoqScreen() {
       boqRequest.current += 1;
       setExpandedVersion("");
       setBoqLoading(false);
+      setBoqItems([]);
+      setBoqSummary(null);
+      setItemsPage(1);
       setEditingItemId("");
       setEditingItemVersion(null);
       return;
@@ -147,6 +201,7 @@ export default function DrawingsBoqScreen() {
     setBoqError("");
     setBoqItems([]);
     setBoqSummary(null);
+    setItemsPage(1);
     setEditingItemId("");
     setEditingItemVersion(null);
 
@@ -155,6 +210,7 @@ export default function DrawingsBoqScreen() {
         listBOQItems(version.id),
         getBOQSummary(version.id),
       ]);
+
       if (boqRequest.current === requestId) {
         setBoqItems(items);
         setBoqSummary(summary);
@@ -162,7 +218,42 @@ export default function DrawingsBoqScreen() {
     } catch (err) {
       if (boqRequest.current === requestId) {
         setBoqError(
-          err instanceof Error ? err.message : "Could not load this BOQ version.",
+          err instanceof Error
+            ? err.message
+            : t("drawingsBoq.versionLoadFailure"),
+        );
+      }
+    } finally {
+      if (boqRequest.current === requestId) setBoqLoading(false);
+    }
+  }
+
+  async function refreshExpandedVersion() {
+    const version = versions.find((item) => item.id === expandedVersion);
+    if (!version) return;
+
+    const requestId = boqRequest.current + 1;
+    boqRequest.current = requestId;
+    setBoqLoading(true);
+    setBoqError("");
+
+    try {
+      const [items, summary] = await Promise.all([
+        listBOQItems(version.id),
+        getBOQSummary(version.id),
+      ]);
+
+      if (boqRequest.current === requestId) {
+        setBoqItems(items);
+        setBoqSummary(summary);
+        setItemsPage(1);
+      }
+    } catch (err) {
+      if (boqRequest.current === requestId) {
+        setBoqError(
+          err instanceof Error
+            ? err.message
+            : t("drawingsBoq.versionLoadFailure"),
         );
       }
     } finally {
@@ -172,6 +263,7 @@ export default function DrawingsBoqScreen() {
 
   async function handleUploadDrawing() {
     if (!projectId || !canUpload) return;
+
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/pdf", "image/*", "*/*"],
@@ -182,14 +274,20 @@ export default function DrawingsBoqScreen() {
       const file = result.assets[0];
       setBusy(true);
       setError("");
+
       await uploadProjectDrawing(projectId, {
         uri: file.uri,
         name: file.name,
         mimeType: file.mimeType,
       });
+
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not upload drawing.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("drawingsBoq.uploadFailure"),
+      );
     } finally {
       setBusy(false);
     }
@@ -197,41 +295,37 @@ export default function DrawingsBoqScreen() {
 
   async function handleCreateVersion() {
     if (!projectId) return;
+
     if (!versionLabel.trim()) {
-      setError("Enter a BOQ version label.");
+      setError(t("drawingsBoq.enterVersionLabel"));
       return;
     }
+
     await run(async () => {
       await createBOQVersion(projectId, { label: versionLabel.trim() });
       setVersionLabel("");
     });
   }
 
-  async function refreshExpandedVersion() {
-    const version = versions.find((v) => v.id === expandedVersion);
-    if (version) {
-      setExpandedVersion("");
-      await toggleVersion(version);
-    }
-  }
-
   async function handleAddCustomItem() {
     if (!expandedVersion) {
-      setError("Expand a BOQ version first.");
+      setError(t("drawingsBoq.expandVersionFirst"));
       return;
     }
     if (!itemName.trim() || !itemUnit.trim()) {
-      setError("Enter material name and unit.");
+      setError(t("drawingsBoq.enterMaterialAndUnit"));
       return;
     }
-    const qty = Number(itemQuantity);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError("Quantity must be a positive number.");
+
+    const quantity = Number(itemQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setError(t("drawingsBoq.quantityPositive"));
       return;
     }
+
     const rate = itemRate.trim() === "" ? null : Number(itemRate);
     if (rate !== null && !Number.isFinite(rate)) {
-      setError("Unit rate must be a valid number.");
+      setError(t("drawingsBoq.rateValid"));
       return;
     }
 
@@ -239,10 +333,11 @@ export default function DrawingsBoqScreen() {
       await addCustomBOQItem(expandedVersion, {
         material_name: itemName.trim(),
         unit: itemUnit.trim(),
-        quantity: qty,
+        quantity,
         category: itemCategory.trim() || null,
         unit_rate: rate,
       });
+
       setItemName("");
       setItemUnit("");
       setItemQuantity("");
@@ -262,24 +357,37 @@ export default function DrawingsBoqScreen() {
     setItemRate(item.unit_rate === null ? "" : String(item.unit_rate));
   }
 
+  function clearItemForm() {
+    setEditingItemId("");
+    setEditingItemVersion(null);
+    setItemName("");
+    setItemUnit("");
+    setItemQuantity("");
+    setItemCategory("");
+    setItemRate("");
+  }
+
   async function handleSaveItem() {
     if (!editingItemId) return;
+
     if (editingItemVersion == null) {
-      setError("Missing item version. Re-open the item and try again.");
+      setError(t("drawingsBoq.itemVersionMissing"));
       return;
     }
     if (!itemName.trim() || !itemUnit.trim()) {
-      setError("Enter material name and unit.");
+      setError(t("drawingsBoq.enterMaterialAndUnit"));
       return;
     }
-    const qty = Number(itemQuantity);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError("Quantity must be a positive number.");
+
+    const quantity = Number(itemQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setError(t("drawingsBoq.quantityPositive"));
       return;
     }
+
     const rate = itemRate.trim() === "" ? null : Number(itemRate);
     if (rate !== null && !Number.isFinite(rate)) {
-      setError("Unit rate must be a valid number.");
+      setError(t("drawingsBoq.rateValid"));
       return;
     }
 
@@ -287,18 +395,13 @@ export default function DrawingsBoqScreen() {
       await updateBOQItem(editingItemId, {
         material_name: itemName.trim(),
         unit: itemUnit.trim(),
-        quantity: qty,
+        quantity,
         category: itemCategory.trim() || null,
         unit_rate: rate,
         version: editingItemVersion,
       });
-      setEditingItemId("");
-      setEditingItemVersion(null);
-      setItemName("");
-      setItemUnit("");
-      setItemQuantity("");
-      setItemCategory("");
-      setItemRate("");
+
+      clearItemForm();
       await refreshExpandedVersion();
     });
   }
@@ -313,8 +416,13 @@ export default function DrawingsBoqScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#183153" />
-        <Text style={styles.muted}>Loading drawings & BOQ…</Text>
+        <View style={styles.switcherRow}>
+          <LanguageSwitcher />
+        </View>
+        <ActivityIndicator size="large" color={COLORS.navy} />
+        <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+          {t("drawingsBoq.loading")}
+        </Text>
       </View>
     );
   }
@@ -322,15 +430,23 @@ export default function DrawingsBoqScreen() {
   if (!project) {
     return (
       <View style={styles.page}>
-        <Text style={styles.error}>{error || "Project not found."}</Text>
+        <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
+          <Text style={[styles.title, styles.headerCopy, isUrdu && styles.rtlText]}>
+            {t("drawingsBoq.title")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+        <Text style={[styles.error, isUrdu && styles.rtlText]}>
+          {error || t("drawingsBoq.projectNotFound")}
+        </Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>‹  Back to project</Text>
+          <Text style={[styles.link, isUrdu && styles.rtlText]}>
+            {t("drawingsBoq.backToProject")}
+          </Text>
         </Pressable>
       </View>
     );
   }
-
-  const currentDrawings = drawings.filter((d) => d.is_current_revision);
 
   return (
     <KeyboardAvoidingView
@@ -341,206 +457,375 @@ export default function DrawingsBoqScreen() {
         contentContainerStyle={styles.page}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>‹  {project.name}</Text>
-        </Pressable>
+        <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
+          <View style={styles.headerCopy}>
+            <Pressable onPress={() => router.back()}>
+              <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                {t("drawingsBoq.backToProjectName", { name: project.name })}
+              </Text>
+            </Pressable>
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {t("drawingsBoq.title")}
+            </Text>
+          </View>
+          <LanguageSwitcher />
+        </View>
 
-        <Text style={styles.title}>Drawings & BOQ</Text>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <Text style={[styles.error, isUrdu && styles.rtlText]}>{error}</Text>
+        ) : null}
 
-        <Text style={styles.section}>Drawings</Text>
-        {drawingsError ? <Text style={styles.error}>{drawingsError}</Text> : null}
+        <Text style={[styles.section, isUrdu && styles.rtlText]}>
+          {t("drawingsBoq.drawings")}
+        </Text>
+
+        {drawingsError ? (
+          <Text style={[styles.error, isUrdu && styles.rtlText]}>
+            {drawingsError}
+          </Text>
+        ) : null}
 
         {canUpload ? (
-          <Action title="Upload drawing" onPress={() => void handleUploadDrawing()} />
+          <Action
+            title={t("drawingsBoq.uploadDrawing")}
+            isUrdu={isUrdu}
+            onPress={() => void handleUploadDrawing()}
+          />
         ) : null}
 
         {!drawingsError && currentDrawings.length === 0 ? (
           <View style={styles.card}>
-            <Text style={styles.muted}>
-              No drawings have been added to this project yet.
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("drawingsBoq.noDrawings")}
             </Text>
           </View>
         ) : (
-          currentDrawings.map((drawing) => (
-            <View key={drawing.id} style={styles.listCard}>
-              <Text style={styles.itemTitle}>{drawing.original_filename}</Text>
-              <Text style={styles.muted}>
-                {drawing.format} · {drawing.status.replaceAll("_", " ")}
-              </Text>
-              {drawing.revision_label ? (
-                <Text style={styles.muted}>Revision {drawing.revision_label}</Text>
-              ) : null}
-              {drawing.error_message ? (
-                <Text style={styles.error}>{drawing.error_message}</Text>
-              ) : null}
-            </View>
-          ))
+          <>
+            {visibleDrawings.map((drawing) => (
+              <View key={drawing.id} style={styles.listCard}>
+                <Text style={[styles.itemTitle, isUrdu && styles.rtlText]}>
+                  {drawing.original_filename}
+                </Text>
+                <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                  {t("drawingsBoq.formatAndStatus", {
+                    format: drawing.format,
+                    status: t(
+                      `drawingsBoq.status.${drawing.status.toLowerCase()}`,
+                      { defaultValue: drawing.status.replaceAll("_", " ") },
+                    ),
+                  })}
+                </Text>
+                {drawing.revision_label ? (
+                  <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                    {t("drawingsBoq.revision", {
+                      revision: drawing.revision_label,
+                    })}
+                  </Text>
+                ) : null}
+                {drawing.error_message ? (
+                  <Text style={[styles.error, isUrdu && styles.rtlText]}>
+                    {drawing.error_message}
+                  </Text>
+                ) : null}
+              </View>
+            ))}
+            <Pagination
+              page={drawingsPage}
+              pages={drawingsPages}
+              isUrdu={isUrdu}
+              onPrevious={() =>
+                setDrawingsPage((page) => Math.max(1, page - 1))
+              }
+              onNext={() =>
+                setDrawingsPage((page) => Math.min(drawingsPages, page + 1))
+              }
+            />
+          </>
         )}
 
-        <Text style={styles.section}>Bill of quantities</Text>
+        <Text style={[styles.section, isUrdu && styles.rtlText]}>
+          {t("drawingsBoq.billOfQuantities")}
+        </Text>
+
         {boqError && !expandedVersion ? (
-          <Text style={styles.error}>{boqError}</Text>
+          <Text style={[styles.error, isUrdu && styles.rtlText]}>
+            {boqError}
+          </Text>
         ) : null}
 
-        <Text style={styles.label}>New BOQ version label</Text>
+        <Text style={[styles.label, isUrdu && styles.rtlText]}>
+          {t("drawingsBoq.newVersionLabel")}
+        </Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, isUrdu && styles.rtlText]}
           value={versionLabel}
           onChangeText={setVersionLabel}
-          placeholder="e.g. Rev A"
+          placeholder={t("drawingsBoq.versionPlaceholder")}
+          textAlign={isUrdu ? "right" : "left"}
         />
-        <Action title="Create BOQ version" onPress={() => void handleCreateVersion()} />
+        <Action
+          title={t("drawingsBoq.createVersion")}
+          isUrdu={isUrdu}
+          onPress={() => void handleCreateVersion()}
+        />
 
         {!boqError && versions.length === 0 ? (
           <View style={styles.card}>
-            <Text style={styles.muted}>
-              No BOQ versions have been created for this project yet.
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("drawingsBoq.noVersions")}
             </Text>
           </View>
         ) : (
-          versions.map((version) => (
-            <View key={version.id} style={styles.listCard}>
-              <Pressable
-                onPress={() => void toggleVersion(version)}
-                accessibilityRole="button"
-              >
-                <View style={styles.versionHeading}>
-                  <View style={styles.versionCopy}>
-                    <Text style={styles.itemTitle}>{version.label}</Text>
-                    <Text style={styles.muted}>
-                      {version.status.replaceAll("_", " ")} ·{" "}
-                      {formatDate(version.created_at)}
+          <>
+            {visibleVersions.map((version) => (
+              <View key={version.id} style={styles.listCard}>
+                <Pressable
+                  onPress={() => void toggleVersion(version)}
+                  accessibilityRole="button"
+                >
+                  <View style={[styles.versionHeading, isUrdu && styles.rtlRow]}>
+                    <View style={styles.versionCopy}>
+                      <Text style={[styles.itemTitle, isUrdu && styles.rtlText]}>
+                        {version.label}
+                      </Text>
+                      <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                        {t("drawingsBoq.versionStatusDate", {
+                          status: t(
+                            `drawingsBoq.status.${version.status.toLowerCase()}`,
+                            {
+                              defaultValue: version.status.replaceAll("_", " "),
+                            },
+                          ),
+                          date: formatDate(
+                            version.created_at,
+                            locale,
+                            t("drawingsBoq.notSet"),
+                          ),
+                        })}
+                      </Text>
+                    </View>
+                    <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                      {expandedVersion === version.id
+                        ? t("drawingsBoq.hide")
+                        : t("drawingsBoq.view")}
                     </Text>
                   </View>
-                  <Text style={styles.link}>
-                    {expandedVersion === version.id ? "Hide" : "View"}
-                  </Text>
-                </View>
-              </Pressable>
+                </Pressable>
 
-              {expandedVersion === version.id ? (
-                <View style={styles.versionDetails}>
-                  {boqLoading ? <ActivityIndicator color="#183153" /> : null}
-                  {boqError ? <Text style={styles.error}>{boqError}</Text> : null}
-
-                  {boqSummary ? (
-                    <View style={styles.summaryBox}>
-                      <InfoRow label="Items" value={String(boqSummary.item_count)} />
-                      <InfoRow label="Total" value={formatMoney(boqSummary.grand_total)} />
-                      <InfoRow
-                        label="Awaiting approval"
-                        value={String(boqSummary.unapproved_item_count)}
-                      />
-                      <InfoRow
-                        label="Unpriced items"
-                        value={String(boqSummary.unpriced_item_count)}
-                      />
-                    </View>
-                  ) : null}
-
-                  {(canCreateItem || canUpdateItem) && (
-                    <>
-                      <Text style={styles.label}>
-                        {editingItemId ? "Edit BOQ item" : "Add custom BOQ item"}
+                {expandedVersion === version.id ? (
+                  <View style={styles.versionDetails}>
+                    {boqLoading ? (
+                      <ActivityIndicator color={COLORS.navy} />
+                    ) : null}
+                    {boqError ? (
+                      <Text style={[styles.error, isUrdu && styles.rtlText]}>
+                        {boqError}
                       </Text>
-                      <Field label="Material name" value={itemName} onChangeText={setItemName} />
-                      <Field label="Unit" value={itemUnit} onChangeText={setItemUnit} />
-                      <Field
-                        label="Quantity"
-                        value={itemQuantity}
-                        onChangeText={setItemQuantity}
-                        keyboardType="decimal-pad"
-                      />
-                      <Field
-                        label="Category"
-                        value={itemCategory}
-                        onChangeText={setItemCategory}
-                      />
-                      <Field
-                        label="Unit rate (optional)"
-                        value={itemRate}
-                        onChangeText={setItemRate}
-                        keyboardType="decimal-pad"
-                      />
-                      {editingItemId ? (
-                        <View style={styles.row}>
-                          <Action title="Save item" onPress={() => void handleSaveItem()} />
-                          <Action
-                            title="Cancel"
-                            secondary
-                            onPress={() => {
-                              setEditingItemId("");
-                              setEditingItemVersion(null);
-                              setItemName("");
-                              setItemUnit("");
-                              setItemQuantity("");
-                              setItemCategory("");
-                              setItemRate("");
-                            }}
-                          />
-                        </View>
-                      ) : canCreateItem ? (
-                        <Action
-                          title="Add custom item"
-                          onPress={() => void handleAddCustomItem()}
+                    ) : null}
+
+                    {boqSummary ? (
+                      <View style={styles.summaryBox}>
+                        <InfoRow
+                          label={t("drawingsBoq.items")}
+                          value={String(boqSummary.item_count)}
+                          isUrdu={isUrdu}
                         />
-                      ) : null}
-                    </>
-                  )}
+                        <InfoRow
+                          label={t("drawingsBoq.total")}
+                          value={formatMoney(
+                            boqSummary.grand_total,
+                            locale,
+                            t("drawingsBoq.notAvailable"),
+                          )}
+                          isUrdu={isUrdu}
+                        />
+                        <InfoRow
+                          label={t("drawingsBoq.awaitingApproval")}
+                          value={String(boqSummary.unapproved_item_count)}
+                          isUrdu={isUrdu}
+                        />
+                        <InfoRow
+                          label={t("drawingsBoq.unpricedItems")}
+                          value={String(boqSummary.unpriced_item_count)}
+                          isUrdu={isUrdu}
+                        />
+                      </View>
+                    ) : null}
 
-                  {!boqLoading && !boqError && boqItems.length === 0 ? (
-                    <Text style={styles.muted}>This BOQ has no items yet.</Text>
-                  ) : null}
-
-                  {boqItems.map((item) => (
-                    <View key={item.id} style={styles.boqItem}>
-                      <View style={styles.versionHeading}>
-                        <Text style={styles.itemTitle}>{item.material_name}</Text>
-                        <Text
-                          style={
-                            item.status === "APPROVED" ? styles.approved : styles.draft
-                          }
-                        >
-                          {item.status}
+                    {(canCreateItem || canUpdateItem) && (
+                      <>
+                        <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                          {editingItemId
+                            ? t("drawingsBoq.editBOQItem")
+                            : t("drawingsBoq.addCustomBOQItem")}
                         </Text>
-                      </View>
-                      <Text style={styles.muted}>
-                        {item.quantity} {item.unit}
-                        {item.category ? ` · ${item.category}` : ""}
-                      </Text>
-                      <Text style={styles.muted}>
-                        {item.unit_rate === null
-                          ? "Rate not set"
-                          : `${formatMoney(item.unit_rate)} per ${item.unit}`}
-                      </Text>
-                      <View style={styles.row}>
-                        {canUpdateItem && item.status !== "APPROVED" ? (
+                        <Field
+                          label={t("drawingsBoq.materialName")}
+                          value={itemName}
+                          onChangeText={setItemName}
+                          isUrdu={isUrdu}
+                        />
+                        <Field
+                          label={t("drawingsBoq.unit")}
+                          value={itemUnit}
+                          onChangeText={setItemUnit}
+                          isUrdu={isUrdu}
+                        />
+                        <Field
+                          label={t("drawingsBoq.quantity")}
+                          value={itemQuantity}
+                          onChangeText={setItemQuantity}
+                          keyboardType="decimal-pad"
+                          isUrdu={isUrdu}
+                        />
+                        <Field
+                          label={t("drawingsBoq.category")}
+                          value={itemCategory}
+                          onChangeText={setItemCategory}
+                          isUrdu={isUrdu}
+                        />
+                        <Field
+                          label={t("drawingsBoq.unitRateOptional")}
+                          value={itemRate}
+                          onChangeText={setItemRate}
+                          keyboardType="decimal-pad"
+                          isUrdu={isUrdu}
+                        />
+
+                        {editingItemId ? (
+                          <View style={[styles.row, isUrdu && styles.rtlRow]}>
+                            <Action
+                              title={t("drawingsBoq.saveItem")}
+                              isUrdu={isUrdu}
+                              onPress={() => void handleSaveItem()}
+                            />
+                            <Action
+                              title={t("drawingsBoq.cancel")}
+                              secondary
+                              isUrdu={isUrdu}
+                              onPress={clearItemForm}
+                            />
+                          </View>
+                        ) : canCreateItem ? (
                           <Action
-                            title="Edit"
-                            secondary
-                            onPress={() => beginEditItem(item)}
+                            title={t("drawingsBoq.addCustomItem")}
+                            isUrdu={isUrdu}
+                            onPress={() => void handleAddCustomItem()}
                           />
                         ) : null}
-                        {canApprove && item.status !== "APPROVED" ? (
-                          <Action
-                            title="Approve"
-                            onPress={() => void handleApproveItem(item)}
-                          />
-                        ) : null}
+                      </>
+                    )}
+
+                    {!boqLoading && !boqError && boqItems.length === 0 ? (
+                      <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                        {t("drawingsBoq.noItems")}
+                      </Text>
+                    ) : null}
+
+                    {visibleItems.map((item) => (
+                      <View key={item.id} style={styles.boqItem}>
+                        <View
+                          style={[
+                            styles.versionHeading,
+                            isUrdu && styles.rtlRow,
+                          ]}
+                        >
+                          <Text
+                            style={[styles.itemTitle, isUrdu && styles.rtlText]}
+                          >
+                            {item.material_name}
+                          </Text>
+                          <Text
+                            style={
+                              item.status === "APPROVED"
+                                ? styles.approved
+                                : styles.draft
+                            }
+                          >
+                            {t(
+                              `drawingsBoq.status.${item.status.toLowerCase()}`,
+                              { defaultValue: item.status.replaceAll("_", " ") },
+                            )}
+                          </Text>
+                        </View>
+                        <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                          {t("drawingsBoq.quantityAndUnit", {
+                            quantity: item.quantity,
+                            unit: item.unit,
+                            category: item.category
+                              ? ` · ${item.category}`
+                              : "",
+                          })}
+                        </Text>
+                        <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                          {item.unit_rate === null
+                            ? t("drawingsBoq.rateNotSet")
+                            : t("drawingsBoq.ratePerUnit", {
+                                rate: formatMoney(
+                                  item.unit_rate,
+                                  locale,
+                                  t("drawingsBoq.notAvailable"),
+                                ),
+                                unit: item.unit,
+                              })}
+                        </Text>
+                        <View style={[styles.row, isUrdu && styles.rtlRow]}>
+                          {canUpdateItem && item.status !== "APPROVED" ? (
+                            <Action
+                              title={t("drawingsBoq.edit")}
+                              secondary
+                              isUrdu={isUrdu}
+                              onPress={() => beginEditItem(item)}
+                            />
+                          ) : null}
+                          {canApprove && item.status !== "APPROVED" ? (
+                            <Action
+                              title={t("drawingsBoq.approve")}
+                              isUrdu={isUrdu}
+                              onPress={() => void handleApproveItem(item)}
+                            />
+                          ) : null}
+                        </View>
                       </View>
-                    </View>
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          ))
+                    ))}
+
+                    {boqItems.length > 0 ? (
+                      <Pagination
+                        page={itemsPage}
+                        pages={itemsPages}
+                        isUrdu={isUrdu}
+                        onPrevious={() =>
+                          setItemsPage((page) => Math.max(1, page - 1))
+                        }
+                        onNext={() =>
+                          setItemsPage((page) => Math.min(itemsPages, page + 1))
+                        }
+                      />
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            ))}
+            <Pagination
+              page={versionsPage}
+              pages={versionsPages}
+              isUrdu={isUrdu}
+              onPrevious={() =>
+                setVersionsPage((page) => Math.max(1, page - 1))
+              }
+              onNext={() =>
+                setVersionsPage((page) => Math.min(versionsPages, page + 1))
+              }
+            />
+          </>
         )}
 
         {busy ? (
           <View style={styles.busy}>
-            <ActivityIndicator color="#183153" />
-            <Text style={styles.muted}>Working…</Text>
+            <ActivityIndicator color={COLORS.navy} />
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("drawingsBoq.working")}
+            </Text>
           </View>
         ) : null}
       </ScrollView>
@@ -548,90 +833,165 @@ export default function DrawingsBoqScreen() {
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  keyboardType = "default",
-}: {
+function Pagination(props: {
+  page: number;
+  pages: number;
+  isUrdu: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <View style={[styles.pagination, props.isUrdu && styles.rtlRow]}>
+      <Action
+        title={t("drawingsBoq.previous")}
+        secondary
+        isUrdu={props.isUrdu}
+        disabled={props.page <= 1}
+        onPress={props.onPrevious}
+      />
+      <Text style={[styles.pageText, props.isUrdu && styles.rtlText]}>
+        {t("drawingsBoq.pageOf", {
+          page: props.page,
+          pages: props.pages,
+        })}
+      </Text>
+      <Action
+        title={t("drawingsBoq.next")}
+        secondary
+        isUrdu={props.isUrdu}
+        disabled={props.page >= props.pages}
+        onPress={props.onNext}
+      />
+    </View>
+  );
+}
+
+function Field(props: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   keyboardType?: "default" | "decimal-pad";
+  isUrdu: boolean;
 }) {
   return (
     <>
-      <Text style={styles.fieldLabel}>{label}</Text>
+      <Text style={[styles.fieldLabel, props.isUrdu && styles.rtlText]}>
+        {props.label}
+      </Text>
       <TextInput
-        style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
+        style={[styles.input, props.isUrdu && styles.rtlText]}
+        value={props.value}
+        onChangeText={props.onChangeText}
+        keyboardType={props.keyboardType ?? "default"}
+        textAlign={props.isUrdu ? "right" : "left"}
       />
     </>
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function InfoRow(props: {
+  label: string;
+  value: string;
+  isUrdu: boolean;
+}) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <View style={[styles.infoRow, props.isUrdu && styles.rtlRow]}>
+      <Text style={[styles.infoLabel, props.isUrdu && styles.rtlText]}>
+        {props.label}
+      </Text>
+      <Text style={[styles.infoValue, props.isUrdu && styles.rtlText]}>
+        {props.value}
+      </Text>
     </View>
   );
 }
 
-function Action({
-  title,
-  onPress,
-  secondary = false,
-}: {
+function Action(props: {
   title: string;
   onPress: () => void;
   secondary?: boolean;
+  disabled?: boolean;
+  isUrdu: boolean;
 }) {
   return (
     <Pressable
-      style={[styles.action, secondary && styles.actionSecondary]}
-      onPress={onPress}
+      style={[
+        styles.action,
+        props.secondary && styles.actionSecondary,
+        props.disabled && styles.disabled,
+      ]}
+      onPress={props.onPress}
+      disabled={props.disabled}
       accessibilityRole="button"
     >
-      <Text style={[styles.actionText, secondary && styles.actionSecondaryText]}>
-        {title}
+      <Text
+        style={[
+          styles.actionText,
+          props.secondary && styles.actionSecondaryText,
+          props.isUrdu && styles.rtlText,
+        ]}
+      >
+        {props.title}
       </Text>
     </Pressable>
   );
 }
 
+const COLORS = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#F7F3EC",
+  navy: "#080D18",
+  text: "#171C26",
+  secondary: "#5C5347",
+  muted: "#81776A",
+  border: "#E4D9C4",
+  gold: "#C7952D",
+  red: "#A63A32",
+  redBackground: "#FBEAE7",
+  green: "#287456",
+  amber: "#9B641A",
+};
+
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#F4F6F8" },
-  page: {flexGrow: 1, padding: 22, paddingTop: 52, paddingBottom: 48, backgroundColor: "#F4F6F8",},
-  center: {flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8",},
-  title: {color: "#17212F", fontSize: 28, fontWeight: "700", marginVertical: 18,},
-  section: {color: "#17212F", fontSize: 20, fontWeight: "700", marginTop: 28, marginBottom: 8,},
-  label: {color: "#344054", fontSize: 14, fontWeight: "600", marginTop: 14, marginBottom: 7,},
-  fieldLabel: {color: "#344054", fontSize: 13, fontWeight: "600", marginTop: 10, marginBottom: 5,},
-  input: {backgroundColor: "white", borderColor: "#D0D5DD", borderWidth: 1, borderRadius: 10, padding: 14, fontSize: 16, color: "#17212F",},
-  card: {backgroundColor: "white", borderRadius: 12, borderWidth: 1, borderColor: "#E4E7EC", padding: 15, marginTop: 10,},
-  listCard: {backgroundColor: "white", borderRadius: 12, borderWidth: 1, borderColor: "#E4E7EC", padding: 16, marginBottom: 10, marginTop: 8,},
-  itemTitle: {flex: 1, color: "#17212F", fontSize: 15, fontWeight: "700", marginRight: 8,},
-  muted: { color: "#667085", marginTop: 5, lineHeight: 20 },
-  error: { color: "#B42318", marginTop: 12, lineHeight: 20 },
-  link: { color: "#183153", fontWeight: "700" },
-  versionHeading: {flexDirection: "row", alignItems: "center", justifyContent: "space-between",},
+  flex: { flex: 1, backgroundColor: COLORS.background },
+  page: { flexGrow: 1, padding: 20, paddingTop: 24, paddingBottom: 38, gap: 10, backgroundColor: COLORS.background },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24, backgroundColor: COLORS.background },
+  switcherRow: { width: "100%", alignItems: "flex-end", marginBottom: 8 },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 8 },
+  headerCopy: { flex: 1 },
+  rtlRow: { flexDirection: "row-reverse" },
+  title: { color: COLORS.text, fontSize: 26, fontWeight: "800", marginTop: 10 },
+  section: { color: COLORS.text, fontSize: 18, fontWeight: "800", marginTop: 18, marginBottom: 2 },
+  label: { color: COLORS.secondary, fontSize: 12, fontWeight: "700", marginTop: 10, marginBottom: 4 },
+  fieldLabel: { color: COLORS.secondary, fontSize: 12, fontWeight: "700", marginTop: 10, marginBottom: 5 },
+  input: { minHeight: 46, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.text },
+  card: { backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, borderTopColor: COLORS.gold, borderTopWidth: 2, padding: 15, marginTop: 8 },
+  listCard: { backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, borderTopColor: COLORS.gold, borderTopWidth: 2, padding: 15, marginTop: 6 },
+  itemTitle: { flex: 1, color: COLORS.text, fontSize: 14, fontWeight: "800", marginRight: 8 },
+  muted: { color: COLORS.muted, fontSize: 13, marginTop: 5, lineHeight: 20 },
+  error: { color: COLORS.red, backgroundColor: COLORS.redBackground, borderColor: "#EAC6C0", borderWidth: 1, borderRadius: 11, padding: 12, marginTop: 8, lineHeight: 19, fontSize: 13 },
+  link: { color: COLORS.navy, fontWeight: "800", fontSize: 13 },
+  versionHeading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   versionCopy: { flex: 1 },
-  versionDetails: {borderTopWidth: 1, borderTopColor: "#E4E7EC", marginTop: 14, paddingTop: 14,},
-  summaryBox: {backgroundColor: "#F8FAFC", borderRadius: 10, paddingHorizontal: 12, paddingTop: 4, marginBottom: 12,},
-  boqItem: {borderTopWidth: 1, borderTopColor: "#F0F2F5", paddingVertical: 12,},
-  approved: { color: "#067647", fontSize: 11, fontWeight: "700" },
-  draft: { color: "#B54708", fontSize: 11, fontWeight: "700" },
-  infoRow: {flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#F0F2F5",},
-  infoLabel: { color: "#667085", fontSize: 13, flex: 1 },
-  infoValue: {color: "#17212F", fontSize: 13, fontWeight: "600", flex: 1,textAlign: "right",},
-  action: {backgroundColor: "#183153", borderRadius: 10, alignItems: "center", padding: 13, marginTop: 10,},
-  actionSecondary: {backgroundColor: "white", borderWidth: 1, borderColor: "#D0D5DD",},
-  actionText: { color: "white", fontWeight: "700" },
-  actionSecondaryText: { color: "#183153" },
+  versionDetails: { borderTopWidth: 1, borderTopColor: COLORS.border, marginTop: 14, paddingTop: 12 },
+  summaryBox: { backgroundColor: COLORS.surfaceMuted, borderWidth: 1, borderColor: COLORS.border, borderRadius: 11, paddingHorizontal: 12, paddingTop: 4, marginBottom: 12 },
+  boqItem: { borderTopWidth: 1, borderTopColor: COLORS.border, paddingVertical: 12 },
+  approved: { color: COLORS.green, fontSize: 11, fontWeight: "800" },
+  draft: { color: COLORS.amber, fontSize: 11, fontWeight: "800" },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: COLORS.border },
+  infoLabel: { color: COLORS.muted, fontSize: 12, flex: 1 },
+  infoValue: { color: COLORS.text, fontSize: 13, fontWeight: "700", flex: 1, textAlign: "right" },
+  action: { minHeight: 44, flexGrow: 1, backgroundColor: COLORS.navy, borderWidth: 1, borderColor: COLORS.navy, borderRadius: 10, alignItems: "center", justifyContent: "center", paddingHorizontal: 13, paddingVertical: 11, marginTop: 8 },
+  actionSecondary: { backgroundColor: COLORS.surface, borderColor: COLORS.border },
+  actionText: { color: COLORS.surface, fontWeight: "800", fontSize: 13, textAlign: "center" },
+  actionSecondaryText: { color: COLORS.navy },
+  disabled: { opacity: 0.5 },
   row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  pagination: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 8 },
+  pageText: { color: COLORS.secondary, fontSize: 12, fontWeight: "700", textAlign: "center" },
   busy: { alignItems: "center", padding: 18, gap: 8 },
-})
+  rtlText: { textAlign: "right", writingDirection: "rtl" },
+});

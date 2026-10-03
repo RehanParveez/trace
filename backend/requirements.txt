@@ -1,7 +1,8 @@
 fastapi
 uvicorn[standard]
-sqlalchemy>=2.0,<3.0
+sqlalchemy[asyncio]>=2.0,<3.0
 asyncpg
+greenlet
 alembic
 pydantic>=2.0,<3.0
 pydantic-settings
@@ -24,3 +25,4 @@ pypdf
 pytest>=8.0
 pytest-asyncio>=0.24
 httpx>=0.27
+shapely>=2.0,<3
