@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { restoreSession } from "../../../../api/client";
 import { getProject } from "../../../../api/projects";
 import {listBOQItems, listProjectBOQVersions,
@@ -10,11 +11,16 @@ import {approveProgressClaim, createProgressClaim, listProgressClaims, rejectPro
 } from "../../../../api/verification";
 import type {BOQItem, BOQVersion, ProgressClaim, Project,
 } from "../../../../api/types";
+import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 
-function formatDate(value: string | null): string {
-  if (!value) return "Not set";
+const PAGE_SIZE = 3;
+
+function formatDate(value: string | null, locale: string, notSet: string) {
+  if (!value) return notSet;
   const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleDateString();
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleDateString(locale);
 }
 
 function validDate(value: string): boolean {
@@ -27,7 +33,20 @@ function validDate(value: string): boolean {
   );
 }
 
+function pageCount(total: number) {
+  return Math.max(1, Math.ceil(total / PAGE_SIZE));
+}
+
+function paginate<T>(items: T[], page: number) {
+  const start = (page - 1) * PAGE_SIZE;
+  return items.slice(start, start + PAGE_SIZE);
+}
+
 export default function ProgressVerificationScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+  const locale = isUrdu ? "ur-PK" : "en-PK";
+
   const params = useLocalSearchParams<{ projectId?: string }>();
   const projectId = Array.isArray(params.projectId)
     ? params.projectId[0]
@@ -40,6 +59,8 @@ export default function ProgressVerificationScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [claimsPage, setClaimsPage] = useState(1);
+  const [itemsPage, setItemsPage] = useState(1);
 
   const [boqItemId, setBoqItemId] = useState("");
   const [claimDate, setClaimDate] = useState("");
@@ -56,38 +77,52 @@ export default function ProgressVerificationScreen() {
   const canSubmit = permissions.includes("progress_claim:submit");
   const canReview = permissions.includes("progress_claim:review");
 
+  const claimsPages = pageCount(claims.length);
+  const itemsPages = pageCount(approvedItems.length);
+  const visibleClaims = paginate(claims, claimsPage);
+  const visibleApprovedItems = paginate(approvedItems, itemsPage);
+
   const load = useCallback(async () => {
     if (!projectId) {
-      setError("Project not found.");
+      setError(t("progressVerification.projectNotFound"));
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setError("");
+
     try {
       const user = await restoreSession();
       if (!user) {
         router.replace("/");
         return;
       }
-      const granted = user.role.permissions.map((p) => p.key);
+
+      const granted = user.role.permissions.map((permission) => permission.key);
       setPermissions(granted);
       setProject(await getProject(projectId));
 
       if (granted.includes("progress_claim:read")) {
         try {
           setClaims(await listProgressClaims(projectId));
+          setClaimsPage(1);
         } catch (err) {
           setError(
             err instanceof Error
               ? err.message
-              : "Could not load progress claims.",
+              : t("progressVerification.loadClaimsFailure"),
           );
         }
+      } else {
+        setClaims([]);
+        setClaimsPage(1);
       }
+
       try {
         const versions = await listProjectBOQVersions(projectId);
         const allItems: BOQItem[] = [];
+
         await Promise.all(
           versions.map(async (version: BOQVersion) => {
             try {
@@ -96,20 +131,27 @@ export default function ProgressVerificationScreen() {
                 if (item.status === "APPROVED") allItems.push(item);
               }
             } catch {
-            
+              // A version's items may be unavailable; continue loading others.
             }
           }),
         );
+
         setApprovedItems(allItems);
+        setItemsPage(1);
       } catch {
-        
+        setApprovedItems([]);
+        setItemsPage(1);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load project.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("progressVerification.loadProjectFailure"),
+      );
     } finally {
       setLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, t]);
 
   useEffect(() => {
     void load();
@@ -118,11 +160,16 @@ export default function ProgressVerificationScreen() {
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
     setError("");
+
     try {
       await action();
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "The action failed.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : t("progressVerification.actionFailure"),
+      );
     } finally {
       setBusy(false);
     }
@@ -140,40 +187,47 @@ export default function ProgressVerificationScreen() {
 
   async function saveClaim() {
     if (!projectId) return;
+
     if (!boqItemId) {
-      setError("Select an approved BOQ item.");
+      setError(t("progressVerification.validation.selectItem"));
       return;
     }
     if (!validDate(claimDate)) {
-      setError("Claim date must be a valid YYYY-MM-DD date.");
+      setError(t("progressVerification.validation.claimDate"));
       return;
     }
-    const qty = Number(claimedQuantity);
-    if (!Number.isFinite(qty) || qty <= 0) {
-      setError("Claimed quantity must be a positive number.");
+
+    const quantity = Number(claimedQuantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setError(t("progressVerification.validation.quantity"));
       return;
     }
-    const pct = Number(claimedPercentage);
-    if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
-      setError("Claimed percentage must be between 0 and 100.");
+
+    const percentage = Number(claimedPercentage);
+    if (
+      !Number.isFinite(percentage) ||
+      percentage < 0 ||
+      percentage > 100
+    ) {
+      setError(t("progressVerification.validation.percentage"));
       return;
     }
 
     if (editingClaimId) {
       if (!canUpdate) {
-        setError("You cannot update progress claims.");
+        setError(t("progressVerification.cannotUpdate"));
         return;
       }
+      if (editingVersion == null) {
+        setError(t("progressVerification.versionMissing"));
+        return;
+      }
+
       await run(async () => {
-        
-        if (editingVersion == null) {
-          setError("Missing claim version. Re-open the claim and try again.");
-          return;
-        }
         await updateProgressClaim(editingClaimId, {
           claim_date: claimDate,
-          claimed_quantity: qty,
-          claimed_percentage: pct,
+          claimed_quantity: quantity,
+          claimed_percentage: percentage,
           notes: notes.trim() || null,
           version: editingVersion,
         });
@@ -183,7 +237,7 @@ export default function ProgressVerificationScreen() {
     }
 
     if (!canCreate) {
-      setError("You cannot create progress claims.");
+      setError(t("progressVerification.cannotCreate"));
       return;
     }
 
@@ -192,8 +246,8 @@ export default function ProgressVerificationScreen() {
         project_id: projectId,
         boq_item_id: boqItemId,
         claim_date: claimDate,
-        claimed_quantity: qty,
-        claimed_percentage: pct,
+        claimed_quantity: quantity,
+        claimed_percentage: percentage,
         notes: notes.trim() || null,
       });
       resetForm();
@@ -202,9 +256,10 @@ export default function ProgressVerificationScreen() {
 
   function beginEditClaim(claim: ProgressClaim) {
     if (claim.status !== "DRAFT") {
-      setError("Only draft claims can be edited.");
+      setError(t("progressVerification.onlyDraftCanEdit"));
       return;
     }
+
     setEditingClaimId(claim.id);
     setEditingVersion(claim.version);
     setBoqItemId(claim.boq_item_id);
@@ -214,20 +269,29 @@ export default function ProgressVerificationScreen() {
     setNotes(claim.notes ?? "");
   }
 
-  async function handleSubmit(claim: ProgressClaim) {
+  function handleSubmit(claim: ProgressClaim) {
     if (!canSubmit) return;
-    Alert.alert("Submit claim?", "Submit this draft claim for review?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Submit",
-        onPress: () =>
-          void run(() => submitProgressClaim(claim.id, claim.version)),
-      },
-    ]);
+
+    Alert.alert(
+      t("progressVerification.submitConfirmTitle"),
+      t("progressVerification.submitConfirmMessage"),
+      [
+        {
+          text: t("progressVerification.cancel"),
+          style: "cancel",
+        },
+        {
+          text: t("progressVerification.submit"),
+          onPress: () =>
+            void run(() => submitProgressClaim(claim.id, claim.version)),
+        },
+      ],
+    );
   }
 
   async function handleApprove(claim: ProgressClaim) {
     if (!canReview) return;
+
     await run(() =>
       approveProgressClaim(claim.id, {
         version: claim.version,
@@ -239,6 +303,7 @@ export default function ProgressVerificationScreen() {
 
   async function handleReject(claim: ProgressClaim) {
     if (!canReview) return;
+
     await run(() =>
       rejectProgressClaim(claim.id, {
         version: claim.version,
@@ -251,8 +316,13 @@ export default function ProgressVerificationScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#183153" />
-        <Text style={styles.muted}>Loading progress verification…</Text>
+        <View style={styles.switcherRow}>
+          <LanguageSwitcher />
+        </View>
+        <ActivityIndicator size="large" color={COLORS.navy} />
+        <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+          {t("progressVerification.loading")}
+        </Text>
       </View>
     );
   }
@@ -260,9 +330,21 @@ export default function ProgressVerificationScreen() {
   if (!project) {
     return (
       <View style={styles.page}>
-        <Text style={styles.error}>{error || "Project not found."}</Text>
+        <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
+          <Text
+            style={[styles.title, styles.headerCopy, isUrdu && styles.rtlText]}
+          >
+            {t("progressVerification.title")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+        <Text style={[styles.error, isUrdu && styles.rtlText]}>
+          {error || t("progressVerification.projectNotFound")}
+        </Text>
         <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>‹  Back to project</Text>
+          <Text style={[styles.link, isUrdu && styles.rtlText]}>
+            {t("progressVerification.backToProject")}
+          </Text>
         </Pressable>
       </View>
     );
@@ -271,12 +353,23 @@ export default function ProgressVerificationScreen() {
   if (!canRead && !canCreate) {
     return (
       <View style={styles.page}>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>‹  {project.name}</Text>
-        </Pressable>
-        <Text style={styles.title}>Progress verification</Text>
-        <Text style={styles.error}>
-          Your organization role does not allow progress claim access.
+        <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
+          <View style={styles.headerCopy}>
+            <Pressable onPress={() => router.back()}>
+              <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                {t("progressVerification.backToProjectName", {
+                  name: project.name,
+                })}
+              </Text>
+            </Pressable>
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {t("progressVerification.title")}
+            </Text>
+          </View>
+          <LanguageSwitcher />
+        </View>
+        <Text style={[styles.error, isUrdu && styles.rtlText]}>
+          {t("progressVerification.accessDenied")}
         </Text>
       </View>
     );
@@ -293,159 +386,276 @@ export default function ProgressVerificationScreen() {
         contentContainerStyle={styles.page}
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>‹  {project.name}</Text>
-        </Pressable>
+        <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
+          <View style={styles.headerCopy}>
+            <Pressable onPress={() => router.back()}>
+              <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                {t("progressVerification.backToProjectName", {
+                  name: project.name,
+                })}
+              </Text>
+            </Pressable>
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {t("progressVerification.title")}
+            </Text>
+          </View>
+          <LanguageSwitcher />
+        </View>
 
-        <Text style={styles.title}>Progress verification</Text>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <Text style={[styles.error, isUrdu && styles.rtlText]}>{error}</Text>
+        ) : null}
 
         {(canCreate || (canUpdate && editingClaimId)) && (
-          <>
-            <Text style={styles.section}>
-              {editingClaimId ? "Edit draft claim" : "New progress claim"}
+          <View style={styles.formCard}>
+            <Text style={[styles.section, isUrdu && styles.rtlText]}>
+              {editingClaimId
+                ? t("progressVerification.editDraftClaim")
+                : t("progressVerification.newClaim")}
             </Text>
 
             {!editingClaimId ? (
               <>
-                <Text style={styles.label}>Approved BOQ item</Text>
+                <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                  {t("progressVerification.approvedBOQItem")}
+                </Text>
                 {approvedItems.length === 0 ? (
-                  <Text style={styles.muted}>
-                    No approved BOQ items available. Approve items in Drawings
-                    & BOQ first.
+                  <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                    {t("progressVerification.noApprovedItems")}
                   </Text>
                 ) : (
-                  approvedItems.map((item) => (
-                    <Chip
-                      key={item.id}
-                      label={`${item.material_name} · ${item.quantity} ${item.unit}`}
-                      selected={boqItemId === item.id}
-                      onPress={() => setBoqItemId(item.id)}
+                  <>
+                    {visibleApprovedItems.map((item) => (
+                      <Chip
+                        key={item.id}
+                        label={`${item.material_name} · ${item.quantity} ${item.unit}`}
+                        selected={boqItemId === item.id}
+                        onPress={() => setBoqItemId(item.id)}
+                        isUrdu={isUrdu}
+                      />
+                    ))}
+                    <Pagination
+                      page={itemsPage}
+                      pages={itemsPages}
+                      isUrdu={isUrdu}
+                      onPrevious={() =>
+                        setItemsPage((page) => Math.max(1, page - 1))
+                      }
+                      onNext={() =>
+                        setItemsPage((page) =>
+                          Math.min(itemsPages, page + 1),
+                        )
+                      }
                     />
-                  ))
+                  </>
                 )}
               </>
             ) : selectedItem ? (
-              <Text style={styles.muted}>
-                Item: {selectedItem.material_name} ({selectedItem.quantity}{" "}
-                {selectedItem.unit})
+              <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                {t("progressVerification.selectedItem", {
+                  name: selectedItem.material_name,
+                  quantity: selectedItem.quantity,
+                  unit: selectedItem.unit,
+                })}
               </Text>
             ) : null}
 
             <Field
-              label="Claim date (YYYY-MM-DD)"
+              label={t("progressVerification.claimDate")}
               value={claimDate}
               onChangeText={setClaimDate}
+              isUrdu={isUrdu}
             />
             <Field
-              label="Claimed quantity"
+              label={t("progressVerification.claimedQuantity")}
               value={claimedQuantity}
               onChangeText={setClaimedQuantity}
               keyboardType="decimal-pad"
+              isUrdu={isUrdu}
             />
             <Field
-              label="Claimed percentage (0–100)"
+              label={t("progressVerification.claimedPercentage")}
               value={claimedPercentage}
               onChangeText={setClaimedPercentage}
               keyboardType="decimal-pad"
+              isUrdu={isUrdu}
             />
             <Field
-              label="Notes (optional)"
+              label={t("progressVerification.notesOptional")}
               value={notes}
               onChangeText={setNotes}
               multiline
+              isUrdu={isUrdu}
             />
             <Action
-              title={editingClaimId ? "Save claim changes" : "Create claim"}
+              title={
+                editingClaimId
+                  ? t("progressVerification.saveClaimChanges")
+                  : t("progressVerification.createClaim")
+              }
               onPress={() => void saveClaim()}
+              isUrdu={isUrdu}
             />
             {editingClaimId ? (
-              <Action title="Cancel edit" secondary onPress={resetForm} />
+              <Action
+                title={t("progressVerification.cancelEdit")}
+                secondary
+                onPress={resetForm}
+                isUrdu={isUrdu}
+              />
             ) : null}
-          </>
+          </View>
         )}
 
         {canReview ? (
-          <>
-            <Text style={styles.section}>Review note</Text>
+          <View style={styles.formCard}>
+            <Text style={[styles.section, isUrdu && styles.rtlText]}>
+              {t("progressVerification.reviewNote")}
+            </Text>
             <TextInput
-              style={[styles.input, styles.multiline]}
+              style={[
+                styles.input,
+                styles.multiline,
+                isUrdu && styles.rtlText,
+              ]}
               value={reviewNote}
               onChangeText={setReviewNote}
-              placeholder="Optional note for approve/reject"
+              placeholder={t("progressVerification.reviewNotePlaceholder")}
               multiline
               textAlignVertical="top"
+              textAlign={isUrdu ? "right" : "left"}
+            />
+          </View>
+        ) : null}
+
+        <Text style={[styles.section, isUrdu && styles.rtlText]}>
+          {t("progressVerification.claims")}
+        </Text>
+
+        {claims.length === 0 ? (
+          <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+            {t("progressVerification.noClaims")}
+          </Text>
+        ) : (
+          <>
+            {visibleClaims.map((claim) => {
+              const item = approvedItems.find(
+                (approvedItem) => approvedItem.id === claim.boq_item_id,
+              );
+
+              return (
+                <View key={claim.id} style={styles.card}>
+                  <View style={[styles.rowBetween, isUrdu && styles.rtlRow]}>
+                    <Text
+                      style={[styles.itemTitle, isUrdu && styles.rtlText]}
+                    >
+                      {item?.material_name || claim.boq_item_id}
+                    </Text>
+                    <Text
+                      style={
+                        claim.status === "APPROVED"
+                          ? styles.approved
+                          : claim.status === "REJECTED"
+                            ? styles.rejected
+                            : claim.status === "SUBMITTED"
+                              ? styles.submitted
+                              : styles.draft
+                      }
+                    >
+                      {t(
+                        `progressVerification.status.${claim.status.toLowerCase()}`,
+                        { defaultValue: claim.status },
+                      )}
+                    </Text>
+                  </View>
+
+                  <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                    {t("progressVerification.claimDateValue", {
+                      date: formatDate(
+                        claim.claim_date,
+                        locale,
+                        t("progressVerification.notSet"),
+                      ),
+                    })}
+                  </Text>
+                  <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                    {t("progressVerification.quantityAndPercentage", {
+                      quantity: claim.claimed_quantity,
+                      unit: item?.unit ? ` ${item.unit}` : "",
+                      percentage: claim.claimed_percentage,
+                    })}
+                  </Text>
+
+                  {claim.notes ? (
+                    <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                      {claim.notes}
+                    </Text>
+                  ) : null}
+
+                  {claim.review_note ? (
+                    <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                      {t("progressVerification.reviewNoteValue", {
+                        note: claim.review_note,
+                      })}
+                    </Text>
+                  ) : null}
+
+                  <View style={[styles.row, isUrdu && styles.rtlRow]}>
+                    {claim.status === "DRAFT" && canUpdate ? (
+                      <Action
+                        title={t("progressVerification.edit")}
+                        secondary
+                        onPress={() => beginEditClaim(claim)}
+                        isUrdu={isUrdu}
+                      />
+                    ) : null}
+                    {claim.status === "DRAFT" && canSubmit ? (
+                      <Action
+                        title={t("progressVerification.submit")}
+                        onPress={() => handleSubmit(claim)}
+                        isUrdu={isUrdu}
+                      />
+                    ) : null}
+                    {claim.status === "SUBMITTED" && canReview ? (
+                      <>
+                        <Action
+                          title={t("progressVerification.approve")}
+                          onPress={() => void handleApprove(claim)}
+                          isUrdu={isUrdu}
+                        />
+                        <Action
+                          title={t("progressVerification.reject")}
+                          danger
+                          onPress={() => void handleReject(claim)}
+                          isUrdu={isUrdu}
+                        />
+                      </>
+                    ) : null}
+                  </View>
+                </View>
+              );
+            })}
+
+            <Pagination
+              page={claimsPage}
+              pages={claimsPages}
+              isUrdu={isUrdu}
+              onPrevious={() =>
+                setClaimsPage((page) => Math.max(1, page - 1))
+              }
+              onNext={() =>
+                setClaimsPage((page) => Math.min(claimsPages, page + 1))
+              }
             />
           </>
-        ) : null}
-
-        <Text style={styles.section}>Claims</Text>
-        {claims.length === 0 ? (
-          <Text style={styles.muted}>No progress claims yet.</Text>
-        ) : null}
-
-        {claims.map((claim) => {
-          const item = approvedItems.find((i) => i.id === claim.boq_item_id);
-          return (
-            <View key={claim.id} style={styles.card}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.itemTitle}>
-                  {item?.material_name || claim.boq_item_id}
-                </Text>
-                <Text
-                  style={
-                    claim.status === "APPROVED"
-                      ? styles.approved
-                      : claim.status === "REJECTED"
-                        ? styles.rejected
-                        : claim.status === "SUBMITTED"
-                          ? styles.submitted
-                          : styles.draft
-                  }
-                >
-                  {claim.status}
-                </Text>
-              </View>
-              <Text style={styles.muted}>Date: {formatDate(claim.claim_date)}</Text>
-              <Text style={styles.muted}>
-                Qty: {claim.claimed_quantity}
-                {item ? ` ${item.unit}` : ""} · {claim.claimed_percentage}%
-              </Text>
-              {claim.notes ? <Text style={styles.muted}>{claim.notes}</Text> : null}
-              {claim.review_note ? (
-                <Text style={styles.muted}>Review: {claim.review_note}</Text>
-              ) : null}
-
-              <View style={styles.row}>
-                {claim.status === "DRAFT" && canUpdate ? (
-                  <Action
-                    title="Edit"
-                    secondary
-                    onPress={() => beginEditClaim(claim)}
-                  />
-                ) : null}
-                {claim.status === "DRAFT" && canSubmit ? (
-                  <Action title="Submit" onPress={() => void handleSubmit(claim)} />
-                ) : null}
-                {claim.status === "SUBMITTED" && canReview ? (
-                  <>
-                    <Action title="Approve" onPress={() => void handleApprove(claim)} />
-                    <Action
-                      title="Reject"
-                      danger
-                      onPress={() => void handleReject(claim)}
-                    />
-                  </>
-                ) : null}
-              </View>
-            </View>
-          );
-        })}
+        )}
 
         {busy ? (
           <View style={styles.busy}>
-            <ActivityIndicator color="#183153" />
-            <Text style={styles.muted}>Saving…</Text>
+            <ActivityIndicator color={COLORS.navy} />
+            <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+              {t("progressVerification.saving")}
+            </Text>
           </View>
         ) : null}
       </ScrollView>
@@ -453,119 +663,186 @@ export default function ProgressVerificationScreen() {
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  multiline = false,
-  keyboardType = "default",
-}: {
+function Pagination(props: {
+  page: number;
+  pages: number;
+  isUrdu: boolean;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <View style={[styles.pagination, props.isUrdu && styles.rtlRow]}>
+      <Action
+        title={t("progressVerification.previous")}
+        secondary
+        disabled={props.page <= 1}
+        onPress={props.onPrevious}
+        isUrdu={props.isUrdu}
+      />
+      <Text style={[styles.pageText, props.isUrdu && styles.rtlText]}>
+        {t("progressVerification.pageOf", {
+          page: props.page,
+          pages: props.pages,
+        })}
+      </Text>
+      <Action
+        title={t("progressVerification.next")}
+        secondary
+        disabled={props.page >= props.pages}
+        onPress={props.onNext}
+        isUrdu={props.isUrdu}
+      />
+    </View>
+  );
+}
+
+function Field(props: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   multiline?: boolean;
   keyboardType?: "default" | "decimal-pad";
+  isUrdu: boolean;
 }) {
   return (
     <>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, props.isUrdu && styles.rtlText]}>
+        {props.label}
+      </Text>
       <TextInput
-        style={[styles.input, multiline && styles.multiline]}
-        value={value}
-        onChangeText={onChangeText}
-        multiline={multiline}
-        textAlignVertical={multiline ? "top" : "center"}
-        keyboardType={keyboardType}
+        style={[
+          styles.input,
+          props.multiline && styles.multiline,
+          props.isUrdu && styles.rtlText,
+        ]}
+        value={props.value}
+        onChangeText={props.onChangeText}
+        multiline={props.multiline}
+        textAlignVertical={props.multiline ? "top" : "center"}
+        textAlign={props.isUrdu ? "right" : "left"}
+        keyboardType={props.keyboardType ?? "default"}
       />
     </>
   );
 }
 
-function Chip({
-  label,
-  selected,
-  onPress,
-}: {
+function Chip(props: {
   label: string;
   selected: boolean;
   onPress: () => void;
+  isUrdu: boolean;
 }) {
   return (
     <Pressable
-      style={[styles.chip, selected && styles.chipSelected]}
-      onPress={onPress}
+      style={[styles.chip, props.selected && styles.chipSelected]}
+      onPress={props.onPress}
       accessibilityRole="button"
+      accessibilityState={{ selected: props.selected }}
     >
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-        {label}
+      <Text
+        style={[
+          styles.chipText,
+          props.selected && styles.chipTextSelected,
+          props.isUrdu && styles.rtlText,
+        ]}
+      >
+        {props.label}
       </Text>
     </Pressable>
   );
 }
 
-function Action({
-  title,
-  onPress,
-  secondary = false,
-  danger = false,
-}: {
+function Action(props: {
   title: string;
   onPress: () => void;
   secondary?: boolean;
   danger?: boolean;
+  disabled?: boolean;
+  isUrdu: boolean;
 }) {
   return (
     <Pressable
       style={[
         styles.action,
-        secondary && styles.actionSecondary,
-        danger && styles.actionDanger,
+        props.secondary && styles.actionSecondary,
+        props.danger && styles.actionDanger,
+        props.disabled && styles.disabled,
       ]}
-      onPress={onPress}
+      onPress={props.onPress}
+      disabled={props.disabled}
       accessibilityRole="button"
     >
       <Text
         style={[
           styles.actionText,
-          secondary && styles.actionSecondaryText,
-          danger && styles.actionDangerText,
+          props.secondary && styles.actionSecondaryText,
+          props.danger && styles.actionDangerText,
+          props.isUrdu && styles.rtlText,
         ]}
       >
-        {title}
+        {props.title}
       </Text>
     </Pressable>
   );
 }
 
+const COLORS = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#F7F3EC",
+  navy: "#080D18",
+  text: "#171C26",
+  secondary: "#5C5347",
+  muted: "#81776A",
+  border: "#E4D9C4",
+  gold: "#C7952D",
+  red: "#A63A32",
+  redBackground: "#FBEAE7",
+  green: "#287456",
+  blue: "#315F9B",
+  amber: "#9B641A",
+};
+
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: "#F4F6F8" },
-  page: {flexGrow: 1,  padding: 22, paddingTop: 52, paddingBottom: 48, backgroundColor: "#F4F6F8",},
-  center: {flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8",},
-  title: {color: "#17212F", fontSize: 28, fontWeight: "700", marginVertical: 18,},
-  section: {color: "#17212F", fontSize: 20, fontWeight: "700", marginTop: 28, marginBottom: 8,},
-  label: {color: "#344054", fontSize: 14, fontWeight: "600", marginTop: 14, marginBottom: 7,},
-  input: {backgroundColor: "white", borderColor: "#D0D5DD", borderWidth: 1, borderRadius: 10, padding: 14, fontSize: 16, color: "#17212F",},
-  multiline: { minHeight: 80 },
-  card: {backgroundColor: "white", borderRadius: 12, borderWidth: 1, borderColor: "#E4E7EC", padding: 15, marginTop: 10,},
-  itemTitle: { color: "#17212F", fontSize: 16, fontWeight: "700", flex: 1 },
-  muted: { color: "#667085", marginTop: 6, lineHeight: 20 },
-  error: { color: "#B42318", marginVertical: 12, lineHeight: 20 },
-  link: { color: "#183153", fontWeight: "700", fontSize: 15 },
-  chip: {borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 20, backgroundColor: "white", paddingHorizontal: 12, paddingVertical: 9, marginTop: 6,},
-  chipSelected: { borderColor: "#183153", backgroundColor: "#E8EEF5" },
-  chipText: { color: "#344054", fontSize: 13, fontWeight: "600" },
-  chipTextSelected: { color: "#183153" },
-  action: {backgroundColor: "#183153", borderRadius: 10, alignItems: "center", padding: 13, marginTop: 10,},
-  actionSecondary: {backgroundColor: "white", borderWidth: 1, borderColor: "#D0D5DD",},
-  actionDanger: { backgroundColor: "#B42318" },
-  actionText: { color: "white", fontWeight: "700" },
-  actionSecondaryText: { color: "#183153" },
-  actionDangerText: { color: "white" },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  rowBetween: {flexDirection: "row", alignItems: "center", justifyContent: "space-between",},
-  approved: { color: "#067647", fontSize: 11, fontWeight: "700" },
-  rejected: { color: "#B42318", fontSize: 11, fontWeight: "700" },
-  submitted: { color: "#175CD3", fontSize: 11, fontWeight: "700" },
-  draft: { color: "#B54708", fontSize: 11, fontWeight: "700" },
+  flex: { flex: 1, backgroundColor: COLORS.background },
+  page: { flexGrow: 1, padding: 20, paddingTop: 24, paddingBottom: 38, backgroundColor: COLORS.background },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24, backgroundColor: COLORS.background },
+  switcherRow: { width: "100%", alignItems: "flex-end", marginBottom: 8 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 },
+  headerCopy: { flex: 1 },
+  rtlRow: { flexDirection: "row-reverse" },
+  title: { color: COLORS.text, fontSize: 26, fontWeight: "800", marginTop: 10, marginBottom: 4 },
+  section: { color: COLORS.text, fontSize: 18, fontWeight: "800", marginTop: 18, marginBottom: 6 },
+  formCard: { backgroundColor: COLORS.surface, borderRadius: 15, borderWidth: 1, borderColor: COLORS.border, borderTopColor: COLORS.gold, borderTopWidth: 2, padding: 15, marginTop: 10 },
+  label: { color: COLORS.secondary, fontSize: 12, fontWeight: "700", marginTop: 12, marginBottom: 6 },
+  input: { minHeight: 46, backgroundColor: COLORS.surface, borderColor: COLORS.border, borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: COLORS.text },
+  multiline: { minHeight: 80, textAlignVertical: "top" },
+  card: { backgroundColor: COLORS.surface, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border, borderTopColor: COLORS.gold, borderTopWidth: 2, padding: 15, marginTop: 10 },
+  itemTitle: { color: COLORS.text, fontSize: 14, fontWeight: "800", flex: 1 },
+  muted: { color: COLORS.muted, fontSize: 13, marginTop: 6, lineHeight: 20 },
+  error: { color: COLORS.red, backgroundColor: COLORS.redBackground, borderColor: "#EAC6C0", borderWidth: 1, borderRadius: 11, padding: 12, marginVertical: 10, lineHeight: 19, fontSize: 13 },
+  link: { color: COLORS.navy, fontWeight: "800", fontSize: 13 },
+  chip: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, backgroundColor: COLORS.surface, paddingHorizontal: 12, paddingVertical: 10, marginTop: 7 },
+  chipSelected: { borderColor: COLORS.gold, backgroundColor: COLORS.surfaceMuted },
+  chipText: { color: COLORS.secondary, fontSize: 13, fontWeight: "700" },
+  chipTextSelected: { color: COLORS.navy },
+  action: { minHeight: 42, flexGrow: 1, backgroundColor: COLORS.navy, borderRadius: 10, borderWidth: 1, borderColor: COLORS.navy, alignItems: "center", justifyContent: "center", paddingHorizontal: 12, paddingVertical: 10, marginTop: 9 },
+  actionSecondary: { backgroundColor: COLORS.surface, borderColor: COLORS.border },
+  actionDanger: { backgroundColor: COLORS.red, borderColor: COLORS.red },
+  actionText: { color: COLORS.surface, fontSize: 12, fontWeight: "800", textAlign: "center" },
+  actionSecondaryText: { color: COLORS.navy },
+  actionDangerText: { color: COLORS.surface },
+  disabled: { opacity: 0.5 },
+  row: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 5 },
+  rowBetween: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  approved: { color: COLORS.green, fontSize: 11, fontWeight: "800" },
+  rejected: { color: COLORS.red, fontSize: 11, fontWeight: "800" },
+  submitted: { color: COLORS.blue, fontSize: 11, fontWeight: "800" },
+  draft: { color: COLORS.amber, fontSize: 11, fontWeight: "800" },
+  pagination: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 10 },
+  pageText: { color: COLORS.secondary, fontSize: 12, fontWeight: "700", textAlign: "center" },
   busy: { alignItems: "center", padding: 18, gap: 8 },
+  rtlText: { textAlign: "right", writingDirection: "rtl" },
 });

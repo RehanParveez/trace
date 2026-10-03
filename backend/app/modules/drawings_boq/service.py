@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
-from app.modules.drawings_boq.models import (AssemblyRecipeComponent, BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQVersionStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
+from app.modules.drawings_boq.models import ( BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQVersionStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
   DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ModelAuditResult
 )
 from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response

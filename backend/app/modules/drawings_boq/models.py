@@ -81,7 +81,72 @@ class DeductionType(str, enum.Enum):
   EXTENT_TRIMMING = "EXTENT_TRIMMING"
   VOID_DEDUCTION = "VOID_DEDUCTION"
   MATERIAL_SUBSTITUTION = "MATERIAL_SUBSTITUTION"
-  MEASUREMENT_CONVENTION = "MEASUREMENT_CONVENTION"        
+  MEASUREMENT_CONVENTION = "MEASUREMENT_CONVENTION"
+  
+class BOQLifecycle(str, enum.Enum):
+  DRAFT = "DRAFT"
+  CALCULATING = "CALCULATING"
+  CALCULATED = "CALCULATED"
+  UNDER_REVIEW = "UNDER_REVIEW"
+  APPROVED = "APPROVED"
+  ISSUED = "ISSUED"
+  SUPERSEDED = "SUPERSEDED"
+  ARCHIVED = "ARCHIVED"
+
+class BOQVersionOrigin(str, enum.Enum):
+  LEGACY = "LEGACY"
+  MANUAL = "MANUAL"
+  ENGINE = "ENGINE"
+
+class BOQItemSourceKind(str, enum.Enum):
+  LEGACY = "LEGACY"
+  MODEL = "MODEL"
+  SCHEDULE_IMPORT = "SCHEDULE_IMPORT"
+  MANUAL = "MANUAL"
+  ESTIMATE = "ESTIMATE"
+
+class ItemReviewStatus(str, enum.Enum):
+  OK = "OK"
+  REVIEW_REQUIRED = "REVIEW_REQUIRED"
+  WAIVED = "WAIVED"
+
+class AdjustmentKind(str, enum.Enum):
+  DELTA = "DELTA"
+  REPLACE = "REPLACE"
+
+class ReviewSeverity(str, enum.Enum):
+  ERROR = "error"
+  WARNING = "warning"
+  INFO = "info"
+
+class ReviewBlocks(str, enum.Enum):
+  NONE = "NONE"
+  APPROVAL = "APPROVAL"
+  ISSUE = "ISSUE"
+
+class ReviewStatus(str, enum.Enum):
+  OPEN = "OPEN"
+  RESOLVED = "RESOLVED"
+  WAIVED = "WAIVED"
+
+class SnapshotPurpose(str, enum.Enum):
+  APPROVAL = "APPROVAL"
+  ISSUE = "ISSUE"
+  MANUAL = "MANUAL"
+
+class ExportKind(str, enum.Enum):
+  CONTRACT_BOQ = "CONTRACT_BOQ"
+  PROCUREMENT = "PROCUREMENT"
+  MEASUREMENT_BOOK = "MEASUREMENT_BOOK"
+  AUDIT_REPORT = "AUDIT_REPORT"
+  REVISION_COMPARISON = "REVISION_COMPARISON"
+  BBS = "BBS"
+
+class ExportStatus(str, enum.Enum):
+  QUEUED = "QUEUED"
+  RUNNING = "RUNNING"
+  SUCCEEDED = "SUCCEEDED"
+  FAILED = "FAILED"        
  
 _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CANCELLED','SUPERSEDED'"
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
@@ -90,6 +155,18 @@ _GEOMETRY_KINDS = "'EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPP
 _LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE'"
 _CANONICAL_UNITS = "'m3','m2','m','kg','nos'"
 _DEDUCTION_TYPES = "'OVERLAP_ALLOCATION','EXTENT_TRIMMING','VOID_DEDUCTION','MATERIAL_SUBSTITUTION','MEASUREMENT_CONVENTION'"
+_LIFECYCLES = "'DRAFT','CALCULATING','CALCULATED','UNDER_REVIEW','APPROVED','ISSUED','SUPERSEDED','ARCHIVED'"
+_VERSION_ORIGINS = "'LEGACY','MANUAL','ENGINE'"
+_ITEM_SOURCES = "'LEGACY','MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE'"
+_ITEM_REVIEW_STATUSES = "'OK','REVIEW_REQUIRED','WAIVED'"
+_ADJUSTMENT_KINDS = "'DELTA','REPLACE'"
+_REVIEW_SEVERITIES = "'error','warning','info'"
+_REVIEW_BLOCKS = "'NONE','APPROVAL','ISSUE'"
+_REVIEW_STATUSES = "'OPEN','RESOLVED','WAIVED'"
+_SNAPSHOT_PURPOSES = "'APPROVAL','ISSUE','MANUAL'"
+_EXPORT_KINDS = "'CONTRACT_BOQ','PROCUREMENT','MEASUREMENT_BOOK','AUDIT_REPORT','REVISION_COMPARISON','BBS'"
+_EXPORT_FORMATS = "'PDF','XLSX'"
+_EXPORT_STATUSES = "'QUEUED','RUNNING','SUCCEEDED','FAILED'"
  
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -371,9 +448,30 @@ class BuildingLevel(Base, TimestampMixin):
 
 class BOQVersion(Base, TimestampMixin):
   __tablename__ = "boq_versions"
-
   __table_args__ = (
-    Index("ix_boq_versions_org_project", "organization_id", "project_id"),
+   UniqueConstraint("id", "organization_id", name="uq_boq_versions_id_org"),
+   Index("ix_boq_versions_org_project", "organization_id", "project_id"),
+   Index("ix_boq_versions_project_lifecycle", "project_id", "lifecycle"),
+   
+   Index(
+    "uq_boq_versions_project_approved_engine", "project_id",
+    unique=True,
+    postgresql_where=text("origin = 'ENGINE' AND lifecycle IN ('APPROVED','ISSUED')"),
+  ),
+   
+    ForeignKeyConstraint(
+      ["calculation_run_id", "organization_id"],
+      ["calculation_runs.id", "calculation_runs.organization_id"],
+      name="fk_boq_versions_calculation_run_tenant",
+    ),
+    
+    CheckConstraint(f"lifecycle IN ({_LIFECYCLES})", name="ck_boq_versions_lifecycle"),
+    CheckConstraint(f"origin IN ({_VERSION_ORIGINS})", name="ck_boq_versions_origin"),
+    
+    CheckConstraint(
+      "lifecycle <> 'ISSUED' OR snapshot_id IS NOT NULL",
+      name="ck_boq_versions_issued_has_snapshot",
+    ),
   )
 
   id: Mapped[UUID] = mapped_column(
@@ -443,6 +541,43 @@ class BOQVersion(Base, TimestampMixin):
     default=dict,
     server_default=text("'{}'::jsonb"),
   )
+  
+  lifecycle: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=BOQLifecycle.DRAFT.value,
+    server_default="DRAFT",
+  )
+
+  origin: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=BOQVersionOrigin.LEGACY.value,
+    server_default="LEGACY",
+  )
+
+  calculation_run_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+
+  snapshot_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("boq_snapshots.id", ondelete="SET NULL", name="fk_boq_versions_snapshot_id", use_alter=True),
+    nullable=True,
+  )
+
+  approved_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_boq_versions_approved_by"),
+    nullable=True,
+  )
+  approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+  issued_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_boq_versions_issued_by"),
+    nullable=True,
+  )
+  
+  issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
   drawing: Mapped["Drawing | None"] = relationship(
     "Drawing",
@@ -457,10 +592,35 @@ class BOQVersion(Base, TimestampMixin):
 
 class BOQItem(Base, TimestampMixin):
   __tablename__ = "boq_items"
-
+  
   __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_boq_items_id_org"),
     Index("ix_boq_items_version", "boq_version_id"),
     Index("ix_boq_items_org_status", "organization_id", "status"),
+    Index("ix_boq_items_org_version_work_item", "organization_id", "boq_version_id", "work_item_code"),
+    
+    Index(
+      "uq_boq_items_version_item_key", "boq_version_id", "item_key",
+      unique=True,
+      postgresql_where=text("item_key IS NOT NULL"),
+    ),
+    
+    ForeignKeyConstraint(
+      ["calculation_run_id", "organization_id"],
+      ["calculation_runs.id", "calculation_runs.organization_id"],
+      name="fk_boq_items_calculation_run_tenant",
+    ),
+    
+    CheckConstraint(f"source_kind IN ({_ITEM_SOURCES})", name="ck_boq_items_source_kind"),
+    CheckConstraint(f"review_status IN ({_ITEM_REVIEW_STATUSES})", name="ck_boq_items_review_status"),
+    
+    CheckConstraint(
+      f"canonical_unit IS NULL OR canonical_unit IN ({_CANONICAL_UNITS})",
+      name="ck_boq_items_canonical_unit",
+    ),
+    
+    CheckConstraint("is_manual = (source_kind = 'MANUAL')", name="ck_boq_items_manual_consistent"),
+    CheckConstraint("net_quantity IS NULL OR net_quantity >= 0", name="ck_boq_items_net_non_negative"),
   )
 
   id: Mapped[UUID] = mapped_column(
@@ -582,12 +742,55 @@ class BOQItem(Base, TimestampMixin):
   gross_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
   net_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
   waste_factor_applied: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
+  
   source_element_count: Mapped[int] = mapped_column(
     Integer,
     nullable=False,
     default=0,
     server_default=text("0"),
   )
+  
+  item_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL", name="fk_boq_items_level_id"),
+    nullable=True,
+  )
+  material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+  canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
+
+  adjustment_total: Mapped[Decimal] = mapped_column(
+    Numeric(18, 4),
+    nullable=False, default=Decimal("0"),
+    server_default=text("0"),
+  )
+
+  review_status: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=ItemReviewStatus.OK.value,
+    server_default="OK",
+  )
+
+  source_kind: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=BOQItemSourceKind.LEGACY.value,
+    server_default="LEGACY",
+  )
+  
+  is_manual: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default=text("false"),
+  )
+
+  calculation_run_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  engine_version: Mapped[str | None] = mapped_column(String(30), nullable=True)
 
 class MaterialLibrary(Base, TimestampMixin):
   __tablename__ = "material_library"
@@ -1703,3 +1906,395 @@ class StagedLedgerDeduction(_DeductionColumns, Base, TimestampMixin):
   )
 
   stage: Mapped[str] = mapped_column(String(40), nullable=False)
+  
+class BOQItemLedgerLink(Base, TimestampMixin):
+  __tablename__ = "boq_item_ledger_links"
+
+  __table_args__ = (
+    UniqueConstraint("boq_item_id", "ledger_id", name="uq_boq_item_ledger_links_item_ledger"),
+    UniqueConstraint("boq_version_id", "ledger_id", name="uq_boq_item_ledger_links_version_ledger"),
+    
+    ForeignKeyConstraint(
+      ["boq_item_id", "organization_id"], ["boq_items.id", "boq_items.organization_id"],
+      ondelete="CASCADE", name="fk_boq_item_ledger_links_item_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["boq_version_id", "organization_id"], ["boq_versions.id", "boq_versions.organization_id"],
+      ondelete="CASCADE", name="fk_boq_item_ledger_links_version_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["ledger_id", "organization_id"], ["quantity_ledger.id", "quantity_ledger.organization_id"],
+      ondelete="CASCADE", name="fk_boq_item_ledger_links_ledger_tenant",
+    ),
+    
+    Index("ix_boq_item_ledger_links_ledger", "ledger_id"),
+    CheckConstraint("quantity_contributed >= 0", name="ck_boq_item_ledger_links_non_negative"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  boq_version_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  boq_item_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  ledger_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  quantity_contributed: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
+
+class BOQItemAdjustment(Base, TimestampMixin):
+  __tablename__ = "boq_item_adjustments"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_boq_item_adjustments_id_org"),
+    
+    ForeignKeyConstraint(
+      ["boq_item_id", "organization_id"], ["boq_items.id", "boq_items.organization_id"],
+      ondelete="CASCADE", name="fk_boq_item_adjustments_item_tenant",
+    ),
+    Index("ix_boq_item_adjustments_item", "boq_item_id"),
+    
+    Index(
+      "uq_boq_item_adjustments_active_replace", "boq_item_id",
+      unique=True,
+      postgresql_where=text("kind = 'REPLACE' AND revoked_at IS NULL"),
+    ),
+    
+    CheckConstraint(f"kind IN ({_ADJUSTMENT_KINDS})", name="ck_boq_item_adjustments_kind"),
+    CheckConstraint("char_length(btrim(reason)) > 0", name="ck_boq_item_adjustments_reason"),
+    CheckConstraint("kind <> 'REPLACE' OR value >= 0", name="ck_boq_item_adjustments_replace_non_negative"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  boq_item_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+
+  kind: Mapped[str] = mapped_column(String(10), nullable=False)
+  value: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+  reason: Mapped[str] = mapped_column(Text, nullable=False)
+
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_boq_item_adjustments_created_by"),
+    nullable=True,
+  )
+  
+  revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+  revoked_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_boq_item_adjustments_revoked_by"),
+    nullable=True,
+  )
+  revoke_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+class BOQSnapshot(Base, TimestampMixin):
+  __tablename__ = "boq_snapshots"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_boq_snapshots_id_org"),
+    UniqueConstraint("boq_version_id", "version_no", name="uq_boq_snapshots_version_no"),
+    
+    ForeignKeyConstraint(
+      ["boq_version_id", "organization_id"], ["boq_versions.id", "boq_versions.organization_id"],
+      ondelete="CASCADE", name="fk_boq_snapshots_version_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["calculation_run_id", "organization_id"],
+      ["calculation_runs.id", "calculation_runs.organization_id"],
+      name="fk_boq_snapshots_run_tenant",
+    ),
+    
+    Index("ix_boq_snapshots_version", "boq_version_id"),
+    CheckConstraint("version_no >= 1", name="ck_boq_snapshots_version_no"),
+    CheckConstraint("item_count >= 0", name="ck_boq_snapshots_item_count"),
+    CheckConstraint("char_length(content_hash) = 64", name="ck_boq_snapshots_hash_len"),
+    CheckConstraint(f"purpose IN ({_SNAPSHOT_PURPOSES})", name="ck_boq_snapshots_purpose"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  boq_version_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  version_no: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+  
+  purpose: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=SnapshotPurpose.ISSUE.value,
+  )
+
+  content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+  item_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  
+  totals: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+
+  calculation_run_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  
+  rule_set_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="SET NULL", name="fk_boq_snapshots_rule_set_id"),
+    nullable=True,
+  )
+  rule_set_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  rule_set_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  convention_code: Mapped[str | None] = mapped_column(String(80), nullable=True)
+  engine_version: Mapped[str | None] = mapped_column(String(30), nullable=True)
+
+  note: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_boq_snapshots_created_by"),
+    nullable=True,
+  )
+
+class BOQSnapshotItem(Base, TimestampMixin):
+  __tablename__ = "boq_snapshot_items"
+
+  __table_args__ = (
+    UniqueConstraint("snapshot_id", "line_no", name="uq_boq_snapshot_items_line"),
+    
+    ForeignKeyConstraint(
+      ["snapshot_id", "organization_id"], ["boq_snapshots.id", "boq_snapshots.organization_id"],
+      ondelete="CASCADE", name="fk_boq_snapshot_items_snapshot_tenant",
+    ),
+    
+    Index("ix_boq_snapshot_items_snapshot", "snapshot_id"),
+    Index("ix_boq_snapshot_items_source", "source_item_id"),
+    CheckConstraint("line_no >= 1", name="ck_boq_snapshot_items_line_no"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  snapshot_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  line_no: Mapped[int] = mapped_column(Integer, nullable=False)
+
+  source_item_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  item_key: Mapped[str | None] = mapped_column(String(300), nullable=True)
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  material_name: Mapped[str] = mapped_column(String(300), nullable=False)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True)
+  category: Mapped[str | None] = mapped_column(String(150), nullable=True)
+  item_type: Mapped[str] = mapped_column(String(20), nullable=False)
+  level_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
+
+  net_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+  adjustment_total: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, default=Decimal("0"))
+  quantity: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
+  waste_factor_applied: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
+  gross_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+
+  unit_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+  rate_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
+
+  confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
+  review_status: Mapped[str] = mapped_column(String(20), nullable=False, default="OK")
+  source_kind: Mapped[str] = mapped_column(String(20), nullable=False, default="MODEL")
+  is_manual: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  ledger_row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  ledger_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+class ReviewIssue(Base, TimestampMixin):
+  __tablename__ = "review_issues"
+
+  __table_args__ = (
+    
+    ForeignKeyConstraint(
+      ["boq_version_id", "organization_id"], ["boq_versions.id", "boq_versions.organization_id"],
+      ondelete="CASCADE", name="fk_review_issues_version_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["calculation_run_id", "organization_id"],
+      ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_review_issues_run_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["ledger_id", "organization_id"], ["quantity_ledger.id", "quantity_ledger.organization_id"],
+      ondelete="CASCADE", name="fk_review_issues_ledger_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["boq_item_id", "organization_id"], ["boq_items.id", "boq_items.organization_id"],
+      ondelete="CASCADE", name="fk_review_issues_item_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["adjustment_id", "organization_id"],
+      ["boq_item_adjustments.id", "boq_item_adjustments.organization_id"],
+      ondelete="CASCADE", name="fk_review_issues_adjustment_tenant",
+    ),
+    
+    Index("ix_review_issues_org_project_status", "organization_id", "project_id", "status"),
+    Index("ix_review_issues_version_status", "boq_version_id", "status"),
+    
+    Index(
+      "ix_review_issues_open_blocking", "boq_version_id",
+      postgresql_where=text("status = 'OPEN' AND blocks <> 'NONE'"),
+    ),
+    
+    Index(
+      "uq_review_issues_version_dedupe", "boq_version_id", "dedupe_key",
+      unique=True, postgresql_where=text("boq_version_id IS NOT NULL"),
+    ),
+    
+    Index(
+      "uq_review_issues_project_dedupe", "project_id", "dedupe_key",
+      unique=True, postgresql_where=text("boq_version_id IS NULL"),
+    ),
+    
+    CheckConstraint(f"severity IN ({_REVIEW_SEVERITIES})", name="ck_review_issues_severity"),
+    CheckConstraint(f"blocks IN ({_REVIEW_BLOCKS})", name="ck_review_issues_blocks"),
+    CheckConstraint(f"status IN ({_REVIEW_STATUSES})", name="ck_review_issues_status"),
+    CheckConstraint("status = 'OPEN' OR resolved_at IS NOT NULL", name="ck_review_issues_resolved_at"),
+    
+    CheckConstraint(
+      "status <> 'WAIVED' OR char_length(btrim(coalesce(resolution_note, ''))) > 0",
+      name="ck_review_issues_waiver_needs_reason",
+    ),
+    
+    CheckConstraint(
+      "(CASE WHEN drawing_element_id IS NULL THEN 0 ELSE 1 END) "
+      "+ (CASE WHEN ledger_id IS NULL THEN 0 ELSE 1 END) "
+      "+ (CASE WHEN boq_item_id IS NULL THEN 0 ELSE 1 END) "
+      "+ (CASE WHEN adjustment_id IS NULL THEN 0 ELSE 1 END) <= 1",
+      name="ck_review_issues_single_target",
+    ),
+  )
+
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
+  
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE", name="fk_review_issues_project_id"),
+    nullable=False,
+  )
+  
+  boq_version_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  calculation_run_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+
+  drawing_element_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawing_elements.id", ondelete="SET NULL", name="fk_review_issues_element_id"),
+    nullable=True,
+  )
+  
+  ledger_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  boq_item_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  adjustment_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+
+  code: Mapped[str] = mapped_column(String(60), nullable=False)
+  
+  severity: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=ReviewSeverity.WARNING.value,
+  )
+  
+  blocks: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=ReviewBlocks.NONE.value, server_default="NONE",
+  )
+  
+  message: Mapped[str] = mapped_column(Text, nullable=False)
+  suggested_fix: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+  details: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  dedupe_key: Mapped[str] = mapped_column(String(200), nullable=False)
+
+  status: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=ReviewStatus.OPEN.value,
+    server_default="OPEN",
+  )
+  
+  resolution_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+  resolved_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_review_issues_resolved_by"),
+    nullable=True,
+  )
+  
+  resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+class ExportJob(Base, TimestampMixin):
+  __tablename__ = "export_jobs"
+
+  __table_args__ = (
+    ForeignKeyConstraint(
+      ["boq_version_id", "organization_id"], ["boq_versions.id", "boq_versions.organization_id"],
+      ondelete="CASCADE", name="fk_export_jobs_version_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["snapshot_id", "organization_id"], ["boq_snapshots.id", "boq_snapshots.organization_id"],
+      ondelete="CASCADE", name="fk_export_jobs_snapshot_tenant",
+    ),
+    
+    Index("ix_export_jobs_org_version", "organization_id", "boq_version_id"),
+    Index("ix_export_jobs_snapshot", "snapshot_id"),
+    CheckConstraint(f"kind IN ({_EXPORT_KINDS})", name="ck_export_jobs_kind"),
+    CheckConstraint(f"format IN ({_EXPORT_FORMATS})", name="ck_export_jobs_format"),
+    CheckConstraint(f"status IN ({_EXPORT_STATUSES})", name="ck_export_jobs_status"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  boq_version_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  snapshot_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+
+  kind: Mapped[str] = mapped_column(String(30), nullable=False)
+  format: Mapped[str] = mapped_column(String(10), nullable=False)
+  
+  status: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=ExportStatus.QUEUED.value,
+    server_default="QUEUED",
+  )
+  
+  parameters: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  requested_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_export_jobs_requested_by"),
+    nullable=True,
+  )
+  
+  storage_key: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+  file_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+  error_code: Mapped[str | None] = mapped_column(String(60), nullable=True)
+  error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+  started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
