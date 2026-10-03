@@ -2,29 +2,48 @@ import { useEffect, useState } from "react";
 import {KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { Link, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { resetPassword } from "../api/client";
+import LanguageSwitcher from "../components/LanguageSwitcher";
+
+const commonPasswords = new Set([
+  "password",
+  "password123",
+  "password123!",
+  "admin123",
+  "admin123!",
+  "qwerty123",
+  "12345678",
+  "123456789",
+  "1234567890",
+]);
 
 const passwordRules = [
-  { label: "12–128 characters", test: (value: string) => value.length >= 12 && value.length <= 128 },
-  { label: "An uppercase letter", test: (value: string) => /[A-Z]/.test(value) },
-  { label: "A lowercase letter", test: (value: string) => /[a-z]/.test(value) },
-  { label: "A number", test: (value: string) => /\d/.test(value) },
-  { label: "A symbol", test: (value: string) => /[^\w\s]/.test(value) },
   {
-    label: "Not a common password",
+    key: "length",
+    test: (value: string) => value.length >= 12 && value.length <= 128,
+  },
+  {
+    key: "uppercase",
+    test: (value: string) => /[A-Z]/.test(value),
+  },
+  {
+    key: "lowercase",
+    test: (value: string) => /[a-z]/.test(value),
+  },
+  {
+    key: "number",
+    test: (value: string) => /\d/.test(value),
+  },
+  {
+    key: "symbol",
+    test: (value: string) => /[^\w\s]/.test(value),
+  },
+  {
+    key: "notCommon",
     test: (value: string) =>
-      !new Set([
-        "password",
-        "password123",
-        "password123!",
-        "admin123",
-        "admin123!",
-        "qwerty123",
-        "12345678",
-        "123456789",
-        "1234567890",
-      ]).has(value.toLowerCase()),
+      value.length > 0 && !commonPasswords.has(value.toLowerCase()),
   },
 ];
 
@@ -33,6 +52,9 @@ function passwordIsStrong(value: string) {
 }
 
 export default function ResetPasswordScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   const params = useLocalSearchParams<{ token?: string | string[] }>();
   const routeToken = Array.isArray(params.token)
     ? params.token[0] ?? ""
@@ -46,32 +68,28 @@ export default function ResetPasswordScreen() {
   const [successMessage, setSuccessMessage] = useState("");
 
   useEffect(() => {
-    if (routeToken) {
-      setToken(routeToken);
-    }
+    if (routeToken) setToken(routeToken);
   }, [routeToken]);
 
   const passwordsMatch = password === confirmation;
   const strongPassword = passwordIsStrong(password);
 
   async function handleSubmit() {
-    if (busy) {
-      return;
-    }
+    if (busy) return;
 
     setError("");
     setSuccessMessage("");
 
     if (!token.trim()) {
-      setError("The reset link is missing its token. Request a new link.");
+      setError(t("resetPassword.tokenMissing"));
       return;
     }
     if (!strongPassword) {
-      setError("Meet all password requirements before continuing.");
+      setError(t("resetPassword.requirementsError"));
       return;
     }
     if (!passwordsMatch) {
-      setError("The passwords do not match.");
+      setError(t("resetPassword.passwordMismatch"));
       return;
     }
 
@@ -83,12 +101,16 @@ export default function ResetPasswordScreen() {
         password,
         confirmation,
       );
-      setSuccessMessage(result.message || "Your password has been reset.");
+      setSuccessMessage(
+        result.message || t("resetPassword.success"),
+      );
       setPassword("");
       setConfirmation("");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Password reset failed. Try again.",
+        err instanceof Error
+          ? err.message
+          : t("resetPassword.failure"),
       );
     } finally {
       setBusy(false);
@@ -97,7 +119,7 @@ export default function ResetPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F3EEE4" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <KeyboardAvoidingView
         style={styles.keyboard}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -108,100 +130,128 @@ export default function ResetPasswordScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <Text style={styles.eyebrow}>ACCOUNT SECURITY</Text>
-            <Text style={styles.title}>
-              {successMessage ? "Password updated." : "Choose a new password."}
+            <View style={[styles.topRow, isUrdu && styles.rtlRow]}>
+              <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
+                {t("resetPassword.eyebrow")}
+              </Text>
+              <LanguageSwitcher />
+            </View>
+
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {successMessage
+                ? t("resetPassword.updatedTitle")
+                : t("resetPassword.title")}
             </Text>
 
             {successMessage ? (
               <View style={styles.successNotice} accessibilityRole="alert">
-                <Text style={styles.successText}>{successMessage}</Text>
+                <Text style={[styles.successText, isUrdu && styles.rtlText]}>
+                  {successMessage}
+                </Text>
               </View>
             ) : (
               <>
-                <Text style={styles.description}>
-                  Use the reset link from your email, then create a new password
-                  for your Trace account.
+                <Text style={[styles.description, isUrdu && styles.rtlText]}>
+                  {t("resetPassword.description")}
                 </Text>
 
                 {!routeToken ? (
                   <>
-                    <Text style={styles.label}>Reset token</Text>
+                    <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                      {t("resetPassword.tokenLabel")}
+                    </Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, isUrdu && styles.rtlText]}
                       value={token}
                       onChangeText={setToken}
                       autoCapitalize="none"
                       autoCorrect={false}
-                      placeholder="Paste the token from your email"
-                      placeholderTextColor="#8C806E"
+                      placeholder={t("resetPassword.tokenPlaceholder")}
+                      placeholderTextColor={COLORS.muted}
                       editable={!busy}
-                      accessibilityLabel="Password reset token"
+                      accessibilityLabel={t("resetPassword.tokenLabel")}
+                      textAlign={isUrdu ? "right" : "left"}
                     />
                   </>
                 ) : null}
 
                 {error ? (
                   <View style={styles.errorNotice} accessibilityRole="alert">
-                    <Text style={styles.errorText}>{error}</Text>
+                    <Text style={[styles.errorText, isUrdu && styles.rtlText]}>
+                      {error}
+                    </Text>
                   </View>
                 ) : null}
 
-                <Text style={styles.label}>New password</Text>
+                <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                  {t("resetPassword.newPassword")}
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, isUrdu && styles.rtlText]}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry
                   autoComplete="new-password"
                   textContentType="newPassword"
-                  placeholder="Create a strong password"
-                  placeholderTextColor="#8C806E"
+                  placeholder={t("resetPassword.passwordPlaceholder")}
+                  placeholderTextColor={COLORS.muted}
                   editable={!busy}
                   returnKeyType="next"
+                  textAlign={isUrdu ? "right" : "left"}
                 />
 
                 {password ? (
                   <View style={styles.passwordCard}>
-                    <Text style={styles.passwordTitle}>PASSWORD REQUIREMENTS</Text>
+                    <Text
+                      style={[styles.passwordTitle, isUrdu && styles.rtlText]}
+                    >
+                      {t("resetPassword.passwordRequirements")}
+                    </Text>
                     {passwordRules.map((rule) => {
                       const passed = rule.test(password);
+
                       return (
                         <Text
-                          key={rule.label}
+                          key={rule.key}
                           style={[
                             styles.passwordRule,
                             passed && styles.passwordRulePassed,
+                            isUrdu && styles.rtlText,
                           ]}
                         >
-                          {passed ? "✓" : "○"} {rule.label}
+                          {passed ? "✓" : "○"}{" "}
+                          {t(`resetPassword.rule.${rule.key}`)}
                         </Text>
                       );
                     })}
                   </View>
                 ) : null}
 
-                <Text style={styles.label}>Confirm new password</Text>
+                <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                  {t("resetPassword.confirmPassword")}
+                </Text>
                 <TextInput
                   style={[
                     styles.input,
                     confirmation && !passwordsMatch && styles.inputError,
+                    isUrdu && styles.rtlText,
                   ]}
                   value={confirmation}
                   onChangeText={setConfirmation}
                   secureTextEntry
                   autoComplete="new-password"
                   textContentType="newPassword"
-                  placeholder="Repeat your new password"
-                  placeholderTextColor="#8C806E"
+                  placeholder={t("resetPassword.confirmPlaceholder")}
+                  placeholderTextColor={COLORS.muted}
                   editable={!busy}
                   returnKeyType="go"
                   onSubmitEditing={() => void handleSubmit()}
+                  textAlign={isUrdu ? "right" : "left"}
                 />
 
                 {confirmation && !passwordsMatch ? (
-                  <Text style={styles.fieldError}>
-                    Passwords do not match.
+                  <Text style={[styles.fieldError, isUrdu && styles.rtlText]}>
+                    {t("resetPassword.passwordMismatch")}
                   </Text>
                 ) : null}
 
@@ -223,16 +273,27 @@ export default function ResetPasswordScreen() {
                     !passwordsMatch
                   }
                 >
-                  <Text style={styles.primaryButtonText}>
-                    {busy ? "Updating password…" : "Reset password"}
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      isUrdu && styles.rtlText,
+                    ]}
+                  >
+                    {busy
+                      ? t("resetPassword.updating")
+                      : t("resetPassword.submit")}
                   </Text>
                 </Pressable>
 
-                <View style={styles.footer}>
-                  <Text style={styles.footerText}>Need a new reset link?</Text>
+                <View style={[styles.footer, isUrdu && styles.rtlRow]}>
+                  <Text style={[styles.footerText, isUrdu && styles.rtlText]}>
+                    {t("resetPassword.needNewLink")}
+                  </Text>
                   <Link href="/forgot-password" asChild>
                     <Pressable accessibilityRole="link">
-                      <Text style={styles.link}>Request one</Text>
+                      <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                        {t("resetPassword.requestLink")}
+                      </Text>
                     </Pressable>
                   </Link>
                 </View>
@@ -241,14 +302,26 @@ export default function ResetPasswordScreen() {
 
             {successMessage ? (
               <Link href="/login" asChild>
-                <Pressable style={styles.primaryButton} accessibilityRole="button">
-                  <Text style={styles.primaryButtonText}>Return to sign in</Text>
+                <Pressable
+                  style={styles.primaryButton}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      isUrdu && styles.rtlText,
+                    ]}
+                  >
+                    {t("resetPassword.returnToSignIn")}
+                  </Text>
                 </Pressable>
               </Link>
             ) : (
               <Link href="/login" asChild>
-                <Pressable style={styles.backButton} accessibilityRole="link">
-                  <Text style={styles.backText}>Back to sign in</Text>
+                <Pressable accessibilityRole="link" style={styles.backButton}>
+                  <Text style={[styles.backText, isUrdu && styles.rtlText]}>
+                    {t("resetPassword.backToSignIn")}
+                  </Text>
                 </Pressable>
               </Link>
             )}
@@ -259,32 +332,52 @@ export default function ResetPasswordScreen() {
   );
 }
 
+const COLORS = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#FBF8F2",
+  text: "#191410",
+  secondary: "#5C5347",
+  muted: "#8C806E",
+  border: "#E4D9C4",
+  gold: "#B98626",
+  goldButton: "#D9A441",
+  navy: "#080D18",
+  green: "#1E8055",
+  greenBackground: "#E4F5EC",
+  red: "#C24A3A",
+  redBackground: "#F9E5DF",
+};
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F3EEE4" },
+  screen: { flex: 1, backgroundColor: COLORS.background },
   keyboard: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: "center", padding: 22 },
   content: { width: "100%", maxWidth: 480, alignSelf: "center" },
-  eyebrow: { marginBottom: 8, color: "#B98626", fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
-  title: { color: "#191410", fontSize: 30, fontWeight: "800" },
-  description: { marginTop: 9, marginBottom: 18, color: "#5C5347", fontSize: 14, lineHeight: 21 },
-  label: { marginTop: 14, marginBottom: 7, color: "#191410", fontSize: 13, fontWeight: "700" },
-  input: {minHeight: 48, borderWidth: 1, borderColor: "#E4D9C4", borderRadius: 8, backgroundColor: "#FFFFFF", paddingHorizontal: 13, color: "#191410", fontSize: 15,},
-  inputError: { borderColor: "#C24A3A" },
-  fieldError: { marginTop: 5, color: "#C24A3A", fontSize: 12 },
-  passwordCard: { marginTop: 9, borderWidth: 1, borderColor: "#E4D9C4", borderRadius: 9, backgroundColor: "#FBF8F2", padding: 12 },
-  passwordTitle: { marginBottom: 5, color: "#5C5347", fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
-  passwordRule: { marginTop: 4, color: "#8C806E", fontSize: 12 },
-  passwordRulePassed: { color: "#1E9D63", fontWeight: "700" },
-  errorNotice: { marginTop: 12, borderRadius: 8, backgroundColor: "#F9E5DF", padding: 12 },
-  errorText: { color: "#C24A3A", fontSize: 13, lineHeight: 19 },
-  successNotice: { marginTop: 15, borderRadius: 8, backgroundColor: "#E4F5EC", padding: 13 },
-  successText: { color: "#1E9D63", fontSize: 13, lineHeight: 19 },
-  primaryButton: { minHeight: 50, alignItems: "center", justifyContent: "center", marginTop: 20, borderRadius: 8, backgroundColor: "#D9A441", paddingHorizontal: 16 },
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 },
+  rtlRow: { flexDirection: "row-reverse" },
+  eyebrow: { marginBottom: 8, color: COLORS.gold, fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
+  title: { color: COLORS.text, fontSize: 29, fontWeight: "800" },
+  description: { marginTop: 9, marginBottom: 18, color: COLORS.secondary, fontSize: 14, lineHeight: 21 },
+  label: { marginTop: 14, marginBottom: 7, color: COLORS.text, fontSize: 13, fontWeight: "700" },
+  input: { minHeight: 48, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, backgroundColor: COLORS.surface, paddingHorizontal: 13, color: COLORS.text, fontSize: 15 },
+  inputError: { borderColor: COLORS.red },
+  fieldError: { marginTop: 5, color: COLORS.red, fontSize: 12 },
+  passwordCard: { marginTop: 9, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, backgroundColor: COLORS.surfaceMuted, padding: 12 },
+  passwordTitle: { marginBottom: 5, color: COLORS.secondary, fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
+  passwordRule: { marginTop: 4, color: COLORS.muted, fontSize: 12 },
+  passwordRulePassed: { color: COLORS.green, fontWeight: "700" },
+  errorNotice: { marginTop: 12, borderWidth: 1, borderColor: "rgba(194,74,58,0.25)", borderRadius: 10, backgroundColor: COLORS.redBackground, padding: 12 },
+  errorText: { color: COLORS.red, fontSize: 13, lineHeight: 19 },
+  successNotice: { marginTop: 15, borderWidth: 1, borderColor: "#B7DDC7", borderRadius: 10, backgroundColor: COLORS.greenBackground, padding: 13 },
+  successText: { color: COLORS.green, fontSize: 13, lineHeight: 19 },
+  primaryButton: { minHeight: 50, alignItems: "center", justifyContent: "center", marginTop: 20, borderRadius: 10, backgroundColor: COLORS.goldButton, paddingHorizontal: 16 },
   disabledButton: { opacity: 0.5 },
-  primaryButtonText: { color: "#080D18", fontSize: 14, fontWeight: "800" },
-  footer: { flexDirection: "row", justifyContent: "center", gap: 5, marginTop: 22 },
-  footerText: { color: "#5C5347", fontSize: 12 },
-  link: { color: "#B98626", fontSize: 12, fontWeight: "800" },
+  primaryButtonText: { color: COLORS.navy, fontSize: 14, fontWeight: "800", textAlign: "center" },
+  footer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 5, marginTop: 22 },
+  footerText: { color: COLORS.secondary, fontSize: 12 },
+  link: { color: COLORS.gold, fontSize: 12, fontWeight: "800" },
   backButton: { alignItems: "center", paddingVertical: 16 },
-  backText: { color: "#8C806E", fontSize: 12, fontWeight: "700" },
+  backText: { color: COLORS.muted, fontSize: 12, fontWeight: "700" },
+  rtlText: { textAlign: "right", writingDirection: "rtl" },
 });

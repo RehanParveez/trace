@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
-import {ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View,
+import {ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, type TextInputProps, View,
 } from "react-native";
 import { Link, useLocalSearchParams } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { previewInvitation, register } from "../api/client";
 import type { InvitationPreview } from "../api/types";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 const commonPasswords = new Set([
   "password",
@@ -20,27 +22,27 @@ const commonPasswords = new Set([
 
 const passwordRules = [
   {
-    label: "12–128 characters",
+    key: "length",
     test: (value: string) => value.length >= 12 && value.length <= 128,
   },
   {
-    label: "An uppercase letter",
+    key: "uppercase",
     test: (value: string) => /[A-Z]/.test(value),
   },
   {
-    label: "A lowercase letter",
+    key: "lowercase",
     test: (value: string) => /[a-z]/.test(value),
   },
   {
-    label: "A number",
+    key: "number",
     test: (value: string) => /\d/.test(value),
   },
   {
-    label: "A symbol",
+    key: "symbol",
     test: (value: string) => /[^\w\s]/.test(value),
   },
   {
-    label: "Not a common password",
+    key: "notCommon",
     test: (value: string) =>
       value.length > 0 && !commonPasswords.has(value.toLowerCase()),
   },
@@ -51,6 +53,9 @@ function passwordIsStrong(value: string) {
 }
 
 export default function RegisterScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   const params = useLocalSearchParams<{ token?: string | string[] }>();
   const invitationToken = Array.isArray(params.token)
     ? params.token[0] ?? ""
@@ -89,17 +94,15 @@ export default function RegisterScreen() {
     previewInvitation(invitationToken)
       .then((result) => {
         if (!active) return;
-
         setInvitation(result);
         setEmail(result.email);
       })
       .catch((err: unknown) => {
         if (!active) return;
-
         setInvitationError(
           err instanceof Error
             ? err.message
-            : "This invitation link is invalid or has expired.",
+            : t("register.invitationFailure"),
         );
       })
       .finally(() => {
@@ -109,7 +112,7 @@ export default function RegisterScreen() {
     return () => {
       active = false;
     };
-  }, [invitationToken]);
+  }, [invitationToken, t]);
 
   const passwordsMatch = password === confirmation;
   const strongPassword = passwordIsStrong(password);
@@ -148,12 +151,14 @@ export default function RegisterScreen() {
       setRegisteredEmail(normalizedEmail);
       setVerificationRequired(result.verification_required);
       setSuccessMessage(
-        result.message || "Your Trace account has been created.",
+        result.message || t("register.accountCreatedMessage"),
       );
       setPassword("");
       setConfirmation("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed.");
+      setError(
+        err instanceof Error ? err.message : t("register.failure"),
+      );
     } finally {
       setBusy(false);
     }
@@ -162,56 +167,87 @@ export default function RegisterScreen() {
   if (successMessage) {
     return (
       <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F3EEE4" />
-        <View style={styles.successContent}>
-          <View style={styles.brandMark}>
-            <Text style={styles.brandMarkText}>T</Text>
-          </View>
+        <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+        <ScrollView
+          contentContainerStyle={styles.successScroll}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.successContent}>
+            <View style={[styles.successTopRow, isUrdu && styles.rtlRow]}>
+              <View style={styles.brandMark}>
+                <Text style={styles.brandMarkText}>T</Text>
+              </View>
+              <LanguageSwitcher />
+            </View>
 
-          <Text style={styles.eyebrow}>ACCOUNT CREATED</Text>
-          <Text style={styles.title}>
-            {verificationRequired ? "Check your email." : "You’re all set."}
-          </Text>
-          <Text style={styles.description}>{successMessage}</Text>
-          <Text style={styles.emailNotice}>{registeredEmail}</Text>
-
-          {verificationRequired ? (
-            <Link
-              href={{
-                pathname: "/verify-email",
-                params: { email: registeredEmail },
-              }}
-              asChild
+            <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
+              {t("register.accountCreatedEyebrow")}
+            </Text>
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {verificationRequired
+                ? t("register.checkEmailTitle")
+                : t("register.allSetTitle")}
+            </Text>
+            <Text style={[styles.description, isUrdu && styles.rtlText]}>
+              {successMessage}
+            </Text>
+            <Text
+              style={[
+                styles.emailNotice,
+                isUrdu && styles.rtlText,
+              ]}
             >
-              <Pressable
-                style={styles.primaryButton}
-                accessibilityRole="button"
+              {registeredEmail}
+            </Text>
+
+            {verificationRequired ? (
+              <Link
+                href={{
+                  pathname: "/verify-email",
+                  params: { email: registeredEmail },
+                }}
+                asChild
               >
-                <Text style={styles.primaryButtonText}>
-                  Continue to email verification
-                </Text>
-              </Pressable>
-            </Link>
-          ) : (
-            <Link href="/login" asChild>
-              <Pressable
-                style={styles.primaryButton}
-                accessibilityRole="button"
-              >
-                <Text style={styles.primaryButtonText}>
-                  Continue to sign in
-                </Text>
-              </Pressable>
-            </Link>
-          )}
-        </View>
+                <Pressable
+                  style={styles.primaryButton}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      isUrdu && styles.rtlText,
+                    ]}
+                  >
+                    {t("register.continueToVerification")}
+                  </Text>
+                </Pressable>
+              </Link>
+            ) : (
+              <Link href="/login" asChild>
+                <Pressable
+                  style={styles.primaryButton}
+                  accessibilityRole="button"
+                >
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      isUrdu && styles.rtlText,
+                    ]}
+                  >
+                    {t("register.continueToSignIn")}
+                  </Text>
+                </Pressable>
+              </Link>
+            )}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F3EEE4" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <KeyboardAvoidingView
         style={styles.keyboard}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -222,162 +258,180 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <View style={styles.brandRow}>
-              <View style={styles.brandMark}>
-                <Text style={styles.brandMarkText}>T</Text>
+            <View style={[styles.topRow, isUrdu && styles.rtlRow]}>
+              <View style={[styles.brandRow, isUrdu && styles.rtlRow]}>
+                <View style={styles.brandMark}>
+                  <Text style={styles.brandMarkText}>T</Text>
+                </View>
+                <Text style={[styles.brand, isUrdu && styles.rtlText]}>
+                  {t("register.brand")}
+                </Text>
               </View>
-              <Text style={styles.brand}>Trace</Text>
+              <LanguageSwitcher />
             </View>
 
-            <Text style={styles.eyebrow}>
-              {invitationToken ? "ACCEPT INVITATION" : "CREATE WORKSPACE"}
+            <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
+              {t(
+                invitationToken
+                  ? "register.acceptInvitation"
+                  : "register.createWorkspace",
+              )}
             </Text>
-            <Text style={styles.title}>Start with a clear record.</Text>
-            <Text style={styles.description}>
-              Create your Trace account and bring your project information into
-              one workspace.
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {t("register.title")}
+            </Text>
+            <Text style={[styles.description, isUrdu && styles.rtlText]}>
+              {t("register.description")}
             </Text>
 
             {invitationLoading ? (
-              <View style={styles.infoNotice}>
-                <ActivityIndicator size="small" color="#3B7DC4" />
-                <Text style={styles.infoText}>Checking invitation…</Text>
+              <View style={[styles.infoNotice, isUrdu && styles.rtlRow]}>
+                <ActivityIndicator size="small" color={COLORS.info} />
+                <Text style={[styles.infoText, isUrdu && styles.rtlText]}>
+                  {t("register.checkingInvitation")}
+                </Text>
               </View>
             ) : null}
 
             {invitation ? (
               <View style={styles.infoNotice}>
-                <Text style={styles.infoText}>
-                  You’re joining {invitation.organization_name}
-                  {invitation.role_name ? ` as ${invitation.role_name}` : ""}.
+                <Text style={[styles.infoText, isUrdu && styles.rtlText]}>
+                  {t("register.joiningOrganization", {
+                    organization: invitation.organization_name,
+                    role: invitation.role_name
+                      ? t("register.asRole", {
+                          role: invitation.role_name,
+                        })
+                      : "",
+                  })}
                 </Text>
               </View>
             ) : null}
 
             {invitationError ? (
               <View style={styles.errorNotice} accessibilityLiveRegion="polite">
-                <Text style={styles.errorText}>{invitationError}</Text>
+                <Text style={[styles.errorText, isUrdu && styles.rtlText]}>
+                  {invitationError}
+                </Text>
               </View>
             ) : null}
 
             {error ? (
               <View style={styles.errorNotice} accessibilityLiveRegion="polite">
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={[styles.errorText, isUrdu && styles.rtlText]}>
+                  {error}
+                </Text>
               </View>
             ) : null}
 
-            <Text style={styles.label}>First name</Text>
-            <TextInput
-              style={styles.input}
+            <Field
+              label={t("register.firstName")}
               value={firstName}
               onChangeText={setFirstName}
+              placeholder={t("register.firstNamePlaceholder")}
               autoComplete="given-name"
               textContentType="givenName"
-              placeholder="First name"
-              placeholderTextColor="#8C806E"
               editable={!busy}
               returnKeyType="next"
+              isUrdu={isUrdu}
             />
 
-            <Text style={styles.label}>Last name</Text>
-            <TextInput
-              style={styles.input}
+            <Field
+              label={t("register.lastName")}
               value={lastName}
               onChangeText={setLastName}
+              placeholder={t("register.lastNamePlaceholder")}
               autoComplete="family-name"
               textContentType="familyName"
-              placeholder="Last name"
-              placeholderTextColor="#8C806E"
               editable={!busy}
               returnKeyType="next"
+              isUrdu={isUrdu}
             />
 
-            <Text style={styles.label}>Work email</Text>
-            <TextInput
-              style={styles.input}
+            <Field
+              label={t("register.workEmail")}
               value={email}
               onChangeText={setEmail}
+              placeholder={t("register.emailPlaceholder")}
               autoCapitalize="none"
               autoCorrect={false}
               autoComplete="email"
               textContentType="emailAddress"
               keyboardType="email-address"
-              placeholder="you@company.com"
-              placeholderTextColor="#8C806E"
               editable={!busy && !invitationToken}
               returnKeyType="next"
+              isUrdu={isUrdu}
             />
 
             {!invitationToken ? (
-              <>
-                <Text style={styles.label}>Organization name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={organizationName}
-                  onChangeText={setOrganizationName}
-                  placeholder="Your construction company"
-                  placeholderTextColor="#8C806E"
-                  editable={!busy}
-                  returnKeyType="next"
-                />
-              </>
+              <Field
+                label={t("register.organizationName")}
+                value={organizationName}
+                onChangeText={setOrganizationName}
+                placeholder={t("register.organizationPlaceholder")}
+                editable={!busy}
+                returnKeyType="next"
+                isUrdu={isUrdu}
+              />
             ) : null}
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
+            <Field
+              label={t("register.password")}
               value={password}
               onChangeText={setPassword}
+              placeholder={t("register.passwordPlaceholder")}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
-              placeholder="Create a strong password"
-              placeholderTextColor="#8C806E"
               editable={!busy}
               returnKeyType="next"
+              isUrdu={isUrdu}
             />
 
             {password ? (
               <View style={styles.passwordCard}>
-                <Text style={styles.passwordTitle}>PASSWORD REQUIREMENTS</Text>
+                <Text style={[styles.passwordTitle, isUrdu && styles.rtlText]}>
+                  {t("register.passwordRequirements")}
+                </Text>
                 {passwordRules.map((rule) => {
                   const passed = rule.test(password);
 
                   return (
                     <Text
-                      key={rule.label}
+                      key={rule.key}
                       style={[
                         styles.passwordRule,
                         passed && styles.passwordRulePassed,
+                        isUrdu && styles.rtlText,
                       ]}
                     >
-                      {passed ? "✓" : "○"} {rule.label}
+                      {passed ? "✓" : "○"}{" "}
+                      {t(`register.passwordRule.${rule.key}`)}
                     </Text>
                   );
                 })}
               </View>
             ) : null}
 
-            <Text style={styles.label}>Confirm password</Text>
-            <TextInput
-              style={[
-                styles.input,
-                confirmation && !passwordsMatch && styles.inputError,
-              ]}
+            <Field
+              label={t("register.confirmPassword")}
               value={confirmation}
               onChangeText={setConfirmation}
+              placeholder={t("register.confirmPasswordPlaceholder")}
               secureTextEntry
               autoComplete="new-password"
               textContentType="newPassword"
-              placeholder="Repeat your password"
-              placeholderTextColor="#8C806E"
               editable={!busy}
               returnKeyType="go"
               onSubmitEditing={() => void handleRegister()}
+              isUrdu={isUrdu}
+              inputError={Boolean(confirmation && !passwordsMatch)}
             />
 
             {confirmation && !passwordsMatch ? (
-              <Text style={styles.fieldError}>Passwords do not match.</Text>
+              <Text style={[styles.fieldError, isUrdu && styles.rtlText]}>
+                {t("register.passwordMismatch")}
+              </Text>
             ) : null}
 
             <Pressable
@@ -389,16 +443,27 @@ export default function RegisterScreen() {
               onPress={() => void handleRegister()}
               disabled={!canSubmit}
             >
-              <Text style={styles.primaryButtonText}>
-                {busy ? "Creating account…" : "Create Trace account"}
+              <Text
+                style={[
+                  styles.primaryButtonText,
+                  isUrdu && styles.rtlText,
+                ]}
+              >
+                {busy
+                  ? t("register.creating")
+                  : t("register.createAccount")}
               </Text>
             </Pressable>
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account?</Text>
+            <View style={[styles.footer, isUrdu && styles.rtlRow]}>
+              <Text style={[styles.footerText, isUrdu && styles.rtlText]}>
+                {t("register.alreadyHaveAccount")}
+              </Text>
               <Link href="/login" asChild>
                 <Pressable accessibilityRole="link">
-                  <Text style={styles.link}>Sign in</Text>
+                  <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                    {t("register.signIn")}
+                  </Text>
                 </Pressable>
               </Link>
             </View>
@@ -409,36 +474,107 @@ export default function RegisterScreen() {
   );
 }
 
+function Field(props: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: boolean;
+  autoComplete?: TextInputProps["autoComplete"];
+  textContentType?: TextInputProps["textContentType"];
+  keyboardType?: "default" | "email-address";
+  secureTextEntry?: boolean;
+  editable?: boolean;
+  returnKeyType?: "next" | "go";
+  onSubmitEditing?: () => void;
+  inputError?: boolean;
+  isUrdu: boolean;
+}) {
+  return (
+    <>
+      <Text style={[styles.label, props.isUrdu && styles.rtlText]}>
+        {props.label}
+      </Text>
+      <TextInput
+        style={[
+          styles.input,
+          props.inputError && styles.inputError,
+          props.isUrdu && styles.rtlText,
+        ]}
+        value={props.value}
+        onChangeText={props.onChangeText}
+        placeholder={props.placeholder}
+        placeholderTextColor={COLORS.muted}
+        autoCapitalize={props.autoCapitalize ?? "sentences"}
+        autoCorrect={props.autoCorrect}
+        autoComplete={props.autoComplete}
+        textContentType={props.textContentType as never}
+        keyboardType={props.keyboardType ?? "default"}
+        secureTextEntry={props.secureTextEntry}
+        editable={props.editable}
+        returnKeyType={props.returnKeyType}
+        onSubmitEditing={props.onSubmitEditing}
+        textAlign={props.isUrdu ? "right" : "left"}
+      />
+    </>
+  );
+}
+
+const COLORS = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#FBF8F2",
+  text: "#191410",
+  secondary: "#5C5347",
+  muted: "#8C806E",
+  border: "#E4D9C4",
+  gold: "#B98626",
+  goldButton: "#D9A441",
+  navy: "#080D18",
+  green: "#1E8055",
+  red: "#C24A3A",
+  redBackground: "#F9E5DF",
+  info: "#3B7DC4",
+  infoBackground: "#E7F0FA",
+  infoBorder: "rgba(59,125,196,0.25)",
+};
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F3EEE4" },
+  screen: { flex: 1, backgroundColor: COLORS.background },
   keyboard: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: "center", padding: 22 },
   content: { width: "100%", maxWidth: 480, alignSelf: "center" },
+  successScroll: { flexGrow: 1 },
   successContent: { flex: 1, justifyContent: "center", padding: 24 },
-  brandRow: {flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 25,},
-  brandMark: {width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: "#080D18",},
-  brandMarkText: { color: "#D9A441", fontSize: 21, fontWeight: "900" },
-  brand: { color: "#080D18", fontSize: 20, fontWeight: "800" },
-  eyebrow: {marginBottom: 7, color: "#B98626", fontSize: 10, fontWeight: "800", letterSpacing: 1.2,},
-  title: { color: "#191410", fontSize: 30, fontWeight: "800", lineHeight: 37 },
-  description: {marginTop: 8, marginBottom: 19, color: "#5C5347", fontSize: 14, lineHeight: 21, },
-  label: { marginTop: 13, marginBottom: 7, color: "#191410", fontSize: 13, fontWeight: "700",},
-  input: {minHeight: 48, borderWidth: 1, borderColor: "#E4D9C4", borderRadius: 8, backgroundColor: "#FFFFFF", paddingHorizontal: 13, color: "#191410", fontSize: 15,},
-  inputError: { borderColor: "#C24A3A" },
-  fieldError: { marginTop: 5, color: "#C24A3A", fontSize: 12 },
-  passwordCard: {marginTop: 9, borderWidth: 1, borderColor: "#E4D9C4", borderRadius: 9, backgroundColor: "#FBF8F2", padding: 12,},
-  passwordTitle: {marginBottom: 5, color: "#5C5347", fontSize: 10, fontWeight: "800", letterSpacing: 0.8,},
-  passwordRule: { marginTop: 4, color: "#8C806E", fontSize: 12 },
-  passwordRulePassed: { color: "#1E9D63", fontWeight: "700" },
-  infoNotice: {flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10, borderWidth: 1, borderColor: "rgba(59,125,196,0.25)", borderRadius: 8, backgroundColor: "#E7F0FA", padding: 12,},
-  infoText: { flex: 1, color: "#3B7DC4", fontSize: 13, lineHeight: 19 },
-  errorNotice: {marginBottom: 10, borderWidth: 1, borderColor: "rgba(194,74,58,0.25)", borderRadius: 8, backgroundColor: "#F9E5DF", padding: 12,},
-  errorText: { color: "#C24A3A", fontSize: 13, lineHeight: 19 },
-  primaryButton: {minHeight: 50, alignItems: "center", justifyContent: "center", marginTop: 21, borderRadius: 8, backgroundColor: "#D9A441", paddingHorizontal: 16,},
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 25 },
+  successTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 25 },
+  rtlRow: { flexDirection: "row-reverse" },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  brandMark: { width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: COLORS.navy },
+  brandMarkText: { color: COLORS.goldButton, fontSize: 21, fontWeight: "900" },
+  brand: { color: COLORS.navy, fontSize: 20, fontWeight: "800" },
+  eyebrow: { marginBottom: 7, color: COLORS.gold, fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
+  title: { color: COLORS.text, fontSize: 29, fontWeight: "800", lineHeight: 37 },
+  description: { marginTop: 8, marginBottom: 19, color: COLORS.secondary, fontSize: 14, lineHeight: 21 },
+  label: { marginTop: 13, marginBottom: 7, color: COLORS.text, fontSize: 13, fontWeight: "700" },
+  input: { minHeight: 48, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, backgroundColor: COLORS.surface, paddingHorizontal: 13, color: COLORS.text, fontSize: 15 },
+  inputError: { borderColor: COLORS.red },
+  fieldError: { marginTop: 5, color: COLORS.red, fontSize: 12 },
+  passwordCard: { marginTop: 9, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, backgroundColor: COLORS.surfaceMuted, padding: 12 },
+  passwordTitle: { marginBottom: 5, color: COLORS.secondary, fontSize: 10, fontWeight: "800", letterSpacing: 0.8 },
+  passwordRule: { marginTop: 4, color: COLORS.muted, fontSize: 12 },
+  passwordRulePassed: { color: COLORS.green, fontWeight: "700" },
+  infoNotice: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10, borderWidth: 1, borderColor: COLORS.infoBorder, borderRadius: 10, backgroundColor: COLORS.infoBackground, padding: 12 },
+  infoText: { flex: 1, color: COLORS.info, fontSize: 13, lineHeight: 19 },
+  errorNotice: { marginBottom: 10, borderWidth: 1, borderColor: "rgba(194,74,58,0.25)", borderRadius: 10, backgroundColor: COLORS.redBackground, padding: 12 },
+  errorText: { color: COLORS.red, fontSize: 13, lineHeight: 19 },
+  primaryButton: { minHeight: 50, alignItems: "center", justifyContent: "center", marginTop: 21, borderRadius: 10, backgroundColor: COLORS.goldButton, paddingHorizontal: 16 },
   disabledButton: { opacity: 0.5 },
-  primaryButtonText: {color: "#080D18", fontSize: 14, fontWeight: "800", textAlign: "center",},
-  emailNotice: {marginTop: 5, borderRadius: 8, backgroundColor: "#FFFFFF", padding: 13, color: "#191410", fontSize: 14,},
-  footer: {flexDirection: "row", justifyContent: "center", gap: 5, marginTop: 22,},
-  footerText: { color: "#5C5347", fontSize: 12 },
-  link: { color: "#B98626", fontSize: 12, fontWeight: "800" },
+  primaryButtonText: { color: COLORS.navy, fontSize: 14, fontWeight: "800", textAlign: "center" },
+  emailNotice: { marginTop: 5, borderRadius: 10, backgroundColor: COLORS.surface, padding: 13, color: COLORS.text, fontSize: 14 },
+  footer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 5, marginTop: 22 },
+  footerText: { color: COLORS.secondary, fontSize: 12 },
+  link: { color: COLORS.gold, fontSize: 12, fontWeight: "800" },
+  rtlText: { textAlign: "right", writingDirection: "rtl" },
 });

@@ -2,10 +2,15 @@ import { useState } from "react";
 import {KeyboardAvoidingView, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { Link } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { forgotPassword } from "../api/client";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function ForgotPasswordScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -14,25 +19,20 @@ export default function ForgotPasswordScreen() {
   async function handleSubmit() {
     const normalizedEmail = email.trim().toLowerCase();
 
-    if (!normalizedEmail || busy) {
-      return;
-    }
+    if (!normalizedEmail || busy) return;
 
     setBusy(true);
     setError("");
     setMessage("");
 
     try {
-      const result = await forgotPassword(normalizedEmail);
-      setMessage(
-        result.message ||
-          "If an account exists for that email, reset instructions have been sent.",
-      );
+      await forgotPassword(normalizedEmail);
+      setMessage(t("forgotPassword.success"));
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Could not request a password reset. Try again.",
+          : t("forgotPassword.requestFailure"),
       );
     } finally {
       setBusy(false);
@@ -41,7 +41,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "bottom"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F3EEE4" />
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
       <KeyboardAvoidingView
         style={styles.keyboard}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -51,34 +51,47 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.eyebrow}>ACCOUNT RECOVERY</Text>
-            <Text style={styles.title}>Reset your password.</Text>
-            <Text style={styles.description}>
-              Enter your account email. If an account exists, Trace will send
-              password reset instructions.
+            <View style={[styles.topRow, isUrdu && styles.rtlRow]}>
+              <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
+                {t("forgotPassword.eyebrow")}
+              </Text>
+              <LanguageSwitcher />
+            </View>
+
+            <Text style={[styles.title, isUrdu && styles.rtlText]}>
+              {t("forgotPassword.title")}
+            </Text>
+            <Text style={[styles.description, isUrdu && styles.rtlText]}>
+              {t("forgotPassword.description")}
             </Text>
 
             {error ? (
               <View style={styles.errorNotice} accessibilityRole="alert">
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={[styles.errorText, isUrdu && styles.rtlText]}>
+                  {error}
+                </Text>
               </View>
             ) : null}
 
             {message ? (
               <View style={styles.successNotice} accessibilityRole="alert">
-                <Text style={styles.successText}>{message}</Text>
+                <Text style={[styles.successText, isUrdu && styles.rtlText]}>
+                  {message}
+                </Text>
               </View>
             ) : null}
 
             {!message ? (
               <>
-                <Text style={styles.label}>Work email</Text>
+                <Text style={[styles.label, isUrdu && styles.rtlText]}>
+                  {t("forgotPassword.emailLabel")}
+                </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, isUrdu && styles.rtlText]}
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="you@company.com"
-                  placeholderTextColor="#8C806E"
+                  placeholder={t("forgotPassword.emailPlaceholder")}
+                  placeholderTextColor={COLORS.muted}
                   autoCapitalize="none"
                   autoCorrect={false}
                   autoComplete="email"
@@ -87,7 +100,8 @@ export default function ForgotPasswordScreen() {
                   returnKeyType="send"
                   onSubmitEditing={() => void handleSubmit()}
                   editable={!busy}
-                  accessibilityLabel="Work email"
+                  accessibilityLabel={t("forgotPassword.emailLabel")}
+                  textAlign={isUrdu ? "right" : "left"}
                 />
 
                 <Pressable
@@ -99,18 +113,29 @@ export default function ForgotPasswordScreen() {
                   onPress={() => void handleSubmit()}
                   disabled={busy || !email.trim()}
                 >
-                  <Text style={styles.primaryButtonText}>
-                    {busy ? "Sending…" : "Send reset instructions"}
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      isUrdu && styles.rtlText,
+                    ]}
+                  >
+                    {busy
+                      ? t("forgotPassword.sending")
+                      : t("forgotPassword.sendInstructions")}
                   </Text>
                 </Pressable>
               </>
             ) : null}
 
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Remember your password?</Text>
+            <View style={[styles.footer, isUrdu && styles.rtlRow]}>
+              <Text style={[styles.footerText, isUrdu && styles.rtlText]}>
+                {t("forgotPassword.rememberPassword")}
+              </Text>
               <Link href="/login" asChild>
                 <Pressable accessibilityRole="link">
-                  <Text style={styles.link}>Return to sign in</Text>
+                  <Text style={[styles.link, isUrdu && styles.rtlText]}>
+                    {t("forgotPassword.returnToSignIn")}
+                  </Text>
                 </Pressable>
               </Link>
             </View>
@@ -121,24 +146,43 @@ export default function ForgotPasswordScreen() {
   );
 }
 
+const COLORS = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  text: "#191410",
+  secondary: "#5C5347",
+  muted: "#8C806E",
+  border: "#E4D9C4",
+  gold: "#B98626",
+  goldButton: "#D9A441",
+  navy: "#080D18",
+  red: "#C24A3A",
+  redBackground: "#F9E5DF",
+  green: "#1E8055",
+  greenBackground: "#E4F5EC",
+};
+
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F3EEE4" },
+  screen: { flex: 1, backgroundColor: COLORS.background },
   keyboard: { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: "center", padding: 22 },
   content: { width: "100%", maxWidth: 460, alignSelf: "center" },
-  eyebrow: { marginBottom: 8, color: "#B98626", fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
-  title: { color: "#191410", fontSize: 31, fontWeight: "800" },
-  description: { marginTop: 9, marginBottom: 22, color: "#5C5347", fontSize: 14, lineHeight: 21 },
-  label: { marginBottom: 7, color: "#191410", fontSize: 13, fontWeight: "700" },
-  input: {minHeight: 48, borderWidth: 1, borderColor: "#E4D9C4", borderRadius: 8, backgroundColor: "#FFFFFF", paddingHorizontal: 13, color: "#191410", fontSize: 15,},
-  primaryButton: {minHeight: 50, alignItems: "center", justifyContent: "center", marginTop: 18, borderRadius: 8, backgroundColor: "#D9A441", paddingHorizontal: 16,},
+  topRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 },
+  rtlRow: { flexDirection: "row-reverse" },
+  eyebrow: { color: COLORS.gold, fontSize: 10, fontWeight: "800", letterSpacing: 1.2 },
+  title: { color: COLORS.text, fontSize: 29, fontWeight: "800" },
+  description: { marginTop: 9, marginBottom: 22, color: COLORS.secondary, fontSize: 14, lineHeight: 21 },
+  label: { marginBottom: 7, color: COLORS.text, fontSize: 13, fontWeight: "700" },
+  input: { minHeight: 48, borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, backgroundColor: COLORS.surface, paddingHorizontal: 13, color: COLORS.text, fontSize: 15 },
+  primaryButton: { minHeight: 50, alignItems: "center", justifyContent: "center", marginTop: 18, borderRadius: 10, backgroundColor: COLORS.goldButton, paddingHorizontal: 16 },
   disabledButton: { opacity: 0.5 },
-  primaryButtonText: { color: "#080D18", fontSize: 14, fontWeight: "800" },
-  errorNotice: { marginBottom: 14, borderRadius: 8, backgroundColor: "#F9E5DF", padding: 12 },
-  errorText: { color: "#C24A3A", fontSize: 13, lineHeight: 19 },
-  successNotice: { borderRadius: 8, backgroundColor: "#E4F5EC", padding: 13 },
-  successText: { color: "#1E9D63", fontSize: 13, lineHeight: 19 },
-  footer: { flexDirection: "row", justifyContent: "center", gap: 5, marginTop: 24 },
-  footerText: { color: "#5C5347", fontSize: 12 },
-  link: { color: "#B98626", fontSize: 12, fontWeight: "800" },
+  primaryButtonText: { color: COLORS.navy, fontSize: 14, fontWeight: "800", textAlign: "center" },
+  errorNotice: { marginBottom: 14, borderWidth: 1, borderColor: "#E9B8AC", borderRadius: 10, backgroundColor: COLORS.redBackground, padding: 12 },
+  errorText: { color: COLORS.red, fontSize: 13, lineHeight: 19 },
+  successNotice: { borderWidth: 1, borderColor: "#B7DDC7", borderRadius: 10, backgroundColor: COLORS.greenBackground, padding: 13 },
+  successText: { color: COLORS.green, fontSize: 13, lineHeight: 19 },
+  footer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 5, marginTop: 24 },
+  footerText: { color: COLORS.secondary, fontSize: 12 },
+  link: { color: COLORS.gold, fontSize: 12, fontWeight: "800" },
+  rtlText: { textAlign: "right", writingDirection: "rtl" },
 });
