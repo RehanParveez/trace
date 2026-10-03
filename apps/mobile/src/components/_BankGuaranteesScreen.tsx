@@ -10,8 +10,30 @@ import { listProjectBOQVersions } from "../api/drawingsBoq";
 import { getProject } from "../api/projects";
 import { listProjectAgreements } from "../api/subcontractors";
 import i18n from "../i18n";
+import LanguageSwitcher from "./LanguageSwitcher";
 import type {AuthUser, BankGuarantee, BankGuaranteeHolderType, BOQVersion, Project, ProjectBankGuaranteeSummary, SubcontractAgreementDetail,
 } from "../api/types";
+
+const C = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#FBF8F2",
+  navy: "#080D18",
+  navySoft: "#18283B",
+  gold: "#D9A441",
+  goldDark: "#B98626",
+  text: "#191410",
+  secondary: "#5C5347",
+  muted: "#8C806E",
+  border: "#E4D9C4",
+  borderStrong: "#D4C7AD",
+  green: "#24744A",
+  greenBg: "#EAF4EC",
+  amber: "#8A5A0A",
+  amberBg: "#FFF3D8",
+  red: "#A33C32",
+  redBg: "#FBECE9",
+} as const;
 
 function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -366,7 +388,7 @@ export function BankGuaranteesScreen({
     return (
       <View style={styles.center}>
         <Stack.Screen options={{ title: t("bankGuarantees.title") }} />
-        <ActivityIndicator size="large" color="#183153" />
+        <ActivityIndicator size="large" color={C.navy} />
         <Text style={styles.muted}>{t("bankGuarantees.loading")}</Text>
       </View>
     );
@@ -391,13 +413,16 @@ export function BankGuaranteesScreen({
         <RefreshControl
           refreshing={refreshing}
           onRefresh={() => void load(true)}
-          tintColor="#183153"
+          tintColor={C.navy}
         />
       }
     >
       <Stack.Screen options={{ title: t("bankGuarantees.title") }} />
 
-      <Text style={styles.eyebrow}>{t("bankGuarantees.eyebrow")}</Text>
+      <View style={styles.topBar}>
+        <Text style={styles.eyebrow}>{t("bankGuarantees.eyebrow")}</Text>
+        <LanguageSwitcher />
+      </View>
       <Text style={styles.title}>
         {project?.name ?? t("bankGuarantees.title")}
       </Text>
@@ -795,36 +820,37 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
-  page: {flexGrow: 1, padding: 20, paddingTop: 28, paddingBottom: 40, backgroundColor: "#F4F6F8",},
-  center: {flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8",},
-  eyebrow: {color: "#8A7B67", fontSize: 11, fontWeight: "800", letterSpacing: 1.2,},
-  title: {color: "#17212F", fontSize: 25, fontWeight: "700", marginTop: 5,},
-  subtitle: {color: "#667085", fontSize: 14, lineHeight: 20, marginTop: 6,},
-  sectionTitle: {color: "#17212F", fontSize: 18, fontWeight: "700", marginTop: 20, marginBottom: 10,},
-  card: {backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#E4E7EC", padding: 16, marginTop: 12,},
-  summaryCard: {backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#E4E7EC", padding: 16, marginTop: 18,},
-  infoRow: {flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#F0F2F5",},
-  infoLabel: { color: "#667085", fontSize: 13, flex: 1 },
-  infoValue: {color: "#17212F", fontSize: 13, fontWeight: "600", flex: 1, textAlign: "right",},
+  page: {flexGrow: 1, padding: 18, paddingTop: 21, paddingBottom: 40, backgroundColor: C.background,},
+  center: {flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 20, backgroundColor: C.background,},
+  topBar: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10,},
+  eyebrow: {color: C.muted, fontSize: 11, fontWeight: "700", letterSpacing: 1.6,},
+  title: {color: C.text, fontSize: 28, fontWeight: "800", marginTop: 5, letterSpacing: -0.5,},
+  subtitle: { color: C.secondary, fontSize: 14, lineHeight: 20, marginTop: 6 },
+  sectionTitle: {color: C.text, fontSize: 18, fontWeight: "800", marginTop: 20, marginBottom: 10,},
+  card: {backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, padding: 16, marginTop: 12,},
+  summaryCard: {backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, borderTopColor: C.gold, borderTopWidth: 3, padding: 16, marginTop: 18,},
+  infoRow: {flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#F0E9DC",},
+  infoLabel: { color: C.muted, fontSize: 12, flex: 1 },
+  infoValue: {color: C.text, fontSize: 13, fontWeight: "700", flex: 1, textAlign: "right",},
   rowBetween: {flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 8,},
-  guaranteeTitle: {color: "#17212F", fontSize: 17, fontWeight: "700", flexShrink: 1,},
-  status: { color: "#183153", fontSize: 11, fontWeight: "800" },
-  warning: { color: "#B54708", fontWeight: "700", marginTop: 10 },
-  muted: { color: "#667085", fontSize: 14, lineHeight: 20, marginTop: 6 },
-  error: { color: "#B42318", fontSize: 14, lineHeight: 20, marginTop: 12 },
-  label: {color: "#344054", fontSize: 14, fontWeight: "700", marginBottom: 7,},
+  guaranteeTitle: {color: C.text, fontSize: 16, fontWeight: "800", flexShrink: 1,},
+  status: {color: C.navy, backgroundColor: C.surfaceMuted, overflow: "hidden", borderRadius: 99, paddingHorizontal: 9, paddingVertical: 5, fontSize: 10, fontWeight: "800",},
+  warning: {color: C.amber, backgroundColor: C.amberBg, overflow: "hidden", borderRadius: 9, paddingHorizontal: 10, paddingVertical: 8, fontWeight: "700", fontSize: 12, marginTop: 10,},
+  muted: { color: C.secondary, fontSize: 13, lineHeight: 19, marginTop: 6 },
+  error: {color: C.red, backgroundColor: C.redBg, borderColor: "#EAC6C0", borderWidth: 1, borderRadius: 11, padding: 12, fontSize: 13, lineHeight: 19, marginTop: 12,},
+  label: {color: C.secondary, fontSize: 12, fontWeight: "700", marginBottom: 7,},
   field: { marginTop: 13 },
-  input: {minHeight: 48, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 10, backgroundColor: "#FFFFFF", paddingHorizontal: 13, color: "#17212F", fontSize: 15,},
-  multiline: { minHeight: 86, paddingTop: 12 },
-  choiceRow: { flexDirection: "row", gap: 8 },
-  choice: {minHeight: 42, justifyContent: "center", paddingHorizontal: 12, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 10, backgroundColor: "#FFFFFF", marginTop: 7,},
-  choiceSelected: {borderColor: "#183153", backgroundColor: "#EAF0F6",},
-  choiceText: { color: "#344054", fontSize: 13, fontWeight: "600" },
-  choiceTextSelected: { color: "#183153" },
-  actions: { gap: 8, marginTop: 10 },
-  actionButton: {minHeight: 46, alignItems: "center", justifyContent: "center", paddingHorizontal: 14, paddingVertical: 12, borderRadius: 10, backgroundColor: "#183153", marginTop: 12,},
-  actionButtonText: { color: "#FFFFFF", fontSize: 14, fontWeight: "700" },
-  secondaryButton: {backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#D0D5DD",},
-  secondaryButtonText: { color: "#183153" },
-  disabledButton: { opacity: 0.55 },
+  input: {minHeight: 46, borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, paddingHorizontal: 12, color: C.text, fontSize: 14,},
+  multiline: { minHeight: 76, paddingTop: 12 },
+  choiceRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  choice: {minHeight: 42, justifyContent: "center", paddingHorizontal: 12, borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, marginTop: 7,},
+  choiceSelected: {borderColor: C.navy, backgroundColor: C.surfaceMuted,},
+  choiceText: { color: C.secondary, fontSize: 12, fontWeight: "700" },
+  choiceTextSelected: { color: C.navy },
+  actions: { gap: 7, marginTop: 10 },
+  actionButton: {minHeight: 47, alignItems: "center", justifyContent: "center", paddingHorizontal: 14, paddingVertical: 12, borderRadius: 11, backgroundColor: C.navy, marginTop: 12,},
+  actionButtonText: {color: C.surface, fontSize: 13, fontWeight: "800", textAlign: "center",},
+  secondaryButton: {backgroundColor: C.surface, borderWidth: 1, borderColor: C.border,},
+  secondaryButtonText: { color: C.navy },
+  disabledButton: { opacity: 0.5 },
 });

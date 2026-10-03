@@ -7,13 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import TraceException
 from app.engine.measure import engine as kernel
 from app.engine.measure.fingerprint import compute_fingerprint
-from backend.app.engine.measure.models import CalculationContext, MappingInput, ModelElement
+from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from app.modules.drawings_boq.calc_repository import CalculationRunRepository
 from app.modules.drawings_boq.models import CalculationRun, DrawingElement, DrawingFormat, DrawingStatus
 from app.modules.drawings_boq.repository import DrawingElementRepository, DrawingRepository, MeasurementRuleSetRepository
 from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.projects.repository import ProjectRepository
-from app.modules.drawings_boq.calc_tasks import calculate_run_task
 from app.modules.drawings_boq.service import DrawingBOQService
 
 class RunError(Exception):
@@ -140,6 +139,7 @@ class CalculationService:
       raise
 
     try:
+      from app.modules.drawings_boq.calc_tasks import calculate_run_task
       calculate_run_task.apply_async(args=[str(run.id)], queue="calc_engine")
     except Exception:
       await self.runs.mark_failed(run.id, "ENQUEUE_FAILED", "Could not enqueue the calculation task.")
@@ -167,7 +167,7 @@ class CalculationService:
     if run is None:
       return
     await self.session.commit()
-    
+
     org = run.organization_id
     project_id = run.project_id
     rule_set_id = run.rule_set_id
@@ -191,6 +191,64 @@ class CalculationService:
         rule_set_version=rule_set.immutable_version, mappings=mappings,
       )
       state: dict = {}
+
+      async def validate():
+        state["accepted"], state["rejected"] = await asyncio.to_thread(kernel.validate_input, ctx, elements)
+        return {"elements_in": len(elements), "accepted": len(state["accepted"]), "rejected": len(state["rejected"])}
+
+      async def build():
+        solids, skipped = await asyncio.to_thread(kernel.build_solids, ctx, state["accepted"])
+        state["solids"], state["skipped"] = solids, skipped
+        await self.runs.clear_staged(run_id)
+        await self.runs.stage_solids([_solid_row(run, s) for s in solids])
+        return {"solids": len(solids), "review_required": sum(1 for s in solids if s.status == "REVIEW_REQUIRED"),
+                "skipped_by_role": skipped}
+
+      async def measure():
+        ledger, unmapped = await asyncio.to_thread(kernel.measure, ctx, state["solids"])
+        state["ledger"], state["unmapped"] = ledger, unmapped
+        await self.runs.stage_ledger([_ledger_row(run, e) for e in ledger])
+        return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped}
+
+      async def check():
+        await asyncio.to_thread(kernel.self_check, state["solids"], state["ledger"])
+        return {"invariants": "passed"}
+
+      await self._stage(run, "validate_input", validate, 15)
+      await self._stage(run, "build_solids", build, 40)
+      await self._skip(run, "spatial_index", "find_relations", "allocate")
+      await self._stage(run, "measure", measure, 65)
+      await self._skip(run, "recipes", "reinforcement")
+      await self._stage(run, "self_check", check, 80)
+
+      await self.runs.set_progress(run_id, 90, status="STAGED")
+      await self.session.commit()
+
+      promoted = await self.runs.promote(run_id)
+      await self.runs.supersede_older_completed(org, project_id, run_id, drawing_ids)
+      await self.runs.complete(run_id, {
+        "promoted": promoted,
+        "elements_in": len(elements),
+        "rejected_sample": [
+          {"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code} for r in state["rejected"][:200]
+        ],
+        "rejected_total": len(state["rejected"]),
+        "skipped_by_role": state["skipped"],
+        "unmapped_by_type": state["unmapped"],
+      })
+      await self.session.commit()
+
+    except Exception as exc:
+      await self.session.rollback()
+      if isinstance(exc, RunError):
+        code = exc.code
+      elif isinstance(exc, kernel.InvariantViolation):
+        code = "SELF_CHECK_FAILED"
+      else:
+        code = "RUN_FAILED"
+      await self.runs.fail_running_stages(run_id, str(exc))
+      await self.runs.mark_failed(run_id, code, str(exc))
+      await self.session.commit()
 
 
       async def validate():

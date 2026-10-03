@@ -1,5 +1,5 @@
 from decimal import Decimal
-from backend.app.engine.measure.models import CalculationContext, MappingInput, ModelElement
+from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from uuid import uuid4
 from app.engine.measure import engine as k
 

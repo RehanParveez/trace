@@ -12,6 +12,27 @@ import type {LabourAdvance, LabourDayAttendanceSummary, LabourDeployment, Labour
 } from "../api/types";
 import LanguageSwitcher from "./LanguageSwitcher";
 
+const C = {
+  background: "#F3EEE4",
+  surface: "#FFFFFF",
+  surfaceMuted: "#FBF8F2",
+  navy: "#080D18",
+  navySoft: "#18283B",
+  gold: "#D9A441",
+  goldDark: "#B98626",
+  text: "#191410",
+  secondary: "#5C5347",
+  muted: "#8C806E",
+  border: "#E4D9C4",
+  borderStrong: "#D4C7AD",
+  green: "#24744A",
+  greenBg: "#EAF4EC",
+  amber: "#8A5A0A",
+  amberBg: "#FFF3D8",
+  red: "#A33C32",
+  redBg: "#FBECE9",
+} as const;
+
 type Section =
   | "directory"
   | "overview"
@@ -448,26 +469,26 @@ export function LabourScreen({ section }: { section: Section }) {
   );
 
   if (loading && !refreshing) {
-  return (
-    <View style={styles.center}>
-      <LanguageSwitcher />
-      <ActivityIndicator size="large" color="#183153" />
-      <Text style={styles.muted}>
-        {t("labour.loading", { section: title.toLowerCase() })}
-      </Text>
-    </View>
-  );
-}
+    return (
+      <View style={styles.center}>
+        <LanguageSwitcher />
+        <ActivityIndicator size="large" color={C.navy} />
+        <Text style={styles.muted}>
+          {t("labour.loading", { section: title.toLowerCase() })}
+        </Text>
+      </View>
+    );
+  }
 
   if (sessionChecked && !canRead) {
-  return (
-    <View style={styles.page}>
-      <LanguageSwitcher />
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.error}>{t("labour.accessDenied")}</Text>
-    </View>
-  );
-}
+    return (
+      <View style={styles.page}>
+        <LanguageSwitcher />
+        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.error}>{t("labour.accessDenied")}</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -479,15 +500,15 @@ export function LabourScreen({ section }: { section: Section }) {
         }
         keyboardShouldPersistTaps="handled"
       >
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.link}>
-            ‹  {section === "directory"
-              ? t("labour.back")
-              : project?.name ?? t("labour.overviewTitle")}
-          </Text>
-        </Pressable>
+        <View style={styles.topBar}>
+          <Pressable style={styles.backPressable} onPress={() => router.back()}>
+            <Text style={styles.link}>
+              ‹  {section === "directory"
+                ? t("labour.back")
+                : project?.name ?? t("labour.overviewTitle")}
+            </Text>
+          </Pressable>
 
-        <View style={{ alignItems: "flex-start", marginTop: 12 }}>
           <LanguageSwitcher />
         </View>
 
@@ -1471,32 +1492,34 @@ function Toggle({
 }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: 20, paddingTop: 24, paddingBottom: 44, backgroundColor: "#F4F6F8" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8" },
-  title: { color: "#17212F", fontSize: 26, fontWeight: "800", marginTop: 18, marginBottom: 12 },
-  section: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#E4E7EC", padding: 16, marginTop: 14 },
-  sectionTitle: { color: "#17212F", fontSize: 18, fontWeight: "700", marginBottom: 10 },
-  card: { backgroundColor: "#FFFFFF", borderColor: "#E4E7EC", borderWidth: 1, borderRadius: 12, padding: 14, marginTop: 10 },
-  itemTitle: { color: "#17212F", fontSize: 16, fontWeight: "700" },
-  muted: { color: "#667085", fontSize: 14, lineHeight: 20, marginTop: 5 },
-  error: { color: "#B42318", fontSize: 14, lineHeight: 20, marginTop: 10 },
-  link: { color: "#183153", fontWeight: "700" },
-  label: { color: "#344054", fontSize: 14, fontWeight: "600", marginTop: 10, marginBottom: 5 },
+  page: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 21, paddingBottom: 44, backgroundColor: C.background },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 20, backgroundColor: C.background },
+  topBar: { minHeight: 42, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 },
+  backPressable: { minHeight: 40, justifyContent: "center", paddingVertical: 7, paddingRight: 10, flexShrink: 1 },
+  title: { color: C.text, fontSize: 28, fontWeight: "800", letterSpacing: -0.5, marginTop: 7, marginBottom: 12 },
+  section: { backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, padding: 16, marginTop: 14 },
+  sectionTitle: { color: C.text, fontSize: 18, fontWeight: "800", marginBottom: 10 },
+  card: { backgroundColor: C.surface, borderColor: C.border, borderWidth: 1, borderRadius: 13, padding: 14, marginTop: 10 },
+  itemTitle: { color: C.text, fontSize: 16, fontWeight: "800" },
+  muted: { color: C.secondary, fontSize: 13, lineHeight: 19, marginTop: 5 },
+  error: { color: C.red, backgroundColor: C.redBg, borderWidth: 1, borderColor: "#EAC6C0", borderRadius: 11, padding: 12, fontSize: 13, lineHeight: 19, marginTop: 10 },
+  link: { color: C.navy, fontSize: 13, fontWeight: "700" },
+  label: { color: C.secondary, fontSize: 11, fontWeight: "700", letterSpacing: 0.3, marginTop: 10, marginBottom: 5 },
   field: { marginTop: 7 },
-  input: { minHeight: 48, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#FFFFFF", color: "#17212F", fontSize: 15 },
-  multiline: { minHeight: 88, textAlignVertical: "top" },
-  button: { minHeight: 46, borderRadius: 10, backgroundColor: "#183153", paddingHorizontal: 14, paddingVertical: 12, alignItems: "center", justifyContent: "center", marginTop: 10 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: C.surface, color: C.text, fontSize: 14 },
+  multiline: { minHeight: 82, textAlignVertical: "top" },
+  button: { minHeight: 47, borderRadius: 11, backgroundColor: C.navy, paddingHorizontal: 14, paddingVertical: 12, alignItems: "center", justifyContent: "center", marginTop: 10 },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "700" },
-  secondaryButton: { minHeight: 50, borderRadius: 10, borderWidth: 1, borderColor: "#D0D5DD", backgroundColor: "#FFFFFF", padding: 14, marginTop: 10 },
-  secondaryButtonText: { color: "#183153", textAlign: "center", fontWeight: "700" },
+  buttonText: { color: C.surface, fontSize: 13, fontWeight: "800" },
+  secondaryButton: { minHeight: 48, borderRadius: 10, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface, padding: 14, marginTop: 10 },
+  secondaryButtonText: { color: C.navy, textAlign: "center", fontWeight: "800", fontSize: 13 },
   choiceList: { gap: 7, marginTop: 6 },
-  choice: { borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 9, paddingHorizontal: 12, paddingVertical: 10, marginTop: 6, backgroundColor: "#FFFFFF" },
-  choiceSelected: { borderColor: "#183153", backgroundColor: "#EAF0F6" },
-  choiceText: { color: "#344054", fontWeight: "600" },
-  choiceTextSelected: { color: "#183153" },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#F0F2F5" },
-  infoValue: { color: "#17212F", fontSize: 14, fontWeight: "700", textAlign: "right", flexShrink: 1 },
+  choice: { borderWidth: 1, borderColor: C.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 6, backgroundColor: C.surface },
+  choiceSelected: { borderColor: C.gold, backgroundColor: C.surfaceMuted },
+  choiceText: { color: C.secondary, fontWeight: "600", fontSize: 13 },
+  choiceTextSelected: { color: C.navy },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#F0E9DC" },
+  infoValue: { color: C.text, fontSize: 13, fontWeight: "700", textAlign: "right", flexShrink: 1 },
   toggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 8 },
-  modal: { flexGrow: 1, backgroundColor: "#F4F6F8", padding: 20, paddingTop: 42, paddingBottom: 40 },
+  modal: { flexGrow: 1, backgroundColor: C.background, paddingHorizontal: 18, paddingTop: 42, paddingBottom: 40 },
 });

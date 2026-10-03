@@ -96,9 +96,10 @@ class CalculationRunRepository:
     await self.session.flush()
 
   async def log_skipped(self, run: CalculationRun, stage: str, reason: str) -> None:
+    now = _now()
     self.session.add(RunStageLog(
       organization_id=run.organization_id, run_id=run.id, stage=stage, status="SKIPPED",
-      counts={"reason": reason},
+      started_at=now, finished_at=now, counts={"reason": reason},
     ))
     await self.session.flush()
 
@@ -118,7 +119,7 @@ class CalculationRunRepository:
     result = await self.session.execute(
       select(RunStageLog)
       .where(RunStageLog.run_id == run_id, RunStageLog.organization_id == organization_id)
-      .order_by(RunStageLog.created_at.asc())
+      .order_by(RunStageLog.started_at.asc())
     )
     return list(result.scalars().all())
 

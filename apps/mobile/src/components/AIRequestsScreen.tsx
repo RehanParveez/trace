@@ -1,13 +1,25 @@
 import { useEffect, useState } from "react";
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View,
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { restoreSession } from "../api/client";
-import {getAIUsageSummary, listAIRequests,
-} from "../api/ai_requests";
-import type {AIEntityType, AIRequestPurpose, AIRequestRecord, AIUsageSummary, AuthUser,
+import { getAIUsageSummary, listAIRequests } from "../api/ai_requests";
+import type {
+  AIEntityType,
+  AIRequestPurpose,
+  AIRequestRecord,
+  AIUsageSummary,
+  AuthUser,
 } from "../api/types";
+import LanguageSwitcher from "./LanguageSwitcher";
 
-const PAGE_SIZE = 100;
+const PAGE_SIZE = 20;
 
 const PURPOSES: Array<AIRequestPurpose | "ALL"> = [
   "ALL",
@@ -25,6 +37,22 @@ const ENTITY_TYPES: Array<AIEntityType | "ALL"> = [
   "DRAWING",
 ];
 
+const C = {
+  background: "#F3EEE4",
+  surface: "#FFFEFB",
+  surfaceMuted: "#F7F1E7",
+  navy: "#080D18",
+  text: "#17212F",
+  secondary: "#5C5347",
+  muted: "#82796C",
+  border: "#E5DCCB",
+  gold: "#D9A441",
+  green: "#26734D",
+  greenBg: "#E8F2E9",
+  red: "#A33A32",
+  redBg: "#F9E9E5",
+};
+
 function label(value: string): string {
   return value
     .toLowerCase()
@@ -33,12 +61,18 @@ function label(value: string): string {
     .join(" ");
 }
 
-function formatDate(value: string): string {
+function formatDate(value: string, locale?: string): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime())
+    ? value
+    : date.toLocaleString(locale);
 }
 
 export function AIRequestsScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+  const locale = i18n.resolvedLanguage || i18n.language;
+
   const [user, setUser] = useState<AuthUser | null>(null);
   const [permissionChecked, setPermissionChecked] = useState(false);
   const [canRead, setCanRead] = useState(false);
@@ -47,13 +81,48 @@ export function AIRequestsScreen() {
   const [summary, setSummary] = useState<AIUsageSummary | null>(null);
   const [purpose, setPurpose] = useState<AIRequestPurpose | "ALL">("ALL");
   const [entityType, setEntityType] = useState<AIEntityType | "ALL">("ALL");
-  const [skip, setSkip] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
 
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState("");
+
+  function purposeLabel(value: AIRequestPurpose | "ALL"): string {
+    if (value === "ALL") return t("aiRequests.all");
+    return t(`aiRequests.purpose.${value.toLowerCase()}`, {
+      defaultValue: label(value),
+    });
+  }
+
+  function entityTypeLabel(value: AIEntityType | "ALL"): string {
+    if (value === "ALL") return t("aiRequests.all");
+    return t(`aiRequests.entityType.${value.toLowerCase()}`, {
+      defaultValue: label(value),
+    });
+  }
+
+  async function fetchPage(page: number) {
+    const [requestRows, nextRows] = await Promise.all([
+      listAIRequests({
+        purpose: purpose === "ALL" ? undefined : purpose,
+        entity_type: entityType === "ALL" ? undefined : entityType,
+        skip: (page - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+      }),
+      listAIRequests({
+        purpose: purpose === "ALL" ? undefined : purpose,
+        entity_type: entityType === "ALL" ? undefined : entityType,
+        skip: page * PAGE_SIZE,
+        limit: PAGE_SIZE,
+      }),
+    ]);
+
+    return {
+      rows: requestRows,
+      hasNext: nextRows.length > 0,
+    };
+  }
 
   useEffect(() => {
     let active = true;
@@ -61,6 +130,8 @@ export function AIRequestsScreen() {
     async function load() {
       setLoading(true);
       setError("");
+      setPageNumber(1);
+      setHasNextPage(false);
 
       try {
         const currentUser = await restoreSession();
@@ -84,25 +155,20 @@ export function AIRequestsScreen() {
           return;
         }
 
-        const [requestRows, usage] = await Promise.all([
-          listAIRequests({
-            purpose: purpose === "ALL" ? undefined : purpose,
-            entity_type: entityType === "ALL" ? undefined : entityType,
-            skip: 0,
-            limit: PAGE_SIZE,
-          }),
+        const [page, usage] = await Promise.all([
+          fetchPage(1),
           getAIUsageSummary(),
         ]);
 
         if (!active) return;
-        setRows(requestRows);
+        setRows(page.rows);
         setSummary(usage);
-        setSkip(requestRows.length);
-        setHasMore(requestRows.length === PAGE_SIZE);
+        setPageNumber(1);
+        setHasNextPage(page.hasNext);
       } catch (err) {
         if (active) {
           setError(
-            err instanceof Error ? err.message : "Could not load AI activity.",
+            err instanceof Error ? err.message : t("aiRequests.loadFailure"),
           );
         }
       } finally {
@@ -114,39 +180,56 @@ export function AIRequestsScreen() {
     return () => {
       active = false;
     };
-  }, [purpose, entityType, attempt]);
+  }, [purpose, entityType, attempt, t]);
 
-  async function loadMore() {
-    if (!canRead || loadingMore || !hasMore) return;
+  async function goToPage(targetPage: number) {
+    if (targetPage < 1 || targetPage === pageNumber || loading) return;
 
-    setLoadingMore(true);
+    setLoading(true);
     setError("");
 
     try {
-      const nextRows = await listAIRequests({
-        purpose: purpose === "ALL" ? undefined : purpose,
-        entity_type: entityType === "ALL" ? undefined : entityType,
-        skip,
-        limit: PAGE_SIZE,
-      });
-
-      setRows((current) => [...current, ...nextRows]);
-      setSkip((current) => current + nextRows.length);
-      setHasMore(nextRows.length === PAGE_SIZE);
+      const page = await fetchPage(targetPage);
+      setRows(page.rows);
+      setPageNumber(targetPage);
+      setHasNextPage(page.hasNext);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Could not load more AI activity.",
+        err instanceof Error ? err.message : t("aiRequests.loadFailure"),
       );
     } finally {
-      setLoadingMore(false);
+      setLoading(false);
     }
   }
 
+  const lastAvailablePage = pageNumber + (hasNextPage ? 1 : 0);
+  const firstVisiblePage = Math.max(
+    1,
+    Math.min(pageNumber - 2, lastAvailablePage - 4),
+  );
+  const visiblePages = Array.from(
+    {
+      length: Math.min(5, lastAvailablePage - firstVisiblePage + 1),
+    },
+    (_, index) => firstVisiblePage + index,
+  );
+
   if (loading || !permissionChecked) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#183153" />
-        <Text style={styles.muted}>Loading AI activity…</Text>
+      <View style={styles.page}>
+        <View style={[styles.heading, isUrdu && styles.rtlRow]}>
+          <Text style={[styles.title, isUrdu && styles.rtlText]}>
+            {t("aiRequests.pageTitle")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={C.navy} />
+          <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+            {t("aiRequests.loading")}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -154,130 +237,274 @@ export function AIRequestsScreen() {
   if (!canRead) {
     return (
       <View style={styles.page}>
-        <Text style={styles.title}>AI Requests</Text>
-        <Text style={styles.error}>
-          You do not have permission to view AI request history.
+        <View style={[styles.heading, isUrdu && styles.rtlRow]}>
+          <Text style={[styles.title, isUrdu && styles.rtlText]}>
+            {t("aiRequests.pageTitle")}
+          </Text>
+          <LanguageSwitcher />
+        </View>
+        <Text style={[styles.error, isUrdu && styles.rtlText]}>
+          {t("aiRequests.accessDenied")}
         </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <View style={styles.heading}>
-        <View>
-          <Text style={styles.eyebrow}>ACTIVITY</Text>
-          <Text style={styles.title}>AI Requests</Text>
+    <ScrollView
+      contentContainerStyle={[
+        styles.page,
+        isUrdu && styles.rtlPage,
+      ]}
+    >
+      <View style={[styles.heading, isUrdu && styles.rtlRow]}>
+        <View style={styles.headerContent}>
+          <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
+            {t("aiRequests.eyebrow")}
+          </Text>
+          <Text style={[styles.title, isUrdu && styles.rtlText]}>
+            {t("aiRequests.pageTitle")}
+          </Text>
         </View>
-        <Pressable
-          onPress={() => setAttempt((value) => value + 1)}
-          accessibilityRole="button"
-        >
-          <Text style={styles.link}>Refresh</Text>
-        </Pressable>
+
+        <View style={[styles.headerActions, isUrdu && styles.rtlRow]}>
+          <Pressable
+            onPress={() => setAttempt((value) => value + 1)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.link}>{t("aiRequests.refresh")}</Text>
+          </Pressable>
+          <LanguageSwitcher />
+        </View>
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.error, isUrdu && styles.rtlText]}>
+          {error}
+        </Text>
+      ) : null}
 
       {summary ? (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Usage summary</Text>
-          <InfoRow label="Total requests" value={String(summary.total_requests)} />
-          <InfoRow label="Succeeded" value={String(summary.succeeded)} />
-          <InfoRow label="Failed" value={String(summary.failed)} />
+          <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
+            {t("aiRequests.usageSummary")}
+          </Text>
           <InfoRow
-            label="Average latency"
+            label={t("aiRequests.totalRequests")}
+            value={String(summary.total_requests)}
+            isUrdu={isUrdu}
+          />
+          <InfoRow
+            label={t("aiRequests.succeeded")}
+            value={String(summary.succeeded)}
+            isUrdu={isUrdu}
+          />
+          <InfoRow
+            label={t("aiRequests.failed")}
+            value={String(summary.failed)}
+            isUrdu={isUrdu}
+          />
+          <InfoRow
+            label={t("aiRequests.averageLatency")}
             value={
               summary.average_latency_ms == null
-                ? "Not available"
-                : `${Math.round(summary.average_latency_ms)} ms`
+                ? t("aiRequests.notAvailable")
+                : t("aiRequests.milliseconds", {
+                    value: Math.round(summary.average_latency_ms),
+                  })
             }
+            isUrdu={isUrdu}
           />
         </View>
       ) : null}
 
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Purpose</Text>
+        <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
+          {t("aiRequests.purposeLabel")}
+        </Text>
         <ChoiceRow
           values={PURPOSES}
           selected={purpose}
           onSelect={setPurpose}
+          getLabel={purposeLabel}
+          isUrdu={isUrdu}
         />
-        <Text style={[styles.sectionTitle, styles.filterHeading]}>
-          Entity type
+
+        <Text
+          style={[
+            styles.sectionTitle,
+            styles.filterHeading,
+            isUrdu && styles.rtlText,
+          ]}
+        >
+          {t("aiRequests.entityTypeLabel")}
         </Text>
         <ChoiceRow
           values={ENTITY_TYPES}
           selected={entityType}
           onSelect={setEntityType}
+          getLabel={entityTypeLabel}
+          isUrdu={isUrdu}
         />
       </View>
 
-      <View style={styles.heading}>
-        <Text style={styles.sectionTitle}>Request history</Text>
-        <Text style={styles.muted}>{rows.length} loaded</Text>
+      <View style={[styles.heading, isUrdu && styles.rtlRow]}>
+        <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
+          {t("aiRequests.requestHistory")}
+        </Text>
+        <Text style={styles.muted}>
+          {t("aiRequests.loadedCount", { count: rows.length })}
+        </Text>
       </View>
 
       {rows.length === 0 ? (
         <View style={styles.card}>
-          <Text style={styles.muted}>No AI requests match these filters.</Text>
+          <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+            {t("aiRequests.noMatches")}
+          </Text>
         </View>
       ) : (
-        rows.map((request) => (
-          <View key={request.id} style={styles.card}>
-            <View style={styles.heading}>
-              <Text style={styles.sectionTitle}>{label(request.purpose)}</Text>
-              <Text
-                style={[
-                  styles.badge,
-                  request.response?.status === "FAILED" && styles.failedBadge,
-                ]}
-              >
-                {request.response ? label(request.response.status) : "Pending"}
-              </Text>
-            </View>
+        rows.map((request) => {
+          const responseStatus = request.response?.status;
+          const statusLabel = responseStatus
+            ? t(`aiRequests.status.${responseStatus.toLowerCase()}`, {
+                defaultValue: label(responseStatus),
+              })
+            : t("aiRequests.status.pending");
 
-            <InfoRow label="Provider" value={label(request.provider)} />
-            <InfoRow label="Model" value={request.model} />
-            <InfoRow
-              label="Entity"
-              value={
-                request.entity_type
-                  ? `${label(request.entity_type)}${request.entity_id ? ` · ${request.entity_id}` : ""}`
-                  : "Not linked"
-              }
-            />
-            <InfoRow label="Requested" value={formatDate(request.created_at)} />
-
-            {request.response?.latency_ms != null ? (
-              <InfoRow
-                label="Latency"
-                value={`${request.response.latency_ms} ms`}
-              />
-            ) : null}
-
-            {request.response?.error_message ? (
-              <Text style={styles.error}>{request.response.error_message}</Text>
-            ) : null}
-
-            {request.response?.parsed_output ? (
-              <View style={styles.output}>
-                <Text style={styles.outputLabel}>Parsed output</Text>
-                <Text selectable style={styles.outputText}>
-                  {JSON.stringify(request.response.parsed_output, null, 2)}
+          return (
+            <View key={request.id} style={styles.card}>
+              <View style={[styles.heading, isUrdu && styles.rtlRow]}>
+                <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
+                  {purposeLabel(request.purpose)}
+                </Text>
+                <Text
+                  style={[
+                    styles.badge,
+                    responseStatus === "SUCCEEDED" && styles.succeededBadge,
+                    responseStatus === "FAILED" && styles.failedBadge,
+                  ]}
+                >
+                  {statusLabel}
                 </Text>
               </View>
-            ) : null}
-          </View>
-        ))
+
+              <InfoRow
+                label={t("aiRequests.provider")}
+                value={label(request.provider)}
+                isUrdu={isUrdu}
+              />
+              <InfoRow
+                label={t("aiRequests.model")}
+                value={request.model}
+                isUrdu={isUrdu}
+              />
+              <InfoRow
+                label={t("aiRequests.entity")}
+                value={
+                  request.entity_type
+                    ? `${entityTypeLabel(request.entity_type)}${
+                        request.entity_id ? ` · ${request.entity_id}` : ""
+                      }`
+                    : t("aiRequests.notLinked")
+                }
+                isUrdu={isUrdu}
+              />
+              <InfoRow
+                label={t("aiRequests.requested")}
+                value={formatDate(request.created_at, locale)}
+                isUrdu={isUrdu}
+              />
+
+              {request.response?.latency_ms != null ? (
+                <InfoRow
+                  label={t("aiRequests.latency")}
+                  value={t("aiRequests.milliseconds", {
+                    value: request.response.latency_ms,
+                  })}
+                  isUrdu={isUrdu}
+                />
+              ) : null}
+
+              {request.response?.error_message ? (
+                <Text style={styles.error}>
+                  {request.response.error_message}
+                </Text>
+              ) : null}
+
+              {request.response?.parsed_output ? (
+                <View style={styles.output}>
+                  <Text
+                    style={[
+                      styles.outputLabel,
+                      isUrdu && styles.rtlText,
+                    ]}
+                  >
+                    {t("aiRequests.parsedOutput")}
+                  </Text>
+                  <Text selectable style={styles.outputText}>
+                    {JSON.stringify(request.response.parsed_output, null, 2)}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })
       )}
 
-      {hasMore ? (
-        <ActionButton
-          label={loadingMore ? "Loading…" : "Load more"}
-          onPress={() => void loadMore()}
-          disabled={loadingMore}
-        />
+      {rows.length > 0 ? (
+        <View style={[styles.pagination, isUrdu && styles.rtlRow]}>
+          <Pressable
+            style={[
+              styles.pageNavButton,
+              pageNumber === 1 && styles.disabled,
+            ]}
+            disabled={pageNumber === 1 || loading}
+            onPress={() => void goToPage(pageNumber - 1)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.pageNavText}>
+              {t("aiRequests.previousPage")}
+            </Text>
+          </Pressable>
+
+          <View style={[styles.pageNumbers, isUrdu && styles.rtlRow]}>
+            {visiblePages.map((page) => (
+              <Pressable
+                key={page}
+                style={[
+                  styles.pageNumber,
+                  page === pageNumber && styles.pageNumberSelected,
+                ]}
+                disabled={loading || page === pageNumber}
+                onPress={() => void goToPage(page)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: page === pageNumber }}
+              >
+                <Text
+                  style={[
+                    styles.pageNumberText,
+                    page === pageNumber && styles.pageNumberTextSelected,
+                  ]}
+                >
+                  {page}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Pressable
+            style={[
+              styles.pageNavButton,
+              !hasNextPage && styles.disabled,
+            ]}
+            disabled={!hasNextPage || loading}
+            onPress={() => void goToPage(pageNumber + 1)}
+            accessibilityRole="button"
+          >
+            <Text style={styles.pageNavText}>{t("aiRequests.nextPage")}</Text>
+          </Pressable>
+        </View>
       ) : null}
     </ScrollView>
   );
@@ -287,14 +514,18 @@ function ChoiceRow<T extends string>({
   values,
   selected,
   onSelect,
+  getLabel,
+  isUrdu,
 }: {
   values: T[];
   selected: T;
   onSelect: (value: T) => void;
+  getLabel: (value: T) => string;
+  isUrdu: boolean;
 }) {
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      <View style={styles.choices}>
+      <View style={[styles.choices, isUrdu && styles.rtlRow]}>
         {values.map((value) => (
           <Pressable
             key={value}
@@ -310,7 +541,7 @@ function ChoiceRow<T extends string>({
                 selected === value && styles.choiceTextSelected,
               ]}
             >
-              {value === "ALL" ? "All" : label(value)}
+              {getLabel(value)}
             </Text>
           </Pressable>
         ))}
@@ -319,61 +550,62 @@ function ChoiceRow<T extends string>({
   );
 }
 
-function InfoRow({ label: title, value }: { label: string; value: string }) {
+function InfoRow({
+  label: title,
+  value,
+  isUrdu,
+}: {
+  label: string;
+  value: string;
+  isUrdu: boolean;
+}) {
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.muted}>{title}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <View style={[styles.infoRow, isUrdu && styles.rtlRow]}>
+      <Text style={[styles.muted, isUrdu && styles.rtlText]}>{title}</Text>
+      <Text style={[styles.infoValue, isUrdu && styles.rtlText]}>
+        {value}
+      </Text>
     </View>
   );
 }
 
-function ActionButton({
-  label: title,
-  onPress,
-  disabled,
-}: {
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      style={[styles.button, disabled && styles.disabled]}
-    >
-      <Text style={styles.buttonText}>{title}</Text>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: 20, paddingTop: 30, paddingBottom: 40, backgroundColor: "#F4F6F8" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8" },
-  heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 10 },
-  eyebrow: { color: "#8A7B67", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
-  title: { color: "#17212F", fontSize: 25, fontWeight: "800", marginTop: 5 },
-  sectionTitle: { color: "#17212F", fontSize: 16, fontWeight: "700" },
-  filterHeading: { marginTop: 16, marginBottom: 8 },
-  card: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E4E7EC", borderRadius: 14, padding: 16, marginBottom: 12 },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, borderTopWidth: 1, borderTopColor: "#F0F2F5", paddingVertical: 8 },
-  infoValue: { flex: 1, color: "#17212F", textAlign: "right", fontWeight: "600" },
-  muted: { color: "#667085", lineHeight: 20 },
-  link: { color: "#183153", fontWeight: "700" },
-  error: { color: "#B42318", lineHeight: 20, marginTop: 8 },
-  badge: { color: "#027A48", backgroundColor: "#ECFDF3", paddingHorizontal: 9, paddingVertical: 5, overflow: "hidden", borderRadius: 20, fontSize: 12, fontWeight: "700" },
-  failedBadge: { color: "#B42318", backgroundColor: "#FEF3F2" },
-  choices: { flexDirection: "row", gap: 8, paddingVertical: 4 },
-  choice: { borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 18, paddingHorizontal: 11, paddingVertical: 8 },
-  choiceSelected: { backgroundColor: "#183153", borderColor: "#183153" },
-  choiceText: { color: "#344054", fontSize: 12, fontWeight: "600" },
-  choiceTextSelected: { color: "#FFFFFF" },
-  output: { backgroundColor: "#F4F6F8", borderRadius: 8, padding: 10, marginTop: 10 },
-  outputLabel: { fontWeight: "700", color: "#344054", marginBottom: 6 },
-  outputText: { color: "#344054", fontSize: 12, lineHeight: 18 },
-  button: { minHeight: 46, backgroundColor: "#183153", borderRadius: 10, alignItems: "center", justifyContent: "center", padding: 12, marginTop: 8 },
-  buttonText: { color: "#FFFFFF", fontWeight: "700" },
-  disabled: { opacity: 0.55 },
+  page: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40, backgroundColor: C.background },
+  rtlPage: { direction: "rtl" },
+  rtlRow: { flexDirection: "row-reverse" },
+  rtlText: { textAlign: "right" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24, backgroundColor: C.background },
+  heading: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 },
+  headerContent: { flex: 1 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+  eyebrow: { color: C.muted, fontSize: 11, fontWeight: "800", letterSpacing: 1.4 },
+  title: { color: C.text, fontSize: 27, fontWeight: "800", marginTop: 5, letterSpacing: -0.4 },
+  sectionTitle: { color: C.text, fontSize: 17, fontWeight: "800" },
+  filterHeading: { marginTop: 18, marginBottom: 8 },
+  card: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderTopColor: C.gold, borderTopWidth: 2, borderRadius: 15, padding: 16, marginBottom: 12 },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, borderTopWidth: 1, borderTopColor: C.border, paddingVertical: 9 },
+  infoValue: { flex: 1, color: C.text, textAlign: "right", fontWeight: "700", fontSize: 13 },
+  muted: { color: C.secondary, fontSize: 13, lineHeight: 19 },
+  link: { color: C.navy, fontSize: 13, fontWeight: "800" },
+  error: { color: C.red, backgroundColor: C.redBg, borderColor: "#EAC6C0", borderWidth: 1, borderRadius: 11, padding: 12, fontSize: 13, lineHeight: 19, marginTop: 8, marginBottom: 12 },
+  badge: { color: C.secondary, backgroundColor: C.surfaceMuted, paddingHorizontal: 10, paddingVertical: 6, overflow: "hidden", borderRadius: 99, fontSize: 11, fontWeight: "800" },
+  succeededBadge: { color: C.green, backgroundColor: C.greenBg },
+  failedBadge: { color: C.red, backgroundColor: C.redBg },
+  choices: { flexDirection: "row", gap: 8, paddingVertical: 5 },
+  choice: { minHeight: 38, justifyContent: "center", borderWidth: 1, borderColor: C.border, borderRadius: 99, backgroundColor: C.surface, paddingHorizontal: 12, paddingVertical: 8 },
+  choiceSelected: { backgroundColor: C.navy, borderColor: C.navy },
+  choiceText: { color: C.secondary, fontSize: 12, fontWeight: "700" },
+  choiceTextSelected: { color: C.surface },
+  output: { backgroundColor: C.surfaceMuted, borderWidth: 1, borderColor: C.border, borderRadius: 10, padding: 12, marginTop: 12 },
+  outputLabel: { fontWeight: "800", color: C.text, marginBottom: 7, fontSize: 13 },
+  outputText: { color: C.secondary, fontSize: 12, lineHeight: 18 },
+  pagination: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 4, padding: 10, backgroundColor: C.surface, borderWidth: 1, borderColor: C.border, borderRadius: 13 },
+  pageNavButton: { minHeight: 38, justifyContent: "center", paddingHorizontal: 10, borderRadius: 9, backgroundColor: C.surfaceMuted },
+  pageNavText: { color: C.navy, fontSize: 12, fontWeight: "800" },
+  pageNumbers: { flexDirection: "row", alignItems: "center", gap: 5 },
+  pageNumber: { minWidth: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 9, borderWidth: 1, borderColor: C.border, backgroundColor: C.surface },
+  pageNumberSelected: { backgroundColor: C.navy, borderColor: C.navy },
+  pageNumberText: { color: C.secondary, fontSize: 13, fontWeight: "700" },
+  pageNumberTextSelected: { color: C.surface },
+  disabled: { opacity: 0.45 },
 });

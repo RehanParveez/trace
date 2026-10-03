@@ -74,7 +74,14 @@ class LedgerSourceKind(str, enum.Enum):
   MODEL = "MODEL"
   SCHEDULE_IMPORT = "SCHEDULE_IMPORT"  
   MANUAL = "MANUAL"                     
-  ESTIMATE = "ESTIMATE"                 
+  ESTIMATE = "ESTIMATE"         
+  
+class DeductionType(str, enum.Enum):
+  OVERLAP_ALLOCATION = "OVERLAP_ALLOCATION"
+  EXTENT_TRIMMING = "EXTENT_TRIMMING"
+  VOID_DEDUCTION = "VOID_DEDUCTION"
+  MATERIAL_SUBSTITUTION = "MATERIAL_SUBSTITUTION"
+  MEASUREMENT_CONVENTION = "MEASUREMENT_CONVENTION"        
  
 _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CANCELLED','SUPERSEDED'"
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
@@ -82,6 +89,7 @@ _SOLID_STATUSES = "'OK','REVIEW_REQUIRED','REJECTED'"
 _GEOMETRY_KINDS = "'EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPPORTED'"
 _LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE'"
 _CANONICAL_UNITS = "'m3','m2','m','kg','nos'"
+_DEDUCTION_TYPES = "'OVERLAP_ALLOCATION','EXTENT_TRIMMING','VOID_DEDUCTION','MATERIAL_SUBSTITUTION','MEASUREMENT_CONVENTION'"
  
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -1597,4 +1605,101 @@ class StagedQuantityLedger(_LedgerColumns, Base, TimestampMixin):
     CheckConstraint(f"unit IN ({_CANONICAL_UNITS})", name="ck_staged_quantity_ledger_unit"),
     )
  
+  stage: Mapped[str] = mapped_column(String(40), nullable=False)
+  
+class _DeductionColumns:
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+
+  from_solid_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  to_solid_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+
+  deduction_type: Mapped[str] = mapped_column(String(30), nullable=False)
+  quantity: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False, default=Decimal("0"))
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+
+  rule_code: Mapped[str] = mapped_column(String(80), nullable=False)
+  rule_version: Mapped[str | None] = mapped_column(String(40), nullable=True)
+
+  geometry: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+  engine_version: Mapped[str] = mapped_column(String(30), nullable=False)
+
+class LedgerDeduction(_DeductionColumns, Base, TimestampMixin):
+  __tablename__ = "ledger_deductions"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_ledger_deductions_id_org"),
+
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_ledger_deductions_run_tenant",
+    ),
+    ForeignKeyConstraint(
+      ["from_solid_id", "organization_id"], ["quantity_solids.id", "quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_ledger_deductions_from_solid_tenant",
+    ),
+    ForeignKeyConstraint(
+      ["to_solid_id", "organization_id"], ["quantity_solids.id", "quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_ledger_deductions_to_solid_tenant",
+    ),
+
+    Index("ix_ledger_deductions_run_from", "run_id", "from_solid_id"),
+    Index("ix_ledger_deductions_run_to", "run_id", "to_solid_id"),
+    Index("ix_ledger_deductions_run_type", "run_id", "deduction_type"),
+
+    CheckConstraint(f"deduction_type IN ({_DEDUCTION_TYPES})", name="ck_ledger_deductions_type"),
+    CheckConstraint("quantity >= 0", name="ck_ledger_deductions_non_negative"),
+    CheckConstraint(f"unit IN ({_CANONICAL_UNITS})", name="ck_ledger_deductions_unit"),
+    CheckConstraint(
+      "to_solid_id IS NULL OR to_solid_id <> from_solid_id",
+      name="ck_ledger_deductions_distinct_solids",
+    ),
+    CheckConstraint(
+      "deduction_type <> 'OVERLAP_ALLOCATION' OR to_solid_id IS NOT NULL",
+      name="ck_ledger_deductions_overlap_needs_owner",
+    ),
+  )
+
+class StagedLedgerDeduction(_DeductionColumns, Base, TimestampMixin):
+  __tablename__ = "staged_ledger_deductions"
+
+  __table_args__ = (
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_staged_ledger_deductions_run_tenant",
+    ),
+    ForeignKeyConstraint(
+      ["from_solid_id", "organization_id"], ["staged_quantity_solids.id", "staged_quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_staged_ledger_deductions_from_solid_tenant",
+    ),
+    ForeignKeyConstraint(
+      ["to_solid_id", "organization_id"], ["staged_quantity_solids.id", "staged_quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_staged_ledger_deductions_to_solid_tenant",
+    ),
+
+    Index("ix_staged_ledger_deductions_run_stage", "run_id", "stage"),
+
+    CheckConstraint(f"deduction_type IN ({_DEDUCTION_TYPES})", name="ck_staged_ledger_deductions_type"),
+    CheckConstraint("quantity >= 0", name="ck_staged_ledger_deductions_non_negative"),
+    CheckConstraint(f"unit IN ({_CANONICAL_UNITS})", name="ck_staged_ledger_deductions_unit"),
+    
+    CheckConstraint(
+      "to_solid_id IS NULL OR to_solid_id <> from_solid_id",
+      name="ck_staged_ledger_deductions_distinct_solids",
+    ),
+    
+    CheckConstraint(
+      "deduction_type <> 'OVERLAP_ALLOCATION' OR to_solid_id IS NOT NULL",
+      name="ck_staged_ledger_deductions_overlap_needs_owner",
+    ),
+  )
+
   stage: Mapped[str] = mapped_column(String(40), nullable=False)

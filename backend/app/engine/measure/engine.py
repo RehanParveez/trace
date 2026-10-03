@@ -27,6 +27,7 @@ VOLUME_ROLES = frozenset({
 COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
 FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
+QTO_ONLY_FACTOR = Decimal("0.9")
 QTO_MISMATCH_TOLERANCE = 0.02
 
 class InvariantViolation(Exception):

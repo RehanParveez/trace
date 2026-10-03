@@ -1,12 +1,33 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { restoreSession } from "../api/client";
-import { approveExpense, createExpense, getExpenseOrganizationSummary, getExpenseStatusSummary, listExpenses, rejectExpense } from "../api/expenses";
+import {
+  approveExpense,
+  createExpense,
+  getExpenseOrganizationSummary,
+  getExpenseStatusSummary,
+  listExpenses,
+  rejectExpense,
+} from "../api/expenses";
 import { getOrganization } from "../api/organizations";
 import { getProject, listProjects } from "../api/projects";
-import type { AuthUser, Expense, ExpenseStatus, Project } from "../api/types";
+import type {
+  AuthUser,
+  Expense,
+  ExpenseStatus,
+  Project,
+} from "../api/types";
 import LanguageSwitcher from "./LanguageSwitcher";
 
 const PAGE_SIZE = 100;
@@ -16,6 +37,22 @@ const STATUSES: Array<ExpenseStatus | "ALL"> = [
   "APPROVED",
   "REJECTED",
 ];
+
+const C = {
+  background: "#F3EEE4",
+  surface: "#FFFEFB",
+  surfaceMuted: "#F7F1E7",
+  navy: "#080D18",
+  text: "#17212F",
+  secondary: "#5C5347",
+  muted: "#82796C",
+  border: "#E5DCCB",
+  gold: "#D9A441",
+  green: "#26734D",
+  greenBg: "#E8F2E9",
+  red: "#A33A32",
+  redBg: "#F9E9E5",
+};
 
 function localDateString(): string {
   const today = new Date();
@@ -287,7 +324,7 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#183153" />
+        <ActivityIndicator size="large" color={C.navy} />
         <Text style={styles.muted}>{t("expenses.loading")}</Text>
       </View>
     );
@@ -309,7 +346,9 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
       <View style={styles.headerRow}>
         <View style={styles.headerContent}>
           <Text style={styles.eyebrow}>
-            {projectId ? t("expenses.eyebrowProject") : t("expenses.eyebrowWorkspace")}
+            {projectId
+              ? t("expenses.eyebrowProject")
+              : t("expenses.eyebrowWorkspace")}
           </Text>
           <Text style={styles.title}>
             {projectId
@@ -382,6 +421,7 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
             onChangeText={setCategory}
             maxLength={150}
             placeholder={t("expenses.categoryPlaceholder")}
+            placeholderTextColor={C.muted}
           />
 
           <Text style={styles.label}>{t("expenses.descriptionOptional")}</Text>
@@ -391,6 +431,7 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
             onChangeText={setDescription}
             multiline
             placeholder={t("expenses.descriptionPlaceholder")}
+            placeholderTextColor={C.muted}
           />
 
           <Text style={styles.label}>
@@ -402,6 +443,7 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
             onChangeText={setAmount}
             keyboardType="decimal-pad"
             placeholder={t("expenses.amountPlaceholder")}
+            placeholderTextColor={C.muted}
           />
 
           <Text style={styles.label}>{t("expenses.expenseDate")}</Text>
@@ -411,6 +453,7 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
             onChangeText={setExpenseDate}
             autoCapitalize="none"
             placeholder={t("expenses.datePlaceholder")}
+            placeholderTextColor={C.muted}
           />
 
           <ActionButton
@@ -425,7 +468,10 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
 
       <View style={styles.rowBetween}>
         <Text style={styles.sectionTitle}>{t("expenses.recordsSection")}</Text>
-        <Pressable onPress={() => setAttempt((value) => value + 1)}>
+        <Pressable
+          onPress={() => setAttempt((value) => value + 1)}
+          accessibilityRole="button"
+        >
           <Text style={styles.link}>{t("expenses.refresh")}</Text>
         </Pressable>
       </View>
@@ -521,6 +567,7 @@ export function ExpensesModuleScreen({ projectId }: { projectId?: string }) {
                     }
                     multiline
                     placeholder={t("expenses.reviewNotePlaceholder")}
+                    placeholderTextColor={C.muted}
                   />
                   <View style={styles.actions}>
                     <ActionButton
@@ -638,41 +685,41 @@ function ActionButton({
 }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: 20, paddingTop: 32, paddingBottom: 40, backgroundColor: "#F4F6F8" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, backgroundColor: "#F4F6F8" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 15 },
+  page: { flexGrow: 1, padding: 22, paddingTop: 28, paddingBottom: 40, backgroundColor: C.background },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24, backgroundColor: C.background },
+  headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 18 },
   headerContent: { flex: 1 },
-  eyebrow: { color: "#8A7B67", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
-  title: { color: "#17212F", fontSize: 25, fontWeight: "800", marginTop: 5 },
-  card: { backgroundColor: "#FFFFFF", borderRadius: 14, borderWidth: 1, borderColor: "#E4E7EC", padding: 16, marginBottom: 12 },
-  sectionTitle: { color: "#17212F", fontSize: 17, fontWeight: "700", marginBottom: 8 },
-  label: { color: "#344054", fontSize: 13, fontWeight: "700", marginTop: 12, marginBottom: 6 },
-  input: { minHeight: 48, borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 10, backgroundColor: "#FFFFFF", color: "#17212F", paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
-  inputText: { color: "#17212F", fontSize: 15 },
+  eyebrow: { color: C.muted, fontSize: 11, fontWeight: "800", letterSpacing: 1.4, textTransform: "uppercase" },
+  title: { color: C.text, fontSize: 27, fontWeight: "800", marginTop: 5, letterSpacing: -0.4 },
+  card: { backgroundColor: C.surface, borderRadius: 15, borderWidth: 1, borderColor: C.border, borderTopColor: C.gold, borderTopWidth: 2, padding: 16, marginBottom: 12 },
+  sectionTitle: { color: C.text, fontSize: 17, fontWeight: "800", marginBottom: 8 },
+  label: { color: C.secondary, fontSize: 12, fontWeight: "700", marginTop: 13, marginBottom: 7 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: C.border, borderRadius: 10, backgroundColor: C.surface, color: C.text, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14 },
+  inputText: { color: C.text, fontSize: 14 },
   multiline: { minHeight: 78, textAlignVertical: "top" },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, borderTopWidth: 1, borderTopColor: "#F0F2F5", paddingVertical: 9 },
-  infoValue: { flex: 1, textAlign: "right", color: "#17212F", fontSize: 14, fontWeight: "600" },
-  bodyText: { color: "#344054", lineHeight: 20, marginTop: 8 },
-  muted: { color: "#667085", lineHeight: 20 },
-  error: { color: "#B42318", lineHeight: 20, marginBottom: 10 },
-  link: { color: "#183153", fontWeight: "700" },
-  status: { color: "#344054", backgroundColor: "#F2F4F7", borderRadius: 20, overflow: "hidden", paddingHorizontal: 10, paddingVertical: 5, fontSize: 12, fontWeight: "700" },
-  statusApproved: { color: "#027A48", backgroundColor: "#ECFDF3" },
-  statusRejected: { color: "#B42318", backgroundColor: "#FEF3F2" },
+  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, borderTopWidth: 1, borderTopColor: C.border, paddingVertical: 9 },
+  infoValue: { flex: 1, textAlign: "right", color: C.text, fontSize: 13, fontWeight: "700" },
+  bodyText: { color: C.secondary, lineHeight: 20, marginTop: 8 },
+  muted: { color: C.secondary, fontSize: 13, lineHeight: 19 },
+  error: { color: C.red, backgroundColor: C.redBg, borderColor: "#EAC6C0", borderWidth: 1, borderRadius: 11, padding: 12, fontSize: 13, lineHeight: 19, marginBottom: 12 },
+  link: { color: C.navy, fontSize: 13, fontWeight: "800" },
+  status: { color: C.navy, backgroundColor: C.surfaceMuted, borderRadius: 99, overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6, fontSize: 11, fontWeight: "800" },
+  statusApproved: { color: C.green, backgroundColor: C.greenBg },
+  statusRejected: { color: C.red, backgroundColor: C.redBg },
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 8 },
   filters: { flexDirection: "row", gap: 8, paddingBottom: 12 },
-  filter: { borderWidth: 1, borderColor: "#D0D5DD", borderRadius: 20, paddingHorizontal: 12, paddingVertical: 8 },
-  filterSelected: { backgroundColor: "#183153", borderColor: "#183153" },
-  filterText: { color: "#344054", fontWeight: "600" },
-  filterTextSelected: { color: "#FFFFFF" },
-  reviewArea: { borderTopWidth: 1, borderTopColor: "#F0F2F5", marginTop: 12 },
+  filter: { minHeight: 38, justifyContent: "center", borderWidth: 1, borderColor: C.border, borderRadius: 99, backgroundColor: C.surface, paddingHorizontal: 13, paddingVertical: 8 },
+  filterSelected: { backgroundColor: C.navy, borderColor: C.navy },
+  filterText: { color: C.secondary, fontSize: 12, fontWeight: "700" },
+  filterTextSelected: { color: C.surface },
+  reviewArea: { borderTopWidth: 1, borderTopColor: C.border, marginTop: 12, paddingTop: 4 },
   actions: { gap: 8, marginTop: 10 },
-  button: { minHeight: 48, backgroundColor: "#183153", borderRadius: 10, alignItems: "center", justifyContent: "center", paddingHorizontal: 14, paddingVertical: 12, marginTop: 10 },
-  buttonText: { color: "#FFFFFF", fontWeight: "700", textAlign: "center" },
-  secondaryButton: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#D0D5DD" },
-  secondaryButtonText: { color: "#183153" },
+  button: { minHeight: 46, backgroundColor: C.navy, borderRadius: 11, alignItems: "center", justifyContent: "center", paddingHorizontal: 14, paddingVertical: 12, marginTop: 10 },
+  buttonText: { color: C.surface, fontSize: 13, fontWeight: "800", textAlign: "center" },
+  secondaryButton: { backgroundColor: C.surface, borderWidth: 1, borderColor: C.border },
+  secondaryButtonText: { color: C.navy },
   disabled: { opacity: 0.55 },
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", padding: 20 },
-  modalCard: { maxHeight: "80%", backgroundColor: "#FFFFFF", borderRadius: 16, padding: 18 },
-  projectOption: { paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: "#F0F2F5" },
+  modalBackdrop: { flex: 1, backgroundColor: "rgba(8, 13, 24, 0.58)", justifyContent: "center", padding: 20 },
+  modalCard: { maxHeight: "80%", backgroundColor: C.surface, borderRadius: 16, borderWidth: 1, borderColor: C.border, padding: 18 },
+  projectOption: { paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: C.border },
 });
