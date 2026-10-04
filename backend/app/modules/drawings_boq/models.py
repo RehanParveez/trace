@@ -146,7 +146,71 @@ class ExportStatus(str, enum.Enum):
   QUEUED = "QUEUED"
   RUNNING = "RUNNING"
   SUCCEEDED = "SUCCEEDED"
-  FAILED = "FAILED"        
+  FAILED = "FAILED" 
+  
+class SpaceSource(str, enum.Enum):
+  IFC = "IFC"
+  MANUAL = "MANUAL"
+ 
+class FinishSurface(str, enum.Enum):
+  FLOOR = "FLOOR"
+  WALL = "WALL"
+  CEILING = "CEILING"
+  SKIRTING = "SKIRTING"
+  DADO = "DADO"
+ 
+class FinishSource(str, enum.Enum):
+  IFC_PSET = "IFC_PSET"
+  SCHEDULE_IMPORT = "SCHEDULE_IMPORT"
+  MANUAL = "MANUAL"
+  RULE_DEFAULT = "RULE_DEFAULT"
+ 
+class RelationKind(str, enum.Enum):
+  HOSTED_IN = "HOSTED_IN"
+  SUPPORTS = "SUPPORTS"
+  CONNECTS = "CONNECTS"
+  ADJACENT = "ADJACENT"
+ 
+class RelationSource(str, enum.Enum):
+  IFC = "IFC"
+  DERIVED = "DERIVED"
+ 
+class BoundaryKind(str, enum.Enum):
+  PHYSICAL = "PHYSICAL"
+  VIRTUAL = "VIRTUAL"
+ 
+class BoundarySide(str, enum.Enum):
+  INTERNAL = "INTERNAL"
+  EXTERNAL = "EXTERNAL"
+  UNDEFINED = "UNDEFINED"
+ 
+class ScheduleKind(str, enum.Enum):
+  DOOR = "DOOR"
+  WINDOW = "WINDOW"
+  FINISH = "FINISH"
+  FIXTURE = "FIXTURE"
+  GENERAL = "GENERAL"
+ 
+class ScheduleSource(str, enum.Enum):
+  PDF_AI = "PDF_AI"
+  PDF_TEXT = "PDF_TEXT"
+  CSV = "CSV"
+  MANUAL = "MANUAL"
+ 
+class ScheduleImportStatus(str, enum.Enum):
+  PENDING_REVIEW = "PENDING_REVIEW"
+  CONFIRMED = "CONFIRMED"
+  REJECTED = "REJECTED"
+  ARCHIVED = "ARCHIVED"
+ 
+class ScheduleRowStatus(str, enum.Enum):
+  PENDING = "PENDING"
+  CONFIRMED = "CONFIRMED"
+  REJECTED = "REJECTED"
+ 
+class LedgerReviewStatus(str, enum.Enum):
+  OK = "OK"
+  REVIEW_REQUIRED = "REVIEW_REQUIRED"       
  
 _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CANCELLED','SUPERSEDED'"
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
@@ -167,11 +231,26 @@ _SNAPSHOT_PURPOSES = "'APPROVAL','ISSUE','MANUAL'"
 _EXPORT_KINDS = "'CONTRACT_BOQ','PROCUREMENT','MEASUREMENT_BOOK','AUDIT_REPORT','REVISION_COMPARISON','BBS'"
 _EXPORT_FORMATS = "'PDF','XLSX'"
 _EXPORT_STATUSES = "'QUEUED','RUNNING','SUCCEEDED','FAILED'"
+_SPACE_SOURCES = "'IFC','MANUAL'"
+_FINISH_SURFACES = "'FLOOR','WALL','CEILING','SKIRTING','DADO'"
+_FINISH_SOURCES = "'IFC_PSET','SCHEDULE_IMPORT','MANUAL','RULE_DEFAULT'"
+_RELATION_KINDS = "'HOSTED_IN','SUPPORTS','CONNECTS','ADJACENT'"
+_RELATION_SOURCES = "'IFC','DERIVED'"
+_BOUNDARY_KINDS = "'PHYSICAL','VIRTUAL'"
+_BOUNDARY_SIDES = "'INTERNAL','EXTERNAL','UNDEFINED'"
+_SCHEDULE_KINDS = "'DOOR','WINDOW','FINISH','FIXTURE','GENERAL'"
+_SCHEDULE_SOURCES = "'PDF_AI','PDF_TEXT','CSV','MANUAL'"
+_IMPORT_STATUSES = "'PENDING_REVIEW','CONFIRMED','REJECTED','ARCHIVED'"
+_ROW_STATUSES = "'PENDING','CONFIRMED','REJECTED'"
+_LEDGER_REVIEW = "'OK','REVIEW_REQUIRED'"
+_NORMALIZATION_STATUSES = "'PENDING','VALID','WARNING','INVALID'"
+
  
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
 
   __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_drawings_id_org"),
     Index("ix_drawings_org_project", "organization_id", "project_id"),
   )
 
@@ -289,10 +368,12 @@ class DrawingElement(Base, TimestampMixin):
   __tablename__ = "drawing_elements"
 
   __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_drawing_elements_id_org"),
     Index("ix_drawing_elements_drawing", "drawing_id"),
     Index("ix_drawing_elements_org_drawing_type", "organization_id", "drawing_id", "ifc_type"),
     Index("ix_drawing_elements_drawing_level_role", "drawing_id", "level_id", "structural_role"),
     Index("ix_drawing_elements_drawing_status", "drawing_id", "normalization_status"),
+    Index("ix_drawing_elements_drawing_type_mark", "drawing_id", "type_mark"),
     CheckConstraint(
       "geometry_kind IS NULL OR geometry_kind IN "
       "('EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPPORTED')",
@@ -396,6 +477,8 @@ class DrawingElement(Base, TimestampMixin):
   geometry_kind: Mapped[str | None] = mapped_column(String(20), nullable=True)
   profile: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
   placement: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  type_mark: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  type_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
 
   normalization_status: Mapped[str] = mapped_column(
     String(10),
@@ -1142,6 +1225,12 @@ class MeasurementRuleSet(Base, TimestampMixin):
   
   element_type_mappings: Mapped[list["ElementTypeMapping"]] = relationship(
     "ElementTypeMapping",
+    back_populates="rule_set",
+    cascade="all, delete-orphan",
+  )
+  
+  finish_rules: Mapped[list["FinishRule"]] = relationship(
+    "FinishRule",
     back_populates="rule_set",
     cascade="all, delete-orphan",
   )
@@ -2298,3 +2387,545 @@ class ExportJob(Base, TimestampMixin):
   error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
   started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+class BuildingSpace(Base, TimestampMixin):
+  __tablename__ = "building_spaces"
+ 
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_building_spaces_id_org"),
+    UniqueConstraint("drawing_id", "ifc_global_id", name="uq_building_spaces_drawing_global_id"),
+    
+    ForeignKeyConstraint(
+      ["drawing_id", "organization_id"], ["drawings.id", "drawings.organization_id"],
+      ondelete="CASCADE", name="fk_building_spaces_drawing_tenant",
+    ),
+    
+    Index("ix_building_spaces_org_project", "organization_id", "project_id"),
+    Index("ix_building_spaces_drawing_level", "drawing_id", "level_id"),
+    CheckConstraint(f"source IN ({_SPACE_SOURCES})", name="ck_building_spaces_source"),
+    
+    CheckConstraint(f"geometry_kind IN ({_GEOMETRY_KINDS})", name="ck_building_spaces_geometry_kind"),
+    
+    CheckConstraint(
+      f"normalization_status IN ({_NORMALIZATION_STATUSES})", name="ck_building_spaces_normalization_status",
+    ),
+    
+    CheckConstraint("source <> 'IFC' OR drawing_id IS NOT NULL", name="ck_building_spaces_ifc_has_drawing"),
+    
+    CheckConstraint(
+      "(gross_floor_area_mm2 IS NULL OR gross_floor_area_mm2 >= 0) "
+      "AND (net_floor_area_mm2 IS NULL OR net_floor_area_mm2 >= 0) "
+      "AND (perimeter_mm IS NULL OR perimeter_mm >= 0) "
+      "AND (height_mm IS NULL OR height_mm >= 0)",
+      name="ck_building_spaces_non_negative",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  drawing_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True), 
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+ 
+  source: Mapped[str] = mapped_column(
+    String(10), 
+    nullable=False, 
+    default=SpaceSource.IFC.value, server_default="IFC",
+  )
+  
+  ifc_global_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  number: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  name: Mapped[str | None] = mapped_column(String(300), nullable=True)
+  long_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+  
+  category: Mapped[str] = mapped_column(
+    String(40),
+    nullable=False,
+    default="UNKNOWN",
+    server_default="UNKNOWN",
+  )
+  
+  usage_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
+  
+  is_external: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default=text("false"),
+  )
+  
+  is_active: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False, 
+    default=True, server_default=text("true"),
+  )
+ 
+  gross_floor_area_mm2: Mapped[Decimal | None] = mapped_column(Numeric(20, 3), nullable=True)
+  net_floor_area_mm2: Mapped[Decimal | None] = mapped_column(Numeric(20, 3), nullable=True)
+  perimeter_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  height_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  elevation_base_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+ 
+  geometry_kind: Mapped[str] = mapped_column(
+    String(20), 
+    nullable=False,
+    default="UNSUPPORTED",
+    server_default="UNSUPPORTED",
+  )
+  
+  footprint: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  
+  properties: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False, 
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  normalization_status: Mapped[str] = mapped_column(
+    String(10), 
+    nullable=False,
+    default="VALID",
+    server_default="VALID",
+  )
+  
+  normalization_issues: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list, 
+    server_default=text("'[]'::jsonb"),
+  )
+ 
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"), 
+    nullable=True,
+  )
+ 
+class SpaceBoundary(Base, TimestampMixin):
+  __tablename__ = "space_boundaries"
+ 
+  __table_args__ = (
+    UniqueConstraint("space_id", "element_id", name="uq_space_boundaries_space_element"),
+    
+    ForeignKeyConstraint(
+      ["space_id", "organization_id"], ["building_spaces.id", "building_spaces.organization_id"],
+      ondelete="CASCADE", name="fk_space_boundaries_space_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["element_id", "organization_id"], ["drawing_elements.id", "drawing_elements.organization_id"],
+      ondelete="CASCADE", name="fk_space_boundaries_element_tenant",
+    ),
+    
+    Index("ix_space_boundaries_element", "element_id"),
+    CheckConstraint(f"boundary_kind IN ({_BOUNDARY_KINDS})", name="ck_space_boundaries_kind"),
+    CheckConstraint(f"side IN ({_BOUNDARY_SIDES})", name="ck_space_boundaries_side"),
+    CheckConstraint(f"source IN ({_RELATION_SOURCES})", name="ck_space_boundaries_source"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  space_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  element_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+ 
+  boundary_kind: Mapped[str] = mapped_column(String(10), nullable=False, default="PHYSICAL", server_default="PHYSICAL")
+  side: Mapped[str] = mapped_column(String(10), nullable=False, default="UNDEFINED", server_default="UNDEFINED")
+  source: Mapped[str] = mapped_column(String(10), nullable=False, default="IFC", server_default="IFC")
+ 
+class ElementRelation(Base, TimestampMixin):
+  __tablename__ = "element_relations"
+ 
+  __table_args__ = (
+    UniqueConstraint("from_element_id", "to_element_id", "relation", name="uq_element_relations_pair_kind"),
+    ForeignKeyConstraint(
+      ["drawing_id", "organization_id"], ["drawings.id", "drawings.organization_id"],
+      ondelete="CASCADE", name="fk_element_relations_drawing_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["from_element_id", "organization_id"], ["drawing_elements.id", "drawing_elements.organization_id"],
+      ondelete="CASCADE", name="fk_element_relations_from_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["to_element_id", "organization_id"], ["drawing_elements.id", "drawing_elements.organization_id"],
+      ondelete="CASCADE", name="fk_element_relations_to_tenant",
+    ),
+    
+    Index("ix_element_relations_drawing_relation", "drawing_id", "relation"),
+    Index("ix_element_relations_to_element", "to_element_id"),
+    CheckConstraint(f"relation IN ({_RELATION_KINDS})", name="ck_element_relations_relation"),
+    CheckConstraint(f"source IN ({_RELATION_SOURCES})", name="ck_element_relations_source"),
+    CheckConstraint("from_element_id <> to_element_id", name="ck_element_relations_distinct"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  drawing_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  from_element_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  to_element_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+ 
+  relation: Mapped[str] = mapped_column(String(12), nullable=False)
+  
+  source: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False, 
+    default="IFC",
+    server_default="IFC",
+  )
+  
+  details: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+class ScheduleImport(Base, TimestampMixin):
+  __tablename__ = "schedule_imports"
+ 
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_schedule_imports_id_org"),
+    Index("ix_schedule_imports_org_project", "organization_id", "project_id"),
+    
+    Index(
+      "uq_schedule_imports_project_hash", "project_id", "content_hash",
+      unique=True,
+      postgresql_where=text("content_hash IS NOT NULL AND status IN ('PENDING_REVIEW','CONFIRMED')"),
+    ),
+    
+    CheckConstraint(f"source IN ({_SCHEDULE_SOURCES})", name="ck_schedule_imports_source"),
+    CheckConstraint(f"schedule_kind IN ({_SCHEDULE_KINDS})", name="ck_schedule_imports_kind"),
+    CheckConstraint(f"status IN ({_IMPORT_STATUSES})", name="ck_schedule_imports_status"),
+    
+    CheckConstraint(
+      "row_count >= 0 AND confirmed_count >= 0 AND confirmed_count <= row_count",
+      name="ck_schedule_imports_counts",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  drawing_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawings.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+ 
+  source: Mapped[str] = mapped_column(String(12), nullable=False)
+  schedule_kind: Mapped[str] = mapped_column(String(12), nullable=False)
+  
+  status: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False,
+    default=ScheduleImportStatus.PENDING_REVIEW.value,
+    server_default="PENDING_REVIEW",
+  )
+  
+  file_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+  content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  
+  row_count: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=0, server_default=text("0"),
+  )
+  
+  confirmed_count: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default=text("0"),
+  )
+  
+  extraction_meta: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+ 
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  confirmed_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"), 
+    nullable=True,
+  )
+  
+  confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+ 
+class ScheduleRow(Base, TimestampMixin):
+  __tablename__ = "schedule_rows"
+ 
+  __table_args__ = (
+    UniqueConstraint("schedule_import_id", "row_no", name="uq_schedule_rows_import_row"),
+    
+    ForeignKeyConstraint(
+      ["schedule_import_id", "organization_id"], ["schedule_imports.id", "schedule_imports.organization_id"],
+      ondelete="CASCADE", name="fk_schedule_rows_import_tenant",
+    ),
+    
+    Index("ix_schedule_rows_import", "schedule_import_id"),
+    Index("ix_schedule_rows_org_status", "organization_id", "review_status"),
+    CheckConstraint(f"schedule_kind IN ({_SCHEDULE_KINDS})", name="ck_schedule_rows_kind"),
+    CheckConstraint(f"review_status IN ({_ROW_STATUSES})", name="ck_schedule_rows_review_status"),
+    
+    CheckConstraint(
+      f"canonical_unit IS NULL OR canonical_unit IN ({_CANONICAL_UNITS})", name="ck_schedule_rows_canonical_unit",
+    ),
+    
+    CheckConstraint("row_no >= 1", name="ck_schedule_rows_row_no"),
+    
+    CheckConstraint(
+      "(quantity IS NULL OR quantity >= 0) AND (canonical_quantity IS NULL OR canonical_quantity >= 0)",
+      name="ck_schedule_rows_non_negative",
+    ),
+    
+    CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_schedule_rows_confidence"),
+    
+    CheckConstraint(
+      "review_status <> 'CONFIRMED' OR (work_item_code IS NOT NULL AND canonical_unit IS NOT NULL "
+      "AND canonical_quantity IS NOT NULL)",
+      name="ck_schedule_rows_confirmed_is_mapped",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  schedule_import_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  row_no: Mapped[int] = mapped_column(Integer, nullable=False)
+  schedule_kind: Mapped[str] = mapped_column(String(12), nullable=False)
+ 
+  page_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+  mark: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+  location_text: Mapped[str | None] = mapped_column(String(300), nullable=True)
+  
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"), 
+    nullable=True,
+  )
+  
+  space_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_spaces.id", ondelete="SET NULL"), 
+    nullable=True,
+  )
+ 
+  unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
+  width_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  height_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+ 
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  canonical_quantity: Mapped[Decimal | None] = mapped_column(Numeric(20, 6), nullable=True)
+ 
+  confidence: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4),
+    nullable=False,
+    default=Decimal("0.5"), 
+    server_default="0.5",
+  )
+  
+  review_status: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default=ScheduleRowStatus.PENDING.value,
+    server_default="PENDING",
+  )
+  
+  review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+  reviewed_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+  matched_element_count: Mapped[int] = mapped_column(
+    Integer, 
+    nullable=False,
+    default=0, 
+    server_default=text("0"),
+  )
+  
+  extra: Mapped[dict] = mapped_column(
+    JSONB, 
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+class SpaceFinish(Base, TimestampMixin):
+  __tablename__ = "space_finishes"
+ 
+  __table_args__ = (
+    UniqueConstraint("space_id", "surface", "work_item_code", name="uq_space_finishes_space_surface_work_item"),
+    
+    ForeignKeyConstraint(
+      ["space_id", "organization_id"], ["building_spaces.id", "building_spaces.organization_id"],
+      ondelete="CASCADE", name="fk_space_finishes_space_tenant",
+    ),
+    
+    Index("ix_space_finishes_space", "space_id"),
+    CheckConstraint(f"surface IN ({_FINISH_SURFACES})", name="ck_space_finishes_surface"),
+    CheckConstraint(f"source IN ({_FINISH_SOURCES})", name="ck_space_finishes_source"),
+    CheckConstraint(f"review_status IN ({_LEDGER_REVIEW})", name="ck_space_finishes_review_status"),
+    CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_space_finishes_confidence"),
+    CheckConstraint("height_mm IS NULL OR height_mm > 0", name="ck_space_finishes_height"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  space_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+ 
+  surface: Mapped[str] = mapped_column(String(12), nullable=False)
+  work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)
+  finish_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+  height_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+ 
+  source: Mapped[str] = mapped_column(
+    String(20),
+    nullable=False, 
+    default="MANUAL", 
+    server_default="MANUAL",
+  )
+  
+  schedule_row_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("schedule_rows.id", ondelete="SET NULL"), 
+    nullable=True,
+  )
+  
+  confidence: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4),
+    nullable=False,
+    default=Decimal("1"),
+    server_default="1",
+  )
+  
+  review_status: Mapped[str] = mapped_column(
+    String(20), 
+    nullable=False,
+    default="OK",
+    server_default="OK",
+  )
+  
+  is_active: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False, 
+    default=True,
+    server_default=text("true"),
+  )
+  
+  extra: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, 
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+ 
+class FinishRule(Base, TimestampMixin):
+  __tablename__ = "finish_rules"
+ 
+  __table_args__ = (
+    UniqueConstraint(
+      "rule_set_id", "space_category", "surface", "work_item_code",
+      name="uq_finish_rules_scope_surface_item",
+    ),
+    
+    Index("ix_finish_rules_rule_set", "rule_set_id"),
+    CheckConstraint(f"surface IN ({_FINISH_SURFACES})", name="ck_finish_rules_surface"),
+    CheckConstraint("height_mm IS NULL OR height_mm > 0", name="ck_finish_rules_height"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  rule_set_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("measurement_rule_sets.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+ 
+  space_category: Mapped[str] = mapped_column(
+    String(40),
+    nullable=False,
+    default="ALL",
+    server_default="ALL",
+  )
+  
+  surface: Mapped[str] = mapped_column(String(12), nullable=False)
+  work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)
+  height_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  
+  deduct_openings: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False, 
+    default=True,
+    server_default=text("true"),
+  )
+  
+  priority: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=0,
+    server_default=text("0"),
+  )
+  
+  extra_config: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+  rule_set: Mapped["MeasurementRuleSet"] = relationship(
+    "MeasurementRuleSet",
+    back_populates="finish_rules",
+  )

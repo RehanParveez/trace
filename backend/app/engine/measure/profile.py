@@ -87,6 +87,16 @@ def _conditions_match(conditions: dict, props: dict) -> bool:
   return True
 
 @dataclass(frozen=True)
+class FinishRuleSpec:
+  space_category: str
+  surface: str
+  work_item_code: str
+  height_mm: Decimal | None
+  deduct_openings: bool = True
+  priority: int = 0
+  exclude: bool = False
+
+@dataclass(frozen=True)
 class ResolvedRuleProfile:
   rule_set_id: str
   code: str
@@ -107,6 +117,7 @@ class ResolvedRuleProfile:
   reinforcement_rules: tuple[ReinforcementRuleSpec, ...] = ()
   mappings: tuple[MappingSpec, ...] = ()
   recipes: tuple[RecipeSpec, ...] = ()
+  finish_rules: tuple[FinishRuleSpec, ...] = ()
 
   def waste_factor(self, material_class: str | None, stage: str = "SITE") -> Decimal:
     wanted = (material_class or "DEFAULT").upper()

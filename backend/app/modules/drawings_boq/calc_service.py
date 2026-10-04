@@ -16,6 +16,8 @@ from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.projects.repository import ProjectRepository
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.core.config import settings
+from app.engine.measure import finishes as fin
+from app.modules.drawings_boq.spatial_repository import load_phase6_inputs
 
 class RunError(Exception):
   def __init__(self, code: str, message: str):
@@ -35,36 +37,37 @@ def _to_model_element(e: DrawingElement) -> ModelElement:
     normalization_status=e.normalization_status,
   )
 
-def _solid_row(run: CalculationRun, s) -> dict:
+def _solid_row(run: CalculationRun, s, stage: str = "build_solids") -> dict:
   return {
     "id": s.id, "organization_id": run.organization_id, "run_id": run.id,
     "element_id": s.element_id, "level_id": s.level_id, "role": s.role,
     "component_type": s.component_type, "geometry_kind": s.geometry_kind, "material_grade": s.material_grade,
     "gross_volume_m3": s.gross_volume_m3, "gross_area_m2": s.gross_area_m2, "gross_length_m": s.gross_length_m,
     "count": s.count, "status": s.status, "issues": list(s.issues),
-    "engine_version": run.engine_version, "stage": "build_solids",
+    "engine_version": run.engine_version, "stage": stage,
   }
 
-def _ledger_row(run: CalculationRun, e) -> dict:
+def _ledger_row(run: CalculationRun, e, stage: str = "measure") -> dict:
   return {
     "id": uuid5(run.id, f"ledger|{e.solid_id}|{e.work_item_code}"),
     "organization_id": run.organization_id, "run_id": run.id, "solid_id": e.solid_id,
     "element_id": e.element_id, "level_id": e.level_id, "work_item_code": e.work_item_code,
     "quantity_net": e.quantity, "unit": e.unit, "material_grade": e.material_grade,
-    "source_kind": "MODEL", "confidence": e.confidence, "formula_code": e.formula_code,
+    "source_kind": getattr(e, "source_kind", "MODEL"), "confidence": e.confidence, "formula_code": e.formula_code,
     "trace": e.trace, "warnings": list(e.warnings),
-    "engine_version": run.engine_version, "stage": "measure",
+    "engine_version": run.engine_version, "stage": stage,
   }
 
-def _deduction_row(run: CalculationRun, d, ctx: CalculationContext) -> dict:
+def _deduction_row(run: CalculationRun, d, ctx: CalculationContext, stage: str = "allocate") -> dict:
   return {
-    "id": uuid5(run.id, f"deduction|{d.from_solid_id}|{d.to_solid_id}|{d.deduction_type}"),
+    "id": uuid5(run.id, f"deduction|{d.from_solid_id}|{d.to_solid_id}|{d.deduction_type}|"
+      f"{d.geometry.get('opening_element_id', '')}"),
     "organization_id": run.organization_id, "run_id": run.id,
     "from_solid_id": d.from_solid_id, "to_solid_id": d.to_solid_id,
     "deduction_type": d.deduction_type, "quantity": d.quantity, "unit": d.unit,
     "rule_code": d.rule_code, "rule_version": str(ctx.rule_set_version),
     "geometry": d.geometry, "explanation": d.explanation,
-    "engine_version": run.engine_version, "stage": "allocate",
+    "engine_version": run.engine_version, "stage": stage,
   }
   
 def engine_v2_enabled(org_id) -> bool:
@@ -81,7 +84,7 @@ class CalculationService:
     self.standards = StandardsService(session)
     self.projects = ProjectRepository(session)
 
-  async def _load_inputs(self, organization_id: UUID, drawing_ids: list[UUID], rule_set_id: UUID):
+  async def _load_inputs(self, organization_id: UUID, drawing_ids: list[UUID], rule_set_id: UUID, project_id: UUID):
     profile = await self.standards.profile_for_rule_set(rule_set_id)
     mappings = tuple(sorted(
       (MappingInput(ifc_type=m.ifc_type, work_item_code=m.work_item_code,
@@ -92,7 +95,8 @@ class CalculationService:
     for drawing_id in sorted(drawing_ids, key=str):
       rows = await self.elements.list_by_drawing(drawing_id, organization_id)
       elements.extend(_to_model_element(r) for r in rows)
-    return profile, mappings, elements
+    phase6 = await load_phase6_inputs(self.session, organization_id, project_id, sorted(drawing_ids, key=str))
+    return profile, mappings, elements, phase6
 
   async def _convention_params(self, code: str | None) -> dict:
     if not code:
@@ -105,12 +109,13 @@ class CalculationService:
 
   @staticmethod
   def _fingerprint(elements, mappings, profile, rule_set, settings: dict,
-    convention_code: str | None, convention_params: dict) -> str:
+    convention_code: str | None, convention_params: dict, phase6=None) -> str:
     return compute_fingerprint(
       elements=elements, mappings=mappings, profile_fingerprint=profile.fingerprint(),
       rule_set_ref=f"{rule_set.id}:{rule_set.immutable_version}:{rule_set.content_hash}",
       convention_code=convention_code, engine_version=kernel.ENGINE_VERSION,
       settings=settings, convention_params=convention_params,
+      spatial=fin.phase6_payload(phase6.spaces, phase6.openings, phase6.schedule_lines) if phase6 else None,
     )
 
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,
@@ -141,9 +146,10 @@ class CalculationService:
     effective_convention = convention_code or rule_set.convention_code
     ids = sorted((d.id for d in chosen), key=str)
     settings = {"scope": "building", "preferred_rule_code": rule_set_code}
-    profile, mappings, elements = await self._load_inputs(organization_id, ids, rule_set.id)
+    profile, mappings, elements, phase6 = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
-    fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention, convention_params)
+    fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
+      convention_params, phase6)
 
     existing = await self.runs.get_completed_by_fingerprint(organization_id, fingerprint)
     if existing is not None:
@@ -198,7 +204,7 @@ class CalculationService:
     if run is None:
       return
     await self.session.commit()
-    
+
     org = run.organization_id
     project_id = run.project_id
     rule_set_id = run.rule_set_id
@@ -213,19 +219,22 @@ class CalculationService:
       rule_set = await self.rule_sets.get_by_id(rule_set_id)
       if rule_set is None:
         raise RunError("RULE_SET_NOT_FOUND", "Rule set no longer exists.")
-      profile, mappings, elements = await self._load_inputs(org, drawing_ids, rule_set.id)
+      profile, mappings, elements, p6 = await self._load_inputs(org, drawing_ids, rule_set.id, project_id)
       convention_params = await self._convention_params(convention_code)
       if self._fingerprint(elements, mappings, profile, rule_set, run_settings,
-        convention_code, convention_params) != expected_fingerprint:
+        convention_code, convention_params, p6) != expected_fingerprint:
         raise RunError("INPUT_CHANGED", "Drawings or rules changed after the run was requested. Request a new run.")
 
       ctx = CalculationContext(
         run_id=run_id, engine_version=engine_version, fingerprint=expected_fingerprint,
         convention_code=convention_code, rule_set_code=rule_set.code,
         rule_set_version=rule_set.immutable_version, mappings=mappings,
-        convention_params=convention_params,
+        convention_params=convention_params, openings=p6.openings, spaces=p6.spaces,
+        schedule_lines=p6.schedule_lines,
       )
-      state: dict = {}
+      state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}}
+      convention = kernel.get_convention(convention_code)
+      state["alloc"] = kernel.AllocationResult.empty()
 
       async def validate():
         state["accepted"], state["rejected"] = await asyncio.to_thread(kernel.validate_input, ctx, elements)
@@ -235,99 +244,9 @@ class CalculationService:
         solids, skipped = await asyncio.to_thread(kernel.build_solids, ctx, state["accepted"])
         state["solids"], state["skipped"] = solids, skipped
         await self.runs.clear_staged(run_id)
-        await self.runs.stage_solids([_solid_row(run, s) for s in solids])
+        await self.runs.stage_solids([_solid_row(run, s, "build_solids") for s in solids])
         return {"solids": len(solids), "review_required": sum(1 for s in solids if s.status == "REVIEW_REQUIRED"),
           "skipped_by_role": skipped}
-
-      convention = kernel.get_convention(convention_code)
-      state["alloc"] = kernel.AllocationResult.empty()
-
-      async def spatial():
-        index = await asyncio.to_thread(kernel.spatial_index, ctx, convention, state["solids"], state["accepted"])
-        state["index"] = index
-        return {"participating": len(index.prisms), "candidate_pairs": len(index.candidates),
-                "unallocated": len(index.unallocated)}
-
-      async def relations():
-        state["overlaps"] = await asyncio.to_thread(kernel.find_relations, ctx, state["index"])
-        return {"overlaps": len(state["overlaps"])}
-
-      async def allocate():
-        alloc = await asyncio.to_thread(
-          kernel.allocate, ctx, convention, state["solids"], state["index"], state["overlaps"])
-        state["alloc"] = alloc
-        await self.runs.stage_deductions([_deduction_row(run, d, ctx) for d in alloc.deductions])
-        return {"deductions": len(alloc.deductions), **alloc.stats}
-
-      async def measure():
-        ledger, unmapped = await asyncio.to_thread(kernel.measure, ctx, state["solids"], state["alloc"])
-        state["ledger"], state["unmapped"] = ledger, unmapped
-        await self.runs.stage_ledger([_ledger_row(run, e) for e in ledger])
-        return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped}
-
-      async def check():
-        await asyncio.to_thread(kernel.self_check, state["solids"], state["ledger"], state["alloc"])
-        return {"invariants": "passed"}
-
-      await self._stage(run, "validate_input", validate, 15)
-      await self._stage(run, "build_solids", build, 30)
-      if convention is not None:
-        await self._stage(run, "spatial_index", spatial, 40)
-        await self._stage(run, "find_relations", relations, 50)
-        await self._stage(run, "allocate", allocate, 60)
-      else:
-        await self._skip(run, "spatial_index", "find_relations", "allocate",
-          reason="no registered measurement convention on this rule set")
-      await self._stage(run, "measure", measure, 70)
-      await self._skip(run, "recipes", "reinforcement")
-      await self._stage(run, "self_check", check, 80)
-
-      await self.runs.set_progress(run_id, 90, status="STAGED")
-      await self.session.commit()
-
-      promoted = await self.runs.promote(run_id)
-      await self.runs.supersede_older_completed(org, project_id, run_id, drawing_ids)
-      await self.runs.complete(run_id, {
-        "promoted": promoted,
-        "elements_in": len(elements),
-        "rejected_sample": [
-          {"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code} for r in state["rejected"][:200]
-        ],
-        "rejected_total": len(state["rejected"]),
-        "skipped_by_role": state["skipped"],
-        "unmapped_by_type": state["unmapped"],
-        "allocation": state["alloc"].stats,
-      })
-      await self.session.commit()
-      
-      await self._build_boq_after_run(org, run_id, requested_by)
-
-    except Exception as exc:
-      await self.session.rollback()
-      if isinstance(exc, RunError):
-        code = exc.code
-      elif isinstance(exc, kernel.InvariantViolation):
-        code = "SELF_CHECK_FAILED"
-      else:
-        code = "RUN_FAILED"
-      await self.runs.fail_running_stages(run_id, str(exc))
-      await self.runs.mark_failed(run_id, code, str(exc))
-      await self.session.commit()
-
-      async def validate():
-        state["accepted"], state["rejected"] = await asyncio.to_thread(kernel.validate_input, ctx, elements)
-        return {"elements_in": len(elements), "accepted": len(state["accepted"]), "rejected": len(state["rejected"])}
-
-      async def build():
-        solids, skipped = await asyncio.to_thread(kernel.build_solids, ctx, state["accepted"])
-        state["solids"], state["skipped"] = solids, skipped
-        await self.runs.clear_staged(run_id)
-        await self.runs.stage_solids([_solid_row(run, s) for s in solids])
-        return {"solids": len(solids), "review_required": sum(1 for s in solids if s.status == "REVIEW_REQUIRED"),
-          "skipped_by_role": skipped}
-        
-      convention = kernel.get_convention(convention_code)
-      state["alloc"] = kernel.AllocationResult.empty()
 
       async def spatial():
         index = await asyncio.to_thread(kernel.spatial_index, ctx, convention, state["solids"], state["accepted"])
@@ -343,17 +262,41 @@ class CalculationService:
         alloc = await asyncio.to_thread(
           kernel.allocate, ctx, convention, state["solids"], state["index"], state["overlaps"])
         state["alloc"] = alloc
-        await self.runs.stage_deductions([_deduction_row(run, d, ctx) for d in alloc.deductions])
+        await self.runs.stage_deductions([_deduction_row(run, d, ctx, "allocate") for d in alloc.deductions])
         return {"deductions": len(alloc.deductions), **alloc.stats}
+
+      async def openings():
+        res = await asyncio.to_thread(fin.apply_openings, ctx, profile, state["solids"], p6.openings)
+        state["alloc"] = fin.merge_openings(state["alloc"], res)
+        await self.runs.stage_deductions([_deduction_row(run, d, ctx, "openings") for d in res.deductions])
+        return res.stats
 
       async def measure():
         ledger, unmapped = await asyncio.to_thread(kernel.measure, ctx, state["solids"], state["alloc"])
         state["ledger"], state["unmapped"] = ledger, unmapped
-        await self.runs.stage_ledger([_ledger_row(run, e) for e in ledger])
+        await self.runs.stage_ledger([_ledger_row(run, e, "measure") for e in ledger])
         return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped}
 
+      async def finishes():
+        res = await asyncio.to_thread(fin.measure_finishes, ctx, profile, p6.spaces, p6.openings)
+        await self.runs.stage_solids([_solid_row(run, s, "finishes") for s in res.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "finishes") for e in res.ledger])
+        state["extra_solids"] += res.solids
+        state["extra_ledger"] += res.ledger
+        state["finish_skipped"] = res.skipped
+        return {"spaces": len(p6.spaces), "finish_lines": len(res.ledger), "skipped": res.skipped}
+
+      async def schedules():
+        res = await asyncio.to_thread(fin.schedule_lines_ledger, ctx, p6.schedule_lines)
+        await self.runs.stage_solids([_solid_row(run, s, "schedules") for s in res.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "schedules") for e in res.ledger])
+        state["extra_solids"] += res.solids
+        state["extra_ledger"] += res.ledger
+        return {"schedule_lines": len(res.ledger)}
+
       async def check():
-        await asyncio.to_thread(kernel.self_check, state["solids"], state["ledger"], state["alloc"])
+        await asyncio.to_thread(kernel.self_check, state["solids"] + state["extra_solids"],
+          state["ledger"] + state["extra_ledger"], state["alloc"])
         return {"invariants": "passed"}
 
       await self._stage(run, "validate_input", validate, 15)
@@ -364,9 +307,12 @@ class CalculationService:
         await self._stage(run, "allocate", allocate, 60)
       else:
         await self._skip(run, "spatial_index", "find_relations", "allocate",
-         reason="no registered measurement convention on this rule set")
+          reason="no registered measurement convention on this rule set")
+      await self._stage(run, "openings", openings, 65)
       await self._stage(run, "measure", measure, 70)
-      await self._skip(run, "recipes", "reinforcement")
+      await self._stage(run, "finishes", finishes, 75)
+      await self._stage(run, "schedules", schedules, 78)
+      await self._skip(run, "recipes", "reinforcement", reason="not implemented in this engine version")
       await self._stage(run, "self_check", check, 80)
 
       await self.runs.set_progress(run_id, 90, status="STAGED")
@@ -384,8 +330,12 @@ class CalculationService:
         "skipped_by_role": state["skipped"],
         "unmapped_by_type": state["unmapped"],
         "allocation": state["alloc"].stats,
+        "finishes_skipped": state["finish_skipped"],
+        "spaces": len(p6.spaces),
       })
       await self.session.commit()
+
+      await self._build_boq_after_run(org, run_id, requested_by)
 
     except Exception as exc:
       await self.session.rollback()

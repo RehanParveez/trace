@@ -280,6 +280,13 @@ class BOQEngineService:
         code="ROLE_NOT_MEASURED", severity="info", blocks="NONE", dedupe_key=f"ROLE_SKIPPED:{role}",
         message=f"{n} element(s) with role {role} are not measured by this engine version.",
         details={"role": role, "count": n}))
+      
+    for reason, n in sorted((stats.get("finishes_skipped") or {}).items()):
+      specs.append(logic.IssueSpec(
+        code="FINISH_SKIPPED", severity="warning", blocks="NONE", dedupe_key=f"FINISH_SKIPPED:{reason}",
+        message=f"{n} finish line(s) were not measured: {reason}.",
+        suggested_fix="Fix the space in the model, or set the finish manually.", details={"reason": reason, "count": n}))
+      
     mapped = [m.ifc_type for m in profile.mappings if m.work_item_code]
     invalid = await self.repo.invalid_counts(org, list(run.drawing_revision_ids), mapped,
       sorted(VOLUME_ROLES | COUNT_ROLES))
@@ -703,18 +710,18 @@ class BOQEngineService:
           continue
         steps = []
         for s in (l.trace or {}).get("steps", []):
-          op = s.get("op")
-          if op == "gross_volume":
-            steps.append(f"gross {s['m3']} m3")
-          elif op in ("overlap_allocation", "extent_trimming"):
-            owner = names.get(UUID(s["to"]), s["to"]) if s.get("to") and s["to"] != "None" else "-"
-            steps.append(f"less {s['m3']} m3 to {owner} [{s.get('rule')}]")
+          op = s.get("op") or ""
+          qty = s.get("m3") or s.get("m2") or s.get("m")
+          if op.startswith("gross"):
+            steps.append(f"gross {qty} {l.unit}")
+          elif op == "deduction":
+            steps.append(f"less {qty} {l.unit} ({s.get('type')}) {s.get('note') or s.get('rule') or ''}".strip())
           elif op == "count":
             steps.append(f"count {s['nos']}")
-          elif op == "allocation":
-            steps.append(f"allocation {s.get('status')}")
+          elif op == "schedule_quantity":
+            steps.append(f"schedule {qty or s.get(l.unit)} {l.unit}")
         steps.append(f"net {(l.trace or {}).get('net')}")
-        lines.append({"element": names.get(l.element_id, "-") if l.element_id else "-",
+        lines.append({"element": names.get(l.element_id, "-") if l.element_id else (l.trace or {}).get("label", "-"),
           "level": levels.get(l.level_id, "-") if l.level_id else "-",
           "quantity": qty, "unit": l.unit, "steps": steps, "warnings": list(l.warnings or [])})
       out[str(item_id)] = lines

@@ -15,6 +15,9 @@ from datetime import date, datetime, timezone
 from sqlalchemy import delete
 from decimal import Decimal
 from app.engine.measure.formulas import CANONICAL_UNITS, check_component_units, get_formula
+from dataclasses import replace
+from app.modules.drawings_boq.models import FinishRule
+from app.modules.drawings_boq.spatial_repository import finish_rule_rows, finish_rule_specs
 
 DEFAULT_RULE_CODE = "PUNJAB_CSR"
 FALLBACK_RULE_CODE = "GENERIC_METRIC"
@@ -142,7 +145,8 @@ class StandardsService:
     conventions = await self.repo.conventions_by_code()
     conv = conventions.get(bundle.rule_set.convention_code or "")
     items = await self.repo.work_item_index(bundle.rule_set.organization_id)
-    return build_profile(bundle, conserves_volume=conv.conserves_volume if conv else True, work_items=items)
+    profile = build_profile(bundle, conserves_volume=conv.conserves_volume if conv else True, work_items=items)
+    return replace(profile, finish_rules=await finish_rule_specs(self.session, bundle.rule_set.id))
 
   async def profile_for_rule_set(self, rule_set_id: UUID) -> ResolvedRuleProfile:
     bundle = await self.repo.load_bundle(rule_set_id)
@@ -304,6 +308,7 @@ class StandardsService:
       (ReinforcementRule, src_bundle.reinforcement_rules), (ElementTypeMapping, src_bundle.mappings),
     ):
       self.session.add_all([_clone_row(model, r, rule_set_id=new.id) for r in rows])
+    self.session.add_all([_clone_row(FinishRule, r, rule_set_id=new.id) for r in await finish_rule_rows(self.session, src.id)])
     for recipe in src_bundle.recipes:
       new_recipe = _clone_row(AssemblyRecipe, recipe, organization_id=organization_id, rule_set_id=new.id, is_system=False)
       self.session.add(new_recipe)

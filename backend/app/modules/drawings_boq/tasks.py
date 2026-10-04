@@ -21,6 +21,7 @@ from app.modules.ai_requests.service import AIOrchestratorService
 from sqlalchemy import select
 from app.core.config import settings
 from app.modules.drawings_boq.calc_service import CalculationService, engine_v2_enabled
+from app.modules.drawings_boq.spatial_repository import persist_spatial
 
 MAX_AI_NORMALIZATIONS_PER_PARSE = 50
 
@@ -176,6 +177,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
       if drawing_elements:
         await elements_repo.bulk_create(drawing_elements)
+        await persist_spatial(session, current_drawing, read_result, drawing_elements, level_ids)
 
       audit = await service.run_model_readiness_audit(
         current_drawing.organization_id,

@@ -34,6 +34,9 @@ class CalculationContext:
   rule_set_version: int
   mappings: tuple[MappingInput, ...]
   convention_params: dict = field(default_factory=dict)
+  openings: tuple = ()
+  spaces: tuple = ()
+  schedule_lines: tuple = ()
 
 @dataclass(frozen=True)
 class Solid:
@@ -67,6 +70,7 @@ class LedgerEntry:
   formula_code: str
   trace: dict
   warnings: tuple = ()
+  source_kind: str = "MODEL"
 
 @dataclass(frozen=True)
 class Rejected:
@@ -124,7 +128,62 @@ class AllocationResult:
   conservation_failures: tuple = ()
   applied: bool = False
   stats: dict = field(default_factory=dict)
+  openings_checked: frozenset = frozenset()
 
   @classmethod
   def empty(cls) -> "AllocationResult":
     return cls()
+  
+@dataclass(frozen=True)
+class OpeningInput:
+  element_id: UUID
+  role: str
+  host_element_id: UUID | None
+  host_thickness_mm: Decimal | None
+  width_mm: Decimal | None
+  height_mm: Decimal | None
+  level_id: UUID | None
+  centre_mm: tuple | None
+
+@dataclass(frozen=True)
+class SpaceFinishInput:
+  surface: str
+  work_item_code: str
+  height_mm: Decimal | None
+  source: str
+  confidence: Decimal
+  review_status: str
+  finish_name: str | None = None
+
+@dataclass(frozen=True)
+class SpaceInput:
+  id: UUID
+  level_id: UUID | None
+  number: str | None
+  name: str | None
+  category: str
+  is_external: bool
+  net_floor_area_mm2: Decimal | None
+  gross_floor_area_mm2: Decimal | None
+  perimeter_mm: Decimal | None
+  height_mm: Decimal | None
+  geometry_kind: str
+  footprint: tuple | None
+  boundary_element_ids: tuple
+  finishes: tuple
+
+@dataclass(frozen=True)
+class ScheduleLineInput:
+  id: UUID
+  import_id: UUID
+  row_no: int
+  schedule_kind: str
+  description: str | None
+  mark: str | None
+  work_item_code: str
+  unit: str
+  quantity: Decimal
+  confidence: Decimal
+  level_id: UUID | None
+  space_id: UUID | None
+  raw_text: str | None

@@ -70,6 +70,9 @@ class IfcReadResult:
   elements: list[ReadElement]
   model_issues: list[dict]
   stats: dict
+  spaces: list = field(default_factory=list)
+  boundaries: list = field(default_factory=list)
+  relations: list = field(default_factory=list)
  
 @dataclass
 class _Scales:
@@ -622,6 +625,10 @@ def _normalise_element(
   qto_dims = _dims_from_qto(role, element, flat_qto, scales)
   for key, value in qto_dims.items():
     dims.setdefault(key, value)
+  if role in ("DOOR", "WINDOW"):
+    for key in ("width", "height"):
+      if key in qto_dims:
+        dims[key] = qto_dims[key]
   if geometry.kind == "UNSUPPORTED" and dims:
     geometry.kind = "QTO_ONLY"
   issues += geometry.issues
@@ -784,7 +791,15 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
   if mesh_budget[0] <= 0:
     model_issues.append(_issue("MESH_FALLBACK_LIMIT_REACHED", "info", f"Mesh bounding-box fallback limit ({mesh_fallback_limit}) reached; later elements may lack geometry."))
  
+  spatial = None
+  try:
+    from app.modules.drawings_boq.ifc_spatial import read_spatial
+    spatial = read_spatial(model, scales, levels, {e.global_id for e in elements if e.global_id})
+  except Exception as exc:
+    model_issues.append(_issue("SPATIAL_READ_FAILED", "warning", f"Spaces and relations could not be read: {str(exc)[:200]}"))
+
   stats = {
+    "space_count": len(spatial.spaces) if spatial else 0,
     "element_count": len(elements),
     "by_status": {s: sum(1 for e in elements if e.status == s) for s in ("VALID", "WARNING", "INVALID")},
     "by_geometry_kind": {},
@@ -804,5 +819,8 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
     elements=elements,
     model_issues=model_issues,
     stats=stats,
+    spaces=spatial.spaces if spatial else [],
+    boundaries=spatial.boundaries if spatial else [],
+    relations=spatial.relations if spatial else [],
   )
  

@@ -9,9 +9,14 @@ import {
   Text,
   View,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { restoreSession } from "../api/client";
+import LanguageSwitcher from "../components/LanguageSwitcher";
 
 export default function LandingScreen() {
+  const { t, i18n } = useTranslation();
+  const isUrdu = i18n.resolvedLanguage === "ur";
+
   const [checkingSession, setCheckingSession] = useState(true);
   const [sessionError, setSessionError] = useState("");
   const [showDetails, setShowDetails] = useState(false);
@@ -30,12 +35,12 @@ export default function LandingScreen() {
       setSessionError(
         error instanceof Error
           ? error.message
-          : "We couldn’t check your account right now.",
+          : i18n.t("landing.sessionCheckFailure"),
       );
     } finally {
       setCheckingSession(false);
     }
-  }, []);
+  }, [i18n]);
 
   useEffect(() => {
     void checkSession();
@@ -49,21 +54,30 @@ export default function LandingScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.brandBlock}>
-          <Text style={styles.brand}>TRACE</Text>
-          <Text style={styles.brandCaption}>CONSTRUCTION WORKSPACE</Text>
+        <View style={[styles.brandHeader, isUrdu && styles.rtlRow]}>
+          <View style={styles.brandBlock}>
+            <Text style={[styles.brand, isUrdu && styles.rtlText]}>
+              {t("landing.brand")}
+            </Text>
+            <Text style={[styles.brandCaption, isUrdu && styles.rtlText]}>
+              {t("landing.brandCaption")}
+            </Text>
+          </View>
+
+          <LanguageSwitcher />
         </View>
 
         <View style={styles.hero}>
-          <Text style={styles.headline}>
-            Keep the work moving.
+          <Text style={[styles.headline, isUrdu && styles.rtlText]}>
+            {t("landing.headline")}
             {"\n"}
-            <Text style={styles.headlineAccent}>Keep the record clear.</Text>
+            <Text style={styles.headlineAccent}>
+              {t("landing.headlineAccent")}
+            </Text>
           </Text>
 
-          <Text style={styles.description}>
-            Bring projects, drawings, site updates, and approvals together in
-            one workspace for your construction team.
+          <Text style={[styles.description, isUrdu && styles.rtlText]}>
+            {t("landing.description")}
           </Text>
         </View>
 
@@ -74,7 +88,9 @@ export default function LandingScreen() {
             android_ripple={{ color: "#9AD8EE" }}
             style={styles.primaryButton}
           >
-            <Text style={styles.primaryButtonText}>Sign in</Text>
+            <Text style={[styles.primaryButtonText, isUrdu && styles.rtlText]}>
+              {t("landing.signIn")}
+            </Text>
           </Pressable>
 
           <Pressable
@@ -83,28 +99,39 @@ export default function LandingScreen() {
             android_ripple={{ color: "#293D55" }}
             style={styles.secondaryButton}
           >
-            <Text style={styles.secondaryButtonText}>Create an account</Text>
+            <Text
+              style={[styles.secondaryButtonText, isUrdu && styles.rtlText]}
+            >
+              {t("landing.createAccount")}
+            </Text>
           </Pressable>
         </View>
 
         {checkingSession ? (
-          <View style={styles.sessionStatus}>
+          <View style={[styles.sessionStatus, isUrdu && styles.rtlRow]}>
             <ActivityIndicator size="small" color="#78C5E4" />
-            <Text style={styles.sessionStatusText}>
-              Checking your account…
+            <Text style={[styles.sessionStatusText, isUrdu && styles.rtlText]}>
+              {t("landing.checkingAccount")}
             </Text>
           </View>
         ) : null}
 
         {sessionError ? (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{sessionError}</Text>
+            <Text style={[styles.errorText, isUrdu && styles.rtlText]}>
+              {sessionError}
+            </Text>
             <Pressable
               accessibilityRole="button"
               onPress={() => void checkSession()}
-              style={styles.retryButton}
+              style={[
+                styles.retryButton,
+                isUrdu && styles.retryButtonRtl,
+              ]}
             >
-              <Text style={styles.retryText}>Try again</Text>
+              <Text style={[styles.retryText, isUrdu && styles.rtlText]}>
+                {t("landing.tryAgain")}
+              </Text>
             </Pressable>
           </View>
         ) : null}
@@ -114,11 +141,15 @@ export default function LandingScreen() {
             accessibilityRole="button"
             accessibilityState={{ expanded: showDetails }}
             onPress={() => setShowDetails((current) => !current)}
-            style={styles.detailsToggle}
+            style={[styles.detailsToggle, isUrdu && styles.rtlRow]}
           >
             <View style={styles.detailsHeading}>
-              <Text style={styles.detailsEyebrow}>TRACE AT A GLANCE</Text>
-              <Text style={styles.detailsTitle}>How Trace helps</Text>
+              <Text style={[styles.detailsEyebrow, isUrdu && styles.rtlText]}>
+                {t("landing.detailsEyebrow")}
+              </Text>
+              <Text style={[styles.detailsTitle, isUrdu && styles.rtlText]}>
+                {t("landing.detailsTitle")}
+              </Text>
             </View>
             <Text style={styles.toggleIcon}>
               {showDetails ? "−" : "+"}
@@ -128,24 +159,27 @@ export default function LandingScreen() {
           {showDetails ? (
             <View style={styles.detailsList}>
               <DetailRow
-                title="Keep project records together"
-                description="Projects, teams, drawings, and progress in one place."
+                title={t("landing.detailRecordsTitle")}
+                description={t("landing.detailRecordsDescription")}
+                isUrdu={isUrdu}
               />
               <DetailRow
-                title="Follow work on site"
-                description="Connect site updates and photos to the right project."
+                title={t("landing.detailSiteTitle")}
+                description={t("landing.detailSiteDescription")}
+                isUrdu={isUrdu}
               />
               <DetailRow
-                title="Make approvals traceable"
-                description="Authorized people review changes before they become official."
+                title={t("landing.detailApprovalsTitle")}
+                description={t("landing.detailApprovalsDescription")}
+                isUrdu={isUrdu}
                 last
               />
             </View>
           ) : null}
         </View>
 
-        <Text style={styles.footer}>
-          AI assists. Deterministic systems calculate. People approve.
+        <Text style={[styles.footer, isUrdu && styles.rtlText]}>
+          {t("landing.footer")}
         </Text>
       </ScrollView>
     </View>
@@ -155,18 +189,30 @@ export default function LandingScreen() {
 function DetailRow({
   title,
   description,
+  isUrdu,
   last = false,
 }: {
   title: string;
   description: string;
+  isUrdu: boolean;
   last?: boolean;
 }) {
   return (
-    <View style={[styles.detailRow, last && styles.lastDetailRow]}>
+    <View
+      style={[
+        styles.detailRow,
+        isUrdu && styles.rtlRow,
+        last && styles.lastDetailRow,
+      ]}
+    >
       <View style={styles.detailMark} />
       <View style={styles.detailCopy}>
-        <Text style={styles.detailTitle}>{title}</Text>
-        <Text style={styles.detailDescription}>{description}</Text>
+        <Text style={[styles.detailTitle, isUrdu && styles.rtlText]}>
+          {title}
+        </Text>
+        <Text style={[styles.detailDescription, isUrdu && styles.rtlText]}>
+          {description}
+        </Text>
       </View>
     </View>
   );
@@ -183,8 +229,15 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 24,
   },
-  brandBlock: {
+  brandHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
     marginBottom: 48,
+  },
+  brandBlock: {
+    flex: 1,
   },
   brand: {
     color: "#F3EEDF",
@@ -198,6 +251,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1.5,
     marginTop: 5,
+  },
+  rtlRow: {
+    flexDirection: "row-reverse",
+  },
+  rtlText: {
+    textAlign: "right",
+    writingDirection: "rtl",
   },
   hero: {
     marginBottom: 28,
@@ -278,6 +338,9 @@ const styles = StyleSheet.create({
   retryButton: {
     alignSelf: "flex-start",
     paddingTop: 9,
+  },
+  retryButtonRtl: {
+    alignSelf: "flex-end",
   },
   retryText: {
     color: "#78C5E4",

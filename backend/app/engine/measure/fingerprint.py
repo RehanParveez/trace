@@ -14,7 +14,7 @@ def _element_key(e) -> dict:
   }
 
 def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,
-  convention_params: dict | None = None) -> str:
+  convention_params: dict | None = None, spatial: dict | None = None) -> str:
   payload = {
     "elements": [_element_key(e) for e in sorted(elements, key=lambda e: str(e.id))],
     "mappings": [[m.ifc_type, m.work_item_code, str(m.confidence_base)]
@@ -25,6 +25,7 @@ def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_se
     "convention_params": convention_params or {},
     "engine": engine_version,
     "settings": settings,
+    "spatial": spatial or {},
   }
   blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
   return hashlib.sha256(blob.encode("utf-8")).hexdigest()

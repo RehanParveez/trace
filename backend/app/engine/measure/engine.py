@@ -9,8 +9,9 @@ from app.engine.measure.allocate import allocate as _allocate
 from app.engine.measure.conventions import get_convention
 from app.engine.measure.intersect import find_overlaps
 from app.engine.measure.spatial import build_spatial_index
+from app.engine.measure.finishes import PHASE6_FORMULA_UNITS, apply_openings, measure_finishes, merge_openings, schedule_lines_ledger
 
-ENGINE_VERSION = "2026.10.2"
+ENGINE_VERSION = "2026.10.4"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -29,7 +30,7 @@ VOLUME_ROLES = frozenset({
   "RAMP", "RAMP_SLAB",
 })
 COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
-FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value}
+FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **PHASE6_FORMULA_UNITS}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
 QTO_ONLY_FACTOR = Decimal("0.9")
 AABB_CONFIDENCE_FACTOR = Decimal("0.8")
@@ -143,8 +144,13 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
     if mapping is None or not mapping.work_item_code:
       unmapped[s.ifc_type] = unmapped.get(s.ifc_type, 0) + 1
       continue
-
+    
     warnings = [i["code"] for i in s.issues if i.get("severity") == "warning"]
+    warnings.extend(getattr(alloc, "solid_warnings", {}).get(s.id, ()))
+    if s.id in getattr(alloc, "approximate_solids", ()):
+      warnings.append("ALLOCATION_APPROXIMATE")
+    if s.id in getattr(alloc, "unallocated_solids", ()):
+      warnings.append("NOT_ALLOCATED")
 
     if s.count is not None:
       formula, unit, quantity = "OPENING_COUNT", Unit.NOS.value, Decimal(s.count)
@@ -170,12 +176,14 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
           "type": d.deduction_type,
           "m3": str(d.quantity),
           "rule": getattr(d, "rule_code", None),
+          "note": getattr(d, "explanation", None),
           "to_solid_id": str(d.to_solid_id) if d.to_solid_id else None,
         })
       steps.append({"op": "net_volume", "m3": str(quantity)})
       net = {"m3": str(quantity)}
 
-      if s.role.startswith("WALL") and not any(d.deduction_type == "VOID_DEDUCTION" for d in solid_deds):
+      if s.role.startswith("WALL") and s.id not in getattr(alloc, "openings_checked", ()) \
+        and not any(d.deduction_type == "VOID_DEDUCTION" for d in solid_deds):
         warnings.append("OPENINGS_NOT_DEDUCTED")
     else:
       continue
@@ -206,7 +214,7 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         "net": net,
         "rounding": "half_up,6dp",
       },
-      warnings=tuple(warnings),
+      warnings=tuple(dict.fromkeys(warnings)),
     ))
 
   ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
@@ -268,7 +276,7 @@ def find_relations(ctx: CalculationContext, index):
 def allocate(ctx: CalculationContext, convention, solids: list[Solid], index, overlaps):
   return _allocate(ctx, convention, solids, index, overlaps)
 
-def run(ctx: CalculationContext, elements: list[ModelElement]) -> CalculationResult:
+def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> CalculationResult:
   accepted, rejected = validate_input(ctx, elements)
   solids, skipped = build_solids(ctx, accepted)
   convention = get_convention(ctx.convention_code)
@@ -277,7 +285,14 @@ def run(ctx: CalculationContext, elements: list[ModelElement]) -> CalculationRes
   else:
     index = spatial_index(ctx, convention, solids, accepted)
     alloc = allocate(ctx, convention, solids, index, find_relations(ctx, index))
+  if profile is not None:
+    alloc = merge_openings(alloc, apply_openings(ctx, profile, solids, ctx.openings))
   ledger, unmapped = measure(ctx, solids, alloc)
-  self_check(solids, ledger, alloc)
-  return CalculationResult(solids=solids, ledger=ledger, rejected=rejected, skipped_by_role=skipped,
-    unmapped_by_type=unmapped, deductions=alloc.deductions)
+  extra_solids, extra_ledger = [], []
+  if profile is not None:
+    for res in (measure_finishes(ctx, profile, ctx.spaces, ctx.openings), schedule_lines_ledger(ctx, ctx.schedule_lines)):
+      extra_solids += res.solids
+      extra_ledger += res.ledger
+  self_check(solids + extra_solids, ledger + extra_ledger, alloc)
+  return CalculationResult(solids=solids + extra_solids, ledger=ledger + extra_ledger, rejected=rejected,
+    skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=alloc.deductions)

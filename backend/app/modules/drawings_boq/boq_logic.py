@@ -20,7 +20,8 @@ _CATEGORY = {"m3": "volume", "m2": "area", "m": "length", "kg": "weight", "nos":
 REVIEW_WARNING_CODES = frozenset({
   "GEOMETRY_INCOMPLETE", "QTO_FALLBACK", "LOW_CONFIDENCE_GEOMETRY", "UNSUPPORTED_GEOMETRY",
   "QTO_GEOMETRY_MISMATCH", "ALLOCATION_APPROXIMATE", "NOT_ALLOCATED", "OVER_DEDUCTED",
-  "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP",
+  "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
+  "FINISH_NEEDS_REVIEW",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -253,6 +254,12 @@ LEDGER_WARNING_CATALOG = {
   "GEOMETRY_INCOMPLETE": ("warning", "NONE", "Profile or depth missing; no volume was measured.", None),
   "UNSUPPORTED_GEOMETRY": ("warning", "NONE", "Geometry could not be measured.", None),
   "ZERO_NET_QUANTITY": ("warning", "NONE", "Net quantity became zero after allocation.", None),
+  "OPENING_SIZE_MISSING": ("warning", "NONE", "An opening has no usable size, so it was not deducted.",
+    "Add width and height to the door or window in the model."),
+  "OPENING_ASSIGNMENT_APPROXIMATE": ("warning", "NONE",
+    "Openings were assigned to rooms by wall membership, without a position check.",
+    "Check the deducted openings in the measurement book."),
+  "FINISH_NEEDS_REVIEW": ("warning", "NONE", "The finish for this surface needs review.", None),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
