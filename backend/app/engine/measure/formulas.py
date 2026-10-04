@@ -37,6 +37,16 @@ _SPECS = (
   FormulaSpec("FOOTING_PCC_VOLUME", "m3", "Footing plan plus projection x blinding thickness."),
   FormulaSpec("EXCAVATION_VOLUME", "m3", "Footing plan plus working space x depth (convention parameters)."),
   FormulaSpec("REBAR_KG", "kg", "Sum of bar marks."),
+  FormulaSpec("FINISH_FLOOR_AREA", "m2", "Net floor finish area."),
+  FormulaSpec("FINISH_CEILING_AREA", "m2", "Ceiling finish area."),
+  FormulaSpec("FINISH_WALL_AREA_NET", "m2", "Wall finish area after opening deductions."),
+  FormulaSpec("FINISH_DADO_AREA_NET", "m2", "Dado finish area after applicable deductions."),
+  FormulaSpec("FINISH_SKIRTING_LENGTH_NET", "m", "Skirting length after door deductions."),
+  FormulaSpec("SCHEDULE_LINE_M3", "m3", "Confirmed mapped schedule quantity."),
+  FormulaSpec("SCHEDULE_LINE_M2", "m2", "Confirmed mapped schedule quantity."),
+  FormulaSpec("SCHEDULE_LINE_M", "m", "Confirmed mapped schedule quantity."),
+  FormulaSpec("SCHEDULE_LINE_KG", "kg", "Confirmed mapped schedule quantity."),
+  FormulaSpec("SCHEDULE_LINE_NOS", "nos", "Confirmed mapped schedule quantity."),
 )
 
 FORMULAS: dict[str, FormulaSpec] = {s.code: s for s in _SPECS}

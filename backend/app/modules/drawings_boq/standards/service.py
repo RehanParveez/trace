@@ -187,45 +187,161 @@ class StandardsService:
     )
     return await self.repo.load_bundle(rule_set_id)
 
-  async def update_draft(self, organization_id: UUID, user_id: UUID, rule_set_id: UUID,
-    payload: RuleSetDraftUpdateRequest) -> RuleSetBundle:
+  async def update_draft(
+    self,
+    organization_id: UUID,
+    user_id: UUID,
+    rule_set_id: UUID,
+    payload: RuleSetDraftUpdateRequest,
+    ) -> RuleSetBundle:
     rs = await self._visible(organization_id, rule_set_id)
     self._require_mutable(rs, organization_id)
 
     if "convention_code" in payload.model_fields_set:
       await self._check_convention(payload.convention_code)
+
     for key in SCALAR_FIELDS:
       if key in payload.model_fields_set and getattr(payload, key) is not None:
         setattr(rs, key, getattr(payload, key))
 
     if payload.opening_rules is not None:
-      _assert_unique(payload.opening_rules, lambda r: (r.element_scope, r.lower_area_m2), "opening rule")
-      await self.session.execute(delete(OpeningMeasurementRule).where(OpeningMeasurementRule.rule_set_id == rs.id))
-      self.session.add_all([OpeningMeasurementRule(id=uuid4(), rule_set_id=rs.id, **r.model_dump()) for r in payload.opening_rules])
+      _assert_unique(
+       payload.opening_rules,
+       lambda rule: (rule.element_scope, rule.lower_area_m2),
+       "opening rule",
+      )
+      await self.session.execute(
+        delete(OpeningMeasurementRule).where(
+         OpeningMeasurementRule.rule_set_id == rs.id
+      )
+     ) 
+      self.session.add_all(
+       [
+        OpeningMeasurementRule(
+          id=uuid4(),
+          rule_set_id=rs.id,
+          **rule.model_dump(),
+        )
+        for rule in payload.opening_rules
+      ]
+    )
+
     if payload.wastage_rules is not None:
-      rows = [{**r.model_dump(), "material_class": r.material_class.upper()} for r in payload.wastage_rules]
-      _assert_unique(rows, lambda r: (r["material_class"], r["procurement_stage"]), "wastage rule")
-      await self.session.execute(delete(MaterialWastageRule).where(MaterialWastageRule.rule_set_id == rs.id))
-      self.session.add_all([MaterialWastageRule(id=uuid4(), rule_set_id=rs.id, **r) for r in rows])
+     rows = [
+      {
+        **rule.model_dump(),
+        "material_class": rule.material_class.upper(),
+      }
+      for rule in payload.wastage_rules
+     ]
+     _assert_unique(
+      rows,
+      lambda row: (row["material_class"], row["procurement_stage"]),
+      "wastage rule",
+    )
+    await self.session.execute(
+      delete(MaterialWastageRule).where(
+        MaterialWastageRule.rule_set_id == rs.id
+      )
+    )
+    self.session.add_all(
+      [
+        MaterialWastageRule(
+          id=uuid4(),
+          rule_set_id=rs.id,
+          **row,
+        )
+        for row in rows
+      ]
+    )
+
     if payload.reinforcement_rules is not None:
-      _assert_unique(payload.reinforcement_rules, lambda r: (r.element_scope, r.bar_role), "reinforcement rule")
-      await self.session.execute(delete(ReinforcementRule).where(ReinforcementRule.rule_set_id == rs.id))
-      self.session.add_all([ReinforcementRule(id=uuid4(), rule_set_id=rs.id, **r.model_dump()) for r in payload.reinforcement_rules])
+     _assert_unique(
+      payload.reinforcement_rules,
+      lambda rule: (rule.element_scope, rule.bar_role),
+      "reinforcement rule",
+    )
+     await self.session.execute(
+      delete(ReinforcementRule).where(
+        ReinforcementRule.rule_set_id == rs.id
+      )
+    )
+     self.session.add_all(
+      [
+        ReinforcementRule(
+          id=uuid4(),
+          rule_set_id=rs.id,
+          **rule.model_dump(),
+        )
+        for rule in payload.reinforcement_rules
+      ]
+    )
+
     if payload.mappings is not None:
-      _assert_unique(payload.mappings, lambda r: r.ifc_type, "element type mapping")
-      await self.session.execute(delete(ElementTypeMapping).where(ElementTypeMapping.rule_set_id == rs.id))
-      self.session.add_all([ElementTypeMapping(id=uuid4(), rule_set_id=rs.id, **r.model_dump()) for r in payload.mappings])
+     _assert_unique(
+       payload.mappings,
+       lambda rule: rule.ifc_type,
+       "element type mapping",
+    )
+     await self.session.execute(
+      delete(ElementTypeMapping).where(
+        ElementTypeMapping.rule_set_id == rs.id
+      )
+    )
+     self.session.add_all(
+      [
+        ElementTypeMapping(
+          id=uuid4(),
+          rule_set_id=rs.id,
+          **rule.model_dump(),
+        )
+        for rule in payload.mappings
+      ]
+    )
+
+    if payload.finish_rules is not None:
+     _assert_unique(
+      payload.finish_rules,
+      lambda rule: (
+        rule.space_category,
+        rule.surface,
+        rule.work_item_code,
+      ),
+      "finish rule",
+    )
+     for rule in payload.finish_rules:
+      await self._check_finish_work_item(
+        organization_id=organization_id,
+        work_item_code=rule.work_item_code,
+        surface=rule.surface,
+      )
+     await self.session.execute(
+      delete(FinishRule).where(FinishRule.rule_set_id == rs.id)
+    )
+     self.session.add_all(
+      [
+        FinishRule(
+          id=uuid4(),
+          rule_set_id=rs.id,
+          **rule.model_dump(),
+        )
+        for rule in payload.finish_rules
+      ]
+    )
 
     await self.session.flush()
     captured_id = rs.id
     captured_code = rs.code
     captured_version = rs.immutable_version
-
     await self.session.commit()
 
     await self.audit.log(
-      organization_id, user_id, AuditEntityType.RULE_SET, captured_id, AuditAction.UPDATE,
-      f'Updated rule set draft "{captured_code}" v{captured_version}',
+     organization_id,
+     user_id,
+     AuditEntityType.RULE_SET,
+     captured_id,
+     AuditAction.UPDATE,
+     f'Updated rule set draft "{captured_code}" v{captured_version}',
     )
     return await self.repo.load_bundle(captured_id)
 
@@ -447,3 +563,29 @@ class StandardsService:
       f'Updated work item "{item_code}"',
     )
     return await self.repo.get_work_item(item_id, organization_id)
+  
+  async def _check_finish_work_item(
+   self,
+   organization_id: UUID,
+   work_item_code: str,
+   surface: str,
+  ) -> None:
+   item = await self.repo.get_work_item_by_code(
+    organization_id,
+    work_item_code,
+   )
+   if item is None or not item.is_active:
+    raise TraceException(
+      f"Unknown or inactive work item '{work_item_code}'.",
+      status_code=422,
+      code="FINISH_WORK_ITEM_UNKNOWN",
+    )
+
+   expected_unit = "m" if surface == "SKIRTING" else "m2"
+   if item.unit != expected_unit:
+    raise TraceException(
+      f"Finish surface {surface} requires unit '{expected_unit}', "
+      f"but work item '{work_item_code}' uses '{item.unit}'.",
+      status_code=422,
+      code="FINISH_WORK_ITEM_UNIT_MISMATCH",
+    )

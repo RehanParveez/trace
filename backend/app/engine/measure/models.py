@@ -154,6 +154,9 @@ class SpaceFinishInput:
   confidence: Decimal
   review_status: str
   finish_name: str | None = None
+  schedule_row_id: UUID | None = None
+  deduct_openings: bool = True
+  extra: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class SpaceInput:

@@ -2929,3 +2929,10 @@ class FinishRule(Base, TimestampMixin):
     "MeasurementRuleSet",
     back_populates="finish_rules",
   )
+  
+  exclude: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default=text("false"),
+)

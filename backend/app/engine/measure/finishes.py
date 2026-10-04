@@ -122,26 +122,59 @@ def merge_openings(alloc: AllocationResult, res: OpeningsResult) -> AllocationRe
     solid_warnings={k: tuple(sorted(v)) for k, v in warn.items()}, stats={**alloc.stats, "openings": res.stats})
 
 def resolve_finishes(space, rules) -> list[_Finish]:
-  explicit: dict = {}
-  for f in space.finishes:
-    explicit.setdefault(f.surface, []).append(f)
-  out = [_Finish(f.surface, f.work_item_code, f.height_mm, True, f.source, f.confidence, f.review_status)
-    for rows in explicit.values() for f in rows]
-  chosen: dict = {}
-  for r in rules:
-    if r.surface in explicit or r.space_category not in (space.category, "ALL"):
+  explicit_by_surface = {}
+  for finish in space.finishes:
+    explicit_by_surface.setdefault(finish.surface, []).append(finish)
+  result = []
+  for surface, finishes in explicit_by_surface.items():
+    for finish in sorted(finishes, key=lambda f: (f.work_item_code, str(f.id))):
+      result.append(
+        _Finish(
+          surface=finish.surface,
+          work_item_code=finish.work_item_code,
+          height_mm=finish.height_mm,
+          deduct_openings=finish.deduct_openings,
+          source=finish.source,
+          confidence=finish.confidence,
+          review=finish.review_status,
+        )
+      )
+  rules_by_surface = {}
+  for rule in rules:
+    if rule.surface in explicit_by_surface:
       continue
-    key = (r.surface, r.work_item_code)
-    cur = chosen.get(key)
-    if cur is None or (cur.space_category == "ALL" and r.space_category != "ALL"):
-      chosen[key] = r
-  for r in chosen.values():
-    if not r.exclude:
-      out.append(_Finish(r.surface, r.work_item_code, r.height_mm, r.deduct_openings, "RULE_DEFAULT",
-        RULE_DEFAULT_CONFIDENCE, "OK"))
-  out.sort(key=lambda f: (SURFACE_ORDER.get(f.surface, 9), f.work_item_code))
-  return out
+    if rule.space_category not in ("ALL", space.category):
+      continue
+    rules_by_surface.setdefault(rule.surface, []).append(rule)
 
+  for surface, candidates in rules_by_surface.items():
+    candidates.sort(
+      key=lambda r: (
+        r.space_category == "ALL",
+        -r.priority,
+        r.work_item_code,
+        str(r.id),
+      )
+    )
+    chosen = candidates[0]
+    if chosen.exclude:
+      continue
+    result.append(
+      _Finish(
+        surface=chosen.surface,
+        work_item_code=chosen.work_item_code,
+        height_mm=chosen.height_mm,
+        deduct_openings=chosen.deduct_openings,
+        source="RULE_DEFAULT",
+        confidence=RULE_DEFAULT_CONFIDENCE,
+        review="OK",
+      )
+    )
+  return sorted(
+    result,
+    key=lambda f: (SURFACE_ORDER.get(f.surface, 9), f.work_item_code),
+  )
+  
 def _assign_openings(space, by_id: dict, by_host: dict):
   polygon = None
   if space.footprint and len(space.footprint) >= 3:
@@ -313,11 +346,17 @@ def measure_finishes(ctx: CalculationContext, profile, spaces, openings) -> Fini
 def schedule_lines_ledger(ctx: CalculationContext, lines) -> FinishResult:
   solids: list = []
   ledger: list = []
+  skipped: dict = {}
   for ln in sorted(lines, key=lambda l: (str(l.import_id), l.row_no)):
     if ln.unit not in SCHEDULE_UNITS:
       continue
     quantity = q6(ln.quantity)
     if quantity <= 0:
+      continue
+    if ln.unit == "nos" and quantity != quantity.to_integral_value():
+      skipped["SCHEDULE_NOS_NOT_INTEGER"] = (
+        skipped.get("SCHEDULE_NOS_NOT_INTEGER", 0) + 1
+      )
       continue
     solid_id = uuid5(ctx.run_id, f"solid|schedule:{ln.id}")
     solids.append(Solid(
@@ -333,30 +372,55 @@ def schedule_lines_ledger(ctx: CalculationContext, lines) -> FinishResult:
       solid_id=solid_id, element_id=None, level_id=ln.level_id, work_item_code=ln.work_item_code,
       quantity=quantity, unit=ln.unit, material_grade=None, confidence=max(ZERO, min(ONE, q4(ln.confidence))),
       formula_code=formula,
-      
+
       trace={
         "formula_code": formula, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
         "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
-        "inputs": {"schedule_import_id": str(ln.import_id), "row_no": ln.row_no, "mark": ln.mark,
-          "kind": ln.schedule_kind, "raw_text": (ln.raw_text or "")[:300]},
+        "inputs": {
+          "schedule_row_id": str(ln.id),
+          "schedule_import_id": str(ln.import_id),
+          "row_no": ln.row_no,
+          "space_id": str(ln.space_id) if ln.space_id else None,
+          "mark": ln.mark,
+          "kind": ln.schedule_kind,
+          "raw_text": (ln.raw_text or "")[:300],
+        },
         "steps": [{"op": "schedule_quantity", ln.unit: str(quantity)}], "net": {ln.unit: str(quantity)},
         "label": f"Schedule {ln.schedule_kind} row {ln.row_no} {ln.mark or ''}".strip(), "rounding": "half_up,6dp",
       },
-      
+
       warnings=(), source_kind="SCHEDULE_IMPORT",
     ))
   ledger.sort(key=lambda r: (r.work_item_code, str(r.solid_id)))
-  return FinishResult(solids=solids, ledger=ledger, skipped={})
+  return FinishResult(solids=solids, ledger=ledger, skipped=skipped)
 
 def phase6_payload(spaces, openings, lines) -> dict:
   return {
-    "spaces": [[str(s.id), str(s.level_id), s.category, s.is_external, str(s.net_floor_area_mm2),
-      str(s.gross_floor_area_mm2), str(s.perimeter_mm), str(s.height_mm), s.footprint,
-      sorted(str(b) for b in s.boundary_element_ids),
-      sorted([f.surface, f.work_item_code, str(f.height_mm), f.source, str(f.confidence), f.review_status]
-        for f in s.finishes)] for s in sorted(spaces, key=lambda s: str(s.id))],
-    "openings": [[str(o.element_id), o.role, str(o.host_element_id), str(o.host_thickness_mm), str(o.width_mm),
-      str(o.height_mm), str(o.level_id), o.centre_mm] for o in sorted(openings, key=lambda o: str(o.element_id))],
-    "schedule": [[str(l.id), l.work_item_code, l.unit, str(l.quantity), str(l.confidence), str(l.level_id)]
-      for l in sorted(lines, key=lambda l: str(l.id))],
+    "spaces": [
+      {"id": str(s.id), "level_id": str(s.level_id) if s.level_id else None, "number": s.number, "name": s.name, "category": s.category, "is_external": s.is_external, "net_floor_area_mm2": str(s.net_floor_area_mm2), "gross_floor_area_mm2": str(s.gross_floor_area_mm2),
+       "perimeter_mm": str(s.perimeter_mm), "height_mm": str(s.height_mm), "geometry_kind": s.geometry_kind, "footprint": s.footprint, "boundary_element_ids": sorted(map(str, s.boundary_element_ids)),
+        "finishes": [
+          {"id": str(f.id), "surface": f.surface, "work_item_code": f.work_item_code, "height_mm": str(f.height_mm), "source": f.source, "confidence": str(f.confidence), "review_status": f.review_status, "finish_name": f.finish_name,
+            "schedule_row_id": str(f.schedule_row_id) if f.schedule_row_id else None, "deduct_openings": f.deduct_openings, "extra": f.extra,
+          }
+          for f in sorted(
+            s.finishes,
+            key=lambda x: (x.surface, x.work_item_code, str(x.id)),
+          )
+        ],
+      }
+      for s in sorted(spaces, key=lambda x: str(x.id))
+    ],
+    "openings": [
+      {"element_id": str(o.element_id), "role": o.role, "host_element_id": str(o.host_element_id) if o.host_element_id else None, "host_thickness_mm": str(o.host_thickness_mm), "width_mm": str(o.width_mm), "height_mm": str(o.height_mm), "level_id": str(o.level_id) if o.level_id else None,
+        "centre_mm": o.centre_mm,
+      }
+      for o in sorted(openings, key=lambda x: str(x.element_id))
+    ],
+    "schedule": [
+      {"id": str(row.id), "import_id": str(row.import_id), "row_no": row.row_no, "schedule_kind": row.schedule_kind, "mark": row.mark, "work_item_code": row.work_item_code, "unit": row.unit, "quantity": str(row.quantity), "confidence": str(row.confidence),
+        "level_id": str(row.level_id) if row.level_id else None, "space_id": str(row.space_id) if row.space_id else None, "raw_text": row.raw_text,
+      }
+      for row in sorted(lines, key=lambda x: (str(x.import_id), x.row_no))
+    ],
   }

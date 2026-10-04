@@ -120,6 +120,7 @@ class SpatialReadResult:
   spaces: list = field(default_factory=list)
   boundaries: list = field(default_factory=list)
   relations: list = field(default_factory=list)
+  issues: list = field(default_factory=list)
 
 def classify_space(*texts) -> str:
   haystack = " " + " ".join(str(t).lower() for t in texts if t) + " "
@@ -225,8 +226,20 @@ def read_spatial(model, scales: _Scales, levels, known_gids: set[str]) -> Spatia
   for space in sorted(model.by_type("IfcSpace"), key=lambda s: s.id()):
     try:
       rs = _read_space(space, scales, levels)
-    except Exception:
+    except Exception as exc:
+      result.issues.append(
+        _issue(
+          "SPACE_READ_FAILED",
+          "warning",
+          f"IfcSpace {getattr(space, 'GlobalId', '<unknown>')} could not be read: "
+          f"{type(exc).__name__}: {exc}",
+        )
+      )
       continue
+
+    result.spaces.append(rs)
+    by_step[space.id()] = rs.global_id
+    
     result.spaces.append(rs)
     by_step[space.id()] = rs.global_id
 
