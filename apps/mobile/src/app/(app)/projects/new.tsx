@@ -66,7 +66,6 @@ export default function NewProjectScreen() {
               setClientPage(1);
             }
           } catch {
-            // Creating a project without an optional client remains possible.
           }
         }
       } catch (err) {

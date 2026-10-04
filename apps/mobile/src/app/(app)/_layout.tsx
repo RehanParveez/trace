@@ -1,400 +1,264 @@
-import { useEffect, useState } from "react";
-import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View,
+import { Drawer } from "expo-router/drawer";
+import { Link } from "expo-router";
+import {Pressable, ScrollView, StyleSheet, Text, View, 
 } from "react-native";
-import { router, useLocalSearchParams, Link, Stack } from "expo-router";
-import { useTranslation } from "react-i18next";
-import { restoreSession } from "../../api/client";
-import { getProject, listClients } from "../../api/projects";
-import type { Client, Project } from "../../api/types";
-import LanguageSwitcher from "../../components/LanguageSwitcher";
+import { useState, type PropsWithChildren } from "react";
 
-function formatDate(
-  value: string | null,
-  locale: string,
-  notSet: string,
-): string {
-  if (!value) return notSet;
-  const date = new Date(`${value.slice(0, 10)}T00:00:00`);
-  return Number.isNaN(date.getTime())
-    ? value
-    : date.toLocaleDateString(locale);
+type NavigationRouteLike = {
+  params?: Record<string, unknown>;
+  state?: NavigationStateLike;
+};
+
+type NavigationStateLike = {
+  index?: number;
+  routes?:  NavigationRouteLike[];
+};
+
+const projectModuleLinks = [
+  ["Project overview", "/projects/[projectId]"],
+  ["Manage project", "/projects/[projectId]/manage"],
+  ["Project team", "/projects/[projectId]/team"],
+  ["Milestones", "/projects/[projectId]/milestones"],
+  ["Drawings & BOQ", "/projects/[projectId]/drawings-boq"],
+  ["Progress verification", "/projects/[projectId]/progress-verification"],
+  ["Site progress", "/projects/[projectId]/site-progress"],
+  ["Site photos", "/projects/[projectId]/site-photos"],
+  ["Labour", "/projects/[projectId]/labour"],
+  ["Subcontractors", "/projects/[projectId]/subcontractors"],
+  ["Bank guarantees", "/projects/[projectId]/bank-guarantees"],
+  ["Change Orders", "/projects/[projectId]/change-orders"],
+  ["Budget", "/projects/[projectId]/budgets"],
+] as const;
+
+function getActiveProjectId(
+  state: NavigationStateLike,
+): string | undefined {
+  let currentState: NavigationStateLike | undefined = state;
+  let projectId: unknown;
+
+  while (currentState?.routes?.length) {
+    const route: NavigationRouteLike | undefined =
+      currentState.routes[currentState.index ?? 0];
+    const candidate = route?.params?.projectId;
+
+    if (typeof candidate === "string") {
+      projectId = candidate;
+    }
+
+    currentState = route?.state;
+  }
+
+  return typeof projectId === "string" ? projectId : undefined;
 }
 
-function ProjectLink(props: {
-  projectId: string;
-  pathname: string;
+export default function AuthenticatedLayout() {
+  return (
+    <Drawer
+      drawerContent={(props) => (
+       <ModuleMenu navigationState={props.state as NavigationStateLike} /> 
+      )}
+      screenOptions={{
+        headerShown: true,
+        headerTitle: "Trace",
+        headerStyle: { backgroundColor: "#FFFFFF" },
+        headerTintColor: "#183153",
+        headerTitleStyle: { fontWeight: "800" },
+        drawerType: "front",
+        drawerStyle: { backgroundColor: "#FFFFFF", width: 300 },
+        sceneStyle: { backgroundColor: "#F4F6F8" },
+      }}
+    >
+      <Drawer.Screen
+        name="projects"
+        options={{ title: "Projects", drawerLabel: "Projects" }}
+      />
+      <Drawer.Screen
+        name="organization"
+        options={{ title: "Organization", drawerLabel: "Organization" }}
+      />
+      <Drawer.Screen
+        name="labour"
+        options={{ title: "Labour directory", drawerLabel: "Labour" }}
+       />
+      <Drawer.Screen
+        name="bank-guarantees"
+        options={{ title: "Bank guarantees", drawerLabel: "Bank guarantees" }}
+      />
+      <Drawer.Screen
+        name="change-orders"
+        options={{ title: "Change Orders", drawerLabel: "Change Orders" }}
+      />
+      <Drawer.Screen
+        name="budgets"
+        options={{ title: "Budgets", drawerLabel: "Budgets" }}
+      />
+
+      <Drawer.Screen
+        name="expenses"
+        options={{ title: "Expenses", drawerLabel: "Expenses" }}
+      />
+
+      <Drawer.Screen
+        name="ai_requests"
+        options={{ title: "AI Requests", drawerLabel: "AI Requests" }}
+      />
+
+      <Drawer.Screen
+        name="notifications"
+        options={{ title: "Notifications", drawerLabel: "Notifications" }}
+      />
+
+     <Drawer.Screen
+       name="audit"
+       options={{ title: "Audit Log", drawerLabel: "Audit Log" }}
+     />
+
+    </Drawer>  
+  );
+}
+
+function ModuleMenu({
+  navigationState,
+}: {
+  navigationState: NavigationStateLike;
+}) {
+  const projectId = getActiveProjectId(navigationState);
+
+  type MenuGroupKey = "workspace" | "projectModules" | "activity" | "organization";
+
+  const [expanded, setExpanded] = useState<Record<MenuGroupKey, boolean>>({
+    workspace: true,
+    projectModules: true,
+    activity: true,
+    organization: true,
+  });
+
+  function toggleGroup(group: MenuGroupKey) {
+    setExpanded((current) => ({ ...current, [group]: !current[group] }));
+  }
+
+  return (
+    <ScrollView contentContainerStyle={styles.menu}>
+      <Text style={styles.brand}>TRACE</Text>
+
+  <MenuGroup
+    title="WORKSPACE"
+    expanded={expanded.workspace}
+    onPress={() => toggleGroup("workspace")}
+  >
+    <MenuLink href="/projects" label="Projects" />
+    <MenuLink href="/labour" label="Labour directory" />
+    <MenuLink href="/subcontractors" label="Subcontractor directory" />
+  </MenuGroup>
+
+  <MenuGroup
+    title="PROJECT MODULES"
+    expanded={expanded.projectModules}
+    onPress={() => toggleGroup("projectModules")}
+  >
+    <MenuLink href="/bank-guarantees" label="Bank guarantees · all projects" />
+    <MenuLink href="/change-orders" label="Change Orders · all projects" />
+    <MenuLink href="/budgets" label="Budgets · all projects" />
+    <MenuLink href="/expenses" label="Expenses · all projects" />
+
+    {projectId ? (
+      projectModuleLinks.map(([label, pathname]) => (
+       <MenuLink
+         key={label}
+         href={{ pathname, params: { projectId } } as any}
+         label={label}
+        />
+      ))
+    ) : (
+    <View style={styles.note}>
+      <Text style={styles.noteText}>
+        Open a project to see its team, milestones, drawings, progress, photos,
+        labour, subcontractor, guarantee, change-order, and budget screens here.
+      </Text>
+      <MenuLink href="/projects" label="Choose a project" />
+    </View>
+  )}
+</MenuGroup>
+
+<MenuGroup
+  title="ACTIVITY"
+  expanded={expanded.activity}
+  onPress={() => toggleGroup("activity")}
+>
+  <MenuLink href="/ai_requests" label="AI Requests" />
+  <MenuLink href="/notifications" label="Notifications" />
+  <MenuLink href="/audit" label="Audit Log" />
+</MenuGroup>
+
+<MenuGroup
+  title="ORGANIZATION"
+  expanded={expanded.organization}
+  onPress={() => toggleGroup("organization")}
+>
+  <MenuLink href="/organization" label="Overview" />
+  <MenuLink href="/organization/settings" label="Settings" />
+  <MenuLink href="/organization/members" label="Members" />
+  <MenuLink href="/organization/roles" label="Roles and access" />
+  <MenuLink href="/organization/invitations" label="Invitations" />
+  <MenuLink href="/organization/subscription" label="Subscription" />
+</MenuGroup>
+</ScrollView>
+  );
+};
+
+function MenuGroup({
+  title,
+  expanded,
+  onPress,
+  children,
+}: PropsWithChildren<{
+  title: string;
+  expanded: boolean;
+  onPress: () => void;
+}>) {
+  return (
+    <View style={styles.group}>
+      <Pressable
+        style={styles.groupHeader}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+      >
+        <Text style={styles.caption}>{title}</Text>
+        <Text style={styles.groupChevron}>{expanded ? "⌃" : "⌄"}</Text>
+      </Pressable>
+      {expanded ? <View>{children}</View> : null}
+    </View>
+  );
+}
+
+function MenuLink({
+  href,
+  label,
+}: {
+  href: any;
   label: string;
-  isUrdu: boolean;
 }) {
   return (
-    <Link
-      href={{
-        pathname: props.pathname as never,
-        params: { projectId: props.projectId },
-      }}
-      asChild
-    >
-      <Pressable style={styles.navButton} accessibilityRole="button">
-        <Text
-          style={[
-            styles.navButtonText,
-            props.isUrdu && styles.rtlText,
-          ]}
-        >
-          {props.label}
-        </Text>
-        <Text style={styles.navArrow}>›</Text>
+    <Link href={href} asChild>
+      <Pressable style={styles.menuItem} accessibilityRole="button">
+        <Text style={styles.menuItemText}>{label}</Text>
+        <Text style={styles.chevron}>›</Text>
       </Pressable>
     </Link>
   );
 }
 
-export default function ProjectDetailScreen() {
-  const { t, i18n } = useTranslation();
-  const isUrdu = i18n.resolvedLanguage === "ur";
-  const locale = isUrdu ? "ur-PK" : "en-PK";
-
-  const params = useLocalSearchParams<{ projectId?: string | string[] }>();
-  const projectId = Array.isArray(params.projectId)
-    ? params.projectId[0]
-    : params.projectId;
-
-  const [project, setProject] = useState<Project | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let active = true;
-
-    async function load() {
-      if (!projectId) {
-        setError(t("projectDetail.projectNotFound"));
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      setError("");
-
-      try {
-        const user = await restoreSession();
-        if (!user) {
-          router.replace("/");
-          return;
-        }
-
-        const projectResult = await getProject(projectId);
-        if (!active) return;
-        setProject(projectResult);
-
-        try {
-          const clientResult = await listClients();
-          if (active) setClients(clientResult);
-        } catch {
-        }
-      } catch (err) {
-        if (active) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : t("projectDetail.loadFailure"),
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    void load();
-
-    return () => {
-      active = false;
-    };
-  }, [projectId, attempt, t]);
-
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <View style={styles.switcherRow}>
-          <LanguageSwitcher />
-        </View>
-        <ActivityIndicator size="large" color={COLORS.navy} />
-        <Text style={[styles.muted, isUrdu && styles.rtlText]}>
-          {t("projectDetail.loading")}
-        </Text>
-      </View>
-    );
-  }
-
-  if (error || !project) {
-    return (
-      <>
-        <Stack.Screen options={{ title: t("projectDetail.title") }} />
-        <View style={styles.page}>
-          <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
-            <Pressable onPress={() => router.back()}>
-              <Text style={[styles.link, isUrdu && styles.rtlText]}>
-                {t("projectDetail.projects")}
-              </Text>
-            </Pressable>
-            <LanguageSwitcher />
-          </View>
-          <Text style={[styles.error, isUrdu && styles.rtlText]}>
-            {error || t("projectDetail.projectNotFound")}
-          </Text>
-          <Pressable
-            style={styles.navButton}
-            onPress={() => setAttempt((current) => current + 1)}
-          >
-            <Text style={[styles.navButtonText, isUrdu && styles.rtlText]}>
-              {t("projectDetail.tryAgain")}
-            </Text>
-          </Pressable>
-        </View>
-      </>
-    );
-  }
-
-  const client = clients.find((item) => item.id === project.client_id);
-  const projectStatusKey = `projectDetail.status.${project.status.toLowerCase()}`;
-
-  return (
-    <>
-      <Stack.Screen options={{ title: project.name }} />
-      <ScrollView
-        contentContainerStyle={styles.page}
-        keyboardShouldPersistTaps="handled"
-      >
-        <View style={[styles.headerRow, isUrdu && styles.rtlRow]}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={[styles.link, isUrdu && styles.rtlText]}>
-              {t("projectDetail.projects")}
-            </Text>
-          </Pressable>
-          <LanguageSwitcher />
-        </View>
-
-        <View style={styles.hero}>
-          <Text style={[styles.eyebrow, isUrdu && styles.rtlText]}>
-            {t("projectDetail.project")}
-          </Text>
-          <Text style={[styles.heroTitle, isUrdu && styles.rtlText]}>
-            {project.name}
-          </Text>
-          {project.code ? (
-            <Text style={[styles.heroSubtitle, isUrdu && styles.rtlText]}>
-              {project.code}
-            </Text>
-          ) : null}
-          <Text style={[styles.status, isUrdu && styles.rtlText]}>
-            {t(projectStatusKey, {
-              defaultValue: project.status.replaceAll("_", " "),
-            })}
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
-            {t("projectDetail.overview")}
-          </Text>
-
-          {project.description ? (
-            <Text style={[styles.description, isUrdu && styles.rtlText]}>
-              {project.description}
-            </Text>
-          ) : null}
-
-          <InfoRow
-            label={t("projectDetail.client")}
-            value={client?.name || t("projectDetail.notAssigned")}
-            isUrdu={isUrdu}
-          />
-          <InfoRow
-            label={t("projectDetail.location")}
-            value={project.location || t("projectDetail.notSet")}
-            isUrdu={isUrdu}
-          />
-          <InfoRow
-            label={t("projectDetail.startDate")}
-            value={formatDate(
-              project.start_date,
-              locale,
-              t("projectDetail.notSet"),
-            )}
-            isUrdu={isUrdu}
-          />
-          <InfoRow
-            label={t("projectDetail.expectedCompletion")}
-            value={formatDate(
-              project.expected_end_date,
-              locale,
-              t("projectDetail.notSet"),
-            )}
-            isUrdu={isUrdu}
-          />
-          <InfoRow
-            label={t("projectDetail.actualCompletion")}
-            value={formatDate(
-              project.actual_end_date,
-              locale,
-              t("projectDetail.notSet"),
-            )}
-            isUrdu={isUrdu}
-          />
-        </View>
-
-        <Text style={[styles.sectionTitle, isUrdu && styles.rtlText]}>
-          {t("projectDetail.projectWorkspace")}
-        </Text>
-
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/manage"
-          label={t("projectDetail.manageProject")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/team"
-          label={t("projectDetail.projectTeam")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/milestones"
-          label={t("projectDetail.milestones")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/drawings-boq"
-          label={t("projectDetail.drawingsBOQ")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/progress-verification"
-          label={t("projectDetail.progressVerification")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/site-photos"
-          label={t("projectDetail.sitePhotos")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/site-progress"
-          label={t("projectDetail.siteProgress")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/subcontractors"
-          label={t("projectDetail.subcontractors")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/labour"
-          label={t("projectDetail.labour")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/bank-guarantees"
-          label={t("projectDetail.bankGuarantees")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/change-orders"
-          label={t("projectDetail.changeOrders")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/budgets"
-          label={t("projectDetail.budget")}
-          isUrdu={isUrdu}
-        />
-        <ProjectLink
-          projectId={project.id}
-          pathname="/projects/[projectId]/expenses"
-          label={t("projectDetail.expenses")}
-          isUrdu={isUrdu}
-        />
-
-        <Pressable
-          style={styles.refreshButton}
-          onPress={() => setAttempt((current) => current + 1)}
-        >
-          <Text style={[styles.refreshButtonText, isUrdu && styles.rtlText]}>
-            {t("projectDetail.refresh")}
-          </Text>
-        </Pressable>
-      </ScrollView>
-    </>
-  );
-}
-
-function InfoRow(props: {
-  label: string;
-  value: string;
-  isUrdu: boolean;
-}) {
-  return (
-    <View style={[styles.infoRow, props.isUrdu && styles.rtlRow]}>
-      <Text style={[styles.infoLabel, props.isUrdu && styles.rtlText]}>
-        {props.label}
-      </Text>
-      <Text style={[styles.infoValue, props.isUrdu && styles.rtlText]}>
-        {props.value}
-      </Text>
-    </View>
-  );
-}
-
-const COLORS = {
-  background: "#F3EEE4",
-  surface: "#FFFFFF",
-  surfaceMuted: "#F7F3EC",
-  navy: "#080D18",
-  text: "#171C26",
-  secondary: "#5C5347",
-  muted: "#81776A",
-  border: "#E4D9C4",
-  gold: "#C7952D",
-};
-
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, padding: 20, paddingTop: 22, paddingBottom: 38, backgroundColor: COLORS.background },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24, backgroundColor: COLORS.background },
-  switcherRow: { width: "100%", alignItems: "flex-end", marginBottom: 8 },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 },
-  rtlRow: { flexDirection: "row-reverse" },
-  hero: { backgroundColor: COLORS.navy, borderRadius: 17, borderWidth: 1, borderColor: "#242B38", padding: 20, marginTop: 12, marginBottom: 16 },
-  eyebrow: { color: "#D9B76B", fontSize: 11, fontWeight: "800", letterSpacing: 1.2 },
-  heroTitle: { color: COLORS.surface, fontSize: 25, fontWeight: "800", marginTop: 8 },
-  heroSubtitle: { color: "#D6D0C5", fontSize: 14, marginTop: 5 },
-  status: { color: COLORS.navy, backgroundColor: "#E4C06E", borderRadius: 99, overflow: "hidden", alignSelf: "flex-start", paddingHorizontal: 11, paddingVertical: 6, marginTop: 14, fontSize: 11, fontWeight: "800" },
-  card: { backgroundColor: COLORS.surface, borderRadius: 15, borderWidth: 1, borderColor: COLORS.border, borderTopColor: COLORS.gold, borderTopWidth: 2, padding: 16, marginBottom: 14 },
-  sectionTitle: { color: COLORS.text, fontSize: 17, fontWeight: "800", marginBottom: 8, marginTop: 10 },
-  description: { color: COLORS.secondary, fontSize: 13, lineHeight: 20, marginBottom: 12 },
-  infoRow: { flexDirection: "row", justifyContent: "space-between", gap: 12, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "#F0EADF" },
-  infoLabel: { color: COLORS.muted, fontSize: 12, flex: 1 },
-  infoValue: { color: COLORS.text, fontSize: 13, fontWeight: "700", flex: 1, textAlign: "right" },
-  muted: { color: COLORS.muted, fontSize: 13, lineHeight: 20 },
-  error: { color: "#A63A32", backgroundColor: "#FBEAE7", borderColor: "#EAC6C0", borderWidth: 1, borderRadius: 11, padding: 12, marginTop: 12, marginBottom: 8, fontSize: 13, lineHeight: 19 },
-  link: { color: COLORS.navy, fontWeight: "800", fontSize: 13 },
-  navButton: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12, backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1,
-    borderColor: COLORS.border, paddingHorizontal: 15, paddingVertical: 12, marginTop: 8 },
-  navButtonText: { flex: 1, color: COLORS.navy, fontSize: 13, fontWeight: "800" },
-  navArrow: { color: COLORS.gold, fontSize: 22, fontWeight: "700" },
-  refreshButton: { minHeight: 46, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.navy, borderRadius: 11, paddingHorizontal: 14, paddingVertical: 11, marginTop: 16 },
-  refreshButtonText: { color: COLORS.surface, fontSize: 13, fontWeight: "800" },
-  rtlText: { textAlign: "right", writingDirection: "rtl" },
+  menu: { flexGrow: 1, paddingHorizontal: 18, paddingTop: 58, paddingBottom: 30 },
+  brand: { color: "#183153", fontSize: 19, fontWeight: "900", letterSpacing: 1.3 },
+  caption: { color: "#8A7B67", fontSize: 11, fontWeight: "800", letterSpacing: 1.2, marginTop: 30, marginBottom: 8 },
+  menuItem: { minHeight: 48, borderRadius: 10, paddingHorizontal: 13, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  menuItemText: { color: "#17212F", fontSize: 15, fontWeight: "600" },
+  chevron: { color: "#8A7B67", fontSize: 22 },
+  group: { marginTop: 22 },
+  groupHeader: {minHeight: 40, flexDirection: "row", alignItems: "center", justifyContent: "space-between",},
+  groupChevron: { color: "#8A7B67", fontSize: 20, fontWeight: "700" },
+  note: { backgroundColor: "#F4F6F8", borderRadius: 10, padding: 12},
+  noteText: { color: "#667085", fontSize: 12, lineHeight: 18 },
 });
