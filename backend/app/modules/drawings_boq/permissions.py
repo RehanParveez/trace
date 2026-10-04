@@ -13,4 +13,7 @@ DRAWINGS_BOQ_PERMISSIONS = {
   PermissionKey.RULESET_MANAGE: "Create and edit draft rule sets, work items and recipes.",
   PermissionKey.RULESET_PUBLISH: "Publish (freeze) rule sets.",
   PermissionKey.CALC_RUN: "Start measurement engine calculation runs.",
+  PermissionKey.BOQ_ADJUST: "Adjust calculated BOQ quantities with a recorded reason.",
+  PermissionKey.BOQ_ISSUE: "Issue and archive BOQ versions.",
+  PermissionKey.REVIEW_RESOLVE: "Resolve or waive BOQ review issues.",
 }

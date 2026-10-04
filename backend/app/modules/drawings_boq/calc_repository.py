@@ -202,3 +202,9 @@ class CalculationRunRepository:
       stmt = stmt.where(LedgerDeduction.id > after)
     result = await self.session.execute(stmt.order_by(LedgerDeduction.id.asc()).limit(limit + 1))
     return list(result.scalars().all())
+  
+  async def merge_stats(self, run_id: UUID, patch: dict) -> None:
+    row = (await self.session.execute(select(CalculationRun).where(CalculationRun.id == run_id))).scalar_one_or_none()
+    if row is not None:
+      row.stats = {**(row.stats or {}), **patch}
+      await self.session.flush()

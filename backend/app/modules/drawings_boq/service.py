@@ -45,6 +45,7 @@ from app.engine.measure.profile import ResolvedRuleProfile
 from app.modules.drawings_boq.ifc_types import ROLE_BY_IFC_TYPE
 from app.modules.drawings_boq.standards.material_class import classify_material_class
 from app.modules.drawings_boq.standards.service import StandardsService
+from app.modules.drawings_boq.boq_service import BOQEngineService, assert_mutable
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
@@ -457,6 +458,7 @@ class DrawingBOQService:
       project_id=project_id,
       drawing_id=None,
       label=payload.label.strip() or "Manual BOQ",
+      origin="MANUAL",
     )
     version = await self.boq_versions.create(version)
     await self.session.commit()
@@ -588,6 +590,9 @@ class DrawingBOQService:
           rate_source=BOQItemRateSource.LIBRARY if default_rate is not None else None,
           item_type=BOQItemType.CUSTOM,
           created_by_user_id=user_id,
+          net_quantity=row["quantity"],
+          source_kind="SCHEDULE_IMPORT",
+          review_status="REVIEW_REQUIRED",
         )
       )
 
@@ -664,48 +669,78 @@ class DrawingBOQService:
         code="BOQ_VERSION_NOT_FOUND",
       )
     if version.status == BOQVersionStatus.SUPERSEDED:
-     raise TraceException(
-      "Cannot edit items on a superseded BOQ version.",
-      status_code=409,
-      code="BOQ_VERSION_SUPERSEDED",
-    )
+      raise TraceException(
+        "Cannot edit items on a superseded BOQ version.",
+        status_code=409,
+        code="BOQ_VERSION_SUPERSEDED",
+      )
+    assert_mutable(version)
+    
+    if version.origin == "ENGINE":
+      raise TraceException(
+        "Engine BOQ lines are approved together with their version.",
+        status_code=409, code="USE_VERSION_APPROVAL",
+      )
 
     if payload.material_name is not None:
       item.material_name = payload.material_name
     if payload.category is not None:
       item.category = payload.category
     if payload.unit is not None:
+      if item.source_kind == "MODEL" and payload.unit != item.unit:
+        raise TraceException("The unit of a calculated item cannot be changed.", status_code=422, code="UNIT_LOCKED")
       item.unit = payload.unit
     if payload.quantity is not None:
-      item.quantity = payload.quantity
-    if payload.unit_rate is not None:
-      item.unit_rate = payload.unit_rate
-      item.rate_source = BOQItemRateSource.MANUAL
+      if item.source_kind == "MODEL":
+        if not (payload.adjustment_reason or "").strip():
+          raise TraceException("Changing a calculated quantity needs a reason.", status_code=422,
+            code="ADJUSTMENT_REQUIRES_REASON")
+        await BOQEngineService(self.session).apply_quantity_change(
+          organization_id, item, user_id, payload.quantity, payload.adjustment_reason)
+      else:
+        item.quantity = payload.quantity
+        if item.is_manual:
+          item.net_quantity = payload.quantity
+        else:
+          item.quantity = payload.quantity
+          item.net_quantity = payload.quantity
+          
+      if payload.unit_rate is not None:
+        item.unit_rate = payload.unit_rate
+        item.rate_source = BOQItemRateSource.MANUAL
 
-      if payload.save_as_library_default and item.drawing_element_id is not None:
-        drawing_element = await self.session.get(DrawingElement, item.drawing_element_id)
-        if drawing_element is not None and drawing_element.raw_material_text:
-          raw_key = drawing_element.raw_material_text.strip().lower()
-          existing_entry = await self.material_library.get_by_raw_text(organization_id, raw_key)
-          if existing_entry is None:
-            await self.material_library.create(
-              MaterialLibrary(
-                id=uuid4(),
-                organization_id=organization_id,
-                raw_text=raw_key,
-                normalized_name=item.material_name,
-                category=item.category,
-                default_unit=item.unit,
-                default_rate=payload.unit_rate,
-              )
+      if payload.save_as_library_default:
+        raw_key = None
+        if item.drawing_element_id is not None:
+          drawing_element = await self.session.get(DrawingElement, item.drawing_element_id)
+          if drawing_element is not None and drawing_element.raw_material_text:
+            raw_key = drawing_element.raw_material_text.strip().lower()
+        if raw_key is None:
+          raw_key = (item.description or item.material_name).strip().lower()
+        existing_entry = await self.material_library.get_by_raw_text(organization_id, raw_key)
+        if existing_entry is None:
+          await self.material_library.create(
+            MaterialLibrary(
+              id=uuid4(),
+              organization_id=organization_id,
+              raw_text=raw_key,
+              normalized_name=item.material_name,
+              category=item.category,
+              default_unit=item.unit,
+              default_rate=payload.unit_rate,
             )
-          else:
-            existing_entry.default_rate = payload.unit_rate
-            await self.material_library.update(existing_entry)
+          )
+        else:
+          existing_entry.default_rate = payload.unit_rate
+          existing_entry.default_unit = item.unit
+          await self.material_library.update(existing_entry)
     item.version += 1
 
     await self.boq_items.update(item)
     await self.session.commit()
+    if version.origin == "ENGINE":
+      await BOQEngineService(self.session).refresh_pricing_issue(organization_id, version.id)
+      await self.session.commit()
     await self.audit.log(
       organization_id,
       user_id,
@@ -760,6 +795,12 @@ class DrawingBOQService:
         "BOQ version not found.",
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
+      )
+    if version.origin == "ENGINE":
+      raise TraceException(
+        "Engine BOQ items are approved together with the version.",
+        status_code=409,
+        code="USE_VERSION_APPROVAL"
       )
     if version.status == BOQVersionStatus.SUPERSEDED:
       raise TraceException(
@@ -937,6 +978,7 @@ class DrawingBOQService:
        status_code=409,
        code="BOQ_VERSION_SUPERSEDED",
       )
+    assert_mutable(version)
     item = BOQItem(
       organization_id=organization_id,
       boq_version_id=boq_version_id,
@@ -947,6 +989,9 @@ class DrawingBOQService:
       unit_rate=payload.unit_rate,
       item_type=BOQItemType.CUSTOM,
       created_by_user_id=user_id,
+      source_kind="MANUAL",
+      is_manual=True,
+      net_quantity=payload.quantity,
     )
     item = await self.boq_items.create(item)
     await self.session.commit()
@@ -1000,6 +1045,7 @@ class DrawingBOQService:
         status_code=409,
         code="BOQ_VERSION_SUPERSEDED",
       )
+    assert_mutable(version)
       
     if not version.covered_area_sqft or version.covered_area_sqft <= 0:
      raise TraceException(
@@ -1054,6 +1100,8 @@ class DrawingBOQService:
       quantity=version.covered_area_sqft,
       unit_rate=rate.rate,
       item_type=BOQItemType.LABOUR,
+      source_kind="ESTIMATE",
+      net_quantity=version.covered_area_sqft,
     )
      for rate in area_rates
      if rate.trade not in approved_trades
@@ -1083,6 +1131,12 @@ class DrawingBOQService:
        status_code=409,
        code="BOQ_ITEM_APPROVED",
       )
+      
+    if item.source_kind == "MODEL":
+      raise TraceException(
+        "Calculated lines cannot be deleted. Add an adjustment instead.",
+        status_code=409, code="ENGINE_ITEM_NOT_DELETABLE",
+      )
 
     version = await self.boq_versions.get_by_id_and_org(
      item.boq_version_id, organization_id
@@ -1093,6 +1147,12 @@ class DrawingBOQService:
         status_code=409,
         code="BOQ_VERSION_SUPERSEDED",
       )
+      
+    if version is not None:
+      assert_mutable(version)
+    if item.source_kind == "MODEL":
+      raise TraceException("Calculated items can't be deleted; adjust them or recalculate.",
+        status_code=409, code="CALCULATED_ITEM_LOCKED")
 
     material_name = item.material_name
     await self.boq_items.delete(item)
@@ -1126,7 +1186,7 @@ class DrawingBOQService:
           i.quantity * i.unit_rate
           for i in items
           if i.item_type == kind
-          and i.status == BOQItemStatus.APPROVED
+          and (i.status == BOQItemStatus.APPROVED or version.origin == "ENGINE")
           and i.unit_rate is not None
         ),
         Decimal("0"),
@@ -1178,6 +1238,10 @@ class DrawingBOQService:
         code="BOQ_VERSION_NOT_FOUND",
       )
     items = await self.boq_items.list_by_version(boq_version_id, organization_id)
+    
+    if version.origin == "ENGINE":
+      raise TraceException("Engine BOQs export from a snapshot. Use /boq-versions/{id}/exports/{kind}.",
+        status_code=409, code="EXPORT_REQUIRES_SNAPSHOT")
 
     if any(i.status == BOQItemStatus.DRAFT for i in items):
       raise TraceException(
@@ -1204,6 +1268,10 @@ class DrawingBOQService:
         code="BOQ_VERSION_NOT_FOUND",
       )
     items = await self.boq_items.list_by_version(boq_version_id, organization_id)
+    
+    if version.origin == "ENGINE":
+      raise TraceException("Engine BOQs export from a snapshot. Use /boq-versions/{id}/exports/{kind}.",
+        status_code=409, code="EXPORT_REQUIRES_SNAPSHOT")
 
     if any(i.status == BOQItemStatus.DRAFT for i in items):
       raise TraceException(

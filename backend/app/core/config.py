@@ -65,6 +65,9 @@ class Settings(BaseSettings):
   ai_api_key: str = ""
   ai_model: str = "claude-haiku-4-5-20251001"
   
+  engine_v2_org_ids: str = ""
+  engine_default_convention: str = "FRAME_MONOLITHIC_A"
+  
   frontend_base_url: str = "http://localhost:5094"
   ai_enabled: bool = False
   ollama_base_url: str = "http://ollama:11434"

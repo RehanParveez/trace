@@ -10,6 +10,7 @@ from reportlab.lib import colors
 from app.modules.drawings_boq.words import rupees_in_words
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
+from reportlab.lib.pagesizes import landscape
 
 _SECTION_TITLES = {
   "MATERIAL": "A. Materials",
@@ -225,4 +226,238 @@ def build_boq_xlsx(
 
   buffer = BytesIO()
   wb.save(buffer)
+  return buffer.getvalue()
+
+def _m(v) -> str:
+  return f"{Decimal(v):,.2f}" if v is not None else "-"
+
+def _q(v) -> str:
+  return f"{Decimal(v):,.4f}" if v is not None else "-"
+
+def _stamp(s: dict) -> str:
+  return (f"Snapshot v{s['version_no']} ({s['purpose']}) | hash {s['content_hash'][:12]} | engine "
+    f"{s.get('engine_version') or '-'} | rules {s.get('rule_set_code') or '-'} v{s.get('rule_set_version') or '-'} "
+    f"| convention {s.get('convention_code') or '-'}")
+
+def _groups(rows: list[dict]) -> dict[str, list[dict]]:
+  groups: dict[str, list[dict]] = {"MATERIAL": [], "LABOUR": [], "CUSTOM": []}
+  for r in rows:
+    groups.setdefault(r["item_type"], []).append(r)
+  return groups
+
+def _flag(r: dict) -> str:
+  if r["unit_rate"] is None:
+    return " [RATE MISSING]"
+  return " [AI est. - verify]" if r.get("rate_source") == "AI_SUGGESTED" else ""
+
+_GRID = [("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e293b")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+  ("FONTSIZE", (0, 0), (-1, -1), 8), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
+  ("VALIGN", (0, 0), (-1, -1), "TOP")]
+
+def _styles():
+  base = getSampleStyleSheet()
+  return base, ParagraphStyle("Cell", parent=base["Normal"], fontSize=8, leading=10), \
+    ParagraphStyle("Small", parent=base["Normal"], fontSize=7, textColor=colors.HexColor("#475569"))
+
+def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company: str) -> bytes:
+  buffer = BytesIO()
+  doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=18 * mm, bottomMargin=18 * mm, leftMargin=16 * mm, rightMargin=16 * mm)
+  styles, cell, small = _styles()
+  totals = snapshot["totals"]
+  story = [Paragraph(company, ParagraphStyle("Co", parent=styles["Heading1"], fontSize=16)),
+    Paragraph("BILL OF QUANTITIES", styles["Heading2"]), Paragraph(_stamp(snapshot), small)]
+  if totals.get("unpriced_item_count"):
+    story.append(Paragraph(f"{totals['unpriced_item_count']} item(s) have no rate yet - grand total is understated.",
+      ParagraphStyle("Warn", parent=styles["Normal"], textColor=colors.red)))
+  info = Table([
+    ["Client", meta.get("client_name", "-"), "Project Title", meta.get("project_title", "-")],
+    ["Location", meta.get("location", "-"), "Plot Size", meta.get("plot_size", "-")],
+    ["Covered Area (Sft)", str(meta.get("covered_area_sqft") or "-"), "Storeys", meta.get("storeys", "-")],
+    ["Date", snapshot["created_at"].strftime("%d %B %Y"), "", ""]], colWidths=[35 * mm, 55 * mm, 35 * mm, 55 * mm])
+  info.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 9), ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+    ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold")]))
+  
+  story += [Spacer(1, 6), info, Spacer(1, 10)]
+  for key, rows_k in _groups(rows).items():
+    if not rows_k:
+      continue
+    story.append(Paragraph(_SECTION_TITLES[key], styles["Heading3"]))
+    data = [["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"]]
+    for n, r in enumerate(rows_k, 1):
+      data.append([str(n), Paragraph(r["material_name"] + _flag(r), cell), r["unit"], _q(r["quantity"]),
+        _m(r["unit_rate"]), _m(r["amount"])])
+    sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
+    data.append(["", "", "", "", "Sub-total", _m(sub)])
+    t = Table(data, colWidths=[8 * mm, 65 * mm, 15 * mm, 22 * mm, 25 * mm, 30 * mm], repeatRows=1)
+    t.setStyle(TableStyle(_GRID + [("ALIGN", (3, 0), (-1, -1), "RIGHT"), ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold")]))
+    story += [t, Spacer(1, 8)]
+    
+  grand = Decimal(totals["grand"])
+  story.append(Paragraph(f"<b>GRAND TOTAL: Rs {grand:,.2f}</b>", styles["Heading2"]))
+  story.append(Paragraph(f"In words: {rupees_in_words(grand)}", styles["Normal"]))
+  area = meta.get("covered_area_sqft")
+  
+  if area and Decimal(area) > 0:
+    story.append(Paragraph(f"Cost per Sft: Rs {grand / Decimal(area):,.2f}", styles["Normal"]))
+  story.append(Spacer(1, 20))
+  sign = Table([["Prepared By", meta.get("prepared_by", "____________________"), "Checked By",
+    meta.get("checked_by", "____________________")]], colWidths=[25 * mm, 60 * mm, 25 * mm, 60 * mm])
+  
+  sign.setStyle(TableStyle([("FONTSIZE", (0, 0), (-1, -1), 9)]))
+  story.append(sign)
+  doc.build(story)
+  return buffer.getvalue()
+
+def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str) -> bytes:
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "Bill of Quantities"
+  head_fill, head_font, bold = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True), Font(bold=True)
+  ws.append([company])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append(["BILL OF QUANTITIES"])
+  ws.append([_stamp(snapshot)])
+  ws.append([])
+  ws.append(["Client", meta.get("client_name", "-"), "Project Title", meta.get("project_title", "-")])
+  ws.append(["Location", meta.get("location", "-"), "Plot Size", meta.get("plot_size", "-")])
+  ws.append(["Covered Area (Sft)", str(meta.get("covered_area_sqft") or "-"), "Storeys", meta.get("storeys", "-")])
+  if snapshot["totals"].get("unpriced_item_count"):
+    ws.append([f"{snapshot['totals']['unpriced_item_count']} item(s) have no rate - total understated"])
+  ws.append([])
+  for key, rows_k in _groups(rows).items():
+    if not rows_k:
+      continue
+    ws.append([_SECTION_TITLES[key]])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    ws.append(["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"])
+    for c in ws[ws.max_row]:
+      c.fill, c.font = head_fill, head_font
+    for n, r in enumerate(rows_k, 1):
+      ws.append([n, r["material_name"] + _flag(r), r["unit"], float(r["quantity"]),
+        float(r["unit_rate"]) if r["unit_rate"] is not None else None,
+        float(r["amount"]) if r["amount"] is not None else None])
+    sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
+    ws.append(["", "", "", "", "Sub-total", float(sub)])
+    ws.cell(row=ws.max_row, column=5).font = ws.cell(row=ws.max_row, column=6).font = bold
+    ws.append([])
+    
+  grand = Decimal(snapshot["totals"]["grand"])
+  ws.append(["GRAND TOTAL", float(grand)])
+  ws.cell(row=ws.max_row, column=1).font = bold
+  ws.append(["In words", rupees_in_words(grand)])
+  area = meta.get("covered_area_sqft")
+  if area and Decimal(area) > 0:
+    ws.append(["Cost per Sft", float(grand / Decimal(area))])
+  for col, width in zip("ABCDEF", (22, 50, 12, 14, 14, 16)):
+    ws.column_dimensions[col].width = width
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
+def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str) -> bytes:
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "Procurement"
+  ws.append([company, "PROCUREMENT SCHEDULE"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append([_stamp(snapshot)])
+  ws.append(["Gross quantities include waste and are for purchasing only; contract pricing uses the contract quantity."])
+  ws.append([])
+  ws.append(["#", "Work item", "Description", "Unit", "Net (calculated)", "Adjustments", "Contract qty",
+    "Waste factor", "Gross (procure)", "Confidence", "Review"])
+  for c in ws[ws.max_row]:
+    c.fill, c.font = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True)
+  for n, r in enumerate(rows, 1):
+    ws.append([n, r["work_item_code"], r["material_name"], r["unit"],
+      float(r["net_quantity"]) if r["net_quantity"] is not None else None, float(r["adjustment_total"]),
+      float(r["quantity"]), float(r["waste_factor_applied"]) if r["waste_factor_applied"] is not None else None,
+      float(r["gross_quantity"]) if r["gross_quantity"] is not None else None,
+      float(r["confidence"]) if r["confidence"] is not None else None, r["review_status"]])
+    
+  for col, width in zip("ABCDEFGHIJK", (5, 16, 44, 8, 16, 14, 14, 12, 16, 12, 18)):
+    ws.column_dimensions[col].width = width
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
+def _evidence_text(e: dict) -> str:
+  return "; ".join(e["steps"]) + (f"  [{', '.join(e['warnings'])}]" if e["warnings"] else "")
+
+def build_measurement_book_pdf(snapshot: dict, rows: list[dict], evidence: dict, meta: dict, company: str) -> bytes:
+  buffer = BytesIO()
+  doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15 * mm, bottomMargin=15 * mm, leftMargin=12 * mm, rightMargin=12 * mm)
+  styles, cell, small = _styles()
+  story = [Paragraph(f"{company} - MEASUREMENT BOOK", styles["Heading2"]), Paragraph(_stamp(snapshot), small), Spacer(1, 6)]
+  for r in rows:
+    story.append(Paragraph(f"<b>{r['line_no']}. {r['material_name']}</b> - contract {_q(r['quantity'])} {r['unit']} "
+      f"(calculated {_q(r['net_quantity'])}, adjustments {_q(r['adjustment_total'])})", styles["Normal"]))
+    lines = evidence.get(str(r["source_item_id"]), [])
+    if lines:
+      data = [["Element", "Level", "Qty (canonical)", "Working"]]
+      for e in lines:
+        data.append([Paragraph(str(e["element"]), cell), e["level"], f"{Decimal(e['quantity']):,.6f} {e['unit']}",
+         Paragraph(_evidence_text(e), cell)])
+      t = Table(data, colWidths=[55 * mm, 30 * mm, 40 * mm, 140 * mm], repeatRows=1)
+      t.setStyle(TableStyle(_GRID))
+      story.append(t)
+    else:
+      story.append(Paragraph("Manual or imported line - no model measurement behind it.", small))
+    story.append(Spacer(1, 6))
+  doc.build(story)
+  return buffer.getvalue()
+
+def build_measurement_book_xlsx(snapshot: dict, rows: list[dict], evidence: dict, meta: dict, company: str) -> bytes:
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "Measurement Book"
+  ws.append([f"{company} - MEASUREMENT BOOK"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append([_stamp(snapshot)])
+  ws.append([])
+  for r in rows:
+    ws.append([f"{r['line_no']}. {r['material_name']}", "", f"Contract {r['quantity']} {r['unit']}",
+      f"Calculated {r['net_quantity']}", f"Adjustments {r['adjustment_total']}"])
+    for c in ws[ws.max_row]:
+      c.font = Font(bold=True)
+    ws.append(["Element", "Level", "Qty", "Unit", "Working"])
+    for e in evidence.get(str(r["source_item_id"]), []):
+      ws.append([e["element"], e["level"], float(e["quantity"]), e["unit"], _evidence_text(e)])
+    ws.append([])
+  for col, width in zip("ABCDE", (46, 18, 16, 10, 100)):
+    ws.column_dimensions[col].width = width
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
+def build_audit_report_pdf(snapshot: dict, rows: list[dict], issues: list[dict], adjustments: list[dict],
+  meta: dict, company: str) -> bytes:
+  buffer = BytesIO()
+  doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=16 * mm, bottomMargin=16 * mm, leftMargin=14 * mm, rightMargin=14 * mm)
+  styles, cell, small = _styles()
+  story = [Paragraph(f"{company} - BOQ AUDIT REPORT", styles["Heading2"]), Paragraph(_stamp(snapshot), small), Spacer(1, 8)]
+
+  def table(title, header, data, widths):
+    story.append(Paragraph(title, styles["Heading3"]))
+    if not data:
+      story.append(Paragraph("None.", small))
+      return
+    t = Table([header] + data, colWidths=widths, repeatRows=1)
+    t.setStyle(TableStyle(_GRID))
+    story.extend([t, Spacer(1, 8)])
+
+  totals = snapshot["totals"]
+  table("Summary", ["Items", "Unpriced", "Grand total (Rs)"],
+    [[str(totals["item_count"]), str(totals["unpriced_item_count"]), _m(totals["grand"])]], [40 * mm, 40 * mm, 60 * mm])
+  table("Review issues", ["Code", "Severity", "Blocks", "Status", "Message / note"],
+    [[i["code"], i["severity"], i["blocks"], i["status"], Paragraph(i["message"] + (f" <i>Note: {i['note']}</i>" if i["note"] else ""), cell)]
+      for i in issues], [38 * mm, 18 * mm, 20 * mm, 18 * mm, 88 * mm])
+  table("Manual overrides (adjustments)", ["Item", "Kind", "Value", "Reason", "State"],
+    [[Paragraph(a["item"], cell), a["kind"], _q(a["value"]), Paragraph(a["reason"], cell),
+      "revoked" if a["revoked"] else "active"] for a in adjustments], [48 * mm, 16 * mm, 24 * mm, 70 * mm, 22 * mm])
+  table("Items needing review or with low confidence", ["Item", "Review", "Confidence", "Source"],
+    [[Paragraph(r["material_name"], cell), r["review_status"], str(r["confidence"] or "-"), r["source_kind"]]
+      for r in rows if r["review_status"] != "OK" or (r["confidence"] is not None and r["confidence"] < Decimal("0.6"))],
+      [90 * mm, 30 * mm, 28 * mm, 30 * mm])
+  
+  doc.build(story)
   return buffer.getvalue()

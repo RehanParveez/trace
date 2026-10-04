@@ -7,13 +7,16 @@ from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
   DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
-   PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse, DeductionResponse
+   PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse,
+   DeductionResponse, AdjustmentCreateRequest, AdjustmentResponse, BOQBuildResponse, ItemTraceResponse, ReasonRequest, ReviewIssueResponse, ReviewIssueUpdateRequest, SnapshotItemResponse, SnapshotResponse, 
+   TransitionRequest
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.drawings_boq.calc_service import CalculationService
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from fastapi.responses import Response
+from app.modules.drawings_boq.boq_service import BOQEngineService
 
 router = APIRouter(
   prefix="/drawings-boq",
@@ -666,3 +669,179 @@ async def list_calculation_run_deductions(
   if next_cursor:
     response.headers["X-Next-Cursor"] = str(next_cursor)
   return rows
+
+def _engine(session: AsyncSession) -> BOQEngineService:
+  return BOQEngineService(session)
+
+@router.post("/calculation-runs/{run_id}/boq", response_model=BOQBuildResponse)
+async def build_boq_from_run(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.CALC_RUN)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).build_from_run(current_user.active_membership.organization_id, run_id, current_user.id)
+
+@router.post("/boq-versions/{boq_version_id}/submit-review", response_model=BOQVersionResponse)
+async def submit_boq_for_review(
+  boq_version_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_UPDATE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).submit_for_review(current_user.active_membership.organization_id, boq_version_id, current_user.id)
+
+@router.post("/boq-versions/{boq_version_id}/reopen", response_model=BOQVersionResponse)
+async def reopen_boq_version(
+  boq_version_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_APPROVE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).reopen(current_user.active_membership.organization_id, boq_version_id, current_user.id)
+
+@router.post("/boq-versions/{boq_version_id}/approve", response_model=BOQVersionResponse)
+async def approve_boq_version(
+  boq_version_id: UUID,
+  payload: TransitionRequest | None = None,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_APPROVE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).approve_version(
+    current_user.active_membership.organization_id, boq_version_id, current_user.id, payload.note if payload else None)
+
+@router.post("/boq-versions/{boq_version_id}/issue", response_model=BOQVersionResponse)
+async def issue_boq_version(
+  boq_version_id: UUID,
+  payload: TransitionRequest | None = None,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_ISSUE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).issue_version(
+    current_user.active_membership.organization_id, boq_version_id, current_user.id, payload.note if payload else None)
+
+@router.post("/boq-versions/{boq_version_id}/archive", response_model=BOQVersionResponse)
+async def archive_boq_version(
+  boq_version_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_ISSUE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).archive_version(current_user.active_membership.organization_id, boq_version_id, current_user.id)
+
+@router.get("/boq-versions/{boq_version_id}/snapshots", response_model=list[SnapshotResponse])
+async def list_boq_snapshots(
+  boq_version_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).list_snapshots(current_user.active_membership.organization_id, boq_version_id)
+
+@router.get("/boq-snapshots/{snapshot_id}/items", response_model=list[SnapshotItemResponse])
+async def list_boq_snapshot_items(
+  snapshot_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).snapshot_items(current_user.active_membership.organization_id, snapshot_id)
+
+@router.get("/boq-versions/{boq_version_id}/ledger", response_model=list[LedgerRowResponse])
+async def list_boq_version_ledger(
+  boq_version_id: UUID,
+  response: Response,
+  limit: int = Query(default=500, ge=1, le=2000),
+  after: UUID | None = Query(default=None),
+  work_item_code: str | None = Query(default=None, max_length=50),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  rows, next_cursor = await _engine(session).ledger_for_version(
+    current_user.active_membership.organization_id, boq_version_id,
+    limit=limit, after=after, work_item_code=work_item_code)
+  if next_cursor:
+    response.headers["X-Next-Cursor"] = str(next_cursor)
+  return rows
+
+@router.get("/boq-items/{item_id}/trace", response_model=ItemTraceResponse)
+async def get_boq_item_trace(
+  item_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).item_trace(current_user.active_membership.organization_id, item_id)
+
+@router.get("/boq-items/{item_id}/adjustments", response_model=list[AdjustmentResponse])
+async def list_boq_item_adjustments(
+  item_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).list_adjustments(current_user.active_membership.organization_id, item_id)
+
+@router.post("/boq-items/{item_id}/adjustments", response_model=AdjustmentResponse, status_code=201)
+async def create_boq_item_adjustment(
+  item_id: UUID,
+  payload: AdjustmentCreateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_ADJUST)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).add_adjustment(
+    current_user.active_membership.organization_id, item_id, current_user.id, payload.kind, payload.value, payload.reason)
+
+@router.post("/boq-adjustments/{adjustment_id}/revoke", response_model=AdjustmentResponse)
+async def revoke_boq_adjustment(
+  adjustment_id: UUID,
+  payload: ReasonRequest,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_ADJUST)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).revoke_adjustment(
+    current_user.active_membership.organization_id, adjustment_id, current_user.id, payload.reason)
+
+@router.post("/boq-items/{item_id}/waive-review", response_model=BOQItemResponse)
+async def waive_boq_item_review(
+  item_id: UUID,
+  payload: ReasonRequest,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_UPDATE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).waive_item_review(
+    current_user.active_membership.organization_id, item_id, current_user.id, payload.reason)
+
+@router.post("/boq-items/{item_id}/confirm-rate", response_model=BOQItemResponse)
+async def confirm_boq_item_rate(
+  item_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_UPDATE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).confirm_rate(current_user.active_membership.organization_id, item_id, current_user.id)
+
+@router.get("/review-issues", response_model=list[ReviewIssueResponse])
+async def list_review_issues(
+  project_id: UUID = Query(...),
+  boq_version_id: UUID | None = Query(default=None),
+  status: Literal["OPEN", "RESOLVED", "WAIVED"] | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).list_issues(
+    current_user.active_membership.organization_id, project_id, status, boq_version_id)
+
+@router.patch("/review-issues/{issue_id}", response_model=ReviewIssueResponse)
+async def update_review_issue(
+  issue_id: UUID,
+  payload: ReviewIssueUpdateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.REVIEW_RESOLVE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).resolve_issue(
+    current_user.active_membership.organization_id, issue_id, current_user.id, payload.status, payload.note)
+
+@router.get("/boq-versions/{boq_version_id}/exports/{kind}")
+async def export_boq_snapshot(
+  boq_version_id: UUID,
+  kind: Literal["CONTRACT_BOQ", "PROCUREMENT", "MEASUREMENT_BOOK", "AUDIT_REPORT", "REVISION_COMPARISON", "BBS"],
+  fmt: Literal["pdf", "xlsx"] = Query(default="pdf"),
+  snapshot_id: UUID | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_EXPORT)),
+  session: AsyncSession = Depends(get_db),
+):
+  data, media, filename = await _engine(session).export_snapshot(
+    current_user.active_membership.organization_id, boq_version_id, kind, fmt, current_user.id, snapshot_id)
+  return Response(content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})

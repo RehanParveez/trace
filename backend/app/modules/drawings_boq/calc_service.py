@@ -15,6 +15,7 @@ from app.modules.drawings_boq.repository import DrawingElementRepository, Drawin
 from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.projects.repository import ProjectRepository
 from app.modules.drawings_boq.service import DrawingBOQService
+from app.core.config import settings
 
 class RunError(Exception):
   def __init__(self, code: str, message: str):
@@ -65,6 +66,10 @@ def _deduction_row(run: CalculationRun, d, ctx: CalculationContext) -> dict:
     "geometry": d.geometry, "explanation": d.explanation,
     "engine_version": run.engine_version, "stage": "allocate",
   }
+  
+def engine_v2_enabled(org_id) -> bool:
+  ids = {s.strip() for s in (settings.engine_v2_org_ids or "").split(",") if s.strip()}
+  return "*" in ids or str(org_id) in ids
 
 class CalculationService:
   def __init__(self, session: AsyncSession):
@@ -202,6 +207,7 @@ class CalculationService:
     expected_fingerprint = run.fingerprint
     engine_version = run.engine_version
     convention_code = run.convention_code
+    requested_by = run.requested_by_user_id
 
     try:
       rule_set = await self.rule_sets.get_by_id(rule_set_id)
@@ -293,6 +299,8 @@ class CalculationService:
         "allocation": state["alloc"].stats,
       })
       await self.session.commit()
+      
+      await self._build_boq_after_run(org, run_id, requested_by)
 
     except Exception as exc:
       await self.session.rollback()
@@ -390,6 +398,16 @@ class CalculationService:
       await self.runs.fail_running_stages(run_id, str(exc))
       await self.runs.mark_failed(run_id, code, str(exc))
       await self.session.commit()
+      
+  async def _build_boq_after_run(self, org: UUID, run_id: UUID, actor) -> None:
+    from app.modules.drawings_boq.boq_service import BOQEngineService
+    try:
+      result = await BOQEngineService(self.session).build_from_run(org, run_id, actor)
+      await self.runs.merge_stats(run_id, {"boq": {k: str(v) for k, v in result.items()}})
+    except Exception as exc:
+      await self.session.rollback()
+      await self.runs.merge_stats(run_id, {"boq_error": str(exc)[:500]})
+    await self.session.commit()
 
   async def get_run(self, organization_id: UUID, run_id: UUID) -> CalculationRun:
     run = await self.runs.get_by_id_and_org(run_id, organization_id)

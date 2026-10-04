@@ -31,6 +31,9 @@ class AuditEntityType(str, enum.Enum):
   PUNCH_LIST = "PUNCH_LIST"
   BANK_GUARANTEE = "BANK_GUARANTEE"
   RULE_SET = "RULE_SET"
+  BOQ_VERSION = "BOQ_VERSION"
+  BOQ_ADJUSTMENT = "BOQ_ADJUSTMENT"
+  REVIEW_ISSUE = "REVIEW_ISSUE"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"

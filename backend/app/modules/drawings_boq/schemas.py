@@ -4,6 +4,7 @@ from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 from app.modules.drawings_boq.models import BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingFormat, DrawingStatus, BOQItemRateSource
+from typing import Literal
 
 class DrawingResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -64,6 +65,14 @@ class BOQVersionResponse(BaseModel):
   status: BOQVersionStatus
   covered_area_sqft: Decimal | None
   export_meta: dict
+  lifecycle: str = "DRAFT"
+  origin: str = "LEGACY"
+  calculation_run_id: UUID | None = None
+  snapshot_id: UUID | None = None
+  rule_set_id: UUID | None = None
+  audit_score: Decimal | None = None
+  approved_at: datetime | None = None
+  issued_at: datetime | None = None
   
 class ProjectBOQCountResponse(BaseModel):
   project_id: UUID
@@ -86,6 +95,21 @@ class BOQItemResponse(BaseModel):
   approved_at: datetime | None
   item_type: BOQItemType
   created_by_user_id: UUID | None
+  work_item_code: str | None = None
+  description: str | None = None
+  net_quantity: Decimal | None = None
+  adjustment_total: Decimal = Decimal("0")
+  gross_quantity: Decimal | None = None
+  waste_factor_applied: Decimal | None = None
+  confidence: Decimal | None = None
+  review_status: str = "OK"
+  source_kind: str = "LEGACY"
+  is_manual: bool = False
+  canonical_unit: str | None = None
+  unit_factor: Decimal | None = None
+  level_id: UUID | None = None
+  item_key: str | None = None
+  calculation_run_id: UUID | None = None
 
 class BOQItemUpdateRequest(BaseModel):
   version: int = Field(
@@ -107,11 +131,17 @@ class BOQItemUpdateRequest(BaseModel):
     max_length=20,
   )
   quantity: Decimal | None = None
+  
+  adjustment_reason: str | None = Field(
+      default=None, max_length=2000,
+      description="Required when changing the quantity of an engine-calculated line.",
+  )
   unit_rate: Decimal | None = None
   save_as_library_default: bool = Field(
     default=False,
     description="If true and unit_rate is set, save this rate as the org's default for this material going forward.",
   )
+  adjustment_reason: str | None = Field(default=None, max_length=1000)
 
 class MaterialLibraryCreateRequest(BaseModel):
   raw_text: str = Field(
@@ -304,3 +334,104 @@ class DeductionResponse(BaseModel):
   geometry: dict
   explanation: str | None
   engine_version: str
+  
+class AdjustmentCreateRequest(BaseModel):
+  kind: Literal["DELTA", "REPLACE"]
+  value: Decimal
+  reason: str = Field(min_length=1, max_length=1000)
+
+class ReasonRequest(BaseModel):
+  reason: str = Field(min_length=1, max_length=1000)
+
+class AdjustmentResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  boq_item_id: UUID
+  kind: str
+  value: Decimal
+  reason: str
+  created_by_user_id: UUID | None
+  created_at: datetime
+  revoked_at: datetime | None
+  revoke_reason: str | None
+
+class TransitionRequest(BaseModel):
+  note: str | None = Field(default=None, max_length=1000)
+
+class BOQBuildResponse(BaseModel):
+  boq_version_id: UUID
+  items_created: int
+  items_updated: int
+  items_removed: int
+  orphaned_items: int
+  open_issues: int
+
+class ReviewIssueResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  project_id: UUID
+  boq_version_id: UUID | None
+  boq_item_id: UUID | None
+  drawing_element_id: UUID | None
+  code: str
+  severity: str
+  blocks: str
+  message: str
+  suggested_fix: str | None
+  details: dict
+  status: str
+  resolution_note: str | None
+  resolved_at: datetime | None
+  created_at: datetime
+
+class ReviewIssueUpdateRequest(BaseModel):
+  status: Literal["RESOLVED", "WAIVED"]
+  note: str | None = Field(default=None, max_length=1000)
+
+class SnapshotResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  boq_version_id: UUID
+  version_no: int
+  purpose: str
+  content_hash: str
+  item_count: int
+  totals: dict
+  rule_set_code: str | None
+  rule_set_version: int | None
+  convention_code: str | None
+  engine_version: str | None
+  note: str | None
+  created_at: datetime
+
+class SnapshotItemResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  line_no: int
+  source_item_id: UUID | None
+  work_item_code: str | None
+  material_name: str
+  description: str | None
+  item_type: str
+  unit: str
+  net_quantity: Decimal | None
+  adjustment_total: Decimal
+  quantity: Decimal
+  gross_quantity: Decimal | None
+  unit_rate: Decimal | None
+  amount: Decimal | None
+  confidence: Decimal | None
+  review_status: str
+  source_kind: str
+  ledger_row_count: int
+  ledger_hash: str | None
+
+class ItemTraceResponse(BaseModel):
+  item: BOQItemResponse
+  ledger: list[LedgerRowResponse]
+  deductions: list[DeductionResponse]
+  adjustments: list[AdjustmentResponse]

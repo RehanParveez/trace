@@ -19,6 +19,8 @@ from app.modules.notifications.service import NotificationService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
 from sqlalchemy import select
+from app.core.config import settings
+from app.modules.drawings_boq.calc_service import CalculationService, engine_v2_enabled
 
 MAX_AI_NORMALIZATIONS_PER_PARSE = 50
 
@@ -145,6 +147,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
     drawing_project_id = current_drawing.project_id
     drawing_filename = current_drawing.original_filename
     uploader_id = current_drawing.uploaded_by_user_id
+    parsed_ok = False
     try:
       if not read_result.elements:
         raise ValueError("No supported building elements were found in this IFC file.")
@@ -343,6 +346,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       current_drawing.parsed_at = datetime.now(timezone.utc)
       await drawings.update(current_drawing)
       await session.commit()
+      parsed_ok = True
 
     except Exception as exc:
       await session.rollback()
@@ -362,3 +366,11 @@ async def _parse_drawing(drawing_id: UUID) -> None:
           commit=False,
         )
       await session.commit()
+
+    if parsed_ok and engine_v2_enabled(drawing_org_id):
+      try:
+        await CalculationService(session).request_run(
+          drawing_org_id, drawing_project_id, uploader_id, None, None,
+          convention_code=settings.engine_default_convention)
+      except Exception:
+        await session.rollback()
