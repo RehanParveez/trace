@@ -123,4 +123,10 @@ class PermissionKey(StrEnum):
   BOQ_ISSUE = "boq:issue"
   REVIEW_RESOLVE = "review:resolve"
   
+  SPACE_MANAGE = "space:manage"
+  FINISH_MANAGE = "finish:manage"
+  SCHEDULE_IMPORT = "schedule:import"
+  
+  
+  
   

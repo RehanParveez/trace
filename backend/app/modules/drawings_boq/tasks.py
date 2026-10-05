@@ -22,6 +22,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.modules.drawings_boq.calc_service import CalculationService, engine_v2_enabled
 from app.modules.drawings_boq.spatial_repository import persist_spatial
+from app.modules.drawings_boq.finish_schedule.common import carry_over_space_finishes
 
 MAX_AI_NORMALIZATIONS_PER_PARSE = 50
 
@@ -77,6 +78,8 @@ def _build_drawing_element(drawing: Drawing, item: ReadElement, level_ids: dict)
     placement=item.placement,
     normalization_status=item.status,
     normalization_issues=item.issues,
+    type_mark=getattr(item, "type_mark", None),
+    type_name=getattr(item, "type_name", None),
   )
 
 async def _parse_drawing(drawing_id: UUID) -> None:
@@ -178,6 +181,15 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       if drawing_elements:
         await elements_repo.bulk_create(drawing_elements)
       await persist_spatial(session, current_drawing, read_result, drawing_elements, level_ids)
+      try:
+        async with session.begin_nested():
+          carried = await carry_over_space_finishes(session, current_drawing)
+        if carried.get("carried"):
+          read_result.model_issues.append({
+            "code": "FINISHES_CARRIED_OVER", "severity": "info",
+            "message": f"{carried['carried']} room finish(es) carried over from the previous revision."})
+      except Exception:
+        pass
 
       audit = await service.run_model_readiness_audit(
         current_drawing.organization_id,

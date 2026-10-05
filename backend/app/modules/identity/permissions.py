@@ -18,4 +18,7 @@ IDENTITY_PERMISSIONS: dict[PermissionKey, str] = {
   PermissionKey.SITE_LOG_READ: "View site progress logs.",
   PermissionKey.SITE_LOG_CREATE: "Create site progress logs.",
   PermissionKey.SITE_LOG_MANAGE: "Update and delete site progress logs.",
+  PermissionKey.SPACE_MANAGE: "Create and edit building spaces and their boundaries.",
+  PermissionKey.FINISH_MANAGE: "Set and edit room finishes.",
+  PermissionKey.SCHEDULE_IMPORT: "Import, review and confirm drawing schedules.",
 }

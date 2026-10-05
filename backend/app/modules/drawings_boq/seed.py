@@ -182,166 +182,166 @@ async def seed_labour_rates(session: AsyncSession) -> None:
           updated_at=now, 
         ) 
       ) 
- 
-async def seed_drawings_boq_rules(session: AsyncSession) -> None: 
-  existing = await session.execute( 
-    select(MeasurementRuleSet).where( 
-      MeasurementRuleSet.code == "PUNJAB_CSR", 
-      MeasurementRuleSet.organization_id.is_(None), 
-    ) 
-  ) 
-  if existing.scalar_one_or_none() is None: 
-    rule = MeasurementRuleSet( 
-      id=uuid4(), 
-      organization_id=None, 
-      code="PUNJAB_CSR", 
-      name="Punjab CSR (default)", 
-      description="Default Pakistan / Punjab measurement conventions for BOQ generation.", 
-      is_system=True, 
-      is_active=True, 
-      opening_deduction_threshold_m2=Decimal("0.5"), 
-      wall_measurement_method="centre_line", 
-      preferred_units={ 
-        "area": "sft", 
-        "volume": "cft", 
-        "length": "rft", 
-        "weight": "kg", 
-        "count": "nos", 
-      }, 
-      waste_factors={ 
-        "default": 1.05, 
-        "brick": 1.05, 
-        "brickwork": 1.05, 
-        "concrete": 1.02, 
-        "plaster": 1.10, 
-        "paint": 1.08, 
-        "steel": 1.03, 
-        "formwork": 1.05, 
-      }, 
-      net_vs_gross_preference="net", 
-      extra_config={"province": "Punjab", "csr_year": 2024}, 
-    ) 
-    session.add(rule) 
-    await session.flush() 
- 
-  existing_g = await session.execute( 
-    select(MeasurementRuleSet).where( 
-      MeasurementRuleSet.code == "GENERIC_METRIC", 
-      MeasurementRuleSet.organization_id.is_(None), 
-    ) 
-  ) 
-  if existing_g.scalar_one_or_none() is None: 
-    session.add( 
-      MeasurementRuleSet( 
-        id=uuid4(), 
-        organization_id=None, 
-        code="GENERIC_METRIC", 
-        name="Generic Metric", 
-        description="International metric fallback.", 
-        is_system=True, 
-        is_active=True, 
-        opening_deduction_threshold_m2=Decimal("0.5"), 
-        wall_measurement_method="centre_line", 
-        preferred_units={"area": "m2", "volume": "m3", "length": "m", "weight": "kg", "count": "nos"}, 
-        waste_factors={"default": 1.05}, 
-        net_vs_gross_preference="net", 
-        extra_config={}, 
-      ) 
-    ) 
-    await session.flush() 
- 
-  async def _ensure_recipe(code: str, name: str, triggers: list, conditions: dict, components: list[dict]): 
-    exists = await session.execute( 
-      select(AssemblyRecipe).where( 
-        AssemblyRecipe.code == code, 
-        AssemblyRecipe.organization_id.is_(None), 
-      ) 
-    ) 
-    if exists.scalar_one_or_none() is not None: 
-      return 
-    recipe = AssemblyRecipe( 
-      id=uuid4(), 
-      organization_id=None, 
-      code=code, 
-      name=name, 
-      description=None, 
-      trigger_ifc_types=triggers, 
-      trigger_conditions=conditions, 
-      is_system=True, 
-      is_active=True, 
-    ) 
-    session.add(recipe) 
-    await session.flush() 
-    for idx, c in enumerate(components): 
-      session.add( 
-        AssemblyRecipeComponent( 
-          id=uuid4(), 
-          recipe_id=recipe.id, 
-          sequence=idx, 
-          work_item_code=c.get("work_item_code"), 
-          description_template=c["description"], 
-          unit=c["unit"], 
-          quantity_factor=Decimal(str(c.get("factor", 1.0))), 
-          quantity_formula=c.get("formula"), 
-          category=c.get("category"), 
-          item_type=BOQItemType(c.get("item_type", "MATERIAL")), 
-          waste_factor=Decimal(str(c.get("waste", 1.0))), 
-          is_optional=c.get("optional", False), 
-        ) 
-      ) 
-    await session.flush() 
- 
-  await _ensure_recipe( 
-    code="EXT_BRICK_WALL_230", 
-    name="External 230 mm Brick Wall", 
-    triggers=["IfcWall", "IfcWallStandardCase"], 
-    conditions={}, 
-    components=[ 
-      {"description": "Brick masonry in {material}", "unit": "cft", "factor": 1.0, "waste": 1.05, "category": "Masonry"}, 
-      {"description": "Internal plaster on {material}", "unit": "sft", "factor": 1.0, "waste": 1.10, "category": "Plaster"}, 
-      {"description": "External plaster on {material}", "unit": "sft", "factor": 1.0, "waste": 1.10, "category": "Plaster"}, 
-      {"description": "External paint on {material}", "unit": "sft", "factor": 1.0, "waste": 1.08, "category": "Paint"}, 
-      {"description": "Scaffolding allowance for external wall", "unit": "sft", "factor": 1.0, "waste": 1.0, "category": "Scaffolding", "item_type": "CUSTOM"}, 
-    ], 
-  ) 
- 
-  await _ensure_recipe( 
-    code="RCC_SLAB", 
-    name="RCC Slab", 
-    triggers=["IfcSlab"], 
-    conditions={}, 
-    components=[ 
-      {"description": "RCC concrete in slab", "unit": "cft", "factor": 1.0, "waste": 1.02, "category": "Concrete"}, 
-      {"description": "Formwork for slab soffit", "unit": "sft", "factor": 1.0, "waste": 1.05, "category": "Formwork"}, 
-      {"description": "Curing of concrete slab", "unit": "sft", "factor": 1.0, "waste": 1.0, "category": "Curing", "item_type": "CUSTOM"}, 
-    ], 
-  ) 
- 
-  await _ensure_recipe( 
-    code="INTERNAL_DOOR", 
-    name="Internal Door", 
-    triggers=["IfcDoor"], 
-    conditions={}, 
-    components=[ 
-      {"description": "Door frame", "unit": "nos", "factor": 1.0, "waste": 1.0, "category": "Doors"}, 
-      {"description": "Door shutter", "unit": "nos", "factor": 1.0, "waste": 1.0, "category": "Doors"}, 
-      {"description": "Door hardware set", "unit": "nos", "factor": 1.0, "waste": 1.0, "category": "Hardware"}, 
-      {"description": "Painting to door", "unit": "sft", "factor": 1.0, "waste": 1.08, "category": "Paint"}, 
-    ], 
-  ) 
- 
-  await _ensure_recipe( 
-    code="RCC_COLUMN", 
-    name="RCC Column", 
-    triggers=["IfcColumn"], 
-    conditions={}, 
-    components=[ 
-      {"description": "RCC concrete in column", "unit": "cft", "factor": 1.0, "waste": 1.02, "category": "Concrete"}, 
-      {"description": "Formwork for column", "unit": "sft", "factor": 1.0, "waste": 1.05, "category": "Formwork"}, 
-      {"description": "Curing of column", "unit": "sft", "factor": 1.0, "waste": 1.0, "category": "Curing", "item_type": "CUSTOM"}, 
-    ], 
-  ) 
-  await session.flush() 
+async def _system_ruleset_exists(session: AsyncSession, code: str) -> bool:
+  result = await session.execute(
+    select(MeasurementRuleSet.id)
+    .where(
+      MeasurementRuleSet.code == code,
+      MeasurementRuleSet.organization_id.is_(None),
+    )
+    .limit(1)
+  )
+  return result.first() is not None
+
+async def seed_drawings_boq_rules(session: AsyncSession) -> None:
+  if not await _system_ruleset_exists(session, "PUNJAB_CSR"):
+    rule = MeasurementRuleSet(
+      id=uuid4(),
+      organization_id=None,
+      code="PUNJAB_CSR",
+      name="Punjab CSR (default)",
+      description="Default Pakistan / Punjab measurement conventions for BOQ generation.",
+      is_system=True,
+      is_active=True,
+      opening_deduction_threshold_m2=Decimal("0.5"),
+      wall_measurement_method="centre_line",
+      preferred_units={
+        "area": "sft",
+        "volume": "cft",
+        "length": "rft",
+        "weight": "kg",
+        "count": "nos",
+      },
+      waste_factors={
+        "default": 1.05,
+        "brick": 1.05,
+        "brickwork": 1.05,
+        "concrete": 1.02,
+        "plaster": 1.10,
+        "paint": 1.08,
+        "steel": 1.03,
+        "formwork": 1.05,
+      },
+      net_vs_gross_preference="net",
+      extra_config={"province": "Punjab", "csr_year": 2024},
+    )
+    session.add(rule)
+    await session.flush()
+
+  if not await _system_ruleset_exists(session, "GENERIC_METRIC"):
+    session.add(
+      MeasurementRuleSet(
+        id=uuid4(),
+        organization_id=None,
+        code="GENERIC_METRIC",
+        name="Generic Metric",
+        description="International metric fallback.",
+        is_system=True,
+        is_active=True,
+        opening_deduction_threshold_m2=Decimal("0.5"),
+        wall_measurement_method="centre_line",
+        preferred_units={"area": "m2", "volume": "m3", "length": "m", "weight": "kg", "count": "nos"},
+        waste_factors={"default": 1.05},
+        net_vs_gross_preference="net",
+        extra_config={},
+      )
+    )
+    await session.flush()
+
+  async def _ensure_recipe(code: str, name: str, triggers: list, conditions: dict, components: list[dict]):
+    exists = await session.execute(
+      select(AssemblyRecipe.id)
+      .where(
+        AssemblyRecipe.code == code,
+        AssemblyRecipe.organization_id.is_(None),
+      )
+      .limit(1)
+    )
+    if exists.first() is not None:
+      return
+    recipe = AssemblyRecipe(
+      id=uuid4(),
+      organization_id=None,
+      code=code,
+      name=name,
+      description=None,
+      trigger_ifc_types=triggers,
+      trigger_conditions=conditions,
+      is_system=True,
+      is_active=True,
+    )
+    session.add(recipe)
+    await session.flush()
+    for idx, c in enumerate(components):
+      session.add(
+        AssemblyRecipeComponent(
+          id=uuid4(),
+          recipe_id=recipe.id,
+          sequence=idx,
+          work_item_code=c.get("work_item_code"),
+          description_template=c["description"],
+          unit=c["unit"],
+          quantity_factor=Decimal(str(c.get("factor", 1.0))),
+          quantity_formula=c.get("formula"),
+          category=c.get("category"),
+          item_type=BOQItemType(c.get("item_type", "MATERIAL")),
+          waste_factor=Decimal(str(c.get("waste", 1.0))),
+          is_optional=c.get("optional", False),
+        )
+      )
+    await session.flush()
+
+  await _ensure_recipe(
+    code="EXT_BRICK_WALL_230",
+    name="External 230 mm Brick Wall",
+    triggers=["IfcWall", "IfcWallStandardCase"],
+    conditions={},
+    components=[
+      {"description": "Brick masonry in {material}", "unit": "cft", "factor": 1.0, "waste": 1.05, "category": "Masonry"},
+      {"description": "Internal plaster on {material}", "unit": "sft", "factor": 1.0, "waste": 1.10, "category": "Plaster"},
+      {"description": "External plaster on {material}", "unit": "sft", "factor": 1.0, "waste": 1.10, "category": "Plaster"},
+      {"description": "External paint on {material}", "unit": "sft", "factor": 1.0, "waste": 1.08, "category": "Paint"},
+      {"description": "Scaffolding allowance for external wall", "unit": "sft", "factor": 1.0, "waste": 1.0, "category": "Scaffolding", "item_type": "CUSTOM"},
+    ],
+  )
+
+  await _ensure_recipe(
+    code="RCC_SLAB",
+    name="RCC Slab",
+    triggers=["IfcSlab"],
+    conditions={},
+    components=[
+      {"description": "RCC concrete in slab", "unit": "cft", "factor": 1.0, "waste": 1.02, "category": "Concrete"},
+      {"description": "Formwork for slab soffit", "unit": "sft", "factor": 1.0, "waste": 1.05, "category": "Formwork"},
+      {"description": "Curing of concrete slab", "unit": "sft", "factor": 1.0, "waste": 1.0, "category": "Curing", "item_type": "CUSTOM"},
+    ],
+  )
+
+  await _ensure_recipe(
+    code="INTERNAL_DOOR",
+    name="Internal Door",
+    triggers=["IfcDoor"],
+    conditions={},
+    components=[
+      {"description": "Door frame", "unit": "nos", "factor": 1.0, "waste": 1.0, "category": "Doors"},
+      {"description": "Door shutter", "unit": "nos", "factor": 1.0, "waste": 1.0, "category": "Doors"},
+      {"description": "Door hardware set", "unit": "nos", "factor": 1.0, "waste": 1.0, "category": "Hardware"},
+      {"description": "Painting to door", "unit": "sft", "factor": 1.0, "waste": 1.08, "category": "Paint"},
+    ],
+  )
+
+  await _ensure_recipe(
+    code="RCC_COLUMN",
+    name="RCC Column",
+    triggers=["IfcColumn"],
+    conditions={},
+    components=[
+      {"description": "RCC concrete in column", "unit": "cft", "factor": 1.0, "waste": 1.02, "category": "Concrete"},
+      {"description": "Formwork for column", "unit": "sft", "factor": 1.0, "waste": 1.05, "category": "Formwork"},
+      {"description": "Curing of column", "unit": "sft", "factor": 1.0, "waste": 1.0, "category": "Curing", "item_type": "CUSTOM"},
+    ],
+  )
+  await session.flush()
  
 async def main(): 
   async with AsyncSessionLocal() as session: 

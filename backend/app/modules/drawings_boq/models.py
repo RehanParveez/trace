@@ -232,7 +232,7 @@ _EXPORT_KINDS = "'CONTRACT_BOQ','PROCUREMENT','MEASUREMENT_BOOK','AUDIT_REPORT',
 _EXPORT_FORMATS = "'PDF','XLSX'"
 _EXPORT_STATUSES = "'QUEUED','RUNNING','SUCCEEDED','FAILED'"
 _SPACE_SOURCES = "'IFC','MANUAL'"
-_FINISH_SURFACES = "'FLOOR','WALL','CEILING','SKIRTING','DADO'"
+_FINISH_SURFACES = "'FLOOR','WALL','CEILING','SKIRTING','DADO', 'STAIR','WATERPROOFING'"
 _FINISH_SOURCES = "'IFC_PSET','SCHEDULE_IMPORT','MANUAL','RULE_DEFAULT'"
 _RELATION_KINDS = "'HOSTED_IN','SUPPORTS','CONNECTS','ADJACENT'"
 _RELATION_SOURCES = "'IFC','DERIVED'"
@@ -2900,7 +2900,7 @@ class FinishRule(Base, TimestampMixin):
     server_default="ALL",
   )
   
-  surface: Mapped[str] = mapped_column(String(12), nullable=False)
+  surface: Mapped[str] = mapped_column(String(50), nullable=False)
   work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)
   height_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
   

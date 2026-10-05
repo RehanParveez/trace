@@ -115,7 +115,7 @@ class CalculationService:
       rule_set_ref=f"{rule_set.id}:{rule_set.immutable_version}:{rule_set.content_hash}",
       convention_code=convention_code, engine_version=kernel.ENGINE_VERSION,
       settings=settings, convention_params=convention_params,
-      spatial=fin.phase6_payload(phase6.spaces, phase6.openings, phase6.schedule_lines) if phase6 else None,
+      spatial=fin.finish_sched_payload(phase6.spaces, phase6.openings, phase6.schedule_lines) if phase6 else None,
     )
 
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,

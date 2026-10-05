@@ -131,6 +131,8 @@ class DrawingBOQService:
     user_id: UUID,
     file: UploadFile,
     idempotency_key: str | None,
+    revision_of: Drawing | None = None,
+    revision_label: str | None = None,
   ) -> Drawing:
     from app.modules.drawings_boq.tasks import parse_drawing_task
     await self._require_project(organization_id, project_id)
@@ -230,12 +232,16 @@ class DrawingBOQService:
       status=DrawingStatus.UPLOADED if is_auto_parsed else DrawingStatus.PARSED,
       file_size_bytes=file_size_bytes,
       parsed_at=None if is_auto_parsed else now,
-      revision_group_id=drawing_id,
-      revision_label=None,
+      revision_group_id=revision_of.revision_group_id if revision_of is not None else drawing_id,
+      revision_label=((revision_label or "").strip() or None) if revision_of is not None else None,
       is_current_revision=True,
     )
 
     drawing = await self.drawings.create(drawing)
+    if revision_of is not None:
+      revision_of.is_current_revision = False
+      revision_of.superseded_at = now
+      await self.drawings.update(revision_of)
     try:
       await self.subscriptions.increment_usage_many(
         organization_id,
@@ -675,12 +681,6 @@ class DrawingBOQService:
         code="BOQ_VERSION_SUPERSEDED",
       )
     assert_mutable(version)
-    
-    if version.origin == "ENGINE":
-      raise TraceException(
-        "Engine BOQ lines are approved together with their version.",
-        status_code=409, code="USE_VERSION_APPROVAL",
-      )
 
     if payload.material_name is not None:
       item.material_name = payload.material_name
@@ -690,8 +690,10 @@ class DrawingBOQService:
       if item.source_kind == "MODEL" and payload.unit != item.unit:
         raise TraceException("The unit of a calculated item cannot be changed.", status_code=422, code="UNIT_LOCKED")
       item.unit = payload.unit
-    if payload.quantity is not None:
-      if item.source_kind == "MODEL":
+    if payload.quantity is not None or payload.unit_rate is not None:
+      if payload.quantity is None:
+        pass
+      elif item.source_kind == "MODEL":
         if not (payload.adjustment_reason or "").strip():
           raise TraceException("Changing a calculated quantity needs a reason.", status_code=422,
             code="ADJUSTMENT_REQUIRES_REASON")
@@ -1400,13 +1402,10 @@ class DrawingBOQService:
         status_code=409, code="DRAWING_NOT_CURRENT_REVISION",
       )
 
-    new_drawing = await self.upload_drawing(organization_id, project_id, user_id, file, idempotency_key)
-
-    new_drawing.revision_group_id = previous.revision_group_id
-    new_drawing.revision_label = (revision_label or "").strip() or None
-    previous.is_current_revision = False
-    previous.superseded_at = datetime.now(timezone.utc)
-    await self.session.commit()
+    new_drawing = await self.upload_drawing(
+      organization_id, project_id, user_id, file, idempotency_key,
+      revision_of=previous, revision_label=revision_label,
+    )
 
     await self.audit.log(
       organization_id, user_id, AuditEntityType.DRAWING, new_drawing.id, AuditAction.CREATE,

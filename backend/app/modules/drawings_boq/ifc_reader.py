@@ -61,6 +61,8 @@ class ReadElement:
   properties: dict = field(default_factory=dict)
   status: str = "VALID"
   issues: list[dict] = field(default_factory=list)
+  type_mark: str | None = None
+  type_name: str | None = None
  
 @dataclass
 class IfcReadResult:
@@ -592,6 +594,26 @@ def _dims_from_qto(role: str, element, flat: dict, scales: _Scales) -> dict:
     height = _num(getattr(element, "OverallHeight", None))
     dims = {"width": width * mm if width else None, "height": height * mm if height else None}
   return {k: v for k, v in dims.items() if v is not None}
+
+def _type_fields(element, psets: dict, role: str) -> dict:
+  if role not in ("DOOR", "WINDOW"):
+    return {}
+  common = "Pset_DoorCommon" if role == "DOOR" else "Pset_WindowCommon"
+  mark = _clean((psets.get(common) or {}).get("Reference"))
+  type_name = None
+  try:
+    etype = ifcopenshell.util.element.get_type(element)
+  except Exception:
+    etype = None
+  if etype is not None:
+    type_name = _clean(getattr(etype, "Name", None))
+    if mark is None:
+      try:
+        type_psets = ifcopenshell.util.element.get_psets(etype, psets_only=True) or {}
+      except Exception:
+        type_psets = {}
+      mark = _clean((type_psets.get(common) or {}).get("Reference")) or _clean(getattr(etype, "Tag", None))
+  return {"type_mark": mark[:100] if mark else None, "type_name": type_name[:200] if type_name else None}
  
 def _normalise_element(
   element,
@@ -738,6 +760,7 @@ def _normalise_element(
     properties=properties,
     status=status,
     issues=issues,
+    **_type_fields(element, psets, role),
   )
  
 def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMIT) -> IfcReadResult:

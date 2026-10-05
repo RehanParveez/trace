@@ -394,7 +394,7 @@ def schedule_lines_ledger(ctx: CalculationContext, lines) -> FinishResult:
   ledger.sort(key=lambda r: (r.work_item_code, str(r.solid_id)))
   return FinishResult(solids=solids, ledger=ledger, skipped=skipped)
 
-def phase6_payload(spaces, openings, lines) -> dict:
+def finish_sched_payload(spaces, openings, lines) -> dict:
   return {
     "spaces": [
       {"id": str(s.id), "level_id": str(s.level_id) if s.level_id else None, "number": s.number, "name": s.name, "category": s.category, "is_external": s.is_external, "net_floor_area_mm2": str(s.net_floor_area_mm2), "gross_floor_area_mm2": str(s.gross_floor_area_mm2),

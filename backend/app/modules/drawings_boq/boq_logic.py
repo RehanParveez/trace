@@ -35,6 +35,9 @@ def q2(value) -> Decimal:
 def q4(value) -> Decimal:
   return _q(value, 4)
 
+def q6(value) -> Decimal:
+  return _q(value, 6)
+
 def fmt(value, places: int = 4):
   return None if value is None else format(_q(value, places), "f")
 

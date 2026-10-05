@@ -1,11 +1,12 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from uuid import UUID, uuid4
 from sqlalchemy import select, and_, or_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased
 from app.engine.measure.models import OpeningInput, ScheduleLineInput, SpaceFinishInput, SpaceInput
 from app.engine.measure.profile import FinishRuleSpec
+from app.modules.drawings_boq.schedule_parsing import norm_mark
 from app.modules.drawings_boq.models import BuildingSpace, DrawingElement, ElementRelation, FinishRule, ScheduleImport, ScheduleRow, SpaceBoundary, SpaceFinish
 
 _CHUNK = 1000
@@ -122,9 +123,11 @@ async def load_phase6_inputs(
   )).all()
 
   openings: dict = {}
+  marks: dict = {}
   for e, host_id, host_t in rows:
     if e.id in openings:
       continue
+    marks[e.id] = e.type_mark
     centre = None
     if None not in (e.bbox_min_x_mm, e.bbox_max_x_mm, e.bbox_min_y_mm, e.bbox_max_y_mm):
       centre = (
@@ -141,7 +144,28 @@ async def load_phase6_inputs(
       level_id=e.level_id,
       centre_mm=centre,
     )
-
+    
+  
+  size_rows = (await session.execute(
+    select(ScheduleRow.schedule_kind, ScheduleRow.mark, ScheduleRow.width_mm, ScheduleRow.height_mm)
+    .join(ScheduleImport, (ScheduleImport.id == ScheduleRow.schedule_import_id)
+      & (ScheduleImport.organization_id == ScheduleRow.organization_id))
+    .where(ScheduleImport.organization_id == org, ScheduleImport.project_id == project_id,
+      ScheduleImport.status == "CONFIRMED", ScheduleRow.review_status == "CONFIRMED",
+      ScheduleRow.schedule_kind.in_(("DOOR", "WINDOW")), ScheduleRow.mark.is_not(None))
+    .order_by(ScheduleRow.created_at.asc(), ScheduleRow.row_no.asc())
+  )).all()
+  sizes: dict = {}
+  for kind, mark, sw, sh in size_rows:
+    if sw or sh:
+      sizes.setdefault((kind, norm_mark(mark)), (sw, sh))
+  for oid, o in list(openings.items()):
+    if o.width_mm and o.height_mm:
+      continue
+    found = sizes.get((o.role, norm_mark(marks.get(oid))))
+    if found:
+      openings[oid] = replace(o, width_mm=o.width_mm or found[0], height_mm=o.height_mm or found[1])
+  
   lines = (await session.execute(
     select(ScheduleRow)
     .join(
