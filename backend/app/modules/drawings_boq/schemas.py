@@ -435,3 +435,192 @@ class ItemTraceResponse(BaseModel):
   ledger: list[LedgerRowResponse]
   deductions: list[DeductionResponse]
   adjustments: list[AdjustmentResponse]
+  bar_marks: list[BarMarkResponse] = Field(default_factory=list)
+  
+class RebarShapeResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  code: str
+  name: str
+  description: str | None
+  standard: str | None
+  segments: list
+  bend_spec: list
+  bend_count: int
+  hook_ends: int
+  is_system: bool
+  is_active: bool
+
+class RebarShapeCreateRequest(BaseModel):
+  code: str = Field(min_length=1, max_length=40)
+  name: str = Field(min_length=1, max_length=200)
+  description: str | None = None
+  standard: str | None = Field(default=None, max_length=60)
+  segments: list = Field(default_factory=list)
+  bend_spec: list = Field(default_factory=list)
+  hook_ends: int = Field(default=0, ge=0)
+
+class BarSizeResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  standard: str
+  designation: str
+  grade: str
+  nominal_dia_mm: Decimal
+  unit_weight_kg_m: Decimal
+  is_system: bool
+  is_active: bool
+
+class BarSizeCreateRequest(BaseModel):
+  standard: str = Field(min_length=1, max_length=60)
+  designation: str = Field(min_length=1, max_length=20)
+  grade: str = Field(default="ALL", max_length=30)
+  nominal_dia_mm: Decimal = Field(gt=0)
+  unit_weight_kg_m: Decimal = Field(gt=0)
+
+class ReinforcementRuleResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  rule_set_id: UUID
+  element_scope: str
+  bar_role: str
+  lap_basis: str | None
+  lap_coefficient: Decimal | None
+  hook_rules: dict
+  bend_rules: dict
+  dev_length_method: str | None
+  splice_constraints: dict
+  stock_length_mm: Decimal | None
+  cover_mm: Decimal | None
+  min_lap_mm: Decimal | None
+  use_couplers: bool
+  weight_tolerance_pct: Decimal
+
+class ReinforcementRuleUpsertRequest(BaseModel):
+  element_scope: str = Field(default="ALL", max_length=50)
+  bar_role: str = Field(min_length=1, max_length=50)
+  lap_basis: str | None = Field(default=None, max_length=30)
+  lap_coefficient: Decimal | None = Field(default=None, ge=0)
+  hook_rules: dict = Field(default_factory=dict)
+  bend_rules: dict = Field(default_factory=dict)
+  dev_length_method: str | None = Field(default=None, max_length=40)
+  splice_constraints: dict = Field(default_factory=dict)
+  stock_length_mm: Decimal | None = Field(default=None, gt=0)
+  cover_mm: Decimal | None = Field(default=None, ge=0)
+  min_lap_mm: Decimal | None = Field(default=None, ge=0)
+  use_couplers: bool = False
+  weight_tolerance_pct: Decimal = Field(default=Decimal("2.0"), ge=0)
+
+class BarMarkResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  run_id: UUID
+  solid_id: UUID
+  element_id: UUID | None
+  level_id: UUID | None
+  mark: str
+  role: str
+  shape_code: str
+  shape_params: dict
+  designation: str | None
+  dia_mm: Decimal
+  grade: str | None
+  count: int
+  spacing_mm: Decimal | None
+  cut_len_mm: Decimal
+  stock_len_mm: Decimal | None
+  pieces: int
+  lap_count: int
+  lap_len_mm: Decimal | None
+  total_len_m: Decimal
+  unit_weight_kg_m: Decimal
+  total_kg: Decimal
+  provenance: str
+  confidence: Decimal
+  review_status: str
+  schedule_row_id: UUID | None
+  trace: dict
+  warnings: list
+  engine_version: str
+
+class RebarScheduleRowResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  schedule_import_id: UUID
+  row_no: int
+  page_no: int | None
+  raw_text: str | None
+  member_mark: str | None
+  mark: str | None
+  role: str | None
+  shape_code: str | None
+  shape_params: dict
+  designation: str | None
+  dia_mm: Decimal | None
+  grade: str | None
+  count: int | None
+  spacing_mm: Decimal | None
+  cut_len_mm: Decimal | None
+  declared_total_kg: Decimal | None
+  level_id: UUID | None
+  matched_element_id: UUID | None
+  confidence: Decimal
+  review_status: str
+  review_note: str | None
+
+class RebarScheduleRowUpdateRequest(BaseModel):
+  member_mark: str | None = Field(default=None, max_length=100)
+  mark: str | None = Field(default=None, max_length=50)
+  role: str | None = Field(default=None, max_length=50)
+  shape_code: str | None = Field(default=None, max_length=40)
+  shape_params: dict | None = None
+  designation: str | None = Field(default=None, max_length=20)
+  dia_mm: Decimal | None = Field(default=None, gt=0)
+  grade: str | None = Field(default=None, max_length=30)
+  count: int | None = Field(default=None, ge=0)
+  spacing_mm: Decimal | None = Field(default=None, gt=0)
+  cut_len_mm: Decimal | None = Field(default=None, ge=0)
+  level_id: UUID | None = None
+  matched_element_id: UUID | None = None
+  review_status: Literal["PENDING", "CONFIRMED", "REJECTED"] | None = None
+  review_note: str | None = Field(default=None, max_length=1000)
+
+class RebarImportResponse(BaseModel):
+  schedule_import_id: UUID
+  row_count: int
+  matched_count: int
+  unmatched_count: int
+  rows: list[RebarScheduleRowResponse]
+
+class RebarConfirmResponse(BaseModel):
+  schedule_import_id: UUID
+  confirmed_count: int
+  rejected_count: int
+  pending_count: int
+
+class RebarSummaryRow(BaseModel):
+  dia_mm: Decimal
+  designation: str | None
+  grade: str | None
+  total_len_m: Decimal
+  total_kg: Decimal
+  mark_count: int
+
+class RebarSummaryResponse(BaseModel):
+  boq_version_id: UUID
+  rows: list[RebarSummaryRow]
+  total_kg: Decimal
+  tier1_kg: Decimal
+  tier2_kg: Decimal
+  tier3_estimate_kg: Decimal
+  bbs_exportable: bool        
+
+class BarMarkOverrideRequest(BaseModel):
+  cut_len_mm: Decimal | None = Field(default=None, ge=0)
+  count: int | None = Field(default=None, ge=0)
+  reason: str = Field(min_length=1, max_length=1000)

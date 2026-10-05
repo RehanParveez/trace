@@ -190,6 +190,7 @@ class ScheduleKind(str, enum.Enum):
   FINISH = "FINISH"
   FIXTURE = "FIXTURE"
   GENERAL = "GENERAL"
+  REBAR = "REBAR"
  
 class ScheduleSource(str, enum.Enum):
   PDF_AI = "PDF_AI"
@@ -210,7 +211,23 @@ class ScheduleRowStatus(str, enum.Enum):
  
 class LedgerReviewStatus(str, enum.Enum):
   OK = "OK"
-  REVIEW_REQUIRED = "REVIEW_REQUIRED"       
+  REVIEW_REQUIRED = "REVIEW_REQUIRED"    
+  
+class RebarProvenance(str, enum.Enum):
+  IFC_EXACT = "IFC_EXACT"
+  SCHEDULE_IMPORT = "SCHEDULE_IMPORT"
+  MANUAL = "MANUAL"
+  RULE_ESTIMATE = "RULE_ESTIMATE"
+
+class RebarReviewStatus(str, enum.Enum):
+  OK = "OK"
+  REVIEW_REQUIRED = "REVIEW_REQUIRED"
+  WAIVED = "WAIVED"
+
+class RebarRowStatus(str, enum.Enum):
+  PENDING = "PENDING"
+  CONFIRMED = "CONFIRMED"
+  REJECTED = "REJECTED"   
  
 _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CANCELLED','SUPERSEDED'"
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
@@ -238,12 +255,15 @@ _RELATION_KINDS = "'HOSTED_IN','SUPPORTS','CONNECTS','ADJACENT'"
 _RELATION_SOURCES = "'IFC','DERIVED'"
 _BOUNDARY_KINDS = "'PHYSICAL','VIRTUAL'"
 _BOUNDARY_SIDES = "'INTERNAL','EXTERNAL','UNDEFINED'"
-_SCHEDULE_KINDS = "'DOOR','WINDOW','FINISH','FIXTURE','GENERAL'"
+_SCHEDULE_KINDS = "'DOOR','WINDOW','FINISH','FIXTURE','GENERAL', 'REBAR'"
 _SCHEDULE_SOURCES = "'PDF_AI','PDF_TEXT','CSV','MANUAL'"
 _IMPORT_STATUSES = "'PENDING_REVIEW','CONFIRMED','REJECTED','ARCHIVED'"
 _ROW_STATUSES = "'PENDING','CONFIRMED','REJECTED'"
 _LEDGER_REVIEW = "'OK','REVIEW_REQUIRED'"
 _NORMALIZATION_STATUSES = "'PENDING','VALID','WARNING','INVALID'"
+_REBAR_PROVENANCES = "'IFC_EXACT','SCHEDULE_IMPORT','MANUAL','RULE_ESTIMATE'"
+_REBAR_REVIEW = "'OK','REVIEW_REQUIRED','WAIVED'"
+_REBAR_ROW_STATUSES = "'PENDING','CONFIRMED','REJECTED'"
 
  
 class Drawing(Base, TimestampMixin):
@@ -1315,6 +1335,22 @@ class ReinforcementRule(Base, TimestampMixin):
       "lap_coefficient IS NULL OR lap_coefficient >= 0",
       name="ck_reinforcement_rules_lap_coeff",
     ),
+    
+    CheckConstraint(
+      "stock_length_mm IS NULL OR stock_length_mm > 0", 
+      name="ck_reinforcement_rules_stock"),
+    
+    CheckConstraint(
+      "cover_mm IS NULL OR cover_mm >= 0",
+      name="ck_reinforcement_rules_cover"),
+    
+    CheckConstraint(
+      "min_lap_mm IS NULL OR min_lap_mm >= 0",
+      name="ck_reinforcement_rules_min_lap"),
+    
+    CheckConstraint(
+      "weight_tolerance_pct >= 0",
+      name="ck_reinforcement_rules_weight_tol"),
   )
  
   id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1362,6 +1398,24 @@ class ReinforcementRule(Base, TimestampMixin):
   rule_set: Mapped["MeasurementRuleSet"] = relationship(
     "MeasurementRuleSet",
     back_populates="reinforcement_rules",
+  )
+  
+  stock_length_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  cover_mm: Mapped[Decimal | None] = mapped_column(Numeric(8, 2), nullable=True)
+  min_lap_mm: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+  
+  use_couplers: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default=text("false"),
+  )
+  
+  weight_tolerance_pct: Mapped[Decimal] = mapped_column(
+    Numeric(6, 3),
+    nullable=False, 
+    default=Decimal("2.0"),
+    server_default="2.0",
   )
   
 class MaterialWastageRule(Base, TimestampMixin):
@@ -2936,3 +2990,348 @@ class FinishRule(Base, TimestampMixin):
     default=False,
     server_default=text("false"),
 )
+  
+class RebarShape(Base, TimestampMixin):
+  __tablename__ = "rebar_shapes"
+
+  __table_args__ = (
+    UniqueConstraint("organization_id", "code", name="uq_rebar_shapes_org_code"),
+    Index(
+      "uq_rebar_shapes_system_code", "code",
+      unique=True,
+      postgresql_where=text("organization_id IS NULL"),
+    ),
+    
+    Index("ix_rebar_shapes_org", "organization_id"),
+    CheckConstraint("bend_count >= 0", name="ck_rebar_shapes_bend_count"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=True,
+    index=True,
+  )
+
+  code: Mapped[str] = mapped_column(String(40), nullable=False)
+  name: Mapped[str] = mapped_column(String(200), nullable=False)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True)
+  standard: Mapped[str | None] = mapped_column(String(60), nullable=True)
+
+  segments: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  bend_spec: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  bend_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  hook_ends: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+class BarSize(Base, TimestampMixin):
+  __tablename__ = "bar_sizes"
+
+  __table_args__ = (
+    
+    UniqueConstraint(
+      "organization_id", "standard", "designation", "grade",
+      name="uq_bar_sizes_org_std_desig_grade",
+    ),
+    
+    Index(
+      "uq_bar_sizes_system_std_desig_grade", "standard", "designation", "grade",
+      unique=True,
+      postgresql_where=text("organization_id IS NULL"),
+    ),
+    
+    Index("ix_bar_sizes_org", "organization_id"),
+    CheckConstraint("nominal_dia_mm > 0", name="ck_bar_sizes_dia"),
+    CheckConstraint("unit_weight_kg_m > 0", name="ck_bar_sizes_weight"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=True,
+    index=True,
+  )
+
+  standard: Mapped[str] = mapped_column(String(60), nullable=False)      
+  designation: Mapped[str] = mapped_column(String(20), nullable=False)  
+   
+  grade: Mapped[str] = mapped_column(
+    String(30),
+    nullable=False,
+    default="ALL",
+    server_default="ALL",
+  )
+  
+  nominal_dia_mm: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+  unit_weight_kg_m: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+class RebarScheduleRow(Base, TimestampMixin):
+  __tablename__ = "rebar_schedule_rows"
+
+  __table_args__ = (
+    UniqueConstraint("schedule_import_id", "row_no", name="uq_rebar_schedule_rows_import_row"),
+    UniqueConstraint("id", "organization_id", name="uq_rebar_schedule_rows_id_org"),
+
+    ForeignKeyConstraint(
+      ["schedule_import_id", "organization_id"], ["schedule_imports.id", "schedule_imports.organization_id"],
+      ondelete="CASCADE", name="fk_rebar_schedule_rows_import_tenant",
+    ),
+
+    Index("ix_rebar_schedule_rows_import", "schedule_import_id"),
+    Index("ix_rebar_schedule_rows_org_status", "organization_id", "review_status"),
+    
+    CheckConstraint(f"review_status IN ({_REBAR_ROW_STATUSES})", name="ck_rebar_schedule_rows_review_status"),
+    CheckConstraint("row_no >= 1", name="ck_rebar_schedule_rows_row_no"),
+    
+    CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_rebar_schedule_rows_confidence"),
+    
+    CheckConstraint("(count IS NULL OR count >= 0) AND (cut_len_mm IS NULL OR cut_len_mm >= 0)",
+      name="ck_rebar_schedule_rows_non_negative"),
+    
+    CheckConstraint(
+      "review_status <> 'CONFIRMED' OR (mark IS NOT NULL AND dia_mm IS NOT NULL AND count IS NOT NULL "
+      "AND (cut_len_mm IS NOT NULL OR shape_code IS NOT NULL))",
+      name="ck_rebar_schedule_rows_confirmed_complete",
+    ),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  schedule_import_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  row_no: Mapped[int] = mapped_column(Integer, nullable=False)
+  page_no: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  raw_text: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+  member_mark: Mapped[str | None] = mapped_column(String(100), nullable=True)   
+  mark: Mapped[str | None] = mapped_column(String(50), nullable=True)           
+  role: Mapped[str | None] = mapped_column(String(50), nullable=True)           
+  shape_code: Mapped[str | None] = mapped_column(String(40), nullable=True)
+  
+  shape_params: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  designation: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  dia_mm: Mapped[Decimal | None] = mapped_column(Numeric(8, 3), nullable=True)
+  grade: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  spacing_mm: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+  cut_len_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  declared_total_kg: Mapped[Decimal | None] = mapped_column(Numeric(20, 6), nullable=True)
+
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  matched_element_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawing_elements.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  confidence: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4),
+    nullable=False,
+    default=Decimal("0.5"), 
+    server_default="0.5",
+  )
+
+  review_status: Mapped[str] = mapped_column(
+    String(10), 
+    nullable=False,
+    default=RebarRowStatus.PENDING.value,
+    server_default="PENDING",
+  )
+  
+  review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+  reviewed_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+class _BarMarkColumns:
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  solid_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+
+  element_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("drawing_elements.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  mark: Mapped[str] = mapped_column(String(50), nullable=False)
+  role: Mapped[str] = mapped_column(String(50), nullable=False)
+  shape_code: Mapped[str] = mapped_column(String(40), nullable=False)
+  
+  shape_params: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+
+  designation: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  dia_mm: Mapped[Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+  grade: Mapped[str | None] = mapped_column(String(30), nullable=True)
+  count: Mapped[int] = mapped_column(Integer, nullable=False)
+  spacing_mm: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+
+  cut_len_mm: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+  stock_len_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+  
+  pieces: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=1,
+    server_default=text("1"),
+  )
+  
+  lap_count: Mapped[int] = mapped_column(
+    Integer, 
+    nullable=False, 
+    default=0,
+    server_default=text("0"),
+  )
+  
+  lap_len_mm: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+
+  total_len_m: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
+  unit_weight_kg_m: Mapped[Decimal] = mapped_column(Numeric(10, 4), nullable=False)
+  total_kg: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
+
+  provenance: Mapped[str] = mapped_column(String(20), nullable=False)
+  
+  confidence: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4),
+    nullable=False,
+    default=Decimal("1"),
+  )
+
+  review_status: Mapped[str] = mapped_column(
+    String(20), nullable=False,
+    default=RebarReviewStatus.OK.value, server_default="OK",
+  )
+
+  schedule_row_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rebar_schedule_rows.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+  trace: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  warnings: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  engine_version: Mapped[str] = mapped_column(String(30), nullable=False)
+
+class RebarBarMark(_BarMarkColumns, Base, TimestampMixin):
+  __tablename__ = "rebar_bar_marks"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_rebar_bar_marks_id_org"),
+    UniqueConstraint("run_id", "solid_id", "mark", name="uq_rebar_bar_marks_run_solid_mark"),
+
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_rebar_bar_marks_run_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["solid_id", "organization_id"], ["quantity_solids.id", "quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_rebar_bar_marks_solid_tenant",
+    ),
+
+    Index("ix_rebar_bar_marks_run_solid", "run_id", "solid_id"),
+    Index("ix_rebar_bar_marks_run_dia_grade", "run_id", "dia_mm", "grade"),
+    Index("ix_rebar_bar_marks_run_provenance", "run_id", "provenance"),
+
+    CheckConstraint(f"provenance IN ({_REBAR_PROVENANCES})", name="ck_rebar_bar_marks_provenance"),
+    CheckConstraint(f"review_status IN ({_REBAR_REVIEW})", name="ck_rebar_bar_marks_review_status"),
+    CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_rebar_bar_marks_confidence"),
+    
+    CheckConstraint("dia_mm > 0 AND count >= 0 AND pieces >= 1 AND lap_count >= 0",
+      name="ck_rebar_bar_marks_positive"),
+    
+    CheckConstraint("cut_len_mm >= 0 AND total_len_m >= 0 AND total_kg >= 0",
+      name="ck_rebar_bar_marks_non_negative"),
+  
+    CheckConstraint(
+      "provenance <> 'RULE_ESTIMATE' OR review_status = 'REVIEW_REQUIRED'",
+      name="ck_rebar_bar_marks_estimate_needs_review",
+    ),
+  )
+
+class StagedRebarBarMark(_BarMarkColumns, Base, TimestampMixin):
+  __tablename__ = "staged_rebar_bar_marks"
+
+  __table_args__ = (
+    
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_staged_rebar_bar_marks_run_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["solid_id", "organization_id"], ["staged_quantity_solids.id", "staged_quantity_solids.organization_id"],
+      ondelete="CASCADE", name="fk_staged_rebar_bar_marks_solid_tenant",
+    ),
+
+    Index("ix_staged_rebar_bar_marks_run_stage", "run_id", "stage"),
+    CheckConstraint(f"provenance IN ({_REBAR_PROVENANCES})", name="ck_staged_rebar_bar_marks_provenance"),
+    
+    CheckConstraint("cut_len_mm >= 0 AND total_len_m >= 0 AND total_kg >= 0",
+      name="ck_staged_rebar_bar_marks_non_negative"),
+    
+    CheckConstraint(
+      "provenance <> 'RULE_ESTIMATE' OR review_status = 'REVIEW_REQUIRED'",
+      name="ck_staged_rebar_bar_marks_estimate_needs_review",
+    ),
+  )
+
+  stage: Mapped[str] = mapped_column(String(40), nullable=False)
