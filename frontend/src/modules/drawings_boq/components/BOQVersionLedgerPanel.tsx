@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {ErrorState, LoadingState, Panel, PanelHeader, Button,
 } from "../../organizations/components/OrganizationUi";
 import { useBOQVersionLedger } from "../hooks";
@@ -12,6 +13,8 @@ interface BOQVersionLedgerPanelProps {
 export function BOQVersionLedgerPanel({
   versionId,
 }: BOQVersionLedgerPanelProps) {
+  const { t } = useTranslation();
+
   const [after, setAfter] =
     useState<string | null>(null);
 
@@ -27,7 +30,7 @@ export function BOQVersionLedgerPanel({
   if (query.isLoading) {
     return (
       <Panel>
-        <LoadingState label="Loading BOQ ledger…" />
+        <LoadingState label={t("boq.ledger.loading")} />
       </Panel>
     );
   }
@@ -36,7 +39,7 @@ export function BOQVersionLedgerPanel({
     return (
       <Panel>
         <ErrorState
-          title="Couldn't load BOQ ledger"
+          title={t("boq.ledger.loadError")}
           onRetry={() =>
             void query.refetch()
           }
@@ -50,9 +53,9 @@ export function BOQVersionLedgerPanel({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="TRACEABILITY"
-        title="BOQ quantity ledger"
-        description="Quantity ledger rows linked to this BOQ version."
+        eyebrow={t("boq.ledger.eyebrow")}
+        title={t("boq.ledger.title")}
+        description={t("boq.ledger.description")}
       />
 
       <div className="overflow-x-auto">
@@ -60,18 +63,18 @@ export function BOQVersionLedgerPanel({
           <thead className="bg-[var(--color-surface-muted)]">
             <tr>
               {[
-                "Work item",
-                "Quantity",
-                "Unit",
-                "Source",
-                "Confidence",
-                "Formula",
+                "boq.ledger.colWorkItem",
+                "boq.ledger.colQuantity",
+                "boq.ledger.colUnit",
+                "boq.ledger.colSource",
+                "boq.ledger.colConfidence",
+                "boq.ledger.colFormula",
               ].map((header) => (
                 <th
                   key={header}
                   className="px-4 py-3 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]"
                 >
-                  {header}
+                  {t(header)}
                 </th>
               ))}
             </tr>
@@ -127,7 +130,7 @@ export function BOQVersionLedgerPanel({
                 )
               }
             >
-              Load more
+              {t("boq.ledger.loadMore")}
             </Button>
           </div>
         ) : null}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {Badge, ErrorState, LoadingState, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import {useBOQSnapshotItems, useBOQSnapshots,
@@ -13,6 +14,7 @@ interface BOQSnapshotsPanelProps {
 export function BOQSnapshotsPanel({
   versionId,
 }: BOQSnapshotsPanelProps) {
+  const { t } = useTranslation();
   const snapshots =
     useBOQSnapshots(versionId);
 
@@ -26,7 +28,7 @@ export function BOQSnapshotsPanel({
   if (snapshots.isLoading) {
     return (
       <Panel>
-        <LoadingState label="Loading snapshots…" />
+        <LoadingState label={t("boq.snapshots.loading")} />
       </Panel>
     );
   }
@@ -35,7 +37,7 @@ export function BOQSnapshotsPanel({
     return (
       <Panel>
         <ErrorState
-          title="Couldn't load snapshots"
+          title={t("boq.snapshots.loadError")}
           onRetry={() =>
             void snapshots.refetch()
           }
@@ -49,16 +51,16 @@ export function BOQSnapshotsPanel({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="IMMUTABLE RECORDS"
-        title="BOQ snapshots"
-        description="Immutable versioned records created for approval and issue history."
+        eyebrow={t("boq.snapshots.eyebrow")}
+        title={t("boq.snapshots.title")}
+        description={t("boq.snapshots.description")}
       />
 
       <div className="grid gap-4 p-5 lg:grid-cols-[280px_1fr]">
         <div className="space-y-2">
           {list.length === 0 ? (
             <div className="text-[12px] text-[var(--color-text-muted)]">
-              No snapshots yet.
+              {t("boq.snapshots.empty")}
             </div>
           ) : (
             list.map((snapshot) => (
@@ -79,8 +81,9 @@ export function BOQSnapshotsPanel({
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[12px] font-semibold">
-                    Snapshot v
-                    {snapshot.version_no}
+                    {t("boq.snapshots.version", {
+                      version: snapshot.version_no,
+                    })}
                   </span>
 
                   <Badge tone="slate">
@@ -89,7 +92,9 @@ export function BOQSnapshotsPanel({
                 </div>
 
                 <div className="mt-2 text-[10.5px] text-[var(--color-text-muted)]">
-                  {snapshot.item_count} items
+                  {t("boq.snapshots.itemCount", {
+                    count: snapshot.item_count,
+                  })}
                 </div>
 
                 <div className="mt-1 truncate font-mono text-[9px] text-[var(--color-text-muted)]">
@@ -103,13 +108,13 @@ export function BOQSnapshotsPanel({
         <div>
           {!selectedId ? (
             <div className="rounded-[8px] border border-dashed border-[var(--color-border)] p-8 text-center text-[12px] text-[var(--color-text-muted)]">
-              Select a snapshot to inspect its frozen line items.
+              {t("boq.snapshots.selectPrompt")}
             </div>
           ) : items.isLoading ? (
-            <LoadingState label="Loading snapshot items…" />
+            <LoadingState label={t("boq.snapshots.itemsLoading")} />
           ) : items.isError ? (
             <ErrorState
-              title="Couldn't load snapshot items"
+              title={t("boq.snapshots.itemsLoadError")}
               onRetry={() =>
                 void items.refetch()
               }
@@ -120,13 +125,13 @@ export function BOQSnapshotsPanel({
                 <thead className="bg-[var(--color-surface-muted)]">
                   <tr>
                     {[
-                      "Line",
-                      "Work item",
-                      "Description",
-                      "Unit",
-                      "Quantity",
-                      "Rate",
-                      "Amount",
+                      t("boq.snapshots.colLine"),
+                      t("boq.snapshots.colWorkItem"),
+                      t("boq.snapshots.colDescription"),
+                      t("boq.snapshots.colUnit"),
+                      t("boq.snapshots.colQuantity"),
+                      t("boq.snapshots.colRate"),
+                      t("boq.snapshots.colAmount"),
                     ].map((header) => (
                       <th
                         key={header}

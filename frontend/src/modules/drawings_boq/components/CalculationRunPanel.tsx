@@ -1,20 +1,18 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {Badge, Button, ErrorState, LoadingState, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useBuildBOQFromCalculationRun, useCalculationRun, useCalculationRunDeductions, useCalculationRunLedger, useCalculationRunSolids, useCalculationRunStages, useStartCalculationRun,
 } from "../hooks";
 import {formatCalculationRunStatus, formatQuantity, getCalculationRunTone,
 } from "../utils/drawings-boq.utils";
-import type {CalculationRun,
-} from "../types/drawings-boq.types";
+import type { CalculationRun } from "../types/drawings-boq.types";
 
 interface CalculationRunPanelProps {
   projectId: string;
   drawingIds: string[];
   activeRunId?: string | null;
-  onRunCreated?: (
-    run: CalculationRun,
-  ) => void;
+  onRunCreated?: (run: CalculationRun) => void;
   onBOQBuilt?: () => void;
 }
 
@@ -31,19 +29,34 @@ export function CalculationRunPanel({
   onRunCreated,
   onBOQBuilt,
 }: CalculationRunPanelProps) {
+  const { t } = useTranslation();
+
   const [runId, setRunId] =
     useState<string | null>(
       activeRunId ?? null,
     );
 
-  const [view, setView] = useState<View>("overview");
-  const [ruleSetCode, setRuleSetCode] = useState("");
-  const [conventionCode, setConventionCode] = useState("");
-  const startRun = useStartCalculationRun(projectId);
+  const [view, setView] =
+    useState<View>("overview");
+  const [ruleSetCode, setRuleSetCode] =
+    useState("");
+  const [conventionCode, setConventionCode] =
+    useState("");
+  const startRun =
+    useStartCalculationRun(projectId);
   const { showToast } = useToast();
-  const runQuery = useCalculationRun(runId ?? undefined);
-  const stagesQuery = useCalculationRunStages(runId ?? undefined);
-  const buildBOQ =useBuildBOQFromCalculationRun(projectId);
+  const runQuery =
+    useCalculationRun(
+      runId ?? undefined,
+    );
+  const stagesQuery =
+    useCalculationRunStages(
+      runId ?? undefined,
+    );
+  const buildBOQ =
+    useBuildBOQFromCalculationRun(
+      projectId,
+    );
   const run = runQuery.data;
 
   function start() {
@@ -65,8 +78,9 @@ export function CalculationRunPanel({
 
           showToast({
             tone: "success",
-            title:
-              "Calculation run started",
+            title: t(
+              "boq.calculationRun.toastStarted",
+            ),
           });
         },
       },
@@ -77,13 +91,16 @@ export function CalculationRunPanel({
     if (!runId) {
       return;
     }
+
     buildBOQ.mutate(runId, {
       onSuccess: () => {
         showToast({
           tone: "success",
-          title:
-            "BOQ generated from calculation run",
+          title: t(
+            "boq.calculationRun.toastBOQGenerated",
+          ),
         });
+
         onBOQBuilt?.();
       },
     });
@@ -92,9 +109,15 @@ export function CalculationRunPanel({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="QUANTITY ENGINE"
-        title="Calculation run"
-        description="Run the measurement engine against selected drawing revisions before promoting quantities into a BOQ."
+        eyebrow={t(
+          "boq.calculationRun.eyebrow",
+        )}
+        title={t(
+          "boq.calculationRun.title",
+        )}
+        description={t(
+          "boq.calculationRun.description",
+        )}
         action={
           <Button
             variant="primary"
@@ -106,8 +129,12 @@ export function CalculationRunPanel({
             onClick={start}
           >
             {startRun.isPending
-              ? "Starting…"
-              : "Start calculation"}
+              ? t(
+                  "boq.calculationRun.starting",
+                )
+              : t(
+                  "boq.calculationRun.startCalculation",
+                )}
           </Button>
         }
       />
@@ -115,7 +142,9 @@ export function CalculationRunPanel({
       <div className="grid gap-3 border-b border-[var(--color-border)] p-5 md:grid-cols-2">
         <label className="block">
           <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Rule set code
+            {t(
+              "boq.calculationRun.ruleSetCode",
+            )}
           </span>
 
           <input
@@ -132,7 +161,9 @@ export function CalculationRunPanel({
 
         <label className="block">
           <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Measurement convention
+            {t(
+              "boq.calculationRun.measurementConvention",
+            )}
           </span>
 
           <input
@@ -142,7 +173,9 @@ export function CalculationRunPanel({
                 event.target.value,
               )
             }
-            placeholder="Optional"
+            placeholder={t(
+              "boq.calculationRun.optional",
+            )}
             className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]"
           />
         </label>
@@ -150,15 +183,23 @@ export function CalculationRunPanel({
 
       {!runId ? (
         <div className="p-5 text-[12px] text-[var(--color-text-secondary)]">
-          Select parsed drawing revisions and start a calculation run.
+          {t(
+            "boq.calculationRun.selectDrawingRevisions",
+          )}
         </div>
       ) : null}
 
       {runQuery.isLoading ? (
-        <LoadingState label="Loading calculation run…" />
+        <LoadingState
+          label={t(
+            "boq.calculationRun.loading",
+          )}
+        />
       ) : runQuery.isError ? (
         <ErrorState
-          title="Couldn't load calculation run"
+          title={t(
+            "boq.calculationRun.loadError",
+          )}
           onRetry={() =>
             void runQuery.refetch()
           }
@@ -167,7 +208,9 @@ export function CalculationRunPanel({
         <>
           <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
             <Metric
-              label="Status"
+              label={t(
+                "boq.calculationRun.metricStatus",
+              )}
               value={formatCalculationRunStatus(
                 run.status,
               )}
@@ -177,19 +220,25 @@ export function CalculationRunPanel({
             />
 
             <Metric
-              label="Progress"
+              label={t(
+                "boq.calculationRun.metricProgress",
+              )}
               value={`${run.progress_pct}%`}
               tone="blue"
             />
 
             <Metric
-              label="Engine"
+              label={t(
+                "boq.calculationRun.metricEngine",
+              )}
               value={run.engine_version}
               tone="slate"
             />
 
             <Metric
-              label="Run"
+              label={t(
+                "boq.calculationRun.metricRun",
+              )}
               value={run.id.slice(0, 8)}
               tone="slate"
             />
@@ -204,13 +253,31 @@ export function CalculationRunPanel({
           <div className="flex flex-wrap gap-2 border-y border-[var(--color-border)] p-4">
             {(
               [
-                ["overview", "Overview"],
-                ["solids", "Solids"],
-                ["ledger", "Quantity ledger"],
-                ["deductions", "Deductions"],
-              ] as Array<
-                [View, string]
-              >
+                [
+                  "overview",
+                  t(
+                    "boq.calculationRun.tabOverview",
+                  ),
+                ],
+                [
+                  "solids",
+                  t(
+                    "boq.calculationRun.tabSolids",
+                  ),
+                ],
+                [
+                  "ledger",
+                  t(
+                    "boq.calculationRun.tabLedger",
+                  ),
+                ],
+                [
+                  "deductions",
+                  t(
+                    "boq.calculationRun.tabDeductions",
+                  ),
+                ],
+              ] as Array<[View, string]>
             ).map(
               ([key, label]) => (
                 <button
@@ -239,8 +306,12 @@ export function CalculationRunPanel({
                 onClick={build}
               >
                 {buildBOQ.isPending
-                  ? "Building…"
-                  : "Build BOQ"}
+                  ? t(
+                      "boq.calculationRun.building",
+                    )
+                  : t(
+                      "boq.calculationRun.buildBOQ",
+                    )}
               </Button>
             ) : null}
           </div>
@@ -255,11 +326,15 @@ export function CalculationRunPanel({
           ) : null}
 
           {view === "solids" ? (
-            <RunSolids runId={run.id} />
+            <RunSolids
+              runId={run.id}
+            />
           ) : null}
 
           {view === "ledger" ? (
-            <RunLedger runId={run.id} />
+            <RunLedger
+              runId={run.id}
+            />
           ) : null}
 
           {view === "deductions" ? (
@@ -289,11 +364,15 @@ function RunOverview({
     error?: string | null;
   }>;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3 p-5">
       {stages.length === 0 ? (
         <div className="text-[12px] text-[var(--color-text-muted)]">
-          No stage records have been produced yet.
+          {t(
+            "boq.calculationRun.noStageRecords",
+          )}
         </div>
       ) : (
         stages.map((stage) => (
@@ -307,7 +386,12 @@ function RunOverview({
               </div>
 
               <div className="mt-1 text-[11px] text-[var(--color-text-muted)]">
-                Attempt {stage.attempt}
+                {t(
+                  "boq.calculationRun.attempt",
+                  {
+                    count: stage.attempt,
+                  },
+                )}
               </div>
             </div>
 
@@ -337,6 +421,8 @@ function RunSolids({
 }: {
   runId: string;
 }) {
+  const { t } = useTranslation();
+
   const [after, setAfter] =
     useState<string | null>(null);
 
@@ -348,15 +434,23 @@ function RunSolids({
         after,
       },
     );
+
   if (query.isLoading) {
     return (
-      <LoadingState label="Loading quantity solids…" />
+      <LoadingState
+        label={t(
+          "boq.calculationRun.solidsLoading",
+        )}
+      />
     );
   }
+
   if (query.isError) {
     return (
       <ErrorState
-        title="Couldn't load solids"
+        title={t(
+          "boq.calculationRun.solidsLoadError",
+        )}
         onRetry={() =>
           void query.refetch()
         }
@@ -370,13 +464,27 @@ function RunSolids({
   return (
     <DataTable
       headers={[
-        "Role",
-        "Component",
-        "Geometry",
-        "Volume m³",
-        "Area m²",
-        "Length m",
-        "Status",
+        t(
+          "boq.calculationRun.colRole",
+        ),
+        t(
+          "boq.calculationRun.colComponent",
+        ),
+        t(
+          "boq.calculationRun.colGeometry",
+        ),
+        t(
+          "boq.calculationRun.colVolumeM3",
+        ),
+        t(
+          "boq.calculationRun.colAreaM2",
+        ),
+        t(
+          "boq.calculationRun.colLengthM",
+        ),
+        t(
+          "boq.calculationRun.colStatus",
+        ),
       ]}
       rows={rows.map((row) => [
         row.role,
@@ -410,6 +518,8 @@ function RunLedger({
 }: {
   runId: string;
 }) {
+  const { t } = useTranslation();
+
   const [after, setAfter] =
     useState<string | null>(null);
 
@@ -424,14 +534,20 @@ function RunLedger({
 
   if (query.isLoading) {
     return (
-      <LoadingState label="Loading quantity ledger…" />
+      <LoadingState
+        label={t(
+          "boq.calculationRun.ledgerLoading",
+        )}
+      />
     );
   }
 
   if (query.isError) {
     return (
       <ErrorState
-        title="Couldn't load quantity ledger"
+        title={t(
+          "boq.calculationRun.ledgerLoadError",
+        )}
         onRetry={() =>
           void query.refetch()
         }
@@ -445,12 +561,12 @@ function RunLedger({
   return (
     <DataTable
       headers={[
-        "Work item",
-        "Quantity",
-        "Unit",
-        "Source",
-        "Confidence",
-        "Formula",
+        t("boq.ledger.colWorkItem",),
+        t("boq.ledger.colQuantity",),
+        t("boq.ledger.colUnit",),
+        t("boq.ledger.colSource",),
+        t("boq.ledger.colConfidence",),
+        t("boq.ledger.colFormula",),
       ]}
       rows={rows.map((row) => [
         row.work_item_code,
@@ -481,6 +597,8 @@ function RunDeductions({
 }: {
   runId: string;
 }) {
+  const { t } = useTranslation();
+
   const [after, setAfter] =
     useState<string | null>(null);
 
@@ -495,13 +613,20 @@ function RunDeductions({
 
   if (query.isLoading) {
     return (
-      <LoadingState label="Loading deductions…" />
+      <LoadingState
+        label={t(
+          "boq.calculationRun.deductionsLoading",
+        )}
+      />
     );
   }
+
   if (query.isError) {
     return (
       <ErrorState
-        title="Couldn't load deductions"
+        title={t(
+          "boq.calculationRun.deductionsLoadError",
+        )}
         onRetry={() =>
           void query.refetch()
         }
@@ -515,13 +640,27 @@ function RunDeductions({
   return (
     <DataTable
       headers={[
-        "Type",
-        "Quantity",
-        "Unit",
-        "Rule",
-        "From solid",
-        "To solid",
-        "Explanation",
+        t(
+          "boq.calculationRun.colType",
+        ),
+        t(
+          "boq.calculationRun.colQuantity",
+        ),
+        t(
+          "boq.calculationRun.colUnit",
+        ),
+        t(
+          "boq.calculationRun.colRule",
+        ),
+        t(
+          "boq.calculationRun.colFromSolid",
+        ),
+        t(
+          "boq.calculationRun.colToSolid",
+        ),
+        t(
+          "boq.calculationRun.colExplanation",
+        ),
       ]}
       rows={rows.map((row) => [
         row.deduction_type,
@@ -559,6 +698,8 @@ function DataTable({
   nextCursor: string | null;
   onNext: () => void;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[900px] text-left">
@@ -582,7 +723,9 @@ function DataTable({
                 colSpan={headers.length}
                 className="px-4 py-8 text-center text-[12px] text-[var(--color-text-muted)]"
               >
-                No rows found.
+                {t(
+                  "boq.calculationRun.noRowsFound",
+                )}
               </td>
             </tr>
           ) : (
@@ -593,7 +736,10 @@ function DataTable({
                   className="border-t border-[var(--color-border)]"
                 >
                   {row.map(
-                    (value, cellIndex) => (
+                    (
+                      value,
+                      cellIndex,
+                    ) => (
                       <td
                         key={cellIndex}
                         className="px-4 py-3 text-[11.5px] text-[var(--color-text-secondary)]"
@@ -616,7 +762,9 @@ function DataTable({
             size="sm"
             onClick={onNext}
           >
-            Load more
+            {t(
+              "boq.calculationRun.loadMore",
+            )}
           </Button>
         </div>
       ) : null}

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {Badge, Button, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useApproveBOQVersion, useArchiveBOQVersion, useIssueBOQVersion, useReopenBOQVersion, useSubmitBOQForReview,
@@ -30,6 +31,7 @@ export function BOQLifecycleActions({
   canApprove,
   canIssue,
 }: BOQLifecycleActionsProps) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [note, setNote] = useState("");
   const submit = useSubmitBOQForReview(version.id, projectId);
@@ -62,13 +64,11 @@ export function BOQLifecycleActions({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="BOQ WORKFLOW"
-        title="Lifecycle"
-        description="Control review, approval and issue state without changing the immutable calculation history."
+        eyebrow={t("boq.lifecycle.eyebrow")}
+        title={t("boq.lifecycle.title")}
+        description={t("boq.lifecycle.description")}
         action={
-          <Badge
-            tone={getBOQLifecycleTone(lifecycle)}
-          >
+          <Badge tone={getBOQLifecycleTone(lifecycle)}>
             {formatBOQLifecycle(lifecycle)}
           </Badge>
         }
@@ -77,16 +77,14 @@ export function BOQLifecycleActions({
       <div className="space-y-4 p-5">
         <label className="block">
           <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Transition note
+            {t("boq.lifecycle.transitionNote")}
           </span>
 
           <textarea
             value={note}
-            onChange={(event) =>
-              setNote(event.target.value)
-            }
+            onChange={(event) => setNote(event.target.value)}
             rows={3}
-            placeholder="Optional approval or issue note"
+            placeholder={t("boq.lifecycle.notePlaceholder")}
             className="mt-1.5 w-full rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]"
           />
         </label>
@@ -97,16 +95,12 @@ export function BOQLifecycleActions({
               variant="primary"
               disabled={submit.isPending}
               onClick={() =>
-                run(
-                  submit,
-                  undefined,
-                  "BOQ submitted for review",
-                )
+                run(submit, undefined, t("boq.lifecycle.submittedToast"))
               }
             >
               {submit.isPending
-                ? "Submitting…"
-                : "Submit for review"}
+                ? t("boq.lifecycle.submitting")
+                : t("boq.lifecycle.submit")}
             </Button>
           ) : null}
 
@@ -120,13 +114,13 @@ export function BOQLifecycleActions({
                   {
                     note: note.trim() || null,
                   } as TransitionRequest,
-                  "BOQ approved",
+                  t("boq.lifecycle.approvedToast"),
                 )
               }
             >
               {approve.isPending
-                ? "Approving…"
-                : "Approve"}
+                ? t("boq.lifecycle.approving")
+                : t("boq.lifecycle.approve")}
             </Button>
           ) : null}
 
@@ -140,13 +134,13 @@ export function BOQLifecycleActions({
                   {
                     note: note.trim() || null,
                   } as TransitionRequest,
-                  "BOQ issued",
+                  t("boq.lifecycle.issuedToast"),
                 )
               }
             >
               {issue.isPending
-                ? "Issuing…"
-                : "Issue BOQ"}
+                ? t("boq.lifecycle.issuing")
+                : t("boq.lifecycle.issue")}
             </Button>
           ) : null}
 
@@ -155,14 +149,10 @@ export function BOQLifecycleActions({
               variant="ghost"
               disabled={reopen.isPending}
               onClick={() =>
-                run(
-                  reopen,
-                  undefined,
-                  "BOQ reopened",
-                )
+                run(reopen, undefined, t("boq.lifecycle.reopenedToast"))
               }
             >
-              Reopen
+              {t("boq.lifecycle.reopen")}
             </Button>
           ) : null}
 
@@ -171,16 +161,12 @@ export function BOQLifecycleActions({
               variant="ghost"
               disabled={archive.isPending}
               onClick={() =>
-                run(
-                  archive,
-                  undefined,
-                  "BOQ archived",
-                )
+                run(archive, undefined, t("boq.lifecycle.archivedToast"))
               }
             >
               {archive.isPending
-                ? "Archiving…"
-                : "Archive"}
+                ? t("boq.lifecycle.archiving")
+                : t("boq.lifecycle.archive")}
             </Button>
           ) : null}
         </div>

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import {Badge, ErrorState, LoadingState, Panel, PanelHeader,
 } from "../../organizations/components/OrganizationUi";
 import { useDrawingAudit } from "../hooks";
@@ -11,13 +12,13 @@ interface DrawingAuditPanelProps {
 export function DrawingAuditPanel({
   drawingId,
 }: DrawingAuditPanelProps) {
-  const query =
-    useDrawingAudit(drawingId);
+  const { t } = useTranslation();
+  const query = useDrawingAudit(drawingId);
 
   if (query.isLoading) {
     return (
       <Panel>
-        <LoadingState label="Loading model audit…" />
+        <LoadingState label={t("drawings.audit.loading")} />
       </Panel>
     );
   }
@@ -26,7 +27,7 @@ export function DrawingAuditPanel({
     return (
       <Panel>
         <ErrorState
-          title="Model audit is not available"
+          title={t("drawings.audit.errorTitle")}
           onRetry={() =>
             void query.refetch()
           }
@@ -40,33 +41,33 @@ export function DrawingAuditPanel({
   return (
     <Panel>
       <PanelHeader
-        eyebrow="MODEL READINESS"
-        title="Drawing audit"
-        description="Readiness checks produced by the backend drawing intelligence pipeline."
+        eyebrow={t("drawings.audit.eyebrow")}
+        title={t("drawings.audit.title")}
+        description={t("drawings.audit.description")}
       />
 
       <div className="grid gap-3 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <Metric
-          label="Overall score"
+          label={t("drawings.audit.overallScore")}
           value={`${formatQuantity(audit.overall_score)}%`}
         />
 
         <Metric
-          label="Elements"
+          label={t("drawings.audit.elements")}
           value={formatQuantity(
             audit.element_count,
           )}
         />
 
         <Metric
-          label="Missing material"
+          label={t("drawings.audit.missingMaterial")}
           value={formatQuantity(
             audit.missing_material_count,
           )}
         />
 
         <Metric
-          label="Zero quantity"
+          label={t("drawings.audit.zeroQuantity")}
           value={formatQuantity(
             audit.zero_quantity_count,
           )}
@@ -76,15 +77,15 @@ export function DrawingAuditPanel({
       <div className="border-t border-[var(--color-border)] px-5 py-4">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone="slate">
-            Unclassified proxy:{" "}
+            {t("drawings.audit.unclassifiedProxy")}:{" "}
             {audit.unclassified_proxy_count}
           </Badge>
 
           {audit.created_at ? (
             <span className="text-[11px] text-[var(--color-text-muted)]">
-              Audited {formatDateTime(
-                audit.created_at,
-              )}
+              {t("drawings.audit.audited", {
+                date: formatDateTime(audit.created_at),
+              })}
             </span>
           ) : null}
         </div>
@@ -93,7 +94,7 @@ export function DrawingAuditPanel({
       {audit.issues.length > 0 ? (
         <div className="border-t border-[var(--color-border)] p-5">
           <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            Issues
+            {t("drawings.audit.issues")}
           </div>
 
           <div className="space-y-2">
@@ -117,7 +118,7 @@ export function DrawingAuditPanel({
         </div>
       ) : (
         <div className="border-t border-[var(--color-border)] px-5 py-4 text-[12px] text-[var(--color-text-secondary)]">
-          No audit issues were reported.
+          {t("drawings.audit.noIssues")}
         </div>
       )}
     </Panel>
