@@ -5,7 +5,8 @@ import argparse
 import asyncio
 from app.shared.storage import download_to_path
 import ifcopenshell
-from app.modules.drawings_boq.ifc_reader import _resolve_scales, _read_levels, _type_fields
+import ifcopenshell.util.placement
+from app.modules.drawings_boq.ifc_reader import _resolve_scales, _read_levels, _type_fields, _dec
 import tempfile
 import os
 from datetime import datetime, timezone
@@ -35,18 +36,25 @@ async def backfill_drawing(session, drawing: Drawing, *, force: bool, drop_finis
     scales = _resolve_scales(model)
     levels = _read_levels(model, scales)
     db_elements = (await session.execute(select(DrawingElement.id, DrawingElement.ifc_global_id,
-      DrawingElement.structural_role, DrawingElement.type_mark).where(
+      DrawingElement.structural_role, DrawingElement.type_mark, DrawingElement.bbox_min_x_mm).where(
       DrawingElement.drawing_id == drawing.id))).all()
     known = {r.ifc_global_id for r in db_elements if r.ifc_global_id}
     read = await asyncio.to_thread(read_spatial, model, scales, levels, known)
 
     marks: dict = {}
     for r in db_elements:
-      if r.structural_role in ("DOOR", "WINDOW") and r.type_mark is None and r.ifc_global_id:
+      if r.structural_role in ("DOOR", "WINDOW") and r.ifc_global_id and (r.type_mark is None or r.bbox_min_x_mm is None):
         try:
           element = model.by_guid(r.ifc_global_id)
-          fields = _type_fields(element, ifcopenshell.util.element.get_psets(element, psets_only=True) or {}, r.structural_role)
-          if fields.get("type_mark") or fields.get("type_name"):
+          fields = {}
+          if r.type_mark is None:
+            f = _type_fields(element, ifcopenshell.util.element.get_psets(element, psets_only=True) or {}, r.structural_role)
+            fields.update({k: v for k, v in f.items() if v})
+          if r.bbox_min_x_mm is None and element.ObjectPlacement is not None:
+            o = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:3, 3] * scales.mm_per_unit
+            for axis, v in zip("xyz", o):
+              fields[f"bbox_min_{axis}_mm"] = fields[f"bbox_max_{axis}_mm"] = _dec(float(v))
+          if fields:
             marks[r.id] = fields
         except Exception:
           continue

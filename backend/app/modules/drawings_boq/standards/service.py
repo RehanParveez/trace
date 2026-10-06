@@ -18,6 +18,8 @@ from app.engine.measure.formulas import CANONICAL_UNITS, check_component_units, 
 from dataclasses import replace
 from app.modules.drawings_boq.models import FinishRule
 from app.modules.drawings_boq.spatial_repository import finish_rule_rows, finish_rule_specs
+from app.modules.drawings_boq.standards.finish_validation import validate_finish_rules
+from app.modules.drawings_boq.standards.rebar_validation import validate_reinforcement_rules
 
 DEFAULT_RULE_CODE = "PUNJAB_CSR"
 FALLBACK_RULE_CODE = "GENERIC_METRIC"
@@ -93,7 +95,8 @@ def build_profile(bundle: RuleSetBundle, *, conserves_volume: bool, work_items: 
     reinforcement_rules=tuple(sorted(
       (ReinforcementRuleSpec(r.element_scope, r.bar_role, r.lap_basis, r.lap_coefficient, dict(r.hook_rules or {}),
         dict(r.bend_rules or {}), r.dev_length_method, dict(r.splice_constraints or {}),
-        dict(r.extra_config or {})) for r in bundle.reinforcement_rules),
+        dict(r.extra_config or {}), r.stock_length_mm, r.cover_mm, r.min_lap_mm, bool(r.use_couplers),
+        r.weight_tolerance_pct if r.weight_tolerance_pct is not None else Decimal("2.0")) for r in bundle.reinforcement_rules),
       key=lambda s: (s.element_scope, s.bar_role))),
     
     mappings=tuple(sorted(
@@ -298,6 +301,14 @@ class StandardsService:
         for rule in payload.mappings
       ]
     )
+     
+    if payload.finish_rules is not None:
+      _assert_unique(payload.finish_rules, lambda r: (r.space_category.upper(), r.surface, r.work_item_code), "finish rule")
+      await self.session.execute(delete(FinishRule).where(FinishRule.rule_set_id == rs.id))
+      self.session.add_all([FinishRule(
+        id=uuid4(), rule_set_id=rs.id, space_category=r.space_category.upper(), surface=r.surface,
+        work_item_code=r.work_item_code, height_mm=r.height_mm, deduct_openings=r.deduct_openings, priority=r.priority,
+        extra_config={**r.extra_config, "exclude": r.exclude}) for r in payload.finish_rules])
 
     if payload.finish_rules is not None:
      _assert_unique(
@@ -446,12 +457,15 @@ class StandardsService:
 
   async def _validate_bundle(self, bundle: RuleSetBundle) -> list[dict]:
     items = await self.repo.work_item_index(bundle.rule_set.organization_id)
-    return validate_bundle(
+    issues = validate_bundle(
       rule_set=bundle.rule_set, opening_rules=bundle.opening_rules, wastage_rules=bundle.wastage_rules,
       reinforcement_rules=bundle.reinforcement_rules, mappings=bundle.mappings, recipes=bundle.recipes,
       work_item_units={code: wi.unit for code, wi in items.items()},
       known_conventions=set((await self.repo.conventions_by_code()).keys()),
     )
+    issues += validate_finish_rules(bundle.finish_rules, {code: wi.unit for code, wi in items.items()})
+    issues += validate_reinforcement_rules(bundle.reinforcement_rules)
+    return issues
 
   async def validate(self, organization_id: UUID, rule_set_id: UUID) -> list[dict]:
     await self._visible(organization_id, rule_set_id)

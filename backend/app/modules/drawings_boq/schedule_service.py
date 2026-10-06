@@ -13,7 +13,7 @@ from app.modules.subscriptions.service import SubscriptionService
 from app.modules.identity.rate_limit import RateLimiter
 from app.core.redis import redis_client
 from app.modules.drawings_boq.schedule_parsing import (norm_key, CSV_CONFIDENCE, KIND_DEFAULT_WORK_ITEM, SURFACE_UNIT, SURFACES, ScheduleParseError, build_schedule_rows_prompt, canonicalize, norm_mark, 
-  parse_ai_rows, read_table, rows_from_table, suggest_finish_work_item,
+  parse_ai_rows, read_table, rows_from_table, rows_from_pdf_text, suggest_finish_work_item,
 )
 from app.modules.drawings_boq.finish_schedule.common import audit_entity, current_ifc_drawing_ids, require_work_item, work_item_catalog
 from uuid import UUID, uuid4
@@ -28,7 +28,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
-from app.modules.drawings_boq.pdf_extraction import extract_pdf_text
+from app.modules.drawings_boq.pdf_extraction import extract_pdf_text, extract_pdf_layout_text
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.boq_logic import UNIT_TABLE
 
@@ -235,7 +235,7 @@ class ScheduleService:
       content_hash=content_hash, notes=notes, meta={"format": suffix.lstrip(".")})
 
   async def create_from_pdf(self, org: UUID, project_id: UUID, user_id: UUID, drawing_id: UUID, kind: str,
-    notes: str | None) -> ScheduleImport:
+    notes: str | None, method: str = "AUTO") -> ScheduleImport:
     await self._require_project(org, project_id)
     drawing = (await self.session.execute(select(Drawing).where(
       Drawing.id == drawing_id, Drawing.organization_id == org, Drawing.project_id == project_id))).scalar_one_or_none()
@@ -244,30 +244,40 @@ class ScheduleService:
       raise TraceException("Drawing not found.", status_code=404, code="DRAWING_NOT_FOUND")
     if drawing.format != DrawingFormat.PDF:
       raise TraceException("Schedules can be extracted from PDF drawings only.", status_code=422, code="DRAWING_NOT_PDF")
-    await self.subscriptions.check_quota(org, "ai_requests")
-    await self.rate_limiter.check(key=f"ai_per_org:{org}", limit=settings.rate_limit_ai_per_org_per_minute, window_seconds=60)
     with tempfile.TemporaryDirectory() as tmp:
       path = os.path.join(tmp, "drawing.pdf")
       await asyncio.to_thread(download_to_path, drawing.storage_key, path)
       with open(path, "rb") as handle:
         contents = handle.read()
-    text = await asyncio.to_thread(extract_pdf_text, contents)
+    layout = await asyncio.to_thread(extract_pdf_layout_text, contents)
     
-    if not text:
+    if not layout.strip():
       raise TraceException("This PDF has no machine-readable text (it may be a scan).", status_code=422, code="PDF_NO_TEXT")
-    content_hash = hashlib.sha256(f"{kind}|{text}".encode()).hexdigest()
+    content_hash = hashlib.sha256(f"{kind}|{layout}".encode()).hexdigest()
     await self._assert_not_duplicate(project_id, content_hash)
-    result = await AIOrchestratorService(self.session).run(
-      organization_id=org, purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION, entity_type=AIEntityType.DRAWING,
-      entity_id=drawing.id, prompt=build_schedule_rows_prompt(kind, text))
-    await self.subscriptions.increment_usage(org, "ai_requests")
-    parsed = parse_ai_rows(result.parsed_output, kind) if result.success else []
+    parsed, source, meta = [], "PDF_TEXT", {"extraction": "text", "text_chars": len(layout)}
+    if method in ("TEXT", "AUTO"):
+      try:
+        parsed = rows_from_pdf_text(layout, kind)
+      except ScheduleParseError:
+        parsed = []
+        
+    if not parsed and method in ("AI", "AUTO"):
+      await self.subscriptions.check_quota(org, "ai_requests")
+      await self.rate_limiter.check(key=f"ai_per_org:{org}", limit=settings.rate_limit_ai_per_org_per_minute, window_seconds=60)
+      text = await asyncio.to_thread(extract_pdf_text, contents)
+      result = await AIOrchestratorService(self.session).run(
+        organization_id=org, purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION, entity_type=AIEntityType.DRAWING,
+        entity_id=drawing.id, prompt=build_schedule_rows_prompt(kind, text))
+      await self.subscriptions.increment_usage(org, "ai_requests")
+      parsed = parse_ai_rows(result.parsed_output, kind) if result.success else []
+      source, meta = "PDF_AI", {"extraction": "ai", "text_chars": len(text)}
+      
     if not parsed:
       await self.session.commit()
       raise TraceException("No schedule rows could be extracted from this PDF.", status_code=422, code="NO_SCHEDULE_ROWS_FOUND")
-    return await self._create_import(org, project_id, user_id, source="PDF_AI", kind=kind, parsed=parsed,
-      file_name=drawing.original_filename, content_hash=content_hash, drawing_id=drawing.id, notes=notes,
-      meta={"extraction": "ai", "text_chars": len(text)})
+    return await self._create_import(org, project_id, user_id, source=source, kind=kind, parsed=parsed,
+      file_name=drawing.original_filename, content_hash=content_hash, drawing_id=drawing.id, notes=notes, meta=meta)
 
   async def create_manual(self, org: UUID, project_id: UUID, user_id: UUID, kind: str, notes: str | None) -> ScheduleImport:
     await self._require_project(org, project_id)

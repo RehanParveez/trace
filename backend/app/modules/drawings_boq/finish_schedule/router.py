@@ -114,7 +114,7 @@ async def import_schedule_from_pdf(
   current_user: User = Depends(require_permission(PermissionKey.SCHEDULE_IMPORT)), session: AsyncSession = Depends(get_db),
 ):
   return await ScheduleService(session).create_from_pdf(_org(current_user), project_id, current_user.id,
-    payload.drawing_id, payload.schedule_kind, payload.notes)
+    payload.drawing_id, payload.schedule_kind, payload.notes, payload.method)
 
 @router.post("/projects/{project_id}/schedule-imports", response_model=ScheduleImportResponse, status_code=201)
 async def create_manual_schedule_import(

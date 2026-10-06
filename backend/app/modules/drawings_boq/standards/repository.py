@@ -1,6 +1,6 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from app.modules.drawings_boq.models import MeasurementRuleSet, OpeningMeasurementRule, MaterialWastageRule, ReinforcementRule, AssemblyRecipe, ElementTypeMapping, MeasurementConvention, WorkItem
+from dataclasses import dataclass, field
+from app.modules.drawings_boq.models import MeasurementRuleSet, OpeningMeasurementRule, MaterialWastageRule, ReinforcementRule, AssemblyRecipe, ElementTypeMapping, MeasurementConvention, WorkItem, FinishRule
 from sqlalchemy import select, func, or_
 from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,7 @@ class RuleSetBundle:
   reinforcement_rules: list[ReinforcementRule]
   mappings: list[ElementTypeMapping]
   recipes: list[AssemblyRecipe]
+  finish_rules: list[FinishRule] = field(default_factory=list)
 
 def _org_clause(column, organization_id: UUID | None):
   return column.is_(None) if organization_id is None else column == organization_id
@@ -83,6 +84,7 @@ class StandardsRepository:
       reinforcement_rules=await _all(ReinforcementRule, ReinforcementRule.element_scope, ReinforcementRule.bar_role),
       mappings=await _all(ElementTypeMapping, ElementTypeMapping.ifc_type),
       recipes=list(recipes),
+      finish_rules=await _all(FinishRule, FinishRule.space_category, FinishRule.surface, FinishRule.work_item_code),
     )
 
   async def conventions_by_code(self) -> dict[str, MeasurementConvention]:

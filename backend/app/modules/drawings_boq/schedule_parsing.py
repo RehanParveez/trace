@@ -149,11 +149,26 @@ _HEADERS = {
   "surface": {"surface", "finish surface", "surface type", "surface name", "applies to", "applied to", "application surface", "substrate", "base surface", "wall surface",
     "floor surface", "ceiling surface"},
 
-  "finish": {"finish", "finish type", "finish name", "finish description", "material", "material type", "material name", "material description", "surface finish", "finish material", 
-    "specified finish", "proposed finish"},
+  "finish": {"finish", "finish type", "material", "finish name"},
+    "dado_height": {"dado height", "dado ht", "dado h"},
 
 }
 _HEADER_LOOKUP = {name: key for key, names in _HEADERS.items() for name in names}
+
+_SURFACE_HEADERS = {
+  "floor": "FLOOR", "floors": "FLOOR", "flooring": "FLOOR", "floor finish": "FLOOR",
+  "wall": "WALL", "walls": "WALL", "wall finish": "WALL", "walls finish": "WALL",
+  "ceiling": "CEILING", "ceilings": "CEILING", "ceiling finish": "CEILING",
+  "skirting": "SKIRTING", "skirting finish": "SKIRTING",
+  "dado": "DADO", "dado finish": "DADO",
+}
+_EMPTY_CELLS = {"-", "--", "n/a", "na", "nil", "none", "null"}
+
+def _split_finishes(value) -> list[str]:
+  text = str(value or "").strip()
+  if not text or text.lower() in _EMPTY_CELLS:
+    return []
+  return [p.strip() for p in re.split(r"\s*(?:\+|&|\band\b)\s*", text, flags=re.IGNORECASE) if p.strip()]
 
 def _header_key(cell) -> str:
   return re.sub(r"[^a-z0-9]+", " ", str(cell or "").lower()).strip()
@@ -214,13 +229,16 @@ def build_row(cells: dict, kind: str) -> dict | None:
   }
 
 def rows_from_table(table: list[list], kind: str) -> list[dict]:
-  header_idx, mapping = None, {}
+  header_idx, mapping, wide = None, {}, {}
   for i, row in enumerate(table[:10]):
     found = {j: _HEADER_LOOKUP[_header_key(c)] for j, c in enumerate(row) if _header_key(c) in _HEADER_LOOKUP}
-    if len(found) >= 2 and set(found.values()) & {"mark", "description", "location", "surface"}:
-      header_idx, mapping = i, found
+    cols = {j: _SURFACE_HEADERS[_header_key(c)] for j, c in enumerate(row) if _header_key(c) in _SURFACE_HEADERS} \
+      if kind == "FINISH" and "surface" not in found.values() else {}
+    anchored = bool(set(found.values()) & {"mark", "description", "location", "surface"})
+    if (len(found) >= 2 and anchored) or (cols and "location" in found.values()):
+      header_idx, mapping, wide = i, found, cols
       break
-  
+    
   if header_idx is None:
     raise ScheduleParseError("Could not find a header row. Expected columns such as mark, description, unit, quantity.")
   out: list[dict] = []
@@ -229,14 +247,31 @@ def rows_from_table(table: list[list], kind: str) -> list[dict]:
     for col, key in mapping.items():
       if col < len(raw) and raw[col] not in (None, ""):
         cells.setdefault(key, raw[col])
-    row = build_row(cells, kind)
-    if row is None:
-      continue
-    row["raw_text"] = " | ".join(str(c) for c in raw if c not in (None, ""))[:2000]
-    out.append(row)
+    raw_text = " | ".join(str(c) for c in raw if c not in (None, ""))[:2000]
+    built: list[dict] = []
+    
+    if wide:
+      base = {k: v for k, v in cells.items() if k not in ("dado_height", "height", "width", "size")}
+      for col, surface in wide.items():
+        if col >= len(raw):
+          continue
+        for name in _split_finishes(raw[col]):
+          c = {**base, "surface": surface, "finish": name}
+          if surface == "DADO" and cells.get("dado_height"):
+            c["height"] = cells["dado_height"]
+          row = build_row(c, kind)
+          if row is not None:
+            built.append(row)
+            
+    else:
+      row = build_row(cells, kind)
+      if row is not None:
+        built.append(row)
+    for row in built:
+      row["raw_text"] = raw_text
+      out.append(row)
     if len(out) > MAX_ROWS:
       raise ScheduleParseError(f"The schedule has more than {MAX_ROWS} rows. Split it and import in parts.")
-  
   if not out:
     raise ScheduleParseError("No data rows found under the header.")
   return out
@@ -276,3 +311,41 @@ def parse_ai_rows(raw_output: dict | None, kind: str) -> list[dict]:
     row["raw_text"] = str({k: v for k, v in r.items() if v is not None})[:2000]
     out.append(row)
   return out
+
+def table_from_layout_text(text: str, header_probe=None) -> list[list]:
+  lines = [ln.rstrip() for ln in (text or "").splitlines() if ln.strip()]
+
+  def cells_of(line):
+    return [(m.start(), m.end(), m.group(0).strip()) for m in re.finditer(r"\S+(?: \S+)*", line)]
+
+  def probe(line):
+    row = [c[2] for c in cells_of(line)]
+    if header_probe is not None:
+      return header_probe(row)
+    found = {_HEADER_LOOKUP[_header_key(c)] for c in row if _header_key(c) in _HEADER_LOOKUP}
+    return len(found) >= 2 and bool(found & {"mark", "description", "location", "surface"})
+
+  start = next((i for i, ln in enumerate(lines) if len(cells_of(ln)) >= 2 and probe(ln)), None)
+  if start is None:
+    raise ScheduleParseError("No schedule table header was found in the PDF text.")
+  
+  head = cells_of(lines[start])
+  centres = [(a + b) / 2 for a, b, _ in head]
+  table = [[c[2] for c in head]]
+  for ln in lines[start + 1:]:
+    toks = cells_of(ln)
+    if len(toks) < 2:
+      continue
+    row = [""] * len(head)
+    for a, b, t in toks:
+      j = min(range(len(centres)), key=lambda k: abs(centres[k] - (a + b) / 2))
+      row[j] = (row[j] + " " + t).strip()
+    table.append(row)
+  return table
+
+def rows_from_pdf_text(text: str, kind: str) -> list[dict]:
+  rows = rows_from_table(table_from_layout_text(text), kind)
+  for r in rows:
+    r["confidence"] = Decimal("0.7")
+    r["notes"] = [*r.get("notes", []), "Read from PDF text; check column alignment."]
+  return rows

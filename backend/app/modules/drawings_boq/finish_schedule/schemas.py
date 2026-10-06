@@ -166,6 +166,7 @@ class ScheduleFromPdfRequest(BaseModel):
   drawing_id: UUID
   schedule_kind: ScheduleKind
   notes: str | None = Field(default=None, max_length=2000)
+  method: Literal["AUTO", "TEXT", "AI"] = "AUTO"
 
 class ScheduleManualCreateRequest(BaseModel):
   schedule_kind: ScheduleKind

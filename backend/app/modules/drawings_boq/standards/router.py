@@ -13,6 +13,7 @@ from app.modules.drawings_boq.standards.schemas import (RuleSetCreateRequest, Co
 from typing import Any
 from datetime import date
 from app.engine.measure.formulas import FORMULAS
+from app.modules.drawings_boq.standards.finish_validation import finish_options
 
 router = APIRouter()
 
@@ -148,3 +149,7 @@ async def update_work_item(
   session: AsyncSession = Depends(get_db),
 ):
   return await _svc(session).update_work_item(_org(current_user), current_user.id, work_item_id, payload)
+
+@router.get("/finish-options")
+async def get_finish_options(current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ))):
+  return finish_options()

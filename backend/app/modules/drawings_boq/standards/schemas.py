@@ -44,6 +44,11 @@ class ReinforcementRuleSchema(BaseModel):
   dev_length_method: str | None = Field(default=None, max_length=40)
   splice_constraints: dict = Field(default_factory=dict)
   extra_config: dict = Field(default_factory=dict)
+  stock_length_mm: Decimal | None = Field(default=None, gt=0)
+  cover_mm: Decimal | None = Field(default=None, ge=0)
+  min_lap_mm: Decimal | None = Field(default=None, ge=0)
+  use_couplers: bool = False
+  weight_tolerance_pct: Decimal = Field(default=Decimal("2.0"), ge=0)
 
 class MappingSchema(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -54,6 +59,27 @@ class MappingSchema(BaseModel):
   unit_override: str | None = Field(default=None, max_length=20)
   confidence_base: Decimal = Field(default=Decimal("0.85"), ge=0, le=1)
   extra_mapping: dict = Field(default_factory=dict, description='Optional {"material_class": "CONCRETE"}')
+  
+class FinishRuleSchema(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+  space_category: str = Field(default="ALL", min_length=1, max_length=40)
+  surface: Literal["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO"]
+  work_item_code: str = Field(min_length=1, max_length=50)
+  height_mm: Decimal | None = Field(default=None, gt=0)
+  deduct_openings: bool = True
+  priority: int = Field(default=0, description="Stored but not used by the engine yet")
+  exclude: bool = Field(default=False, description="Remove this finish for the category (needs a matching ALL rule)")
+  extra_config: dict = Field(default_factory=dict)
+
+  @model_validator(mode="before")
+  @classmethod
+  def _from_row(cls, data):
+    if isinstance(data, dict):
+      return data
+    extra = dict(getattr(data, "extra_config", None) or {})
+    return {"space_category": data.space_category, "surface": data.surface, "work_item_code": data.work_item_code,
+      "height_mm": data.height_mm, "deduct_openings": data.deduct_openings, "priority": data.priority,
+      "exclude": bool(extra.pop("exclude", False)), "extra_config": extra}
 
 class RecipeComponentRequest(BaseModel):
   sequence: int = Field(default=0, ge=0)
@@ -130,6 +156,7 @@ class RuleSetDetailResponse(BaseModel):
   reinforcement_rules: list[ReinforcementRuleSchema]
   mappings: list[MappingSchema]
   recipes: list[RecipeResponse]
+  finish_rules: list[FinishRuleSchema] = Field(default_factory=list)
 
 class RuleSetCreateRequest(BaseModel):
   code: str = Field(min_length=1, max_length=50)
@@ -163,6 +190,7 @@ class RuleSetDraftUpdateRequest(BaseModel):
   wastage_rules: list[WastageRuleSchema] | None = None
   reinforcement_rules: list[ReinforcementRuleSchema] | None = None
   mappings: list[MappingSchema] | None = None
+  finish_rules: list[FinishRuleSchema] | None = None
   finish_rules: list[FinishRuleSchema] | None = None
 
 class ValidationIssue(BaseModel):

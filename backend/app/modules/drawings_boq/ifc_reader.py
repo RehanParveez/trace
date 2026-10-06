@@ -728,6 +728,12 @@ def _normalise_element(
   if geometry.bbox_min is not None and geometry.bbox_max is not None:
     bbox_min = tuple(_dec(float(v)) for v in geometry.bbox_min)
     bbox_max = tuple(_dec(float(v)) for v in geometry.bbox_max)
+  if bbox_min is None and role in ("DOOR", "WINDOW") and getattr(element, "ObjectPlacement", None) is not None:
+    try:
+      origin = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:3, 3]
+      bbox_min = bbox_max = tuple(_dec(float(v) * scales.mm_per_unit) for v in origin)
+    except Exception:
+      pass
  
   return ReadElement(
     step_id=element.id(),

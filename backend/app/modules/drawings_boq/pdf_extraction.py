@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 MAX_EXTRACTED_TEXT_CHARS = 12_000
+MAX_LAYOUT_TEXT_CHARS = 400_000
 
 def extract_pdf_text(contents: bytes) -> str:
   """
@@ -84,3 +85,15 @@ def parse_schedule_extraction_response(raw_output: dict | None) -> list[dict]:
     )
 
   return parsed
+
+def extract_pdf_layout_text(contents: bytes) -> str:
+  reader = PdfReader(BytesIO(contents))
+  pages = []
+  for page in reader.pages:
+    try:
+      pages.append(page.extract_text(extraction_mode="layout") or "")
+    except TypeError:
+      pages.append(page.extract_text() or "")
+    except Exception:
+      continue
+  return "\n".join(pages)[:MAX_LAYOUT_TEXT_CHARS]

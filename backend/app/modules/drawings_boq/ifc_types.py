@@ -193,7 +193,7 @@ QUANTITY_LOOKUP_ORDER: list[tuple[list[str], str]] = [
   (["Length"], "m"),
 ]
 
-READER_VERSION = "2026.10.5"
+READER_VERSION = "2026.10.6"
  
 ROLE_BY_IFC_TYPE: dict[str, str] = {
   "IfcWall": "WALL",
