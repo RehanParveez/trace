@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient,  useInfiniteQuery } from "@tanstack/react-query";
 import { drawingsBoqApi } from "../api/drawings-boq.api";
 import {isDrawingInProgress, openBlobInNewTab, triggerBlobDownload,
 } from "../utils/drawings-boq.utils";
 import type {AdjustmentCreateRequest, BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQVersion, BOQVersionUpdateRequest, CalculationRunCreateRequest, DeductionType,
   Drawing, DrawingElementFilters, LabourRate, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, ReviewIssueUpdateRequest,
-  ReviewStatus, TransitionRequest,
+  ReviewStatus, TransitionRequest, DeductionKind, DeductionResponse, LedgerRowResponse, QuantitySolidResponse,
 } from "../types/drawings-boq.types";
 
 export const drawingsBoqKeys = {
@@ -747,7 +747,7 @@ export function useCalculationRunSolids(
       params,
     ),
     queryFn: () =>
-      drawingsBoqApi.listCalculationRunSolids(
+      drawingsBoqApi.listRunSolids(
         runId as string,
         params,
       ),
@@ -770,7 +770,7 @@ export function useCalculationRunLedger(
       params,
     ),
     queryFn: () =>
-      drawingsBoqApi.listCalculationRunLedger(
+      drawingsBoqApi.listRunLedger(
         runId as string,
         params,
       ),
@@ -794,7 +794,7 @@ export function useCalculationRunDeductions(
         params,
       ),
     queryFn: () =>
-      drawingsBoqApi.listCalculationRunDeductions(
+      drawingsBoqApi.listRunDeductions(
         runId as string,
         params,
       ),
@@ -1053,7 +1053,7 @@ export function useBOQVersionLedger(
         params,
       ),
     queryFn: () =>
-      drawingsBoqApi.listBOQVersionLedger(
+      drawingsBoqApi.listVersionLedger(
         versionId as string,
         params,
       ),
@@ -1347,3 +1347,89 @@ export function useExportAdvancedBOQ(
   });
 }
 
+export function useRunSolids(
+  runId: string | undefined,
+  params: {
+    role?: string | null;
+    level_id?: string | null;
+  } = {},
+) {
+  const query = useInfiniteQuery({
+    queryKey: drawingsBoqKeys.runSolids(runId ?? "", params),
+    queryFn: ({ pageParam }) =>
+      drawingsBoqApi.listRunSolids(runId as string, {
+        ...params,
+        after: pageParam,
+        limit: 200,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(runId),
+  });
+
+  return {
+    ...query,
+    rows: (query.data?.pages.flatMap((p) => p.items) ?? []) as QuantitySolidResponse[],
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    fetchNextPage: query.fetchNextPage,
+  };
+}
+
+export function useRunLedger(
+  runId: string | undefined,
+  params: {
+    work_item_code?: string | null;
+    level_id?: string | null;
+  } = {},
+) {
+  const query = useInfiniteQuery({
+    queryKey: drawingsBoqKeys.runLedger(runId ?? "", params),
+    queryFn: ({ pageParam }) =>
+      drawingsBoqApi.listRunLedger(runId as string, {
+        ...params,
+        after: pageParam,
+        limit: 200,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(runId),
+  });
+
+  return {
+    ...query,
+    rows: (query.data?.pages.flatMap((p) => p.items) ?? []) as LedgerRowResponse[],
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    fetchNextPage: query.fetchNextPage,
+  };
+}
+
+export function useRunDeductions(
+  runId: string | undefined,
+  params: {
+    from_solid_id?: string | null;
+    deduction_type?: DeductionKind | null;
+  } = {},
+) {
+  const query = useInfiniteQuery({
+    queryKey: drawingsBoqKeys.runDeductions(runId ?? "", params),
+    queryFn: ({ pageParam }) =>
+      drawingsBoqApi.listRunDeductions(runId as string, {
+        ...params,
+        after: pageParam,
+        limit: 200,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(runId),
+  });
+
+  return {
+    ...query,
+    rows: (query.data?.pages.flatMap((p) => p.items) ?? []) as DeductionResponse[],
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    fetchNextPage: query.fetchNextPage,
+  };
+}

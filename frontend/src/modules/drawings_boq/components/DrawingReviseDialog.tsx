@@ -18,18 +18,12 @@ export function DrawingReviseDialog({
   onClose,
 }: DrawingReviseDialogProps) {
   const { t } = useTranslation();
-
   const revise = useReviseDrawing(projectId);
   const { showToast } = useToast();
-
   const [file, setFile] = useState<File | null>(null);
-
   const [revisionLabel, setRevisionLabel] = useState("");
-
   const [error, setError] = useState<string | null>(null);
-
   const inputRef = useRef<HTMLInputElement>(null);
-
   function handleFileChange(
     event: React.ChangeEvent<HTMLInputElement>,
   ) {

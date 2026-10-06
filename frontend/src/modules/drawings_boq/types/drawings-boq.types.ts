@@ -4,6 +4,12 @@ export type BOQItemStatus = "DRAFT" | "APPROVED";
 export type BOQItemType = "MATERIAL" | "LABOUR" | "CUSTOM";
 export type BOQVersionStatus = "ACTIVE" | "SUPERSEDED";
 export type BOQItemRateSource = "LIBRARY" | "AI_SUGGESTED" | "MANUAL";
+export type Num = number | string;
+export type EngineSeverity = "error" | "warning" | "info";
+export type EngineBlocks = "NONE" | "APPROVAL" | "ISSUE";
+export type EngineIssueStatus = "OPEN" | "RESOLVED" | "WAIVED";
+export type ModelAuditResponse = ModelAudit;
+export type ItemTraceResponse = ItemTrace;
 
 export interface Drawing {
   id: string;
@@ -70,11 +76,19 @@ export interface BuildingLevel {
   sequence: number;
 }
 
+export interface BuildingLevelResponse {
+  id: string;
+  name: string;
+  elevation_mm: number | string | null;
+  ifc_storey_id: string | null;
+  sequence: number;
+}
+
 export interface ModelAudit {
   id: string;
   drawing_id: string;
   overall_score: number | string;
-  issues: unknown[];
+  issues: ModelAuditIssue[];
   element_count: number;
   missing_material_count: number;
   zero_quantity_count: number;
@@ -120,6 +134,25 @@ export interface BOQVersion {
   issued_at?: string | null;
   created_at: string;
   updated_at?: string;
+}
+
+export interface BOQVersionResponse {
+  id: string;
+  project_id: string;
+  drawing_id: string | null;
+  label: string;
+  created_at: string;
+  status: BOQVersionStatus;
+  covered_area_sqft: number | string | null;
+  export_meta: Record<string, unknown>;
+  lifecycle: BOQLifecycle;
+  origin: BOQVersionOrigin;
+  calculation_run_id: string | null;
+  snapshot_id: string | null;
+  rule_set_id: string | null;
+  audit_score: number | string | null;
+  approved_at: string | null;
+  issued_at: string | null;
 }
 
 export interface BOQExportMeta {
@@ -170,6 +203,38 @@ export interface BOQItem {
   is_manual?: boolean;
   calculation_run_id?: string | null;
   engine_version?: string | null;
+}
+
+export interface BOQItemResponse {
+  id: string;
+  boq_version_id: string;
+  drawing_element_id: string | null;
+  material_name: string;
+  category: string | null;
+  unit: string;
+  quantity: number | string;
+  unit_rate: number | string | null;
+  rate_source: BOQItemRateSource | null;
+  status: BOQItemStatus;
+  version: number;
+  approved_at: string | null;
+  item_type: BOQItemType;
+  created_by_user_id: string | null;
+  work_item_code: string | null;
+  description: string | null;
+  net_quantity: number | string | null;
+  adjustment_total: number | string;
+  gross_quantity: number | string | null;
+  waste_factor_applied: number | string | null;
+  confidence: number | string | null;
+  review_status: ItemReviewStatus;
+  source_kind: BOQItemSourceKind;
+  is_manual: boolean;
+  canonical_unit: string | null;
+  unit_factor: number | string | null;
+  level_id: string | null;
+  item_key: string | null;
+  calculation_run_id: string | null;
 }
 
 export interface BOQItemUpdateRequest {
@@ -294,6 +359,24 @@ export interface CalculationRun {
   updated_at?: string;
 }
 
+export interface CalculationRunResponse {
+  id: string;
+  project_id: string;
+  rule_set_id: string;
+  convention_code: string | null;
+  drawing_revision_ids: string[];
+  engine_version: string;
+  fingerprint: string;
+  status: CalculationRunStatus;
+  progress_pct: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  stats: Record<string, unknown>;
+  created_at: string;
+}
+
 export interface RunStage {
   id: string;
   organization_id?: string;
@@ -307,6 +390,16 @@ export interface RunStage {
   error?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface RunStageResponse {
+  stage: string;
+  status: RunStageStatus;
+  attempt: number;
+  started_at: string | null;
+  finished_at: string | null;
+  counts: Record<string, unknown>;
+  error: string | null;
 }
 
 export interface QuantitySolid {
@@ -328,6 +421,21 @@ export interface QuantitySolid {
   engine_version: string;
 }
 
+export interface QuantitySolidResponse {
+  id: string;
+  element_id: string | null;
+  level_id: string | null;
+  role: string;
+  component_type: string;
+  geometry_kind: string;
+  gross_volume_m3: number | string | null;
+  gross_area_m2: number | string | null;
+  gross_length_m: number | string | null;
+  count: number | null;
+  status: SolidStatus;
+  issues: Record<string, unknown>[];
+}
+
 export interface LedgerRow {
   id: string;
   organization_id?: string;
@@ -342,9 +450,25 @@ export interface LedgerRow {
   source_kind: LedgerSourceKind;
   confidence: number | string;
   formula_code: string;
-
   trace: Record<string, unknown>;
   warnings: unknown[];
+  engine_version: string;
+}
+
+export interface LedgerRowResponse {
+  id: string;
+  solid_id: string;
+  element_id: string | null;
+  level_id: string | null;
+  work_item_code: string;
+  quantity_net: number | string;
+  unit: string;
+  material_grade: string | null;
+  source_kind: string;
+  confidence: number | string;
+  formula_code: string;
+  trace: Record<string, unknown>;
+  warnings: string[];
   engine_version: string;
 }
 
@@ -364,6 +488,20 @@ export interface Deduction {
   engine_version: string;
 }
 
+export interface DeductionResponse {
+  id: string;
+  from_solid_id: string;
+  to_solid_id: string | null;
+  deduction_type: DeductionKind;
+  quantity: number | string;
+  unit: string;
+  rule_code: string;
+  rule_version: string | null;
+  geometry: Record<string, unknown>;
+  explanation: string | null;
+  engine_version: string;
+}
+
 export interface BOQBuildResponse {
   boq_version_id?: string;
   calculation_run_id?: string;
@@ -374,6 +512,20 @@ export interface BOQBuildResponse {
   version?: BOQVersion;
   items?: BOQItem[];
   [key: string]: unknown;
+  items_created: number;
+  items_updated: number;
+  items_removed: number;
+  orphaned_items: number;
+  open_issues: number;
+}
+
+export interface EngineBOQBuildResponse {
+  boq_version_id: string;
+  items_created: number;
+  items_updated: number;
+  items_removed: number;
+  orphaned_items: number;
+  open_issues: number;
 }
 
 export interface TransitionRequest {
@@ -449,14 +601,30 @@ export interface Adjustment {
   updated_at?: string;
 }
 
-export interface AdjustmentCreateRequest {
+export interface AdjustmentResponse {
+  id: string;
+  boq_item_id: string;
   kind: AdjustmentKind;
+  value: number | string;
+  reason: string;
+  created_by_user_id: string | null;
+  created_at: string;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+}
+
+export interface AdjustmentCreateRequest {
+  kind: "DELTA" | "REPLACE";
   value: number;
   reason: string;
 }
 
 export interface ItemTrace {
   [key: string]: unknown;
+  item: BOQItemResponse;
+  ledger: LedgerRowResponse[];
+  deductions: DeductionResponse[];
+  adjustments: AdjustmentResponse[];
 }
 
 export interface ReviewIssue {
@@ -484,14 +652,109 @@ export interface ReviewIssue {
   updated_at?: string;
 }
 
-export interface ReviewIssueUpdateRequest {
+export interface ReviewIssueResponse {
+  id: string;
+  project_id: string;
+  boq_version_id: string | null;
+  boq_item_id: string | null;
+  drawing_element_id: string | null;
+  code: string;
+  severity: ReviewSeverity;
+  blocks: ReviewBlocks;
+  message: string;
+  suggested_fix: string | null;
+  details: Record<string, unknown>;
   status: ReviewStatus;
+  resolution_note: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
+export interface ReviewIssueUpdateRequest {
+  status: "RESOLVED" | "WAIVED";
   note?: string | null;
 }
 
 export interface ReasonRequest {
   reason: string;
 }
+
+export interface DrawingIngestionMeta {
+  reader_version?: string;
+  ifc_schema?: string;
+  length_unit_scale?: number;
+  model_issues?: {
+    code: string;
+    severity: string;
+    message: string;
+  }[];
+  stats?: {
+    space_count?: number;
+    element_count?: number;
+    by_status?: Record<string, number>;
+    by_geometry_kind?: Record<string, number>;
+    by_role?: Record<string, number>;
+    by_discipline?: Record<string, number>;
+    excluded?: Record<string, number>;
+  };
+}
+
+export interface ModelAuditIssue {
+  code: string;
+  severity: EngineSeverity | string;
+  message: string;
+  count: number;
+  element_ids: string[];
+  scope?: "model";
+}
+
+export interface SnapshotTotals {
+  materials?: string;
+  labour?: string;
+  custom?: string;
+  grand?: string;
+  item_count?: number;
+  unpriced_item_count?: number;
+}
+
+export interface SnapshotResponse {
+  id: string;
+  boq_version_id: string;
+  version_no: number;
+  purpose: SnapshotPurpose;
+  content_hash: string;
+  item_count: number;
+  totals: SnapshotTotals;
+  rule_set_code: string | null;
+  rule_set_version: number | null;
+  convention_code: string | null;
+  engine_version: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export interface SnapshotItemResponse {
+  id: string;
+  line_no: number;
+  source_item_id: string | null;
+  work_item_code: string | null;
+  material_name: string;
+  description: string | null;
+  item_type: string;
+  unit: string;
+  net_quantity: number | string | null;
+  adjustment_total: number | string;
+  quantity: number | string;
+  gross_quantity: number | string | null;
+  unit_rate: number | string | null;
+  amount: number | string | null;
+  confidence: number | string | null;
+  review_status: string;
+  source_kind: string;
+  ledger_row_count: number;
+  ledger_hash: string | null;
+}
+
 
 export type BOQLifecycle =
   | "DRAFT"
@@ -567,3 +830,19 @@ export type NormalizationStatus =
   | "VALID"
   | "WARNING"
   | "INVALID";
+
+export type DeductionKind =
+  | "OVERLAP_ALLOCATION"
+  | "EXTENT_TRIMMING"
+  | "VOID_DEDUCTION"
+  | "MATERIAL_SUBSTITUTION"
+  | "MEASUREMENT_CONVENTION";
+
+export type TransitionAction =
+  | "submit-review"
+  | "reopen"
+  | "approve"
+  | "issue"
+  | "archive";
+
+export type Page<T> = CursorPage<T>;

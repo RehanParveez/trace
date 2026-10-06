@@ -7,6 +7,8 @@ import {useBuildBOQFromCalculationRun, useCalculationRun, useCalculationRunDeduc
 import {formatCalculationRunStatus, formatQuantity, getCalculationRunTone,
 } from "../utils/drawings-boq.utils";
 import type { CalculationRun } from "../types/drawings-boq.types";
+import type {LedgerRowResponse, QuantitySolidResponse, DeductionResponse,
+} from "../types/drawings-boq.types";
 
 interface CalculationRunPanelProps {
   projectId: string;
@@ -72,15 +74,15 @@ export function CalculationRunPanel({
           conventionCode.trim() || null,
       },
       {
-        onSuccess: (createdRun) => {
-          setRunId(createdRun.id);
-          onRunCreated?.(createdRun);
+       onSuccess: ({ run: createdRun, reused }) => {
+        setRunId(createdRun.id);
+        onRunCreated?.(createdRun);
 
-          showToast({
-            tone: "success",
-            title: t(
-              "boq.calculationRun.toastStarted",
-            ),
+        showToast({
+          tone: "success",
+          title: reused
+            ? t("boq.calculationRun.toastReused") 
+            : t("boq.calculationRun.toastStarted"),
           });
         },
       },
@@ -486,21 +488,16 @@ function RunSolids({
           "boq.calculationRun.colStatus",
         ),
       ]}
-      rows={rows.map((row) => [
-        row.role,
-        row.component_type,
-        row.geometry_kind,
-        formatQuantity(
-          row.gross_volume_m3 ?? "",
-        ),
-        formatQuantity(
-          row.gross_area_m2 ?? "",
-        ),
-        formatQuantity(
-          row.gross_length_m ?? "",
-        ),
-        row.status,
+      rows={rows.map((row: QuantitySolidResponse) => [
+       row.role,
+       row.component_type,
+       row.geometry_kind,
+       formatQuantity(row.gross_volume_m3 ?? ""),
+       formatQuantity(row.gross_area_m2 ?? ""),
+       formatQuantity(row.gross_length_m ?? ""),
+       row.status,
       ])}
+
       nextCursor={
         query.data?.nextCursor ?? null
       }
@@ -568,17 +565,13 @@ function RunLedger({
         t("boq.ledger.colConfidence",),
         t("boq.ledger.colFormula",),
       ]}
-      rows={rows.map((row) => [
-        row.work_item_code,
-        formatQuantity(
-          row.quantity_net,
-        ),
-        row.unit,
-        row.source_kind,
-        formatQuantity(
-          row.confidence,
-        ),
-        row.formula_code,
+      rows={rows.map((row: LedgerRowResponse) => [
+       row.work_item_code,
+       formatQuantity(row.quantity_net),
+       row.unit,
+       row.source_kind,
+       formatQuantity(row.confidence),
+       row.formula_code,
       ])}
       nextCursor={
         query.data?.nextCursor ?? null
@@ -662,19 +655,16 @@ function RunDeductions({
           "boq.calculationRun.colExplanation",
         ),
       ]}
-      rows={rows.map((row) => [
-        row.deduction_type,
-        formatQuantity(
-          row.quantity,
-        ),
-        row.unit,
-        row.rule_code,
-        row.from_solid_id.slice(0, 8),
-        row.to_solid_id
-          ? row.to_solid_id.slice(0, 8)
-          : "—",
-        row.explanation ?? "—",
+      rows={rows.map((row: DeductionResponse) => [
+       row.deduction_type,
+       formatQuantity(row.quantity),
+       row.unit,
+       row.rule_code,
+       row.from_solid_id.slice(0, 8),
+       row.to_solid_id ? row.to_solid_id.slice(0, 8) : "—",
+       row.explanation ?? "—",
       ])}
+      
       nextCursor={
         query.data?.nextCursor ?? null
       }

@@ -5,6 +5,7 @@ import {ErrorState, LoadingState, Panel, PanelHeader, Button,
 import { useBOQVersionLedger } from "../hooks";
 import {formatQuantity,
 } from "../utils/drawings-boq.utils";
+import type { LedgerRowResponse } from "../types/drawings-boq.types"; 
 
 interface BOQVersionLedgerPanelProps {
   versionId: string;
@@ -81,20 +82,18 @@ export function BOQVersionLedgerPanel({
           </thead>
 
           <tbody>
-            {rows.map((row) => (
-              <tr
-                key={row.id}
-                className="border-t border-[var(--color-border)]"
-              >
-                <td className="px-4 py-3 text-[12px] font-semibold text-[var(--color-text-primary)]">
-                  {row.work_item_code}
-                </td>
+            {rows.map((row: LedgerRowResponse) => (
+             <tr
+              key={row.id}
+              className="border-t border-[var(--color-border)]"
+             >
+              <td className="px-4 py-3 text-[12px] font-semibold text-[var(--color-text-primary)]">
+                {row.work_item_code}
+              </td>
 
-                <td className="px-4 py-3 font-mono text-[12px]">
-                  {formatQuantity(
-                    row.quantity_net,
-                  )}
-                </td>
+              <td className="px-4 py-3 font-mono text-[12px]">
+                {formatQuantity(row.quantity_net)}
+              </td>
 
                 <td className="px-4 py-3 text-[12px]">
                   {row.unit}

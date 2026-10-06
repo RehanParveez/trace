@@ -19,17 +19,11 @@ export function DrawingElementsDialog({
   onClose,
 }: DrawingElementsDialogProps) {
   const { t } = useTranslation();
-
   const [structuralRole, setStructuralRole] = useState("");
-
   const [discipline, setDiscipline] = useState("");
-
   const [levelId, setLevelId] = useState("");
-
   const [normalizationStatus, setNormalizationStatus] = useState<NormalizationStatus | "">("");
-
   const [after, setAfter] = useState<string | null>(null);
-
   const elementsQuery =
     useDrawingElementsPage(
       drawing.id,

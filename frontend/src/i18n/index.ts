@@ -1200,6 +1200,7 @@ const resources = {
       "boq.ledger.colFormula": "Formula",
       "boq.ledger.loadMore": "Load more",
 
+      "boq.calculationRun.toastReused": "Calculation run reused",
       "boq.calculationRun.toastStarted": "Calculation run started",
       "boq.calculationRun.toastBOQGenerated": "BOQ generated from calculation run",
       "boq.calculationRun.eyebrow": "QUANTITY ENGINE",
@@ -1247,6 +1248,10 @@ const resources = {
       "boq.calculationRun.colExplanation": "Explanation",
       "boq.calculationRun.noRowsFound": "No rows found.",
       "boq.calculationRun.loadMore": "Load more",
+      "boq.calculationRun.filterRole": "Role, e.g. WALL",
+      "boq.calculationRun.filterWorkItem": "Work item code",
+      "boq.calculationRun.allTypes": "All types",
+      "boq.calculationRun.noRowsDesc": "Nothing matches this filter.",
 
       "drawings.table.eyebrow": "BIM INGESTION",
       "drawings.table.title": "Drawings",
@@ -3900,6 +3905,7 @@ const resources = {
       "boq.ledger.loadMore": "مزید لوڈ کریں",
 
       "boq.calculationRun.toastStarted": "کیلکولیشن رن شروع ہو گیا",
+      "boq.calculationRun.toastReused": "موجودہ کیلکولیشن رن دوبارہ استعمال کیا جا رہا ہے",
       "boq.calculationRun.toastBOQGenerated": "کیلکولیشن رن سے بی او کیو تیار ہو گیا",
       "boq.calculationRun.eyebrow": "مقدار کا انجن",
       "boq.calculationRun.title": "کیلکولیشن رن",
@@ -3946,6 +3952,10 @@ const resources = {
       "boq.calculationRun.colExplanation": "وضاحت",
       "boq.calculationRun.noRowsFound": "کوئی ریکارڈ نہیں ملا۔",
       "boq.calculationRun.loadMore": "مزید لوڈ کریں",
+      "boq.calculationRun.filterRole": "کردار، مثلاً WALL",
+      "boq.calculationRun.filterWorkItem": "ورک آئٹم کوڈ",
+      "boq.calculationRun.allTypes": "تمام اقسام",
+      "boq.calculationRun.noRowsDesc": "اس فلٹر سے کوئی ریکارڈ نہیں ملتا۔",
 
       "drawings.table.eyebrow": "بی آئی ایم انجسشن",
       "drawings.table.title": "ڈرائنگز",
