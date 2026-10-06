@@ -3,6 +3,9 @@ import type {Adjustment, AdjustmentCreateRequest, BOQBuildResponse, BOQCustomIte
   CalculationRun, CalculationRunCreateRequest, Drawing, DrawingElement, DrawingElementFilters, LabourRate, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry,
   MaterialLibraryUpdateRequest, ModelAudit, PDFExtractionResult, ProjectBOQCount, ReasonRequest, ReviewIssue, ReviewIssueUpdateRequest, RunStage, Snapshot, SnapshotItem, TransitionRequest, ItemTrace, 
   DrawingOrganizationSummary, CalculationRunResponse, BOQVersionResponse, TransitionAction, DeductionKind, DeductionResponse, LedgerRowResponse, Page, QuantitySolidResponse,
+  BoundaryCandidate, BulkReviewResponse, ConfirmImportResponse, FinishPreviewResponse, LevelOption, RematchResponse, RowDecision, ScheduleFromPdfRequest, ScheduleImportDetailResponse, ScheduleImportResponse, ScheduleKind, 
+  ScheduleManualCreateRequest, ScheduleRowCreateRequest, ScheduleRowResponse, ScheduleRowUpdateRequest, SpaceCreateRequest, SpaceDetailResponse, SpaceFinishCreateRequest, SpaceFinishResponse,
+   SpaceListFilters, SpaceResponse, SpaceUpdateRequest,
 } from "../types/drawings-boq.types";
 
 function getNextCursor(response: { headers: Record<string, unknown> }): string | null {
@@ -768,5 +771,219 @@ export const drawingsBoqApi = {
     );
 
     return response.data;
+  },
+};
+
+const B = "/drawings-boq";
+
+export const spacesSchedulesApi = {
+ 
+  async listLevels(drawingId: string) {
+    return (
+      await apiClient.get<LevelOption[]>(`${B}/drawings/${drawingId}/levels`)
+    ).data;
+  },
+  async listBoundaryCandidates(drawingId: string) {
+    return (
+      await apiClient.get<BoundaryCandidate[]>(
+        `${B}/drawings/${drawingId}/elements`,
+        { params: { limit: 5000 } },
+      )
+    ).data;
+  },
+
+  async listSpaces(projectId: string, f: SpaceListFilters) {
+    return (
+      await apiClient.get<SpaceResponse[]>(
+        `${B}/projects/${projectId}/spaces`,
+        { params: f },
+      )
+    ).data;
+  },
+
+  async createSpace(projectId: string, body: SpaceCreateRequest) {
+    return (
+      await apiClient.post<SpaceResponse>(
+        `${B}/projects/${projectId}/spaces`,
+        body,
+      )
+    ).data;
+  },
+
+  async getSpace(spaceId: string) {
+    return (
+      await apiClient.get<SpaceDetailResponse>(`${B}/spaces/${spaceId}`)
+    ).data;
+  },
+
+  async updateSpace(spaceId: string, body: SpaceUpdateRequest) {
+    return (
+      await apiClient.patch<SpaceResponse>(`${B}/spaces/${spaceId}`, body)
+    ).data;
+  },
+
+  async deleteSpace(spaceId: string) {
+    await apiClient.delete(`${B}/spaces/${spaceId}`);
+  },
+
+  async setBoundaries(spaceId: string, elementIds: string[]) {
+    return (
+      await apiClient.put<{ boundary_count: number }>(
+        `${B}/spaces/${spaceId}/boundaries`,
+        { element_ids: elementIds },
+      )
+    ).data;
+  },
+
+  async listFinishes(spaceId: string) {
+    return (
+      await apiClient.get<SpaceFinishResponse[]>(
+        `${B}/spaces/${spaceId}/finishes`,
+      )
+    ).data;
+  },
+  
+  async upsertFinish(spaceId: string, body: SpaceFinishCreateRequest) {
+    return (
+      await apiClient.post<SpaceFinishResponse>(
+        `${B}/spaces/${spaceId}/finishes`,
+        body,
+      )
+    ).data;
+  },
+
+  async deleteFinish(finishId: string) {
+    await apiClient.delete(`${B}/space-finishes/${finishId}`);
+  },
+
+  async previewFinishes(spaceId: string, ruleSetCode?: string) {
+    return (
+      await apiClient.get<FinishPreviewResponse>(
+        `${B}/spaces/${spaceId}/finish-preview`,
+        { params: { rule_set_code: ruleSetCode || undefined } },
+      )
+    ).data;
+  },
+
+  async listImports(projectId: string, status?: string) {
+    return (
+      await apiClient.get<ScheduleImportResponse[]>(
+        `${B}/projects/${projectId}/schedule-imports`,
+        { params: { status: status || undefined } },
+      )
+    ).data;
+  },
+
+  async importFile(
+    projectId: string,
+    file: File,
+    kind: ScheduleKind,
+    notes?: string | null,
+  ) {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("schedule_kind", kind);
+    if (notes) form.append("notes", notes);
+    return (
+      await apiClient.post<ScheduleImportResponse>(
+        `${B}/projects/${projectId}/schedule-imports/file`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      )
+    ).data;
+  },
+
+  async importFromPdf(projectId: string, body: ScheduleFromPdfRequest) {
+    return (
+      await apiClient.post<ScheduleImportResponse>(
+        `${B}/projects/${projectId}/schedule-imports/from-pdf`,
+        body,
+      )
+    ).data;
+  },
+
+  async createManualImport(
+    projectId: string,
+    body: ScheduleManualCreateRequest,
+  ) {
+    return (
+      await apiClient.post<ScheduleImportResponse>(
+        `${B}/projects/${projectId}/schedule-imports`,
+        body,
+      )
+    ).data;
+  },
+
+  async getImport(importId: string) {
+    return (
+      await apiClient.get<ScheduleImportDetailResponse>(
+        `${B}/schedule-imports/${importId}`,
+      )
+    ).data;
+  },
+
+  async addRow(importId: string, body: ScheduleRowCreateRequest) {
+    return (
+      await apiClient.post<ScheduleRowResponse>(
+        `${B}/schedule-imports/${importId}/rows`,
+        body,
+      )
+    ).data;
+  },
+
+  async updateRow(rowId: string, body: ScheduleRowUpdateRequest) {
+    return (
+      await apiClient.patch<ScheduleRowResponse>(
+        `${B}/schedule-rows/${rowId}`,
+        body,
+      )
+    ).data;
+  },
+
+  async bulkReview(
+    importId: string,
+    rowIds: string[],
+    decision: RowDecision,
+  ) {
+    return (
+      await apiClient.post<BulkReviewResponse>(
+        `${B}/schedule-imports/${importId}/rows/bulk-review`,
+        { row_ids: rowIds, review_status: decision },
+      )
+    ).data;
+  },
+
+  async confirmImport(importId: string, rejectPending: boolean) {
+    return (
+      await apiClient.post<ConfirmImportResponse>(
+        `${B}/schedule-imports/${importId}/confirm`,
+        { reject_pending: rejectPending },
+      )
+    ).data;
+  },
+
+  async rejectImport(importId: string, note?: string | null) {
+    return (
+      await apiClient.post<ScheduleImportResponse>(
+        `${B}/schedule-imports/${importId}/reject`,
+        { note: note ?? null },
+      )
+    ).data;
+  },
+
+  async archiveImport(importId: string) {
+    return (
+      await apiClient.post<ScheduleImportResponse>(
+        `${B}/schedule-imports/${importId}/archive`,
+      )
+    ).data;
+  },
+
+  async rematchImport(importId: string) {
+    return (
+      await apiClient.post<RematchResponse>(
+        `${B}/schedule-imports/${importId}/rematch`,
+      )
+    ).data;
   },
 };

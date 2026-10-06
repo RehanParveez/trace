@@ -45,6 +45,9 @@ export const IDENTITY_PERMISSIONS = {
   SITE_LOG_READ: "site_log:read",
   SITE_LOG_CREATE: "site_log:create",
   SITE_LOG_MANAGE: "site_log:manage",
+  SPACE_MANAGE: "space.manage",
+  FINISH_MANAGE: "finish.manage",
+  SCHEDULE_IMPORT: "schedule.import",
 } as const;
 
 export type IdentityPermission =

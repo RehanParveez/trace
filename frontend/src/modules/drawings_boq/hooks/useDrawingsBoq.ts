@@ -1045,6 +1045,7 @@ export function useBOQVersionLedger(
     after?: string | null;
     work_item_code?: string | null;
   } = {},
+  isEngine = false,                
 ) {
   return useQuery({
     queryKey:
@@ -1057,12 +1058,13 @@ export function useBOQVersionLedger(
         versionId as string,
         params,
       ),
-    enabled: Boolean(versionId),
+    enabled: Boolean(versionId) && isEngine, 
   });
 }
 
 export function useBOQSnapshots(
   versionId: string | undefined,
+  isEngine = false,                
 ) {
   return useQuery({
     queryKey: drawingsBoqKeys.snapshots(
@@ -1072,7 +1074,7 @@ export function useBOQSnapshots(
       drawingsBoqApi.listBOQSnapshots(
         versionId as string,
       ),
-    enabled: Boolean(versionId),
+    enabled: Boolean(versionId) && isEngine, 
   });
 }
 

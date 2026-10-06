@@ -10,6 +10,11 @@ export type EngineBlocks = "NONE" | "APPROVAL" | "ISSUE";
 export type EngineIssueStatus = "OPEN" | "RESOLVED" | "WAIVED";
 export type ModelAuditResponse = ModelAudit;
 export type ItemTraceResponse = ItemTrace;
+export type Surface = "FLOOR" | "WALL" | "CEILING" | "SKIRTING" | "DADO";
+export type ScheduleKind = "DOOR" | "WINDOW" | "FINISH" | "FIXTURE" | "GENERAL";
+export type RowDecision = "PENDING" | "CONFIRMED" | "REJECTED";
+export type ScheduleImportStatus = "PENDING_REVIEW" | "CONFIRMED" | "REJECTED" | "ARCHIVED";
+export type ScheduleSource = "PDF_AI" | "PDF_TEXT" | "CSV" | "MANUAL";
 
 export interface Drawing {
   id: string;
@@ -755,6 +760,279 @@ export interface SnapshotItemResponse {
   ledger_hash: string | null;
 }
 
+export interface NormalizationIssue {
+  code: string;
+  severity: string;
+  message: string;
+}
+
+export interface SpaceResponse {
+  id: string;
+  project_id: string;
+  drawing_id: string | null;
+  level_id: string | null;
+  source: "IFC" | "MANUAL";
+  ifc_global_id: string | null;
+  number: string | null;
+  name: string | null;
+  long_name: string | null;
+  category: string;
+  usage_text: string | null;
+  is_external: boolean;
+  is_active: boolean;
+  gross_floor_area_mm2: Num | null;
+  net_floor_area_mm2: Num | null;
+  perimeter_mm: Num | null;
+  height_mm: Num | null;
+  geometry_kind: string;
+  normalization_status: string;
+  normalization_issues: NormalizationIssue[];
+  finish_count: number;
+  boundary_count: number;
+}
+
+export interface SpaceFinishResponse {
+  id: string;
+  space_id: string;
+  surface: Surface;
+  work_item_code: string;
+  finish_name: string | null;
+  height_mm: Num | null;
+  source: "IFC_PSET" | "SCHEDULE_IMPORT" | "MANUAL" | "RULE_DEFAULT" | string;
+  schedule_row_id: string | null;
+  confidence: Num;
+  review_status: string;
+  is_active: boolean;
+}
+
+export interface BoundaryResponse {
+  element_id: string;
+  name: string | null;
+  ifc_type: string;
+  structural_role: string | null;
+  boundary_kind: string;
+  side: string;
+  source: string;
+}
+
+export interface SpaceDetailResponse extends SpaceResponse {
+  boundaries: BoundaryResponse[];
+  finishes: SpaceFinishResponse[];
+}
+
+export interface SpaceCreateRequest {
+  number?: string | null;
+  name?: string | null;
+  long_name?: string | null;
+  usage_text?: string | null;
+  category?: string;
+  level_id?: string | null;
+  is_external?: boolean;
+  floor_area_m2?: number | null;
+  perimeter_m?: number | null;
+  height_m?: number | null;
+}
+
+export interface SpaceUpdateRequest {
+  number?: string | null;
+  name?: string | null;
+  long_name?: string | null;
+  usage_text?: string | null;
+  category?: string | null;
+  level_id?: string | null;
+  is_external?: boolean | null;
+  is_active?: boolean | null;
+  floor_area_m2?: number | null;
+  perimeter_m?: number | null;
+  height_m?: number | null;
+}
+
+export interface SpaceFinishCreateRequest {
+  surface: Surface;
+  work_item_code: string;
+  finish_name?: string | null;
+  height_mm?: number | null;
+}
+
+export interface FinishPreviewLine {
+  surface: string;
+  work_item_code: string;
+  unit: string;
+  quantity: Num;
+  confidence: Num;
+  formula_code: string;
+  source_kind: string;
+  warnings: string[];
+  steps: Record<string, unknown>[];
+}
+
+export interface FinishPreviewResolved {
+  surface: string;
+  work_item_code: string;
+  source: string;
+  height_mm: string | null;
+  deduct_openings: boolean;
+}
+
+export interface FinishPreviewResponse {
+  space_id: string;
+  rule_set_code: string;
+  resolved: FinishPreviewResolved[];
+  lines: FinishPreviewLine[];
+  skipped: Record<string, unknown>;
+}
+
+export interface ScheduleRowResponse {
+  id: string;
+  schedule_import_id: string;
+  row_no: number;
+  schedule_kind: ScheduleKind;
+  page_no: number | null;
+  raw_text: string | null;
+  mark: string | null;
+  description: string | null;
+  location_text: string | null;
+  level_id: string | null;
+  space_id: string | null;
+  unit: string | null;
+  quantity: Num | null;
+  width_mm: Num | null;
+  height_mm: Num | null;
+  work_item_code: string | null;
+  canonical_unit: string | null;
+  canonical_quantity: Num | null;
+  confidence: Num;
+  review_status: RowDecision;
+  review_note: string | null;
+  matched_element_count: number;
+  surface: Surface | null;
+  finish_name: string | null;
+  notes: string[];
+  quantity_defaulted: boolean;
+}
+
+export interface ScheduleImportResponse {
+  id: string;
+  project_id: string;
+  drawing_id: string | null;
+  source: ScheduleSource;
+  schedule_kind: ScheduleKind;
+  status: ScheduleImportStatus;
+  file_name: string | null;
+  row_count: number;
+  confirmed_count: number;
+  notes: string | null;
+  extraction_meta: Record<string, unknown>;
+  created_at: string;
+  confirmed_at: string | null;
+}
+
+export interface ScheduleCountMismatch {
+  row_id: string;
+  mark: string | null;
+  schedule_quantity: string;
+  model_count: number;
+}
+
+export interface ScheduleImportSummary {
+  pending: number;
+  confirmed: number;
+  rejected: number;
+  model_matched: number;
+  finish_rows_linked: number;
+  finish_rows_unlinked: number;
+  count_mismatches: ScheduleCountMismatch[];
+}
+
+export interface ScheduleImportDetailResponse extends ScheduleImportResponse {
+  rows: ScheduleRowResponse[];
+  summary: ScheduleImportSummary;
+}
+
+export interface ScheduleFromPdfRequest {
+  drawing_id: string;
+  schedule_kind: ScheduleKind;
+  notes?: string | null;
+}
+
+export interface ScheduleManualCreateRequest {
+  schedule_kind: ScheduleKind;
+  notes?: string | null;
+}
+
+export interface ScheduleRowCreateRequest {
+  mark?: string | null;
+  description?: string | null;
+  location_text?: string | null;
+  level_id?: string | null;
+  space_id?: string | null;
+  unit?: string | null;
+  quantity?: number | null;
+  width_mm?: number | null;
+  height_mm?: number | null;
+  work_item_code?: string | null;
+  surface?: Surface | null;
+  finish_name?: string | null;
+}
+
+export interface SpaceListFilters {
+  drawing_id?: string;
+  level_id?: string;
+  category?: string;
+  include_inactive?: boolean;
+  current_only?: boolean;
+}
+
+export interface ScheduleRowUpdateRequest extends ScheduleRowCreateRequest {
+  review_status?: RowDecision | null;
+  review_note?: string | null;
+}
+
+export interface BulkReviewResponse {
+  updated: number;
+  failed: { row_id: string; code: string; message: string }[];
+}
+
+export interface FinishConflict {
+  row_id: string;
+  space_id: string;
+  surface: string;
+  work_item_code: string | null;
+  reason: string;
+}
+
+export interface ConfirmImportResponse {
+  schedule_import: ScheduleImportResponse;
+  finishes_created: number;
+  finishes_updated: number;
+  finish_conflicts: FinishConflict[];
+  ledger_lines: number;
+  model_matched_rows: number;
+  unlinked_finish_rows: number;
+  count_mismatches: ScheduleCountMismatch[];
+  rerun_recommended: boolean;
+}
+
+export interface RematchResponse {
+  rows_changed: number;
+  rerun_recommended: boolean;
+}
+
+export interface LevelOption {
+  id: string;
+  name: string;
+  elevation_mm: Num | null;
+  ifc_storey_id: string | null;
+  sequence: number;
+}
+
+export interface BoundaryCandidate {
+  id: string;
+  name: string | null;
+  ifc_type: string;
+  structural_role: string | null;
+  level_id: string | null;
+}
 
 export type BOQLifecycle =
   | "DRAFT"

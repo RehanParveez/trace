@@ -1,6 +1,13 @@
 import type {BOQLifecycle, BOQItemStatus, BOQItemType, BOQVersionStatus, CalculationRunStatus, DrawingStatus, ReviewSeverity,
-  AdjustmentResponse, EngineBlocks, EngineSeverity, ReviewIssueResponse,
+  AdjustmentResponse, EngineBlocks, EngineSeverity, ReviewIssueResponse, ScheduleImportStatus, ScheduleKind, ScheduleRowResponse, Surface,
 } from "../types/drawings-boq.types";
+
+export interface WarningInfo {
+  severity: EngineSeverity;
+  blocks: EngineBlocks;
+  message: string;
+  fix: string | null;
+}
 
 export const LOW_CONFIDENCE_THRESHOLD = 0.6;
 
@@ -549,13 +556,6 @@ export function computeQuantity(
   return roundHalfUp(base + delta, 4);
 }
 
-export interface WarningInfo {
-  severity: EngineSeverity;
-  blocks: EngineBlocks;
-  message: string;
-  fix: string | null;
-}
-
 export function sortIssues(
   issues: ReviewIssueResponse[],
 ): ReviewIssueResponse[] {
@@ -660,3 +660,131 @@ export function lifecycleTone(
       return "slate";
   }
 }
+
+export const SURFACES: readonly Surface[] = ["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO"];
+
+export const SURFACE_UNIT: Record<Surface, "m2" | "m"> = {
+  FLOOR: "m2",
+  WALL: "m2",
+  CEILING: "m2",
+  DADO: "m2",
+  SKIRTING: "m",
+};
+
+export const SCHEDULE_KINDS: readonly ScheduleKind[] = ["DOOR", "WINDOW", "FINISH", "FIXTURE", "GENERAL"];
+
+export const KIND_DEFAULT_WORK_ITEM: Partial<Record<ScheduleKind, string>> = {
+  DOOR: "DOR-NOS",
+  WINDOW: "WIN-NOS",
+};
+
+export const WORK_ITEM_SUGGESTIONS = [
+  "DOR-NOS",
+  "WIN-NOS",
+  "FIN-FLOOR",
+  "FIN-SKIRT",
+  "FIN-DADO",
+  "FIN-CEIL-PAINT",
+  "FIN-CEIL-PLASTER",
+  "FIN-PAINT",
+  "FIN-PLASTER",
+];
+
+export const ROW_CONFIDENCE_REVIEW = 0.6;
+export const SCHEDULE_FILE_MAX_BYTES = 5 * 1024 * 1024;
+export const SCHEDULE_FILE_EXTENSIONS = [".csv", ".txt", ".xlsx"];
+
+export const SPACE_CATEGORIES = [
+  "TOILET", "BATHROOM", "KITCHEN", "BEDROOM", "DRESSING", "LIVING", "DINING", "CORRIDOR", "STAIR", "LIFT", "STORE", "GARAGE",
+  "PARKING", "BALCONY", "TERRACE", "ROOF", "PORCH", "COURTYARD", "LAUNDRY", "SERVANT_QUARTER", "DRIVER_QUARTER", "GUARD_ROOM",
+  "OFFICE", "PRAYER", "LIBRARY", "PLAYROOM", "RECREATION", "GYM", "NURSERY", "MUMTY", "SHAFT", "DUCT", "MECHANICAL", "ELECTRICAL",
+  "PLUMBING", "FIRE_CONTROL", "REFUSE", "COLD_STORAGE", "BASEMENT", "ATTIC", "PLANT", "RECEPTION", "WAITING", "CLASSROOM",
+  "LABORATORY", "RETAIL", "RESTAURANT", "WAREHOUSE", "WORKSHOP", "LOADING", "SERVICE", "OPEN_AREA", "UNKNOWN",
+] as const;
+export const EXTERNAL_CATEGORIES = new Set(["BALCONY", "TERRACE", "PORCH", "COURTYARD", "ROOF", "OPEN_AREA"]);
+
+export const BOUNDARY_ROLE_PREFIXES = ["WALL", "CURTAIN_WALL", "DOOR", "WINDOW", "COLUMN"];
+
+export const isBoundaryRole = (role: string | null) =>
+  !!role && BOUNDARY_ROLE_PREFIXES.some((p) => role === p || role.startsWith(`${p}_`));
+
+const MM2_PER_M2 = 1_000_000;
+export const mm2ToM2 = (v: number | string | null | undefined): number | null =>
+  v === null || v === undefined ? null : Number(v) / MM2_PER_M2;
+export const mmToM = (v: number | string | null | undefined): number | null =>
+  v === null || v === undefined ? null : Number(v) / 1000;
+export const toInput = (v: number | null, digits = 4): string =>
+  v === null || Number.isNaN(v) ? "" : String(+v.toFixed(digits));
+export const fmt = (v: number | null | undefined, digits = 2): string =>
+  v === null || v === undefined || Number.isNaN(v)
+    ? "—"
+    : v.toLocaleString("en-PK", { maximumFractionDigits: digits });
+
+export function inferSurface(text: string | null | undefined): Surface | null {
+  const t = (text ?? "").toLowerCase();
+  for (const [keyword, surface] of [
+    ["skirt", "SKIRTING"],
+    ["dado", "DADO"],
+    ["ceil", "CEILING"],
+    ["floor", "FLOOR"],
+    ["wall", "WALL"],
+  ] as const) {
+    if (t.includes(keyword)) return surface;
+  }
+  return null;
+}
+
+export function suggestFinishWorkItem(
+  surface: Surface | null | undefined,
+  text: string | null | undefined,
+): string | null {
+  const t = (text ?? "").toLowerCase();
+  if (surface === "FLOOR") return "FIN-FLOOR";
+  if (surface === "SKIRTING") return "FIN-SKIRT";
+  if (surface === "DADO") return "FIN-DADO";
+  const paint = ["paint", "emulsion", "distemper"].some((k) => t.includes(k));
+  if (surface === "CEILING") return paint ? "FIN-CEIL-PAINT" : "FIN-CEIL-PLASTER";
+  if (surface === "WALL") return paint ? "FIN-PAINT" : t.includes("plaster") ? "FIN-PLASTER" : null;
+  return null;
+}
+
+export const isLinkedFinish = (
+  r: Pick<ScheduleRowResponse, "schedule_kind" | "space_id">,
+) => r.schedule_kind === "FINISH" && r.space_id !== null;
+
+export function rowConfirmBlocker(r: ScheduleRowResponse): string | null {
+  if (!r.work_item_code) return "Choose a work item.";
+  const linked = isLinkedFinish(r);
+  if (linked && !(r.surface && SURFACES.includes(r.surface)))
+    return "Set the surface (floor, wall, ceiling, skirting or dado).";
+  if (r.canonical_unit === null || r.canonical_quantity === null)
+    return "The unit or quantity is missing or not recognised.";
+  if (!linked && Number(r.canonical_quantity) <= 0)
+    return "The quantity must be greater than zero.";
+  return null;
+}
+
+export const isImportEditable = (status: ScheduleImportStatus) =>
+  status === "PENDING_REVIEW";
+
+export function importTone(
+  s: ScheduleImportStatus,
+): "gold" | "green" | "red" | "slate" {
+  return s === "PENDING_REVIEW"
+    ? "gold"
+    : s === "CONFIRMED"
+      ? "green"
+      : s === "REJECTED"
+        ? "red"
+        : "slate";
+}
+
+export function rowTone(s: string): "gold" | "green" | "red" {
+  return s === "CONFIRMED" ? "green" : s === "REJECTED" ? "red" : "gold";
+}
+
+export const spaceLabel = (s: {
+  number: string | null;
+  name: string | null;
+  id: string;
+}) => [s.number, s.name].filter(Boolean).join(" · ") || s.id.slice(0, 8);
