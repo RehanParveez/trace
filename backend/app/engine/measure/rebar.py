@@ -1,6 +1,6 @@
 from __future__ import annotations
 from decimal import Decimal
-from app.engine.measure.models import BarSizeSpec, ShapeSpec, RebarError, RebarRowInput, BarMark, RebarInputs, RebarResult
+from app.engine.measure.models import BarSizeSpec, ShapeSpec, RebarRowInput, BarMark, RebarInputs, RebarResult
 import math
 from uuid import uuid5
 from app.engine.measure.units import q4, q6
@@ -169,10 +169,11 @@ def _review(warnings, confidence: Decimal) -> str:
 
 def _unique_mark(used: dict, solid_id, mark: str) -> str:
   names = used.setdefault(solid_id, set())
+  mark = (mark or "M")[:50]
   candidate, n = mark, 1
   while candidate in names:
     n += 1
-    candidate = f"{mark}-{n}"
+    candidate = f"{mark[:45]}-{n}"
   names.add(candidate)
   return candidate
 

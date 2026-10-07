@@ -611,12 +611,14 @@ async def list_calculation_run_bar_marks(
   limit: int = Query(default=500, ge=1, le=2000),
   after: UUID | None = Query(default=None),
   solid_id: UUID | None = Query(default=None),
+  provenance: Literal["IFC_EXACT", "SCHEDULE_IMPORT", "MANUAL", "RULE_ESTIMATE"] | None = Query(default=None),
+  role: str | None = Query(default=None, max_length=50),
   current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
   session: AsyncSession = Depends(get_db),
 ):
   rows, next_cursor = await CalculationService(session).list_bar_marks(
     current_user.active_membership.organization_id, run_id,
-    limit=limit, after=after, solid_id=solid_id,
+    limit=limit, after=after, solid_id=solid_id, provenance=provenance, role=role,
   )
   if next_cursor:
     response.headers["X-Next-Cursor"] = str(next_cursor)

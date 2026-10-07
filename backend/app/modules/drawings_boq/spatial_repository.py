@@ -17,6 +17,7 @@ class ReinforcementsInputs:
   spaces: tuple = ()
   openings: tuple = ()
   schedule_lines: tuple = ()
+  rebar: object = None
 
 def _chunks(items: list, size: int = _CHUNK):
   for i in range(0, len(items), size):

@@ -22,6 +22,8 @@ import { BOQReviewIssuesPanel } from "./BOQReviewIssuesPanel";
 import { BOQVersionLedgerPanel } from "./BOQVersionLedgerPanel";
 import { BOQSnapshotsPanel } from "./BOQSnapshotsPanel";
 import { BOQAdvancedExportPanel } from "./BOQAdvancedExportPanel";
+import { SpacesSchedulesSection } from "./SpacesSchedulesSection";
+import { RebarSummaryPanel } from "../../drawings_boq/rebar/components/RebarSummaryPanel";
 import { useTranslation } from "react-i18next";
 
 interface DrawingsBoqSectionProps {
@@ -83,31 +85,20 @@ export function DrawingsBoqSection({
 
   const drawingQuota = useQuotaStatus("drawings");
 
-  const canCalculate = permissions.some(
-      (permission) =>
-        String(permission) ===
-        "CALC_RUN",
+  const canCalculate = permissions.includes(
+      IDENTITY_PERMISSIONS.CALC_RUN,
     );
 
-  const canAdjust =
-    permissions.some(
-      (permission) =>
-        String(permission) ===
-        "BOQ_ADJUST",
+  const canAdjust = permissions.includes(
+      IDENTITY_PERMISSIONS.BOQ_ADJUST,
     );
 
-  const canIssue =
-    permissions.some(
-      (permission) =>
-        String(permission) ===
-        "BOQ_ISSUE",
+  const canIssue = permissions.includes(
+      IDENTITY_PERMISSIONS.BOQ_ISSUE,
     );
 
-  const canResolveReview =
-    permissions.some(
-      (permission) =>
-        String(permission) ===
-        "REVIEW_RESOLVE",
+  const canResolveReview = permissions.includes(
+      IDENTITY_PERMISSIONS.REVIEW_RESOLVE,
     );
 
   const boqVersions =
@@ -203,6 +194,11 @@ export function DrawingsBoqSection({
         }
       />
 
+      <SpacesSchedulesSection
+        projectId={projectId}
+        drawings={drawingsQuery.data ?? []}
+      />
+
       {viewingDrawing ? (
         <div className="space-y-5">
           <DrawingAuditPanel
@@ -270,6 +266,12 @@ export function DrawingsBoqSection({
           <BOQVersionLedgerPanel
             versionId={selectedVersion.id}
           />
+
+          {selectedVersion.calculation_run_id ? (
+            <RebarSummaryPanel
+              versionId={selectedVersion.id}
+            />
+          ) : null}
 
           <BOQSnapshotsPanel
             versionId={selectedVersion.id}

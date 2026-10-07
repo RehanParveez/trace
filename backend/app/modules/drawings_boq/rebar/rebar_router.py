@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
-from app.modules.drawings_boq.finish_schedule.schemas import BulkReviewRequest, BulkReviewResponse, ConfirmImportRequest
+from app.modules.drawings_boq.finish_schedule.schemas import BulkReviewRequest, BulkReviewResponse, ConfirmImportRequest, ScheduleImportResponse
 from app.modules.drawings_boq.rebar.rebar_service import RebarService
 from app.modules.drawings_boq.schemas import (
   BarMarkResponse, BarSizeCreateRequest, BarSizeResponse, RebarConfirmResponse, RebarImportResponse, RebarScheduleRowResponse,
@@ -14,7 +14,7 @@ from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from pydantic import BaseModel, Field
 
-router = APIRouter(prefix="/drawings-boq", tags=["Reinforcement"])
+router = APIRouter(tags=["Reinforcement"])
 
 class RebarFromPdfRequest(BaseModel):
   drawing_id: UUID
@@ -40,6 +40,11 @@ async def list_bar_sizes(current_user: User = Depends(require_permission(Permiss
 async def create_bar_size(payload: BarSizeCreateRequest, current_user: User = Depends(require_permission(PermissionKey.RULESET_MANAGE)),
   session: AsyncSession = Depends(get_db)):
   return await RebarService(session).create_size(_org(current_user), current_user.id, payload)
+
+@router.get("/projects/{project_id}/rebar-imports", response_model=list[ScheduleImportResponse])
+async def list_rebar_imports(project_id: UUID, status: str | None = Query(default=None, max_length=20),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)), session: AsyncSession = Depends(get_db)):
+  return await RebarService(session).list_imports(_org(current_user), project_id, status)
 
 @router.post("/projects/{project_id}/rebar-imports/file", response_model=RebarImportResponse, status_code=201)
 async def import_rebar_file(project_id: UUID, file: UploadFile = File(...), notes: str | None = Form(default=None),
@@ -80,16 +85,6 @@ async def reject_rebar_import(import_id: UUID, current_user: User = Depends(requ
 async def archive_rebar_import(import_id: UUID, current_user: User = Depends(require_permission(PermissionKey.SCHEDULE_IMPORT)),
   session: AsyncSession = Depends(get_db)):
   return await RebarService(session).archive_import(_org(current_user), import_id, current_user.id)
-
-@router.get("/calculation-runs/{run_id}/bar-marks", response_model=list[BarMarkResponse])
-async def list_run_bar_marks(run_id: UUID, response: Response, limit: int = Query(default=500, ge=1, le=2000),
-  after: UUID | None = Query(default=None), provenance: str | None = Query(default=None, max_length=20),
-  role: str | None = Query(default=None, max_length=50),
-  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)), session: AsyncSession = Depends(get_db)):
-  rows, nxt = await RebarService(session).list_bar_marks(_org(current_user), run_id, limit=limit, after=after, provenance=provenance, role=role)
-  if nxt:
-    response.headers["X-Next-Cursor"] = str(nxt)
-  return rows
 
 @router.get("/boq-versions/{boq_version_id}/rebar-summary", response_model=RebarSummaryResponse)
 async def get_rebar_summary(boq_version_id: UUID, current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),

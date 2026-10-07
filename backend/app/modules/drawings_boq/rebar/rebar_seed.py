@@ -40,9 +40,12 @@ async def seed_rebar_defaults(session: AsyncSession) -> None:
         is_system=True, is_active=True))
   await session.flush()
   rule_sets = (await session.execute(select(MeasurementRuleSet).where(
-    MeasurementRuleSet.code.like("PUNJAB%"), MeasurementRuleSet.status == "ACTIVE"))).scalars().all()
+    MeasurementRuleSet.code.like("PUNJAB%"), MeasurementRuleSet.published_at.is_(None)))).scalars().all()
   
   for rs in rule_sets:
+    await apply_rebar_rules(session, rs)
+
+async def apply_rebar_rules(session: AsyncSession, rs: MeasurementRuleSet) -> None:
     rules = (await session.execute(select(ReinforcementRule).where(ReinforcementRule.rule_set_id == rs.id))).scalars().all()
     changed = False
     for r in rules:

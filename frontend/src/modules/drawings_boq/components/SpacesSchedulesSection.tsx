@@ -4,6 +4,7 @@ import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import type { Drawing } from "../types/drawings-boq.types";
 import { ScheduleImportsPanel } from "./ScheduleImportsPanel";
 import { SpacesPanel } from "./SpacesPanel";
+import { RebarImportsPanel } from "../../drawings_boq/rebar/components/RebarImportsPanel";
 import { useTranslation } from "react-i18next";
 
 interface SpacesSchedulesSectionProps {
@@ -14,7 +15,7 @@ interface SpacesSchedulesSectionProps {
 export function SpacesSchedulesSection({ projectId, drawings }: SpacesSchedulesSectionProps) {
   const { t } = useTranslation();
   const permissions = usePermissionKeys();
-  const [tab, setTab] = useState<"spaces" | "schedules">("spaces");
+  const [tab, setTab] = useState<"spaces" | "schedules" | "rebar">("spaces");
 
   if (!permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ)) return null;
   const canManageSpaces = permissions.includes(IDENTITY_PERMISSIONS.SPACE_MANAGE);
@@ -29,11 +30,14 @@ export function SpacesSchedulesSection({ projectId, drawings }: SpacesSchedulesS
       <Panel className="flex gap-2 p-4">
         <button type="button" className={tabCls(tab === "spaces")} onClick={() => setTab("spaces")}>{t("section.spaces", "Spaces and finishes")}</button>
         <button type="button" className={tabCls(tab === "schedules")} onClick={() => setTab("schedules")}>{t("section.schedules", "Schedules")}</button>
+        <button type="button" className={tabCls(tab === "rebar")} onClick={() => setTab("rebar")}>{t("section.rebar", "Bar schedules")}</button>
       </Panel>
       {tab === "spaces" ? (
         <SpacesPanel projectId={projectId} drawings={drawings} canManage={canManageSpaces} canManageFinish={canManageFinish} />
-      ) : (
+      ) : tab === "schedules" ? (
         <ScheduleImportsPanel projectId={projectId} drawings={drawings} canImport={canImport} canManageSpaces={canManageSpaces} />
+      ) : (
+        <RebarImportsPanel projectId={projectId} drawings={drawings} canImport={canImport} />
       )}
     </div>
   );

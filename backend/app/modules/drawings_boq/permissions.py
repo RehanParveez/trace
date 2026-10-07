@@ -16,4 +16,7 @@ DRAWINGS_BOQ_PERMISSIONS = {
   PermissionKey.BOQ_ADJUST: "Adjust calculated BOQ quantities with a recorded reason.",
   PermissionKey.BOQ_ISSUE: "Issue and archive BOQ versions.",
   PermissionKey.REVIEW_RESOLVE: "Resolve or waive BOQ review issues.",
+  PermissionKey.SPACE_MANAGE: "Create and edit rooms (spaces) and their boundaries.",
+  PermissionKey.FINISH_MANAGE: "Set room finishes.",
+  PermissionKey.SCHEDULE_IMPORT: "Import, review and confirm schedules and bar bending schedules.",
 }

@@ -15,6 +15,7 @@ export type ScheduleKind = "DOOR" | "WINDOW" | "FINISH" | "FIXTURE" | "GENERAL";
 export type RowDecision = "PENDING" | "CONFIRMED" | "REJECTED";
 export type ScheduleImportStatus = "PENDING_REVIEW" | "CONFIRMED" | "REJECTED" | "ARCHIVED";
 export type ScheduleSource = "PDF_AI" | "PDF_TEXT" | "CSV" | "MANUAL";
+export type RebarRole = "COLUMN" | "BEAM" | "LINTEL" | "SLAB" | "FOOTING" | "PILE" | "WALL" | "STAIR";
 
 export interface Drawing {
   id: string;
@@ -630,6 +631,7 @@ export interface ItemTrace {
   ledger: LedgerRowResponse[];
   deductions: DeductionResponse[];
   adjustments: AdjustmentResponse[];
+  bar_marks?: BarMarkResponse[];
 }
 
 export interface ReviewIssue {
@@ -1251,9 +1253,111 @@ export type DeductionRuleCode =
   | "OPENING_DEDUCT" | "OPENING_PARTIAL" | "OPENING_IGNORED" | "OPENING_SIZE_MISSING"
   | (string & {});
 
-export type RebarProvenance = "SCHEDULE_IMPORT" | "RULE_ESTIMATE";
+export type RebarProvenance = "IFC_EXACT" | "SCHEDULE_IMPORT" | "MANUAL" | "RULE_ESTIMATE";
 
 export interface TraceStep {
   op: string; 
   [key: string]: unknown;
+}
+
+export interface RebarScheduleRow {
+  id: string;
+  schedule_import_id: string;
+  row_no: number;
+  page_no: number | null;
+  raw_text: string | null;
+  member_mark: string | null;
+  mark: string | null;
+  role: string | null;
+  shape_code: string | null;
+  shape_params: Record<string, Num>;
+  designation: string | null;
+  dia_mm: Num | null;
+  grade: string | null;
+  count: number | null;
+  spacing_mm: Num | null;
+  cut_len_mm: Num | null;
+  declared_total_kg: Num | null;
+  level_id: string | null;
+  matched_element_id: string | null;
+  confidence: Num;
+  review_status: RowDecision;
+  review_note: string | null;
+}
+
+export interface RebarImportDetail {
+  schedule_import_id: string;
+  row_count: number;
+  matched_count: number;
+  unmatched_count: number;
+  rows: RebarScheduleRow[];
+}
+
+export interface RebarRowUpdateRequest {
+  member_mark?: string | null;
+  mark?: string | null;
+  role?: string | null;
+  shape_code?: string | null;
+  shape_params?: Record<string, number> | null;
+  designation?: string | null;
+  dia_mm?: number | null;
+  grade?: string | null;
+  count?: number | null;
+  spacing_mm?: number | null;
+  cut_len_mm?: number | null;
+  level_id?: string | null;
+  matched_element_id?: string | null;
+  review_status?: RowDecision | null;
+  review_note?: string | null;
+}
+
+export interface RebarConfirmResponse {
+  schedule_import_id: string;
+  confirmed_count: number;
+  rejected_count: number;
+  pending_count: number;
+}
+
+export interface RebarShape {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  standard: string | null;
+  segments: string[];
+  bend_spec: number[];
+  bend_count: number;
+  hook_ends: number;
+  is_system: boolean;
+  is_active: boolean;
+}
+
+export interface BarSize {
+  id: string;
+  standard: string;
+  designation: string;
+  grade: string;
+  nominal_dia_mm: Num;
+  unit_weight_kg_m: Num;
+  is_system: boolean;
+  is_active: boolean;
+}
+
+export interface RebarSummaryRow {
+  dia_mm: Num;
+  designation: string | null;
+  grade: string | null;
+  total_len_m: Num;
+  total_kg: Num;
+  mark_count: number;
+}
+
+export interface RebarSummary {
+  boq_version_id: string;
+  rows: RebarSummaryRow[];
+  total_kg: Num;
+  tier1_kg: Num;
+  tier2_kg: Num;
+  tier3_estimate_kg: Num;
+  bbs_exportable: boolean;
 }

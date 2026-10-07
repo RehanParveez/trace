@@ -37,6 +37,28 @@ const EXPORTS: Array<{
   },
 ];
 
+const FORMATS: Record<ExportKind, Array<"pdf" | "xlsx">> = {
+  CONTRACT_BOQ: ["pdf", "xlsx"],
+  PROCUREMENT: ["xlsx"],
+  MEASUREMENT_BOOK: ["pdf", "xlsx"],
+  AUDIT_REPORT: ["pdf"],
+  REVISION_COMPARISON: [],
+  BBS: ["xlsx"],
+};
+
+async function exportErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const data = (error as { response?: { data?: unknown } })?.response?.data;
+  if (data instanceof Blob) {
+    try {
+      const body = JSON.parse(await data.text());
+      return body?.error?.message ?? body?.detail ?? fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  return fallback;
+}
+
 export function BOQAdvancedExportPanel({
   versionId,
   label,
@@ -83,6 +105,12 @@ export function BOQAdvancedExportPanel({
             title:
               t("boq.advancedExport.exportGenerated"),
           }),
+        onError: async (error) =>
+          showToast({
+            tone: "error",
+            title: t("boq.advancedExport.exportFailed", "Export failed"),
+            description: await exportErrorMessage(error, t("boq.advancedExport.exportFailedDesc", "The export could not be generated.")),
+          }),
       },
     );
   }
@@ -108,14 +136,15 @@ export function BOQAdvancedExportPanel({
           <select
             value={kind}
             onChange={(event) =>
-              setKind(
-                event.target
-                  .value as ExportKind,
-              )
+              {
+                const next = event.target.value as ExportKind;
+                setKind(next);
+                if (!FORMATS[next].includes(format)) setFormat(FORMATS[next][0]);
+              }
             }
             className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px]"
           >
-            {EXPORTS.map(
+              {EXPORTS.filter((option) => FORMATS[option.kind].length > 0).map(
               (option) => (
                 <option
                   key={option.kind}
@@ -147,12 +176,16 @@ export function BOQAdvancedExportPanel({
             }
             className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px]"
           >
-            <option value="pdf">
-              {t("boq.advancedExport.pdf")}
-            </option>
-            <option value="xlsx">
-              {t("boq.advancedExport.xlsx")}
-            </option>
+            {FORMATS[kind].includes("pdf") ? (
+              <option value="pdf">
+                {t("boq.advancedExport.pdf")}
+              </option>
+            ) : null}
+            {FORMATS[kind].includes("xlsx") ? (
+              <option value="xlsx">
+                {t("boq.advancedExport.xlsx")}
+              </option>
+            ) : null}
           </select>
         </label>
 

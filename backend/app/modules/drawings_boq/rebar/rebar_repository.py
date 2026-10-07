@@ -62,16 +62,19 @@ async def load_rebar_inputs(session: AsyncSession, org: UUID, project_id: UUID) 
     return RebarInputs((), shapes, sizes)
   return RebarInputs(tuple(sorted(usable, key=lambda r: (str(r.import_id), r.row_no))), shapes, sizes)
 
-async def bar_marks_page(session: AsyncSession, org: UUID, run_id: UUID, *, limit: int, after: UUID | None,
-  provenance: str | None = None, role: str | None = None) -> list[RebarBarMark]:
+async def marks_for_run(session: AsyncSession, org: UUID, run_id: UUID, *, include_estimates: bool = True) -> list[RebarBarMark]:
   stmt = select(RebarBarMark).where(RebarBarMark.run_id == run_id, RebarBarMark.organization_id == org)
-  if provenance:
-    stmt = stmt.where(RebarBarMark.provenance == provenance)
-  if role:
-    stmt = stmt.where(RebarBarMark.role == role)
-  if after:
-    stmt = stmt.where(RebarBarMark.id > after)
-  return list((await session.execute(stmt.order_by(RebarBarMark.id.asc()).limit(limit + 1))).scalars().all())
+  if not include_estimates:
+    stmt = stmt.where(RebarBarMark.provenance != "RULE_ESTIMATE")
+  rows = (await session.execute(stmt)).scalars().all()
+  return sorted(rows, key=lambda m: (str(m.level_id), m.role, str(m.element_id), str(m.solid_id), m.mark))
+
+async def marks_for_solids(session: AsyncSession, org: UUID, run_id: UUID, solid_ids: list[UUID]) -> list[RebarBarMark]:
+  if not solid_ids:
+    return []
+  rows = (await session.execute(select(RebarBarMark).where(RebarBarMark.run_id == run_id,
+    RebarBarMark.organization_id == org, RebarBarMark.solid_id.in_(solid_ids)))).scalars().all()
+  return sorted(rows, key=lambda m: (str(m.solid_id), m.mark))
 
 async def summary_for_run(session: AsyncSession, org: UUID, run_id: UUID) -> dict:
   by_dia = (await session.execute(

@@ -380,6 +380,79 @@ def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company
   wb.save(buffer)
   return buffer.getvalue()
 
+def _num(v):
+  return float(v) if v is not None else None
+
+def _dims(params: dict) -> str:
+  return ", ".join(f"{k}={Decimal(str(v)):g}" for k, v in sorted((params or {}).items()))
+
+def build_bbs_xlsx(snapshot: dict, marks: list[dict], meta: dict, company: str, estimated_kg: Decimal) -> bytes:
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "Bar Bending Schedule"
+  head_fill, white = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True)
+  bold = Font(bold=True)
+  ws.append([company, "BAR BENDING SCHEDULE"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append([_stamp(snapshot)])
+  
+  ws.append(["Scheduled steel only (bar schedule or model). Estimated steel is never part of a bar bending schedule."])
+  if estimated_kg and estimated_kg > 0:
+    ws.append([f"Not included: {Decimal(estimated_kg):,.3f} kg of steel estimated from concrete volume (review required)."])
+    ws.cell(row=ws.max_row, column=1).font = Font(color="B45309", bold=True)
+  ws.append([])
+  ws.append(["#", "Level", "Member", "Member mark", "Bar mark", "Shape", "Dimensions (mm)", "Dia (mm)", "Size", "Grade",
+    "No. of bars", "Spacing (mm)", "Cut length (mm)", "Stock (mm)", "Pieces", "Laps", "Lap (mm)", "Total length (m)",
+    "kg/m", "Total (kg)", "Source", "Confidence", "Review", "Warnings"])
+  
+  for c in ws[ws.max_row]:
+    c.fill, c.font = head_fill, white
+  for n, m in enumerate(marks, 1):
+    ws.append([n, m["level"], m["member"], (m.get("trace") or {}).get("member_mark"), m["mark"], m["shape_code"],
+      _dims(m.get("shape_params")), _num(m["dia_mm"]), m.get("designation"), m.get("grade"), m["count"],
+      _num(m.get("spacing_mm")), _num(m["cut_len_mm"]), _num(m.get("stock_len_mm")), m["pieces"], m["lap_count"],
+      _num(m.get("lap_len_mm")), _num(m["total_len_m"]), _num(m["unit_weight_kg_m"]), _num(m["total_kg"]),
+      m["provenance"], _num(m["confidence"]), m["review_status"], ", ".join(m.get("warnings") or [])])
+    
+  total = sum((Decimal(m["total_kg"]) for m in marks), Decimal("0"))
+  ws.append([])
+  ws.append(["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "TOTAL", float(total)])
+  ws.cell(row=ws.max_row, column=19).font = ws.cell(row=ws.max_row, column=20).font = bold
+  for col, width in zip("ABCDEFGHIJKLMNOPQRSTUVWX", (5, 14, 22, 12, 10, 14, 22, 9, 8, 10, 10, 11, 14, 11, 8, 7, 9, 14, 9, 12, 16, 11, 16, 30)):
+    ws.column_dimensions[col].width = width
+  ws.freeze_panes = "A7" if estimated_kg and estimated_kg > 0 else "A6"
+
+  sm = wb.create_sheet("Summary by diameter")
+  sm.append([company, "STEEL SUMMARY BY DIAMETER AND GRADE"])
+  sm["A1"].font = Font(bold=True, size=14)
+  sm.append([_stamp(snapshot)])
+  sm.append([])
+  
+  sm.append(["Dia (mm)", "Size", "Grade", "Bar marks", "Total length (m)", "Total (kg)", "Total (tonnes)"])
+  for c in sm[sm.max_row]:
+    c.fill, c.font = head_fill, white
+    
+  groups: dict = {}
+  for m in marks:
+    key = (Decimal(m["dia_mm"]), m.get("designation") or "", m.get("grade") or "")
+    g = groups.setdefault(key, [0, Decimal("0"), Decimal("0")])
+    g[0] += 1
+    g[1] += Decimal(m["total_len_m"])
+    g[2] += Decimal(m["total_kg"])
+    
+  for (dia, desig, grade), (count, length, kg) in sorted(groups.items()):
+    sm.append([float(dia), desig or None, grade or None, count, float(length), float(kg), float(kg / 1000)])
+  sm.append(["TOTAL", None, None, len(marks), None, float(total), float(total / 1000)])
+  for c in sm[sm.max_row]:
+    c.font = bold
+    
+  for col, width in zip("ABCDEFG", (10, 8, 12, 11, 16, 14, 14)):
+    sm.column_dimensions[col].width = width
+    
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
 def _evidence_text(e: dict) -> str:
   return "; ".join(e["steps"]) + (f"  [{', '.join(e['warnings'])}]" if e["warnings"] else "")
 
@@ -388,18 +461,21 @@ def build_measurement_book_pdf(snapshot: dict, rows: list[dict], evidence: dict,
   doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15 * mm, bottomMargin=15 * mm, leftMargin=12 * mm, rightMargin=12 * mm)
   styles, cell, small = _styles()
   story = [Paragraph(f"{company} - MEASUREMENT BOOK", styles["Heading2"]), Paragraph(_stamp(snapshot), small), Spacer(1, 6)]
+  
   for r in rows:
     story.append(Paragraph(f"<b>{r['line_no']}. {r['material_name']}</b> - contract {_q(r['quantity'])} {r['unit']} "
       f"(calculated {_q(r['net_quantity'])}, adjustments {_q(r['adjustment_total'])})", styles["Normal"]))
     lines = evidence.get(str(r["source_item_id"]), [])
     if lines:
       data = [["Element", "Level", "Qty (canonical)", "Working"]]
+      
       for e in lines:
         data.append([Paragraph(str(e["element"]), cell), e["level"], f"{Decimal(e['quantity']):,.6f} {e['unit']}",
          Paragraph(_evidence_text(e), cell)])
       t = Table(data, colWidths=[55 * mm, 30 * mm, 40 * mm, 140 * mm], repeatRows=1)
       t.setStyle(TableStyle(_GRID))
       story.append(t)
+      
     else:
       story.append(Paragraph("Manual or imported line - no model measurement behind it.", small))
     story.append(Spacer(1, 6))
@@ -414,6 +490,7 @@ def build_measurement_book_xlsx(snapshot: dict, rows: list[dict], evidence: dict
   ws["A1"].font = Font(bold=True, size=14)
   ws.append([_stamp(snapshot)])
   ws.append([])
+  
   for r in rows:
     ws.append([f"{r['line_no']}. {r['material_name']}", "", f"Contract {r['quantity']} {r['unit']}",
       f"Calculated {r['net_quantity']}", f"Adjustments {r['adjustment_total']}"])
@@ -423,6 +500,7 @@ def build_measurement_book_xlsx(snapshot: dict, rows: list[dict], evidence: dict
     for e in evidence.get(str(r["source_item_id"]), []):
       ws.append([e["element"], e["level"], float(e["quantity"]), e["unit"], _evidence_text(e)])
     ws.append([])
+    
   for col, width in zip("ABCDE", (46, 18, 16, 10, 100)):
     ws.column_dimensions[col].width = width
   buffer = BytesIO()
@@ -450,6 +528,7 @@ def build_audit_report_pdf(snapshot: dict, rows: list[dict], issues: list[dict],
     [[str(totals["item_count"]), str(totals["unpriced_item_count"]), _m(totals["grand"])]], [40 * mm, 40 * mm, 60 * mm])
   table("Review issues", ["Code", "Severity", "Blocks", "Status", "Message / note"],
     [[i["code"], i["severity"], i["blocks"], i["status"], Paragraph(i["message"] + (f" <i>Note: {i['note']}</i>" if i["note"] else ""), cell)]
+     
       for i in issues], [38 * mm, 18 * mm, 20 * mm, 18 * mm, 88 * mm])
   table("Manual overrides (adjustments)", ["Item", "Kind", "Value", "Reason", "State"],
     [[Paragraph(a["item"], cell), a["kind"], _q(a["value"]), Paragraph(a["reason"], cell),

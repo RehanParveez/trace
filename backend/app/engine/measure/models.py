@@ -39,11 +39,6 @@ class CalculationContext:
   spaces: tuple = ()
   schedule_lines: tuple = ()
   rebar: object = None
-  rebar_rules: tuple = ()
-  bar_sizes: tuple = ()
-  shapes: tuple = ()
-  rebar_sources: tuple = ()
-  allow_rebar_estimates: bool = True
 
 @dataclass(frozen=True)
 class Solid:
@@ -200,89 +195,6 @@ class ScheduleLineInput:
   level_id: UUID | None
   space_id: UUID | None
   raw_text: str | None
-  
-@dataclass(frozen=True)
-class ReinforcementRuleInput:
-  element_scope: str
-  bar_role: str
-  lap_basis: str | None
-  lap_coefficient: Decimal | None
-  hook_rules: dict
-  bend_rules: dict
-  dev_length_method: str | None
-  splice_constraints: dict
-  stock_length_mm: Decimal | None
-  cover_mm: Decimal | None
-  min_lap_mm: Decimal | None
-  use_couplers: bool
-  weight_tolerance_pct: Decimal
-
-@dataclass(frozen=True)
-class BarSizeInput:
-  standard: str
-  designation: str
-  grade: str
-  nominal_dia_mm: Decimal
-  unit_weight_kg_m: Decimal
-
-@dataclass(frozen=True)
-class ShapeInput:
-  code: str
-  segments: tuple
-  bend_spec: tuple
-  bend_count: int
-  hook_ends: int
-
-@dataclass(frozen=True)
-class RebarSourceInput:
-  element_id: UUID
-  level_id: UUID | None
-  mark: str
-  role: str
-  shape_code: str
-  shape_params: dict
-  designation: str | None
-  dia_mm: Decimal
-  grade: str | None
-  count: int
-  spacing_mm: Decimal | None
-  cut_len_mm: Decimal | None
-  declared_total_kg: Decimal | None
-  provenance: str
-  confidence: Decimal
-  schedule_row_id: UUID | None = None
-
-@dataclass(frozen=True)
-class BarMark:
-  solid_id: UUID
-  element_id: UUID
-  level_id: UUID | None
-  mark: str
-  role: str
-  shape_code: str
-  shape_params: dict
-  designation: str | None
-  dia_mm: Decimal
-  grade: str | None
-  count: int
-  spacing_mm: Decimal | None
-  cut_len_mm: Decimal
-  stock_len_mm: Decimal | None
-  pieces: int
-  lap_count: int
-  lap_len_mm: Decimal | None
-  total_len_m: Decimal
-  unit_weight_kg_m: Decimal
-  total_kg: Decimal
-  provenance: str
-  confidence: Decimal
-  review_status: str
-  trace: dict
-  warnings: tuple = ()
-  schedule_row_id: UUID | None = None
-  
-class RebarError(Exception):
-  pass
 
 @dataclass(frozen=True)
 class ShapeSpec:

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from uuid import UUID, uuid4
 import re
 from app.modules.drawings_boq.schedule_parsing import ScheduleParseError, norm_key, read_table
-from app.engine.measure.rebar import RebarError, compute_mark, role_family
+from app.engine.measure.rebar import compute_mark, role_family
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.projects.repository import ProjectRepository
 from app.modules.audit.service import AuditLogService
@@ -27,9 +27,9 @@ from fastapi import UploadFile
 from pathlib import PurePosixPath
 from sqlalchemy.exc import IntegrityError
 from app.modules.drawings_boq.pdf_extraction import extract_pdf_layout_text
-from app.modules.drawings_boq.calc_service import CalculationService 
 
 MAX_FILE_BYTES = 5 * 1024 * 1024
+HUMAN_EDIT_CONFIDENCE = Decimal("0.9")
 _ROLE_WORDS = frozenset({"column", "columns", "beam", "beams", "slab", "slabs", "footing", "footings", "wall", "walls", "lintel", "stair", "pile"})
 
 def _now():
@@ -97,18 +97,16 @@ class RebarService:
   async def _computable(self, org: UUID, row: RebarScheduleRow, rules, shapes, sizes) -> None:
     def fail(message: str, code: str):
       raise TraceException(f"Row {row.row_no}: {message}", status_code=422, code=code)
+    
     if not row.mark:
       fail("a bar mark is required.", "ROW_NEEDS_MARK")
     if row.dia_mm is None or row.dia_mm <= 0:
       fail("the bar size is missing or not recognised.", "ROW_NEEDS_SIZE")
+      
     if row.count is None or row.count <= 0:
       fail("the number of bars is missing.", "ROW_NEEDS_COUNT")
     if row.cut_len_mm is None and not (row.shape_code and row.shape_code.upper() in shapes):
       fail("give the cut length, or a known shape with its dimensions.", "ROW_NEEDS_LENGTH")
-    try:
-      compute_mark(repo.row_input(row), shapes.get((row.shape_code or "").upper()), sizes, rules, role_family(row.role))
-    except RebarError as exc:
-      fail(str(exc) + ".", "ROW_NOT_COMPUTABLE")
 
   def _build_row(self, imp: ScheduleImport, org: UUID, n: int, p: dict, elements, levels) -> RebarScheduleRow:
     confidence = Decimal(p.get("confidence") or "0.7")
@@ -133,13 +131,13 @@ class RebarService:
     imp = ScheduleImport(id=uuid4(), organization_id=org, project_id=project_id, drawing_id=drawing_id, source=source,
       schedule_kind="BBS", status="PENDING_REVIEW", file_name=(file_name or "")[:500] or None, content_hash=content_hash,
       row_count=0, confirmed_count=0, extraction_meta=meta or {}, notes=notes, created_by_user_id=user_id)
-    self.session.add(imp)
-    await self.session.flush()
     elements, levels = await self._context(org, project_id)
     rows = [self._build_row(imp, org, i, p, elements, levels) for i, p in enumerate(parsed, start=1)]
-    self.session.add_all(rows)
     imp.row_count = len(rows)
     try:
+      self.session.add(imp)
+      await self.session.flush()
+      self.session.add_all(rows)
       await self.session.flush()
       iid = imp.id
       await self.session.commit()
@@ -191,6 +189,14 @@ class RebarService:
       content_hash=hashlib.sha256(("BBS|" + layout).encode()).hexdigest(), drawing_id=drawing.id, notes=notes,
       meta={"extraction": "text", "text_chars": len(layout)})
 
+  async def list_imports(self, org: UUID, project_id: UUID, status: str | None = None) -> list[ScheduleImport]:
+    await self._require_project(org, project_id)
+    stmt = select(ScheduleImport).where(ScheduleImport.organization_id == org, ScheduleImport.project_id == project_id,
+      ScheduleImport.schedule_kind == "BBS")
+    if status:
+      stmt = stmt.where(ScheduleImport.status == status)
+    return list((await self.session.execute(stmt.order_by(ScheduleImport.created_at.desc()))).scalars().all())
+  
   async def get_import(self, org: UUID, import_id: UUID) -> dict:
     imp = await self._import(org, import_id)
     rows = await self._rows(org, import_id)
@@ -218,6 +224,10 @@ class RebarService:
       
       if dia is not None:
         row.designation, row.dia_mm = desig, dia
+    if fs & {"dia_mm", "count", "cut_len_mm", "shape_code", "shape_params", "designation"}:
+      row.confidence = max(Decimal(row.confidence), HUMAN_EDIT_CONFIDENCE)
+    if fs & {"dia_mm", "count", "cut_len_mm", "shape_code", "shape_params", "designation"}:
+      row.confidence = max(Decimal(row.confidence), HUMAN_EDIT_CONFIDENCE)
     if "matched_element_id" in fs:
       if payload.matched_element_id is not None and (await self.session.execute(select(DrawingElement.id).where(
         DrawingElement.id == payload.matched_element_id, DrawingElement.organization_id == org))).first() is None:
@@ -338,11 +348,6 @@ class RebarService:
     self.session.add(size)
     await self.session.commit()
     return size
-
-  async def list_bar_marks(self, org: UUID, run_id: UUID, *, limit: int, after: UUID | None, provenance: str | None, role: str | None):
-    await CalculationService(self.session).get_run(org, run_id)
-    rows = await repo.bar_marks_page(self.session, org, run_id, limit=limit, after=after, provenance=provenance, role=role)
-    return rows[:limit], (rows[limit - 1].id if len(rows) > limit else None)
 
   async def summary(self, org: UUID, version_id: UUID) -> dict:
     version = (await self.session.execute(select(BOQVersion).where(BOQVersion.id == version_id,

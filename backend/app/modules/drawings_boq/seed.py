@@ -14,7 +14,7 @@ from app.shared.seed_utils import seed_module_permissions
 from app.modules.drawings_boq.permissions import DRAWINGS_BOQ_PERMISSIONS 
 from app.modules.drawings_boq.standards.seed import seed_standards
 from app.modules.drawings_boq.finish_seed import seed_finish_defaults
-from app.modules.drawings_boq.rebar_seed import seed_rebar_defaults
+from app.modules.drawings_boq.rebar.rebar_seed import seed_rebar_defaults
  
 MATERIAL_ENTRIES = [ 
   { 

@@ -4,6 +4,7 @@ import { useBOQItemTrace } from "../hooks";
 import {activeAdjustments, DEDUCTION_RULE_LABEL, formatJsonValue, formatPrecise, isLowConfidence, warningInfo,
 } from "../utils/drawings-boq.utils";
 import { TraceSteps } from "./TraceSteps";
+import { shapeDims } from "../../drawings_boq/rebar/utils/rebar.utils";
 
 interface BOQItemTraceDialogProps {
   itemId: string;
@@ -85,6 +86,38 @@ export function BOQItemTraceDialog({ itemId, itemName, onClose }: BOQItemTraceDi
               ))
             )}
           </div>
+
+          {(data.bar_marks ?? []).length > 0 ? (
+            <div className="space-y-2">
+              <div className={label}>{t("boq.itemTrace.barMarks", "Bar marks")} ({data.bar_marks?.length})</div>
+              <div className="overflow-auto rounded-[8px] border border-[var(--color-border)]">
+                <table className="w-full min-w-[640px] text-left text-[12px]">
+                  <thead className="bg-[var(--color-surface-muted)] text-[11px] uppercase text-[var(--color-text-muted)]"><tr>
+                    <th className="px-3 py-2">{t("rebar.colMark", "Bar mark")}</th>
+                    <th className="px-3 py-2">{t("rebar.colShape", "Shape")}</th>
+                    <th className="px-3 py-2 text-right">{t("rebar.colDia", "Dia mm")}</th>
+                    <th className="px-3 py-2 text-right">{t("rebar.colCount", "Nos")}</th>
+                    <th className="px-3 py-2 text-right">{t("rebar.colCut", "Cut mm")}</th>
+                    <th className="px-3 py-2 text-right">kg</th>
+                    <th className="px-3 py-2">{t("rebar.colSource", "Source")}</th>
+                  </tr></thead>
+                  <tbody>
+                    {(data.bar_marks ?? []).map((m) => (
+                      <tr key={m.id ?? `${m.solid_id}-${m.mark}`} className="border-t border-[var(--color-border)]">
+                        <td className="px-3 py-2 font-mono font-semibold">{m.mark}</td>
+                        <td className="px-3 py-2">{m.shape_code}<div className="font-mono text-[11px] text-[var(--color-text-muted)]">{shapeDims(m.shape_params)}</div></td>
+                        <td className="px-3 py-2 text-right font-mono">{formatPrecise(m.dia_mm, 3)}</td>
+                        <td className="px-3 py-2 text-right font-mono">{m.count}</td>
+                        <td className="px-3 py-2 text-right font-mono">{formatPrecise(m.cut_len_mm, 1)}</td>
+                        <td className="px-3 py-2 text-right font-mono font-semibold">{formatPrecise(m.total_kg, 3)}</td>
+                        <td className="px-3 py-2"><Badge tone={m.provenance === "RULE_ESTIMATE" ? "gold" : "slate"}>{m.provenance}</Badge></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : null}
 
           {data.deductions.length > 0 ? (
             <div className="space-y-2">

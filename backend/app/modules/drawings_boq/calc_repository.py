@@ -216,6 +216,20 @@ class CalculationRunRepository:
     result = await self.session.execute(stmt.order_by(LedgerDeduction.id.asc()).limit(limit + 1))
     return list(result.scalars().all())
   
+  async def list_bar_marks(self, run_id: UUID, organization_id: UUID, *, limit: int, after: UUID | None = None,
+    solid_id: UUID | None = None, provenance: str | None = None, role: str | None = None) -> list[RebarBarMark]:
+    stmt = select(RebarBarMark).where(RebarBarMark.run_id == run_id, RebarBarMark.organization_id == organization_id)
+    if solid_id:
+      stmt = stmt.where(RebarBarMark.solid_id == solid_id)
+    if provenance:
+      stmt = stmt.where(RebarBarMark.provenance == provenance)
+    if role:
+      stmt = stmt.where(RebarBarMark.role == role)
+    if after:
+      stmt = stmt.where(RebarBarMark.id > after)
+    result = await self.session.execute(stmt.order_by(RebarBarMark.id.asc()).limit(limit + 1))
+    return list(result.scalars().all())
+  
   async def merge_stats(self, run_id: UUID, patch: dict) -> None:
     row = (await self.session.execute(select(CalculationRun).where(CalculationRun.id == run_id))).scalar_one_or_none()
     if row is not None:

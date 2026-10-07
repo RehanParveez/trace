@@ -5,6 +5,7 @@ from app.modules.drawings_boq.schedule_parsing import MAX_ROWS, ScheduleParseErr
 
 CSV_CONFIDENCE = Decimal("0.9")
 PDF_TEXT_CONFIDENCE = Decimal("0.7")
+GUESSED_UNIT_CONFIDENCE = Decimal("0.5")
 _SHAPE_PARAMS = ("A", "B", "C", "D", "E")
 
 _HEADERS = {
@@ -72,13 +73,12 @@ def _col_unit(header) -> str | None:
     return next(g for g in m.groups() if g)
   return "m" if re.search(r"\blength m\b", t) else None
 
-def _to_mm(value, unit) -> Decimal | None:
+def _to_mm(value, unit) -> tuple[Decimal | None, str | None]:
   if value in (None, ""):
-    return None
+    return None, None
   if unit in ("ft", "in") and re.fullmatch(r"\d+(?:\.\d+)?", str(value).strip()):
-    return (Decimal(str(value).strip()) * (Decimal("304.8") if unit == "ft" else Decimal("25.4"))).quantize(Decimal("0.001"))
-  mm, _ = _length_mm(str(value), unit)
-  return mm
+    return (Decimal(str(value).strip()) * (Decimal("304.8") if unit == "ft" else Decimal("25.4"))).quantize(Decimal("0.001")), None
+  return _length_mm(str(value), unit)
 
 def _find_header(table: list[list]):
   best = None
@@ -100,20 +100,32 @@ def _row_from_cells(cells: dict, params: dict, units: dict, default_unit_for_len
     return None
 
   count = int(count_d) if count_d is not None and count_d >= 0 else None
-  length = _to_mm(cells.get("length"), units.get("length") or default_unit_for_length)
+  length, length_note = _to_mm(cells.get("length"), units.get("length") or default_unit_for_length)
   weight = parse_decimal(cells.get("weight"))
   notes: list[str] = []
+  if length_note:
+    notes.append(f"Cut length has no unit; {length_note.lower()} Check it.")
   
   if units.get("weight") == "ton" and weight is not None:
     weight, _ = weight * 1000, notes.append("Weight read as tonnes.")
-  shape_params = {p: str(v) for p, c in params.items() if (v := _to_mm(cells.get(f"param:{p}"), units.get("param"))) is not None}
+    
+  shape_params: dict = {}
+  for p in params:
+    v, note = _to_mm(cells.get(f"param:{p}"), units.get("param"))
+    if v is not None:
+      shape_params[p] = str(v)
+      if note:
+        notes.append(f"Dimension {p} has no unit; {note.lower()} Check it.")
   spacing = parse_decimal(cells.get("spacing"))
   member = _clean(cells.get("member_mark"))
-  role = (str(cells.get("role")).strip().upper()[:50] if cells.get("role") else None) or infer_role(member, cells.get("role"))
+  role_text = _clean(cells.get("role"))
+  role = infer_role(role_text) or infer_role(member) or (role_text.upper()[:50] if role_text else None)
+  
   return {"member_mark": member, "mark": mark, "role": role, "shape_code": (_clean(cells.get("shape")) or "").upper()[:40] or None,
     "shape_params": shape_params, "designation": designation, "dia_mm": dia, "grade": parse_grade(cells.get("grade")),
     "count": count, "spacing_mm": spacing if spacing and spacing > 0 else None, "cut_len_mm": length if length and length > 0 else None,
-    "declared_total_kg": weight if weight and weight > 0 else None, "level_text": _clean(cells.get("level")), "notes": notes}
+    "declared_total_kg": weight if weight and weight > 0 else None, "level_text": _clean(cells.get("level")), "notes": notes,
+    "guessed_unit": bool(length_note) or any(n.startswith("Dimension") for n in notes)}
 
 def rows_from_table(table: list[list], *, confidence: Decimal = CSV_CONFIDENCE, length_unit: str | None = None) -> list[dict]:
   found = _find_header(table)
@@ -139,7 +151,7 @@ def rows_from_table(table: list[list], *, confidence: Decimal = CSV_CONFIDENCE, 
       continue
   
     row["raw_text"] = " | ".join(str(c) for c in raw if c not in (None, ""))[:2000]
-    row["confidence"] = confidence
+    row["confidence"] = min(confidence, GUESSED_UNIT_CONFIDENCE) if row.pop("guessed_unit") else confidence
     out.append(row)
     if len(out) > MAX_ROWS:
       raise ScheduleParseError(f"The schedule has more than {MAX_ROWS} rows. Split it and import in parts.")

@@ -77,7 +77,8 @@ class ScheduleService:
       raise TraceException("Project not found.", status_code=404, code="PROJECT_NOT_FOUND")
 
   async def _import(self, org: UUID, import_id: UUID, lock: bool = False) -> ScheduleImport:
-    stmt = select(ScheduleImport).where(ScheduleImport.id == import_id, ScheduleImport.organization_id == org)
+    stmt = select(ScheduleImport).where(ScheduleImport.id == import_id, ScheduleImport.organization_id == org,
+      ScheduleImport.schedule_kind != "BBS")
     if lock:
       stmt = stmt.with_for_update()
     imp = (await self.session.execute(stmt)).scalar_one_or_none()
@@ -286,7 +287,8 @@ class ScheduleService:
 
   async def list_imports(self, org: UUID, project_id: UUID, status: str | None = None) -> list[ScheduleImport]:
     await self._require_project(org, project_id)
-    stmt = select(ScheduleImport).where(ScheduleImport.organization_id == org, ScheduleImport.project_id == project_id)
+    stmt = select(ScheduleImport).where(ScheduleImport.organization_id == org, ScheduleImport.project_id == project_id,
+      ScheduleImport.schedule_kind != "BBS")
     if status:
       stmt = stmt.where(ScheduleImport.status == status)
     return list((await self.session.execute(stmt.order_by(ScheduleImport.created_at.desc()))).scalars().all())

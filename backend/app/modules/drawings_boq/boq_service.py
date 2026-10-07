@@ -17,6 +17,7 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.engine.measure.engine import COUNT_ROLES, VOLUME_ROLES
 from app.modules.drawings_boq.boq_repository import BOQEngineRepository
 from app.modules.drawings_boq import export as exp
+from app.modules.drawings_boq.rebar import rebar_repository as rebar_repo
 
 _LOCKED = frozenset({"CALCULATING", "APPROVED", "ISSUED", "SUPERSEDED", "ARCHIVED"})
 _NON_WAIVABLE = logic.NON_WAIVABLE_CODES
@@ -24,7 +25,7 @@ _COPY = ("material_name", "category", "unit", "quantity", "unit_rate", "rate_sou
   "work_item_code", "canonical_unit", "unit_factor", "net_quantity", "waste_factor_applied", "confidence",
   "level_id", "material_grade", "item_key", "calculation_formula", "source_element_count")
 _EXPORTS = {"CONTRACT_BOQ": {"pdf", "xlsx"}, "PROCUREMENT": {"xlsx"}, "MEASUREMENT_BOOK": {"pdf", "xlsx"},
-  "AUDIT_REPORT": {"pdf"}}
+  "AUDIT_REPORT": {"pdf"}, "BBS": {"xlsx"}}
 
 def _now():
   return datetime.now(timezone.utc)
@@ -513,11 +514,13 @@ class BOQEngineService:
     if item is None:
       raise TraceException("BOQ item not found.", status_code=404, code="BOQ_ITEM_NOT_FOUND")
     ledger = await self.repo.ledger_for_item(item_id, org)
-    deductions = []
+    deductions, bar_marks = [], []
     if ledger:
       deductions = await self.repo.deductions_for_solids(ledger[0].run_id, org, [l.solid_id for l in ledger])
+      steel = [l.solid_id for l in ledger if l.formula_code in ("REBAR_BBS_WEIGHT", "REBAR_RULE_ESTIMATE")]
+      bar_marks = await rebar_repo.marks_for_solids(self.session, org, ledger[0].run_id, steel)
     return {"item": item, "ledger": ledger, "deductions": deductions,
-      "adjustments": await self.repo.list_adjustments(item_id, org)}
+      "adjustments": await self.repo.list_adjustments(item_id, org), "bar_marks": bar_marks}
 
   async def ledger_for_version(self, org: UUID, version_id: UUID, *, limit: int, after, work_item_code):
     await self._engine_version(org, version_id)
@@ -676,6 +679,8 @@ class BOQEngineService:
       data = (exp.build_contract_boq_pdf if fmt == "pdf" else exp.build_contract_boq_xlsx)(snapshot, rows, version_meta, company)
     elif kind == "PROCUREMENT":
       data = exp.build_procurement_xlsx(snapshot, rows, version_meta, company)
+    elif kind == "BBS":
+      data = await self._bbs_workbook(org, snap, snapshot, version_meta, company)
     elif kind == "MEASUREMENT_BOOK":
       evidence = await self._evidence(org, version.id)
       data = (exp.build_measurement_book_pdf if fmt == "pdf" else exp.build_measurement_book_xlsx)(
@@ -697,6 +702,25 @@ class BOQEngineService:
     await self.session.commit()
     media = "application/pdf" if fmt == "pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return data, media, filename
+   
+  async def _bbs_workbook(self, org: UUID, snap, snapshot: dict, version_meta: dict, company: str) -> bytes:
+    if snap.calculation_run_id is None:
+      raise TraceException("This snapshot was not built from a calculation run.", status_code=422, code="NOT_ENGINE_VERSION")
+    marks = await rebar_repo.marks_for_run(self.session, org, snap.calculation_run_id)
+    scheduled = [m for m in marks if m.provenance != "RULE_ESTIMATE"]
+    
+    if not scheduled:
+      raise TraceException("There is no scheduled steel to export. Estimated steel is never exported as a bar "
+        "bending schedule; import and confirm a bar schedule, then re-run the calculation.",
+        status_code=409, code="BBS_NO_SCHEDULED_STEEL")
+      
+    estimated_kg = sum((m.total_kg for m in marks if m.provenance == "RULE_ESTIMATE"), Decimal("0"))
+    names = await self.repo.element_names([m.element_id for m in scheduled if m.element_id])
+    levels = await self.repo.level_names(org, [m.level_id for m in scheduled if m.level_id])
+    rows = [{**_row_dict(m),
+      "member": names.get(m.element_id) if m.element_id else ((m.trace or {}).get("member_mark") or "-"),
+      "level": levels.get(m.level_id, "-") if m.level_id else "-"} for m in scheduled]
+    return exp.build_bbs_xlsx(snapshot, rows, version_meta, company, estimated_kg)
 
   async def _evidence(self, org: UUID, version_id: UUID) -> dict[str, list[dict]]:
     links = await self.repo.link_pairs(version_id, org)
@@ -717,17 +741,17 @@ class BOQEngineService:
         steps = []
         for s in (l.trace or {}).get("steps", []):
           op = s.get("op") or ""
-          qty = s.get("m3") or s.get("m2") or s.get("m")
+          step_qty = s.get("m3") or s.get("m2") or s.get("m")
           if op.startswith("gross"):
-            steps.append(f"gross {qty} {l.unit}")
+            steps.append(f"gross {step_qty} {l.unit}")
           elif op == "deduction":
-            steps.append(f"less {qty} {l.unit} ({s.get('type')}) {s.get('note') or s.get('rule') or ''}".strip())
+            steps.append(f"less {step_qty} {l.unit} ({s.get('type')}) {s.get('note') or s.get('rule') or ''}".strip())
           elif op == "count":
             steps.append(f"count {s['nos']}")
           elif op == "bar_mark":
             steps.append(f"bar {s['mark']} dia {s['dia_mm']} x {s['count']} = {s['kg']} kg")
           elif op == "schedule_quantity":
-            steps.append(f"schedule {qty or s.get(l.unit)} {l.unit}")
+            steps.append(f"schedule {step_qty or s.get(l.unit)} {l.unit}")
         steps.append(f"net {(l.trace or {}).get('net')}")
         lines.append({"element": names.get(l.element_id, "-") if l.element_id else (l.trace or {}).get("label", "-"),
           "level": levels.get(l.level_id, "-") if l.level_id else "-",

@@ -544,7 +544,6 @@ class BarMarkResponse(BaseModel):
   review_status: str
   schedule_row_id: UUID | None
   trace: dict
-  warnings: list
   engine_version: str
   warnings: list[str]
   
