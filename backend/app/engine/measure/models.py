@@ -95,6 +95,7 @@ class CalculationResult:
   unmapped_by_type: dict = field(default_factory=dict)
   deductions: list = field(default_factory=list)
   bar_marks: list = field(default_factory=list)
+  stats: dict = field(default_factory=dict)
   
 @dataclass(frozen=True)
 class Prism:

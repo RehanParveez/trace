@@ -546,7 +546,8 @@ class BarMarkResponse(BaseModel):
   trace: dict
   warnings: list
   engine_version: str
-
+  warnings: list[str]
+  
 class RebarScheduleRowResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
 

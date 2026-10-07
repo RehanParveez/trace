@@ -36,6 +36,7 @@ export function SpaceDetailDialog({ projectId, spaceId, drawings, canManage, can
   const [workItemTouched, setWorkItemTouched] = useState(false);
   const [finishName, setFinishName] = useState("");
   const [height, setHeight] = useState("");
+  const [deduct, setDeduct] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingBoundaries, setEditingBoundaries] = useState(false);
 
@@ -50,14 +51,15 @@ export function SpaceDetailDialog({ projectId, spaceId, drawings, canManage, can
   function edit(f: SpaceFinishResponse) {
     setSurface(f.surface); setWorkItem(f.work_item_code); setWorkItemTouched(true);
     setFinishName(f.finish_name ?? ""); setHeight(f.height_mm !== null ? String(Number(f.height_mm)) : ""); setError(null);
+    setDeduct(f.deduct_openings ?? true);
   }
 
   function submit() {
     setError(null);
     upsert.mutate(
-      { spaceId, payload: { surface, work_item_code: workItem.trim(), finish_name: finishName.trim() || null, height_mm: height === "" ? null : Number(height) } },
+      { spaceId, payload: { surface, work_item_code: workItem.trim(), finish_name: finishName.trim() || null, height_mm: height === "" ? null : Number(height), deduct_openings: deduct } },
       {
-        onSuccess: () => { showToast({ tone: "success", title: t("spaces.finish.saved", "Finish saved") }); setFinishName(""); setHeight(""); },
+        onSuccess: () => { showToast({ tone: "success", title: t("spaces.finish.saved", "Finish saved") }); setFinishName(""); setHeight(""); setDeduct(true); },
         onError: (e) => setError(getApiErrorMessage(e, t("spaces.finish.error", "Couldn't save this finish."))),
       },
     );
@@ -109,6 +111,7 @@ export function SpaceDetailDialog({ projectId, spaceId, drawings, canManage, can
                   <table className="w-full min-w-[720px] text-left">
                     <thead className="bg-[var(--color-surface-muted)]"><tr>
                       <th className={th}>Surface</th><th className={th}>Work item</th><th className={th}>Finish</th><th className={`${th} text-right`}>Height mm</th>
+                      <th className={th}>Openings</th>
                       <th className={th}>Source</th><th className={`${th} text-right`}>Confidence</th><th className={th}>Review</th>{canManageFinish ? <th className={`${th} text-right`}>Actions</th> : null}
                     </tr></thead>
                     <tbody>
@@ -118,6 +121,11 @@ export function SpaceDetailDialog({ projectId, spaceId, drawings, canManage, can
                           <td className="px-3 py-2.5 font-mono text-[12px]">{f.work_item_code}</td>
                           <td className="px-3 py-2.5 text-[12.5px] text-[var(--color-text-secondary)]">{f.finish_name ?? "—"}</td>
                           <td className="px-3 py-2.5 text-right font-mono text-[12.5px]">{f.height_mm !== null ? Number(f.height_mm) : "—"}</td>
+                          <td className="px-3 py-2.5 text-[12px]">
+                            {f.surface === "FLOOR" || f.surface === "CEILING"
+                              ? "—"
+                              : f.deduct_openings ? t("common.yes", "Yes") : t("common.no", "No")}
+                          </td>
                           <td className="px-3 py-2.5"><Badge tone={f.source === "MANUAL" ? "blue" : "slate"}>{f.source}</Badge></td>
                           <td className="px-3 py-2.5 text-right font-mono text-[12.5px]">{Math.round(Number(f.confidence) * 100)}%</td>
                           <td className="px-3 py-2.5"><Badge tone={f.review_status === "OK" ? "green" : "gold"}>{f.review_status}</Badge>{!f.is_active ? <span className="ml-1.5 text-[11px] text-[var(--color-text-muted)]">{t("spaces.inactive", "inactive")}</span> : null}</td>
@@ -151,6 +159,15 @@ export function SpaceDetailDialog({ projectId, spaceId, drawings, canManage, can
                     <Field label={t("spaces.finish.height", "Height (mm, optional)")}><input className={inputClass} type="number" step="any" min="0" value={height} onChange={(e) => setHeight(e.target.value)} /></Field>
                   </div>
                   <p className="text-[11.5px] text-[var(--color-text-muted)]">{t("spaces.finish.unitHint", "{{surface}} finishes are measured in {{unit}}. The work item must use the same unit.", { surface: surface[0] + surface.slice(1).toLowerCase(), unit: SURFACE_UNIT[surface] === "m2" ? "m²" : "m" })}</p>
+                  <label className="flex items-center gap-2 text-[12.5px] text-[var(--color-text-secondary)]">
+                    <input
+                      type="checkbox"
+                      checked={deduct && surface !== "FLOOR" && surface !== "CEILING"}
+                      disabled={surface === "FLOOR" || surface === "CEILING"}
+                      onChange={(e) => setDeduct(e.target.checked)}
+                    />
+                    {t("spaces.finish.deductOpenings", "Deduct doors and windows")}
+                  </label>
                   {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
                   <div className="flex justify-end">
                     <Button variant="primary" onClick={submit} disabled={upsert.isPending || !workItem.trim() || (height !== "" && !(Number(height) > 0))}>{upsert.isPending ? t("common.saving", "Saving…") : t("spaces.finish.save", "Save finish")}</Button>

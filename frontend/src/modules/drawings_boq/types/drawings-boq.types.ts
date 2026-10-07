@@ -359,7 +359,7 @@ export interface CalculationRun {
   error_code?: string | null;
   error_message?: string | null;
   settings?: Record<string, unknown>;
-  stats?: Record<string, unknown>;
+  stats?: RunStats;
   created_at?: string;
   updated_at?: string;
 }
@@ -378,7 +378,7 @@ export interface CalculationRunResponse {
   completed_at: string | null;
   error_code: string | null;
   error_message: string | null;
-  stats: Record<string, unknown>;
+  stats: RunStats;
   created_at: string;
 }
 
@@ -455,7 +455,7 @@ export interface LedgerRow {
   source_kind: LedgerSourceKind;
   confidence: number | string;
   formula_code: string;
-  trace: Record<string, unknown>;
+  trace: LedgerTrace;
   warnings: unknown[];
   engine_version: string;
 }
@@ -472,7 +472,7 @@ export interface LedgerRowResponse {
   source_kind: string;
   confidence: number | string;
   formula_code: string;
-  trace: Record<string, unknown>;
+  trace: LedgerTrace;
   warnings: string[];
   engine_version: string;
 }
@@ -803,6 +803,7 @@ export interface SpaceFinishResponse {
   confidence: Num;
   review_status: string;
   is_active: boolean;
+  deduct_openings: boolean;
 }
 
 export interface BoundaryResponse {
@@ -852,6 +853,7 @@ export interface SpaceFinishCreateRequest {
   work_item_code: string;
   finish_name?: string | null;
   height_mm?: number | null;
+  deduct_openings?: boolean;
 }
 
 export interface FinishPreviewLine {
@@ -863,7 +865,7 @@ export interface FinishPreviewLine {
   formula_code: string;
   source_kind: string;
   warnings: string[];
-  steps: Record<string, unknown>[];
+  steps: TraceStep[];
 }
 
 export interface FinishPreviewResolved {
@@ -1034,6 +1036,115 @@ export interface BoundaryCandidate {
   level_id: string | null;
 }
 
+export interface LedgerTrace {
+  formula_code: FormulaCode | string;
+  engine_version: string;
+  convention: string | null;
+  rule_set: { code: string; version: number };
+  inputs: Record<string, unknown>;
+  steps: TraceStep[];
+  net: Record<string, string>;
+  rounding: string;
+  label?: string;
+}
+
+export interface ElementPlacement {
+  depth_mm?: Num | null;
+  plan_mm?: [Num, Num][] | null;
+  z_min_mm?: Num | null;
+  z_max_mm?: Num | null;
+  [key: string]: unknown;
+}
+
+export type ElementProfile =
+  | { kind: "RECT"; x_dim: Num; y_dim: Num }
+  | { kind: "CIRCLE"; radius: Num }
+  | { kind: "POLYGON"; points_mm: [Num, Num][] };
+
+export interface OpeningStats {
+  hosted: number; deducted: number; ignored: number;
+  size_missing: number; unhosted: number; qto_walls_skipped: number;
+}
+
+export interface AllocationStats {
+  convention?: string;
+  participating?: number;
+  overlaps?: number;
+  approximate_solids?: number;
+  components_checked?: number;
+  conservation_failures?: number;
+  openings?: OpeningStats;
+}
+
+export interface RebarStats {
+  schedule_rows?: number; schedule_marks?: number; matched?: number; unmatched?: number;
+  estimated_marks?: number; estimate_suppressed?: number;
+  total_kg?: string; tier2_kg?: string; tier3_kg?: string; covered_families?: string[];
+}
+
+export interface RunStats {
+  convention?: string;
+  promoted?: unknown;
+  spaces?: number;
+  rejected_total?: number;
+  rejected_sample?: { element_id: string; ifc_type: string; code: string }[];
+  finishes_skipped?: Record<string, number>;
+  boq?: Record<string, string>;
+  boq_error?: string;
+  elements_in?: number;
+  participating?: number;
+  overlaps?: number;
+  approximate_solids?: number;
+  components_checked?: number;
+  conservation_failures?: number;
+  openings?: OpeningStats;
+  schedule_rows?: number; schedule_marks?: number; matched?: number; unmatched?: number;
+  estimated_marks?: number; estimate_suppressed?: number;
+  total_kg?: string; tier2_kg?: string; tier3_kg?: string; covered_families?: string[];
+  allocation?: AllocationStats;
+  skipped_by_role?: Record<string, number>;
+  unmapped_by_type?: Record<string, number>;
+  rejected?: { element_id: string; ifc_type: string; code: string; message: string }[];
+  [key: string]: unknown;
+  rebar?: RebarStats;
+  rebar_skipped?: Record<string, number>;
+  finish_skipped?: Record<string, number>
+}
+
+export interface RunStats {
+  
+}
+
+export interface BarMarkResponse {
+  id?: string;
+  solid_id: string;
+  element_id: string | null;
+  level_id: string | null;
+  mark: string;
+  role: string;
+  shape_code: string;
+  shape_params: Record<string, Num>;
+  designation: string | null;
+  dia_mm: Num;
+  grade: string | null;
+  count: number;
+  spacing_mm: Num | null;
+  cut_len_mm: Num;
+  stock_len_mm: Num | null;
+  pieces: number;
+  lap_count: number;
+  lap_len_mm: Num | null;
+  total_len_m: Num;
+  unit_weight_kg_m: Num;
+  total_kg: Num;
+  provenance: RebarProvenance;
+  confidence: Num;
+  review_status: ItemReviewStatus;
+  schedule_row_id: string | null;
+  trace: { steps: TraceStep[]; row_no?: number; member_mark?: string | null };
+  warnings: string[];
+}
+
 export type BOQLifecycle =
   | "DRAFT"
   | "CALCULATING"
@@ -1124,3 +1235,25 @@ export type TransitionAction =
   | "archive";
 
 export type Page<T> = CursorPage<T>;
+
+export type GeometryKind =
+  | "EXTRUDED_PROFILE" | "AXIS_SWEPT" | "BOX_ONLY" | "QTO_ONLY" | "UNSUPPORTED";
+
+export type FormulaCode =
+  | "SOLID_NET_VOLUME" | "OPENING_COUNT"
+  | "FINISH_FLOOR_AREA" | "FINISH_CEILING_AREA" | "FINISH_WALL_AREA_NET"
+  | "FINISH_DADO_AREA_NET" | "FINISH_SKIRTING_LENGTH_NET"
+  | "SCHEDULE_LINE_M3" | "SCHEDULE_LINE_M2" | "SCHEDULE_LINE_M"
+  | "SCHEDULE_LINE_KG" | "SCHEDULE_LINE_NOS"
+  | "REBAR_BBS_WEIGHT" | "REBAR_RULE_ESTIMATE";
+
+export type DeductionRuleCode =
+  | "OPENING_DEDUCT" | "OPENING_PARTIAL" | "OPENING_IGNORED" | "OPENING_SIZE_MISSING"
+  | (string & {});
+
+export type RebarProvenance = "SCHEDULE_IMPORT" | "RULE_ESTIMATE";
+
+export interface TraceStep {
+  op: string; 
+  [key: string]: unknown;
+}

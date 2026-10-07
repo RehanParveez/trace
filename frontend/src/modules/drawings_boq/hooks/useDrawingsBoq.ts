@@ -4,7 +4,7 @@ import {isDrawingInProgress, openBlobInNewTab, triggerBlobDownload,
 } from "../utils/drawings-boq.utils";
 import type {AdjustmentCreateRequest, BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQVersion, BOQVersionUpdateRequest, CalculationRunCreateRequest, DeductionType,
   Drawing, DrawingElementFilters, LabourRate, LabourRateCreateRequest, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryEntry, MaterialLibraryUpdateRequest, ReviewIssueUpdateRequest,
-  ReviewStatus, TransitionRequest, DeductionKind, DeductionResponse, LedgerRowResponse, QuantitySolidResponse,
+  ReviewStatus, TransitionRequest, DeductionKind, DeductionResponse, LedgerRowResponse, QuantitySolidResponse, BarMarkResponse
 } from "../types/drawings-boq.types";
 
 export const drawingsBoqKeys = {
@@ -76,6 +76,8 @@ export const drawingsBoqKeys = {
     [...drawingsBoqKeys.all, "trace", itemId] as const,
   boqItemCounts: () =>
     [...drawingsBoqKeys.all, "boq-item-counts"] as const,
+  runBarMarks: (runId: string, params: Record<string, unknown>) =>
+    [...drawingsBoqKeys.all, "run-bar-marks", runId, params] as const,
   revisions: (drawingId: string) =>
     [...drawingsBoqKeys.all, "revisions", drawingId] as const,
   sourceElements: (itemId: string) =>
@@ -633,6 +635,32 @@ export function useReviseDrawing(
       });
     },
   });
+}
+
+export function useRunBarMarks(
+  runId: string | undefined,
+  params: { solid_id?: string | null } = {},
+) {
+  const query = useInfiniteQuery({
+    queryKey: drawingsBoqKeys.runBarMarks(runId ?? "", params),
+    queryFn: ({ pageParam }) =>
+      drawingsBoqApi.listRunBarMarks(runId as string, {
+        ...params,
+        after: pageParam,
+        limit: 200,
+      }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    enabled: Boolean(runId),
+  });
+
+  return {
+    ...query,
+    rows: (query.data?.pages.flatMap((p) => p.items) ?? []) as BarMarkResponse[],
+    hasNextPage: query.hasNextPage,
+    isFetchingNextPage: query.isFetchingNextPage,
+    fetchNextPage: query.fetchNextPage,
+  };
 }
 
 export function useBOQItemSourceElements(

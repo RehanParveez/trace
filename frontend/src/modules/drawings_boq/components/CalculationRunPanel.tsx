@@ -9,6 +9,8 @@ import {formatCalculationRunStatus, formatQuantity, getCalculationRunTone,
 import type { CalculationRun } from "../types/drawings-boq.types";
 import type {LedgerRowResponse, QuantitySolidResponse, DeductionResponse,
 } from "../types/drawings-boq.types";
+import { RunStatsSummary } from "./RunStatsSummary";
+import { RebarMarksPanel } from "./RebarMarksPanel";
 
 interface CalculationRunPanelProps {
   projectId: string;
@@ -22,7 +24,8 @@ type View =
   | "overview"
   | "solids"
   | "ledger"
-  | "deductions";
+  | "deductions"
+  | "rebar";
 
 export function CalculationRunPanel({
   projectId,
@@ -279,6 +282,12 @@ export function CalculationRunPanel({
                     "boq.calculationRun.tabDeductions",
                   ),
                 ],
+                [
+                  "rebar",
+                   t(
+                    "boq.calculationRun.tabRebar", "Rebar"
+                   ),
+                 ],
               ] as Array<[View, string]>
             ).map(
               ([key, label]) => (
@@ -344,6 +353,12 @@ export function CalculationRunPanel({
               runId={run.id}
             />
           ) : null}
+
+          {view === "rebar" ?
+           <RebarMarksPanel
+             runId={run.id}
+           />
+           : null}
         </>
       ) : null}
     </Panel>
@@ -404,15 +419,14 @@ function RunOverview({
         ))
       )}
 
-      {Object.keys(run.stats ?? {})
-        .length > 0 ? (
-        <pre className="overflow-x-auto rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-[11px] text-[var(--color-text-secondary)]">
-          {JSON.stringify(
-            run.stats,
-            null,
-            2,
-          )}
-        </pre>
+      <RunStatsSummary stats={run.stats} />
+      {Object.keys(run.stats ?? {}).length > 0 ? (
+        <details>
+          <summary className="cursor-pointer text-[11.5px] text-[var(--color-text-muted)]">Raw stats</summary>
+          <pre className="mt-2 overflow-x-auto rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-[11px] text-[var(--color-text-secondary)]">
+            {JSON.stringify(run.stats, null, 2)}
+          </pre>
+        </details>
       ) : null}
     </div>
   );

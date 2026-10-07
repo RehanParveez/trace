@@ -7,6 +7,7 @@ import {formatPrecise, isLowConfidence, warningInfo,
 } from "../utils/drawings-boq.utils";
 import type { DeductionKind } from "../types/drawings-boq.types";
 import { useTranslation } from "react-i18next";
+import { RebarMarksPanel } from "./RebarMarksPanel";
 
 const DEDUCTION_TYPES: DeductionKind[] = [
   "OVERLAP_ALLOCATION",
@@ -21,7 +22,7 @@ const selectCls =
 const th =
   "px-3 py-2.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]";
 
-type Tab = "solids" | "ledger" | "deductions";
+type Tab = "solids" | "ledger" | "deductions" | "rebar";
 
 export function RunDetailsPanel({ runId }: { runId: string }) {
   const { t } = useTranslation();
@@ -40,8 +41,8 @@ export function RunDetailsPanel({ runId }: { runId: string }) {
     tab === "deductions" ? runId : undefined,
     { deduction_type: dedType || undefined },
   );
-  const current =
-    tab === "solids" ? solids : tab === "ledger" ? ledger : deductions;
+  
+  const current = tab === "solids" ? solids : tab === "deductions" ? deductions : ledger;
 
   const tabCls = (active: boolean) =>
     `rounded-[7px] border px-3 py-1.5 text-[12px] font-semibold transition ${
@@ -51,29 +52,34 @@ export function RunDetailsPanel({ runId }: { runId: string }) {
     }`;
 
   const tabLabel = (k: Tab) => {
+    if (k === "rebar") return t("boq.calculationRun.tabRebar", "Rebar");
     if (k === "ledger") return t("boq.calculationRun.tabLedger");
     if (k === "solids") return t("boq.calculationRun.tabSolids");
     return t("boq.calculationRun.tabDeductions");
   };
 
   const loadingLabel =
-    tab === "solids"
-      ? t("boq.calculationRun.solidsLoading")
-      : tab === "ledger"
-        ? t("boq.calculationRun.ledgerLoading")
-        : t("boq.calculationRun.deductionsLoading");
+   tab === "solids"
+    ? t("boq.calculationRun.solidsLoading")
+    : tab === "ledger"
+      ? t("boq.calculationRun.ledgerLoading")
+      : tab === "deductions"
+        ? t("boq.calculationRun.deductionsLoading")
+        : t("boq.calculationRun.rebarLoading", "Loading rebar marks...");
 
   const errorTitle =
-    tab === "solids"
-      ? t("boq.calculationRun.solidsLoadError")
-      : tab === "ledger"
-        ? t("boq.calculationRun.ledgerLoadError")
-        : t("boq.calculationRun.deductionsLoadError");
+   tab === "solids"
+    ? t("boq.calculationRun.solidsLoadError")
+    : tab === "ledger"
+      ? t("boq.calculationRun.ledgerLoadError")
+      : tab === "deductions"
+        ? t("boq.calculationRun.deductionsLoadError")
+        : t("boq.calculationRun.rebarLoadError", "Unable to load rebar marks");
 
   return (
     <div className="border-t border-[var(--color-border)]">
       <div className="flex flex-wrap items-center gap-2 p-4">
-        {(["ledger", "solids", "deductions"] as Tab[]).map((k) => (
+        {(["ledger", "solids", "deductions", "rebar"] as Tab[]).map((k) => (
           <button
             key={k}
             type="button"
@@ -128,21 +134,21 @@ export function RunDetailsPanel({ runId }: { runId: string }) {
       </div>
 
       {current.isLoading ? (
-        <LoadingState label={loadingLabel} />
+       <LoadingState label={loadingLabel} />
       ) : current.isError ? (
-        <ErrorState
-          title={errorTitle}
-          onRetry={() => void current.refetch()}
+       <ErrorState
+         title={errorTitle}
+         onRetry={() => void current.refetch()}
         />
       ) : current.rows.length === 0 ? (
-        <EmptyState
-          icon="info"
-          title={t("boq.calculationRun.noRowsFound")}
-          description={t(
-            "boq.calculationRun.noRowsDesc",
-            "Nothing matches this filter.",
-          )}
-        />
+       <EmptyState
+         icon="info"
+         title={t("boq.calculationRun.noRowsFound")}
+         description={t(
+          "boq.calculationRun.noRowsDesc",
+          "Nothing matches this filter.",
+        )}
+       />
       ) : (
         <TableShell>
           {tab === "solids" ? (
@@ -336,20 +342,20 @@ export function RunDetailsPanel({ runId }: { runId: string }) {
         </TableShell>
       )}
 
-      {current.hasNextPage ? (
-        <div className="flex justify-center border-t border-[var(--color-border)] p-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={current.isFetchingNextPage}
-            onClick={() => void current.fetchNextPage()}
-          >
+      {tab !== "rebar" && current.hasNextPage ? (
+       <div className="flex justify-center border-t border-[var(--color-border)] p-3">
+         <Button
+           variant="ghost"
+           size="sm"
+           disabled={current.isFetchingNextPage}
+           onClick={() => void current.fetchNextPage()}
+         >
             {current.isFetchingNextPage
-              ? t("common.loading")
-              : t("boq.calculationRun.loadMore")}
-          </Button>
+            ? t("common.loading")
+            : t("boq.calculationRun.loadMore")}
+         </Button>
         </div>
-      ) : null}
+       ) : null}
     </div>
   );
 }

@@ -5,7 +5,7 @@ import type {Adjustment, AdjustmentCreateRequest, BOQBuildResponse, BOQCustomIte
   DrawingOrganizationSummary, CalculationRunResponse, BOQVersionResponse, TransitionAction, DeductionKind, DeductionResponse, LedgerRowResponse, Page, QuantitySolidResponse,
   BoundaryCandidate, BulkReviewResponse, ConfirmImportResponse, FinishPreviewResponse, LevelOption, RematchResponse, RowDecision, ScheduleFromPdfRequest, ScheduleImportDetailResponse, ScheduleImportResponse, ScheduleKind, 
   ScheduleManualCreateRequest, ScheduleRowCreateRequest, ScheduleRowResponse, ScheduleRowUpdateRequest, SpaceCreateRequest, SpaceDetailResponse, SpaceFinishCreateRequest, SpaceFinishResponse,
-   SpaceListFilters, SpaceResponse, SpaceUpdateRequest,
+   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse
 } from "../types/drawings-boq.types";
 
 function getNextCursor(response: { headers: Record<string, unknown> }): string | null {
@@ -55,6 +55,16 @@ export const drawingsBoqApi = {
 
     return response.data;
   },
+
+  async listRunBarMarks(runId: string,
+   params: { limit?: number; after?: string | null; solid_id?: string | null } = {},
+  ): Promise<Page<BarMarkResponse>> {
+   if (!runId) throw new Error("Run ID is required");
+   return getPage<BarMarkResponse>(
+    `/drawings-boq/calculation-runs/${runId}/bar-marks`,
+    { limit: 200, ...params },
+  );
+ },
 
   async listDrawings(projectId: string): Promise<Drawing[]> {
     if (!projectId) throw new Error("Project ID is required");

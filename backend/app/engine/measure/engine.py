@@ -10,7 +10,7 @@ from app.engine.measure.conventions import get_convention
 from app.engine.measure.intersect import find_overlaps
 from app.engine.measure.spatial import build_spatial_index
 from app.engine.measure.finishes import REINFORCEMENT_FORMULA_UNITS, apply_openings, measure_finishes, merge_openings, schedule_lines_ledger
-from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar
+from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar, self_check_rebar
 
 ENGINE_VERSION = "2026.10.5"
 
@@ -288,17 +288,37 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     alloc = allocate(ctx, convention, solids, index, find_relations(ctx, index))
   if profile is not None:
     alloc = merge_openings(alloc, apply_openings(ctx, profile, solids, ctx.openings))
+    
   ledger, unmapped = measure(ctx, solids, alloc)
   extra_solids, extra_ledger = [], []
+  finish_skipped: dict = {}
+  rebar_res = None
   if profile is not None:
     for res in (measure_finishes(ctx, profile, ctx.spaces, ctx.openings), schedule_lines_ledger(ctx, ctx.schedule_lines)):
       extra_solids += res.solids
       extra_ledger += res.ledger
-  if profile is not None:
+      for k, v in res.skipped.items():
+        finish_skipped[k] = finish_skipped.get(k, 0) + v
+        
     rebar_res = measure_rebar(ctx, profile, solids, ledger, ctx.rebar)
     extra_solids += rebar_res.solids
     extra_ledger += rebar_res.ledger
+    
   self_check(solids + extra_solids, ledger + extra_ledger, alloc)
-  
+  if rebar_res is not None:
+    rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
+    if rebar_failures:
+      raise InvariantViolation(rebar_failures)
+
+  stats = {
+    **alloc.stats,
+    **(rebar_res.stats if rebar_res else {}),
+    "rebar_skipped": rebar_res.skipped if rebar_res else {},
+    "finish_skipped": finish_skipped,
+    "skipped_by_role": skipped,
+    "unmapped_by_type": unmapped,
+    "rejected": [{"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code, "message": r.message} for r in rejected],
+  }
   return CalculationResult(solids=solids + extra_solids, ledger=ledger + extra_ledger, rejected=rejected,
-    skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=alloc.deductions)
+    skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=alloc.deductions,
+    bar_marks=rebar_res.marks if rebar_res else [], stats=stats)

@@ -9,7 +9,7 @@ from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQIt
   DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
    PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse,
    DeductionResponse, AdjustmentCreateRequest, AdjustmentResponse, BOQBuildResponse, ItemTraceResponse, ReasonRequest, ReviewIssueResponse, ReviewIssueUpdateRequest, SnapshotItemResponse, SnapshotResponse, 
-   TransitionRequest
+   TransitionRequest, BarMarkResponse
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.drawings_boq.calc_service import CalculationService
@@ -603,6 +603,24 @@ async def get_calculation_run(
   session: AsyncSession = Depends(get_db),
 ):
   return await CalculationService(session).get_run(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/bar-marks", response_model=list[BarMarkResponse])
+async def list_calculation_run_bar_marks(
+  run_id: UUID,
+  response: Response,
+  limit: int = Query(default=500, ge=1, le=2000),
+  after: UUID | None = Query(default=None),
+  solid_id: UUID | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  rows, next_cursor = await CalculationService(session).list_bar_marks(
+    current_user.active_membership.organization_id, run_id,
+    limit=limit, after=after, solid_id=solid_id,
+  )
+  if next_cursor:
+    response.headers["X-Next-Cursor"] = str(next_cursor)
+  return rows
 
 @router.get("/calculation-runs/{run_id}/stages", response_model=list[RunStageResponse])
 async def list_calculation_run_stages(

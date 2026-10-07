@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import {Button,EmptyState,ErrorState, LoadingState, Modal,
+import {Button,EmptyState,ErrorState, LoadingState, Modal, Badge,
 } from "../../organizations/components/OrganizationUi";
 import {useDrawingElementsPage, useDrawingLevels,
 } from "../hooks";
 import type {Drawing, NormalizationStatus,
 } from "../types/drawings-boq.types";
-import {formatQuantity,
+import {formatQuantity, elementMeasureMode,
 } from "../utils/drawings-boq.utils";
 
 interface DrawingElementsDialogProps {
@@ -239,6 +239,15 @@ export function DrawingElementsDialog({
                         "drawings.elements.normalization",
                       ),
                     },
+                    
+                    {
+                      key: "measured",
+                      label: t(
+                        "drawings.elements.measuredAs",
+                        "Measured as",
+                      ),
+                    },
+
                   ].map((header) => (
                     <th
                       key={header.key}
@@ -289,6 +298,17 @@ export function DrawingElementsDialog({
 
                     <td className="px-3 py-2.5 text-[10px]">
                       {element.normalization_status ?? "—"}
+                    </td>
+
+                    <td className="px-3 py-2.5 text-[10px]">
+                      {(() => {
+                      const mode = elementMeasureMode(element);
+                      return mode === null ? "—" : (
+                        <Badge tone={mode === "EXACT" ? "green" : mode === "APPROXIMATE" ? "gold" : "red"}>
+                          {mode === "EXACT" ? "Exact" : mode === "APPROXIMATE" ? "Bbox" : "No geometry"}
+                        </Badge>
+                       );
+                      })()}
                     </td>
                   </tr>
                 ))}

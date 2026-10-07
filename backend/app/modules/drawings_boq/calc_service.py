@@ -339,7 +339,7 @@ class CalculationService:
       await self._stage(run, "measure", measure, 70)
       await self._stage(run, "finishes", finishes, 75)
       await self._stage(run, "schedules", schedules, 78)
-      await self._skip(run, "recipes", "reinforcement", reason="not implemented in this engine version")
+      await self._skip(run, "recipes", reason="not implemented in this engine version")
       await self._stage(run, "reinforcement", reinforcement, 79)
       await self._stage(run, "self_check", check, 80)
 
@@ -404,6 +404,12 @@ class CalculationService:
     await self.get_run(organization_id, run_id)
     limit = kwargs.pop("limit")
     rows = await self.runs.list_ledger(run_id, organization_id, limit=limit, **kwargs)
+    return (rows[:limit], rows[limit - 1].id if len(rows) > limit else None)
+  
+  async def list_bar_marks(self, organization_id: UUID, run_id: UUID, **kwargs):
+    await self.get_run(organization_id, run_id)
+    limit = kwargs.pop("limit")
+    rows = await self.runs.list_bar_marks(run_id, organization_id, limit=limit, **kwargs)
     return (rows[:limit], rows[limit - 1].id if len(rows) > limit else None)
 
   async def list_solids(self, organization_id: UUID, run_id: UUID, **kwargs):

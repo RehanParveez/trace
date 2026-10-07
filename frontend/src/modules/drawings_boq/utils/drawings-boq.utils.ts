@@ -1,5 +1,5 @@
 import type {BOQLifecycle, BOQItemStatus, BOQItemType, BOQVersionStatus, CalculationRunStatus, DrawingStatus, ReviewSeverity,
-  AdjustmentResponse, EngineBlocks, EngineSeverity, ReviewIssueResponse, ScheduleImportStatus, ScheduleKind, ScheduleRowResponse, Surface,
+  AdjustmentResponse, EngineBlocks, EngineSeverity, ReviewIssueResponse, ScheduleImportStatus, ScheduleKind, ScheduleRowResponse, Surface, TraceStep, DrawingElement, ElementPlacement
 } from "../types/drawings-boq.types";
 
 export interface WarningInfo {
@@ -72,8 +72,51 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
   OPENINGS_NOT_DEDUCTED: {
     severity: "info",
     blocks: "NONE",
-    message: "Wall volumes are gross of door and window openings.",
-    fix: "Opening deductions arrive with finishes and schedules; use an adjustment if one is needed now.",
+    message: "Wall volume is gross of openings: no hosted openings were found for this wall.",
+    fix: "Check that doors and windows are hosted by this wall, or add an adjustment.",
+  },
+
+  ZERO_GROSS_VOLUME: {
+    severity: "warning",
+    blocks: "NONE",
+    message: "Gross volume rounds to zero; the element was not measured.",
+    fix: "Check profile and extrusion depth in the model.",
+  },
+
+  QTO_GEOMETRY_MISMATCH: {
+    severity: "warning", blocks: "NONE",
+    message: "Geometry volume differs from the model's Qto volume by more than 2%.",
+    fix: "Check the element in the model; the geometry volume was used.",
+  },
+
+  DECLARED_WEIGHT_MISMATCH: {
+    severity: "warning", blocks: "NONE",
+    message: "Computed bar weight differs from the weight declared in the schedule beyond tolerance.",
+    fix: "Check bar dimensions, count and shape code in the bar schedule.",
+  },
+
+  MATCHED_ELEMENT_NOT_MEASURED: {
+    severity: "warning", blocks: "NONE",
+    message: "Schedule row is matched to an element that was not measured; steel is held separately.",
+    fix: "Check the matched element's geometry and role.",
+  },
+
+  UNIT_WEIGHT_COMPUTED: {
+    severity: "info", blocks: "NONE",
+    message: "No bar size in the table; unit weight computed as d²/162.2.",
+    fix: "Add this bar size to the bar size table.",
+  },
+
+  MIXED_GRADES: {
+    severity: "warning", blocks: "NONE",
+    message: "Bar marks on this element use different steel grades.",
+    fix: null,
+  },
+
+  LAP_LENGTH_UNKNOWN: {
+    severity: "warning", blocks: "NONE",
+    message: "Bars exceed stock length but no lap rule applies; laps were not added.",
+    fix: "Add a lap rule for this element scope to the rule set.",
   },
 
   SAME_ROLE_OVERLAP: {
@@ -81,6 +124,12 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
     blocks: "NONE",
     message: "Elements of the same role overlap; the lowest element id owns the shared volume.",
     fix: "Check these overlaps in the model.",
+  },
+
+  STEEL_ESTIMATED: {
+    severity: "warning", blocks: "NONE",
+    message: "Steel is estimated from a kg/m³ rule, not a bar schedule.",
+    fix: "Import a bar bending schedule to replace the estimate.",
   },
 
   ALLOCATION_APPROXIMATE: {
@@ -197,6 +246,32 @@ const SEVERITY_RANK: Record<string, number> = {
 
 export const severityRank = (severity: string): number =>
   SEVERITY_RANK[severity] ?? 3;
+
+export const FORMULA_UNIT: Record<string, string> = {
+  SOLID_NET_VOLUME: "m3", OPENING_COUNT: "nos",
+  FINISH_FLOOR_AREA: "m2", FINISH_CEILING_AREA: "m2",
+  FINISH_WALL_AREA_NET: "m2", FINISH_DADO_AREA_NET: "m2",
+  FINISH_SKIRTING_LENGTH_NET: "m",
+  SCHEDULE_LINE_M3: "m3", SCHEDULE_LINE_M2: "m2", SCHEDULE_LINE_M: "m",
+  SCHEDULE_LINE_KG: "kg", SCHEDULE_LINE_NOS: "nos",
+  REBAR_BBS_WEIGHT: "kg", REBAR_RULE_ESTIMATE: "kg",
+};
+
+export const DEDUCTION_RULE_LABEL: Record<string, string> = {
+  OPENING_DEDUCT: "Opening deducted",
+  OPENING_PARTIAL: "Opening partly deducted",
+  OPENING_IGNORED: "Opening below threshold",
+  OPENING_SIZE_MISSING: "Opening size missing",
+};
+
+export const TRACE_OP_LABEL: Record<string, string> = {
+  gross_volume: "Gross volume", deduction: "Deduction", net_volume: "Net volume",
+  gross_area: "Gross area", gross_length: "Gross length", net: "Net", count: "Count",
+  schedule_quantity: "Schedule quantity", declared_cut_length: "Declared cut length",
+  segments: "Segment total", bend_deduction: "Bend deduction", hook_allowance: "Hook allowance",
+  laps: "Laps", weight: "Weight", declared_weight: "Declared weight",
+  bar_mark: "Bar mark", intensity: "Steel intensity",
+};
 
 export function formatDrawingStatus(
   status: DrawingStatus,
@@ -661,6 +736,38 @@ export function lifecycleTone(
   }
 }
 
+export function traceStepValue(step: TraceStep): { value: string; unit: string } | null {
+  for (const unit of ["m3", "m2", "kg", "nos", "m", "mm"]) {
+    const v = step[unit];
+    if (typeof v === "string" || typeof v === "number") return { value: String(v), unit };
+  }
+  return null;
+}
+
+export type MeasureMode = "EXACT" | "APPROXIMATE" | "NONE";
+
+export function traceStepDetail(step: TraceStep): string {
+  const used = traceStepValue(step)?.unit;
+  return Object.entries(step)
+    .filter(([k, v]) => k !== "op" && k !== used && v !== null && v !== undefined && v !== "")
+    .map(([k, v]) => {
+      const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+      return `${k.replace(/_/g, " ")}: ${k.endsWith("_id") ? s.slice(0, 8) : s}`;
+    })
+    .join(" · ");
+}
+
+export function elementMeasureMode(el: DrawingElement): MeasureMode | null {
+  const b = [el.bbox_min_x_mm, el.bbox_min_y_mm, el.bbox_min_z_mm,
+    el.bbox_max_x_mm, el.bbox_max_y_mm, el.bbox_max_z_mm];
+  if (el.placement === undefined && b.every((v) => v === undefined)) return null;
+  const pl = (el.placement ?? {}) as ElementPlacement;
+  if ((pl.plan_mm?.length ?? 0) >= 3 && pl.z_min_mm != null && pl.z_max_mm != null) return "EXACT";
+  return b.every((v) => v != null) ? "APPROXIMATE" : "NONE";
+}
+
+export const isRebarProvenanceEstimate = (p: string) => p === "RULE_ESTIMATE";
+
 export const SURFACES: readonly Surface[] = ["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO"];
 
 export const SURFACE_UNIT: Record<Surface, "m2" | "m"> = {
@@ -759,6 +866,10 @@ export function rowConfirmBlocker(r: ScheduleRowResponse): string | null {
     return "Set the surface (floor, wall, ceiling, skirting or dado).";
   if (r.canonical_unit === null || r.canonical_quantity === null)
     return "The unit or quantity is missing or not recognised.";
+  if (!linked && r.canonical_unit === "nos" &&
+    Number(r.canonical_quantity) !== Math.floor(Number(r.canonical_quantity))
+  )
+  return "Count (nos) must be a whole number.";
   if (!linked && Number(r.canonical_quantity) <= 0)
     return "The quantity must be greater than zero.";
   return null;
