@@ -346,13 +346,13 @@ async def seed_drawings_boq_rules(session: AsyncSession) -> None:
  
 async def main(): 
   async with AsyncSessionLocal() as session: 
+    from app.dependencies.tenancy import scope_session_as_platform_admin
+    await scope_session_as_platform_admin(session) 
     await seed_module_permissions(session, DRAWINGS_BOQ_PERMISSIONS) 
     await seed_material_library(session) 
     await seed_labour_rates(session) 
-    await seed_drawings_boq_rules(session) 
-    await seed_standards(session)
-    await seed_finish_defaults(session)
     await seed_rebar_defaults(session)
+    await seed_standards(session)
     await session.commit() 
   print( 
     "Drawings & BOQ module seeding completed successfully." 

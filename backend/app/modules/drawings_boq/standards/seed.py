@@ -8,10 +8,21 @@ from app.modules.drawings_boq.models import (MeasurementConvention, AssemblyReci
 from decimal import Decimal
 from uuid import uuid4
 from app.engine.measure.formulas import FORMULAS
+from sqlalchemy import select
+from app.modules.drawings_boq.models import FinishRule
+from app.modules.drawings_boq.finish_seed import finish_rule_rows, seed_finish_defaults
+from app.modules.drawings_boq.rebar.rebar_seed import estimate_rule_rows
+
+async def _missing_defaults(session: AsyncSession, rule_set_id) -> bool:
+  has_finish = (await session.execute(select(FinishRule.id).where(FinishRule.rule_set_id == rule_set_id).limit(1))).first()
+  has_estimate = (await session.execute(select(ReinforcementRule.id).where(
+    ReinforcementRule.rule_set_id == rule_set_id, ReinforcementRule.bar_role == "ESTIMATE").limit(1))).first()
+  return has_finish is None or has_estimate is None
 
 async def seed_standards(session: AsyncSession) -> dict:
   svc = StandardsService(session)
   report = {"conventions": 0, "work_items": 0, "rule_sets": []}
+  await seed_finish_defaults(session)
 
   existing_conventions = await svc.repo.conventions_by_code()
   for c in CONVENTIONS:
@@ -29,8 +40,9 @@ async def seed_standards(session: AsyncSession) -> dict:
   await session.flush()
 
   for spec in PROFILES:
-    if await svc.rule_sets.get_by_code_and_org(spec["code"], None):
-      continue 
+    current = await svc.rule_sets.get_by_code_and_org(spec["code"], None)
+    if current is not None and current.convention_code and not (spec["full"] and await _missing_defaults(session, current.id)):
+      continue
     version = await svc.repo.max_version(None, spec["code"]) + 1
     rs = MeasurementRuleSet(
       id=uuid4(), organization_id=None, code=spec["code"], name=spec["name"], description=spec["description"],
@@ -38,6 +50,7 @@ async def seed_standards(session: AsyncSession) -> dict:
       convention_code="FRAME_MONOLITHIC_A", is_system=True, is_active=False, status="DRAFT",
       immutable_version=version, opening_deduction_threshold_m2=OPENING_THRESHOLD_M2,
       wall_measurement_method="centre_line", net_vs_gross_preference="net",
+      preferred_units=dict(spec.get("preferred_units") or {}),
     )
     session.add(rs)
     await session.flush()
@@ -55,7 +68,15 @@ async def seed_standards(session: AsyncSession) -> dict:
       session.add(ElementTypeMapping(id=uuid4(), rule_set_id=rs.id, ifc_type=ifc_type, work_item_code=work_item_code,
         default_category=category, extra_mapping={"material_class": material_class}))
     if spec["full"]:
-      session.add_all([ReinforcementRule(id=uuid4(), rule_set_id=rs.id, **r) for r in REBAR_RULES])
+      session.add_all([
+        ReinforcementRule(id=uuid4(), rule_set_id=rs.id,
+          stock_length_mm=(Decimal(str(r["splice_constraints"]["stock_length_m"])) * 1000
+            if (r.get("splice_constraints") or {}).get("stock_length_m") else None),
+          **r)
+        for r in REBAR_RULES
+      ])
+      session.add_all(estimate_rule_rows(rs.id))
+      session.add_all(finish_rule_rows(rs.id))
       await session.flush()
       for recipe in RECIPES:
         row = AssemblyRecipe(id=uuid4(), organization_id=None, rule_set_id=rs.id, code=recipe["code"],

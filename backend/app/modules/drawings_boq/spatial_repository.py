@@ -34,6 +34,7 @@ async def finish_rule_specs(session: AsyncSession, rule_set_id: UUID) -> tuple[F
       r.space_category, r.surface, r.work_item_code, r.height_mm,
       r.deduct_openings, r.priority,
       bool((r.extra_config or {}).get("exclude")),
+      str(r.id),
     ) for r in rows),
     key=lambda s: (s.space_category, s.surface, s.work_item_code),
   ))
@@ -79,6 +80,8 @@ async def load_reinforcements_inputs(
       )
     )).scalars().all():
       finishes.setdefault(f.space_id, []).append(SpaceFinishInput(
+        id=f.id,
+        schedule_row_id=f.schedule_row_id,
         surface=f.surface,
         work_item_code=f.work_item_code,
         height_mm=f.height_mm,
@@ -180,9 +183,10 @@ async def load_reinforcements_inputs(
       ScheduleImport.project_id == project_id,
       ScheduleImport.status == "CONFIRMED",
       ScheduleRow.review_status == "CONFIRMED",
-      ScheduleRow.matched_element_count == 0,
     )
   )).scalars().all()
+  model_kinds = {o.role for o in openings.values()}
+  lines = [r for r in lines if not (r.schedule_kind in ("DOOR", "WINDOW") and r.schedule_kind in model_kinds)]
 
   line_inputs = tuple(sorted((
     ScheduleLineInput(

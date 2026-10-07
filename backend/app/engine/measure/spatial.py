@@ -2,7 +2,9 @@ from __future__ import annotations
 from app.engine.measure.models import ModelElement, Prism, CalculationContext, Solid, SpatialIndex
 from shapely.geometry import Polygon
 from shapely import STRtree, box, make_valid
-from app.engine.measure.geometry import snap_mm
+from app.engine.measure.geometry import snap_mm, extrusion_volume_mm3
+
+PRISM_VOLUME_TOLERANCE = 0.005  
 
 def _prism_from_element(el: ModelElement) -> Prism | None:
   pl = el.placement or {}
@@ -14,7 +16,14 @@ def _prism_from_element(el: ModelElement) -> Prism | None:
     except (TypeError, ValueError, IndexError):
       pts, lo, hi = None, 0.0, 0.0
     if pts and hi > lo:
-      return Prism(plan=pts, z0=lo, z1=hi, exact=True)
+      prism = Prism(plan=pts, z0=lo, z1=hi, exact=True)
+      ref = extrusion_volume_mm3(el.profile, pl)
+      if ref is None and el.volume_mm3 is not None:
+        ref = float(el.volume_mm3)
+      if ref is None or abs(_polygon(prism).area * (hi - lo) - ref) > max(PRISM_VOLUME_TOLERANCE * ref, 5000.0):
+        return None  
+      return prism
+    
   bmin, bmax = el.bbox_min_mm, el.bbox_max_mm
   if bmin and bmax:
     x0, y0, za = (snap_mm(float(v)) for v in bmin)
@@ -34,7 +43,10 @@ def build_spatial_index(ctx: CalculationContext, convention, solids: list[Solid]
   polys: dict = {}
   unallocated: set = set()
   for s in sorted(solids, key=lambda s: str(s.element_id)):
-    if convention.rank(s.role) is None or s.gross_volume_m3 is None:
+    if s.gross_volume_m3 is None:
+      continue
+    if convention.rank(s.role) is None:
+      unallocated.add(s.id)   
       continue
     el = by_element.get(s.element_id)
     prism = _prism_from_element(el) if el is not None else None

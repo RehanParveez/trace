@@ -105,24 +105,17 @@ RULES = [
 
 ]
 
-async def seed_finish_defaults(session: AsyncSession) -> None:
+def finish_rule_rows(rule_set_id) -> list[FinishRule]:
+  return [
+    FinishRule(id=uuid4(), rule_set_id=rule_set_id, space_category=cat, surface=surface, work_item_code=code,
+      height_mm=height, deduct_openings=deduct, priority=0, extra_config={"exclude": exclude, **PLACEHOLDER})
+    for cat, surface, code, height, deduct, exclude in RULES
+  ]
 
+async def seed_finish_defaults(session: AsyncSession) -> None:
   for code, desc, unit, trade, mclass in WORK_ITEMS:
     exists = await session.execute(select(WorkItem).where(WorkItem.code == code, WorkItem.organization_id.is_(None)))
     if exists.scalar_one_or_none() is None:
       session.add(WorkItem(id=uuid4(), organization_id=None, code=code, description=desc, unit=unit, trade=trade,
         is_system=True, is_active=True, extra={"material_class": mclass, **PLACEHOLDER}))
   await session.flush()
-  rule_sets = (await session.execute(select(MeasurementRuleSet).where(
-    MeasurementRuleSet.code.like("PUNJAB%"), MeasurementRuleSet.status == "ACTIVE"))).scalars().all()
-  for rs in rule_sets:
-    have = (await session.execute(select(FinishRule.id).where(FinishRule.rule_set_id == rs.id).limit(1))).first()
-    if have is not None:
-      continue
-    for cat, surface, code, height, deduct, exclude in RULES:
-      session.add(FinishRule(id=uuid4(), rule_set_id=rs.id, space_category=cat, surface=surface, work_item_code=code,
-        height_mm=height, deduct_openings=deduct, priority=0, extra_config={"exclude": exclude, **PLACEHOLDER}))
-    await session.flush()
-    profile = await StandardsService(session).profile_for_rule_set(rs.id)
-    rs.content_hash = profile.content_fingerprint()
-    await session.flush()

@@ -403,8 +403,10 @@ class MaterialNormalizationCacheRepository:
     self,
     entry: MaterialNormalizationCache,
   ) -> MaterialNormalizationCache:
-    self.session.add(entry)
-    await self.session.flush()
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+    values = {c.name: getattr(entry, c.name) for c in MaterialNormalizationCache.__table__.columns
+      if getattr(entry, c.name, None) is not None}
+    await self.session.execute(pg_insert(MaterialNormalizationCache).values(**values).on_conflict_do_nothing())
     return entry
   
 class LabourRateRepository:
@@ -511,16 +513,6 @@ class MeasurementRuleSetRepository:
         MeasurementRuleSet.is_system.is_(True),
         MeasurementRuleSet.status == "ACTIVE",
       )
-    )
-    rule = result.scalar_one_or_none()
-    if rule is not None:
-      return rule
-    result = await self.session.execute(
-      select(MeasurementRuleSet).where(
-        MeasurementRuleSet.organization_id.is_(None),
-        MeasurementRuleSet.is_system.is_(True),
-        MeasurementRuleSet.status == "ACTIVE",
-      ).order_by(MeasurementRuleSet.created_at.asc()).limit(1)
     )
     return result.scalar_one_or_none()
 

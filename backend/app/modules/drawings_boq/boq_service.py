@@ -134,7 +134,9 @@ class BOQEngineService:
       if previous is not None:
         seed_items = await self.repo.items_by_key(previous.id, org)
         seed_adj = await self.repo.active_adjustments([i.id for i in seed_items.values()])
-        seed_manual = [i for i in await self.items.list_by_version(previous.id, org) if i.is_manual]
+        seed_manual = [i for i in await self.items.list_by_version(previous.id, org) if i.item_key is None]
+        version.covered_area_sqft = previous.covered_area_sqft
+        version.export_meta = dict(previous.export_meta or {})
     else:
       if not await self.repo.transition(version.id, org, version.lifecycle, "CALCULATING",
         calculation_run_id=run.id, rule_set_id=run.rule_set_id):
@@ -151,6 +153,7 @@ class BOQEngineService:
     item_for_key: dict[str, BOQItem] = {}
     adj_for_item: dict[UUID, list] = {}
     counts = {"created": 0, "updated": 0, "removed": 0, "orphaned": 0}
+    orphans: list[BOQItem] = []
 
     for d in drafts:
       item = target.get(d.item_key)
@@ -168,6 +171,7 @@ class BOQEngineService:
         item.version += 1
         counts["updated"] += 1
       keep_waived = item.review_status == "WAIVED" and d.review_status == "REVIEW_REQUIRED"
+      prev_unit = (seed.unit if seed is not None else None) if is_new else item.unit
       item.work_item_code, item.material_name, item.description = d.work_item_code, d.material_name, d.description
       item.category, item.unit, item.canonical_unit, item.unit_factor = d.category, d.unit, d.canonical_unit, d.unit_factor
       item.net_quantity, item.waste_factor_applied, item.confidence = d.net_quantity, d.waste_factor, d.confidence
@@ -177,9 +181,21 @@ class BOQEngineService:
       item.source_element_count, item.drawing_element_id = d.element_count, None
 
       adjustments = list(seed_adj.get(seed.id, [])) if (is_new and seed is not None) else list(adj_map.get(item.id, []))
+      unit_changed = bool(prev_unit) and prev_unit != d.unit
+      if unit_changed and item.unit_rate is not None:
+        converted = logic.convert_rate(item.unit_rate, prev_unit, d.unit)
+        if converted is None:
+          item.unit_rate, item.rate_source = None, None
+          rate_mismatch.append(item)
+        else:
+          item.unit_rate = converted
+          
       self._apply_quantities(item, adjustments)
       if item.quantity < 0:
         item.review_status = "REVIEW_REQUIRED"
+      if unit_changed and adjustments:
+        item.review_status = "REVIEW_REQUIRED"
+        orphans.append(item)  
 
       if item.unit_rate is None:
         rate, flag = await self._library_rate(org, d.description, d.unit)
@@ -196,16 +212,24 @@ class BOQEngineService:
               created_by_user_id=a.created_by_user_id))
       item_for_key[d.item_key] = item
 
-    orphans: list[BOQItem] = []
+    gone = [o.id for k, o in target.items() if k not in drafts_by_key and o.source_kind == "MODEL"]
+    history = await self.repo.adjustment_history(gone)
     for key, old in list(target.items()):
       if key in drafts_by_key or old.source_kind != "MODEL":
         continue
+      
       if adj_map.get(old.id):
         old.net_quantity, old.confidence, old.review_status = Decimal("0"), None, "REVIEW_REQUIRED"
         old.status = BOQItemStatus.DRAFT
         self._apply_quantities(old, adj_map[old.id])
         orphans.append(old)
         counts["orphaned"] += 1
+      elif old.id in history:
+        
+        old.net_quantity, old.confidence, old.review_status = Decimal("0"), None, "REVIEW_REQUIRED"
+        old.status = BOQItemStatus.DRAFT
+        self._apply_quantities(old, [])
+        
       else:
         await self.items.delete(old)
         counts["removed"] += 1
@@ -372,8 +396,12 @@ class BOQEngineService:
           calculation_run_id=run_id, drawing_element_id=s.drawing_element_id, boq_item_id=s.boq_item_id,
           code=s.code, severity=s.severity, blocks=s.blocks, message=s.message, suggested_fix=s.suggested_fix,
           details=s.details, dedupe_key=s.dedupe_key))
-      elif cur.status == "OPEN" or (cur.status == "RESOLVED" and cur.resolved_by_user_id is None):
+      elif cur.status == "OPEN" or (cur.status == "RESOLVED" and cur.resolved_by_user_id is None) or (
+          cur.status == "WAIVED" and s.dedupe_key == "UNPRICED"
+          and set((s.details or {}).get("item_ids", [])) - set((cur.details or {}).get("item_ids", []))):
         cur.status, cur.resolved_at, cur.resolution_note = "OPEN", None, None
+        cur.resolved_by_user_id = None
+        
         cur.severity, cur.blocks, cur.message, cur.details = s.severity, s.blocks, s.message, s.details
         cur.suggested_fix, cur.calculation_run_id, cur.boq_item_id = s.suggested_fix, run_id, s.boq_item_id
     for key, cur in existing.items():
@@ -448,8 +476,10 @@ class BOQEngineService:
   async def apply_quantity_change(self, org, item, user_id, new_quantity, reason) -> None:
     delta = Decimal(new_quantity) - item.quantity
     if delta != 0:
-      await self._add_adjustment(org, item, user_id, "DELTA", delta, reason)
-
+      adj = await self._add_adjustment(org, item, user_id, "DELTA", delta, reason)
+      await self.audit.log(org, user_id, AuditEntityType.BOQ_ADJUSTMENT, adj.id, AuditAction.CREATE,
+        f'DELTA adjustment {delta} on "{item.material_name}": {reason.strip()[:200]}')
+      
   async def add_adjustment(self, org: UUID, item_id: UUID, user_id: UUID, kind: str, value: Decimal, reason: str):
     item, _ = await self._item_for_edit(org, item_id)
     adj = await self._add_adjustment(org, item, user_id, kind, value, reason)
@@ -475,6 +505,12 @@ class BOQEngineService:
     self._apply_quantities(item, active)
     item.version += 1
     await self.items.update(item)
+    if not active and item.item_key:
+      issue = await self.repo.issue_by_dedupe(item.boq_version_id, f"ORPHAN:{item.item_key}")
+      if issue is not None and issue.status == "OPEN":
+        issue.status, issue.resolved_at = "RESOLVED", _now()
+        issue.resolved_by_user_id, issue.resolution_note = user_id, "All adjustments on the orphaned line were revoked."
+        
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.BOQ_ADJUSTMENT, adj.id, AuditAction.UPDATE,
       f'Revoked adjustment on "{item.material_name}"')
@@ -594,6 +630,14 @@ class BOQEngineService:
     if any(i.rate_source == BOQItemRateSource.AI_SUGGESTED for i in items):
       raise TraceException("AI-suggested rates must be confirmed before approval.",
         status_code=409, code="AI_RATE_UNCONFIRMED")
+      
+    if any(i.quantity is not None and i.quantity < 0 for i in items):
+      raise TraceException("Items with a negative contract quantity must be corrected first.",
+        status_code=409, code="NEGATIVE_QUANTITY")
+      
+    if "ISSUE" in blocks and any(i.unit_rate is None for i in items):
+      raise TraceException("Every item must be priced before the BOQ is issued.",
+        status_code=409, code="UNPRICED_ITEMS")
 
   async def submit_for_review(self, org, version_id, user_id):
     version = await self._engine_version(org, version_id, lock=True)

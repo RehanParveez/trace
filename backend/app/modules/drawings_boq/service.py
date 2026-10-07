@@ -30,7 +30,7 @@ from app.modules.drawings_boq.words import rupees_in_words
 from app.modules.identity.models import Organization
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from app.core.redis import redis_client
 from app.modules.identity.rate_limit import RateLimiter
 from app.core.config import settings
@@ -86,6 +86,11 @@ def _decode_cursor(cursor: str | None) -> tuple[str, UUID] | None:
     return str(ifc_type), UUID(element_id)
   except Exception:
     raise TraceException("Invalid cursor.", status_code=422, code="INVALID_CURSOR")
+  
+def _labour_quantity(covered_area_sqft: Decimal, rate_unit: str) -> Decimal:
+  if (rate_unit or "").strip().lower() in {"m2", "sqm"}:
+    return (Decimal(covered_area_sqft) / Decimal("10.7639104")).quantize(Decimal("0.0001"))
+  return covered_area_sqft
   
 class DrawingBOQService:
   def __init__(self, session: AsyncSession):
@@ -517,7 +522,9 @@ class DrawingBOQService:
       organization_id, drawing.project_id
     )
     version = next(
-      (candidate for candidate in existing_versions if candidate.drawing_id == drawing.id),
+      (candidate for candidate in existing_versions
+       if candidate.drawing_id == drawing.id and candidate.origin != "ENGINE"
+       and candidate.status != BOQVersionStatus.SUPERSEDED),
       None,
     )
 
@@ -546,10 +553,8 @@ class DrawingBOQService:
       prompt=build_schedule_extraction_prompt(drawing_text),
     )
 
-    await self.subscriptions.increment_usage(organization_id, "ai_requests")
-
     if not result.success or not result.parsed_output:
-      await self.session.commit()
+      await self.subscriptions.increment_usage(organization_id, "ai_requests")  
       return {"boq_version_id": version.id, "created_item_count": 0, "items": []}
 
     rows = parse_schedule_extraction_response(result.parsed_output)
@@ -604,7 +609,7 @@ class DrawingBOQService:
 
     if created_items:
       await self.boq_items.bulk_create(created_items)
-    await self.session.commit()
+    await self.subscriptions.increment_usage(organization_id, "ai_requests")  
     await self.audit.log(
       organization_id,
       user_id,
@@ -711,7 +716,7 @@ class DrawingBOQService:
         item.unit_rate = payload.unit_rate
         item.rate_source = BOQItemRateSource.MANUAL
 
-      if payload.save_as_library_default:
+      if payload.save_as_library_default and item.unit_rate is not None:
         raw_key = None
         if item.drawing_element_id is not None:
           drawing_element = await self.session.get(DrawingElement, item.drawing_element_id)
@@ -729,11 +734,11 @@ class DrawingBOQService:
               normalized_name=item.material_name,
               category=item.category,
               default_unit=item.unit,
-              default_rate=payload.unit_rate,
+              default_rate=item.unit_rate,
             )
           )
         else:
-          existing_entry.default_rate = payload.unit_rate
+          existing_entry.default_rate = item.unit_rate
           existing_entry.default_unit = item.unit
           await self.material_library.update(existing_entry)
     item.version += 1
@@ -1020,6 +1025,7 @@ class DrawingBOQService:
         status_code=404,
         code="BOQ_VERSION_NOT_FOUND",
       )
+    assert_mutable(version)
     if payload.covered_area_sqft is not None:
       version.covered_area_sqft = payload.covered_area_sqft
     if payload.export_meta is not None:
@@ -1099,11 +1105,11 @@ class DrawingBOQService:
       material_name=rate.trade,
       category="Labour",
       unit=rate.unit,
-      quantity=version.covered_area_sqft,
+      quantity=_labour_quantity(version.covered_area_sqft, rate.unit),
       unit_rate=rate.rate,
       item_type=BOQItemType.LABOUR,
       source_kind="ESTIMATE",
-      net_quantity=version.covered_area_sqft,
+      net_quantity=_labour_quantity(version.covered_area_sqft, rate.unit),
     )
      for rate in area_rates
      if rate.trade not in approved_trades
@@ -1184,8 +1190,8 @@ class DrawingBOQService:
 
     def _total(kind: BOQItemType) -> Decimal:
       return sum(
-        (
-          i.quantity * i.unit_rate
+         (
+          (i.quantity * i.unit_rate).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
           for i in items
           if i.item_type == kind
           and (i.status == BOQItemStatus.APPROVED or version.origin == "ENGINE")
@@ -1352,20 +1358,39 @@ class DrawingBOQService:
     user_id: UUID | None = None,
   ) -> None:
     drawing = await self.get_drawing(organization_id, drawing_id)
+    if drawing.status == DrawingStatus.PROCESSING:
+      raise TraceException("Drawing is still being processed.", status_code=409, code="DRAWING_PROCESSING")
+    from sqlalchemy import and_, or_
+    from app.modules.drawings_boq.models import CalculationRun
+    locked = await self.session.scalar(
+      select(BOQVersion.id).where(
+        BOQVersion.organization_id == organization_id,
+        or_(
+          and_(BOQVersion.drawing_id == drawing_id,
+               BOQVersion.items.any(BOQItem.status == BOQItemStatus.APPROVED)),
+          and_(BOQVersion.origin == "ENGINE", BOQVersion.lifecycle.in_(("APPROVED", "ISSUED")),
+               BOQVersion.calculation_run_id.in_(select(CalculationRun.id).where(
+                 CalculationRun.organization_id == organization_id,
+                 CalculationRun.drawing_revision_ids.any(drawing_id)))),
+        ),
+      ).limit(1)
+    )
+    if locked is not None:
+      raise TraceException("This drawing feeds an approved or issued BOQ and cannot be deleted.",
+        status_code=409, code="DRAWING_HAS_APPROVED_BOQ")
     storage_key = drawing.storage_key
     file_size_bytes = drawing.file_size_bytes or 0
 
     await self.session.delete(drawing)
+    await self.session.commit()
 
     try:
-      await self.subscriptions.increment_usage(organization_id, "drawings", delta=-1)
+      await self.subscriptions.decrement_usage(organization_id, "drawings", 1)
       if file_size_bytes > 0:
-        await self.subscriptions.increment_usage(
-          organization_id, "storage_bytes", delta=-file_size_bytes
-        )
+        await self.subscriptions.decrement_usage(organization_id, "storage_bytes", file_size_bytes)
     except Exception:
-     pass  
-    await self.session.commit()
+      await self.session.rollback()
+      
     try:
       await asyncio.to_thread(delete_object, storage_key)
     except Exception:
@@ -1478,6 +1503,8 @@ class DrawingBOQService:
 
     if rule_set is not None:
       return rule_set
+    if preferred_code:
+      raise TraceException(f"No active rule set with code '{preferred_code}'.", status_code=404, code="RULESET_NOT_FOUND")
     rule_set = await self.rule_sets.get_system_default(
       "GENERIC_METRIC",
     )

@@ -101,7 +101,7 @@ class FinishRuleSpec:
   deduct_openings: bool = True
   priority: int = 0
   exclude: bool = False
-  id: UUID = field(default_factory=uuid4)
+  id: str | None = None
 
 @dataclass(frozen=True)
 class ResolvedRuleProfile:
@@ -171,4 +171,6 @@ class ResolvedRuleProfile:
       data.pop(key, None)
     for recipe in data.get("recipes", []):
       recipe.pop("id", None)
+    for rule in data.get("finish_rules", []):
+      rule.pop("id", None)
     return _digest(data)

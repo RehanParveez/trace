@@ -128,7 +128,8 @@ class ScheduleService:
     kind = imp.schedule_kind
     extra: dict = {"notes": list(p.get("notes") or [])}
     unit, qty = p.get("unit"), p.get("quantity")
-    confidence = Decimal(p.get("confidence") or CSV_CONFIDENCE)
+    raw_confidence = p.get("confidence")
+    confidence = Decimal(str(raw_confidence)) if raw_confidence is not None else CSV_CONFIDENCE
     if kind in ("DOOR", "WINDOW"):
       unit = unit or "nos"
       if qty is None:
@@ -342,6 +343,8 @@ class ScheduleService:
     family = UNIT_TABLE.get((wi.unit or "").strip().lower())
     if family is not None and family[0] != row.canonical_unit:
       fail(f"work item {wi.code} is measured in {family[0]}, but the row is in {row.canonical_unit}.", "ROW_UNIT_MISMATCH")
+    if wi.code == "STL-REBAR":
+      fail("reinforcement steel must be imported as a bar bending schedule (Bar schedules tab), not as a general row.", "ROW_USE_BBS")
 
   async def _apply_fields(self, org: UUID, imp: ScheduleImport, row: ScheduleRow, payload, m: _Match) -> None:
     fs = payload.model_fields_set
@@ -350,7 +353,10 @@ class ScheduleService:
       if key in fs:
         setattr(row, key, ((getattr(payload, key) or "").strip())[:limit] or None)
     if "quantity" in fs:
-      row.quantity, extra.pop("quantity_defaulted", None) if payload.quantity is not None else None
+      row.quantity = payload.quantity
+      if payload.quantity is not None:
+        extra.pop("quantity_defaulted", None)
+        
     if "width_mm" in fs:
       row.width_mm = payload.width_mm
     if "height_mm" in fs:

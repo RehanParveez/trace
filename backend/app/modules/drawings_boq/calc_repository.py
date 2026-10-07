@@ -56,6 +56,16 @@ class CalculationRunRepository:
     )
     return result.scalar_one_or_none()
 
+  async def fail_stale(self, project_id: UUID, older_than: datetime) -> None:
+    await self.session.execute(
+      update(CalculationRun).where(
+        CalculationRun.project_id == project_id,
+        ((CalculationRun.status.in_(("RUNNING", "STAGED")) & (CalculationRun.started_at < older_than))
+         | ((CalculationRun.status == "QUEUED") & (CalculationRun.created_at < older_than))),
+      ).values(status="FAILED", error_code="RUN_STALE",
+      error_message="The worker did not finish within the time limit.", completed_at=_now())
+    )
+
   async def set_progress(self, run_id: UUID, pct: int, status: str | None = None) -> None:
     values: dict = {"progress_pct": pct}
     if status:

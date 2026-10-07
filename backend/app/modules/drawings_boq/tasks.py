@@ -2,7 +2,7 @@ from __future__ import annotations
 import asyncio
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from decimal import Decimal
 from uuid import UUID
 from app.core.database import WorkerSessionLocal, dispose_worker_engine
@@ -18,13 +18,17 @@ from app.modules.notifications.models import NotificationType
 from app.modules.notifications.service import NotificationService
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
-from sqlalchemy import select
+from sqlalchemy import select, or_, and_
 from app.core.config import settings
 from app.modules.drawings_boq.calc_service import CalculationService, engine_v2_enabled
 from app.modules.drawings_boq.spatial_repository import persist_spatial
+from app.core.exceptions import TraceException
+from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
 from app.modules.drawings_boq.finish_schedule.common import carry_over_space_finishes
+from app.modules.drawings_boq.calc_tasks import auto_run_task
 
 MAX_AI_NORMALIZATIONS_PER_PARSE = 50
+STALE_PARSE_SECONDS = 960
 
 @celery_app.task(
   name="app.modules.drawings_boq.tasks.parse_drawing_task",
@@ -88,12 +92,17 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
   async with WorkerSessionLocal() as session:
     drawings = DrawingRepository(session)
+    await scope_session_as_platform_admin(session)   
 
     result = await session.execute(
       select(Drawing)
       .where(
         Drawing.id == drawing_id,
-        Drawing.status.in_([DrawingStatus.UPLOADED, DrawingStatus.FAILED]),
+        or_(
+          Drawing.status.in_([DrawingStatus.UPLOADED, DrawingStatus.FAILED]),
+          and_(Drawing.status == DrawingStatus.PROCESSING,
+               Drawing.updated_at < datetime.now(timezone.utc) - timedelta(seconds=STALE_PARSE_SECONDS)),
+        ),
       )
       .with_for_update(skip_locked=True)
     )
@@ -103,6 +112,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
     organization_id = drawing.organization_id
     storage_key = drawing.storage_key
+    await scope_session_to_org(session, organization_id)
 
     drawing.status = DrawingStatus.PROCESSING
     drawing.error_message = None
@@ -197,6 +207,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
         model_issues=read_result.model_issues,
       )
 
+      legacy_boq = not engine_v2_enabled(current_drawing.organization_id)
       boq_version = await boq_versions_repo.create(
         BOQVersion(
           organization_id=current_drawing.organization_id,
@@ -204,7 +215,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
           drawing_id=current_drawing.id,
           label=f"{current_drawing.original_filename} — auto-generated",
         )
-      )
+      ) if legacy_boq else None
 
       boq_items: list[BOQItem] = []
       skipped_without_quantity = 0
@@ -260,7 +271,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
         return resolved
 
       grouped: dict[tuple, dict] = {}
-      for element, drawing_element in zip(read_result.elements, drawing_elements):
+      for element, drawing_element in (zip(read_result.elements, drawing_elements) if legacy_boq else ()):
         if element.structural_role in NO_LEGACY_BOQ_ROLES:
           stored_only += 1
           continue
@@ -384,7 +395,12 @@ async def _parse_drawing(drawing_id: UUID) -> None:
     if parsed_ok and engine_v2_enabled(drawing_org_id):
       try:
         await CalculationService(session).request_run(
-          drawing_org_id, drawing_project_id, uploader_id, None, None,
-          convention_code=settings.engine_default_convention)
+          drawing_org_id, drawing_project_id, uploader_id, None, None, convention_code=None)
+      except TraceException as exc:
+        await session.rollback()
+        if exc.code == "RUN_IN_PROGRESS":
+          auto_run_task.apply_async(
+            args=[str(drawing_org_id), str(drawing_project_id), str(uploader_id) if uploader_id else None],
+            countdown=120, queue="calc_engine")
       except Exception:
         await session.rollback()

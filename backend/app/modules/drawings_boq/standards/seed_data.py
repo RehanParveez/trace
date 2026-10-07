@@ -75,6 +75,7 @@ RECIPES = [
 PROFILES = [
   dict(code="PUNJAB_CSR", name="Punjab - CSR (draft profile)", jurisdiction="PK", province="Punjab",
     standard_name="CSR", full=True,
+    preferred_units={"volume": "cft", "area": "sft", "length": "rft", "weight": "kg", "count": "nos"},
     description="System profile for Punjab. All values are placeholders pending QS sign-off."),
   dict(code="GENERIC_METRIC", name="Generic metric (fallback)", jurisdiction=None, province=None,
     standard_name=None, full=False, description="Minimal fallback profile."),

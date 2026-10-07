@@ -5,8 +5,8 @@ from decimal import Decimal
 import asyncio
 from uuid import uuid4
 from sqlalchemy import select
-from app.modules.drawings_boq.standards.service import StandardsService
 from app.core.database import AsyncSessionLocal
+from app.dependencies.tenancy import scope_session_as_platform_admin
 
 ASTM = [("#3", "9.525", "0.560"), ("#4", "12.700", "0.994"), ("#5", "15.875", "1.552"), ("#6", "19.050", "2.235"),
   ("#7", "22.225", "3.042"), ("#8", "25.400", "3.973"), ("#9", "28.575", "5.060"), ("#10", "32.258", "6.404"),
@@ -54,20 +54,18 @@ async def apply_rebar_rules(session: AsyncSession, rs: MeasurementRuleSet) -> No
         r.stock_length_mm = Decimal(str(stock_m)) * 1000
         changed = True
         
-    have = {(r.element_scope, r.bar_role) for r in rules}
-    for scope, intensity in ESTIMATES.items():
-      if (scope, "ESTIMATE") not in have:
-        session.add(ReinforcementRule(id=uuid4(), rule_set_id=rs.id, element_scope=scope, bar_role="ESTIMATE",
-          extra_config={"kg_per_m3": intensity, "assumed_dia_mm": 12, "confidence": "0.5", "status": PLACEHOLDER}))
-        changed = True
-    if changed:
-      await session.flush()
-      profile = await StandardsService(session).profile_for_rule_set(rs.id)
-      rs.content_hash = profile.content_fingerprint()
-      await session.flush()
+    await session.flush()
+
+def estimate_rule_rows(rule_set_id) -> list[ReinforcementRule]:
+  return [
+    ReinforcementRule(id=uuid4(), rule_set_id=rule_set_id, element_scope=scope, bar_role="ESTIMATE",
+      extra_config={"kg_per_m3": intensity, "assumed_dia_mm": 12, "confidence": "0.5", "status": PLACEHOLDER})
+    for scope, intensity in ESTIMATES.items()
+  ]
 
 async def main() -> None:
   async with AsyncSessionLocal() as session:
+    await scope_session_as_platform_admin(session)
     await seed_rebar_defaults(session)
     await session.commit()
   print("Rebar reference data seeded.")

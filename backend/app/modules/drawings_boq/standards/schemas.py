@@ -191,7 +191,6 @@ class RuleSetDraftUpdateRequest(BaseModel):
   reinforcement_rules: list[ReinforcementRuleSchema] | None = None
   mappings: list[MappingSchema] | None = None
   finish_rules: list[FinishRuleSchema] | None = None
-  finish_rules: list[FinishRuleSchema] | None = None
 
 class ValidationIssue(BaseModel):
   code: str

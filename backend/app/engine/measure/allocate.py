@@ -97,8 +97,9 @@ def allocate(ctx: CalculationContext, convention, solids: list[Solid], index: Sp
       exact = prism.exact and index.prisms[n].exact
       if not exact:
         approximate.add(sid)
-      if loser.role == owner.role:
+      if convention.rank(loser.role) == convention.rank(owner.role):
         warnings.setdefault(sid, set()).add("SAME_ROLE_OVERLAP")
+        
       deductions.append(Deduction(
         from_solid_id=sid, to_solid_id=n, deduction_type=dtype, quantity=quantity,
         unit=Unit.M3.value, rule_code=rule,

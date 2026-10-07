@@ -343,7 +343,10 @@ def measure_finishes(ctx: CalculationContext, profile, spaces, openings) -> Fini
   ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.solid_id)))
   return FinishResult(solids=solids, ledger=ledger, skipped=dict(sorted(skipped.items())))
 
-def schedule_lines_ledger(ctx: CalculationContext, lines) -> FinishResult:
+LOW_SCHEDULE_CONFIDENCE = Decimal("0.6")
+
+def schedule_lines_ledger(ctx: CalculationContext, lines, model_codes: frozenset = frozenset()) -> FinishResult:
+  
   solids: list = []
   ledger: list = []
   skipped: dict = {}
@@ -389,7 +392,10 @@ def schedule_lines_ledger(ctx: CalculationContext, lines) -> FinishResult:
         "label": f"Schedule {ln.schedule_kind} row {ln.row_no} {ln.mark or ''}".strip(), "rounding": "half_up,6dp",
       },
 
-      warnings=(), source_kind="SCHEDULE_IMPORT",
+      warnings=tuple(w for w in (
+        "SCHEDULE_OVERLAPS_MODEL" if ln.work_item_code in model_codes else None,
+        "SCHEDULE_LOW_CONFIDENCE" if ln.confidence < LOW_SCHEDULE_CONFIDENCE else None,
+      ) if w), source_kind="SCHEDULE_IMPORT",
     ))
   ledger.sort(key=lambda r: (r.work_item_code, str(r.solid_id)))
   return FinishResult(solids=solids, ledger=ledger, skipped=skipped)

@@ -159,11 +159,12 @@ class StandardsService:
 
   async def resolve_profile(self, organization_id: UUID | None, code: str | None = None,
     as_of: date | None = None) -> ResolvedRuleProfile:
+    explicit = code is not None
     code = code or DEFAULT_RULE_CODE
     rs = (
       await self.rule_sets.get_by_code_and_org(code, organization_id, as_of)
       or await self.rule_sets.get_system_default(code)
-      or await self.rule_sets.get_system_default(FALLBACK_RULE_CODE)
+      or (None if explicit else await self.rule_sets.get_system_default(FALLBACK_RULE_CODE))
     )
     if rs is None:
       raise TraceException("No active rule set found. Run the standards seed.", status_code=404, code="RULESET_NOT_FOUND")
@@ -230,33 +231,15 @@ class StandardsService:
     )
 
     if payload.wastage_rules is not None:
-     rows = [
-      {
-        **rule.model_dump(),
-        "material_class": rule.material_class.upper(),
-      }
-      for rule in payload.wastage_rules
-     ]
-     _assert_unique(
-      rows,
-      lambda row: (row["material_class"], row["procurement_stage"]),
-      "wastage rule",
-    )
-    await self.session.execute(
-      delete(MaterialWastageRule).where(
-        MaterialWastageRule.rule_set_id == rs.id
-      )
-    )
-    self.session.add_all(
-      [
-        MaterialWastageRule(
-          id=uuid4(),
-          rule_set_id=rs.id,
-          **row,
-        )
-        for row in rows
+      rows = [
+        {**rule.model_dump(), "material_class": rule.material_class.upper()}
+        for rule in payload.wastage_rules
       ]
-    )
+      _assert_unique(rows, lambda row: (row["material_class"], row["procurement_stage"]), "wastage rule")
+      await self.session.execute(
+        delete(MaterialWastageRule).where(MaterialWastageRule.rule_set_id == rs.id)
+      )
+      self.session.add_all([MaterialWastageRule(id=uuid4(), rule_set_id=rs.id, **row) for row in rows])
 
     if payload.reinforcement_rules is not None:
      _assert_unique(
@@ -304,41 +287,13 @@ class StandardsService:
      
     if payload.finish_rules is not None:
       _assert_unique(payload.finish_rules, lambda r: (r.space_category.upper(), r.surface, r.work_item_code), "finish rule")
+      for rule in payload.finish_rules:
+        await self._check_finish_work_item(organization_id=organization_id, work_item_code=rule.work_item_code, surface=rule.surface)
       await self.session.execute(delete(FinishRule).where(FinishRule.rule_set_id == rs.id))
       self.session.add_all([FinishRule(
         id=uuid4(), rule_set_id=rs.id, space_category=r.space_category.upper(), surface=r.surface,
         work_item_code=r.work_item_code, height_mm=r.height_mm, deduct_openings=r.deduct_openings, priority=r.priority,
         extra_config={**r.extra_config, "exclude": r.exclude}) for r in payload.finish_rules])
-
-    if payload.finish_rules is not None:
-     _assert_unique(
-      payload.finish_rules,
-      lambda rule: (
-        rule.space_category,
-        rule.surface,
-        rule.work_item_code,
-      ),
-      "finish rule",
-    )
-     for rule in payload.finish_rules:
-      await self._check_finish_work_item(
-        organization_id=organization_id,
-        work_item_code=rule.work_item_code,
-        surface=rule.surface,
-      )
-     await self.session.execute(
-      delete(FinishRule).where(FinishRule.rule_set_id == rs.id)
-    )
-     self.session.add_all(
-      [
-        FinishRule(
-          id=uuid4(),
-          rule_set_id=rs.id,
-          **rule.model_dump(),
-        )
-        for rule in payload.finish_rules
-      ]
-    )
 
     await self.session.flush()
     captured_id = rs.id
@@ -366,6 +321,14 @@ class StandardsService:
       problems = check_component_units(c.quantity_formula_code, c.unit)
       if problems:
         raise TraceException(problems[0][1], status_code=422, code=problems[0][0])
+      
+    items = await self.repo.work_item_index(organization_id)
+    for c in payload.components:
+      if c.work_item_code:
+        wi = items.get(c.work_item_code)
+        if wi is None or wi.unit != c.unit:
+          raise TraceException(f"Work item '{c.work_item_code}' is unknown or its unit differs from '{c.unit}'.",
+            status_code=422, code="RECIPE_WORK_ITEM_UNIT_MISMATCH")
 
     await self.session.execute(
       delete(AssemblyRecipe).where(AssemblyRecipe.rule_set_id == rs.id, AssemblyRecipe.code == payload.code)
@@ -460,10 +423,10 @@ class StandardsService:
     issues = validate_bundle(
       rule_set=bundle.rule_set, opening_rules=bundle.opening_rules, wastage_rules=bundle.wastage_rules,
       reinforcement_rules=bundle.reinforcement_rules, mappings=bundle.mappings, recipes=bundle.recipes,
+      finish_rules=bundle.finish_rules,
       work_item_units={code: wi.unit for code, wi in items.items()},
       known_conventions=set((await self.repo.conventions_by_code()).keys()),
     )
-    issues += validate_finish_rules(bundle.finish_rules, {code: wi.unit for code, wi in items.items()})
     issues += validate_reinforcement_rules(bundle.reinforcement_rules)
     return issues
 
@@ -501,8 +464,15 @@ class StandardsService:
 
   async def publish(self, organization_id: UUID, user_id: UUID, rule_set_id: UUID) -> tuple[MeasurementRuleSet, list[dict]]:
     rs = await self._visible(organization_id, rule_set_id)
+    await self.session.refresh(rs, with_for_update=True) 
     self._require_mutable(rs, organization_id)
-    warnings = await self._publish_core(rs, user_id)
+    from sqlalchemy.exc import IntegrityError
+    try:
+      warnings = await self._publish_core(rs, user_id)
+    except IntegrityError:
+      await self.session.rollback()
+      raise TraceException("Another version of this rule set was published at the same time. Reload and retry.",
+        status_code=409, code="RULESET_PUBLISH_CONFLICT")
     captured_id = rs.id
     captured_code = rs.code
     captured_version = rs.immutable_version
@@ -584,10 +554,7 @@ class StandardsService:
    work_item_code: str,
    surface: str,
   ) -> None:
-   item = await self.repo.get_work_item_by_code(
-    organization_id,
-    work_item_code,
-   )
+   item = (await self.repo.work_item_index(organization_id)).get(work_item_code)
    if item is None or not item.is_active:
     raise TraceException(
       f"Unknown or inactive work item '{work_item_code}'.",

@@ -12,7 +12,7 @@ from app.engine.measure.spatial import build_spatial_index
 from app.engine.measure.finishes import REINFORCEMENT_FORMULA_UNITS, apply_openings, measure_finishes, merge_openings, schedule_lines_ledger
 from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar, self_check_rebar
 
-ENGINE_VERSION = "2026.10.5"
+ENGINE_VERSION = "2026.10."
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -152,6 +152,8 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
       warnings.append("ALLOCATION_APPROXIMATE")
     if s.id in getattr(alloc, "unallocated_solids", ()):
       warnings.append("NOT_ALLOCATED")
+    elif s.gross_volume_m3 is not None and not getattr(alloc, "applied", False):
+      warnings.append("NOT_ALLOCATED") 
 
     if s.count is not None:
       formula, unit, quantity = "OPENING_COUNT", Unit.NOS.value, Decimal(s.count)
@@ -163,9 +165,13 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
       solid_deds = deds_by_solid.get(s.id, [])
       total_ded = q6(sum((d.quantity for d in solid_deds), Decimal("0")))
       quantity = q6(gross - total_ded)
+      zero_flagged = False
+      if quantity <= 0 and total_ded > 0:
+        warnings.append("DUPLICATE_SOLID" if "SAME_ROLE_OVERLAP" in warnings else "ZERO_NET_QUANTITY")
+        zero_flagged = True
       if quantity < 0:
         quantity = Decimal("0")
-
+        
       formula, unit = "SOLID_NET_VOLUME", Unit.M3.value
       inputs = {"geometry_kind": s.geometry_kind, "gross_m3": str(gross)}
       steps = [
@@ -189,7 +195,7 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
     else:
       continue
 
-    if quantity <= 0:
+    if quantity <= 0 and not (s.count is None and zero_flagged):
       continue
 
     confidence = q4(min(mapping.confidence_base, s.classification_confidence) * s.confidence_factor)

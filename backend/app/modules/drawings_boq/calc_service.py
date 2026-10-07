@@ -1,5 +1,7 @@
 from __future__ import annotations
 import asyncio
+import json
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import UUID, uuid4, uuid5
 from sqlalchemy.exc import IntegrityError
@@ -19,6 +21,19 @@ from app.core.config import settings
 from app.engine.measure import finishes as fin
 from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
 from app.engine.measure import rebar as rb
+from datetime import timedelta, timezone, datetime
+import json
+from app.dependencies.tenancy import scope_session_to_org
+
+STALE_RUN_SECONDS = 2100           
+_SNAPSHOT_KEYS = ("rule_set", "rule_profile_snapshot")
+
+def _rule_snapshot(rule_set, profile) -> dict:
+  return {
+    "rule_set": {"id": str(rule_set.id), "code": rule_set.code, "version": rule_set.immutable_version,
+      "content_hash": rule_set.content_hash},
+    "rule_profile_snapshot": json.loads(json.dumps(profile.to_dict(), default=str)),
+  }
 
 class RunError(Exception):
   def __init__(self, code: str, message: str):
@@ -157,9 +172,13 @@ class CalculationService:
     rule_set = await DrawingBOQService(self.session).get_active_rule_set(organization_id, rule_set_code)
     if convention_code and kernel.get_convention(convention_code) is None:
       raise TraceException(f"Unknown measurement convention '{convention_code}'.", status_code=422, code="UNKNOWN_CONVENTION")
-    effective_convention = convention_code or rule_set.convention_code
+    if convention_code and rule_set.convention_code and convention_code != rule_set.convention_code:
+      raise TraceException("The measurement convention is chosen by the rule set. Clone the rule set to use another convention.",
+        status_code=422, code="CONVENTION_OVERRIDE_NOT_ALLOWED")
+      
+    effective_convention = rule_set.convention_code or convention_code
     ids = sorted((d.id for d in chosen), key=str)
-    settings = {"scope": "building", "preferred_rule_code": rule_set_code}
+    settings = {"scope": "building", "preferred_rule_code": rule_set_code, "project_id": str(project_id)}
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
@@ -169,11 +188,12 @@ class CalculationService:
     if existing is not None:
       return existing, True
 
+    await self.runs.fail_stale(project_id, datetime.now(timezone.utc) - timedelta(seconds=STALE_RUN_SECONDS))
     run = CalculationRun(
       id=uuid4(), organization_id=organization_id, project_id=project_id, requested_by_user_id=user_id,
       rule_set_id=rule_set.id, convention_code=effective_convention, drawing_revision_ids=ids,
       engine_version=kernel.ENGINE_VERSION, fingerprint=fingerprint, status="QUEUED",
-      progress_pct=0, settings=settings,
+      progress_pct=0, settings={**settings, **_rule_snapshot(rule_set, profile)},
     )
     try:
       await self.runs.create(run)
@@ -218,12 +238,13 @@ class CalculationService:
     if run is None:
       return
     await self.session.commit()
-
+    
+    await scope_session_to_org(self.session, run.organization_id)
     org = run.organization_id
     project_id = run.project_id
     rule_set_id = run.rule_set_id
     drawing_ids = list(run.drawing_revision_ids)
-    run_settings = dict(run.settings or {})
+    run_settings = {k: v for k, v in (run.settings or {}).items() if k not in _SNAPSHOT_KEYS}
     expected_fingerprint = run.fingerprint
     engine_version = run.engine_version
     convention_code = run.convention_code
@@ -301,7 +322,8 @@ class CalculationService:
         return {"spaces": len(p6.spaces), "finish_lines": len(res.ledger), "skipped": res.skipped}
 
       async def schedules():
-        res = await asyncio.to_thread(fin.schedule_lines_ledger, ctx, p6.schedule_lines)
+        model_codes = frozenset(e.work_item_code for e in state["ledger"] + state["extra_ledger"])
+        res = await asyncio.to_thread(fin.schedule_lines_ledger, ctx, p6.schedule_lines, model_codes)
         await self.runs.stage_solids([_solid_row(run, s, "schedules") for s in res.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "schedules") for e in res.ledger])
         state["extra_solids"] += res.solids
@@ -347,6 +369,7 @@ class CalculationService:
       await self.session.commit()
 
       promoted = await self.runs.promote(run_id)
+      await self.runs.clear_staged(run_id)   
       await self.runs.supersede_older_completed(org, project_id, run_id, drawing_ids)
       await self.runs.complete(run_id, {
         "promoted": promoted,
@@ -378,6 +401,7 @@ class CalculationService:
         code = "RUN_FAILED"
       await self.runs.fail_running_stages(run_id, str(exc))
       await self.runs.mark_failed(run_id, code, str(exc))
+      await self.runs.clear_staged(run_id)
       await self.session.commit()
       
   async def _build_boq_after_run(self, org: UUID, run_id: UUID, actor) -> None:

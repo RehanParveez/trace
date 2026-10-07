@@ -22,7 +22,7 @@ REVIEW_WARNING_CODES = frozenset({
   "QTO_GEOMETRY_MISMATCH", "ALLOCATION_APPROXIMATE", "NOT_ALLOCATED", "OVER_DEDUCTED",
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
-    "MATCHED_ELEMENT_NOT_MEASURED",
+    "MATCHED_ELEMENT_NOT_MEASURED", "DUPLICATE_SOLID", "SCHEDULE_OVERLAPS_MODEL", "SCHEDULE_LOW_CONFIDENCE",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -251,8 +251,17 @@ LEDGER_WARNING_CATALOG = {
     "Check these overlaps in the model."),
   "ALLOCATION_APPROXIMATE": ("warning", "NONE", "Overlaps were allocated from bounding boxes, not exact footprints.",
     "Re-upload the model with the current reader so footprints are stored."),
-  "NOT_ALLOCATED": ("warning", "NONE", "Elements had no footprint and were not allocated; their volume is gross.",
-    "Re-upload the model or fix the geometry."),
+  "NOT_ALLOCATED": ("warning", "NONE",
+    "Elements were not allocated (no usable footprint, sloped or non-prismatic shape, a role the convention does not rank, "
+    "or no convention on the rule set); their volume is gross and may overlap other elements.",
+    "Check these elements in the model, or set a convention on the rule set."),
+  "DUPLICATE_SOLID": ("warning", "NONE", "An element is fully inside another element of the same role (duplicate in the model); "
+    "it was given zero volume.", "Delete the duplicate element in the model."),
+  "SCHEDULE_OVERLAPS_MODEL": ("warning", "APPROVAL", "A schedule row uses a work item that the model or the finish rules "
+    "already measured in this run, so the quantity may be counted twice.",
+    "Archive the schedule row, change its work item, or waive this issue with a reason."),
+  "SCHEDULE_LOW_CONFIDENCE": ("warning", "NONE", "A schedule row was read with low confidence.",
+    "Check the row against the drawing."),
   "QTO_FALLBACK": ("warning", "NONE", "Volume was taken from the model's Qto value because geometry was incomplete.", None),
   "LOW_CONFIDENCE_GEOMETRY": ("warning", "NONE", "Volume is approximate (bounding box or Qto only).", None),
   "GEOMETRY_INCOMPLETE": ("warning", "NONE", "Profile or depth missing; no volume was measured.", None),

@@ -5,7 +5,7 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.audit.service import AuditLogService
 from uuid import UUID, uuid4
 from sqlalchemy import and_, func, or_, select
-from app.modules.drawings_boq.models import BuildingLevel, BuildingSpace, DrawingElement, SpaceBoundary, SpaceFinish
+from app.modules.drawings_boq.models import BuildingLevel, BuildingSpace, DrawingElement, SpaceBoundary, SpaceFinish, Drawing
 from app.modules.drawings_boq.finish_schedule.common import audit_entity, current_ifc_drawing_ids, require_work_item
 from app.core.exceptions import TraceException
 from app.modules.audit.models import AuditAction
@@ -185,8 +185,10 @@ class SpaceService:
     wanted = set(element_ids)
     
     if wanted:
-      found = {row[0] for row in (await self.session.execute(select(DrawingElement.id).where(
-        DrawingElement.organization_id == org, DrawingElement.id.in_(list(wanted)))))}
+      found = {row[0] for row in (await self.session.execute(
+        select(DrawingElement.id).join(Drawing, Drawing.id == DrawingElement.drawing_id).where(
+          DrawingElement.organization_id == org, DrawingElement.id.in_(list(wanted)),
+          Drawing.project_id == space.project_id, Drawing.is_current_revision.is_(True))))}
       if found != wanted:
         raise TraceException("One or more elements were not found.", status_code=422, code="ELEMENT_NOT_FOUND")
     existing = (await self.session.execute(select(SpaceBoundary).where(
