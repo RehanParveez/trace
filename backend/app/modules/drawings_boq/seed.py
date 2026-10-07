@@ -14,6 +14,7 @@ from app.shared.seed_utils import seed_module_permissions
 from app.modules.drawings_boq.permissions import DRAWINGS_BOQ_PERMISSIONS 
 from app.modules.drawings_boq.standards.seed import seed_standards
 from app.modules.drawings_boq.finish_seed import seed_finish_defaults
+from app.modules.drawings_boq.rebar_seed import seed_rebar_defaults
  
 MATERIAL_ENTRIES = [ 
   { 
@@ -351,6 +352,7 @@ async def main():
     await seed_drawings_boq_rules(session) 
     await seed_standards(session)
     await seed_finish_defaults(session)
+    await seed_rebar_defaults(session)
     await session.commit() 
   print( 
     "Drawings & BOQ module seeding completed successfully." 

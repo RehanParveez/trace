@@ -9,9 +9,10 @@ from app.engine.measure.allocate import allocate as _allocate
 from app.engine.measure.conventions import get_convention
 from app.engine.measure.intersect import find_overlaps
 from app.engine.measure.spatial import build_spatial_index
-from app.engine.measure.finishes import PHASE6_FORMULA_UNITS, apply_openings, measure_finishes, merge_openings, schedule_lines_ledger
+from app.engine.measure.finishes import REINFORCEMENT_FORMULA_UNITS, apply_openings, measure_finishes, merge_openings, schedule_lines_ledger
+from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar
 
-ENGINE_VERSION = "2026.10.4"
+ENGINE_VERSION = "2026.10.5"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -30,7 +31,7 @@ VOLUME_ROLES = frozenset({
   "RAMP", "RAMP_SLAB",
 })
 COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
-FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **PHASE6_FORMULA_UNITS}
+FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
 QTO_ONLY_FACTOR = Decimal("0.9")
 AABB_CONFIDENCE_FACTOR = Decimal("0.8")
@@ -293,6 +294,11 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     for res in (measure_finishes(ctx, profile, ctx.spaces, ctx.openings), schedule_lines_ledger(ctx, ctx.schedule_lines)):
       extra_solids += res.solids
       extra_ledger += res.ledger
+  if profile is not None:
+    rebar_res = measure_rebar(ctx, profile, solids, ledger, ctx.rebar)
+    extra_solids += rebar_res.solids
+    extra_ledger += rebar_res.ledger
   self_check(solids + extra_solids, ledger + extra_ledger, alloc)
+  
   return CalculationResult(solids=solids + extra_solids, ledger=ledger + extra_ledger, rejected=rejected,
     skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=alloc.deductions)

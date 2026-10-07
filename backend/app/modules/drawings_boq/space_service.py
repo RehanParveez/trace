@@ -14,7 +14,7 @@ from app.modules.drawings_boq.boq_logic import UNIT_TABLE
 from app.modules.drawings_boq.schedule_parsing import SURFACE_UNIT
 from app.engine.measure import finishes as fin
 from app.engine.measure import engine as kernel
-from app.modules.drawings_boq.spatial_repository import load_phase6_inputs
+from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.drawings_boq.standards.service import StandardsService
 
@@ -254,7 +254,7 @@ class SpaceService:
   async def preview_finishes(self, org: UUID, space_id: UUID, rule_set_code: str | None = None) -> dict:
     space = await self._space(org, space_id)
     drawing_ids = await current_ifc_drawing_ids(self.session, org, space.project_id)
-    p6 = await load_phase6_inputs(self.session, org, space.project_id, drawing_ids)
+    p6 = await load_reinforcements_inputs(self.session, org, space.project_id, drawing_ids)
     match = [s for s in p6.spaces if s.id == space.id]
     
     if not match:

@@ -287,6 +287,12 @@ class BOQEngineService:
         message=f"{n} finish line(s) were not measured: {reason}.",
         suggested_fix="Fix the space in the model, or set the finish manually.", details={"reason": reason, "count": n}))
       
+    for reason, n in sorted((stats.get("rebar_skipped") or {}).items()):
+      specs.append(logic.IssueSpec(
+        code="REBAR_ROW_SKIPPED", severity="warning", blocks="NONE", dedupe_key=f"REBAR_SKIPPED:{reason}",
+        message=f"{n} bar schedule row(s) were not measured ({reason}).",
+        suggested_fix="Fix the row's shape, dimensions or length and re-run.", details={"reason": reason, "count": n}))
+      
     mapped = [m.ifc_type for m in profile.mappings if m.work_item_code]
     invalid = await self.repo.invalid_counts(org, list(run.drawing_revision_ids), mapped,
       sorted(VOLUME_ROLES | COUNT_ROLES))
@@ -718,6 +724,8 @@ class BOQEngineService:
             steps.append(f"less {qty} {l.unit} ({s.get('type')}) {s.get('note') or s.get('rule') or ''}".strip())
           elif op == "count":
             steps.append(f"count {s['nos']}")
+          elif op == "bar_mark":
+            steps.append(f"bar {s['mark']} dia {s['dia_mm']} x {s['count']} = {s['kg']} kg")
           elif op == "schedule_quantity":
             steps.append(f"schedule {qty or s.get(l.unit)} {l.unit}")
         steps.append(f"net {(l.trace or {}).get('net')}")

@@ -2,6 +2,7 @@ from __future__ import annotations
 from uuid import UUID
 from decimal import Decimal
 from dataclasses import dataclass, field
+from uuid import UUID, uuid4
 
 @dataclass(frozen=True)
 class ModelElement:
@@ -37,6 +38,7 @@ class CalculationContext:
   openings: tuple = ()
   spaces: tuple = ()
   schedule_lines: tuple = ()
+  rebar: object = None
   rebar_rules: tuple = ()
   bar_sizes: tuple = ()
   shapes: tuple = ()
@@ -163,6 +165,7 @@ class SpaceFinishInput:
   schedule_row_id: UUID | None = None
   deduct_openings: bool = True
   extra: dict = field(default_factory=dict)
+  id: UUID = field(default_factory=uuid4)
 
 @dataclass(frozen=True)
 class SpaceInput:
@@ -276,3 +279,86 @@ class BarMark:
   trace: dict
   warnings: tuple = ()
   schedule_row_id: UUID | None = None
+  
+class RebarError(Exception):
+  pass
+
+@dataclass(frozen=True)
+class ShapeSpec:
+  code: str
+  segments: tuple = ()
+  bend_angles: tuple = ()
+  hook_ends: int = 0
+  is_link: bool = False
+
+@dataclass(frozen=True)
+class BarSizeSpec:
+  standard: str
+  designation: str
+  grade: str
+  dia_mm: Decimal
+  kg_per_m: Decimal
+
+@dataclass(frozen=True)
+class RebarRowInput:
+  id: UUID
+  import_id: UUID
+  row_no: int
+  member_mark: str | None
+  mark: str
+  role: str | None
+  shape_code: str | None
+  shape_params: dict
+  designation: str | None
+  dia_mm: Decimal
+  grade: str | None
+  count: int
+  spacing_mm: Decimal | None
+  cut_len_mm: Decimal | None
+  declared_total_kg: Decimal | None
+  level_id: UUID | None
+  matched_element_id: UUID | None
+  confidence: Decimal
+
+@dataclass(frozen=True)
+class RebarInputs:
+  rows: tuple = ()
+  shapes: tuple = ()
+  sizes: tuple = ()
+
+@dataclass(frozen=True)
+class BarMark:
+  solid_id: UUID
+  element_id: UUID | None
+  level_id: UUID | None
+  mark: str
+  role: str
+  shape_code: str
+  shape_params: dict
+  designation: str | None
+  dia_mm: Decimal
+  grade: str | None
+  count: int
+  spacing_mm: Decimal | None
+  cut_len_mm: Decimal
+  stock_len_mm: Decimal | None
+  pieces: int
+  lap_count: int
+  lap_len_mm: Decimal | None
+  total_len_m: Decimal
+  unit_weight_kg_m: Decimal
+  total_kg: Decimal
+  provenance: str
+  confidence: Decimal
+  review_status: str
+  schedule_row_id: UUID | None
+  trace: dict
+  warnings: tuple = ()
+
+@dataclass(frozen=True)
+class RebarResult:
+  solids: list = field(default_factory=list)
+  ledger: list = field(default_factory=list)
+  marks: list = field(default_factory=list)
+  skipped: dict = field(default_factory=dict)
+  stats: dict = field(default_factory=dict)

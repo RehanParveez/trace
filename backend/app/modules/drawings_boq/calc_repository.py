@@ -1,7 +1,7 @@
 from __future__ import annotations
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.drawings_boq.models import CalculationRun, QuantityLedger, QuantitySolid, RunStageLog, StagedQuantityLedger, StagedQuantitySolid, LedgerDeduction, StagedLedgerDeduction
+from app.modules.drawings_boq.models import CalculationRun, QuantityLedger, QuantitySolid, RunStageLog, StagedQuantityLedger, StagedQuantitySolid, LedgerDeduction, StagedLedgerDeduction, RebarBarMark, StagedRebarBarMark
 from uuid import UUID
 from sqlalchemy import delete, func, insert, select, update
 
@@ -124,6 +124,7 @@ class CalculationRunRepository:
     return list(result.scalars().all())
 
   async def clear_staged(self, run_id: UUID) -> None:
+    await self.session.execute(delete(StagedRebarBarMark).where(StagedRebarBarMark.run_id == run_id))
     await self.session.execute(delete(StagedLedgerDeduction).where(StagedLedgerDeduction.run_id == run_id))
     await self.session.execute(delete(StagedQuantityLedger).where(StagedQuantityLedger.run_id == run_id))
     await self.session.execute(delete(StagedQuantitySolid).where(StagedQuantitySolid.run_id == run_id))
@@ -139,6 +140,10 @@ class CalculationRunRepository:
   async def stage_deductions(self, rows: list[dict]) -> None:
     for i in range(0, len(rows), _CHUNK):
       await self.session.execute(insert(StagedLedgerDeduction), rows[i:i + _CHUNK])
+      
+  async def stage_bar_marks(self, rows: list[dict]) -> None:
+    for i in range(0, len(rows), _CHUNK):
+      await self.session.execute(insert(StagedRebarBarMark), rows[i:i + _CHUNK])
 
   async def promote(self, run_id: UUID) -> dict:
     solid_cols = [c.name for c in QuantitySolid.__table__.columns]
@@ -158,13 +163,21 @@ class CalculationRunRepository:
       insert(LedgerDeduction.__table__).from_select(
         ded_cols, select(*[d_src.c[n] for n in ded_cols]).where(d_src.c.run_id == run_id))
     )
+    mark_cols = [c.name for c in RebarBarMark.__table__.columns]
+    m_src = StagedRebarBarMark.__table__
+    await self.session.execute(
+      insert(RebarBarMark.__table__).from_select(
+        mark_cols, select(*[m_src.c[n] for n in mark_cols]).where(m_src.c.run_id == run_id))
+    )
+    bar_marks = (await self.session.execute(
+      select(func.count()).select_from(RebarBarMark).where(RebarBarMark.run_id == run_id))).scalar_one()
     deductions = (await self.session.execute(
       select(func.count()).select_from(LedgerDeduction).where(LedgerDeduction.run_id == run_id))).scalar_one()
     solids = (await self.session.execute(
       select(func.count()).select_from(QuantitySolid).where(QuantitySolid.run_id == run_id))).scalar_one()
     ledger = (await self.session.execute(
       select(func.count()).select_from(QuantityLedger).where(QuantityLedger.run_id == run_id))).scalar_one()
-    return {"solids": solids, "ledger_rows": ledger, "deductions": deductions}
+    return {"solids": solids, "ledger_rows": ledger, "deductions": deductions, "bar_marks": bar_marks}
 
   async def list_solids(self, run_id: UUID, organization_id: UUID, *, limit: int, after: UUID | None = None,
     role: str | None = None, level_id: UUID | None = None) -> list[QuantitySolid]:

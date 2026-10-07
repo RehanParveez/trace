@@ -18,7 +18,7 @@ from app.engine.measure.formulas import CANONICAL_UNITS, check_component_units, 
 from dataclasses import replace
 from app.modules.drawings_boq.models import FinishRule
 from app.modules.drawings_boq.spatial_repository import finish_rule_rows, finish_rule_specs
-from app.modules.drawings_boq.standards.finish_validation import validate_finish_rules
+from app.modules.drawings_boq.standards.validation import validate_finish_rules
 from app.modules.drawings_boq.standards.rebar_validation import validate_reinforcement_rules
 
 DEFAULT_RULE_CODE = "PUNJAB_CSR"

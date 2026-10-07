@@ -8,11 +8,12 @@ from app.engine.measure.models import OpeningInput, ScheduleLineInput, SpaceFini
 from app.engine.measure.profile import FinishRuleSpec
 from app.modules.drawings_boq.schedule_parsing import norm_mark
 from app.modules.drawings_boq.models import BuildingSpace, DrawingElement, ElementRelation, FinishRule, ScheduleImport, ScheduleRow, SpaceBoundary, SpaceFinish
+from app.modules.drawings_boq.rebar.rebar_repository import load_rebar_inputs
 
 _CHUNK = 1000
 
 @dataclass(frozen=True)
-class Phase6Inputs:
+class ReinforcementsInputs:
   spaces: tuple = ()
   openings: tuple = ()
   schedule_lines: tuple = ()
@@ -36,14 +37,14 @@ async def finish_rule_specs(session: AsyncSession, rule_set_id: UUID) -> tuple[F
     key=lambda s: (s.space_category, s.surface, s.work_item_code),
   ))
 
-async def load_phase6_inputs(
+async def load_reinforcements_inputs(
   session: AsyncSession,
   org: UUID,
   project_id: UUID,
   drawing_ids: list[UUID],
-) -> Phase6Inputs:
+) -> ReinforcementsInputs:
   if not drawing_ids:
-    return Phase6Inputs()
+    return ReinforcementsInputs()
 
   spaces = list((await session.execute(
     select(BuildingSpace).where(
@@ -200,10 +201,10 @@ async def load_phase6_inputs(
     ) for r in lines if not (r.schedule_kind == "FINISH" and r.space_id is not None)
   ), key=lambda l: str(l.id)))
 
-  return Phase6Inputs(
+  return ReinforcementsInputs(
     spaces=space_inputs,
     openings=tuple(sorted(openings.values(), key=lambda o: str(o.element_id))),
-    schedule_lines=line_inputs,
+    schedule_lines=line_inputs, rebar=await load_rebar_inputs(session, org, project_id)
   )
 
 async def persist_spatial(session: AsyncSession, drawing, read_result, drawing_elements, level_ids: dict) -> None:

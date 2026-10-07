@@ -17,7 +17,8 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.core.config import settings
 from app.engine.measure import finishes as fin
-from app.modules.drawings_boq.spatial_repository import load_phase6_inputs
+from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
+from app.engine.measure import rebar as rb
 
 class RunError(Exception):
   def __init__(self, code: str, message: str):
@@ -70,6 +71,19 @@ def _deduction_row(run: CalculationRun, d, ctx: CalculationContext, stage: str =
     "engine_version": run.engine_version, "stage": stage,
   }
   
+def _bar_mark_row(run: CalculationRun, m, stage: str = "reinforcement") -> dict:
+  return {
+    "id": uuid5(run.id, f"mark|{m.solid_id}|{m.mark}"), "organization_id": run.organization_id, "run_id": run.id,
+    "solid_id": m.solid_id, "element_id": m.element_id, "level_id": m.level_id, "mark": m.mark, "role": m.role,
+    "shape_code": m.shape_code, "shape_params": m.shape_params, "designation": m.designation, "dia_mm": m.dia_mm,
+    "grade": m.grade, "count": m.count, "spacing_mm": m.spacing_mm, "cut_len_mm": m.cut_len_mm,
+    "stock_len_mm": m.stock_len_mm, "pieces": m.pieces, "lap_count": m.lap_count, "lap_len_mm": m.lap_len_mm,
+    "total_len_m": m.total_len_m, "unit_weight_kg_m": m.unit_weight_kg_m, "total_kg": m.total_kg,
+    "provenance": m.provenance, "confidence": m.confidence, "review_status": m.review_status,
+    "schedule_row_id": m.schedule_row_id, "trace": m.trace, "warnings": list(m.warnings),
+    "engine_version": run.engine_version, "stage": stage,
+  }
+  
 def engine_v2_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_v2_org_ids or "").split(",") if s.strip()}
   return "*" in ids or str(org_id) in ids
@@ -95,8 +109,8 @@ class CalculationService:
     for drawing_id in sorted(drawing_ids, key=str):
       rows = await self.elements.list_by_drawing(drawing_id, organization_id)
       elements.extend(_to_model_element(r) for r in rows)
-    phase6 = await load_phase6_inputs(self.session, organization_id, project_id, sorted(drawing_ids, key=str))
-    return profile, mappings, elements, phase6
+    reinforcements = await load_reinforcements_inputs(self.session, organization_id, project_id, sorted(drawing_ids, key=str))
+    return profile, mappings, elements, reinforcements
 
   async def _convention_params(self, code: str | None) -> dict:
     if not code:
@@ -109,13 +123,13 @@ class CalculationService:
 
   @staticmethod
   def _fingerprint(elements, mappings, profile, rule_set, settings: dict,
-    convention_code: str | None, convention_params: dict, phase6=None) -> str:
+    convention_code: str | None, convention_params: dict, reinforcements=None) -> str:
     return compute_fingerprint(
       elements=elements, mappings=mappings, profile_fingerprint=profile.fingerprint(),
       rule_set_ref=f"{rule_set.id}:{rule_set.immutable_version}:{rule_set.content_hash}",
       convention_code=convention_code, engine_version=kernel.ENGINE_VERSION,
       settings=settings, convention_params=convention_params,
-      spatial=fin.finish_sched_payload(phase6.spaces, phase6.openings, phase6.schedule_lines) if phase6 else None,
+      spatial={**fin.finish_sched_payload(reinforcements.spaces, reinforcements.openings, reinforcements.schedule_lines), "rebar": rb.rebar_payload(reinforcements.rebar)} if reinforcements else None,
     )
 
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,
@@ -146,10 +160,10 @@ class CalculationService:
     effective_convention = convention_code or rule_set.convention_code
     ids = sorted((d.id for d in chosen), key=str)
     settings = {"scope": "building", "preferred_rule_code": rule_set_code}
-    profile, mappings, elements, phase6 = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
+    profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
-      convention_params, phase6)
+      convention_params, reinforcements)
 
     existing = await self.runs.get_completed_by_fingerprint(organization_id, fingerprint)
     if existing is not None:
@@ -230,9 +244,9 @@ class CalculationService:
         convention_code=convention_code, rule_set_code=rule_set.code,
         rule_set_version=rule_set.immutable_version, mappings=mappings,
         convention_params=convention_params, openings=p6.openings, spaces=p6.spaces,
-        schedule_lines=p6.schedule_lines,
+        schedule_lines=p6.schedule_lines, rebar=p6.rebar,
       )
-      state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}}
+      state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
       state["alloc"] = kernel.AllocationResult.empty()
 
@@ -293,10 +307,23 @@ class CalculationService:
         state["extra_solids"] += res.solids
         state["extra_ledger"] += res.ledger
         return {"schedule_lines": len(res.ledger)}
+      
+      async def reinforcement():
+        res = await asyncio.to_thread(rb.measure_rebar, ctx, profile, state["solids"], state["ledger"], p6.rebar)
+        await self.runs.stage_solids([_solid_row(run, s, "reinforcement") for s in res.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "reinforcement") for e in res.ledger])
+        await self.runs.stage_bar_marks([_bar_mark_row(run, m) for m in res.marks])
+        state["extra_solids"] += res.solids
+        state["extra_ledger"] += res.ledger
+        state["marks"], state["rebar_stats"], state["rebar_skipped"] = res.marks, res.stats, res.skipped
+        return {**res.stats, "skipped": res.skipped}
 
       async def check():
         await asyncio.to_thread(kernel.self_check, state["solids"] + state["extra_solids"],
           state["ledger"] + state["extra_ledger"], state["alloc"])
+        failures = rb.self_check_rebar(state["marks"], state["extra_ledger"])
+        if failures:
+          raise kernel.InvariantViolation(failures)
         return {"invariants": "passed"}
 
       await self._stage(run, "validate_input", validate, 15)
@@ -313,6 +340,7 @@ class CalculationService:
       await self._stage(run, "finishes", finishes, 75)
       await self._stage(run, "schedules", schedules, 78)
       await self._skip(run, "recipes", "reinforcement", reason="not implemented in this engine version")
+      await self._stage(run, "reinforcement", reinforcement, 79)
       await self._stage(run, "self_check", check, 80)
 
       await self.runs.set_progress(run_id, 90, status="STAGED")
@@ -332,7 +360,10 @@ class CalculationService:
         "allocation": state["alloc"].stats,
         "finishes_skipped": state["finish_skipped"],
         "spaces": len(p6.spaces),
+        "rebar": state["rebar_stats"],
+        "rebar_skipped": state["rebar_skipped"],
       })
+
       await self.session.commit()
 
       await self._build_boq_after_run(org, run_id, requested_by)

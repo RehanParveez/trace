@@ -21,7 +21,7 @@ FINISH_FORMULAS = {
 }
 
 SCHEDULE_UNITS = ("m3", "m2", "m", "kg", "nos")
-PHASE6_FORMULA_UNITS = {
+REINFORCEMENT_FORMULA_UNITS = {
   **{code: unit for code, unit in FINISH_FORMULAS.values()},
   **{f"SCHEDULE_LINE_{u.upper()}": u for u in SCHEDULE_UNITS},
 }

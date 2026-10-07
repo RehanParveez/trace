@@ -4,6 +4,7 @@ from decimal import Decimal
 import json
 import hashlib
 from dataclasses import asdict, dataclass, field
+from uuid import UUID, uuid4
 
 def _jsonable(value: Any) -> Any:
   if isinstance(value, Decimal):
@@ -40,6 +41,11 @@ class ReinforcementRuleSpec:
   dev_length_method: str | None = None
   splice_constraints: dict = field(default_factory=dict)
   extra_config: dict = field(default_factory=dict)
+  stock_length_mm: Decimal | None = None
+  cover_mm: Decimal | None = None
+  min_lap_mm: Decimal | None = None
+  use_couplers: bool = False
+  weight_tolerance_pct: Decimal = Decimal("2.0")
 
 @dataclass(frozen=True)
 class MappingSpec:
@@ -95,6 +101,7 @@ class FinishRuleSpec:
   deduct_openings: bool = True
   priority: int = 0
   exclude: bool = False
+  id: UUID = field(default_factory=uuid4)
 
 @dataclass(frozen=True)
 class ResolvedRuleProfile:

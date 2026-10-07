@@ -21,7 +21,8 @@ REVIEW_WARNING_CODES = frozenset({
   "GEOMETRY_INCOMPLETE", "QTO_FALLBACK", "LOW_CONFIDENCE_GEOMETRY", "UNSUPPORTED_GEOMETRY",
   "QTO_GEOMETRY_MISMATCH", "ALLOCATION_APPROXIMATE", "NOT_ALLOCATED", "OVER_DEDUCTED",
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
-  "FINISH_NEEDS_REVIEW",
+  "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
+    "MATCHED_ELEMENT_NOT_MEASURED",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -263,6 +264,15 @@ LEDGER_WARNING_CATALOG = {
     "Openings were assigned to rooms by wall membership, without a position check.",
     "Check the deducted openings in the measurement book."),
   "FINISH_NEEDS_REVIEW": ("warning", "NONE", "The finish for this surface needs review.", None),
+  "STEEL_ESTIMATED": ("warning", "ISSUE", "Steel is estimated from concrete volume, not measured from a bar schedule.",
+    "Import and confirm a bar bending schedule, or waive this issue with a reason."),
+  "DECLARED_WEIGHT_MISMATCH": ("warning", "NONE", "A bar schedule weight differs from the computed weight.",
+    "Check the bar sizes, counts and lengths in the schedule."),
+  "MIXED_GRADES": ("warning", "NONE", "Bars of different grades share one member; the line has no single grade.", None),
+  "LAP_LENGTH_UNKNOWN": ("warning", "NONE", "A bar longer than stock length has no lap rule, so no lap was added.",
+    "Set a lap basis and coefficient on the reinforcement rule."),
+  "MATCHED_ELEMENT_NOT_MEASURED": ("warning", "NONE", "A bar row was matched to an element that is not measured.", None),
+  "UNIT_WEIGHT_COMPUTED": ("info", "NONE", "Unit weight was computed from the diameter (no bar-size entry).", None),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
