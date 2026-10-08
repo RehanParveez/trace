@@ -19,4 +19,5 @@ DRAWINGS_BOQ_PERMISSIONS = {
   PermissionKey.SPACE_MANAGE: "Create and edit rooms (spaces) and their boundaries.",
   PermissionKey.FINISH_MANAGE: "Set room finishes.",
   PermissionKey.SCHEDULE_IMPORT: "Import, review and confirm schedules and bar bending schedules.",
+  PermissionKey.RATEBOOK_MANAGE: "Create, edit and publish rate books, rate analyses and escalations.",
 }

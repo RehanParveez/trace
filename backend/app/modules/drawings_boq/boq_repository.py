@@ -328,3 +328,11 @@ class BOQEngineRepository:
     r = await self.session.execute(
       select(QuantitySolid).where(QuantitySolid.id.in_(ids), QuantitySolid.organization_id == org))
     return {s.id: s for s in r.scalars().all()}
+  
+  async def previous_snapshot_for_project(self, org: UUID, project_id: UUID, exclude_version_id: UUID) -> BOQSnapshot | None:
+    r = await self.session.execute(
+      select(BOQSnapshot).join(BOQVersion, BOQVersion.id == BOQSnapshot.boq_version_id)
+      .where(BOQSnapshot.organization_id == org, BOQVersion.project_id == project_id,
+        BOQSnapshot.boq_version_id != exclude_version_id)
+      .order_by(BOQSnapshot.created_at.desc(), BOQSnapshot.version_no.desc()).limit(1))
+    return r.scalar_one_or_none()

@@ -1,9 +1,9 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
-from app.modules.drawings_boq.models import BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingFormat, DrawingStatus, BOQItemRateSource
+from app.modules.drawings_boq.models import BOQItemStatus, BOQItemType, BOQVersionStatus, DrawingFormat, DrawingStatus
 from typing import Literal
 
 class DrawingResponse(BaseModel):
@@ -73,6 +73,8 @@ class BOQVersionResponse(BaseModel):
   audit_score: Decimal | None = None
   approved_at: datetime | None = None
   issued_at: datetime | None = None
+  priced_at: datetime | None = None
+  pricing_meta: dict = Field(default_factory=dict)
   
 class ProjectBOQCountResponse(BaseModel):
   project_id: UUID
@@ -110,6 +112,9 @@ class BOQItemResponse(BaseModel):
   level_id: UUID | None = None
   item_key: str | None = None
   calculation_run_id: UUID | None = None
+  rate_book_id: UUID | None = None
+  base_rate: Decimal | None = None
+  escalation_factor: Decimal | None = None
 
 class BOQItemUpdateRequest(BaseModel):
   version: int = Field(
@@ -160,6 +165,8 @@ class MaterialLibraryCreateRequest(BaseModel):
     max_length=20,
   )
   default_rate: Decimal | None = None
+  work_item_code: str | None = Field(default=None, max_length=50)
+  effective_from: date | None = None
 
 class MaterialLibraryResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -170,6 +177,8 @@ class MaterialLibraryResponse(BaseModel):
   category: str | None
   default_unit: str | None
   default_rate: Decimal | None
+  work_item_code: str | None = None
+  effective_from: date | None = None
   
 class PDFExtractionResultResponse(BaseModel):
   boq_version_id: UUID
@@ -181,16 +190,22 @@ class MaterialLibraryUpdateRequest(BaseModel):
   category: str | None = Field(default=None, max_length=150)
   default_unit: str | None = Field(default=None, max_length=20)
   default_rate: Decimal | None = None
+  work_item_code: str | None = Field(default=None, max_length=50)
+  effective_from: date | None = None
 
 class LabourRateCreateRequest(BaseModel):
   trade: str = Field(min_length=1, max_length=150)
   unit: str = Field(min_length=1, max_length=20)
   rate: Decimal
+  work_item_code: str | None = Field(default=None, max_length=50)
+  effective_from: date | None = None
 
 class LabourRateUpdateRequest(BaseModel):
   trade: str | None = Field(default=None, min_length=1, max_length=150)
   unit: str | None = Field(default=None, min_length=1, max_length=20)
   rate: Decimal | None = None
+  work_item_code: str | None = Field(default=None, max_length=50)
+  effective_from: date | None = None
 
 class LabourRateResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -199,6 +214,8 @@ class LabourRateResponse(BaseModel):
   trade: str
   unit: str
   rate: Decimal
+  work_item_code: str | None = None
+  effective_from: date | None = None
 
 class BOQCustomItemCreateRequest(BaseModel):
   material_name: str = Field(min_length=1, max_length=300)
@@ -422,6 +439,9 @@ class SnapshotItemResponse(BaseModel):
   quantity: Decimal
   gross_quantity: Decimal | None
   unit_rate: Decimal | None
+  rate_source: str | None = None
+  base_rate: Decimal | None = None
+  escalation_factor: Decimal | None = None
   amount: Decimal | None
   confidence: Decimal | None
   review_status: str

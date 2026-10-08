@@ -46,6 +46,7 @@ from app.modules.drawings_boq.ifc_types import ROLE_BY_IFC_TYPE
 from app.modules.drawings_boq.standards.material_class import classify_material_class
 from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.drawings_boq.boq_service import BOQEngineService, assert_mutable
+from app.modules.drawings_boq.pricing.labour_service import LabourPricingService
 
 SUPPORTED_UPLOAD_FORMATS = {".ifc": DrawingFormat.IFC}
 
@@ -715,6 +716,7 @@ class DrawingBOQService:
       if payload.unit_rate is not None:
         item.unit_rate = payload.unit_rate
         item.rate_source = BOQItemRateSource.MANUAL
+        item.rate_book_id = item.base_rate = item.escalation_factor = item.rate_resolution = None
 
       if payload.save_as_library_default and item.unit_rate is not None:
         raw_key = None
@@ -853,6 +855,8 @@ class DrawingBOQService:
       category=payload.category,
       default_unit=payload.default_unit,
       default_rate=payload.default_rate,
+      work_item_code=payload.work_item_code.strip().upper() if payload.work_item_code else None,
+      effective_from=payload.effective_from,
     )
     entry = await self.material_library.create(entry)
     await self.session.commit()
@@ -894,6 +898,11 @@ class DrawingBOQService:
       entry.default_unit = payload.default_unit
     if payload.default_rate is not None:
       entry.default_rate = payload.default_rate
+    fields = payload.model_fields_set
+    if "work_item_code" in fields:
+      entry.work_item_code = payload.work_item_code.strip().upper() if payload.work_item_code else None
+    if "effective_from" in fields:
+      entry.effective_from = payload.effective_from
     entry = await self.material_library.update(entry)
     
     await self.session.commit()
@@ -934,6 +943,8 @@ class DrawingBOQService:
       trade=payload.trade.strip(),
       unit=payload.unit.strip(),
       rate=payload.rate,
+      work_item_code=payload.work_item_code.strip().upper() if payload.work_item_code else None,
+      effective_from=payload.effective_from,
     )
     rate = await self.labour_rates.create(rate)
     await self.session.commit()
@@ -958,6 +969,11 @@ class DrawingBOQService:
       rate.unit = payload.unit.strip()
     if payload.rate is not None:
       rate.rate = payload.rate
+    fields = payload.model_fields_set
+    if "work_item_code" in fields:
+      rate.work_item_code = payload.work_item_code.strip().upper() if payload.work_item_code else None
+    if "effective_from" in fields:
+      rate.effective_from = payload.effective_from
     rate = await self.labour_rates.update(rate)
     await self.session.commit()
     return rate
@@ -1038,87 +1054,9 @@ class DrawingBOQService:
     self,
     organization_id: UUID,
     boq_version_id: UUID,
+    user_id: UUID | None = None,
   ) -> list[BOQItem]:
-    version = await self.boq_versions.get_by_id_and_org(boq_version_id, organization_id)
-    if version is None:
-     raise TraceException(
-      "BOQ version not found.",
-      status_code=404,
-      code="BOQ_VERSION_NOT_FOUND",
-    )
-     
-    if version.status == BOQVersionStatus.SUPERSEDED:
-      raise TraceException(
-        "Cannot generate labour items on a superseded BOQ version.",
-        status_code=409,
-        code="BOQ_VERSION_SUPERSEDED",
-      )
-    assert_mutable(version)
-      
-    if not version.covered_area_sqft or version.covered_area_sqft <= 0:
-     raise TraceException(
-      "Set covered_area_sqft on this BOQ version before generating labour costs.",
-      status_code=422,
-      code="COVERED_AREA_REQUIRED",
-    )
-
-    rates = await self.labour_rates.list_by_org(organization_id)
-    if not rates:
-     raise TraceException(
-       "No labour rates configured for this organization.",
-       status_code=422,
-       code="NO_LABOUR_RATES",
-     )
-    AREA_UNITS = {"sft", "sq ft", "sqft", "m2", "sqm", "square feet"}
-
-    area_rates = [
-       r for r in rates
-       if r.unit.strip().lower() in AREA_UNITS
-    ]
-    skipped = [
-       r for r in rates
-       if r.unit.strip().lower() not in AREA_UNITS
-    ]
-    if not area_rates:
-      raise TraceException(
-       "No area-based (Sft/m²) labour rates configured.",
-       status_code=422,
-       code="NO_AREA_LABOUR_RATES",
-      )
-
-    existing = await self.boq_items.list_by_version(boq_version_id, organization_id)
-    approved_trades = {
-      item.material_name
-      for item in existing
-      if item.item_type == BOQItemType.LABOUR and item.status == BOQItemStatus.APPROVED
-    }
-
-    for item in existing:
-     if item.item_type == BOQItemType.LABOUR and item.status == BOQItemStatus.DRAFT:
-      await self.session.delete(item)
-    await self.session.flush()
-
-    new_items = [
-     BOQItem(
-      organization_id=organization_id,
-      boq_version_id=boq_version_id,
-      material_name=rate.trade,
-      category="Labour",
-      unit=rate.unit,
-      quantity=_labour_quantity(version.covered_area_sqft, rate.unit),
-      unit_rate=rate.rate,
-      item_type=BOQItemType.LABOUR,
-      source_kind="ESTIMATE",
-      net_quantity=_labour_quantity(version.covered_area_sqft, rate.unit),
-    )
-     for rate in area_rates
-     if rate.trade not in approved_trades
-    ]
-    if new_items:
-     await self.boq_items.bulk_create(new_items)
-    await self.session.commit()
-
-    return new_items
+    return await LabourPricingService(self.session).generate(organization_id, boq_version_id, user_id)
   
   async def delete_boq_item(
     self,

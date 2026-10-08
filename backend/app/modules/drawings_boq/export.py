@@ -142,6 +142,56 @@ def build_boq_pdf(
   doc.build(story)
   return buffer.getvalue()
 
+_STATUS_FILL = {"ADDED": "DCFCE7", "REMOVED": "FEE2E2", "CHANGED": "FEF9C3"}
+
+def build_revision_comparison_xlsx(snapshot: dict, base: dict, diff: dict, meta: dict, company: str) -> bytes:
+  wb = Workbook()
+  head_fill, head_font, bold = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True), Font(bold=True)
+  ws = wb.active
+  ws.title = "Summary"
+  ws.append([company, "REVISION COMPARISON"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append(["Base (older)", _stamp(base)])
+  ws.append(["New", _stamp(snapshot)])
+  ws.append([])
+  summary = diff["summary"]
+  for label, key in (("Lines added", "ADDED"), ("Lines removed", "REMOVED"), ("Lines changed", "CHANGED"), ("Lines unchanged", "UNCHANGED")):
+    ws.append([label, summary[key]])
+    
+  ws.append([])
+  ws.append(["Total (base)", float(summary["total_a"])])
+  ws.append(["Total (new)", float(summary["total_b"])])
+  ws.append(["Difference", float(summary["total_delta"])])
+  ws.cell(row=ws.max_row, column=1).font = bold
+  if summary.get("total_delta_pct") is not None:
+    ws.append(["Difference %", float(summary["total_delta_pct"])])
+  if summary["unpriced_a"] or summary["unpriced_b"]:
+    ws.append([f"Unpriced lines: {summary['unpriced_a']} in the base, {summary['unpriced_b']} in the new snapshot - totals understate them."])
+  ws.column_dimensions["A"].width, ws.column_dimensions["B"].width = 22, 110
+
+  ch = wb.create_sheet("Changes")
+  ch.append(["Status", "Work item", "Description", "Unit (base)", "Unit (new)", "Qty base", "Qty new", "Qty change",
+    "Qty change %", "Rate base", "Rate new", "Rate change", "Amount base", "Amount new", "Amount change"])
+  
+  for c in ch[1]:
+    c.fill, c.font = head_fill, head_font
+  order = {"ADDED": 0, "REMOVED": 1, "CHANGED": 2}
+  for l in sorted((l for l in diff["lines"] if l["status"] != "UNCHANGED"),
+      key=lambda l: (order[l["status"]], l["work_item_code"] or "~", l["material_name"] or "")):
+    ch.append([l["status"], l["work_item_code"], l["material_name"], l["unit_a"], l["unit_b"], _num(l["quantity_a"]),
+      _num(l["quantity_b"]), _num(l["quantity_delta"]), _num(l["quantity_delta_pct"]), _num(l["rate_a"]), _num(l["rate_b"]),
+      _num(l["rate_delta"]), _num(l["amount_a"]), _num(l["amount_b"]), _num(l["amount_delta"])])
+    fill = _STATUS_FILL.get(l["status"])
+    
+    if fill:
+      ch.cell(row=ch.max_row, column=1).fill = PatternFill(start_color=fill, end_color=fill, fill_type="solid")
+  for col, width in zip("ABCDEFGHIJKLMNO", (11, 16, 44, 10, 10, 14, 14, 14, 12, 12, 12, 12, 16, 16, 16)):
+    ch.column_dimensions[col].width = width
+  ch.freeze_panes = "A2"
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
 def build_boq_xlsx(
   boq_version: BOQVersion,
   items: list[BOQItem],
@@ -329,13 +379,15 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
       continue
     ws.append([_SECTION_TITLES[key]])
     ws.cell(row=ws.max_row, column=1).font = bold
-    ws.append(["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"])
+    ws.append(["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)", "Base rate (Rs)", "Escalation (x)"])
     for c in ws[ws.max_row]:
       c.fill, c.font = head_fill, head_font
     for n, r in enumerate(rows_k, 1):
       ws.append([n, r["material_name"] + _flag(r), r["unit"], float(r["quantity"]),
         float(r["unit_rate"]) if r["unit_rate"] is not None else None,
-        float(r["amount"]) if r["amount"] is not None else None])
+        float(r["amount"]) if r["amount"] is not None else None,
+        float(r["base_rate"]) if r.get("base_rate") is not None else None,
+        float(r["escalation_factor"]) if r.get("escalation_factor") is not None else None])
     sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
     ws.append(["", "", "", "", "Sub-total", float(sub)])
     ws.cell(row=ws.max_row, column=5).font = ws.cell(row=ws.max_row, column=6).font = bold
@@ -348,7 +400,7 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
   area = meta.get("covered_area_sqft")
   if area and Decimal(area) > 0:
     ws.append(["Cost per Sft", float(grand / Decimal(area))])
-  for col, width in zip("ABCDEF", (22, 50, 12, 14, 14, 16)):
+  for col, width in zip("ABCDEFGH", (22, 50, 12, 14, 14, 16, 16, 14)):
     ws.column_dimensions[col].width = width
   buffer = BytesIO()
   wb.save(buffer)

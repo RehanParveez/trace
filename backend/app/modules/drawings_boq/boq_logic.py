@@ -17,6 +17,20 @@ UNIT_TABLE: dict[str, tuple[str, Decimal]] = {
 }
 _CATEGORY = {"m3": "volume", "m2": "area", "m": "length", "kg": "weight", "nos": "count"}
 
+UNIT_ALIASES: dict[str, str] = {
+  "cum": "m3", "cu.m": "m3", "cu m": "m3", "m³": "m3", "cubic metre": "m3", "cubic meter": "m3",
+  "sqm": "m2", "sq.m": "m2", "sq m": "m2", "m²": "m2", "square metre": "m2", "square meter": "m2",
+  "sq ft": "sft", "sq.ft": "sft", "sqft": "sft", "square feet": "sft", "square foot": "sft",
+  "cu ft": "cft", "cu.ft": "cft", "cuft": "cft", "cubic feet": "cft", "cubic foot": "cft",
+  "rm": "m", "rmt": "m", "mtr": "m", "metre": "m", "meter": "m", "r.ft": "rft", "running feet": "rft",
+  "kgs": "kg", "kilogram": "kg",
+  "no": "nos", "no.": "nos", "nos.": "nos", "each": "nos", "ea": "nos", "unit": "nos", "units": "nos", "pcs": "nos",
+}
+
+def normalise_unit(unit: str | None) -> str:
+  key = (unit or "").strip().lower()
+  return UNIT_ALIASES.get(key, key)
+
 REVIEW_WARNING_CODES = frozenset({
   "GEOMETRY_INCOMPLETE", "QTO_FALLBACK", "LOW_CONFIDENCE_GEOMETRY", "UNSUPPORTED_GEOMETRY",
   "QTO_GEOMETRY_MISMATCH", "ALLOCATION_APPROXIMATE", "NOT_ALLOCATED", "OVER_DEDUCTED",
@@ -59,10 +73,11 @@ def resolve_display_unit(canonical: str, preferred: dict | None, fallback: str |
   return canonical, ONE
 
 def convert_rate(rate: Decimal, from_unit: str, to_unit: str) -> Decimal | None:
-  a = UNIT_TABLE.get((from_unit or "").strip().lower())
-  b = UNIT_TABLE.get((to_unit or "").strip().lower())
+  a = UNIT_TABLE.get(normalise_unit(from_unit))
+  b = UNIT_TABLE.get(normalise_unit(to_unit))
   if a is None or b is None or a[0] != b[0]:
     return None
+  
   return q2(Decimal(rate) * a[1] / b[1])
 
 @dataclass(frozen=True)
@@ -172,10 +187,10 @@ _TYPE_ORDER = {"MATERIAL": 0, "LABOUR": 1, "CUSTOM": 2}
 _PLACES = {
   "net_quantity": 4, "adjustment_total": 4, "quantity": 4, "gross_quantity": 4,
   "waste_factor_applied": 4, "unit_factor": 10, "unit_rate": 2, "amount": 2, "confidence": 4,
+  "base_rate": 2, "escalation_factor": 4,
 }
 
 def ledger_hash(pairs: Iterable[tuple]) -> str | None:
-  """pairs = (ledger_id, quantity_contributed). Stable hash of the evidence behind one item."""
   parts = sorted(f"{lid}:{fmt(Decimal(qty), 6)}" for lid, qty in pairs)
   if not parts:
     return None
@@ -208,8 +223,8 @@ def build_snapshot(items: list[dict], header: dict):
       "net_quantity": q4(net if net is not None else quantity),
       "adjustment_total": q4(i.get("adjustment_total") or ZERO), "quantity": quantity,
       "waste_factor_applied": i.get("waste_factor_applied"),
-      "gross_quantity": i.get("gross_quantity"),
-      "unit_rate": rate, "rate_source": i.get("rate_source"), "amount": amount,
+      "base_rate": i.get("base_rate"), "escalation_factor": i.get("escalation_factor"),
+      "rate_resolution": i.get("rate_resolution"),
       "confidence": i.get("confidence"), "review_status": i.get("review_status") or "OK",
       "source_kind": i.get("source_kind") or "MODEL", "is_manual": bool(i.get("is_manual")),
       "ledger_row_count": int(i.get("ledger_row_count") or 0), "ledger_hash": i.get("ledger_hash"),

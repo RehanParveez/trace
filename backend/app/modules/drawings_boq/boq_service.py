@@ -16,16 +16,19 @@ from uuid import UUID, uuid4
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.engine.measure.engine import COUNT_ROLES, VOLUME_ROLES
 from app.modules.drawings_boq.boq_repository import BOQEngineRepository
-from app.modules.drawings_boq import export as exp
+from app.modules.drawings_boq.pricing import pricing_logic as pricing
+from app.modules.drawings_boq.pricing_resolver import PriceResolver, apply_resolution, clear_rate
 from app.modules.drawings_boq.rebar import rebar_repository as rebar_repo
+import app.modules.drawings_boq.export as exp
 
 _LOCKED = frozenset({"CALCULATING", "APPROVED", "ISSUED", "SUPERSEDED", "ARCHIVED"})
 _NON_WAIVABLE = logic.NON_WAIVABLE_CODES
 _COPY = ("material_name", "category", "unit", "quantity", "unit_rate", "rate_source", "item_type", "description",
   "work_item_code", "canonical_unit", "unit_factor", "net_quantity", "waste_factor_applied", "confidence",
-  "level_id", "material_grade", "item_key", "calculation_formula", "source_element_count")
+  "level_id", "material_grade", "item_key", "calculation_formula", "source_element_count",
+  "rate_book_id", "base_rate", "escalation_factor", "rate_resolution")
 _EXPORTS = {"CONTRACT_BOQ": {"pdf", "xlsx"}, "PROCUREMENT": {"xlsx"}, "MEASUREMENT_BOOK": {"pdf", "xlsx"},
-  "AUDIT_REPORT": {"pdf"}, "BBS": {"xlsx"}}
+  "AUDIT_REPORT": {"pdf"}, "BBS": {"xlsx"}, "REVISION_COMPARISON": {"xlsx"}}
 
 def _now():
   return datetime.now(timezone.utc)
@@ -148,6 +151,8 @@ class BOQEngineService:
     await self.repo.delete_links(version.id)
 
     drafts_by_key = {d.item_key: d for d in drafts}
+    resolver = await PriceResolver.load(self.session, org, run.project_id,
+      codes={d.work_item_code for d in drafts if d.work_item_code})
     rate_mismatch: list[BOQItem] = []
     new_adjustments: list[BOQItemAdjustment] = []
     item_for_key: dict[str, BOQItem] = {}
@@ -185,7 +190,7 @@ class BOQEngineService:
       if unit_changed and item.unit_rate is not None:
         converted = logic.convert_rate(item.unit_rate, prev_unit, d.unit)
         if converted is None:
-          item.unit_rate, item.rate_source = None, None
+          clear_rate(item)
           rate_mismatch.append(item)
         else:
           item.unit_rate = converted
@@ -197,12 +202,17 @@ class BOQEngineService:
         item.review_status = "REVIEW_REQUIRED"
         orphans.append(item)  
 
-      if item.unit_rate is None:
-        rate, flag = await self._library_rate(org, d.description, d.unit)
-        if flag == "ok":
-          item.unit_rate, item.rate_source = rate, BOQItemRateSource.LIBRARY
-        elif flag == "mismatch":
-          rate_mismatch.append(item)
+      source = item.rate_source.value if item.rate_source is not None else None
+      if item.unit_rate is None or source in pricing.AUTO_SOURCES or source == "AI_SUGGESTED":
+        res = resolver.resolve(d.work_item_code, [d.description, d.material_name], d.unit)
+        if res.found:
+          apply_resolution(item, res)
+        else:
+          if source in pricing.AUTO_SOURCES:
+            clear_rate(item)
+          if res.unit_mismatch and item.unit_rate is None and item not in rate_mismatch:
+            rate_mismatch.append(item)
+            
       if is_new:
         self.session.add(item)
         if seed is not None:
@@ -281,6 +291,10 @@ class BOQEngineService:
       "convention_code": run.convention_code, "engine_version": run.engine_version,
       "scope": (run.settings or {}).get("scope", "building"), "item_count": len(items_now), **counts,
     }
+    
+    version.pricing_meta = {"as_of": resolver.as_of.isoformat(), "rate_books": resolver.stack_summary(),
+      "rate_book_ids": [str(b.id) for b in resolver.books], "overwrite_manual": False}
+    version.priced_at = _now()
     await self.versions.update(version)
     if not await self.repo.transition(version.id, org, "CALCULATING", "CALCULATED"):
       raise TraceException("BOQ version changed during the build.", status_code=409, code="CONCURRENT_MODIFICATION")
@@ -350,9 +364,10 @@ class BOQEngineService:
       
     for it in rate_mismatch:
       specs.append(logic.IssueSpec(
-        code="RATE_UNIT_MISMATCH", severity="error", blocks="APPROVAL", dedupe_key=f"RATE_UNIT:{it.item_key}",
-        message=f"The library rate for '{it.material_name}' cannot be converted to {it.unit}.",
-        suggested_fix="Set a rate in the item's unit.", boq_item_id=it.id))
+        code="RATE_UNIT_MISMATCH", severity="error", blocks="APPROVAL", dedupe_key=f"RATE_UNIT:{it.item_key or it.id}",
+        message=f"The rate for '{it.material_name}' cannot be converted to {it.unit}.",
+        suggested_fix="Set a rate in the item's unit, or add a rate for this work item in a compatible unit.",
+        boq_item_id=it.id))
       
     for it in orphans:
       specs.append(logic.IssueSpec(
@@ -580,7 +595,9 @@ class BOQEngineService:
         "canonical_unit": i.canonical_unit, "unit_factor": i.unit_factor, "net_quantity": i.net_quantity,
         "adjustment_total": i.adjustment_total, "quantity": i.quantity, "waste_factor_applied": i.waste_factor_applied,
         "gross_quantity": i.gross_quantity, "unit_rate": i.unit_rate,
-        "rate_source": i.rate_source.value if i.rate_source else None, "confidence": i.confidence,
+        "rate_source": i.rate_source.value if i.rate_source else None,
+        "base_rate": i.base_rate, "escalation_factor": i.escalation_factor, "rate_resolution": i.rate_resolution,
+        "confidence": i.confidence,
         "review_status": i.review_status, "source_kind": i.source_kind, "is_manual": i.is_manual,
         "ledger_row_count": len(pairs), "ledger_hash": logic.ledger_hash(pairs)})
     header = {"version_id": str(version.id), "run_id": str(version.calculation_run_id),
@@ -699,7 +716,7 @@ class BOQEngineService:
     return await self.versions.get_by_id_and_org(version.id, org)
 
   async def export_snapshot(self, org: UUID, version_id: UUID, kind: str, fmt: str, user_id: UUID,
-    snapshot_id: UUID | None = None) -> tuple[bytes, str, str]:
+    snapshot_id: UUID | None = None, compare_snapshot_id: UUID | None = None) -> tuple[bytes, str, str]:
     if kind not in _EXPORTS:
       raise TraceException("This export is not available yet.", status_code=422, code="EXPORT_NOT_AVAILABLE")
     if fmt not in _EXPORTS[kind]:
@@ -725,6 +742,14 @@ class BOQEngineService:
       data = exp.build_procurement_xlsx(snapshot, rows, version_meta, company)
     elif kind == "BBS":
       data = await self._bbs_workbook(org, snap, snapshot, version_meta, company)
+      
+    elif kind == "REVISION_COMPARISON":
+      base = await self._comparison_base(org, version, snap, compare_snapshot_id)
+      base_rows = [_row_dict(r) for r in await self.repo.snapshot_items(base.id, org)]
+      base_snapshot = {k: getattr(base, k) for k in snapshot}
+      data = exp.build_revision_comparison_xlsx(snapshot, base_snapshot, pricing.diff_lines(base_rows, rows),
+        version_meta, company)
+      compare_id = base.id
     elif kind == "MEASUREMENT_BOOK":
       evidence = await self._evidence(org, version.id)
       data = (exp.build_measurement_book_pdf if fmt == "pdf" else exp.build_measurement_book_xlsx)(
@@ -736,16 +761,42 @@ class BOQEngineService:
         "created_at": a.created_at, "revoked": a.revoked_at is not None, "revoke_reason": a.revoke_reason}
         for a, name in await self.repo.adjustments_for_version(version.id, org)]
       data = exp.build_audit_report_pdf(snapshot, rows, issues, adjustments, version_meta, company)
-
+      
     safe = version.label.replace(" ", "_").encode("ascii", "ignore").decode("ascii")
     filename = f"{kind}-{safe}-s{snap.version_no}.{fmt}"
+    parameters = {"snapshot_version_no": snap.version_no}
+    if kind == "REVISION_COMPARISON":
+      parameters["compare_snapshot_id"] = str(compare_id)
+      filename = f"{kind}-{safe}-s{snap.version_no}-vs-s{base.version_no}.{fmt}"
     self.repo.add_export_job(ExportJob(
       id=uuid4(), organization_id=org, boq_version_id=version.id, snapshot_id=snap.id, kind=kind, format=fmt.upper(),
-      status="SUCCEEDED", parameters={"snapshot_version_no": snap.version_no}, requested_by_user_id=user_id,
+      status="SUCCEEDED", parameters=parameters, requested_by_user_id=user_id,
       file_size_bytes=len(data), started_at=started, finished_at=_now()))
     await self.session.commit()
     media = "application/pdf" if fmt == "pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return data, media, filename
+  
+  async def _comparison_base(self, org: UUID, version: BOQVersion, snap, compare_snapshot_id: UUID | None):
+    if compare_snapshot_id is not None:
+      base = await self.repo.get_snapshot(compare_snapshot_id, org)
+      
+      if base is None:
+        raise TraceException("Snapshot to compare with was not found.", status_code=404, code="SNAPSHOT_NOT_FOUND")
+    else:
+      base = await self.repo.previous_snapshot_for_project(org, version.project_id, version.id)
+      
+      if base is None:
+        raise TraceException("There is no earlier snapshot to compare with. Pass compare_snapshot_id.",
+          status_code=422, code="NO_BASE_SNAPSHOT")
+        
+    if base.id == snap.id:
+      raise TraceException("Pick a different snapshot to compare with.", status_code=422, code="DIFF_SAME_VERSION")
+    other = await self.versions.get_by_id_and_org(base.boq_version_id, org)
+    
+    if other is None or other.project_id != version.project_id:
+      raise TraceException("Only snapshots of the same project can be compared.", status_code=422,
+        code="DIFF_PROJECT_MISMATCH")
+    return base
    
   async def _bbs_workbook(self, org: UUID, snap, snapshot: dict, version_meta: dict, company: str) -> bytes:
     if snap.calculation_run_id is None:

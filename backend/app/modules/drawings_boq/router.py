@@ -459,7 +459,7 @@ async def generate_labour_items(
 ):
   service = _service(session)
   return await service.generate_labour_items(
-    current_user.active_membership.organization_id, boq_version_id,
+    current_user.active_membership.organization_id, boq_version_id, current_user.id,
   )
 
 @router.get(
@@ -859,9 +859,11 @@ async def export_boq_snapshot(
   kind: Literal["CONTRACT_BOQ", "PROCUREMENT", "MEASUREMENT_BOOK", "AUDIT_REPORT", "REVISION_COMPARISON", "BBS"],
   fmt: Literal["pdf", "xlsx"] = Query(default="pdf"),
   snapshot_id: UUID | None = Query(default=None),
+  compare_snapshot_id: UUID | None = Query(default=None),
   current_user: User = Depends(require_permission(PermissionKey.BOQ_EXPORT)),
   session: AsyncSession = Depends(get_db),
 ):
   data, media, filename = await _engine(session).export_snapshot(
-    current_user.active_membership.organization_id, boq_version_id, kind, fmt, current_user.id, snapshot_id)
+    current_user.active_membership.organization_id, boq_version_id, kind, fmt, current_user.id, snapshot_id,
+    compare_snapshot_id)
   return Response(content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})

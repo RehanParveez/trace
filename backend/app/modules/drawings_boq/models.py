@@ -37,6 +37,8 @@ class BOQItemRateSource(str, enum.Enum):
   LIBRARY = "LIBRARY"
   AI_SUGGESTED = "AI_SUGGESTED"
   MANUAL = "MANUAL"
+  PROJECT_OVERRIDE = "PROJECT_OVERRIDE"
+  RATE_BOOK = "RATE_BOOK"
 
 class BOQVersionStatus(str, enum.Enum):
   ACTIVE = "ACTIVE"
@@ -293,6 +295,7 @@ _RATE_BOOK_STATUSES = "'DRAFT','ACTIVE','SUPERSEDED','ARCHIVED'"
 _ANALYSIS_COMPONENT_TYPES = "'MATERIAL','LABOUR','PLANT','OTHER'"
 _ANALYSIS_COMPONENT_SOURCES = "'DIRECT','RATE_ITEM','LABOUR_RATE','MATERIAL_LIBRARY'"
 _RATE_RESOLUTION_SOURCES = "'PROJECT_OVERRIDE','RATE_BOOK','LIBRARY','AI_SUGGESTED','MANUAL'"
+_ITEM_RATE_SOURCES = "'LIBRARY','AI_SUGGESTED','MANUAL','PROJECT_OVERRIDE','RATE_BOOK'"
 
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -708,7 +711,14 @@ class BOQVersion(Base, TimestampMixin):
     nullable=True,
   )
   
-  issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  pricing_meta: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  priced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
   drawing: Mapped["Drawing | None"] = relationship(
     "Drawing",
@@ -752,6 +762,8 @@ class BOQItem(Base, TimestampMixin):
     
     CheckConstraint("is_manual = (source_kind = 'MANUAL')", name="ck_boq_items_manual_consistent"),
     CheckConstraint("net_quantity IS NULL OR net_quantity >= 0", name="ck_boq_items_net_non_negative"),
+    CheckConstraint(f"rate_source IS NULL OR rate_source IN ({_ITEM_RATE_SOURCES})", name="ck_boq_items_rate_source"),
+    CheckConstraint("escalation_factor IS NULL OR escalation_factor > 0", name="ck_boq_items_escalation_factor"),
   )
 
   id: Mapped[UUID] = mapped_column(
@@ -807,9 +819,19 @@ class BOQItem(Base, TimestampMixin):
   )
   
   rate_source: Mapped[BOQItemRateSource | None] = mapped_column(
-    Enum(BOQItemRateSource, name="boq_item_rate_source"),
+    Enum(BOQItemRateSource, name="boq_item_rate_source", native_enum=False, length=20, create_constraint=False),
     nullable=True,
   )
+
+  rate_book_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_books.id", ondelete="SET NULL", name="fk_boq_items_rate_book"),
+    nullable=True,
+  )
+  
+  base_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+  escalation_factor: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
+  rate_resolution: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
   
   item_type: Mapped[BOQItemType] = mapped_column(
     Enum(BOQItemType, name="boq_item_type"),
@@ -973,6 +995,9 @@ class MaterialLibrary(Base, TimestampMixin):
     nullable=True,
   )
   
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+  
 class LabourRate(Base, TimestampMixin):
   __tablename__ = "labour_rates"
 
@@ -1001,6 +1026,9 @@ class LabourRate(Base, TimestampMixin):
   trade: Mapped[str] = mapped_column(String(150), nullable=False)
   unit: Mapped[str] = mapped_column(String(20), nullable=False)
   rate: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+  
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
 
 class MaterialNormalizationCache(Base, TimestampMixin):
   __tablename__ = "material_normalization_cache"
@@ -2264,8 +2292,11 @@ class BOQSnapshotItem(Base, TimestampMixin):
   waste_factor_applied: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
   gross_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
 
-  unit_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
-  rate_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  base_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+  escalation_factor: Mapped[Decimal | None] = mapped_column(Numeric(8, 4), nullable=True)
+  rate_resolution: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
   amount: Mapped[Decimal | None] = mapped_column(Numeric(18, 2), nullable=True)
 
   confidence: Mapped[Decimal | None] = mapped_column(Numeric(5, 4), nullable=True)
@@ -3470,17 +3501,17 @@ class RateBook(Base, TimestampMixin):
   items: Mapped[list["RateItem"]] = relationship(
     "RateItem",
     back_populates="rate_book",
+    foreign_keys="RateItem.rate_book_id",
     cascade="all, delete-orphan",
     primaryjoin="RateBook.id == RateItem.rate_book_id",
-    foreign_keys="RateItem.rate_book_id",
   )
    
   escalations: Mapped[list["RateBookEscalation"]] = relationship(
     "RateBookEscalation",
-    back_populates="rate_book", 
+    back_populates="rate_book",
+    foreign_keys="RateBookEscalation.rate_book_id", 
     cascade="all, delete-orphan",
     primaryjoin="RateBook.id == RateBookEscalation.rate_book_id",
-    foreign_keys="RateBookEscalation.rate_book_id",
   )
  
 class RateItem(Base, TimestampMixin):
@@ -3536,8 +3567,7 @@ class RateItem(Base, TimestampMixin):
   rate_book: Mapped["RateBook"] = relationship(
     "RateBook",
     back_populates="items",
-    primaryjoin="RateBook.id == RateItem.rate_book_id",
-    foreign_keys="RateItem.rate_book_id",
+    foreign_keys=[rate_book_id],
   )
  
 class RateBookEscalation(Base, TimestampMixin):
@@ -3571,8 +3601,7 @@ class RateBookEscalation(Base, TimestampMixin):
   rate_book: Mapped["RateBook"] = relationship(
     "RateBook",
     back_populates="escalations",
-    primaryjoin="RateBook.id == RateBookEscalation.rate_book_id",
-    foreign_keys="RateBookEscalation.rate_book_id",
+    foreign_keys=[rate_book_id],
   )
  
 class RateAnalysis(Base, TimestampMixin):

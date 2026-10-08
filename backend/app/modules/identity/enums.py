@@ -126,6 +126,7 @@ class PermissionKey(StrEnum):
   SPACE_MANAGE = "space:manage"
   FINISH_MANAGE = "finish:manage"
   SCHEDULE_IMPORT = "schedule:import"
+  RATEBOOK_MANAGE = "ratebook:manage"
   
   
   
