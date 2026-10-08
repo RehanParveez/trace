@@ -1376,6 +1376,7 @@ export function useExportAdvancedBOQ(
       kind,
       format,
       snapshotId,
+      compareSnapshotId,
     }: {
       kind:
         | "CONTRACT_BOQ"
@@ -1386,6 +1387,7 @@ export function useExportAdvancedBOQ(
         | "BBS";
       format: "pdf" | "xlsx";
       snapshotId?: string | null;
+      compareSnapshotId?: string | null;
     }) => {
       const blob =
         await drawingsBoqApi.exportAdvancedBOQ(
@@ -1393,14 +1395,12 @@ export function useExportAdvancedBOQ(
           kind,
           format,
           snapshotId,
+          compareSnapshotId,
         );
 
       triggerBlobDownload(
         blob,
-        `${kind}-${label.replace(
-          /\s+/g,
-          "_",
-        )}.${format}`,
+        `${kind}-${label.replace(/\s+/g, "_")}.${format}`,
       );
     },
   });

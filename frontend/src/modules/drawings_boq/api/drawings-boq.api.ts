@@ -434,33 +434,34 @@ export const drawingsBoqApi = {
   },
 
   async exportAdvancedBOQ(
-    versionId: string,
-    kind:
-      | "CONTRACT_BOQ"
-      | "PROCUREMENT"
-      | "MEASUREMENT_BOOK"
-      | "AUDIT_REPORT"
-      | "REVISION_COMPARISON"
-      | "BBS",
-    format: "pdf" | "xlsx",
-    snapshotId?: string | null,
+   versionId: string,
+   kind:
+    | "CONTRACT_BOQ"
+    | "PROCUREMENT"
+    | "MEASUREMENT_BOOK"
+    | "AUDIT_REPORT"
+    | "REVISION_COMPARISON"
+    | "BBS",
+   format: "pdf" | "xlsx",
+   snapshotId?: string | null,
+   compareSnapshotId?: string | null,
   ): Promise<Blob> {
-    if (!versionId) throw new Error("Version ID is required");
+  if (!versionId) throw new Error("Version ID is required");
 
-    const response = await apiClient.get(
-      `/drawings-boq/boq-versions/${versionId}/exports/${kind}`,
-      {
-        params: {
-          fmt: format,
-          snapshot_id: snapshotId ?? undefined,
-        },
-        responseType: "blob",
+  const response = await apiClient.get(
+    `/drawings-boq/boq-versions/${versionId}/exports/${kind}`,
+    {
+      params: {
+        fmt: format,
+        snapshot_id: snapshotId ?? undefined,
+        compare_snapshot_id: compareSnapshotId ?? undefined,
       },
-    );
+      responseType: "blob",
+    },
+  );
 
-    return response.data;
-  },
-
+  return response.data;
+},
   async startCalculationRun(
     projectId: string,
     body: CalculationRunCreateRequest = {},

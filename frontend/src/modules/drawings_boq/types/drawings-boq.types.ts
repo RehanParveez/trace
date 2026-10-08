@@ -287,6 +287,7 @@ export interface MaterialLibraryEntry {
   category: string | null;
   default_unit: string | null;
   default_rate: number | string | null;
+  work_item_code: string | null;
 }
 
 export interface MaterialLibraryCreateRequest {
@@ -309,18 +310,24 @@ export interface LabourRate {
   trade: string;
   unit: string;
   rate: number | string;
+  work_item_code: string | null;
+  effective_from: string | null;
 }
 
 export interface LabourRateCreateRequest {
   trade: string;
   unit: string;
   rate: number;
+  work_item_code: string | null;
+  effective_from: string | null;
 }
 
 export interface LabourRateUpdateRequest {
   trade?: string;
   unit?: string;
   rate?: number;
+  work_item_code: string | null;
+  effective_from: string | null;
 }
 
 export interface PDFExtractionResult {
