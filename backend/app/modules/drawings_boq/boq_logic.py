@@ -223,6 +223,8 @@ def build_snapshot(items: list[dict], header: dict):
       "net_quantity": q4(net if net is not None else quantity),
       "adjustment_total": q4(i.get("adjustment_total") or ZERO), "quantity": quantity,
       "waste_factor_applied": i.get("waste_factor_applied"),
+      "unit_rate": rate,
+      "amount": amount,
       "base_rate": i.get("base_rate"), "escalation_factor": i.get("escalation_factor"),
       "rate_resolution": i.get("rate_resolution"),
       "confidence": i.get("confidence"), "review_status": i.get("review_status") or "OK",

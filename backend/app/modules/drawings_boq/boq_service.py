@@ -46,7 +46,15 @@ def _clone(src: BOQItem, version_id: UUID, org: UUID, **over) -> BOQItem:
     review_status=src.review_status, **data)
 
 def _row_dict(obj) -> dict:
-  return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+  d = {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+  qty, amount = d.get("quantity"), d.get("amount")
+  if amount is not None and qty:
+    d["unit_rate"] = (Decimal(amount) / Decimal(qty)).quantize(Decimal("0.01"))
+  else:
+    d["unit_rate"] = None
+
+  d["rate_source"] = (d.get("rate_resolution") or {}).get("source")
+  return d
 
 class BOQEngineService:
   def __init__(self, session: AsyncSession):

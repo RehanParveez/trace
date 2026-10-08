@@ -1,11 +1,5 @@
 import { useEffect, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+import {ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View,
 } from "react-native";
 import { router, useLocalSearchParams, Link } from "expo-router";
 import { useTranslation } from "react-i18next";
@@ -112,7 +106,6 @@ export default function ProjectDetailScreen() {
             setClients(clientResult);
           }
         } catch {
-          // Project details can still be shown if client details fail to load.
         }
       } catch (err) {
         if (active) {

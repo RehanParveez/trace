@@ -216,7 +216,21 @@ export type Drawing = {
   revision_label: string | null;
   is_current_revision: boolean;
   superseded_at: string | null;
+  ingestion_meta: Record<string, unknown>;
+  latest_audit_id: string | null;
 };
+
+export type BOQLifecycle =
+  | "DRAFT"
+  | "CALCULATING"
+  | "CALCULATED"
+  | "UNDER_REVIEW"
+  | "APPROVED"
+  | "ISSUED"
+  | "SUPERSEDED"
+  | "ARCHIVED";
+
+export type BOQOrigin = "LEGACY" | "MANUAL" | "ENGINE";
 
 export type BOQVersion = {
   id: string;
@@ -227,6 +241,16 @@ export type BOQVersion = {
   covered_area_sqft: number | string | null;
   export_meta: Record<string, unknown>;
   created_at: string;
+  lifecycle: BOQLifecycle;
+  origin: BOQOrigin;
+  calculation_run_id: string | null;
+  snapshot_id: string | null;
+  rule_set_id: string | null;
+  audit_score: number | string | null;
+  approved_at: string | null;
+  issued_at: string | null;
+  priced_at: string | null;
+  pricing_meta: Record<string, unknown>;
 };
 
 export type BOQItem = {
@@ -244,6 +268,24 @@ export type BOQItem = {
   approved_at: string | null;
   item_type: "MATERIAL" | "LABOUR" | "CUSTOM";
   created_by_user_id: string | null;
+  work_item_code: string | null;
+  description: string | null;
+  net_quantity: number | string | null;
+  adjustment_total: number | string;
+  gross_quantity: number | string | null;
+  waste_factor_applied: number | string | null;
+  confidence: number | string | null;
+  review_status: "OK" | "REVIEW_REQUIRED" | "WAIVED";
+  source_kind: "LEGACY" | "MODEL" | "SCHEDULE_IMPORT" | "MANUAL" | "ESTIMATE";
+  is_manual: boolean;
+  canonical_unit: string | null;
+  unit_factor: number | string | null;
+  level_id: string | null;
+  item_key: string | null;
+  calculation_run_id: string | null;
+  rate_book_id: string | null;
+  base_rate: number | string | null;
+  escalation_factor: number | string | null;
 };
 
 export type BOQSummary = {
@@ -338,6 +380,7 @@ export type BOQItemUpdatePayload = {
   quantity?: number;
   unit_rate?: number | null;
   save_as_library_default?: boolean;
+  adjustment_reason?: string;
 };
 
 export type ProgressClaimStatus =
@@ -1277,7 +1320,10 @@ export type AuditEntityType =
   | "CHANGE_ORDER"
   | "SCHEDULE_TASK"
   | "PUNCH_LIST"
-  | "BANK_GUARANTEE";
+  | "BANK_GUARANTEE"
+  | "BOQ_VERSION"
+  | "REVIEW_ISSUE"
+  | "BOQ_ADJUSTMENT";
 
 export type AuditAction =
   | "CREATE"
@@ -1306,3 +1352,206 @@ export type EntityActivitySummary = {
   last_summary: string;
   last_created_at: string;
 };
+
+export type BOQVersionUpdatePayload = {
+  covered_area_sqft?: number | null;
+  export_meta?: Record<string, unknown>;
+};
+
+export type CalculationRunStatus =
+  | "QUEUED"
+  | "RUNNING"
+  | "STAGED"
+  | "PROMOTED"
+  | "COMPLETED"
+  | "FAILED"
+  | "CANCELLED"
+  | "SUPERSEDED";
+
+export type CalculationRun = {
+  id: string;
+  project_id: string;
+  rule_set_id: string;
+  convention_code: string | null;
+  drawing_revision_ids: string[];
+  engine_version: string;
+  fingerprint: string;
+  status: CalculationRunStatus;
+  progress_pct: number;
+  started_at: string | null;
+  completed_at: string | null;
+  error_code: string | null;
+  error_message: string | null;
+  stats: Record<string, unknown>;
+  created_at: string;
+};
+
+export type RunStage = {
+  stage: string;
+  status: "PENDING" | "RUNNING" | "SUCCEEDED" | "FAILED" | "SKIPPED";
+  attempt: number;
+  started_at: string | null;
+  finished_at: string | null;
+  counts: Record<string, unknown>;
+  error: string | null;
+};
+
+export type BOQBuildResult = {
+  boq_version_id: string;
+  items_created: number;
+  items_updated: number;
+  items_removed: number;
+  orphaned_items: number;
+  open_issues: number;
+};
+
+export type ReviewIssueStatus = "OPEN" | "RESOLVED" | "WAIVED";
+
+export type ReviewIssue = {
+  id: string;
+  project_id: string;
+  boq_version_id: string | null;
+  boq_item_id: string | null;
+  drawing_element_id: string | null;
+  code: string;
+  severity: "error" | "warning" | "info";
+  blocks: "NONE" | "APPROVAL" | "ISSUE";
+  message: string;
+  suggested_fix: string | null;
+  details: Record<string, unknown>;
+  status: ReviewIssueStatus;
+  resolution_note: string | null;
+  resolved_at: string | null;
+  created_at: string;
+};
+
+export type Adjustment = {
+  id: string;
+  boq_item_id: string;
+  kind: "DELTA" | "REPLACE";
+  value: number | string;
+  reason: string;
+  created_by_user_id: string | null;
+  created_at: string;
+  revoked_at: string | null;
+  revoke_reason: string | null;
+};
+
+export type AdjustmentCreatePayload = {
+  kind: "DELTA" | "REPLACE";
+  value: number;
+  reason: string;
+};
+
+export type Snapshot = {
+  id: string;
+  boq_version_id: string;
+  version_no: number;
+  purpose: "APPROVAL" | "ISSUE" | "MANUAL";
+  content_hash: string;
+  item_count: number;
+  totals: Record<string, unknown>;
+  rule_set_code: string | null;
+  rule_set_version: number | null;
+  convention_code: string | null;
+  engine_version: string | null;
+  note: string | null;
+  created_at: string;
+};
+
+export type LedgerRow = {
+  id: string;
+  solid_id: string;
+  element_id: string | null;
+  level_id: string | null;
+  work_item_code: string;
+  quantity_net: number | string;
+  unit: string;
+  material_grade: string | null;
+  source_kind: string;
+  confidence: number | string;
+  formula_code: string;
+  trace: Record<string, unknown>;
+  warnings: string[];
+  engine_version: string;
+};
+
+export type Deduction = {
+  id: string;
+  from_solid_id: string;
+  to_solid_id: string | null;
+  deduction_type: string;
+  quantity: number | string;
+  unit: string;
+  rule_code: string;
+  rule_version: string | null;
+  geometry: Record<string, unknown>;
+  explanation: string | null;
+  engine_version: string;
+};
+
+export type BarMark = {
+  id: string;
+  run_id: string;
+  solid_id: string;
+  mark: string;
+  role: string;
+  shape_code: string;
+  designation: string | null;
+  dia_mm: number | string;
+  grade: string | null;
+  count: number;
+  spacing_mm: number | string | null;
+  cut_len_mm: number | string;
+  pieces: number;
+  total_len_m: number | string;
+  total_kg: number | string;
+  provenance: string;
+  confidence: number | string;
+  review_status: string;
+  warnings: string[];
+};
+
+export type ItemTrace = {
+  item: BOQItem;
+  ledger: LedgerRow[];
+  deductions: Deduction[];
+  adjustments: Adjustment[];
+  bar_marks: BarMark[];
+};
+
+export type DrawingAudit = {
+  id: string;
+  drawing_id: string;
+  overall_score: number | string;
+  issues: Record<string, unknown>[];
+  element_count: number;
+  missing_material_count: number;
+  zero_quantity_count: number;
+  unclassified_proxy_count: number;
+  extra_stats: Record<string, unknown>;
+  created_at: string;
+};
+
+export type PriceVersionResult = {
+  boq_version_id: string;
+  as_of: string;
+  rate_books: Record<string, unknown>[];
+  priced: number;
+  changed: number;
+  unpriced: number;
+  unit_mismatch: number;
+  skipped_manual: number;
+  skipped_other: number;
+  by_source: Record<string, unknown>;
+  total: string;
+  open_issues: number;
+};
+
+export type ExportKind =
+  |"CONTRACT_BOQ"
+  |"PROCUREMENT"
+  |"MEASUREMENT_BOOK"
+  |"AUDIT_REPORT"
+  |"REVISION_COMPARISON"
+  |"BBS";

@@ -711,6 +711,11 @@ class BOQVersion(Base, TimestampMixin):
     nullable=True,
   )
   
+  issued_at: Mapped[datetime | None] = mapped_column(   
+    DateTime(timezone=True),
+    nullable=True, 
+  )
+  
   pricing_meta: Mapped[dict] = mapped_column(
     JSONB,
     nullable=False,

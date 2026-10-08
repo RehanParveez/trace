@@ -15,6 +15,22 @@ function getBaseUrl(): string {
   return API_BASE_URL;
 }
 
+export class ApiError extends Error {
+  status: number;
+  code: string | null;
+
+  constructor(message: string, status: number, code: string | null = null) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export function errorCode(err: unknown): string | null {
+  return err instanceof ApiError ? err.code : null;
+}
+
 async function readBody<T>(response: Response): Promise<T> {
   const text = await response.text();
 
@@ -56,6 +72,18 @@ async function readBody<T>(response: Response): Promise<T> {
         undefined;
     }
 
+    let code: string | null = null;
+    const errorObject = record?.error;
+    if (errorObject && typeof errorObject === "object") {
+      const errorRecord = errorObject as Record<string, unknown>;
+      if (!message && typeof errorRecord.message === "string") {
+        message = errorRecord.message;
+      }
+      if (typeof errorRecord.code === "string") {
+        code = errorRecord.code;
+      }
+    }
+
     if (!message && typeof record?.message === "string") {
       message = record.message;
     }
@@ -63,7 +91,11 @@ async function readBody<T>(response: Response): Promise<T> {
       message = record.error;
     }
 
-    throw new Error(message || text.trim() || `Request failed (${response.status})`);
+    throw new ApiError(
+      message || text.trim() || `Request failed (${response.status})`,
+      response.status,
+      code,
+    );
   }
 
   return body as T;

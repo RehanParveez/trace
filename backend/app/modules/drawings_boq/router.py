@@ -16,6 +16,8 @@ from app.modules.drawings_boq.calc_service import CalculationService
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from fastapi.responses import Response
+from sqlalchemy import select
+from app.modules.drawings_boq.models import CalculationRun
 from app.modules.drawings_boq.boq_service import BOQEngineService
 
 router = APIRouter(
@@ -595,6 +597,24 @@ async def start_calculation_run(
   if reused:
     response.status_code = 200
   return run
+
+@router.get("/projects/{project_id}/calculation-runs", response_model=list[CalculationRunResponse])
+async def list_project_calculation_runs(
+  project_id: UUID,
+  limit: int = Query(default=5, ge=1, le=50),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  result = await session.execute(
+    select(CalculationRun)
+    .where(
+      CalculationRun.organization_id == current_user.active_membership.organization_id,
+      CalculationRun.project_id == project_id,
+    )
+    .order_by(CalculationRun.created_at.desc())
+    .limit(limit)
+  )
+  return list(result.scalars().all())
 
 @router.get("/calculation-runs/{run_id}", response_model=CalculationRunResponse)
 async def get_calculation_run(

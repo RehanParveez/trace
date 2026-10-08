@@ -76,6 +76,7 @@ from app.modules.drawings_boq.models import CalculationRun, Drawing, DrawingElem
 from app.modules.drawings_boq.permissions import DRAWINGS_BOQ_PERMISSIONS
 from app.modules.identity.models import Permission
 from app.modules.projects.models import Project, ProjectStatus
+from sqlalchemy import text
  
 ALL_KEYS = [str(k) for k in DRAWINGS_BOQ_PERMISSIONS]
 
@@ -226,6 +227,8 @@ async def engine():
     poolclass=NullPool,
   )
   async with eng.begin() as conn:
+    await conn.execute(text("DROP SCHEMA public CASCADE"))
+    await conn.execute(text("CREATE SCHEMA public"))
     await conn.run_sync(Base.metadata.create_all)
   yield eng
   await eng.dispose()
@@ -967,7 +970,6 @@ async def verification_admin_context(
   seed_verification_permissions,
   seed_org_permissions,
 ):
-  """User with full verification + org permissions."""
   org = await make_organization(name="Verif Org", slug=f"verif-{uuid4().hex[:6]}")
   all_perms = (
     list(seed_verification_permissions.values())

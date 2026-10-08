@@ -1,18 +1,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
+import {Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import * as DocumentPicker from "expo-document-picker";
 import { restoreSession } from "../../../../api/client";
 import { getProject } from "../../../../api/projects";
-import {addCustomBOQItem, approveBOQItem, createBOQVersion, getBOQSummary, listBOQItems, listProjectBOQVersions, listProjectDrawings, updateBOQItem, uploadProjectDrawing,
+import {addCustomBOQItem, approveBOQItem, createBOQVersion, deleteDrawing, getBOQSummary, getDrawingAudit, listBOQItems, listProjectBOQVersions, listProjectDrawings, reviseDrawing, 
+  suggestBOQItemsFromPDF, updateBOQItem, uploadProjectDrawing,
 } from "../../../../api/drawingsBoq";
-import type {BOQItem, BOQSummary, BOQVersion, Drawing, Project,
+import type {BOQItem, BOQSummary, BOQVersion, Drawing, DrawingAudit, Project,
 } from "../../../../api/types";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher";
+import { isEngine, isLocked } from "../../../../features/drawingsBoq/lifecycle";
+import { PERM, hasPerm } from "../../../../features/drawingsBoq/permissions";
+import { describeError } from "../../../../features/drawingsBoq/errors";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 function pageCount(total: number) {
   return Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -86,11 +90,16 @@ export default function DrawingsBoqScreen() {
   const [editingItemVersion, setEditingItemVersion] = useState<number | null>(
     null,
   );
+  const [itemReason, setItemReason] = useState("");
+  const [editingIsModel, setEditingIsModel] = useState(false);
+  const [audits, setAudits] = useState<Record<string, DrawingAudit>>({});
 
-  const canUpload = permissions.includes("drawing:create");
-  const canCreateItem = permissions.includes("boq_item_create");
-  const canUpdateItem = permissions.includes("boq:update");
-  const canApprove = permissions.includes("boq:approve");
+  const canUpload = hasPerm(permissions, PERM.DRAWING_CREATE);
+  const canCreateItem = hasPerm(permissions, PERM.BOQ_ITEM_CREATE);
+  const canUpdateItem = hasPerm(permissions, PERM.BOQ_UPDATE);
+  const canApprove = hasPerm(permissions, PERM.BOQ_APPROVE);
+  const canDeleteDrawing = hasPerm(permissions, PERM.DRAWING_DELETE);
+  const canRun = hasPerm(permissions, PERM.CALC_RUN);
 
   const currentDrawings = drawings.filter(
     (drawing) => drawing.is_current_revision,
@@ -101,69 +110,93 @@ export default function DrawingsBoqScreen() {
   const visibleDrawings = paginate(currentDrawings, drawingsPage);
   const visibleVersions = paginate(versions, versionsPage);
   const visibleItems = paginate(boqItems, itemsPage);
+  const expandedVersionObj =
+    versions.find((version) => version.id === expandedVersion) ?? null;
+  const engineVersion = expandedVersionObj ? isEngine(expandedVersionObj) : false;
+  const locked = expandedVersionObj ? isLocked(expandedVersionObj) : false;
 
-  const load = useCallback(async () => {
-    if (!projectId) {
-      setError(t("drawingsBoq.projectNotFound"));
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-    setDrawingsError("");
-    setBoqError("");
-
-    try {
-      const user = await restoreSession();
-      if (!user) {
-        router.replace("/");
+  const load = useCallback(
+    async (silent = false) => {
+      if (!projectId) {
+        setError(t("drawingsBoq.projectNotFound"));
+        setLoading(false);
         return;
       }
 
-      setPermissions(user.role.permissions.map((permission) => permission.key));
-      setProject(await getProject(projectId));
-
-      const [drawingResult, versionResult] = await Promise.allSettled([
-        listProjectDrawings(projectId),
-        listProjectBOQVersions(projectId),
-      ]);
-
-      if (drawingResult.status === "fulfilled") {
-        setDrawings(drawingResult.value);
-        setDrawingsPage(1);
-      } else {
-        setDrawingsError(
-          drawingResult.reason instanceof Error
-            ? drawingResult.reason.message
-            : t("drawingsBoq.drawingsLoadFailure"),
-        );
+      if (!silent) {
+        setLoading(true);
+        setError("");
+        setDrawingsError("");
+        setBoqError("");
       }
 
-      if (versionResult.status === "fulfilled") {
-        setVersions(versionResult.value);
-        setVersionsPage(1);
-      } else {
-        setBoqError(
-          versionResult.reason instanceof Error
-            ? versionResult.reason.message
-            : t("drawingsBoq.versionsLoadFailure"),
+      try {
+        const user = await restoreSession();
+        if (!user) {
+          router.replace("/");
+          return;
+        }
+
+        setPermissions(
+          user.role.permissions.map((permission) => permission.key),
         );
+        setProject(await getProject(projectId));
+
+        const [drawingResult, versionResult] = await Promise.allSettled([
+          listProjectDrawings(projectId),
+          listProjectBOQVersions(projectId),
+        ]);
+
+        if (drawingResult.status === "fulfilled") {
+          setDrawings(drawingResult.value);
+          setDrawingsPage(1);
+        } else {
+          setDrawingsError(
+            drawingResult.reason instanceof Error
+              ? drawingResult.reason.message
+              : t("drawingsBoq.drawingsLoadFailure"),
+          );
+        }
+
+        if (versionResult.status === "fulfilled") {
+          setVersions(versionResult.value);
+          setVersionsPage(1);
+        } else {
+          setBoqError(
+            versionResult.reason instanceof Error
+              ? versionResult.reason.message
+              : t("drawingsBoq.versionsLoadFailure"),
+          );
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : t("drawingsBoq.projectLoadFailure"),
+        );
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t("drawingsBoq.projectLoadFailure"),
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId, t]);
+    },
+    [projectId, t],
+  );
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  const hasPendingDrawing = drawings.some(
+    (drawing) =>
+      drawing.status === "UPLOADED" || drawing.status === "PROCESSING",
+  );
+
+  useEffect(() => {
+    if (!hasPendingDrawing) return;
+    const timer = setInterval(() => {
+      void load(true);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [hasPendingDrawing, load]);
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -171,17 +204,23 @@ export default function DrawingsBoqScreen() {
 
     try {
       await action();
-      await load();
+      await load(true);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : t("drawingsBoq.actionFailure"),
-      );
+      setError(describeError(err, t("drawingsBoq.actionFailure")));
     } finally {
       setBusy(false);
     }
   }
 
   async function toggleVersion(version: BOQVersion) {
+    if (version.origin === "ENGINE" && project) {
+      router.push({
+        pathname: "/projects/[projectId]/boq-version",
+        params: { projectId: project.id, versionId: version.id },
+      });
+      return;
+    }
+
     if (expandedVersion === version.id) {
       boqRequest.current += 1;
       setExpandedVersion("");
@@ -272,6 +311,16 @@ export default function DrawingsBoqScreen() {
       if (result.canceled || !result.assets?.length) return;
 
       const file = result.assets[0];
+      const lowerName = file.name.toLowerCase();
+      if (!lowerName.endsWith(".ifc") && !lowerName.endsWith(".pdf")) {
+        setError(
+          t("drawingsBoq.unsupportedFileType", {
+            defaultValue:
+              "Upload an .ifc file for automatic BOQ, or a .pdf as a reference drawing.",
+          }),
+        );
+        return;
+      }
       setBusy(true);
       setError("");
 
@@ -281,16 +330,92 @@ export default function DrawingsBoqScreen() {
         mimeType: file.mimeType,
       });
 
-      await load();
+      await load(true);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : t("drawingsBoq.uploadFailure"),
+        err instanceof Error ? err.message : t("drawingsBoq.uploadFailure"),
       );
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleReviseDrawing(drawing: Drawing) {
+    if (!canUpload) return;
+
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.length) return;
+
+      const file = result.assets[0];
+      const lowerName = file.name.toLowerCase();
+      if (!lowerName.endsWith(".ifc") && !lowerName.endsWith(".pdf")) {
+        setError(
+          t("drawingsBoq.unsupportedFileType", {
+            defaultValue:
+              "Upload an .ifc file for automatic BOQ, or a .pdf as a reference drawing.",
+          }),
+        );
+        return;
+      }
+
+      setBusy(true);
+      setError("");
+      await reviseDrawing(drawing.id, {
+        uri: file.uri,
+        name: file.name,
+        mimeType: file.mimeType,
+      });
+      await load(true);
+    } catch (err) {
+      setError(describeError(err, t("drawingsBoq.uploadFailure")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function handleDeleteDrawing(drawing: Drawing) {
+    Alert.alert(
+      t("drawingsBoq.deleteDrawingTitle", { defaultValue: "Delete drawing?" }),
+      t("drawingsBoq.deleteDrawingBody", {
+        defaultValue:
+          "{{name}} will be removed. This is blocked if an approved BOQ uses it.",
+        name: drawing.original_filename,
+      }),
+      [
+        { text: t("drawingsBoq.cancel"), style: "cancel" },
+        {
+          text: t("drawingsBoq.delete", { defaultValue: "Delete" }),
+          style: "destructive",
+          onPress: () =>
+            void run(async () => {
+              await deleteDrawing(drawing.id);
+            }),
+        },
+      ],
+    );
+  }
+
+  async function handleShowAudit(drawing: Drawing) {
+    setBusy(true);
+    setError("");
+    try {
+      const audit = await getDrawingAudit(drawing.id);
+      setAudits((current) => ({ ...current, [drawing.id]: audit }));
+    } catch (err) {
+      setError(describeError(err, t("drawingsBoq.actionFailure")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSuggestItems(drawing: Drawing) {
+    await run(async () => {
+      await suggestBOQItemsFromPDF(drawing.id);
+    });
   }
 
   async function handleCreateVersion() {
@@ -350,6 +475,8 @@ export default function DrawingsBoqScreen() {
   function beginEditItem(item: BOQItem) {
     setEditingItemId(item.id);
     setEditingItemVersion(item.version ?? null);
+    setEditingIsModel(item.source_kind === "MODEL");
+    setItemReason("");
     setItemName(item.material_name);
     setItemUnit(item.unit);
     setItemQuantity(String(item.quantity));
@@ -358,6 +485,8 @@ export default function DrawingsBoqScreen() {
   }
 
   function clearItemForm() {
+    setItemReason("");
+    setEditingIsModel(false);
     setEditingItemId("");
     setEditingItemVersion(null);
     setItemName("");
@@ -391,11 +520,27 @@ export default function DrawingsBoqScreen() {
       return;
     }
 
+    const original = boqItems.find((item) => item.id === editingItemId);
+    const isModel = original?.source_kind === "MODEL";
+    const quantityChanged = !original || Number(original.quantity) !== quantity;
+
+    if (isModel && quantityChanged && !itemReason.trim()) {
+      setError(
+        t("drawingsBoq.adjustmentReasonRequired", {
+          defaultValue: "Enter a reason for changing a calculated quantity.",
+        }),
+      );
+      return;
+    }
+
     await run(async () => {
       await updateBOQItem(editingItemId, {
         material_name: itemName.trim(),
         unit: itemUnit.trim(),
-        quantity,
+        ...(!isModel || quantityChanged ? { quantity } : {}),
+        ...(isModel && quantityChanged
+          ? { adjustment_reason: itemReason.trim() }
+          : {}),
         category: itemCategory.trim() || null,
         unit_rate: rate,
         version: editingItemVersion,
@@ -527,6 +672,51 @@ export default function DrawingsBoqScreen() {
                     {drawing.error_message}
                   </Text>
                 ) : null}
+                {audits[drawing.id] ? (
+                  <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                    {t("drawingsBoq.auditSummary", {
+                      defaultValue:
+                        "Readiness score: {{score}} · {{issues}} issues · {{missing}} without material",
+                      score: Number(audits[drawing.id].overall_score).toFixed(0),
+                      issues: audits[drawing.id].issues.length,
+                      missing: audits[drawing.id].missing_material_count,
+                    })}
+                  </Text>
+                ) : null}
+                <View style={[styles.row, isUrdu && styles.rtlRow]}>
+                  {drawing.format === "IFC" && drawing.status === "PARSED" ? (
+                    <Action
+                      title={t("drawingsBoq.viewAudit", { defaultValue: "Readiness" })}
+                      secondary
+                      isUrdu={isUrdu}
+                      onPress={() => void handleShowAudit(drawing)}
+                    />
+                  ) : null}
+                  {drawing.format === "PDF" && canCreateItem ? (
+                    <Action
+                      title={t("drawingsBoq.suggestItems", { defaultValue: "Suggest items" })}
+                      secondary
+                      isUrdu={isUrdu}
+                      onPress={() => void handleSuggestItems(drawing)}
+                    />
+                  ) : null}
+                  {canUpload ? (
+                    <Action
+                      title={t("drawingsBoq.revise", { defaultValue: "Revise" })}
+                      secondary
+                      isUrdu={isUrdu}
+                      onPress={() => void handleReviseDrawing(drawing)}
+                    />
+                  ) : null}
+                  {canDeleteDrawing ? (
+                    <Action
+                      title={t("drawingsBoq.delete", { defaultValue: "Delete" })}
+                      secondary
+                      isUrdu={isUrdu}
+                      onPress={() => handleDeleteDrawing(drawing)}
+                    />
+                  ) : null}
+                </View>
               </View>
             ))}
             <Pagination
@@ -546,6 +736,32 @@ export default function DrawingsBoqScreen() {
         <Text style={[styles.section, isUrdu && styles.rtlText]}>
           {t("drawingsBoq.billOfQuantities")}
         </Text>
+
+        <View style={[styles.row, isUrdu && styles.rtlRow]}>
+          {canRun ? (
+            <Action
+              title={t("drawingsBoq.runCalculation", { defaultValue: "Run calculation" })}
+              isUrdu={isUrdu}
+              onPress={() =>
+                router.push({
+                  pathname: "/projects/[projectId]/calculation",
+                  params: { projectId: project.id },
+                })
+              }
+            />
+          ) : null}
+          <Action
+            title={t("drawingsBoq.reviewIssues", { defaultValue: "Review issues" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/review-issues",
+                params: { projectId: project.id },
+              })
+            }
+          />
+        </View>
 
         {boqError && !expandedVersion ? (
           <Text style={[styles.error, isUrdu && styles.rtlText]}>
@@ -587,6 +803,19 @@ export default function DrawingsBoqScreen() {
                     <View style={styles.versionCopy}>
                       <Text style={[styles.itemTitle, isUrdu && styles.rtlText]}>
                         {version.label}
+                      </Text>
+                      <Text style={[styles.muted, isUrdu && styles.rtlText]}>
+                        {t("drawingsBoq.versionOriginLifecycle", {
+                          defaultValue: "{{origin}} · {{lifecycle}}",
+                          origin: t(
+                            `drawingsBoq.origin.${version.origin.toLowerCase()}`,
+                            { defaultValue: version.origin },
+                          ),
+                          lifecycle: t(
+                            `drawingsBoq.lifecycle.${version.lifecycle.toLowerCase()}`,
+                            { defaultValue: version.lifecycle.replaceAll("_", " ") },
+                          ),
+                        })}
                       </Text>
                       <Text style={[styles.muted, isUrdu && styles.rtlText]}>
                         {t("drawingsBoq.versionStatusDate", {
@@ -652,7 +881,7 @@ export default function DrawingsBoqScreen() {
                       </View>
                     ) : null}
 
-                    {(canCreateItem || canUpdateItem) && (
+                    {!locked && (canCreateItem || canUpdateItem) && (
                       <>
                         <Text style={[styles.label, isUrdu && styles.rtlText]}>
                           {editingItemId
@@ -669,6 +898,7 @@ export default function DrawingsBoqScreen() {
                           label={t("drawingsBoq.unit")}
                           value={itemUnit}
                           onChangeText={setItemUnit}
+                          editable={!(editingItemId !== "" && editingIsModel)}
                           isUrdu={isUrdu}
                         />
                         <Field
@@ -691,6 +921,16 @@ export default function DrawingsBoqScreen() {
                           keyboardType="decimal-pad"
                           isUrdu={isUrdu}
                         />
+                        {editingItemId !== "" && editingIsModel ? (
+                          <Field
+                            label={t("drawingsBoq.adjustmentReason", {
+                              defaultValue: "Reason for quantity change",
+                            })}
+                            value={itemReason}
+                            onChangeText={setItemReason}
+                            isUrdu={isUrdu}
+                          />
+                        ) : null}
 
                         {editingItemId ? (
                           <View style={[styles.row, isUrdu && styles.rtlRow]}>
@@ -769,8 +1009,16 @@ export default function DrawingsBoqScreen() {
                                 unit: item.unit,
                               })}
                         </Text>
+                        {item.review_status && item.review_status !== "OK" ? (
+                          <Text style={[styles.draft, isUrdu && styles.rtlText]}>
+                            {t(
+                              `drawingsBoq.review.${item.review_status.toLowerCase()}`,
+                              { defaultValue: item.review_status.replaceAll("_", " ") },
+                            )}
+                          </Text>
+                        ) : null}
                         <View style={[styles.row, isUrdu && styles.rtlRow]}>
-                          {canUpdateItem && item.status !== "APPROVED" ? (
+                          {!locked && canUpdateItem && item.status !== "APPROVED" ? (
                             <Action
                               title={t("drawingsBoq.edit")}
                               secondary
@@ -778,7 +1026,7 @@ export default function DrawingsBoqScreen() {
                               onPress={() => beginEditItem(item)}
                             />
                           ) : null}
-                          {canApprove && item.status !== "APPROVED" ? (
+                          {canApprove && !engineVersion && item.status !== "APPROVED" ? (
                             <Action
                               title={t("drawingsBoq.approve")}
                               isUrdu={isUrdu}
@@ -873,6 +1121,7 @@ function Field(props: {
   value: string;
   onChangeText: (value: string) => void;
   keyboardType?: "default" | "decimal-pad";
+  editable?: boolean;
   isUrdu: boolean;
 }) {
   return (
@@ -884,6 +1133,7 @@ function Field(props: {
         style={[styles.input, props.isUrdu && styles.rtlText]}
         value={props.value}
         onChangeText={props.onChangeText}
+        editable={props.editable ?? true}
         keyboardType={props.keyboardType ?? "default"}
         textAlign={props.isUrdu ? "right" : "left"}
       />
