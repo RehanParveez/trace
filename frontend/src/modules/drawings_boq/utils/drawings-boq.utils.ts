@@ -46,6 +46,14 @@ export const REVIEW_WARNING_CODES = new Set([
   "OPENING_SIZE_MISSING",
   "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW",
+  "STEEL_ESTIMATED",
+  "DECLARED_WEIGHT_MISMATCH",
+  "MIXED_GRADES",
+  "LAP_LENGTH_UNKNOWN",
+  "MATCHED_ELEMENT_NOT_MEASURED",
+  "DUPLICATE_SOLID",
+  "SCHEDULE_OVERLAPS_MODEL",
+  "SCHEDULE_LOW_CONFIDENCE",
 ]);
 
 export const isRunActive = (
@@ -127,7 +135,7 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
   },
 
   STEEL_ESTIMATED: {
-    severity: "warning", blocks: "NONE",
+    severity: "warning", blocks: "ISSUE",
     message: "Steel is estimated from a kg/m³ rule, not a bar schedule.",
     fix: "Import a bar bending schedule to replace the estimate.",
   },
@@ -142,8 +150,29 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
   NOT_ALLOCATED: {
     severity: "warning",
     blocks: "NONE",
-    message: "Elements had no footprint and were not allocated; their volume is gross.",
-    fix: "Re-upload the model or fix the geometry.",
+    message: "Elements were not allocated (no usable footprint, sloped or non-prismatic shape, a role the convention does not rank, or no convention on the rule set); their volume is gross and may overlap other elements.",
+    fix: "Check these elements in the model, or set a convention on the rule set.",
+  },
+
+  DUPLICATE_SOLID: {
+    severity: "warning",
+    blocks: "NONE",
+    message: "An element is fully inside another element of the same role (duplicate in the model); it was given zero volume.",
+    fix: "Delete the duplicate element in the model.",
+  },
+
+  SCHEDULE_OVERLAPS_MODEL: {
+    severity: "warning",
+    blocks: "APPROVAL",
+    message: "A schedule row uses a work item that the model or the finish rules already measured in this run, so the quantity may be counted twice.",
+    fix: "Archive the schedule row, change its work item, or waive this issue with a reason.",
+  },
+
+  SCHEDULE_LOW_CONFIDENCE: {
+    severity: "warning",
+    blocks: "NONE",
+    message: "A schedule row was read with low confidence.",
+    fix: "Check the row against the drawing.",
   },
 
   QTO_FALLBACK: {

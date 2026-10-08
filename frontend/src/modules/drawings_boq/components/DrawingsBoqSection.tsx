@@ -125,6 +125,18 @@ export function DrawingsBoqSection({
         selectedVersionId,
     );
 
+  const isEngineVersion =
+    selectedVersion?.origin === "ENGINE";
+
+  const versionEditable = Boolean(
+    selectedVersion &&
+    (
+     selectedVersion.lifecycle === "DRAFT" ||
+     selectedVersion.lifecycle === "CALCULATED" ||
+     selectedVersion.lifecycle === "UNDER_REVIEW"
+    )
+  );
+
   useEffect(() => {
     if (
       !selectedVersionId &&
@@ -242,30 +254,35 @@ export function DrawingsBoqSection({
             }
           />
 
-          <BOQLifecycleActions
-            projectId={projectId}
-            version={selectedVersion}
-            canUpdate={canUpdateBOQ}
-            canApprove={canApproveBOQ}
-            canIssue={canIssue}
-          />
+          {isEngineVersion ? (
+            <BOQLifecycleActions
+              projectId={projectId}
+              version={selectedVersion}
+              canUpdate={canUpdateBOQ}
+              canApprove={canApproveBOQ}
+              canIssue={canIssue}
+            />
+          ) : null}
 
           <BOQItemTable
             boqVersionId={selectedVersion.id}
-            canUpdate={canUpdateBOQ}
+            isEngine={isEngineVersion}
+            canUpdate={canUpdateBOQ && (!isEngineVersion || versionEditable)}
             canApprove={canApproveBOQ}
-            canAdjust={canAdjust}
+            canAdjust={canAdjust && isEngineVersion && versionEditable}
           />
 
           <BOQReviewIssuesPanel
             projectId={projectId}
             versionId = {selectedVersion.id}
-            canResolve = {canResolveReview}
+            canResolve = {canResolveReview && versionEditable}
           />
 
-          <BOQVersionLedgerPanel
-            versionId={selectedVersion.id}
-          />
+          {isEngineVersion ? (
+            <BOQVersionLedgerPanel
+              versionId={selectedVersion.id}
+            />
+          ) : null}
 
           {selectedVersion.calculation_run_id ? (
             <RebarSummaryPanel
@@ -273,48 +290,52 @@ export function DrawingsBoqSection({
             />
           ) : null}
 
-          <BOQSnapshotsPanel
-            versionId={selectedVersion.id}
-          />
+            {isEngineVersion ? (
+            <>
+              <BOQSnapshotsPanel
+                versionId={selectedVersion.id}
+              />
 
-          <BOQAdvancedExportPanel
-            versionId={
-              selectedVersion.id
-            }
-            label={
-              selectedVersion.label
-            }
-            canExport={
-              canExport
-            }
-          />
-
-          {canCalculate ? (
-            <CalculationRunPanel
-              projectId={
-                projectId
-              }
-              drawingIds={parsedDrawings.map(
-                (drawing) =>
-                  drawing.id,
-              )}
-              activeRunId={
-                selectedVersion.calculation_run_id ??
-                null
-              }
-              onBOQBuilt={() => {
-                void boqVersionsQuery.refetch();
-              }}
-            />
+              <BOQAdvancedExportPanel
+                versionId={
+                  selectedVersion.id
+                }
+                label={
+                  selectedVersion.label
+                }
+                canExport={
+                  canExport
+                }
+              />
+            </>
           ) : null}
         </>
       ) : (
         <Panel>
           <div className="p-6 text-[12px] text-[var(--color-text-secondary)]">
-            No BOQ version exists for this project yet.
+            {t("boq.noVersionYet", "No BOQ version exists for this project yet.")}
           </div>
         </Panel>
       )}
+
+      {canCalculate ? (
+        <CalculationRunPanel
+          projectId={
+            projectId
+          }
+          drawingIds={parsedDrawings.map(
+            (drawing) =>
+              drawing.id,
+          )}
+          activeRunId={
+            selectedVersion?.calculation_run_id ??
+            null
+          }
+          onBOQBuilt={() => {
+            void boqVersionsQuery.refetch();
+          }}
+        />
+      ) : null}
 
       {uploadOpen ? (
         <DrawingUploadDialog

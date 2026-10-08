@@ -227,7 +227,32 @@ class RebarReviewStatus(str, enum.Enum):
 class RebarRowStatus(str, enum.Enum):
   PENDING = "PENDING"
   CONFIRMED = "CONFIRMED"
-  REJECTED = "REJECTED"  
+  REJECTED = "REJECTED"
+  
+class RateBookStatus(str, enum.Enum):
+  DRAFT = "DRAFT"
+  ACTIVE = "ACTIVE"
+  SUPERSEDED = "SUPERSEDED"
+  ARCHIVED = "ARCHIVED"
+ 
+class RateAnalysisComponentType(str, enum.Enum):
+  MATERIAL = "MATERIAL"
+  LABOUR = "LABOUR"
+  PLANT = "PLANT"
+  OTHER = "OTHER"
+ 
+class RateAnalysisComponentSource(str, enum.Enum):
+  DIRECT = "DIRECT"                      
+  RATE_ITEM = "RATE_ITEM"                
+  LABOUR_RATE = "LABOUR_RATE"            
+  MATERIAL_LIBRARY = "MATERIAL_LIBRARY"  
+ 
+class RateResolutionSource(str, enum.Enum):
+  PROJECT_OVERRIDE = "PROJECT_OVERRIDE"
+  RATE_BOOK = "RATE_BOOK"        
+  LIBRARY = "LIBRARY"           
+  AI_SUGGESTED = "AI_SUGGESTED"
+  MANUAL = "MANUAL"  
  
 _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CANCELLED','SUPERSEDED'"
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
@@ -264,6 +289,10 @@ _NORMALIZATION_STATUSES = "'PENDING','VALID','WARNING','INVALID'"
 _REBAR_PROVENANCES = "'IFC_EXACT','SCHEDULE_IMPORT','MANUAL','RULE_ESTIMATE'"
 _REBAR_REVIEW = "'OK','REVIEW_REQUIRED','WAIVED'"
 _REBAR_ROW_STATUSES = "'PENDING','CONFIRMED','REJECTED'"
+_RATE_BOOK_STATUSES = "'DRAFT','ACTIVE','SUPERSEDED','ARCHIVED'"
+_ANALYSIS_COMPONENT_TYPES = "'MATERIAL','LABOUR','PLANT','OTHER'"
+_ANALYSIS_COMPONENT_SOURCES = "'DIRECT','RATE_ITEM','LABOUR_RATE','MATERIAL_LIBRARY'"
+_RATE_RESOLUTION_SOURCES = "'PROJECT_OVERRIDE','RATE_BOOK','LIBRARY','AI_SUGGESTED','MANUAL'"
 
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -3334,3 +3363,373 @@ class StagedRebarBarMark(_BarMarkColumns, Base, TimestampMixin):
   )
 
   stage: Mapped[str] = mapped_column(String(40), nullable=False)
+  
+class RateBook(Base, TimestampMixin):
+  __tablename__ = "rate_books"
+ 
+  __table_args__ = (
+    
+    UniqueConstraint("id", "organization_id", name="uq_rate_books_id_org"),
+    UniqueConstraint("organization_id", "code", "immutable_version", name="uq_rate_books_org_code_version"),
+    
+    Index(
+      "uq_rate_books_system_code_version", "code", "immutable_version",
+      unique=True, postgresql_where=text("organization_id IS NULL"),
+    ),
+    
+    Index(
+      "uq_rate_books_active_org", "organization_id", "code",
+      unique=True, postgresql_where=text("status = 'ACTIVE' AND organization_id IS NOT NULL"),
+    ),
+    
+    Index(
+      "uq_rate_books_active_system", "code",
+      unique=True, postgresql_where=text("status = 'ACTIVE' AND organization_id IS NULL"),
+    ),
+    
+    Index("ix_rate_books_org", "organization_id"),
+    Index("ix_rate_books_status", "status"),
+    
+    CheckConstraint(f"status IN ({_RATE_BOOK_STATUSES})", name="ck_rate_books_status"),
+    CheckConstraint("immutable_version >= 1", name="ck_rate_books_version_pos"),
+    CheckConstraint("char_length(currency) = 3", name="ck_rate_books_currency"),
+    
+    CheckConstraint(
+      "effective_from IS NULL OR effective_to IS NULL OR effective_to >= effective_from",
+      name="ck_rate_books_effective_range",
+    ),
+    
+    CheckConstraint("status = 'DRAFT' OR published_at IS NOT NULL", name="ck_rate_books_published_at"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  organization_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=True,
+    index=True,
+  )
+ 
+  code: Mapped[str] = mapped_column(String(50), nullable=False)
+  name: Mapped[str] = mapped_column(String(200), nullable=False)
+  description: Mapped[str | None] = mapped_column(Text, nullable=True)
+  edition: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  currency: Mapped[str] = mapped_column(String(3), nullable=False, default="PKR", server_default="PKR")
+ 
+  jurisdiction: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  province: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+  effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+ 
+  status: Mapped[str] = mapped_column(
+    String(20), nullable=False,
+    default=RateBookStatus.DRAFT.value, server_default="DRAFT",
+  )
+  
+  immutable_version: Mapped[int] = mapped_column(
+    Integer,
+    nullable=False,
+    default=1, 
+    server_default=text("1"),
+  )
+  
+  published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+ 
+  published_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_rate_books_published_by"),
+    nullable=True,
+  )
+  
+  content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+ 
+  parent_rate_book_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_books.id", ondelete="SET NULL", name="fk_rate_books_parent"),
+    nullable=True,
+  )
+  
+  supersedes_rate_book_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_books.id", ondelete="SET NULL", name="fk_rate_books_supersedes"),
+    nullable=True,
+  )
+ 
+  is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+ 
+  extra: Mapped[dict] = mapped_column(
+    JSONB, 
+    nullable=False, 
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+  items: Mapped[list["RateItem"]] = relationship(
+    "RateItem",
+    back_populates="rate_book",
+    cascade="all, delete-orphan",
+    primaryjoin="RateBook.id == RateItem.rate_book_id",
+    foreign_keys="RateItem.rate_book_id",
+  )
+   
+  escalations: Mapped[list["RateBookEscalation"]] = relationship(
+    "RateBookEscalation",
+    back_populates="rate_book", 
+    cascade="all, delete-orphan",
+    primaryjoin="RateBook.id == RateBookEscalation.rate_book_id",
+    foreign_keys="RateBookEscalation.rate_book_id",
+  )
+ 
+class RateItem(Base, TimestampMixin):
+  __tablename__ = "rate_items"
+ 
+  __table_args__ = (
+    UniqueConstraint("rate_book_id", "work_item_code", "unit", name="uq_rate_items_book_code_unit"),
+    
+    ForeignKeyConstraint(
+      ["rate_book_id", "organization_id"], ["rate_books.id", "rate_books.organization_id"],
+      ondelete="CASCADE", name="fk_rate_items_book_tenant",
+    ),
+    
+    Index("ix_rate_items_book", "rate_book_id"),
+    Index("ix_rate_items_work_item", "work_item_code"),
+    CheckConstraint("rate >= 0", name="ck_rate_items_rate_non_negative"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+ 
+  rate_book_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_books.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  organization_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True, index=True)
+ 
+  work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)   
+  rate: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+ 
+  description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+  trade: Mapped[str | None] = mapped_column(String(80), nullable=True)
+  specification: Mapped[str | None] = mapped_column(Text, nullable=True)
+  csr_ref: Mapped[str | None] = mapped_column(String(80), nullable=True)
+ 
+  analysis_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_analyses.id", ondelete="SET NULL", name="fk_rate_items_analysis_id", use_alter=True),
+    nullable=True,
+  )
+  
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  
+  extra: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, 
+    server_default=text("'{}'::jsonb"),
+  )
+ 
+  rate_book: Mapped["RateBook"] = relationship(
+    "RateBook",
+    back_populates="items",
+    primaryjoin="RateBook.id == RateItem.rate_book_id",
+    foreign_keys="RateItem.rate_book_id",
+  )
+ 
+class RateBookEscalation(Base, TimestampMixin):
+  __tablename__ = "rate_book_escalations"
+ 
+  __table_args__ = (
+    UniqueConstraint("rate_book_id", "trade_scope", "effective_from", name="uq_rate_book_escalations_scope_date"),
+    ForeignKeyConstraint(
+      ["rate_book_id", "organization_id"], ["rate_books.id", "rate_books.organization_id"],
+      ondelete="CASCADE", name="fk_rate_book_escalations_book_tenant",
+    ),
+    Index("ix_rate_book_escalations_book", "rate_book_id"),
+    CheckConstraint("factor > 0", name="ck_rate_book_escalations_factor"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  rate_book_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_books.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  organization_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+ 
+  trade_scope: Mapped[str] = mapped_column(String(80), nullable=False, default="ALL", server_default="ALL")
+  effective_from: Mapped[date] = mapped_column(Date, nullable=False)
+  factor: Mapped[Decimal] = mapped_column(Numeric(8, 4), nullable=False, default=Decimal("1.0")) 
+  note: Mapped[str | None] = mapped_column(Text, nullable=True)
+ 
+  rate_book: Mapped["RateBook"] = relationship(
+    "RateBook",
+    back_populates="escalations",
+    primaryjoin="RateBook.id == RateBookEscalation.rate_book_id",
+    foreign_keys="RateBookEscalation.rate_book_id",
+  )
+ 
+class RateAnalysis(Base, TimestampMixin):
+  __tablename__ = "rate_analyses"
+ 
+  __table_args__ = (
+    UniqueConstraint("rate_book_id", "code", name="uq_rate_analyses_book_code"),
+    UniqueConstraint("id", "organization_id", name="uq_rate_analyses_id_org"),
+    
+    ForeignKeyConstraint(
+      ["rate_book_id", "organization_id"], ["rate_books.id", "rate_books.organization_id"],
+      ondelete="CASCADE", name="fk_rate_analyses_book_tenant",
+    ),
+    
+    Index("ix_rate_analyses_book", "rate_book_id"),
+    Index("ix_rate_analyses_work_item", "work_item_code"),
+    CheckConstraint("basis_quantity > 0", name="ck_rate_analyses_basis"),
+    CheckConstraint("overhead_pct >= 0 AND profit_pct >= 0", name="ck_rate_analyses_pct"),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  rate_book_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_books.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  organization_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True, index=True)
+ 
+  code: Mapped[str] = mapped_column(String(80), nullable=False)
+  work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)
+  description: Mapped[str] = mapped_column(String(500), nullable=False)
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  
+  basis_quantity: Mapped[Decimal] = mapped_column(
+    Numeric(14, 4), 
+    nullable=False,
+    default=Decimal("1"),
+  )
+ 
+  overhead_pct: Mapped[Decimal] = mapped_column(Numeric(6, 3), nullable=False, default=Decimal("0"))
+  profit_pct: Mapped[Decimal] = mapped_column(Numeric(6, 3), nullable=False, default=Decimal("0"))
+ 
+  computed_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)  
+  computed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+ 
+  components: Mapped[list["RateAnalysisComponent"]] = relationship(
+    "RateAnalysisComponent",
+    back_populates="analysis",
+    cascade="all, delete-orphan",
+    order_by="RateAnalysisComponent.sequence",
+  )
+ 
+class RateAnalysisComponent(Base, TimestampMixin):
+  __tablename__ = "rate_analysis_components"
+ 
+  __table_args__ = (
+    UniqueConstraint("analysis_id", "sequence", name="uq_rate_analysis_components_seq"),
+    Index("ix_rate_analysis_components_analysis", "analysis_id"),
+    CheckConstraint(f"component_type IN ({_ANALYSIS_COMPONENT_TYPES})", name="ck_rate_analysis_components_type"),
+    CheckConstraint(f"rate_source IN ({_ANALYSIS_COMPONENT_SOURCES})", name="ck_rate_analysis_components_source"),
+    CheckConstraint("coefficient >= 0", name="ck_rate_analysis_components_coefficient"),
+    
+    CheckConstraint(
+      "rate_source <> 'DIRECT' OR unit_rate IS NOT NULL", name="ck_rate_analysis_components_direct_has_rate",
+    ),
+    
+    CheckConstraint(
+      "rate_source <> 'RATE_ITEM' OR ref_rate_item_id IS NOT NULL", name="ck_rate_analysis_components_ref_has_item",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  analysis_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_analyses.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  organization_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+ 
+  sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+  component_type: Mapped[str] = mapped_column(String(10), nullable=False, default="MATERIAL")
+  description: Mapped[str] = mapped_column(String(500), nullable=False)
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+ 
+  rate_source: Mapped[str] = mapped_column(String(20), nullable=False, default="DIRECT")
+  
+  ref_rate_item_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rate_items.id", ondelete="SET NULL", name="fk_rate_analysis_components_ref_item"),
+    nullable=True,
+  )
+ 
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  coefficient: Mapped[Decimal] = mapped_column(Numeric(14, 6), nullable=False, default=Decimal("1"))  
+  unit_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+  analysis: Mapped["RateAnalysis"] = relationship("RateAnalysis", back_populates="components")
+ 
+class ProjectRateOverride(Base, TimestampMixin):
+  __tablename__ = "project_rate_overrides"
+ 
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_project_rate_overrides_id_org"),
+    
+    Index(
+      "uq_project_rate_overrides_active", "project_id", "work_item_code", "unit",
+      unique=True, postgresql_where=text("revoked_at IS NULL"),
+    ),
+    
+    Index("ix_project_rate_overrides_org_project", "organization_id", "project_id"),
+    
+    CheckConstraint("rate >= 0", name="ck_project_rate_overrides_rate"),
+    CheckConstraint("char_length(btrim(reason)) > 0", name="ck_project_rate_overrides_reason"),
+    
+    CheckConstraint(
+      "effective_from IS NULL OR effective_to IS NULL OR effective_to >= effective_from",
+      name="ck_project_rate_overrides_effective_range",
+    ),
+  )
+ 
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+ 
+  work_item_code: Mapped[str] = mapped_column(String(50), nullable=False)
+  unit: Mapped[str] = mapped_column(String(20), nullable=False)
+  rate: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+  reason: Mapped[str] = mapped_column(Text, nullable=False)
+  effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
+  effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+ 
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_project_rate_overrides_created_by"),
+    nullable=True,
+  )
+  revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+  revoked_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_project_rate_overrides_revoked_by"),
+    nullable=True,
+  )
+  
+  revoke_reason: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -45,8 +45,6 @@ export function CalculationRunPanel({
     useState<View>("overview");
   const [ruleSetCode, setRuleSetCode] =
     useState("");
-  const [conventionCode, setConventionCode] =
-    useState("");
   const startRun =
     useStartCalculationRun(projectId);
   const { showToast } = useToast();
@@ -73,8 +71,7 @@ export function CalculationRunPanel({
             : undefined,
         rule_set_code:
           ruleSetCode.trim() || null,
-        convention_code:
-          conventionCode.trim() || null,
+        convention_code: null,
       },
       {
        onSuccess: ({ run: createdRun, reused }) => {
@@ -164,26 +161,6 @@ export function CalculationRunPanel({
           />
         </label>
 
-        <label className="block">
-          <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-            {t(
-              "boq.calculationRun.measurementConvention",
-            )}
-          </span>
-
-          <input
-            value={conventionCode}
-            onChange={(event) =>
-              setConventionCode(
-                event.target.value,
-              )
-            }
-            placeholder={t(
-              "boq.calculationRun.optional",
-            )}
-            className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]"
-          />
-        </label>
       </div>
 
       {!runId ? (

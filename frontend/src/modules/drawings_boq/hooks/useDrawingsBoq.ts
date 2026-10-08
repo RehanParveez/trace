@@ -305,6 +305,9 @@ export function useUpdateBOQItem(
           boqVersionId,
         ),
       });
+      void queryClient.invalidateQueries({ queryKey: [...drawingsBoqKeys.all, "issues"] });
+      void queryClient.invalidateQueries({ queryKey: drawingsBoqKeys.adjustments(item.id) });
+      void queryClient.invalidateQueries({ queryKey: drawingsBoqKeys.trace(item.id) });
     },
   });
 }
@@ -875,6 +878,14 @@ function invalidateVersionQueries(
       drawingsBoqKeys.snapshots(versionId),
   });
 
+  void queryClient.invalidateQueries({
+    queryKey: [...drawingsBoqKeys.all, "issues"],
+  });
+
+  void queryClient.invalidateQueries({
+    queryKey: [...drawingsBoqKeys.all, "issues"],
+  });
+
   if (projectId) {
     void queryClient.invalidateQueries({
       queryKey:
@@ -1073,7 +1084,7 @@ export function useBOQVersionLedger(
     after?: string | null;
     work_item_code?: string | null;
   } = {},
-  isEngine = false,                
+  isEngine = true,
 ) {
   return useQuery({
     queryKey:
@@ -1092,7 +1103,7 @@ export function useBOQVersionLedger(
 
 export function useBOQSnapshots(
   versionId: string | undefined,
-  isEngine = false,                
+  isEngine = true,
 ) {
   return useQuery({
     queryKey: drawingsBoqKeys.snapshots(
@@ -1172,6 +1183,10 @@ export function useCreateBOQItemAdjustment(
           drawingsBoqKeys.adjustments(itemId),
       });
 
+      void queryClient.invalidateQueries({
+        queryKey: drawingsBoqKeys.trace(itemId),
+      });
+
       if (versionId) {
         invalidateVersionQueries(
           queryClient,
@@ -1212,6 +1227,17 @@ export function useRevokeBOQAdjustment(
           versionId,
         );
       }
+    },
+  });
+}
+
+export function useDeleteBOQItem(versionId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (itemId: string) => drawingsBoqApi.deleteBOQItem(itemId),
+    onSuccess: () => {
+      invalidateVersionQueries(queryClient, versionId);
     },
   });
 }
@@ -1333,6 +1359,9 @@ export function useUpdateReviewIssue(
             versionId,
             status,
           ),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: [...drawingsBoqKeys.all, "issues", projectId],
       });
     },
   });

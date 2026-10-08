@@ -3,7 +3,7 @@ import axios from "axios";
 import {Badge, Button, EmptyState, ErrorState, Icon, LoadingState, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
-import {useApproveBOQItem, useBOQItems, useConfirmBOQItemRate, useUpdateBOQItem, useWaiveBOQItemReview,
+import {useApproveBOQItem, useBOQItems, useConfirmBOQItemRate, useDeleteBOQItem, useUpdateBOQItem, useWaiveBOQItemReview,
 } from "../hooks";
 import type { BOQItem } from "../types/drawings-boq.types";
 import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity,
@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 
 interface BOQItemTableProps {
   boqVersionId: string;
+  isEngine?: boolean;
   canUpdate: boolean;
   canApprove: boolean;
   canAdjust?: boolean;
@@ -21,6 +22,7 @@ interface BOQItemTableProps {
 
 export function BOQItemTable({
   boqVersionId,
+  isEngine = false,
   canUpdate,
   canApprove,
   canAdjust = false,
@@ -52,6 +54,14 @@ export function BOQItemTable({
     useWaiveBOQItemReview(
       boqVersionId,
     );
+
+  const deleteItem =
+    useDeleteBOQItem(
+      boqVersionId,
+    );
+
+  const onActionError = (error: unknown) =>
+    setNotice(getApiErrorMessage(error, t("boq.items.actionError", "This action could not be completed.")));
 
   const { showToast } =
     useToast();
@@ -367,7 +377,7 @@ export function BOQItemTable({
                           {t("boq.items.trace")}
                         </Button>
 
-                        {canAdjust ? (
+                        {canAdjust && item.source_kind === "MODEL" ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -408,8 +418,8 @@ export function BOQItemTable({
                           "DRAFT" &&
                         item.unit_rate !==
                           null &&
-                        item.review_status ===
-                          "REVIEW_REQUIRED" ? (
+                        item.rate_source ===
+                          "AI_SUGGESTED" ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -419,6 +429,7 @@ export function BOQItemTable({
                             onClick={() =>
                               confirmRate.mutate(
                                 item.id,
+                                { onError: onActionError },
                               )
                             }
                           >
@@ -454,6 +465,7 @@ export function BOQItemTable({
                                   reason:
                                     reason.trim(),
                                 },
+                                { onError: onActionError },
                               );
                             }}
                           >
@@ -461,7 +473,31 @@ export function BOQItemTable({
                           </Button>
                         ) : null}
 
+                        {canUpdate &&
+                        item.status ===
+                          "DRAFT" &&
+                        item.source_kind !==
+                          "MODEL" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={
+                              deleteItem.isPending
+                            }
+                            onClick={() => {
+                              if (!window.confirm(t("boq.items.deleteConfirm", "Delete this draft line?"))) return;
+                              deleteItem.mutate(item.id, {
+                                onSuccess: () => showToast({ tone: "success", title: t("boq.items.deletedToast", "Line deleted") }),
+                                onError: onActionError,
+                              });
+                            }}
+                          >
+                            {t("boq.items.delete", "Delete")}
+                          </Button>
+                        ) : null}
+
                         {canApprove &&
+                        !isEngine &&
                         item.status ===
                           "DRAFT" ? (
                           <Button
@@ -544,6 +580,9 @@ export function BOQItemTable({
           itemName={
             adjustmentItem.material_name
           }
+          unit={adjustmentItem.unit}
+          netQuantity={adjustmentItem.net_quantity}
+          quantity={adjustmentItem.quantity}
           canAdjust={
             canAdjust
           }
@@ -562,11 +601,12 @@ interface BOQItemEditRowProps {
   item: BOQItem;
   isSaving: boolean;
   onCancel: () => void;
-  onSave: (payload: {
+    onSave: (payload: {
     material_name: string;
     category: string | null;
     unit: string;
-    quantity: number;
+    quantity?: number;
+    adjustment_reason?: string;
     unit_rate: number | null;
   }) => void;
 }
@@ -731,8 +771,15 @@ function BOQItemEditRow({
                   null,
                 unit:
                   unit.trim(),
-                quantity:
-                  Number(quantity),
+                ...(Number(quantity) !== Number(item.quantity)
+                  ? {
+                      quantity: Number(quantity),
+                      adjustment_reason:
+                        item.source_kind === "MODEL"
+                          ? window.prompt(t("boq.items.adjustReasonPrompt", "Reason for changing the calculated quantity"))?.trim() || undefined
+                          : undefined,
+                    }
+                  : {}),
                 unit_rate:
                   unitRate === ""
                     ? null

@@ -250,6 +250,7 @@ export interface BOQItemUpdateRequest {
   unit?: string;
   quantity?: number;
   unit_rate?: number | null;
+  adjustment_reason?: string;
 }
 
 export interface BOQCustomItemCreateRequest {

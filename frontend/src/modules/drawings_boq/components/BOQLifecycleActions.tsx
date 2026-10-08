@@ -6,6 +6,7 @@ import {useApproveBOQVersion, useArchiveBOQVersion, useIssueBOQVersion, useReope
 } from "../hooks";
 import {formatBOQLifecycle, getBOQLifecycleTone,
 } from "../utils/drawings-boq.utils";
+import { getApiErrorMessage } from "../../identity";
 import type { BOQVersion, TransitionRequest } from "../types/drawings-boq.types";
 import type { UseMutationResult } from "@tanstack/react-query";
 
@@ -48,7 +49,7 @@ export function BOQLifecycleActions({
   ) {
     (mutation.mutate as (
       vars?: TVars,
-      opts?: { onSuccess?: () => void },
+      opts?: { onSuccess?: () => void; onError?: (error: unknown) => void },
     ) => void)(payload, {
       onSuccess: () => {
         if (successMessage) {
@@ -57,6 +58,12 @@ export function BOQLifecycleActions({
             title: successMessage,
           });
         }
+      },
+      onError: (error: unknown) => {
+        showToast({
+          tone: "error",
+          title: getApiErrorMessage(error, t("boq.lifecycle.transitionError", "Couldn't change the BOQ status.")),
+        });
       },
     });
   }
@@ -90,7 +97,7 @@ export function BOQLifecycleActions({
         </label>
 
         <div className="flex flex-wrap gap-2">
-          {canUpdate && lifecycle === "DRAFT" ? (
+          {canUpdate && lifecycle === "CALCULATED" ? (
             <Button
               variant="primary"
               disabled={submit.isPending}
@@ -144,7 +151,7 @@ export function BOQLifecycleActions({
             </Button>
           ) : null}
 
-          {canApprove && lifecycle === "APPROVED" ? (
+          {canApprove && lifecycle === "UNDER_REVIEW" ? (
             <Button
               variant="ghost"
               disabled={reopen.isPending}
@@ -156,7 +163,7 @@ export function BOQLifecycleActions({
             </Button>
           ) : null}
 
-          {canIssue && lifecycle === "ISSUED" ? (
+          {canIssue && !["CALCULATING", "ARCHIVED", "ISSUED"].includes(lifecycle) ? (
             <Button
               variant="ghost"
               disabled={archive.isPending}

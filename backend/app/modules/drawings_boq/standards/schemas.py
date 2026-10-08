@@ -192,6 +192,7 @@ class RuleSetDraftUpdateRequest(BaseModel):
   mappings: list[MappingSchema] | None = None
   finish_rules: list[FinishRuleSchema] | None = None
 
+
 class ValidationIssue(BaseModel):
   code: str
   severity: Literal["error", "warning", "info"]

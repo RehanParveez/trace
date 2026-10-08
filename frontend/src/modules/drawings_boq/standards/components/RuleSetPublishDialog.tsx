@@ -13,7 +13,6 @@ export function RuleSetPublishDialog({ ruleSet, onClose }: { ruleSet: RuleSet; o
 
   useEffect(() => {
     validate.mutate(ruleSet.id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ruleSet.id]);
 
   const issues = validate.data?.issues ?? [];
@@ -68,7 +67,7 @@ export function RuleSetPublishDialog({ ruleSet, onClose }: { ruleSet: RuleSet; o
 
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={publish.isPending}>Cancel</Button>
-          <Button type="button" variant="primary" onClick={confirm} disabled={validate.isPending || !validate.data || errorCount > 0 || publish.isPending}>{publish.isPending ? "Publishing…" : "Publish"}</Button>
+          <Button type="button" variant="primary" onClick={confirm} disabled={validate.isPending || (validate.isSuccess && errorCount > 0) || publish.isPending}>{publish.isPending ? "Publishing…" : "Publish"}</Button>
         </div>
       </div>
     </Modal>

@@ -153,6 +153,7 @@ export function useConfirmScheduleImport(projectId: string, importId: string) {
       void qc.invalidateQueries({ queryKey: spaceKeys.importsRoot(projectId) });
       void qc.invalidateQueries({ queryKey: spaceKeys.spacesRoot(projectId) });
       void qc.invalidateQueries({ queryKey: spaceKeys.detailRoot() });
+      void qc.invalidateQueries({ queryKey: [...K, "finish-preview"] });
     },
   });
 }

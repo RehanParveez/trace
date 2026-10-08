@@ -662,6 +662,11 @@ export const drawingsBoqApi = {
     return response.data;
   },
 
+  async deleteBOQItem(itemId: string): Promise<void> {
+    if (!itemId) throw new Error("Item ID is required");
+    await apiClient.delete(`/drawings-boq/boq-items/${itemId}`);
+  },
+
   async confirmBOQItemRate(itemId: string): Promise<BOQItem> {
     if (!itemId) throw new Error("Item ID is required");
 

@@ -57,26 +57,26 @@ export function BOQItemAdjustmentsDialog({
   const hasActiveReplace = active.some((a) => a.kind === "REPLACE");
 
   const net = Number(netQuantity ?? quantity ?? 0);
-  const current = useMemo(() => {
-    let q = net;
+  const { current, deltaSum } = useMemo(() => {
+    let base = net;
+    let d = 0;
     for (const a of active) {
       const v = Number(a.value);
-      if (a.kind === "REPLACE") q = v;
-      else q += v;
+      if (a.kind === "REPLACE") base = v;
+      else d += v;
     }
-    return q;
+    return { current: base + d, deltaSum: d };
   }, [net, active]);
 
   const numeric = value === "" ? null : Number(value);
   const previewValid =
     numeric !== null &&
     !Number.isNaN(numeric) &&
-    !(kind === "REPLACE" && numeric < 0) &&
-    !(kind === "REPLACE" && hasActiveReplace);
+    !(kind === "REPLACE" && numeric < 0);
 
   const preview = previewValid
     ? kind === "REPLACE"
-      ? numeric
+      ? (numeric as number) + deltaSum
       : current + (numeric as number)
     : null;
 

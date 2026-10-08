@@ -141,7 +141,6 @@ class BOQItemUpdateRequest(BaseModel):
     default=False,
     description="If true and unit_rate is set, save this rate as the org's default for this material going forward.",
   )
-  adjustment_reason: str | None = Field(default=None, max_length=1000)
 
 class MaterialLibraryCreateRequest(BaseModel):
   raw_text: str = Field(

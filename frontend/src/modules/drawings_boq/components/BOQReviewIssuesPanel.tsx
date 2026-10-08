@@ -5,6 +5,7 @@ import {Badge,Button, EmptyState, ErrorState, LoadingState, Panel, PanelHeader, 
 import {useReviewIssues, useUpdateReviewIssue,
 } from "../hooks";
 import type { ReviewStatus } from "../types/drawings-boq.types";
+import { isWaivable } from "../utils/drawings-boq.utils";
 import { ReasonDialog } from "./ReasonDialog";
 
 interface BOQReviewIssuesPanelProps {
@@ -210,6 +211,7 @@ export function BOQReviewIssuesPanel({
                           status: "WAIVED",
                         });
                       }}
+                      disabled={!isWaivable(issue.code)}
                     >
                       {t("boq.reviewIssues.waive")}
                     </Button>
