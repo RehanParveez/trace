@@ -838,6 +838,39 @@ export default function DrawingsBoqScreen() {
               })
             }
           />
+          <Action
+            title={t("drawingsBoq.libraries", { defaultValue: "Libraries & set-up" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/libraries",
+                params: { projectId: project.id },
+              })
+            }
+          />
+          <Action
+            title={t("drawingsBoq.standards", { defaultValue: "Standards & rules" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/standards",
+                params: { projectId: project.id },
+              })
+            }
+          />
+          <Action
+            title={t("drawingsBoq.files", { defaultValue: "Files & counts" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/project-files",
+                params: { projectId: project.id },
+              })
+            }
+          />
         </View>
 
         {boqError && !expandedVersion ? (

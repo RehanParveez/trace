@@ -22,7 +22,7 @@ export default function ProjectSitePhotosScreen() {
   const isUrdu = i18n.resolvedLanguage === "ur";
 
   const params = useLocalSearchParams<{ projectId?: string | string[] }>();
-  const projectId = Array.isArray(params.projectId)
+  const projectId = Array.isArray(params.projectId) 
     ? params.projectId[0]
     : params.projectId;
 

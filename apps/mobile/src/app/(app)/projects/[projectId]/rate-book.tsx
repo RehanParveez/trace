@@ -7,6 +7,7 @@ import { restoreSession } from "../../../../api/client";
 import {addEscalation, addRateItem, applyAnalysis, archiveRateBook, computeAnalysis, deleteAnalysis, deleteEscalation, deleteRateBook, deleteRateItem, getAnalysisBreakdown, getRateBook,
   importRateItemsCsv, listAnalyses, listEscalations, listRateItems, newRateBookVersion, publishRateBook, updateRateBook, updateRateItem,
 } from "../../../../api/pricing";
+import { bulkUpsertRates } from "../../../../api/pricingExtras";
 import type {AnalysisBreakdown, RateAnalysis, RateBook, RateEscalation, RateItem,
 } from "../../../../api/types";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher";
@@ -15,7 +16,7 @@ import { PERM, hasPerm } from "../../../../features/drawingsBoq/permissions";
 import { Action, Badge, COLORS, Field, InfoRow, formatMoney, formatNumber, ui } from "../../../../features/drawingsBoq/ui";
 
 type Tab = "items" | "escalations" | "analyses";
-type Panel = "" | "details" | "addItem" | "editItem" | "addEscalation";
+type Panel = "" | "details" | "addItem" | "editItem" | "addEscalation" | "bulk";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -56,6 +57,7 @@ export default function RateBookScreen() {
   const [itemForm, setItemForm] = useState({ code: "", unit: "", rate: "", description: "", trade: "" });
   const [editId, setEditId] = useState("");
   const [escForm, setEscForm] = useState({ scope: "ALL", from: "", factor: "", note: "" });
+  const [bulkText, setBulkText] = useState("");
   const [openAnalysis, setOpenAnalysis] = useState("");
   const [breakdown, setBreakdown] = useState<AnalysisBreakdown | null>(null);
 
@@ -280,6 +282,35 @@ export default function RateBookScreen() {
     });
   }
 
+  async function handleBulk() {
+    const rows: { work_item_code: string; unit: string; rate: number; description?: string; trade?: string }[] = [];
+    const lines = bulkText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+    for (const [index, line] of lines.entries()) {
+      const cells = line.split(",").map((cell) => cell.trim());
+      if (index === 0 && cells[0].toLowerCase() === "work_item_code") continue;
+      const rate = Number((cells[2] ?? "").replace(/,/g, ""));
+      if (!cells[0] || !cells[1] || !cells[2] || !Number.isFinite(rate) || rate < 0) {
+        setError(tx("rateBook.bulkBadLine", "Line {{n}} is not valid. Use: code,unit,rate", { n: index + 1 }));
+        return;
+      }
+      rows.push({ work_item_code: cells[0], unit: cells[1], rate, description: cells[3] || undefined, trade: cells[4] || undefined });
+    }
+    if (rows.length === 0) {
+      setError(tx("rateBook.bulkEmpty", "Paste at least one line."));
+      return;
+    }
+    if (rows.length > 2000) {
+      setError(tx("rateBook.bulkTooMany", "At most 2000 lines at a time."));
+      return;
+    }
+    await act(async () => {
+      const out = await bulkUpsertRates(bookId!, rows);
+      setNotice(tx("rateBook.imported", "Imported: {{created}} new, {{updated}} updated.", out));
+      setBulkText("");
+      setPanel("");
+    });
+  }
+
   async function toggleBreakdown(analysisId: string) {
     if (openAnalysis === analysisId) {
       setOpenAnalysis("");
@@ -409,9 +440,19 @@ export default function RateBookScreen() {
                     <>
                       <Action title={tx("rateBook.addRate", "Add a rate")} secondary={panel !== "addItem"} isUrdu={isUrdu} onPress={() => { setItemForm({ code: "", unit: "", rate: "", description: "", trade: "" }); setPanel(panel === "addItem" ? "" : "addItem"); }} />
                       <Action title={tx("rateBook.importCsv", "Import CSV")} secondary disabled={busy} isUrdu={isUrdu} onPress={() => void handleImport()} />
+                      <Action title={tx("rateBook.pasteRates", "Paste rates")} secondary={panel !== "bulk"} isUrdu={isUrdu} onPress={() => setPanel(panel === "bulk" ? "" : "bulk")} />
                     </>
                   ) : null}
                 </View>
+                {panel === "bulk" ? (
+                  <View style={ui.panel}>
+                    <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+                      {tx("rateBook.bulkHelp", "One rate per line: code,unit,rate and optionally ,description,trade. Existing rates with the same code and unit are updated.")}
+                    </Text>
+                    <Field label={tx("rateBook.bulkLabel", "Rates")} value={bulkText} onChangeText={setBulkText} multiline isUrdu={isUrdu} />
+                    <Action title={tx("rateBook.bulkRun", "Add or update rates")} disabled={busy} isUrdu={isUrdu} onPress={() => void handleBulk()} />
+                  </View>
+                ) : null}
                 {panel === "addItem" ? rateForm(tx("rateBook.addRate", "Add a rate"), () => void handleAddItem(), false) : null}
                 {items.length === 0 ? <Text style={[ui.muted, isUrdu && ui.rtlText]}>{tx("rateBook.noItems", "No rates found.")}</Text> : null}
                 {items.length >= 200 ? (
@@ -472,6 +513,14 @@ export default function RateBookScreen() {
                 <Text style={[ui.muted, isUrdu && ui.rtlText]}>
                   {tx("rateBook.analysisHelp", "A rate analysis builds a rate from materials, labour and plant. Compute it, then apply it to put the result in the rates list. New analyses are created on the web for now.")}
                 </Text>
+                {editable ? (
+                  <Action
+                    title={tx("rateBook.newAnalysis", "New analysis")}
+                    secondary
+                    isUrdu={isUrdu}
+                    onPress={() => router.push({ pathname: "/projects/[projectId]/analysis-edit", params: { projectId: first(params.projectId) ?? "", bookId: bookId ?? "" } })}
+                  />
+                ) : null}
                 {analyses.length === 0 ? <Text style={[ui.muted, isUrdu && ui.rtlText]}>{tx("rateBook.noAnalyses", "No analyses.")}</Text> : null}
                 {analyses.map((analysis) => (
                   <View key={analysis.id} style={ui.boqItem}>
@@ -491,6 +540,7 @@ export default function RateBookScreen() {
                       <Action title={openAnalysis === analysis.id ? tx("rateBook.hideBreakdown", "Hide breakdown") : tx("rateBook.breakdown", "Breakdown")} secondary isUrdu={isUrdu} onPress={() => void toggleBreakdown(analysis.id)} />
                       {editable ? (
                         <>
+                          <Action title={tx("drawingsBoq.edit", "Edit")} secondary isUrdu={isUrdu} onPress={() => router.push({ pathname: "/projects/[projectId]/analysis-edit", params: { projectId: first(params.projectId) ?? "", bookId: bookId ?? "", analysisId: analysis.id } })} />
                           <Action title={tx("rateBook.compute", "Compute")} secondary disabled={busy} isUrdu={isUrdu} onPress={() => void act(() => computeAnalysis(analysis.id), tx("rateBook.computed", "Computed."))} />
                           <Action title={tx("rateBook.apply", "Apply to rates")} disabled={busy || analysis.computed_rate == null} isUrdu={isUrdu} onPress={() => void act(() => applyAnalysis(analysis.id), tx("rateBook.applied", "Applied to the rates list."))} />
                           <Action title={tx("rateBook.delete", "Delete")} secondary disabled={busy} isUrdu={isUrdu} onPress={() => ask(tx("rateBook.deleteAnalysisTitle", "Delete this analysis?"), "", tx("rateBook.delete", "Delete"), () => void act(() => deleteAnalysis(analysis.id)))} />

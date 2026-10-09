@@ -2075,3 +2075,247 @@ export type PriceVersionOptions = {
   asOf?: string;
   overwriteManual?: boolean;
 };
+
+export type MaterialEntry = {
+  id: string;
+  raw_text: string;
+  normalized_name: string;
+  category: string | null;
+  default_unit: string | null;
+  default_rate: number | string | null;
+  work_item_code: string | null;
+  effective_from: string | null;
+};
+
+export type LabourRateEntry = {
+  id: string;
+  trade: string;
+  unit: string;
+  rate: number | string;
+  work_item_code: string | null;
+  effective_from: string | null;
+};
+
+export type BarSize = {
+  id: string;
+  standard: string;
+  designation: string;
+  grade: string;
+  nominal_dia_mm: number | string;
+  unit_weight_kg_m: number | string;
+  is_system: boolean;
+  is_active: boolean;
+};
+
+export type RebarShape = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  standard: string | null;
+  segments: unknown[];
+  bend_spec: unknown[];
+  bend_count: number;
+  hook_ends: number;
+  is_system: boolean;
+  is_active: boolean;
+};
+
+export type AnalysisComponentType = "MATERIAL" | "LABOUR" | "PLANT" | "OTHER";
+export type AnalysisComponentSource = "DIRECT" | "RATE_ITEM" | "LABOUR_RATE" | "MATERIAL_LIBRARY";
+
+export type AnalysisComponentInput = {
+  component_type: AnalysisComponentType;
+  description: string;
+  work_item_code?: string;
+  rate_source: AnalysisComponentSource;
+  ref_rate_item_id?: string;
+  unit: string;
+  coefficient: number;
+  unit_rate?: number;
+};
+
+export type AnalysisCreatePayload = {
+  code: string;
+  work_item_code: string;
+  description: string;
+  unit: string;
+  basis_quantity: number;
+  overhead_pct: number;
+  profit_pct: number;
+  components: AnalysisComponentInput[];
+};
+
+export type AnalysisUpdatePayload = {
+  description?: string;
+  unit?: string;
+  basis_quantity?: number;
+  overhead_pct?: number;
+  profit_pct?: number;
+  components?: AnalysisComponentInput[];
+};
+
+export type BulkRateInput = {
+  work_item_code: string;
+  unit: string;
+  rate: number;
+  description?: string;
+  trade?: string;
+}
+
+export type RuleSet = {
+  id: string;
+  organization_id: string | null;
+  code: string;
+  name: string;
+  description: string | null;
+  jurisdiction: string | null;
+  province: string | null;
+  city: string | null;
+  standard_name: string | null;
+  standard_edition: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  status: string;
+  immutable_version: number;
+  convention_code: string | null;
+  is_system: boolean;
+  published_at: string | null;
+  content_hash: string | null;
+  supersedes_rule_set_id: string | null;
+  wall_measurement_method: string;
+  net_vs_gross_preference: string;
+  preferred_units: Record<string, unknown>;
+  extra_config: Record<string, unknown>;
+};
+
+export type RuleRow = Record<string, unknown>;
+
+export type RecipeComponent = {
+  sequence: number;
+  work_item_code: string | null;
+  description_template: string;
+  unit: string;
+  quantity_formula_code: string;
+  output_unit: string;
+  category: string | null;
+  item_type: string;
+  is_optional: boolean;
+};
+
+export type Recipe = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  trigger_ifc_types: string[];
+  trigger_conditions: Record<string, unknown>;
+  is_active: boolean;
+  components: RecipeComponent[];
+};
+
+export type RuleSetDetail = {
+  rule_set: RuleSet;
+  opening_rules: RuleRow[];
+  wastage_rules: RuleRow[];
+  reinforcement_rules: RuleRow[];
+  mappings: RuleRow[];
+  recipes: Recipe[];
+  finish_rules: RuleRow[];
+};
+
+export type RuleSectionKey =
+  | "opening_rules"
+  | "wastage_rules"
+  | "reinforcement_rules"
+  | "mappings"
+  | "finish_rules";
+
+export type RuleValidationIssue = {
+  code: string;
+  severity: "error" | "warning" | "info";
+  message: string;
+  ref: string | null;
+};
+
+export type RuleValidation = { valid: boolean; issues: RuleValidationIssue[] };
+
+export type RulePublishResult = { rule_set: RuleSet; warnings: RuleValidationIssue[] };
+
+export type RecipePayload = {
+  code: string;
+  name: string;
+  description?: string;
+  trigger_ifc_types: string[];
+  trigger_conditions: Record<string, unknown>;
+  components: {
+    sequence: number;
+    work_item_code?: string;
+    description_template: string;
+    unit: string;
+    quantity_formula_code: string;
+    category?: string;
+    item_type: "MATERIAL" | "LABOUR" | "CUSTOM";
+    is_optional: boolean;
+  }[];
+};
+
+export type Formula = {
+  code: string;
+  output_unit: string;
+  description: string;
+  input_unit: string | null;
+  needs_kernel: boolean;
+};
+
+export type Convention = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  conserves_volume: boolean;
+  parameters: Record<string, unknown>;
+};
+
+export type FinishOptions = {
+  surfaces: { surface: string; unit: string; needs_height: boolean }[];
+  categories: string[];
+};
+
+export type WorkItemFull = {
+  id: string;
+  organization_id: string | null;
+  code: string;
+  description: string;
+  unit: string;
+  trade: string | null;
+  wbs_code: string | null;
+  specification: string | null;
+  csr_ref: string | null;
+  default_formula_code: string | null;
+  is_system: boolean;
+  is_active: boolean;
+  extra: Record<string, unknown>;
+};
+
+export type QuantitySolid = {
+  id: string;
+  element_id: string | null;
+  level_id: string | null;
+  role: string;
+  component_type: string;
+  geometry_kind: string;
+  gross_volume_m3: number | string | null;
+  gross_area_m2: number | string | null;
+  gross_length_m: number | string | null;
+  count: number | null;
+  status: string;
+  issues: { code?: string; severity?: string; message?: string }[];
+};
+
+export type ProjectBoqCount = {
+  project_id: string;
+  latest_boq_item_count: number;
+};
+
+export type CursorPage<T> = { rows: T[]; next: string | null };

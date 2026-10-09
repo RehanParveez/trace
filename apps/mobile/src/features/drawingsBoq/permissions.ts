@@ -14,6 +14,10 @@ export const PERM = {
   SPACE_MANAGE: "space:manage",
   FINISH_MANAGE: "finish:manage",
   RATEBOOK_MANAGE: "ratebook:manage",
+  MATERIAL_LIBRARY_MANAGE: "material_library:manage",
+  LABOUR_RATE_MANAGE: "labour_rate_manage",
+  RULESET_MANAGE: "ruleset:manage",
+  RULESET_PUBLISH: "ruleset:publish",
 } as const;
 
 export function hasPerm(permissions: string[], key: string): boolean {

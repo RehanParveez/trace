@@ -383,6 +383,23 @@ export default function BoqVersionScreen() {
                 })
               }
             />
+            {version.calculation_run_id ? (
+              <Action
+                title={tx("boqVersion.runData", "Calculation data")}
+                secondary
+                isUrdu={isUrdu}
+                onPress={() =>
+                  router.push({
+                    pathname: "/projects/[projectId]/run-data",
+                    params: {
+                      projectId: version.project_id,
+                      runId: version.calculation_run_id ?? "",
+                      versionId: version.id,
+                    },
+                  })
+                }
+              />
+            ) : null}
             <Action
               title={tx("boqVersion.reviewIssues", "Review issues")}
               secondary

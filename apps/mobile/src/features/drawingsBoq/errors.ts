@@ -1,8 +1,7 @@
 import { ApiError } from "../../api/client";
 
 const MESSAGES: Record<string, string> = {
-  NO_PARSED_DRAWINGS:
-    "No processed IFC drawing yet. Upload an IFC and wait until its status is PARSED.",
+  NO_PARSED_DRAWINGS: "No processed IFC drawing yet. Upload an IFC and wait until its status is PARSED.",
   RUN_IN_PROGRESS: "A calculation is already running for this project.",
   BOQ_IMMUTABLE: "This BOQ is locked in its current state and cannot be changed.",
   OPEN_BLOCKING_ISSUES: "Resolve or waive the blocking review issues first.",
@@ -35,8 +34,15 @@ const MESSAGES: Record<string, string> = {
   RATE_OVERRIDE_REVOKED: "This override is already revoked.",
   RATE_IMPORT_TOO_LARGE: "The CSV is too large (5 MB or 2000 rows at most).",
   INVALID_RATE_BOOK_STATE: "That action is not available for this rate book's status.",
+  BAR_SIZE_EXISTS: "This bar size already exists.",
+  RULESET_NOT_FOUND: "Rule set not found.",
+  RULESET_SYSTEM_READONLY: "System rule sets are read-only. Clone it to get your own draft.",
+  RULESET_IMMUTABLE: "A published rule set cannot be changed. Clone it to get a new draft.",
+  CONVENTION_UNKNOWN: "That measurement convention is not available.",
+  WORK_ITEM_ALREADY_EXISTS: "A work item with this code already exists.",
+  WORK_ITEM_NOT_FOUND: "Work item not found.",
+  WORK_ITEM_SYSTEM_READONLY: "System work items cannot be changed.",
 };
-
 
 export function describeError(err: unknown, fallback: string): string {
   if (err instanceof ApiError && err.code && MESSAGES[err.code]) {
