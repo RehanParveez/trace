@@ -17,17 +17,26 @@ def format_bytes(value: int | None) -> str:
     size /= 1024
   return f"{size:.1f} TB"
 
-def get_s3_client():
-  scheme = "https" if settings.minio_secure else "http"
-  endpoint = f"{scheme}://{settings.minio_endpoint}"
+def _build_s3_client(endpoint_host: str, secure: bool):
+  scheme = "https" if secure else "http"
   return boto3.client(
     "s3",
-    endpoint_url=endpoint,
+    endpoint_url=f"{scheme}://{endpoint_host}",
     aws_access_key_id=settings.minio_access_key,
     aws_secret_access_key=settings.minio_secret_key,
     config=Config(signature_version = "s3v4"),
     region_name = "us-east-1",
   )
+
+def get_s3_client():
+  return _build_s3_client(settings.minio_endpoint, settings.minio_secure)
+
+def get_public_s3_client():
+  public_host = (settings.minio_public_endpoint or "").strip()
+  if not public_host:
+    return get_s3_client()
+  secure = settings.minio_secure if settings.minio_public_secure is None else settings.minio_public_secure
+  return _build_s3_client(public_host, secure)
 
 def ensure_bucket() -> None:
   client = get_s3_client()
@@ -39,10 +48,11 @@ def build_storage_key(organization_id: UUID, project_id: UUID, filename: str) ->
   safe_name = filename.replace("/", "_").replace("\\", "_")
   return f"{organization_id}/{project_id}/drawings/{uuid.uuid4().hex}_{safe_name}"
 
-def build_site_photo_storage_key(organization_id: UUID, filename: str,
+def build_site_photo_storage_key(organization_id: UUID, filename: str, project_id: UUID | None = None,
 ) -> str:
   safe_name = filename.replace("/", "_").replace("\\", "_")
-  return f"{organization_id}/site-photos/unassigned/{uuid.uuid4().hex}_{safe_name}"
+  folder = str(project_id) if project_id is not None else "unassigned"
+  return f"{organization_id}/site-photos/{folder}/{uuid.uuid4().hex}_{safe_name}"
 
 def upload_fileobj(key: str, fileobj, content_type: str | None = None) -> None:
   client = get_s3_client()
@@ -62,8 +72,22 @@ def download_bytes(key: str) -> bytes:
   response = client.get_object(Bucket=settings.minio_bucket, Key=key)
   return response["Body"].read()
   
-def generate_presigned_url(key: str, expires_in: int = 3600) -> str:
+def object_exists(key: str) -> bool:
+  from botocore.exceptions import ClientError
   client = get_s3_client()
+  try:
+    client.head_object(Bucket=settings.minio_bucket, Key=key)
+    return True
+  except ClientError as exc:
+    status = str(exc.response.get("Error", {}).get("Code", ""))
+    if status in {"404", "NoSuchKey", "NotFound"}:
+      return False
+    raise
+
+def generate_presigned_url(key: str, expires_in: int | None = None) -> str:
+  client = get_public_s3_client()
+  if expires_in is None:
+    expires_in = settings.site_photo_url_ttl_seconds
   return client.generate_presigned_url(
     "get_object",
     Params={"Bucket": settings.minio_bucket, "Key": key},

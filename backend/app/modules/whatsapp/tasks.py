@@ -39,7 +39,14 @@ async def _process(message_id: UUID) -> None:
 @celery_app.task(name="app.modules.whatsapp.tasks.reap_stuck_photo_messages")
 def reap_stuck_photo_messages() -> str:
   async def _run():
+    try:
+      await _reap()
+    finally:
+      await dispose_worker_engine()
+
+  async def _reap():
     async with WorkerSessionLocal() as session:
+      await scope_session_as_platform_admin(session)
       cutoff = datetime.now(timezone.utc) - timedelta(minutes=10)
       result = await session.execute(
         select(WhatsAppMessage).where(

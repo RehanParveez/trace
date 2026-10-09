@@ -1,13 +1,14 @@
 import { useState } from "react";
 import {Button, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
-import {useBOQSnapshots, useExportAdvancedBOQ,
+import {useBOQSnapshots, useBOQVersions, useExportAdvancedBOQ,
 } from "../hooks";
 import type {ExportKind,
 } from "../types/drawings-boq.types";
 import { useTranslation } from "react-i18next";
 
 interface BOQAdvancedExportPanelProps {
+  projectId?: string;
   versionId: string;
   label: string;
   canExport: boolean;
@@ -42,7 +43,7 @@ const FORMATS: Record<ExportKind, Array<"pdf" | "xlsx">> = {
   PROCUREMENT: ["xlsx"],
   MEASUREMENT_BOOK: ["pdf", "xlsx"],
   AUDIT_REPORT: ["pdf"],
-  REVISION_COMPARISON: [],
+  REVISION_COMPARISON: ["xlsx"],
   BBS: ["xlsx"],
 };
 
@@ -60,6 +61,7 @@ async function exportErrorMessage(error: unknown, fallback: string): Promise<str
 }
 
 export function BOQAdvancedExportPanel({
+  projectId,
   versionId,
   label,
   canExport,
@@ -81,7 +83,17 @@ export function BOQAdvancedExportPanel({
       null,
     );
 
+  const [compareVersionId, setCompareVersionId] =
+    useState<string>("");
+
   const snapshots = useBOQSnapshots(versionId);
+  const versions = useBOQVersions(projectId ?? "");
+
+  const comparableVersions = (versions.data ?? []).filter(
+    (version) =>
+      version.id !== versionId &&
+      Boolean(version.snapshot_id),
+    );
 
   const exportMutation =
     useExportAdvancedBOQ(
@@ -97,6 +109,13 @@ export function BOQAdvancedExportPanel({
         kind,
         format,
         snapshotId,
+        compareSnapshotId:
+          kind === "REVISION_COMPARISON"
+            ? comparableVersions.find(
+             (version) =>
+                version.id === compareVersionId,
+             )?.snapshot_id ?? null
+            : null,
       },
       {
         onSuccess: () =>
@@ -225,6 +244,39 @@ export function BOQAdvancedExportPanel({
             )}
           </select>
         </label>
+        
+        {kind === "REVISION_COMPARISON" && projectId ? (
+          <label className="block">
+            <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+             {t("boq.advancedExport.compareWith", "Compare against")}
+            </span>
+
+            <select
+              value={compareVersionId}
+              onChange={(event) =>
+                setCompareVersionId(
+                 event.target.value,
+              )
+             }
+            className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px]"
+           >
+             <option value="">
+               {t("boq.advancedExport.compareLatest", "Latest earlier snapshot")}
+             </option>
+
+              {comparableVersions.map(
+               (version) => (
+                 <option
+                    key={version.id}
+                    value={version.id}
+                 >
+                   {version.label}
+                   </option>
+                ),
+              )}
+           </select>
+        </label>
+       ) : null}
       </div>
 
       <div className="flex justify-end border-t border-[var(--color-border)] p-5">

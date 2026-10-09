@@ -157,7 +157,7 @@ def _perimeter(points) -> float:
   return sum(math.dist(points[i], points[(i + 1) % n]) for i in range(n))
 
 def _read_space(space, scales: _Scales, levels) -> ReadSpace:
-  psets = ifcopenshell.util.element.get_psets(space, psetsa_only=True) or {}
+  psets = ifcopenshell.util.element.get_psets(space, psets_only=True) or {}
   qtos = ifcopenshell.util.element.get_psets(space, qtos_only=True) or {}
   flat = _flatten_qtos(qtos)
   issues: list = []
@@ -237,9 +237,6 @@ def read_spatial(model, scales: _Scales, levels, known_gids: set[str]) -> Spatia
       )
       continue
 
-    result.spaces.append(rs)
-    by_step[space.id()] = rs.global_id
-    
     result.spaces.append(rs)
     by_step[space.id()] = rs.global_id
 

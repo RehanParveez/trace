@@ -54,6 +54,7 @@ export const IDENTITY_PERMISSIONS = {
   BOQ_ADJUST: "boq:adjust",
   BOQ_ISSUE: "boq:issue",
   REVIEW_RESOLVE: "review:resolve",
+  RATEBOOK_MANAGE: "ratebook:manage",
 } as const;
 
 export type IdentityPermission =

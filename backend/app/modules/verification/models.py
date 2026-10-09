@@ -6,7 +6,7 @@ from decimal import Decimal
 from uuid import UUID
 from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, Numeric, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
 
@@ -220,3 +220,13 @@ class PhotoBOQLink(Base, TimestampMixin):
     ForeignKey("users.id", ondelete="SET NULL"),
     nullable=True,
   )
+  
+  site_photo: Mapped["SitePhoto"] = relationship(
+    "SitePhoto",
+    lazy="selectin",
+    viewonly=True,
+  )
+
+  @property
+  def photo_storage_key(self) -> str | None:
+    return self.site_photo.storage_key if self.site_photo is not None else None

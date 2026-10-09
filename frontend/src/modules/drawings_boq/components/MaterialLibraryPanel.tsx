@@ -29,6 +29,8 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
   const [category, setCategory] = useState("");
   const [defaultUnit, setDefaultUnit] = useState("");
   const [defaultRate, setDefaultRate] = useState("");
+  const [workItemCode, setWorkItemCode] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState("");
   const [error, setError] = useState<string | null>(null);
   const updateEntry = useUpdateMaterialLibraryEntry();
 
@@ -54,6 +56,8 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
         category: category.trim() || null,
         default_unit: defaultUnit.trim() || null,
         default_rate: defaultRate === "" ? null : Number(defaultRate),
+        work_item_code: workItemCode.trim() || null,
+        effective_from: effectiveFrom || null,
       },
       {
         onSuccess: () => {
@@ -62,6 +66,8 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
           setCategory("");
           setDefaultUnit("");
           setDefaultRate("");
+          setWorkItemCode("");
+          setEffectiveFrom("");
           setFormOpen(false);
           showToast({
             tone: "success",
@@ -126,6 +132,14 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
             <input className={inputClass} type="number" step="any" value={defaultRate} onChange={(e) => setDefaultRate(e.target.value)} placeholder="18500" />
           </Field>
 
+          <Field label={t("materials.workItemCode", "Work item code")}>
+            <input className={inputClass} value={workItemCode} onChange={(e) => setWorkItemCode(e.target.value)} placeholder="RCC-M20" />
+          </Field>
+
+          <Field label={t("materials.effectiveFrom", "Effective from")}>
+            <input className={inputClass} type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
+          </Field>
+
           {error ? (
             <div className="sm:col-span-2 rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div>
           ) : null}
@@ -144,13 +158,15 @@ export function MaterialLibraryPanel({ canManage }: MaterialLibraryPanelProps) {
         <EmptyState icon="info" title={t("materials.emptyTitle")} description={t("materials.emptyDesc")} />
       ) : (
         <TableShell>
-          <table className="w-full min-w-[560px] text-left">
-            <thead className="bg-[var(--color-surface-muted)]">
+          <table className="w-full min-w-[760px] text-left">
+           <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">{t("materials.colRaw")}</th>
                 <th className="px-4 py-3">{t("materials.colNormalized")}</th>
                 <th className="px-4 py-3">{t("materials.colCategory")}</th>
                 <th className="px-4 py-3">{t("materials.colUnit")}</th>
+                <th className="px-4 py-3">{t("materials.colWorkItem", "Work item")}</th>
+                <th className="px-4 py-3">{t("materials.colEffective", "Effective from")}</th>
                 <th className="px-4 py-3 text-right">{t("materials.colRate")}</th>
               </tr>
             </thead>
@@ -205,6 +221,8 @@ function MaterialLibraryRow({ entry, canManage, onSaveRate }: MaterialLibraryRow
       </td>
       <td className="px-4 py-3 text-[12px] text-[var(--color-text-secondary)]">{entry.category ?? "—"}</td>
       <td className="px-4 py-3 text-[12px] text-[var(--color-text-secondary)]">{entry.default_unit ?? "—"}</td>
+      <td className="px-4 py-3 font-mono text-[12px] text-[var(--color-text-secondary)]">{entry.work_item_code ?? "—"}</td>
+      <td className="px-4 py-3 text-[12px] text-[var(--color-text-secondary)]">{entry.effective_from ?? "—"}</td>
       <td className="px-4 py-3 text-right">
         {canManage ? (
           <input

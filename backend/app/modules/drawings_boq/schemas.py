@@ -135,13 +135,13 @@ class BOQItemUpdateRequest(BaseModel):
     min_length=1,
     max_length=20,
   )
-  quantity: Decimal | None = None
+  quantity: Decimal | None = Field(default=None, ge=0)
   
   adjustment_reason: str | None = Field(
       default=None, max_length=2000,
       description="Required when changing the quantity of an engine-calculated line.",
   )
-  unit_rate: Decimal | None = None
+  unit_rate: Decimal | None = Field(default=None, ge=0)
   save_as_library_default: bool = Field(
     default=False,
     description="If true and unit_rate is set, save this rate as the org's default for this material going forward.",
@@ -221,8 +221,8 @@ class BOQCustomItemCreateRequest(BaseModel):
   material_name: str = Field(min_length=1, max_length=300)
   category: str | None = Field(default=None, max_length=150)
   unit: str = Field(min_length=1, max_length=20)
-  quantity: Decimal
-  unit_rate: Decimal | None = None
+  quantity: Decimal = Field(ge=0)
+  unit_rate: Decimal | None = Field(default=None, ge=0)
 
 class BOQVersionUpdateRequest(BaseModel):
   covered_area_sqft: Decimal | None = None

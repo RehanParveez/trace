@@ -60,6 +60,9 @@ class Settings(BaseSettings):
   whatsapp_media_download_timeout_seconds: int = 240
   whatsapp_graph_api_version: str = "v21.0"
   whatsapp_max_photo_bytes: int = 10 * 1024 * 1024
+  minio_public_endpoint: str = ""
+  minio_public_secure: bool | None = None
+  site_photo_url_ttl_seconds: int = 6 * 60 * 60
   
   ai_provider: str = "ollama"
   ai_api_key: str = ""

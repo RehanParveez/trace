@@ -8,6 +8,7 @@ from app.modules.punch_lists.models import PunchList, PunchListItem, PunchListIt
 from uuid import UUID, uuid4
 from app.modules.punch_lists.schemas import PunchListCreateRequest, PunchListItemCreateRequest, PunchListItemPhotoCreateRequest, PunchListItemUpdateRequest
 from app.core.exceptions import TraceException
+from app.modules.whatsapp.models import SitePhoto
 from datetime import datetime, timezone
 
 class PunchListService:
@@ -124,12 +125,16 @@ class PunchListService:
     item = await self.repo.get_item(item_id, organization_id)
     if item is None:
       raise TraceException("Punch list item not found.", status_code=404, code="PUNCH_LIST_ITEM_NOT_FOUND")
+    site_photo = await self.session.get(SitePhoto, payload.site_photo_id)
+    if site_photo is None or site_photo.organization_id != organization_id:
+      raise TraceException("Site photo not found.", status_code=404, code="SITE_PHOTO_NOT_FOUND")
     photo = PunchListItemPhoto(
       id=uuid4(), organization_id=organization_id, punch_list_item_id=item_id,
       site_photo_id=payload.site_photo_id, photo_purpose=payload.photo_purpose,
     )
     await self.repo.create_photo_link(photo)
     await self.session.commit()
+    await self.session.refresh(photo, attribute_names=["site_photo"])
     return photo
 
   async def remove_photo(self, organization_id: UUID, link_id: UUID) -> None:

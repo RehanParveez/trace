@@ -3,6 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
+from app.shared.photo_urls import PhotoUrlMixin
 from app.modules.verification.models import ProgressClaimStatus
 
 class ProgressClaimCreateRequest(BaseModel):
@@ -99,7 +100,7 @@ class PhotoBOQLinkCreateRequest(BaseModel):
     max_length=5000,
   )
 
-class PhotoBOQLinkResponse(BaseModel):
+class PhotoBOQLinkResponse(PhotoUrlMixin):
   model_config = ConfigDict(
     from_attributes=True,
   )

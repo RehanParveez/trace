@@ -393,6 +393,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
       await session.commit()
 
     if parsed_ok and engine_v2_enabled(drawing_org_id):
+      session.expire_all()
       try:
         await CalculationService(session).request_run(
           drawing_org_id, drawing_project_id, uploader_id, None, None, convention_code=None)

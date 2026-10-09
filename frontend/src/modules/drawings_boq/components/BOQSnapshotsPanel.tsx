@@ -6,6 +6,8 @@ import {useBOQSnapshotItems, useBOQSnapshots,
 } from "../hooks";
 import {formatCurrency, formatQuantity,
 } from "../utils/drawings-boq.utils";
+import { RateSourceBadge } from "../pricing/components/RateSourceBadge";
+import { formatFactor } from "../pricing/utils/pricing.utils";
 
 interface BOQSnapshotsPanelProps {
   versionId: string;
@@ -121,7 +123,7 @@ export function BOQSnapshotsPanel({
             />
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[900px] text-left">
+              <table className="w-full min-w-[1000px] text-left">
                 <thead className="bg-[var(--color-surface-muted)]">
                   <tr>
                     {[
@@ -131,6 +133,7 @@ export function BOQSnapshotsPanel({
                       t("boq.snapshots.colUnit"),
                       t("boq.snapshots.colQuantity"),
                       t("boq.snapshots.colRate"),
+                      t("boq.snapshots.colSource", "Rate source"),
                       t("boq.snapshots.colAmount"),
                     ].map((header) => (
                       <th
@@ -179,6 +182,21 @@ export function BOQSnapshotsPanel({
                             item.unit_rate ??
                               null,
                           )}
+                        </td>
+
+                        <td className="px-3 py-3 text-[11px]">
+                          <RateSourceBadge
+                            source={item.rate_source ?? null}
+                            hasRate={item.unit_rate !== null && item.unit_rate !== undefined}
+                          />
+                          {item.base_rate !== null &&
+                          item.base_rate !== undefined &&
+                          item.escalation_factor !== null &&
+                          item.escalation_factor !== undefined ? (
+                            <div className="mt-1 font-mono text-[10px] text-[var(--color-text-muted)]">
+                              {formatCurrency(item.base_rate)} {formatFactor(item.escalation_factor)}
+                            </div>
+                          ) : null}
                         </td>
 
                         <td className="px-3 py-3 font-mono text-[11px] font-semibold">

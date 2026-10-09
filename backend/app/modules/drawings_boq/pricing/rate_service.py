@@ -17,7 +17,7 @@ from uuid import UUID, uuid4
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.drawings_boq.pricing import pricing_logic as pl
 from app.modules.drawings_boq.models import MaterialLibrary
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from app.modules.projects.models import Project
 
 MAX_IMPORT_ROWS = 5000
@@ -159,6 +159,8 @@ class RateBookService:
     if await self.repo.referenced_book_ids(org, book.id):
       raise TraceException("This rate book is referenced by BOQ lines.", status_code=409, code="RATE_BOOK_IN_USE")
     code, version = book.code, book.immutable_version
+    await self.session.execute(delete(RateAnalysisComponent).where(RateAnalysisComponent.analysis_id.in_(
+      select(RateAnalysis.id).where(RateAnalysis.rate_book_id == book.id))))
     await self.repo.delete(book)
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.RATE_BOOK, book_id, AuditAction.DELETE,
@@ -334,6 +336,10 @@ class RateBookService:
     if item is None:
       raise TraceException("Rate not found.", status_code=404, code="RATE_ITEM_NOT_FOUND")
     book = await self._editable_book(org, item.rate_book_id)
+    used_by = (await self.session.execute(select(RateAnalysisComponent.id).where(RateAnalysisComponent.ref_rate_item_id == item.id).limit(1))).first()
+    if used_by is not None:
+      raise TraceException("This rate is used as an ingredient in a rate analysis. Remove it from the analysis first.",
+        status_code=409, code="RATE_ITEM_IN_USE")
     label = f"{item.work_item_code} / {item.unit}"
     await self.repo.delete(item)
     await self.session.commit()

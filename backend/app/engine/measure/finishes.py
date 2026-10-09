@@ -11,13 +11,15 @@ MM_PER_M = Decimal("1000")
 ZERO, ONE = Decimal("0"), Decimal("1")
 RULE_DEFAULT_CONFIDENCE = Decimal("0.7")
 GEOMETRY_CONFIDENCE = {"EXTRUDED_PROFILE": ONE, "QTO_ONLY": Decimal("0.9")}
-SURFACE_ORDER = {"FLOOR": 0, "SKIRTING": 1, "WALL": 2, "DADO": 3, "CEILING": 4}
+SURFACE_ORDER = {"FLOOR": 0, "SKIRTING": 1, "WALL": 2, "DADO": 3, "CEILING": 4, "STAIR": 5, "WATERPROOFING": 6}
 FINISH_FORMULAS = {
   "FLOOR": ("FINISH_FLOOR_AREA", "m2"),
   "CEILING": ("FINISH_CEILING_AREA", "m2"),
   "WALL": ("FINISH_WALL_AREA_NET", "m2"),
   "DADO": ("FINISH_DADO_AREA_NET", "m2"),
   "SKIRTING": ("FINISH_SKIRTING_LENGTH_NET", "m"),
+  "STAIR": ("FINISH_FLOOR_AREA", "m2"),
+  "WATERPROOFING": ("FINISH_FLOOR_AREA", "m2"),
 }
 
 SCHEDULE_UNITS = ("m3", "m2", "m", "kg", "nos")
@@ -227,7 +229,7 @@ def _calculate(space, f: _Finish, openings: list, profile):
   steps: list = []
   warnings: list = []
   inputs: dict = {"surface": f.surface}
-  if f.surface in ("FLOOR", "CEILING"):
+  if f.surface in ("FLOOR", "CEILING", "STAIR", "WATERPROOFING"):
     area = space.net_floor_area_mm2 or space.gross_floor_area_mm2
     if not area or area <= 0:
       return "space has no floor area"

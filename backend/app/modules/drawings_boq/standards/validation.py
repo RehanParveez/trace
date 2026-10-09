@@ -2,7 +2,7 @@ from __future__ import annotations
 from collections import defaultdict
 from app.engine.measure.formulas import check_component_units
 
-SURFACE_UNIT = {"FLOOR": "m2", "WALL": "m2", "CEILING": "m2", "DADO": "m2", "SKIRTING": "m"}
+SURFACE_UNIT = {"FLOOR": "m2", "WALL": "m2", "CEILING": "m2", "DADO": "m2", "SKIRTING": "m", "STAIR": "m2", "WATERPROOFING": "m2"}
 SURFACE_NEEDS_HEIGHT = {"DADO": True}
 
 KNOWN_CATEGORIES = (

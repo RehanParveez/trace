@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, DOUBLE_PRECISION
 
 class DrawingFormat(str, enum.Enum):
   IFC = "IFC"
@@ -1031,7 +1031,6 @@ class LabourRate(Base, TimestampMixin):
   trade: Mapped[str] = mapped_column(String(150), nullable=False)
   unit: Mapped[str] = mapped_column(String(20), nullable=False)
   rate: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
-  
   work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
   effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
 
@@ -1748,6 +1747,21 @@ class CalculationRun(Base, TimestampMixin):
     
     CheckConstraint(f"status IN ({_RUN_STATUSES})", name="ck_calculation_runs_status"),
     CheckConstraint("progress_pct >= 0 AND progress_pct <= 100", name="ck_calculation_runs_progress"),
+    
+    CheckConstraint("mode IN ('FULL','INCREMENTAL')", name="ck_calculation_runs_mode"),
+    CheckConstraint("attempts >= 0", name="ck_calculation_runs_attempts"),
+    Index("ix_calculation_runs_org_created", "organization_id", "created_at"),
+    
+    Index(
+      "ix_calculation_runs_active_heartbeat", "status", "heartbeat_at",
+      postgresql_where=text(f"status IN ({_ACTIVE_RUN_STATUSES})"),
+    ),
+    
+    Index(
+      "ix_calculation_runs_project_state", "project_id", "completed_at",
+      postgresql_where=text("state_available"),
+    ),
+    
   )
  
   id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1806,7 +1820,41 @@ class CalculationRun(Base, TimestampMixin):
     server_default=text("'{}'::jsonb"),
   )
   
-  stats: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  stats: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  mode: Mapped[str] = mapped_column(String(12), nullable=False, default="FULL", server_default="FULL")
+  
+  baseline_run_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("calculation_runs.id", ondelete="SET NULL", name="fk_calculation_runs_baseline"),
+    nullable=True,
+  )
+  
+  force_full: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+  verify: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+  
+  metrics: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, 
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  alloc_signature: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  
+  state_available: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False, 
+    default=False,
+    server_default=text("false"),
+  )
   
 class RunStageLog(Base, TimestampMixin):
   __tablename__ = "run_stage_log"
@@ -1841,6 +1889,76 @@ class RunStageLog(Base, TimestampMixin):
   )
   
   error: Mapped[str | None] = mapped_column(Text, nullable=True)
+  duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  peak_rss_mb: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  
+class RunElementState(Base):
+  __tablename__ = "run_element_state"
+
+  __table_args__ = (
+    UniqueConstraint("run_id", "element_key", name="uq_run_element_state_run_key"),
+    
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_run_element_state_run_tenant",
+    ),
+    
+    Index("ix_run_element_state_run_element", "run_id", "element_id"),
+    Index("ix_run_element_state_run_solid", "run_id", "solid_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  element_key: Mapped[str] = mapped_column(String(80), nullable=False)
+  element_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  solid_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  alloc_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+  participating: Mapped[bool] = mapped_column(Boolean, nullable=False)
+  
+  approximate: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default=text("false"),
+  )
+  
+  warnings: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  owned_mm3: Mapped[float | None] = mapped_column(DOUBLE_PRECISION, nullable=True)
+  bounds: Mapped[list | None] = mapped_column(ARRAY(DOUBLE_PRECISION), nullable=True)
+
+class RunDependencyEdge(Base):
+  __tablename__ = "run_dependency_edges"
+
+  __table_args__ = (
+    UniqueConstraint("run_id", "key_a", "key_b", name="uq_run_dependency_edges_run_pair"),
+    
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_run_dependency_edges_run_tenant",
+    ),
+    
+    CheckConstraint("key_a < key_b", name="ck_run_dependency_edges_ordered"),
+    Index("ix_run_dependency_edges_run_a", "run_id", "key_a"),
+    Index("ix_run_dependency_edges_run_b", "run_id", "key_b"),
+    Index("ix_run_dependency_edges_run_ea", "run_id", "element_a_id"),
+    Index("ix_run_dependency_edges_run_eb", "run_id", "element_b_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  key_a: Mapped[str] = mapped_column(String(80), nullable=False)
+  key_b: Mapped[str] = mapped_column(String(80), nullable=False)
+  element_a_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  element_b_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  overlap_mm3: Mapped[float] = mapped_column(DOUBLE_PRECISION, nullable=False)  
  
 class _SolidColumns:
   id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -1906,6 +2024,7 @@ class StagedQuantitySolid(_SolidColumns, Base, TimestampMixin):
   __tablename__ = "staged_quantity_solids"
   
   __table_args__ = (
+    Index("ix_staged_quantity_solids_created", "created_at"),
     UniqueConstraint("id", "organization_id", name="uq_staged_quantity_solids_id_org"),
     ForeignKeyConstraint(
       ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
@@ -1995,6 +2114,8 @@ class StagedQuantityLedger(_LedgerColumns, Base, TimestampMixin):
   __tablename__ = "staged_quantity_ledger"
 
   __table_args__ = (
+  Index("ix_staged_quantity_ledger_solid", "solid_id", "organization_id"),
+  Index("ix_staged_quantity_ledger_created", "created_at"),
   UniqueConstraint("run_id", "solid_id", "work_item_code", name="uq_staged_quantity_ledger_run_solid_work_item"),
     
   ForeignKeyConstraint(
@@ -2079,6 +2200,10 @@ class StagedLedgerDeduction(_DeductionColumns, Base, TimestampMixin):
   __tablename__ = "staged_ledger_deductions"
 
   __table_args__ = (
+    Index("ix_staged_ledger_deductions_from_solid", "from_solid_id", "organization_id"),
+    Index("ix_staged_ledger_deductions_to_solid", "to_solid_id", "organization_id"),
+    Index("ix_staged_ledger_deductions_created", "created_at"),
+    
     ForeignKeyConstraint(
       ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
       ondelete="CASCADE", name="fk_staged_ledger_deductions_run_tenant",
@@ -2290,6 +2415,8 @@ class BOQSnapshotItem(Base, TimestampMixin):
   unit: Mapped[str] = mapped_column(String(20), nullable=False)
   canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
   unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
+  unit_rate: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+  rate_source: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
   net_quantity: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
   adjustment_total: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False, default=Decimal("0"))
@@ -3375,6 +3502,9 @@ class StagedRebarBarMark(_BarMarkColumns, Base, TimestampMixin):
   __tablename__ = "staged_rebar_bar_marks"
 
   __table_args__ = (
+    
+    Index("ix_staged_rebar_bar_marks_solid", "solid_id", "organization_id"),
+    Index("ix_staged_rebar_bar_marks_created", "created_at"),
     
     ForeignKeyConstraint(
       ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],

@@ -10,12 +10,18 @@ import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrenc
 } from "../utils/drawings-boq.utils";
 import { BOQItemTraceDialog } from "./BOQItemTraceDialog";
 import { BOQItemAdjustmentsDialog } from "./BOQItemAdjustmentsDialog";
+import { OverrideFormDialog } from "../pricing/components/OverrideFormDialog";
+import { RateExplainDialog } from "../pricing/components/RateExplainDialog";
+import { RateSourceBadge } from "../pricing/components/RateSourceBadge";
+import { formatFactor } from "../pricing/utils/pricing.utils";
 import { useTranslation } from "react-i18next";
 
 interface BOQItemTableProps {
   boqVersionId: string;
   isEngine?: boolean;
   canUpdate: boolean;
+  canOverrideRate?: boolean;
+  projectId?: string;
   canApprove: boolean;
   canAdjust?: boolean;
 }
@@ -26,6 +32,8 @@ export function BOQItemTable({
   canUpdate,
   canApprove,
   canAdjust = false,
+  canOverrideRate = false,
+  projectId,
 }: BOQItemTableProps) {
   const { t } =
     useTranslation();
@@ -83,6 +91,16 @@ export function BOQItemTable({
 
   const [notice, setNotice] =
     useState<string | null>(
+      null,
+    );
+
+  const [explainItem, setExplainItem] =
+    useState<BOQItem | null>(
+      null,
+    );
+
+  const [overrideItem, setOverrideItem] =
+    useState<BOQItem | null>(
       null,
     );
 
@@ -315,6 +333,22 @@ export function BOQItemTable({
                       {formatCurrency(
                         item.unit_rate,
                       )}
+                      <div className="mt-1 flex flex-col items-end gap-0.5">
+                        <RateSourceBadge
+                          source={item.rate_source ?? null}
+                          hasRate={item.unit_rate !== null}
+                        />
+
+                        {item.base_rate !== null &&
+                        item.base_rate !== undefined &&
+                        item.escalation_factor !== null &&
+                        item.escalation_factor !== undefined ? (
+                          <span className="text-[10.5px] font-normal text-[var(--color-text-muted)]">
+                           {formatCurrency(item.base_rate)}{" "}
+                            {formatFactor(item.escalation_factor)}
+                          </span>
+                        ) : null}
+                      </div>
                     </td>
 
                     <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">
@@ -376,6 +410,20 @@ export function BOQItemTable({
                         >
                           {t("boq.items.trace")}
                         </Button>
+
+                        {item.source_kind !== "ESTIMATE" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setExplainItem(
+                                item,
+                              )
+                            }
+                          >
+                            {t("boq.items.explainRate", "Rate source")}
+                          </Button>
+                        ) : null}
 
                         {canAdjust && item.source_kind === "MODEL" ? (
                           <Button
@@ -565,6 +613,39 @@ export function BOQItemTable({
           }
           onClose={() =>
             setTraceItem(null)
+          }
+        />
+      ) : null}
+
+      {explainItem ? (
+        <RateExplainDialog
+          itemId={explainItem.id}
+          itemName={explainItem.material_name}
+          onOverride={
+            canOverrideRate && projectId
+              ? () => {
+                  setOverrideItem(explainItem);
+                  setExplainItem(null);
+                }
+              : undefined
+          }
+          onClose={() =>
+            setExplainItem(null)
+          }
+        />
+      ) : null}
+
+      {overrideItem && projectId ? (
+        <OverrideFormDialog
+          projectId={projectId}
+          defaults={{
+            work_item_code: overrideItem.work_item_code,
+            unit: overrideItem.unit,
+            rate: overrideItem.unit_rate,
+          }}
+          onClose={() =>
+            setOverrideItem(null)
+
           }
         />
       ) : null}

@@ -76,7 +76,7 @@ RULES = [
   ("ALL", "CEILING", "FIN-CEIL-PLASTER", None, False, False),
   ("ALL", "CEILING", "FIN-CEIL-PAINT", None, False, False),
 
-  ("ALL", "STAIR", "FIN-STAIR-TILE", None, True, False),
+  ("STAIR", "STAIR", "FIN-STAIR-TILE", None, True, False),
 
   ("BATHROOM", "FLOOR", "FIN-FLOOR-TILE", None, True, True),
   ("BATHROOM", "WALL", "FIN-WALL-TILE-WET", None, True, True),

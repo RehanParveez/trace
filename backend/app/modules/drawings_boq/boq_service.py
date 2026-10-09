@@ -451,7 +451,9 @@ class BOQEngineService:
       if issue.code in _NON_WAIVABLE:
         raise TraceException("This issue cannot be waived.", status_code=422, code="ISSUE_NOT_WAIVABLE")
     if issue.boq_version_id is not None:
-      assert_mutable(await self.versions.get_by_id_and_org(issue.boq_version_id, org))
+     version = await self.versions.get_by_id_and_org(issue.boq_version_id, org)
+     if not (version.lifecycle == "APPROVED" and issue.blocks == "ISSUE"):
+      assert_mutable(version)
     issue.status, issue.resolution_note = status, (note or "").strip() or None
     issue.resolved_by_user_id, issue.resolved_at = user_id, _now()
     await self.session.commit()
@@ -669,15 +671,16 @@ class BOQEngineService:
     await self._move(org, version.id, "CALCULATED", "UNDER_REVIEW")
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.BOQ_VERSION, version.id, AuditAction.UPDATE, "Submitted BOQ for review")
-    return await self.versions.get_by_id_and_org(version.id, org)
+    await self.session.refresh(version)
+    return version
 
   async def reopen(self, org, version_id, user_id):
     version = await self._engine_version(org, version_id, lock=True)
     await self._move(org, version.id, "UNDER_REVIEW", "CALCULATED")
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.BOQ_VERSION, version.id, AuditAction.UPDATE, "Sent BOQ back from review")
-    return await self.versions.get_by_id_and_org(version.id, org)
-
+    await self.session.refresh(version)
+    return version
   async def approve_version(self, org, version_id, user_id, note: str | None = None):
     version = await self._engine_version(org, version_id, lock=True)
     if version.lifecycle != "UNDER_REVIEW":
@@ -696,7 +699,8 @@ class BOQEngineService:
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.BOQ_VERSION, version.id, AuditAction.APPROVE,
       f"Approved BOQ (snapshot v{snap.version_no}, hash {snap.content_hash[:12]})")
-    return await self.versions.get_by_id_and_org(version.id, org)
+    await self.session.refresh(version)
+    return version
 
   async def issue_version(self, org, version_id, user_id, note: str | None = None):
     version = await self._engine_version(org, version_id, lock=True)
@@ -709,7 +713,8 @@ class BOQEngineService:
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.BOQ_VERSION, version.id, AuditAction.UPDATE,
       f"Issued BOQ (snapshot v{snap.version_no}, hash {snap.content_hash[:12]})")
-    return await self.versions.get_by_id_and_org(version.id, org)
+    await self.session.refresh(version)
+    return version
 
   async def archive_version(self, org, version_id, user_id):
     version = await self._engine_version(org, version_id, lock=True)
@@ -721,8 +726,8 @@ class BOQEngineService:
     await self._move(org, version.id, version.lifecycle, "ARCHIVED")
     await self.session.commit()
     await self.audit.log(org, user_id, AuditEntityType.BOQ_VERSION, version.id, AuditAction.UPDATE, "Archived BOQ")
-    return await self.versions.get_by_id_and_org(version.id, org)
-
+    await self.session.refresh(version)
+    return version
   async def export_snapshot(self, org: UUID, version_id: UUID, kind: str, fmt: str, user_id: UUID,
     snapshot_id: UUID | None = None, compare_snapshot_id: UUID | None = None) -> tuple[bytes, str, str]:
     if kind not in _EXPORTS:

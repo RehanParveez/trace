@@ -66,10 +66,16 @@ function buildOrganizationNav(
       label: t("nav.materialLibrary"),
       to: "/app/drawings_boq",
       icon: "materials",
+      exact: true,
     },
     {
-      label: "nav.standards",
+      label: t("nav.standards"),
       to: "/app/drawings_boq/standards",
+      icon: "budget",
+    },
+    {
+      label: t("nav.rateBooks"),
+      to: "/app/drawings_boq/rate-books",
       icon: "budget",
     },
     {

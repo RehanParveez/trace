@@ -3,7 +3,7 @@ export type DrawingStatus = "UPLOADED" | "PROCESSING" | "PARSED" | "FAILED";
 export type BOQItemStatus = "DRAFT" | "APPROVED";
 export type BOQItemType = "MATERIAL" | "LABOUR" | "CUSTOM";
 export type BOQVersionStatus = "ACTIVE" | "SUPERSEDED";
-export type BOQItemRateSource = "LIBRARY" | "AI_SUGGESTED" | "MANUAL";
+export type BOQItemRateSource = "LIBRARY" | "AI_SUGGESTED" | "MANUAL" | "PROJECT_OVERRIDE" | "RATE_BOOK";
 export type Num = number | string;
 export type EngineSeverity = "error" | "warning" | "info";
 export type EngineBlocks = "NONE" | "APPROVAL" | "ISSUE";
@@ -138,6 +138,8 @@ export interface BOQVersion {
   approved_at?: string | null;
   issued_by_user_id?: string | null;
   issued_at?: string | null;
+  priced_at?: string | null;
+  pricing_meta?: Record<string, unknown>;
   created_at: string;
   updated_at?: string;
 }
@@ -159,6 +161,8 @@ export interface BOQVersionResponse {
   audit_score: number | string | null;
   approved_at: string | null;
   issued_at: string | null;
+  priced_at: string | null;
+  pricing_meta: Record<string, unknown>;
 }
 
 export interface BOQExportMeta {
@@ -209,6 +213,9 @@ export interface BOQItem {
   is_manual?: boolean;
   calculation_run_id?: string | null;
   engine_version?: string | null;
+  rate_book_id?: string | null;
+  base_rate?: number | string | null;
+  escalation_factor?: number | string | null;
 }
 
 export interface BOQItemResponse {
@@ -241,6 +248,9 @@ export interface BOQItemResponse {
   level_id: string | null;
   item_key: string | null;
   calculation_run_id: string | null;
+  rate_book_id: string | null;
+  base_rate: number | string | null;
+  escalation_factor: number | string | null;
 }
 
 export interface BOQItemUpdateRequest {
@@ -287,7 +297,8 @@ export interface MaterialLibraryEntry {
   category: string | null;
   default_unit: string | null;
   default_rate: number | string | null;
-  work_item_code: string | null;
+  work_item_code?: string | null;
+  effective_from?: string | null;
 }
 
 export interface MaterialLibraryCreateRequest {
@@ -296,6 +307,8 @@ export interface MaterialLibraryCreateRequest {
   category?: string | null;
   default_unit?: string | null;
   default_rate?: number | null;
+  work_item_code?: string | null;
+  effective_from?: string | null;
 }
 
 export interface MaterialLibraryUpdateRequest {
@@ -303,6 +316,8 @@ export interface MaterialLibraryUpdateRequest {
   category?: string | null;
   default_unit?: string | null;
   default_rate?: number | null;
+  work_item_code?: string | null;
+  effective_from?: string | null;
 }
 
 export interface LabourRate {
@@ -318,16 +333,16 @@ export interface LabourRateCreateRequest {
   trade: string;
   unit: string;
   rate: number;
-  work_item_code: string | null;
-  effective_from: string | null;
+  work_item_code?: string | null;
+  effective_from?: string | null;
 }
 
 export interface LabourRateUpdateRequest {
   trade?: string;
   unit?: string;
   rate?: number;
-  work_item_code: string | null;
-  effective_from: string | null;
+  work_item_code?: string | null;
+  effective_from?: string | null;
 }
 
 export interface PDFExtractionResult {
@@ -591,6 +606,8 @@ export interface SnapshotItem {
   gross_quantity?: number | string | null;
   unit_rate?: number | string | null;
   rate_source?: string | null;
+  base_rate?: number | string | null;
+  escalation_factor?: number | string | null;
   amount?: number | string | null;
   confidence?: number | string | null;
   review_status: string;
@@ -762,6 +779,9 @@ export interface SnapshotItemResponse {
   quantity: number | string;
   gross_quantity: number | string | null;
   unit_rate: number | string | null;
+  rate_source: string | null;
+  base_rate: number | string | null;
+  escalation_factor: number | string | null;
   amount: number | string | null;
   confidence: number | string | null;
   review_status: string;

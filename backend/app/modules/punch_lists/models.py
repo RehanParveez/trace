@@ -165,3 +165,13 @@ class PunchListItemPhoto(Base, TimestampMixin):
     )
 
   item: Mapped["PunchListItem"] = relationship("PunchListItem", back_populates="photos")
+
+  site_photo: Mapped["SitePhoto"] = relationship(
+    "SitePhoto",
+    lazy="selectin",
+    viewonly=True,
+  )
+
+  @property
+  def photo_storage_key(self) -> str | None:
+    return self.site_photo.storage_key if self.site_photo is not None else None

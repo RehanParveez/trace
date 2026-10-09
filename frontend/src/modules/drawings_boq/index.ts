@@ -47,3 +47,4 @@ export * from "./rebar/components/RebarReviewDialog";
 export * from "./rebar/components/RebarRowsTable";
 export * from "./rebar/components/RebarSummaryPanel";
 export * from "./components/RebarMarksPanel";
+export * from "./pricing";

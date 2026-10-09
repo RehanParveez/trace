@@ -7,8 +7,8 @@ from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
-from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse, PhotoTagCreateRequest, PhotoTagResponse, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest,
- SitePhotoResponse, SitePhotoUpdateRequest,
+from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse, PhotoTagCreateRequest, PhotoTagResponse, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, 
+  SitePhotoUrlResponse, SitePhotoResponse, SitePhotoUpdateRequest,
 )
 from app.modules.whatsapp.service import WhatsAppService
 from datetime import date
@@ -163,6 +163,19 @@ async def get_photo(
 ):
   service = _service(session)
   return await service.get_photo(
+    current_user.active_membership.organization_id, photo_id
+  )
+
+@router.get("/photos/{photo_id}/url", response_model=SitePhotoUrlResponse)
+async def get_photo_url(
+  photo_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.SITE_PHOTO_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.get_photo_url(
     current_user.active_membership.organization_id, photo_id
   )
 

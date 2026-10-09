@@ -17,8 +17,8 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
 from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
 from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository
-from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, PhotoTagResponse
-from app.shared.storage import build_site_photo_storage_key, delete_object, generate_presigned_url, upload_fileobj
+from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, SitePhotoUrlResponse, PhotoTagResponse
+from app.shared.storage import build_site_photo_storage_key, delete_object, generate_presigned_url, object_exists, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
 from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
@@ -383,6 +383,7 @@ class WhatsAppService:
     storage_key = build_site_photo_storage_key(
       organization_id,
       f"{uuid4().hex}{extension}",
+      project_id,
     )
     try:
       await asyncio.to_thread(
@@ -524,6 +525,7 @@ class WhatsAppService:
       return
 
     photo_size_bytes = len(media_bytes)
+    organization_id = message.organization_id
 
     try:
       await self.subscriptions.check_quota(
@@ -616,7 +618,7 @@ class WhatsAppService:
        except Exception:
          pass
 
-     failed_message = await self.messages.get_by_id(message_id, message.organization_id)
+     failed_message = await self.messages.get_by_id(message_id, organization_id)
      if failed_message is None:
         return
 
@@ -793,6 +795,7 @@ class WhatsAppService:
     return [
       ProjectPhotoThumbnailResponse(
         project_id=photo.project_id,
+        photo_id=photo.id,
         photo_url=generate_presigned_url(photo.storage_key),
       )
       for photo in photos
@@ -828,6 +831,26 @@ class WhatsAppService:
       photo_id,
     )
     return _to_photo_response(photo)
+
+  async def get_photo_url(
+    self,
+    organization_id: UUID,
+    photo_id: UUID,
+  ) -> SitePhotoUrlResponse:
+    photo = await self._get_photo_model(organization_id, photo_id)
+    exists = await asyncio.to_thread(object_exists, photo.storage_key)
+    
+    if not exists:
+      raise TraceException(
+        "The image file for this photo is missing from storage.",
+        status_code=404,
+        code="SITE_PHOTO_FILE_MISSING",
+      )
+    return SitePhotoUrlResponse(
+      photo_id=photo.id,
+      photo_url=generate_presigned_url(photo.storage_key),
+      photo_url_expires_in=settings.site_photo_url_ttl_seconds,
+    )
 
   async def assign_project(
     self,
@@ -1050,6 +1073,7 @@ def _to_photo_response(photo: SitePhoto) -> SitePhotoResponse:
     project_id=photo.project_id,
     storage_key=photo.storage_key,
     photo_url=generate_presigned_url(photo.storage_key),
+    photo_url_expires_in=settings.site_photo_url_ttl_seconds,
     sender_phone_number=photo.sender_phone_number,
     caption_raw=photo.caption_raw,
     caption_parsed=photo.caption_parsed,

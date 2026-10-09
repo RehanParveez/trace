@@ -52,6 +52,7 @@ class SitePhotoResponse(BaseModel):
   project_id: UUID | None
   storage_key: str
   photo_url: str 
+  photo_url_expires_in: int = 0
   sender_phone_number: str | None
   caption_raw: str | None
   caption_parsed: dict
@@ -73,6 +74,12 @@ class SitePhotoUpdateRequest(BaseModel):
   )
   photo_date: date | None = None
   
+class SitePhotoUrlResponse(BaseModel):
+  photo_id: UUID
+  photo_url: str
+  photo_url_expires_in: int
+
 class ProjectPhotoThumbnailResponse(BaseModel):
   project_id: UUID
+  photo_id: UUID | None = None
   photo_url: str

@@ -63,7 +63,7 @@ class MappingSchema(BaseModel):
 class FinishRuleSchema(BaseModel):
   model_config = ConfigDict(from_attributes=True)
   space_category: str = Field(default="ALL", min_length=1, max_length=40)
-  surface: Literal["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO"]
+  surface: Literal["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO", "STAIR", "WATERPROOFING"]
   work_item_code: str = Field(min_length=1, max_length=50)
   height_mm: Decimal | None = Field(default=None, gt=0)
   deduct_openings: bool = True
@@ -192,7 +192,6 @@ class RuleSetDraftUpdateRequest(BaseModel):
   mappings: list[MappingSchema] | None = None
   finish_rules: list[FinishRuleSchema] | None = None
 
-
 class ValidationIssue(BaseModel):
   code: str
   severity: Literal["error", "warning", "info"]
@@ -263,7 +262,7 @@ class ConventionResponse(BaseModel):
   
 class FinishRuleSchema(BaseModel):
   space_category: str = Field(default="ALL", min_length=1, max_length=40)
-  surface: Literal["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO"]
+  surface: Literal["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO", "STAIR", "WATERPROOFING"]
   work_item_code: str = Field(min_length=1, max_length=50)
   height_mm: Decimal | None = Field(default=None, gt=0)
   deduct_openings: bool = True

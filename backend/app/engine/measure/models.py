@@ -18,6 +18,7 @@ class ModelElement:
   bbox_max_mm: tuple | None
   classification_confidence: Decimal
   normalization_status: str
+  ifc_global_id: str | None = None
 
 @dataclass(frozen=True)
 class MappingInput:
@@ -133,6 +134,7 @@ class AllocationResult:
   applied: bool = False
   stats: dict = field(default_factory=dict)
   openings_checked: frozenset = frozenset()
+  owned_mm3: dict = field(default_factory=dict)
 
   @classmethod
   def empty(cls) -> "AllocationResult":

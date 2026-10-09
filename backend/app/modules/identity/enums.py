@@ -128,6 +128,3 @@ class PermissionKey(StrEnum):
   SCHEDULE_IMPORT = "schedule:import"
   RATEBOOK_MANAGE = "ratebook:manage"
   
-  
-  
-  

@@ -35,6 +35,7 @@ import { SalesTaxPage } from "../modules/salex_tax";
 import { BankGuaranteesPage } from "../modules/bank_guarantees";
 import { CashFlowPage } from "../modules/cash_flow";
 import { StandardsPage } from "../modules/drawings_boq/standards";
+import { RateBookDetailPage, RateBooksPage } from "../modules/drawings_boq/pricing";
 
 export const router = createBrowserRouter([
   {
@@ -187,6 +188,14 @@ export const router = createBrowserRouter([
     {
       path: "standards",
       element: <StandardsPage />
+     },
+    {
+      path: "rate-books",
+      element: <RateBooksPage />,
+    },
+    {
+      path: "rate-books/:bookId",
+      element: <RateBookDetailPage />,
     },
     {
       path: "labour-rates",

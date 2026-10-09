@@ -21,6 +21,8 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
   const [trade, setTrade] = useState("");
   const [unit, setUnit] = useState("Sft");
   const [rate, setRate] = useState("");
+  const [workItemCode, setWorkItemCode] = useState("");
+  const [effectiveFrom, setEffectiveFrom] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { showToast } = useToast();
 
@@ -32,12 +34,20 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
     setError(null);
 
     createRate.mutate(
-      { trade: trade.trim(), unit: unit.trim(), rate: Number(rate) },
+      {
+       trade: trade.trim(),
+        unit: unit.trim(),
+        rate: Number(rate),
+        work_item_code: workItemCode.trim() || null,
+        effective_from: effectiveFrom || null,
+      },
       {
         onSuccess: () => {
           setTrade("");
           setUnit("Sft");
           setRate("");
+          setWorkItemCode("");
+          setEffectiveFrom("");
           setFormOpen(false);
           showToast({
             tone: "success",
@@ -73,6 +83,16 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
             <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("labour.rate")} *</span>
             <input className={cls} required type="number" step="any" value={rate} onChange={(e) => setRate(e.target.value)} placeholder={t("labour.ratePlaceholder")} />
           </label>
+
+          <label className="block">
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("labour.workItemCode", "Work item code")}</span>
+            <input className={cls} value={workItemCode} onChange={(e) => setWorkItemCode(e.target.value)} placeholder="LAB-PLASTER" />
+          </label>
+          <label className="block">
+            <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-[#756957]">{t("labour.effectiveFrom", "Effective from")}</span>
+            <input className={cls} type="date" value={effectiveFrom} onChange={(e) => setEffectiveFrom(e.target.value)} />
+          </label>
+
           {error ? <div className="sm:col-span-3 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] px-3 py-2 text-[11px] text-[#c24a3a]">{error}</div> : null}
           <div className="sm:col-span-3 flex justify-end">
             <Button type="submit" variant="primary" disabled={createRate.isPending}>{createRate.isPending ? t("common.saving") : t("labour.save")}</Button>
@@ -103,10 +123,10 @@ export function LabourRatesPanel({ canManage }: LabourRatesPanelProps) {
         />
       ) : (
         <TableShell>
-          <table className="w-full min-w-[420px] text-left">
+          <table className="w-full min-w-[620px] text-left">
             <thead className="bg-[#f5efe3]">
               <tr className="text-[9.5px] font-bold uppercase tracking-[0.08em] text-[#a2957c]">
-                <th className="px-4 py-3">{t("labour.colTrade")}</th><th className="px-4 py-3">{t("labour.colUnit")}</th><th className="px-4 py-3 text-right">{t("labour.colRate")}</th>
+                <th className="px-4 py-3">{t("labour.colTrade")}</th><th className="px-4 py-3">{t("labour.colUnit")}</th><th className="px-4 py-3">{t("labour.colWorkItem", "Work item")}</th><th className="px-4 py-3">{t("labour.colEffective", "Effective from")}</th><th className="px-4 py-3 text-right">{t("labour.colRate")}</th>
               </tr>
             </thead>
             <tbody>
@@ -159,6 +179,8 @@ function LabourRateRow({ rate, canManage, onSave }: LabourRateRowProps) {
     <tr className="border-t border-[#e1d5bc]">
       <td className="px-4 py-3 text-[11.5px] font-semibold text-[#191410]">{rate.trade}</td>
       <td className="px-4 py-3 text-[11px] text-[#6b6152]">{rate.unit}</td>
+      <td className="px-4 py-3 font-mono text-[11px] text-[#6b6152]">{rate.work_item_code ?? "—"}</td>
+      <td className="px-4 py-3 text-[11px] text-[#6b6152]">{rate.effective_from ?? "—"}</td>
       <td className="px-4 py-3 text-right">
         {canManage ? (
           <input

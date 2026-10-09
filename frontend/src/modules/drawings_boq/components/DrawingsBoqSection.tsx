@@ -24,6 +24,9 @@ import { BOQSnapshotsPanel } from "./BOQSnapshotsPanel";
 import { BOQAdvancedExportPanel } from "./BOQAdvancedExportPanel";
 import { SpacesSchedulesSection } from "./SpacesSchedulesSection";
 import { RebarSummaryPanel } from "../../drawings_boq/rebar/components/RebarSummaryPanel";
+import { BOQPricingPanel } from "../pricing/components/BOQPricingPanel";
+import { ProjectRateOverridesPanel } from "../pricing/components/ProjectRateOverridesPanel";
+import { RevisionComparePanel } from "../pricing/components/RevisionComparePanel";
 import { useTranslation } from "react-i18next";
 
 interface DrawingsBoqSectionProps {
@@ -136,6 +139,13 @@ export function DrawingsBoqSection({
      selectedVersion.lifecycle === "UNDER_REVIEW"
     )
   );
+
+  const canPriceBOQ =
+    canUpdateBOQ &&
+    Boolean(selectedVersion) &&
+    (isEngineVersion
+      ? versionEditable
+      : selectedVersion?.status === "ACTIVE");
 
   useEffect(() => {
     if (
@@ -264,18 +274,37 @@ export function DrawingsBoqSection({
             />
           ) : null}
 
+          <BOQPricingPanel
+            projectId={projectId}
+            versionId={selectedVersion.id}
+            canPrice={canPriceBOQ}
+          />
+
           <BOQItemTable
             boqVersionId={selectedVersion.id}
             isEngine={isEngineVersion}
             canUpdate={canUpdateBOQ && (!isEngineVersion || versionEditable)}
             canApprove={canApproveBOQ}
             canAdjust={canAdjust && isEngineVersion && versionEditable}
+            canOverrideRate={canAdjust}
+            projectId={projectId}
           />
 
           <BOQReviewIssuesPanel
             projectId={projectId}
             versionId = {selectedVersion.id}
             canResolve = {canResolveReview && versionEditable}
+          />
+
+          <ProjectRateOverridesPanel
+            projectId={projectId}
+            canAdjust={canAdjust}
+          />
+
+          <RevisionComparePanel
+            projectId={projectId}
+            versionId={selectedVersion.id}
+            canExport={canExport}
           />
 
           {isEngineVersion ? (
@@ -297,6 +326,7 @@ export function DrawingsBoqSection({
               />
 
               <BOQAdvancedExportPanel
+                projectId={projectId}
                 versionId={
                   selectedVersion.id
                 }

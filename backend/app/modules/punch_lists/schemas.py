@@ -2,6 +2,7 @@ from __future__ import annotations
 from uuid import UUID
 from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from app.shared.photo_urls import PhotoUrlMixin
 from app.modules.punch_lists.models import PunchListPhotoPurpose, PunchListItemStatus, PunchListStatus
 
 class PunchListCreateRequest(BaseModel):
@@ -36,7 +37,7 @@ class PunchListItemPhotoCreateRequest(BaseModel):
   site_photo_id: UUID
   photo_purpose: PunchListPhotoPurpose
 
-class PunchListItemPhotoResponse(BaseModel):
+class PunchListItemPhotoResponse(PhotoUrlMixin):
   model_config = ConfigDict(from_attributes=True)
   id: UUID
   site_photo_id: UUID
