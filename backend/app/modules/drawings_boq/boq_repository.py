@@ -289,6 +289,56 @@ class BOQEngineRepository:
 
   def add_export_job(self, job: ExportJob) -> None:
     self.session.add(job)
+
+  async def get_export_job(self, job_id: UUID, org: UUID) -> ExportJob | None:
+    r = await self.session.execute(select(ExportJob).where(ExportJob.id == job_id, ExportJob.organization_id == org))
+    return r.scalar_one_or_none()
+
+  async def find_reusable_export(self, org: UUID, version_id: UUID, snapshot_id: UUID, kind: str, fmt: str,
+    compare_snapshot_id: str | None, newer_than: datetime) -> ExportJob | None:
+    """A queued, running or finished async export of the same snapshot: snapshots never change, so it is the same file."""
+    r = await self.session.execute(
+      select(ExportJob).where(
+        ExportJob.organization_id == org, ExportJob.boq_version_id == version_id, ExportJob.snapshot_id == snapshot_id,
+        ExportJob.kind == kind, ExportJob.format == fmt, ExportJob.created_at >= newer_than,
+        or_(ExportJob.status.in_(("QUEUED", "RUNNING")),
+          (ExportJob.status == "SUCCEEDED") & ExportJob.storage_key.is_not(None)))
+      .order_by(ExportJob.created_at.desc()).limit(5))
+    for job in r.scalars().all():
+      if (job.parameters or {}).get("compare_snapshot_id") == compare_snapshot_id:
+        return job
+    return None
+
+  async def claim_export_job(self, job_id: UUID) -> ExportJob | None:
+    r = await self.session.execute(
+      update(ExportJob).where(ExportJob.id == job_id, ExportJob.status == "QUEUED")
+      .values(status="RUNNING", started_at=_now()).returning(ExportJob))
+    return r.scalar_one_or_none()
+
+  async def finish_export_job(self, job_id: UUID, status: str, *, storage_key: str | None = None, size: int | None = None,
+    parameters: dict | None = None, error_code: str | None = None, error_message: str | None = None) -> None:
+    values = {"status": status, "finished_at": _now(), "error_code": error_code, "error_message": error_message}
+    if storage_key is not None:
+      values["storage_key"] = storage_key
+    if size is not None:
+      values["file_size_bytes"] = size
+    if parameters is not None:
+      values["parameters"] = parameters
+    await self.session.execute(update(ExportJob).where(ExportJob.id == job_id).values(**values))
+
+  async def stale_export_jobs(self, queued_before: datetime, running_before: datetime, limit: int = 100) -> list[ExportJob]:
+    r = await self.session.execute(
+      select(ExportJob).where(or_(
+        (ExportJob.status == "QUEUED") & (ExportJob.created_at < queued_before),
+        (ExportJob.status == "RUNNING") & (ExportJob.started_at < running_before)))
+      .order_by(ExportJob.created_at).limit(limit))
+    return list(r.scalars().all())
+
+  async def expired_export_files(self, before: datetime, limit: int = 500) -> list[ExportJob]:
+    r = await self.session.execute(
+      select(ExportJob).where(ExportJob.storage_key.is_not(None), ExportJob.finished_at < before)
+      .order_by(ExportJob.finished_at).limit(limit))
+    return list(r.scalars().all())
     
   async def delete_items(self, ids: list[UUID]) -> None:
     for i in range(0, len(ids), _CHUNK):

@@ -6,11 +6,15 @@ from uuid import UUID
 from app.workers.celery_app import celery_app
 from app.core.exceptions import TraceException
 from app.dependencies.tenancy import scope_session_as_platform_admin
+from app.core.config import settings
+from app.modules.drawings_boq.recalculation.calc_limits import RETRYABLE_CODES
 
 @celery_app.task(
   name="app.modules.drawings_boq.calc_tasks.calculate_run_task",
-  time_limit=1800,
-  soft_time_limit=1500,
+  time_limit=int(settings.calc_time_limit_seconds),
+  soft_time_limit=int(settings.calc_soft_time_limit_seconds),
+  acks_late=True,
+  reject_on_worker_lost=True,
 )
 def calculate_run_task(run_id: str) -> str:
   async def _run() -> None:
@@ -46,6 +50,33 @@ def auto_run_task(self, organization_id: str, project_id: str, user_id: str | No
   try:
     return asyncio.run(_run())
   except TraceException as exc:
-    if exc.code == "RUN_IN_PROGRESS":
-      raise self.retry(countdown=120)
+    if exc.code in RETRYABLE_CODES:
+      raise self.retry(countdown=120 if exc.code == "RUN_IN_PROGRESS" else 300)
     return f"skipped: {exc.code}"
+
+def _maintenance(name: str):
+  async def _run() -> dict:
+    from app.modules.drawings_boq import calc_maintenance
+    try:
+      async with WorkerSessionLocal() as session:
+        await scope_session_as_platform_admin(session)
+        return await getattr(calc_maintenance, name)(session)
+    finally:
+      await dispose_worker_engine()
+  return asyncio.run(_run())
+
+@celery_app.task(name="app.modules.drawings_boq.calc_tasks.recover_stale_runs_task")
+def recover_stale_runs_task() -> dict:
+  return _maintenance("recover_stale_runs")
+
+@celery_app.task(name="app.modules.drawings_boq.calc_tasks.recover_exports_task")
+def recover_exports_task() -> dict:
+  return _maintenance("recover_exports")
+
+@celery_app.task(name="app.modules.drawings_boq.calc_tasks.purge_staging_task")
+def purge_staging_task() -> dict:
+  return _maintenance("purge_staging")
+
+@celery_app.task(name="app.modules.drawings_boq.calc_tasks.expire_export_files_task")
+def expire_export_files_task() -> dict:
+  return _maintenance("expire_export_files")

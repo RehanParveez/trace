@@ -9,7 +9,7 @@ from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQIt
   DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
    PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse,
    DeductionResponse, AdjustmentCreateRequest, AdjustmentResponse, BOQBuildResponse, ItemTraceResponse, ReasonRequest, ReviewIssueResponse, ReviewIssueUpdateRequest, SnapshotItemResponse, SnapshotResponse, 
-   TransitionRequest, BarMarkResponse
+   TransitionRequest, BarMarkResponse, RunMetricsResponse, OrgCalcMetricsResponse, CalcUsageResponse, ImpactResponse, ExportJobResponse
 )
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.modules.drawings_boq.calc_service import CalculationService
@@ -18,7 +18,9 @@ from app.modules.identity.models import User
 from fastapi.responses import Response
 from sqlalchemy import select
 from app.modules.drawings_boq.models import CalculationRun
+from app.modules.drawings_boq.recalculation.calc_insight import CalcInsightService
 from app.modules.drawings_boq.boq_service import BOQEngineService
+from fastapi.responses import JSONResponse
 
 router = APIRouter(
   prefix="/drawings-boq",
@@ -593,6 +595,8 @@ async def start_calculation_run(
     payload.drawing_ids,
     payload.rule_set_code,
     payload.convention_code,
+    force_full=payload.force_full,
+    verify=payload.verify,
   )
   if reused:
     response.status_code = 200
@@ -637,7 +641,7 @@ async def list_calculation_run_bar_marks(
   session: AsyncSession = Depends(get_db),
 ):
   rows, next_cursor = await CalculationService(session).list_bar_marks(
-    current_user.active_membership.organization_id, run_id,
+    current_user.active_membership.organization_id, run_id, cached=True,
     limit=limit, after=after, solid_id=solid_id, provenance=provenance, role=role,
   )
   if next_cursor:
@@ -650,7 +654,39 @@ async def list_calculation_run_stages(
   current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
   session: AsyncSession = Depends(get_db),
 ):
-  return await CalculationService(session).list_stages(current_user.active_membership.organization_id, run_id)
+   return await CalculationService(session).list_stages(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/metrics", response_model=RunMetricsResponse)
+async def get_calculation_run_metrics(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await CalcInsightService(session).run_metrics(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/elements/{element_id}/impact", response_model=ImpactResponse)
+async def get_element_impact(
+  run_id: UUID,
+  element_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await CalcInsightService(session).impact(current_user.active_membership.organization_id, run_id, element_id)
+
+@router.get("/calculation-metrics", response_model=OrgCalcMetricsResponse)
+async def get_organization_calculation_metrics(
+  days: int = Query(default=30, ge=1, le=365),
+  current_user: User = Depends(require_permission(PermissionKey.CALC_RUN)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await CalcInsightService(session).org_metrics(current_user.active_membership.organization_id, days)
+
+@router.get("/calculation-usage", response_model=CalcUsageResponse)
+async def get_calculation_usage(
+  current_user: User = Depends(require_permission(PermissionKey.CALC_RUN)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await CalcInsightService(session).usage(current_user.active_membership.organization_id)
 
 @router.get("/calculation-runs/{run_id}/solids", response_model=list[QuantitySolidResponse])
 async def list_calculation_run_solids(
@@ -664,7 +700,7 @@ async def list_calculation_run_solids(
   session: AsyncSession = Depends(get_db),
 ):
   rows, next_cursor = await CalculationService(session).list_solids(
-    current_user.active_membership.organization_id, run_id,
+    current_user.active_membership.organization_id, run_id, cached=True,
     limit=limit, after=after, role=role, level_id=level_id,
   )
   if next_cursor:
@@ -683,7 +719,7 @@ async def list_calculation_run_ledger(
   session: AsyncSession = Depends(get_db),
 ):
   rows, next_cursor = await CalculationService(session).list_ledger(
-    current_user.active_membership.organization_id, run_id,
+    current_user.active_membership.organization_id, run_id, cached=True,
     limit=limit, after=after, work_item_code=work_item_code, level_id=level_id,
   )
   if next_cursor:
@@ -703,7 +739,7 @@ async def list_calculation_run_deductions(
   session: AsyncSession = Depends(get_db),
 ):
   rows, next_cursor = await CalculationService(session).list_deductions(
-    current_user.active_membership.organization_id, run_id,
+    current_user.active_membership.organization_id, run_id, cached=True,
     limit=limit, after=after, from_solid_id=from_solid_id, deduction_type=deduction_type,
   )
   if next_cursor:
@@ -873,17 +909,42 @@ async def update_review_issue(
   return await _engine(session).resolve_issue(
     current_user.active_membership.organization_id, issue_id, current_user.id, payload.status, payload.note)
 
-@router.get("/boq-versions/{boq_version_id}/exports/{kind}")
+@router.get("/boq-versions/{boq_version_id}/exports/{kind}", responses={202: {"model": ExportJobResponse}})
 async def export_boq_snapshot(
   boq_version_id: UUID,
   kind: Literal["CONTRACT_BOQ", "PROCUREMENT", "MEASUREMENT_BOOK", "AUDIT_REPORT", "REVISION_COMPARISON", "BBS"],
   fmt: Literal["pdf", "xlsx"] = Query(default="pdf"),
   snapshot_id: UUID | None = Query(default=None),
   compare_snapshot_id: UUID | None = Query(default=None),
+  mode: Literal["auto", "sync", "async"] = Query(default="auto",
+    description="auto: large BOQs are produced in the background (202 and a job to poll); sync: always inline; async: always in the background."),
   current_user: User = Depends(require_permission(PermissionKey.BOQ_EXPORT)),
   session: AsyncSession = Depends(get_db),
 ):
-  data, media, filename = await _engine(session).export_snapshot(
+  how, result = await _engine(session).request_export(
     current_user.active_membership.organization_id, boq_version_id, kind, fmt, current_user.id, snapshot_id,
-    compare_snapshot_id)
+    compare_snapshot_id, mode)
+  if how == "async":
+    body = ExportJobResponse.model_validate(result).model_dump(mode="json")
+    return JSONResponse(body, status_code=202 if result.status in ("QUEUED", "RUNNING") else 200,
+      headers={"Location": f"/drawings-boq/export-jobs/{result.id}"})
+  data, media, filename = result
+  return Response(content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+@router.get("/export-jobs/{job_id}", response_model=ExportJobResponse)
+async def get_export_job(
+  job_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_EXPORT)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).get_export_job(current_user.active_membership.organization_id, job_id)
+
+@router.get("/export-jobs/{job_id}/download")
+async def download_export_job(
+  job_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.BOQ_EXPORT)),
+  session: AsyncSession = Depends(get_db),
+):
+  data, media, filename = await _engine(session).download_export_job(
+    current_user.active_membership.organization_id, job_id)
   return Response(content=data, media_type=media, headers={"Content-Disposition": f'attachment; filename="{filename}"'})

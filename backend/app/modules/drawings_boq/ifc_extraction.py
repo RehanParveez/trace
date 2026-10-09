@@ -7,7 +7,6 @@ from uuid import UUID
 from app.modules.drawings_boq.ifc_types import QUANTITY_LOOKUP_ORDER
 
 def humanize_ifc_type(ifc_type: str) -> str:
-  """'IfcWallStandardCase' -> 'Wall Standard Case'."""
   stripped = ifc_type[3:] if ifc_type.startswith("Ifc") else ifc_type
   return re.sub(r"(?<!^)(?=[A-Z])", " ", stripped).strip()
 

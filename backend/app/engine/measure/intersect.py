@@ -1,7 +1,14 @@
 from __future__ import annotations
 from app.engine.measure.models import CalculationContext, SpatialIndex, Overlap
 
-def find_overlaps(ctx: CalculationContext, index: SpatialIndex) -> list[Overlap]:
+def find_overlaps(ctx: CalculationContext, index: SpatialIndex, known: dict | None = None,
+  dirty: frozenset | set | None = None) -> list[Overlap]:
+  """Exact plan intersection of every broad-phase candidate pair.
+
+  Incremental runs pass `known` (frozenset{solid, solid} -> overlap volume from the previous run, only for pairs of two
+  unchanged solids) and an index whose candidates are only the pairs that involve a changed solid: nothing that decides
+  the overlap of two unchanged solids has changed, so their edge is carried over instead of intersected again. Every
+  candidate pair is measured exactly as in a full run."""
   params = ctx.convention_params or {}
   sliver = float(params.get("sliver_area_mm2", 1.0))
   min_z = float(params.get("min_z_overlap_mm", 0.1))
@@ -15,4 +22,9 @@ def find_overlaps(ctx: CalculationContext, index: SpatialIndex) -> list[Overlap]
     if inter.is_empty or inter.area <= sliver:
       continue
     overlaps.append(Overlap(a=a, b=b, volume_mm3=inter.area * dz))
+  if known:
+    for pair, volume in known.items():
+      a, b = sorted(pair, key=str)
+      overlaps.append(Overlap(a=a, b=b, volume_mm3=volume))
+    overlaps.sort(key=lambda o: (str(o.a), str(o.b)))
   return overlaps

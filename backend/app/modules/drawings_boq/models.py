@@ -1750,6 +1750,7 @@ class CalculationRun(Base, TimestampMixin):
     
     CheckConstraint("mode IN ('FULL','INCREMENTAL')", name="ck_calculation_runs_mode"),
     CheckConstraint("attempts >= 0", name="ck_calculation_runs_attempts"),
+    
     Index("ix_calculation_runs_org_created", "organization_id", "created_at"),
     
     Index(

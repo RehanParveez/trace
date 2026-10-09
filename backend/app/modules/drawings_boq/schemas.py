@@ -271,6 +271,9 @@ class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None
   rule_set_code: str | None = Field(default=None, max_length=50)
   convention_code: str | None = Field(default=None, max_length=80)
+  force_full: bool = Field(default=False, description="Recompute everything instead of only what changed since the last run.")
+  verify: bool = Field(default=False,
+    description="After an incremental run, also run the full allocation and compare. Slower; a mismatch falls back to the full result.")
 
 class CalculationRunResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -290,6 +293,11 @@ class CalculationRunResponse(BaseModel):
   error_message: str | None
   stats: dict
   created_at: datetime
+  mode: str = "FULL"
+  baseline_run_id: UUID | None = None
+  force_full: bool = False
+  verify: bool = False
+  attempts: int = 0
 
 class RunStageResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -301,6 +309,101 @@ class RunStageResponse(BaseModel):
   finished_at: datetime | None
   counts: dict
   error: str | None
+  duration_ms: int | None = None
+  peak_rss_mb: int | None = None
+
+class StageTimingResponse(BaseModel):
+  stage: str
+  status: str
+  duration_ms: int | None
+  peak_rss_mb: int | None
+
+class RunBudgetResponse(BaseModel):
+  name: str
+  limit: float
+  actual: float | None
+  unit: str
+  ok: bool | None
+
+class RunMetricsResponse(BaseModel):
+  run_id: UUID
+  organization_id: UUID
+  project_id: UUID
+  status: str
+  mode: str
+  baseline_run_id: UUID | None
+  engine_version: str
+  fingerprint: str
+  attempts: int
+  started_at: datetime | None
+  completed_at: datetime | None
+  duration_ms: int | None
+  stages: list[StageTimingResponse]
+  timings_ms: dict
+  counts: dict
+  allocation: dict
+  verify: dict | None
+  peak_rss_mb: int | None
+  failure: dict | None
+  budgets: list[RunBudgetResponse]
+
+class OrgCalcMetricsResponse(BaseModel):
+  organization_id: UUID
+  window_days: int
+  runs_total: int
+  runs_by_status: dict
+  runs_by_mode: dict
+  failure_codes: dict
+  active_now: int
+  duration_seconds: dict
+  elements_processed: int
+  warnings_total: int
+  incremental_share: float
+  slowest_runs: list[dict]
+  usage: dict
+
+class CalcUsageResponse(BaseModel):
+  quota: dict | None
+  concurrent: dict
+  rate_limits: list[dict]
+
+class ImpactElementResponse(BaseModel):
+  element_id: UUID
+  ifc_type: str | None
+  name: str | None
+  ifc_global_id: str | None
+  overlap_mm3: float | None
+
+class ImpactLedgerResponse(BaseModel):
+  element_id: UUID | None
+  work_item_code: str
+  quantity_net: Decimal
+  unit: str
+  ledger_id: UUID
+
+class ImpactResponse(BaseModel):
+  run_id: UUID
+  element_id: UUID
+  touching: list[ImpactElementResponse]
+  affected_ledger: list[ImpactLedgerResponse]
+  truncated: bool
+
+class ExportJobResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  boq_version_id: UUID
+  snapshot_id: UUID
+  kind: str
+  format: str
+  status: str
+  parameters: dict
+  file_size_bytes: int | None
+  error_code: str | None
+  error_message: str | None
+  started_at: datetime | None
+  finished_at: datetime | None
+  created_at: datetime
 
 class QuantitySolidResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

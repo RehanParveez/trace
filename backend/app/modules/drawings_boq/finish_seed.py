@@ -1,8 +1,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.drawings_boq.models import WorkItem, FinishRule, MeasurementRuleSet
-from app.modules.drawings_boq.standards.service import StandardsService
+from app.modules.drawings_boq.models import WorkItem, FinishRule
 from sqlalchemy import select
 from uuid import uuid4
 

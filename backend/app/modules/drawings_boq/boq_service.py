@@ -1,5 +1,7 @@
 from __future__ import annotations
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+import logging
+from app.core.config import settings
 from app.core.exceptions import TraceException
 from sqlalchemy import select
 from app.modules.drawings_boq.models import BOQItem, BOQItemAdjustment, BOQItemRateSource, BOQItemStatus, BOQItemType, BOQSnapshot, BOQVersion, ExportJob, ReviewIssue
@@ -20,6 +22,7 @@ from app.modules.drawings_boq.pricing import pricing_logic as pricing
 from app.modules.drawings_boq.pricing_resolver import PriceResolver, apply_resolution, clear_rate
 from app.modules.drawings_boq.rebar import rebar_repository as rebar_repo
 import app.modules.drawings_boq.export as exp
+from app.modules.drawings_boq.recalculation.export_task import render_export_task
 
 _LOCKED = frozenset({"CALCULATING", "APPROVED", "ISSUED", "SUPERSEDED", "ARCHIVED"})
 _NON_WAIVABLE = logic.NON_WAIVABLE_CODES
@@ -29,6 +32,8 @@ _COPY = ("material_name", "category", "unit", "quantity", "unit_rate", "rate_sou
   "rate_book_id", "base_rate", "escalation_factor", "rate_resolution")
 _EXPORTS = {"CONTRACT_BOQ": {"pdf", "xlsx"}, "PROCUREMENT": {"xlsx"}, "MEASUREMENT_BOOK": {"pdf", "xlsx"},
   "AUDIT_REPORT": {"pdf"}, "BBS": {"xlsx"}, "REVISION_COMPARISON": {"xlsx"}}
+
+logger = logging.getLogger("trace.boq")
 
 def _now():
   return datetime.now(timezone.utc)
@@ -728,10 +733,11 @@ class BOQEngineService:
     await self.audit.log(org, user_id, AuditEntityType.BOQ_VERSION, version.id, AuditAction.UPDATE, "Archived BOQ")
     await self.session.refresh(version)
     return version
-  async def export_snapshot(self, org: UUID, version_id: UUID, kind: str, fmt: str, user_id: UUID,
-    snapshot_id: UUID | None = None, compare_snapshot_id: UUID | None = None) -> tuple[bytes, str, str]:
+  
+  async def _export_target(self, org: UUID, version_id: UUID, kind: str, fmt: str, snapshot_id: UUID | None):
     if kind not in _EXPORTS:
       raise TraceException("This export is not available yet.", status_code=422, code="EXPORT_NOT_AVAILABLE")
+    
     if fmt not in _EXPORTS[kind]:
       raise TraceException(f"{kind} is not available as {fmt}.", status_code=422, code="EXPORT_FORMAT_UNSUPPORTED")
     version = await self._engine_version(org, version_id)
@@ -740,15 +746,18 @@ class BOQEngineService:
     snap = await self.repo.get_snapshot(snapshot_id or version.snapshot_id, org)
     if snap is None or snap.boq_version_id != version.id:
       raise TraceException("Snapshot not found for this version.", status_code=404, code="SNAPSHOT_NOT_FOUND")
-    started = _now()
+    return version, snap
 
+  async def _render_export(self, org: UUID, version, snap, kind: str, fmt: str,
+    compare_snapshot_id: UUID | None) -> tuple[bytes, str, str, dict]:
     rows = [_row_dict(r) for r in await self.repo.snapshot_items(snap.id, org)]
     snapshot = {k: getattr(snap, k) for k in ("id", "version_no", "purpose", "content_hash", "created_at", "totals",
+                                              
       "rule_set_code", "rule_set_version", "convention_code", "engine_version", "item_count")}
     meta = version.export_meta or {}
     company = meta.get("company_name") or await self._org_name(org)
     version_meta = {**meta, "covered_area_sqft": version.covered_area_sqft}
-    
+
     if kind == "CONTRACT_BOQ":
       data = (exp.build_contract_boq_pdf if fmt == "pdf" else exp.build_contract_boq_xlsx)(snapshot, rows, version_meta, company)
     elif kind == "PROCUREMENT":
@@ -762,7 +771,6 @@ class BOQEngineService:
       base_snapshot = {k: getattr(base, k) for k in snapshot}
       data = exp.build_revision_comparison_xlsx(snapshot, base_snapshot, pricing.diff_lines(base_rows, rows),
         version_meta, company)
-      compare_id = base.id
     elif kind == "MEASUREMENT_BOOK":
       evidence = await self._evidence(org, version.id)
       data = (exp.build_measurement_book_pdf if fmt == "pdf" else exp.build_measurement_book_xlsx)(
@@ -779,16 +787,103 @@ class BOQEngineService:
     filename = f"{kind}-{safe}-s{snap.version_no}.{fmt}"
     parameters = {"snapshot_version_no": snap.version_no}
     if kind == "REVISION_COMPARISON":
-      parameters["compare_snapshot_id"] = str(compare_id)
+      parameters["compare_snapshot_id"] = str(base.id)
       filename = f"{kind}-{safe}-s{snap.version_no}-vs-s{base.version_no}.{fmt}"
+    media = "application/pdf" if fmt == "pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    return data, media, filename, parameters
+
+  async def export_snapshot(self, org: UUID, version_id: UUID, kind: str, fmt: str, user_id: UUID,
+    snapshot_id: UUID | None = None, compare_snapshot_id: UUID | None = None) -> tuple[bytes, str, str]:
+    version, snap = await self._export_target(org, version_id, kind, fmt, snapshot_id)
+    started = _now()
+    data, media, filename, parameters = await self._render_export(org, version, snap, kind, fmt, compare_snapshot_id)
     self.repo.add_export_job(ExportJob(
       id=uuid4(), organization_id=org, boq_version_id=version.id, snapshot_id=snap.id, kind=kind, format=fmt.upper(),
       status="SUCCEEDED", parameters=parameters, requested_by_user_id=user_id,
       file_size_bytes=len(data), started_at=started, finished_at=_now()))
     await self.session.commit()
-    media = "application/pdf" if fmt == "pdf" else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     return data, media, filename
-  
+
+  # ---- asynchronous exports (architecture section 14: large BOQs are produced on the `export` queue) ----
+
+  async def request_export(self, org: UUID, version_id: UUID, kind: str, fmt: str, user_id: UUID,
+    snapshot_id: UUID | None = None, compare_snapshot_id: UUID | None = None, mode: str = "auto"):
+    """Decide how to produce an export. Returns ("sync", (data, media, filename)) or ("async", ExportJob).
+    `auto` goes async when the snapshot has at least `export_async_item_threshold` lines."""
+    version, snap = await self._export_target(org, version_id, kind, fmt, snapshot_id)
+    threshold = int(settings.export_async_item_threshold)
+    go_async = mode == "async" or (mode == "auto" and threshold > 0 and (snap.item_count or 0) >= threshold)
+    if not go_async:
+      return "sync", await self.export_snapshot(org, version_id, kind, fmt, user_id, snapshot_id, compare_snapshot_id)
+    if kind == "REVISION_COMPARISON":
+      base = await self._comparison_base(org, version, snap, compare_snapshot_id)
+      compare_snapshot_id = base.id
+    existing = await self.repo.find_reusable_export(org, version.id, snap.id, kind, fmt.upper(),
+      str(compare_snapshot_id) if compare_snapshot_id else None,
+      _now() - timedelta(days=int(settings.export_retention_days)))
+    if existing is not None:
+      return "async", existing
+    job = ExportJob(id=uuid4(), organization_id=org, boq_version_id=version.id, snapshot_id=snap.id, kind=kind,
+      format=fmt.upper(), status="QUEUED", requested_by_user_id=user_id,
+      parameters={"compare_snapshot_id": str(compare_snapshot_id) if compare_snapshot_id else None})
+    self.repo.add_export_job(job)
+    await self.session.commit()
+    try:
+      render_export_task.delay(str(job.id))
+    except Exception:
+      logger.warning("could not enqueue export job %s", job.id, exc_info=True)
+    return "async", job
+
+  async def run_export_job(self, job_id: UUID) -> str:
+    job = await self.repo.claim_export_job(job_id)
+    if job is None:
+      return "skipped"
+    await self.session.commit()
+    org, kind, fmt_upper = job.organization_id, job.kind, job.format
+    snapshot_id, version_id = job.snapshot_id, job.boq_version_id
+    job_parameters = dict(job.parameters or {})
+    from app.dependencies.tenancy import scope_session_to_org
+    await scope_session_to_org(self.session, org)
+    try:
+      fmt = fmt_upper.lower()
+      compare = job_parameters.get("compare_snapshot_id")
+      version, snap = await self._export_target(org, version_id, kind, fmt, snapshot_id)
+      data, media, filename, parameters = await self._render_export(
+        org, version, snap, kind, fmt, UUID(compare) if compare else None)
+      from app.shared import storage
+      import asyncio, io
+      key = f"{org}/exports/{job_id}/{filename}"
+      await asyncio.to_thread(storage.upload_fileobj, key, io.BytesIO(data), media)
+      await self.repo.finish_export_job(job_id, "SUCCEEDED", storage_key=key, size=len(data),
+        parameters={**job_parameters, **parameters, "filename": filename, "media_type": media})
+      await self.session.commit()
+      return "done"
+    except Exception as exc:
+      await self.session.rollback()
+      code = exc.code if isinstance(exc, TraceException) else "EXPORT_FAILED"
+      await self.repo.finish_export_job(job_id, "FAILED", error_code=str(code)[:60], error_message=str(exc)[:1000])
+      await self.session.commit()
+      return "failed"
+
+  async def get_export_job(self, org: UUID, job_id: UUID) -> ExportJob:
+    job = await self.repo.get_export_job(job_id, org)
+    if job is None:
+      raise TraceException("Export job not found.", status_code=404, code="EXPORT_JOB_NOT_FOUND")
+    return job
+
+  async def download_export_job(self, org: UUID, job_id: UUID) -> tuple[bytes, str, str]:
+    job = await self.get_export_job(org, job_id)
+    if job.status != "SUCCEEDED" or not job.storage_key:
+      raise TraceException("The export is not ready.", status_code=409, code="EXPORT_NOT_READY")
+    from app.shared import storage
+    import asyncio
+    try:
+      data = await asyncio.to_thread(storage.download_bytes, job.storage_key)
+    except Exception:
+      raise TraceException("The export file has expired. Request it again.", status_code=410, code="EXPORT_FILE_GONE")
+    params = job.parameters or {}
+    return data, params.get("media_type") or "application/octet-stream", params.get("filename") or "export"
+
   async def _comparison_base(self, org: UUID, version: BOQVersion, snap, compare_snapshot_id: UUID | None):
     if compare_snapshot_id is not None:
       base = await self.repo.get_snapshot(compare_snapshot_id, org)

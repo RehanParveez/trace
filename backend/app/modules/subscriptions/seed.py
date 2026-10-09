@@ -31,6 +31,7 @@ PLANS = [
       "site_photos": 100,
       "drawings": 3,
       "ai_requests": 10,
+      "calculation_runs": 100,
     },
   },
   
@@ -56,8 +57,9 @@ PLANS = [
       "site_photos": 1000,
       "drawings": 20,
       "ai_requests": 100,
+      "calculation_runs": 1000,
     },
-    "limit_policy": {"ai_requests": "soft", "storage_bytes": "hard"},
+    "limit_policy": {"ai_requests": "soft", "storage_bytes": "hard", "calculation_runs": "soft"},
   },
   
   {
@@ -83,8 +85,9 @@ PLANS = [
       "site_photos": 10000,
       "drawings": 100,
       "ai_requests": 1000,
+      "calculation_runs": 10000,
     },
-    "limit_policy": {"ai_requests": "soft", "storage_bytes": "hard"},
+    "limit_policy": {"ai_requests": "soft", "storage_bytes": "hard", "calculation_runs": "soft"},
   },
 ]
 

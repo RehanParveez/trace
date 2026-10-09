@@ -26,14 +26,16 @@ from app.core.exceptions import TraceException
 from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
 from app.modules.drawings_boq.finish_schedule.common import carry_over_space_finishes
 from app.modules.drawings_boq.calc_tasks import auto_run_task
+from app.modules.drawings_boq.recalculation.calc_limits import RETRYABLE_CODES
 
 MAX_AI_NORMALIZATIONS_PER_PARSE = 50
 STALE_PARSE_SECONDS = 960
 
 @celery_app.task(
   name="app.modules.drawings_boq.tasks.parse_drawing_task",
-  time_limit=900,
-  soft_time_limit=780,
+  time_limit=int(settings.bim_parsing_time_limit_seconds),
+  soft_time_limit=int(settings.bim_parsing_soft_time_limit_seconds),
+  acks_late=True,
 )
 
 def parse_drawing_task(drawing_id: str) -> str:
@@ -399,9 +401,9 @@ async def _parse_drawing(drawing_id: UUID) -> None:
           drawing_org_id, drawing_project_id, uploader_id, None, None, convention_code=None)
       except TraceException as exc:
         await session.rollback()
-        if exc.code == "RUN_IN_PROGRESS":
+        if exc.code in RETRYABLE_CODES:
           auto_run_task.apply_async(
             args=[str(drawing_org_id), str(drawing_project_id), str(uploader_id) if uploader_id else None],
-            countdown=120, queue="calc_engine")
+            countdown=120 if exc.code == "RUN_IN_PROGRESS" else 300)
       except Exception:
         await session.rollback()

@@ -45,6 +45,12 @@ class Settings(BaseSettings):
   rate_limit_auth_per_minute: int = 10
   rate_limit_ai_per_org_per_minute: int = 20
   rate_limit_webhook_per_minute: int = 120
+  export_time_limit_seconds: int = 300
+  export_soft_time_limit_seconds: int = 270
+  calc_max_concurrent_runs_per_org: int = 3
+  calc_run_rate_limit_per_minute: int = 5
+  export_async_item_threshold: int = 500
+  export_retention_days: int = 7
   
   email_enabled: bool = False
   smtp_host: str = ""
@@ -70,6 +76,33 @@ class Settings(BaseSettings):
   
   engine_v2_org_ids: str = ""
   engine_default_convention: str = "FRAME_MONOLITHIC_A"
+
+  calc_max_concurrent_runs_per_org: int = 3
+  calc_run_rate_limit_per_minute: int = 5
+  calc_run_rate_limit_per_hour: int = 30
+  calc_time_limit_seconds: int = 1800
+  calc_soft_time_limit_seconds: int = 1500
+  calc_memory_budget_mb: int = 1536
+  calc_worker_max_memory_kb: int = 2_000_000
+  calc_heartbeat_seconds: int = 30
+  calc_stale_heartbeat_seconds: int = 600
+  calc_queued_requeue_seconds: int = 900
+  calc_max_attempts: int = 3
+  calc_incremental_enabled: bool = True
+  calc_incremental_max_change_ratio: float = 0.5
+  calc_verify_sample_rate: float = 0.0
+  calc_state_keep_runs: int = 2
+  calc_staging_retention_days: int = 7
+  calc_stage_chunk_rows: int = 5000
+  calc_element_fetch_rows: int = 2000
+  calc_read_cache_ttl_seconds: int = 3600
+  bim_parsing_time_limit_seconds: int = 900
+  bim_parsing_soft_time_limit_seconds: int = 780
+  bim_element_insert_chunk: int = 1000
+  export_async_item_threshold: int = 1500
+  export_time_limit_seconds: int = 900
+  export_soft_time_limit_seconds: int = 780
+  export_retention_days: int = 14
   
   frontend_base_url: str = "http://localhost:5094"
   ai_enabled: bool = False

@@ -30,6 +30,7 @@ METRIC_LABELS = {
   "projects": "Projects",
   "ai_requests": "AI requests",
   "site_photos": "Site photos",
+  "calculation_runs": "Calculation runs",
 }
 
 def _metric_label(metric: str) -> str:

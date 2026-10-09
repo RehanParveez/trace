@@ -7,6 +7,11 @@ from app.engine.measure.units import q4, q6
 from app.engine.measure.models import LedgerEntry, Solid
 
 ZERO, ONE = Decimal("0"), Decimal("1")
+
+class RebarError(ValueError):
+  """A bar mark that cannot be measured (missing dimension, no bend or hook rule, non-positive cut length). The mark is
+  skipped with a warning instead of failing the run."""
+  
 REBAR_WORK_ITEM = "STL-REBAR"
 FORMULA_BBS = "REBAR_BBS_WEIGHT"
 FORMULA_ESTIMATE = "REBAR_RULE_ESTIMATE"

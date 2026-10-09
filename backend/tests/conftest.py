@@ -219,13 +219,9 @@ async def make_run(db_session, rule_set):
 def anyio_backend() -> str:
   return "asyncio"
 
-@pytest_asyncio.fixture()
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def engine():
-  eng = create_async_engine(
-    settings.database_url,
-    echo=False,
-    poolclass=NullPool,
-  )
+  eng = create_async_engine(settings.database_url, echo=False, poolclass=NullPool)
   async with eng.begin() as conn:
     await conn.execute(text("DROP SCHEMA public CASCADE"))
     await conn.execute(text("CREATE SCHEMA public"))
@@ -1506,3 +1502,42 @@ async def make_budget(db_session: AsyncSession):
     )
     return result.scalar_one()
   return _factory
+
+class CounterRedis:
+  def __init__(self):
+    self.store: dict = {}
+    self.ttl_of: dict = {}
+
+  async def eval(self, script, numkeys, key, window):
+    self.store[key] = int(self.store.get(key, 0)) + 1
+    self.ttl_of.setdefault(key, int(window))
+    return self.store[key]
+
+  async def get(self, key):
+    v = self.store.get(key)
+    return None if v is None else (v if isinstance(v, (str, bytes)) else str(v))
+
+  async def set(self, key, value, ex=None):
+    self.store[key] = value
+    if ex:
+      self.ttl_of[key] = ex
+    return True
+
+  async def ttl(self, key):
+    return self.ttl_of.get(key, -1)
+
+  async def delete(self, *keys):
+    n = 0
+    for k in keys:
+      n += 1 if self.store.pop(k, None) is not None else 0
+    return n
+
+  async def scan_iter(self, match=None, count=None):
+    import fnmatch
+    for k in list(self.store):
+      if match is None or fnmatch.fnmatch(k, match):
+        yield k
+
+@pytest.fixture
+def counter_redis():
+  return CounterRedis()
