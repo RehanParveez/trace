@@ -15,6 +15,9 @@ import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 import { isEngine, isLocked } from "../../../../features/drawingsBoq/lifecycle";
 import { PERM, hasPerm } from "../../../../features/drawingsBoq/permissions";
 import { describeError } from "../../../../features/drawingsBoq/errors";
+import { deleteBOQItem, generateLabourItems } from "../../../../api/drawingsBoq";
+import { downloadLegacyExport } from "../../../../api/boqExtras";
+import { shareExportFile } from "../../../../features/drawingsBoq/exportFile";
 
 const PAGE_SIZE = 10;
 
@@ -100,6 +103,7 @@ export default function DrawingsBoqScreen() {
   const canApprove = hasPerm(permissions, PERM.BOQ_APPROVE);
   const canDeleteDrawing = hasPerm(permissions, PERM.DRAWING_DELETE);
   const canRun = hasPerm(permissions, PERM.CALC_RUN);
+  const canExport = hasPerm(permissions, PERM.BOQ_EXPORT);
 
   const currentDrawings = drawings.filter(
     (drawing) => drawing.is_current_revision,
@@ -551,6 +555,46 @@ export default function DrawingsBoqScreen() {
     });
   }
 
+  function handleDeleteItem(item: BOQItem) {
+    Alert.alert(
+      t("drawingsBoq.deleteItemTitle", { defaultValue: "Delete item?" }),
+      item.material_name,
+      [
+        { text: t("drawingsBoq.cancel"), style: "cancel" },
+        {
+          text: t("drawingsBoq.delete", { defaultValue: "Delete" }),
+          style: "destructive",
+          onPress: () =>
+            void run(async () => {
+              await deleteBOQItem(item.id);
+              await refreshExpandedVersion();
+            }),
+        },
+      ],
+    );
+  }
+
+  async function handleGenerateLabour() {
+    if (!expandedVersion) return;
+    await run(async () => {
+      await generateLabourItems(expandedVersion);
+      await refreshExpandedVersion();
+    });
+  }
+
+  async function handleLegacyExport(fmt: "pdf" | "xlsx") {
+    if (!expandedVersion) return;
+    setBusy(true);
+    setError("");
+    try {
+      await shareExportFile(await downloadLegacyExport(expandedVersion, fmt));
+    } catch (err) {
+      setError(describeError(err, t("drawingsBoq.actionFailure")));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleApproveItem(item: BOQItem) {
     await run(async () => {
       await approveBOQItem(item.id);
@@ -761,6 +805,39 @@ export default function DrawingsBoqScreen() {
               })
             }
           />
+          <Action
+            title={t("drawingsBoq.schedulesRebar", { defaultValue: "Schedules & rebar" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/imports",
+                params: { projectId: project.id },
+              })
+            }
+          />
+          <Action
+            title={t("drawingsBoq.rooms", { defaultValue: "Rooms & finishes" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/spaces",
+                params: { projectId: project.id },
+              })
+            }
+          />
+          <Action
+            title={t("drawingsBoq.pricing", { defaultValue: "Pricing" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/pricing",
+                params: { projectId: project.id },
+              })
+            }
+          />
         </View>
 
         {boqError && !expandedVersion ? (
@@ -880,6 +957,33 @@ export default function DrawingsBoqScreen() {
                         />
                       </View>
                     ) : null}
+
+                    <View style={[styles.row, isUrdu && styles.rtlRow]}>
+                      {!locked && canUpdateItem ? (
+                        <Action
+                          title={t("drawingsBoq.generateLabour", { defaultValue: "Generate labour items" })}
+                          secondary
+                          isUrdu={isUrdu}
+                          onPress={() => void handleGenerateLabour()}
+                        />
+                      ) : null}
+                      {canExport ? (
+                        <>
+                          <Action
+                            title="PDF"
+                            secondary
+                            isUrdu={isUrdu}
+                            onPress={() => void handleLegacyExport("pdf")}
+                          />
+                          <Action
+                            title="XLSX"
+                            secondary
+                            isUrdu={isUrdu}
+                            onPress={() => void handleLegacyExport("xlsx")}
+                          />
+                        </>
+                      ) : null}
+                    </View>
 
                     {!locked && (canCreateItem || canUpdateItem) && (
                       <>
@@ -1024,6 +1128,14 @@ export default function DrawingsBoqScreen() {
                               secondary
                               isUrdu={isUrdu}
                               onPress={() => beginEditItem(item)}
+                            />
+                          ) : null}
+                          {!locked && canUpdateItem && item.status !== "APPROVED" ? (
+                            <Action
+                              title={t("drawingsBoq.delete", { defaultValue: "Delete" })}
+                              secondary
+                              isUrdu={isUrdu}
+                              onPress={() => handleDeleteItem(item)}
                             />
                           ) : null}
                           {canApprove && !engineVersion && item.status !== "APPROVED" ? (

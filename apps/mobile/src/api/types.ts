@@ -1555,3 +1555,523 @@ export type ExportKind =
   |"AUDIT_REPORT"
   |"REVISION_COMPARISON"
   |"BBS";
+
+export type SnapshotItem = {
+  id: string;
+  line_no: number;
+  source_item_id: string | null;
+  work_item_code: string | null;
+  material_name: string;
+  description: string | null;
+  item_type: string;
+  unit: string;
+  net_quantity: number | string | null;
+  adjustment_total: number | string;
+  quantity: number | string;
+  gross_quantity: number | string | null;
+  unit_rate: number | string | null;
+  rate_source: string | null;
+  base_rate: number | string | null;
+  escalation_factor: number | string | null;
+  amount: number | string | null;
+  confidence: number | string | null;
+  review_status: string;
+  source_kind: string;
+  ledger_row_count: number;
+  ledger_hash: string | null;
+};
+
+export type DiffLine = {
+  item_key: string;
+  status: "ADDED" | "REMOVED" | "CHANGED" | "UNCHANGED" | string;
+  work_item_code: string | null;
+  material_name: string | null;
+  unit_a: string | null;
+  unit_b: string | null;
+  unit_changed: boolean;
+  net_a: number | string | null;
+  net_b: number | string | null;
+  quantity_a: number | string | null;
+  quantity_b: number | string | null;
+  rate_a: number | string | null;
+  rate_b: number | string | null;
+  amount_a: number | string | null;
+  amount_b: number | string | null;
+  net_delta: number | string | null;
+  quantity_delta: number | string | null;
+  quantity_delta_pct: number | string | null;
+  rate_delta: number | string | null;
+  amount_delta: number | string | null;
+};
+
+export type DiffSummary = {
+  ADDED: number;
+  REMOVED: number;
+  CHANGED: number;
+  UNCHANGED: number;
+  total_a: number | string;
+  total_b: number | string;
+  total_delta: number | string;
+  total_delta_pct: number | string | null;
+  unpriced_a: number;
+  unpriced_b: number;
+};
+
+export type DiffResult = {
+  version_a_id: string;
+  version_b_id: string;
+  summary: DiffSummary;
+  lines: DiffLine[];
+};
+
+export type DrawingElement = {
+  id: string;
+  ifc_global_id: string | null;
+  ifc_type: string;
+  name: string | null;
+  raw_material_text: string | null;
+  unit: string | null;
+  quantity: number | string;
+  discipline: string | null;
+  structural_role: string | null;
+  level_id: string | null;
+  length_mm: number | string | null;
+  width_mm: number | string | null;
+  height_mm: number | string | null;
+  thickness_mm: number | string | null;
+  area_mm2: number | string | null;
+  volume_mm3: number | string | null;
+  normalization_status: string;
+};
+
+export type ScheduleKind = "DOOR" | "WINDOW" | "FINISH" | "FIXTURE" | "GENERAL";
+
+export type ReviewDecision = "PENDING" | "CONFIRMED" | "REJECTED";
+
+export type ScheduleImport = {
+  id: string;
+  project_id: string;
+  drawing_id: string | null;
+  source: string;
+  schedule_kind: string;
+  status: "PENDING_REVIEW" | "CONFIRMED" | "REJECTED" | "ARCHIVED" | string;
+  file_name: string | null;
+  row_count: number;
+  confirmed_count: number;
+  notes: string | null;
+  extraction_meta: Record<string, unknown>;
+  created_at: string;
+  confirmed_at: string | null;
+};
+
+export type ScheduleRow = {
+  id: string;
+  schedule_import_id: string;
+  row_no: number;
+  schedule_kind: string;
+  page_no: number | null;
+  raw_text: string | null;
+  mark: string | null;
+  description: string | null;
+  location_text: string | null;
+  unit: string | null;
+  quantity: number | string | null;
+  width_mm: number | string | null;
+  height_mm: number | string | null;
+  work_item_code: string | null;
+  canonical_unit: string | null;
+  canonical_quantity: number | string | null;
+  confidence: number | string;
+  review_status: ReviewDecision | string;
+  review_note: string | null;
+  matched_element_count: number;
+  surface: string | null;
+  finish_name: string | null;
+  notes: string[];
+  quantity_defaulted: boolean;
+};
+
+export type ScheduleImportDetail = ScheduleImport & {
+  rows: ScheduleRow[];
+  summary: Record<string, unknown>;
+};
+
+export type ScheduleRowPayload = {
+  mark?: string;
+  description?: string;
+  location_text?: string;
+  unit?: string;
+  quantity?: number;
+  work_item_code?: string;
+  width_mm?: number;
+  height_mm?: number;
+  surface?: string;
+  finish_name?: string;
+};
+
+export type ConfirmImportResult = {
+  schedule_import: ScheduleImport;
+  finishes_created: number;
+  finishes_updated: number;
+  finish_conflicts: Record<string, unknown>[];
+  ledger_lines: number;
+  model_matched_rows: number;
+  unlinked_finish_rows: number;
+  count_mismatches: Record<string, unknown>[];
+  rerun_recommended: boolean;
+};
+
+export type RebarRow = {
+  id: string;
+  schedule_import_id: string;
+  row_no: number;
+  page_no: number | null;
+  raw_text: string | null;
+  member_mark: string | null;
+  mark: string | null;
+  role: string | null;
+  shape_code: string | null;
+  designation: string | null;
+  dia_mm: number | string | null;
+  grade: string | null;
+  count: number | null;
+  spacing_mm: number | string | null;
+  cut_len_mm: number | string | null;
+  declared_total_kg: number | string | null;
+  matched_element_id: string | null;
+  confidence: number | string;
+  review_status: ReviewDecision | string;
+  review_note: string | null;
+};
+
+export type RebarRowPayload = {
+  mark?: string;
+  designation?: string;
+  dia_mm?: number;
+  count?: number;
+  spacing_mm?: number;
+  cut_len_mm?: number;
+};
+
+export type RebarImportDetail = {
+  schedule_import_id: string;
+  row_count: number;
+  matched_count: number;
+  unmatched_count: number;
+  rows: RebarRow[];
+};
+
+export type RebarConfirmResult = {
+  schedule_import_id: string;
+  confirmed_count: number;
+  rejected_count: number;
+  pending_count: number;
+};
+
+export type RebarSummary = {
+  boq_version_id: string;
+  rows: {
+    dia_mm: number | string;
+    designation: string | null;
+    grade: string | null;
+    total_len_m: number | string;
+    total_kg: number | string;
+    mark_count: number;
+  }[];
+  total_kg: number | string;
+  tier1_kg: number | string;
+  tier2_kg: number | string;
+  tier3_estimate_kg: number | string;
+  bbs_exportable: boolean;
+};
+
+export type Surface = "FLOOR" | "WALL" | "CEILING" | "SKIRTING" | "DADO";
+
+export type BuildingLevel = {
+  id: string;
+  name: string;
+  elevation_mm: number | string | null;
+  ifc_storey_id: string | null;
+  sequence: number;
+};
+
+export type WorkItem = {
+  id: string;
+  code: string;
+  description: string;
+  unit: string;
+  trade: string | null;
+  is_active: boolean;
+};
+
+export type Space = {
+  id: string;
+  project_id: string;
+  drawing_id: string | null;
+  level_id: string | null;
+  source: string;
+  number: string | null;
+  name: string | null;
+  long_name: string | null;
+  category: string;
+  usage_text: string | null;
+  is_external: boolean;
+  is_active: boolean;
+  gross_floor_area_mm2: number | string | null;
+  net_floor_area_mm2: number | string | null;
+  perimeter_mm: number | string | null;
+  height_mm: number | string | null;
+  geometry_kind: string;
+  normalization_status: string;
+  normalization_issues: { code?: string; severity?: string; message?: string }[];
+  finish_count: number;
+  boundary_count: number;
+};
+
+export type SpaceFinish = {
+  id: string;
+  space_id: string;
+  surface: Surface | string;
+  work_item_code: string;
+  finish_name: string | null;
+  height_mm: number | string | null;
+  source: string;
+  schedule_row_id: string | null;
+  confidence: number | string;
+  review_status: string;
+  is_active: boolean;
+};
+
+export type SpaceBoundary = {
+  element_id: string;
+  name: string | null;
+  ifc_type: string;
+  structural_role: string | null;
+  boundary_kind: string;
+  side: string;
+  source: string;
+};
+
+export type SpaceDetail = Space & {
+  boundaries: SpaceBoundary[];
+  finishes: SpaceFinish[];
+};
+
+export type SpacePayload = {
+  number?: string;
+  name?: string;
+  long_name?: string;
+  usage_text?: string;
+  category?: string;
+  level_id?: string;
+  is_external?: boolean;
+  is_active?: boolean;
+  floor_area_m2?: number;
+  perimeter_m?: number;
+  height_m?: number;
+};
+
+export type SpaceFinishPayload = {
+  surface: Surface;
+  work_item_code: string;
+  finish_name?: string;
+  height_mm?: number;
+};
+
+export type FinishPreviewLine = {
+  surface: string;
+  work_item_code: string;
+  unit: string;
+  quantity: number | string;
+  confidence: number | string;
+  formula_code: string;
+  source_kind: string;
+  warnings: string[];
+  steps: Record<string, unknown>[];
+};
+
+export type FinishPreview = {
+  space_id: string;
+  rule_set_code: string;
+  resolved: Record<string, unknown>[];
+  lines: FinishPreviewLine[];
+  skipped: Record<string, unknown>;
+};
+
+export type RateBookStatus = "DRAFT" | "ACTIVE" | "SUPERSEDED" | "ARCHIVED";
+
+export type RateBook = {
+  id: string;
+  organization_id: string | null;
+  code: string;
+  name: string;
+  description: string | null;
+  edition: string | null;
+  currency: string;
+  jurisdiction: string | null;
+  province: string | null;
+  city: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
+  status: RateBookStatus | string;
+  immutable_version: number;
+  published_at: string | null;
+  content_hash: string | null;
+  parent_rate_book_id: string | null;
+  supersedes_rate_book_id: string | null;
+  is_system: boolean;
+  item_count: number;
+  analysis_count: number;
+  escalation_count: number;
+};
+
+export type RateBookPayload = {
+  code?: string;
+  name?: string;
+  description?: string;
+  edition?: string;
+  currency?: string;
+  jurisdiction?: string;
+  province?: string;
+  city?: string;
+  effective_from?: string;
+  effective_to?: string;
+};
+
+export type RateItem = {
+  id: string;
+  rate_book_id: string;
+  work_item_code: string;
+  unit: string;
+  rate: number | string;
+  description: string | null;
+  trade: string | null;
+  specification: string | null;
+  csr_ref: string | null;
+  analysis_id: string | null;
+  is_active: boolean;
+};
+
+export type RateItemPayload = {
+  work_item_code?: string;
+  unit?: string;
+  rate?: number;
+  description?: string;
+  trade?: string;
+  specification?: string;
+  csr_ref?: string;
+  is_active?: boolean;
+};
+
+export type RateImportResult = { created: number; updated: number; total: number };
+
+export type RateEscalation = {
+  id: string;
+  rate_book_id: string;
+  trade_scope: string;
+  effective_from: string;
+  factor: number | string;
+  note: string | null;
+};
+
+export type RateEscalationPayload = {
+  trade_scope: string;
+  effective_from: string;
+  factor: number;
+  note?: string;
+};
+
+export type AnalysisComponent = {
+  id: string;
+  sequence: number;
+  component_type: string;
+  description: string;
+  work_item_code: string | null;
+  rate_source: string;
+  ref_rate_item_id: string | null;
+  unit: string;
+  coefficient: number | string;
+  unit_rate: number | string | null;
+};
+
+export type RateAnalysis = {
+  id: string;
+  rate_book_id: string;
+  code: string;
+  work_item_code: string;
+  description: string;
+  unit: string;
+  basis_quantity: number | string;
+  overhead_pct: number | string;
+  profit_pct: number | string;
+  computed_rate: number | string | null;
+  computed_at: string | null;
+  is_active: boolean;
+  components: AnalysisComponent[];
+};
+
+export type AnalysisBreakdown = {
+  analysis_id: string;
+  lines: Record<string, unknown>[];
+  cost_by_type: Record<string, unknown>;
+  cost: string;
+  overhead: string;
+  profit: string;
+  total: string;
+  basis_quantity: string;
+  rate: string;
+  unit: string;
+};
+
+export type RateOverride = {
+  id: string;
+  project_id: string;
+  work_item_code: string;
+  unit: string;
+  rate: number | string;
+  reason: string;
+  effective_from: string | null;
+  effective_to: string | null;
+  created_by_user_id: string | null;
+  created_at: string | null;
+  revoked_at: string | null;
+  revoked_by_user_id: string | null;
+  revoke_reason: string | null;
+};
+
+export type RateOverridePayload = {
+  work_item_code: string;
+  unit: string;
+  rate: number;
+  reason: string;
+  effective_from?: string;
+  effective_to?: string;
+};
+
+export type PricingSummary = {
+  boq_version_id: string;
+  priced_at: string | null;
+  pricing_meta: Record<string, unknown>;
+  item_count: number;
+  unpriced_count: number;
+  by_source: Record<string, number>;
+  total: string;
+};
+
+export type RateExplain = {
+  item_id: string;
+  work_item_code: string | null;
+  unit: string;
+  current: Record<string, unknown> | null;
+  current_source: string | null;
+  current_unit_rate: number | string | null;
+  would_resolve_to: Record<string, unknown> | null;
+  attempts: Record<string, unknown>[];
+  stack: Record<string, unknown>[];
+};
+
+export type PriceVersionOptions = {
+  rateBookIds?: string[];
+  asOf?: string;
+  overwriteManual?: boolean;
+};

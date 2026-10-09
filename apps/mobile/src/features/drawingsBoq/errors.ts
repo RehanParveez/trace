@@ -15,7 +15,28 @@ const MESSAGES: Record<string, string> = {
   USE_VERSION_APPROVAL: "Approve the whole version instead of single items.",
   UNIT_LOCKED: "The unit of a calculated item cannot be changed.",
   BBS_NO_SCHEDULED_STEEL: "No bar bending schedule data for this version.",
+  PENDING_ROWS_REMAIN: "Some rows are still pending. Confirm or reject them first.",
+  NO_CONFIRMED_ROWS: "Confirm at least one row first.",
+  IMPORT_NOT_EDITABLE: "This import can no longer be edited.",
+  NOT_ENGINE_VERSION: "This is only available on calculated (engine) versions.",
+  SPACE_NEEDS_NAME: "A room needs a number or a name.",
+  SPACE_NOT_FOUND: "Room not found.",
+  SPACE_NOT_IN_CURRENT_MODEL: "This room is not in the current model, so it cannot be previewed.",
+  ELEMENT_NOT_FOUND: "Some of the chosen elements are not in the current model.",
+  LEVEL_NOT_FOUND: "That level was not found.",
+  RATE_BOOK_IMMUTABLE: "Only a draft rate book can be changed. Start a new version first.",
+  RATE_BOOK_READ_ONLY: "This is a system rate book and cannot be changed.",
+  RATE_BOOK_IN_USE: "BOQ lines use this rate book, so it cannot be deleted.",
+  RATE_BOOK_EMPTY: "Add at least one active rate before publishing.",
+  RATE_BOOK_IS_DRAFT: "This rate book is already a draft.",
+  RATE_ITEM_EXISTS: "This work item already has a rate in that unit.",
+  ESCALATION_EXISTS: "An escalation for this trade and date already exists.",
+  RATE_OVERRIDE_EXISTS: "An override for this work item and unit already exists.",
+  RATE_OVERRIDE_REVOKED: "This override is already revoked.",
+  RATE_IMPORT_TOO_LARGE: "The CSV is too large (5 MB or 2000 rows at most).",
+  INVALID_RATE_BOOK_STATE: "That action is not available for this rate book's status.",
 };
+
 
 export function describeError(err: unknown, fallback: string): string {
   if (err instanceof ApiError && err.code && MESSAGES[err.code]) {

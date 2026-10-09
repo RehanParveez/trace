@@ -10,6 +10,10 @@ export const PERM = {
   BOQ_ADJUST: "boq:adjust",
   BOQ_ISSUE: "boq:issue",
   REVIEW_RESOLVE: "review:resolve",
+  SCHEDULE_IMPORT: "schedule:import",
+  SPACE_MANAGE: "space:manage",
+  FINISH_MANAGE: "finish:manage",
+  RATEBOOK_MANAGE: "ratebook:manage",
 } as const;
 
 export function hasPerm(permissions: string[], key: string): boolean {

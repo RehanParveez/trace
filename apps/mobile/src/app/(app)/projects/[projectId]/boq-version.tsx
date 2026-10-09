@@ -3,12 +3,12 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Sc
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { restoreSession } from "../../../../api/client";
-import {getBOQSummary, listBOQItems, listProjectBOQVersions, updateBOQVersion,
+import {getBOQSummary, listBOQItems, listProjectBOQVersions, updateBOQVersion
 } from "../../../../api/drawingsBoq";
 import {addAdjustment, approveVersion, archiveVersion, confirmItemRate, downloadExport, getItemTrace, issueVersion, listAdjustments, listSnapshots, priceVersion, reopenVersion, revokeAdjustment,
   submitVersionForReview, waiveItemReview,
 } from "../../../../api/boqEngine";
-import type {Adjustment, BOQItem, BOQSummary, BOQVersion, ExportKind, ItemTrace, Snapshot,
+import type {Adjustment, BOQItem, BOQSummary, BOQVersion, ExportKind, ItemTrace, Snapshot, DrawingElement, SnapshotItem, 
 } from "../../../../api/types";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 import { describeError } from "../../../../features/drawingsBoq/errors";
@@ -19,6 +19,9 @@ import {availableActions, isLocked, lifecycleTone,
 import { PERM, hasPerm } from "../../../../features/drawingsBoq/permissions";
 import {Action, Badge, COLORS, Field, InfoRow, formatMoney, formatNumber, ui,
 } from "../../../../features/drawingsBoq/ui";
+import { listItemSourceElements, listSnapshotItems } from "../../../../api/boqExtras";
+import { getRebarSummary } from "../../../../api/imports";
+import type { RebarSummary } from "../../../../api/types";
 
 const PAGE_SIZE = 5;
 
@@ -35,7 +38,9 @@ function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-type PanelState = { itemId: string; mode: "trace" | "adjust" | "waive" } | null;
+type PanelState =
+  | { itemId: string; mode: "trace" | "adjust" | "waive" | "elements" }
+  | null;
 
 export default function BoqVersionScreen() {
   const { t, i18n } = useTranslation();
@@ -61,6 +66,7 @@ export default function BoqVersionScreen() {
   const [panel, setPanel] = useState<PanelState>(null);
   const [note, setNote] = useState("");
   const [areaText, setAreaText] = useState("");
+  const [showRebar, setShowRebar] = useState(false);
 
   const canUpdate = hasPerm(permissions, PERM.BOQ_UPDATE);
   const canApprove = hasPerm(permissions, PERM.BOQ_APPROVE);
@@ -360,6 +366,24 @@ export default function BoqVersionScreen() {
             </View>
 
             <Action
+              title={tx("boqVersion.rebarSummary", "Rebar summary")}
+              secondary
+              isUrdu={isUrdu}
+              onPress={() => setShowRebar((open) => !open)}
+            />
+            {showRebar ? <RebarSummaryPanel versionId={version.id} isUrdu={isUrdu} tx={tx} /> : null}
+            <Action
+              title={tx("boqVersion.compare", "Compare with another version")}
+              secondary
+              isUrdu={isUrdu}
+              onPress={() =>
+                router.push({
+                  pathname: "/projects/[projectId]/boq-compare",
+                  params: { projectId: version.project_id, versionId: version.id },
+                })
+              }
+            />
+            <Action
               title={tx("boqVersion.reviewIssues", "Review issues")}
               secondary
               isUrdu={isUrdu}
@@ -430,6 +454,14 @@ export default function BoqVersionScreen() {
                   isUrdu={isUrdu}
                   onPress={() => setPanel(open === "trace" ? null : { itemId: item.id, mode: "trace" })}
                 />
+                {model ? (
+                  <Action
+                    title={tx("boqVersion.elements", "Source elements")}
+                    secondary
+                    isUrdu={isUrdu}
+                    onPress={() => setPanel(open === "elements" ? null : { itemId: item.id, mode: "elements" })}
+                  />
+                ) : null}
                 {!locked && canAdjust && model ? (
                   <Action
                     title={tx("boqVersion.adjust", "Adjust")}
@@ -501,11 +533,12 @@ export default function BoqVersionScreen() {
           </Text>
         ) : (
           snapshots.map((snapshot) => (
-            <InfoRow
+            <SnapshotRow
               key={snapshot.id}
-              label={`#${snapshot.version_no} · ${snapshot.purpose}`}
-              value={tx("boqVersion.snapshotItems", "{{count}} items", { count: snapshot.item_count })}
+              snapshot={snapshot}
+              locale={locale}
               isUrdu={isUrdu}
+              tx={tx}
             />
           ))
         )}
@@ -553,7 +586,7 @@ type Tx = (key: string, defaultValue: string, vars?: Record<string, unknown>) =>
 
 function ItemPanel(props: {
   item: BOQItem;
-  mode: "trace" | "adjust" | "waive";
+  mode: "trace" | "adjust" | "waive" | "elements";
   locked: boolean;
   isUrdu: boolean;
   tx: Tx;
@@ -563,6 +596,7 @@ function ItemPanel(props: {
   const { item, mode, isUrdu, tx } = props;
   const [trace, setTrace] = useState<ItemTrace | null>(null);
   const [adjustments, setAdjustments] = useState<Adjustment[]>([]);
+  const [elements, setElements] = useState<DrawingElement[]>([]);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -582,6 +616,9 @@ function ItemPanel(props: {
         } else if (mode === "adjust") {
           const result = await listAdjustments(item.id);
           if (!cancelled) setAdjustments(result);
+        } else if (mode === "elements") {
+          const result = await listItemSourceElements(item.id);
+          if (!cancelled) setElements(result);
         }
       } catch (err) {
         if (!cancelled) setError(describeError(err, tx("boqVersion.actionFailure", "Action failed.")));
@@ -780,6 +817,25 @@ function ItemPanel(props: {
         </>
       ) : null}
 
+      {mode === "elements" ? (
+        <>
+          <Text style={[ui.label, isUrdu && ui.rtlText]}>
+            {tx("boqVersion.elementsCount", "Drawing elements ({{count}})", { count: elements.length })}
+          </Text>
+          {elements.slice(0, 30).map((element) => (
+            <Text key={element.id} style={[ui.muted, isUrdu && ui.rtlText]}>
+              {`${element.name ?? element.ifc_type} · ${formatNumber(element.quantity)} ${element.unit ?? ""}`}
+              {element.raw_material_text ? ` · ${element.raw_material_text}` : ""}
+            </Text>
+          ))}
+          {elements.length > 30 ? (
+            <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+              {tx("boqVersion.more", "+{{count}} more", { count: elements.length - 30 })}
+            </Text>
+          ) : null}
+        </>
+      ) : null}
+
       {mode === "waive" ? (
         <>
           <Field
@@ -794,6 +850,112 @@ function ItemPanel(props: {
             isUrdu={isUrdu}
             onPress={() => void submitWaive()}
           />
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+function SnapshotRow(props: {
+  snapshot: Snapshot;
+  locale: string;
+  isUrdu: boolean;
+  tx: Tx;
+}) {
+  const { snapshot, locale, isUrdu, tx } = props;
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<SnapshotItem[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && rows === null) {
+      setLoading(true);
+      setError("");
+      try {
+        setRows(await listSnapshotItems(snapshot.id));
+      } catch (err) {
+        setError(describeError(err, tx("boqVersion.actionFailure", "Action failed.")));
+      } finally {
+        setLoading(false);
+      }
+    }
+  }
+
+  return (
+    <View>
+      <Pressable onPress={() => void toggle()} accessibilityRole="button">
+        <InfoRow
+          label={`#${snapshot.version_no} · ${snapshot.purpose}`}
+          value={tx("boqVersion.snapshotItems", "{{count}} items", { count: snapshot.item_count })}
+          isUrdu={isUrdu}
+        />
+      </Pressable>
+
+      {open ? (
+        <View style={ui.panel}>
+          {loading ? <ActivityIndicator color={COLORS.navy} /> : null}
+          {error ? <Text style={[ui.error, isUrdu && ui.rtlText]}>{error}</Text> : null}
+          {(rows ?? []).slice(0, 50).map((row) => (
+            <Text key={row.id} style={[ui.muted, isUrdu && ui.rtlText]}>
+              {`${row.line_no}. ${row.material_name} · ${formatNumber(row.quantity)} ${row.unit}`}
+              {row.amount != null ? ` · ${formatMoney(row.amount, locale, "-")}` : ""}
+            </Text>
+          ))}
+          {rows && rows.length > 50 ? (
+            <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+              {tx("boqVersion.more", "+{{count}} more", { count: rows.length - 50 })}
+            </Text>
+          ) : null}
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function RebarSummaryPanel(props: { versionId: string; isUrdu: boolean; tx: Tx }) {
+  const { versionId, isUrdu, tx } = props;
+  const [summary, setSummary] = useState<RebarSummary | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    getRebarSummary(versionId)
+      .then((result) => {
+        if (!cancelled) setSummary(result);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(describeError(err, tx("boqVersion.actionFailure", "Action failed.")));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [versionId]);
+
+  return (
+    <View style={ui.panel}>
+      {!summary && !error ? <ActivityIndicator color={COLORS.navy} /> : null}
+      {error ? <Text style={[ui.error, isUrdu && ui.rtlText]}>{error}</Text> : null}
+      {summary ? (
+        <>
+          {summary.rows.map((row, index) => (
+            <InfoRow
+              key={index}
+              label={`${row.designation ?? `${formatNumber(row.dia_mm, 0)} mm`}${row.grade ? ` · ${row.grade}` : ""}`}
+              value={`${formatNumber(row.total_kg)} kg · ${formatNumber(row.total_len_m, 1)} m`}
+              isUrdu={isUrdu}
+            />
+          ))}
+          <InfoRow label={tx("boqVersion.rebarTotal", "Total steel")} value={`${formatNumber(summary.total_kg)} kg`} isUrdu={isUrdu} />
+          <InfoRow label={tx("boqVersion.rebarScheduled", "From confirmed schedules")} value={`${formatNumber(summary.tier1_kg)} kg`} isUrdu={isUrdu} />
+          <InfoRow label={tx("boqVersion.rebarEstimated", "Estimated by rules")} value={`${formatNumber(Number(summary.tier2_kg) + Number(summary.tier3_estimate_kg))} kg`} isUrdu={isUrdu} />
+          <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+            {summary.bbs_exportable
+              ? tx("boqVersion.bbsReady", "A bar bending schedule export is available.")
+              : tx("boqVersion.bbsNotReady", "Import and confirm a bar schedule to enable the bar bending schedule export.")}
+          </Text>
         </>
       ) : null}
     </View>
