@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {Button,EmptyState,ErrorState, LoadingState, Modal, Badge,
+import {Button, EmptyState, ErrorState, LoadingState, Modal, Badge,
 } from "../../organizations/components/OrganizationUi";
 import {useDrawingElementsPage, useDrawingLevels,
 } from "../hooks";
@@ -315,18 +315,26 @@ export function DrawingElementsDialog({
                       {element.unit ?? ""}
                     </td>
 
-                    <td className="px-3 py-2.5 text-[10px]">
+                    <td
+                      className="px-3 py-2.5 text-[10px]"
+                      title={(element.normalization_issues ?? [])
+                        .map((issue) => (issue as { message?: string }).message)
+                        .filter(Boolean)
+                        .join("\n") || undefined}
+                    >
                       {element.normalization_status ?? "—"}
                     </td>
 
                     <td className="px-3 py-2.5 text-[10px]">
                       {(() => {
-                      const mode = elementMeasureMode(element);
-                      return mode === null ? "—" : (
-                        <div title={element.measured_as ?? undefined}>
+                      const mode = element.measure_mode ?? elementMeasureMode(element);
+                      return (
+                          <div title={element.measured_as ?? undefined}>
+                          {mode === null ? "—" : (
                           <Badge tone={mode === "EXACT" ? "green" : mode === "APPROXIMATE" ? "gold" : "red"}>
                             {mode === "EXACT" ? "Exact" : mode === "APPROXIMATE" ? "Bbox" : "No geometry"}
                           </Badge>
+                          )}
                           {element.measured_as ? (
                             <div className="mt-1 text-[10px] text-[var(--color-text-muted)]">
                               {element.measured_as}

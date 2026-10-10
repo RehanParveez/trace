@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {RunningBill, RunningBillCreateRequest, RunningBillDetail,
+import type {RecordCollectionRequest, RunningBill, RunningBillCollection, RunningBillCreateRequest, RunningBillDetail,
 } from "../types/running-bill.types";
 
 export const runningBillsApi = {
@@ -33,10 +33,10 @@ export const runningBillsApi = {
     return response.data;
   },
 
-  async cancel(billId: string, version: number): Promise<RunningBill> {
+  async cancel(billId: string, version: number, reason?: string): Promise<RunningBill> {
     const response = await apiClient.post<RunningBill>(
       `/running-bills/${billId}/cancel`,
-      { version },
+      { version, reason: reason ?? null },
     );
     return response.data;
   },
@@ -57,8 +57,21 @@ export const runningBillsApi = {
     return response.data;
   },
 
-  async recordCollection(billId: string, amount: number, collectionDate: string): Promise<RunningBill> {
-    const response = await apiClient.post<RunningBill>(`/running-bills/${billId}/record-collection`, { amount, collection_date: collectionDate });
+  async recordCollection(billId: string, payload: RecordCollectionRequest): Promise<RunningBill> {
+    const response = await apiClient.post<RunningBill>(`/running-bills/${billId}/record-collection`, payload);
+    return response.data;
+  },
+
+  async listCollections(billId: string): Promise<RunningBillCollection[]> {
+    const response = await apiClient.get<RunningBillCollection[]>(`/running-bills/${billId}/collections`);
+    return response.data;
+  },
+
+  async voidCollection(billId: string, collectionId: string, reason: string): Promise<RunningBill> {
+    const response = await apiClient.post<RunningBill>(
+      `/running-bills/${billId}/collections/${collectionId}/void`,
+      { reason },
+    );
     return response.data;
   },
 };

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
-from app.modules.running_bills.models import RunningBill, RunningBillLineItem, RunningBillStatus
+from app.modules.running_bills.models import RunningBill, RunningBillCollection, RunningBillLineItem, RunningBillStatus
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from datetime import date
@@ -102,3 +102,64 @@ class RunningBillRepository:
     )
     claims = result.scalars().unique().all()
     return {claim.boq_item_id: claim for claim in claims}
+  
+  async def has_later_issued_bill(
+    self, organization_id: UUID, project_id: UUID, boq_version_id: UUID, bill_number: int,
+  ) -> bool:
+    result = await self.session.execute(
+      select(func.count(RunningBill.id)).where(
+        RunningBill.organization_id == organization_id,
+        RunningBill.project_id == project_id,
+        RunningBill.boq_version_id == boq_version_id,
+        RunningBill.status == RunningBillStatus.ISSUED,
+        RunningBill.bill_number > bill_number,
+      )
+    )
+    return (result.scalar() or 0) > 0
+
+  async def list_collections(self, organization_id: UUID, bill_id: UUID) -> list[RunningBillCollection]:
+    result = await self.session.execute(
+      select(RunningBillCollection)
+      .where(RunningBillCollection.organization_id == organization_id, RunningBillCollection.bill_id == bill_id)
+      .order_by(RunningBillCollection.collection_date.desc(), RunningBillCollection.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+  async def get_collection(
+    self, collection_id: UUID, bill_id: UUID, organization_id: UUID,
+  ) -> RunningBillCollection | None:
+    result = await self.session.execute(
+      select(RunningBillCollection).where(
+        RunningBillCollection.id == collection_id,
+        RunningBillCollection.bill_id == bill_id,
+        RunningBillCollection.organization_id == organization_id,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def get_collection_by_key(
+    self, organization_id: UUID, bill_id: UUID, idempotency_key: str,
+  ) -> RunningBillCollection | None:
+    result = await self.session.execute(
+      select(RunningBillCollection).where(
+        RunningBillCollection.organization_id == organization_id,
+        RunningBillCollection.bill_id == bill_id,
+        RunningBillCollection.idempotency_key == idempotency_key,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def count_active_collections(self, organization_id: UUID, bill_id: UUID) -> int:
+    result = await self.session.execute(
+      select(func.count(RunningBillCollection.id)).where(
+        RunningBillCollection.organization_id == organization_id,
+        RunningBillCollection.bill_id == bill_id,
+        RunningBillCollection.voided_at.is_(None),
+      )
+    )
+    return result.scalar() or 0
+
+  async def create_collection(self, collection: RunningBillCollection) -> RunningBillCollection:
+    self.session.add(collection)
+    await self.session.flush()
+    return collection

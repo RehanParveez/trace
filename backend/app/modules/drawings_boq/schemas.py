@@ -57,6 +57,7 @@ class DrawingElementResponse(BaseModel):
   level_sequence: int | None = None
   measured_as: str | None = None
   predefined_type: str | None = None
+  measure_mode: str | None = None
 
 class BOQVersionResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

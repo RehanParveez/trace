@@ -43,6 +43,29 @@ export interface RunningBill {
   version: number;
   issued_at: string | null;
   created_at: string;
+  previous_bill_id?: string | null;
+  cancel_reason?: string | null;
+}
+
+export interface RunningBillCollection {
+  id: string;
+  bill_id: string;
+  amount_received: number | string;
+  client_wht_amount: number | string;
+  credited_amount: number | string;
+  collection_date: string;
+  reference: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
+  created_at: string;
+}
+
+export interface RecordCollectionRequest {
+  amount: number;
+  client_wht_amount: number;
+  collection_date: string;
+  reference?: string | null;
+  idempotency_key?: string | null;
 }
 
 export interface RunningBillDetail extends RunningBill {

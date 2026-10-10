@@ -22,6 +22,7 @@ from app.modules.ai_requests.service import AIOrchestratorService, AIRunResult
 from app.shared.storage import download_bytes
 import logging
 from app.modules.identity.enums import PermissionKey
+from app.modules.running_bills.models import RunningBill, RunningBillLineItem, RunningBillStatus
 
 logger = logging.getLogger(__name__)
 
@@ -270,6 +271,7 @@ class VerificationService:
       code="CONCURRENT_MODIFICATION",
     )
 
+   await self._validate_claim_against_issued_bills(organization_id, claim)
    claim.status = ProgressClaimStatus.APPROVED
    claim.reviewed_by = user_id
    claim.reviewed_at = datetime.now(timezone.utc)
@@ -304,6 +306,37 @@ class VerificationService:
     )
 
    return claim
+ 
+  async def _validate_claim_against_issued_bills(self, organization_id: UUID, claim: ProgressClaim) -> None:
+    result = await self.session.execute(
+      select(RunningBill.bill_number, RunningBill.period_end, RunningBillLineItem.cumulative_percentage)
+      .join(RunningBillLineItem, RunningBillLineItem.bill_id == RunningBill.id)
+      .where(
+        RunningBill.organization_id == organization_id,
+        RunningBill.project_id == claim.project_id,
+        RunningBill.status == RunningBillStatus.ISSUED,
+        RunningBillLineItem.boq_item_id == claim.boq_item_id,
+      )
+      .order_by(RunningBill.bill_number.desc())
+    )
+    billed = result.all()
+    if not billed:
+      return
+
+    latest_number, latest_period_end, latest_percentage = billed[0]
+    if claim.claim_date <= latest_period_end:
+      raise TraceException(
+        f"Bill #{latest_number} already covers this item up to {latest_period_end.isoformat()}. "
+        "Date the claim after that, or cancel that bill first.",
+        status_code=409, code="CLAIM_PERIOD_ALREADY_BILLED",
+      )
+      
+    if claim.claimed_percentage < latest_percentage:
+      raise TraceException(
+        f"{latest_percentage}% of this item is already billed (bill #{latest_number}); "
+        f"a claim of {claim.claimed_percentage}% would go backwards.",
+        status_code=409, code="CLAIM_BELOW_BILLED_PERCENTAGE",
+      )
 
   async def reject_claim(
     self,

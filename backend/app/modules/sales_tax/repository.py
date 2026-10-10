@@ -1,6 +1,6 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.sales_tax.models import SalesTaxRate, SalesTaxAuthority, SalesTaxCharge
+from app.modules.sales_tax.models import SalesTaxRate, SalesTaxAuthority, SalesTaxCharge, SalesTaxSourceType
 from uuid import UUID
 from sqlalchemy import func, select
 from datetime import date
@@ -62,6 +62,18 @@ class SalesTaxRepository:
     if project_id is not None:
       query = query.where(SalesTaxCharge.project_id == project_id)
     result = await self.session.execute(query.order_by(SalesTaxCharge.charge_date.desc()))
+    return list(result.scalars().all())
+  
+  async def list_charges_for_source(
+    self, organization_id: UUID, source_type: SalesTaxSourceType, source_id: UUID,
+  ) -> list[SalesTaxCharge]:
+    result = await self.session.execute(
+      select(SalesTaxCharge).where(
+        SalesTaxCharge.organization_id == organization_id,
+        SalesTaxCharge.source_type == source_type,
+        SalesTaxCharge.source_id == source_id,
+      )
+    )
     return list(result.scalars().all())
 
   async def get_register_summary(self, organization_id: UUID, period_start: date, period_end: date):

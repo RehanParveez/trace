@@ -75,6 +75,7 @@ export interface DrawingElement {
   level_sequence?: number | null;
   measured_as?: string | null;
   predefined_type?: string | null;
+  measure_mode?: "EXACT" | "APPROXIMATE" | "NONE" | null;
 }
 
 export interface BuildingLevel {

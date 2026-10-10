@@ -4,7 +4,9 @@ from uuid import UUID
 from app.modules.identity.models import User
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.running_bills.service import RunningBillService
-from app.modules.running_bills.schemas import RunningBillCancelRequest, RunningBillCreateRequest, RunningBillDetailResponse, RunningBillIssueRequest, RunningBillResponse, RunningBillRecordCollectionRequest
+from app.modules.running_bills.schemas import (RunningBillCancelRequest, RunningBillCollectionResponse, RunningBillCreateRequest, RunningBillDetailResponse, RunningBillIssueRequest, RunningBillRecordCollectionRequest,
+  RunningBillResponse, RunningBillVoidCollectionRequest,
+)
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
@@ -60,7 +62,7 @@ async def cancel_running_bill(
   session: AsyncSession = Depends(get_db),
 ):
   return await _service(session).cancel_bill(
-    current_user.active_membership.organization_id, bill_id, payload.version, current_user.id,
+    current_user.active_membership.organization_id, bill_id, payload.version, current_user.id, payload.reason,
   )
 
 @router.get("/{bill_id}/export/pdf")
@@ -93,5 +95,25 @@ async def record_collection(
   session: AsyncSession = Depends(get_db),
 ):
   return await _service(session).record_collection(
-    current_user.active_membership.organization_id, bill_id, payload.amount, payload.collection_date, current_user.id,
+    current_user.active_membership.organization_id, bill_id, payload, current_user.id,
+  )
+
+@router.get("/{bill_id}/collections", response_model=list[RunningBillCollectionResponse])
+async def list_collections(
+  bill_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.RUNNING_BILL_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).list_collections(current_user.active_membership.organization_id, bill_id)
+
+@router.post("/{bill_id}/collections/{collection_id}/void", response_model=RunningBillResponse)
+async def void_collection(
+  bill_id: UUID,
+  collection_id: UUID,
+  payload: RunningBillVoidCollectionRequest,
+  current_user: User = Depends(require_permission(PermissionKey.RUNNING_BILL_ISSUE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).void_collection(
+    current_user.active_membership.organization_id, bill_id, collection_id, payload, current_user.id,
   )

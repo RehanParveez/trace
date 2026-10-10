@@ -90,9 +90,16 @@ def _decode_cursor(cursor: str | None) -> tuple[str, UUID] | None:
   
 def _labour_quantity(covered_area_sqft: Decimal, rate_unit: str) -> Decimal:
   if (rate_unit or "").strip().lower() in {"m2", "sqm"}:
-        return (Decimal(covered_area_sqft) / Decimal("10.7639104")).quantize(Decimal("0.0001"))
+    return (Decimal(covered_area_sqft) / Decimal("10.7639104")).quantize(Decimal("0.0001"))
   return covered_area_sqft
   
+def _measure_mode(row) -> str:
+  if row.geometry_kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT"):
+    return "EXACT"
+  if row.geometry_kind == "BOX_ONLY":
+    return "APPROXIMATE"
+  return "NONE"
+
 def _measured_as(row) -> str:
   codes = {i.get("code") for i in (row.normalization_issues or []) if isinstance(i, dict)}
   kind = row.geometry_kind
@@ -442,6 +449,7 @@ class DrawingBOQService:
       row.level_name = level.name if level else None
       row.level_sequence = level.sequence if level else None
       row.measured_as = _measured_as(row)
+      row.measure_mode = _measure_mode(row)
       row.predefined_type = ((row.properties or {}).get("_ifc") or {}).get("predefined_type")
     return rows, next_cursor
 

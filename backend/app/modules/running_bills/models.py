@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Date, DateTime, Enum, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
@@ -122,6 +122,13 @@ class RunningBill(Base, TimestampMixin):
   
   issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  cancel_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+  previous_bill_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("running_bills.id", ondelete="SET NULL"),
+    nullable=True,
+  )
 
   version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
 
@@ -203,3 +210,73 @@ class RunningBillLineItem(Base):
   )
 
   bill: Mapped["RunningBill"] = relationship("RunningBill", back_populates="line_items")
+  
+class RunningBillCollection(Base, TimestampMixin):
+  """One receipt of money from the client against a bill: cash received plus any tax the client withheld."""
+  __tablename__ = "running_bill_collections"
+
+  __table_args__ = (
+    CheckConstraint("amount_received >= 0", name="ck_rb_collection_amount_non_negative"),
+    CheckConstraint("client_wht_amount >= 0", name="ck_rb_collection_wht_non_negative"),
+    CheckConstraint("credited_amount > 0", name="ck_rb_collection_credited_positive"),
+    Index("ix_rb_collections_org_bill", "organization_id", "bill_id"),
+    Index(
+      "uq_rb_collection_idempotency", "organization_id", "bill_id", "idempotency_key",
+      unique=True, postgresql_where=text("idempotency_key IS NOT NULL"),
+    ),
+  )
+
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4,
+  )
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True), 
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  bill_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("running_bills.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  amount_received: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+  
+  client_wht_amount: Mapped[Decimal] = mapped_column(
+    Numeric(18, 2),
+    nullable=False,
+    default=Decimal("0"),
+  )
+  
+  credited_amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
+  collection_date: Mapped[date] = mapped_column(Date, nullable=False)
+  reference: Mapped[str | None] = mapped_column(String(120), nullable=True)
+  idempotency_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+  recorded_by_user_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="RESTRICT"),
+    nullable=False,
+  )
+  
+  voided_at: Mapped[datetime | None] = mapped_column(
+    DateTime(timezone=True),
+    nullable=True,
+  )
+  
+  voided_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="RESTRICT"),
+    nullable=True,
+  )
+  
+  void_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

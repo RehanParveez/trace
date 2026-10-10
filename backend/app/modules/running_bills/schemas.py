@@ -56,6 +56,8 @@ class RunningBillResponse(BaseModel):
   version: int
   issued_at: datetime | None
   created_at: datetime
+  previous_bill_id: UUID | None = None
+  cancel_reason: str | None = None
 
   @model_validator(mode="after")
   def _compute_total_amount_due(self) -> "RunningBillResponse":
@@ -90,7 +92,34 @@ class RunningBillIssueRequest(BaseModel):
 
 class RunningBillCancelRequest(BaseModel):
   version: int
-  
+  reason: str | None = Field(default=None, max_length=500)
+
 class RunningBillRecordCollectionRequest(BaseModel):
-  amount: Decimal = Field(gt=0)
+  amount: Decimal = Field(default=Decimal("0"), ge=0, description="Cash/cheque actually received.")
+  client_wht_amount: Decimal = Field(default=Decimal("0"), ge=0, description="Income tax the client withheld from this payment.")
   collection_date: date
+  reference: str | None = Field(default=None, max_length=120)
+  idempotency_key: str | None = Field(default=None, max_length=100)
+
+  @model_validator(mode="after")
+  def _validate_total(self) -> "RunningBillRecordCollectionRequest":
+    if self.amount + self.client_wht_amount <= 0:
+      raise ValueError("Enter the amount received and/or the tax the client withheld.")
+    return self
+
+class RunningBillVoidCollectionRequest(BaseModel):
+  reason: str = Field(min_length=3, max_length=500)
+
+class RunningBillCollectionResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  bill_id: UUID
+  amount_received: Decimal
+  client_wht_amount: Decimal
+  credited_amount: Decimal
+  collection_date: date
+  reference: str | None
+  voided_at: datetime | None
+  void_reason: str | None
+  created_at: datetime

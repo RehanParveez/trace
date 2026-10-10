@@ -65,10 +65,12 @@ export function useCancelRunningBill() {
     mutationFn: ({
       billId,
       version,
+      reason,
     }: {
       billId: string;
       version: number;
-    }) => runningBillsApi.cancel(billId, version),
+      reason?: string;
+    }) => runningBillsApi.cancel(billId, version, reason),
     onSuccess: (bill) => {
       void queryClient.invalidateQueries({
         queryKey: runningBillKeys.list(bill.project_id),
@@ -78,4 +80,22 @@ export function useCancelRunningBill() {
       });
     },
   });
+}
+
+export function useRunningBillCollections(billId: string | undefined) {
+  return useQuery({
+    queryKey: [...runningBillKeys.all, "collections", billId ?? ""] as const,
+    queryFn: () => runningBillsApi.listCollections(billId as string),
+    enabled: Boolean(billId),
+  });
+}
+
+export function invalidateBillAfterCollectionChange(
+  queryClient: ReturnType<typeof useQueryClient>,
+  billId: string,
+  projectId: string,
+) {
+  void queryClient.invalidateQueries({ queryKey: runningBillKeys.detail(billId) });
+  void queryClient.invalidateQueries({ queryKey: runningBillKeys.list(projectId) });
+  void queryClient.invalidateQueries({ queryKey: [...runningBillKeys.all, "collections", billId] });
 }

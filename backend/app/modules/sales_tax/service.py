@@ -78,6 +78,25 @@ class SalesTaxService:
     await self.repo.create_charge(charge)
     return rate_percentage, tax_amount
 
+  async def reverse_charges_for_source(
+    self, *, organization_id: UUID, source_type: SalesTaxSourceType, source_id: UUID,
+    reversal_date: date, actor_user_id: UUID,
+  ) -> Decimal:
+    charges = await self.repo.list_charges_for_source(organization_id, source_type, source_id)
+    net_tax = sum((c.tax_amount for c in charges), Decimal("0"))
+    net_taxable = sum((c.taxable_amount for c in charges), Decimal("0"))
+    if not charges or (net_tax == 0 and net_taxable == 0):
+      return Decimal("0")
+
+    first = charges[0]
+    await self.repo.create_charge(SalesTaxCharge(
+      id=uuid4(), organization_id=organization_id, project_id=first.project_id, source_type=source_type,
+      source_id=source_id, authority=first.authority, rate_percentage=first.rate_percentage,
+      taxable_amount=-net_taxable, tax_amount=-net_tax, charge_date=reversal_date,
+      currency=first.currency, created_by_user_id=actor_user_id,
+    ))
+    return net_tax
+
   async def list_charges(
     self, organization_id: UUID, period_start: date | None, period_end: date | None, project_id: UUID | None,
   ) -> list[SalesTaxCharge]:
