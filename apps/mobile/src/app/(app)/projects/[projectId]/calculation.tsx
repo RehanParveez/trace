@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { restoreSession } from "../../../../api/client";
@@ -10,6 +10,9 @@ import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 import { describeError } from "../../../../features/drawingsBoq/errors";
 import { PERM, hasPerm } from "../../../../features/drawingsBoq/permissions";
 import { usePolling } from "../../../../features/drawingsBoq/usePolling";
+import {classifyStartError, runFailureInfo, startErrorGuidance,
+  type StartRunError,
+} from "../../../../features/drawingsBoq/runInsightText";
 import { Action, Badge, COLORS, InfoRow, ui } from "../../../../features/drawingsBoq/ui";
 
 const TERMINAL = new Set(["COMPLETED", "FAILED", "CANCELLED", "SUPERSEDED"]);
@@ -34,6 +37,10 @@ export default function CalculationScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [waitedForBoq, setWaitedForBoq] = useState(0);
+  const [forceFull, setForceFull] = useState(false);
+  const [verify, setVerify] = useState(false);
+  const [startError, setStartError] = useState<StartRunError | null>(null);
+  const [reusedNotice, setReusedNotice] = useState(false);
 
   const canRun = hasPerm(permissions, PERM.CALC_RUN);
   const boqStats = run?.stats?.boq as Record<string, string> | undefined;
@@ -104,11 +111,17 @@ export default function CalculationScreen() {
     setError("");
     setWaitedForBoq(0);
     try {
-      const started = await startCalculationRun(projectId);
+      setStartError(null);
+      setReusedNotice(false);
+      const started = await startCalculationRun(projectId, {
+        force_full: forceFull,
+        verify: verify && !forceFull,
+      });
+      if (started.status === "COMPLETED") setReusedNotice(true);
       setRun(started);
       setStages(await listRunStages(started.id));
     } catch (err) {
-      setError(describeError(err, tx("calculation.startFailure", "Could not start the calculation.")));
+      setStartError(classifyStartError(err, tx("calculation.startFailure", "Could not start the calculation.")));
     } finally {
       setBusy(false);
     }
@@ -164,6 +177,77 @@ export default function CalculationScreen() {
         {error ? <Text style={[ui.error, isUrdu && ui.rtlText]}>{error}</Text> : null}
 
         {canRun ? (
+          <View style={ui.card}>
+            <View style={[ui.heading, isUrdu && ui.rtlRow]}>
+              <View style={ui.headerCopy}>
+                <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>
+                  {tx("calculation.forceFull", "Recalculate everything")}
+                </Text>
+                <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+                  {tx(
+                    "calculation.forceFullHint",
+                    "Normally a run reuses the earlier result for elements that did not change. Turn this on to calculate every element again.",
+                  )}
+                </Text>
+              </View>
+              <Switch value={forceFull} onValueChange={(value) => { setForceFull(value); if (value) setVerify(false); }} />
+            </View>
+            <View style={[ui.heading, isUrdu && ui.rtlRow]}>
+              <View style={ui.headerCopy}>
+                <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>
+                  {tx("calculation.verify", "Check against a full calculation")}
+                </Text>
+                <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+                  {tx(
+                    "calculation.verifyHint",
+                    "After a partial update, also run the full calculation and compare. Slower. If they differ, the full result is kept.",
+                  )}
+                </Text>
+              </View>
+              <Switch value={verify && !forceFull} disabled={forceFull} onValueChange={setVerify} />
+            </View>
+          </View>
+        ) : null}
+
+        {reusedNotice ? (
+          <Text style={[ui.notice, isUrdu && ui.rtlText]}>
+            {tx(
+              "calculation.reused",
+              "Nothing changed since the last calculation, so its result is shown. Turn on “Recalculate everything” to run it again.",
+            )}
+          </Text>
+        ) : null}
+
+        {startError ? (
+          <View style={ui.card}>
+            <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>
+              {startErrorGuidance(tx, startError.kind).title}
+            </Text>
+            {startErrorGuidance(tx, startError.kind).hint ? (
+              <Text style={[ui.muted, isUrdu && ui.rtlText]}>{startErrorGuidance(tx, startError.kind).hint}</Text>
+            ) : null}
+            {startError.message ? <Text style={[ui.error, isUrdu && ui.rtlText]}>{startError.message}</Text> : null}
+            <View style={[ui.row, isUrdu && ui.rtlRow]}>
+              {startError.retryable ? (
+                <Action
+                  title={tx("calculation.tryAgain", "Try again")}
+                  secondary
+                  disabled={busy}
+                  isUrdu={isUrdu}
+                  onPress={() => void handleStart()}
+                />
+              ) : null}
+              <Action
+                title={tx("calculation.dismiss", "Dismiss")}
+                secondary
+                isUrdu={isUrdu}
+                onPress={() => setStartError(null)}
+              />
+            </View>
+          </View>
+        ) : null}
+
+        {canRun ? (
           <Action
             title={
               run && !runDone
@@ -202,9 +286,53 @@ export default function CalculationScreen() {
               <View style={[ui.progressFill, { width: `${Math.max(2, Math.min(100, run.progress_pct))}%` }]} />
             </View>
 
+            <View style={[ui.row, isUrdu && ui.rtlRow]}>
+              <Badge
+                label={
+                  run.mode === "INCREMENTAL"
+                    ? tx("calculation.modeIncremental", "Partial update")
+                    : tx("calculation.modeFull", "Full calculation")
+                }
+                tone={run.mode === "INCREMENTAL" ? "good" : "neutral"}
+              />
+              {run.attempts && run.attempts > 1 ? (
+                <Badge label={tx("calculation.attempts", "Tried {{count}} times", { count: run.attempts })} tone="warn" />
+              ) : null}
+            </View>
+
+            {run.status === "FAILED" ? (
+              <>
+                <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>{runFailureInfo(tx, run.error_code).title}</Text>
+                <Text style={[ui.muted, isUrdu && ui.rtlText]}>{runFailureInfo(tx, run.error_code).hint}</Text>
+                {run.error_code ? <Text style={[ui.muted, isUrdu && ui.rtlText]}>{run.error_code}</Text> : null}
+              </>
+            ) : null}
+
             {run.error_message ? (
               <Text style={[ui.error, isUrdu && ui.rtlText]}>{run.error_message}</Text>
             ) : null}
+
+            {run.status === "FAILED" && canRun && runFailureInfo(tx, run.error_code).retry ? (
+              <Action
+                title={tx("calculation.runAgain", "Run again")}
+                secondary
+                disabled={busy}
+                isUrdu={isUrdu}
+                onPress={() => void handleStart()}
+              />
+            ) : null}
+
+            <Action
+              title={tx("calculation.metrics", "Run metrics")}
+              secondary
+              isUrdu={isUrdu}
+              onPress={() =>
+                router.push({
+                  pathname: "/projects/[projectId]/run-metrics",
+                  params: { projectId: run.project_id, runId: run.id },
+                })
+              }
+            />
 
             {stages.length > 0 ? (
               <View style={ui.summaryBox}>

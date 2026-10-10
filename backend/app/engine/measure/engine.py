@@ -3,7 +3,7 @@ from app.engine.measure.units import Unit, mm3_to_m3, q4, q6
 from decimal import Decimal
 from uuid import uuid5
 from app.engine.measure.geometry import bbox_volume_mm3, extrusion_volume_mm3
-from app.engine.measure.models import CalculationContext, CalculationResult, LedgerEntry, ModelElement, Rejected, Solid, AllocationResult
+from app.engine.measure.models import CalculationContext, CalculationResult, LedgerEntry, MappingInput, ModelElement, Rejected, Solid, AllocationResult
 from app.engine.measure.formulas import get_formula
 from app.engine.measure.allocate import allocate as _allocate
 from app.engine.measure.conventions import get_convention
@@ -110,7 +110,7 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     id=_solid_id(ctx, el.id), element_id=el.id, ifc_type=el.ifc_type, role=el.role,
     level_id=el.level_id, geometry_kind=kind,
     classification_confidence=el.classification_confidence, confidence_factor=factor,
-    gross_volume_m3=gross, status=status, issues=tuple(issues),
+    gross_volume_m3=gross, status=status, issues=tuple(issues), material_class=el.material_class,
   )
 
 def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
@@ -131,8 +131,18 @@ def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
   solids.sort(key=lambda s: (s.role, str(s.level_id), str(s.element_id)))
   return solids, dict(sorted(skipped.items()))
 
+STRUCTURAL_CONCRETE_TYPES = ("IfcSlab", "IfcColumn", "IfcBeam", "IfcFooting")
+
+def _structural_concrete_code(by_ifc: dict) -> str | None:
+  for ifc_type in STRUCTURAL_CONCRETE_TYPES:
+    m = by_ifc.get(ifc_type)
+    if m is not None and m.work_item_code:
+      return m.work_item_code
+  return None
+
 def measure(ctx: CalculationContext, solids: list[Solid], alloc):
   by_ifc = {m.ifc_type: m for m in ctx.mappings}
+  concrete_code = _structural_concrete_code(by_ifc)
   deds_by_solid: dict = {}
   for d in getattr(alloc, "deductions", ()) or ():
     deds_by_solid.setdefault(d.from_solid_id, []).append(d)
@@ -142,6 +152,12 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
 
   for s in solids:
     mapping = by_ifc.get(s.ifc_type)
+    redirect = None
+    if (mapping is not None and mapping.work_item_code and concrete_code and s.material_class == "CONCRETE"
+        
+        and s.role.startswith("WALL") and mapping.work_item_code != concrete_code):
+      redirect = {"from": mapping.work_item_code, "to": concrete_code, "reason": "WALL_MATERIAL_CONCRETE"}
+      mapping = MappingInput(mapping.ifc_type, concrete_code, mapping.confidence_base)
     if mapping is None or not mapping.work_item_code:
       unmapped[s.ifc_type] = unmapped.get(s.ifc_type, 0) + 1
       continue
@@ -174,6 +190,10 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         
       formula, unit = "SOLID_NET_VOLUME", Unit.M3.value
       inputs = {"geometry_kind": s.geometry_kind, "gross_m3": str(gross)}
+      if s.material_class:
+        inputs["material_class"] = s.material_class
+      if redirect:
+        inputs["work_item_redirect"] = redirect
       steps = [
         {"op": "gross_volume", "m3": str(gross)},
       ]
@@ -283,6 +303,16 @@ def find_relations(ctx: CalculationContext, index):
 def allocate(ctx: CalculationContext, convention, solids: list[Solid], index, overlaps):
   return _allocate(ctx, convention, solids, index, overlaps)
 
+def wall_material_stats(solids: list[Solid], ledger: list[LedgerEntry]) -> dict:
+  walls = [s for s in solids if s.role.startswith("WALL")]
+  return {
+    "walls": len(walls),
+    "concrete": sum(1 for s in walls if s.material_class == "CONCRETE"),
+    "masonry": sum(1 for s in walls if s.material_class == "MASONRY"),
+    "material_unknown": sum(1 for s in walls if not s.material_class),
+    "billed_as_concrete": sum(1 for r in ledger if (r.trace.get("inputs") or {}).get("work_item_redirect")),
+  }
+
 def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> CalculationResult:
   accepted, rejected = validate_input(ctx, elements)
   solids, skipped = build_solids(ctx, accepted)
@@ -322,6 +352,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "rebar_skipped": rebar_res.skipped if rebar_res else {},
     "finish_skipped": finish_skipped,
     "skipped_by_role": skipped,
+    "wall_material": wall_material_stats(solids, ledger),
     "unmapped_by_type": unmapped,
     "rejected": [{"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code, "message": r.message} for r in rejected],
   }

@@ -17,6 +17,7 @@ import { AddCustomBOQItemDialog } from "./AddCustomBOQItemDialog";
 import { BOQVersionMetaDialog } from "./BOQVersionMetaDialog";
 import { DrawingAuditPanel } from "./DrawingAuditPanel";
 import { CalculationRunPanel } from "./CalculationRunPanel";
+import { BOQSourceDrawings } from "./BOQSourceDrawings";
 import { BOQLifecycleActions } from "./BOQLifecycleActions";
 import { BOQReviewIssuesPanel } from "./BOQReviewIssuesPanel";
 import { BOQVersionLedgerPanel } from "./BOQVersionLedgerPanel";
@@ -112,6 +113,7 @@ export function DrawingsBoqSection({
       () =>
         (drawingsQuery.data ?? []).filter(
           (drawing) =>
+            drawing.format === "IFC" &&
             drawing.status ===
               "PARSED" &&
             drawing.is_current_revision,
@@ -265,6 +267,13 @@ export function DrawingsBoqSection({
           />
 
           {isEngineVersion ? (
+            <BOQSourceDrawings
+              runId={selectedVersion.calculation_run_id}
+              drawings={drawingsQuery.data ?? []}
+            />
+          ) : null}
+
+          {isEngineVersion ? (
             <BOQLifecycleActions
               projectId={projectId}
               version={selectedVersion}
@@ -353,10 +362,7 @@ export function DrawingsBoqSection({
           projectId={
             projectId
           }
-          drawingIds={parsedDrawings.map(
-            (drawing) =>
-              drawing.id,
-          )}
+          drawings={parsedDrawings}
           activeRunId={
             selectedVersion?.calculation_run_id ??
             null

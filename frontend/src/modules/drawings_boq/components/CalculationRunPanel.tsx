@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {Badge, Button, ErrorState, LoadingState, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
@@ -6,18 +6,19 @@ import {useBuildBOQFromCalculationRun, useCalculationRun, useCalculationRunDeduc
 } from "../hooks";
 import {formatCalculationRunStatus, formatQuantity, getCalculationRunTone,
 } from "../utils/drawings-boq.utils";
-import type { CalculationRun } from "../types/drawings-boq.types";
+import type { CalculationRun, Drawing } from "../types/drawings-boq.types";
 import type {LedgerRowResponse, QuantitySolidResponse, DeductionResponse,
 } from "../types/drawings-boq.types";
 import { RunStatsSummary } from "./RunStatsSummary";
 import { RebarMarksPanel } from "./RebarMarksPanel";
+import { RunDrawingPicker } from "./RunDrawingPicker";
 import {CalcUsagePanel, ElementImpactButton, RunFailureNotice, RunMetricsPanel, RunModeBadge, RunOptionsFields, RunStartNotice, classifyStartError, formatDurationMs, formatMb, useScaleT,
 } from "../recalculation";
 import type { RunOptions, StartRunError } from "../recalculation";
 
 interface CalculationRunPanelProps {
   projectId: string;
-  drawingIds: string[];
+  drawings: Drawing[];
   activeRunId?: string | null;
   onRunCreated?: (run: CalculationRun) => void;
   onBOQBuilt?: () => void;
@@ -33,7 +34,7 @@ type View =
 
 export function CalculationRunPanel({
   projectId,
-  drawingIds,
+  drawings,
   activeRunId,
   onRunCreated,
   onBOQBuilt,
@@ -49,6 +50,8 @@ export function CalculationRunPanel({
     useState<View>("overview");
   const [ruleSetCode, setRuleSetCode] =
     useState("");
+  const [selectedIds, setSelectedIds] =
+    useState<string[]>([]);
   const [options, setOptions] =
     useState<RunOptions>({
       force_full: false,
@@ -74,13 +77,21 @@ export function CalculationRunPanel({
     );
   const run = runQuery.data;
 
+  const eligibleKey = drawings.map((d) => d.id).join(",");
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const valid = current.filter((id) => drawings.some((d) => d.id === id));
+      if (valid.length === 0 && drawings.length === 1) {
+        return [drawings[0].id];
+      }
+      return valid.length === current.length ? current : valid;
+    });
+  }, [eligibleKey]);
+
   function start() {
     startRun.mutate(
       {
-        drawing_ids:
-          drawingIds.length > 0
-            ? drawingIds
-            : undefined,
+        drawing_ids: selectedIds,
         rule_set_code:
           ruleSetCode.trim() || null,
         convention_code: null,
@@ -152,7 +163,7 @@ export function CalculationRunPanel({
             size="sm"
             disabled={
               startRun.isPending ||
-              drawingIds.length === 0
+              selectedIds.length === 0
             }
             onClick={start}
           >
@@ -187,7 +198,12 @@ export function CalculationRunPanel({
           />
         </label>
 
-      
+        <RunDrawingPicker
+          drawings={drawings}
+          selectedIds={selectedIds}
+          onChange={setSelectedIds}
+          disabled={startRun.isPending}
+        />
       </div>
 
       <div className="space-y-3 border-b border-[var(--color-border)] p-5">
@@ -324,7 +340,7 @@ export function CalculationRunPanel({
               attempts={run.attempts}
               retrying={startRun.isPending}
               onRetry={
-                drawingIds.length > 0
+                selectedIds.length > 0
                   ? start
                   : undefined
               }

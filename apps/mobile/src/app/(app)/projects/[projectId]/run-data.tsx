@@ -130,6 +130,20 @@ export default function RunDataScreen() {
           <LanguageSwitcher />
         </View>
 
+        {runId ? (
+          <Action
+            title={tx("runData.metrics", "Run metrics")}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/run-metrics",
+                params: { projectId: params.projectId ?? "", runId },
+              })
+            }
+          />
+        ) : null}
+
         <View style={[ui.row, isUrdu && ui.rtlRow]}>
           {(
             [
@@ -192,11 +206,26 @@ export default function RunDataScreen() {
                     row.geometry_kind,
                   ].filter(Boolean).join(" · ")}
                 </Text>
-                {openId === row.id
-                  ? row.issues.map((issue, index) => (
+                {openId === row.id ? (
+                  <>
+                    {row.issues.map((issue, index) => (
                       <Text key={index} style={[ui.muted, isUrdu && ui.rtlText]}>{`${issue.severity ?? ""} ${issue.code ?? ""} ${issue.message ?? ""}`.trim()}</Text>
-                    ))
-                  : null}
+                    ))}
+                    {row.element_id && runId ? (
+                      <Action
+                        title={tx("runData.impact", "What does this affect?")}
+                        secondary
+                        isUrdu={isUrdu}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/projects/[projectId]/element-impact",
+                            params: { projectId: params.projectId ?? "", runId, elementId: row.element_id ?? "" },
+                          })
+                        }
+                      />
+                    ) : null}
+                  </>
+                ) : null}
               </Pressable>
             ))
           : null}
@@ -214,7 +243,24 @@ export default function RunDataScreen() {
                 {row.warnings.map((warning, index) => (
                   <Text key={index} style={[ui.error, isUrdu && ui.rtlText]}>{warning}</Text>
                 ))}
-                {openId === row.id ? <Text style={[ui.muted, isUrdu && ui.rtlText]}>{pretty(row.trace)}</Text> : null}
+                {openId === row.id ? (
+                  <>
+                    <Text style={[ui.muted, isUrdu && ui.rtlText]}>{pretty(row.trace)}</Text>
+                    {row.element_id && runId ? (
+                      <Action
+                        title={tx("runData.impact", "What does this affect?")}
+                        secondary
+                        isUrdu={isUrdu}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/projects/[projectId]/element-impact",
+                            params: { projectId: params.projectId ?? "", runId, elementId: row.element_id ?? "" },
+                          })
+                        }
+                      />
+                    ) : null}
+                  </>
+                ) : null}
               </Pressable>
             ))
           : null}

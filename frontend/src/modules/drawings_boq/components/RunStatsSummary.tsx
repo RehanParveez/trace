@@ -86,6 +86,19 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
         </Section>
       ) : null}
 
+      {stats.wall_material && stats.wall_material.walls > 0 ? (
+        <Section title={t("boq.calculationRun.statsWalls", "Wall material")}>
+          <Stat label={t("boq.calculationRun.statWalls", "Walls")} value={stats.wall_material.walls} />
+          <Stat label={t("boq.calculationRun.statWallsConcrete", "Concrete (billed as RCC)")} value={stats.wall_material.billed_as_concrete} />
+          <Stat label={t("boq.calculationRun.statWallsMasonry", "Masonry")} value={stats.wall_material.masonry} />
+          <Stat
+            label={t("boq.calculationRun.statWallsUnknown", "Material not in model (billed as masonry)")}
+            value={stats.wall_material.material_unknown}
+            tone={stats.wall_material.material_unknown > 0 ? "gold" : undefined}
+          />
+        </Section>
+      ) : null}
+
       {o ? (
         <Section title={t("boq.calculationRun.statsOpenings", "Openings")}>
           <Stat label={t("boq.calculationRun.statHosted", "Hosted")} value={o.hosted} />

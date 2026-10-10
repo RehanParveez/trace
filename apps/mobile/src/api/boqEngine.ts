@@ -10,6 +10,8 @@ export function startCalculationRun(
     drawing_ids?: string[];
     rule_set_code?: string;
     convention_code?: string;
+    force_full?: boolean;
+    verify?: boolean;
   },
 ): Promise<CalculationRun> {
   return authenticatedRequest<CalculationRun>(

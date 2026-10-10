@@ -19,6 +19,7 @@ class ModelElement:
   classification_confidence: Decimal
   normalization_status: str
   ifc_global_id: str | None = None
+  material_class: str | None = None
 
 @dataclass(frozen=True)
 class MappingInput:
@@ -59,6 +60,7 @@ class Solid:
   count: int | None = None
   status: str = "OK"
   issues: tuple = ()
+  material_class: str | None = None
 
 @dataclass(frozen=True)
 class LedgerEntry:

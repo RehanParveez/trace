@@ -871,6 +871,17 @@ export default function DrawingsBoqScreen() {
               })
             }
           />
+          <Action
+            title={t("drawingsBoq.insights", { defaultValue: "Calculation insights" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/calc-insights",
+                params: { projectId: project.id },
+              })
+            }
+          />
         </View>
 
         {boqError && !expandedVersion ? (

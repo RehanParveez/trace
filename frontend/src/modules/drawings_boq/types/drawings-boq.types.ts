@@ -1161,6 +1161,15 @@ export interface RunStats {
   rebar?: RebarStats;
   rebar_skipped?: Record<string, number>;
   finish_skipped?: Record<string, number>
+  wall_material?: WallMaterialStats
+}
+
+export interface WallMaterialStats {
+  walls: number;
+  concrete: number;
+  masonry: number;
+  material_unknown: number;
+  billed_as_concrete: number;
 }
 
 export interface RunStats {

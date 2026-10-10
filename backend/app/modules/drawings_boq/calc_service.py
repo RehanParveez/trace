@@ -177,8 +177,15 @@ class CalculationService:
       if len(chosen) != len(wanted):
         raise TraceException("One or more drawings are not current, parsed IFC drawings in this project.",
           status_code=422, code="DRAWING_NOT_ELIGIBLE")
-    else:
+    elif len(eligible) <= 1:
       chosen = eligible
+      
+    else:
+      names = ", ".join(sorted(d.original_filename for d in eligible)[:6])
+      raise TraceException(
+        f"This project has {len(eligible)} current IFC drawings ({names}). Choose the drawing or drawings to calculate. "
+        "A run only measures what you select.",
+        status_code=422, code="DRAWING_SELECTION_REQUIRED")
     if not chosen:
       raise TraceException("This project has no parsed IFC drawing to calculate.",
         status_code=422, code="NO_PARSED_DRAWINGS")
@@ -439,8 +446,9 @@ class CalculationService:
       async def measure():
         ledger, unmapped = await asyncio.to_thread(kernel.measure, ctx, state["solids"], state["alloc"])
         state["ledger"], state["unmapped"] = ledger, unmapped
+        state["wall_material"] = kernel.wall_material_stats(state["solids"], ledger)
         await self.runs.stage_ledger([_ledger_row(run, e, "measure") for e in ledger])
-        return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped}
+        return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped, "wall_material": state["wall_material"]}
 
       async def finishes():
         res = await asyncio.to_thread(fin.measure_finishes, ctx, profile, p6.spaces, p6.openings)
@@ -544,6 +552,7 @@ class CalculationService:
         "rejected_total": len(state["rejected"]),
         "skipped_by_role": state["skipped"],
         "unmapped_by_type": state["unmapped"],
+        "wall_material": state.get("wall_material", {}),
         "allocation": state["alloc"].stats,
         "finishes_skipped": state["finish_skipped"],
         "spaces": len(p6.spaces),

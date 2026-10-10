@@ -273,6 +273,9 @@ def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs 
     rule = pick_rule(rules, family, solid.role if solid else None, "ESTIMATE", allow_all=False) if family else None
     if rule is None:
       continue
+    if getattr(solid, "material_class", None) == "MASONRY":
+      stats["estimate_masonry_skipped"] = stats.get("estimate_masonry_skipped", 0) + 1
+      continue
   
     if solid.element_id in covered_elements or family in covered_families:
       stats["estimate_suppressed"] += 1
