@@ -57,7 +57,7 @@ app.add_middleware(
   allow_credentials=True,
   allow_methods=["*"],
   allow_headers=["*"],
-  expose_headers=["X-Total-Count"],
+  expose_headers=["X-Total-Count", "X-Next-Cursor"],
 )
 
 app.include_router(identity_router, prefix=settings.api_v1_prefix)

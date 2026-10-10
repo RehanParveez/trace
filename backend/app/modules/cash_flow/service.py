@@ -5,7 +5,8 @@ from app.modules.cash_flow.models import CashFlowSettings
 from app.modules.cash_flow.forecasting import CashFlowCategory, CashFlowDirection, CashFlowLineItem, build_forecast, clamp_to_as_of
 from uuid import UUID
 from app.modules.cash_flow.schemas import CashFlowSettingsUpdateRequest
-from datetime import date
+from datetime import date, timedelta
+from app.shared.timeutils import today_local, to_local_date
 from decimal import Decimal
 from app.modules.identity.models import Organization
 
@@ -34,7 +35,7 @@ class CashFlowService:
     settings = await self.repo.get_or_create_settings(organization_id)
     organization = await self.session.get(Organization, organization_id)
     currency = organization.currency if organization else "PKR"
-    today = date.today()
+    today = today_local()
     limitations: list[str] = []
 
     line_items: list[CashFlowLineItem] = []
@@ -45,8 +46,8 @@ class CashFlowService:
       if request.estimated_amount is None:
         skipped_no_amount += 1
         continue
-      base_date = request.needed_by_date if request.needed_by_date is not None else request.created_at.date()
-      raw_date = base_date + __import__("datetime").timedelta(days=settings.procurement_payment_days)
+      base_date = request.needed_by_date if request.needed_by_date is not None else to_local_date(request.created_at)
+      raw_date = base_date + timedelta(days=settings.procurement_payment_days)
       event_date, is_overdue = clamp_to_as_of(raw_date, today)
       line_items.append(CashFlowLineItem(
         event_date=event_date, category=CashFlowCategory.PROCUREMENT, direction=CashFlowDirection.OUT,
@@ -62,7 +63,7 @@ class CashFlowService:
       "forecast. Trace does not currently track whether a received item has actually been paid."
     )
 
-    lookback_start = today - __import__("datetime").timedelta(days=settings.labour_lookback_days)
+    lookback_start = today - timedelta(days=settings.labour_lookback_days)
     labour_total = await self.repo.get_labour_run_rate_total(organization_id, project_id, lookback_start, today)
     labour_daily_run_rate = (labour_total / settings.labour_lookback_days) if settings.labour_lookback_days > 0 else Decimal("0")
     if labour_daily_run_rate == 0:
@@ -71,7 +72,7 @@ class CashFlowService:
     
       bucket_count = max((horizon_days + 6) // 7, 1)
       for i in range(bucket_count):
-        week_start = today + __import__("datetime").timedelta(days=i * 7)
+        week_start = today + timedelta(days=i * 7)
         days_in_week = min(7, horizon_days - i * 7)
         if days_in_week <= 0:
           break
@@ -87,8 +88,8 @@ class CashFlowService:
       outstanding = total_due - paid_so_far
       if outstanding <= 0:
         continue
-      issued_date = bill.issued_at.date() if bill.issued_at else today
-      raw_date = issued_date + __import__("datetime").timedelta(days=settings.subcontractor_payment_days)
+      issued_date = to_local_date(bill.issued_at) if bill.issued_at else today
+      raw_date = issued_date + timedelta(days=settings.subcontractor_payment_days)
       event_date, is_overdue = clamp_to_as_of(raw_date, today)
       line_items.append(CashFlowLineItem(
         event_date=event_date, category=CashFlowCategory.SUBCONTRACTOR, direction=CashFlowDirection.OUT,
@@ -101,8 +102,8 @@ class CashFlowService:
       outstanding = total_due - (bill.collected_amount or Decimal("0"))
       if outstanding <= 0:
         continue
-      issued_date = bill.issued_at.date() if bill.issued_at else today
-      raw_date = issued_date + __import__("datetime").timedelta(days=settings.client_collection_days)
+      issued_date = to_local_date(bill.issued_at) if bill.issued_at else today
+      raw_date = issued_date + timedelta(days=settings.client_collection_days)
       event_date, is_overdue = clamp_to_as_of(raw_date, today)
       line_items.append(CashFlowLineItem(
         event_date=event_date, category=CashFlowCategory.CLIENT_COLLECTION, direction=CashFlowDirection.IN,

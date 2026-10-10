@@ -22,6 +22,8 @@ from app.modules.withholding_tax.models import WHTSourceType
 from datetime import datetime, timezone
 from app.modules.withholding_tax.service import WithholdingTaxService
 from app.modules.sales_tax.service import SalesTaxService
+from app.modules.sales_tax.models import SalesTaxAuthority, SalesTaxSourceType
+from app.shared.timeutils import today_local
 from app.modules.bank_guarantees.service import BankGuaranteeService
 
 
@@ -63,7 +65,7 @@ class SubcontractorService:
     return await self.repo.list_all(organization_id)
 
   async def create_agreement(
-    self, organization_id: UUID, payload: SubcontractAgreementCreateRequest,
+    self, organization_id: UUID, payload: SubcontractAgreementCreateRequest, actor_user_id: UUID | None = None,
   ) -> SubcontractAgreement:
     project = await self._require_project(organization_id, payload.project_id)
     subcontractor = await self.repo.get(payload.subcontractor_id, organization_id)
@@ -103,7 +105,7 @@ class SubcontractorService:
     await self.session.commit()
 
     await self.audit.log(
-      organization_id, None, AuditEntityType.SUBCONTRACTOR, agreement.id, AuditAction.CREATE,
+      organization_id, actor_user_id, AuditEntityType.SUBCONTRACTOR, agreement.id, AuditAction.CREATE,
       f"Created subcontract agreement with {subcontractor.name} for {project.name}, value {contract_value}.",
     )
     return await self.get_agreement(organization_id, agreement.id)
@@ -197,8 +199,16 @@ class SubcontractorService:
         status_code=409, code="NO_NEW_PROGRESS",
       )
 
-    retention_percentage = payload.retention_percentage or agreement.default_retention_percentage
-    retention_cap_percentage = payload.retention_cap_percentage or agreement.default_retention_cap_percentage
+    retention_percentage = (
+      payload.retention_percentage if payload.retention_percentage is not None
+      else agreement.default_retention_percentage
+    )
+    
+    retention_cap_percentage = (
+      payload.retention_cap_percentage if payload.retention_cap_percentage is not None
+      else agreement.default_retention_cap_percentage
+    )
+    
     retention_this_period, retention_cumulative = self._calculate_retention(
       gross_this_period=gross_this_period, retention_percentage=retention_percentage,
       retention_cap_percentage=retention_cap_percentage,
@@ -281,10 +291,19 @@ class SubcontractorService:
       )
 
     if bill.sales_tax_authority is not None:
+      rate_percentage, tax_amount = await self.sales_tax.calculate_and_record(
+        organization_id=organization_id, project_id=bill.project_id,
+        authority=SalesTaxAuthority(bill.sales_tax_authority), taxable_amount=bill.gross_value_this_period,
+        source_type=SalesTaxSourceType.SUBCONTRACTOR_BILL, source_id=bill.id,
+        charge_date=today_local(), actor_user_id=actor_user_id,
+      )
+      bill.sales_tax_rate_percentage = rate_percentage
+      bill.sales_tax_amount = tax_amount
+
+    bill.status = SubcontractorBillStatus.ISSUED
+    bill.issued_at = datetime.now(timezone.utc)
+    bill.version += 1
     
-     bill.status = SubcontractorBillStatus.ISSUED
-     bill.issued_at = datetime.now(timezone.utc)
-     bill.version += 1
     await self.session.commit()
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.SUBCONTRACTOR, bill.id, AuditAction.UPDATE,
@@ -356,7 +375,9 @@ class SubcontractorService:
   async def record_payment(
     self, organization_id: UUID, agreement_id: UUID, payload: SubcontractorPaymentCreateRequest, actor_user_id: UUID,
   ) -> SubcontractorPayment:
-    agreement = await self.get_agreement(organization_id, agreement_id)
+    agreement = await self.repo.get_agreement_for_update(agreement_id, organization_id)
+    if agreement is None:
+      raise TraceException("Agreement not found.", status_code=404, code="AGREEMENT_NOT_FOUND")
     subcontractor = await self.repo.get(agreement.subcontractor_id, organization_id)
 
     if payload.advance_recovered_amount > 0:
@@ -378,6 +399,7 @@ class SubcontractorService:
         gross_amount=payload.gross_amount, is_filer=subcontractor.is_active_taxpayer,
         payee_name=subcontractor.name, payee_ntn_or_cnic=subcontractor.ntn_or_cnic,
         source_type=WHTSourceType.SUBCONTRACTOR_PAYMENT, source_id=payment_id, actor_user_id=actor_user_id,
+         deduction_date=payload.payment_date,
       )
 
     net_paid = payload.gross_amount - payload.advance_recovered_amount - wht_deducted_amount

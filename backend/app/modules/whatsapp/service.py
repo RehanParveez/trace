@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import hmac
 from datetime import date, datetime, timezone
+from app.shared.timeutils import to_local_date
 from io import BytesIO
 from typing import Any
 from uuid import UUID, uuid4
@@ -569,7 +570,7 @@ class WhatsAppService:
 
       caption_parsed: dict[str, Any] = {}
       project_match: UUID | None = None
-      photo_date = message.received_at.date()
+      photo_date = to_local_date(message.received_at)
 
       caption_text = (message.caption_text or "")[:2000]
 

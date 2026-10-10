@@ -7,6 +7,7 @@ import { useProjectBudget } from "../hooks";
 import { formatBudgetAmount } from "../utils/budget.utils";
 import { useTranslation } from "react-i18next";
 import { SUBCONTRACTOR_PERMISSIONS, useProjectSubcontractCost } from "../../subcontractors";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface ProjectFinancialSummaryProps {
   projectId: string;
@@ -38,7 +39,7 @@ export function ProjectFinancialSummary({ projectId }: ProjectFinancialSummaryPr
   const labourPeriodStart = budget?.created_at
     ? budget.created_at.slice(0, 10)
     : "2000-01-01";
-  const labourPeriodEnd = new Date().toISOString().slice(0, 10);
+  const labourPeriodEnd = todayLocal();
 
   const labourSummaryQuery = useLabourSummary(
     projectId,

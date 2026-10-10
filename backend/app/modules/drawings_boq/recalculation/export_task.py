@@ -7,7 +7,7 @@ from app.core.database import WorkerSessionLocal, dispose_worker_engine
 from app.dependencies.tenancy import scope_session_as_platform_admin
 
 @celery_app.task(
-  name="app.modules.drawings_boq.export_tasks.render_export_task",
+  name="app.modules.drawings_boq.recalculation.export_task.render_export_task",
   time_limit=int(settings.export_time_limit_seconds),
   soft_time_limit=int(settings.export_soft_time_limit_seconds),
 )

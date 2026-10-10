@@ -7,6 +7,7 @@ import { useSalesTaxCharges, useSalesTaxRates, useSalesTaxRegisterSummary } from
 import { SalesTaxRateForm } from "../components/SalesTaxRateForm";
 import { formatSalesTaxAuthority, formatSalesTaxMoney } from "../utils/sales-tax.utils";
 import { useTranslation } from "react-i18next";
+import { monthStartLocal, todayLocal } from "../../../shared/utils/date";
 
 export function SalesTaxPage() {
   const { t } = useTranslation();
@@ -17,8 +18,7 @@ export function SalesTaxPage() {
   const ratesQuery = useSalesTaxRates();
   const [formOpen, setFormOpen] = useState(false);
 
-  const monthStart = new Date(); monthStart.setDate(1);
-  const periodStart = monthStart.toISOString().slice(0, 10);
+  const periodStart = monthStartLocal();
   const periodEnd = new Date().toISOString().slice(0, 10);
   const summaryQuery = useSalesTaxRegisterSummary(periodStart, periodEnd);
   const chargesQuery = useSalesTaxCharges(periodStart, periodEnd);

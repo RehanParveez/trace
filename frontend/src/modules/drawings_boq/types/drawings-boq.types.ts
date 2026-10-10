@@ -71,6 +71,10 @@ export interface DrawingElement {
   type_name?: string | null;
   normalization_status?: NormalizationStatus;
   normalization_issues?: unknown[];
+  level_name?: string | null;
+  level_sequence?: number | null;
+  measured_as?: string | null;
+  predefined_type?: string | null;
 }
 
 export interface BuildingLevel {
@@ -117,6 +121,7 @@ export interface DrawingElementFilters {
 export interface CursorPage<T> {
   items: T[];
   nextCursor: string | null;
+  total?: number | null;
 }
 
 export interface BOQVersion {

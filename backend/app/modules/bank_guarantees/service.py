@@ -12,7 +12,8 @@ from decimal import Decimal
 from uuid import UUID, uuid4
 from app.modules.audit.models import AuditEntityType, AuditAction
 from app.modules.subcontractors.models import SubcontractAgreement
-from datetime import date as _date, datetime, timezone
+from datetime import datetime, timezone
+from app.shared.timeutils import today_local
 
 EXPIRING_SOON_WINDOW_DAYS = 30
 
@@ -108,6 +109,10 @@ class BankGuaranteeService:
     guarantee = await self.repo.get_by_id_for_update(guarantee_id, organization_id)
     if guarantee is None:
       raise TraceException("Bank guarantee not found.", status_code=404, code="BANK_GUARANTEE_NOT_FOUND")
+    if guarantee.status != BankGuaranteeStatus.ACTIVE:
+      raise TraceException(
+        "Only an active guarantee can be marked as called.", status_code=409, code="BANK_GUARANTEE_NOT_ACTIVE",
+      )
     guarantee.status = BankGuaranteeStatus.CALLED
     await self.session.commit()
     await self.audit.log(
@@ -129,7 +134,7 @@ class BankGuaranteeService:
   async def get_project_summary(self, organization_id: UUID, project_id: UUID) -> dict:
     await self._require_project(organization_id, project_id)
     active_guarantees = await self.repo.get_active_for_project(organization_id, project_id)
-    today = _date.today()
+    today_local()
 
     expiring_soon = 0
     expired = 0

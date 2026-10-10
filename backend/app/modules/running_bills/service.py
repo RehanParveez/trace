@@ -19,6 +19,7 @@ from app.modules.sales_tax.models import SalesTaxSourceType
 from app.modules.sales_tax.service import SalesTaxService
 from app.modules.sales_tax.models import SalesTaxAuthority
 from app.modules.bank_guarantees.service import BankGuaranteeService
+from app.shared.timeutils import today_local
 
 class RunningBillService:
   def __init__(self, session: AsyncSession):
@@ -65,7 +66,10 @@ class RunningBillService:
     line_items: list[RunningBillLineItem] = []
     gross_this_period = Decimal("0")
     gross_cumulative = Decimal("0")
-    contract_total_value = Decimal("0")
+    contract_total_value = sum(
+      ((item.quantity or Decimal("0")) * (item.unit_rate or Decimal("0")) for item in boq_items),
+      Decimal("0"),
+    )
 
     for boq_item in boq_items:
       claim = current_claims.get(boq_item.id)
@@ -86,14 +90,13 @@ class RunningBillService:
 
       unit_rate = boq_item.unit_rate or Decimal("0")
       contract_quantity = boq_item.quantity or Decimal("0")
-      contract_total_value += contract_quantity * unit_rate
 
       cumulative_quantity = contract_quantity * cumulative_percentage / Decimal("100")
       previous_quantity = contract_quantity * previous_percentage / Decimal("100")
       this_period_quantity = cumulative_quantity - previous_quantity
 
-      cumulative_value = cumulative_quantity * unit_rate
-      previous_value = previous_quantity * unit_rate
+      cumulative_value = (cumulative_quantity * unit_rate).quantize(Decimal("0.01"))
+      previous_value = (previous_quantity * unit_rate).quantize(Decimal("0.01"))
       this_period_value = cumulative_value - previous_value
 
       gross_this_period += this_period_value
@@ -235,7 +238,7 @@ class RunningBillService:
         organization_id=organization_id, project_id=bill.project_id,
         authority=SalesTaxAuthority(bill.sales_tax_authority), taxable_amount=bill.gross_value_this_period,
         source_type=SalesTaxSourceType.RUNNING_BILL, source_id=bill.id,
-        charge_date=datetime.now(timezone.utc).date(), actor_user_id=actor_user_id,
+        charge_date=today_local(), actor_user_id=actor_user_id,
       )
       bill.sales_tax_rate_percentage = rate_percentage
       bill.sales_tax_amount = tax_amount

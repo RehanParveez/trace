@@ -5,6 +5,7 @@ from app.modules.withholding_tax.schemas import WHTRateCreateRequest, WHTRateUpd
 from uuid import UUID, uuid4
 from decimal import Decimal
 from datetime import date
+from app.shared.timeutils import today_local
 from app.core.exceptions import TraceException
 from app.modules.identity.models import Organization
 from app.modules.withholding_tax.models import WHTCategory, WHTSourceType, WithholdingTaxDeduction, WithholdingTaxRate
@@ -16,7 +17,7 @@ class WithholdingTaxService:
 
   async def create_rate(self, organization_id: UUID, payload: WHTRateCreateRequest) -> WithholdingTaxRate:
     existing_active = await self.repo.get_active_rate(organization_id, payload.category)
-    if existing_active is not None:
+    if existing_active is not None and payload.effective_from <= today_local():
       existing_active.is_active = False
 
     rate = WithholdingTaxRate(
@@ -44,8 +45,9 @@ class WithholdingTaxService:
 
   async def calculate_preview(
     self, organization_id: UUID, category: WHTCategory, gross_amount: Decimal, is_filer: bool,
+     as_of: date | None = None,
   ) -> tuple[Decimal, Decimal]:
-    rate = await self.repo.get_active_rate(organization_id, category)
+    rate = await self.repo.get_active_rate(organization_id, category, as_of or today_local())
     if rate is None:
       raise TraceException(
         f"No active withholding tax rate is configured for "
@@ -59,17 +61,21 @@ class WithholdingTaxService:
   async def calculate_and_record(
     self, *, organization_id: UUID, project_id: UUID, category: WHTCategory, gross_amount: Decimal,
     is_filer: bool, payee_name: str, payee_ntn_or_cnic: str | None,
-    source_type: WHTSourceType, source_id: UUID, actor_user_id: UUID,
+    source_type: WHTSourceType, source_id: UUID, actor_user_id: UUID, deduction_date: date | None = None,
   ) -> tuple[Decimal, Decimal]:
 
-    rate_percentage, deducted_amount = await self.calculate_preview(organization_id, category, gross_amount, is_filer)
+    effective_date = deduction_date or today_local()
+    rate_percentage, deducted_amount = await self.calculate_preview(
+      organization_id, category, gross_amount, is_filer, as_of=effective_date,
+    )
+     
     organization = await self.session.get(Organization, organization_id)
 
     deduction = WithholdingTaxDeduction(
       id=uuid4(), organization_id=organization_id, project_id=project_id,
       source_type=source_type, source_id=source_id, payee_name=payee_name, payee_ntn_or_cnic=payee_ntn_or_cnic,
       category=category, gross_amount=gross_amount, rate_percentage=rate_percentage, is_filer=is_filer,
-      deducted_amount=deducted_amount, deduction_date=date.today(),
+      deducted_amount=deducted_amount, deduction_date=effective_date,
       currency=organization.currency if organization else "PKR", created_by_user_id=actor_user_id,
     )
     await self.repo.create_deduction(deduction)

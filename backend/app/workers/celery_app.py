@@ -11,7 +11,7 @@ celery_app = Celery(
     "app.modules.subscriptions.tasks",
     "app.modules.drawings_boq.tasks",
     "app.modules.drawings_boq.calc_tasks",
-    "app.modules.drawings_boq.export_tasks",
+    "app.modules.drawings_boq.recalculation.export_task",
   ],
 )
 
@@ -27,7 +27,7 @@ celery_app.conf.update(
     "app.modules.drawings_boq.calc_tasks.purge_*": {"queue": "default"},
     "app.modules.drawings_boq.calc_tasks.expire_*": {"queue": "default"},
     "app.modules.drawings_boq.tasks.parse_drawing_task": {"queue": "bim_parsing"},
-    "app.modules.drawings_boq.export_tasks.*": {"queue": "export"},
+    "app.modules.drawings_boq.recalculation.export_task.*": {"queue": "export"},
   },
   task_acks_late=True,
   worker_prefetch_multiplier=1,
@@ -49,6 +49,10 @@ celery_app.conf.update(
     },
     "recover-lost-exports": {
       "task": "app.modules.drawings_boq.calc_tasks.recover_exports_task",
+      "schedule": 300.0,
+    },
+    "reap-stuck-photo-messages": {
+      "task": "app.modules.whatsapp.tasks.reap_stuck_photo_messages",
       "schedule": 300.0,
     },
     "purge-calculation-staging": {

@@ -4,6 +4,7 @@ import { Button, Field, inputClass, Modal, useToast } from "../../organizations/
 import { useCreateSiteLog } from "../hooks";
 import { useTranslation } from "react-i18next";
 import { LabourDayCrossCheck } from "./LabourDayCrossCheck";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface SiteLogFormProps {
   projectId: string;
@@ -15,7 +16,7 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
   const createLog = useCreateSiteLog();
   const { showToast } = useToast();
 
-  const [logDate, setLogDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [logDate, setLogDate] = useState(() => todayLocal());
   const [workforceCount, setWorkforceCount] = useState("");
   const [weather, setWeather] = useState("");
   const [blockers, setBlockers] = useState("");

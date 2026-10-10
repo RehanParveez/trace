@@ -1,6 +1,6 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.modules.bank_guarantees.models import BankGuarantee, BankGuaranteeStatus
+from app.modules.bank_guarantees.models import BankGuarantee, BankGuaranteePurpose, BankGuaranteeStatus
 from uuid import UUID
 from sqlalchemy import select
 
@@ -40,6 +40,7 @@ class BankGuaranteeRepository:
       select(BankGuarantee)
       .where(
         BankGuarantee.organization_id == organization_id, BankGuarantee.boq_version_id == boq_version_id,
+        BankGuarantee.purpose == BankGuaranteePurpose.RETENTION,
         BankGuarantee.status == BankGuaranteeStatus.ACTIVE,
       )
       .order_by(BankGuarantee.expiry_date.desc())
@@ -52,6 +53,7 @@ class BankGuaranteeRepository:
       select(BankGuarantee)
       .where(
         BankGuarantee.organization_id == organization_id, BankGuarantee.agreement_id == agreement_id,
+        BankGuarantee.purpose == BankGuaranteePurpose.RETENTION,
         BankGuarantee.status == BankGuaranteeStatus.ACTIVE,
       )
       .order_by(BankGuarantee.expiry_date.desc())

@@ -7,6 +7,7 @@ import {useCreateLabourAdvance, useCreateLabourPayment, useLabourAdvances, useLa
 } from "../hooks";
 import { formatLabourDate, formatLabourMoney } from "../utils/labour.utils";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function LabourFinancePanel({ projectId, canManagePayments }: { projectId: string; canManagePayments: boolean }) {
   const { t } = useTranslation();
@@ -88,7 +89,7 @@ function AdvanceDialog({ projectId, sources, onClose }: { projectId: string; sou
   const { showToast } = useToast();
   const [sourceId, setSourceId] = useState(sources[0]?.id ?? "");
   const [amount, setAmount] = useState("");
-  const [advanceDate, setAdvanceDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [advanceDate, setAdvanceDate] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {
@@ -127,10 +128,10 @@ function PaymentDialog({ projectId, sources, onClose }: { projectId: string; sou
   const { showToast } = useToast();
   const [sourceId, setSourceId] = useState(sources[0]?.id ?? "");
   const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState(() => new Date().toISOString().slice(0, 10));
+  const [periodEnd, setPeriodEnd] = useState(() => todayLocal());
   const [gross, setGross] = useState("");
   const [advanceRecovered, setAdvanceRecovered] = useState("0");
-  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paymentDate, setPaymentDate] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {

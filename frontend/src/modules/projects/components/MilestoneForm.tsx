@@ -1,14 +1,13 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import {
-  Button, Field, inputClass, Modal, useToast,
+import {Button, Field, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
-import {
-  useCreateMilestone, useUpdateMilestone,
+import {useCreateMilestone, useUpdateMilestone,
 } from "../hooks";
 import { getApiErrorMessage } from "../../identity";
 import type { Milestone } from "../types/project.types";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface MilestoneFormProps {
   projectId: string;
@@ -49,7 +48,7 @@ export function MilestoneForm({
             description: description.trim() || null,
             due_date: dueDate || null,
             completed_at: completed
-              ? (milestone.completed_at ?? new Date().toISOString().slice(0, 10))
+              ? (milestone.completed_at ?? todayLocal())
               : null,
           },
         },

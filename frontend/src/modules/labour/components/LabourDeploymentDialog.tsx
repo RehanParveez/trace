@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../identity";
 import { useCreateLabourDeployment, useLabourSources, useLabourWorkers } from "../hooks";
 import { SUGGESTED_TRADES } from "../utils/labour.utils";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function LabourDeploymentDialog({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export function LabourDeploymentDialog({ projectId, onClose }: { projectId: stri
   const [workerId, setWorkerId] = useState("");
   const [trade, setTrade] = useState("");
   const [dailyRate, setDailyRate] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   const sources = sourcesQuery.data ?? [];

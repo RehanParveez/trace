@@ -56,7 +56,7 @@ def auto_run_task(self, organization_id: str, project_id: str, user_id: str | No
 
 def _maintenance(name: str):
   async def _run() -> dict:
-    from app.modules.drawings_boq import calc_maintenance
+    from app.modules.drawings_boq.recalculation import calc_maintenance
     try:
       async with WorkerSessionLocal() as session:
         await scope_session_as_platform_admin(session)

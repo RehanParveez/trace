@@ -20,18 +20,23 @@ class SalesTaxRepository:
     )
     return result.scalar_one_or_none()
 
-  async def get_active_rate(self, organization_id: UUID, authority: SalesTaxAuthority) -> SalesTaxRate | None:
+  async def get_active_rate(
+    self, organization_id: UUID, authority: SalesTaxAuthority, as_of: date | None = None,
+  ) -> SalesTaxRate | None:
     result = await self.session.execute(
       select(SalesTaxRate)
-      .where(
-        SalesTaxRate.organization_id == organization_id,
-        SalesTaxRate.authority == authority,
-        SalesTaxRate.is_active.is_(True),
-      )
-      .order_by(SalesTaxRate.updated_at.desc())
-      .limit(1)
+      .where(SalesTaxRate.organization_id == organization_id, SalesTaxRate.authority == authority)
+      .order_by(SalesTaxRate.effective_from.desc(), SalesTaxRate.updated_at.desc())
     )
-    return result.scalar_one_or_none()
+    rates = list(result.scalars().all())
+    if as_of is not None:
+      in_force = [r for r in rates if r.effective_from <= as_of]
+      if in_force:
+        chosen = in_force[0]
+        if chosen.is_active or chosen is not rates[0]:
+          return chosen
+    active = [r for r in rates if r.is_active]
+    return max(active, key=lambda r: r.updated_at) if active else None
 
   async def list_rates(self, organization_id: UUID) -> list[SalesTaxRate]:
     result = await self.session.execute(

@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../identity";
 import { useRecordMaterialIssue } from "../hooks";
 import type { MaterialIssueType } from "../types/material-stock.types";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function MaterialIssueForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const { t } = useTranslation();
@@ -15,7 +16,7 @@ export function MaterialIssueForm({ projectId, onClose }: { projectId: string; o
   const [quantity, setQuantity] = useState("");
   const [issueType, setIssueType] = useState<MaterialIssueType>("ISSUED");
   const [issuedTo, setIssuedTo] = useState("");
-  const [issueDate, setIssueDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [issueDate, setIssueDate] = useState(() => todayLocal());
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 

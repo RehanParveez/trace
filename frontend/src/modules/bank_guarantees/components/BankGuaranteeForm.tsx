@@ -7,6 +7,7 @@ import { useAgreements } from "../../subcontractors";
 import { useCreateBankGuarantee } from "../hooks/index.ts";
 import type { BankGuaranteeHolderType } from "../types/bank-guarantee.types";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function BankGuaranteeForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const { t } = useTranslation();
@@ -21,7 +22,8 @@ export function BankGuaranteeForm({ projectId, onClose }: { projectId: string; o
   const [guaranteeNumber, setGuaranteeNumber] = useState("");
   const [issuingBank, setIssuingBank] = useState("");
   const [amount, setAmount] = useState("");
-  const [issueDate, setIssueDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [issueDate, setIssueDate] = useState(() => todayLocal()
+);
   const [expiryDate, setExpiryDate] = useState("");
   const [error, setError] = useState<string | null>(null);
 

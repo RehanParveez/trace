@@ -22,10 +22,14 @@ async function getPage<T>(
 ): Promise<Page<T>> {
   const response = await apiClient.get<T[]>(url, { params });
 
+  const totalHeader = response.headers["x-total-count"];
+  const total = totalHeader === undefined ? NaN : Number(totalHeader);
+
   return {
     items: response.data,
     nextCursor:
       (response.headers["x-next-cursor"] as string | undefined) ?? null,
+    total: Number.isFinite(total) ? total : null,
   };
 }
 
@@ -173,7 +177,7 @@ export const drawingsBoqApi = {
     return getPage<DrawingElement>(
       `/drawings-boq/drawings/${drawingId}/elements`,
       {
-        limit: filters.limit ?? 200,
+        limit: filters.limit ?? 1000,
         cursor: filters.cursor ?? undefined,
         structural_role: filters.structural_role ?? undefined,
         discipline: filters.discipline ?? undefined,

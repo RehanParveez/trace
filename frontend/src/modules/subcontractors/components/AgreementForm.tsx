@@ -4,6 +4,7 @@ import { Button, Field, Icon, inputClass, Modal, useToast } from "../../organiza
 import { getApiErrorMessage } from "../../identity";
 import { useCreateAgreement, useSubcontractors } from "../hooks";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function AgreementForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const { t } = useTranslation();
@@ -13,7 +14,7 @@ export function AgreementForm({ projectId, onClose }: { projectId: string; onClo
 
   const [subcontractorId, setSubcontractorId] = useState("");
   const [scope, setScope] = useState("");
-  const [startDate, setStartDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [startDate, setStartDate] = useState(() => todayLocal());
   const [retention, setRetention] = useState("10");
   const [pricingMode, setPricingMode] = useState<"lump_sum" | "items">("lump_sum");
   const [contractValue, setContractValue] = useState("");

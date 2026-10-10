@@ -9,6 +9,7 @@ import {formatBillDate, formatBillMoney, formatRunningBillStatus, getRunningBill
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
 import type { RunningBillDetail } from "../types/running-bill.types";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface RunningBillDetailDialogProps {
   billId: string;
@@ -270,7 +271,7 @@ function RunningBillCollectionForm({
 }) {
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(() =>
-    new Date().toISOString().slice(0, 10),
+    todayLocal(),
   );
   const { showToast } = useToast();
 

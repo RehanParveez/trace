@@ -8,6 +8,7 @@ import { useCreateRunningBill } from "../hooks";
 import { useTranslation } from "react-i18next";
 import type { SalesTaxAuthority } from "../../salex_tax";
 import { formatSalesTaxAuthority, formatSalesTaxMoney } from "../../salex_tax";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface RunningBillFormProps {
   projectId: string;
@@ -25,7 +26,7 @@ export function RunningBillForm({ projectId, onClose }: RunningBillFormProps) {
   const [boqVersionId, setBoqVersionId] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState(() =>
-  new Date().toISOString().slice(0, 10),
+  todayLocal(),
 );
   const [salesTaxAuthority, setSalesTaxAuthority] = useState<SalesTaxAuthority | "">("");
   const [retentionPercentage, setRetentionPercentage] = useState("10");

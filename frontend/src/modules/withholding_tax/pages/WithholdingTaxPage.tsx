@@ -7,6 +7,7 @@ import { useWHTDeductions, useWHTRates, useWHTRegisterSummary } from "../hooks";
 import { WHTRateForm } from "../components/WHTRateForm";
 import { formatWHTCategory, formatWHTMoney } from "../utils/withholding-tax.utils";
 import { useTranslation } from "react-i18next";
+import { monthStartLocal, todayLocal } from "../../../shared/utils/date";
 
 export function WithholdingTaxPage() {
   const { t } = useTranslation();
@@ -17,9 +18,8 @@ export function WithholdingTaxPage() {
   const ratesQuery = useWHTRates();
   const [formOpen, setFormOpen] = useState(false);
 
-  const monthStart = new Date(); monthStart.setDate(1);
-  const periodStart = monthStart.toISOString().slice(0, 10);
-  const periodEnd = new Date().toISOString().slice(0, 10);
+  const periodStart = monthStartLocal();
+  const periodEnd = todayLocal();
   const summaryQuery = useWHTRegisterSummary(periodStart, periodEnd);
   const deductionsQuery = useWHTDeductions(periodStart, periodEnd);
 

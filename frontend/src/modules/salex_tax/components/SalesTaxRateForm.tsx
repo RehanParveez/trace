@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../identity";
 import { useCreateSalesTaxRate } from "../hooks";
 import type { SalesTaxAuthority } from "../types/sales-tax.types";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function SalesTaxRateForm({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
@@ -12,7 +13,7 @@ export function SalesTaxRateForm({ onClose }: { onClose: () => void }) {
   const { showToast } = useToast();
   const [authority, setAuthority] = useState<SalesTaxAuthority>("PRA");
   const [rate, setRate] = useState("");
-  const [effectiveFrom, setEffectiveFrom] = useState(() => new Date().toISOString().slice(0, 10));
+  const [effectiveFrom, setEffectiveFrom] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {

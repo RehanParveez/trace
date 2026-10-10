@@ -3,12 +3,13 @@ import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
 import { useCreatePunchList } from "../hooks";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function PunchListForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const createPunchList = useCreatePunchList(projectId);
   const { showToast } = useToast();
   const [title, setTitle] = useState("");
-  const [inspectionDate, setInspectionDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [inspectionDate, setInspectionDate] = useState(() => todayLocal());
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
 

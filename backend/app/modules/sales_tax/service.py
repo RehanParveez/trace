@@ -8,6 +8,7 @@ from app.modules.sales_tax.models import SalesTaxRate, SalesTaxAuthority, SalesT
 from app.core.exceptions import TraceException
 from app.modules.identity.models import Organization
 from datetime import date
+from app.shared.timeutils import today_local
 
 class SalesTaxService:
   def __init__(self, session: AsyncSession):
@@ -16,7 +17,7 @@ class SalesTaxService:
 
   async def create_rate(self, organization_id: UUID, payload: SalesTaxRateCreateRequest) -> SalesTaxRate:
     existing_active = await self.repo.get_active_rate(organization_id, payload.authority)
-    if existing_active is not None:
+    if existing_active is not None and payload.effective_from <= today_local():
       existing_active.is_active = False
 
     rate = SalesTaxRate(
@@ -43,9 +44,9 @@ class SalesTaxService:
     return await self.repo.list_rates(organization_id)
 
   async def calculate_preview(
-    self, organization_id: UUID, authority: SalesTaxAuthority, taxable_amount: Decimal,
+     self, organization_id: UUID, authority: SalesTaxAuthority, taxable_amount: Decimal, as_of: date | None = None,
   ) -> tuple[Decimal, Decimal]:
-    rate = await self.repo.get_active_rate(organization_id, authority)
+    rate = await self.repo.get_active_rate(organization_id, authority, as_of or today_local())
     if rate is None:
       raise TraceException(
         f"No active sales tax rate is configured for {authority.value}. "
@@ -65,7 +66,7 @@ class SalesTaxService:
     so the tax charge and the bill status change commit atomically
     together, same pattern as WithholdingTaxService.calculate_and_record.
     """
-    rate_percentage, tax_amount = await self.calculate_preview(organization_id, authority, taxable_amount)
+    rate_percentage, tax_amount = await self.calculate_preview(organization_id, authority, taxable_amount, as_of=charge_date)
     organization = await self.session.get(Organization, organization_id)
 
     charge = SalesTaxCharge(

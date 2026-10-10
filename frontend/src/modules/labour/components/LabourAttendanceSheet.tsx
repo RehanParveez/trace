@@ -4,6 +4,7 @@ import {Button, EmptyState, Field, inputClass, Panel, PanelHeader, useToast,
 import { getApiErrorMessage } from "../../identity";
 import { useBulkRecordAttendance, useLabourDeployments } from "../hooks";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface LabourAttendanceSheetProps {
   projectId: string;
@@ -17,7 +18,7 @@ export function LabourAttendanceSheet({ projectId, canManage, onDeploy }: Labour
   const bulkAttendance = useBulkRecordAttendance(projectId);
   const { showToast } = useToast();
 
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayLocal());
   const [values, setValues] = useState<Record<string, string>>({});
 
   const activeDeployments = (deploymentsQuery.data ?? []).filter((d) => d.status === "ACTIVE");

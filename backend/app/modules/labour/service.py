@@ -14,6 +14,7 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.identity.models import Organization
 from sqlalchemy import select
 from app.modules.projects.repository import ProjectRepository
+from app.modules.projects.models import Project
 from app.modules.withholding_tax.models import WHTSourceType
 from app.modules.withholding_tax.service import WithholdingTaxService
 
@@ -233,6 +234,7 @@ class LabourService:
     self, organization_id: UUID, project_id: UUID, payload: LabourPaymentCreateRequest, actor_user_id: UUID,
   ) -> LabourPayment:
     await self._require_project(organization_id, project_id)
+    await self.session.execute(select(Project.id).where(Project.id == project_id).with_for_update())
     source = await self.repo.get_source(payload.source_id, organization_id)
     if source is None:
       raise TraceException("Labour source not found.", status_code=404, code="LABOUR_SOURCE_NOT_FOUND")
@@ -264,6 +266,7 @@ class LabourService:
         gross_amount=payload.gross_wage_amount, is_filer=source.is_active_taxpayer,
         payee_name=source.name, payee_ntn_or_cnic=None,
         source_type=WHTSourceType.LABOUR_PAYMENT, source_id=payment_id, actor_user_id=actor_user_id,
+          deduction_date=payload.payment_date,
       )
 
     net_paid = payload.gross_wage_amount - payload.advance_recovered_amount - wht_deducted_amount

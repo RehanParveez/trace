@@ -5,6 +5,7 @@ import { useBOQVersions, useBOQItems } from "../../drawings_boq";
 import { useCreateProgressClaim } from "../hooks";
 import { formatClaimQuantity } from "../utils/verification.utils";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface ProgressClaimFormProps {
   projectId: string;
@@ -22,7 +23,7 @@ export function ProgressClaimForm({ projectId, onClose }: ProgressClaimFormProps
   const approvedItems = (boqItemsQuery.data ?? []).filter((item) => item.status === "APPROVED");
 
   const [boqItemId, setBoqItemId] = useState("");
-  const [claimDate, setClaimDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [claimDate, setClaimDate] = useState(() => todayLocal());
   const [claimedQuantity, setClaimedQuantity] = useState("");
   const [claimedPercentage, setClaimedPercentage] = useState("");
   const [notes, setNotes] = useState("");

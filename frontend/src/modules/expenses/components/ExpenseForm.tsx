@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateExpense } from "../hooks";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 interface ExpenseFormProps {
   projectId: string;
@@ -17,7 +18,7 @@ export function ExpenseForm({ projectId, onClose }: ExpenseFormProps) {
   const [category, setCategory] = useState("");
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
-  const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [expenseDate, setExpenseDate] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {

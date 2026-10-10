@@ -10,6 +10,7 @@ import { LabourDeploymentDialog } from "../components/LabourDeploymentDialog";
 import { LabourFinancePanel } from "../components/LabourFinancePanel";
 import { formatLabourMoney } from "../utils/labour.utils";
 import { useTranslation } from "react-i18next";
+import { monthStartLocal, todayLocal } from "../../../shared/utils/date";
 
 const TABS = ["Roster", "Attendance", "Finance"] as const;
 
@@ -28,10 +29,8 @@ export function LabourPage() {
   const projects = projectsQuery.data ?? [];
   const activeProjectId = projectId || projects[0]?.id || "";
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  const periodStart = monthStart.toISOString().slice(0, 10);
-  const periodEnd = new Date().toISOString().slice(0, 10);
+  const periodStart = monthStartLocal();
+  const periodEnd = todayLocal();
   const summaryQuery = useLabourSummary(activeProjectId, periodStart, periodEnd, { enabled: canRead && Boolean(activeProjectId) });
 
   if (!canRead && permissions.length > 0) {

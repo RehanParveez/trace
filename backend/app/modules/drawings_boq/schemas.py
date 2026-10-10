@@ -53,6 +53,10 @@ class DrawingElementResponse(BaseModel):
   geometry_kind: str | None = None
   normalization_status: str = "PENDING"
   normalization_issues: list[dict] = Field(default_factory=list)
+  level_name: str | None = None
+  level_sequence: int | None = None
+  measured_as: str | None = None
+  predefined_type: str | None = None
 
 class BOQVersionResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

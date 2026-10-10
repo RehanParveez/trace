@@ -127,6 +127,16 @@ async def list_drawing_elements(
   session: AsyncSession = Depends(get_db),
 ):
   service = _service(session)
+  if cursor is None:
+    response.headers["X-Total-Count"] = str(await service.count_elements(
+      current_user.active_membership.organization_id,
+      drawing_id,
+      structural_role=structural_role,
+      discipline=discipline,
+      level_id=level_id,
+      normalization_status=normalization_status,
+      ifc_type=ifc_type,
+    ))
   elements, next_cursor = await service.list_elements_page(
     current_user.active_membership.organization_id,
     drawing_id,
@@ -141,6 +151,17 @@ async def list_drawing_elements(
   if next_cursor:
     response.headers["X-Next-Cursor"] = next_cursor
   return elements
+
+@router.get("/drawings/{drawing_id}/elements/summary")
+async def drawing_elements_summary(
+  drawing_id: UUID,
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+):
+  service = _service(session)
+  return await service.element_summary(current_user.active_membership.organization_id, drawing_id)
 
 @router.get(
   "/drawings/{drawing_id}/levels",

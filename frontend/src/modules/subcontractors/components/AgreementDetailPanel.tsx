@@ -12,6 +12,7 @@ import { useWHTPreview } from "../../withholding_tax";
 import type { WHTCategory } from "../../withholding_tax";
 import { formatWHTMoney } from "../../withholding_tax";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function AgreementDetailPanel({ agreement, subcontractor, canManage, canManagePayments, onClose }: {
   agreement: SubcontractAgreementDetail; subcontractor: { is_active_taxpayer: boolean }; canManage: boolean; canManagePayments: boolean; onClose: () => void;
@@ -96,7 +97,7 @@ function BillGenerationForm({ agreement, onClose }: { agreement: SubcontractAgre
   const createBill = useCreateBill(agreement.id);
   const { showToast } = useToast();
   const [periodStart, setPeriodStart] = useState("");
-  const [periodEnd, setPeriodEnd] = useState(() => new Date().toISOString().slice(0, 10));
+  const [periodEnd, setPeriodEnd] = useState(() => todayLocal());
   const [percentages, setPercentages] = useState<Record<string, string>>({});
   const [salesTaxAuthority, setSalesTaxAuthority] = useState<"PRA" | "SRB" | "KPRA" | "BRA" | "ICT" | "">("");
   const [retentionSecuredByGuarantee, setRetentionSecuredByGuarantee] = useState(false);
@@ -193,7 +194,7 @@ function AdvanceForm({ agreementId, onClose }: { agreementId: string; onClose: (
   const createAdvance = useCreateAdvance(agreementId);
   const { showToast } = useToast();
   const [amount, setAmount] = useState("");
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayLocal());
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -228,7 +229,7 @@ function PaymentForm({agreementId, subcontractor, onClose,
   const [gross, setGross] = useState("");
   const [whtCategory, setWhtCategory] = useState<WHTCategory | "">("");
   const [advanceRecovered, setAdvanceRecovered] = useState("0");
-  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [paymentDate, setPaymentDate] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   const whtPreview = useWHTPreview(

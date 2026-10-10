@@ -90,9 +90,31 @@ def _decode_cursor(cursor: str | None) -> tuple[str, UUID] | None:
   
 def _labour_quantity(covered_area_sqft: Decimal, rate_unit: str) -> Decimal:
   if (rate_unit or "").strip().lower() in {"m2", "sqm"}:
-    return (Decimal(covered_area_sqft) / Decimal("10.7639104")).quantize(Decimal("0.0001"))
+        return (Decimal(covered_area_sqft) / Decimal("10.7639104")).quantize(Decimal("0.0001"))
   return covered_area_sqft
   
+def _measured_as(row) -> str:
+  codes = {i.get("code") for i in (row.normalization_issues or []) if isinstance(i, dict)}
+  kind = row.geometry_kind
+  source = row.quantity_source
+  basis = ((row.properties or {}).get("_ifc") or {}).get("quantity_basis")
+  suffix = f" [{basis}]" if basis else ""
+  
+  if "NON_CONCRETE_MATERIAL" in codes:
+    return "Excluded: not a concrete element"
+  if "QTO_MESH_MISMATCH" in codes:
+    return "Model quantity, disagrees with 3D geometry: review" + suffix
+  if kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") and source != "QTO":
+    return ("Exact profile x length" if kind == "AXIS_SWEPT" else "Exact profile x depth") + suffix
+  if source == "QTO":
+    check = "verified against 3D geometry" if "QTO_MESH_VERIFIED" in codes else "not cross-checked"
+    return f"Model quantity, {check}{suffix}"
+  if source == "GEOMETRY":
+    return "Derived from geometry" + suffix
+  if source == "COUNT":
+    return "Counted"
+  return "No quantity"
+
 class DrawingBOQService:
   def __init__(self, session: AsyncSession):
     self.session = session
@@ -413,7 +435,29 @@ class DrawingBOQService:
     if len(rows) > limit:
       rows = rows[:limit]
       next_cursor = _encode_cursor(rows[-1].ifc_type, rows[-1].id)
+    levels = {lv.id: lv for lv in await self.levels.list_by_drawing(drawing_id, organization_id)}
+    
+    for row in rows:
+      level = levels.get(row.level_id)
+      row.level_name = level.name if level else None
+      row.level_sequence = level.sequence if level else None
+      row.measured_as = _measured_as(row)
+      row.predefined_type = ((row.properties or {}).get("_ifc") or {}).get("predefined_type")
     return rows, next_cursor
+
+  async def count_elements(self, organization_id: UUID, drawing_id: UUID, **filters) -> int:
+    await self.get_drawing(organization_id, drawing_id)
+    return await self.elements.count_filtered(drawing_id, organization_id, **filters)
+
+  async def element_summary(self, organization_id: UUID, drawing_id: UUID) -> list[dict]:
+    await self.get_drawing(organization_id, drawing_id)
+    levels = {lv.id: lv for lv in await self.levels.list_by_drawing(drawing_id, organization_id)}
+    rows = await self.elements.summary(drawing_id, organization_id)
+    for row in rows:
+      level = levels.get(row["level_id"])
+      row["level_name"] = level.name if level else None
+      row["level_id"] = str(row["level_id"]) if row["level_id"] else None
+    return rows
 
   async def list_levels(self, organization_id: UUID, drawing_id: UUID):
     await self.get_drawing(organization_id, drawing_id)

@@ -20,6 +20,16 @@ _KEYWORD_PATTERNS = [
   for keyword, role in NAME_KEYWORD_ROLES
 ]
 _MM3_PER_M3 = 1_000_000_000.0
+QTO_MESH_TOLERANCE = 0.02
+CONCRETE_ONLY_ROLES = frozenset({"COLUMN", "BEAM", "SLAB", "SLAB_FOUNDATION", "SLAB_ROOF", "WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "FOOTING", "PILE", "PILE_CAP"})
+_CONCRETE_TEXT = re.compile(r"concrete|cement|\brcc\b|grout", re.I)
+_PILE_CAP_NAME = re.compile(r"(?<![a-z])pile[\s_\-]*caps?(?![a-z])", re.I)
+_PILE_NAME = re.compile(r"(?<![a-z])piles?(?![a-z])", re.I)
+_PILE_REFINABLE_ROLES = frozenset({"SLAB", "SLAB_FOUNDATION", "FOOTING", "COLUMN", "MEMBER", "UNKNOWN"})
+_NON_CONCRETE_PATTERNS = (
+  ("STEEL", re.compile(r"\b(steel|metal|iron|aluminium|aluminum)\b|\b(UB|UC|PFC|RHS|SHS|CHS|IPE|HEA|HEB)\s?\d{2,4}", re.I)),
+  ("TIMBER", re.compile(r"\b(timber|wood|plywood|lvl)\b", re.I)),
+)
 _MM2_PER_M2 = 1_000_000.0
  
 @dataclass
@@ -97,6 +107,7 @@ class _Geometry:
   dims: dict = field(default_factory=dict)  
   profile_area_mm2: float | None = None
   depth_mm: float | None = None
+  mesh_volume_mm3: float | None = None
   issues: list[dict] = field(default_factory=list)
  
 def humanize_ifc_type(ifc_type: str) -> str:
@@ -183,6 +194,15 @@ def _read_levels(model, scales: _Scales) -> list[ReadLevel]:
     for idx, (elev, name, gid) in enumerate(raw)
   ]
  
+def _material_family(material_text, name, role) -> str:
+  if material_text and _CONCRETE_TEXT.search(material_text):
+    return "CONCRETE_OR_UNKNOWN"
+  haystack = f"{material_text or ''} {name or ''}"
+  for family, pattern in _NON_CONCRETE_PATTERNS:
+    if pattern.search(haystack):
+      return family
+  return "CONCRETE_OR_UNKNOWN"
+
 def _storey_of(element) -> str | None:
   try:
     container = ifcopenshell.util.element.get_container(element)
@@ -270,7 +290,16 @@ def _type_chain(schema_id: str, ifc_type: str) -> tuple[str, ...]:
   return tuple(chain)
  
 def _classify(element, psets: dict, schema_id: str) -> tuple[str, str, float]:
-  """Returns (role, source, confidence). Never fails: every IfcElement ends at IfcElement."""
+  role, source, confidence = _classify_base(element, psets, schema_id)
+  if role in _PILE_REFINABLE_ROLES and element.is_a() != "IfcPile":
+    text = " ".join(str(v) for v in (getattr(element, "Name", None), getattr(element, "ObjectType", None)) if v)
+    if _PILE_CAP_NAME.search(text):
+      return "PILE_CAP", "NAME_REFINED", 0.8
+    if _PILE_NAME.search(text):
+      return "PILE", "NAME_REFINED", 0.8
+  return role, source, confidence
+
+def _classify_base(element, psets: dict, schema_id: str) -> tuple[str, str, float]:
   chain = _type_chain(schema_id, element.is_a())
   matched = next((name for name in chain if name in ROLE_BY_IFC_TYPE), None)
   role = ROLE_BY_IFC_TYPE[matched] if matched else "UNKNOWN"
@@ -383,8 +412,33 @@ def _unwrap_boolean(item):
     clipped = True
   return item, clipped
  
+def _unwrap_mapped(item):
+  matrix = np.eye(4)
+  clipped = False
+  for _ in range(6):
+    if item is None:
+      break
+    if item.is_a("IfcBooleanResult"):
+      item = item.FirstOperand
+      clipped = True
+      continue
+    
+    if item.is_a("IfcMappedItem"):
+      rep = getattr(item.MappingSource, "MappedRepresentation", None)
+      if rep is None or len(rep.Items or []) != 1:
+        return None, matrix, clipped
+      step = ifcopenshell.util.placement.get_mappeditem_transformation(item)
+      scale = np.linalg.norm(step[:3, :3], axis=0)
+      
+      if not np.allclose(scale, 1.0, atol=1e-6):
+        return None, matrix, clipped   
+      matrix = matrix @ step
+      item = rep.Items[0]
+      continue
+    break
+  return item, matrix, clipped
+
 def _closest_dim(px: float, py: float, target: float) -> tuple[float, float]:
-  """Returns (dimension closest to target, the other dimension)."""
   if abs(px - target) <= abs(py - target):
     return px, py
   return py, px
@@ -432,7 +486,7 @@ def _extruded_geometry(element, role: str, scales: _Scales) -> _Geometry | None:
   items = _body_items(element)
   if not items or len(items) != 1:
     return None
-  solid, clipped = _unwrap_boolean(items[0])
+  solid, mapping_matrix, clipped = _unwrap_mapped(items[0])
   if solid is None or solid.is_a() != "IfcExtrudedAreaSolid":
     return None
   parsed = _profile_points(solid.SweptArea)
@@ -448,7 +502,7 @@ def _extruded_geometry(element, role: str, scales: _Scales) -> _Geometry | None:
   solid_matrix = (
     ifcopenshell.util.placement.get_axis2placement(solid.Position) if solid.Position is not None else np.eye(4)
   )
-  matrix = placement_matrix @ solid_matrix
+  matrix = placement_matrix @ mapping_matrix @ solid_matrix
  
   ratios = np.array(solid.ExtrudedDirection.DirectionRatios[:3] + (0.0,) * (3 - len(solid.ExtrudedDirection.DirectionRatios)), dtype=float)
   norm = np.linalg.norm(ratios)
@@ -522,12 +576,22 @@ def _mesh_settings():
   return _MESH_SETTINGS
  
  
+def _closed_mesh_volume_mm3(verts_mm: np.ndarray, faces: np.ndarray) -> float | None:
+  if faces.size == 0:
+    return None
+  edges = np.sort(np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]]), axis=1)
+  _, counts = np.unique(edges, axis=0, return_counts=True)
+  if not np.all(counts % 2 == 0):
+    return None
+  a, b, c = verts_mm[faces[:, 0]], verts_mm[faces[:, 1]], verts_mm[faces[:, 2]]
+  return abs(float(np.einsum("ij,ij->i", a, np.cross(b, c)).sum()) / 6.0)
+
 def _mesh_bbox_geometry(element, role: str) -> _Geometry | None:
   try:
     import ifcopenshell.geom
- 
     shape = ifcopenshell.geom.create_shape(_mesh_settings(), element)
     verts = np.asarray(shape.geometry.verts, dtype=float).reshape(-1, 3)
+    faces = np.asarray(shape.geometry.faces, dtype=int).reshape(-1, 3)
   except Exception:
     return None
   if verts.size == 0:
@@ -538,6 +602,15 @@ def _mesh_bbox_geometry(element, role: str) -> _Geometry | None:
   geometry.bbox_max = verts_mm.max(axis=0)
   dx, dy, dz = (geometry.bbox_max - geometry.bbox_min).tolist()
   long_, short = max(dx, dy), min(dx, dy)
+  geometry.mesh_volume_mm3 = _closed_mesh_volume_mm3(verts_mm, faces)
+  if role in LINEAR_ROLES and role not in WALL_ROLES and len(verts_mm) >= 4:
+    centred = verts_mm - verts_mm.mean(axis=0)
+    try:
+      main_axis = np.linalg.svd(centred, full_matrices=False)[2][0]
+      along = centred @ main_axis
+      long_ = float(along.max() - along.min())
+    except Exception:
+      pass
   if role in WALL_ROLES:
     geometry.dims = {"length": long_, "thickness": short, "height": dz}
   elif role in SLAB_ROLES:
@@ -555,6 +628,15 @@ def _flatten_qtos(qtos: dict) -> dict:
         flat.setdefault(key, value)
   return flat
  
+def _qto_source_name(kind: str, qtos: dict) -> str | None:
+  for prop in QUANTITY_PROPS_BY_KIND[kind]:
+    for set_name, props in qtos.items():
+      if isinstance(props, dict):
+        value = _num(props.get(prop))
+        if value is not None and value > 0:
+          return f"{set_name}.{prop}"
+  return None
+
 def _qto_quantity(kind: str, flat: dict, scales: _Scales) -> tuple[Decimal, str] | None:
   scale, unit = {
     "volume": (scales.volume_m3, "m3"),
@@ -564,7 +646,7 @@ def _qto_quantity(kind: str, flat: dict, scales: _Scales) -> tuple[Decimal, str]
   for prop in QUANTITY_PROPS_BY_KIND[kind]:
     value = _num(flat.get(prop))
     if value is not None and value > 0:
-      return Decimal(str(round(value * scale, 4))), unit
+      return Decimal(repr(value * scale)), unit
   return None
  
 def _dims_from_qto(role: str, element, flat: dict, scales: _Scales) -> dict:
@@ -657,23 +739,31 @@ def _normalise_element(
  
   order = QUANTITY_KIND_ORDER_BY_ROLE.get(role, DEFAULT_QUANTITY_KIND_ORDER)
   quantity, unit, source = Decimal("0"), None, "NONE"
+  quantity_basis = None
   for kind in order:
     if kind == "count":
       quantity, unit, source = Decimal("1"), "nos", "COUNT"
+      quantity_basis = "Counted as 1 each"
       break
     found = _qto_quantity(kind, flat_qto, scales)
+    
     if found:
       quantity, unit = found
       source = "QTO"
+      quantity_basis = _qto_source_name(kind, qtos)
       break
+    
   if source == "NONE":
     for kind in order:
       if kind == "volume" and geometry.profile_area_mm2 and geometry.depth_mm:
         cubic_mm = geometry.profile_area_mm2 * geometry.depth_mm
-        quantity, unit, source = Decimal(str(round(cubic_mm / _MM3_PER_M3, 4))), "m3", "GEOMETRY"
+        quantity, unit, source = Decimal(repr(cubic_mm / _MM3_PER_M3)), "m3", "GEOMETRY"
+        quantity_basis = "Profile area x depth"
         break
+      
       if kind == "length" and dims.get("length"):
-        quantity, unit, source = Decimal(str(round(dims["length"] / 1000.0, 4))), "m", "GEOMETRY"
+        quantity, unit, source = Decimal(repr(dims["length"] / 1000.0)), "m", "GEOMETRY"
+        quantity_basis = "Member length"
         break
     if source == "GEOMETRY":
       issues.append(_issue("QUANTITY_FROM_GEOMETRY", "info", "No usable Qto quantity; quantity derived from extruded geometry."))
@@ -683,6 +773,33 @@ def _normalise_element(
   volume_mm3 = float(volume_m3[0]) * _MM3_PER_M3 if volume_m3 else (
     geometry.profile_area_mm2 * geometry.depth_mm if geometry.profile_area_mm2 and geometry.depth_mm else None
   )
+  reference_mm3 = geometry.mesh_volume_mm3
+  if reference_mm3 is None and geometry.profile_area_mm2 and geometry.depth_mm and not any(i["code"] == "GEOMETRY_CLIPPED" for i in geometry.issues):
+    reference_mm3 = geometry.profile_area_mm2 * geometry.depth_mm
+    
+  if reference_mm3:
+    if volume_mm3 is None:
+      volume_mm3 = reference_mm3
+      if source == "NONE" and any(k == "volume" for k in order):
+        quantity, unit, source = Decimal(repr(volume_mm3 / _MM3_PER_M3)), "m3", "GEOMETRY"
+        quantity_basis = "Closed 3D mesh volume"
+        issues.append(_issue("QUANTITY_FROM_MESH", "info", "No usable Qto volume; volume taken from the closed 3D mesh."))
+        
+    elif abs(volume_mm3 - reference_mm3) > QTO_MESH_TOLERANCE * reference_mm3:
+      issues.append(_issue(
+        "QTO_MESH_MISMATCH", "warning",
+        f"Model volume {volume_mm3 / _MM3_PER_M3:.4f} m3 differs from the 3D geometry volume "
+        f"{reference_mm3 / _MM3_PER_M3:.4f} m3 by more than {QTO_MESH_TOLERANCE:.0%}.",
+      ))
+      
+    else:
+      issues.append(_issue("QTO_MESH_VERIFIED", "info", "Model volume agrees with the 3D geometry volume."))
+  material_family = _material_family(material, getattr(element, "Name", None), role)
+  if material_family != "CONCRETE_OR_UNKNOWN" and role in CONCRETE_ONLY_ROLES:
+    issues.append(_issue(
+      "NON_CONCRETE_MATERIAL", "error",
+      f"Material looks like {material_family.lower()}, but role {role} is measured as concrete. Excluded from the RCC quantities.",
+    ))
   area_mm2 = float(area_m2[0]) * _MM2_PER_M2 if area_m2 else geometry.profile_area_mm2
  
   base_mm = float(geometry.bbox_min[2]) if geometry.bbox_min is not None else None
@@ -720,6 +837,8 @@ def _normalise_element(
   properties = _json_safe({**psets, **qtos})
   properties["is_generic_fallback"] = is_generic
   properties["_ifc"] = {
+    "material_family": material_family,
+    "quantity_basis": quantity_basis,
     "predefined_type": _clean(getattr(element, "PredefinedType", None)),
     "object_type": _clean(getattr(element, "ObjectType", None)),
   }

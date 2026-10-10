@@ -5,6 +5,7 @@ import { getApiErrorMessage } from "../../identity";
 import { useCreateWHTRate } from "../hooks";
 import type { WHTCategory } from "../types/withholding-tax.types";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function WHTRateForm({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
@@ -13,7 +14,7 @@ export function WHTRateForm({ onClose }: { onClose: () => void }) {
   const [category, setCategory] = useState<WHTCategory>("CONTRACTS_EXECUTION");
   const [filerRate, setFilerRate] = useState("");
   const [nonFilerRate, setNonFilerRate] = useState("");
-  const [effectiveFrom, setEffectiveFrom] = useState(() => new Date().toISOString().slice(0, 10));
+  const [effectiveFrom, setEffectiveFrom] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
   function submit(event: FormEvent<HTMLFormElement>) {

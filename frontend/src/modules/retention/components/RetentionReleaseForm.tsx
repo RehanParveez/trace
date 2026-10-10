@@ -7,6 +7,7 @@ import { useAgreements } from "../../subcontractors";
 import { useCreateRetentionRelease } from "../hooks";
 import type { RetentionHolderType } from "../types/retention.types";
 import { useTranslation } from "react-i18next";
+import { todayLocal } from "../../../shared/utils/date";
 
 export function RetentionReleaseForm({ projectId, onClose }: { projectId: string; onClose: () => void }) {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export function RetentionReleaseForm({ projectId, onClose }: { projectId: string
   const [boqVersionId, setBoqVersionId] = useState("");
   const [agreementId, setAgreementId] = useState("");
   const [amount, setAmount] = useState("");
-  const [releaseDate, setReleaseDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [releaseDate, setReleaseDate] = useState(() => todayLocal());
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isFinalRelease, setIsFinalRelease] = useState(false);

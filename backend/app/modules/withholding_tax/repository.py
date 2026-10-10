@@ -22,18 +22,23 @@ class WithholdingTaxRepository:
     )
     return result.scalar_one_or_none()
 
-  async def get_active_rate(self, organization_id: UUID, category: WHTCategory) -> WithholdingTaxRate | None:
+  async def get_active_rate(
+    self, organization_id: UUID, category: WHTCategory, as_of: date | None = None,
+  ) -> WithholdingTaxRate | None:
     result = await self.session.execute(
       select(WithholdingTaxRate)
-      .where(
-        WithholdingTaxRate.organization_id == organization_id,
-        WithholdingTaxRate.category == category,
-        WithholdingTaxRate.is_active.is_(True),
-      )
-      .order_by(WithholdingTaxRate.updated_at.desc())
-      .limit(1)
+      .where(WithholdingTaxRate.organization_id == organization_id, WithholdingTaxRate.category == category)
+      .order_by(WithholdingTaxRate.effective_from.desc(), WithholdingTaxRate.updated_at.desc())
     )
-    return result.scalar_one_or_none()
+    rates = list(result.scalars().all())
+    if as_of is not None:
+      in_force = [r for r in rates if r.effective_from <= as_of]
+      if in_force:
+        chosen = in_force[0]
+        if chosen.is_active or chosen is not rates[0]:
+          return chosen
+    active = [r for r in rates if r.is_active]
+    return max(active, key=lambda r: r.updated_at) if active else None
 
   async def list_rates(self, organization_id: UUID) -> list[WithholdingTaxRate]:
     result = await self.session.execute(

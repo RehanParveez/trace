@@ -47,7 +47,7 @@ async def create_agreement(
   current_user: User = Depends(require_permission(PermissionKey.SUBCONTRACTOR_MANAGE)),
   session: AsyncSession = Depends(get_db),
 ):
-  return await _service(session).create_agreement(current_user.active_membership.organization_id, payload)
+  return await _service(session).create_agreement(current_user.active_membership.organization_id, payload, current_user.id)
 
 @router.get("/agreements/{agreement_id}", response_model=SubcontractAgreementDetailResponse)
 async def get_agreement(

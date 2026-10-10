@@ -86,6 +86,62 @@ class DrawingElementRepository:
     await self.session.flush()
     return elements
 
+  async def count_filtered(
+    self,
+    drawing_id: UUID,
+    organization_id: UUID,
+    *,
+    structural_role: str | None = None,
+    discipline: str | None = None,
+    level_id: UUID | None = None,
+    normalization_status: str | None = None,
+    ifc_type: str | None = None,
+  ) -> int:
+    stmt = select(func.count(DrawingElement.id)).where(
+      DrawingElement.drawing_id == drawing_id,
+      DrawingElement.organization_id == organization_id,
+    )
+    if structural_role is not None:
+      stmt = stmt.where(DrawingElement.structural_role == structural_role)
+    if discipline is not None:
+      stmt = stmt.where(DrawingElement.discipline == discipline)
+    if level_id is not None:
+      stmt = stmt.where(DrawingElement.level_id == level_id)
+    if normalization_status is not None:
+      stmt = stmt.where(DrawingElement.normalization_status == normalization_status)
+    if ifc_type is not None:
+      stmt = stmt.where(DrawingElement.ifc_type == ifc_type)
+    return int((await self.session.execute(stmt)).scalar_one())
+
+  async def summary(self, drawing_id: UUID, organization_id: UUID) -> list[dict]:
+    stmt = (
+      select(
+        DrawingElement.ifc_type,
+        DrawingElement.structural_role,
+        DrawingElement.level_id,
+        DrawingElement.normalization_status,
+        DrawingElement.geometry_kind,
+        func.count(DrawingElement.id),
+        func.coalesce(func.sum(DrawingElement.volume_mm3), 0),
+        func.coalesce(func.sum(DrawingElement.area_mm2), 0),
+      )
+      .where(DrawingElement.drawing_id == drawing_id, DrawingElement.organization_id == organization_id)
+      .group_by(
+        DrawingElement.ifc_type, DrawingElement.structural_role, DrawingElement.level_id,
+        DrawingElement.normalization_status, DrawingElement.geometry_kind,
+      )
+      .order_by(DrawingElement.ifc_type, DrawingElement.structural_role)
+    )
+    rows = (await self.session.execute(stmt)).all()
+    return [
+      {
+        "ifc_type": r[0], "structural_role": r[1], "level_id": r[2], "normalization_status": r[3],
+        "geometry_kind": r[4], "count": int(r[5]),
+        "volume_m3": float(r[6]) / 1_000_000_000.0, "area_m2": float(r[7]) / 1_000_000.0,
+      }
+      for r in rows
+    ]
+
   async def list_by_drawing(
    self,
    drawing_id: UUID,

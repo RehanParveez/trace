@@ -13,6 +13,8 @@ from decimal import Decimal
 from app.modules.drawings_boq.models import BOQVersion
 from app.modules.subcontractors.models import SubcontractAgreement, Subcontractor
 from app.modules.punch_lists.service import PunchListService
+from sqlalchemy import select
+from app.modules.projects.models import Project
 
 class RetentionService:
   def __init__(self, session: AsyncSession):
@@ -26,6 +28,7 @@ class RetentionService:
     self, organization_id: UUID, payload: RetentionReleaseCreateRequest, actor_user_id: UUID,
   ) -> RetentionRelease:
     project = await self._require_project(organization_id, payload.project_id)
+    await self.session.execute(select(Project.id).where(Project.id == payload.project_id).with_for_update())
 
     if payload.holder_type == RetentionHolderType.CLIENT:
       outstanding = await self._get_client_outstanding(organization_id, payload.boq_version_id)
