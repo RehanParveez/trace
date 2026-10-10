@@ -84,6 +84,11 @@ function buildOrganizationNav(
       icon: "budget",
     },
     {
+      label: t("nav.calculation"),
+      to: "/app/drawings_boq/calculation",
+      icon: "trend",
+    },
+    {
       label: t("nav.whatsappConnection"),
       to: "/app/whatsapp-settings",
       icon: "external",

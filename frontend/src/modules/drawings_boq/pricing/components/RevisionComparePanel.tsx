@@ -4,6 +4,8 @@ import {Button, EmptyState, ErrorState, Field, inputClass, LoadingState, Panel, 
 } from "../../../organizations/components/OrganizationUi";
 import { getApiErrorCode, getApiErrorMessage } from "../../../identity";
 import { useBOQVersions, useExportAdvancedBOQ } from "../../hooks";
+import { ExportJobCard } from "../../recalculation";
+import type { ExportJob } from "../../recalculation";
 import type { BOQVersion } from "../../types/drawings-boq.types";
 import { formatCurrency, formatDateTime } from "../../utils/drawings-boq.utils";
 import { useVersionDiff } from "../hooks";
@@ -44,6 +46,7 @@ export function RevisionComparePanel({ projectId, versionId, canExport }: Revisi
 
   const [baseId, setBaseId] = useState("");
   const [showUnchanged, setShowUnchanged] = useState(false);
+  const [job, setJob] = useState<ExportJob | null>(null);
 
   useEffect(() => {
     if (others.length === 0) {
@@ -68,7 +71,19 @@ export function RevisionComparePanel({ projectId, versionId, canExport }: Revisi
     exportMutation.mutate(
       { kind: "REVISION_COMPARISON", format: "xlsx", snapshotId: null, compareSnapshotId: base.snapshot_id },
       {
-        onSuccess: () => showToast({ tone: "success", title: t("pricing.compare.exported", "Comparison workbook generated") }),
+        onSuccess: (outcome) => {
+          if (outcome.kind === "job") {
+            setJob(outcome.job);
+            showToast({
+              tone: "success",
+              title: t("scale.export.queued", "Export is being prepared"),
+              description: t("scale.export.queuedDesc", "Large exports are prepared in the background. It will appear below when it is ready."),
+            });
+            return;
+          }
+          setJob(null);
+          showToast({ tone: "success", title: t("pricing.compare.exported", "Comparison workbook generated") });
+        },
         onError: async (e) =>
           showToast({
             tone: "error",
@@ -96,8 +111,19 @@ export function RevisionComparePanel({ projectId, versionId, canExport }: Revisi
               {exportMutation.isPending ? t("pricing.compare.generating", "Generating…") : t("pricing.compare.download", "Download Excel")}
             </Button>
           ) : null
-        }
+      }
       />
+
+      {job ? (
+        <div className="border-b border-[var(--color-border)] p-5">
+          <ExportJobCard
+            job={job}
+            kindLabel={t("boq.advancedExport.revisionComparison", "Revision comparison")}
+            onRequestAgain={download}
+            onDismiss={() => setJob(null)}
+          />
+        </div>
+      ) : null}
 
       {versionsQuery.isLoading ? (
         <LoadingState label={t("pricing.compare.loading", "Loading versions…")} />

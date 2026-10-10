@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { ExportJobCard } from "../recalculation";
+import type { ExportDelivery, ExportJob, ExportRequest } from "../recalculation";
 import {Button, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
 import {useBOQSnapshots, useBOQVersions, useExportAdvancedBOQ,
@@ -86,6 +88,12 @@ export function BOQAdvancedExportPanel({
   const [compareVersionId, setCompareVersionId] =
     useState<string>("");
 
+  const [delivery, setDelivery] =
+    useState<ExportDelivery>("auto");
+
+  const [jobs, setJobs] =
+    useState<Array<{ job: ExportJob; request: ExportRequest }>>([]);
+
   const snapshots = useBOQSnapshots(versionId);
   const versions = useBOQVersions(projectId ?? "");
 
@@ -104,26 +112,54 @@ export function BOQAdvancedExportPanel({
   const { showToast } = useToast();
 
   function exportFile() {
-    exportMutation.mutate(
-      {
-        kind,
-        format,
-        snapshotId,
-        compareSnapshotId:
-          kind === "REVISION_COMPARISON"
-            ? comparableVersions.find(
-             (version) =>
+    runExport({
+      kind,
+      format,
+      snapshotId,
+      compareSnapshotId:
+        kind === "REVISION_COMPARISON"
+          ? comparableVersions.find(
+              (version) =>
                 version.id === compareVersionId,
-             )?.snapshot_id ?? null
-            : null,
-      },
+            )?.snapshot_id ?? null
+          : null,
+      delivery,
+    });
+  }
+
+  function runExport(request: ExportRequest) {
+    exportMutation.mutate(
+      request,
       {
-        onSuccess: () =>
+        onSuccess: (outcome) => {
+          if (outcome.kind === "job") {
+            const queued = outcome.job;
+            setJobs((current) => [
+              { job: queued, request },
+              ...current.filter(
+                (entry) => entry.job.id !== queued.id,
+              ),
+            ]);
+            showToast({
+              tone: "success",
+              title: t(
+                "scale.export.queued",
+                "Export is being prepared",
+              ),
+              description: t(
+                "scale.export.queuedDesc",
+                "Large exports are prepared in the background. It will appear below when it is ready.",
+              ),
+            });
+            return;
+          }
+
           showToast({
             tone: "success",
             title:
               t("boq.advancedExport.exportGenerated"),
-          }),
+          });
+        },
         onError: async (error) =>
           showToast({
             tone: "error",
@@ -274,10 +310,66 @@ export function BOQAdvancedExportPanel({
                    </option>
                 ),
               )}
-           </select>
+            </select>
+          </label>
+        ) : null}
+
+        <label className="block">
+          <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
+            {t("scale.export.delivery", "Delivery")}
+          </span>
+
+          <select
+            value={delivery}
+            onChange={(event) =>
+              setDelivery(
+                event.target.value as ExportDelivery,
+              )
+            }
+            className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px]"
+          >
+            <option value="auto">
+              {t("scale.export.deliveryAuto", "Automatic")}
+            </option>
+            <option value="sync">
+              {t("scale.export.deliverySync", "Download now")}
+            </option>
+            <option value="async">
+              {t("scale.export.deliveryAsync", "Prepare in background")}
+            </option>
+          </select>
         </label>
-       ) : null}
       </div>
+
+      {jobs.length > 0 ? (
+        <div className="space-y-2 border-t border-[var(--color-border)] p-5">
+          {jobs.map((entry) => (
+            <ExportJobCard
+              key={entry.job.id}
+              job={entry.job}
+              kindLabel={t(
+                EXPORTS.find(
+                  (option) => option.kind === entry.request.kind,
+                )?.labelKey ?? "boq.advancedExport.title",
+              )}
+              onRequestAgain={() =>
+                runExport({
+                  ...entry.request,
+                  delivery: "async",
+                })
+              }
+              onDismiss={() =>
+                setJobs((current) =>
+                  current.filter(
+                    (item) =>
+                      item.job.id !== entry.job.id,
+                  ),
+                )
+              }
+            />
+          ))}
+        </div>
+      ) : null}
 
       <div className="flex justify-end border-t border-[var(--color-border)] p-5">
         <Button

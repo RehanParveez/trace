@@ -564,6 +564,7 @@ class RateBookService:
       effective_from=payload.effective_from, effective_to=payload.effective_to, created_by_user_id=user_id)
     self.repo.add(o)
     await self.session.commit()
+    await self.session.refresh(o)
     await self.audit.log(org, user_id, AuditEntityType.RATE_OVERRIDE, o.id, AuditAction.CREATE,
       f"Rate override {o.work_item_code} / {o.unit} = {o.rate}: {o.reason[:200]}")
     return o

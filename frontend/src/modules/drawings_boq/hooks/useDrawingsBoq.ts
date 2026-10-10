@@ -1,5 +1,8 @@
 import { useMutation, useQuery, useQueryClient,  useInfiniteQuery } from "@tanstack/react-query";
 import { drawingsBoqApi } from "../api/drawings-boq.api";
+import { recalculationApi } from "../recalculation/api/recalculation.api";
+import { recalculationKeys } from "../recalculation/api/recalculation.keys";
+import type { ExportDelivery, ExportOutcome } from "../recalculation/types/recalculation.types";
 import {isDrawingInProgress, openBlobInNewTab, triggerBlobDownload,
 } from "../utils/drawings-boq.utils";
 import type {AdjustmentCreateRequest, BOQCustomItemCreateRequest, BOQItem, BOQItemUpdateRequest, BOQVersion, BOQVersionUpdateRequest, CalculationRunCreateRequest, DeductionType,
@@ -225,6 +228,11 @@ export function useSuggestItemsFromPdf(
         queryKey: drawingsBoqKeys.boqItems(
           result.boq_version_id,
         ),
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: recalculationKeys.all,
       });
     },
   });
@@ -1377,6 +1385,7 @@ export function useExportAdvancedBOQ(
       format,
       snapshotId,
       compareSnapshotId,
+      delivery,
     }: {
       kind:
         | "CONTRACT_BOQ"
@@ -1388,20 +1397,19 @@ export function useExportAdvancedBOQ(
       format: "pdf" | "xlsx";
       snapshotId?: string | null;
       compareSnapshotId?: string | null;
-    }) => {
-      const blob =
-        await drawingsBoqApi.exportAdvancedBOQ(
-          versionId,
-          kind,
-          format,
-          snapshotId,
-          compareSnapshotId,
-        );
-
-      triggerBlobDownload(
-        blob,
-        `${kind}-${label.replace(/\s+/g, "_")}.${format}`,
+      delivery?: ExportDelivery;
+    }): Promise<ExportOutcome> => {
+      const fallbackName = `${kind}-${label.replace(/\s+/g, "_")}.${format}`;
+      const result = await recalculationApi.requestExport(
+        versionId,
+        { kind, format, snapshotId, compareSnapshotId, delivery },
+        fallbackName,
       );
+      if (result.kind === "job") {
+        return { kind: "job", job: result.job };
+      }
+      triggerBlobDownload(result.blob, result.filename);
+      return { kind: "file", filename: result.filename };
     },
   });
 }

@@ -364,6 +364,8 @@ export interface CalculationRunCreateRequest {
   drawing_ids?: string[];
   rule_set_code?: string | null;
   convention_code?: string | null;
+  force_full?: boolean;
+  verify?: boolean;
 }
 
 export interface CalculationRun {
@@ -386,6 +388,11 @@ export interface CalculationRun {
   stats?: RunStats;
   created_at?: string;
   updated_at?: string;
+  mode?: "FULL" | "INCREMENTAL";
+  baseline_run_id?: string | null;
+  force_full?: boolean;
+  verify?: boolean;
+  attempts?: number;
 }
 
 export interface CalculationRunResponse {
@@ -404,6 +411,11 @@ export interface CalculationRunResponse {
   error_message: string | null;
   stats: RunStats;
   created_at: string;
+  mode: "FULL" | "INCREMENTAL";
+  baseline_run_id: string | null;
+  force_full: boolean;
+  verify: boolean;
+  attempts: number;
 }
 
 export interface RunStage {
@@ -419,6 +431,8 @@ export interface RunStage {
   error?: string | null;
   created_at?: string;
   updated_at?: string;
+  duration_ms?: number | null;
+  peak_rss_mb?: number | null;
 }
 
 export interface RunStageResponse {
@@ -429,6 +443,8 @@ export interface RunStageResponse {
   finished_at: string | null;
   counts: Record<string, unknown>;
   error: string | null;
+  duration_ms: number | null;
+  peak_rss_mb: number | null;
 }
 
 export interface QuantitySolid {

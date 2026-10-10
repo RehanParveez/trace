@@ -36,6 +36,7 @@ import { BankGuaranteesPage } from "../modules/bank_guarantees";
 import { CashFlowPage } from "../modules/cash_flow";
 import { StandardsPage } from "../modules/drawings_boq/standards";
 import { RateBookDetailPage, RateBooksPage } from "../modules/drawings_boq/pricing";
+import { CalculationInsightsPage } from "../modules/drawings_boq/recalculation";
 
 export const router = createBrowserRouter([
   {
@@ -200,6 +201,10 @@ export const router = createBrowserRouter([
     {
       path: "labour-rates",
       element: <LabourRatesPage />,
+    },
+    {
+      path: "recalculation",
+      element: <CalculationInsightsPage />,
     },
    ],
   },

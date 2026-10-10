@@ -11,6 +11,9 @@ import type {LedgerRowResponse, QuantitySolidResponse, DeductionResponse,
 } from "../types/drawings-boq.types";
 import { RunStatsSummary } from "./RunStatsSummary";
 import { RebarMarksPanel } from "./RebarMarksPanel";
+import {CalcUsagePanel, ElementImpactButton, RunFailureNotice, RunMetricsPanel, RunModeBadge, RunOptionsFields, RunStartNotice, classifyStartError, formatDurationMs, formatMb, useScaleT,
+} from "../recalculation";
+import type { RunOptions, StartRunError } from "../recalculation";
 
 interface CalculationRunPanelProps {
   projectId: string;
@@ -25,7 +28,8 @@ type View =
   | "solids"
   | "ledger"
   | "deductions"
-  | "rebar";
+  | "rebar"
+  | "metrics";
 
 export function CalculationRunPanel({
   projectId,
@@ -45,6 +49,14 @@ export function CalculationRunPanel({
     useState<View>("overview");
   const [ruleSetCode, setRuleSetCode] =
     useState("");
+  const [options, setOptions] =
+    useState<RunOptions>({
+      force_full: false,
+      verify: false,
+    });
+  const [startError, setStartError] =
+    useState<StartRunError | null>(null);
+  const ts = useScaleT();
   const startRun =
     useStartCalculationRun(projectId);
   const { showToast } = useToast();
@@ -72,11 +84,25 @@ export function CalculationRunPanel({
         rule_set_code:
           ruleSetCode.trim() || null,
         convention_code: null,
+        force_full: options.force_full,
+        verify: options.force_full ? false : options.verify,
       },
       {
-       onSuccess: ({ run: createdRun, reused }) => {
-        setRunId(createdRun.id);
-        onRunCreated?.(createdRun);
+        onError: (error) => {
+          setStartError(
+            classifyStartError(
+              error,
+              ts(
+                "scale.start.failed",
+                "The calculation could not be started.",
+              ),
+            ),
+          );
+        },
+        onSuccess: ({ run: createdRun, reused }) => {
+          setStartError(null);
+          setRunId(createdRun.id);
+          onRunCreated?.(createdRun);
 
         showToast({
           tone: "success",
@@ -161,6 +187,28 @@ export function CalculationRunPanel({
           />
         </label>
 
+      
+      </div>
+
+      <div className="space-y-3 border-b border-[var(--color-border)] p-5">
+        <RunOptionsFields
+          value={options}
+          onChange={setOptions}
+          disabled={startRun.isPending}
+        />
+
+        {startError ? (
+          <RunStartNotice
+            error={startError}
+            retrying={startRun.isPending}
+            onRetry={start}
+            onDismiss={() =>
+              setStartError(null)
+            }
+          />
+        ) : null}
+
+        <CalcUsagePanel compact />
       </div>
 
       {!runId ? (
@@ -223,10 +271,65 @@ export function CalculationRunPanel({
               )}
               value={run.id.slice(0, 8)}
               tone="slate"
-            />
+                        />
           </div>
 
-          {run.error_message ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-5 pb-4 text-[11.5px] text-[var(--color-text-muted)]">
+            <RunModeBadge
+              mode={run.mode}
+            />
+
+            {run.baseline_run_id ? (
+              <span>
+                {ts(
+                  "scale.run.baseline",
+                  "Built on run {{id}}",
+                  {
+                    id: run.baseline_run_id.slice(
+                      0,
+                      8,
+                    ),
+                  },
+                )}
+              </span>
+            ) : null}
+
+            {run.attempts && run.attempts > 1 ? (
+              <span>
+                {ts(
+                  "scale.run.attempts",
+                  "Attempt {{count}}",
+                  {
+                    count: run.attempts,
+                  },
+                )}
+              </span>
+            ) : null}
+
+            {run.force_full ? (
+              <span>
+                {ts(
+                  "scale.run.forcedFull",
+                  "Recalculated everything on request",
+                )}
+              </span>
+            ) : null}
+          </div>
+
+          {run.status === "FAILED" ? (
+            <RunFailureNotice
+              runId={run.id}
+              errorCode={run.error_code}
+              errorMessage={run.error_message}
+              attempts={run.attempts}
+              retrying={startRun.isPending}
+              onRetry={
+                drawingIds.length > 0
+                  ? start
+                  : undefined
+              }
+            />
+          ) : run.error_message ? (
             <div className="mx-5 mb-5 rounded-[8px] border border-[#efc5bd] bg-[#fff7f5] p-3 text-[12px] text-[#c24a3a]">
               {run.error_message}
             </div>
@@ -265,6 +368,13 @@ export function CalculationRunPanel({
                     "boq.calculationRun.tabRebar", "Rebar"
                    ),
                  ],
+                [
+                  "metrics",
+                  ts(
+                    "scale.tab.performance",
+                    "Performance",
+                  ),
+                ],
               ] as Array<[View, string]>
             ).map(
               ([key, label]) => (
@@ -328,6 +438,13 @@ export function CalculationRunPanel({
           {view === "deductions" ? (
             <RunDeductions
               runId={run.id}
+          />
+          ) : null}
+
+          {view === "metrics" ? (
+            <RunMetricsPanel
+              runId={run.id}
+              status={run.status}
             />
           ) : null}
 
@@ -348,7 +465,7 @@ function RunOverview({
 }: {
   run: CalculationRun;
   stages: Array<{
-    id: string;
+    id?: string;
     stage: string;
     status: string;
     attempt: number;
@@ -356,6 +473,8 @@ function RunOverview({
     finished_at?: string | null;
     counts: Record<string, unknown>;
     error?: string | null;
+    duration_ms?: number | null;
+    peak_rss_mb?: number | null;
   }>;
 }) {
   const { t } = useTranslation();
@@ -371,7 +490,7 @@ function RunOverview({
       ) : (
         stages.map((stage) => (
           <div
-            key={stage.id}
+            key={`${stage.stage}-${stage.attempt}`}
             className="flex flex-wrap items-center justify-between gap-3 rounded-[8px] border border-[var(--color-border)] p-3"
           >
             <div>
@@ -389,9 +508,22 @@ function RunOverview({
               </div>
             </div>
 
-            <LocalBadge tone="slate">
-              {stage.status}
-            </LocalBadge>
+            <div className="flex items-center gap-3">
+              {stage.duration_ms != null ? (
+                <span className="font-mono text-[11px] text-[var(--color-text-muted)]">
+                  {formatDurationMs(
+                    stage.duration_ms,
+                  )}
+                  {stage.peak_rss_mb != null
+                    ? ` · ${formatMb(stage.peak_rss_mb)}`
+                    : ""}
+                </span>
+              ) : null}
+
+              <LocalBadge tone="slate">
+                {stage.status}
+              </LocalBadge>
+            </div>
           </div>
         ))
       )}
@@ -412,9 +544,10 @@ function RunOverview({
 function RunSolids({
   runId,
 }: {
-  runId: string;
+    runId: string;
 }) {
   const { t } = useTranslation();
+  const ts = useScaleT();
 
   const [after, setAfter] =
     useState<string | null>(null);
@@ -478,6 +611,7 @@ function RunSolids({
         t(
           "boq.calculationRun.colStatus",
         ),
+        ts("scale.impact.open", "Impact"),
       ]}
       rows={rows.map((row: QuantitySolidResponse) => [
        row.role,
@@ -487,6 +621,11 @@ function RunSolids({
        formatQuantity(row.gross_area_m2 ?? ""),
        formatQuantity(row.gross_length_m ?? ""),
        row.status,
+       <ElementImpactButton
+         key="impact"
+         runId={runId}
+         elementId={row.element_id}
+       />,
       ])}
 
       nextCursor={
@@ -507,6 +646,7 @@ function RunLedger({
   runId: string;
 }) {
   const { t } = useTranslation();
+  const ts = useScaleT();
 
   const [after, setAfter] =
     useState<string | null>(null);
@@ -555,6 +695,7 @@ function RunLedger({
         t("boq.ledger.colSource",),
         t("boq.ledger.colConfidence",),
         t("boq.ledger.colFormula",),
+        ts("scale.impact.open", "Impact"),
       ]}
       rows={rows.map((row: LedgerRowResponse) => [
        row.work_item_code,
@@ -563,6 +704,11 @@ function RunLedger({
        row.source_kind,
        formatQuantity(row.confidence),
        row.formula_code,
+       <ElementImpactButton
+         key="impact"
+         runId={runId}
+         elementId={row.element_id}
+       />,
       ])}
       nextCursor={
         query.data?.nextCursor ?? null
@@ -675,7 +821,7 @@ function DataTable({
   onNext,
 }: {
   headers: string[];
-  rows: string[][];
+  rows: React.ReactNode[][];
   nextCursor: string | null;
   onNext: () => void;
 }) {

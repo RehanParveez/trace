@@ -83,6 +83,7 @@ export const NAV_SEARCH_DESTINATIONS: SearchDestination[] = [
   { label: "Standards", to: "/app/drawings_boq/standards", icon: "budget", group: "Organization" },
   { label: "Rate books", to: "/app/drawings_boq/rate-books", icon: "budget", group: "Organization" },
   { label: "Labour rates", to: "/app/drawings_boq/labour-rates", icon: "budget", group: "Organization" },
+  { label: "Calculation", to: "/app/drawings_boq/calculation", icon: "trend", group: "Organization" },
   { label: "WhatsApp connection", to: "/app/whatsapp-settings", icon: "external", group: "Organization" },
   { label: "Projects", to: "/app/projects", icon: "projects", group: "Projects" },
   { label: "Budgets", to: "/app/budgets", icon: "budget", group: "Projects" },

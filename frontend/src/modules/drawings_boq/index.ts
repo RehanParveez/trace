@@ -48,3 +48,4 @@ export * from "./rebar/components/RebarRowsTable";
 export * from "./rebar/components/RebarSummaryPanel";
 export * from "./components/RebarMarksPanel";
 export * from "./pricing";
+export * from "./recalculation";
