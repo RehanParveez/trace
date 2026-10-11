@@ -42,6 +42,7 @@ class CalculationContext:
   spaces: tuple = ()
   schedule_lines: tuple = ()
   rebar: object = None
+  takeoff: object = None
 
 @dataclass(frozen=True)
 class Solid:

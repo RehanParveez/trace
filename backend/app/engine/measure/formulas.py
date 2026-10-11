@@ -46,7 +46,16 @@ _SPECS = (
   FormulaSpec("SCHEDULE_LINE_M2", "m2", "Confirmed mapped schedule quantity."),
   FormulaSpec("SCHEDULE_LINE_M", "m", "Confirmed mapped schedule quantity."),
   FormulaSpec("SCHEDULE_LINE_KG", "kg", "Confirmed mapped schedule quantity."),
-  FormulaSpec("SCHEDULE_LINE_NOS", "nos", "Confirmed mapped schedule quantity."),
+  FormulaSpec("PDF_TAKEOFF_LENGTH", "m", "Calibrated PDF polyline length."),
+  FormulaSpec("PDF_TAKEOFF_AREA", "m2", "Calibrated PDF polygon area less deduction polygons."),
+  FormulaSpec("PDF_TAKEOFF_COUNT", "nos", "Counted PDF markers."),
+  FormulaSpec("PDF_TAKEOFF_LENGTH_X_HEIGHT", "m2", "PDF length x height less openings, adjustments and repeats."),
+  FormulaSpec("PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS", "m3", "PDF length x height less openings x thickness."),
+  FormulaSpec("PDF_TAKEOFF_LENGTH_X_SECTION", "m3", "PDF length x section width x section depth."),
+  FormulaSpec("PDF_TAKEOFF_AREA_X_THICKNESS", "m3", "PDF area x thickness."),
+  FormulaSpec("PDF_TAKEOFF_COUNT_X_LENGTH", "m", "PDF count x unit length."),
+  FormulaSpec("PDF_TAKEOFF_COUNT_X_AREA", "m2", "PDF count x unit length x unit width."),
+  FormulaSpec("PDF_TAKEOFF_COUNT_X_VOLUME", "m3", "PDF count x unit length x width x depth."),
 )
 
 FORMULAS: dict[str, FormulaSpec] = {s.code: s for s in _SPECS}

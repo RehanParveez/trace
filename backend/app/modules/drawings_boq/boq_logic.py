@@ -14,6 +14,8 @@ UNIT_TABLE: dict[str, tuple[str, Decimal]] = {
   "m2": ("m2", ONE), "sft": ("m2", Decimal("10.7639104")),
   "m": ("m", ONE), "rft": ("m", Decimal("3.280839895")),
   "kg": ("kg", ONE), "nos": ("nos", ONE),
+  "quintal": ("kg", Decimal("0.01")),
+  "tonne": ("kg", Decimal("0.001")),
 }
 _CATEGORY = {"m3": "volume", "m2": "area", "m": "length", "kg": "weight", "nos": "count"}
 
@@ -36,7 +38,7 @@ REVIEW_WARNING_CODES = frozenset({
   "QTO_GEOMETRY_MISMATCH", "ALLOCATION_APPROXIMATE", "NOT_ALLOCATED", "OVER_DEDUCTED",
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
-    "MATCHED_ELEMENT_NOT_MEASURED", "DUPLICATE_SOLID", "SCHEDULE_OVERLAPS_MODEL", "SCHEDULE_LOW_CONFIDENCE",
+    "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -262,6 +264,33 @@ class IssueSpec:
   boq_item_id: object = None
 
 LEDGER_WARNING_CATALOG = {
+  "PDF_LOW_PRECISION": ("warning", "NONE",
+    "A PDF measurement is too small or too coarse for its scale; a one-pixel pick error moves the quantity by more than 5%.",
+    "Measure a larger extent, snap to the vector geometry, or use a drawing with a larger scale."),
+  "PDF_SCALE_MISMATCH": ("warning", "APPROVAL",
+    "The check dimension on the calibration disagrees with the scale by 1% to 2%, so the measurements on this sheet may be off by that much.",
+    "Re-calibrate using a longer known dimension, or confirm the sheet is printed at the stated scale."),
+  "PDF_SCANNED_LOW_PRECISION": ("warning", "NONE",
+    "The sheet is a scanned image; measurements were picked by eye and are less precise than on vector drawings.",
+    "Ask for the vector PDF export of this drawing if the quantity is large."),
+  "PDF_DIMENSION_ASSUMED": ("warning", "NONE",
+    "A height or thickness used with a PDF measurement was assumed, not read from the drawing.",
+    "Enter the dimension from the drawing or the specification and mark it as drawn or specified."),
+  "PDF_CAL_SHORT_BASELINE": ("warning", "NONE",
+    "The calibration was taken over a short distance, which magnifies picking error across the whole sheet.",
+    "Calibrate over the longest known dimension on the sheet."),
+  "PDF_RATIO_UNVERIFIED": ("warning", "NONE",
+    "The scale was typed from the title block and not checked against a known dimension; plotted sheets are often not at the printed scale.",
+    "Add a check dimension to the calibration."),
+  "PDF_GEOMETRY_WARNING": ("warning", "NONE",
+    "A deduction polygon lies partly outside the boundary it is deducted from.", "Redraw the deduction inside the boundary."),
+  "PDF_OVER_DEDUCTED": ("error", "APPROVAL",
+    "Deductions on a PDF measurement exceeded its gross quantity; the quantity was clamped to zero.",
+    "Check the openings and adjustments entered on this measurement."),
+  "PDF_ADDED_TO_MODEL": ("info", "NONE",
+    "A PDF measurement was added on top of a model quantity for the same work item, by choice.", None),
+  "PDF_REPLACES_MODEL": ("info", "NONE",
+    "A PDF measurement replaced the model quantity for the same work item, by choice.", None),
   "OPENINGS_NOT_DEDUCTED": ("info", "NONE", "Wall volumes are gross of door and window openings.",
     "Opening deductions arrive with finishes and schedules; use an adjustment if one is needed now."),
   "SAME_ROLE_OVERLAP": ("warning", "NONE", "Elements of the same role overlap; the lowest element id owns the shared volume.",
@@ -315,6 +344,51 @@ LEDGER_WARNING_CATALOG = {
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
+
+def takeoff_issue_specs(stats: dict) -> list[IssueSpec]:
+  specs: list[IssueSpec] = []
+  for n in stats.get("not_counted") or []:
+    code, level = n["work_item_code"], n.get("level_id")
+    specs.append(IssueSpec(
+      code="PDF_MEASUREMENT_NOT_COUNTED", severity="warning", blocks="APPROVAL",
+      message=f"{n['measurements']} PDF measurement(s) for {code} were not counted because the model already measures this work item.",
+      suggested_fix="Open the PDF takeoff and choose Add to model, Replace model or Verify only for these measurements.",
+      details={"work_item_code": code, "level_id": level, "count": n["measurements"]},
+      dedupe_key=f"PDF_NOT_COUNTED:{code}:{level or 'ALL'}"))
+    
+  for reason, n in sorted((stats.get("skipped") or {}).items()):
+    if reason == "PDF_UNCALIBRATED":
+      specs.append(IssueSpec(
+        code="PDF_UNCALIBRATED", severity="error", blocks="APPROVAL",
+        message=f"{n} PDF measurement(s) have no calibration and were not measured.",
+        suggested_fix="Calibrate the sheet and confirm the measurements again.", details={"count": n},
+        dedupe_key="PDF_UNCALIBRATED"))
+      
+    elif reason == "PDF_MEASUREMENT_UNASSIGNED":
+      specs.append(IssueSpec(
+        code="PDF_MEASUREMENT_UNASSIGNED", severity="warning", blocks="NONE",
+        message=f"{n} PDF measurement(s) have no work item and were not counted.",
+        suggested_fix="Choose a work item for each measurement.", details={"count": n},
+        dedupe_key="PDF_UNASSIGNED"))
+      
+    else:
+      specs.append(IssueSpec(
+        code="PDF_MEASUREMENT_SKIPPED", severity="warning", blocks="NONE",
+        message=f"{n} PDF measurement(s) were not measured ({reason}).",
+        suggested_fix="Open the PDF takeoff, fix these measurements and confirm them again.",
+        details={"reason": reason, "count": n}, dedupe_key=f"PDF_SKIPPED:{reason}"))
+      
+  for v in stats.get("variances") or []:
+    if not v.get("over_tolerance"):
+      continue
+    level = v.get("level_id")
+    specs.append(IssueSpec(
+      code="PDF_MODEL_VARIANCE", severity="warning" if level else "info", blocks="NONE",
+      message=(f"The PDF takeoff differs from the model by {v['variance_pct']}% for {v['work_item_code']} "
+        f"(PDF {v['pdf_quantity']} {v['unit']}, model {v['model_quantity']} {v['unit']}; tolerance {v['tolerance_pct']}%)."),
+      suggested_fix="Check which of the two is right before approving; either the model or the PDF measurement is incomplete.",
+      details=dict(v), dedupe_key=f"PDF_VARIANCE:{v['work_item_code']}:{level or 'ALL'}:{v['unit']}"))
+  return specs
 
 def ledger_warning_specs(rows: Iterable[tuple]) -> list[IssueSpec]:
   grouped: dict = {}

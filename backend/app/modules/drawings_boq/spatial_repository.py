@@ -9,6 +9,7 @@ from app.engine.measure.profile import FinishRuleSpec
 from app.modules.drawings_boq.schedule_parsing import norm_mark
 from app.modules.drawings_boq.models import BuildingSpace, DrawingElement, ElementRelation, FinishRule, ScheduleImport, ScheduleRow, SpaceBoundary, SpaceFinish
 from app.modules.drawings_boq.rebar.rebar_repository import load_rebar_inputs
+from app.modules.drawings_boq.takeoff.repository import load_takeoff_inputs
 
 _CHUNK = 1000
 
@@ -17,7 +18,7 @@ class ReinforcementsInputs:
   spaces: tuple = ()
   openings: tuple = ()
   schedule_lines: tuple = ()
-  rebar: object = None
+  takeoff: object = None
 
 def _chunks(items: list, size: int = _CHUNK):
   for i in range(0, len(items), size):
@@ -209,7 +210,8 @@ async def load_reinforcements_inputs(
   return ReinforcementsInputs(
     spaces=space_inputs,
     openings=tuple(sorted(openings.values(), key=lambda o: str(o.element_id))),
-    schedule_lines=line_inputs, rebar=await load_rebar_inputs(session, org, project_id)
+    schedule_lines=line_inputs, rebar=await load_rebar_inputs(session, org, project_id),
+    takeoff=await load_takeoff_inputs(session, org, drawing_ids),
   )
 
 async def persist_spatial(session: AsyncSession, drawing, read_result, drawing_elements, level_ids: dict) -> None:

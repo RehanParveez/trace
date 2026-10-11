@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.drawings_boq.models import ( CalculationRun, RunStageLog, DrawingElement, QuantityLedger, QuantitySolid, RunDependencyEdge, RunElementState, StagedQuantityLedger, StagedQuantitySolid,
- LedgerDeduction, StagedLedgerDeduction, RebarBarMark, StagedRebarBarMark 
+ LedgerDeduction, StagedLedgerDeduction, RebarBarMark, StagedRebarBarMark, TakeoffMeasurement
 )
 import json
 from uuid import UUID, uuid5
@@ -165,6 +165,24 @@ class CalculationRunRepository:
   async def stage_deductions(self, rows: list[dict]) -> None:
     for i in range(0, len(rows), _chunk()):
       await self.session.execute(insert(StagedLedgerDeduction), rows[i:i + _chunk()])
+  
+  async def drop_staged_ledger(self, run_id: UUID, ledger_ids: list[UUID], solid_ids: list[UUID] | None = None) -> None:
+    ledger_ids = list(ledger_ids)
+    for i in range(0, len(ledger_ids), _chunk()):
+      await self.session.execute(delete(StagedQuantityLedger).where(
+        StagedQuantityLedger.run_id == run_id, StagedQuantityLedger.id.in_(ledger_ids[i:i + _chunk()])))
+      
+    solid_ids = list(solid_ids or [])
+    for i in range(0, len(solid_ids), _chunk()):
+      await self.session.execute(delete(StagedQuantitySolid).where(
+        StagedQuantitySolid.run_id == run_id, StagedQuantitySolid.id.in_(solid_ids[i:i + _chunk()])))
+
+  async def record_takeoff_results(self, org: UUID, results: list[dict], run_id: UUID) -> None:
+    for r in results:
+      await self.session.execute(
+        update(TakeoffMeasurement)
+        .where(TakeoffMeasurement.id == UUID(r["measurement_id"]), TakeoffMeasurement.organization_id == org)
+        .values(last_result={**r, "run_id": str(run_id)}))
       
   async def stage_bar_marks(self, rows: list[dict]) -> None:
     for i in range(0, len(rows), _chunk()):

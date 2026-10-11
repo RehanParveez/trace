@@ -260,7 +260,7 @@ _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CA
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
 _SOLID_STATUSES = "'OK','REVIEW_REQUIRED','REJECTED'"
 _GEOMETRY_KINDS = "'EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPPORTED'"
-_LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE'"
+_LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE','PDF_TAKEOFF'"
 _CANONICAL_UNITS = "'m3','m2','m','kg','nos'"
 _DEDUCTION_TYPES = "'OVERLAP_ALLOCATION','EXTENT_TRIMMING','VOID_DEDUCTION','MATERIAL_SUBSTITUTION','MEASUREMENT_CONVENTION'"
 _LIFECYCLES = "'DRAFT','CALCULATING','CALCULATED','UNDER_REVIEW','APPROVED','ISSUED','SUPERSEDED','ARCHIVED'"
@@ -3889,6 +3889,7 @@ class ProjectRateOverride(Base, TimestampMixin):
     ForeignKey("users.id", ondelete="SET NULL", name="fk_project_rate_overrides_created_by"),
     nullable=True,
   )
+  
   revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   
   revoked_by_user_id: Mapped[UUID | None] = mapped_column(
@@ -3898,3 +3899,253 @@ class ProjectRateOverride(Base, TimestampMixin):
   )
   
   revoke_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+
+_TAKEOFF_CONTENT_KINDS = "'VECTOR','RASTER','UNKNOWN'"
+_TAKEOFF_PREP_STATUSES = "'PENDING','READY','FAILED'"
+_TAKEOFF_CAL_METHODS = "'TWO_POINT','SCALE_RATIO'"
+_TAKEOFF_KINDS = "'LENGTH','AREA','COUNT'"
+_TAKEOFF_RECON_MODES = "'AUTO','ADD','REPLACE_MODEL','VERIFY_ONLY'"
+_TAKEOFF_SOURCES = "'MANUAL','VECTOR_SNAP','TAG_SCAN'"
+_TAKEOFF_STATUSES = "'DRAFT','CONFIRMED'"
+
+class TakeoffSheet(Base, TimestampMixin):
+  __tablename__ = "takeoff_sheets"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_takeoff_sheets_id_org"),
+    UniqueConstraint("drawing_id", "page_no", name="uq_takeoff_sheets_drawing_page"),
+    
+    ForeignKeyConstraint(
+      ["drawing_id", "organization_id"], ["drawings.id", "drawings.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_sheets_drawing_tenant",
+    ),
+    
+    Index("ix_takeoff_sheets_org_project", "organization_id", "project_id"),
+    CheckConstraint("page_no >= 1", name="ck_takeoff_sheets_page_no"),
+    CheckConstraint("width_pt > 0 AND height_pt > 0", name="ck_takeoff_sheets_size"),
+    CheckConstraint("rotation IN (0, 90, 180, 270)", name="ck_takeoff_sheets_rotation"),
+    CheckConstraint(f"content_kind IN ({_TAKEOFF_CONTENT_KINDS})", name="ck_takeoff_sheets_content_kind"),
+    CheckConstraint(f"prep_status IN ({_TAKEOFF_PREP_STATUSES})", name="ck_takeoff_sheets_prep_status"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  drawing_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  page_no: Mapped[int] = mapped_column(Integer, nullable=False)
+  width_pt: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
+  height_pt: Mapped[Decimal] = mapped_column(Numeric(12, 4), nullable=False)
+  rotation: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  content_kind: Mapped[str] = mapped_column(String(10), nullable=False, default="UNKNOWN", server_default="UNKNOWN")
+  label: Mapped[str | None] = mapped_column(String(200), nullable=True)
+  
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  scale_text: Mapped[str | None] = mapped_column(String(60), nullable=True)
+  
+  detected_scale: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, server_default=text("'{}'::jsonb"),
+  )
+  
+  prep_status: Mapped[str] = mapped_column(
+    String(10),
+    nullable=False,
+    default="PENDING",
+    server_default="PENDING",
+  )
+  
+  prep_error: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+  prep_meta: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  text_chars: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  vector_ops: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+class TakeoffCalibration(Base, TimestampMixin):
+  __tablename__ = "takeoff_calibrations"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_takeoff_calibrations_id_org"),
+    
+    ForeignKeyConstraint(
+      ["sheet_id", "organization_id"], ["takeoff_sheets.id", "takeoff_sheets.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_calibrations_sheet_tenant",
+    ),
+    
+    Index("ix_takeoff_calibrations_sheet", "sheet_id"),
+    Index("uq_takeoff_calibrations_default", "sheet_id", unique=True, postgresql_where=text("is_default")),
+    CheckConstraint(f"method IN ({_TAKEOFF_CAL_METHODS})", name="ck_takeoff_calibrations_method"),
+    CheckConstraint("ratio IS NULL OR ratio > 0", name="ck_takeoff_calibrations_ratio"),
+    CheckConstraint("quality_factor >= 0 AND quality_factor <= 1", name="ck_takeoff_calibrations_quality"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"), 
+    nullable=False,
+  )
+  
+  sheet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  method: Mapped[str] = mapped_column(String(12), nullable=False)
+  
+  ref: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  check_ref: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  ratio: Mapped[Decimal | None] = mapped_column(Numeric(14, 6), nullable=True)
+  label: Mapped[str | None] = mapped_column(String(120), nullable=True)
+  
+  is_default: Mapped[bool] = mapped_column(
+    Boolean,
+    nullable=False,
+    default=False,
+    server_default=text("false"),
+  )
+  
+  usable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+  reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+  mm_per_pt: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+  check_error_pct: Mapped[Decimal | None] = mapped_column(Numeric(10, 4), nullable=True)
+  baseline_pt: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), nullable=True)
+  
+  quality_factor: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4),
+    nullable=False,
+    default=Decimal("0"),
+    server_default=text("0"),
+  )
+  
+  warnings: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+
+class TakeoffMeasurement(Base, TimestampMixin):
+  __tablename__ = "takeoff_measurements"
+
+  __table_args__ = (
+    UniqueConstraint("id", "organization_id", name="uq_takeoff_measurements_id_org"),
+    
+    ForeignKeyConstraint(
+      ["sheet_id", "organization_id"], ["takeoff_sheets.id", "takeoff_sheets.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_measurements_sheet_tenant",
+    ),
+    
+    ForeignKeyConstraint(
+      ["calibration_id", "organization_id"], ["takeoff_calibrations.id", "takeoff_calibrations.organization_id"],
+      name="fk_takeoff_measurements_calibration_tenant",
+    ),
+    
+    Index("ix_takeoff_measurements_sheet", "sheet_id"),
+    Index("ix_takeoff_measurements_org_project_status", "organization_id", "project_id", "status"),
+    
+    CheckConstraint(f"kind IN ({_TAKEOFF_KINDS})", name="ck_takeoff_measurements_kind"),
+    CheckConstraint(f"recon_mode IN ({_TAKEOFF_RECON_MODES})", name="ck_takeoff_measurements_recon_mode"),
+    CheckConstraint(f"source IN ({_TAKEOFF_SOURCES})", name="ck_takeoff_measurements_source"),
+    CheckConstraint(f"status IN ({_TAKEOFF_STATUSES})", name="ck_takeoff_measurements_status"),
+    CheckConstraint("status <> 'CONFIRMED' OR work_item_code IS NOT NULL", name="ck_takeoff_measurements_confirmed_item"),
+    CheckConstraint("status <> 'CONFIRMED' OR kind = 'COUNT' OR calibration_id IS NOT NULL", name="ck_takeoff_measurements_confirmed_cal"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  sheet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  calibration_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  kind: Mapped[str] = mapped_column(String(8), nullable=False)
+  
+  quantity_mode: Mapped[str] = mapped_column(
+    String(40),
+    nullable=False,
+    default="DIRECT",
+    server_default="DIRECT",
+  )
+  
+  geometry: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  params: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  work_item_code: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  
+  level_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("building_levels.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  label: Mapped[str | None] = mapped_column(String(200), nullable=True)
+  tag: Mapped[str | None] = mapped_column(String(60), nullable=True)
+  material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  
+  recon_mode: Mapped[str] = mapped_column(String(14), nullable=False, default="AUTO", server_default="AUTO")
+  source: Mapped[str] = mapped_column(String(12), nullable=False, default="MANUAL", server_default="MANUAL")
+  status: Mapped[str] = mapped_column(String(10), nullable=False, default="DRAFT", server_default="DRAFT")
+  geometry_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  computed: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  last_result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  confirmed_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

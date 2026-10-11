@@ -12,6 +12,7 @@ from app.modules.projects.router import router as projects_router
 from app.modules.drawings_boq.router import router as drawings_boq_router
 from app.modules.drawings_boq.standards.router import router as standards_router
 from app.modules.drawings_boq.finish_schedule.router import router as finish_schedule_router
+from app.modules.drawings_boq.takeoff.router import router as takeoff_router
 from app.modules.drawings_boq.rebar.rebar_router import router as rebar_router
 from app.modules.drawings_boq.pricing.router import router as pricing_router
 from app.modules.whatsapp.router import router as  whatsapp_router
@@ -74,6 +75,8 @@ app.include_router(drawings_boq_router, prefix=settings.api_v1_prefix)
 app.include_router(standards_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(finish_schedule_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
+
+app.include_router(takeoff_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(rebar_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 

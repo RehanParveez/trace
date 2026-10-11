@@ -15,8 +15,9 @@ from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar, self_ch
 from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UNITS, STEEL_REJECTED_CODE, STEEL_SOLID_PROFILE_FACTOR,
   STEEL_UNCERTAIN_FACTOR, UNCERTAIN_BASES, is_pile, is_steel_role, measure_steel, solid_profile_suspected, split_steel,
   steel_check, steel_duplicate_ids, steel_length_mm, steel_member_length_mm, steel_recoverable, steel_stats)
+from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.4"
+ENGINE_VERSION = "2026.10.5"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -35,7 +36,7 @@ VOLUME_ROLES = frozenset({
   "RAMP", "RAMP_SLAB",
 })
 COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
-FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS, **STEEL_FORMULA_UNITS}
+FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS, **STEEL_FORMULA_UNITS, **TAKEOFF_FORMULA_UNITS}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
 QTO_ONLY_FACTOR = Decimal("0.9")
 AABB_CONFIDENCE_FACTOR = Decimal("0.8")
@@ -366,7 +367,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
       if row.quantity != expected:
         failures.append(f"net volume != gross - deductions on solid {row.solid_id}")
 
-  failures.extend(steel_check(solids, ledger))
+  failures.extend(takeoff_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
@@ -418,7 +419,16 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids += rebar_res.solids
     extra_ledger += rebar_res.ledger
     
-  self_check(solids + extra_solids, ledger + extra_ledger, alloc)
+  takeoff_res = None
+  if ctx.takeoff is not None:
+    takeoff_res = measure_takeoff(ctx, profile, ctx.takeoff, ledger + extra_ledger)
+    ledger = apply_replacements(ledger, takeoff_res.dropped_keys)
+    extra_ledger = apply_replacements(extra_ledger, takeoff_res.dropped_keys)
+    live = {e.solid_id for e in ledger + extra_ledger}
+    gone = {sid for sid, _ in takeoff_res.dropped_keys if sid not in live}
+    extra_solids = [s for s in extra_solids if s.id not in gone]
+    extra_solids += takeoff_res.solids
+    extra_ledger += takeoff_res.ledger
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:
@@ -428,7 +438,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     **alloc.stats,
     **(rebar_res.stats if rebar_res else {}),
     "rebar_skipped": rebar_res.skipped if rebar_res else {},
-    "finish_skipped": finish_skipped,
+    "pdf_takeoff": takeoff_res.stats if takeoff_res else {},
     "skipped_by_role": skipped,
     "wall_material": wall_material_stats(solids, ledger),
     "steel": steel_stats(solids, ledger, rejected),

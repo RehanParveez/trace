@@ -21,6 +21,8 @@ from app.core.config import settings
 from app.engine.measure import finishes as fin
 from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
 from app.engine.measure import rebar as rb
+from app.engine.measure import takeoff as tk
+from app.modules.drawings_boq.takeoff.repository import takeoff_drawing_ids
 from datetime import timedelta, timezone, datetime
 import json
 import random
@@ -157,7 +159,8 @@ class CalculationService:
       rule_set_ref=f"{rule_set.id}:{rule_set.immutable_version}:{rule_set.content_hash}",
       convention_code=convention_code, engine_version=kernel.ENGINE_VERSION,
       settings=settings, convention_params=convention_params,
-      spatial={**fin.finish_sched_payload(reinforcements.spaces, reinforcements.openings, reinforcements.schedule_lines), "rebar": rb.rebar_payload(reinforcements.rebar)} if reinforcements else None,
+      spatial={**fin.finish_sched_payload(reinforcements.spaces, reinforcements.openings, reinforcements.schedule_lines), "rebar": rb.rebar_payload(reinforcements.rebar),
+        "takeoff": tk.takeoff_payload(reinforcements.takeoff)} if reinforcements else None,
     )
 
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,
@@ -170,15 +173,18 @@ class CalculationService:
 
     drawings = await self.drawings.list_by_project(organization_id, project_id)
     eligible = [d for d in drawings
-      if d.format == DrawingFormat.IFC and d.status == DrawingStatus.PARSED and d.is_current_revision]
+    if d.format == DrawingFormat.IFC and d.status == DrawingStatus.PARSED and d.is_current_revision]
+    takeoff_ids = await takeoff_drawing_ids(self.session, organization_id, project_id)
+    takeoff_drawings = [d for d in drawings if d.format == DrawingFormat.PDF and d.id in takeoff_ids and d.is_current_revision]
+    
     if drawing_ids:
       wanted = set(drawing_ids)
-      chosen = [d for d in eligible if d.id in wanted]
+      chosen = [d for d in (*eligible, *takeoff_drawings) if d.id in wanted]
       if len(chosen) != len(wanted):
-        raise TraceException("One or more drawings are not current, parsed IFC drawings in this project.",
+        raise TraceException("One or more drawings are not current, parsed IFC drawings, or current PDFs with confirmed takeoff, in this project.",
           status_code=422, code="DRAWING_NOT_ELIGIBLE")
     elif len(eligible) <= 1:
-      chosen = eligible
+      chosen = [*eligible, *takeoff_drawings]
       
     else:
       names = ", ".join(sorted(d.original_filename for d in eligible)[:6])
@@ -187,7 +193,7 @@ class CalculationService:
         "A run only measures what you select.",
         status_code=422, code="DRAWING_SELECTION_REQUIRED")
     if not chosen:
-      raise TraceException("This project has no parsed IFC drawing to calculate.",
+      raise TraceException("This project has no parsed IFC drawing and no confirmed PDF takeoff measurements to calculate.",
         status_code=422, code="NO_PARSED_DRAWINGS")
 
     rule_set = await DrawingBOQService(self.session).get_active_rule_set(organization_id, rule_set_code)
@@ -343,7 +349,7 @@ class CalculationService:
         convention_code=convention_code, rule_set_code=rule_set.code,
         rule_set_version=rule_set.immutable_version, mappings=mappings,
         convention_params=convention_params, openings=p6.openings, spaces=p6.spaces,
-        schedule_lines=p6.schedule_lines, rebar=p6.rebar,
+        schedule_lines=p6.schedule_lines, rebar=p6.rebar, takeoff=p6.takeoff,
       )
       state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
@@ -480,6 +486,25 @@ class CalculationService:
         state["extra_ledger"] += res.ledger
         state["marks"], state["rebar_stats"], state["rebar_skipped"] = res.marks, res.stats, res.skipped
         return {**res.stats, "skipped": res.skipped}
+      
+      async def pdf_takeoff():
+        res = await asyncio.to_thread(tk.measure_takeoff, ctx, profile, p6.takeoff, state["ledger"] + state["extra_ledger"])
+        if res.dropped_keys:
+          state["ledger"] = tk.apply_replacements(state["ledger"], res.dropped_keys)
+          state["extra_ledger"] = tk.apply_replacements(state["extra_ledger"], res.dropped_keys)
+          live = {e.solid_id for e in state["ledger"] + state["extra_ledger"]}
+          gone = {sid for sid, _ in res.dropped_keys if sid not in live}
+          synthetic_gone = [s.id for s in state["extra_solids"] if s.id in gone]
+          await self.runs.drop_staged_ledger(run_id, [uuid5(run_id, f"ledger|{sid}|{code}") for sid, code in res.dropped_keys], synthetic_gone)
+          state["extra_solids"] = [s for s in state["extra_solids"] if s.id not in set(synthetic_gone)]
+        await self.runs.stage_solids([_solid_row(run, s, "pdf_takeoff") for s in res.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "pdf_takeoff") for e in res.ledger])
+        state["extra_solids"] += res.solids
+        state["extra_ledger"] += res.ledger
+        state["takeoff_stats"], state["takeoff_results"] = res.stats, res.results
+        return {"measurements": res.stats.get("measurements", 0), "counted": res.stats.get("counted", 0),
+          "verified": res.stats.get("verified", 0), "skipped": res.stats.get("skipped", {}),
+          "replaced_work_items": len(res.stats.get("replaced", []))}
 
       async def check():
         await asyncio.to_thread(kernel.self_check, state["solids"] + state["extra_solids"],
@@ -505,6 +530,7 @@ class CalculationService:
       await self._stage(run, "schedules", schedules, 78)
       await self._skip(run, "recipes", reason="not implemented in this engine version")
       await self._stage(run, "reinforcement", reinforcement, 79)
+      
       await self._stage(run, "self_check", check, 80)
 
       if not await self.runs.touch_heartbeat(run_id, self._attempt):
@@ -546,6 +572,7 @@ class CalculationService:
       await self.runs.set_metrics(
         run_id, metrics, mode=mode, baseline_run_id=state.get("baseline_run_id") if mode == "INCREMENTAL" else None,
         alloc_signature=signature if planner is not None else None, state_available=planner is not None)
+      await self.runs.record_takeoff_results(org, state.get("takeoff_results") or [], run_id)
       await self.runs.complete(run_id, {
         "promoted": promoted,
         "elements_in": len(elements),
@@ -561,7 +588,7 @@ class CalculationService:
         "finishes_skipped": state["finish_skipped"],
         "spaces": len(p6.spaces),
         "rebar": state["rebar_stats"],
-        "rebar_skipped": state["rebar_skipped"],
+        "pdf_takeoff": state.get("takeoff_stats", {}),
       })
       if planner is not None:
         await self.runs.prune_state(org, project_id, int(settings.calc_state_keep_runs))

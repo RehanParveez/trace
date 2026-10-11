@@ -353,6 +353,7 @@ class BOQEngineService:
         suggested_fix="Add a volume quantity (Qto) or a solid body to these members in the model, or add the steel manually.",
         details={"count": steel["not_measured"]}))
       
+    specs.extend(logic.takeoff_issue_specs(stats.get("pdf_takeoff") or {}))
     mapped = [m.ifc_type for m in profile.mappings if m.work_item_code]
     invalid = await self.repo.invalid_counts(org, list(run.drawing_revision_ids), mapped,
       sorted(VOLUME_ROLES | COUNT_ROLES))
