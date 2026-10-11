@@ -10,6 +10,7 @@ from app.core.database import Base
 from app.shared.mixins import TimestampMixin
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.dialects.postgresql import JSONB, DOUBLE_PRECISION
+from sqlalchemy import LargeBinary as _TakeoffLargeBinary
 
 class DrawingFormat(str, enum.Enum):
   IFC = "IFC"
@@ -4149,3 +4150,38 @@ class TakeoffMeasurement(Base, TimestampMixin):
   )
   
   confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+class TakeoffSheetIndex(Base, TimestampMixin):
+  __tablename__ = "takeoff_sheet_indexes"
+
+  __table_args__ = (
+    
+    ForeignKeyConstraint(
+      ["sheet_id", "organization_id"], ["takeoff_sheets.id", "takeoff_sheets.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_sheet_indexes_sheet_tenant",
+    ),
+    
+    CheckConstraint("analysis_version >= 1", name="ck_takeoff_sheet_indexes_version"),
+  )
+
+  sheet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"), 
+    nullable=False
+  )
+  
+  analysis_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+  segment_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  ring_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  word_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default=text("0"))
+  
+  analysis: Mapped[dict] = mapped_column(
+    JSONB, 
+    nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  payload: Mapped[bytes] = mapped_column(_TakeoffLargeBinary, nullable=False)

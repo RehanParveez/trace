@@ -116,4 +116,5 @@ async def preview(
 async def reconciliation(
   project_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
-  return await TakeoffService(session).reconciliation(_org(current_user), project_id)
+ from app.modules.drawings_boq.takeoff.prep_router import router as _prep_router  
+ router.include_router(_prep_router)

@@ -250,6 +250,7 @@ class TakeoffService:
       sheet.scale_text = (payload.scale_text or "").strip() or None
     if "content_kind" in fs and payload.content_kind is not None and payload.content_kind != sheet.content_kind:
       sheet.content_kind, kind_changed = payload.content_kind, True
+      sheet.prep_meta = {**(sheet.prep_meta or {}), "kind_source": "USER"}
     await self.session.flush()
     
     if kind_changed:
@@ -367,7 +368,7 @@ class TakeoffService:
     self._check_mode(payload.kind, payload.quantity_mode)
     await self._check_level(org, payload.level_id)
     code = await self._check_work_item(org, payload.work_item_code)
-    
+
     try:
       geometry = tk.normalized_geometry(payload.kind, payload.geometry)
     except tk.TakeoffError as exc:
@@ -378,16 +379,19 @@ class TakeoffService:
         cal = await self._calibration(org, payload.calibration_id)
         if cal.sheet_id != sheet.id:
           raise TraceException("That calibration belongs to another sheet.", status_code=422, code="CALIBRATION_WRONG_SHEET")
-      
       else:
         cal = await self._default_calibration(org, sheet.id)
+    source = payload.source
+    if source != "MANUAL":
+      from app.modules.drawings_boq.takeoff.prep_service import PrepService
+      source = await PrepService(self.session).verified_source(org, sheet, payload.kind, geometry, source, payload.tag)
     m = TakeoffMeasurement(
-      id=uuid4(), organization_id=org, project_id=sheet.project_id, sheet_id=sheet.id,
+      id=uuid4(), organization_id=org, sheet_id=sheet.id,
       calibration_id=cal.id if cal is not None else None, kind=payload.kind, quantity_mode=payload.quantity_mode,
       geometry=geometry, params=self._params_json(payload.params), work_item_code=code,
       level_id=payload.level_id if payload.level_id is not None else sheet.level_id,
       label=(payload.label or "").strip() or None, tag=(payload.tag or "").strip() or None,
-      material_grade=(payload.material_grade or "").strip() or None, recon_mode=payload.recon_mode, source=payload.source,
+      material_grade=(payload.material_grade or "").strip() or None, recon_mode=payload.recon_mode, source=source,
       status="DRAFT", geometry_hash=tk.geometry_hash(payload.kind, geometry), created_by_user_id=user_id)
     m.computed = self._evaluate(m, sheet, cal, await self._profile(org))
     self.session.add(m)
@@ -415,6 +419,10 @@ class TakeoffService:
       if geometry != m.geometry:
         m.geometry, m.geometry_hash = geometry, tk.geometry_hash(m.kind, geometry)
         changed.add("geometry")
+        if m.source != "MANUAL":
+          from app.modules.drawings_boq.takeoff.prep_service import PrepService
+          m.source = await PrepService(self.session).verified_source(org, sheet, m.kind, geometry, m.source, m.tag)
+      
     if "params" in fs and payload.params is not None:
       params = self._params_json(payload.params)
       if params != (m.params or {}):
@@ -559,11 +567,16 @@ class TakeoffService:
         cal = (await self._calibration(org, payload.calibration_id)) if payload.calibration_id else await self._default_calibration(org, sheet.id)
         if cal is not None and cal.sheet_id != sheet.id:
           raise TraceException("That calibration belongs to another sheet.", status_code=422, code="CALIBRATION_WRONG_SHEET")
-      
+
+      source = payload.source
+      if source != "MANUAL":
+        from app.modules.drawings_boq.takeoff.prep_service import PrepService
+        source = await PrepService(self.session).verified_source(org, sheet, payload.kind, geometry, source, None)
+
       probe = tk.MeasurementInput(
         id=uuid4(), sheet_id=sheet.id, calibration_id=cal.id if cal is not None else None, kind=payload.kind,
         quantity_mode=payload.quantity_mode, geometry=geometry, params=self._params_json(payload.params),
-        work_item_code=None, source=payload.source)
+        work_item_code=None, source=source)
       cal_eval = tk.evaluate_calibration(repo_mod.calibration_input(cal, repo_mod.sheet_user_unit(sheet))) if cal is not None else None
       comp = tk.compute_measurement(probe, repo_mod.sheet_input(sheet), cal_eval, profile)
     except tk.TakeoffError as exc:
