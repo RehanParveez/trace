@@ -7,6 +7,17 @@ import { useSitePhotos } from "../../whatsapp";
 import { useExpenses } from "../../expenses";
 import { useProcurementRequests } from "../../procurement";
 import { useTranslation } from "react-i18next";
+import { useAttentionAlerts, type AttentionKind } from "../../alerts";
+import { formatCashFlowMoney } from "../../cash_flow/utils/cash-flow.utils";
+
+const ALERT_ROUTES: Record<AttentionKind, { to: string; icon: DashboardAttentionItem["icon"] }> = {
+  CLIENT_BILLS_OVERDUE: { to: "/app/running-bills", icon: "expenses" },
+  SUBCONTRACTOR_BILLS_OVERDUE: { to: "/app/subcontractors", icon: "expenses" },
+  GUARANTEES_EXPIRING: { to: "/app/bank-guarantees", icon: "spark" },
+  TAX_DUE: { to: "/app/sales-tax", icon: "expenses" },
+  PROCUREMENT_OVERDUE: { to: "/app/procurement", icon: "procurement" },
+  BUDGETS_NEAR_LIMIT: { to: "/app/budgets", icon: "spark" },
+};
 
 export function useDashboardAttention(): {
   items: DashboardAttentionItem[];
@@ -44,6 +55,8 @@ export function useDashboardAttention(): {
     { status: "REQUESTED" },
     { enabled: canManageProcurement },
   );
+
+  const alertsQuery = useAttentionAlerts();
 
   const items: DashboardAttentionItem[] = [];
 
@@ -119,7 +132,24 @@ export function useDashboardAttention(): {
     }
   }
 
+  const alertCurrency = alertsQuery.data?.currency ?? "PKR";
+  for (const alert of alertsQuery.data?.items ?? []) {
+    const route = ALERT_ROUTES[alert.kind];
+    if (!route) continue;
+    items.push({
+      key: `alert-${alert.kind}`,
+      icon: route.icon,
+      label: t(`dashboard.attention.alert.${alert.kind}`, {
+        count: alert.count,
+        amount: alert.amount === null ? "" : formatCashFlowMoney(alert.amount, alertCurrency),
+      }),
+      count: alert.count,
+      to: route.to,
+    });
+  }
+
   const isLoading =
+    alertsQuery.isLoading ||
     (canManageMembers && invitationsQuery.isLoading) ||
     (canReviewClaims && submittedClaimsQuery.isLoading) ||
     (canManagePhotos && unassignedPhotosQuery.isLoading) ||

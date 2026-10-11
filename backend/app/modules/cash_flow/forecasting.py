@@ -13,6 +13,7 @@ class CashFlowCategory(str, Enum):
   LABOUR = "LABOUR"
   SUBCONTRACTOR = "SUBCONTRACTOR"
   CLIENT_COLLECTION = "CLIENT_COLLECTION"
+  TAX = "TAX"
 
 @dataclass
 class CashFlowLineItem:

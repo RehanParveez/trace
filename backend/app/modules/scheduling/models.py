@@ -4,6 +4,7 @@ from app.shared.mixins import TimestampMixin
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from uuid import UUID
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import Enum, Boolean, Date, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 import enum
 import uuid
@@ -35,6 +36,8 @@ class ProjectSchedule(Base, TimestampMixin):
   )
   
   target_completion_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+  work_week_days: Mapped[int] = mapped_column(Integer, nullable=False, default=6, server_default="6")
+  holidays: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default="[]")
 
 class ScheduleTask(Base, TimestampMixin):
   __tablename__ = "schedule_tasks"

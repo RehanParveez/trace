@@ -8,6 +8,7 @@ class CashFlowSettingsUpdateRequest(BaseModel):
   subcontractor_payment_days: int | None = Field(default=None, ge=0, le=180)
   client_collection_days: int | None = Field(default=None, ge=0, le=180)
   labour_lookback_days: int | None = Field(default=None, ge=7, le=180)
+  expected_client_wht_percentage: Decimal | None = Field(default=None, ge=0, le=40)
 
 class CashFlowSettingsResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -15,6 +16,7 @@ class CashFlowSettingsResponse(BaseModel):
   subcontractor_payment_days: int
   client_collection_days: int
   labour_lookback_days: int
+  expected_client_wht_percentage: Decimal
 
 class CashFlowLineItemResponse(BaseModel):
   event_date: date
@@ -49,4 +51,6 @@ class CashFlowForecastResponse(BaseModel):
   line_items: list[CashFlowLineItemResponse]
   assumptions: CashFlowSettingsResponse
   labour_daily_run_rate: Decimal
+  expected_client_wht_total: Decimal
+  suggested_client_wht_percentage: Decimal | None
   limitations: list[str]

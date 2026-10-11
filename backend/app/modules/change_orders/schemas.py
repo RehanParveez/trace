@@ -2,7 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from uuid import UUID
 from decimal import Decimal
-from datetime import datetime
+from datetime import date, datetime
 from app.modules.change_orders.models import ChangeOrderStatus, ChangeOrderType
 
 class ChangeOrderLineItemInput(BaseModel):
@@ -35,6 +35,9 @@ class ChangeOrderCreateRequest(BaseModel):
 
 class ChangeOrderApproveRequest(BaseModel):
   version: int
+  client_approved_on: date | None = None
+  client_reference: str | None = Field(default=None, max_length=100)
+  extension_of_time_days: int = Field(default=0, ge=0, le=730)
 
 class ChangeOrderRejectRequest(BaseModel):
   version: int
@@ -68,6 +71,8 @@ class ChangeOrderResponse(BaseModel):
   value_impact: Decimal
   currency: str
   approved_at: datetime | None
+  client_approved_on: date | None = None
+  extension_of_time_days: int = 0
   rejected_at: datetime | None
   rejection_reason: str | None
   version: int
@@ -81,4 +86,6 @@ class ProjectChangeOrderSummaryResponse(BaseModel):
   approved_count: int
   approved_net_value_impact: Decimal
   draft_count: int
+  approved_without_client_sign_off: int = 0
+  approved_extension_days: int = 0
   currency: str

@@ -68,6 +68,21 @@ class ChangeOrderRepository:
       )
     )
     return approved_count, float(approved_total), draft_count.scalar_one()
+  
+  async def get_sign_off_summary(self, organization_id: UUID, project_id: UUID) -> tuple[int, int]:
+    unsigned = (await self.session.execute(
+      select(func.count()).select_from(ChangeOrder).where(
+        ChangeOrder.organization_id == organization_id, ChangeOrder.project_id == project_id,
+        ChangeOrder.status == ChangeOrderStatus.APPROVED, ChangeOrder.client_approved_on.is_(None),
+      )
+    )).scalar_one()
+    days = (await self.session.execute(
+      select(func.coalesce(func.sum(ChangeOrder.extension_of_time_days), 0)).where(
+        ChangeOrder.organization_id == organization_id, ChangeOrder.project_id == project_id,
+        ChangeOrder.status == ChangeOrderStatus.APPROVED,
+      )
+    )).scalar_one()
+    return int(unsigned), int(days)
 
   async def get_boq_item(self, boq_item_id: UUID, organization_id: UUID, boq_version_id: UUID) -> BOQItem | None:
     result = await self.session.execute(

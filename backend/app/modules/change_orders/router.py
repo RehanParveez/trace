@@ -60,6 +60,7 @@ async def approve_change_order(
 ):
   return await _service(session).approve_change_order(
     current_user.active_membership.organization_id, change_order_id, payload.version, current_user.id,
+    payload.client_approved_on, payload.client_reference, payload.extension_of_time_days,
   )
 
 @router.post("/{change_order_id}/reject", response_model=ChangeOrderResponse)

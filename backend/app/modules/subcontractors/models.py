@@ -237,6 +237,7 @@ class SubcontractorBill(Base, TimestampMixin):
   
   issued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   cancelled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  cancel_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
   version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default="1")
   line_items: Mapped[list["SubcontractorBillLineItem"]] = relationship(
     "SubcontractorBillLineItem",

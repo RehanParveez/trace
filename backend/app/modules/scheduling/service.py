@@ -8,13 +8,18 @@ from app.modules.scheduling.models import ScheduleTask, ScheduleDependency, Sche
 from app.modules.audit.models import AuditAction, AuditEntityType
 from uuid import UUID, uuid4
 from app.core.exceptions import TraceException
-from app.modules.scheduling.cpm import CPMResult, TaskInput, compute_cpm
+from app.modules.scheduling.cpm import CPMResult, TaskInput, WorkCalendar, compute_cpm
+from app.modules.change_orders.repository import ChangeOrderRepository
+from app.shared.timeutils import today_local
+from datetime import date, timedelta
+from decimal import Decimal
 
 class SchedulingService:
   def __init__(self, session: AsyncSession):
     self.session = session
     self.repo = SchedulingRepository(session)
     self.projects = ProjectRepository(session)
+    self.change_orders = ChangeOrderRepository(session)
     self.audit = AuditLogService(session)
 
   async def create_task(
@@ -58,6 +63,14 @@ class SchedulingService:
       if value is not None:
         setattr(task, field_name, value.strip() if isinstance(value, str) else value)
 
+    if task.percent_complete > 0 and task.actual_start_date is None:
+      task.actual_start_date = today_local()
+    if task.percent_complete >= 100 and task.actual_end_date is None:
+      task.actual_end_date = today_local()
+    if task.actual_start_date and task.actual_end_date and task.actual_end_date < task.actual_start_date:
+      raise TraceException(
+        "The finish date cannot be before the start date.", status_code=422, code="SCHEDULE_ACTUAL_DATES_INVALID",
+      )
     self._recompute_status(task)
     await self.session.commit()
 
@@ -103,7 +116,13 @@ class SchedulingService:
     self, organization_id: UUID, project_id: UUID, payload: ProjectScheduleSettingsUpdateRequest,
   ):
     settings = await self.repo.get_or_create_settings(organization_id, project_id)
-    settings.target_completion_date = payload.target_completion_date
+    sent = payload.model_fields_set
+    if "target_completion_date" in sent:
+      settings.target_completion_date = payload.target_completion_date
+    if payload.work_week_days is not None:
+      settings.work_week_days = payload.work_week_days
+    if payload.holidays is not None:
+      settings.holidays = sorted({d.isoformat() for d in payload.holidays})
     await self.session.commit()
     return settings
 
@@ -121,10 +140,18 @@ class SchedulingService:
       TaskInput(
         id=task.id, planned_start_date=task.planned_start_date, planned_duration_days=task.planned_duration_days,
         predecessor_ids=predecessors_by_successor.get(task.id, []),
+        actual_start_date=task.actual_start_date, actual_end_date=task.actual_end_date,
+        percent_complete=task.percent_complete,
       )
       for task in tasks
     ]
-    result: CPMResult = compute_cpm(cpm_inputs, settings.target_completion_date)
+    holidays = frozenset(date.fromisoformat(d) for d in (settings.holidays or []))
+    calendar = WorkCalendar(work_week_days=settings.work_week_days, holidays=holidays)
+    _unsigned, extension_days = await self.change_orders.get_sign_off_summary(organization_id, project_id)
+    base_target = settings.target_completion_date
+   
+    adjusted_target = base_target + timedelta(days=extension_days) if base_target and extension_days else base_target
+    result: CPMResult = compute_cpm(cpm_inputs, adjusted_target, calendar, today_local())
 
     task_responses = []
     for task in tasks:
@@ -143,10 +170,13 @@ class SchedulingService:
         "latest_finish": computed.latest_finish if computed else None,
         "total_float_days": computed.total_float_days if computed else None,
         "is_critical": computed.is_critical if computed else False,
+        "is_complete": computed.is_complete if computed else False,
       })
 
     return {
-      "project_id": project_id, "target_completion_date": settings.target_completion_date,
+      "project_id": project_id, "target_completion_date": adjusted_target,
+      "base_target_completion_date": base_target, "approved_extension_days": extension_days,
+      "work_week_days": settings.work_week_days, "holidays": sorted(holidays),
       "natural_completion_date": result.natural_completion_date,
       "days_ahead_or_behind_target": result.days_ahead_or_behind_target,
       "warnings": result.warnings, "tasks": task_responses,

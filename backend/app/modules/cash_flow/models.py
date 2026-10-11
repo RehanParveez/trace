@@ -1,7 +1,8 @@
 from __future__ import annotations
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
-from sqlalchemy import UniqueConstraint, ForeignKey, Integer
+from decimal import Decimal
+from sqlalchemy import UniqueConstraint, ForeignKey, Integer, Numeric
 from sqlalchemy.orm import Mapped, mapped_column
 from uuid import UUID
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -23,3 +24,9 @@ class CashFlowSettings(Base, TimestampMixin):
   subcontractor_payment_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
   client_collection_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
   labour_lookback_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+  expected_client_wht_percentage: Mapped[Decimal] = mapped_column(
+    Numeric(5, 2), 
+    nullable=False, 
+    default=Decimal("0"),
+    server_default="0",
+  )

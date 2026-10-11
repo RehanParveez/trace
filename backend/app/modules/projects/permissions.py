@@ -12,4 +12,7 @@ PROJECT_PERMISSIONS = {
 
   PermissionKey.PROJECT_DELETE:
     "Delete projects, clients, members, and milestones.",
+
+  PermissionKey.PROJECT_VIEW_ALL:
+    "See every project in the company. Without it, a person sees only the projects they have been added to.",
 }

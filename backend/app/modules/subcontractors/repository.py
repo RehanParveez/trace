@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
+from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 from app.modules.subcontractors.models import Subcontractor, SubcontractAgreement, SubcontractAgreementItem, SubcontractorAdvance, SubcontractorBill, SubcontractorBillLineItem, SubcontractorBillStatus, SubcontractorPayment
@@ -168,6 +169,56 @@ class SubcontractorRepository:
       )
     )).scalar_one()
     return float(total_billed), float(total_paid), float(total_advances), float(total_recovered)
+  
+  async def get_settlement_totals(self, organization_id: UUID, agreement_id: UUID) -> tuple[Decimal, Decimal]:
+    """(sales tax on issued bills, gross settled by payments). A payment settles its bill by the gross amount:
+    cash handed over + tax withheld + advance recovered."""
+    tax = (await self.session.execute(
+      select(func.coalesce(func.sum(SubcontractorBill.sales_tax_amount), 0)).where(
+        SubcontractorBill.organization_id == organization_id, SubcontractorBill.agreement_id == agreement_id,
+        SubcontractorBill.status == SubcontractorBillStatus.ISSUED,
+      )
+    )).scalar_one()
+    settled = (await self.session.execute(
+      select(func.coalesce(func.sum(SubcontractorPayment.gross_amount), 0)).where(
+        SubcontractorPayment.organization_id == organization_id, SubcontractorPayment.agreement_id == agreement_id,
+      )
+    )).scalar_one()
+    return Decimal(str(tax)), Decimal(str(settled))
+
+  async def get_bill_settled(self, organization_id: UUID, bill_id: UUID) -> Decimal:
+    value = (await self.session.execute(
+      select(func.coalesce(func.sum(SubcontractorPayment.gross_amount), 0)).where(
+        SubcontractorPayment.organization_id == organization_id, SubcontractorPayment.bill_id == bill_id,
+      )
+    )).scalar_one()
+    return Decimal(str(value))
+
+  async def count_payments_for_bill(self, organization_id: UUID, bill_id: UUID) -> int:
+    return int((await self.session.execute(
+      select(func.count(SubcontractorPayment.id)).where(
+        SubcontractorPayment.organization_id == organization_id, SubcontractorPayment.bill_id == bill_id,
+      )
+    )).scalar_one())
+
+  async def has_later_issued_bill(self, organization_id: UUID, agreement_id: UUID, bill_number: int) -> bool:
+    return (await self.session.execute(
+      select(SubcontractorBill.id).where(
+        SubcontractorBill.organization_id == organization_id, SubcontractorBill.agreement_id == agreement_id,
+        SubcontractorBill.status == SubcontractorBillStatus.ISSUED, SubcontractorBill.bill_number > bill_number,
+      ).limit(1)
+    )).first() is not None
+
+  async def find_recent_duplicate_payment(
+    self, organization_id: UUID, agreement_id: UUID, bill_id: UUID | None, gross_amount: Decimal, payment_date, since,
+  ) -> SubcontractorPayment | None:
+    query = select(SubcontractorPayment).where(
+      SubcontractorPayment.organization_id == organization_id, SubcontractorPayment.agreement_id == agreement_id,
+      SubcontractorPayment.gross_amount == gross_amount, SubcontractorPayment.payment_date == payment_date,
+      SubcontractorPayment.created_at >= since,
+    )
+    query = query.where(SubcontractorPayment.bill_id == bill_id) if bill_id else query.where(SubcontractorPayment.bill_id.is_(None))
+    return (await self.session.execute(query.limit(1))).scalar_one_or_none()
 
   async def get_project_billed_total(self, organization_id: UUID, project_id: UUID) -> float:
     result = await self.session.execute(

@@ -121,6 +121,7 @@ class SubcontractorBillIssueRequest(BaseModel):
 
 class SubcontractorBillCancelRequest(BaseModel):
   version: int
+  reason: str | None = Field(default=None, max_length=500)
 
 class SubcontractorBillLineItemResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -162,6 +163,7 @@ class SubcontractorBillResponse(BaseModel):
   notes: str | None
   version: int
   issued_at: datetime | None
+  cancel_reason: str | None = None
   created_at: datetime
 
 class SubcontractorBillDetailResponse(SubcontractorBillResponse):
@@ -186,6 +188,7 @@ class SubcontractorPaymentCreateRequest(BaseModel):
   wht_category: "WHTCategory | None" = None
   payment_date: date
   notes: str | None = None
+  allow_overpay: bool = False
 
 class SubcontractorPaymentResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -204,7 +207,9 @@ class SubcontractorLedgerResponse(BaseModel):
   agreement_id: UUID
   contract_value: Decimal
   total_billed: Decimal
+  total_sales_tax: Decimal
   total_paid: Decimal
+  total_settled: Decimal
   outstanding_bill_balance: Decimal
   total_advances_given: Decimal
   outstanding_advance_balance: Decimal

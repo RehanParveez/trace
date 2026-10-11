@@ -1,5 +1,5 @@
 from __future__ import annotations
-from sqlalchemy import Enum, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Enum, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text, UniqueConstraint
 import enum
 from app.core.database import Base
 from app.shared.mixins import TimestampMixin
@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 import uuid
 from decimal import Decimal
-from datetime import datetime
+from datetime import date, datetime
 
 class ChangeOrderType(str, enum.Enum):
   ADDITION = "ADDITION"
@@ -91,6 +91,8 @@ class ChangeOrder(Base, TimestampMixin):
   )
   
   approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  client_approved_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+  extension_of_time_days: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
   rejected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   rejection_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
 

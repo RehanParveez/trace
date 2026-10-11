@@ -14,12 +14,14 @@ export function CashFlowSettingsDialog({ onClose }: { onClose: () => void }) {
   const [subcontractorDays, setSubcontractorDays] = useState(String(s?.subcontractor_payment_days ?? 30));
   const [clientDays, setClientDays] = useState(String(s?.client_collection_days ?? 30));
   const [labourLookback, setLabourLookback] = useState(String(s?.labour_lookback_days ?? 30));
+  const [clientWht, setClientWht] = useState(String(s?.expected_client_wht_percentage ?? 0));
 
   function save() {
     updateSettings.mutate(
       {
         procurement_payment_days: Number(procurementDays), subcontractor_payment_days: Number(subcontractorDays),
         client_collection_days: Number(clientDays), labour_lookback_days: Number(labourLookback),
+        expected_client_wht_percentage: Number(clientWht),
       },
       { onSuccess: () => { onClose(); showToast({ tone: "success", title: t("cashFlow.settings.updatedToast") }); } },
     );
@@ -40,6 +42,9 @@ export function CashFlowSettingsDialog({ onClose }: { onClose: () => void }) {
     </Field>
     <Field label={t("cashFlow.settings.clientDays")}>
       <input type="number" min="0" className={inputClass} value={clientDays} onChange={(e) => setClientDays(e.target.value)} />
+    </Field>
+    <Field label={t("cashFlow.settings.clientWht")} hint={t("cashFlow.settings.clientWhtHint")}>
+      <input type="number" min="0" max="40" step="0.5" className={inputClass} value={clientWht} onChange={(e) => setClientWht(e.target.value)} />
     </Field>
     <Field label={t("cashFlow.settings.labourLookback")}>
       <input type="number" min="7" className={inputClass} value={labourLookback} onChange={(e) => setLabourLookback(e.target.value)} />

@@ -9,6 +9,7 @@ celery_app = Celery(
   include=[
     "app.modules.whatsapp.tasks",
     "app.modules.subscriptions.tasks",
+    "app.modules.alerts.tasks",
     "app.modules.drawings_boq.tasks",
     "app.modules.drawings_boq.calc_tasks",
     "app.modules.drawings_boq.recalculation.export_task",
@@ -21,6 +22,7 @@ celery_app.conf.update(
     "app.modules.whatsapp.*": {"queue": "whatsapp_priority"},
     "app.workers.bim.*": {"queue": "bim_parsing"},
     "app.modules.subscriptions.*": {"queue": "billing"},
+    "app.modules.alerts.*": {"queue": "default"},
     "app.modules.drawings_boq.calc_tasks.calculate_run_task": {"queue": "calc_engine"},
     "app.modules.drawings_boq.calc_tasks.auto_run_task": {"queue": "default"},
     "app.modules.drawings_boq.calc_tasks.recover_*": {"queue": "default"},
@@ -42,6 +44,10 @@ celery_app.conf.update(
     "roll-expired-subscriptions": {
       "task": "app.modules.subscriptions.tasks.roll_expired_subscriptions_task",
        "schedule": crontab(minute=0),
+    },
+    "daily-attention-digest": {
+      "task": "app.modules.alerts.tasks.send_attention_digests_task",
+      "schedule": crontab(hour=7, minute=30),
     },
     "recover-stale-calculation-runs": {
       "task": "app.modules.drawings_boq.calc_tasks.recover_stale_runs_task",

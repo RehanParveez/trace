@@ -22,6 +22,7 @@ class PermissionKey(StrEnum):
   PROJECT_CREATE = "project.create"
   PROJECT_UPDATE = "project.update"
   PROJECT_DELETE = "project.delete"
+  PROJECT_VIEW_ALL = "project.view_all"
   
   SUBSCRIPTION_READ = "subscription.read"
   SUBSCRIPTION_MANAGE = "subscription.manage"

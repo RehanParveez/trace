@@ -125,7 +125,9 @@ async def cancel_bill(
   current_user: User = Depends(require_permission(PermissionKey.SUBCONTRACTOR_MANAGE)),
   session: AsyncSession = Depends(get_db),
 ):
-  return await _service(session).cancel_bill(current_user.active_membership.organization_id, bill_id, payload.version, current_user.id)
+  return await _service(session).cancel_bill(
+    current_user.active_membership.organization_id, bill_id, payload.version, current_user.id, payload.reason,
+  )
 
 @router.get("/bills/{bill_id}/export/pdf")
 async def export_bill_pdf(

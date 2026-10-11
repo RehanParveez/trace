@@ -229,10 +229,14 @@ class ProjectService:
   async def list_projects(
     self,
     organization_id: UUID,
+    only_project_ids: set[UUID] | None = None,
   ) -> list[Project]:
-    return await self.projects.list_by_org(
+    projects = await self.projects.list_by_org(
       organization_id
     )
+    if only_project_ids is not None:
+      projects = [p for p in projects if p.id in only_project_ids]
+    return projects
 
   async def get_project(
     self,

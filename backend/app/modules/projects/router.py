@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
+from app.dependencies.project_access import accessible_project_ids, ensure_project_access
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from app.modules.projects.schemas import (ClientCreate, ClientResponse, ClientUpdate, MilestoneCreate, MilestoneResponse, MilestoneUpdate, ProjectCreate, ProjectMemberCreate, ProjectMemberResponse,
@@ -156,6 +157,7 @@ async def list_projects(
   service = _service(session)
   return await service.list_projects(
     current_user.active_membership.organization_id,
+    await accessible_project_ids(session, current_user),
   )
 
 @router.get(
@@ -188,8 +190,9 @@ async def get_project(
       PermissionKey.PROJECT_READ
     )
   ),
-  session: AsyncSession = Depends(get_db),
+ session: AsyncSession = Depends(get_db),
 ):
+  await ensure_project_access(session, current_user, project_id)
   service = _service(session)
 
   return await service.get_project(

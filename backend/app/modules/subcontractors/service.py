@@ -8,7 +8,7 @@ from app.core.exceptions import TraceException
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
 from app.modules.identity.models import Organization
-from app.modules.projects.models import Client, Project
+from app.modules.projects.models import Project
 from app.modules.subcontractors.export import build_subcontractor_bill_pdf, build_subcontractor_bill_xlsx
 from app.modules.subcontractors.models import (Subcontractor, SubcontractAgreement, SubcontractAgreementItem, SubcontractAgreementStatus, SubcontractorAdvance, SubcontractorBill, SubcontractorBillLineItem, 
   SubcontractorBillStatus, SubcontractorPayment,
@@ -19,7 +19,7 @@ from app.modules.subcontractors.schemas import (SubcontractAgreementCreateReques
 )
 from app.modules.projects.repository import ProjectRepository
 from app.modules.withholding_tax.models import WHTSourceType
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from app.modules.withholding_tax.service import WithholdingTaxService
 from app.modules.sales_tax.service import SalesTaxService
 from app.modules.sales_tax.models import SalesTaxAuthority, SalesTaxSourceType
@@ -311,8 +311,9 @@ class SubcontractorService:
     )
     return bill
 
-  async def cancel_bill(self, organization_id: UUID, bill_id: UUID, expected_version: int, actor_user_id: UUID) -> SubcontractorBill:
-    from datetime import datetime, timezone
+  async def cancel_bill(
+    self, organization_id: UUID, bill_id: UUID, expected_version: int, actor_user_id: UUID, reason: str | None = None,
+  ) -> SubcontractorBill:
     bill = await self.repo.get_bill_for_update(bill_id, organization_id)
     if bill is None:
       raise TraceException("Bill not found.", status_code=404, code="SUBCONTRACTOR_BILL_NOT_FOUND")
@@ -320,13 +321,36 @@ class SubcontractorService:
       raise TraceException("This bill was changed by someone else. Reload and try again.", status_code=409, code="SUBCONTRACTOR_BILL_VERSION_CONFLICT")
     if bill.status == SubcontractorBillStatus.CANCELLED:
       raise TraceException("This bill is already cancelled.", status_code=409, code="SUBCONTRACTOR_BILL_ALREADY_CANCELLED")
+    clean_reason = reason.strip() if reason and reason.strip() else None
+    reversed_tax = Decimal("0")
+    was_issued = bill.status == SubcontractorBillStatus.ISSUED
+    if was_issued:
+      if clean_reason is None or len(clean_reason) < 3:
+        raise TraceException("Give a reason for cancelling an issued bill.", status_code=422, code="CANCEL_REASON_REQUIRED")
+      if await self.repo.count_payments_for_bill(organization_id, bill.id) > 0:
+        raise TraceException(
+          "Payments were recorded against this bill. A bill that has been paid cannot be cancelled.",
+          status_code=409, code="SUBCONTRACTOR_BILL_HAS_PAYMENTS",
+        )
+      if await self.repo.has_later_issued_bill(organization_id, bill.agreement_id, bill.bill_number):
+        raise TraceException(
+          "A later bill was issued on top of this one. Cancel the later bill first.",
+          status_code=409, code="SUBCONTRACTOR_BILL_HAS_LATER_BILLS",
+        )
+      if bill.sales_tax_authority is not None:
+        reversed_tax = await self.sales_tax.reverse_charges_for_source(
+          organization_id=organization_id, source_type=SalesTaxSourceType.SUBCONTRACTOR_BILL, source_id=bill.id,
+          reversal_date=today_local(), actor_user_id=actor_user_id,
+        )
     bill.status = SubcontractorBillStatus.CANCELLED
     bill.cancelled_at = datetime.now(timezone.utc)
+    bill.cancel_reason = clean_reason
     bill.version += 1
     await self.session.commit()
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.SUBCONTRACTOR, bill.id, AuditAction.UPDATE,
-      f"Cancelled subcontractor bill #{bill.bill_number}.",
+      f"Cancelled {'issued ' if was_issued else ''}subcontractor bill #{bill.bill_number}"
+      + (f" ({clean_reason})" if clean_reason else "") + (f"; reversed {reversed_tax} sales tax" if reversed_tax else "") + ".",
     )
     return bill
 
@@ -380,6 +404,32 @@ class SubcontractorService:
       raise TraceException("Agreement not found.", status_code=404, code="AGREEMENT_NOT_FOUND")
     subcontractor = await self.repo.get(agreement.subcontractor_id, organization_id)
 
+    if payload.advance_recovered_amount > payload.gross_amount:
+      raise TraceException(
+        "The advance recovered cannot be more than the payment amount.", status_code=422, code="ADVANCE_RECOVERY_EXCEEDS_PAYMENT",
+      )
+    if payload.bill_id is not None:
+      bill = await self.repo.get_bill(payload.bill_id, organization_id)
+      if bill is None or bill.agreement_id != agreement.id:
+        raise TraceException("That bill does not belong to this agreement.", status_code=404, code="SUBCONTRACTOR_BILL_NOT_FOUND")
+      if bill.status != SubcontractorBillStatus.ISSUED:
+        raise TraceException("Payments can only be recorded against an issued bill.", status_code=409, code="SUBCONTRACTOR_BILL_NOT_PAYABLE")
+      owed = bill.net_payable + bill.sales_tax_amount - await self.repo.get_bill_settled(organization_id, bill.id)
+      if payload.gross_amount > owed and not payload.allow_overpay:
+        raise TraceException(
+          f"This bill only has {owed} left to pay, but you entered {payload.gross_amount}. Confirm to pay more than the bill.",
+          status_code=409, code="PAYMENT_EXCEEDS_BILL_BALANCE",
+        )
+    duplicate = await self.repo.find_recent_duplicate_payment(
+      organization_id, agreement.id, payload.bill_id, payload.gross_amount, payload.payment_date,
+      datetime.now(timezone.utc) - timedelta(seconds=45),
+    )
+    if duplicate is not None:
+      raise TraceException(
+        "An identical payment was just recorded. If you really meant to pay twice, wait a minute and try again.",
+        status_code=409, code="DUPLICATE_PAYMENT",
+      )
+
     if payload.advance_recovered_amount > 0:
       _billed, _paid, total_advances, total_recovered = await self.repo.get_ledger_totals(organization_id, agreement.id)
       outstanding = Decimal(str(total_advances)) - Decimal(str(total_recovered))
@@ -429,13 +479,16 @@ class SubcontractorService:
     total_billed, total_paid, total_advances, total_recovered = await self.repo.get_ledger_totals(
       organization_id, agreement.id,
     )
+    total_sales_tax, total_settled = await self.repo.get_settlement_totals(organization_id, agreement.id)
     organization = await self.session.get(Organization, organization_id)
     return {
       "agreement_id": agreement.id,
       "contract_value": agreement.contract_value,
       "total_billed": Decimal(str(total_billed)),
+      "total_sales_tax": total_sales_tax,
       "total_paid": Decimal(str(total_paid)),
-      "outstanding_bill_balance": Decimal(str(total_billed)) - Decimal(str(total_paid)),
+      "total_settled": total_settled,
+      "outstanding_bill_balance": Decimal(str(total_billed)) + total_sales_tax - total_settled,
       "total_advances_given": Decimal(str(total_advances)),
       "outstanding_advance_balance": Decimal(str(total_advances)) - Decimal(str(total_recovered)),
       "currency": organization.currency if organization else "PKR",

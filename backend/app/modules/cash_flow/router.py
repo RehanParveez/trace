@@ -9,6 +9,8 @@ from fastapi import APIRouter, Depends, Query
 from app.dependencies.permissions import require_permission
 from app.core.database import get_db
 from app.modules.identity.enums import PermissionKey
+from app.dependencies.project_access import accessible_project_ids, ensure_project_access
+from app.core.exceptions import TraceException
 
 router = APIRouter(prefix="/cash-flow", tags=["Cash Flow"])
 
@@ -23,6 +25,14 @@ async def get_forecast(
   current_user: User = Depends(require_permission(PermissionKey.CASH_FLOW_READ)),
   session: AsyncSession = Depends(get_db),
 ):
+  
+  if project_id is not None:
+    await ensure_project_access(session, current_user, project_id)
+  elif await accessible_project_ids(session, current_user) is not None:
+    raise TraceException(
+      "Choose a project: the company-wide forecast is only available to people who can see all projects.",
+      status_code=403, code="PROJECT_SCOPE_REQUIRED",
+    )
   data = await _service(session).get_forecast(
     current_user.active_membership.organization_id, project_id, horizon_days,
     Decimal(str(starting_cash_balance)) if starting_cash_balance is not None else None,

@@ -1,10 +1,11 @@
 export interface CashFlowSettings {
   procurement_payment_days: number; subcontractor_payment_days: number;
   client_collection_days: number; labour_lookback_days: number;
+  expected_client_wht_percentage: number | string;
 }
 
 export interface CashFlowLineItem {
-  event_date: string; category: "PROCUREMENT" | "LABOUR" | "SUBCONTRACTOR" | "CLIENT_COLLECTION";
+  event_date: string; category: "PROCUREMENT" | "LABOUR" | "SUBCONTRACTOR" | "CLIENT_COLLECTION" | "TAX";
   direction: "IN" | "OUT"; amount: number | string; description: string;
   is_estimated_timing: boolean; is_overdue: boolean;
 }
@@ -21,4 +22,5 @@ export interface CashFlowForecast {
   weekly_buckets: WeeklyBucket[]; summaries: Record<number, HorizonSummary>;
   line_items: CashFlowLineItem[]; assumptions: CashFlowSettings;
   labour_daily_run_rate: number | string; limitations: string[];
+  expected_client_wht_total: number | string; suggested_client_wht_percentage: number | string | null;
 }

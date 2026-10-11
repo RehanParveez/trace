@@ -27,6 +27,8 @@ class ScheduleDependencyCreateRequest(BaseModel):
 
 class ProjectScheduleSettingsUpdateRequest(BaseModel):
   target_completion_date: date | None = None
+  work_week_days: int | None = Field(default=None, ge=5, le=7)
+  holidays: list[date] | None = Field(default=None, max_length=400)
 
 class ScheduleTaskResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -51,10 +53,15 @@ class ScheduleTaskComputedResponse(ScheduleTaskResponse):
   latest_finish: date | None
   total_float_days: int | None
   is_critical: bool
+  is_complete: bool = False
 
 class ProjectScheduleResponse(BaseModel):
   project_id: UUID
   target_completion_date: date | None
+  base_target_completion_date: date | None = None
+  approved_extension_days: int = 0
+  work_week_days: int = 6
+  holidays: list[date] = Field(default_factory=list)
   natural_completion_date: date | None
   days_ahead_or_behind_target: int | None
   warnings: list[str]

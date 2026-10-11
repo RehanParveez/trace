@@ -10,7 +10,8 @@ from app.modules.drawings_boq.models import BOQItem, BOQItemRateSource, BOQItemS
 from app.modules.identity.models import Organization
 from app.modules.audit.models import  AuditEntityType, AuditAction
 from decimal import Decimal
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
+from app.shared.timeutils import today_local
 from sqlalchemy.exc import IntegrityError
 from app.core.exceptions import TraceException
 from sqlalchemy import select
@@ -93,7 +94,12 @@ class ChangeOrderService:
 
   async def approve_change_order(
     self, organization_id: UUID, change_order_id: UUID, expected_version: int, actor_user_id: UUID,
+    client_approved_on: date | None = None, client_reference: str | None = None, extension_of_time_days: int = 0,
   ) -> ChangeOrder:
+    if client_approved_on is not None and client_approved_on > today_local():
+      raise TraceException(
+        "The client approval date cannot be in the future.", status_code=422, code="CLIENT_APPROVAL_DATE_IN_FUTURE",
+      )
     change_order = await self.repo.get_by_id_for_update(change_order_id, organization_id)
     if change_order is None:
       raise TraceException("Change order not found.", status_code=404, code="CHANGE_ORDER_NOT_FOUND")
@@ -146,6 +152,10 @@ class ChangeOrderService:
     change_order.status = ChangeOrderStatus.APPROVED
     change_order.approved_by_user_id = actor_user_id
     change_order.approved_at = datetime.now(timezone.utc)
+    change_order.client_approved_on = client_approved_on
+    change_order.extension_of_time_days = extension_of_time_days
+    if client_reference and client_reference.strip():
+      change_order.client_reference = client_reference.strip()
     change_order.value_impact = realized_total
     change_order.version += 1
 
@@ -153,7 +163,9 @@ class ChangeOrderService:
 
     await self.audit.log(
       organization_id, actor_user_id, AuditEntityType.CHANGE_ORDER, change_order.id, AuditAction.UPDATE,
-      f"Approved change order #{change_order.change_order_number}, applied impact {realized_total} {change_order.currency}.",
+      f"Approved change order #{change_order.change_order_number}, applied impact {realized_total} {change_order.currency}"
+      + (f", client signed off {client_approved_on}" if client_approved_on else ", WITHOUT client sign-off")
+      + (f", extension of time {extension_of_time_days} day(s)" if extension_of_time_days else "") + ".",
     )
     return change_order
 
@@ -224,10 +236,12 @@ class ChangeOrderService:
   async def get_project_summary(self, organization_id: UUID, project_id: UUID) -> dict:
     await self._require_project(organization_id, project_id)
     approved_count, approved_total, draft_count = await self.repo.get_approval_summary(organization_id, project_id)
+    unsigned, extension_days = await self.repo.get_sign_off_summary(organization_id, project_id)
     organization = await self.session.get(Organization, organization_id)
     return {
       "project_id": project_id, "approved_count": approved_count,
       "approved_net_value_impact": Decimal(str(approved_total)), "draft_count": draft_count,
+      "approved_without_client_sign_off": unsigned, "approved_extension_days": extension_days,
       "currency": organization.currency if organization else "PKR",
     }
 

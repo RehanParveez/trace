@@ -15,6 +15,7 @@ export function formatCashFlowCategory(category: string): string {
     case "LABOUR": return "Labour";
     case "SUBCONTRACTOR": return "Subcontractor";
     case "CLIENT_COLLECTION": return "Client collection";
+    case "TAX": return "Taxes";
     default: return category;
   }
 }
