@@ -364,7 +364,8 @@ class CalculationService:
           "skipped_by_role": skipped}
 
       def make_planner(baseline):
-        return AllocationPlanner(ctx, convention, state["solids"], state["accepted"], baseline,
+        concrete_solids, concrete_elements = kernel.split_steel(state["solids"], state["accepted"])
+        return AllocationPlanner(ctx, convention, concrete_solids, concrete_elements, baseline,
           float(settings.calc_incremental_max_change_ratio))
 
       async def spatial():
@@ -447,8 +448,10 @@ class CalculationService:
         ledger, unmapped = await asyncio.to_thread(kernel.measure, ctx, state["solids"], state["alloc"])
         state["ledger"], state["unmapped"] = ledger, unmapped
         state["wall_material"] = kernel.wall_material_stats(state["solids"], ledger)
+        state["steel"] = kernel.steel_stats(state["solids"], ledger, state["rejected"])
         await self.runs.stage_ledger([_ledger_row(run, e, "measure") for e in ledger])
-        return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped, "wall_material": state["wall_material"]}
+        return {"ledger_rows": len(ledger), "unmapped_by_type": unmapped, "wall_material": state["wall_material"],
+          "steel": state["steel"]}
 
       async def finishes():
         res = await asyncio.to_thread(fin.measure_finishes, ctx, profile, p6.spaces, p6.openings)
@@ -553,6 +556,7 @@ class CalculationService:
         "skipped_by_role": state["skipped"],
         "unmapped_by_type": state["unmapped"],
         "wall_material": state.get("wall_material", {}),
+        "steel": state.get("steel", {}),
         "allocation": state["alloc"].stats,
         "finishes_skipped": state["finish_skipped"],
         "spaces": len(p6.spaces),

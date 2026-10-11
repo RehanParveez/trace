@@ -91,3 +91,32 @@ class ExpenseRepository:
       .group_by(Expense.status)
     )
     return {status: total for status, total in result.all()}
+  
+  async def get_category_totals(
+    self, organization_id: UUID, project_id: UUID,
+  ) -> list[tuple[UUID | None, ExpenseStatus, Decimal]]:
+    result = await self.session.execute(
+      select(
+        Expense.budget_category_id,
+        Expense.status,
+        func.coalesce(func.sum(Expense.amount), 0),
+      )
+      .where(
+        Expense.organization_id == organization_id,
+        Expense.project_id == project_id,
+        Expense.status.in_([ExpenseStatus.APPROVED, ExpenseStatus.PENDING]),
+      )
+      .group_by(Expense.budget_category_id, Expense.status)
+    )
+    return [(cid, status, Decimal(str(total))) for cid, status, total in result.all()]
+
+  async def count_for_category(
+    self, category_id: UUID, organization_id: UUID,
+  ) -> int:
+    result = await self.session.execute(
+      select(func.count(Expense.id)).where(
+        Expense.organization_id == organization_id,
+        Expense.budget_category_id == category_id,
+      )
+    )
+    return int(result.scalar_one())

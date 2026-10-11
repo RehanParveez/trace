@@ -10,7 +10,7 @@ from decimal import Decimal
 from sqlalchemy import Integer, and_, delete, func, insert, or_, select, update
 from app.core.config import settings
 from app.engine.measure.incremental import Baseline, StoredElement, baseline_from_run
-from app.engine.measure.material import wall_material_class
+from app.engine.measure.steel import element_material_class, steel_material_basis
 from app.engine.measure.models import ModelElement
 
 _ACTIVE = ("QUEUED", "RUNNING", "STAGED", "PROMOTED")
@@ -322,6 +322,7 @@ class CalculationRunRepository:
       e.id, e.ifc_global_id, e.ifc_type, e.structural_role, e.level_id, e.geometry_kind, e.profile, e.placement,
       e.volume_mm3, e.bbox_min_x_mm, e.bbox_min_y_mm, e.bbox_min_z_mm, e.bbox_max_x_mm, e.bbox_max_y_mm,
       e.bbox_max_z_mm, e.classification_confidence, e.normalization_status, e.raw_material_text,
+      e.properties["_ifc"]["material_family"].as_string().label("material_family"),
     ).where(e.drawing_id == drawing_id, e.organization_id == organization_id).execution_options(
       yield_per=fetch_rows or int(settings.calc_element_fetch_rows))
     result = await self.session.stream(stmt)
@@ -336,7 +337,8 @@ class CalculationRunRepository:
         bbox_max_mm=hi if all(v is not None for v in hi) else None,
         classification_confidence=r.classification_confidence if r.classification_confidence is not None else Decimal("0"),
         normalization_status=r.normalization_status, ifc_global_id=r.ifc_global_id,
-        material_class=wall_material_class(r.structural_role, r.raw_material_text),
+        material_class=element_material_class(r.structural_role, r.raw_material_text, r.material_family),
+        material_basis=steel_material_basis(r.structural_role, r.raw_material_text, r.material_family),
       )
 
   async def find_baseline_run(self, organization_id: UUID, project_id: UUID, signature: str,

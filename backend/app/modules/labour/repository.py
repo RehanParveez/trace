@@ -4,6 +4,7 @@ from app.modules.labour.models import LabourSource, LabourAdvance, LabourAttenda
 from uuid import UUID
 from sqlalchemy import func, select
 from datetime import date
+from decimal import Decimal
 
 class LabourRepository:
   def __init__(self, session: AsyncSession):
@@ -174,3 +175,102 @@ class LabourRepository:
       )
     )).scalar_one()
     return float(advance_total), float(payment_total)
+  
+  async def get_last_attendance_date_before(
+    self, organization_id: UUID, project_id: UUID, before: date,
+  ) -> date | None:
+    result = await self.session.execute(
+      select(func.max(LabourAttendance.attendance_date)).where(
+        LabourAttendance.organization_id == organization_id,
+        LabourAttendance.project_id == project_id,
+        LabourAttendance.attendance_date < before,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def get_worker_names(self, organization_id: UUID, worker_ids: list[UUID]) -> dict[UUID, str]:
+    if not worker_ids:
+      return {}
+    result = await self.session.execute(
+      select(LabourWorker.id, LabourWorker.name).where(
+        LabourWorker.organization_id == organization_id, LabourWorker.id.in_(worker_ids),
+      )
+    )
+    return {wid: name for wid, name in result.all()}
+
+  async def get_source_names(self, organization_id: UUID) -> dict[UUID, str]:
+    result = await self.session.execute(
+      select(LabourSource.id, LabourSource.name).where(LabourSource.organization_id == organization_id)
+    )
+    return {sid: name for sid, name in result.all()}
+
+  async def get_accrued_by_party(
+    self, organization_id: UUID, project_id: UUID,
+  ) -> dict[tuple[UUID, UUID | None], Decimal]:
+    result = await self.session.execute(
+      select(
+        LabourDeployment.source_id,
+        LabourDeployment.worker_id,
+        func.coalesce(func.sum(LabourAttendance.units_present * LabourDeployment.daily_rate), 0),
+      )
+      .join(LabourDeployment, LabourDeployment.id == LabourAttendance.deployment_id)
+      .where(
+        LabourAttendance.organization_id == organization_id,
+        LabourAttendance.project_id == project_id,
+      )
+      .group_by(LabourDeployment.source_id, LabourDeployment.worker_id)
+    )
+    return {(sid, wid): Decimal(str(total)) for sid, wid, total in result.all()}
+
+  async def get_paid_by_party(
+    self, organization_id: UUID, project_id: UUID,
+  ) -> dict[tuple[UUID, UUID | None], tuple[Decimal, Decimal]]:
+    result = await self.session.execute(
+      select(
+        LabourPayment.source_id,
+        LabourPayment.worker_id,
+        func.coalesce(func.sum(LabourPayment.gross_wage_amount), 0),
+        func.coalesce(func.sum(LabourPayment.advance_recovered_amount), 0),
+      )
+      .where(LabourPayment.organization_id == organization_id, LabourPayment.project_id == project_id)
+      .group_by(LabourPayment.source_id, LabourPayment.worker_id)
+    )
+    return {(sid, wid): (Decimal(str(gross)), Decimal(str(rec))) for sid, wid, gross, rec in result.all()}
+
+  async def get_advances_by_party(
+    self, organization_id: UUID, project_id: UUID,
+  ) -> dict[tuple[UUID, UUID | None], Decimal]:
+    result = await self.session.execute(
+      select(
+        LabourAdvance.source_id,
+        LabourAdvance.worker_id,
+        func.coalesce(func.sum(LabourAdvance.amount), 0),
+      )
+      .where(LabourAdvance.organization_id == organization_id, LabourAdvance.project_id == project_id)
+      .group_by(LabourAdvance.source_id, LabourAdvance.worker_id)
+    )
+    return {(sid, wid): Decimal(str(total)) for sid, wid, total in result.all()}
+
+  async def get_project_payment_totals(
+    self, organization_id: UUID, project_id: UUID,
+  ) -> tuple[Decimal, Decimal, Decimal]:
+    result = await self.session.execute(
+      select(
+        func.coalesce(func.sum(LabourPayment.gross_wage_amount), 0),
+        func.coalesce(func.sum(LabourPayment.net_paid_amount), 0),
+        func.coalesce(func.sum(LabourPayment.advance_recovered_amount), 0),
+      ).where(LabourPayment.organization_id == organization_id, LabourPayment.project_id == project_id)
+    )
+    gross, net, recovered = result.one()
+    return Decimal(str(gross)), Decimal(str(net)), Decimal(str(recovered))
+
+  async def get_total_accrued_cost(self, organization_id: UUID, project_id: UUID) -> Decimal:
+    result = await self.session.execute(
+      select(func.coalesce(func.sum(LabourAttendance.units_present * LabourDeployment.daily_rate), 0))
+      .join(LabourDeployment, LabourDeployment.id == LabourAttendance.deployment_id)
+      .where(
+        LabourAttendance.organization_id == organization_id,
+        LabourAttendance.project_id == project_id,
+      )
+    )
+    return Decimal(str(result.scalar_one()))

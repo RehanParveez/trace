@@ -65,3 +65,25 @@ export interface ProjectPhotoThumbnail {
   project_id: string;
   photo_url: string;
 }
+
+export interface WhatsAppSender {
+  id: string;
+  phone_number: string;
+  display_name: string;
+  default_project_id: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface WhatsAppSenderCreateRequest {
+  phone_number: string;
+  display_name: string;
+  default_project_id?: string | null;
+}
+
+export interface WhatsAppSenderUpdateRequest {
+  display_name?: string;
+  default_project_id?: string | null;
+  clear_default_project?: boolean;
+  is_active?: boolean;
+}

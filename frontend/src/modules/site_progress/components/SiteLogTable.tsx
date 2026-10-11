@@ -4,6 +4,8 @@ import { getApiErrorMessage } from "../../identity";
 import type { SiteLogEntry } from "../types/site-progress.types";
 import { formatLogDate } from "../utils/site-progress.utils";
 import { useDeleteSiteLog } from "../hooks";
+import { useState } from "react";
+import { DailyReportDialog } from "./DailyReportDialog";
 import { useTranslation } from "react-i18next";
 
 interface SiteLogTableProps {
@@ -17,6 +19,7 @@ export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTa
   const { t } = useTranslation();
   const deleteLog = useDeleteSiteLog();
   const { showToast } = useToast();
+  const [reportFor, setReportFor] = useState<SiteLogEntry | null>(null);
 
   return (
     <Panel>
@@ -44,7 +47,7 @@ export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTa
                 <th className="px-4 py-3">{t("siteProgress.table.colWeather")}</th>
                 <th className="px-4 py-3">{t("siteProgress.table.colBlockers")}</th>
                 <th className="px-4 py-3">{t("siteProgress.table.colNotes")}</th>
-                {canManage ? <th className="px-4 py-3 text-right">{t("siteProgress.table.colActions")}</th> : null}
+                <th className="px-4 py-3 text-right">{t("siteProgress.table.colActions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -54,9 +57,11 @@ export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTa
                   <td className="px-4 py-3.5 font-mono text-[12.5px] text-[var(--color-text-secondary)]">{log.workforce_count ?? "—"}</td>
                   <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{log.weather ?? "—"}</td>
                   <td className="px-4 py-3.5 max-w-[220px] truncate text-[12.5px] text-[var(--color-text-secondary)]">{log.blockers ?? "—"}</td>
-                  <td className="px-4 py-3.5 max-w-[260px] truncate text-[12.5px] text-[var(--color-text-secondary)]">{log.notes ?? "—"}</td>
+                  <td className="px-4 py-3.5 max-w-[260px] truncate text-[12.5px] text-[var(--color-text-secondary)]">{log.work_done ?? log.notes ?? "—"}</td>
+                  <td className="px-4 py-3.5 text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button variant="secondary" size="sm" onClick={() => setReportFor(log)}>{t("siteProgress.table.report")}</Button>
                   {canManage ? (
-                    <td className="px-4 py-3.5 text-right">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -77,14 +82,16 @@ export function SiteLogTable({ logs, canCreate, canManage, onCreate }: SiteLogTa
                       >
                         {t("common.delete")}
                       </Button>
-                    </td>
                   ) : null}
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </TableShell>
       )}
+      {reportFor ? <DailyReportDialog projectId={reportFor.project_id} reportDate={reportFor.log_date} onClose={() => setReportFor(null)} /> : null}
     </Panel>
   );
 }

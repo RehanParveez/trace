@@ -2,7 +2,8 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import hmac
-from datetime import date, datetime, timezone
+import re
+from datetime import date, datetime, timedelta, timezone
 from app.shared.timeutils import to_local_date
 from io import BytesIO
 from typing import Any
@@ -16,8 +17,9 @@ from app.modules.identity.models import Organization
 from app.modules.projects.models import ProjectStatus
 from app.modules.projects.repository import ProjectRepository
 from app.modules.subscriptions.service import SubscriptionService
-from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType
-from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository
+from app.modules.whatsapp.models import PhotoTag, PhotoTagSource, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppMessageStatus, WhatsAppMessageType, WhatsAppSender
+from app.modules.whatsapp.repository import PhotoTagRepository, SitePhotoRepository, WhatsAppChannelRepository, WhatsAppMessageRepository, WhatsAppSenderRepository
+from app.modules.whatsapp.schemas import SenderCreateRequest, SenderUpdateRequest, ChannelConnectRequest
 from app.modules.whatsapp.schemas import ChannelConnectRequest, PhotoTagCreateRequest, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, SitePhotoUpdateRequest, SitePhotoResponse, SitePhotoUrlResponse, PhotoTagResponse
 from app.shared.storage import build_site_photo_storage_key, delete_object, generate_presigned_url, object_exists, upload_fileobj
 from app.modules.whatsapp.tasks import process_whatsapp_photo_task
@@ -36,6 +38,28 @@ GRAPH_API_BASE = (
   f"https://graph.facebook.com/{settings.whatsapp_graph_api_version}"
 )
 MAX_QUICK_REPLY_PROJECTS = 3
+STICKY_PROJECT_WINDOW = timedelta(hours=2)
+
+def normalize_phone_number(raw: str) -> str:
+  digits = re.sub(r"\D", "", raw or "")
+  if digits.startswith("00"):
+    digits = digits[2:]
+  if digits.startswith("0") and len(digits) == 11:
+    digits = "92" + digits[1:]
+  return digits
+
+def match_project_in_caption(projects: list, caption: str) -> UUID | None:
+  text = caption.lower()
+  hits = []
+  for project in projects:
+    if project.status != ProjectStatus.ACTIVE:
+      continue
+    code = (project.code or "").strip().lower()
+    name = project.name.strip().lower()
+    code_hit = bool(code) and re.search(r"(?<![a-z0-9])" + re.escape(code) + r"(?![a-z0-9])", text) is not None
+    if code_hit or (name and name in text):
+      hits.append(project.id)
+  return hits[0] if len(hits) == 1 else None
 
 class WhatsAppService:
   def __init__(self, session: AsyncSession):
@@ -45,6 +69,7 @@ class WhatsAppService:
     self.photos = SitePhotoRepository(session)
     self.tags = PhotoTagRepository(session)
     self.projects = ProjectRepository(session)
+    self.senders = WhatsAppSenderRepository(session)
     self.subscriptions = SubscriptionService(session)
     self.notifications = NotificationService(session)
     self.audit = AuditLogService(session)
@@ -260,6 +285,14 @@ class WhatsAppService:
     return
 
    await self.session.commit()
+
+   allowed, _sender = await self._check_sender(channel.organization_id, from_phone_number)
+   if not allowed:
+    created.status = WhatsAppMessageStatus.IGNORED
+    created.error_message = "Sender is not on this organization's approved WhatsApp sender list."
+    await self.messages.update(created)
+    await self.session.commit()
+    return
 
    if message_type == WhatsAppMessageType.IMAGE:
     process_whatsapp_photo_task.apply_async(
@@ -515,9 +548,15 @@ class WhatsAppService:
     await self.session.commit()
 
     try:
-      media_bytes, mime_type = await _download_whatsapp_media(
-        channel.access_token, message.media_id
-      )
+      try:
+        media_bytes, mime_type = await _download_whatsapp_media(
+          channel.access_token, message.media_id
+        )
+      except Exception:
+        await asyncio.sleep(3)
+        media_bytes, mime_type = await _download_whatsapp_media(
+          channel.access_token, message.media_id
+        )
     except Exception as exc:
       message.status = WhatsAppMessageStatus.FAILED
       message.error_message = f"Media download failed: {exc}"[:2000]
@@ -592,6 +631,12 @@ class WhatsAppService:
           project_name_guess,
         )
 
+      if project_match is None:
+        project_match = await self._resolve_project_for_photo(message, caption_text)
+
+      if project_match is None:
+        project_match = await self._resolve_project_for_photo(message, caption_text)
+
       photo = SitePhoto(
         id=uuid4(),
         organization_id=message.organization_id,
@@ -640,6 +685,94 @@ class WhatsAppService:
       await self.messages.update(message)
       await self.session.commit()
       await self._send_project_disambiguation_prompt(channel, message)
+
+  async def _check_sender(
+    self, organization_id: UUID, from_phone_number: str,
+  ) -> tuple[bool, WhatsAppSender | None]:
+    senders = await self.senders.list_by_org(organization_id)
+    if not senders:
+      return True, None
+    phone = normalize_phone_number(from_phone_number)
+    match = next((s for s in senders if s.phone_number == phone and s.is_active), None)
+    return match is not None, match
+
+  async def _resolve_project_for_photo(
+    self, message: WhatsAppMessage, caption_text: str,
+  ) -> UUID | None:
+    """Work out the project without bothering the sender: a project code/name in the caption, else the sender's
+    default project, else the project of their photos from the last couple of hours."""
+    projects = await self.projects.list_by_org(message.organization_id)
+    active = {p.id for p in projects if p.status == ProjectStatus.ACTIVE}
+
+    if caption_text:
+      matched = match_project_in_caption(projects, caption_text)
+      if matched is not None:
+        return matched
+
+    _allowed, sender = await self._check_sender(message.organization_id, message.from_phone_number)
+    if sender is not None and sender.default_project_id in active:
+      return sender.default_project_id
+
+    recent = await self.senders.get_recent_project_for_sender(
+      message.organization_id, message.from_phone_number,
+      datetime.now(timezone.utc) - STICKY_PROJECT_WINDOW,
+    )
+    if recent is not None and recent in active:
+      return recent
+    return None
+
+  async def list_senders(self, organization_id: UUID) -> list[WhatsAppSender]:
+    return await self.senders.list_by_org(organization_id)
+
+  async def create_sender(self, organization_id: UUID, payload: SenderCreateRequest) -> WhatsAppSender:
+    phone = normalize_phone_number(payload.phone_number)
+    if len(phone) < 8:
+      raise TraceException("Enter a valid phone number.", status_code=422, code="INVALID_PHONE_NUMBER")
+    if await self.senders.get_by_phone(organization_id, phone) is not None:
+      raise TraceException(
+        "This number is already on the sender list.", status_code=409, code="SENDER_ALREADY_EXISTS",
+      )
+    await self._check_default_project(organization_id, payload.default_project_id)
+    sender = WhatsAppSender(
+      id=uuid4(), organization_id=organization_id, phone_number=phone,
+      display_name=payload.display_name.strip(), default_project_id=payload.default_project_id,
+    )
+    await self.senders.create(sender)
+    await self.session.commit()
+    return sender
+
+  async def update_sender(
+    self, organization_id: UUID, sender_id: UUID, payload: SenderUpdateRequest,
+  ) -> WhatsAppSender:
+    sender = await self.senders.get_by_id(sender_id, organization_id)
+    
+    if sender is None:
+      raise TraceException("Sender not found.", status_code=404, code="SENDER_NOT_FOUND")
+    if payload.display_name is not None:
+      sender.display_name = payload.display_name.strip()
+    if payload.clear_default_project:
+      sender.default_project_id = None
+    elif payload.default_project_id is not None:
+      await self._check_default_project(organization_id, payload.default_project_id)
+      sender.default_project_id = payload.default_project_id
+      
+    if payload.is_active is not None:
+      sender.is_active = payload.is_active
+    await self.session.commit()
+    return sender
+
+  async def delete_sender(self, organization_id: UUID, sender_id: UUID) -> None:
+    sender = await self.senders.get_by_id(sender_id, organization_id)
+    if sender is None:
+      raise TraceException("Sender not found.", status_code=404, code="SENDER_NOT_FOUND")
+    await self.senders.delete(sender)
+    await self.session.commit()
+
+  async def _check_default_project(self, organization_id: UUID, project_id: UUID | None) -> None:
+    if project_id is None:
+      return
+    if await self.projects.get_by_id_and_org(project_id, organization_id) is None:
+      raise TraceException("Project not found.", status_code=404, code="PROJECT_NOT_FOUND")
 
   async def _is_ai_enabled(self, organization_id: UUID) -> bool:
     result = await self.session.execute(

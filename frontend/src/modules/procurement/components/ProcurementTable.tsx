@@ -5,6 +5,8 @@ import type { ProcurementRequest } from "../types/procurement.types";
 import {formatNextProcurementActionLabel, formatProcurementAmount, formatProcurementDate, formatProcurementStatus, getProcurementStatusTone, PROCUREMENT_NEXT_STATUS,
 } from "../utils/procurement.utils";
 import { useUpdateProcurementStatus } from "../hooks";
+import { useState } from "react";
+import { DeliveryDialog } from "./DeliveryDialog";
 import { useTranslation } from "react-i18next";
 
 interface ProcurementTableProps {
@@ -18,6 +20,7 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
   const { t } = useTranslation();
   const updateStatus = useUpdateProcurementStatus();
   const { showToast } = useToast();
+  const [deliveryFor, setDeliveryFor] = useState<ProcurementRequest | null>(null);
 
   return (
     <Panel>
@@ -59,14 +62,36 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
                       <span className="block text-[13.5px] font-semibold text-[var(--color-text-primary)]">{request.material_name}</span>
                       {request.notes ? <span className="mt-0.5 block max-w-[280px] truncate text-[12px] text-[var(--color-text-secondary)]">{request.notes}</span> : null}
                     </td>
-                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{request.quantity} {request.unit}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">
+                      {request.quantity} {request.unit}
+                      {Number(request.delivered_quantity) > 0 && request.status !== "CANCELLED" ? (
+                        <span className="block text-[11px] text-[var(--color-text-secondary)]">
+                          {t("procurement.table.receivedOf", { delivered: request.delivered_quantity })}
+                        </span>
+                      ) : null}
+                      {request.supplier_name ? <span className="block text-[11px] text-[var(--color-text-secondary)]">{request.supplier_name}</span> : null}
+                      {!canManage && Number(request.delivered_quantity) > 0 ? (
+                        <button type="button" className="mt-0.5 text-[11px] font-semibold text-[var(--color-trace-gold-dark)] hover:underline" onClick={() => setDeliveryFor(request)}>
+                          {t("procurement.table.viewDeliveries")}
+                        </button>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">{formatProcurementAmount(request.estimated_amount)}</td>
                     <td className="px-4 py-3.5 text-[12.5px] text-[var(--color-text-secondary)]">{formatProcurementDate(request.needed_by_date)}</td>
-                    <td className="px-4 py-3.5"><Badge tone={getProcurementStatusTone(request.status)}>{formatProcurementStatus(request.status)}</Badge></td>
-                                        {canManage ? (
+                    <td className="px-4 py-3.5">
+                      <Badge tone={getProcurementStatusTone(request.status)}>
+                        {request.status === "ORDERED" && Number(request.delivered_quantity) > 0 ? t("procurement.table.partlyReceived") : formatProcurementStatus(request.status)}
+                      </Badge>
+                    </td>
+                      {canManage ? (
                       <td className="px-4 py-3.5 text-right">
                         <div className="flex justify-end gap-2">
-                          {nextStatus && nextLabel ? (
+                          {request.status === "APPROVED" || request.status === "ORDERED" ? (
+                            <Button variant="primary" size="sm" onClick={() => setDeliveryFor(request)}>
+                              {t("procurement.table.receiveDelivery")}
+                            </Button>
+                          ) : null}
+                          {nextStatus && nextLabel && request.status !== "ORDERED" ? (
                             <Button
                               variant="secondary"
                               size="sm"
@@ -136,6 +161,13 @@ export function ProcurementTable({ requests, canCreate, canManage, onCreate }: P
           </table>
         </TableShell>
       )}
+      {deliveryFor ? (
+        <DeliveryDialog
+          request={requests.find((r) => r.id === deliveryFor.id) ?? deliveryFor}
+          canManage={canManage}
+          onClose={() => setDeliveryFor(null)}
+        />
+      ) : null}
     </Panel>
   );
 }

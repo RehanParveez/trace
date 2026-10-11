@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { procurementApi } from "../api/procurement.api";
-import type {ProcurementCreateRequest, ProcurementListParams, ProcurementStatusUpdateRequest,
+import type {ProcurementDeliveryCreateRequest, ProcurementCreateRequest, ProcurementListParams, ProcurementStatusUpdateRequest,
 } from "../types/procurement.types";
 
 export const procurementKeys = {
@@ -41,6 +41,37 @@ export function useUpdateProcurementStatus() {
     mutationFn: ({ requestId, payload }: { requestId: string; payload: ProcurementStatusUpdateRequest }) =>
       procurementApi.updateStatus(requestId, payload),
     onSuccess: () => invalidateProcurementLists(queryClient),
+  });
+}
+
+function invalidateAfterDelivery(queryClient: ReturnType<typeof useQueryClient>) {
+  invalidateProcurementLists(queryClient);
+  void queryClient.invalidateQueries({ queryKey: [...procurementKeys.all, "deliveries"] });
+  void queryClient.invalidateQueries({ queryKey: ["material-stock"] });
+  void queryClient.invalidateQueries({ queryKey: ["budgets", "status"] });
+}
+
+export function useProcurementDeliveries(requestId: string | undefined) {
+  return useQuery({
+    queryKey: [...procurementKeys.all, "deliveries", requestId ?? ""] as const,
+    queryFn: () => procurementApi.listDeliveries(requestId as string),
+    enabled: Boolean(requestId),
+  });
+}
+
+export function useRecordDelivery(requestId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: ProcurementDeliveryCreateRequest) => procurementApi.recordDelivery(requestId, payload),
+    onSuccess: () => invalidateAfterDelivery(queryClient),
+  });
+}
+
+export function useVoidDelivery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ deliveryId, reason }: { deliveryId: string; reason: string }) => procurementApi.voidDelivery(deliveryId, reason),
+    onSuccess: () => invalidateAfterDelivery(queryClient),
   });
 }
 

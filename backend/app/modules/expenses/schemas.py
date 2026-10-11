@@ -7,13 +7,15 @@ from app.modules.expenses.models import ExpenseStatus
 
 class ExpenseCreateRequest(BaseModel):
   project_id: UUID
-  category: str = Field(min_length=1, max_length=150)
+  category: str | None = Field(default=None, max_length=150)
+  budget_category_id: UUID | None = None
   description: str | None = None
   amount: Decimal = Field(gt=0)
   expense_date: date
 
 class ExpenseReviewRequest(BaseModel):
   note: str | None = None
+  budget_category_id: UUID | None = None
 
 class ExpenseResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -21,6 +23,7 @@ class ExpenseResponse(BaseModel):
   id: UUID
   project_id: UUID
   category: str
+  budget_category_id: UUID | None = None
   description: str | None
   amount: Decimal
   expense_date: date

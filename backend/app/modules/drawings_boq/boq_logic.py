@@ -35,7 +35,7 @@ REVIEW_WARNING_CODES = frozenset({
   "GEOMETRY_INCOMPLETE", "QTO_FALLBACK", "LOW_CONFIDENCE_GEOMETRY", "UNSUPPORTED_GEOMETRY",
   "QTO_GEOMETRY_MISMATCH", "ALLOCATION_APPROXIMATE", "NOT_ALLOCATED", "OVER_DEDUCTED",
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
-  "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
+  "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "MATCHED_ELEMENT_NOT_MEASURED", "DUPLICATE_SOLID", "SCHEDULE_OVERLAPS_MODEL", "SCHEDULE_LOW_CONFIDENCE",
 })
 
@@ -299,6 +299,19 @@ LEDGER_WARNING_CATALOG = {
     "Set a lap basis and coefficient on the reinforcement rule."),
   "MATCHED_ELEMENT_NOT_MEASURED": ("warning", "NONE", "A bar row was matched to an element that is not measured.", None),
   "UNIT_WEIGHT_COMPUTED": ("info", "NONE", "Unit weight was computed from the diameter (no bar-size entry).", None),
+  "PILE_WEIGHT_NOT_COMPUTED": ("info", "NONE",
+    "Steel piles are billed by driven length. The model draws a pipe pile as a solid cylinder, so no weight was taken from its volume.",
+    "Give the pile its wall thickness or section in the model if a weight is needed."),
+  "STEEL_SOLID_SECTION_SUSPECTED": ("warning", "NONE",
+  "A steel member looks like a solid section: it weighs more than 800 kg per metre, or it is a plain solid rectangle or circle "
+    "of section size. The model may have drawn a hollow or rolled section as a solid, which overstates the weight.",
+    "Check the section of these members in the model."),
+  "STEEL_DUPLICATE_SUSPECTED": ("warning", "NONE",
+    "Another steel member has the same type, position and size, so this one may be a duplicate in the model and counted twice.",
+    "Delete the duplicate in the model, or confirm both members exist."),
+  "STEEL_MATERIAL_UNCERTAIN": ("warning", "NONE",
+    "The material only says metal or iron, or steel was inferred from the element name, so it may not be structural steel.",
+    "Give the member a steel material (for example Steel S275) in the model."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }

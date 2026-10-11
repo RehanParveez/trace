@@ -1128,10 +1128,44 @@ export interface AllocationStats {
   openings?: OpeningStats;
 }
 
+export interface RebarBand {
+  elements: number;
+  m3: Num;
+  low_kg: Num;
+  likely_kg: Num;
+  high_kg: Num;
+}
+
 export interface RebarStats {
   schedule_rows?: number; schedule_marks?: number; matched?: number; unmatched?: number;
   estimated_marks?: number; estimate_suppressed?: number;
   total_kg?: string; tier2_kg?: string; tier3_kg?: string; covered_families?: string[];
+  estimated_elements?: number;
+  total_low_kg?: Num;
+  total_high_kg?: Num;
+  measured_share_pct?: Num;
+  estimate_bands?: Record<string, RebarBand>;
+  by_dia_kg?: Record<string, Num>;
+}
+
+export interface SteelRoleStats {
+  count: number;
+  kg: Num;
+}
+
+export interface SteelStats {
+  elements?: number;
+  measured?: number;
+  not_measured?: number;
+  sections_kg?: Num;
+  sections_tonnes?: Num;
+  piles?: number;
+  pile_length_m?: Num;
+  suspected_solid_sections?: number;
+  duplicates_suspected?: number;
+  uncertain_material?: number;
+  density_kg_m3?: Num;
+  by_role?: Record<string, SteelRoleStats>;
 }
 
 export interface RunStats {
@@ -1159,6 +1193,7 @@ export interface RunStats {
   rejected?: { element_id: string; ifc_type: string; code: string; message: string }[];
   [key: string]: unknown;
   rebar?: RebarStats;
+  steel?: SteelStats;
   rebar_skipped?: Record<string, number>;
   finish_skipped?: Record<string, number>
   wall_material?: WallMaterialStats
@@ -1170,10 +1205,6 @@ export interface WallMaterialStats {
   masonry: number;
   material_unknown: number;
   billed_as_concrete: number;
-}
-
-export interface RunStats {
-  
 }
 
 export interface BarMarkResponse {

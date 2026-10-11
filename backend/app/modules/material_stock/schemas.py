@@ -13,6 +13,7 @@ class MaterialIssueCreateRequest(BaseModel):
   issued_to: str | None = Field(default=None, max_length=200)
   issue_date: date
   notes: str | None = None
+  allow_negative_stock: bool = False
 
 class MaterialIssueResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)

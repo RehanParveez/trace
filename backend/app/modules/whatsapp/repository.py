@@ -1,11 +1,11 @@
 from __future__ import annotations
-from datetime import date
+from datetime import date, datetime
 from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from app.modules.whatsapp.models import PhotoTag, SitePhoto, WhatsAppChannel, WhatsAppMessage
+from app.modules.whatsapp.models import PhotoTag, SitePhoto, WhatsAppChannel, WhatsAppMessage, WhatsAppSender
 
 class WhatsAppChannelRepository:
   def __init__(self, session: AsyncSession):
@@ -266,4 +266,57 @@ class PhotoTagRepository:
   ) -> None:
     await self.session.delete(tag)
     await self.session.flush()
+    
+class WhatsAppSenderRepository:
+  def __init__(self, session: AsyncSession):
+    self.session = session
+
+  async def list_by_org(self, organization_id: UUID) -> list[WhatsAppSender]:
+    result = await self.session.execute(
+      select(WhatsAppSender)
+      .where(WhatsAppSender.organization_id == organization_id)
+      .order_by(WhatsAppSender.display_name.asc())
+    )
+    return list(result.scalars().all())
+
+  async def get_by_id(self, sender_id: UUID, organization_id: UUID) -> WhatsAppSender | None:
+    result = await self.session.execute(
+      select(WhatsAppSender).where(
+        WhatsAppSender.id == sender_id, WhatsAppSender.organization_id == organization_id,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def get_by_phone(self, organization_id: UUID, phone_number: str) -> WhatsAppSender | None:
+    result = await self.session.execute(
+      select(WhatsAppSender).where(
+        WhatsAppSender.organization_id == organization_id, WhatsAppSender.phone_number == phone_number,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def create(self, sender: WhatsAppSender) -> WhatsAppSender:
+    self.session.add(sender)
+    await self.session.flush()
+    return sender
+
+  async def delete(self, sender: WhatsAppSender) -> None:
+    await self.session.delete(sender)
+    await self.session.flush()
+
+  async def get_recent_project_for_sender(
+    self, organization_id: UUID, phone_number: str, since: datetime,
+  ) -> UUID | None:
+    result = await self.session.execute(
+      select(SitePhoto.project_id)
+      .where(
+        SitePhoto.organization_id == organization_id,
+        SitePhoto.sender_phone_number == phone_number,
+        SitePhoto.project_id.isnot(None),
+        SitePhoto.created_at >= since,
+      )
+      .order_by(SitePhoto.created_at.desc())
+      .limit(1)
+    )
+    return result.scalar_one_or_none()
     

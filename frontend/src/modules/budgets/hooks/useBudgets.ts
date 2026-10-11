@@ -6,7 +6,17 @@ export const budgetKeys = {
   all: ["budgets"] as const,
   forProject: (projectId: string) => [...budgetKeys.all, "project", projectId] as const,
   organizationSummary: () => [...budgetKeys.all, "organization-summary"] as const,
+  status: (projectId: string) => [...budgetKeys.all, "status", projectId] as const,
 };
+
+export function useBudgetStatus(projectId: string | undefined, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: budgetKeys.status(projectId ?? ""),
+    queryFn: () => budgetsApi.getStatus(projectId as string),
+    enabled: Boolean(projectId) && (options?.enabled ?? true),
+    staleTime: 15_000,
+  });
+}
 
 export function useProjectBudget(projectId: string | undefined) {
   return useQuery({
@@ -26,6 +36,7 @@ export function useSaveBudget() {
     mutationFn: (payload: BudgetSaveRequest) => budgetsApi.saveBudget(payload),
     onSuccess: (budget) => {
       queryClient.setQueryData(budgetKeys.forProject(budget.project_id), budget);
+      void queryClient.invalidateQueries({ queryKey: budgetKeys.status(budget.project_id) });
     },
   });
 }

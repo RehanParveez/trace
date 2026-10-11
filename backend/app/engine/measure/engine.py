@@ -1,5 +1,6 @@
 from __future__ import annotations
-from app.engine.measure.units import Unit, mm3_to_m3, q4, q6
+from dataclasses import replace
+from app.engine.measure.units import Unit, mm3_to_m3, q4, q6, to_decimal
 from decimal import Decimal
 from uuid import uuid5
 from app.engine.measure.geometry import bbox_volume_mm3, extrusion_volume_mm3
@@ -11,8 +12,11 @@ from app.engine.measure.intersect import find_overlaps
 from app.engine.measure.spatial import build_spatial_index
 from app.engine.measure.finishes import REINFORCEMENT_FORMULA_UNITS, apply_openings, measure_finishes, merge_openings, schedule_lines_ledger
 from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar, self_check_rebar
+from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UNITS, STEEL_REJECTED_CODE, STEEL_SOLID_PROFILE_FACTOR,
+  STEEL_UNCERTAIN_FACTOR, UNCERTAIN_BASES, is_pile, is_steel_role, measure_steel, solid_profile_suspected, split_steel,
+  steel_check, steel_duplicate_ids, steel_length_mm, steel_member_length_mm, steel_recoverable, steel_stats)
 
-ENGINE_VERSION = "2026.10."
+ENGINE_VERSION = "2026.10.4"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -31,7 +35,7 @@ VOLUME_ROLES = frozenset({
   "RAMP", "RAMP_SLAB",
 })
 COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
-FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS}
+FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS, **STEEL_FORMULA_UNITS}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
 QTO_ONLY_FACTOR = Decimal("0.9")
 AABB_CONFIDENCE_FACTOR = Decimal("0.8")
@@ -52,9 +56,13 @@ def validate_input(ctx: CalculationContext, elements: list[ModelElement]):
   accepted: list[ModelElement] = []
   rejected: list[Rejected] = []
   for el in sorted(elements, key=lambda e: str(e.id)):
-    if el.normalization_status == "INVALID":
-      rejected.append(Rejected(el.id, el.ifc_type, "INVALID_ELEMENT",
-        "Element failed ingestion validation; not measured."))
+    if el.normalization_status == "INVALID" and not steel_recoverable(el):
+      if el.material_class == STEEL and is_steel_role(el.role):
+        rejected.append(Rejected(el.id, el.ifc_type, STEEL_REJECTED_CODE,
+          "Steel element has no model volume or length; not weighed."))
+      else:
+        rejected.append(Rejected(el.id, el.ifc_type, "INVALID_ELEMENT",
+          "Element failed ingestion validation; not measured."))
     else:
       accepted.append(el)
   return accepted, rejected
@@ -113,11 +121,76 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     gross_volume_m3=gross, status=status, issues=tuple(issues), material_class=el.material_class,
   )
 
+def _steel_flags(el: ModelElement, duplicate: bool):
+  issues: list[dict] = []
+  factor = Decimal("1")
+  if el.material_basis in UNCERTAIN_BASES:
+    issues.append(_issue("STEEL_MATERIAL_UNCERTAIN", "warning",
+      "The material only says metal or iron, or steel was inferred from the element name; confirm it is structural steel."))
+    factor *= STEEL_UNCERTAIN_FACTOR
+    
+  if duplicate:
+    issues.append(_issue("STEEL_DUPLICATE_SUSPECTED", "warning",
+      "Another steel member has the same type, position and size; this one may be a duplicate in the model."))
+  if solid_profile_suspected(el):
+    issues.append(_issue("STEEL_SOLID_SECTION_SUSPECTED", "warning",
+      "The member is drawn as a plain solid rectangle or circle of section size; it may be a hollow or rolled section."))
+    factor *= STEEL_SOLID_PROFILE_FACTOR
+  return issues, factor
+
+def _steel_solid(ctx: CalculationContext, el: ModelElement, duplicate: bool = False) -> Solid:
+  solid = _steel_solid_base(ctx, el, duplicate)
+  flags, factor = _steel_flags(el, duplicate)
+  if not flags:
+    return solid
+  return replace(solid, confidence_factor=solid.confidence_factor * factor, issues=(*solid.issues, *flags),
+    status="REVIEW_REQUIRED" if solid.status == "OK" else solid.status)
+
+def _steel_solid_base(ctx: CalculationContext, el: ModelElement, duplicate: bool = False) -> Solid:
+  kind = el.geometry_kind or "UNSUPPORTED"
+  if el.volume_mm3 is not None and not Decimal(el.volume_mm3).is_finite():
+    el = replace(el, volume_mm3=None)
+  length_mm = steel_length_mm(el) if is_pile(el.role) else steel_member_length_mm(el)
+  length_m = q6(to_decimal(length_mm) / 1000) if length_mm else None
+  note = _issue("STEEL_MEASURED_BY_WEIGHT", "info",
+    "Steel element measured as structural steel, not concrete." if el.normalization_status != "INVALID" else
+    "The reader flagged this steel element as non-concrete; it is measured as structural steel instead.")
+  
+  if is_pile(el.role):
+    issues = [note]
+    
+    if length_m is None:
+      issues.append(_issue("UNSUPPORTED_GEOMETRY", "warning", "No usable pile length."))
+    return Solid(
+      id=_solid_id(ctx, el.id), element_id=el.id, ifc_type=el.ifc_type, role=el.role, level_id=el.level_id,
+      geometry_kind=kind if kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT", "BOX_ONLY", "QTO_ONLY") else "UNSUPPORTED",
+      classification_confidence=el.classification_confidence,
+      confidence_factor=Decimal("1") if kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") else STEEL_BBOX_FACTOR,
+      gross_length_m=length_m, status="OK" if length_m is not None else "REVIEW_REQUIRED", issues=tuple(issues),
+      material_class=STEEL)
+    
+  solid = _volume_solid(ctx, el)
+  issues = [i for i in solid.issues if i["code"] != "LOW_CONFIDENCE_GEOMETRY"]
+  issues.append(note)
+  
+  if kind == "BOX_ONLY":
+    if not (el.volume_mm3 is not None and el.volume_mm3 > 0):
+      issues.append(_issue("STEEL_NO_RELIABLE_VOLUME", "warning",
+        "Only a bounding box is available for this steel member; it was not weighed."))
+      return replace(solid, gross_volume_m3=None, status="REVIEW_REQUIRED", issues=tuple(issues), material_class=STEEL)
+    return replace(solid, confidence_factor=STEEL_BBOX_FACTOR, status="OK", issues=tuple(issues),
+      gross_length_m=length_m, material_class=STEEL)
+  return replace(solid, issues=tuple(issues), gross_length_m=length_m, material_class=STEEL)
+
 def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
   solids: list[Solid] = []
   skipped: dict[str, int] = {}
+  duplicates = steel_duplicate_ids(elements)
+  
   for el in elements:
-    if el.role in COUNT_ROLES:
+    if el.material_class == STEEL and is_steel_role(el.role):
+      solids.append(_steel_solid(ctx, el, el.id in duplicates))
+    elif el.role in COUNT_ROLES:
       solids.append(Solid(
         id=_solid_id(ctx, el.id), element_id=el.id, ifc_type=el.ifc_type, role=el.role,
         level_id=el.level_id, geometry_kind=el.geometry_kind or "UNSUPPORTED",
@@ -151,6 +224,8 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
   unmapped: dict[str, int] = {}
 
   for s in solids:
+    if s.material_class == STEEL:
+      continue
     mapping = by_ifc.get(s.ifc_type)
     redirect = None
     if (mapping is not None and mapping.work_item_code and concrete_code and s.material_class == "CONCRETE"
@@ -244,6 +319,7 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
       warnings=tuple(dict.fromkeys(warnings)),
     ))
 
+  ledger.extend(measure_steel(ctx, solids))
   ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
   return ledger, dict(sorted(unmapped.items()))
 
@@ -290,6 +366,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
       if row.quantity != expected:
         failures.append(f"net volume != gross - deductions on solid {row.solid_id}")
 
+  failures.extend(steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
@@ -320,8 +397,9 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
   if convention is None:
     alloc = AllocationResult.empty()
   else:
-    index = spatial_index(ctx, convention, solids, accepted)
-    alloc = allocate(ctx, convention, solids, index, find_relations(ctx, index))
+    concrete_solids, concrete_elements = split_steel(solids, accepted)
+    index = spatial_index(ctx, convention, concrete_solids, concrete_elements)
+    alloc = allocate(ctx, convention, concrete_solids, index, find_relations(ctx, index))
   if profile is not None:
     alloc = merge_openings(alloc, apply_openings(ctx, profile, solids, ctx.openings))
     
@@ -353,6 +431,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "finish_skipped": finish_skipped,
     "skipped_by_role": skipped,
     "wall_material": wall_material_stats(solids, ledger),
+    "steel": steel_stats(solids, ledger, rejected),
     "unmapped_by_type": unmapped,
     "rejected": [{"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code, "message": r.message} for r in rejected],
   }

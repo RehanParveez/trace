@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {SiteLogCreateRequest, SiteLogEntry, SiteLogListParams, SiteLogUpdateRequest,
+import type {DailyReport, SiteLogCreateRequest, SiteLogEntry, SiteLogListParams, SiteLogUpdateRequest,
 } from "../types/site-progress.types";
 
 export const siteProgressApi = {
@@ -8,6 +8,13 @@ export const siteProgressApi = {
       params: { project_id: params.projectId, skip: params.skip ?? 0, limit: params.limit ?? 100 },
     });
 
+    return response.data;
+  },
+
+  async getDailyReport(projectId: string, reportDate: string): Promise<DailyReport> {
+    const response = await apiClient.get<DailyReport>("/site-logs/report", {
+      params: { project_id: projectId, report_date: reportDate },
+    });
     return response.data;
   },
 

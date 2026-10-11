@@ -87,6 +87,29 @@ class WhatsAppChannel(Base, TimestampMixin):
     cascade="all, delete-orphan",
   )
 
+class WhatsAppSender(Base, TimestampMixin):
+  __tablename__ = "whatsapp_senders"
+
+  __table_args__ = (
+    UniqueConstraint("organization_id", "phone_number", name="uq_whatsapp_senders_org_phone"),
+    Index("ix_whatsapp_senders_org", "organization_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  phone_number: Mapped[str] = mapped_column(String(32), nullable=False)
+  display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+  default_project_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
+
 class WhatsAppMessage(Base, TimestampMixin):
   __tablename__ = "whatsapp_messages"
 

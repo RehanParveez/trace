@@ -1,8 +1,8 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.labour.service import LabourService
-from app.modules.labour.schemas import ( LabourSourceResponse, AttendanceBulkCreateRequest, AttendanceBulkResultResponse, DayAttendanceSummaryResponse, LabourAdvanceCreateRequest, LabourAdvanceResponse, LabourBalanceResponse, LabourCostResponse,
-  LabourDeploymentCreateRequest, LabourDeploymentResponse, LabourDeploymentUpdateRequest, LabourPaymentCreateRequest, LabourPaymentResponse, LabourSourceCreateRequest,
+from app.modules.labour.schemas import ( AttendanceSheetResponse, LabourDueRowResponse, LabourSourceResponse, AttendanceBulkCreateRequest, AttendanceBulkResultResponse, DayAttendanceSummaryResponse, LabourAdvanceCreateRequest, LabourAdvanceResponse,
+  LabourBalanceResponse, LabourCostResponse, LabourDeploymentCreateRequest, LabourDeploymentResponse, LabourDeploymentUpdateRequest, LabourPaymentCreateRequest, LabourPaymentResponse, LabourSourceCreateRequest,
   LabourSourceUpdateRequest, LabourSummaryResponse, LabourTradeCostResponse, LabourWorkerCreateRequest, LabourWorkerResponse, LabourWorkerUpdateRequest,
 )
 from app.modules.identity.models import User
@@ -122,6 +122,25 @@ async def list_attendance(
      "units_present": r.units_present, "notes": r.notes}
     for r in records
   ]
+
+@router.get("/projects/{project_id}/attendance/sheet", response_model=AttendanceSheetResponse)
+async def get_attendance_sheet(
+  project_id: UUID,
+  attendance_date: date = Query(...),
+  current_user: User = Depends(require_permission(PermissionKey.LABOUR_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).get_attendance_sheet(
+    current_user.active_membership.organization_id, project_id, attendance_date,
+  )
+
+@router.get("/projects/{project_id}/dues", response_model=list[LabourDueRowResponse])
+async def get_labour_dues(
+  project_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.LABOUR_PAYMENT_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).get_dues(current_user.active_membership.organization_id, project_id)
 
 @router.get("/projects/{project_id}/attendance/day-summary", response_model=DayAttendanceSummaryResponse)
 async def get_day_attendance_summary(

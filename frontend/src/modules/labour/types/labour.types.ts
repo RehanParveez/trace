@@ -45,3 +45,18 @@ export interface LabourSummary {
 export interface LabourCost { period_start: string; period_end: string; total_cost: number | string; currency: string; }
 export interface LabourBalance { outstanding_advance_balance: number | string; currency: string; }
 export interface DayAttendanceSummary { attendance_date: string; total_present: number | string; by_trade: LabourTradeCost[]; }
+
+export interface AttendanceSheetRow {
+  deployment_id: string; source_id: string; source_name: string;
+  worker_id: string | null; worker_name: string | null; trade: string; daily_rate: number | string;
+  is_headcount: boolean; recorded: boolean; units_present: number | string | null;
+  suggested_units: number | string | null; notes: string | null;
+}
+
+export interface AttendanceSheet { attendance_date: string; previous_date: string | null; rows: AttendanceSheetRow[]; }
+
+export interface LabourDueRow {
+  source_id: string; source_name: string; worker_id: string | null; worker_name: string | null;
+  accrued_wages: number | string; gross_paid: number | string; wages_due: number | string;
+  advances_given: number | string; advances_recovered: number | string; advance_balance: number | string;
+}

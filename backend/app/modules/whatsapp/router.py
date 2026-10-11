@@ -7,7 +7,7 @@ from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
-from app.modules.whatsapp.schemas import (ChannelConnectRequest, ChannelResponse, PhotoTagCreateRequest, PhotoTagResponse, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, 
+from app.modules.whatsapp.schemas import (SenderCreateRequest, SenderResponse, SenderUpdateRequest, ChannelConnectRequest, ChannelResponse, PhotoTagCreateRequest, PhotoTagResponse, ProjectPhotoThumbnailResponse, SitePhotoAssignProjectRequest, 
   SitePhotoUrlResponse, SitePhotoResponse, SitePhotoUpdateRequest,
 )
 from app.modules.whatsapp.service import WhatsAppService
@@ -68,6 +68,40 @@ async def connect_channel(
     payload,
     current_user.id,
   )
+
+@router.get("/senders", response_model=list[SenderResponse])
+async def list_senders(
+  current_user: User = Depends(require_permission(PermissionKey.WHATSAPP_CHANNEL_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).list_senders(current_user.active_membership.organization_id)
+
+@router.post("/senders", response_model=SenderResponse, status_code=status.HTTP_201_CREATED)
+async def create_sender(
+  payload: SenderCreateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.WHATSAPP_CHANNEL_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).create_sender(current_user.active_membership.organization_id, payload)
+
+@router.patch("/senders/{sender_id}", response_model=SenderResponse)
+async def update_sender(
+  sender_id: UUID,
+  payload: SenderUpdateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.WHATSAPP_CHANNEL_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _service(session).update_sender(
+    current_user.active_membership.organization_id, sender_id, payload,
+  )
+
+@router.delete("/senders/{sender_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_sender(
+  sender_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.WHATSAPP_CHANNEL_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  await _service(session).delete_sender(current_user.active_membership.organization_id, sender_id)
 
 @router.get("/channel", response_model=ChannelResponse)
 async def get_channel(

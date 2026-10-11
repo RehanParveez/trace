@@ -3,6 +3,7 @@ export * from "./components/ChannelConnectDialog";
 export * from "./components/ChannelStatusCard";
 export * from "./components/SitePhotoCard";
 export * from "./components/SitePhotoDetailDialog";
+export * from "./components/SendersPanel";
 export * from "./components/SitePhotoGallery";
 export * from "./hooks";
 export * from "./pages/SitePhotosPage";

@@ -4,6 +4,7 @@ export interface Expense {
   id: string;
   project_id: string;
   category: string;
+  budget_category_id: string | null;
   description: string | null;
   amount: number | string;
   expense_date: string;
@@ -17,7 +18,8 @@ export interface Expense {
 
 export interface ExpenseCreateRequest {
   project_id: string;
-  category: string;
+  category?: string;
+  budget_category_id?: string | null;
   description?: string | null;
   amount: number;
   expense_date: string;
@@ -25,6 +27,7 @@ export interface ExpenseCreateRequest {
 
 export interface ExpenseReviewRequest {
   note?: string | null;
+  budget_category_id?: string | null;
 }
 
 export interface ExpenseListParams {

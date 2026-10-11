@@ -1,7 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
-from app.modules.budgets.models import Budget
+from app.modules.budgets.models import Budget, BudgetCategory
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
@@ -82,3 +82,32 @@ class BudgetRepository:
       "total_approved_amount": row.total_approved_amount,
       "budget_count": row.budget_count,
     }
+    
+  async def get_category_for_project(
+    self, category_id: UUID, project_id: UUID, organization_id: UUID,
+  ) -> BudgetCategory | None:
+    result = await self.session.execute(
+      select(BudgetCategory)
+      .join(Budget, Budget.id == BudgetCategory.budget_id)
+      .where(
+        BudgetCategory.id == category_id,
+        Budget.project_id == project_id,
+        Budget.organization_id == organization_id,
+      )
+    )
+    return result.scalar_one_or_none()
+
+  async def find_categories_by_name(
+    self, project_id: UUID, organization_id: UUID, name: str,
+  ) -> list[BudgetCategory]:
+    result = await self.session.execute(
+      select(BudgetCategory)
+      .join(Budget, Budget.id == BudgetCategory.budget_id)
+      .where(
+        Budget.project_id == project_id,
+        Budget.organization_id == organization_id,
+        func.lower(func.trim(BudgetCategory.name)) == name.strip().lower(),
+      )
+    )
+    return list(result.scalars().all())
+  

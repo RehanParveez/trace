@@ -9,6 +9,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 from functools import lru_cache
+from app.engine.measure.steel import is_steel_role
 from app.modules.drawings_boq.ifc_types import (COUNT_ROLES, DEFAULT_DISCIPLINE, DEFAULT_MESH_FALLBACK_LIMIT, DEFAULT_QUANTITY_KIND_ORDER, DISCIPLINE_BY_ROLE, EXCLUDED_IFC_TYPES, LINEAR_ROLES,
   LOW_CLASSIFICATION_CONFIDENCE, MESH_FALLBACK_ROLES, NAME_KEYWORD_ROLES, NO_LEGACY_BOQ_ROLES, PREDEFINED_TYPE_ROLE_OVERRIDES, QUANTITY_KIND_ORDER_BY_ROLE, QUANTITY_PROPS_BY_KIND,
   REQUIRED_DIMENSIONS_BY_ROLE, ROLE_BY_IFC_TYPE, SLAB_ROLES, SUPERTYPE_FALLBACK_TYPES, WALL_ROLES,
@@ -26,8 +27,10 @@ _CONCRETE_TEXT = re.compile(r"concrete|cement|\brcc\b|grout", re.I)
 _PILE_CAP_NAME = re.compile(r"(?<![a-z])pile[\s_\-]*caps?(?![a-z])", re.I)
 _PILE_NAME = re.compile(r"(?<![a-z])piles?(?![a-z])", re.I)
 _PILE_REFINABLE_ROLES = frozenset({"SLAB", "SLAB_FOUNDATION", "FOOTING", "COLUMN", "MEMBER", "UNKNOWN"})
+_STEEL_NAME = re.compile(r"\bsteel\b|\b(UB|UC|PFC|RHS|SHS|CHS|IPE|HEA|HEB)\s?\d{2,4}", re.I)
 _NON_CONCRETE_PATTERNS = (
-  ("STEEL", re.compile(r"\b(steel|metal|iron|aluminium|aluminum)\b|\b(UB|UC|PFC|RHS|SHS|CHS|IPE|HEA|HEB)\s?\d{2,4}", re.I)),
+  ("ALUMINIUM", re.compile(r"\b(aluminium|aluminum)\b", re.I)),
+  ("STEEL", re.compile(r"\b(steel|metal|iron)\b|\b(UB|UC|PFC|RHS|SHS|CHS|IPE|HEA|HEB)\s?\d{2,4}", re.I)),
   ("TIMBER", re.compile(r"\b(timber|wood|plywood|lvl)\b", re.I)),
 )
 _MM2_PER_M2 = 1_000_000.0
@@ -795,11 +798,25 @@ def _normalise_element(
     else:
       issues.append(_issue("QTO_MESH_VERIFIED", "info", "Model volume agrees with the 3D geometry volume."))
   material_family = _material_family(material, getattr(element, "Name", None), role)
-  if material_family != "CONCRETE_OR_UNKNOWN" and role in CONCRETE_ONLY_ROLES:
+  if material_family == "STEEL" and is_steel_role(role) and role in CONCRETE_ONLY_ROLES:
+    issues.append(_issue(
+      "STEEL_MEASURED_AS_STEEL", "info",
+      f"Material looks like steel on a {role}; it is measured as structural steel by weight, not as concrete.",
+    ))
+    
+  elif (material_family == "CONCRETE_OR_UNKNOWN" and is_steel_role(role) and material and _CONCRETE_TEXT.search(material)
+        and _STEEL_NAME.search(f"{getattr(element, 'Name', None) or ''} {getattr(element, 'ObjectType', None) or ''}")):
+    issues.append(_issue(
+      "STEEL_MATERIAL_CONFLICT", "warning",
+      "The material says concrete but the element name says steel. It is measured as concrete; check the model.",
+    ))
+    
+  elif material_family != "CONCRETE_OR_UNKNOWN" and role in CONCRETE_ONLY_ROLES:
     issues.append(_issue(
       "NON_CONCRETE_MATERIAL", "error",
       f"Material looks like {material_family.lower()}, but role {role} is measured as concrete. Excluded from the RCC quantities.",
     ))
+    
   area_mm2 = float(area_m2[0]) * _MM2_PER_M2 if area_m2 else geometry.profile_area_mm2
  
   base_mm = float(geometry.bbox_min[2]) if geometry.bbox_min is not None else None

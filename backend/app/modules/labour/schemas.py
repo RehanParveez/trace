@@ -89,6 +89,37 @@ class AttendanceEntryInput(BaseModel):
   units_present: Decimal = Field(ge=0, le=9999)
   notes: str | None = None
 
+class AttendanceSheetRowResponse(BaseModel):
+  deployment_id: UUID
+  source_id: UUID
+  source_name: str
+  worker_id: UUID | None
+  worker_name: str | None
+  trade: str
+  daily_rate: Decimal
+  is_headcount: bool
+  recorded: bool
+  units_present: Decimal | None
+  suggested_units: Decimal | None
+  notes: str | None = None
+
+class AttendanceSheetResponse(BaseModel):
+  attendance_date: date
+  previous_date: date | None
+  rows: list[AttendanceSheetRowResponse]
+
+class LabourDueRowResponse(BaseModel):
+  source_id: UUID
+  source_name: str
+  worker_id: UUID | None
+  worker_name: str | None
+  accrued_wages: Decimal
+  gross_paid: Decimal
+  wages_due: Decimal
+  advances_given: Decimal
+  advances_recovered: Decimal
+  advance_balance: Decimal
+
 class AttendanceBulkCreateRequest(BaseModel):
   entries: list[AttendanceEntryInput] = Field(min_length=1, max_length=500)
 
@@ -131,6 +162,7 @@ class LabourPaymentCreateRequest(BaseModel):
   wht_category: "WHTCategory | None" = None
   payment_date: date
   notes: str | None = None
+  allow_overpay: bool = False
 
   @model_validator(mode="after")
   def _validate_period(self) -> "LabourPaymentCreateRequest":
@@ -176,6 +208,9 @@ class LabourSummaryResponse(BaseModel):
   cost_by_trade: list[LabourTradeCostResponse]
   total_advances_given: Decimal
   total_payments_made: Decimal
+  total_gross_paid: Decimal = Decimal("0")
+  total_advances_recovered: Decimal = Decimal("0")
+  wages_due: Decimal = Decimal("0")
   outstanding_advance_balance: Decimal
   currency: str
 

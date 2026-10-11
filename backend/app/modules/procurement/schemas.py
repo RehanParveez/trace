@@ -16,6 +16,7 @@ class ProcurementCreateRequest(BaseModel):
 
 class ProcurementStatusUpdateRequest(BaseModel):
   status: ProcurementStatus
+  supplier_name: str | None = Field(default=None, max_length=200)
 
 class ProcurementResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -28,6 +29,8 @@ class ProcurementResponse(BaseModel):
   estimated_amount: Decimal | None
   status: ProcurementStatus
   needed_by_date: date | None
+  supplier_name: str | None = None
+  delivered_quantity: Decimal = Decimal("0")
   notes: str | None
   requested_by: UUID | None
   created_at: datetime
@@ -39,3 +42,33 @@ class ProcurementOrganizationSummaryResponse(BaseModel):
   
 class ProcurementStatusSummaryResponse(BaseModel):
   counts: dict[str, int]
+  
+class ProcurementDeliveryCreateRequest(BaseModel):
+  received_date: date
+  quantity: Decimal = Field(gt=0)
+  supplier_name: str | None = Field(default=None, max_length=200)
+  invoice_number: str | None = Field(default=None, max_length=100)
+  amount: Decimal | None = Field(default=None, ge=0)
+  notes: str | None = Field(default=None, max_length=300)
+  allow_over_delivery: bool = False
+
+class ProcurementDeliveryVoidRequest(BaseModel):
+  reason: str = Field(min_length=3, max_length=500)
+
+class ProcurementDeliveryResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  request_id: UUID
+  project_id: UUID
+  material_name: str
+  unit: str
+  received_date: date
+  quantity: Decimal
+  supplier_name: str | None
+  invoice_number: str | None
+  amount: Decimal | None
+  notes: str | None
+  voided_at: datetime | None
+  void_reason: str | None
+  created_at: datetime

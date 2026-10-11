@@ -1,3 +1,3 @@
 export {
-  siteProgressKeys, useCreateSiteLog, useDeleteSiteLog, useSiteLogs, useUpdateSiteLog,
+  siteProgressKeys, useDailyReport, useCreateSiteLog, useDeleteSiteLog, useSiteLogs, useUpdateSiteLog,
 } from "./useSiteProgress";

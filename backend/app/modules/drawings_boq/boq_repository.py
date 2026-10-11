@@ -5,7 +5,8 @@ from uuid import UUID
 from app.modules.drawings_boq.models import (BOQVersion, BOQItem, BOQItemAdjustment, BOQItemLedgerLink, BOQItemSourceElement, BOQItemStatus, BOQSnapshot, BOQSnapshotItem, BOQVersionStatus,
   BuildingLevel, CalculationRun, Drawing, DrawingElement, ExportJob, LedgerDeduction, ModelAuditResult, QuantityLedger, ReviewIssue, WorkItem, QuantitySolid
 )
-from sqlalchemy import select, delete, func, insert, or_, update
+from sqlalchemy import and_, select, delete, func, insert, or_, update
+from app.engine.measure.steel import STEEL_ROLE_PREFIXES
 
 _WORKING = ("DRAFT", "CALCULATING", "CALCULATED", "UNDER_REVIEW")
 _CHUNK = 1000
@@ -259,11 +260,16 @@ class BOQEngineRepository:
   async def invalid_counts(self, org: UUID, drawing_ids: list[UUID], ifc_types: list[str], roles: list[str]) -> dict:
     if not drawing_ids or not ifc_types:
       return {}
+    
+    role = DrawingElement.structural_role
+    steel_family = func.coalesce(DrawingElement.properties["_ifc"]["material_family"].as_string(), "") == "STEEL"
+    measured_as_steel = and_(steel_family, or_(*[role.startswith(p) for p in STEEL_ROLE_PREFIXES]), ~role.startswith("PILE_CAP"))
+    
     r = await self.session.execute(
       select(DrawingElement.ifc_type, func.count()).where(
         DrawingElement.organization_id == org, DrawingElement.drawing_id.in_(drawing_ids),
         DrawingElement.normalization_status == "INVALID", DrawingElement.ifc_type.in_(ifc_types),
-        DrawingElement.structural_role.in_(roles)).group_by(DrawingElement.ifc_type))
+        role.in_(roles), ~measured_as_steel).group_by(DrawingElement.ifc_type))
     return {t: n for t, n in r.all()}
 
   async def element_names(self, ids: list[UUID]) -> dict[UUID, str]:

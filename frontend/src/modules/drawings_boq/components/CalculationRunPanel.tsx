@@ -10,6 +10,7 @@ import type { CalculationRun, Drawing } from "../types/drawings-boq.types";
 import type {LedgerRowResponse, QuantitySolidResponse, DeductionResponse,
 } from "../types/drawings-boq.types";
 import { RunStatsSummary } from "./RunStatsSummary";
+import { ledgerRangeText } from "./SteelRebarRange";
 import { RebarMarksPanel } from "./RebarMarksPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
 import {CalcUsagePanel, ElementImpactButton, RunFailureNotice, RunMetricsPanel, RunModeBadge, RunOptionsFields, RunStartNotice, classifyStartError, formatDurationMs, formatMb, useScaleT,
@@ -76,6 +77,12 @@ export function CalculationRunPanel({
       projectId,
     );
   const run = runQuery.data;
+  useEffect(() => {
+    if (activeRunId) {
+      setRunId(activeRunId);
+      setView("overview");
+    }
+  }, [activeRunId]);
 
   const eligibleKey = drawings.map((d) => d.id).join(",");
   useEffect(() => {
@@ -715,7 +722,12 @@ function RunLedger({
       ]}
       rows={rows.map((row: LedgerRowResponse) => [
        row.work_item_code,
-       formatQuantity(row.quantity_net),
+       <span key="qty" title={ledgerRangeText(row) ?? undefined}>
+         {formatQuantity(row.quantity_net)}
+         {ledgerRangeText(row) ? (
+           <span className="ml-1.5 text-[10px] text-[var(--color-warning)]">{ledgerRangeText(row)}</span>
+         ) : null}
+       </span>,
        row.unit,
        row.source_kind,
        formatQuantity(row.confidence),

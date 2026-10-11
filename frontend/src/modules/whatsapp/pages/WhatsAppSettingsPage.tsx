@@ -1,6 +1,7 @@
 import { PageHeader } from "../../organizations/components/OrganizationUi";
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../identity";
 import { ChannelStatusCard } from "../components/ChannelStatusCard";
+import { SendersPanel } from "../components/SendersPanel";
 import { useTranslation } from "react-i18next";
 
 export function WhatsAppSettingsPage() {
@@ -12,6 +13,7 @@ export function WhatsAppSettingsPage() {
     <div className="space-y-7">
       <PageHeader title={t("whatsapp.status.title")} description={t("whatsapp.status.pageDescription")} />
       <ChannelStatusCard canManage={canManage} />
+      {canManage ? <SendersPanel /> : null}
     </div>
   );
 }

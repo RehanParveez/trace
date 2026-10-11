@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import {Button, Field, Icon, inputClass, Modal, useToast,
 } from "../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../identity";
 import { useSaveBudget } from "../hooks";
 import type { Budget, BudgetCategoryInput } from "../types/budget.types";
 import { useTranslation } from "react-i18next";
@@ -23,7 +24,8 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
   const [currency, setCurrency] = useState(budget?.currency ?? "PKR");
   const [notes, setNotes] = useState(budget?.notes ?? "");
   const [categories, setCategories] = useState<BudgetCategoryInput[]>(
-    budget?.categories.map((category) => ({
+     budget?.categories.map((category) => ({
+      id: category.id,
       name: category.name,
       allocated_amount: Number(category.allocated_amount),
     })) ?? [],
@@ -58,11 +60,14 @@ export function BudgetForm({ projectId, budget, onClose }: BudgetFormProps) {
           onClose();
           showToast({ tone: "success", title: budget ? "Budget updated" : "Budget set" });
         },
-        onError: () =>
+        onError: (err) =>
           setError(
-            budget
-              ? "This budget was changed by someone else. Close this dialog, reopen it and try again."
-              : "Couldn't save this budget. Please try again.",
+            getApiErrorMessage(
+              err,
+              budget
+                ? "This budget was changed by someone else. Close this dialog, reopen it and try again."
+                : "Couldn't save this budget. Please try again.",
+            ),
           ),
       },
     );

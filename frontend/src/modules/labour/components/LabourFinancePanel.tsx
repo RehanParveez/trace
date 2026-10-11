@@ -3,8 +3,10 @@ import type { FormEvent } from "react";
 import {Badge, Button, EmptyState, Field, inputClass, Modal, Panel, PanelHeader, TableShell, useToast,
 } from "../../organizations/components/OrganizationUi";
 import { getApiErrorMessage } from "../../identity";
-import {useCreateLabourAdvance, useCreateLabourPayment, useLabourAdvances, useLabourPayments, useLabourSources,
+import {useCreateLabourAdvance, useCreateLabourPayment, useLabourAdvances, useLabourDues, useLabourPayments, useLabourSources, useLabourWorkers,
 } from "../hooks";
+import { getApiErrorCode } from "../../../shared/utils/apiError";
+import type { LabourDueRow } from "../types/labour.types";
 import { formatLabourDate, formatLabourMoney } from "../utils/labour.utils";
 import { useTranslation } from "react-i18next";
 import { todayLocal } from "../../../shared/utils/date";
@@ -16,12 +18,54 @@ export function LabourFinancePanel({ projectId, canManagePayments }: { projectId
   const paymentsQuery = useLabourPayments(projectId);
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [payFor, setPayFor] = useState<LabourDueRow | null>(null);
+  const duesQuery = useLabourDues(projectId, { enabled: canManagePayments });
+  const dues = (duesQuery.data ?? []).filter((row) => Number(row.wages_due) > 0 || Number(row.advance_balance) > 0);
 
   const sources = sourcesQuery.data ?? [];
   const sourceNameById = new Map(sources.map((s) => [s.id, s.name]));
 
   return (
     <div className="space-y-5">
+      {canManagePayments && dues.length > 0 ? (
+        <Panel>
+          <PanelHeader eyebrow={t("labour.finance.eyebrow")} title={t("labour.finance.duesTitle")} description={t("labour.finance.duesDescription")} />
+          <TableShell>
+            <table className="w-full min-w-[640px] text-left">
+              <thead className="bg-[var(--color-surface-muted)]">
+                <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+                  <th className="px-4 py-3">{t("labour.finance.source")}</th>
+                  <th className="px-4 py-3 text-right">{t("labour.finance.accrued")}</th>
+                  <th className="px-4 py-3 text-right">{t("labour.finance.paidGross")}</th>
+                  <th className="px-4 py-3 text-right">{t("labour.finance.due")}</th>
+                  <th className="px-4 py-3 text-right">{t("labour.finance.advanceBalance")}</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {dues.map((row) => (
+                  <tr key={`${row.source_id}-${row.worker_id ?? "all"}`} className="border-t border-[var(--color-border)]">
+                    <td className="px-4 py-3.5 text-[13px] font-medium text-[var(--color-text-primary)]">
+                      {row.worker_name ?? row.source_name}
+                      {row.worker_name ? <span className="block text-[11px] text-[var(--color-text-secondary)]">{row.source_name}</span> : null}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatLabourMoney(row.accrued_wages)}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatLabourMoney(row.gross_paid)}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[13px] font-semibold text-[var(--color-text-primary)]">{formatLabourMoney(row.wages_due)}</td>
+                    <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-secondary)]">{formatLabourMoney(row.advance_balance)}</td>
+                    <td className="px-4 py-3.5 text-right">
+                      {Number(row.wages_due) > 0 ? (
+                        <Button variant="secondary" size="sm" onClick={() => { setPayFor(row); setPaymentOpen(true); }}>{t("labour.finance.payNow")}</Button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
+        </Panel>
+      ) : null}
+
       <Panel>
         <PanelHeader
           eyebrow={t("labour.finance.eyebrow")}
@@ -54,7 +98,7 @@ export function LabourFinancePanel({ projectId, canManagePayments }: { projectId
           eyebrow={t("labour.finance.eyebrow")}
           title={t("labour.finance.paymentsTitle")}
           description={t("labour.finance.paymentsDescription")}
-          action={canManagePayments ? <Button variant="primary" size="sm" onClick={() => setPaymentOpen(true)}>{t("labour.finance.recordPayment")}</Button> : null}
+          action={canManagePayments ? <Button variant="primary" size="sm" onClick={() => { setPayFor(null); setPaymentOpen(true); }}>{t("labour.finance.recordPayment")}</Button> : null}
         />
         {(paymentsQuery.data ?? []).length === 0 ? (
           <EmptyState icon="budget"  title={t("labour.finance.noPaymentsTitle")} description={t("labour.finance.noPaymentsDescription")} />
@@ -78,7 +122,7 @@ export function LabourFinancePanel({ projectId, canManagePayments }: { projectId
       </Panel>
 
       {advanceOpen ? <AdvanceDialog projectId={projectId} sources={sources} onClose={() => setAdvanceOpen(false)} /> : null}
-      {paymentOpen ? <PaymentDialog projectId={projectId} sources={sources} onClose={() => setPaymentOpen(false)} /> : null}
+      {paymentOpen ? <PaymentDialog projectId={projectId} sources={sources} due={payFor} onClose={() => { setPaymentOpen(false); setPayFor(null); }} /> : null}
     </div>
   );
 }
@@ -122,47 +166,67 @@ function AdvanceDialog({ projectId, sources, onClose }: { projectId: string; sou
   );
 }
 
-function PaymentDialog({ projectId, sources, onClose }: { projectId: string; sources: { id: string; name: string }[]; onClose: () => void }) {
+function PaymentDialog({ projectId, sources, due, onClose }: { projectId: string; sources: { id: string; name: string }[]; due: LabourDueRow | null; onClose: () => void }) {
   const { t } = useTranslation();
   const createPayment = useCreateLabourPayment(projectId);
   const { showToast } = useToast();
-  const [sourceId, setSourceId] = useState(sources[0]?.id ?? "");
+  const [sourceId, setSourceId] = useState(due?.source_id ?? sources[0]?.id ?? "");
+  const [workerId, setWorkerId] = useState(due?.worker_id ?? "");
+  const workersQuery = useLabourWorkers(sourceId || undefined);
+  const workers = workersQuery.data ?? [];
+  const [overpay, setOverpay] = useState(false);
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState(() => todayLocal());
-  const [gross, setGross] = useState("");
+  const [gross, setGross] = useState(due ? String(Number(due.wages_due)) : "");
   const [advanceRecovered, setAdvanceRecovered] = useState("0");
   const [paymentDate, setPaymentDate] = useState(() => todayLocal());
   const [error, setError] = useState<string | null>(null);
 
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function submit(event?: FormEvent<HTMLFormElement>, allowOverpay = false) {
+    event?.preventDefault();
     setError(null);
     createPayment.mutate(
-      { source_id: sourceId, period_start: periodStart, period_end: periodEnd, gross_wage_amount: Number(gross), advance_recovered_amount: Number(advanceRecovered), payment_date: paymentDate },
+      { source_id: sourceId, worker_id: workerId || null, period_start: periodStart, period_end: periodEnd, gross_wage_amount: Number(gross), advance_recovered_amount: Number(advanceRecovered), payment_date: paymentDate, allow_overpay: allowOverpay },
       {
         onSuccess: () => { onClose(); showToast({ tone: "success", title: t("labour.finance.paymentRecorded"), }); },
-        onError: (mutationError) => setError(getApiErrorMessage(mutationError, t("labour.finance.paymentError"),)),
+        onError: (mutationError) => {
+          setOverpay(getApiErrorCode(mutationError) === "LABOUR_PAYMENT_EXCEEDS_DUE");
+          setError(getApiErrorMessage(mutationError, t("labour.finance.paymentError")));
+        },
       },
     );
   }
 
   return (
     <Modal title={t("labour.finance.recordPaymentTitle")} description={t("labour.finance.netPaymentDescription")} onClose={onClose} wide>
-      <form onSubmit={submit} className="space-y-4">
-        <Field label={t("labour.finance.source")}><select className={inputClass} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>{sources.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+      <form onSubmit={(event) => submit(event, false)} className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label={t("labour.finance.source")}><select className={inputClass} value={sourceId} onChange={(e) => { setSourceId(e.target.value); setWorkerId(""); setOverpay(false); }}>{sources.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></Field>
+          <Field label={t("labour.finance.worker")} hint={t("labour.finance.workerHint")}>
+            <select className={inputClass} value={workerId} onChange={(e) => { setWorkerId(e.target.value); setOverpay(false); }}>
+              <option value="">{t("labour.finance.wholeSource")}</option>
+              {workers.map((w) => <option key={w.id} value={w.id}>{w.name} · {w.trade}</option>)}
+            </select>
+          </Field>
+        </div>
+        {due ? <div className="rounded-[8px] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">{t("labour.finance.dueHint", { amount: formatLabourMoney(due.wages_due) })}</div> : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("labour.finance.periodStart")}><input type="date" required className={inputClass} value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} /></Field>
           <Field label={t("labour.finance.periodEnd")}><input type="date" required className={inputClass} value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} /></Field>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label={t("labour.finance.grossWagesPkr")}><input type="number" min="0" step="any" required className={inputClass} value={gross} onChange={(e) => setGross(e.target.value)} /></Field>
+          <Field label={t("labour.finance.grossWagesPkr")}><input type="number" min="0" step="any" required className={inputClass} value={gross} onChange={(e) => { setGross(e.target.value); setOverpay(false); }} /></Field>
           <Field label={t("labour.finance.advanceRecoveredPkr")}><input type="number" min="0" step="any" className={inputClass} value={advanceRecovered} onChange={(e) => setAdvanceRecovered(e.target.value)} /></Field>
         </div>
         <Field label={t("labour.finance.paymentDate")}><input type="date" required className={inputClass} value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} /></Field>
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}
         <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={createPayment.isPending}>{t("common.cancel")}</Button>
-          <Button type="submit" variant="primary" disabled={createPayment.isPending || !sourceId || !periodStart || !gross}>{createPayment.isPending ? t("common.saving") : t("labour.finance.recordPayment")}</Button>
+          {overpay ? (
+            <Button type="button" variant="danger" disabled={createPayment.isPending} onClick={() => submit(undefined, true)}>{t("labour.finance.payAnyway")}</Button>
+          ) : (
+            <Button type="submit" variant="primary" disabled={createPayment.isPending || !sourceId || !periodStart || !gross}>{createPayment.isPending ? t("common.saving") : t("labour.finance.recordPayment")}</Button>
+          )}
         </div>
       </form>
     </Modal>

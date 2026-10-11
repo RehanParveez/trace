@@ -28,8 +28,11 @@ export function useCreateExpense() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (payload: ExpenseCreateRequest) => expensesApi.createExpense(payload),
-    onSuccess: () => invalidateExpenseLists(queryClient),
+     mutationFn: (payload: ExpenseCreateRequest) => expensesApi.createExpense(payload),
+    onSuccess: () => {
+      invalidateExpenseLists(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ["budgets", "status"] });
+    },
   });
 }
 
@@ -39,7 +42,10 @@ export function useApproveExpense() {
   return useMutation({
     mutationFn: ({ expenseId, payload }: { expenseId: string; payload: ExpenseReviewRequest }) =>
       expensesApi.approveExpense(expenseId, payload),
-    onSuccess: () => invalidateExpenseLists(queryClient),
+    onSuccess: () => {
+      invalidateExpenseLists(queryClient);
+      void queryClient.invalidateQueries({ queryKey: ["budgets", "status"] });
+    },
   });
 }
 

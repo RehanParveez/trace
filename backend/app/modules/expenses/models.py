@@ -21,6 +21,7 @@ class Expense(Base, TimestampMixin):
     Index("ix_expenses_project", "project_id"),
     Index("ix_expenses_org", "organization_id"),
     Index("ix_expenses_status", "status"),
+    Index("ix_expenses_budget_category", "budget_category_id"),
   )
 
   id: Mapped[UUID] = mapped_column(
@@ -37,6 +38,13 @@ class Expense(Base, TimestampMixin):
     nullable=False,
   )
   category: Mapped[str] = mapped_column(String(150), nullable=False)
+  
+  budget_category_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("budget_categories.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
   description: Mapped[str | None] = mapped_column(Text, nullable=True)
   amount: Mapped[Decimal] = mapped_column(Numeric(18, 2), nullable=False)
   expense_date: Mapped[date] = mapped_column(Date, nullable=False)

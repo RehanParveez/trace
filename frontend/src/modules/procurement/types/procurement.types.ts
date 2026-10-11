@@ -10,6 +10,8 @@ export interface ProcurementRequest {
   status: ProcurementStatus;
   needed_by_date: string | null;
   notes: string | null;
+  supplier_name: string | null;
+  delivered_quantity: number | string;
   requested_by: string | null;
   created_at: string;
   updated_at: string;
@@ -27,6 +29,34 @@ export interface ProcurementCreateRequest {
 
 export interface ProcurementStatusUpdateRequest {
   status: ProcurementStatus;
+  supplier_name?: string | null;
+}
+
+export interface ProcurementDelivery {
+  id: string;
+  request_id: string;
+  project_id: string;
+  material_name: string;
+  unit: string;
+  received_date: string;
+  quantity: number | string;
+  supplier_name: string | null;
+  invoice_number: string | null;
+  amount: number | string | null;
+  notes: string | null;
+  voided_at: string | null;
+  void_reason: string | null;
+  created_at: string;
+}
+
+export interface ProcurementDeliveryCreateRequest {
+  received_date: string;
+  quantity: number;
+  supplier_name?: string | null;
+  invoice_number?: string | null;
+  amount?: number | null;
+  notes?: string | null;
+  allow_over_delivery?: boolean;
 }
 
 export interface ProcurementListParams {

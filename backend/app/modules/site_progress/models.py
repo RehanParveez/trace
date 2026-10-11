@@ -32,7 +32,9 @@ class SiteLogEntry(Base, TimestampMixin):
   log_date: Mapped[date] = mapped_column(Date, nullable=False)
   workforce_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
   weather: Mapped[str | None] = mapped_column(String(255), nullable=True)
+  work_done: Mapped[str | None] = mapped_column(Text, nullable=True)
   blockers: Mapped[str | None] = mapped_column(Text, nullable=True)
+  client_instructions: Mapped[str | None] = mapped_column(Text, nullable=True)
   notes: Mapped[str | None] = mapped_column(Text, nullable=True)
   created_by: Mapped[UUID | None] = mapped_column(
     PGUUID(as_uuid=True),

@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
+import { SteelRebarRange } from "./SteelRebarRange";
 
 function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: "red" | "gold" }) {
   const color =
@@ -126,6 +127,8 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
           <Stat label={t("boq.calculationRun.statFamilies", "Covered families")} value={(r.covered_families ?? []).join(", ") || "—"} />
         </Section>
       ) : null}
+
+      <SteelRebarRange steel={stats.steel} rebar={r} />
 
       <Counts title={t("boq.calculationRun.statsSkippedRoles", "Skipped (no quantity role)")} data={stats.skipped_by_role} />
       <Counts title={t("boq.calculationRun.statsUnmapped", "Unmapped IFC types (no work item)")} data={stats.unmapped_by_type} />

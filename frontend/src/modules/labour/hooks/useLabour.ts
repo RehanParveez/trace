@@ -9,6 +9,8 @@ export const labourKeys = {
   advances: (projectId: string) => [...labourKeys.all, "advances", projectId] as const,
   payments: (projectId: string) => [...labourKeys.all, "payments", projectId] as const,
   summary: (projectId: string, start: string, end: string) => [...labourKeys.all, "summary", projectId, start, end] as const,
+  sheet: (projectId: string, date: string) => [...labourKeys.all, "sheet", projectId, date] as const,
+  dues: (projectId: string) => [...labourKeys.all, "dues", projectId] as const,
   daySummary: (projectId: string, date: string) => [...labourKeys.all, "day-summary", projectId, date] as const,
 };
 
@@ -47,11 +49,21 @@ export function useBulkRecordAttendance(projectId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (entries: Parameters<typeof labourApi.bulkRecordAttendance>[1]) => labourApi.bulkRecordAttendance(projectId, entries),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: labourKeys.all }),
+     onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: labourKeys.all });
+      void qc.invalidateQueries({ queryKey: ["budgets", "status"] });
+      void qc.invalidateQueries({ queryKey: ["site-progress"] });
+    },
   });
 }
 export function useLabourDaySummary(projectId: string, date: string) {
   return useQuery({ queryKey: labourKeys.daySummary(projectId, date), queryFn: () => labourApi.getDaySummary(projectId, date), enabled: Boolean(projectId && date) });
+}
+export function useAttendanceSheet(projectId: string, date: string) {
+  return useQuery({ queryKey: labourKeys.sheet(projectId, date), queryFn: () => labourApi.getAttendanceSheet(projectId, date), enabled: Boolean(projectId && date) });
+}
+export function useLabourDues(projectId: string, options?: { enabled?: boolean }) {
+  return useQuery({ queryKey: labourKeys.dues(projectId), queryFn: () => labourApi.getDues(projectId), enabled: Boolean(projectId) && (options?.enabled ?? true) });
 }
 export function useLabourAdvances(projectId: string) {
   return useQuery({ queryKey: labourKeys.advances(projectId), queryFn: () => labourApi.listAdvances(projectId), enabled: Boolean(projectId) });

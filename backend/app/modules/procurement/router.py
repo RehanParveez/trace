@@ -1,7 +1,10 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.procurement.service import ProcurementService
-from app.modules.procurement.schemas import ProcurementCreateRequest, ProcurementOrganizationSummaryResponse, ProcurementResponse, ProcurementStatusSummaryResponse, ProcurementStatusUpdateRequest
+from app.modules.procurement.schemas import (ProcurementCreateRequest, ProcurementDeliveryCreateRequest, ProcurementDeliveryResponse, ProcurementDeliveryVoidRequest, ProcurementOrganizationSummaryResponse, ProcurementResponse,
+  ProcurementStatusSummaryResponse, ProcurementStatusUpdateRequest,
+)
+from datetime import date
 from app.modules.procurement.models import ProcurementStatus
 from app.modules.identity.models import User
 from app.modules.identity.enums import PermissionKey
@@ -66,4 +69,46 @@ async def update_status(
   session: AsyncSession = Depends(get_db),
 ):
   org_id = current_user.active_membership.organization_id
-  return await _service(session).update_status(org_id, request_id, payload)
+  return await _service(session).update_status(org_id, request_id, payload, current_user.id)
+
+@router.post("/requests/{request_id}/deliveries", response_model=ProcurementDeliveryResponse, status_code=201)
+async def record_delivery(
+  request_id: UUID,
+  payload: ProcurementDeliveryCreateRequest,
+  current_user: User = Depends(require_permission(PermissionKey.PROCUREMENT_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).record_delivery(org_id, request_id, payload, current_user.id)
+
+@router.get("/requests/{request_id}/deliveries", response_model=list[ProcurementDeliveryResponse])
+async def list_request_deliveries(
+  request_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.PROCUREMENT_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).list_deliveries(org_id, request_id=request_id)
+
+@router.get("/projects/{project_id}/deliveries", response_model=list[ProcurementDeliveryResponse])
+async def list_project_deliveries(
+  project_id: UUID,
+  date_from: date | None = Query(default=None),
+  date_to: date | None = Query(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.PROCUREMENT_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).list_deliveries(
+    org_id, project_id=project_id, date_from=date_from, date_to=date_to,
+  )
+
+@router.post("/deliveries/{delivery_id}/void", response_model=ProcurementDeliveryResponse)
+async def void_delivery(
+  delivery_id: UUID,
+  payload: ProcurementDeliveryVoidRequest,
+  current_user: User = Depends(require_permission(PermissionKey.PROCUREMENT_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).void_delivery(org_id, delivery_id, payload, current_user.id)

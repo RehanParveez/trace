@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {ProcurementCreateRequest, ProcurementListParams, ProcurementOrganizationSummary, ProcurementRequest, ProcurementStatusUpdateRequest, ProcurementStatusSummary, ProcurementListResponse,
+import type {ProcurementDelivery, ProcurementDeliveryCreateRequest, ProcurementCreateRequest, ProcurementListParams, ProcurementOrganizationSummary, ProcurementRequest, ProcurementStatusUpdateRequest, ProcurementStatusSummary, ProcurementListResponse,
 } from "../types/procurement.types";
 
 export const procurementApi = {
@@ -23,6 +23,21 @@ export const procurementApi = {
 
   async updateStatus(requestId: string, payload: ProcurementStatusUpdateRequest): Promise<ProcurementRequest> {
     const response = await apiClient.patch<ProcurementRequest>(`/procurement/requests/${requestId}/status`, payload);
+    return response.data;
+  },
+
+  async listDeliveries(requestId: string): Promise<ProcurementDelivery[]> {
+    const response = await apiClient.get<ProcurementDelivery[]>(`/procurement/requests/${requestId}/deliveries`);
+    return response.data;
+  },
+
+  async recordDelivery(requestId: string, payload: ProcurementDeliveryCreateRequest): Promise<ProcurementDelivery> {
+    const response = await apiClient.post<ProcurementDelivery>(`/procurement/requests/${requestId}/deliveries`, payload);
+    return response.data;
+  },
+
+  async voidDelivery(deliveryId: string, reason: string): Promise<ProcurementDelivery> {
+    const response = await apiClient.post<ProcurementDelivery>(`/procurement/deliveries/${deliveryId}/void`, { reason });
     return response.data;
   },
   

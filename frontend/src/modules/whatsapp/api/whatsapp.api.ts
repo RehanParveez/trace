@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {Channel, ChannelConnectRequest, PhotoTag, PhotoTagCreateRequest, ProjectPhotoThumbnail, SitePhoto, SitePhotoAssignProjectRequest, SitePhotoListParams, SitePhotoUpdateRequest,
+import type {WhatsAppSender, WhatsAppSenderCreateRequest, WhatsAppSenderUpdateRequest, Channel, ChannelConnectRequest, PhotoTag, PhotoTagCreateRequest, ProjectPhotoThumbnail, SitePhoto, SitePhotoAssignProjectRequest, SitePhotoListParams, SitePhotoUpdateRequest,
 } from "../types/whatsapp.types";
 
 export const whatsappApi = {
@@ -59,6 +59,25 @@ export const whatsappApi = {
 
   async removeTag(photoId: string, tagId: string): Promise<void> {
     await apiClient.delete(`/whatsapp/photos/${photoId}/tags/${tagId}`);
+  },
+
+  async listSenders(): Promise<WhatsAppSender[]> {
+    const response = await apiClient.get<WhatsAppSender[]>("/whatsapp/senders");
+    return response.data;
+  },
+
+  async createSender(payload: WhatsAppSenderCreateRequest): Promise<WhatsAppSender> {
+    const response = await apiClient.post<WhatsAppSender>("/whatsapp/senders", payload);
+    return response.data;
+  },
+
+  async updateSender(senderId: string, payload: WhatsAppSenderUpdateRequest): Promise<WhatsAppSender> {
+    const response = await apiClient.patch<WhatsAppSender>(`/whatsapp/senders/${senderId}`, payload);
+    return response.data;
+  },
+
+  async deleteSender(senderId: string): Promise<void> {
+    await apiClient.delete(`/whatsapp/senders/${senderId}`);
   },
 
   async uploadPhoto(projectId: string, file: File): Promise<SitePhoto> {

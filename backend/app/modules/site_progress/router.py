@@ -1,7 +1,8 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.site_progress.service import SiteProgressService
-from app.modules.site_progress.schemas import SiteLogResponse, SiteLogCreateRequest, SiteLogUpdateRequest
+from app.modules.site_progress.schemas import DailyReportResponse, SiteLogResponse, SiteLogCreateRequest, SiteLogUpdateRequest
+from datetime import date
 from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 from app.dependencies.permissions import require_permission
@@ -26,6 +27,16 @@ async def list_logs(
   return await _service(session).list_logs(
     org_id, project_id, skip=skip, limit=limit,
   )
+
+@router.get("/report", response_model=DailyReportResponse)
+async def get_daily_report(
+  project_id: UUID = Query(...),
+  report_date: date = Query(...),
+  current_user: User = Depends(require_permission(PermissionKey.SITE_LOG_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  org_id = current_user.active_membership.organization_id
+  return await _service(session).get_daily_report(org_id, project_id, report_date)
 
 @router.post("", response_model=SiteLogResponse, status_code=201)
 async def create_log(

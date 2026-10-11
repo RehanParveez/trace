@@ -3,8 +3,11 @@ from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
-
 class BudgetCategoryInput(BaseModel):
+  id: UUID | None = Field(
+    default=None,
+    description="Send the existing category id to keep it (and the expenses linked to it); omit for a new category.",
+  )
   name: str = Field(min_length=1, max_length=200)
   allocated_amount: Decimal = Field(ge=0)
 
@@ -55,3 +58,30 @@ class BudgetProjectSummaryResponse(BaseModel):
   project_id: UUID
   approved_amount: Decimal
   currency: str
+
+class BudgetCategoryStatusResponse(BaseModel):
+  category_id: UUID | None
+  name: str
+  allocated_amount: Decimal
+  spent_amount: Decimal
+  pending_amount: Decimal
+  remaining_amount: Decimal
+  used_percentage: float | None
+
+class BudgetStatusResponse(BaseModel):
+  project_id: UUID
+  has_budget: bool
+  currency: str
+  approved_amount: Decimal
+  allocated_total: Decimal
+  expenses_approved: Decimal | None
+  expenses_pending: Decimal | None
+  labour_accrued: Decimal | None
+  subcontracted: Decimal | None
+  materials_received: Decimal | None
+  materials_committed: Decimal | None
+  total_used: Decimal
+  forecast_total: Decimal
+  remaining: Decimal
+  used_percentage: float | None
+  categories: list[BudgetCategoryStatusResponse] = Field(default_factory=list)

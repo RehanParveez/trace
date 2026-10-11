@@ -1,5 +1,5 @@
 import { apiClient } from "../../../shared/api/client";
-import type {DayAttendanceSummary, LabourAdvance, LabourAttendance, LabourBalance, LabourCost, LabourDeployment, LabourPayment, LabourSource, LabourSummary, LabourWorker,
+import type {AttendanceSheet, LabourDueRow, DayAttendanceSummary, LabourAdvance, LabourAttendance, LabourBalance, LabourCost, LabourDeployment, LabourPayment, LabourSource, LabourSummary, LabourWorker,
 } from "../types/labour.types";
 
 export const labourApi = {
@@ -27,6 +27,12 @@ export const labourApi = {
   async bulkRecordAttendance(projectId: string, entries: { deployment_id: string; attendance_date: string; units_present: number; notes?: string | null }[]): Promise<{ created: number; updated: number; items: LabourAttendance[] }> {
     return (await apiClient.post(`/labour/projects/${projectId}/attendance/bulk`, { entries })).data;
   },
+  async getAttendanceSheet(projectId: string, date: string): Promise<AttendanceSheet> {
+    return (await apiClient.get<AttendanceSheet>(`/labour/projects/${projectId}/attendance/sheet`, { params: { attendance_date: date } })).data;
+  },
+  async getDues(projectId: string): Promise<LabourDueRow[]> {
+    return (await apiClient.get<LabourDueRow[]>(`/labour/projects/${projectId}/dues`)).data;
+  },
   async getDaySummary(projectId: string, date: string): Promise<DayAttendanceSummary> {
     return (await apiClient.get<DayAttendanceSummary>(`/labour/projects/${projectId}/attendance/day-summary`, { params: { attendance_date: date } })).data;
   },
@@ -45,7 +51,7 @@ export const labourApi = {
   async listPayments(projectId: string): Promise<LabourPayment[]> {
     return (await apiClient.get<LabourPayment[]>(`/labour/projects/${projectId}/payments`)).data;
   },
-  async createPayment(projectId: string, payload: { source_id: string; worker_id?: string | null; period_start: string; period_end: string; gross_wage_amount: number; advance_recovered_amount?: number; payment_date: string; notes?: string | null }): Promise<LabourPayment> {
+  async createPayment(projectId: string, payload: { source_id: string; worker_id?: string | null; period_start: string; period_end: string; gross_wage_amount: number; advance_recovered_amount?: number; payment_date: string; notes?: string | null; allow_overpay?: boolean }): Promise<LabourPayment> {
     return (await apiClient.post<LabourPayment>(`/labour/projects/${projectId}/payments`, payload)).data;
   },
   async getSummary(projectId: string, periodStart: string, periodEnd: string): Promise<LabourSummary> {

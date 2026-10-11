@@ -1,2 +1,2 @@
-export {procurementKeys, useCreateProcurementRequest, useProcurementOrganizationSummary, useProcurementRequests, useUpdateProcurementStatus, useProcurementStatusSummary
+export {procurementKeys, useCreateProcurementRequest, useProcurementOrganizationSummary, useProcurementRequests, useProcurementDeliveries, useRecordDelivery, useVoidDelivery, useUpdateProcurementStatus, useProcurementStatusSummary
 } from "./useProcurement";

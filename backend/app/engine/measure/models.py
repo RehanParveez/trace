@@ -20,6 +20,7 @@ class ModelElement:
   normalization_status: str
   ifc_global_id: str | None = None
   material_class: str | None = None
+  material_basis: str | None = None
 
 @dataclass(frozen=True)
 class MappingInput:

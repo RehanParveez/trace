@@ -10,6 +10,8 @@ from sqlalchemy import func, select
 from app.modules.identity.models import Organization
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.models import MaterialLibrary
+from app.modules.projects.models import Project
+from app.shared.timeutils import today_local
 
 class MaterialStockService:
   def __init__(self, session: AsyncSession):
@@ -21,6 +23,28 @@ class MaterialStockService:
     self, organization_id: UUID, project_id: UUID, payload: MaterialIssueCreateRequest, actor_user_id: UUID,
   ) -> MaterialIssue:
     await self._require_project(organization_id, project_id)
+    if payload.issue_date > today_local():
+      raise TraceException(
+        "The issue date cannot be in the future.", status_code=422, code="ISSUE_DATE_IN_FUTURE",
+      )
+    await self.session.execute(select(Project.id).where(Project.id == project_id).with_for_update())
+
+    known_units = await self.repo.get_known_units(organization_id, project_id, payload.material_name)
+    if known_units and payload.unit.strip().lower() not in known_units:
+      raise TraceException(
+        f"{payload.material_name.strip()} is tracked in {', '.join(sorted(known_units))} on this project, "
+        f"not {payload.unit.strip()}. Use the same unit so the stock balance stays correct.",
+        status_code=422, code="MATERIAL_UNIT_MISMATCH",
+      )
+      
+    balance = await self.repo.get_material_balance(organization_id, project_id, payload.material_name)
+    if payload.quantity > balance and not payload.allow_negative_stock:
+      raise TraceException(
+        f"Only {max(balance, Decimal('0'))} {payload.unit.strip()} of {payload.material_name.strip()} "
+        "is recorded in stock for this project. Record the delivery first, or confirm to issue anyway.",
+        status_code=409, code="INSUFFICIENT_STOCK",
+      )
+      
     issue = MaterialIssue(
       id=uuid4(), organization_id=organization_id, project_id=project_id,
       material_name=payload.material_name.strip(), unit=payload.unit.strip(), quantity=payload.quantity,

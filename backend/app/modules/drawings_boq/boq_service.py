@@ -345,14 +345,22 @@ class BOQEngineService:
         message=f"{n} bar schedule row(s) were not measured ({reason}).",
         suggested_fix="Fix the row's shape, dimensions or length and re-run.", details={"reason": reason, "count": n}))
       
+    steel = stats.get("steel") or {}
+    if steel.get("not_measured"):
+      specs.append(logic.IssueSpec(
+        code="STEEL_NOT_MEASURED", severity="warning", blocks="NONE", dedupe_key="STEEL_NOT_MEASURED",
+        message=f"{steel['not_measured']} steel element(s) have no usable model volume or length, so they are not in the steel quantities.",
+        suggested_fix="Add a volume quantity (Qto) or a solid body to these members in the model, or add the steel manually.",
+        details={"count": steel["not_measured"]}))
+      
     mapped = [m.ifc_type for m in profile.mappings if m.work_item_code]
     invalid = await self.repo.invalid_counts(org, list(run.drawing_revision_ids), mapped,
       sorted(VOLUME_ROLES | COUNT_ROLES))
     for t, n in sorted(invalid.items()):
       specs.append(logic.IssueSpec(
         code="ELEMENT_NOT_MEASURED", severity="error", blocks="APPROVAL", dedupe_key=f"INVALID:{t}",
-        message=f"{n} {t} element(s) failed model validation and have no quantity.",
-        suggested_fix="Fix the missing dimensions or quantities in the model and re-upload.",
+        message=f"{n} {t} element(s) failed model validation and have no quantity (missing quantity or dimensions, or a material this role cannot be measured in).",
+        suggested_fix="Check the material, dimensions and quantities of these elements in the model and re-upload.",
         details={"ifc_type": t, "count": n}))
       
     for did in run.drawing_revision_ids:

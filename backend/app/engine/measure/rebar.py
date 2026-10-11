@@ -21,6 +21,20 @@ DEFAULT_ESTIMATE_DIA_MM = Decimal("12")
 DEFAULT_ESTIMATE_CONFIDENCE = Decimal("0.5")
 DEFAULT_TOLERANCE_PCT = Decimal("2.0")
 SCHEDULE_CONFIDENCE_FLOOR = Decimal("0.6")
+ESTIMATE_BANDS = {
+  "SLAB": (Decimal("55"), Decimal("67"), Decimal("78.5")),
+  "BEAM": (Decimal("78.5"), Decimal("118"), Decimal("157")),
+  "COLUMN": (Decimal("78.5"), Decimal("196"), Decimal("392")),
+  "FOOTING": (Decimal("50"), Decimal("75"), Decimal("100")),
+}
+
+ESTIMATE_DIA_MIX = {
+  "SLAB": ((Decimal("10"), Decimal("0.60")), (Decimal("12"), Decimal("0.40"))),
+  "BEAM": ((Decimal("10"), Decimal("0.25")), (Decimal("16"), Decimal("0.40")), (Decimal("20"), Decimal("0.35"))),
+  "COLUMN": ((Decimal("10"), Decimal("0.20")), (Decimal("16"), Decimal("0.45")), (Decimal("20"), Decimal("0.35"))),
+  "FOOTING": ((Decimal("12"), Decimal("0.50")), (Decimal("16"), Decimal("0.50"))),
+}
+
 REVIEW_CODES = frozenset({"DECLARED_WEIGHT_MISMATCH", "LAP_LENGTH_UNKNOWN", "MATCHED_ELEMENT_NOT_MEASURED"})
 _FAMILIES = (("COLUMN", "COLUMN"), ("BEAM", "BEAM"), ("LINTEL", "BEAM"), ("EDGE_BEAM", "BEAM"), ("GIRDER", "BEAM"),
   ("GROUND_BEAM", "BEAM"), ("DIAPHRAGM", "BEAM"), ("SLAB", "SLAB"), ("RAFT", "FOOTING"), ("FOOTING", "FOOTING"),
@@ -32,6 +46,47 @@ def role_family(role: str | None) -> str | None:
     if r.startswith(prefix):
       return family
   return None
+
+def _dec(value) -> Decimal | None:
+  try:
+    number = Decimal(str(value))
+  except Exception:
+    return None
+  return number if number > 0 else None
+
+def estimate_band(family: str | None, extra: dict | None) -> dict | None:
+  extra = extra or {}
+  default = ESTIMATE_BANDS.get(family or "")
+  configured = _dec(extra.get("kg_per_m3"))
+  placeholder = "PLACEHOLDER" in str(extra.get("status") or "").upper()
+  if default is not None and (placeholder or configured is None):
+    return {"low": default[0], "likely": default[1], "high": default[2], "source": "TRACE_DEFAULT_BAND"}
+  
+  if configured is None:
+    return None
+  low, high = _dec(extra.get("kg_per_m3_low")), _dec(extra.get("kg_per_m3_high"))
+  if default is not None:
+    low, high = low or min(default[0], configured), high or max(default[2], configured)
+  else:
+    low, high = low or configured * Decimal("0.8"), high or configured * Decimal("1.25")
+  return {"low": min(low, configured), "likely": configured, "high": max(high, configured), "source": "RULE_CONFIGURED"}
+
+def estimate_dia_mix(family: str | None, extra: dict | None) -> tuple:
+  extra = extra or {}
+  explicit = extra.get("dia_mix")
+  if explicit:
+    try:
+      mix = tuple((Decimal(str(d)), Decimal(str(s))) for d, s in explicit)
+      if mix and all(d > 0 and s > 0 for d, s in mix):
+        total = sum((s for _, s in mix), ZERO)
+        return tuple((d, s / total) for d, s in mix)
+      
+    except Exception:
+      pass
+  placeholder = "PLACEHOLDER" in str(extra.get("status") or "").upper()
+  if placeholder and family in ESTIMATE_DIA_MIX:
+    return ESTIMATE_DIA_MIX[family]
+  return ((_dec(extra.get("assumed_dia_mm")) or DEFAULT_ESTIMATE_DIA_MM, ONE),)
 
 def _norm(text) -> str:
   return "".join(ch for ch in str(text or "").upper() if ch.isalnum() or ch == "#")
@@ -182,7 +237,8 @@ def _unique_mark(used: dict, solid_id, mark: str) -> str:
   names.add(candidate)
   return candidate
 
-def _ledger_for_solid(ctx, solid: Solid, marks: list[BarMark], formula: str, source_kind: str, label: str) -> LedgerEntry:
+def _ledger_for_solid(ctx, solid: Solid, marks: list[BarMark], formula: str, source_kind: str, label: str,
+  band: dict | None = None) -> LedgerEntry:
   kg = q6(sum((m.total_kg for m in marks), ZERO))
   grades = {m.grade for m in marks}
   warnings = [w for m in marks for w in m.warnings]
@@ -198,9 +254,11 @@ def _ledger_for_solid(ctx, solid: Solid, marks: list[BarMark], formula: str, sou
     confidence=min(m.confidence for m in marks), formula_code=formula,
     trace={"formula_code": formula, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
       "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version}, "label": label,
-      "inputs": {"marks": len(marks), "provenance": sorted({m.provenance for m in marks})},
+      "inputs": {"marks": len(marks), "provenance": sorted({m.provenance for m in marks}),
+        **({"band": {"kg_per_m3": {k: str(band[k]) for k in ("low", "likely", "high")}, "source": band["source"]}} if band else {})},
       "steps": [{"op": "bar_mark", "mark": m.mark, "dia_mm": str(m.dia_mm), "count": m.count, "kg": str(m.total_kg)} for m in marks],
-      "net": {"kg": str(kg)}, "rounding": "half_up,6dp"},
+      "net": {"kg": str(kg), **({"kg_low": str(band["kg_low"]), "kg_high": str(band["kg_high"])} if band else {})},
+      "rounding": "half_up,6dp"},
     warnings=tuple(dict.fromkeys(warnings)), source_kind=source_kind)
 
 def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs | None) -> RebarResult:
@@ -217,7 +275,9 @@ def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs 
   covered_elements: set = set()
   covered_families: set = set()
   stats = {"schedule_rows": len(inputs.rows), "schedule_marks": 0, "matched": 0, "unmatched": 0, "estimated_marks": 0,
-    "estimate_suppressed": 0}
+    "estimated_elements": 0, "estimate_suppressed": 0}
+  band_low = band_high = ZERO
+  by_family: dict = {}
 
   for row in sorted(inputs.rows, key=lambda r: (str(r.import_id), r.row_no)):
     family = role_family(row.role)
@@ -281,38 +341,63 @@ def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs 
       stats["estimate_suppressed"] += 1
       continue
     extra = rule.extra_config or {}
-    try:
-      intensity = Decimal(str(extra.get("kg_per_m3") or 0))
-      dia = Decimal(str(extra.get("assumed_dia_mm") or DEFAULT_ESTIMATE_DIA_MM))
-      conf = Decimal(str(extra.get("confidence") or DEFAULT_ESTIMATE_CONFIDENCE))
-    except Exception:
-      intensity, dia, conf = ZERO, DEFAULT_ESTIMATE_DIA_MM, DEFAULT_ESTIMATE_CONFIDENCE
-    if intensity <= 0:
+    band = estimate_band(family, extra)
+    if band is None:
       skipped["estimate rule has no kg_per_m3"] = skipped.get("estimate rule has no kg_per_m3", 0) + 1
       continue
-    uw, uw_warn = unit_weight(inputs.sizes, None, dia, None)
-    kg = q6(e.quantity * intensity)
-    total_len_m = q6(kg / uw)
+    conf = _dec(extra.get("confidence")) or DEFAULT_ESTIMATE_CONFIDENCE
+    mix = estimate_dia_mix(family, extra)
+    likely_kg = q6(e.quantity * band["likely"])
+    band["kg_low"], band["kg_high"] = q6(e.quantity * band["low"]), q6(e.quantity * band["high"])
+    remaining = likely_kg
+    element_marks: list = []
     
-    mark = BarMark(
-      solid_id=solid.id, element_id=solid.element_id, level_id=solid.level_id, mark=_unique_mark(used, solid.id, f"EST-{family}"),
-      role=family, shape_code="ESTIMATE", shape_params={}, designation=None, dia_mm=dia, grade=None, count=1, spacing_mm=None,
-      cut_len_mm=(total_len_m * 1000).quantize(Decimal("0.001")), stock_len_mm=None, pieces=1, lap_count=0, lap_len_mm=None,
-      total_len_m=total_len_m, unit_weight_kg_m=uw, total_kg=kg, provenance="RULE_ESTIMATE", confidence=max(ZERO, min(ONE, conf)),
-      review_status="REVIEW_REQUIRED", schedule_row_id=None,
-      trace={"steps": [{"op": "net_volume", "m3": str(e.quantity)}, {"op": "intensity", "kg_per_m3": str(intensity)},
-        {"op": "weight", "assumed_dia_mm": str(dia), "kg": str(kg)}]},
-      warnings=tuple(dict.fromkeys(["STEEL_ESTIMATED", *uw_warn])))
-    marks.append(mark)
-    
-    out_ledger.append(_ledger_for_solid(ctx, solid, [mark], FORMULA_ESTIMATE, "ESTIMATE", f"Estimate {family}"))
-    stats["estimated_marks"] += 1
+    for n, (dia, share) in enumerate(mix):
+      kg = remaining if n == len(mix) - 1 else q6(likely_kg * share)
+      remaining -= kg
+      uw, uw_warn = unit_weight(inputs.sizes, None, dia, None)
+      total_len_m = q6(kg / uw)
+      mark = BarMark(
+        solid_id=solid.id, element_id=solid.element_id, level_id=solid.level_id,
+        mark=_unique_mark(used, solid.id, f"EST-{family}" if len(mix) == 1 else f"EST-{family}-D{int(dia)}"),
+        role=family, shape_code="ESTIMATE", shape_params={}, designation=None, dia_mm=dia, grade=None, count=1, spacing_mm=None,
+        cut_len_mm=(total_len_m * 1000).quantize(Decimal("0.001")), stock_len_mm=None, pieces=1, lap_count=0, lap_len_mm=None,
+        total_len_m=total_len_m, unit_weight_kg_m=uw, total_kg=kg, provenance="RULE_ESTIMATE", confidence=max(ZERO, min(ONE, conf)),
+        review_status="REVIEW_REQUIRED", schedule_row_id=None,
+        trace={"steps": [{"op": "net_volume", "m3": str(e.quantity)}, {"op": "intensity", "kg_per_m3": str(band["likely"]),
+          "low": str(band["low"]), "high": str(band["high"]), "source": band["source"]},
+          {"op": "diameter_share", "share": str(q4(share)), "dia_mm": str(dia)}, {"op": "weight", "kg": str(kg)}]},
+        warnings=tuple(dict.fromkeys(["STEEL_ESTIMATED", *uw_warn])))
+      marks.append(mark)
+      element_marks.append(mark)
+    out_ledger.append(_ledger_for_solid(ctx, solid, element_marks, FORMULA_ESTIMATE, "ESTIMATE", f"Estimate {family}", band))
+    stats["estimated_marks"] += len(element_marks)
+    stats["estimated_elements"] += 1
+    band_low += band["kg_low"]
+    band_high += band["kg_high"]
+    fam = by_family.setdefault(family, {"elements": 0, "m3": ZERO, "low_kg": ZERO, "likely_kg": ZERO, "high_kg": ZERO})
+    fam["elements"] += 1
+    fam["m3"] += e.quantity
+    fam["low_kg"] += band["kg_low"]
+    fam["likely_kg"] += likely_kg
+    fam["high_kg"] += band["kg_high"]
 
   out_ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.solid_id)))
   total = q6(sum((m.total_kg for m in marks), ZERO))
+  tier2 = q6(sum((m.total_kg for m in marks if m.provenance != "RULE_ESTIMATE"), ZERO))
+  tier3 = q6(sum((m.total_kg for m in marks if m.provenance == "RULE_ESTIMATE"), ZERO))
+  by_dia: dict = {}
+  
+  for m in marks:
+    key = f"{m.dia_mm.normalize():f}"
+    by_dia[key] = by_dia.get(key, ZERO) + m.total_kg
   stats.update({"total_kg": str(total), "covered_families": sorted(covered_families),
-    "tier2_kg": str(q6(sum((m.total_kg for m in marks if m.provenance != "RULE_ESTIMATE"), ZERO))),
-    "tier3_kg": str(q6(sum((m.total_kg for m in marks if m.provenance == "RULE_ESTIMATE"), ZERO)))})
+    "tier2_kg": str(tier2), "tier3_kg": str(tier3),
+    "measured_share_pct": str(q4(tier2 / total * 100)) if total > 0 else "0",
+    "total_low_kg": str(q6(tier2 + band_low)), "total_high_kg": str(q6(tier2 + band_high)),
+    "estimate_bands": {k: {"elements": v["elements"], "m3": str(q6(v["m3"])), "low_kg": str(q6(v["low_kg"])),
+      "likely_kg": str(q6(v["likely_kg"])), "high_kg": str(q6(v["high_kg"]))} for k, v in sorted(by_family.items())},
+    "by_dia_kg": {k: str(q6(v)) for k, v in sorted(by_dia.items(), key=lambda kv: Decimal(kv[0]))}})
   return RebarResult(solids=new_solids, ledger=out_ledger, marks=marks, skipped=dict(sorted(skipped.items())), stats=stats)
 
 def self_check_rebar(marks: list, ledger: list) -> list[str]:

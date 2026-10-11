@@ -17,6 +17,7 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.projects.models import Project
 from app.modules.withholding_tax.models import WHTSourceType
 from app.modules.withholding_tax.service import WithholdingTaxService
+from app.shared.timeutils import today_local
 
 class LabourService:
   def __init__(self, session: AsyncSession):
@@ -150,6 +151,8 @@ class LabourService:
     created = 0
     updated = 0
     results: list[LabourAttendance] = []
+    today = today_local()
+    seen_keys: set[tuple[UUID, date]] = set()
 
     for entry in payload.entries:
       deployment = await self.repo.get_deployment(entry.deployment_id, organization_id)
@@ -157,6 +160,38 @@ class LabourService:
         raise TraceException(
           "One of these deployments does not belong to this project.",
           status_code=404, code="DEPLOYMENT_NOT_FOUND",
+        )
+
+      key = (entry.deployment_id, entry.attendance_date)
+      if key in seen_keys:
+        raise TraceException(
+          "The same deployment appears twice for one date.",
+          status_code=422, code="DUPLICATE_ATTENDANCE_ENTRY",
+        )
+      seen_keys.add(key)
+
+      if entry.attendance_date > today:
+        raise TraceException(
+          "Attendance cannot be recorded for a future date.",
+          status_code=422, code="ATTENDANCE_DATE_IN_FUTURE",
+        )
+        
+      if entry.attendance_date < deployment.start_date:
+        raise TraceException(
+          f"{deployment.trade} was deployed from {deployment.start_date}; attendance cannot be recorded before that.",
+          status_code=422, code="ATTENDANCE_BEFORE_DEPLOYMENT",
+        )
+        
+      if deployment.end_date is not None and entry.attendance_date > deployment.end_date:
+        raise TraceException(
+          f"{deployment.trade} was released on {deployment.end_date}; attendance cannot be recorded after that.",
+          status_code=422, code="ATTENDANCE_AFTER_DEPLOYMENT_END",
+        )
+        
+      if deployment.status == LabourDeploymentStatus.ENDED and deployment.end_date is None:
+        raise TraceException(
+          f"{deployment.trade} has been released from this project.",
+          status_code=409, code="DEPLOYMENT_ENDED",
         )
 
       if deployment.worker_id is not None and entry.units_present not in (Decimal("0"), Decimal("0.5"), Decimal("1")):
@@ -211,6 +246,7 @@ class LabourService:
     source = await self.repo.get_source(payload.source_id, organization_id)
     if source is None:
       raise TraceException("Labour source not found.", status_code=404, code="LABOUR_SOURCE_NOT_FOUND")
+    await self._validate_party(organization_id, payload.source_id, payload.worker_id)
 
     advance = LabourAdvance(
       id=uuid4(), organization_id=organization_id, project_id=project_id, source_id=payload.source_id,
@@ -238,6 +274,23 @@ class LabourService:
     source = await self.repo.get_source(payload.source_id, organization_id)
     if source is None:
       raise TraceException("Labour source not found.", status_code=404, code="LABOUR_SOURCE_NOT_FOUND")
+
+    await self._validate_party(organization_id, payload.source_id, payload.worker_id)
+
+    if payload.advance_recovered_amount > payload.gross_wage_amount:
+      raise TraceException(
+        "The advance recovered cannot be more than the gross wages being paid.",
+        status_code=422, code="ADVANCE_RECOVERY_EXCEEDS_GROSS",
+      )
+
+    if not payload.allow_overpay:
+      due = await self._wages_due(organization_id, project_id, payload.source_id, payload.worker_id)
+      if payload.gross_wage_amount > due + Decimal("0.01"):
+        raise TraceException(
+          f"Attendance accrued less than this payment: wages not yet paid are {max(due, Decimal('0'))}, "
+          f"but this payment is {payload.gross_wage_amount}. Record the attendance first, or confirm to overpay.",
+          status_code=409, code="LABOUR_PAYMENT_EXCEEDS_DUE",
+        )
 
     if payload.wht_category is not None and source.source_type != LabourSourceType.CONTRACTOR:
       raise TraceException(
@@ -270,6 +323,16 @@ class LabourService:
       )
 
     net_paid = payload.gross_wage_amount - payload.advance_recovered_amount - wht_deducted_amount
+    if net_paid < 0:
+      raise TraceException(
+        "Advance recovery plus tax deducted is more than the gross wages, so the net payment would be negative.",
+        status_code=422, code="NET_PAYMENT_NEGATIVE",
+      )
+    if net_paid < 0:
+      raise TraceException(
+        "Advance recovery plus tax deducted is more than the gross wages, so the net payment would be negative.",
+        status_code=422, code="NET_PAYMENT_NEGATIVE",
+      )
 
     payment = LabourPayment(
       id=payment_id, organization_id=organization_id, project_id=project_id, source_id=payload.source_id,
@@ -318,6 +381,8 @@ class LabourService:
     cost_rows = await self.repo.get_accrued_cost(organization_id, project_id, period_start, period_end)
     total_advances, total_recovered = await self.repo.get_project_labour_totals(organization_id, project_id)
     total_cost = sum((Decimal(str(cost)) for _trade, cost in cost_rows), Decimal("0"))
+    gross_paid, net_paid, recovered = await self.repo.get_project_payment_totals(organization_id, project_id)
+    accrued_all_time = await self.repo.get_total_accrued_cost(organization_id, project_id)
 
     organization = await self.session.get(Organization, organization_id)
 
@@ -325,10 +390,105 @@ class LabourService:
       "total_accrued_cost": total_cost,
       "cost_by_trade": [{"trade": trade, "cost": Decimal(str(cost))} for trade, cost in cost_rows],
       "total_advances_given": Decimal(str(total_advances)),
-      "total_payments_made": Decimal(str(total_recovered)),
+      "total_payments_made": net_paid,
+      "total_gross_paid": gross_paid,
+      "total_advances_recovered": recovered,
+      "wages_due": accrued_all_time - gross_paid,
       "outstanding_advance_balance": Decimal(str(total_advances)) - Decimal(str(total_recovered)),
       "currency": organization.currency if organization else "PKR",
     }
+
+  async def get_attendance_sheet(
+    self, organization_id: UUID, project_id: UUID, sheet_date: date,
+  ) -> dict:
+    await self._require_project(organization_id, project_id)
+    deployments = await self.repo.list_deployments(organization_id, project_id)
+    eligible = [
+      d for d in deployments
+      if d.start_date <= sheet_date
+      and (d.end_date is None or d.end_date >= sheet_date)
+      and not (d.status == LabourDeploymentStatus.ENDED and d.end_date is None)
+    ]
+
+    today_records = await self.repo.list_attendance(organization_id, project_id, sheet_date, sheet_date)
+    recorded = {r.deployment_id: r for r in today_records}
+
+    previous_date = await self.repo.get_last_attendance_date_before(organization_id, project_id, sheet_date)
+    previous: dict[UUID, Decimal] = {}
+    if previous_date is not None:
+      for record in await self.repo.list_attendance(organization_id, project_id, previous_date, previous_date):
+        previous[record.deployment_id] = record.units_present
+
+    worker_names = await self.repo.get_worker_names(
+      organization_id, [d.worker_id for d in eligible if d.worker_id is not None],
+    )
+    source_names = await self.repo.get_source_names(organization_id)
+
+    rows = []
+    for d in eligible:
+      is_headcount = d.worker_id is None
+      existing = recorded.get(d.id)
+      if d.id in previous:
+        suggested = previous[d.id]
+      else:
+        suggested = None if is_headcount else Decimal("1")
+      rows.append({
+        "deployment_id": d.id, "source_id": d.source_id, "source_name": source_names.get(d.source_id, ""),
+        "worker_id": d.worker_id, "worker_name": worker_names.get(d.worker_id) if d.worker_id else None,
+        "trade": d.trade, "daily_rate": d.daily_rate, "is_headcount": is_headcount,
+        "recorded": existing is not None,
+        "units_present": existing.units_present if existing else None,
+        "suggested_units": suggested,
+        "notes": existing.notes if existing else None,
+      })
+    rows.sort(key=lambda r: (r["source_name"].lower(), r["trade"].lower(), (r["worker_name"] or "").lower()))
+    return {"attendance_date": sheet_date, "previous_date": previous_date, "rows": rows}
+
+  async def get_dues(self, organization_id: UUID, project_id: UUID) -> list[dict]:
+    await self._require_project(organization_id, project_id)
+    accrued = await self.repo.get_accrued_by_party(organization_id, project_id)
+    paid = await self.repo.get_paid_by_party(organization_id, project_id)
+    advances = await self.repo.get_advances_by_party(organization_id, project_id)
+
+    parties = set(accrued) | set(paid) | set(advances)
+    source_names = await self.repo.get_source_names(organization_id)
+    worker_names = await self.repo.get_worker_names(
+      organization_id, [wid for _sid, wid in parties if wid is not None],
+    )
+
+    rows = []
+    for source_id, worker_id in parties:
+      earned = accrued.get((source_id, worker_id), Decimal("0"))
+      gross_paid, recovered = paid.get((source_id, worker_id), (Decimal("0"), Decimal("0")))
+      given = advances.get((source_id, worker_id), Decimal("0"))
+      rows.append({
+        "source_id": source_id, "source_name": source_names.get(source_id, ""),
+        "worker_id": worker_id, "worker_name": worker_names.get(worker_id) if worker_id else None,
+        "accrued_wages": earned, "gross_paid": gross_paid, "wages_due": earned - gross_paid,
+        "advances_given": given, "advances_recovered": recovered, "advance_balance": given - recovered,
+      })
+    rows.sort(key=lambda r: (r["source_name"].lower(), (r["worker_name"] or "").lower()))
+    return rows
+
+  async def _wages_due(
+    self, organization_id: UUID, project_id: UUID, source_id: UUID, worker_id: UUID | None,
+    
+  ) -> Decimal:
+    accrued = await self.repo.get_accrued_by_party(organization_id, project_id)
+    paid = await self.repo.get_paid_by_party(organization_id, project_id)
+    gross_paid, _recovered = paid.get((source_id, worker_id), (Decimal("0"), Decimal("0")))
+    return accrued.get((source_id, worker_id), Decimal("0")) - gross_paid
+
+  async def _validate_party(self, organization_id: UUID, source_id: UUID, worker_id: UUID | None) -> None:
+    if worker_id is None:
+      return
+    worker = await self.repo.get_worker(worker_id, organization_id)
+    if worker is None:
+      raise TraceException("Labour worker not found.", status_code=404, code="LABOUR_WORKER_NOT_FOUND")
+    if worker.source_id != source_id:
+      raise TraceException(
+        "This worker does not belong to the selected source.", status_code=422, code="WORKER_SOURCE_MISMATCH",
+      )
 
   async def _require_project(self, organization_id: UUID, project_id: UUID):
     project = await self.projects.get_by_id_and_org(project_id, organization_id)

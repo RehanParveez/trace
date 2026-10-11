@@ -83,3 +83,24 @@ class ProjectPhotoThumbnailResponse(BaseModel):
   project_id: UUID
   photo_id: UUID | None = None
   photo_url: str
+  
+class SenderCreateRequest(BaseModel):
+  phone_number: str = Field(min_length=7, max_length=32)
+  display_name: str = Field(min_length=1, max_length=200)
+  default_project_id: UUID | None = None
+
+class SenderUpdateRequest(BaseModel):
+  display_name: str | None = Field(default=None, min_length=1, max_length=200)
+  default_project_id: UUID | None = None
+  clear_default_project: bool = False
+  is_active: bool | None = None
+
+class SenderResponse(BaseModel):
+  model_config = ConfigDict(from_attributes=True)
+
+  id: UUID
+  phone_number: str
+  display_name: str
+  default_project_id: UUID | None
+  is_active: bool
+  created_at: datetime

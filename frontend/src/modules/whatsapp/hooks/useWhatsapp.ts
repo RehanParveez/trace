@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { whatsappApi } from "../api/whatsapp.api";
-import type {ChannelConnectRequest, PhotoTagCreateRequest, SitePhoto, SitePhotoAssignProjectRequest, SitePhotoListParams, SitePhotoUpdateRequest,
+import type {WhatsAppSenderCreateRequest, WhatsAppSenderUpdateRequest, ChannelConnectRequest, PhotoTagCreateRequest, SitePhoto, SitePhotoAssignProjectRequest, SitePhotoListParams, SitePhotoUpdateRequest,
 } from "../types/whatsapp.types";
 
 export const whatsappKeys = {
@@ -118,5 +118,41 @@ export function useUploadSitePhoto() {
         queryKey: [...whatsappKeys.all, "latest-by-project"],
       });
     },
+  });
+}
+
+export function useWhatsAppSenders(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: [...whatsappKeys.all, "senders"] as const,
+    queryFn: whatsappApi.listSenders,
+    enabled: options?.enabled,
+  });
+}
+
+function invalidateSenders(queryClient: ReturnType<typeof useQueryClient>) {
+  void queryClient.invalidateQueries({ queryKey: [...whatsappKeys.all, "senders"] });
+}
+
+export function useCreateWhatsAppSender() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: WhatsAppSenderCreateRequest) => whatsappApi.createSender(payload),
+    onSuccess: () => invalidateSenders(queryClient),
+  });
+}
+
+export function useUpdateWhatsAppSender() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ senderId, payload }: { senderId: string; payload: WhatsAppSenderUpdateRequest }) => whatsappApi.updateSender(senderId, payload),
+    onSuccess: () => invalidateSenders(queryClient),
+  });
+}
+
+export function useDeleteWhatsAppSender() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (senderId: string) => whatsappApi.deleteSender(senderId),
+    onSuccess: () => invalidateSenders(queryClient),
   });
 }

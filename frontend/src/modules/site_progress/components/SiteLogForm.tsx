@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Field, inputClass, Modal, useToast } from "../../organizations/components/OrganizationUi";
 import { useCreateSiteLog } from "../hooks";
+import { useLabourDaySummary } from "../../labour/hooks";
+import { getApiErrorMessage } from "../../identity";
 import { useTranslation } from "react-i18next";
 import { LabourDayCrossCheck } from "./LabourDayCrossCheck";
 import { todayLocal } from "../../../shared/utils/date";
@@ -19,9 +21,20 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
   const [logDate, setLogDate] = useState(() => todayLocal());
   const [workforceCount, setWorkforceCount] = useState("");
   const [weather, setWeather] = useState("");
+  const [workDone, setWorkDone] = useState("");
   const [blockers, setBlockers] = useState("");
+  const [clientInstructions, setClientInstructions] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [workforceTouched, setWorkforceTouched] = useState(false);
+
+  const daySummary = useLabourDaySummary(projectId, logDate);
+  useEffect(() => {
+    const present = daySummary.data?.total_present;
+    if (!workforceTouched && present !== undefined && Number(present) > 0) {
+      setWorkforceCount(String(Math.round(Number(present))));
+    }
+  }, [daySummary.data, workforceTouched]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,7 +46,9 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
         log_date: logDate,
         workforce_count: workforceCount === "" ? null : Number(workforceCount),
         weather: weather.trim() || null,
+        work_done: workDone.trim() || null,
         blockers: blockers.trim() || null,
+        client_instructions: clientInstructions.trim() || null,
         notes: notes.trim() || null,
       },
     
@@ -42,7 +57,7 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
           onClose();
           showToast({ tone: "success", title: t("siteProgress.form.saved") });
         },
-        onError: () => setError(t("siteProgress.form.saveError")),
+        onError: (err) => setError(getApiErrorMessage(err, t("siteProgress.form.saveError"))),
       },
     );
   }
@@ -52,10 +67,10 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
       <form onSubmit={submit} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={t("siteProgress.form.logDate")}>
-            <input type="date" required className={inputClass} value={logDate} onChange={(e) => setLogDate(e.target.value)} />
+            <input type="date" required max={todayLocal()} className={inputClass} value={logDate} onChange={(e) => { setLogDate(e.target.value); setWorkforceTouched(false); setWorkforceCount(""); }} />
           </Field>
            <Field label={t("siteProgress.form.workforce")}>
-            <input type="number" min="0" className={inputClass} value={workforceCount} onChange={(e) => setWorkforceCount(e.target.value)} placeholder={t("siteProgress.form.workforcePlaceholder")} />
+            <input type="number" min="0" className={inputClass} value={workforceCount} onChange={(e) => { setWorkforceTouched(true); setWorkforceCount(e.target.value); }}placeholder={t("siteProgress.form.workforcePlaceholder")} />
           </Field>
         </div>
 
@@ -63,8 +78,16 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
           <input className={inputClass} value={weather} onChange={(e) => setWeather(e.target.value)} placeholder={t("siteProgress.form.weatherPlaceholder")} />
         </Field>
 
+        <Field label={t("siteProgress.form.workDone")}>
+          <textarea className={`${inputClass} resize-y`} rows={3} value={workDone} onChange={(e) => setWorkDone(e.target.value)} placeholder={t("siteProgress.form.workDonePlaceholder")} />
+        </Field>
+
         <Field label={t("siteProgress.form.blockers")}>
           <textarea className={`${inputClass} resize-y`} rows={2} value={blockers} onChange={(e) => setBlockers(e.target.value)} placeholder={t("siteProgress.form.blockersPlaceholder")} />
+        </Field>
+
+        <Field label={t("siteProgress.form.clientInstructions")} hint={t("siteProgress.form.clientInstructionsHint")}>
+          <textarea className={`${inputClass} resize-y`} rows={2} value={clientInstructions} onChange={(e) => setClientInstructions(e.target.value)} placeholder={t("siteProgress.form.clientInstructionsPlaceholder")} />
         </Field>
 
         <Field label={t("siteProgress.form.notes")}>
@@ -72,7 +95,7 @@ export function SiteLogForm({ projectId, onClose }: SiteLogFormProps) {
         </Field>
 
         {logDate ? (
-         <LabourDayCrossCheck projectId={projectId} date={logDate} />
+         <LabourDayCrossCheck projectId={projectId} date={logDate} reported={workforceCount === "" ? null : Number(workforceCount)} />
         ) : null}
 
         {error ? <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div> : null}

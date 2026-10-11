@@ -15,10 +15,19 @@ export function useSiteLogs(params: SiteLogListParams = {}) {
   });
 }
 
+export function useDailyReport(projectId: string, reportDate: string) {
+  return useQuery({
+    queryKey: [...siteProgressKeys.all, "report", projectId, reportDate] as const,
+    queryFn: () => siteProgressApi.getDailyReport(projectId, reportDate),
+    enabled: Boolean(projectId && reportDate),
+  });
+}
+
+
 function invalidateSiteLogLists(queryClient: ReturnType<typeof useQueryClient>) {
   void queryClient.invalidateQueries({
     queryKey: siteProgressKeys.all,
-    predicate: (query) => query.queryKey[1] === "list",
+    predicate: (query) => query.queryKey[1] === "list" || query.queryKey[1] === "report",
   });
 }
 
