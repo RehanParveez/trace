@@ -330,3 +330,71 @@ export interface ReconciliationStats {
 }
 
 export interface Reconciliation { run_id: string | null; stats: ReconciliationStats; measurements: ReconciliationRow[] }
+
+export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM";
+export type CandidateStatus = "VALID" | "WARNING" | "INVALID";
+export type CandidateDecision = "NEW" | "ACCEPTED" | "REJECTED";
+
+export interface CandidateNote { code: string; severity: "info" | "warning" | "error"; message: string; [extra: string]: unknown }
+
+export interface TakeoffCandidate {
+  id: string;
+  sheet_id: string;
+  category: CandidateCategory;
+  kind: MeasureKind;
+  quantity_mode: string;
+  label: string;
+  tag: string | null;
+  geometry: Geometry;
+  params: Record<string, unknown>;
+  missing: string[];
+  suggested_work_item: string | null;
+  count: number;
+  status: CandidateStatus;
+  confidence: string;
+  facts: Record<string, unknown>;
+  notes: CandidateNote[];
+  source: MeasureSource;
+  decision: CandidateDecision;
+  measurement_id: string | null;
+  decided_at: string | null;
+  mm_per_pt: string | null;
+}
+
+export type StaleReason = "SCALE_CHANGED" | "SHEET_READ_AGAIN" | "NEWER_LOGIC";
+
+export interface ExtractionMeta {
+  sheet_id: string;
+  ran: boolean;
+  ran_at?: string | null;
+  stale: boolean;
+  stale_reasons: StaleReason[];
+  mm_per_pt?: string | null;
+  scale_unverified: boolean;
+  stats: Record<string, unknown>;
+  unmapped_tags: Array<{ tag: string; count: number }>;
+  notes: CandidateNote[];
+}
+
+export interface CandidateSummary {
+  total: number;
+  new: number;
+  accepted: number;
+  rejected: number;
+  warnings: number;
+  by_category: Record<string, { found: number; new: number; accepted: number; rejected: number }>;
+}
+
+export interface CandidateList { sheet_id: string; extraction: ExtractionMeta; candidates: TakeoffCandidate[]; summary: CandidateSummary }
+export interface ExtractResult extends CandidateList { added: number; updated: number; removed: number; calibration_created: boolean }
+
+export interface AcceptBody {
+  ids: string[];
+  wall_height_mm?: number | null;
+  column_height_mm?: number | null;
+  footing_depth_mm?: number | null;
+  work_items?: Record<string, string>;
+}
+export interface CandidateFailure { id: string; code: string; message: string }
+export interface AcceptResult { accepted: Array<{ id: string; measurement_id: string; work_item_code: string | null }>; failed: CandidateFailure[] }
+export interface DecideResult { changed: string[]; failed: CandidateFailure[] }

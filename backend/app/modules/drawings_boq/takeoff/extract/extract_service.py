@@ -1,0 +1,330 @@
+from __future__ import annotations
+import logging
+import asyncio
+from datetime import datetime, timezone
+from decimal import Decimal
+import time
+from uuid import UUID
+from app.modules.drawings_boq.takeoff.prep_service import PrepService
+from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
+from app.modules.drawings_boq.models import TakeoffExtraction, TakeoffCandidate
+from app.modules.audit.models import AuditAction
+from pydantic import ValidationError
+from app.core.exceptions import TraceException
+from app.engine.measure import takeoff as tk
+from app.modules.drawings_boq.takeoff import repository as repo_mod
+from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.finish_schedule.common import work_item_catalog
+from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
+from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, run_extraction
+from app.modules.drawings_boq.takeoff.schemas import MeasurementCreateRequest, MeasurementParams
+
+log = logging.getLogger(__name__)
+
+HEIGHT_FIELDS = {
+  ("WALL", "height_mm"): ("wall_height_mm", "height_mm", "the wall height"),
+  ("COLUMN", "height_mm"): ("column_height_mm", "depth_mm", "the column height"),
+  ("FOOTING", "depth_mm"): ("footing_depth_mm", "depth_mm", "the footing depth"),
+}
+
+def _now() -> datetime:
+  return datetime.now(timezone.utc)
+
+def _same_scale(a, b) -> bool:
+  if a is None or b is None:
+    return False
+  a, b = Decimal(str(a)), Decimal(str(b))
+  return abs(a - b) <= max(abs(a), abs(b)) * Decimal("0.000001")
+
+def index_stamp(meta) -> str:
+  return f"{meta.analysis_version}:{meta.updated_at.isoformat() if meta.updated_at else ''}"[:40]
+
+def _fail(ident: UUID, code: str, message: str) -> dict:
+  return {"id": str(ident), "code": code, "message": message}
+
+def fill_missing(category: str, missing: list, params: dict, typed: dict) -> tuple:
+  out = dict(params or {})
+  for need in missing or []:
+    spec = HEIGHT_FIELDS.get((category, need))
+    
+    if spec is None:
+      return out, ("CANDIDATE_NEEDS_DIMENSIONS", "No size was found for this item. Draw it by hand.")
+    field, target, words = spec
+    value = typed.get(field)
+    if value is None:
+      return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {words} to measure this item.")
+    out[target] = float(value)
+    out["dims_basis"] = "SPECIFIED"
+  return out, None
+
+class ExtractService:
+  def __init__(self, session):
+    self.session = session
+    self.prep = PrepService(session)
+    self.core = self.prep.core
+    self.repo = ExtractRepository(session)
+
+  async def _scale(self, org: UUID, sheet):
+
+    cal = await self.core._default_calibration(org, sheet.id)
+    if cal is None:
+      return None, None
+    ev = tk.evaluate_calibration(repo_mod.calibration_input(cal, repo_mod.sheet_user_unit(sheet)))
+    return (cal, ev) if ev.usable else (None, None)
+
+  async def _heal(self, org: UUID, rows: list) -> bool:
+
+    accepted = [r for r in rows if r.decision == "ACCEPTED"]
+    if not accepted:
+      return False
+    alive = await self.repo.existing_measurement_ids(org, [r.measurement_id for r in accepted if r.measurement_id])
+    changed = False
+    
+    for r in accepted:
+      if r.measurement_id is None or r.measurement_id not in alive:
+        r.decision, r.measurement_id, r.decided_at, r.decided_by_user_id = "NEW", None, None, None
+        changed = True
+    if changed:
+      await self.session.flush()
+    return changed
+
+  @staticmethod
+  def _summary(rows: list) -> dict:
+    by_cat: dict = {}
+    for r in rows:
+      c = by_cat.setdefault(r.category, {"found": 0, "new": 0, "accepted": 0, "rejected": 0})
+      c["found"] += 1
+      c[r.decision.lower()] += 1
+    return {"total": len(rows), "new": sum(1 for r in rows if r.decision == "NEW"), "accepted": sum(1 for r in rows if r.decision == "ACCEPTED"),
+      "rejected": sum(1 for r in rows if r.decision == "REJECTED"), "warnings": sum(1 for r in rows if r.status != "VALID" and r.decision == "NEW"),
+      "by_category": by_cat}
+
+  async def _meta(self, org: UUID, sheet, ext: TakeoffExtraction | None) -> dict:
+    if ext is None:
+      return {"sheet_id": sheet.id, "ran": False}
+    reasons: list = []
+    cal, ev = await self._scale(org, sheet)
+    if ev is None or not _same_scale(ev.mm_per_pt, ext.mm_per_pt):
+      reasons.append("SCALE_CHANGED")
+      
+    meta = await self.prep.prep.meta(org, sheet.id)
+    if meta is None or index_stamp(meta) != ext.index_stamp:
+      reasons.append("SHEET_READ_AGAIN")
+    if ext.extract_version != C.EXTRACT_VERSION:
+      reasons.append("NEWER_LOGIC")
+    return {"sheet_id": sheet.id, "ran": True, "ran_at": ext.updated_at, "stale": bool(reasons), "stale_reasons": reasons,
+      "mm_per_pt": ext.mm_per_pt, "scale_unverified": ext.scale_unverified, "stats": ext.stats or {}, "unmapped_tags": ext.unmapped_tags or [],
+      "notes": ext.notes or []}
+
+  async def _list(self, org: UUID, sheet) -> dict:
+    rows = await self.repo.candidates(org, [sheet.id])
+    if await self._heal(org, rows):
+      await self.session.commit()
+    ext = await self.repo.extraction(org, sheet.id)
+    return {"sheet_id": sheet.id, "extraction": await self._meta(org, sheet, ext), "candidates": rows, "summary": self._summary(rows)}
+
+  async def candidates(self, org: UUID, sheet_id: UUID) -> dict:
+    sheet = await self.core._sheet(org, sheet_id)
+    return await self._list(org, sheet)
+
+  async def drawing_candidates(self, org: UUID, drawing_id: UUID) -> dict:
+    await self.core._pdf_drawing(org, drawing_id)
+    sheets = await self.core.repo.sheets(org, drawing_id)
+    return {"drawing_id": drawing_id, "sheets": [await self._list(org, s) for s in sheets]}
+
+  async def _ensure_scale(self, org: UUID, sheet, user_id: UUID, auto: bool):
+    cal, ev = await self._scale(org, sheet)
+    if ev is not None:
+      return cal, ev, False
+  
+    if not auto:
+      raise TraceException("Set the scale of this sheet first. The sizes found depend on it.", status_code=409, code="SHEET_NOT_CALIBRATED")
+    meta = await self.prep.prep.meta(org, sheet.id)
+    agreement = (meta.analysis or {}).get("agreement") if meta is not None else None
+    if agreement != "VERIFIED":
+      raise TraceException("The scale printed on this sheet is not confirmed by its dimensions. Check the scale on the Scale tab first.",
+        status_code=409, code="SCALE_NEEDS_CONFIRMATION")
+    await self.prep.auto_calibrate(org, sheet.id, user_id, AutoCalibrateRequest(use="RECOMMENDED", make_default=True))
+    sheet = await self.core._sheet(org, sheet.id)
+    cal, ev = await self._scale(org, sheet)
+    if ev is None:
+      raise TraceException("The recommended scale could not be used. Set the scale by hand.", status_code=409, code="SHEET_NOT_CALIBRATED")
+    return cal, ev, True
+
+  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload) -> dict:
+    sheet = await self.core._sheet(org, sheet_id, lock=True)
+    if sheet.prep_status != "READY":
+      raise TraceException("Prepare this sheet first; its drawing has not been read yet.", status_code=409, code="SHEET_NOT_PREPARED")
+    index = await self.prep._index(org, sheet.id)
+    meta = await self.prep.prep.meta(org, sheet.id)
+    cal, ev, created = await self._ensure_scale(org, sheet, user_id, payload.auto_calibrate)
+    mm_per_pt = float(ev.mm_per_pt)
+    unverified = "PDF_RATIO_UNVERIFIED" in (ev.warnings or ())
+    
+    try:
+      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
+        content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds))
+    except Exception:
+      log.exception("PDF extraction failed for sheet %s", sheet.id)
+      raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
+    found = result.candidates
+    codes = {c.work_item for c in found if c.work_item}
+    catalog = await work_item_catalog(self.session, org, codes) if codes else {}
+    for c in found:
+      if c.work_item and c.work_item not in catalog:
+        c.work_item = None
+    added, updated, removed = await self._store(org, sheet, found, mm_per_pt)
+    ext = await self.repo.extraction(org, sheet.id)
+    
+    if ext is None:
+      ext = TakeoffExtraction(sheet_id=sheet.id, organization_id=org)
+      self.session.add(ext)
+    ext.extract_version = C.EXTRACT_VERSION
+    ext.index_stamp = index_stamp(meta)
+    ext.calibration_id = cal.id
+    ext.mm_per_pt = Decimal(str(ev.mm_per_pt))
+    ext.scale_unverified = unverified
+    ext.stats = result.stats
+    ext.unmapped_tags = result.unmapped_tags
+    ext.notes = result.notes
+    ext.ran_by_user_id = user_id
+    ext.updated_at = _now()
+    
+    await self.core._log(org, user_id, sheet.drawing_id, AuditAction.UPDATE,
+      f"Read sheet {sheet.page_no} automatically: {len(found)} items found")
+    await self.session.commit()
+    out = await self._list(org, sheet)
+    out.update(added=added, updated=updated, removed=removed, calibration_created=created)
+    return out
+
+  async def _store(self, org: UUID, sheet, found: list[Candidate], mm_per_pt: float) -> tuple:
+    old = {r.ckey: r for r in await self.repo.candidates(org, [sheet.id])}
+    await self._heal(org, list(old.values()))
+    added = updated = 0
+    seen: set = set()
+    for c in found:
+      if c.key in seen:
+        continue
+    
+      seen.add(c.key)
+      row = old.get(c.key)
+      if row is not None and row.decision == "ACCEPTED":
+        continue
+      if row is None:
+        row = TakeoffCandidate(organization_id=org, project_id=sheet.project_id, sheet_id=sheet.id, ckey=c.key, decision="NEW")
+        self.session.add(row)
+        added += 1
+      else:
+        updated += 1
+        
+      row.category, row.kind, row.quantity_mode, row.label, row.tag = c.category, c.kind, c.quantity_mode, c.label[:200], c.tag
+      row.geometry, row.params, row.missing = c.geometry, c.params, c.missing
+      row.suggested_work_item, row.count, row.status = c.work_item, c.count, c.status
+      row.confidence, row.facts, row.notes, row.source = Decimal(str(c.confidence)), c.facts, c.notes, c.source
+      row.extract_version, row.mm_per_pt = C.EXTRACT_VERSION, Decimal(str(mm_per_pt))
+    gone = [r.id for k, r in old.items() if k not in seen and r.decision != "ACCEPTED"]
+    await self.repo.delete_candidates(org, gone)
+    await self.session.flush()
+    return added, updated, len(gone)
+
+  async def extract_drawing(self, org: UUID, drawing_id: UUID, user_id: UUID, payload) -> dict:
+    await self.core._pdf_drawing(org, drawing_id)
+    sheets = await self.core.repo.sheets(org, drawing_id)
+    started = time.monotonic()
+    done: list = []
+    skipped: list = []
+    for sheet in sheets:
+      if time.monotonic() - started > 80 and done:
+        skipped.append({"sheet_id": str(sheet.id), "page_no": sheet.page_no, "code": "TIME_BUDGET", "message": "Run it again for the remaining sheets."})
+        continue
+    
+      try:
+        done.append(await self.extract_sheet(org, sheet.id, user_id, payload))
+      except TraceException as exc:
+        await self.session.rollback()
+        skipped.append({"sheet_id": str(sheet.id), "page_no": sheet.page_no, "code": exc.code, "message": exc.message})
+    return {"drawing_id": drawing_id, "done": done, "skipped": skipped}
+
+  async def accept(self, org: UUID, user_id: UUID, payload) -> dict:
+    rows = {r.id: r for r in await self.repo.candidates_by_ids(org, list(payload.ids), lock=True)}
+    await self._heal(org, list(rows.values()))
+    given = payload.work_items or {}
+    wanted = {c for c in [*(given.values()), *(r.suggested_work_item for r in rows.values())] if c}
+    catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
+    typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm}
+    accepted: list = []
+    failed: list = []
+    for cid in payload.ids:
+      cand = rows.get(cid)
+      
+      if cand is None:
+        failed.append(_fail(cid, "CANDIDATE_NOT_FOUND", "This item no longer exists. Read the sheet again."))
+        continue
+      if cand.decision == "ACCEPTED":
+        failed.append(_fail(cid, "CANDIDATE_ALREADY_ACCEPTED", "This item is already a measurement."))
+        continue
+      if cand.status == "INVALID":
+        failed.append(_fail(cid, "CANDIDATE_INVALID", "This item has an error and cannot be measured."))
+        continue
+      if cand.category == "BEAM":
+        failed.append(_fail(cid, "CANDIDATE_NOT_MEASURABLE", "Beam marks are only counted. Draw the beam lengths with the length tool."))
+        continue
+      params, problem = fill_missing(cand.category, cand.missing or [], cand.params or {}, typed)
+      if problem:
+        failed.append(_fail(cid, *problem))
+        continue
+    
+      code = given.get(cand.category) or cand.suggested_work_item
+      if code and code not in catalog and given.get(cand.category):
+        failed.append(_fail(cid, "WORK_ITEM_NOT_FOUND", f"Work item '{code}' is not in the catalog."))
+        continue
+      if code and code not in catalog:
+        code = None
+        
+      try:
+        request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
+          params=MeasurementParams(**params), work_item_code=code, level_id=payload.level_id, label=cand.label, tag=cand.tag,
+          source=cand.source)
+      except ValidationError:
+        failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))
+        continue
+      try:
+        async with self.session.begin_nested():
+          m = await self.core.create_measurement(org, cand.sheet_id, user_id, request, commit=False)
+          cand.decision, cand.measurement_id, cand.decided_by_user_id, cand.decided_at = "ACCEPTED", m.id, user_id, _now()
+      except TraceException as exc:
+        failed.append(_fail(cid, exc.code, exc.message))
+        continue
+    
+      accepted.append({"id": str(cid), "measurement_id": str(m.id), "work_item_code": code})
+    if accepted:
+      first = next(r for r in rows.values() if str(r.id) == accepted[0]["id"])
+      sheet = await self.core._sheet(org, first.sheet_id)
+      await self.core._log(org, user_id, sheet.drawing_id, AuditAction.CREATE,
+        f"Accepted {len(accepted)} automatically found items as draft measurements")
+    await self.session.commit()
+    return {"accepted": accepted, "failed": failed}
+
+  async def _decide(self, org: UUID, user_id: UUID, ids: list, frm: str, to: str) -> dict:
+    rows = {r.id: r for r in await self.repo.candidates_by_ids(org, list(ids), lock=True)}
+    await self._heal(org, list(rows.values()))
+    changed: list = []
+    failed: list = []
+    
+    for cid in ids:
+      r = rows.get(cid)
+      if r is None:
+        failed.append(_fail(cid, "CANDIDATE_NOT_FOUND", "This item no longer exists."))
+      elif r.decision == "ACCEPTED":
+        failed.append(_fail(cid, "CANDIDATE_ALREADY_ACCEPTED", "This item is already a measurement. Delete the measurement first."))
+      elif r.decision == frm:
+        r.decision, r.decided_by_user_id, r.decided_at = to, (user_id if to == "REJECTED" else None), (_now() if to == "REJECTED" else None)
+        changed.append(cid)
+    await self.session.commit()
+    return {"changed": changed, "failed": failed}
+
+  async def reject(self, org: UUID, user_id: UUID, ids: list) -> dict:
+    return await self._decide(org, user_id, ids, "NEW", "REJECTED")
+
+  async def restore(self, org: UUID, user_id: UUID, ids: list) -> dict:
+    return await self._decide(org, user_id, ids, "REJECTED", "NEW")

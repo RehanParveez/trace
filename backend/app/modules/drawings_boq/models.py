@@ -297,6 +297,9 @@ _ANALYSIS_COMPONENT_TYPES = "'MATERIAL','LABOUR','PLANT','OTHER'"
 _ANALYSIS_COMPONENT_SOURCES = "'DIRECT','RATE_ITEM','LABOUR_RATE','MATERIAL_LIBRARY'"
 _RATE_RESOLUTION_SOURCES = "'PROJECT_OVERRIDE','RATE_BOOK','LIBRARY','AI_SUGGESTED','MANUAL'"
 _ITEM_RATE_SOURCES = "'LIBRARY','AI_SUGGESTED','MANUAL','PROJECT_OVERRIDE','RATE_BOOK'"
+_TAKEOFF_CANDIDATE_CATEGORIES = "'COLUMN','FOOTING','BEAM','DOOR','WINDOW','WALL','ROOM'"
+_TAKEOFF_CANDIDATE_STATUSES = "'VALID','WARNING','INVALID'"
+_TAKEOFF_CANDIDATE_DECISIONS = "'NEW','ACCEPTED','REJECTED'"
 
 class Drawing(Base, TimestampMixin):
   __tablename__ = "drawings"
@@ -4185,3 +4188,129 @@ class TakeoffSheetIndex(Base, TimestampMixin):
   )
   
   payload: Mapped[bytes] = mapped_column(_TakeoffLargeBinary, nullable=False)
+  
+class TakeoffExtraction(Base, TimestampMixin):
+  """The last automatic read of one sheet: which scale and geometry it used, and what it could not map."""
+  __tablename__ = "takeoff_extractions"
+
+  __table_args__ = (
+    ForeignKeyConstraint(
+      ["sheet_id", "organization_id"], ["takeoff_sheets.id", "takeoff_sheets.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_extractions_sheet_tenant",
+    ),
+    CheckConstraint("extract_version >= 1", name="ck_takeoff_extractions_version"),
+  )
+
+  sheet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+  extract_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+  index_stamp: Mapped[str | None] = mapped_column(String(40), nullable=True)
+  calibration_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  mm_per_pt: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+  scale_unverified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))
+  stats: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  unmapped_tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+  notes: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+  ran_by_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+class TakeoffCandidate(Base, TimestampMixin):
+  __tablename__ = "takeoff_candidates"
+
+  __table_args__ = (
+    UniqueConstraint("sheet_id", "ckey", name="uq_takeoff_candidates_sheet_key"),
+    ForeignKeyConstraint(
+      ["sheet_id", "organization_id"], ["takeoff_sheets.id", "takeoff_sheets.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_candidates_sheet_tenant",
+    ),
+    
+    Index("ix_takeoff_candidates_sheet", "sheet_id"),
+    Index("ix_takeoff_candidates_org_project", "organization_id", "project_id"),
+    CheckConstraint(f"category IN ({_TAKEOFF_CANDIDATE_CATEGORIES})", name="ck_takeoff_candidates_category"),
+    CheckConstraint(f"kind IN ({_TAKEOFF_KINDS})", name="ck_takeoff_candidates_kind"),
+    CheckConstraint(f"status IN ({_TAKEOFF_CANDIDATE_STATUSES})", name="ck_takeoff_candidates_status"),
+    CheckConstraint(f"decision IN ({_TAKEOFF_CANDIDATE_DECISIONS})", name="ck_takeoff_candidates_decision"),
+    CheckConstraint(f"source IN ({_TAKEOFF_SOURCES})", name="ck_takeoff_candidates_source"),
+    CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_takeoff_candidates_confidence"),
+    CheckConstraint("count >= 1", name="ck_takeoff_candidates_count"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False
+  )
+  
+  sheet_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  ckey: Mapped[str] = mapped_column(String(40), nullable=False)
+  category: Mapped[str] = mapped_column(String(10), nullable=False)
+  kind: Mapped[str] = mapped_column(String(8), nullable=False)
+  quantity_mode: Mapped[str] = mapped_column(String(40), nullable=False)
+  label: Mapped[str] = mapped_column(String(200), nullable=False)
+  tag: Mapped[str | None] = mapped_column(String(60), nullable=True)
+  
+  geometry: Mapped[dict] = mapped_column(
+    JSONB, nullable=False,
+    default=dict,
+    server_default=text("'{}'::jsonb"),
+  )
+  
+  params: Mapped[dict] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=dict, server_default=text("'{}'::jsonb"),
+  )
+  
+  missing: Mapped[list] = mapped_column(
+    JSONB,
+    nullable=False,
+    default=list,
+    server_default=text("'[]'::jsonb"),
+  )
+  
+  suggested_work_item: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  count: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+  status: Mapped[str] = mapped_column(String(10), nullable=False, default="VALID", server_default="VALID")
+  
+  confidence: Mapped[Decimal] = mapped_column(
+    Numeric(5, 4),
+    nullable=False,
+    default=Decimal("0"),
+    server_default=text("0"),
+  )
+  
+  facts: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  notes: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
+  
+  source: Mapped[str] = mapped_column(
+    String(12),
+    nullable=False,
+    default="VECTOR_SNAP",
+    server_default="VECTOR_SNAP",
+  )
+  
+  decision: Mapped[str] = mapped_column(String(10), nullable=False, default="NEW", server_default="NEW")
+  
+  measurement_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("takeoff_measurements.id", ondelete="SET NULL"),
+    nullable=True,
+  )
+  
+  extract_version: Mapped[int] = mapped_column(Integer, nullable=False, default=1, server_default=text("1"))
+  mm_per_pt: Mapped[Decimal | None] = mapped_column(Numeric(24, 12), nullable=True)
+  
+  decided_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True
+  )
+  
+  decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
