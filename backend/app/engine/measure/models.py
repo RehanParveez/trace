@@ -21,6 +21,8 @@ class ModelElement:
   ifc_global_id: str | None = None
   material_class: str | None = None
   material_basis: str | None = None
+  thickness_mm: Decimal | None = None
+  material_text: str | None = None
 
 @dataclass(frozen=True)
 class MappingInput:
@@ -43,6 +45,7 @@ class CalculationContext:
   schedule_lines: tuple = ()
   rebar: object = None
   takeoff: object = None
+  spec_mode: bool = False
 
 @dataclass(frozen=True)
 class Solid:
@@ -63,6 +66,7 @@ class Solid:
   status: str = "OK"
   issues: tuple = ()
   material_class: str | None = None
+  spec: dict | None = None
 
 @dataclass(frozen=True)
 class LedgerEntry:
@@ -78,6 +82,8 @@ class LedgerEntry:
   trace: dict
   warnings: tuple = ()
   source_kind: str = "MODEL"
+  spec: dict | None = None
+  spec_key: str | None = None
 
 @dataclass(frozen=True)
 class Rejected:

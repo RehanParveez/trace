@@ -5,7 +5,8 @@ import { useTranslation } from "react-i18next";
 import { restoreSession } from "../../../../api/client";
 import {buildBoqFromRun, getCalculationRun, listProjectCalculationRuns, listRunStages, startCalculationRun,
 } from "../../../../api/boqEngine";
-import type { CalculationRun, RunStage } from "../../../../api/types";
+import type { CalculationRun, Drawing, RunStage } from "../../../../api/types";
+import { listProjectDrawings } from "../../../../api/drawingsBoq";
 import LanguageSwitcher from "../../../../components/LanguageSwitcher";
 import { describeError } from "../../../../features/drawingsBoq/errors";
 import { PERM, hasPerm } from "../../../../features/drawingsBoq/permissions";
@@ -41,10 +42,19 @@ export default function CalculationScreen() {
   const [verify, setVerify] = useState(false);
   const [startError, setStartError] = useState<StartRunError | null>(null);
   const [reusedNotice, setReusedNotice] = useState(false);
+  const [drawings, setDrawings] = useState<Drawing[]>([]);
+  const [useAllDrawings, setUseAllDrawings] = useState(true);
+  const [selectedDrawingIds, setSelectedDrawingIds] = useState<string[]>([]);
 
   const canRun = hasPerm(permissions, PERM.CALC_RUN);
   const boqStats = run?.stats?.boq as Record<string, string> | undefined;
   const boqError = run?.stats?.boq_error as string | undefined;
+  const asRecord = (v: unknown): Record<string, unknown> | null =>
+    v && typeof v === "object" && !Array.isArray(v) && Object.keys(v as object).length > 0
+      ? (v as Record<string, unknown>)
+      : null;
+  const pdfStats = asRecord(run?.stats?.pdf_takeoff);
+  const steelStats = asRecord(run?.stats?.steel);
   const runDone = run ? TERMINAL.has(run.status) : false;
   const waitingForBoq =
     run?.status === "COMPLETED" && !boqStats && !boqError && waitedForBoq < 20;
@@ -66,6 +76,13 @@ export default function CalculationScreen() {
         }
         if (cancelled) return;
         setPermissions(user.role.permissions.map((p) => p.key));
+
+        try {
+          const list = await listProjectDrawings(projectId);
+          setDrawings(list.filter((d) => d.is_current_revision && d.status !== "FAILED"));
+        } catch {
+          setDrawings([]);
+        }
 
         try {
           const runs = await listProjectCalculationRuns(projectId, 1);
@@ -110,12 +127,18 @@ export default function CalculationScreen() {
     setBusy(true);
     setError("");
     setWaitedForBoq(0);
+    if (!useAllDrawings && selectedDrawingIds.length === 0) {
+      setBusy(false);
+      setError(tx("calculation.pickDrawings", "Choose at least one drawing, or turn on all drawings."));
+      return;
+    }
     try {
       setStartError(null);
       setReusedNotice(false);
       const started = await startCalculationRun(projectId, {
         force_full: forceFull,
         verify: verify && !forceFull,
+        drawing_ids: useAllDrawings ? undefined : selectedDrawingIds,
       });
       if (started.status === "COMPLETED") setReusedNotice(true);
       setRun(started);
@@ -206,6 +229,44 @@ export default function CalculationScreen() {
               </View>
               <Switch value={verify && !forceFull} disabled={forceFull} onValueChange={setVerify} />
             </View>
+          </View>
+        ) : null}
+
+        {drawings.length > 0 ? (
+          <View style={ui.card}>
+            <View style={[ui.heading, isUrdu && ui.rtlRow]}>
+              <View style={ui.headerCopy}>
+                <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>
+                  {tx("calculation.allDrawings", "Use all drawings")}
+                </Text>
+                <Text style={[ui.muted, isUrdu && ui.rtlText]}>
+                  {tx(
+                    "calculation.allDrawingsHint",
+                    "PDF drawings with confirmed measurements are included automatically.",
+                  )}
+                </Text>
+              </View>
+              <Switch value={useAllDrawings} onValueChange={setUseAllDrawings} />
+            </View>
+            {!useAllDrawings
+              ? drawings.map((d) => {
+                  const on = selectedDrawingIds.includes(d.id);
+                  return (
+                    <Pressable
+                      key={d.id}
+                      style={ui.boqItem}
+                      onPress={() =>
+                        setSelectedDrawingIds((cur) => (on ? cur.filter((x) => x !== d.id) : [...cur, d.id]))
+                      }
+                    >
+                      <View style={[ui.heading, isUrdu && ui.rtlRow]}>
+                        <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>{d.original_filename}</Text>
+                        <Badge label={on ? tx("calculation.included", "included") : d.format} tone={on ? "good" : "neutral"} />
+                      </View>
+                    </Pressable>
+                  );
+                })
+              : null}
           </View>
         ) : null}
 
@@ -344,6 +405,47 @@ export default function CalculationScreen() {
                     isUrdu={isUrdu}
                   />
                 ))}
+              </View>
+            ) : null}
+
+            {pdfStats || steelStats ? (
+              <View style={ui.summaryBox}>
+                {pdfStats ? (
+                  <>
+                    <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>
+                      {tx("calculation.pdfTakeoff", "PDF takeoff in this run")}
+                    </Text>
+                    {Object.entries(pdfStats)
+                      .filter(([, v]) => typeof v === "number" || typeof v === "string")
+                      .map(([k, v]) => (
+                        <InfoRow key={k} label={k.replace(/_/g, " ")} value={String(v)} isUrdu={isUrdu} />
+                      ))}
+                    <Pressable
+                      onPress={() =>
+                        router.push({
+                          pathname: "/projects/[projectId]/takeoff-recon",
+                          params: { projectId: projectId ?? "" },
+                        })
+                      }
+                    >
+                      <Text style={[ui.link, isUrdu && ui.rtlText]}>
+                        {tx("calculation.seeRecon", "See how it compares with the model")}
+                      </Text>
+                    </Pressable>
+                  </>
+                ) : null}
+                {steelStats ? (
+                  <>
+                    <Text style={[ui.itemTitle, isUrdu && ui.rtlText]}>
+                      {tx("calculation.steel", "Steel")}
+                    </Text>
+                    {Object.entries(steelStats)
+                      .filter(([, v]) => typeof v === "number" || typeof v === "string")
+                      .map(([k, v]) => (
+                        <InfoRow key={k} label={k.replace(/_/g, " ")} value={String(v)} isUrdu={isUrdu} />
+                      ))}
+                  </>
+                ) : null}
               </View>
             ) : null}
 

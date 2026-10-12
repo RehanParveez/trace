@@ -10,6 +10,9 @@ from app.modules.drawings_boq.takeoff.schemas import (BulkConfirmRequest, BulkCo
 from app.modules.drawings_boq.takeoff.service import TakeoffService
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
+from app.modules.drawings_boq.takeoff.extract.extract_router import router as _extract_router
+from app.modules.drawings_boq.takeoff.summary_router import router as _summary_router
+
 
 router = APIRouter()
 
@@ -120,3 +123,6 @@ async def reconciliation(
 
 from app.modules.drawings_boq.takeoff.prep_router import router as _prep_router 
 router.include_router(_prep_router)
+
+router.include_router(_extract_router)
+router.include_router(_summary_router)

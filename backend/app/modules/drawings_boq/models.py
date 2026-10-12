@@ -920,6 +920,8 @@ class BOQItem(Base, TimestampMixin):
     nullable=True,
   )
   material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
   canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
   unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
@@ -1981,6 +1983,9 @@ class _SolidColumns:
     ForeignKey("building_levels.id", ondelete="SET NULL"),
     nullable=True,
   )
+  
+  spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
  
   role: Mapped[str] = mapped_column(String(30), nullable=False, default="UNKNOWN")   
   component_type: Mapped[str] = mapped_column(String(30), nullable=False, default="BODY")  

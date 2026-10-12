@@ -882,6 +882,18 @@ export default function DrawingsBoqScreen() {
               })
             }
           />
+
+          <Action
+            title={t("drawingsBoq.pdfTakeoff", { defaultValue: "PDF takeoff" })}
+            secondary
+            isUrdu={isUrdu}
+            onPress={() =>
+              router.push({
+                pathname: "/projects/[projectId]/takeoff",
+                params: { projectId: project.id },
+              })
+            }
+          />
         </View>
 
         {boqError && !expandedVersion ? (

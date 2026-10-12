@@ -2463,3 +2463,418 @@ export type ElementImpact = {
   affected_ledger: ImpactLedgerRow[];
   truncated: boolean;
 };
+
+export type TakeoffKind = "LENGTH" | "AREA" | "COUNT";
+export type TakeoffReconMode = "AUTO" | "ADD" | "REPLACE_MODEL" | "VERIFY_ONLY";
+export type TakeoffSource = "MANUAL" | "VECTOR_SNAP" | "TAG_SCAN";
+export type TakeoffPoint = [number, number];
+
+export type ScaleNote = { code: string; severity?: string; message?: string };
+
+export type DetectedScale = {
+  declared?: {
+    candidates?: { text: string; ratio: number; labelled?: boolean }[];
+    primary?: { text: string; ratio: number; trust?: number; ambiguous?: boolean } | null;
+    multi_scale?: boolean;
+    not_to_scale?: boolean;
+  };
+  measured?: { pairs_found?: number };
+  agreement?: string;
+  recommended?: {
+    method: "SCALE_RATIO" | "TWO_POINT";
+    ratio: number;
+    scale_text: string;
+    basis: string;
+    trust: number;
+  } | null;
+  notes?: ScaleNote[];
+  paper?: { name?: string; orientation?: string; standard?: boolean };
+};
+
+export type TakeoffSheet = {
+  id: string;
+  drawing_id: string;
+  page_no: number;
+  width_pt: string | number;
+  height_pt: string | number;
+  rotation: number;
+  content_kind: "VECTOR" | "RASTER" | "UNKNOWN" | string;
+  label: string | null;
+  level_id: string | null;
+  scale_text: string | null;
+  detected_scale: DetectedScale;
+  prep_status: "PENDING" | "READY" | "FAILED" | string;
+  prep_error: string | null;
+  text_chars: number | null;
+  vector_ops: number | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TakeoffCalibration = {
+  id: string;
+  sheet_id: string;
+  method: "TWO_POINT" | "SCALE_RATIO" | string;
+  ref: Record<string, unknown>;
+  check_ref: Record<string, unknown> | null;
+  ratio: string | number | null;
+  label: string | null;
+  is_default: boolean;
+  usable: boolean;
+  reason: string | null;
+  mm_per_pt: string | number | null;
+  check_error_pct: string | number | null;
+  baseline_pt: string | number | null;
+  quality_factor: string | number;
+  warnings: (string | { code?: string; message?: string })[];
+  created_at: string;
+  updated_at: string;
+  measurements_recomputed?: number;
+  measurements_reverted_to_draft?: number;
+};
+
+export type TakeoffOpening = {
+  role: "DOOR" | "WINDOW" | "OPENING";
+  width_mm: number | string;
+  height_mm: number | string;
+  nos: number;
+  label?: string | null;
+};
+
+export type TakeoffAdjustment = {
+  op: "LESS" | "ADD";
+  value: number | string;
+  label?: string | null;
+};
+
+export type TakeoffParams = {
+  height_mm?: number | string | null;
+  thickness_mm?: number | string | null;
+  width_mm?: number | string | null;
+  depth_mm?: number | string | null;
+  length_mm?: number | string | null;
+  openings?: TakeoffOpening[];
+  adjustments?: TakeoffAdjustment[];
+  repeat?: number;
+  dims_basis?: "DRAWN" | "SPECIFIED" | "ASSUMED";
+};
+
+export type TakeoffComputed = {
+  quantity?: string;
+  unit?: string;
+  formula?: string;
+  confidence?: string;
+  uncertainty_pct?: string;
+  warnings?: string[];
+  steps?: Record<string, unknown>[];
+  inputs?: Record<string, unknown>;
+  error?: { code: string; message: string };
+};
+
+export type TakeoffMeasurement = {
+  id: string;
+  sheet_id: string;
+  project_id: string;
+  calibration_id: string | null;
+  kind: TakeoffKind;
+  quantity_mode: string;
+  geometry: Record<string, unknown>;
+  params: TakeoffParams;
+  work_item_code: string | null;
+  level_id: string | null;
+  label: string | null;
+  tag: string | null;
+  material_grade: string | null;
+  recon_mode: TakeoffReconMode;
+  source: TakeoffSource;
+  status: "DRAFT" | "CONFIRMED" | string;
+  geometry_hash: string | null;
+  computed: TakeoffComputed | null;
+  last_result: Record<string, unknown> | null;
+  confirmed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TakeoffOverview = {
+  drawing_id: string;
+  sheets: TakeoffSheet[];
+  calibrations: TakeoffCalibration[];
+  measurements: TakeoffMeasurement[];
+  summary: { sheets: number; calibrated_sheets: number; measurements: number; confirmed: number; draft: number };
+};
+
+export type TakeoffMode = {
+  kind: TakeoffKind;
+  quantity_mode: string;
+  output_unit: string;
+  required_params: string[];
+  formula_code: string;
+};
+
+export type TakeoffMeasurementCreate = {
+  kind: TakeoffKind;
+  quantity_mode?: string;
+  geometry: Record<string, unknown>;
+  params?: TakeoffParams;
+  calibration_id?: string | null;
+  work_item_code?: string | null;
+  level_id?: string | null;
+  label?: string | null;
+  tag?: string | null;
+  material_grade?: string | null;
+  recon_mode?: TakeoffReconMode;
+  source?: TakeoffSource;
+};
+
+export type TakeoffMeasurementUpdate = {
+  quantity_mode?: string;
+  geometry?: Record<string, unknown>;
+  params?: TakeoffParams;
+  calibration_id?: string | null;
+  work_item_code?: string | null;
+  level_id?: string | null;
+  label?: string | null;
+  tag?: string | null;
+  material_grade?: string | null;
+  recon_mode?: TakeoffReconMode;
+};
+
+export type TakeoffPreview = {
+  ok: boolean;
+  quantity?: string | null;
+  unit?: string | null;
+  formula?: string | null;
+  confidence?: string | null;
+  uncertainty_pct?: string | null;
+  warnings: string[];
+  steps: Record<string, unknown>[];
+  inputs: Record<string, unknown>;
+  error?: { code: string; message: string } | null;
+};
+
+export type TakeoffBulkConfirm = {
+  confirmed: string[];
+  failed: { id?: string; measurement_id?: string; code?: string; message?: string }[];
+};
+
+export type TakeoffPrepareResult = {
+  drawing_id: string;
+  prepared: string[];
+  skipped: string[];
+  failed: { sheet_id?: string; code?: string; message?: string }[];
+  remaining: number;
+  elapsed_seconds: number;
+  sheets: TakeoffSheet[];
+};
+
+export type TakeoffSheetAnalysis = {
+  sheet_id: string;
+  prep_status: string;
+  stale: boolean;
+  content_kind: string;
+  detected_scale: DetectedScale;
+  meta: Record<string, unknown>;
+};
+
+export type TakeoffAutoCalibrate = {
+  calibration: TakeoffCalibration;
+  additional: TakeoffCalibration[];
+  created: boolean;
+  recommendation: Record<string, unknown>;
+  notes: ScaleNote[];
+};
+
+export type TakeoffVector = {
+  bbox: number[];
+  segments: number[][];
+  total: number;
+  truncated: boolean;
+};
+
+export type TakeoffSnapResult = {
+  input: number[];
+  snapped: boolean;
+  x?: number | null;
+  y?: number | null;
+  kind?: string | null;
+  distance?: number | null;
+};
+
+export type TakeoffPick = {
+  snap: Record<string, unknown> | null;
+  wall: Record<string, unknown> | null;
+  region: Record<string, unknown> | null;
+  labels: Record<string, unknown>[];
+  mm_per_pt: string | null;
+};
+
+export type TakeoffWord = { text: string; x: number; y: number; angle?: number; size?: number };
+export type TakeoffText = { total: number; words: TakeoffWord[]; truncated: boolean };
+
+export type TakeoffTag = { tag: string; count: number; in_drawing: number };
+
+export type TakeoffCountSuggestion = {
+  kind: "COUNT";
+  quantity_mode: "DIRECT";
+  geometry: Record<string, unknown>;
+  source: "TAG_SCAN" | "VECTOR_SNAP";
+  tag: string | null;
+  label: string;
+};
+
+export type TakeoffTagDetail = {
+  tag: string;
+  count: number;
+  in_drawing: number;
+  points: { x: number; y: number }[];
+  suggestion: TakeoffCountSuggestion;
+  note: string | null;
+};
+
+export type TakeoffShape = {
+  id: string;
+  shape: string;
+  a_pt: number;
+  b_pt: number;
+  a_mm: number | null;
+  b_mm: number | null;
+  count: number;
+  filled: number;
+};
+
+export type TakeoffShapeList = { shapes: TakeoffShape[]; mm_per_pt: string | null };
+export type TakeoffShapeDetail = { shape: TakeoffShape; points: number[][]; suggestion: TakeoffCountSuggestion };
+
+export type ProjectTakeoffDrawing = {
+  drawing_id: string;
+  original_filename: string;
+  revision_label: string | null;
+  is_current_revision: boolean;
+  sheets: number;
+  prepared_sheets: number;
+  calibrated_sheets: number;
+  draft: number;
+  confirmed: number;
+};
+
+export type TakeoffReconRow = {
+  measurement_id: string;
+  sheet_id?: string;
+  label?: string | null;
+  tag?: string | null;
+  kind?: string;
+  decision?: string;
+  reason?: string | null;
+  message?: string | null;
+  work_item_code?: string | null;
+  quantity?: string;
+  unit?: string;
+  model_quantity?: string | null;
+  variance_pct?: string | null;
+  warnings?: string[];
+  mode?: string;
+};
+
+export type TakeoffReconStats = {
+  measurements?: number;
+  counted?: number;
+  verified?: number;
+  skipped?: Record<string, number>;
+  variances?: {
+    work_item_code: string;
+    level_id?: string | null;
+    variance_pct?: string | number;
+    pdf_quantity?: string | number;
+    model_quantity?: string | number;
+    unit?: string;
+    tolerance_pct?: string | number;
+    over_tolerance?: boolean;
+  }[];
+  not_counted?: { work_item_code: string; level_id: string | null; measurements: number }[];
+  replaced?: { work_item_code: string; level_id: string | null; rows_dropped: number; model_quantity: string }[];
+  tolerance_pct?: string;
+};
+
+export type TakeoffReconciliation = {
+  run_id: string | null;
+  stats: TakeoffReconStats;
+  measurements: TakeoffReconRow[];
+};
+
+export type CandidateNote = { code: string; severity: "info" | "warning" | "error" | string; message: string };
+
+export type TakeoffCandidate = {
+  id: string;
+  sheet_id: string;
+  category: "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM" | string;
+  kind: TakeoffKind;
+  quantity_mode: string;
+  label: string;
+  tag: string | null;
+  geometry: Record<string, unknown>;
+  params: Record<string, unknown>;
+  missing: string[];
+  suggested_work_item: string | null;
+  count: number;
+  status: "VALID" | "WARNING" | "INVALID" | string;
+  confidence: string | number;
+  facts: Record<string, unknown>;
+  notes: CandidateNote[];
+  source: TakeoffSource;
+  decision: "NEW" | "ACCEPTED" | "REJECTED" | string;
+  measurement_id: string | null;
+  decided_at: string | null;
+  mm_per_pt: string | number | null;
+};
+
+export type CandidateExtraction = {
+  sheet_id: string;
+  ran: boolean;
+  ran_at?: string | null;
+  stale: boolean;
+  stale_reasons: string[];
+  mm_per_pt?: string | number | null;
+  scale_unverified: boolean;
+  stats: Record<string, unknown>;
+  unmapped_tags: { tag: string; count: number }[];
+  notes: CandidateNote[];
+};
+
+export type CandidateList = {
+  sheet_id: string;
+  extraction: CandidateExtraction;
+  candidates: TakeoffCandidate[];
+  summary: Record<string, unknown>;
+};
+
+export type CandidateExtractResult = CandidateList & {
+  added: number;
+  updated: number;
+  removed: number;
+  calibration_created: boolean;
+};
+
+export type DrawingCandidates = { drawing_id: string; sheets: CandidateList[] };
+
+export type DrawingExtractResult = {
+  drawing_id: string;
+  done: CandidateExtractResult[];
+  skipped: { sheet_id: string; page_no: number; code: string; message: string }[];
+};
+
+export type CandidateAcceptBody = {
+  ids: string[];
+  wall_height_mm?: number | null;
+  column_height_mm?: number | null;
+  footing_depth_mm?: number | null;
+  work_items?: Record<string, string>;
+  level_id?: string | null;
+};
+
+export type CandidateFailure = { id: string; code: string; message: string };
+export type CandidateAcceptResult = {
+  accepted: { id: string; measurement_id: string; work_item_code: string | null }[];
+  failed: CandidateFailure[];
+};
+export type CandidateDecideResult = { changed: string[]; failed: CandidateFailure[] };

@@ -12,6 +12,8 @@ def _element_key(e) -> dict:
     "bmax": [str(v) for v in e.bbox_max_mm] if e.bbox_max_mm else None,
     "c": str(e.classification_confidence), "s": e.normalization_status,
     "m": getattr(e, "material_class", None),
+    "th": str(e.thickness_mm) if getattr(e, "thickness_mm", None) is not None else None,
+    "mt": getattr(e, "material_text", None),
   }
 
 def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,

@@ -340,7 +340,7 @@ class CalculationRunRepository:
       e.id, e.ifc_global_id, e.ifc_type, e.structural_role, e.level_id, e.geometry_kind, e.profile, e.placement,
       e.volume_mm3, e.bbox_min_x_mm, e.bbox_min_y_mm, e.bbox_min_z_mm, e.bbox_max_x_mm, e.bbox_max_y_mm,
       e.bbox_max_z_mm, e.classification_confidence, e.normalization_status, e.raw_material_text,
-      e.properties["_ifc"]["material_family"].as_string().label("material_family"),
+      e.bbox_max_z_mm, e.classification_confidence, e.normalization_status, e.raw_material_text, e.thickness_mm,
     ).where(e.drawing_id == drawing_id, e.organization_id == organization_id).execution_options(
       yield_per=fetch_rows or int(settings.calc_element_fetch_rows))
     result = await self.session.stream(stmt)
@@ -357,6 +357,7 @@ class CalculationRunRepository:
         normalization_status=r.normalization_status, ifc_global_id=r.ifc_global_id,
         material_class=element_material_class(r.structural_role, r.raw_material_text, r.material_family),
         material_basis=steel_material_basis(r.structural_role, r.raw_material_text, r.material_family),
+        thickness_mm=r.thickness_mm, material_text=r.raw_material_text,
       )
 
   async def find_baseline_run(self, organization_id: UUID, project_id: UUID, signature: str,

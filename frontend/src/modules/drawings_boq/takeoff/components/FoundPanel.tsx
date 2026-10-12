@@ -20,7 +20,7 @@ interface Props {
   busy: boolean;
   blocked: string | null;
   selected: Set<string>;
-  onSelected: (next: Set<string>) => void;
+  onSelected: (next: Set<string>) => void
   focusId: string | null;
   heights: Heights;
   onHeights: (next: Heights) => void;

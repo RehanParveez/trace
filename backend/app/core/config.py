@@ -75,6 +75,7 @@ class Settings(BaseSettings):
   ai_model: str = "claude-haiku-4-5-20251001"
   
   engine_v2_org_ids: str = ""
+  engine_spec_org_ids: str = ""
   engine_default_convention: str = "FRAME_MONOLITHIC_A"
 
   calc_max_concurrent_runs_per_org: int = 3

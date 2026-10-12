@@ -1,7 +1,13 @@
 import { ApiError } from "../../api/client";
 
 const MESSAGES: Record<string, string> = {
-  NO_PARSED_DRAWINGS: "No processed IFC drawing yet. Upload an IFC and wait until its status is PARSED.",
+  NO_PARSED_DRAWINGS: "No processed IFC drawing and no confirmed PDF takeoff yet. Upload an IFC and wait until it is PARSED, or confirm some PDF takeoff measurements.",
+  DRAWING_NOT_PDF: "PDF takeoff only works on PDF drawings.",
+  SHEET_NOT_PREPARED: "Prepare this sheet first so its drawing can be read.",
+  SHEET_NOT_CALIBRATED: "Set the scale of this sheet first.",
+  SCALE_NEEDS_CONFIRMATION: "The printed scale is not confirmed by the sheet's dimensions. Check the scale on the sheet screen first.",
+  MEASUREMENT_NEEDS_WORK_ITEM: "Choose a work item before confirming.",
+  WORK_ITEM_RESERVED: "That work item is measured from bar schedules or the model, not from a PDF. Choose another.",
   RUN_IN_PROGRESS: "A calculation is already running for this project.",
   BOQ_IMMUTABLE: "This BOQ is locked in its current state and cannot be changed.",
   OPEN_BLOCKING_ISSUES: "Resolve or waive the blocking review issues first.",
@@ -18,7 +24,7 @@ const MESSAGES: Record<string, string> = {
   RUN_NOT_COMPLETED: "Impact is available once the run has completed.",
   RUN_STATE_UNAVAILABLE: "This run did not keep its dependency data, so impact cannot be shown. Run the calculation again.",
   ELEMENT_NOT_IN_RUN: "That element is not part of this run.",
-  DRAWING_NOT_ELIGIBLE: "Choose only current, parsed IFC drawings of this project.",
+  DRAWING_NOT_ELIGIBLE: "Choose only current, parsed IFC drawings, or current PDFs with confirmed takeoff, of this project.",
   UNKNOWN_CONVENTION: "That measurement convention is not known.",
   CONVENTION_OVERRIDE_NOT_ALLOWED: "The rule set decides the measurement convention. Clone the rule set to use another.",
   EXPORT_NOT_READY: "The export is not ready yet. Try again in a moment.",

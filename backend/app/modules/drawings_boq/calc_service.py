@@ -84,7 +84,9 @@ def _ledger_row(run: CalculationRun, e, stage: str = "measure") -> dict:
     "element_id": e.element_id, "level_id": e.level_id, "work_item_code": e.work_item_code,
     "quantity_net": e.quantity, "unit": e.unit, "material_grade": e.material_grade,
     "source_kind": getattr(e, "source_kind", "MODEL"), "confidence": e.confidence, "formula_code": e.formula_code,
-    "trace": e.trace, "warnings": list(e.warnings),
+     "trace": e.trace, "warnings": list(e.warnings),
+    "spec_key": getattr(e, "spec_key", None), "spec": getattr(e, "spec", None),
+    "spec_key": getattr(e, "spec_key", None), "spec": getattr(e, "spec", None),
     "engine_version": run.engine_version, "stage": stage,
   }
 
@@ -115,6 +117,10 @@ def _bar_mark_row(run: CalculationRun, m, stage: str = "reinforcement") -> dict:
   
 def engine_v2_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_v2_org_ids or "").split(",") if s.strip()}
+  return "*" in ids or str(org_id) in ids
+
+def engine_spec_enabled(org_id) -> bool:
+  ids = {s.strip() for s in (settings.engine_spec_org_ids or "").split(",") if s.strip()}
   return "*" in ids or str(org_id) in ids
 
 class CalculationService:
@@ -206,6 +212,8 @@ class CalculationService:
     effective_convention = rule_set.convention_code or convention_code
     ids = sorted((d.id for d in chosen), key=str)
     settings = {"scope": "building", "preferred_rule_code": rule_set_code, "project_id": str(project_id)}
+    if engine_spec_enabled(organization_id):
+      settings["spec"] = True
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
@@ -272,7 +280,7 @@ class CalculationService:
       **{k: v for k, v in counts.items() if isinstance(v, (int, float, str)) and not isinstance(v, bool)})
     return counts
 
-  async def _skip(self, run: CalculationRun, *names: str, reason: str = "not implemented in engine 2026.10.2") -> None:
+  async def _skip(self, run: CalculationRun, *names: str, reason: str = "skipped in this run") -> None:
     for name in names:
       await self.runs.log_skipped(run, name, reason)
     await self.session.commit()
@@ -350,6 +358,7 @@ class CalculationService:
         rule_set_version=rule_set.immutable_version, mappings=mappings,
         convention_params=convention_params, openings=p6.openings, spaces=p6.spaces,
         schedule_lines=p6.schedule_lines, rebar=p6.rebar, takeoff=p6.takeoff,
+        spec_mode=bool(run_settings.get("spec")),
       )
       state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
@@ -530,6 +539,10 @@ class CalculationService:
       await self._stage(run, "schedules", schedules, 78)
       await self._skip(run, "recipes", reason="not implemented in this engine version")
       await self._stage(run, "reinforcement", reinforcement, 79)
+      if p6.takeoff is not None and getattr(p6.takeoff, "measurements", None):
+        await self._stage(run, "pdf_takeoff", pdf_takeoff, 79)
+      else:
+        await self._skip(run, "pdf_takeoff", reason="no confirmed PDF takeoff measurements in this run")
       
       await self._stage(run, "self_check", check, 80)
 

@@ -15,9 +15,10 @@ from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar, self_ch
 from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UNITS, STEEL_REJECTED_CODE, STEEL_SOLID_PROFILE_FACTOR,
   STEEL_UNCERTAIN_FACTOR, UNCERTAIN_BASES, is_pile, is_steel_role, measure_steel, solid_profile_suspected, split_steel,
   steel_check, steel_duplicate_ids, steel_length_mm, steel_member_length_mm, steel_recoverable, steel_stats)
+from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.5"
+ENGINE_VERSION = "2026.10.6"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -115,11 +116,13 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     issues.append(_issue("ZERO_GROSS_VOLUME", "warning", "Gross volume rounds to zero."))
     status = "REVIEW_REQUIRED"
 
+  spec = derive_spec(el) if ctx.spec_mode else None
   return Solid(
     id=_solid_id(ctx, el.id), element_id=el.id, ifc_type=el.ifc_type, role=el.role,
     level_id=el.level_id, geometry_kind=kind,
     classification_confidence=el.classification_confidence, confidence_factor=factor,
     gross_volume_m3=gross, status=status, issues=tuple(issues), material_class=el.material_class,
+    material_grade=spec_grade(spec), spec=spec,
   )
 
 def _steel_flags(el: ModelElement, duplicate: bool):
@@ -239,6 +242,7 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
       continue
     
     warnings = [i["code"] for i in s.issues if i.get("severity") == "warning"]
+    warnings.extend(missing_spec_warnings(s.spec, bool(concrete_code) and mapping.work_item_code == concrete_code))
     warnings.extend(getattr(alloc, "solid_warnings", {}).get(s.id, ()))
     if s.id in getattr(alloc, "approximate_solids", ()):
       warnings.append("ALLOCATION_APPROXIMATE")
@@ -270,6 +274,8 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         inputs["material_class"] = s.material_class
       if redirect:
         inputs["work_item_redirect"] = redirect
+      if s.spec:
+        inputs["spec"] = s.spec
       steps = [
         {"op": "gross_volume", "m3": str(gross)},
       ]
@@ -318,6 +324,8 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         "rounding": "half_up,6dp",
       },
       warnings=tuple(dict.fromkeys(warnings)),
+      spec=s.spec,
+      spec_key=spec_key(s.spec),
     ))
 
   ledger.extend(measure_steel(ctx, solids))
@@ -362,12 +370,16 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
     seen.add(key)
     if not row.trace or "formula_code" not in row.trace:
       failures.append(f"missing trace on solid {row.solid_id}")
+    if row.formula_code == "SOLID_NET_VOLUME" and row.spec_key != spec_key(solid.spec):
+      failures.append(f"specification key differs from its solid on solid {row.solid_id}")
+      
     if row.formula_code == "SOLID_NET_VOLUME" and solid.gross_volume_m3 is not None:
       expected = q6(max(Decimal("0"), solid.gross_volume_m3 - ded_total.get(row.solid_id, Decimal("0"))))
       if row.quantity != expected:
         failures.append(f"net volume != gross - deductions on solid {row.solid_id}")
 
   failures.extend(takeoff_check(solids, ledger))
+  failures.extend(steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
@@ -389,6 +401,21 @@ def wall_material_stats(solids: list[Solid], ledger: list[LedgerEntry]) -> dict:
     "masonry": sum(1 for s in walls if s.material_class == "MASONRY"),
     "material_unknown": sum(1 for s in walls if not s.material_class),
     "billed_as_concrete": sum(1 for r in ledger if (r.trace.get("inputs") or {}).get("work_item_redirect")),
+  }
+
+def spec_stats(ctx: CalculationContext, ledger: list[LedgerEntry]) -> dict:
+  if not ctx.spec_mode:
+    return {"enabled": False}
+  rows = [r for r in ledger if r.spec]
+  def count(code):
+    return sum(1 for r in rows if code in r.warnings)
+  return {
+    "enabled": True, "rows_with_spec": len(rows),
+    "masonry_rows": sum(1 for r in rows if r.spec.get("kind") == "MASONRY"),
+    "concrete_rows": sum(1 for r in rows if r.spec.get("kind") == "CONCRETE"),
+    "mix_missing": count("SPEC_MIX_MISSING"), "mortar_missing": count("SPEC_MORTAR_MISSING"),
+    "thickness_missing": count("SPEC_THICKNESS_MISSING"),
+    "distinct_spec_keys": len({(r.work_item_code, r.material_grade, r.spec_key) for r in rows}),
   }
 
 def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> CalculationResult:
@@ -441,6 +468,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "pdf_takeoff": takeoff_res.stats if takeoff_res else {},
     "skipped_by_role": skipped,
     "wall_material": wall_material_stats(solids, ledger),
+    "spec": spec_stats(ctx, ledger),
     "steel": steel_stats(solids, ledger, rejected),
     "unmapped_by_type": unmapped,
     "rejected": [{"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code, "message": r.message} for r in rejected],

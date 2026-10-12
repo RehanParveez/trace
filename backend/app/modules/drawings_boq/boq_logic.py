@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import Callable, Iterable
 import hashlib
 import json
+from app.engine.measure.spec import describe_spec
 
 ZERO = Decimal("0")
 ONE = Decimal("1")
@@ -94,9 +95,12 @@ class LedgerLine:
   material_grade: str | None
   confidence: Decimal
   warnings: tuple = ()
+  spec_key: str | None = None
+  spec: dict | None = None
 
 @dataclass(frozen=True)
 class WorkItemInfo:
+
   code: str
   description: str
   unit: str
@@ -129,22 +133,25 @@ class ItemDraft:
   formula_text: str
   element_count: int
   lines: list = field(default_factory=list)
+  spec_key: str | None = None
+  spec: dict | None = None
 
-def make_item_key(code: str, unit: str, grade: str | None, level) -> str:
-  return f"{code}|{unit}|{grade or '-'}|{level or '-'}"
+def make_item_key(code: str, unit: str, grade: str | None, level, spec_key: str | None = None) -> str:
+  key = f"{code}|{unit}|{grade or '-'}|{level or '-'}"
+  return f"{key}|{spec_key}" if spec_key else key
 
 def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict | None,
   work_items: dict, waste_for: Callable[[str | None], Decimal]):
   groups: dict = {}
   for ln in lines:
     level = ln.level_id if scope == "level" else None
-    groups.setdefault((ln.work_item_code, ln.unit, ln.material_grade or None, level), []).append(ln)
+    groups.setdefault((ln.work_item_code, ln.unit, ln.material_grade or None, ln.spec_key or None, level), []).append(ln)
 
   drafts: list[ItemDraft] = []
   unknown: set = set()
   mismatch: set = set()
-  for key in sorted(groups, key=lambda k: (k[0], k[1], k[2] or "", str(k[3] or ""))):
-    code, unit, grade, level = key
+  for key in sorted(groups, key=lambda k: (k[0], k[1], k[2] or "", k[3] or "", str(k[4] or ""))):
+    code, unit, grade, spec_key, level = key
     group = sorted(groups[key], key=lambda l: (str(l.element_id), str(l.id)))
     wi = work_items.get(code)
     if wi is None:
@@ -162,8 +169,12 @@ def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict 
     flagged = confidence < LOW_CONFIDENCE_THRESHOLD or any(
       w in REVIEW_WARNING_CODES for l in group for w in l.warnings)
     description = wi.description if wi else code
+    spec = next((l.spec for l in group if l.spec), None)
+    label = describe_spec(spec)
+    if label:
+      description = f"{description} ({label})"
     drafts.append(ItemDraft(
-      item_key=make_item_key(code, unit, grade, level), work_item_code=code, level_id=level,
+      item_key=make_item_key(code, unit, grade, level, spec_key), work_item_code=code, level_id=level,
       material_grade=grade, canonical_unit=unit, unit=display, unit_factor=factor,
       canonical_total=total, net_quantity=net, waste_factor=waste, confidence=confidence,
       review_status="REVIEW_REQUIRED" if flagged else "OK",
@@ -291,8 +302,19 @@ LEDGER_WARNING_CATALOG = {
     "A PDF measurement was added on top of a model quantity for the same work item, by choice.", None),
   "PDF_REPLACES_MODEL": ("info", "NONE",
     "A PDF measurement replaced the model quantity for the same work item, by choice.", None),
-  "OPENINGS_NOT_DEDUCTED": ("info", "NONE", "Wall volumes are gross of door and window openings.",
-    "Opening deductions arrive with finishes and schedules; use an adjustment if one is needed now."),
+  "OPENINGS_NOT_DEDUCTED": ("info", "NONE",
+    "No door or window opening was deducted from these wall volumes, so they are gross of openings.",
+    "Check that the rule set has opening rules and that the doors and windows in the model have sizes and sit in these walls; "
+    "otherwise enter an adjustment."),
+  "SPEC_MIX_MISSING": ("info", "NONE",
+    "The model does not state a concrete mix or grade for these elements, so they are grouped without one.",
+    "Give the concrete a material name that carries the mix (for example Reinforced Concrete 1:2:4 or M20), or confirm the mix with the engineer."),
+  "SPEC_MORTAR_MISSING": ("info", "NONE",
+    "The model does not state a mortar ratio for these masonry walls, so they are grouped without one.",
+    "Read the mortar ratio from the drawing notes or specification and set it on the rule set or the wall material."),
+  "SPEC_THICKNESS_MISSING": ("warning", "NONE",
+    "The model does not give a thickness for these masonry walls, so walls of different thickness may be grouped together.",
+    "Give the walls a thickness in the model, or check them one by one."),
   "SAME_ROLE_OVERLAP": ("warning", "NONE", "Elements of the same role overlap; the lowest element id owns the shared volume.",
     "Check these overlaps in the model."),
   "ALLOCATION_APPROXIMATE": ("warning", "NONE", "Overlaps were allocated from bounding boxes, not exact footprints.",
