@@ -84,8 +84,13 @@ function buildOrganizationNav(
       icon: "budget",
     },
     {
-      label: t("nav.calculation"),
-      to: "/app/drawings_boq/calculation",
+      label: t("nav.recalculation"),
+      to: "/app/drawings_boq/recalculation",
+      icon: "trend",
+    },
+    {
+      label: t("nav.takeoff"),
+      to: "/app/drawings_boq/takeoff",
       icon: "trend",
     },
     {

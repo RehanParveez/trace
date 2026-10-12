@@ -83,8 +83,10 @@ def page_geometry(contents: bytes) -> list[dict]:
     
     if reader.is_encrypted:
       try:
-        reader.decrypt("")
+        unlocked = int(reader.decrypt(""))
       except Exception:
+        unlocked = 0
+      if not unlocked:
         raise TraceException("This PDF is password protected.", status_code=422, code="PDF_ENCRYPTED")
     pages = list(reader.pages)
   except TraceException:
@@ -386,13 +388,13 @@ class TakeoffService:
       from app.modules.drawings_boq.takeoff.prep_service import PrepService
       source = await PrepService(self.session).verified_source(org, sheet, payload.kind, geometry, source, payload.tag)
     m = TakeoffMeasurement(
-      id=uuid4(), organization_id=org, sheet_id=sheet.id,
+      id=uuid4(), organization_id=org, project_id=sheet.project_id, sheet_id=sheet.id,
       calibration_id=cal.id if cal is not None else None, kind=payload.kind, quantity_mode=payload.quantity_mode,
       geometry=geometry, params=self._params_json(payload.params), work_item_code=code,
       level_id=payload.level_id if payload.level_id is not None else sheet.level_id,
       label=(payload.label or "").strip() or None, tag=(payload.tag or "").strip() or None,
       material_grade=(payload.material_grade or "").strip() or None, recon_mode=payload.recon_mode, source=source,
-      status="DRAFT", geometry_hash=tk.geometry_hash(payload.kind, geometry), created_by_user_id=user_id)
+        status="DRAFT", geometry_hash=tk.geometry_hash(payload.kind, geometry), created_by_user_id=user_id)
     m.computed = self._evaluate(m, sheet, cal, await self._profile(org))
     self.session.add(m)
     await self.session.flush()

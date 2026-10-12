@@ -42,8 +42,9 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
     const selected = event.target.files?.[0] ?? null;
     setError(null);
 
-    if (selected && !selected.name.toLowerCase().endsWith(".ifc")) {
-      setError(t("drawings.upload.ifcOnly"))
+    const lowerName = selected?.name.toLowerCase() ?? "";
+    if (selected && !lowerName.endsWith(".ifc") && !lowerName.endsWith(".pdf")) {
+      setError(t("drawings.upload.typeError", "Choose an .ifc file for automatic BOQ generation, or a .pdf to measure by hand."));
       setFile(null);
       return;
     }
@@ -89,10 +90,10 @@ export function DrawingUploadDialog({ projectId, onClose }: DrawingUploadDialogP
         >
           <Icon name="download" size={20} className="text-[var(--color-text-muted)]" />
           <span className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">{file ? file.name : t("drawings.upload.chooseFile")}</span>
-          <span className="text-[12px] text-[var(--color-text-muted)]">{file ? formatFileSize(file.size) : t("drawings.upload.ifcOnlyHint")}</span>
+          <span className="text-[12px] text-[var(--color-text-muted)]">{file ? formatFileSize(file.size) : t("drawings.upload.typeHint", "IFC (automatic BOQ) or PDF (reference drawing, measure by hand)")}</span>
         </button>
 
-        <input ref={inputRef} type="file" accept=".ifc" onChange={handleFileChange} className="hidden" />
+        <input ref={inputRef} type="file" accept=".ifc,.pdf" onChange={handleFileChange} className="hidden" />
 
         {error ? (
           <div className="rounded-[8px] border border-[var(--color-danger)]/30 bg-[var(--color-danger-bg)] px-3 py-2 text-[12px] text-[var(--color-danger)]">{error}</div>

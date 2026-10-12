@@ -37,6 +37,7 @@ import { CashFlowPage } from "../modules/cash_flow";
 import { StandardsPage } from "../modules/drawings_boq/standards";
 import { RateBookDetailPage, RateBooksPage } from "../modules/drawings_boq/pricing";
 import { CalculationInsightsPage } from "../modules/drawings_boq/recalculation";
+import { TakeoffPage } from "../modules/drawings_boq/takeoff";
 
 export const router = createBrowserRouter([
   {
@@ -205,6 +206,10 @@ export const router = createBrowserRouter([
     {
       path: "recalculation",
       element: <CalculationInsightsPage />,
+    },
+    {
+      path: "takeoff",
+      element: <TakeoffPage />,
     },
    ],
   },
