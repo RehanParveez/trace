@@ -619,6 +619,7 @@ async def start_calculation_run(
     force_full=payload.force_full,
     verify=payload.verify,
     confirm_overlap=payload.confirm_overlap,
+    derived_params=payload.derived_params.model_dump(exclude_none=True) if payload.derived_params else None,
   )
   if reused:
     response.status_code = 200

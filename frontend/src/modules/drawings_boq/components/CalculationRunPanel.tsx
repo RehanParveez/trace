@@ -14,6 +14,9 @@ import { ledgerRangeText } from "./SteelRebarRange";
 import { RebarMarksPanel } from "./RebarMarksPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
 import { RunScope } from "./RunScope";
+import { DerivedParamsForm } from "./DerivedParamsForm";
+import { derivedParamsFromInput } from "../utils/derived";
+import type { DerivedInput } from "../utils/derived";
 import {CalcUsagePanel, ElementImpactButton, RunFailureNotice, RunMetricsPanel, RunModeBadge, RunOptionsFields, RunStartNotice, classifyStartError, formatDurationMs, formatMb, useScaleT,
 } from "../recalculation";
 import type { RunOptions, StartRunError } from "../recalculation";
@@ -61,6 +64,10 @@ export function CalculationRunPanel({
     });
   const [startError, setStartError] =
     useState<StartRunError | null>(null);
+  const [derivedInput, setDerivedInput] =
+    useState<DerivedInput>({});
+  const derivedCheck =
+    derivedParamsFromInput(derivedInput);
   const ts = useScaleT();
   const startRun =
     useStartCalculationRun(projectId);
@@ -106,6 +113,9 @@ export function CalculationRunPanel({
   }
 
   function submit(confirmOverlap: boolean) {
+    if (derivedCheck.errors.length > 0) {
+      return;
+    }
     startRun.mutate(
       {
         drawing_ids: selectedIds,
@@ -115,6 +125,7 @@ export function CalculationRunPanel({
         force_full: options.force_full,
         verify: options.force_full ? false : options.verify,
         confirm_overlap: confirmOverlap || undefined,
+        derived_params: derivedCheck.params,
       },
       {
         onError: (error) => {
@@ -181,7 +192,8 @@ export function CalculationRunPanel({
             size="sm"
             disabled={
               startRun.isPending ||
-              selectedIds.length === 0
+              selectedIds.length === 0 ||
+              derivedCheck.errors.length > 0
             }
             onClick={start}
           >
@@ -228,6 +240,12 @@ export function CalculationRunPanel({
         <RunOptionsFields
           value={options}
           onChange={setOptions}
+          disabled={startRun.isPending}
+        />
+
+        <DerivedParamsForm
+          value={derivedInput}
+          onChange={setDerivedInput}
           disabled={startRun.isPending}
         />
 

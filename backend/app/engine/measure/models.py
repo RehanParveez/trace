@@ -24,6 +24,9 @@ class ModelElement:
   thickness_mm: Decimal | None = None
   material_text: str | None = None
   volume_check: str | None = None
+  layers: tuple | None = None
+  generic_material: bool = False
+  height_mm: Decimal | None = None
 
 @dataclass(frozen=True)
 class MappingInput:
@@ -48,6 +51,9 @@ class CalculationContext:
   takeoff: object = None
   spec_mode: bool = False
   stage_mode: bool = False
+  layer_mode: bool = False
+  derived_mode: bool = False
+  derived_params: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class Solid:
@@ -70,6 +76,7 @@ class Solid:
   material_class: str | None = None
   spec: dict | None = None
   volume_check: str | None = None
+  generic_material: bool = False
 
 @dataclass(frozen=True)
 class LedgerEntry:

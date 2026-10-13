@@ -9,6 +9,7 @@ import type { BOQItem } from "../types/drawings-boq.types";
 import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity, stageSortKey
 } from "../utils/drawings-boq.utils";
 import { useStageLabel } from "./StageBadge";
+import { DerivedBadge } from "./DerivedWorks";
 import { BOQItemTraceDialog } from "./BOQItemTraceDialog";
 import { BOQItemAdjustmentsDialog } from "./BOQItemAdjustmentsDialog";
 import { OverrideFormDialog } from "../pricing/components/OverrideFormDialog";
@@ -328,6 +329,12 @@ export function BOQItemTable({
                       {item.category ? (
                         <span className="mt-0.5 block text-[12px] text-[var(--color-text-secondary)]">
                           {item.category}
+                        </span>
+                      ) : null}
+
+                      {item.spec?.kind === "DERIVED" ? (
+                        <span className="mt-1 block">
+                          <DerivedBadge spec={item.spec} />
                         </span>
                       ) : null}
                     </td>

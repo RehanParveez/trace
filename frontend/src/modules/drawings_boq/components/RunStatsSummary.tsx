@@ -59,6 +59,9 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
 
   const sp = stats.spec;
   const st = stats.stages;
+  const ly = stats.layers;
+  const dv = stats.derived;
+  const genericMaterial = Number(stats.material?.generic_elements ?? 0);
 
   return (
     <div className="space-y-4">
@@ -161,6 +164,58 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
             {t("boq.calculationRun.stagesNotDerived", "Quantities were not split by stage of work")}: {st.reason ?? "—"}
           </div>
         )
+      ) : null}
+
+            {ly?.enabled ? (
+        <Section title={t("boq.calculationRun.statsLayers", "Wall layers")}>
+          <Stat label={t("boq.calculationRun.statLayerSplit", "Rows split by layer")} value={ly.rows_split ?? 0} />
+          <Stat label={t("boq.calculationRun.statLayerMerged", "Layers of one material")} value={ly.rows_merged ?? 0} />
+          <Stat label={t("boq.calculationRun.statLayerNotSplit", "Left whole")} value={ly.rows_not_split ?? 0} tone={Number(ly.rows_not_split ?? 0) > 0 ? "gold" : undefined} />
+          <Stat label={t("boq.calculationRun.statLayerMismatch", "Thickness differs from layers")} value={ly.rows_mismatch ?? 0} tone={Number(ly.rows_mismatch ?? 0) > 0 ? "gold" : undefined} />
+          <Stat label={t("boq.calculationRun.statLayerFinish", "Finish layers left out (m³)")} value={formatPrecise(ly.finish_excluded_m3 ?? 0, 3)} />
+          <Stat label={t("boq.calculationRun.statLayerUnpriced", "Unpriced layers left out (m³)")} value={formatPrecise(ly.unpriced_m3 ?? 0, 3)} tone={Number(ly.unpriced_m3 ?? 0) > 0 ? "gold" : undefined} />
+        </Section>
+      ) : null}
+
+      {dv?.enabled ? (
+        dv.ran ? (
+          <div className="space-y-3">
+            <Section title={t("boq.calculationRun.statsDerived", "Derived works (below ground)")}>
+              <Stat label={t("boq.calculationRun.statDerivedFoundations", "Footings")} value={dv.foundations ?? 0} />
+              <Stat label={t("boq.calculationRun.statDerivedExcavation", "Excavation (m³)")} value={formatPrecise(dv.excavation_m3 ?? 0, 3)} />
+              <Stat label={t("boq.calculationRun.statDerivedPcc", "PCC bed (m³)")} value={formatPrecise(dv.pcc_m3 ?? 0, 3)} />
+              <Stat label={t("boq.calculationRun.statDerivedBackfill", "Backfill (m³)")} value={formatPrecise(dv.backfill_m3 ?? 0, 3)} />
+              <Stat label={t("boq.calculationRun.statDerivedBuried", "Structure in the trench (m³)")} value={formatPrecise(dv.buried_m3 ?? 0, 3)} />
+              <Stat label={t("boq.calculationRun.statDerivedBox", "Footings taken as rectangles")} value={dv.box_footprints ?? 0} tone={Number(dv.box_footprints ?? 0) > 0 ? "gold" : undefined} />
+            </Section>
+            {(dv.assumed?.length ?? 0) > 0 || dv.ngl_assumed ? (
+              <div>
+                <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+                  {t("boq.calculationRun.derivedAssumedLabel", "Assumed (not given)")}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[...(dv.assumed ?? []), ...(dv.ngl_assumed ? ["ngl"] : [])].map((name) => (
+                    <span key={name} className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 text-[11px] text-[var(--color-warning)]">
+                      {t(`boq.derived.param.${name}`, name)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
+            {dv.reason === "ALL_ITEMS_IN_MODEL"
+              ? t("boq.calculationRun.derivedModelHas", "The model already draws excavation or PCC, so none was derived.")
+              : `${t("boq.calculationRun.derivedNotRun", "Excavation, PCC and backfill were not worked out")}: ${dv.reason ?? "—"}`}
+          </div>
+        )
+      ) : null}
+
+      {genericMaterial > 0 ? (
+        <Section title={t("boq.calculationRun.statsMaterial", "Material")}>
+          <Stat label={t("boq.calculationRun.statMaterialGeneric", "Elements with a generic material")} value={genericMaterial} tone="gold" />
+        </Section>
       ) : null}
 
       {o ? (

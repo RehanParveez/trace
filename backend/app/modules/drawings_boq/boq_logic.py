@@ -41,6 +41,7 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -382,6 +383,37 @@ LEDGER_WARNING_CATALOG = {
   "STEEL_MATERIAL_UNCERTAIN": ("warning", "NONE",
     "The material only says metal or iron, or steel was inferred from the element name, so it may not be structural steel.",
     "Give the member a steel material (for example Steel S275) in the model."),
+    "LAYER_FINISH_EXCLUDED": ("info", "NONE",
+    "The wall is built up of layers in the model. The plaster, paint and other finish layers were taken out of the masonry volume, "
+    "so the brickwork is measured at its own thickness only.",
+    "Nothing to do. Plaster and paint are measured separately from the room finishes."),
+  "LAYER_UNPRICED": ("warning", "NONE",
+    "A layer of this element (for example insulation, a membrane or a cavity) has no work item, so it is not in the BOQ. "
+    "The element's volume was reduced by it.",
+    "Map this layer family to a work item on the rule set (a mapping named LAYER:<FAMILY>), or confirm it is not to be billed."),
+  "LAYER_THICKNESS_MISMATCH": ("warning", "NONE",
+    "The layers of this element add up to a different thickness from the element's own width in the model. "
+    "The layers were scaled to the element's volume.",
+    "Check the layer thicknesses in the model."),
+  "LAYER_NOT_SPLIT": ("warning", "NONE",
+    "None of this element's layers could be matched to a billable work item, so the element was left whole as one material.",
+    "Check the material layers of this element in the model, or map the layer families to work items on the rule set."),
+  "MATERIAL_GENERIC": ("warning", "NONE",
+    "The model gives this element no real material (it says generic, default or nothing), so the grade or mortar could not be read "
+    "and the masonry or concrete class is a guess.",
+    "Give the element a material in the model, for example Brick or Concrete C25."),
+  "DERIVED_ASSUMED": ("warning", "NONE",
+    "This quantity is not drawn in the model. It is worked out from the foundation using site assumptions that were not given "
+    "(working space, PCC projection or PCC thickness), so standard values were used.",
+    "Confirm the working space, PCC projection and PCC thickness for this site when starting the run."),
+  "DERIVED_NGL_ASSUMED": ("warning", "NONE",
+    "The natural ground level is not in the model, so the excavation and backfill depth was worked out from an assumed level "
+    "below the floor level.",
+    "Give the natural ground level (how far below floor level) when starting the run."),
+  "DERIVED_BOX_FOOTPRINT": ("warning", "NONE",
+    "The foundation has no exact outline in the model, so its bounding rectangle was used for the excavation and PCC. "
+    "A foundation that is not rectangular is overstated.",
+    "Re-upload the model with the current reader so outlines are stored."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
@@ -400,6 +432,25 @@ def stage_issue_specs(stats: dict) -> list[IssueSpec]:
     code="STAGES_NOT_DERIVED", severity="info", blocks="NONE", dedupe_key="STAGES_NOT_DERIVED",
     message=f"Quantities were not split by stage of work because {STAGE_REASON_TEXT.get(reason, reason)}.",
     suggested_fix="Check the doors and the floor slabs in the model, or set the reference levels on the measurement convention.",
+    details={"reason": reason})]
+  
+DERIVED_REASON_TEXT = {
+  "NO_RECIPE": "the rule set has no footing preparation recipe (excavation and PCC under footings)",
+  "ALL_ITEMS_IN_MODEL": "the model already draws these items",
+  "NO_FOUNDATIONS": "the model has no footings",
+  "TOO_MANY_FOUNDATIONS": "the model has more footings than the derived works can handle in one run",
+}
+
+def derived_issue_specs(stats: dict) -> list[IssueSpec]:
+  if not stats.get("enabled") or stats.get("ran"):
+    return []
+  reason = stats.get("reason") or "UNKNOWN"
+  if reason == "ALL_ITEMS_IN_MODEL":
+    return []
+  return [IssueSpec(
+    code="DERIVED_NOT_RUN", severity="info", blocks="NONE", dedupe_key="DERIVED_NOT_RUN",
+    message=f"Excavation, PCC and backfill were not worked out because {DERIVED_REASON_TEXT.get(reason, reason)}.",
+    suggested_fix="Add the footing preparation recipe to the rule set, or measure these items another way.",
     details={"reason": reason})]
 
 def takeoff_issue_specs(stats: dict) -> list[IssueSpec]:

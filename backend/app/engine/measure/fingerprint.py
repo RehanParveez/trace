@@ -15,6 +15,8 @@ def _element_key(e) -> dict:
     "th": str(e.thickness_mm) if getattr(e, "thickness_mm", None) is not None else None,
     "mt": getattr(e, "material_text", None),
     "vc": getattr(e, "volume_check", None),
+    "ly": getattr(e, "layers", None),
+    "gm": getattr(e, "generic_material", False),
   }
 
 def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,

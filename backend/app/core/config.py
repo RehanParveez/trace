@@ -77,6 +77,8 @@ class Settings(BaseSettings):
   engine_v2_org_ids: str = ""
   engine_spec_org_ids: str = ""
   engine_stage_org_ids: str = ""
+  engine_layer_org_ids: str = ""
+  engine_derived_org_ids: str = ""
   
   engine_default_convention: str = "FRAME_MONOLITHIC_A"
 

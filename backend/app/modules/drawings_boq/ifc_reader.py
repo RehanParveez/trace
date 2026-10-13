@@ -278,6 +278,34 @@ def _material_text(element) -> str | None:
     return None
   unique = list(dict.fromkeys(names))
   return " / ".join(unique)[:MATERIAL_TEXT_MAX]
+
+MAX_LAYERS = 30
+
+def _material_layers(element, scales) -> list[dict]:
+  """The layers of a layered element (wall, slab, roof), outside first, as the model gives them."""
+  try:
+    material = ifcopenshell.util.element.get_material(element)
+    if material is None:
+      return []
+    if material.is_a("IfcMaterialLayerSetUsage"):
+      layer_set = material.ForLayerSet
+    elif material.is_a("IfcMaterialLayerSet"):
+      layer_set = material
+    else:
+      return []
+    
+    out: list[dict] = []
+    for layer in list(layer_set.MaterialLayers or [])[:MAX_LAYERS]:
+      thickness = getattr(layer, "LayerThickness", None)
+      mm = round(float(thickness) * scales.mm_per_unit, 3) if thickness else None
+      out.append({
+        "name": _clean(getattr(layer, "Name", None)),
+        "material": _clean(getattr(layer.Material, "Name", None)) if getattr(layer, "Material", None) is not None else None,
+        "thickness_mm": mm if mm and mm > 0 else None,
+      })
+    return out
+  except Exception:
+    return []
  
 @lru_cache(maxsize=None)
 def _type_chain(schema_id: str, ifc_type: str) -> tuple[str, ...]:
@@ -713,6 +741,7 @@ def _normalise_element(
  
   role, class_source, class_conf = _classify(element, psets, schema_id)
   material = _material_text(element)
+  layers = _material_layers(element, scales)
   ifc_type = element.is_a()
   issues: list[dict] = []
  
@@ -859,6 +888,9 @@ def _normalise_element(
     "predefined_type": _clean(getattr(element, "PredefinedType", None)),
     "object_type": _clean(getattr(element, "ObjectType", None)),
   }
+  
+  if len(layers) > 1:
+    properties["_ifc"]["layers"] = layers
  
   bbox_min = bbox_max = None
   if geometry.bbox_min is not None and geometry.bbox_max is not None:

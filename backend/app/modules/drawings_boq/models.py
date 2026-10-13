@@ -77,7 +77,8 @@ class LedgerSourceKind(str, enum.Enum):
   MODEL = "MODEL"
   SCHEDULE_IMPORT = "SCHEDULE_IMPORT"  
   MANUAL = "MANUAL"                     
-  ESTIMATE = "ESTIMATE"         
+  ESTIMATE = "ESTIMATE"    
+  DERIVED = "DERIVED"     
   
 class DeductionType(str, enum.Enum):
   OVERLAP_ALLOCATION = "OVERLAP_ALLOCATION"
@@ -261,7 +262,7 @@ _RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED','COMPLETED','FAILED','CA
 _ACTIVE_RUN_STATUSES = "'QUEUED','RUNNING','STAGED','PROMOTED'"
 _SOLID_STATUSES = "'OK','REVIEW_REQUIRED','REJECTED'"
 _GEOMETRY_KINDS = "'EXTRUDED_PROFILE','AXIS_SWEPT','BOX_ONLY','QTO_ONLY','UNSUPPORTED'"
-_LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE','PDF_TAKEOFF'"
+_LEDGER_SOURCES = "'MODEL','SCHEDULE_IMPORT','MANUAL','ESTIMATE','PDF_TAKEOFF','DERIVED'"
 _CANONICAL_UNITS = "'m3','m2','m','kg','nos'"
 _DEDUCTION_TYPES = "'OVERLAP_ALLOCATION','EXTENT_TRIMMING','VOID_DEDUCTION','MATERIAL_SUBSTITUTION','MEASUREMENT_CONVENTION'"
 _LIFECYCLES = "'DRAFT','CALCULATING','CALCULATED','UNDER_REVIEW','APPROVED','ISSUED','SUPERSEDED','ARCHIVED'"
@@ -920,11 +921,9 @@ class BOQItem(Base, TimestampMixin):
     nullable=True,
   )
   material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
   spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
   spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-  
-  work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
-
   canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
   unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
 
@@ -1993,9 +1992,6 @@ class _SolidColumns:
     ForeignKey("building_levels.id", ondelete="SET NULL"),
     nullable=True,
   )
-  
-  spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
-  spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
  
   role: Mapped[str] = mapped_column(String(30), nullable=False, default="UNKNOWN")   
   component_type: Mapped[str] = mapped_column(String(30), nullable=False, default="BODY")  
@@ -2082,6 +2078,8 @@ class _LedgerColumns:
   material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
   
   work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
+  spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
  
   source_kind: Mapped[str] = mapped_column(
     String(20),
@@ -2110,7 +2108,6 @@ class QuantityLedger(_LedgerColumns, Base, TimestampMixin):
   
   __table_args__ = (
     UniqueConstraint("id", "organization_id", name="uq_quantity_ledger_id_org"),
-    UniqueConstraint("run_id", "solid_id", "work_item_code", name="uq_quantity_ledger_run_solid_work_item"),
     Index("uq_quantity_ledger_run_solid_work_item_stage", "run_id", "solid_id", "work_item_code", text("coalesce(work_stage, '')"), unique=True),
     
     ForeignKeyConstraint(

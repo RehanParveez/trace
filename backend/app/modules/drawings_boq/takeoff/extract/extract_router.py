@@ -3,13 +3,14 @@ from app.modules.identity.models import User
 from uuid import UUID
 from app.modules.identity.enums import PermissionKey
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import (ExtractResponse, ExtractRequest, AcceptRequest, AcceptResponse, CandidateListResponse, DecideRequest, DecideResponse, 
-  DrawingCandidatesResponse, DrawingExtractResponse,
+  DrawingCandidatesResponse, DrawingExtractResponse, RegisterSyncResponse
 )
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends
 from app.dependencies.permissions import require_permission
 from app.core.database import get_db
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
+from app.modules.drawings_boq.takeoff.register_service import RegisterService
 
 router = APIRouter()
 
@@ -61,4 +62,10 @@ async def reject_candidates(
 async def restore_candidates(
   payload: DecideRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
-  return await ExtractService(session).restore(_org(current_user), current_user.id, payload.ids)
+    return await ExtractService(session).restore(_org(current_user), current_user.id, payload.ids)
+
+@router.post("/drawings/{drawing_id}/takeoff/register", response_model=RegisterSyncResponse)
+async def sync_register(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await RegisterService(session).sync_and_commit(_org(current_user), drawing_id)

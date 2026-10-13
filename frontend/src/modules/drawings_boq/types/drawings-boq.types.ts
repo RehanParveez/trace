@@ -75,7 +75,7 @@ export interface DrawingElement {
   level_sequence?: number | null;
   measured_as?: string | null;
   predefined_type?: string | null;
-  measure_mode?: "EXACT" | "APPROXIMATE" | "NONE" | null;
+  measure_mode?: "EXACT" | "APPROXIMATE" | "NONE" | "PDF_MEASURED" | "PDF_FOUND" | null;
 }
 
 export interface BuildingLevel {
@@ -379,6 +379,7 @@ export interface CalculationRunCreateRequest {
   force_full?: boolean;
   verify?: boolean;
   confirm_overlap?: boolean;
+  derived_params?: DerivedParams;
 }
 
 export interface RunScopeOverlap {
@@ -1234,6 +1235,9 @@ export interface RunStats {
   wall_material?: WallMaterialStats
   spec?: SpecStats;
   stages?: StageStats;
+  layers?: LayerStats;
+  derived?: DerivedStats;
+  material?: MaterialStats;
   coverage?: CoverageStats;
   confidence?: ConfidenceStats;
 }
@@ -1255,11 +1259,15 @@ export interface ConfidenceStats {
 }
 
 export interface BOQItemSpec {
-  kind: "MASONRY" | "CONCRETE";
+  kind: "MASONRY" | "CONCRETE" | "DERIVED";
   thickness_mm?: number;
   mortar?: string;
   grade?: string;
   basis?: Record<string, string>;
+  recipe?: string;
+  item?: string;
+  params?: Record<string, number>;
+  ngl_z_mm?: number;
 }
 
 export interface SpecStats {
@@ -1290,6 +1298,65 @@ export interface StageStats {
   rows_not_split?: number;
   rows_unresolved?: number;
   rows_by_stage?: Record<string, number>;
+}
+
+export interface DerivedParams {
+  working_space_mm?: number;
+  pcc_projection_mm?: number;
+  pcc_thickness_mm?: number;
+  ngl_below_ffl_mm?: number;
+}
+
+export type DerivedParamName = keyof DerivedParams;
+
+export interface DerivedParamUsed {
+  value: number;
+  source: "user" | "convention" | "default";
+}
+
+export interface DerivedStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  skipped_items?: Record<string, string>;
+  params?: Record<string, DerivedParamUsed>;
+  ngl?: { z_mm: number; source: "user" | "convention" | "default"; note: string };
+  skipped?: Record<string, number>;
+  foundations?: number;
+  rows?: number;
+  excavation_m3?: string;
+  pcc_m3?: string;
+  backfill_m3?: string;
+  buried_m3?: string;
+  assumed?: string[];
+  ngl_assumed?: boolean;
+  box_footprints?: number;
+}
+
+export interface LayerStats {
+  enabled: boolean;
+  rows_split?: number;
+  rows_merged?: number;
+  rows_not_split?: number;
+  rows_mismatch?: number;
+  finish_excluded_m3?: string;
+  unpriced_m3?: string;
+  unpriced_by_family?: Record<string, string>;
+}
+
+export interface MaterialStats {
+  generic_elements: number;
+}
+
+export interface LayerSplitTrace {
+  of_m3: string;
+  total_thickness_mm: string;
+  declared_thickness_mm: string | null;
+  excluded_m3: string;
+  layers: { material: string; family: string; thickness_mm: string }[];
+  family: string;
+  billed_thickness_mm: string;
+  share: string;
 }
 
 export interface WallMaterialStats {
@@ -1347,7 +1414,7 @@ export type BOQItemSourceKind =
   | "MODEL"
   | "SCHEDULE_IMPORT"
   | "MANUAL"
-  | "ESTIMATE";
+  | "ESTIMATE"
 
 export type ItemReviewStatus = "OK" | "REVIEW_REQUIRED" | "WAIVED";
 
@@ -1380,7 +1447,8 @@ export type LedgerSourceKind =
   | "MODEL"
   | "SCHEDULE_IMPORT"
   | "MANUAL"
-  | "ESTIMATE";
+  | "ESTIMATE"
+  | "DERIVED";
 
 export type DeductionType =
   | "OVERLAP_ALLOCATION"

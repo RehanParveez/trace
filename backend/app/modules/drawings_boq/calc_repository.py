@@ -343,8 +343,11 @@ class CalculationRunRepository:
       e.volume_mm3, e.bbox_min_x_mm, e.bbox_min_y_mm, e.bbox_min_z_mm, e.bbox_max_x_mm, e.bbox_max_y_mm,
       e.bbox_max_z_mm, e.classification_confidence, e.normalization_status, e.raw_material_text, e.thickness_mm,
       e.properties["_ifc"]["material_family"].as_string().label("material_family"), e.normalization_issues,
-    ).where(e.drawing_id == drawing_id, e.organization_id == organization_id).execution_options(
-      yield_per=fetch_rows or int(settings.calc_element_fetch_rows))
+      e.height_mm, e.properties["_ifc"]["layers"].label("layers"),
+    ).where(
+      e.drawing_id == drawing_id, e.organization_id == organization_id,
+      or_(e.properties["source"].as_string().is_(None), e.properties["source"].as_string() != "pdf_takeoff"),
+    ).execution_options(yield_per=fetch_rows or int(settings.calc_element_fetch_rows))
     result = await self.session.stream(stmt)
     
     async for r in result:
@@ -361,6 +364,9 @@ class CalculationRunRepository:
         material_basis=steel_material_basis(r.structural_role, r.raw_material_text, r.material_family),
         thickness_mm=r.thickness_mm, material_text=r.raw_material_text,
         volume_check=volume_check(r.normalization_issues),
+        height_mm=r.height_mm,
+        layers=tuple(r.layers) if isinstance(r.layers, list) and r.layers else None,
+        generic_material=any(isinstance(i, dict) and i.get("code") == "MISSING_MATERIAL" for i in (r.normalization_issues or ())),
       )
 
   async def shared_global_ids(self, organization_id: UUID, drawing_ids: list[UUID]):

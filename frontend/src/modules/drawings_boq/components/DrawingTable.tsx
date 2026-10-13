@@ -90,7 +90,6 @@ export function DrawingTable({
         }
       />
 
-
       {currentDrawings.length === 0 ? (
         <EmptyState
           icon="building"
@@ -209,6 +208,15 @@ export function DrawingTable({
                                   : t("drawings.suggest.button")}
                               </Button>
                             ) : null}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={drawing.status !== "PARSED"}
+                              onClick={() => onView(drawing)}
+                              title={t("drawings.table.viewPdfElementsTitle", "Items read from this PDF's sheets")}
+                            >
+                              {t("drawings.table.viewElements")}
+                            </Button>
                           </>
                         ) : (
                           <Button

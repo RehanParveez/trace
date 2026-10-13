@@ -6,6 +6,7 @@ from decimal import Decimal
 import time
 from uuid import UUID
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
+from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
 from app.modules.drawings_boq.models import TakeoffExtraction, TakeoffCandidate
 from app.modules.audit.models import AuditAction
@@ -87,6 +88,15 @@ class ExtractService:
     if changed:
       await self.session.flush()
     return changed
+
+  async def _sync_register(self, org: UUID, sheet_ids) -> None:
+    try:
+      drawings = {(await self.core._sheet(org, sid)).drawing_id for sid in set(sheet_ids)}
+      for drawing_id in drawings:
+        async with self.session.begin_nested():
+          await RegisterService(self.session).sync_drawing(org, drawing_id)
+    except Exception:
+      log.exception("PDF register could not be updated")
 
   @staticmethod
   def _summary(rows: list) -> dict:
@@ -192,6 +202,8 @@ class ExtractService:
     
     await self.core._log(org, user_id, sheet.drawing_id, AuditAction.UPDATE,
       f"Read sheet {sheet.page_no} automatically: {len(found)} items found")
+    await self.session.flush()
+    await self._sync_register(org, [sheet.id])
     await self.session.commit()
     out = await self._list(org, sheet)
     out.update(added=added, updated=updated, removed=removed, calibration_created=created)
@@ -227,22 +239,37 @@ class ExtractService:
     await self.session.flush()
     return added, updated, len(gone)
 
+  async def _current_sheet_ids(self, org: UUID, sheets: list) -> set:
+    out: set = set()
+    exts = {e.sheet_id: e for e in await self.repo.extractions(org, [s.id for s in sheets])}
+    for sheet in sheets:
+      ext = exts.get(sheet.id)
+      if ext is None or sheet.prep_status != "READY" or ext.extract_version != C.EXTRACT_VERSION:
+        continue
+      meta = await self.prep.prep.meta(org, sheet.id)
+      if meta is not None and ext.index_stamp == index_stamp(meta):
+        out.add(sheet.id)
+    return out
+
   async def extract_drawing(self, org: UUID, drawing_id: UUID, user_id: UUID, payload) -> dict:
     await self.core._pdf_drawing(org, drawing_id)
     sheets = await self.core.repo.sheets(org, drawing_id)
     started = time.monotonic()
     done: list = []
     skipped: list = []
-    for sheet in sheets:
-      if time.monotonic() - started > 80 and done:
-        skipped.append({"sheet_id": str(sheet.id), "page_no": sheet.page_no, "code": "TIME_BUDGET", "message": "Run it again for the remaining sheets."})
+    current = await self._current_sheet_ids(org, sheets) if getattr(payload, "only_unread", False) else set()
+    plan = [(s.id, s.page_no) for s in sheets]  
+    for sheet_id, page_no in plan:
+      if sheet_id in current:
         continue
-    
+      if time.monotonic() - started > 80 and done:
+        skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": "TIME_BUDGET", "message": "Run it again for the remaining sheets."})
+        continue
       try:
-        done.append(await self.extract_sheet(org, sheet.id, user_id, payload))
+        done.append(await self.extract_sheet(org, sheet_id, user_id, payload))
       except TraceException as exc:
         await self.session.rollback()
-        skipped.append({"sheet_id": str(sheet.id), "page_no": sheet.page_no, "code": exc.code, "message": exc.message})
+        skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": exc.code, "message": exc.message})
     return {"drawing_id": drawing_id, "done": done, "skipped": skipped}
 
   async def accept(self, org: UUID, user_id: UUID, payload) -> dict:
@@ -302,6 +329,8 @@ class ExtractService:
       sheet = await self.core._sheet(org, first.sheet_id)
       await self.core._log(org, user_id, sheet.drawing_id, AuditAction.CREATE,
         f"Accepted {len(accepted)} automatically found items as draft measurements")
+    await self.session.flush()
+    await self._sync_register(org, {r.sheet_id for r in rows.values()})
     await self.session.commit()
     return {"accepted": accepted, "failed": failed}
 
@@ -320,6 +349,9 @@ class ExtractService:
       elif r.decision == frm:
         r.decision, r.decided_by_user_id, r.decided_at = to, (user_id if to == "REJECTED" else None), (_now() if to == "REJECTED" else None)
         changed.append(cid)
+    await self.session.flush()
+    if changed:
+      await self._sync_register(org, {r.sheet_id for r in rows.values()})
     await self.session.commit()
     return {"changed": changed, "failed": failed}
 

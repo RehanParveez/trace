@@ -398,3 +398,20 @@ export interface AcceptBody {
 export interface CandidateFailure { id: string; code: string; message: string }
 export interface AcceptResult { accepted: Array<{ id: string; measurement_id: string; work_item_code: string | null }>; failed: CandidateFailure[] }
 export interface DecideResult { changed: string[]; failed: CandidateFailure[] }
+export interface DrawingExtractSkipped { sheet_id: string; page_no: number; code: string; message: string }
+export interface DrawingExtractResult { drawing_id: string; done: ExtractResult[]; skipped: DrawingExtractSkipped[] }
+
+export interface RegisterWaiting { page_no: number; sheet_id: string; reason: "NOT_PREPARED" | "NOT_READ" }
+export interface RegisterSyncResult {
+  drawing_id: string;
+  total: number;
+  added: number;
+  updated: number;
+  removed: number;
+  by_type: Record<string, number>;
+  sheets: number;
+  sheets_read: number;
+  waiting: RegisterWaiting[];
+  measured: number;
+  needs_review: number;
+}

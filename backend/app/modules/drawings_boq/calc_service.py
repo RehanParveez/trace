@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.exceptions import TraceException
 from app.engine.measure import engine as kernel
+from app.engine.measure import derived as derived_module
 from app.engine.measure.fingerprint import compute_fingerprint
 from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from app.modules.drawings_boq.calc_repository import CalculationRunRepository
@@ -130,6 +131,26 @@ def engine_stage_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_stage_org_ids or "").split(",") if s.strip()}
   return "*" in ids or str(org_id) in ids
 
+def engine_layer_enabled(org_id) -> bool:
+  ids = {s.strip() for s in (settings.engine_layer_org_ids or "").split(",") if s.strip()}
+  return "*" in ids or str(org_id) in ids
+
+def engine_derived_enabled(org_id) -> bool:
+  ids = {s.strip() for s in (settings.engine_derived_org_ids or "").split(",") if s.strip()}
+  return "*" in ids or str(org_id) in ids
+
+def clean_derived_params(raw: dict | None) -> dict:
+  out: dict = {}
+  for name in (*derived_module.PARAMS, derived_module.NGL_PARAM):
+    value = (raw or {}).get(name)
+    if value is None or isinstance(value, bool):
+      continue
+    try:
+      out[name] = float(value)
+    except (TypeError, ValueError):
+      continue
+  return out
+
 class CalculationService:
   def __init__(self, session: AsyncSession, heartbeat_factory=None):
     self.session = session
@@ -178,7 +199,8 @@ class CalculationService:
 
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,
     drawing_ids: list[UUID] | None, rule_set_code: str | None, convention_code: str | None = None,
-    force_full: bool = False, verify: bool = False, enqueue: bool = True, confirm_overlap: bool = False):
+    force_full: bool = False, verify: bool = False, enqueue: bool = True, confirm_overlap: bool = False,
+    derived_params: dict | None = None):
 
     project = await self.projects.get_by_id_and_org(project_id, organization_id)
     if project is None:
@@ -230,6 +252,13 @@ class CalculationService:
       settings["spec"] = True
       if engine_stage_enabled(organization_id):
         settings["stages"] = True
+      if engine_layer_enabled(organization_id):
+        settings["layers"] = True
+    if engine_derived_enabled(organization_id):
+      settings["derived"] = True
+      cleaned = clean_derived_params(derived_params)
+      if cleaned:
+        settings["derived_params"] = cleaned
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
@@ -382,6 +411,8 @@ class CalculationService:
         convention_params=convention_params, openings=p6.openings, spaces=p6.spaces,
         schedule_lines=p6.schedule_lines, rebar=p6.rebar, takeoff=p6.takeoff,
         spec_mode=bool(run_settings.get("spec")), stage_mode=bool(run_settings.get("stages")),
+        layer_mode=bool(run_settings.get("layers")), derived_mode=bool(run_settings.get("derived")),
+        derived_params=dict(run_settings.get("derived_params") or {}),
       )
       state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
@@ -538,6 +569,26 @@ class CalculationService:
         return {"measurements": res.stats.get("measurements", 0), "counted": res.stats.get("counted", 0),
           "verified": res.stats.get("verified", 0), "skipped": res.stats.get("skipped", {}),
           "replaced_work_items": len(res.stats.get("replaced", []))}
+      async def layer_split():
+        res = await asyncio.to_thread(kernel.split_layers, ctx, state["accepted"], state["solids"], state["ledger"])
+        old_ids, added = restage_plan(run_id, state["ledger"], res)
+        await self.runs.drop_staged_ledger(run_id, old_ids)
+        await self.runs.stage_ledger([_ledger_row(run, e, "measure") for e in added])
+        state["ledger"] = res.ledger
+        state["layer_stats"] = res.stats
+        return {"rows_split": res.stats.get("rows_split", 0), "rows_merged": res.stats.get("rows_merged", 0),
+          "finish_excluded_m3": res.stats.get("finish_excluded_m3", "0"), "unpriced_m3": res.stats.get("unpriced_m3", "0")}
+
+      async def derived_works():
+        res = await asyncio.to_thread(kernel.measure_derived, ctx, profile, state["accepted"], state["solids"], state["ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in res.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in res.ledger])
+        state["extra_solids"] += res.solids
+        state["extra_ledger"] += res.ledger
+        state["derived_stats"] = res.stats
+        return {"rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
+          "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),
+          "backfill_m3": res.stats.get("backfill_m3", "0"), **({"reason": res.stats["reason"]} if res.stats.get("reason") else {})}
 
       async def stage_split():
         res = await asyncio.to_thread(kernel.split_stages, ctx, state["accepted"], state["solids"], state["alloc"], state["ledger"])
@@ -577,10 +628,20 @@ class CalculationService:
       else:
         await self._skip(run, "pdf_takeoff", reason="no confirmed PDF takeoff measurements in this run")
         
+      if ctx.layer_mode and ctx.spec_mode:
+        await self._stage(run, "layer_split", layer_split, 79)
+      else:
+        await self._skip(run, "layer_split", reason="layer splitting is not switched on for this company")
+
       if ctx.stage_mode:
         await self._stage(run, "stage_split", stage_split, 79)
       else:
         await self._skip(run, "stage_split", reason="work stages are not switched on for this company")
+
+      if ctx.derived_mode:
+        await self._stage(run, "derived_works", derived_works, 80)
+      else:
+        await self._skip(run, "derived_works", reason="derived works are not switched on for this company")
       
       await self._stage(run, "self_check", check, 80)
 
@@ -642,6 +703,9 @@ class CalculationService:
         "pdf_takeoff": state.get("takeoff_stats", {}),
         "spec": kernel.spec_stats(ctx, state["ledger"] + state["extra_ledger"]),
         "stages": state.get("stage_stats") or kernel.stage_stats(ctx),
+        "layers": state.get("layer_stats") or kernel.layer_stats(ctx),
+        "derived": state.get("derived_stats") or kernel.derived_stats(ctx),
+        "material": kernel.material_stats(state["solids"], state["ledger"]),
         "coverage": kernel.coverage_stats(elements, state["rejected"], state["skipped"], state["unmapped"], state["ledger"]),
         "confidence": kernel.confidence_stats(state["ledger"] + state["extra_ledger"]),
       })
@@ -679,7 +743,7 @@ class CalculationService:
       else:
         code = "RUN_FAILED"
       failed_stage = next((n for n in ("validate_input", "build_solids", "spatial_index", "find_relations", "allocate",
-        "openings", "measure", "finishes", "schedules", "reinforcement", "stage_split", "self_check") if n not in self._timings), None)
+        "openings", "measure", "finishes", "schedules", "reinforcement", "layer_split", "stage_split", "derived_works", "self_check") if n not in self._timings), None)
       await self.runs.fail_running_stages(run_id, str(exc))
       await self.runs.mark_failed(run_id, code, str(exc))
       await self.runs.clear_staged(run_id)

@@ -122,6 +122,16 @@ def spec_key(spec: dict | None) -> str | None:
 def describe_spec(spec: dict | None) -> str | None:
   if not spec:
     return None
+  if spec.get("kind") == "DERIVED":
+    p = spec.get("params") or {}
+    bits: list[str] = []
+    if p.get("working_space_mm") is not None:
+      bits.append(f"{p['working_space_mm']:g} mm working space")
+    if p.get("pcc_projection_mm") is not None:
+      bits.append(f"PCC projects {p['pcc_projection_mm']:g} mm")
+    if p.get("pcc_thickness_mm") is not None:
+      bits.append(f"PCC {p['pcc_thickness_mm']:g} mm thick")
+    return ", ".join(bits) or "worked out from the foundation"
   parts: list[str] = []
   if spec.get("thickness_mm") is not None:
     parts.append(f"{spec['thickness_mm']} mm thick")

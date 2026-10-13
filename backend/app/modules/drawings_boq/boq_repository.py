@@ -269,7 +269,9 @@ class BOQEngineRepository:
       select(DrawingElement.ifc_type, func.count()).where(
         DrawingElement.organization_id == org, DrawingElement.drawing_id.in_(drawing_ids),
         DrawingElement.normalization_status == "INVALID", DrawingElement.ifc_type.in_(ifc_types),
-        role.in_(roles), ~measured_as_steel).group_by(DrawingElement.ifc_type))
+        role.in_(roles), ~measured_as_steel,
+        or_(DrawingElement.properties["source"].as_string().is_(None), DrawingElement.properties["source"].as_string() != "pdf_takeoff"),
+      ).group_by(DrawingElement.ifc_type))
     return {t: n for t, n in r.all()}
 
   async def element_names(self, ids: list[UUID]) -> dict[UUID, str]:

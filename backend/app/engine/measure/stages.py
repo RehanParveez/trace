@@ -97,6 +97,12 @@ def element_z(el: ModelElement):
       return None
     if hi > lo:
       return lo, hi
+    try:
+      height = float(getattr(el, "height_mm", None) or 0)
+    except (TypeError, ValueError):
+      height = 0.0
+    if height > 0 and (el.role or "").upper() in OPENING_ROLES:
+      return lo, lo + height
   return None
 
 def _plan_area(el: ModelElement) -> float:
@@ -256,11 +262,15 @@ def _pieces_of(row: LedgerEntry, solid: Solid, host_deds: list, cuts: list, z0: 
     s, fallback = _share(d, spans, z0, z1)
     shares.append(s)
     apportioned = apportioned or fallback
+    
   raw = []
+  base = q6(q6(gross) - q6(sum((d.quantity for d in host_deds), Decimal("0"))))
+  scale = row.quantity / base if base > 0 and row.quantity != base else Decimal("1")
   for i, (p0, p1) in enumerate(spans):
-    piece_gross = gross * _d(p1 - p0) / _d(height)
-    piece_deds = [d.quantity * _d(shares[k][i]) for k, d in enumerate(host_deds)]
+    piece_gross = (gross * scale) * _d(p1 - p0) / _d(height)
+    piece_deds = [d.quantity * scale * _d(shares[k][i]) for k, d in enumerate(host_deds)]
     raw.append((piece_gross, piece_deds))
+    
   nets = [max(Decimal("0"), q6(g - sum(ds, Decimal("0")))) for g, ds in raw]
   biggest = max(range(len(nets)), key=lambda i: (nets[i], -i))
   nets[biggest] = q6(nets[biggest] + (row.quantity - sum(nets, Decimal("0"))))

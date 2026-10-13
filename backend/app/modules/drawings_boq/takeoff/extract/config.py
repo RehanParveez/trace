@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 1
+EXTRACT_VERSION = 2
 
 SUGGESTIONS = {
   "COLUMN": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
@@ -68,6 +68,8 @@ NOTES = {
   "ROOM_SIZE_MISMATCH": ("warning", "The size printed in the room label gives another area than the outline."),
   "ROOM_FROM_OUTLINE": ("warning", "This room was taken from a drawn outline, not from the wall layout."),
   "HEIGHT_FROM_NOTE": ("info", "The height comes from a note on the drawing."),
+  "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
+  "SAME_MARK_ON_OTHER_SHEET": ("info", "This mark is also on another sheet of the same drawing. It is listed once in the element register."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),
   
   "SCALE_CONFLICT": ("warning", "Conflicting scale information was found on the sheet. Confirm the correct scale before relying on measured sizes."),

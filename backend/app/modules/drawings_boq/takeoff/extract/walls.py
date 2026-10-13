@@ -42,6 +42,7 @@ class Face:
   d: float
   s0: float
   s1: float
+  w: float = 0.0          
 
 @dataclass
 class Piece:
@@ -50,6 +51,7 @@ class Piece:
   d1: float
   s0: float
   s1: float
+  w: float = 0.0        
 
   @property
   def t(self) -> float:
@@ -74,6 +76,7 @@ class Run:
   end0: str = "FREE"
   end1: str = "FREE"
   overlap_pt: float = 0.0
+  w: float = 0.0         
 
 class TimeLimit(Exception):
   pass
@@ -110,14 +113,15 @@ def angle_peaks(theta_deg: np.ndarray, weight: np.ndarray, max_peaks: int = 12, 
 def collect_faces(index, mm_per_pt: float, deadline: float | None = None) -> tuple[list[Frame], list[Face]]:
   if len(index.kinds) == 0:
     return [], []
-  segs = np.frombuffer(index.segs, dtype=np.float32).reshape(-1, 5)[:, :4].astype(np.float64)
+  raw = np.frombuffer(index.segs, dtype=np.float32).reshape(-1, 5).astype(np.float64)
+  segs, wid = raw[:, :4], raw[:, 4]
   kinds = np.frombuffer(index.kinds, dtype=np.uint8)
   dx, dy = segs[:, 2] - segs[:, 0], segs[:, 3] - segs[:, 1]
   ln = np.hypot(dx, dy)
   keep = (kinds == 0) & (ln >= MIN_SEG_PT)
   if not keep.any():
     return [], []
-  segs, dx, dy, ln = segs[keep], dx[keep], dy[keep], ln[keep]
+  segs, dx, dy, ln, wid = segs[keep], dx[keep], dy[keep], ln[keep], wid[keep]
   theta = np.degrees(np.arctan2(dy, dx)) % 180.0
   peaks = angle_peaks(theta, ln)
   
@@ -143,6 +147,7 @@ def collect_faces(index, mm_per_pt: float, deadline: float | None = None) -> tup
     d = ((s[:, 0] + s[:, 2]) / 2.0) * fr.nx + ((s[:, 1] + s[:, 3]) / 2.0) * fr.ny
     order = np.argsort(d, kind="stable")
     d, lo, hi = d[order], lo[order], hi[order]
+    wv = wid[sel][order]
     start = 0
     n = len(d)
     i = 1
@@ -155,6 +160,7 @@ def collect_faces(index, mm_per_pt: float, deadline: float | None = None) -> tup
       i += 1
     for a, b in clusters:
       dm = float(d[a:b].mean())
+      wm = float(np.average(wv[a:b], weights=np.maximum(hi[a:b] - lo[a:b], 1e-6)))
       segs_ = sorted(zip(lo[a:b].tolist(), hi[a:b].tolist()))
       cur0, cur1 = segs_[0]
       for l0, l1 in segs_[1:]:
@@ -162,10 +168,10 @@ def collect_faces(index, mm_per_pt: float, deadline: float | None = None) -> tup
           cur1 = max(cur1, l1)
         else:
           if cur1 - cur0 >= min_face:
-            faces.append(Face(pi, dm, cur0, cur1))
+            faces.append(Face(pi, dm, cur0, cur1, wm))
           cur0, cur1 = l0, l1
       if cur1 - cur0 >= min_face:
-        faces.append(Face(pi, dm, cur0, cur1))
+        faces.append(Face(pi, dm, cur0, cur1, wm))
   return frames, faces
 
 def _standard(t_mm: float) -> bool:
@@ -215,7 +221,7 @@ def pair_faces(faces: list[Face], mm_per_pt: float, deadline: float | None = Non
     claimed.setdefault(ia, []).append((o0, o1))
     claimed.setdefault(ib, []).append((o0, o1))
     fa, fb = faces[ia], faces[ib]
-    pieces.append(Piece(fa.peak, fa.d, fb.d, o0, o1))
+    pieces.append(Piece(fa.peak, fa.d, fb.d, o0, o1, min(fa.w, fb.w)))
   return pieces
 
 def _piece_polygon(p: Piece, fr: Frame) -> Polygon:
@@ -271,8 +277,9 @@ def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadli
       cur = None
       for p in cl:
         if cur is None:
-          cur = Run(peak, dc, p.t, p.s0, p.s1, p.s1 - p.s0, 1)
+          cur = Run(peak, dc, p.t, p.s0, p.s1, p.s1 - p.s0, 1, w=p.w)
           cur_t = [p.t * (p.s1 - p.s0), p.s1 - p.s0]
+          cur_w = [p.w * (p.s1 - p.s0), p.s1 - p.s0]
           continue
       
         gap = p.s0 - cur.s1
@@ -291,11 +298,14 @@ def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadli
           cur_t[0] += p.t * (p.s1 - p.s0)
           cur_t[1] += p.s1 - p.s0
           cur.t_pt = cur_t[0] / cur_t[1]
-          
+          cur_w[0] += p.w * (p.s1 - p.s0)
+          cur_w[1] += p.s1 - p.s0
+          cur.w = cur_w[0] / cur_w[1]
         else:
           runs.append(cur)
-          cur = Run(peak, dc, p.t, p.s0, p.s1, p.s1 - p.s0, 1)
+          cur = Run(peak, dc, p.t, p.s0, p.s1, p.s1 - p.s0, 1, w=p.w)
           cur_t = [p.t * (p.s1 - p.s0), p.s1 - p.s0]
+          cur_w = [p.w * (p.s1 - p.s0), p.s1 - p.s0]
       if cur is not None:
         runs.append(cur)
   min_run = C.WALL_MIN_RUN_MM / mm_per_pt
@@ -368,12 +378,38 @@ def settle_junctions(runs: list[Run], frames: list[Frame], mm_per_pt: float) -> 
           A.end1, A.ext1 = "L", ext
   return stats
 
+LIGHT_RATIO = 0.75        
+def weight_reference(runs: list[Run]) -> float:
+  ws = sorted(((r.w, r.s1 - r.s0) for r in runs), key=lambda t: t[0])
+  total = sum(l for _, l in ws)
+  if total <= 0:
+    return 0.0
+  acc = 0.0
+  for w, l in ws:
+    acc += l
+    if acc >= total / 2.0:
+      return w
+  return ws[-1][0]
+
+def is_light(r: Run, ref: float) -> bool:
+  return ref > 0.0 and r.w < LIGHT_RATIO * ref
+
 def detect_walls(index, mm_per_pt: float, deadline: float | None = None) -> tuple[list[Frame], list[Run], dict]:
   frames, faces = collect_faces(index, mm_per_pt, deadline)
   pieces = pair_faces(faces, mm_per_pt, deadline)
   runs = join_runs(pieces, frames, mm_per_pt, deadline)
   stats = settle_junctions(runs, frames, mm_per_pt)
-  stats.update({"faces": len(faces), "pieces": len(pieces), "runs": len(runs)})
+  ref = weight_reference(runs)
+  
+  loose = [r for r in runs if is_light(r, ref) and (r.end0 == "FREE" or r.end1 == "FREE")]
+  if loose:
+    gone = {id(r) for r in loose}
+    runs = [r for r in runs if id(r) not in gone]
+    for r in runs:
+      r.end0 = r.end1 = "FREE"
+      r.ext0 = r.ext1 = 0.0
+    stats = settle_junctions(runs, frames, mm_per_pt)
+  stats.update({"faces": len(faces), "pieces": len(pieces), "runs": len(runs), "dropped_light_loose": len(loose), "weight_ref_pt": round(ref, 4)})
   return frames, runs, stats
 
 def standard_thickness(t_mm: float) -> int | None:

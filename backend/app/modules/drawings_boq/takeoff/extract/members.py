@@ -95,6 +95,8 @@ def _plausible(cat: str, size: tuple) -> bool:
   a, b = size
   return (a0 <= a <= a1 and b0 <= b <= b1) or (a0 <= b <= a1 and b0 <= a <= b1)
 
+HEADERS = {"MARK", "MARKS", "MK", "TAG", "ID", "NO", "REF", "TYPE", "SYMBOL", "SR", "S.NO"}
+
 def schedule_rows(words: list, hint: str | None) -> tuple:
 
   tag_of = {id(w): is_tag(w.text) for w in words}
@@ -114,6 +116,9 @@ def schedule_rows(words: list, hint: str | None) -> tuple:
     size_w = max(w.size, 1.0)
     lo, hi = bisect_left(tag_ys, w.cy - 18 * size_w), bisect_right(tag_ys, w.cy + 18 * size_w)
     stacked = any(o is not w and abs(o.x0 - w.x0) <= 2.5 for o in tags_y[lo:hi])
+    if not stacked:  
+      stacked = any(o.text.strip().upper().rstrip(".:") in HEADERS and abs(o.x0 - w.x0) <= 2.5 and abs(o.cy - w.cy) <= 4 * size_w
+        for o in by_y[bisect_left(ys, w.cy - 4 * size_w):bisect_right(ys, w.cy + 4 * size_w)])
     if not stacked:
       continue
     reach = 0.6 * max(size_w, max_size)
@@ -178,7 +183,12 @@ def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None) -
       continue
     drawn = []
     if g["category"] in ("COLUMN", "FOOTING"):
-      found = [s for s in match_shapes(pts, shapes, radius) if s is not None]
+      pool = [s for s in shapes if _plausible(g["category"], (s["a"], s["b"]))]
+      want = sched.get(key)
+      if want:
+        close = [s for s in pool if abs(s["a"] - min(want)) <= C.SIZE_TOL * min(want) + 5 and abs(s["b"] - max(want)) <= C.SIZE_TOL * max(want) + 5]
+        pool = close or pool
+      found = [s for s in match_shapes(pts, pool, radius) if s is not None]
       drawn = [(s["a"], s["b"]) for s in found]
     entry = {"tag": key, "category": g["category"], "points": pts, "count": len(pts), "schedule_rows": g["dense"], "matched": len(drawn)}
     

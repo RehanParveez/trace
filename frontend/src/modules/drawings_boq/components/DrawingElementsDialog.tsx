@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import {Button, EmptyState, ErrorState, LoadingState, Modal, Badge,
 } from "../../organizations/components/OrganizationUi";
 import {useDrawingElementsPage, useDrawingLevels,
@@ -8,6 +9,9 @@ import type {Drawing, DrawingElement, NormalizationStatus,
 } from "../types/drawings-boq.types";
 import {formatQuantity, elementMeasureMode,
 } from "../utils/drawings-boq.utils";
+import { useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeoff";
+import type { ReadStage } from "../takeoff/hooks/useTakeoff";
+import { isPdfFormat, measureBadge, needsPerson, waitingPages } from "../takeoff/utils/register";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -63,15 +67,77 @@ export function DrawingElementsDialog({
   );
   const total = elementsQuery.data?.total ?? null;
 
+  const isPdf = isPdfFormat(drawing.format);
+  const navigate = useNavigate();
+  const syncRegister = useSyncPdfRegister(drawing.id);
+  const readSheets = useReadPdfDrawing(drawing.id);
+  const [stage, setStage] = useState<ReadStage | null>(null);
+  const { mutate: syncNow } = syncRegister;
+  useEffect(() => {
+    if (isPdf) syncNow();
+  }, [isPdf, syncNow]);
+  const reg = readSheets.data ?? syncRegister.data ?? null;
+  const reading = readSheets.isPending;
+  const pages = waitingPages(reg);
+
   return (
     <Modal
       title={drawing.original_filename}
       onClose={onClose}
     >
       <div className="space-y-4">
-        <p className="text-[12px] text-[var(--color-text-muted)]">
-          {t("drawings.elements.description")}
+                <p className="text-[12px] text-[var(--color-text-muted)]">
+          {isPdf ? t("drawings.elements.pdfDescription", "Items read from the sheets of this PDF. Each mark is one row. Review and measure them on the Measure page.") : t("drawings.elements.description")}
         </p>
+
+        {isPdf ? (
+          <div className="space-y-2 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3 text-[12px]">
+            {reg ? (
+              <p className="font-semibold text-[var(--color-text-primary)]">
+                {t("drawings.elements.pdfSummary", {
+                  defaultValue: "{{total}} items listed from {{read}} of {{sheets}} sheets. {{measured}} measured, {{review}} need a look.",
+                  total: reg.total, read: reg.sheets_read, sheets: reg.sheets, measured: reg.measured, review: reg.needs_review,
+                })}
+              </p>
+            ) : syncRegister.isPending ? (
+              <p>{t("drawings.elements.pdfListing", "Listing the items read from this PDF…")}</p>
+            ) : null}
+            {needsPerson(reg) ? (
+              <p className="text-[var(--color-danger)]">
+                {t("drawings.elements.pdfWaiting", {
+                  defaultValue: "Sheet {{pages}} is not read yet. Press Read sheets. If it stays unread, open Measure and confirm the scale of that sheet.",
+                  pages,
+                })}
+              </p>
+            ) : null}
+            {readSheets.isError || syncRegister.isError ? (
+              <p className="text-[var(--color-danger)]">
+                {t("drawings.elements.pdfFailed", "The sheets could not be read just now. Try again, or measure by hand on the Measure page.")}
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={reading || syncRegister.isPending}
+                onClick={() => readSheets.mutate({ onStage: setStage })}
+              >
+                {reading
+                  ? stage === "PREPARE" ? t("drawings.elements.pdfPreparing", "Preparing sheets…")
+                    : stage === "LIST" ? t("drawings.elements.pdfListingShort", "Listing items…")
+                    : t("drawings.elements.pdfReading", "Reading sheets…")
+                  : t("drawings.elements.pdfReadSheets", "Read sheets")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/app/takeoff/${drawing.project_id}/${drawing.id}`)}
+              >
+                {t("drawings.elements.pdfReview", "Review and measure")}
+              </Button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
           <input
@@ -196,10 +262,10 @@ export function DrawingElementsDialog({
             icon="info"
             title={t(
               "drawings.elements.emptyTitle",
-            )}
-            description={t(
-              "drawings.elements.emptyDescription",
-            )}
+          )}
+            description={isPdf && !structuralRole.trim() && !discipline.trim() && !levelId && !normalizationStatus
+              ? t("drawings.elements.pdfEmptyDescription", "Nothing was found on this PDF yet. Press Read sheets. A scanned sheet cannot be read automatically; measure it by hand.")
+              : t("drawings.elements.emptyDescription")}
           />
         ) : (
           <div className="max-h-[60vh] overflow-auto">
@@ -326,13 +392,13 @@ export function DrawingElementsDialog({
                     </td>
 
                     <td className="px-3 py-2.5 text-[10px]">
-                      {(() => {
-                      const mode = element.measure_mode ?? elementMeasureMode(element);
+                    {(() => {
+                      const badge = measureBadge(element.measure_mode ?? elementMeasureMode(element));
                       return (
                           <div title={element.measured_as ?? undefined}>
-                          {mode === null ? "—" : (
-                          <Badge tone={mode === "EXACT" ? "green" : mode === "APPROXIMATE" ? "gold" : "red"}>
-                            {mode === "EXACT" ? "Exact" : mode === "APPROXIMATE" ? "Bbox" : "No geometry"}
+                          {badge === null ? "—" : (
+                          <Badge tone={badge.tone}>
+                            {badge.label}
                           </Badge>
                           )}
                           {element.measured_as ? (

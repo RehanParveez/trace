@@ -27,6 +27,7 @@ WORK_ITEMS = [
   ("FIN-FLOOR", "Floor finish", "m2", "Finishes", "TILING"),
   ("FRM-STRUCT", "Formwork to structural concrete", "m2", "Formwork", "FORMWORK"),
   ("EXC-FOUND", "Excavation for foundations", "m3", "Earthwork", "EARTHWORK"),
+  ("EXC-BACKFILL", "Backfilling around foundations", "m3", "Earthwork", "EARTHWORK"),
   ("STL-REBAR", "Reinforcement steel", "kg", "Steel", "STEEL"),
   ("STL-STRUCT", "Structural steel sections", "kg", "Steel", "STEEL"),
   ("STL-PILE", "Steel piles (driven length)", "m", "Piling", "DEFAULT"),

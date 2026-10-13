@@ -1,5 +1,6 @@
 import { apiClient } from "../../../../shared/api/client";
-import type {AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
+import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
+  AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
   TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
@@ -93,5 +94,28 @@ export const takeoffApi = {
   },
   async reconciliation(projectId: string): Promise<Reconciliation> {
     return (await apiClient.get<Reconciliation>(`${BASE}/projects/${projectId}/takeoff/reconciliation`)).data;
+  },
+  async candidates(sheetId: string): Promise<CandidateList> {
+    return (await apiClient.get<CandidateList>(`${BASE}/takeoff/sheets/${sheetId}/candidates`)).data;
+  },
+  async extract(sheetId: string, body: { auto_calibrate?: boolean } = {}): Promise<ExtractResult> {
+    return (await apiClient.post<ExtractResult>(`${BASE}/takeoff/sheets/${sheetId}/extract`, body)).data;
+  },
+  async acceptCandidates(body: AcceptBody): Promise<AcceptResult> {
+    return (await apiClient.post<AcceptResult>(`${BASE}/takeoff/candidates/accept`, body)).data;
+  },
+  async rejectCandidates(ids: string[]): Promise<DecideResult> {
+    return (await apiClient.post<DecideResult>(`${BASE}/takeoff/candidates/reject`, { ids })).data;
+  },
+  async restoreCandidates(ids: string[]): Promise<DecideResult> {
+    return (await apiClient.post<DecideResult>(`${BASE}/takeoff/candidates/restore`, { ids })).data;
+  },
+  /** Reads every prepared sheet of the drawing; the server stops starting new sheets after its time budget and lists them as skipped. */
+  async extractDrawing(drawingId: string, body: { auto_calibrate?: boolean; budget_seconds?: number; only_unread?: boolean } = {}): Promise<DrawingExtractResult> {
+    return (await apiClient.post<DrawingExtractResult>(`${BASE}/drawings/${drawingId}/takeoff/extract`, body)).data;
+  },
+  /** Rebuilds the element register rows of a PDF drawing from what was read from its sheets. Safe to repeat. */
+  async syncRegister(drawingId: string): Promise<RegisterSyncResult> {
+    return (await apiClient.post<RegisterSyncResult>(`${BASE}/drawings/${drawingId}/takeoff/register`)).data;
   },
 };

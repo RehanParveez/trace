@@ -275,6 +275,12 @@ class ModelAuditResponse(BaseModel):
   extra_stats: dict
   created_at: datetime
   
+class DerivedParamsRequest(BaseModel):
+  working_space_mm: float | None = Field(default=None, ge=0, le=3000)
+  pcc_projection_mm: float | None = Field(default=None, ge=0, le=1000)
+  pcc_thickness_mm: float | None = Field(default=None, ge=0, le=600)
+  ngl_below_ffl_mm: float | None = Field(default=None, ge=-2000, le=3000)
+  
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None
   rule_set_code: str | None = Field(default=None, max_length=50)
@@ -284,7 +290,9 @@ class CalculationRunCreateRequest(BaseModel):
     description="After an incremental run, also run the full allocation and compare. Slower; a mismatch falls back to the full result.")
   confirm_overlap: bool = Field(default=False,
     description="Go ahead although the chosen drawings share model elements, which would then be counted in each drawing.")
-
+  derived_params: DerivedParamsRequest | None = Field(default=None,
+    description="Site assumptions for the derived works (excavation, PCC bed, backfill). Left out, the engine uses its defaults and says so."
+  )
 class RunScopeDrawingResponse(BaseModel):
   drawing_id: UUID
   filename: str

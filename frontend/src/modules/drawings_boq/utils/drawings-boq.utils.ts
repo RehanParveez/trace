@@ -273,6 +273,54 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
     fix: null,
   },
 
+    LAYER_FINISH_EXCLUDED: {
+    severity: "info", blocks: "NONE",
+    message: "The wall is built up of layers in the model. The plaster, paint and other finish layers were taken out of the masonry volume, so the brickwork is measured at its own thickness only.",
+    fix: "Nothing to do. Plaster and paint are measured separately from the room finishes.",
+  },
+
+  LAYER_UNPRICED: {
+    severity: "warning", blocks: "NONE",
+    message: "A layer of this element (for example insulation, a membrane or a cavity) has no work item, so it is not in the BOQ. The element's volume was reduced by it.",
+    fix: "Map this layer family to a work item on the rule set (a mapping named LAYER:<FAMILY>), or confirm it is not to be billed.",
+  },
+
+  LAYER_THICKNESS_MISMATCH: {
+    severity: "warning", blocks: "NONE",
+    message: "The layers of this element add up to a different thickness from the element's own width in the model. The layers were scaled to the element's volume.",
+    fix: "Check the layer thicknesses in the model.",
+  },
+
+  LAYER_NOT_SPLIT: {
+    severity: "warning", blocks: "NONE",
+    message: "None of this element's layers could be matched to a billable work item, so the element was left whole as one material.",
+    fix: "Check the material layers of this element in the model, or map the layer families to work items on the rule set.",
+  },
+
+  MATERIAL_GENERIC: {
+    severity: "warning", blocks: "NONE",
+    message: "The model gives this element no real material (it says generic, default or nothing), so the grade or mortar could not be read and the masonry or concrete class is a guess.",
+    fix: "Give the element a material in the model, for example Brick or Concrete C25.",
+  },
+
+  DERIVED_ASSUMED: {
+    severity: "warning", blocks: "NONE",
+    message: "This quantity is not drawn in the model. It is worked out from the foundation using site assumptions that were not given (working space, PCC projection or PCC thickness), so standard values were used.",
+    fix: "Confirm the working space, PCC projection and PCC thickness for this site when starting the run.",
+  },
+
+  DERIVED_NGL_ASSUMED: {
+    severity: "warning", blocks: "NONE",
+    message: "The natural ground level is not in the model, so the excavation and backfill depth was worked out from an assumed level below the floor level.",
+    fix: "Give the natural ground level (how far below floor level) when starting the run.",
+  },
+
+  DERIVED_BOX_FOOTPRINT: {
+    severity: "warning", blocks: "NONE",
+    message: "The foundation has no exact outline in the model, so its bounding rectangle was used for the excavation and PCC. A foundation that is not rectangular is overstated.",
+    fix: "Re-upload the model with the current reader so outlines are stored.",
+  },
+
   OVER_DEDUCTED: {
     severity: "error",
     blocks: "APPROVAL",

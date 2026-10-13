@@ -7,6 +7,7 @@ from decimal import Decimal
 class ExtractRequest(BaseModel):
   auto_calibrate: bool = Field(default=False, description="If the sheet has no scale yet, set the recommended one, but only when the drawn scale and the printed dimensions agree.")
   budget_seconds: int = Field(default=25, ge=5, le=90)
+  only_unread: bool = Field(default=False, description="Whole-drawing reads only: leave out sheets that were already read from the current prepared version of the sheet.")
 
 class CandidateResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -83,3 +84,16 @@ class DecideRequest(BaseModel):
 class DecideResponse(BaseModel):
   changed: list[UUID]
   failed: list[dict]
+
+class RegisterSyncResponse(BaseModel):
+  drawing_id: UUID
+  total: int
+  added: int
+  updated: int
+  removed: int
+  by_type: dict = Field(default_factory=dict)
+  sheets: int = 0
+  sheets_read: int = 0
+  waiting: list = Field(default_factory=list)
+  measured: int = 0
+  needs_review: int = 0

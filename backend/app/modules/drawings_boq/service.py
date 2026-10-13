@@ -93,7 +93,14 @@ def _labour_quantity(covered_area_sqft: Decimal, rate_unit: str) -> Decimal:
     return (Decimal(covered_area_sqft) / Decimal("10.7639104")).quantize(Decimal("0.0001"))
   return covered_area_sqft
   
+def _pdf_meta(row) -> dict | None:
+  props = getattr(row, "properties", None) or {}
+  return (props.get("_pdf") or {}) if props.get("source") == "pdf_takeoff" else None
+
 def _measure_mode(row) -> str:
+  pdf = _pdf_meta(row)
+  if pdf is not None:
+    return pdf.get("mode") or "PDF_FOUND"
   if row.geometry_kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT"):
     return "EXACT"
   if row.geometry_kind == "BOX_ONLY":
@@ -101,6 +108,9 @@ def _measure_mode(row) -> str:
   return "NONE"
 
 def _measured_as(row) -> str:
+  pdf = _pdf_meta(row)
+  if pdf is not None:
+    return pdf.get("measured_as") or "Read from the PDF"
   codes = {i.get("code") for i in (row.normalization_issues or []) if isinstance(i, dict)}
   kind = row.geometry_kind
   source = row.quantity_source
@@ -169,7 +179,7 @@ class DrawingBOQService:
     revision_of: Drawing | None = None,
     revision_label: str | None = None,
   ) -> Drawing:
-    from app.modules.drawings_boq.tasks import parse_drawing_task
+    from app.modules.drawings_boq.tasks import parse_drawing_task, read_pdf_drawing_task
     await self._require_project(organization_id, project_id)
 
     if idempotency_key:
@@ -309,6 +319,11 @@ class DrawingBOQService:
       parse_drawing_task.apply_async(
         args=[str(drawing.id)], queue="bim_parsing"
       )
+    elif drawing_format == DrawingFormat.PDF:
+      try:
+        read_pdf_drawing_task.apply_async(args=[str(drawing.id)], queue="bim_parsing")
+      except Exception:
+        pass
 
     return drawing
   
@@ -448,6 +463,9 @@ class DrawingBOQService:
       level = levels.get(row.level_id)
       row.level_name = level.name if level else None
       row.level_sequence = level.sequence if level else None
+      pdf = _pdf_meta(row)
+      if pdf is not None and row.level_name is None:
+        row.level_name = pdf.get("level_name") or pdf.get("sheet")
       row.measured_as = _measured_as(row)
       row.measure_mode = _measure_mode(row)
       row.predefined_type = ((row.properties or {}).get("_ifc") or {}).get("predefined_type")

@@ -355,6 +355,8 @@ class BOQEngineService:
         details={"count": steel["not_measured"]}))
       
     specs.extend(logic.takeoff_issue_specs(stats.get("pdf_takeoff") or {}))
+    specs.extend(logic.stage_issue_specs(stats.get("stages") or {}))
+    specs.extend(logic.derived_issue_specs(stats.get("derived") or {}))
     mapped = [m.ifc_type for m in profile.mappings if m.work_item_code]
     invalid = await self.repo.invalid_counts(org, list(run.drawing_revision_ids), mapped,
       sorted(VOLUME_ROLES | COUNT_ROLES))

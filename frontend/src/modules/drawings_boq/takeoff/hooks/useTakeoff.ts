@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { CalibrationCreate, MeasurementCreate, MeasurementUpdate, PrepareResult, TakeoffSheet } from "../types/takeoff.types";
+import type { AcceptBody, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
+
 
 export const takeoffKeys = {
   all: ["takeoff"] as const,
@@ -32,7 +33,55 @@ function useInvalidateOverview(drawingId: string | undefined) {
   return () => {
     if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.overview(drawingId) });
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "project-drawings"] });
+    };
+}
+function useInvalidateRegister(drawingId: string | undefined) {
+  const qc = useQueryClient();
+  return () => {
+    if (!drawingId) return;
+    void qc.invalidateQueries({ queryKey: [...drawingsBoqKeys.all, "elements-page", drawingId] });
+    void qc.invalidateQueries({ queryKey: drawingsBoqKeys.elements(drawingId) });
   };
+}
+
+export function useSyncPdfRegister(drawingId: string | undefined) {
+  const invalidate = useInvalidateRegister(drawingId);
+  return useMutation({
+    mutationFn: () => takeoffApi.syncRegister(drawingId as string),
+    onSettled: invalidate,
+  });
+}
+
+export type ReadStage = "PREPARE" | "READ" | "LIST";
+
+export function useReadPdfDrawing(drawingId: string | undefined) {
+  const invalidate = useInvalidateRegister(drawingId);
+  const invalidateOverview = useInvalidateOverview(drawingId);
+  return useMutation({
+    mutationFn: async (args: { onStage?: (stage: ReadStage) => void } = {}) => {
+      const id = drawingId as string;
+      args.onStage?.("PREPARE");
+      let prep: PrepareResult;
+      let guard = 0;
+      do {
+        prep = await takeoffApi.prepareDrawing(id, { budget_seconds: 45 });
+        guard += 1;
+      } while (prep.remaining > 0 && prep.prepared.length > 0 && guard < 20);
+      args.onStage?.("READ");
+      let out: DrawingExtractResult;
+      guard = 0;
+      do {
+        out = await takeoffApi.extractDrawing(id, { auto_calibrate: true, only_unread: true });
+        guard += 1;
+      } while (out.skipped.some((s) => s.code === "TIME_BUDGET") && out.done.length > 0 && guard < 8);
+      args.onStage?.("LIST");
+      return takeoffApi.syncRegister(id);
+    },
+    onSettled: () => {
+      invalidate();
+      invalidateOverview();
+    },
+  });
 }
 
 export function useSyncTakeoff(drawingId: string | undefined) {

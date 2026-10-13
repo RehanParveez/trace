@@ -4,6 +4,7 @@ import hashlib
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import members as M
 from app.modules.drawings_boq.takeoff.extract import rooms as R
+from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.prep import census
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint
@@ -125,7 +126,11 @@ def _tag_candidates(index, words, shapes, f, hint, heights, ctx) -> list:
     elif cat == "BEAM":
       notes.append(C.note("BEAM_LENGTH_NOT_READ"))
       work_item = None
-      label = f"{tag} ×{g['count']}"
+      sched = g.get("schedule_mm")
+      if sched:
+        facts["size_schedule_mm"] = list(sched)
+        notes.append(C.note("SIZE_FROM_SCHEDULE"))
+      label = f"{tag} ×{g['count']}" + (f" · {_fmt_mm(sched[0])}×{_fmt_mm(sched[1])} mm" if sched else "")
     else:
       sched = g.get("schedule_mm")
       
@@ -242,15 +247,19 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
   heights = M.height_hints(lines, hint)
   shapes = M.member_shapes(index.rings, mm_per_pt)
   res.candidates.extend(_tag_candidates(index, words, shapes, mm_per_pt, hint, heights, ctx))
+  kind = sheet_kind(words)
+  res.stats["sheet_kind"] = kind
   frames, runs = [], []
-  
-  try:
-    frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, heights, ctx, deadline)
-    res.candidates.extend(walls)
-    res.stats["walls"] = wstats
-    res.candidates.extend(_room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx))
-  except W.TimeLimit:
-    res.notes.append(C.note("TIME_LIMIT"))
+  if kind["kind"] == "STRUCTURAL":
+    res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"]))
+  else:
+    try:
+      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, heights, ctx, deadline)
+      res.candidates.extend(walls)
+      res.stats["walls"] = wstats
+      res.candidates.extend(_room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx))
+    except W.TimeLimit:
+      res.notes.append(C.note("TIME_LIMIT"))
   mapped = {c.tag for c in res.candidates if c.tag}
   unmapped: dict = {}
   for g in census.tag_census(words):

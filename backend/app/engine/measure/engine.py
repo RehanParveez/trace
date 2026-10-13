@@ -16,11 +16,13 @@ from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UN
   STEEL_UNCERTAIN_FACTOR, UNCERTAIN_BASES, is_pile, is_steel_role, measure_steel, solid_profile_suspected, split_steel,
   steel_check, steel_duplicate_ids, steel_length_mm, steel_member_length_mm, steel_recoverable, steel_stats)
 from app.engine.measure.stages import split_stages
+from app.engine.measure.layers import layer_check, layer_excluded_by_solid, split_layers
+from app.engine.measure.derived import derived_check, measure_derived
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.8"
+ENGINE_VERSION = "2026.10.9"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -144,6 +146,7 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     classification_confidence=el.classification_confidence, confidence_factor=factor,
     gross_volume_m3=gross, status=status, issues=tuple(issues), material_class=el.material_class,
     material_grade=spec_grade(spec), spec=spec, volume_check=el.volume_check if kind == "BOX_ONLY" else None,
+    generic_material=bool(getattr(el, "generic_material", False)),
   )
 
 def _steel_flags(el: ModelElement, duplicate: bool):
@@ -264,6 +267,8 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
     
     warnings = [i["code"] for i in s.issues if i.get("severity") == "warning"]
     warnings.extend(missing_spec_warnings(s.spec, bool(concrete_code) and mapping.work_item_code == concrete_code))
+    if s.generic_material:
+      warnings.append("MATERIAL_GENERIC")
     warnings.extend(getattr(alloc, "solid_warnings", {}).get(s.id, ()))
     if s.id in getattr(alloc, "approximate_solids", ()):
       warnings.append("ALLOCATION_APPROXIMATE")
@@ -379,6 +384,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
 
   seen: set = set()
   net_by_solid: dict = {}
+  layer_excluded = layer_excluded_by_solid(ledger)
   for row in ledger:
     solid = by_id.get(row.solid_id)
     if solid is None:
@@ -394,22 +400,26 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
     seen.add(key)
     if not row.trace or "formula_code" not in row.trace:
       failures.append(f"missing trace on solid {row.solid_id}")
-      if row.work_stage is not None and row.source_kind != "MODEL":
-       failures.append(f"work stage {row.work_stage} on a row not measured from the model ({row.solid_id})")
-       
-    if row.formula_code == "SOLID_NET_VOLUME" and row.spec_key != spec_key(solid.spec):
+    if row.work_stage is not None and row.source_kind != "MODEL":
+      failures.append(f"work stage {row.work_stage} on a row not measured from the model ({row.solid_id})")
+
+    layered = bool((((row.trace or {}).get("inputs") or {}).get("layer_split")))
+    if row.formula_code == "SOLID_NET_VOLUME" and not layered and row.spec_key != spec_key(solid.spec):
       failures.append(f"specification key differs from its solid on solid {row.solid_id}")
       
     if row.formula_code == "SOLID_NET_VOLUME" and solid.gross_volume_m3 is not None:
       net_by_solid[row.solid_id] = net_by_solid.get(row.solid_id, Decimal("0")) + row.quantity
 
   for solid_id, total in net_by_solid.items():
-    expected = q6(max(Decimal("0"), by_id[solid_id].gross_volume_m3 - ded_total.get(solid_id, Decimal("0"))))
+    expected = q6(max(Decimal("0"), by_id[solid_id].gross_volume_m3 - ded_total.get(solid_id, Decimal("0"))
+      - layer_excluded.get(solid_id, Decimal("0"))))
     if total != expected:
       failures.append(f"net volume != gross - deductions on solid {solid_id}")
 
   failures.extend(takeoff_check(solids, ledger))
   failures.extend(steel_check(solids, ledger))
+  failures.extend(layer_check(ledger))
+  failures.extend(derived_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
@@ -450,6 +460,16 @@ def spec_stats(ctx: CalculationContext, ledger: list[LedgerEntry]) -> dict:
   
 def stage_stats(ctx: CalculationContext) -> dict:
   return {"enabled": bool(ctx.stage_mode)}
+
+def layer_stats(ctx: CalculationContext) -> dict:
+  return {"enabled": bool(ctx.layer_mode and ctx.spec_mode)}
+
+def derived_stats(ctx: CalculationContext) -> dict:
+  return {"enabled": bool(ctx.derived_mode)}
+
+def material_stats(solids: list, ledger: list) -> dict:
+  generic = {r.solid_id for r in ledger if "MATERIAL_GENERIC" in r.warnings}
+  return {"generic_elements": len(generic)}
 
 def coverage_stats(elements: list, rejected: list, skipped: dict, unmapped: dict, ledger: list) -> dict:
   ids = {e.id for e in elements}
@@ -517,6 +537,9 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_ledger += rebar_res.ledger
     
   takeoff_res = None
+  stage_info: dict = stage_stats(ctx)
+  layer_info: dict = layer_stats(ctx)
+  derived_info: dict = derived_stats(ctx)
   if ctx.takeoff is not None:
     takeoff_res = measure_takeoff(ctx, profile, ctx.takeoff, ledger + extra_ledger)
     ledger = apply_replacements(ledger, takeoff_res.dropped_keys)
@@ -526,12 +549,20 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids = [s for s in extra_solids if s.id not in gone]
     extra_solids += takeoff_res.solids
     extra_ledger += takeoff_res.ledger
-    stage_info: dict = stage_stats(ctx)
-    
+
+  if ctx.layer_mode and ctx.spec_mode:
+    layered = split_layers(ctx, accepted, solids, ledger)
+    ledger = layered.ledger
+    layer_info = layered.stats
   if ctx.stage_mode:
     staged = split_stages(ctx, accepted, solids, alloc, ledger)
     ledger = staged.ledger
     stage_info = staged.stats
+  if ctx.derived_mode and profile is not None:
+    derived_res = measure_derived(ctx, profile, accepted, solids, ledger)
+    extra_solids += derived_res.solids
+    extra_ledger += derived_res.ledger
+    derived_info = derived_res.stats
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:
@@ -546,6 +577,9 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "wall_material": wall_material_stats(solids, ledger),
     "spec": spec_stats(ctx, ledger),
     "stages": stage_info,
+    "layers": layer_info,
+    "derived": derived_info,
+    "material": material_stats(solids, ledger),
     "coverage": coverage_stats(elements, rejected, skipped, unmapped, ledger),
     "confidence": confidence_stats(ledger + extra_ledger),
     "steel": steel_stats(solids, ledger, rejected),

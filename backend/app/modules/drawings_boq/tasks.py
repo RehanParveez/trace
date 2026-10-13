@@ -27,6 +27,11 @@ from app.dependencies.tenancy import scope_session_as_platform_admin, scope_sess
 from app.modules.drawings_boq.finish_schedule.common import carry_over_space_finishes
 from app.modules.drawings_boq.calc_tasks import auto_run_task
 from app.modules.drawings_boq.recalculation.calc_limits import RETRYABLE_CODES
+from app.modules.drawings_boq.takeoff.extract.extract_schemas import ExtractRequest
+from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
+from app.modules.drawings_boq.takeoff.prep_schemas import PrepareRequest
+from app.modules.drawings_boq.takeoff.prep_service import PrepService
+from app.modules.drawings_boq.takeoff.register_service import RegisterService
 
 MAX_AI_NORMALIZATIONS_PER_PARSE = 50
 STALE_PARSE_SECONDS = 960
@@ -407,3 +412,74 @@ async def _parse_drawing(drawing_id: UUID) -> None:
             countdown=120 if exc.code == "RUN_IN_PROGRESS" else 300)
       except Exception:
         await session.rollback()
+        
+PDF_READ_ROUNDS = 6
+
+@celery_app.task(
+  name="app.modules.drawings_boq.tasks.read_pdf_drawing_task",
+  time_limit=int(settings.bim_parsing_time_limit_seconds),
+  soft_time_limit=int(settings.bim_parsing_soft_time_limit_seconds),
+  acks_late=True,
+)
+
+def read_pdf_drawing_task(drawing_id: str) -> str:
+  async def _run() -> None:
+    try:
+      await _read_pdf_drawing(UUID(drawing_id))
+    finally:
+      await dispose_worker_engine()
+
+  asyncio.run(_run())
+  return "read"
+
+async def _read_pdf_drawing(drawing_id: UUID) -> None:
+  from app.modules.drawings_boq.models import DrawingFormat
+  
+  async with WorkerSessionLocal() as session:
+    await scope_session_as_platform_admin(session)
+    drawing = (await session.execute(select(Drawing).where(Drawing.id == drawing_id))).scalar_one_or_none()
+    if drawing is None or drawing.format != DrawingFormat.PDF or not drawing.is_current_revision or drawing.uploaded_by_user_id is None:
+      return
+    org, user_id, filename = drawing.organization_id, drawing.uploaded_by_user_id, drawing.original_filename
+    project_id = drawing.project_id
+    await scope_session_to_org(session, org)
+    summary: dict = {"ok": False}
+    
+    try:
+      prep = PrepService(session)
+      for _ in range(PDF_READ_ROUNDS):
+        done = await prep.prepare_drawing(org, drawing_id, user_id, PrepareRequest())
+        await session.commit()
+        if not done["remaining"]:
+          break
+        
+      extractor = ExtractService(session)
+      skipped: list = []
+      for _ in range(PDF_READ_ROUNDS):
+        out = await extractor.extract_drawing(org, drawing_id, user_id, ExtractRequest(auto_calibrate=True, only_unread=True))
+        skipped = out["skipped"]
+        if not any(x.get("code") == "TIME_BUDGET" for x in skipped):
+          break
+        
+      result = await RegisterService(session).sync_and_commit(org, drawing_id)
+      summary = {"ok": True, "items": result["total"], "sheets": result["sheets"], "sheets_read": result["sheets_read"],
+        "needs_review": result["needs_review"], "skipped": [{"page_no": x.get("page_no"), "code": x.get("code")} for x in skipped][:50]}
+    except Exception as exc:
+      await session.rollback()
+      summary = {"ok": False, "error": str(exc)[:500]}
+      
+    try:
+      current = await DrawingRepository(session).get_by_id_and_org(drawing_id, org)
+      if current is not None:
+        current.ingestion_meta = {**(current.ingestion_meta or {}), "pdf_read": summary}
+        await DrawingRepository(session).update(current)
+        if summary.get("ok"):
+          waiting = summary["sheets"] - summary["sheets_read"]
+          await NotificationService(session).notify_user(
+            org, user_id, NotificationType.DRAWING_PARSED, f'"{filename}" was read',
+            body=f"{summary['items']} item(s) listed from {summary['sheets_read']} of {summary['sheets']} sheet(s)"
+              + (f"; {waiting} sheet(s) need their scale confirmed on the Takeoff page." if waiting else "."),
+            link_path=f"/app/projects/{project_id}", commit=False)
+        await session.commit()
+    except Exception:
+      await session.rollback()
