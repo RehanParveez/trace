@@ -8,12 +8,13 @@ import time
 from app.modules.drawings_boq.takeoff.prep import census, dimensions
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 
-ANALYSIS_VERSION = 1
+ANALYSIS_VERSION = 2
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
 STRONG_SUPPORT = 3
 STRONG_SPREAD_PCT = 1.2
+RIVAL_SHARE = 0.34
 
 @dataclass
 class PageAnalysis:
@@ -122,9 +123,12 @@ def _recommend(declared: dict, clusters: list, pairs: list, paper: dict, user_un
   d_trust = declared["primary"]["trust"] if declared.get("primary") else 0.0
   strong = [c for c in clusters if c.support >= STRONG_SUPPORT and c.spread_pct <= STRONG_SPREAD_PCT and
     (c.support / max(c.total_pairs, 1) >= 0.5 or c.support >= 5)]
+  
   weak = [c for c in clusters if c not in strong and c.support >= 2 and c.spread_pct <= STRONG_SPREAD_PCT]
   main = strong[0] if strong else (weak[0] if weak else None)
-  if len(strong) > 1 and abs(strong[1].ratio / strong[0].ratio - 1.0) > 0.05:
+  others = [c for c in strong[1:] if abs(c.ratio / strong[0].ratio - 1.0) > 0.05] if strong else []
+  rivals = [c for c in others if c.support >= max(STRONG_SUPPORT, RIVAL_SHARE * strong[0].support)]
+  if rivals:
     agreement = "MULTI_SCALE"
     notes.append({"code": "MULTI_SCALE", "message": "Printed dimensions show more than one drawing scale on this sheet. Calibrate each view separately."})
     
@@ -140,6 +144,8 @@ def _recommend(declared: dict, clusters: list, pairs: list, paper: dict, user_un
     agreement = "DECLARED_ONLY"
   else:
     agreement = "NONE"
+  if others and not rivals:
+    notes.append({"code": "OTHER_SCALE_DIMENSIONS", "message": "A few dimensions on this sheet follow another scale (a detail drawn larger or smaller). The scale of most dimensions is used."})
   if agreement == "MULTI_SCALE" and d is not None:
     main = min(strong, key=lambda c: abs(c.ratio / d - 1.0))
   if declared.get("not_to_scale") and d is None:
@@ -234,9 +240,11 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
   by_id = {id(pairs[i]): j for i, j in members.items()}
   measured = None
   if clusters:
-    show = sorted(pairs, key=lambda p: (id(p) not in by_id, -p.quality * p.length_pt))[:16]
+    shown = [p for p in pairs if not p.alt or id(p) in by_id]
+    show = sorted(shown, key=lambda p: (id(p) not in by_id, -p.quality * p.length_pt))[:16]
+    member_groups = {pairs[i].group for i in members if pairs[i].group >= 0}
     measured = {
-      "pairs_found": len(pairs),
+      "pairs_found": len({p.group if p.group >= 0 else id(p) for p in pairs}),
       "clusters": [{"ratio": _r4(c.ratio), "support": c.support, "spread_pct": round(c.spread_pct, 3), "weight": round(c.weight, 2),
         "bbox": _cluster_bbox(c, pairs)} for c in clusters],
       "pairs": [_pair_json(p, by_id, main.ratio, user_unit) for p in show],
@@ -245,7 +253,7 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
     if main.support >= STRONG_SUPPORT and main.spread_pct <= STRONG_SPREAD_PCT:
       flagged = []
       for p in pairs:
-        if id(p) in by_id:
+        if id(p) in by_id or p.alt or p.group in member_groups:
           continue
         drawn = p.length_pt * PT_MM * user_unit * main.ratio
         for rd in p.readings:

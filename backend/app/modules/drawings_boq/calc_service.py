@@ -13,6 +13,7 @@ from app.engine.measure import derived as derived_module
 from app.engine.measure.fingerprint import compute_fingerprint
 from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from app.modules.drawings_boq.calc_repository import CalculationRunRepository
+from app.modules.drawings_boq.measurement_params import MeasurementParametersService
 from app.modules.drawings_boq.models import CalculationRun, DrawingElement, DrawingFormat, DrawingStatus, MeasurementConvention
 from app.modules.drawings_boq.repository import DrawingElementRepository, DrawingRepository, MeasurementRuleSetRepository
 from app.modules.drawings_boq.standards.service import StandardsService
@@ -256,7 +257,8 @@ class CalculationService:
         settings["layers"] = True
     if engine_derived_enabled(organization_id):
       settings["derived"] = True
-      cleaned = clean_derived_params(derived_params)
+      stored_params = await MeasurementParametersService(self.session).stored_for_run(organization_id, project_id)
+      cleaned = clean_derived_params({**stored_params, **(derived_params or {})})
       if cleaned:
         settings["derived_params"] = cleaned
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)

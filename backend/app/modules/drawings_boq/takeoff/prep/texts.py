@@ -264,9 +264,14 @@ _LEVEL_WORDS = (
   ("TYPICAL", re.compile(r"\bTYPICAL\b", re.I)),
 )
 
+COMPOSITE_VIEWS = 4
+_STRUCTURAL_VIEW = re.compile(r"FRAMING|FOUNDATION|FOOTING|COLUMN|BEAM|SLAB|REINFORC|STEEL", re.I)
+
 def title_hints(lines: list[TextLine]) -> dict:
   sheet_no = None
   phrases = []
+  views = 0
+  structural_views = 0
   for ln in lines:
     t = ln.text
     if sheet_no is None:
@@ -275,6 +280,10 @@ def title_hints(lines: list[TextLine]) -> dict:
         sheet_no = re.sub(r"\s+", "", m.group("n")).upper()
     for m in _PLAN_PHRASE.finditer(t):
       p = re.sub(r"\s+", " ", m.group("p")).strip().upper()
+      views += 1
+      
+      if _STRUCTURAL_VIEW.search(p):
+        structural_views += 1
       if len(p.split()) >= 2:
         size = max((w.size for a, b, w in ln.spans if a >= m.start() and b <= m.end() + 1), default=0.0)
         phrases.append((size, len(p), p))
@@ -288,7 +297,8 @@ def title_hints(lines: list[TextLine]) -> dict:
       if pat.search(title):
         level = key
         break
-  return {"sheet_no": sheet_no, "title": title, "level_hint": level}
+  return {"sheet_no": sheet_no, "title": title, "level_hint": level, "views": views, "structural_views": structural_views,
+    "composite": views >= COMPOSITE_VIEWS}
 
 TAG_RE = re.compile(r"^[A-Z]{1,3}[-.]?\d{1,3}[A-Z]?$")
 

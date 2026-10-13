@@ -84,14 +84,42 @@ class RegisterService:
     await self.session.flush()
     read_ids = {x for x in (await self.session.execute(select(TakeoffExtraction.sheet_id).where(TakeoffExtraction.organization_id == org,
       TakeoffExtraction.sheet_id.in_(list(by_sheet) or [None])))).scalars().all()}
-    waiting = [{"page_no": sh.page_no, "sheet_id": str(sh.id),
-      "reason": "NOT_PREPARED" if sh.prep_status != "READY" else "NOT_READ"} for sh in sheets if sh.id not in read_ids]
+    per_sheet: dict = {}
+    for r in rows:
+      sid = r["properties"]["_pdf"]["sheet_id"]
+      per_sheet[sid] = per_sheet.get(sid, 0) + 1
+    waiting: list = []
+    set_aside: list = []
+    sheet_status: list = []
+    
+    for sh in sheets:
+      issue = (sh.prep_meta or {}).get("read_issue") or {}
+      title = (sh.prep_meta or {}).get("title") or {}
+      if sh.id in read_ids:
+        status = "READ"
+      elif issue.get("severity") == "INFO":
+        status = "SET_ASIDE"
+      elif sh.prep_status != "READY":
+        status = "NOT_PREPARED"
+      else:
+        status = "WAITING"
+      reason = "NOT_PREPARED" if sh.prep_status != "READY" else "NOT_READ"
+      code, message, severity = issue.get("code"), issue.get("message") or sh.prep_error, issue.get("severity")
+      
+      if status in ("WAITING", "NOT_PREPARED"):
+        waiting.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "error": sh.prep_error, "reason": reason, "code": code, "message": message})
+      elif status == "SET_ASIDE":
+        set_aside.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "code": code, "message": message})
+      sheet_status.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "title": title.get("title") or sh.label, "level": levels.get(sh.level_id) if sh.level_id else None,
+        "status": status, "items": per_sheet.get(str(sh.id), 0), "code": code, "message": message if status != "READ" else None, "severity": severity,
+        "composite": bool(title.get("composite"))})
     by_cat: dict = {}
     
     for r in rows:
       by_cat[r["ifc_type"]] = by_cat.get(r["ifc_type"], 0) + 1
     return {"drawing_id": drawing_id, "total": len(rows), "added": added, "updated": updated, "removed": len(gone), "by_type": by_cat,
-      "sheets": len(sheets), "sheets_read": len(read_ids), "waiting": waiting, "measured": sum(1 for r in rows if r["properties"]["_pdf"]["mode"] == "PDF_MEASURED"),
+      "sheets": len(sheets), "sheets_read": len(read_ids), "waiting": waiting, "set_aside": set_aside, "sheet_status": sheet_status,
+      "measured": sum(1 for r in rows if r["properties"]["_pdf"]["mode"] == "PDF_MEASURED"),
       "needs_review": sum(1 for r in rows if r["normalization_status"] != "VALID")}
 
   async def sync_and_commit(self, org: UUID, drawing_id: UUID) -> dict:

@@ -16,6 +16,7 @@ from app.engine.measure import takeoff as tk
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census
+from app.modules.drawings_boq.takeoff.levels import ensure_level
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
 from app.modules.drawings_boq.takeoff.prep.codec import encode_index
 from app.shared.storage import download_to_path
@@ -125,7 +126,7 @@ class PrepService:
           if ok:
             prepared.append(sheet.id)
           else:
-            failed.append({"sheet_id": str(sheet.id), "page_no": sheet.page_no})
+            failed.append({"sheet_id": str(sheet.id), "page_no": sheet.page_no, "message": sheet.prep_error or "This sheet could not be read."})
       finally:
         try:
           doc.close()
@@ -188,8 +189,13 @@ class PrepService:
     if not locked.scale_text and primary:
       locked.scale_text = str(primary.get("text"))[:60]
     title = result.meta.get("title") or {}
-    if not locked.label and (title.get("title") or title.get("sheet_no")):
+    if not locked.label and title.get("composite"):
+      locked.label = "Several drawings on one sheet"
+    elif not locked.label and (title.get("title") or title.get("sheet_no")):
       locked.label = " ".join(x for x in (title.get("sheet_no"), title.get("title")) if x)[:200]
+    
+    if locked.level_id is None and title.get("level_hint") and not title.get("composite"):
+      locked.level_id = await ensure_level(self.session, org, locked.drawing_id, title.get("level_hint"))
     await self.prep.save(org, locked.id, ANALYSIS_VERSION, payload,
         {"segments": len(result.index.kinds), "rings": len(result.index.rings), "words": len(result.index.words)}, full)
     await self.session.flush()

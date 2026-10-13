@@ -195,11 +195,10 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
 SHARED_MARKS = ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW") 
 
 def _primary(candidates, sheets: dict) -> tuple:
-  
   groups: dict = {}
   for c in candidates:
     if c.category in SHARED_MARKS and c.tag and c.decision != "REJECTED" and c.sheet_id in sheets:
-      groups.setdefault((c.category, c.tag.strip().upper()), []).append(c)
+      groups.setdefault((c.category, c.tag.strip().upper(), getattr(sheets[c.sheet_id], "level_id", None)), []).append(c)
   also, hidden = {}, set()
   for items in groups.values():
     if len(items) < 2:

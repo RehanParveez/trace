@@ -95,5 +95,7 @@ class RegisterSyncResponse(BaseModel):
   sheets: int = 0
   sheets_read: int = 0
   waiting: list = Field(default_factory=list)
+  set_aside: list = Field(default_factory=list)
+  sheet_status: list = Field(default_factory=list)
   measured: int = 0
   needs_review: int = 0

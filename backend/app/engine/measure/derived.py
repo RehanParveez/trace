@@ -11,23 +11,38 @@ from app.engine.measure.spatial import prism_and_polygon
 DERIVED = "DERIVED"
 RECIPE_CODE = "FOOTING_PREP"
 EXCAVATION, PCC, BACKFILL = "EXCAVATION_VOLUME", "FOOTING_PCC_VOLUME", "BACKFILL_VOLUME"
-DEFAULT_CODES = {EXCAVATION: "EXC-FOUND", PCC: "CON-PCC", BACKFILL: "EXC-BACKFILL"}
-ITEM_NAMES = {EXCAVATION: "EXCAVATION", PCC: "PCC", BACKFILL: "BACKFILL"}
+BALLAST, SHORING = "BRICK_BALLAST_VOLUME", "SHORING_AREA"
+DEFAULT_CODES = {EXCAVATION: "EXC-FOUND", PCC: "CON-PCC", BACKFILL: "EXC-BACKFILL", BALLAST: "MAS-BALLAST", SHORING: "EXC-SHORING"}
+ITEM_NAMES = {EXCAVATION: "EXCAVATION", PCC: "PCC", BACKFILL: "BACKFILL", BALLAST: "BALLAST", SHORING: "SHORING"}
 FOUNDATION_ROLES = frozenset({"FOOTING", "FOOTING_ISOLATED", "FOOTING_STRIP", "FOOTING_COMBINED", "RAFT", "RAFT_FOUNDATION", "SLAB_FOUNDATION"})
+WALL_BED_ROLES = frozenset({"WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "WALL_PARTITION", "WALL_LOAD_BEARING", "WALL_FOUNDATION"})
+WALL_MIN_BURIED_MM = 300.0
 NOT_BURIED_ROLES = frozenset({"DOOR", "WINDOW"})
 
 PARAMS = {
   "working_space_mm": (150.0, 0.0, 3000.0),
   "pcc_projection_mm": (100.0, 0.0, 1000.0),
   "pcc_thickness_mm": (100.0, 0.0, 600.0),
+  "ballast_thickness_mm": (304.8, 0.0, 1500.0),
+  "ballast_clearance_mm": (152.4, 0.0, 1000.0),
+  "wall_bed": (0.0, 0.0, 1.0),
+  "shoring": (0.0, 0.0, 1.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
+_BALLAST_PARAMS = ("ballast_clearance_mm", "ballast_thickness_mm")
 PARAM_USED_BY = {
   EXCAVATION: ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"),
   PCC: ("pcc_projection_mm", "pcc_thickness_mm"),
   BACKFILL: ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"),
+  BALLAST: _BALLAST_PARAMS,
+  SHORING: ("working_space_mm", "shoring", *_BALLAST_PARAMS),
 }
+
+def _used(kind: str, bed: str) -> tuple:
+  if bed == "BALLAST" and kind in (EXCAVATION, BACKFILL):
+    return ("working_space_mm", *_BALLAST_PARAMS)
+  return PARAM_USED_BY[kind]
 
 CODE_ASSUMED = "DERIVED_ASSUMED"
 CODE_NGL_ASSUMED = "DERIVED_NGL_ASSUMED"
@@ -109,6 +124,9 @@ class _Foundation:
   exc_poly: object = None
   pcc_poly: object = None
   exc_bottom: float = 0.0
+  bed: str = "PCC"
+  bed_proj: float = 0.0
+  bed_t: float = 0.0
 
 @dataclass
 class _Buried:
@@ -144,19 +162,20 @@ def _owned(items: list, poly_of, prefix=None):
   return pieces
 
 def _row(ctx, f: _Foundation, kind: str, code: str, quantity: Decimal, params: dict, ngl: dict, detail: dict, steps: list,
-  extra_warnings: list):
-  used = PARAM_USED_BY[kind]
+  extra_warnings: list, unit: str = "m3"):
+  used = _used(kind, f.bed)
+  needs_ngl = kind not in (PCC, BALLAST)
   assumed = [n for n in used if params[n]["source"] == "default"]
   warnings = list(extra_warnings)
   
   if assumed:
     warnings.append(CODE_ASSUMED)
-  if kind != PCC and ngl["source"] == "default":
+  if needs_ngl and ngl["source"] == "default":
     warnings.append(CODE_NGL_ASSUMED)
   if not f.exact:
     warnings.append(CODE_BOX)
   base = f.solid.classification_confidence * f.solid.confidence_factor
-  factor = FACTOR_ASSUMED if (assumed or (kind != PCC and ngl["source"] == "default")) else FACTOR_CONFIRMED
+  factor = FACTOR_ASSUMED if (assumed or (needs_ngl and ngl["source"] == "default")) else FACTOR_CONFIRMED
   if not f.exact:
     factor *= FACTOR_BOX
   confidence = max(Decimal("0"), min(Decimal("1"), q4(base * factor)))
@@ -166,8 +185,10 @@ def _row(ctx, f: _Foundation, kind: str, code: str, quantity: Decimal, params: d
     "kind": DERIVED, "recipe": RECIPE_CODE, "item": ITEM_NAMES[kind],
     "params": {n: params[n]["value"] for n in used}, "basis": {n: params[n]["source"] for n in used},
   }
+  if f.bed == "BALLAST":
+    spec["bed"] = "BALLAST"
   
-  if kind != PCC:
+  if needs_ngl:
     spec["ngl_z_mm"] = round(ngl["z_mm"], 1)
     spec["basis"]["ngl"] = ngl["source"]
   solid = Solid(
@@ -178,13 +199,13 @@ def _row(ctx, f: _Foundation, kind: str, code: str, quantity: Decimal, params: d
   )
   
   entry = LedgerEntry(
-    solid_id=solid_id, element_id=el.id, level_id=el.level_id, work_item_code=code, quantity=quantity, unit="m3",
+    solid_id=solid_id, element_id=el.id, level_id=el.level_id, work_item_code=code, quantity=quantity, unit=unit,
     material_grade=None, confidence=confidence, formula_code=kind,
     trace={
       "formula_code": kind, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
       "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
       "inputs": {"source_element_id": str(el.id), "recipe": RECIPE_CODE, "spec": spec, "ngl": ngl, **detail},
-      "steps": steps, "net": {"m3": str(quantity)}, "rounding": "half_up,6dp",
+      "steps": steps, "net": {unit: str(quantity)}, "rounding": "half_up,6dp",
     },
     warnings=tuple(dict.fromkeys(warnings)), source_kind=DERIVED, spec=spec, spec_key="derived",
   )
@@ -220,6 +241,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   params = resolve_params(ctx)
   ngl = resolve_ngl(ctx, elements)
   ws, pp, pt = (params[n]["value"] for n in ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"))
+  bc, bt = params["ballast_clearance_mm"]["value"], params["ballast_thickness_mm"]["value"]
   stats["params"] = {n: dict(v) for n, v in params.items()}
   stats["ngl"] = dict(ngl)
 
@@ -242,16 +264,27 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     prism, poly = found
     if prism.z0 < ngl["z_mm"]:
       buried.append(_Buried(poly, prism.z0, prism.z1))
-    if role not in FOUNDATION_ROLES:
+    is_wall = role in WALL_BED_ROLES
+    if role not in FOUNDATION_ROLES and not is_wall:
       continue
-    if prism.z0 >= ngl["z_mm"] - 1.0:
-      skipped["ABOVE_GROUND"] = skipped.get("ABOVE_GROUND", 0) + 1
-      continue
+    if is_wall:
+      if prism.z0 > ngl["z_mm"] - WALL_MIN_BURIED_MM:
+        continue
+      bed = "PCC" if params["wall_bed"]["value"] >= 0.5 else "BALLAST"
+      proj, thick = (pp, pt) if bed == "PCC" else (bc, bt)
+    else:
+      if prism.z0 >= ngl["z_mm"] - 1.0:
+        skipped["ABOVE_GROUND"] = skipped.get("ABOVE_GROUND", 0) + 1
+        continue
+      bed, proj, thick = "PCC", pp, pt
   
     foundations.append(_Foundation(
       element=el, solid=solid, poly=poly, exact=bool(prism.exact), bottom=float(prism.z0), top=float(prism.z1),
-      exc_poly=_grow(poly, pp + ws), pcc_poly=_grow(poly, pp), exc_bottom=float(prism.z0) - pt))
+      exc_poly=_grow(poly, proj + ws), pcc_poly=_grow(poly, proj), exc_bottom=float(prism.z0) - thick,
+      bed=bed, bed_proj=float(proj), bed_t=float(thick)))
   stats["skipped"] = dict(sorted(skipped.items()))
+  stats["wall_foundations"] = sum(1 for f in foundations if f.bed == "BALLAST" or f.element.role in WALL_BED_ROLES)
+  
   stats["foundations"] = len(foundations)
   if not foundations:
     stats["reason"] = "NO_FOUNDATIONS"
@@ -259,11 +292,18 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   if len(foundations) > MAX_FOUNDATIONS:
     stats["reason"] = "TOO_MANY_FOUNDATIONS"
     return DerivedResult(stats=stats)
+  if EXCAVATION in codes:
+    if any(f.bed == "BALLAST" for f in foundations) and DEFAULT_CODES[BALLAST] not in model_codes:
+      codes[BALLAST] = DEFAULT_CODES[BALLAST]
+    if params["shoring"]["value"] >= 0.5 and DEFAULT_CODES[SHORING] not in model_codes:
+      codes[SHORING] = DEFAULT_CODES[SHORING]
+  shoring_on = SHORING in codes
 
   exc: dict = {}
   pcc: dict = {}
   back: dict = {}
   bur: dict = {}
+  shr: dict = {}
   area_sum: dict = {}
   ngl_z = float(ngl["z_mm"])
   levels = _levels(foundations, buried, ngl_z)
@@ -276,9 +316,14 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     covering = [b.poly for b in buried if b.z0 <= za + EPS and b.z1 >= zb - EPS]
     covering += [f.pcc_poly for f in foundations if _pcc_covers(f, za, zb)]
     union = unary_union(covering) if covering else None
+    whole = unary_union([x.exc_poly for x in reaching]) if shoring_on and reaching else None
     for f, owned in _owned(reaching, lambda x: x.exc_poly):
       inside = owned.intersection(union).area if union is not None else 0.0
       key = f.element.id
+      if whole is not None:
+        exposed = owned.boundary.intersection(whole.boundary.buffer(0.5)).length
+        shr[key] = shr.get(key, 0.0) + exposed * h
+        
       exc[key] = exc.get(key, Decimal("0")) + _vol_m3(owned.area, h)
       back[key] = back.get(key, Decimal("0")) + _vol_m3(max(0.0, owned.area - inside), h)
       bur[key] = bur.get(key, Decimal("0")) + _vol_m3(inside, h)
@@ -288,7 +333,8 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
 
   out_solids: list = []
   out_ledger: list = []
-  totals = {EXCAVATION: Decimal("0"), PCC: Decimal("0"), BACKFILL: Decimal("0"), "buried": Decimal("0")}
+  totals = {EXCAVATION: Decimal("0"), PCC: Decimal("0"), BACKFILL: Decimal("0"), BALLAST: Decimal("0"), SHORING: Decimal("0"),
+    "buried": Decimal("0")}
   for f in sorted(foundations, key=lambda x: str(x.element.id)):
     key = f.element.id
     footprint = q6(_d(f.poly.area) / Decimal("1000000"))
@@ -297,8 +343,10 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
       q = q6(exc[key])
       steps = [
         {"op": "footprint", "m2": str(footprint)},
-        {"op": "plan_offset", "mm": round(pp + ws, 1), "pcc_projection_mm": pp, "working_space_mm": ws},
-        {"op": "depth", "from_mm": round(ngl_z, 1), "to_mm": round(f.exc_bottom, 1), "pcc_thickness_mm": pt},
+        {"op": "plan_offset", "mm": round(f.bed_proj + ws, 1), "working_space_mm": ws,
+          ("ballast_clearance_mm" if f.bed == "BALLAST" else "pcc_projection_mm"): f.bed_proj},
+        {"op": "depth", "from_mm": round(ngl_z, 1), "to_mm": round(f.exc_bottom, 1),
+          ("ballast_thickness_mm" if f.bed == "BALLAST" else "pcc_thickness_mm"): f.bed_t},
         {"op": "share_of_overlapping_trench", "note": "trench area shared with a neighbouring foundation is counted once"},
         {"op": "net_volume", "m3": str(q)},
       ]
@@ -307,19 +355,21 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
       out_solids.append(s)
       out_ledger.append(e)
       totals[EXCAVATION] += q
-    if PCC in codes and pcc.get(key, Decimal("0")) > 0:
+    bed_kind = BALLAST if f.bed == "BALLAST" else PCC
+    if bed_kind in codes and pcc.get(key, Decimal("0")) > 0:
       q = q6(pcc[key])
       steps = [
         {"op": "footprint", "m2": str(footprint)},
-        {"op": "plan_offset", "mm": pp, "pcc_projection_mm": pp},
-        {"op": "thickness", "mm": pt},
+        {"op": "plan_offset", "mm": f.bed_proj,
+          ("ballast_clearance_mm" if f.bed == "BALLAST" else "pcc_projection_mm"): f.bed_proj},
+        {"op": "thickness", "mm": f.bed_t},
         {"op": "net_volume", "m3": str(q)},
         
       ]
-      s, e = _row(ctx, f, PCC, codes[PCC], q, params, ngl, common, steps, [])
+      s, e = _row(ctx, f, bed_kind, codes[bed_kind], q, params, ngl, common, steps, [])
       out_solids.append(s)
       out_ledger.append(e)
-      totals[PCC] += q
+      totals[bed_kind] += q
     if BACKFILL in codes and back.get(key, Decimal("0")) > 0:
       q = q6(back[key])
       excavation_q = q6(exc.get(key, Decimal("0")))
@@ -336,13 +386,26 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
       out_ledger.append(e)
       totals[BACKFILL] += q
       totals["buried"] += buried_q
+      
+    if SHORING in codes and shr.get(key, 0.0) > 1.0:
+      area = q6(_d(shr[key]) / Decimal("1000000"))
+      steps = [
+        {"op": "excavation_side_length_exposed_to_ground", "note": "sides of the trench not shared with a neighbouring trench"},
+        {"op": "depth", "from_mm": round(ngl_z, 1), "to_mm": round(f.exc_bottom, 1)},
+        {"op": "net_area", "m2": str(area)},
+      ]
+      s, e = _row(ctx, f, SHORING, codes[SHORING], area, params, ngl, common, steps, [], unit="m2")
+      out_solids.append(s)
+      out_ledger.append(e)
+      totals[SHORING] += area
   out_ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
   
   stats.update({
     "ran": True, "rows": len(out_ledger),
     "excavation_m3": str(q6(totals[EXCAVATION])), "pcc_m3": str(q6(totals[PCC])),
+    "ballast_m3": str(q6(totals[BALLAST])), "shoring_m2": str(q6(totals[SHORING])),
     "backfill_m3": str(q6(totals[BACKFILL])), "buried_m3": str(q6(totals["buried"])),
-    "assumed": sorted({n for k in codes for n in PARAM_USED_BY[k] if params[n]["source"] == "default"}),
+    "assumed": sorted({n for e in out_ledger for n, b in ((e.spec or {}).get("basis") or {}).items() if b == "default" and n != "ngl"}),
     "ngl_assumed": ngl["source"] == "default",
     "box_footprints": sum(1 for f in foundations if not f.exact),
   })
@@ -356,8 +419,9 @@ def derived_check(solids: list, ledger: list) -> list:
       continue
     if r.solid_id not in by_id:
       failures.append(f"derived row references unknown solid {r.solid_id}")
-    if r.unit != "m3":
-      failures.append(f"derived row {r.solid_id} is not in m3")
+    want_unit = "m2" if r.formula_code == SHORING else "m3"
+    if r.unit != want_unit:
+      failures.append(f"derived row {r.solid_id} is not in {want_unit}")
     if r.work_stage is not None:
       failures.append(f"derived row {r.solid_id} carries a work stage")
     inputs = (r.trace or {}).get("inputs") or {}
@@ -370,4 +434,6 @@ def derived_check(solids: list, ledger: list) -> list:
         continue
       if abs(want - r.quantity) > Decimal("0.000002"):
         failures.append(f"backfill != excavation - buried on solid {r.solid_id}")
+      if Decimal(inputs["buried_m3"]) > Decimal(inputs["excavation_m3"]) + Decimal("0.000002"):
+        failures.append(f"permanent work exceeds the excavation on solid {r.solid_id}; a datum or footprint is wrong")
   return failures

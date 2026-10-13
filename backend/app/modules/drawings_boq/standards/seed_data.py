@@ -16,18 +16,33 @@ CONVENTIONS = [
       "slab": "reduced_by_column_footprints",
     },
   ),
+  dict(
+    code="LOAD_BEARING_MASONRY_A",
+    name="Load-bearing masonry (illustrative)",
+    description="Illustrative convention for load-bearing brick buildings: masonry walls own their volume, ground beams and "
+      "lintels cut out of the wall, foundation walls sit on brick ballast. Replace with the convention of a real client BOQ (Q1).",
+    conserves_volume=True,
+    parameters={
+      "column_extent": "full_footprint_full_height",
+      "beam_extent": "column_face_to_face",
+      "beam_slab_overlap": "slab_owns_top_layer",
+      "slab": "reduced_by_column_footprints",
+    },
+  ),
 ]
 
 WORK_ITEMS = [
   ("CON-RCC", "Reinforced cement concrete (structural)", "m3", "Concrete", "CONCRETE"),
   ("CON-PCC", "Plain cement concrete (blinding)", "m3", "Concrete", "CONCRETE"),
   ("MAS-BRICK", "Brick masonry", "m3", "Masonry", "MASONRY"),
+  ("MAS-BALLAST", "Brick ballast under foundation", "m3", "Masonry", "MASONRY"),
   ("FIN-PLASTER", "Cement plaster", "m2", "Finishes", "PLASTER"),
   ("FIN-PAINT", "Wall paint", "m2", "Finishes", "PAINT"),
   ("FIN-FLOOR", "Floor finish", "m2", "Finishes", "TILING"),
   ("FRM-STRUCT", "Formwork to structural concrete", "m2", "Formwork", "FORMWORK"),
   ("EXC-FOUND", "Excavation for foundations", "m3", "Earthwork", "EARTHWORK"),
   ("EXC-BACKFILL", "Backfilling around foundations", "m3", "Earthwork", "EARTHWORK"),
+  ("EXC-SHORING", "Shoring to excavation", "m2", "Earthwork", "EARTHWORK"),
   ("STL-REBAR", "Reinforcement steel", "kg", "Steel", "STEEL"),
   ("STL-STRUCT", "Structural steel sections", "kg", "Steel", "STEEL"),
   ("STL-PILE", "Steel piles (driven length)", "m", "Piling", "DEFAULT"),
@@ -80,6 +95,10 @@ PROFILES = [
     standard_name="CSR", full=True,
     preferred_units={"volume": "cft", "area": "sft", "length": "rft", "weight": "kg", "count": "nos"},
     description="System profile for Punjab. All values are placeholders pending QS sign-off."),
+  dict(code="PUNJAB_CSR_MASONRY", name="Punjab - CSR, load-bearing masonry (draft profile)", jurisdiction="PK", province="Punjab",
+    standard_name="CSR", full=True, convention="LOAD_BEARING_MASONRY_A",
+    preferred_units={"volume": "cft", "area": "sft", "length": "rft", "weight": "kg", "count": "nos"},
+    description="System profile for load-bearing brick buildings in Punjab. All values are placeholders pending QS sign-off."),
   dict(code="GENERIC_METRIC", name="Generic metric (fallback)", jurisdiction=None, province=None,
     standard_name=None, full=False, description="Minimal fallback profile."),
 ]

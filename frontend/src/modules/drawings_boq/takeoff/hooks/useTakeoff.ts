@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { AcceptBody, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, TakeoffSheet } from "../types/takeoff.types";
+import type { AcceptBody, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
 
 
@@ -53,6 +53,8 @@ export function useSyncPdfRegister(drawingId: string | undefined) {
 }
 
 export type ReadStage = "PREPARE" | "READ" | "LIST";
+export interface ReadIssue { page_no: number; message: string }
+export interface ReadPdfOutcome { register: RegisterSyncResult; issues: ReadIssue[] }
 
 export function useReadPdfDrawing(drawingId: string | undefined) {
   const invalidate = useInvalidateRegister(drawingId);
@@ -67,6 +69,10 @@ export function useReadPdfDrawing(drawingId: string | undefined) {
         prep = await takeoffApi.prepareDrawing(id, { budget_seconds: 45 });
         guard += 1;
       } while (prep.remaining > 0 && prep.prepared.length > 0 && guard < 20);
+      const why = new Map<number, string>();
+      for (const f of prep.failed) {
+        if (f.page_no != null) why.set(f.page_no, f.message ?? "This sheet could not be read.");
+      }
       args.onStage?.("READ");
       let out: DrawingExtractResult;
       guard = 0;
@@ -74,8 +80,17 @@ export function useReadPdfDrawing(drawingId: string | undefined) {
         out = await takeoffApi.extractDrawing(id, { auto_calibrate: true, only_unread: true });
         guard += 1;
       } while (out.skipped.some((s) => s.code === "TIME_BUDGET") && out.done.length > 0 && guard < 8);
+      for (const s of out.skipped) {
+        if (s.code !== "TIME_BUDGET") why.set(s.page_no, s.message);
+      }
       args.onStage?.("LIST");
-      return takeoffApi.syncRegister(id);
+      const register = await takeoffApi.syncRegister(id);
+      const waiting = new Set(register.waiting.map((w) => w.page_no));
+      const issues: ReadIssue[] = [...why.entries()]
+        .filter(([page]) => waiting.has(page))
+        .sort((a, b) => a[0] - b[0])
+        .map(([page_no, message]) => ({ page_no, message }));
+      return { register, issues } as ReadPdfOutcome;
     },
     onSettled: () => {
       invalidate();

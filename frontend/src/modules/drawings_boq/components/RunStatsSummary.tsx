@@ -185,6 +185,15 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
               <Stat label={t("boq.calculationRun.statDerivedExcavation", "Excavation (m³)")} value={formatPrecise(dv.excavation_m3 ?? 0, 3)} />
               <Stat label={t("boq.calculationRun.statDerivedPcc", "PCC bed (m³)")} value={formatPrecise(dv.pcc_m3 ?? 0, 3)} />
               <Stat label={t("boq.calculationRun.statDerivedBackfill", "Backfill (m³)")} value={formatPrecise(dv.backfill_m3 ?? 0, 3)} />
+              {Number(dv.wall_foundations ?? 0) > 0 ? (
+                <Stat label={t("boq.calculationRun.statDerivedWallFoundations", "Masonry foundation walls")} value={dv.wall_foundations ?? 0} />
+              ) : null}
+              {Number(dv.ballast_m3 ?? 0) > 0 ? (
+                <Stat label={t("boq.calculationRun.statDerivedBallast", "Brick ballast (m³)")} value={formatPrecise(dv.ballast_m3 ?? 0, 3)} />
+              ) : null}
+              {Number(dv.shoring_m2 ?? 0) > 0 ? (
+                <Stat label={t("boq.calculationRun.statDerivedShoring", "Shoring (m²)")} value={formatPrecise(dv.shoring_m2 ?? 0, 3)} />
+              ) : null}
               <Stat label={t("boq.calculationRun.statDerivedBuried", "Structure in the trench (m³)")} value={formatPrecise(dv.buried_m3 ?? 0, 3)} />
               <Stat label={t("boq.calculationRun.statDerivedBox", "Footings taken as rectangles")} value={dv.box_footprints ?? 0} tone={Number(dv.box_footprints ?? 0) > 0 ? "gold" : undefined} />
             </Section>

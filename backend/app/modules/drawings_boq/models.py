@@ -4329,3 +4329,35 @@ class TakeoffCandidate(Base, TimestampMixin):
   )
   
   decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+  
+class ProjectMeasurementParameter(Base, TimestampMixin):
+  __tablename__ = "project_measurement_parameters"
+
+  __table_args__ = (
+    UniqueConstraint("project_id", "code", name="uq_project_measurement_parameters_code"),
+    Index("ix_project_measurement_parameters_org_project", "organization_id", "project_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  code: Mapped[str] = mapped_column(String(50), nullable=False)
+  value: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+  
+  updated_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_project_measurement_parameters_updated_by"),
+    nullable=True,
+  )

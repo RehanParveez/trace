@@ -404,8 +404,8 @@ LEDGER_WARNING_CATALOG = {
     "Give the element a material in the model, for example Brick or Concrete C25."),
   "DERIVED_ASSUMED": ("warning", "NONE",
     "This quantity is not drawn in the model. It is worked out from the foundation using site assumptions that were not given "
-    "(working space, PCC projection or PCC thickness), so standard values were used.",
-    "Confirm the working space, PCC projection and PCC thickness for this site when starting the run."),
+    "(working space, PCC projection, PCC thickness, or the brick ballast clearance and thickness under masonry walls), so standard values were used.",
+    "Confirm the working space, PCC projection and thickness, and the ballast clearance and thickness for this site when starting the run."),
   "DERIVED_NGL_ASSUMED": ("warning", "NONE",
     "The natural ground level is not in the model, so the excavation and backfill depth was worked out from an assumed level "
     "below the floor level.",

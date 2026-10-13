@@ -173,7 +173,7 @@ export interface PrepareResult {
   drawing_id: string;
   prepared: string[];
   skipped: string[];
-  failed: Array<{ sheet_id?: string; message?: string; code?: string }>;
+  failed: Array<{ sheet_id?: string; page_no?: number; message?: string; code?: string }>;
   remaining: number;
   elapsed_seconds: number;
   sheets: TakeoffSheet[];
@@ -401,7 +401,22 @@ export interface DecideResult { changed: string[]; failed: CandidateFailure[] }
 export interface DrawingExtractSkipped { sheet_id: string; page_no: number; code: string; message: string }
 export interface DrawingExtractResult { drawing_id: string; done: ExtractResult[]; skipped: DrawingExtractSkipped[] }
 
-export interface RegisterWaiting { page_no: number; sheet_id: string; reason: "NOT_PREPARED" | "NOT_READ" }
+export interface RegisterWaiting { page_no: number; sheet_id: string; reason: "NOT_PREPARED" | "NOT_READ" ; error?: string | null; code?: string | null; message?: string | null }
+export interface RegisterSetAside { page_no: number; sheet_id: string; code: string | null; message: string | null }
+export type SheetReadStatus = "READ" | "SET_ASIDE" | "WAITING" | "NOT_PREPARED";
+
+export interface RegisterSheetStatus {
+  page_no: number;
+  sheet_id: string;
+  title: string | null;
+  level: string | null;
+  status: SheetReadStatus;
+  items: number;
+  code: string | null;
+  message: string | null;
+  severity: "INFO" | "ACTION" | null;
+  composite: boolean;
+}
 export interface RegisterSyncResult {
   drawing_id: string;
   total: number;
@@ -412,6 +427,8 @@ export interface RegisterSyncResult {
   sheets: number;
   sheets_read: number;
   waiting: RegisterWaiting[];
+  set_aside: RegisterSetAside[];
+  sheet_status: RegisterSheetStatus[];
   measured: number;
   needs_review: number;
 }

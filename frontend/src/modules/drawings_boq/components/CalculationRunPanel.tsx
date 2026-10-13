@@ -15,7 +15,8 @@ import { RebarMarksPanel } from "./RebarMarksPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
 import { RunScope } from "./RunScope";
 import { DerivedParamsForm } from "./DerivedParamsForm";
-import { derivedParamsFromInput } from "../utils/derived";
+import { derivedInputFromParams, derivedParamsFromInput, derivedUpdateFromInput } from "../utils/derived";
+import { useMeasurementParameters, useSaveMeasurementParameters } from "../hooks/useMeasurementParams";
 import type { DerivedInput } from "../utils/derived";
 import {CalcUsagePanel, ElementImpactButton, RunFailureNotice, RunMetricsPanel, RunModeBadge, RunOptionsFields, RunStartNotice, classifyStartError, formatDurationMs, formatMb, useScaleT,
 } from "../recalculation";
@@ -66,8 +67,15 @@ export function CalculationRunPanel({
     useState<StartRunError | null>(null);
   const [derivedInput, setDerivedInput] =
     useState<DerivedInput>({});
+  const [derivedTouched, setDerivedTouched] =
+    useState(false);
+  const storedParams =
+    useMeasurementParameters(projectId);
+  const saveParams =
+    useSaveMeasurementParameters(projectId);
   const derivedCheck =
     derivedParamsFromInput(derivedInput);
+
   const ts = useScaleT();
   const startRun =
     useStartCalculationRun(projectId);
@@ -103,6 +111,23 @@ export function CalculationRunPanel({
       return valid.length === current.length ? current : valid;
     });
   }, [eligibleKey]);
+
+  useEffect(() => {
+    if (!derivedTouched && storedParams.data) {
+      setDerivedInput(derivedInputFromParams(storedParams.data.values));
+    }
+  }, [storedParams.data, derivedTouched]);
+
+  function saveDerivedDefaults() {
+    if (derivedCheck.errors.length > 0) {
+      return;
+    }
+    saveParams.mutate(derivedUpdateFromInput(derivedInput), {
+      onSuccess: () => {
+        showToast({ tone: "success", title: t("boq.derived.savedToast", "Site assumptions saved for this project") });
+      },
+    });
+  }
 
   function start() {
     submit(false);
@@ -245,8 +270,13 @@ export function CalculationRunPanel({
 
         <DerivedParamsForm
           value={derivedInput}
-          onChange={setDerivedInput}
+          onChange={(next) => {
+            setDerivedTouched(true);
+            setDerivedInput(next);
+          }}
           disabled={startRun.isPending}
+          onSave={saveDerivedDefaults}
+          saving={saveParams.isPending}
         />
 
         {startError ? (

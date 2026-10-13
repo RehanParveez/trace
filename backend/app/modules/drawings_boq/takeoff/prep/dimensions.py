@@ -13,6 +13,9 @@ MIN_DIM_PT = 8.0
 MAX_WORDS_TRIED = 4000
 RATIO_TOL = 0.015
 MIN_RATIO, MAX_RATIO = 0.2, 5000.0
+ALT_ENDS = 4
+ALT_MAX = 4
+ALT_WEIGHT = 0.8
 
 @dataclass
 class Pair:
@@ -28,6 +31,8 @@ class Pair:
   ends: str
   size: float
   key: tuple = field(default=())
+  group: int = -1
+  alt: bool = False
 
 def _markers(index: VectorIndex, w, ux: float, uy: float, nx: float, ny: float, off: float, lo: float, hi: float, h: float) -> list[dict]:
   def sc(x, y):
@@ -163,7 +168,9 @@ def find_pairs(index: VectorIndex, words: list, hint: str | None, deadline: floa
       s1 = (a - w.cx) * ux + (b - w.cy) * uy
       s2 = (c - w.cx) * ux + (d - w.cy) * uy
       groups.setdefault(round(off / 0.4), []).append((min(s1, s2), max(s1, s2), off))
+      
     best = None
+    alts: list = []
     for frags in groups.values():
       frags.sort()
       off = sum(f[2] for f in frags) / len(frags)
@@ -187,37 +194,56 @@ def find_pairs(index: VectorIndex, words: list, hint: str | None, deadline: floa
         right = [m for m in markers if m["s"] > 1.0 and m["q"] >= 0.5]
         if not left or not right:
           continue
-      
-        ml, mr = max(left, key=lambda m: m["s"]), min(right, key=lambda m: m["s"])
-        length = mr["s"] - ml["s"]
-        if length < MIN_DIM_PT or abs((ml["s"] + mr["s"]) / 2.0) > 0.45 * length + 0.5 * tw:
-          continue
-        q = (ml["q"] + mr["q"]) / 2.0
-        if not (ml["has_ext"] or mr["has_ext"]):
-          q = min(q, 0.6)
-        tick = ml["tick"] and mr["tick"]
-        arrow = ml["arrow"] and mr["arrow"]
-        label = "EXT" if (ml["has_ext"] and mr["has_ext"]) else "EXT/LINE" if (ml["has_ext"] or mr["has_ext"]) else "LINE"
-        label += "+TICK" if tick else "+ARROW" if arrow else ""
-        cand = (q, -abs(off), length, off, ml["s"], mr["s"], label)
-        if best is None or cand[:3] > best[:3]:
-          best = cand
+        
+        near_l = sorted(left, key=lambda m: -m["s"])[:ALT_ENDS]
+        near_r = sorted(right, key=lambda m: m["s"])[:ALT_ENDS]
+        for ci, ml in enumerate(near_l):
+          for cj, mr in enumerate(near_r):
+            length = mr["s"] - ml["s"]
+            if length < MIN_DIM_PT or abs((ml["s"] + mr["s"]) / 2.0) > 0.45 * length + 0.5 * tw:
+              continue
+            
+            q = (ml["q"] + mr["q"]) / 2.0
+            if not (ml["has_ext"] or mr["has_ext"]):
+              q = min(q, 0.6)
+            tick = ml["tick"] and mr["tick"]
+            arrow = ml["arrow"] and mr["arrow"]
+            label = "EXT" if (ml["has_ext"] and mr["has_ext"]) else "EXT/LINE" if (ml["has_ext"] or mr["has_ext"]) else "LINE"
+            label += "+TICK" if tick else "+ARROW" if arrow else ""
+            cand = (q, -abs(off), length, off, ml["s"], mr["s"], label)
+            if ci == 0 and cj == 0:
+              if best is None or cand[:3] > best[:3]:
+                best = cand
+            else:
+              alts.append(cand)
           
     if best is None:
       continue
-    q, _, length, off, sa, sb, label = best
-    p1 = (w.cx + ux * sa + nx * off, w.cy + uy * sa + ny * off)
-    p2 = (w.cx + ux * sb + nx * off, w.cy + uy * sb + ny * off)
-    key = (round(min(p1[0], p2[0]) / 0.6), round(min(p1[1], p2[1]) / 0.6), round(max(p1[0], p2[0]) / 0.6), round(max(p1[1], p2[1]) / 0.6))
-    hit = pairs.get(key)
     ang = w.angle % 180.0
-    if hit is None:
-      pairs[key] = Pair(text=w.text, cx=w.cx, cy=w.cy, angle=ang, p1=p1, p2=p2, length_pt=length, readings=list(readings),
-        quality=q, ends=label, size=w.size, key=key)
-    else:
-      hit.readings.extend(readings)
-      hit.text = hit.text + " | " + w.text
-      hit.quality = max(hit.quality, q)
+    picked = [(best, False)]
+    seen_len = [best[2]]
+    for cand in sorted(alts, key=lambda c: (-c[0], c[2])):
+      if len(picked) > ALT_MAX:
+        break
+      if any(abs(cand[2] / x - 1.0) < 0.01 for x in seen_len):
+        continue
+      seen_len.append(cand[2])
+      picked.append((cand, True))
+      
+    for (q, _, length, off, sa, sb, label), is_alt in picked:
+      p1 = (w.cx + ux * sa + nx * off, w.cy + uy * sa + ny * off)
+      p2 = (w.cx + ux * sb + nx * off, w.cy + uy * sb + ny * off)
+      key = (round(min(p1[0], p2[0]) / 0.6), round(min(p1[1], p2[1]) / 0.6), round(max(p1[0], p2[0]) / 0.6), round(max(p1[1], p2[1]) / 0.6))
+      hit = pairs.get(key)
+      if hit is None:
+        pairs[key] = Pair(text=w.text, cx=w.cx, cy=w.cy, angle=ang, p1=p1, p2=p2, length_pt=length, readings=list(readings),
+          quality=q * (ALT_WEIGHT if is_alt else 1.0), ends=label, size=w.size, key=key, group=tried, alt=is_alt)
+      elif not is_alt or hit.alt:
+        hit.readings.extend(readings)
+        hit.text = hit.text + " | " + w.text
+        hit.quality = max(hit.quality, q)
+        if not is_alt:
+          hit.alt = False
   return list(pairs.values())
 
 @dataclass
@@ -240,6 +266,9 @@ def _weighted_median(items: list) -> float:
   return items[-1][0]
 
 def consensus(pairs: list[Pair], user_unit: float = 1.0, tol: float = RATIO_TOL, max_clusters: int = 3) -> list[Cluster]:
+  def gk(i: int):
+    g = pairs[i].group
+    return g if g >= 0 else ("p", i)
 
   entries = []
   for i, p in enumerate(pairs):
@@ -249,13 +278,13 @@ def consensus(pairs: list[Pair], user_unit: float = 1.0, tol: float = RATIO_TOL,
       
       if MIN_RATIO <= r <= MAX_RATIO:
         entries.append((r, p.quality * rd.prior * lw, i, j))
-  if len(entries) > 800:
-    entries = sorted(entries, key=lambda e: -e[1])[:800]
+  if len(entries) > 1200:
+    entries = sorted(entries, key=lambda e: -e[1])[:1200]
   clusters: list[Cluster] = []
   used: set = set()
-  total_pairs = len(pairs)
+  total_pairs = len({gk(i) for i in range(len(pairs))})
   while len(clusters) < max_clusters:
-    avail = sorted((e for e in entries if e[2] not in used), key=lambda e: e[0])
+    avail = sorted((e for e in entries if gk(e[2]) not in used), key=lambda e: e[0])
     
     if not avail:
       break
@@ -268,11 +297,13 @@ def consensus(pairs: list[Pair], user_unit: float = 1.0, tol: float = RATIO_TOL,
       k = left
       while k < n and avail[k][0] <= hi:
         r, wgt, i, j = avail[k]
-        if i not in per_pair or wgt > per_pair[i][0]:
-          per_pair[i] = (wgt, r, j)
+        g = gk(i)
+        if g not in per_pair or wgt > per_pair[g][0]:
+          per_pair[g] = (wgt, r, j, i)
         k += 1
       score = sum(v[0] for v in per_pair.values())
       cand = (score, len(per_pair), left)
+      
       if best is None or cand > best[0]:
         best = (cand, per_pair)
     if best is None or best[0][1] < 2:
@@ -281,8 +312,9 @@ def consensus(pairs: list[Pair], user_unit: float = 1.0, tol: float = RATIO_TOL,
     center = _weighted_median([(v[1], v[0]) for v in per_pair.values()])
     members = {}
     for r, wgt, i, j in avail:
-      if abs(r / center - 1.0) <= tol and (i not in members or wgt > members[i][0]):
-        members[i] = (wgt, j, r)
+      g = gk(i)
+      if abs(r / center - 1.0) <= tol and (g not in members or wgt > members[g][0]):
+        members[g] = (wgt, j, r, i)
         
     if len(members) < 2:
       break
@@ -291,6 +323,7 @@ def consensus(pairs: list[Pair], user_unit: float = 1.0, tol: float = RATIO_TOL,
     mean = sum(v[2] * v[0] for v in members.values()) / tw
     var = sum(v[0] * (v[2] - mean) ** 2 for v in members.values()) / tw
     clusters.append(Cluster(ratio=center, support=len(members), weight=tw, spread_pct=100.0 * math.sqrt(var) / mean,
-      members=[(i, v[1]) for i, v in sorted(members.items())], total_pairs=total_pairs))
+      members=sorted((v[3], v[1]) for v in members.values()), total_pairs=total_pairs))
     used.update(members.keys())
   return clusters
+

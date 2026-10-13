@@ -37,6 +37,8 @@ _SPECS = (
   FormulaSpec("FOOTING_PCC_VOLUME", "m3", "Footing plan plus projection x blinding thickness."),
   FormulaSpec("EXCAVATION_VOLUME", "m3", "Footing plan plus working space x depth (convention parameters)."),
   FormulaSpec("BACKFILL_VOLUME", "m3", "Excavation less the foundation, PCC bed and other structure standing in the trench."),
+  FormulaSpec("BRICK_BALLAST_VOLUME", "m3", "Masonry foundation plan plus ballast clearance x ballast thickness."),
+  FormulaSpec("SHORING_AREA", "m2", "Trench side length exposed to ground x trench depth."),
   FormulaSpec("REBAR_KG", "kg", "Sum of bar marks."),
   FormulaSpec("FINISH_FLOOR_AREA", "m2", "Net floor finish area."),
   FormulaSpec("FINISH_CEILING_AREA", "m2", "Ceiling finish area."),

@@ -1305,6 +1305,10 @@ export interface DerivedParams {
   pcc_projection_mm?: number;
   pcc_thickness_mm?: number;
   ngl_below_ffl_mm?: number;
+  ballast_thickness_mm?: number;
+  ballast_clearance_mm?: number;
+  wall_bed?: number;
+  shoring?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1327,6 +1331,9 @@ export interface DerivedStats {
   excavation_m3?: string;
   pcc_m3?: string;
   backfill_m3?: string;
+  ballast_m3?: string;
+  shoring_m2?: string;
+  wall_foundations?: number;
   buried_m3?: string;
   assumed?: string[];
   ngl_assumed?: boolean;

@@ -1,0 +1,28 @@
+import { apiClient } from "../../../shared/api/client";
+import type { DerivedParamName } from "../types/drawings-boq.types";
+
+export interface MeasurementParameters {
+  values: Partial<Record<DerivedParamName, number>>;
+  defaults: Partial<Record<DerivedParamName, number>>;
+}
+
+export type MeasurementParametersUpdate = Partial<Record<DerivedParamName, number | null>>;
+
+export const measurementParamsApi = {
+  async get(projectId: string): Promise<MeasurementParameters> {
+    if (!projectId) throw new Error("Project ID is required");
+    const response = await apiClient.get<MeasurementParameters>(
+      `/drawings-boq/projects/${projectId}/measurement-parameters`,
+    );
+    return response.data;
+  },
+
+  async save(projectId: string, values: MeasurementParametersUpdate): Promise<MeasurementParameters> {
+    if (!projectId) throw new Error("Project ID is required");
+    const response = await apiClient.put<MeasurementParameters>(
+      `/drawings-boq/projects/${projectId}/measurement-parameters`,
+      { values },
+    );
+    return response.data;
+  },
+};

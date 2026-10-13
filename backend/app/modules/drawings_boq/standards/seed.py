@@ -47,7 +47,7 @@ async def seed_standards(session: AsyncSession) -> dict:
     rs = MeasurementRuleSet(
       id=uuid4(), organization_id=None, code=spec["code"], name=spec["name"], description=spec["description"],
       jurisdiction=spec["jurisdiction"], province=spec["province"], standard_name=spec["standard_name"],
-      convention_code="FRAME_MONOLITHIC_A", is_system=True, is_active=False, status="DRAFT",
+      convention_code=spec.get("convention", "FRAME_MONOLITHIC_A"), is_system=True, is_active=False, status="DRAFT",
       immutable_version=version, opening_deduction_threshold_m2=OPENING_THRESHOLD_M2,
       wall_measurement_method="centre_line", net_vs_gross_preference="net",
       preferred_units=dict(spec.get("preferred_units") or {}),

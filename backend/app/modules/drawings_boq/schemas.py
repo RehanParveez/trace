@@ -280,6 +280,10 @@ class DerivedParamsRequest(BaseModel):
   pcc_projection_mm: float | None = Field(default=None, ge=0, le=1000)
   pcc_thickness_mm: float | None = Field(default=None, ge=0, le=600)
   ngl_below_ffl_mm: float | None = Field(default=None, ge=-2000, le=3000)
+  ballast_thickness_mm: float | None = Field(default=None, ge=0, le=1500)
+  ballast_clearance_mm: float | None = Field(default=None, ge=0, le=1000)
+  wall_bed: float | None = Field(default=None, ge=0, le=1, description="1 puts a PCC bed under masonry foundation walls instead of brick ballast.")
+  shoring: float | None = Field(default=None, ge=0, le=1, description="1 adds shoring to the trench sides.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None
@@ -293,6 +297,7 @@ class CalculationRunCreateRequest(BaseModel):
   derived_params: DerivedParamsRequest | None = Field(default=None,
     description="Site assumptions for the derived works (excavation, PCC bed, backfill). Left out, the engine uses its defaults and says so."
   )
+  
 class RunScopeDrawingResponse(BaseModel):
   drawing_id: UUID
   filename: str

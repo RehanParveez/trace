@@ -463,7 +463,8 @@ async def _read_pdf_drawing(drawing_id: UUID) -> None:
         
       result = await RegisterService(session).sync_and_commit(org, drawing_id)
       summary = {"ok": True, "items": result["total"], "sheets": result["sheets"], "sheets_read": result["sheets_read"],
-        "needs_review": result["needs_review"], "skipped": [{"page_no": x.get("page_no"), "code": x.get("code")} for x in skipped][:50]}
+        "waiting": len(result["waiting"]), "set_aside": len(result["set_aside"]),
+        "needs_review": result["needs_review"], "skipped": [{"page_no": x.get("page_no"), "code": x.get("code"), "message": x.get("message")} for x in skipped][:50]}
     except Exception as exc:
       await session.rollback()
       summary = {"ok": False, "error": str(exc)[:500]}
@@ -474,7 +475,7 @@ async def _read_pdf_drawing(drawing_id: UUID) -> None:
         current.ingestion_meta = {**(current.ingestion_meta or {}), "pdf_read": summary}
         await DrawingRepository(session).update(current)
         if summary.get("ok"):
-          waiting = summary["sheets"] - summary["sheets_read"]
+          waiting = summary["waiting"]
           await NotificationService(session).notify_user(
             org, user_id, NotificationType.DRAWING_PARSED, f'"{filename}" was read',
             body=f"{summary['items']} item(s) listed from {summary['sheets_read']} of {summary['sheets']} sheet(s)"

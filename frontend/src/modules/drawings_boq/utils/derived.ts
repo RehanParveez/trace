@@ -6,12 +6,17 @@ export interface DerivedFieldDef {
   defaultMm: number | null;
   min: number;
   max: number;
+  flag?: boolean;
 }
 
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "working_space_mm", defaultMm: 150, min: 0, max: 3000 },
   { key: "pcc_projection_mm", defaultMm: 100, min: 0, max: 1000 },
   { key: "pcc_thickness_mm", defaultMm: 100, min: 0, max: 600 },
+  { key: "ballast_clearance_mm", defaultMm: 152.4, min: 0, max: 1000 },
+  { key: "ballast_thickness_mm", defaultMm: 304.8, min: 0, max: 1500 },
+  { key: "wall_bed", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "shoring", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
 ];
 
@@ -46,6 +51,29 @@ export function derivedParamsFromInput(input: DerivedInput): { params: DerivedPa
   return { params: Object.keys(params).length > 0 ? params : undefined, errors };
 }
 
+export function derivedInputFromParams(values: DerivedParams | undefined): DerivedInput {
+  const input: DerivedInput = {};
+  for (const def of DERIVED_FIELDS) {
+    const value = values?.[def.key];
+    if (typeof value === "number") {
+      input[def.key] = String(value);
+    }
+  }
+  return input;
+}
+
+export function derivedUpdateFromInput(input: DerivedInput): Partial<Record<DerivedParamName, number | null>> {
+  const update: Partial<Record<DerivedParamName, number | null>> = {};
+  for (const def of DERIVED_FIELDS) {
+    const parsed = parseDerivedField(input[def.key], def);
+    if (parsed.error) {
+      continue;
+    }
+    update[def.key] = parsed.value ?? null;
+  }
+  return update;
+}
+
 export function mmToInches(mm: number): string {
   const inches = mm / 25.4;
   return Number.isInteger(inches) ? String(inches) : inches.toFixed(1);
@@ -63,7 +91,7 @@ export interface DerivedBasisRow {
   basis: DerivedBasis | null;
 }
 
-const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ngl"];
+const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "ngl"];
 
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {

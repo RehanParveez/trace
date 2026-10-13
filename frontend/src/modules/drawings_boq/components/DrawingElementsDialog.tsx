@@ -11,7 +11,7 @@ import {formatQuantity, elementMeasureMode,
 } from "../utils/drawings-boq.utils";
 import { useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeoff";
 import type { ReadStage } from "../takeoff/hooks/useTakeoff";
-import { isPdfFormat, measureBadge, needsPerson, waitingPages } from "../takeoff/utils/register";
+import { isPdfFormat, measureBadge, needsPerson, setAsideCount, sheetRows, unreadPages } from "../takeoff/utils/register";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -76,9 +76,12 @@ export function DrawingElementsDialog({
   useEffect(() => {
     if (isPdf) syncNow();
   }, [isPdf, syncNow]);
-  const reg = readSheets.data ?? syncRegister.data ?? null;
+  const reg = readSheets.data?.register ?? syncRegister.data ?? null;
+  const issues = readSheets.data?.issues ?? [];
   const reading = readSheets.isPending;
-  const pages = waitingPages(reg);
+  const pages = unreadPages(reg);
+  const sheetList = sheetRows(reg, issues);
+  const asideCount = setAsideCount(reg);
 
   return (
     <Modal
@@ -94,15 +97,20 @@ export function DrawingElementsDialog({
           <div className="space-y-2 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3 text-[12px]">
             {reg ? (
               <p className="font-semibold text-[var(--color-text-primary)]">
-                {t("drawings.elements.pdfSummary", {
-                  defaultValue: "{{total}} items listed from {{read}} of {{sheets}} sheets. {{measured}} measured, {{review}} need a look.",
-                  total: reg.total, read: reg.sheets_read, sheets: reg.sheets, measured: reg.measured, review: reg.needs_review,
-                })}
+                {asideCount > 0
+                  ? t("drawings.elements.pdfSummaryAside", {
+                    defaultValue: "{{total}} items listed from {{read}} of {{sheets}} sheets ({{aside}} set aside). {{measured}} measured, {{review}} need a look.",
+                    total: reg.total, read: reg.sheets_read, sheets: reg.sheets, aside: asideCount, measured: reg.measured, review: reg.needs_review,
+                  })
+                  : t("drawings.elements.pdfSummary", {
+                    defaultValue: "{{total}} items listed from {{read}} of {{sheets}} sheets. {{measured}} measured, {{review}} need a look.",
+                    total: reg.total, read: reg.sheets_read, sheets: reg.sheets, measured: reg.measured, review: reg.needs_review,
+                  })}
               </p>
             ) : syncRegister.isPending ? (
               <p>{t("drawings.elements.pdfListing", "Listing the items read from this PDF…")}</p>
             ) : null}
-            {needsPerson(reg) ? (
+            {pages ? (
               <p className="text-[var(--color-danger)]">
                 {t("drawings.elements.pdfWaiting", {
                   defaultValue: "Sheet {{pages}} is not read yet. Press Read sheets. If it stays unread, open Measure and confirm the scale of that sheet.",
@@ -110,6 +118,29 @@ export function DrawingElementsDialog({
                 })}
               </p>
             ) : null}
+
+            {sheetList.length > 0 ? (
+              <ul className="max-h-40 list-none space-y-0.5 overflow-auto pl-0">
+                {sheetList.map((row) => (
+                  <li
+                    key={row.sheet_id}
+                    className={row.tone === "action" ? "text-[var(--color-danger)]" : "text-[var(--color-text-muted)]"}
+                  >
+                    {row.tone === "ok"
+                      ? t("drawings.elements.pdfSheetRead", {
+                        defaultValue: "Sheet {{page}} · {{level}} · {{items}} items",
+                        page: row.page_no, level: row.level ?? row.title ?? "—", items: row.items,
+                      })
+                      : t("drawings.elements.pdfSheetNote", {
+                        defaultValue: "Sheet {{page}} · {{message}}",
+                        page: row.page_no,
+                        message: row.message ?? t("drawings.elements.pdfSheetUnread", "Not read yet."),
+                      })}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
             {readSheets.isError || syncRegister.isError ? (
               <p className="text-[var(--color-danger)]">
                 {t("drawings.elements.pdfFailed", "The sheets could not be read just now. Try again, or measure by hand on the Measure page.")}
@@ -264,7 +295,9 @@ export function DrawingElementsDialog({
               "drawings.elements.emptyTitle",
           )}
             description={isPdf && !structuralRole.trim() && !discipline.trim() && !levelId && !normalizationStatus
-              ? t("drawings.elements.pdfEmptyDescription", "Nothing was found on this PDF yet. Press Read sheets. A scanned sheet cannot be read automatically; measure it by hand.")
+              ? (needsPerson(reg)
+              ? t("drawings.elements.pdfEmptyWaiting", "No sheet of this PDF has been read yet. Press Read sheets. If a sheet stays unread, the reason is shown above it.")
+              : t("drawings.elements.pdfEmptyDescription", "Nothing was found on this PDF yet. Press Read sheets. A scanned sheet cannot be read automatically; measure it by hand."))
               : t("drawings.elements.emptyDescription")}
           />
         ) : (

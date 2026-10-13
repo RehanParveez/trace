@@ -343,7 +343,11 @@ def _classify_base(element, psets: dict, schema_id: str) -> tuple[str, str, floa
         if override:
           return override, "PREDEFINED_TYPE", 0.98
     if role == "WALL":
-      is_external = (psets.get("Pset_WallCommon") or {}).get("IsExternal")
+      common = psets.get("Pset_WallCommon") or {}
+      if common.get("LoadBearing") is True:
+        return "WALL_LOAD_BEARING", "PSET", 0.95
+      is_external = common.get("IsExternal")
+      
       if is_external is True:
         return "WALL_EXTERNAL", "PSET", 0.95
       if is_external is False:

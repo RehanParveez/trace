@@ -8,6 +8,7 @@ from uuid import UUID
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
+from app.modules.drawings_boq.takeoff.extract.scalegate import auto_scale_gate, composite_issue
 from app.modules.drawings_boq.models import TakeoffExtraction, TakeoffCandidate
 from app.modules.audit.models import AuditAction
 from pydantic import ValidationError
@@ -150,10 +151,9 @@ class ExtractService:
     if not auto:
       raise TraceException("Set the scale of this sheet first. The sizes found depend on it.", status_code=409, code="SHEET_NOT_CALIBRATED")
     meta = await self.prep.prep.meta(org, sheet.id)
-    agreement = (meta.analysis or {}).get("agreement") if meta is not None else None
-    if agreement != "VERIFIED":
-      raise TraceException("The scale printed on this sheet is not confirmed by its dimensions. Check the scale on the Scale tab first.",
-        status_code=409, code="SCALE_NEEDS_CONFIRMATION")
+    ok, code, message = auto_scale_gate(meta.analysis if meta is not None else None)
+    if not ok:
+      raise TraceException(message, status_code=409, code=code)
     await self.prep.auto_calibrate(org, sheet.id, user_id, AutoCalibrateRequest(use="RECOMMENDED", make_default=True))
     sheet = await self.core._sheet(org, sheet.id)
     cal, ev = await self._scale(org, sheet)
@@ -199,6 +199,8 @@ class ExtractService:
     ext.notes = result.notes
     ext.ran_by_user_id = user_id
     ext.updated_at = _now()
+    if (sheet.prep_meta or {}).get("read_issue"):
+      sheet.prep_meta = {k: v for k, v in sheet.prep_meta.items() if k != "read_issue"}
     
     await self.core._log(org, user_id, sheet.drawing_id, AuditAction.UPDATE,
       f"Read sheet {sheet.page_no} automatically: {len(found)} items found")
@@ -251,6 +253,21 @@ class ExtractService:
         out.add(sheet.id)
     return out
 
+  async def _note_issue(self, org: UUID, sheet_id: UUID, code: str, message: str, severity: str = "ACTION") -> None:
+    sheet = await self.core._sheet(org, sheet_id, lock=True)
+    sheet.prep_meta = {**(sheet.prep_meta or {}), "read_issue": {"code": code, "message": message, "severity": severity, "at": _now().isoformat()}}
+    await self.session.flush()
+    await self.session.commit()
+
+  async def _set_aside(self, org: UUID, sheet_id: UUID, code: str, message: str, severity: str) -> None:
+    rows = await self.repo.candidates(org, [sheet_id])
+    await self.repo.delete_candidates(org, [r.id for r in rows if r.decision != "ACCEPTED"])
+    ext = await self.repo.extraction(org, sheet_id)
+    if ext is not None:
+      await self.session.delete(ext)
+    await self.session.flush()
+    await self._note_issue(org, sheet_id, code, message, severity)
+
   async def extract_drawing(self, org: UUID, drawing_id: UUID, user_id: UUID, payload) -> dict:
     await self.core._pdf_drawing(org, drawing_id)
     sheets = await self.core.repo.sheets(org, drawing_id)
@@ -258,8 +275,20 @@ class ExtractService:
     done: list = []
     skipped: list = []
     current = await self._current_sheet_ids(org, sheets) if getattr(payload, "only_unread", False) else set()
-    plan = [(s.id, s.page_no) for s in sheets]  
+    titles = {s.id: dict((s.prep_meta or {}).get("title") or {}) for s in sheets}
+    composite = {sid for sid, t in titles.items() if t.get("composite")}
+    
+    plan = [(s.id, s.page_no) for s in sheets if s.id not in composite] + [(s.id, s.page_no) for s in sheets if s.id in composite]
+    singles_read = any(e.sheet_id not in composite for e in await self.repo.extractions(org, [s.id for s in sheets]))
     for sheet_id, page_no in plan:
+      if sheet_id in composite:
+        issue = composite_issue(titles[sheet_id], singles_read)
+        if issue is not None:
+          code, severity, message = issue
+          await self._set_aside(org, sheet_id, code, message, severity)
+          skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": code, "message": message, "severity": severity})
+          continue
+      
       if sheet_id in current:
         continue
       if time.monotonic() - started > 80 and done:
@@ -267,9 +296,12 @@ class ExtractService:
         continue
       try:
         done.append(await self.extract_sheet(org, sheet_id, user_id, payload))
+        if sheet_id not in composite:
+          singles_read = True
       except TraceException as exc:
         await self.session.rollback()
-        skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": exc.code, "message": exc.message})
+        skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": exc.code, "message": exc.message, "severity": "ACTION"})
+        await self._note_issue(org, sheet_id, exc.code, exc.message, "ACTION")
     return {"drawing_id": drawing_id, "done": done, "skipped": skipped}
 
   async def accept(self, org: UUID, user_id: UUID, payload) -> dict:
@@ -281,8 +313,10 @@ class ExtractService:
     typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm}
     accepted: list = []
     failed: list = []
+    sheet_levels: dict = {}
     for cid in payload.ids:
       cand = rows.get(cid)
+
       
       if cand is None:
         failed.append(_fail(cid, "CANDIDATE_NOT_FOUND", "This item no longer exists. Read the sheet again."))
@@ -308,9 +342,11 @@ class ExtractService:
       if code and code not in catalog:
         code = None
         
+      if cand.sheet_id not in sheet_levels:
+        sheet_levels[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).level_id
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
-          params=MeasurementParams(**params), work_item_code=code, level_id=payload.level_id, label=cand.label, tag=cand.tag,
+          params=MeasurementParams(**params), work_item_code=code, level_id=payload.level_id or sheet_levels[cand.sheet_id], label=cand.label, tag=cand.tag,
           source=cand.source)
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))
