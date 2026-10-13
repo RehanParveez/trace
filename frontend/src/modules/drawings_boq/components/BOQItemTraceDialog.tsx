@@ -4,6 +4,8 @@ import { useBOQItemTrace } from "../hooks";
 import {activeAdjustments, DEDUCTION_RULE_LABEL, formatJsonValue, formatPrecise, isLowConfidence, warningInfo,
 } from "../utils/drawings-boq.utils";
 import { TraceSteps } from "./TraceSteps";
+import { StageBadge } from "./StageBadge";
+import { ConfidenceBasis } from "./ConfidenceBasis";
 import { shapeDims } from "../../drawings_boq/rebar/utils/rebar.utils";
 
 interface BOQItemTraceDialogProps {
@@ -58,6 +60,7 @@ export function BOQItemTraceDialog({ itemId, itemName, onClose }: BOQItemTraceDi
                     <span className="font-mono text-[12.5px] font-semibold">{l.work_item_code}</span>
                     <span className="font-mono text-[11.5px] text-[var(--color-text-secondary)]">{l.formula_code}</span>
                     <Badge tone="slate">{l.source_kind}</Badge>
+                    <StageBadge stage={l.work_stage} />
                     <span className={`font-mono text-[12px] ${isLowConfidence(l.confidence) ? "text-[var(--color-warning)]" : ""}`}>
                       {Math.round(Number(l.confidence) * 100)}%
                     </span>
@@ -65,6 +68,8 @@ export function BOQItemTraceDialog({ itemId, itemName, onClose }: BOQItemTraceDi
                       {formatPrecise(l.quantity_net, 6)} {l.unit}
                     </span>
                   </div>
+
+                  <ConfidenceBasis trace={l.trace} />
 
                   {l.trace?.label ? <div className="text-[12px] text-[var(--color-text-secondary)]">{l.trace.label}</div> : null}
                   <TraceSteps steps={l.trace?.steps ?? []} />

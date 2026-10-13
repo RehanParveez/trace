@@ -38,9 +38,12 @@ from app.modules.drawings_boq.schemas import DeductionResponse
 from app.modules.drawings_boq.schemas import LedgerRowResponse
 from app.modules.drawings_boq.schemas import BarMarkResponse
 from app.modules.drawings_boq.schemas import QuantitySolidResponse
+from app.modules.drawings_boq.run_scope import SCOPE_KEY, build_scope_snapshot
+from app.modules.drawings_boq.ledger_keys import ids_for_keys, ledger_id, restage_plan
+from app.modules.drawings_boq.scope_check import OVERLAP_KEY, find_scope_overlaps, overlap_message
 
 STALE_RUN_SECONDS = 2100           
-_SNAPSHOT_KEYS = ("rule_set", "rule_profile_snapshot")
+_SNAPSHOT_KEYS = ("rule_set", "rule_profile_snapshot", SCOPE_KEY, OVERLAP_KEY)
 
 def _rule_snapshot(rule_set, profile) -> dict:
   return {
@@ -79,14 +82,14 @@ def _solid_row(run: CalculationRun, s, stage: str = "build_solids") -> dict:
 
 def _ledger_row(run: CalculationRun, e, stage: str = "measure") -> dict:
   return {
-    "id": uuid5(run.id, f"ledger|{e.solid_id}|{e.work_item_code}"),
+    "id": ledger_id(run.id, e),
     "organization_id": run.organization_id, "run_id": run.id, "solid_id": e.solid_id,
     "element_id": e.element_id, "level_id": e.level_id, "work_item_code": e.work_item_code,
     "quantity_net": e.quantity, "unit": e.unit, "material_grade": e.material_grade,
     "source_kind": getattr(e, "source_kind", "MODEL"), "confidence": e.confidence, "formula_code": e.formula_code,
      "trace": e.trace, "warnings": list(e.warnings),
     "spec_key": getattr(e, "spec_key", None), "spec": getattr(e, "spec", None),
-    "spec_key": getattr(e, "spec_key", None), "spec": getattr(e, "spec", None),
+    "work_stage": getattr(e, "work_stage", None),
     "engine_version": run.engine_version, "stage": stage,
   }
 
@@ -121,6 +124,10 @@ def engine_v2_enabled(org_id) -> bool:
 
 def engine_spec_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_spec_org_ids or "").split(",") if s.strip()}
+  return "*" in ids or str(org_id) in ids
+
+def engine_stage_enabled(org_id) -> bool:
+  ids = {s.strip() for s in (settings.engine_stage_org_ids or "").split(",") if s.strip()}
   return "*" in ids or str(org_id) in ids
 
 class CalculationService:
@@ -171,7 +178,7 @@ class CalculationService:
 
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,
     drawing_ids: list[UUID] | None, rule_set_code: str | None, convention_code: str | None = None,
-    force_full: bool = False, verify: bool = False, enqueue: bool = True):
+    force_full: bool = False, verify: bool = False, enqueue: bool = True, confirm_overlap: bool = False):
 
     project = await self.projects.get_by_id_and_org(project_id, organization_id)
     if project is None:
@@ -202,6 +209,13 @@ class CalculationService:
       raise TraceException("This project has no parsed IFC drawing and no confirmed PDF takeoff measurements to calculate.",
         status_code=422, code="NO_PARSED_DRAWINGS")
 
+    scope_overlaps: list[dict] = []
+    ifc_chosen = [d for d in chosen if d.format == DrawingFormat.IFC]
+    if len(ifc_chosen) > 1:
+      scope_overlaps = await self._scope_overlaps(organization_id, ifc_chosen)
+      if scope_overlaps and not confirm_overlap:
+        raise TraceException(overlap_message(scope_overlaps), status_code=422, code="DRAWINGS_OVERLAP")
+
     rule_set = await DrawingBOQService(self.session).get_active_rule_set(organization_id, rule_set_code)
     if convention_code and kernel.get_convention(convention_code) is None:
       raise TraceException(f"Unknown measurement convention '{convention_code}'.", status_code=422, code="UNKNOWN_CONVENTION")
@@ -214,6 +228,8 @@ class CalculationService:
     settings = {"scope": "building", "preferred_rule_code": rule_set_code, "project_id": str(project_id)}
     if engine_spec_enabled(organization_id):
       settings["spec"] = True
+      if engine_stage_enabled(organization_id):
+        settings["stages"] = True
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
@@ -231,7 +247,8 @@ class CalculationService:
       id=uuid4(), organization_id=organization_id, project_id=project_id, requested_by_user_id=user_id,
       rule_set_id=rule_set.id, convention_code=effective_convention, drawing_revision_ids=ids,
       engine_version=kernel.ENGINE_VERSION, fingerprint=fingerprint, status="QUEUED",
-      progress_pct=0, settings={**settings, **_rule_snapshot(rule_set, profile)},
+      progress_pct=0,
+      settings={**settings, **_rule_snapshot(rule_set, profile), SCOPE_KEY: build_scope_snapshot(chosen), OVERLAP_KEY: scope_overlaps},
       force_full=bool(force_full), verify=bool(verify), attempts=0,
     )
     try:
@@ -261,6 +278,12 @@ class CalculationService:
     calc_obs.log_event("run_requested", run_id=run.id, organization_id=organization_id, engine_version=run.engine_version,
       project_id=str(project_id), elements=len(elements), force_full=bool(force_full), verify=bool(verify))
     return run, False
+
+  async def _scope_overlaps(self, organization_id: UUID, drawings) -> list[dict]:
+    shared, counts = await self.runs.shared_global_ids(organization_id, [d.id for d in drawings])
+    return find_scope_overlaps(
+      {(str(a), str(b)): n for (a, b), n in shared.items()}, {str(k): v for k, v in counts.items()},
+      {str(d.id): d.original_filename for d in drawings})
 
   async def _stage(self, run: CalculationRun, name: str, work, progress: int) -> dict:
     if not await self.runs.touch_heartbeat(run.id, self._attempt):
@@ -358,7 +381,7 @@ class CalculationService:
         rule_set_version=rule_set.immutable_version, mappings=mappings,
         convention_params=convention_params, openings=p6.openings, spaces=p6.spaces,
         schedule_lines=p6.schedule_lines, rebar=p6.rebar, takeoff=p6.takeoff,
-        spec_mode=bool(run_settings.get("spec")),
+        spec_mode=bool(run_settings.get("spec")), stage_mode=bool(run_settings.get("stages")),
       )
       state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
@@ -499,12 +522,13 @@ class CalculationService:
       async def pdf_takeoff():
         res = await asyncio.to_thread(tk.measure_takeoff, ctx, profile, p6.takeoff, state["ledger"] + state["extra_ledger"])
         if res.dropped_keys:
+          gone_ids = ids_for_keys(run_id, state["ledger"] + state["extra_ledger"], res.dropped_keys)
           state["ledger"] = tk.apply_replacements(state["ledger"], res.dropped_keys)
           state["extra_ledger"] = tk.apply_replacements(state["extra_ledger"], res.dropped_keys)
           live = {e.solid_id for e in state["ledger"] + state["extra_ledger"]}
           gone = {sid for sid, _ in res.dropped_keys if sid not in live}
           synthetic_gone = [s.id for s in state["extra_solids"] if s.id in gone]
-          await self.runs.drop_staged_ledger(run_id, [uuid5(run_id, f"ledger|{sid}|{code}") for sid, code in res.dropped_keys], synthetic_gone)
+          await self.runs.drop_staged_ledger(run_id, gone_ids, synthetic_gone)
           state["extra_solids"] = [s for s in state["extra_solids"] if s.id not in set(synthetic_gone)]
         await self.runs.stage_solids([_solid_row(run, s, "pdf_takeoff") for s in res.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "pdf_takeoff") for e in res.ledger])
@@ -514,6 +538,15 @@ class CalculationService:
         return {"measurements": res.stats.get("measurements", 0), "counted": res.stats.get("counted", 0),
           "verified": res.stats.get("verified", 0), "skipped": res.stats.get("skipped", {}),
           "replaced_work_items": len(res.stats.get("replaced", []))}
+
+      async def stage_split():
+        res = await asyncio.to_thread(kernel.split_stages, ctx, state["accepted"], state["solids"], state["alloc"], state["ledger"])
+        old_ids, added = restage_plan(run_id, state["ledger"], res)
+        await self.runs.drop_staged_ledger(run_id, old_ids)
+        await self.runs.stage_ledger([_ledger_row(run, e, "measure") for e in added])
+        state["ledger"] = res.ledger
+        state["stage_stats"] = res.stats
+        return {"rows_split": res.stats.get("rows_split", 0), "rows_tagged": res.stats.get("rows_tagged", 0)}
 
       async def check():
         await asyncio.to_thread(kernel.self_check, state["solids"] + state["extra_solids"],
@@ -543,6 +576,11 @@ class CalculationService:
         await self._stage(run, "pdf_takeoff", pdf_takeoff, 79)
       else:
         await self._skip(run, "pdf_takeoff", reason="no confirmed PDF takeoff measurements in this run")
+        
+      if ctx.stage_mode:
+        await self._stage(run, "stage_split", stage_split, 79)
+      else:
+        await self._skip(run, "stage_split", reason="work stages are not switched on for this company")
       
       await self._stage(run, "self_check", check, 80)
 
@@ -602,6 +640,10 @@ class CalculationService:
         "spaces": len(p6.spaces),
         "rebar": state["rebar_stats"],
         "pdf_takeoff": state.get("takeoff_stats", {}),
+        "spec": kernel.spec_stats(ctx, state["ledger"] + state["extra_ledger"]),
+        "stages": state.get("stage_stats") or kernel.stage_stats(ctx),
+        "coverage": kernel.coverage_stats(elements, state["rejected"], state["skipped"], state["unmapped"], state["ledger"]),
+        "confidence": kernel.confidence_stats(state["ledger"] + state["extra_ledger"]),
       })
       if planner is not None:
         await self.runs.prune_state(org, project_id, int(settings.calc_state_keep_runs))
@@ -637,7 +679,7 @@ class CalculationService:
       else:
         code = "RUN_FAILED"
       failed_stage = next((n for n in ("validate_input", "build_solids", "spatial_index", "find_relations", "allocate",
-        "openings", "measure", "finishes", "schedules", "reinforcement", "self_check") if n not in self._timings), None)
+        "openings", "measure", "finishes", "schedules", "reinforcement", "stage_split", "self_check") if n not in self._timings), None)
       await self.runs.fail_running_stages(run_id, str(exc))
       await self.runs.mark_failed(run_id, code, str(exc))
       await self.runs.clear_staged(run_id)

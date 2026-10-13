@@ -119,7 +119,7 @@ class BOQEngineService:
     lines = [logic.LedgerLine(
       id=r.id, solid_id=r.solid_id, element_id=r.element_id, level_id=r.level_id, work_item_code=r.work_item_code,
       quantity=r.quantity_net, unit=r.unit, material_grade=r.material_grade, confidence=r.confidence,
-      warnings=tuple(r.warnings or ()), spec_key=r.spec_key, spec=r.spec) for r in ledger]
+      warnings=tuple(r.warnings or ()), spec_key=r.spec_key, spec=r.spec, work_stage=r.work_stage) for r in ledger]
     catalog = await self.repo.work_items_by_codes(org, {l.work_item_code for l in lines})
     work_items = {
       code: logic.WorkItemInfo(
@@ -195,7 +195,7 @@ class BOQEngineService:
       item.net_quantity, item.waste_factor_applied, item.confidence = d.net_quantity, d.waste_factor, d.confidence
       item.review_status = "WAIVED" if keep_waived else d.review_status
       item.level_id, item.material_grade, item.calculation_formula = d.level_id, d.material_grade, d.formula_text
-      item.spec_key, item.spec = d.spec_key, d.spec
+      item.spec_key, item.spec, item.work_stage = d.spec_key, d.spec, d.work_stage
       item.rule_set_id, item.calculation_run_id, item.engine_version = run.rule_set_id, run.id, run.engine_version
       item.source_element_count, item.drawing_element_id = d.element_count, None
 

@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
 import { SteelRebarRange } from "./SteelRebarRange";
+import { RunTrust } from "./RunTrust";
+import { useStageLabel } from "./StageBadge";
 
 function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: "red" | "gold" }) {
   const color =
@@ -45,6 +47,7 @@ function Counts({ title, data }: { title: string; data?: Record<string, number> 
 
 export function RunStatsSummary({ stats }: { stats?: RunStats }) {
   const { t } = useTranslation();
+  const stageLabel = useStageLabel();
   if (!stats || Object.keys(stats).length === 0) return null;
 
   const a = stats.allocation;
@@ -53,6 +56,9 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
   const failures = Number(a?.conservation_failures ?? 0);
   const estimatedKg = Number(r?.tier3_kg ?? 0);
   const rejected = Number(stats.rejected_total ?? 0);
+
+  const sp = stats.spec;
+  const st = stats.stages;
 
   return (
     <div className="space-y-4">
@@ -67,6 +73,8 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
         <Stat label={t("boq.calculationRun.statRejected", "Rejected")} value={rejected} tone={rejected > 0 ? "red" : undefined} />
         <Stat label={t("boq.calculationRun.statSpaces", "Spaces")} value={stats.spaces ?? 0} />
       </Section>
+
+      <RunTrust stats={stats} />
 
       {a && a.participating !== undefined ? (
         <Section title={t("boq.calculationRun.statsAllocation", "Overlap allocation")}>
@@ -98,6 +106,61 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
             tone={stats.wall_material.material_unknown > 0 ? "gold" : undefined}
           />
         </Section>
+      ) : null}
+
+            {sp?.enabled ? (
+        <Section title={t("boq.calculationRun.statsSpec", "Specification")}>
+          <Stat label={t("boq.calculationRun.statSpecRows", "Rows with a specification")} value={sp.rows_with_spec ?? 0} />
+          <Stat label={t("boq.calculationRun.statSpecMasonry", "Masonry rows")} value={sp.masonry_rows ?? 0} />
+          <Stat label={t("boq.calculationRun.statSpecConcrete", "Concrete rows")} value={sp.concrete_rows ?? 0} />
+          <Stat label={t("boq.calculationRun.statSpecKeys", "Distinct specifications")} value={sp.distinct_spec_keys ?? 0} />
+          <Stat label={t("boq.calculationRun.statSpecMix", "Mix not stated")} value={sp.mix_missing ?? 0} tone={Number(sp.mix_missing ?? 0) > 0 ? "gold" : undefined} />
+          <Stat label={t("boq.calculationRun.statSpecMortar", "Mortar not stated")} value={sp.mortar_missing ?? 0} tone={Number(sp.mortar_missing ?? 0) > 0 ? "gold" : undefined} />
+          <Stat label={t("boq.calculationRun.statSpecThickness", "Thickness not stated")} value={sp.thickness_missing ?? 0} tone={Number(sp.thickness_missing ?? 0) > 0 ? "gold" : undefined} />
+        </Section>
+      ) : null}
+
+      {st?.enabled ? (
+        st.resolved ? (
+          <div className="space-y-3">
+            <Section title={t("boq.calculationRun.statsStages", "Work stages")}>
+              <Stat label={t("boq.calculationRun.statStageSplit", "Rows cut at a level")} value={st.rows_split ?? 0} />
+              <Stat label={t("boq.calculationRun.statStageTagged", "Rows placed whole")} value={st.rows_tagged ?? 0} />
+              <Stat label={t("boq.calculationRun.statStageNotSplit", "Could not be cut")} value={st.rows_not_split ?? 0} tone={Number(st.rows_not_split ?? 0) > 0 ? "gold" : undefined} />
+              <Stat label={t("boq.calculationRun.statStageUnresolved", "Height unknown")} value={st.rows_unresolved ?? 0} tone={Number(st.rows_unresolved ?? 0) > 0 ? "red" : undefined} />
+            </Section>
+            <div>
+              <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+                {t("boq.calculationRun.statsDatums", "Reference levels (mm)")}
+              </div>
+              <ul className="space-y-0.5 text-[11.5px] text-[var(--color-text-secondary)]">
+                {(st.datums ?? []).map((d) => (
+                  <li key={d.name}>
+                    <span className="inline-block w-20 font-mono font-semibold">{d.name}</span>
+                    <span className="inline-block w-20 font-mono">{formatPrecise(d.z_mm, 0)}</span>
+                    <span className={d.source === "default" ? "text-[var(--color-warning)]" : ""}>
+                      {d.source === "model" ? t("boq.calculationRun.datumModel", "from the model")
+                        : d.source === "param" ? t("boq.calculationRun.datumParam", "set on the convention")
+                        : t("boq.calculationRun.datumDefault", "assumed")}
+                    </span>
+                    <span className="ml-2 text-[var(--color-text-muted)]">{d.note}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(st.rows_by_stage ?? {}).map(([k, v]) => (
+                <span key={k} className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 font-mono text-[11px] text-[var(--color-text-secondary)]">
+                  {stageLabel(k)}: {v}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-warning)]">
+            {t("boq.calculationRun.stagesNotDerived", "Quantities were not split by stage of work")}: {st.reason ?? "—"}
+          </div>
+        )
       ) : null}
 
       {o ? (

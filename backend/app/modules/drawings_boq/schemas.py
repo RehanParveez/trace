@@ -120,6 +120,9 @@ class BOQItemResponse(BaseModel):
   rate_book_id: UUID | None = None
   base_rate: Decimal | None = None
   escalation_factor: Decimal | None = None
+  spec_key: str | None = None
+  spec: dict | None = None
+  work_stage: str | None = None
 
 class BOQItemUpdateRequest(BaseModel):
   version: int = Field(
@@ -279,6 +282,26 @@ class CalculationRunCreateRequest(BaseModel):
   force_full: bool = Field(default=False, description="Recompute everything instead of only what changed since the last run.")
   verify: bool = Field(default=False,
     description="After an incremental run, also run the full allocation and compare. Slower; a mismatch falls back to the full result.")
+  confirm_overlap: bool = Field(default=False,
+    description="Go ahead although the chosen drawings share model elements, which would then be counted in each drawing.")
+
+class RunScopeDrawingResponse(BaseModel):
+  drawing_id: UUID
+  filename: str
+  format: str
+  revision_label: str | None = None
+  revision_group_id: UUID | None = None
+  file_size_bytes: int = 0
+  uploaded_at: datetime | None = None
+  parsed_at: datetime | None = None
+
+class RunScopeOverlapResponse(BaseModel):
+  drawing_a_id: UUID
+  drawing_a_name: str
+  drawing_b_id: UUID
+  drawing_b_name: str
+  shared_elements: int
+  share: float
 
 class CalculationRunResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -303,6 +326,8 @@ class CalculationRunResponse(BaseModel):
   force_full: bool = False
   verify: bool = False
   attempts: int = 0
+  scope_drawings: list[RunScopeDrawingResponse] = []
+  scope_overlaps: list[RunScopeOverlapResponse] = []
 
 class RunStageResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -442,6 +467,9 @@ class LedgerRowResponse(BaseModel):
   formula_code: str
   trace: dict
   warnings: list
+  spec_key: str | None = None
+  spec: dict | None = None
+  work_stage: str | None = None
   engine_version: str
   
 class DeductionResponse(BaseModel):

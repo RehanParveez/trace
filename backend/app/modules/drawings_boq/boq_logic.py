@@ -5,6 +5,7 @@ from typing import Callable, Iterable
 import hashlib
 import json
 from app.engine.measure.spec import describe_spec
+from app.engine.measure.stages import stage_label
 
 ZERO = Decimal("0")
 ONE = Decimal("1")
@@ -97,10 +98,10 @@ class LedgerLine:
   warnings: tuple = ()
   spec_key: str | None = None
   spec: dict | None = None
+  work_stage: str | None = None
 
 @dataclass(frozen=True)
 class WorkItemInfo:
-
   code: str
   description: str
   unit: str
@@ -135,23 +136,26 @@ class ItemDraft:
   lines: list = field(default_factory=list)
   spec_key: str | None = None
   spec: dict | None = None
+  work_stage: str | None = None
 
-def make_item_key(code: str, unit: str, grade: str | None, level, spec_key: str | None = None) -> str:
+def make_item_key(code: str, unit: str, grade: str | None, level, spec_key: str | None = None, stage: str | None = None) -> str:
   key = f"{code}|{unit}|{grade or '-'}|{level or '-'}"
-  return f"{key}|{spec_key}" if spec_key else key
+  if spec_key:
+    key = f"{key}|{spec_key}"
+  return f"{key}|@{stage}" if stage else key
 
 def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict | None,
   work_items: dict, waste_for: Callable[[str | None], Decimal]):
   groups: dict = {}
   for ln in lines:
     level = ln.level_id if scope == "level" else None
-    groups.setdefault((ln.work_item_code, ln.unit, ln.material_grade or None, ln.spec_key or None, level), []).append(ln)
+    groups.setdefault((ln.work_item_code, ln.unit, ln.material_grade or None, ln.spec_key or None, ln.work_stage or None, level), []).append(ln)
 
   drafts: list[ItemDraft] = []
   unknown: set = set()
   mismatch: set = set()
-  for key in sorted(groups, key=lambda k: (k[0], k[1], k[2] or "", k[3] or "", str(k[4] or ""))):
-    code, unit, grade, spec_key, level = key
+  for key in sorted(groups, key=lambda k: (k[0], k[1], k[2] or "", k[3] or "", k[4] or "", str(k[5] or ""))):
+    code, unit, grade, spec_key, stage, level = key
     group = sorted(groups[key], key=lambda l: (str(l.element_id), str(l.id)))
     wi = work_items.get(code)
     if wi is None:
@@ -170,11 +174,12 @@ def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict 
       w in REVIEW_WARNING_CODES for l in group for w in l.warnings)
     description = wi.description if wi else code
     spec = next((l.spec for l in group if l.spec), None)
-    label = describe_spec(spec)
+    label = ", ".join(x for x in (describe_spec(spec), stage_label(stage)) if x)
+    
     if label:
       description = f"{description} ({label})"
     drafts.append(ItemDraft(
-      item_key=make_item_key(code, unit, grade, level, spec_key), work_item_code=code, level_id=level,
+      item_key=make_item_key(code, unit, grade, level, spec_key, stage), work_item_code=code, level_id=level,
       material_grade=grade, canonical_unit=unit, unit=display, unit_factor=factor,
       canonical_total=total, net_quantity=net, waste_factor=waste, confidence=confidence,
       review_status="REVIEW_REQUIRED" if flagged else "OK",
@@ -182,7 +187,7 @@ def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict 
       category=wi.trade if wi else None,
       formula_text=f"Sum of {len(group)} ledger row(s) in {unit} x {factor} = {display}"[:500],
       element_count=len({l.element_id for l in group if l.element_id is not None}),
-      lines=group,
+      lines=group, spec_key=spec_key, spec=spec, work_stage=stage,
     ))
   return drafts, sorted(unknown), sorted(mismatch)
 
@@ -315,6 +320,20 @@ LEDGER_WARNING_CATALOG = {
   "SPEC_THICKNESS_MISSING": ("warning", "NONE",
     "The model does not give a thickness for these masonry walls, so walls of different thickness may be grouped together.",
     "Give the walls a thickness in the model, or check them one by one."),
+  "DATUM_DEFAULTED": ("info", "NONE",
+    "The stage this quantity falls in depends on a reference level that the model does not give (the DPC or the lintel level), "
+    "so an assumed level was used. The total quantity is not affected, only which stage it is shown under.",
+    "Set the DPC drop below floor level or the lintel height on the measurement convention, or confirm the levels with the engineer."),
+  "STAGE_NOT_SPLIT": ("warning", "NONE",
+    "This element stands across a stage level but could not be cut there (no exact footprint, or not upright), so all of it was put "
+    "in the stage holding its middle.",
+    "Check the element in the model; re-upload with the current reader so footprints are stored."),
+  "STAGE_UNRESOLVED": ("warning", "NONE",
+    "The height of this element is not known, so it could not be placed in a stage of work.",
+    "Check the element in the model."),
+  "STAGE_DEDUCTION_APPORTIONED": ("info", "NONE",
+    "A deduction on this element has no recorded height, so it was shared between the stages in proportion to their height.",
+    "Re-run with the current reader so openings carry their heights."),
   "SAME_ROLE_OVERLAP": ("warning", "NONE", "Elements of the same role overlap; the lowest element id owns the shared volume.",
     "Check these overlaps in the model."),
   "ALLOCATION_APPROXIMATE": ("warning", "NONE", "Overlaps were allocated from bounding boxes, not exact footprints.",
@@ -366,6 +385,22 @@ LEDGER_WARNING_CATALOG = {
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
+
+STAGE_REASON_TEXT = {
+  "NO_DOORS_FOR_FLOOR_LEVEL": "the model has no doors, so the floor level could not be found",
+  "NO_FLOOR_SLAB_FOUND": "no floor slab was found a storey above the floor level",
+  "DATUMS_OUT_OF_ORDER": "the floor level, lintel level and slab level found in the model are not in a workable order",
+}
+
+def stage_issue_specs(stats: dict) -> list[IssueSpec]:
+  if not stats.get("enabled") or stats.get("resolved"):
+    return []
+  reason = stats.get("reason") or "UNKNOWN"
+  return [IssueSpec(
+    code="STAGES_NOT_DERIVED", severity="info", blocks="NONE", dedupe_key="STAGES_NOT_DERIVED",
+    message=f"Quantities were not split by stage of work because {STAGE_REASON_TEXT.get(reason, reason)}.",
+    suggested_fix="Check the doors and the floor slabs in the model, or set the reference levels on the measurement convention.",
+    details={"reason": reason})]
 
 def takeoff_issue_specs(stats: dict) -> list[IssueSpec]:
   specs: list[IssueSpec] = []

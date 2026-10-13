@@ -15,10 +15,12 @@ from app.engine.measure.rebar import REBAR_FORMULA_UNITS, measure_rebar, self_ch
 from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UNITS, STEEL_REJECTED_CODE, STEEL_SOLID_PROFILE_FACTOR,
   STEEL_UNCERTAIN_FACTOR, UNCERTAIN_BASES, is_pile, is_steel_role, measure_steel, solid_profile_suspected, split_steel,
   steel_check, steel_duplicate_ids, steel_length_mm, steel_member_length_mm, steel_recoverable, steel_stats)
+from app.engine.measure.stages import split_stages
+from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.6"
+ENGINE_VERSION = "2026.10.8"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -98,14 +100,33 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
           status = "REVIEW_REQUIRED"
   elif kind in ("BOX_ONLY", "QTO_ONLY"):
     volume_mm3 = qto_mm3
+    from_bbox = False
     if volume_mm3 is None and kind == "BOX_ONLY":
       volume_mm3 = bbox_volume_mm3(el.bbox_min_mm, el.bbox_max_mm)
+      from_bbox = volume_mm3 is not None
+    status = "REVIEW_REQUIRED"
     if volume_mm3 is None:
       issues.append(_issue("UNSUPPORTED_GEOMETRY", "warning", "No usable volume for this element."))
-    else:
-      factor = LOW_CONFIDENCE_FACTOR if kind == "BOX_ONLY" else QTO_ONLY_FACTOR
+    elif kind == "QTO_ONLY":
+      factor = QTO_ONLY_FACTOR
       issues.append(_issue("LOW_CONFIDENCE_GEOMETRY", "warning", f"Volume taken from {kind}; treat as approximate."))
-    status = "REVIEW_REQUIRED"
+    else:
+      factor = box_factor(el.volume_check, from_bbox)
+      if stands_on_its_own(el.volume_check, from_bbox):
+        status = "OK"
+        issues.append(_issue(
+          "BOX_VOLUME_VERIFIED" if el.volume_check == VERIFIED else "BOX_VOLUME_FROM_MESH", "info",
+          "Volume agrees with the closed 3D mesh. The shape is a bounding box, so overlaps and openings are approximate."
+          if el.volume_check == VERIFIED else
+          "Volume taken from the closed 3D mesh. The shape is a bounding box, so overlaps and openings are approximate."))
+      elif from_bbox:
+        issues.append(_issue("LOW_CONFIDENCE_GEOMETRY", "warning",
+          "No model volume and no closed mesh; the volume is the bounding box, which overstates a slanted or notched member."))
+      elif el.volume_check == MISMATCH:
+        issues.append(_issue("LOW_CONFIDENCE_GEOMETRY", "warning",
+          "The model's volume and the 3D mesh volume differ by more than 2%; treat as approximate."))
+      else:
+        issues.append(_issue("LOW_CONFIDENCE_GEOMETRY", "warning", f"Volume taken from {kind}; treat as approximate."))
   else:
     issues.append(_issue("UNSUPPORTED_GEOMETRY", "warning", "Geometry kind not measurable in this engine version."))
     status = "REVIEW_REQUIRED"
@@ -122,7 +143,7 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     level_id=el.level_id, geometry_kind=kind,
     classification_confidence=el.classification_confidence, confidence_factor=factor,
     gross_volume_m3=gross, status=status, issues=tuple(issues), material_class=el.material_class,
-    material_grade=spec_grade(spec), spec=spec,
+    material_grade=spec_grade(spec), spec=spec, volume_check=el.volume_check if kind == "BOX_ONLY" else None,
   )
 
 def _steel_flags(el: ModelElement, duplicate: bool):
@@ -174,7 +195,7 @@ def _steel_solid_base(ctx: CalculationContext, el: ModelElement, duplicate: bool
       material_class=STEEL)
     
   solid = _volume_solid(ctx, el)
-  issues = [i for i in solid.issues if i["code"] != "LOW_CONFIDENCE_GEOMETRY"]
+  issues = [i for i in solid.issues if i["code"] not in ("LOW_CONFIDENCE_GEOMETRY", "BOX_VOLUME_VERIFIED", "BOX_VOLUME_FROM_MESH")]
   issues.append(note)
   
   if kind == "BOX_ONLY":
@@ -269,7 +290,9 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         quantity = Decimal("0")
         
       formula, unit = "SOLID_NET_VOLUME", Unit.M3.value
-      inputs = {"geometry_kind": s.geometry_kind, "gross_m3": str(gross)}
+      inputs = {"geometry_kind": s.geometry_kind, "gross_m3": str(gross), "confidence_factor": str(s.confidence_factor)}
+      if s.volume_check:
+        inputs["volume_check"] = s.volume_check
       if s.material_class:
         inputs["material_class"] = s.material_class
       if redirect:
@@ -355,6 +378,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
     ded_total[d.from_solid_id] = ded_total.get(d.from_solid_id, Decimal("0")) + d.quantity
 
   seen: set = set()
+  net_by_solid: dict = {}
   for row in ledger:
     solid = by_id.get(row.solid_id)
     if solid is None:
@@ -364,19 +388,25 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
       failures.append(f"negative quantity on solid {row.solid_id}")
     if _expected_unit(row.formula_code) != row.unit:
       failures.append(f"unit {row.unit} does not match formula {row.formula_code}")
-    key = (row.solid_id, row.work_item_code)
+    key = (row.solid_id, row.work_item_code, row.work_stage)
     if key in seen:
       failures.append(f"duplicate ledger row for {key}")
     seen.add(key)
     if not row.trace or "formula_code" not in row.trace:
       failures.append(f"missing trace on solid {row.solid_id}")
+      if row.work_stage is not None and row.source_kind != "MODEL":
+       failures.append(f"work stage {row.work_stage} on a row not measured from the model ({row.solid_id})")
+       
     if row.formula_code == "SOLID_NET_VOLUME" and row.spec_key != spec_key(solid.spec):
       failures.append(f"specification key differs from its solid on solid {row.solid_id}")
       
     if row.formula_code == "SOLID_NET_VOLUME" and solid.gross_volume_m3 is not None:
-      expected = q6(max(Decimal("0"), solid.gross_volume_m3 - ded_total.get(row.solid_id, Decimal("0"))))
-      if row.quantity != expected:
-        failures.append(f"net volume != gross - deductions on solid {row.solid_id}")
+      net_by_solid[row.solid_id] = net_by_solid.get(row.solid_id, Decimal("0")) + row.quantity
+
+  for solid_id, total in net_by_solid.items():
+    expected = q6(max(Decimal("0"), by_id[solid_id].gross_volume_m3 - ded_total.get(solid_id, Decimal("0"))))
+    if total != expected:
+      failures.append(f"net volume != gross - deductions on solid {solid_id}")
 
   failures.extend(takeoff_check(solids, ledger))
   failures.extend(steel_check(solids, ledger))
@@ -417,6 +447,46 @@ def spec_stats(ctx: CalculationContext, ledger: list[LedgerEntry]) -> dict:
     "thickness_missing": count("SPEC_THICKNESS_MISSING"),
     "distinct_spec_keys": len({(r.work_item_code, r.material_grade, r.spec_key) for r in rows}),
   }
+  
+def stage_stats(ctx: CalculationContext) -> dict:
+  return {"enabled": bool(ctx.stage_mode)}
+
+def coverage_stats(elements: list, rejected: list, skipped: dict, unmapped: dict, ledger: list) -> dict:
+  ids = {e.id for e in elements}
+  measured = len({r.element_id for r in ledger if r.element_id in ids and getattr(r, "source_kind", "MODEL") == "MODEL"})
+  not_roled = sum(skipped.values())
+  not_mapped = sum(unmapped.values())
+  other = max(0, len(ids) - measured - len(rejected) - not_roled - not_mapped)
+  
+  return {
+    "elements": len(ids), "measured": measured, "rejected": len(rejected),
+    "skipped_by_role": not_roled, "unmapped": not_mapped, "other_unmeasured": other,
+  }
+
+def confidence_stats(ledger: list) -> dict:
+  zero = Decimal("0")
+  bands = {"HIGH": 0, "MEDIUM": 0, "LOW": 0}
+  volume = {"HIGH": zero, "MEDIUM": zero, "LOW": zero}
+  by_geometry: dict = {}
+  
+  for r in ledger:
+    b = band(r.confidence)
+    bands[b] += 1
+    inputs = (r.trace or {}).get("inputs") or {}
+    if r.unit == Unit.M3.value and r.source_kind == "MODEL":
+      volume[b] += r.quantity
+      label = inputs.get("geometry_kind") or "UNKNOWN"
+      if inputs.get("volume_check"):
+        label = f"{label}:{inputs['volume_check']}"
+      row = by_geometry.setdefault(label, {"rows": 0, "m3": zero})
+      row["rows"] += 1
+      row["m3"] += r.quantity
+      
+  return {
+    "rows": len(ledger), "bands": bands,
+    "volume_m3": {k: str(q6(v)) for k, v in volume.items()},
+    "by_geometry": {k: {"rows": v["rows"], "m3": str(q6(v["m3"]))} for k, v in sorted(by_geometry.items())},
+  }
 
 def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> CalculationResult:
   accepted, rejected = validate_input(ctx, elements)
@@ -456,6 +526,12 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids = [s for s in extra_solids if s.id not in gone]
     extra_solids += takeoff_res.solids
     extra_ledger += takeoff_res.ledger
+    stage_info: dict = stage_stats(ctx)
+    
+  if ctx.stage_mode:
+    staged = split_stages(ctx, accepted, solids, alloc, ledger)
+    ledger = staged.ledger
+    stage_info = staged.stats
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:
@@ -469,6 +545,9 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "skipped_by_role": skipped,
     "wall_material": wall_material_stats(solids, ledger),
     "spec": spec_stats(ctx, ledger),
+    "stages": stage_info,
+    "coverage": coverage_stats(elements, rejected, skipped, unmapped, ledger),
+    "confidence": confidence_stats(ledger + extra_ledger),
     "steel": steel_stats(solids, ledger, rejected),
     "unmapped_by_type": unmapped,
     "rejected": [{"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code, "message": r.message} for r in rejected],

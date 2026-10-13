@@ -84,6 +84,48 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
     fix: "Check that doors and windows are hosted by this wall, or add an adjustment.",
   },
 
+  SPEC_MIX_MISSING: {
+    severity: "info", blocks: "NONE",
+    message: "The model does not state a concrete mix or grade for these elements, so they are grouped without one.",
+    fix: "Give the concrete a material name that carries the mix (for example Reinforced Concrete 1:2:4 or M20), or confirm the mix with the engineer.",
+  },
+
+  SPEC_MORTAR_MISSING: {
+    severity: "info", blocks: "NONE",
+    message: "The model does not state a mortar ratio for these masonry walls, so they are grouped without one.",
+    fix: "Read the mortar ratio from the drawing notes or specification and set it on the rule set or the wall material.",
+  },
+
+  SPEC_THICKNESS_MISSING: {
+    severity: "warning", blocks: "NONE",
+    message: "The model does not give a thickness for these masonry walls, so walls of different thickness may be grouped together.",
+    fix: "Give the walls a thickness in the model, or check them one by one.",
+  },
+
+  DATUM_DEFAULTED: {
+    severity: "info", blocks: "NONE",
+    message: "The stage this quantity falls in depends on a reference level the model does not give (the DPC or the lintel level), so an assumed level was used. The total quantity is not affected.",
+    fix: "Set the DPC drop below floor level or the lintel height on the measurement convention, or confirm the levels with the engineer.",
+  },
+
+  STAGE_NOT_SPLIT: {
+    severity: "warning", blocks: "NONE",
+    message: "This element stands across a stage level but could not be cut there, so all of it was put in the stage holding its middle.",
+    fix: "Check the element in the model; re-upload with the current reader so footprints are stored.",
+  },
+
+  STAGE_UNRESOLVED: {
+    severity: "warning", blocks: "NONE",
+    message: "The height of this element is not known, so it could not be placed in a stage of work.",
+    fix: "Check the element in the model.",
+  },
+
+  STAGE_DEDUCTION_APPORTIONED: {
+    severity: "info", blocks: "NONE",
+    message: "A deduction on this element has no recorded height, so it was shared between the stages in proportion to their height.",
+    fix: "Re-run with the current reader so openings carry their heights.",
+  },
+
   ZERO_GROSS_VOLUME: {
     severity: "warning",
     blocks: "NONE",
@@ -294,7 +336,7 @@ export const DEDUCTION_RULE_LABEL: Record<string, string> = {
 };
 
 export const TRACE_OP_LABEL: Record<string, string> = {
-  gross_volume: "Gross volume", deduction: "Deduction", net_volume: "Net volume",
+  gross_volume: "Gross volume", stage_gross_volume: "Gross volume in this stage", deduction: "Deduction", net_volume: "Net volume",
   gross_area: "Gross area", gross_length: "Gross length", net: "Net", count: "Count",
   schedule_quantity: "Schedule quantity", declared_cut_length: "Declared cut length",
   segments: "Segment total", bend_deduction: "Bend deduction", hook_allowance: "Hook allowance",
@@ -763,6 +805,28 @@ export function lifecycleTone(
     default:
       return "slate";
   }
+}
+
+const STAGE_FALLBACK: Record<string, string> = {
+  BELOW_PLINTH: "Below plinth",
+  PLINTH_TO_LINTEL: "Plinth to lintel",
+  LINTEL_TO_SLAB: "Lintel to slab",
+  TOP: "Above roof slab",
+};
+
+export function stageDescriptor(code: string): { key: string; fallback: string; n?: number } {
+  const m = /^UPPER_FLOOR_(\d+)$/.exec(code);
+  if (m) return { key: "boq.stage.UPPER_FLOOR", fallback: `Upper floor ${m[1]}`, n: Number(m[1]) };
+  return { key: `boq.stage.${code}`, fallback: STAGE_FALLBACK[code] ?? code.replace(/_/g, " ").toLowerCase() };
+}
+
+export function stageSortKey(code: string | null | undefined): number {
+  if (!code) return 999;
+  const order = ["BELOW_PLINTH", "PLINTH_TO_LINTEL", "LINTEL_TO_SLAB"].indexOf(code);
+  if (order >= 0) return order;
+  const m = /^UPPER_FLOOR_(\d+)$/.exec(code);
+  if (m) return 10 + Number(m[1]);
+  return code === "TOP" ? 900 : 500;
 }
 
 export function traceStepValue(step: TraceStep): { value: string; unit: string } | null {

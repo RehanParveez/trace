@@ -61,11 +61,17 @@ class _Calc:
   warnings: list
   inputs: dict
 
+def _z_extent(o) -> dict:
+  lo, hi = getattr(o, "z_min_mm", None), getattr(o, "z_max_mm", None)
+  if lo is None or hi is None or hi <= lo:
+    return {}
+  return {"z_min_mm": float(lo), "z_max_mm": float(hi)}
+
 def _void(host: Solid, o, quantity: Decimal, rule: str, explanation: str, extra: dict) -> Deduction:
   return Deduction(
     from_solid_id=host.id, to_solid_id=None, deduction_type="VOID_DEDUCTION", quantity=quantity, unit="m3",
     rule_code=rule, explanation=explanation,
-    geometry={"opening_element_id": str(o.element_id), "role": o.role, **extra},
+    geometry={"opening_element_id": str(o.element_id), "role": o.role, **_z_extent(o), **extra},
   )
 
 DEDUCTIBLE_KINDS = ("EXTRUDED_PROFILE", "AXIS_SWEPT")
@@ -128,6 +134,7 @@ def resolve_finishes(space, rules) -> list[_Finish]:
   for finish in space.finishes:
     explicit_by_surface.setdefault(finish.surface, []).append(finish)
   result = []
+  
   for surface, finishes in explicit_by_surface.items():
     for finish in sorted(finishes, key=lambda f: (f.work_item_code, str(f.id))):
       result.append(
@@ -422,6 +429,7 @@ def finish_sched_payload(spaces, openings, lines) -> dict:
     "openings": [
       {"element_id": str(o.element_id), "role": o.role, "host_element_id": str(o.host_element_id) if o.host_element_id else None, "host_thickness_mm": str(o.host_thickness_mm), "width_mm": str(o.width_mm), "height_mm": str(o.height_mm), "level_id": str(o.level_id) if o.level_id else None,
         "centre_mm": o.centre_mm,
+        "z_min_mm": str(o.z_min_mm) if o.z_min_mm is not None else None, "z_max_mm": str(o.z_max_mm) if o.z_max_mm is not None else None,
       }
       for o in sorted(openings, key=lambda x: str(x.element_id))
     ],

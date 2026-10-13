@@ -76,6 +76,8 @@ class Settings(BaseSettings):
   
   engine_v2_org_ids: str = ""
   engine_spec_org_ids: str = ""
+  engine_stage_org_ids: str = ""
+  
   engine_default_convention: str = "FRAME_MONOLITHIC_A"
 
   calc_max_concurrent_runs_per_org: int = 3

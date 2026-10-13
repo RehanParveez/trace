@@ -6,8 +6,9 @@ import { getApiErrorMessage } from "../../identity";
 import {useApproveBOQItem, useBOQItems, useConfirmBOQItemRate, useDeleteBOQItem, useUpdateBOQItem, useWaiveBOQItemReview,
 } from "../hooks";
 import type { BOQItem } from "../types/drawings-boq.types";
-import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity,
+import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrency, formatQuantity, stageSortKey
 } from "../utils/drawings-boq.utils";
+import { useStageLabel } from "./StageBadge";
 import { BOQItemTraceDialog } from "./BOQItemTraceDialog";
 import { BOQItemAdjustmentsDialog } from "./BOQItemAdjustmentsDialog";
 import { OverrideFormDialog } from "../pricing/components/OverrideFormDialog";
@@ -107,6 +108,16 @@ export function BOQItemTable({
   const items =
     itemsQuery.data ?? [];
 
+  const stageLabel = useStageLabel();
+  const [stageFilter, setStageFilter] = useState<string | null>(null);
+  const stages = Array.from(new Set(items.map((i) => i.work_stage).filter((s): s is string => !!s)))
+    .sort((a, b) => stageSortKey(a) - stageSortKey(b));
+  const shownItems = stageFilter ? items.filter((i) => i.work_stage === stageFilter) : items;
+  const chip = (on: boolean) =>
+    `rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${on
+      ? "bg-[var(--color-trace-navy)] text-white"
+      : "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"}`;
+
   function handleConflict() {
     setNotice(
       t("boq.items.conflict"),
@@ -138,6 +149,19 @@ export function BOQItemTable({
       {notice ? (
         <div className="border-b border-[var(--color-info)]/25 bg-[var(--color-info-bg)] px-5 py-3 text-[12px] text-[var(--color-info)]">
           {notice}
+        </div>
+      ) : null}
+
+      {stages.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--color-border)] px-5 py-3">
+          <button type="button" onClick={() => setStageFilter(null)} className={chip(stageFilter === null)}>
+            {t("boq.items.stageAll", "All stages")}
+          </button>
+          {stages.map((s) => (
+            <button key={s} type="button" onClick={() => setStageFilter(s)} className={chip(stageFilter === s)}>
+              {stageLabel(s)}
+            </button>
+          ))}
         </div>
       ) : null}
 
@@ -212,7 +236,7 @@ export function BOQItemTable({
             </thead>
 
             <tbody>
-              {items.map((item) =>
+              {shownItems.map((item) =>
                 editingId ===
                 item.id ? (
                   <BOQItemEditRow

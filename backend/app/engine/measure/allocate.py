@@ -39,7 +39,7 @@ def _union_mm3(group: list, index: SpatialIndex, min_z: float) -> float:
 
 @dataclass(frozen=True)
 class CachedAllocation:
-  """Result of allocating one solid in an earlier run, re-expressed with this run's solid ids."""
+  
   deductions: tuple
   approximate: bool
   warnings: tuple
@@ -47,14 +47,11 @@ class CachedAllocation:
 
 @dataclass(frozen=True)
 class Reuse:
-  """Incremental recalculation plan (Phase 9). `recompute` are allocated afresh, every other participating solid takes its
-  `cached` result; only overlap components containing a `recompute` solid are conservation-checked again."""
+
   recompute: frozenset
   cached: dict
 
 def _allocate_solid(sid, prism, poly, owners, index, by_id, convention, min_z):
-  """Allocation of one solid against the owners that outrank it. Depends on nothing but the solid and its owners, which is
-  what makes a one-hop neighbourhood the exact set to recompute when an element changes."""
   total_mm3 = poly.area * (prism.z1 - prism.z0)
   if not owners:
     return [], False, set(), total_mm3
@@ -68,6 +65,7 @@ def _allocate_solid(sid, prism, poly, owners, index, by_id, convention, min_z):
   bands = sorted(zs)
 
   taken = {n: 0.0 for n in owners}
+  taken_bands: dict = {n: [] for n in owners}
   for za, zb in zip(bands, bands[1:]):
     h = zb - za
     if h < min_z:
@@ -80,6 +78,7 @@ def _allocate_solid(sid, prism, poly, owners, index, by_id, convention, min_z):
         if piece.is_empty or piece.area <= 0:
           continue
         taken[n] += piece.area * h
+        taken_bands[n].append([round(za, 1), round(zb, 1), round(piece.area * h, 1)])
         remaining = remaining.difference(piece)
         if remaining.is_empty:
           break
@@ -101,7 +100,7 @@ def _allocate_solid(sid, prism, poly, owners, index, by_id, convention, min_z):
     deductions.append(Deduction(
       from_solid_id=sid, to_solid_id=n, deduction_type=dtype, quantity=quantity,
       unit=Unit.M3.value, rule_code=rule,
-      geometry={"method": "polygon_z_band" if exact else "aabb", "owner_element_id": str(owner.element_id)},
+      geometry={"method": "polygon_z_band" if exact else "aabb", "owner_element_id": str(owner.element_id), "bands": taken_bands[n]},
       explanation=f"{loser.role} volume shared with {owner.role}; owned by {owner.role} under {convention.code}.",
     ))
   return deductions, approximate, warnings, max(0.0, total_mm3 - sum(taken.values()))
@@ -177,6 +176,7 @@ def allocate(ctx: CalculationContext, convention, solids: list[Solid], index: Sp
     conservation_failures=tuple(failures),
     applied=True,
     owned_mm3=owned_mm3,
+    
     stats={
       "convention": convention.code, "participating": len(index.prisms), "overlaps": len(overlaps),
       "approximate_solids": len(approximate), "components_checked": checked,

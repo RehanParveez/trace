@@ -23,6 +23,7 @@ class ModelElement:
   material_basis: str | None = None
   thickness_mm: Decimal | None = None
   material_text: str | None = None
+  volume_check: str | None = None
 
 @dataclass(frozen=True)
 class MappingInput:
@@ -46,6 +47,7 @@ class CalculationContext:
   rebar: object = None
   takeoff: object = None
   spec_mode: bool = False
+  stage_mode: bool = False
 
 @dataclass(frozen=True)
 class Solid:
@@ -67,6 +69,7 @@ class Solid:
   issues: tuple = ()
   material_class: str | None = None
   spec: dict | None = None
+  volume_check: str | None = None
 
 @dataclass(frozen=True)
 class LedgerEntry:
@@ -84,6 +87,7 @@ class LedgerEntry:
   source_kind: str = "MODEL"
   spec: dict | None = None
   spec_key: str | None = None
+  work_stage: str | None = None
 
 @dataclass(frozen=True)
 class Rejected:
@@ -160,6 +164,8 @@ class OpeningInput:
   height_mm: Decimal | None
   level_id: UUID | None
   centre_mm: tuple | None
+  z_min_mm: Decimal | None = None
+  z_max_mm: Decimal | None = None
 
 @dataclass(frozen=True)
 class SpaceFinishInput:

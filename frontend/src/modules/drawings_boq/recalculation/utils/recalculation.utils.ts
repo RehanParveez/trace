@@ -145,7 +145,7 @@ export function runFailureInfo(t: Translate, code: string | null | undefined): F
   }
 }
 
-export type StartErrorKind = "concurrency" | "rate" | "quota" | "in_progress" | "other";
+export type StartErrorKind = "concurrency" | "rate" | "quota" | "in_progress" | "overlap" | "other";
 
 export interface StartRunError {
   kind: StartErrorKind;
@@ -164,6 +164,7 @@ export function classifyStartError(error: unknown, fallback: string): StartRunEr
   const message = getApiErrorMessage(error, fallback);
   if (code === "RUN_CONCURRENCY_LIMIT") return { kind: "concurrency", code, message, retryable: true };
   if (code === "RUN_RATE_LIMITED") return { kind: "rate", code, message, retryable: true };
+  if (code === "DRAWINGS_OVERLAP") return { kind: "overlap", code, message, retryable: false };
   if (code === "RUN_IN_PROGRESS" || (status === 409 && !code)) return { kind: "in_progress", code, message, retryable: true };
   if (status === 402) return { kind: "quota", code, message, retryable: false };
   return { kind: "other", code, message, retryable: false };

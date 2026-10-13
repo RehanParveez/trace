@@ -1,6 +1,6 @@
 from __future__ import annotations
-import hashlib
 import json
+import hashlib
 
 def _element_key(e) -> dict:
   return {
@@ -14,10 +14,12 @@ def _element_key(e) -> dict:
     "m": getattr(e, "material_class", None),
     "th": str(e.thickness_mm) if getattr(e, "thickness_mm", None) is not None else None,
     "mt": getattr(e, "material_text", None),
+    "vc": getattr(e, "volume_check", None),
   }
 
 def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,
   convention_params: dict | None = None, spatial: dict | None = None) -> str:
+  
   payload = {
     "elements": [_element_key(e) for e in sorted(elements, key=lambda e: str(e.id))],
     "mappings": [[m.ifc_type, m.work_item_code, str(m.confidence_base)]

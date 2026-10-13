@@ -76,6 +76,7 @@ def derive_spec(el) -> dict | None:
   klass = el.material_class
   if klass == "STEEL":
     return None
+
   if is_wall(role) and klass != CONCRETE:
     spec: dict = {"kind": MASONRY}
     basis: dict = {}
@@ -98,6 +99,7 @@ def derive_spec(el) -> dict | None:
   if (is_wall(role) and klass == CONCRETE) or is_structural_concrete(role):
     spec = {"kind": CONCRETE}
     grade = concrete_grade(text)
+    
     if grade:
       spec["grade"] = grade
       spec["basis"] = {"grade": "material_text"}

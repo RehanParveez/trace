@@ -211,6 +211,9 @@ export interface BOQItem {
   item_key?: string | null;
   level_id?: string | null;
   material_grade?: string | null;
+  spec_key?: string | null;
+  spec?: BOQItemSpec | null;
+  work_stage?: string | null;
   canonical_unit?: string | null;
   unit_factor?: number | string | null;
   adjustment_total?: number | string;
@@ -254,6 +257,9 @@ export interface BOQItemResponse {
   level_id: string | null;
   item_key: string | null;
   calculation_run_id: string | null;
+  spec_key?: string | null;
+  spec?: BOQItemSpec | null;
+  work_stage?: string | null;
   rate_book_id: string | null;
   base_rate: number | string | null;
   escalation_factor: number | string | null;
@@ -372,6 +378,27 @@ export interface CalculationRunCreateRequest {
   convention_code?: string | null;
   force_full?: boolean;
   verify?: boolean;
+  confirm_overlap?: boolean;
+}
+
+export interface RunScopeOverlap {
+  drawing_a_id: string;
+  drawing_a_name: string;
+  drawing_b_id: string;
+  drawing_b_name: string;
+  shared_elements: number;
+  share: number;
+}
+
+export interface RunScopeDrawing {
+  drawing_id: string;
+  filename: string;
+  format: string;
+  revision_label: string | null;
+  revision_group_id?: string | null;
+  file_size_bytes: number;
+  uploaded_at?: string | null;
+  parsed_at?: string | null;
 }
 
 export interface CalculationRun {
@@ -382,6 +409,8 @@ export interface CalculationRun {
   rule_set_id?: string;
   convention_code?: string | null;
   drawing_revision_ids?: string[];
+  scope_drawings?: RunScopeDrawing[];
+  scope_overlaps?: RunScopeOverlap[];
   engine_version: string;
   fingerprint?: string;
   status: CalculationRunStatus;
@@ -498,6 +527,9 @@ export interface LedgerRow {
   quantity_net: number | string;
   unit: string;
   material_grade?: string | null;
+  spec_key?: string | null;
+  spec?: BOQItemSpec | null;
+  work_stage?: string | null;
   source_kind: LedgerSourceKind;
   confidence: number | string;
   formula_code: string;
@@ -516,6 +548,9 @@ export interface LedgerRowResponse {
   unit: string;
   material_grade: string | null;
   source_kind: string;
+  spec_key?: string | null;
+  spec?: BOQItemSpec | null;
+  work_stage?: string | null;
   confidence: number | string;
   formula_code: string;
   trace: LedgerTrace;
@@ -1197,6 +1232,64 @@ export interface RunStats {
   rebar_skipped?: Record<string, number>;
   finish_skipped?: Record<string, number>
   wall_material?: WallMaterialStats
+  spec?: SpecStats;
+  stages?: StageStats;
+  coverage?: CoverageStats;
+  confidence?: ConfidenceStats;
+}
+
+export interface CoverageStats {
+  elements: number;
+  measured: number;
+  rejected: number;
+  skipped_by_role: number;
+  unmapped: number;
+  other_unmeasured: number;
+}
+
+export interface ConfidenceStats {
+  rows: number;
+  bands: { HIGH: number; MEDIUM: number; LOW: number };
+  volume_m3: { HIGH: string; MEDIUM: string; LOW: string };
+  by_geometry: Record<string, { rows: number; m3: string }>;
+}
+
+export interface BOQItemSpec {
+  kind: "MASONRY" | "CONCRETE";
+  thickness_mm?: number;
+  mortar?: string;
+  grade?: string;
+  basis?: Record<string, string>;
+}
+
+export interface SpecStats {
+  enabled: boolean;
+  rows_with_spec?: number;
+  masonry_rows?: number;
+  concrete_rows?: number;
+  mix_missing?: number;
+  mortar_missing?: number;
+  thickness_missing?: number;
+  distinct_spec_keys?: number;
+}
+
+export interface StageDatum {
+  name: string;
+  z_mm: number;
+  source: "model" | "param" | "default";
+  note: string;
+}
+
+export interface StageStats {
+  enabled: boolean;
+  resolved?: boolean;
+  reason?: string;
+  datums?: StageDatum[];
+  rows_split?: number;
+  rows_tagged?: number;
+  rows_not_split?: number;
+  rows_unresolved?: number;
+  rows_by_stage?: Record<string, number>;
 }
 
 export interface WallMaterialStats {

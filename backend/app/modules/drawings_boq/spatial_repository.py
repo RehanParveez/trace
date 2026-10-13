@@ -18,6 +18,7 @@ class ReinforcementsInputs:
   spaces: tuple = ()
   openings: tuple = ()
   schedule_lines: tuple = ()
+  rebar: object = None
   takeoff: object = None
 
 def _chunks(items: list, size: int = _CHUNK):
@@ -149,6 +150,8 @@ async def load_reinforcements_inputs(
       height_mm=e.height_mm,
       level_id=e.level_id,
       centre_mm=centre,
+      z_min_mm=e.bbox_min_z_mm,
+      z_max_mm=e.bbox_max_z_mm,
     )
     
   

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {Badge, Button, ErrorState, LoadingState, Panel, PanelHeader, useToast,
 } from "../../organizations/components/OrganizationUi";
-import {useBuildBOQFromCalculationRun, useCalculationRun, useCalculationRunDeductions, useCalculationRunLedger, useCalculationRunSolids, useCalculationRunStages, useStartCalculationRun,
+import {useBuildBOQFromCalculationRun, useCalculationRun, useCalculationRunDeductions, useCalculationRunLedger, useCalculationRunSolids, useCalculationRunStages, useStartCalculationRun, useDrawings,
 } from "../hooks";
 import {formatCalculationRunStatus, formatQuantity, getCalculationRunTone,
 } from "../utils/drawings-boq.utils";
@@ -13,6 +13,7 @@ import { RunStatsSummary } from "./RunStatsSummary";
 import { ledgerRangeText } from "./SteelRebarRange";
 import { RebarMarksPanel } from "./RebarMarksPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
+import { RunScope } from "./RunScope";
 import {CalcUsagePanel, ElementImpactButton, RunFailureNotice, RunMetricsPanel, RunModeBadge, RunOptionsFields, RunStartNotice, classifyStartError, formatDurationMs, formatMb, useScaleT,
 } from "../recalculation";
 import type { RunOptions, StartRunError } from "../recalculation";
@@ -77,6 +78,7 @@ export function CalculationRunPanel({
       projectId,
     );
   const run = runQuery.data;
+  const allDrawings = useDrawings(projectId).data ?? null;
   useEffect(() => {
     if (activeRunId) {
       setRunId(activeRunId);
@@ -96,6 +98,14 @@ export function CalculationRunPanel({
   }, [eligibleKey]);
 
   function start() {
+    submit(false);
+  }
+
+  function startAnyway() {
+    submit(true);
+  }
+
+  function submit(confirmOverlap: boolean) {
     startRun.mutate(
       {
         drawing_ids: selectedIds,
@@ -104,6 +114,7 @@ export function CalculationRunPanel({
         convention_code: null,
         force_full: options.force_full,
         verify: options.force_full ? false : options.verify,
+        confirm_overlap: confirmOverlap || undefined,
       },
       {
         onError: (error) => {
@@ -225,6 +236,7 @@ export function CalculationRunPanel({
             error={startError}
             retrying={startRun.isPending}
             onRetry={start}
+            onConfirmOverlap={startAnyway}
             onDismiss={() =>
               setStartError(null)
             }
@@ -440,6 +452,7 @@ export function CalculationRunPanel({
           {view === "overview" ? (
             <RunOverview
               run={run}
+              allDrawings={allDrawings}
               stages={
                 stagesQuery.data ?? []
               }
@@ -484,9 +497,11 @@ export function CalculationRunPanel({
 
 function RunOverview({
   run,
+  allDrawings,
   stages,
 }: {
   run: CalculationRun;
+  allDrawings: Drawing[] | null;
   stages: Array<{
     id?: string;
     stage: string;
@@ -504,6 +519,11 @@ function RunOverview({
 
   return (
     <div className="space-y-3 p-5">
+      <RunScope
+        run={run}
+        drawings={allDrawings}
+        label={t("boq.sourceDrawings.calculatedFrom", "Calculated from")}
+      />
       {stages.length === 0 ? (
         <div className="text-[12px] text-[var(--color-text-muted)]">
           {t(

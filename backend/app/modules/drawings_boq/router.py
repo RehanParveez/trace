@@ -618,6 +618,7 @@ async def start_calculation_run(
     payload.convention_code,
     force_full=payload.force_full,
     verify=payload.verify,
+    confirm_overlap=payload.confirm_overlap,
   )
   if reused:
     response.status_code = 200

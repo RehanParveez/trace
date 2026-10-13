@@ -6,6 +6,7 @@ import { useBOQVersionLedger } from "../hooks";
 import {formatQuantity,
 } from "../utils/drawings-boq.utils";
 import type { LedgerRowResponse } from "../types/drawings-boq.types"; 
+import { StageBadge } from "./StageBadge";
 
 interface BOQVersionLedgerPanelProps {
   versionId: string;
@@ -65,6 +66,7 @@ export function BOQVersionLedgerPanel({
             <tr>
               {[
                 "boq.ledger.colWorkItem",
+                "boq.ledger.colStage",
                 "boq.ledger.colQuantity",
                 "boq.ledger.colUnit",
                 "boq.ledger.colSource",
@@ -89,6 +91,10 @@ export function BOQVersionLedgerPanel({
              >
               <td className="px-4 py-3 text-[12px] font-semibold text-[var(--color-text-primary)]">
                 {row.work_item_code}
+              </td>
+
+              <td className="px-4 py-3 text-[12px]">
+                <StageBadge stage={row.work_stage} />
               </td>
 
               <td className="px-4 py-3 font-mono text-[12px]">

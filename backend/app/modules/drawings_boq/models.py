@@ -922,6 +922,8 @@ class BOQItem(Base, TimestampMixin):
   material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
   spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
   spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  
+  work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
 
   canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
   unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
@@ -1737,6 +1739,14 @@ class ModelAuditResult(Base, TimestampMixin):
 class CalculationRun(Base, TimestampMixin):
   __tablename__ = "calculation_runs"
   
+  @property
+  def scope_drawings(self) -> list:
+    return list((self.settings or {}).get("scope_drawings") or [])
+
+  @property
+  def scope_overlaps(self) -> list:
+    return list((self.settings or {}).get("scope_overlaps") or [])
+  
   __table_args__ = (
     UniqueConstraint("id", "organization_id", name="uq_calculation_runs_id_org"),
     Index("ix_calculation_runs_org_project_status", "organization_id", "project_id", "status"),
@@ -2070,6 +2080,8 @@ class _LedgerColumns:
   quantity_net: Mapped[Decimal] = mapped_column(Numeric(20, 6), nullable=False)
   unit: Mapped[str] = mapped_column(String(20), nullable=False)             
   material_grade: Mapped[str | None] = mapped_column(String(50), nullable=True)
+  
+  work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
  
   source_kind: Mapped[str] = mapped_column(
     String(20),
@@ -2099,6 +2111,7 @@ class QuantityLedger(_LedgerColumns, Base, TimestampMixin):
   __table_args__ = (
     UniqueConstraint("id", "organization_id", name="uq_quantity_ledger_id_org"),
     UniqueConstraint("run_id", "solid_id", "work_item_code", name="uq_quantity_ledger_run_solid_work_item"),
+    Index("uq_quantity_ledger_run_solid_work_item_stage", "run_id", "solid_id", "work_item_code", text("coalesce(work_stage, '')"), unique=True),
     
     ForeignKeyConstraint(
       ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
@@ -2126,7 +2139,7 @@ class StagedQuantityLedger(_LedgerColumns, Base, TimestampMixin):
   __table_args__ = (
   Index("ix_staged_quantity_ledger_solid", "solid_id", "organization_id"),
   Index("ix_staged_quantity_ledger_created", "created_at"),
-  UniqueConstraint("run_id", "solid_id", "work_item_code", name="uq_staged_quantity_ledger_run_solid_work_item"),
+  Index("uq_staged_quantity_ledger_run_solid_work_item_stage", "run_id", "solid_id", "work_item_code", text("coalesce(work_stage, '')"), unique=True),
     
   ForeignKeyConstraint(
     ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],

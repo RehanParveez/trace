@@ -6,11 +6,12 @@ import { useScaleT } from "../utils/useRecalculationT";
 interface RunStartNoticeProps {
   error: StartRunError;
   onRetry?: () => void;
+  onConfirmOverlap?: () => void;
   onDismiss?: () => void;
   retrying?: boolean;
 }
 
-export function RunStartNotice({ error, onRetry, onDismiss, retrying = false }: RunStartNoticeProps) {
+export function RunStartNotice({ error, onRetry, onConfirmOverlap, onDismiss, retrying = false }: RunStartNoticeProps) {
   const t = useScaleT();
 
   const guidance: Record<string, { title: string; hint: string }> = {
@@ -29,6 +30,10 @@ export function RunStartNotice({ error, onRetry, onDismiss, retrying = false }: 
     quota: {
       title: t("scale.start.quota.title", "Your plan has no calculation runs left"),
       hint: t("scale.start.quota.hint", "The runs included in your plan for this period are used up. Review your subscription to add more."),
+    },
+    overlap: {
+      title: t("scale.start.overlap.title", "These drawings describe some of the same elements"),
+      hint: t("scale.start.overlap.hint", "Measuring them together counts the shared elements twice. Choose one of the drawings, or go on if the files really are different parts of the building."),
     },
     other: {
       title: t("scale.start.other.title", "The calculation could not be started"),
@@ -53,6 +58,13 @@ export function RunStartNotice({ error, onRetry, onDismiss, retrying = false }: 
             {t("scale.start.tryAgain", "Try again")}
           </Button>
         ) : null}
+
+        {error.kind === "overlap" && onConfirmOverlap ? (
+          <Button size="sm" variant="secondary" disabled={retrying} onClick={onConfirmOverlap}>
+            {t("scale.start.overlap.confirm", "Calculate anyway")}
+          </Button>
+        ) : null}
+
         {error.kind === "quota" ? (
           <Link
             to="/app/subscription"
