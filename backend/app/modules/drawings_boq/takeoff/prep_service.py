@@ -9,6 +9,8 @@ from app.modules.drawings_boq.models import BuildingLevel, TakeoffCalibration, T
 from sqlalchemy import select
 from decimal import Decimal
 import asyncio
+import logging
+import re
 from uuid import UUID, uuid4
 import math
 import os
@@ -17,10 +19,15 @@ from app.engine.measure import takeoff as tk
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules
-from app.modules.drawings_boq.takeoff.levels import ensure_level
+from app.modules.drawings_boq.takeoff.levels import ensure_level, level_spec
+from app.modules.drawings_boq.takeoff.prep import details
+from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
 from app.modules.drawings_boq.takeoff.prep.codec import encode_index
+from app.modules.drawings_boq.takeoff.sheet_reason import failure_text
 from app.shared.storage import download_to_path
+
+log = logging.getLogger(__name__)
 
 SNAP_VERIFY_TOL_PT = 0.12
 TAG_VERIFY_RADIUS_PT = 14.0
@@ -60,7 +67,21 @@ def _open(contents: bytes):
 def _analyze_one(doc, page_no: int, user_unit: float, budget_s: float):
   raw = extract_page(doc, page_no - 1, budget_s=budget_s)
   result = analyze_page(raw, user_unit, budget_s=max(5.0, budget_s / 2))
+  _read_details(doc, page_no, raw, result)
   return result, raw.stats
+
+def _read_details(doc, page_no: int, raw, result) -> None:
+  """Column details drawn on the sheet: their marks, and (when the character reader is installed) the sizes written beside them. This is the one
+  place the PDF is still open, so the pictures are read here and only their result is stored."""
+  try:
+    page = doc[page_no - 1]
+    found = details.read_column_details(result.index.words, result.index, page, page.get_size(), raw.cropbox, raw.rotation)
+  except Exception:
+    result.meta["details_reader"] = "FAILED"
+    return
+  if found["details"]:
+    result.meta["details"] = found["details"]
+    result.meta["details_reader"] = found["ocr"]
 
 class PrepService:
   def __init__(self, session):
@@ -167,7 +188,8 @@ class PrepService:
     try:
       result, stats = await asyncio.to_thread(_analyze_one, doc, sheet.page_no, user_unit, min(budget_s, 40.0))
     except Exception as exc:  
-      await self._mark_failed(org, sheet.id, f"Page {sheet.page_no} could not be read: {type(exc).__name__}")
+      log.exception("Sheet %s (page %s) could not be prepared", sheet.id, sheet.page_no)
+      await self._mark_failed(org, sheet.id, failure_text(sheet.page_no, exc))
       return False
   
     payload = await asyncio.to_thread(encode_index, result.index)
@@ -218,10 +240,93 @@ class PrepService:
     keys = [a["key"] for a in out["schedule"]["areas"] if a.get("kind") == "FLOOR"]
     heights = drawing_facts.floor_heights(keys, out["ladder"], suggested["slab_mm"] if suggested else None)
     out["suggest"]["wall_height_by_floor"] = heights
-    out["floors"] = await self._floor_checks(org, sheets, out["schedule"]["areas"], heights)
+    structure = await self._structure(org, sheets)
+    out["views"] = structure["views"]
+    out["structure"] = structure["levels"]
+    out["details"], out["details_reader"], out["checks"] = await self._detail_checks(org, sheets)
+    out["floors"] = await self._floor_checks(org, sheets, out["schedule"]["areas"], heights, structure["levels"])
     return out
 
-  async def _floor_checks(self, org: UUID, sheets: list, areas: list, heights: dict | None = None) -> list:
+  async def _detail_checks(self, org: UUID, sheets: list) -> tuple:
+    """The column details read on the drawing's sheets, and the checks between them and the plans."""
+    found, reader = [], None
+    for s in sheets:
+      meta = s.prep_meta or {}
+      for d in meta.get("details") or []:
+        found.append({"mark": d["mark"], "caption": d.get("caption"), "page_no": s.page_no, "read": d.get("read") or "NONE", "w_in": d.get("w_in"), "h_in": d.get("h_in")})
+      if meta.get("details"):
+        got = meta.get("details_reader")
+        reader = got if reader in (None, "OK") else reader
+        
+    if not found:
+      return [], None, []
+    rows = (await self.session.execute(select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org,
+      TakeoffCandidate.sheet_id.in_([s.id for s in sheets]), TakeoffCandidate.decision != "REJECTED", TakeoffCandidate.category == "COLUMN"))).scalars().all()
+    plan_marks, mismatches, seen = set(), [], set()
+    for c in rows:
+      tag = c.tag or ""
+      plan_marks.add(re.sub(r"[\s\-]", "", tag).upper())
+      for n in c.notes or []:
+        if n.get("code") == "COLUMN_PLAN_VS_DETAIL" and tag not in seen:
+          seen.add(tag)
+          d, t = n.get("drawn_mm") or [], n.get("detail_mm") or []
+          if len(d) == 2 and len(t) == 2:
+            mismatches.append({"tag": tag, "drawn_in": [round(v / 25.4, 1) for v in d], "detail_in": [round(v / 25.4, 1) for v in t]})
+    return found, reader, checks_mod.column_checks(found, reader, {m for m in plan_marks if m}, mismatches)
+
+  async def _structure(self, org: UUID, sheets: list) -> dict:
+    """The drawings of every sheet that shows several (a structural sheet with foundation and framing plans), and what was found in each of them:
+    columns, footings and beam marks per floor, with the slab note and panel count the plan prints. These never count as a floor having been read."""
+    shown, by_sheet = [], {}
+    for s in sheets:
+      vs = (s.prep_meta or {}).get("views") or []
+      if sum(1 for v in vs if v.get("structural")) >= 2:
+        by_sheet[s.id] = s
+        for v in vs:
+          if v.get("plan") or v.get("structural"):
+            shown.append({"page_no": s.page_no, "key": v["key"], "kind": v.get("kind"), "caption": v.get("caption"), "level_hint": v.get("level_hint"),
+              "structural": bool(v.get("structural")), "foundation": bool(v.get("foundation")), "scale_ratio": (v.get("scale") or {}).get("ratio"),
+              "scale_support": (v.get("scale") or {}).get("support"), "slab_note_mm": v.get("slab_note_mm"), "slab_panels": int(v.get("slab_panels") or 0)})
+    levels: dict = {}
+    for v in shown:
+      if not v["structural"] or not v["level_hint"]:
+        continue
+      spec = level_spec(v["level_hint"])
+      lv = levels.setdefault(v["level_hint"], {"key": v["level_hint"], "name": spec[0] if spec else v["level_hint"], "sequence": spec[1] if spec else 0,
+        "columns": 0, "footings": 0, "beams": 0, "column_marks": [], "footing_marks": [], "beam_marks": [], "slab_panels": 0, "slab_thickness_mm": None,
+        "pages": []})
+      if not v["foundation"]:
+        lv["slab_panels"] += v["slab_panels"]
+        lv["slab_thickness_mm"] = lv["slab_thickness_mm"] or v["slab_note_mm"]
+      if v["page_no"] not in lv["pages"]:
+        lv["pages"].append(v["page_no"])
+        
+    if by_sheet:
+      rows = (await self.session.execute(select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org,
+        TakeoffCandidate.sheet_id.in_(list(by_sheet)), TakeoffCandidate.decision != "REJECTED",
+        TakeoffCandidate.category.in_(("COLUMN", "FOOTING", "BEAM"))))).scalars().all()
+      for c in rows:
+        hint = (((c.facts or {}).get("view")) or {}).get("level_hint")
+        lv = levels.get(hint)
+        if lv is None:
+          continue
+        n = int(c.count or 1)
+        
+        slot = {"COLUMN": "column", "FOOTING": "footing", "BEAM": "beam"}[c.category]
+        p = c.params or {}
+        size = [p.get("length_mm"), p.get("width_mm")] if p.get("length_mm") and p.get("width_mm") else None
+        lv[slot + "s"] += n
+        codes = [x.get("code") for x in (c.notes or [])]
+        source = "SCHEDULE" if "SIZE_FROM_SCHEDULE" in codes else "DETAIL" if ("SIZE_FROM_COLUMN_DETAIL" in codes or "SIZE_FROM_DETAIL" in codes) else "PLAN" if size else None
+        warns = [x.get("code") for x in (c.notes or []) if x.get("severity") == "warning"]
+        lv[slot + "_marks"].append({"tag": c.tag or c.label, "count": n, "size_mm": size, "status": c.status, "size_source": source, "warnings": warns})
+    for lv in levels.values():
+      for slot in ("column_marks", "footing_marks", "beam_marks"):
+        lv[slot].sort(key=lambda m: str(m["tag"]))
+      lv["pages"].sort()
+    return {"views": shown, "levels": sorted(levels.values(), key=lambda lv: lv["sequence"])}
+
+  async def _floor_checks(self, org: UUID, sheets: list, areas: list, heights: dict | None = None, structure: list | None = None) -> list:
     """Each floor's covered area from the area table, beside what was found on that floor's plan: the rooms added up, and the openings counted."""
     floors = [a for a in areas if a.get("kind") == "FLOOR"]
     if not floors:
@@ -246,11 +351,14 @@ class PrepService:
       group = by_hint.get(a["key"], [])
       sheet_ids = {s.id for s in group}
       mine = [c for c in cands if c.sheet_id in sheet_ids]
+      st = next((lv for lv in (structure or []) if lv["key"] == a["key"]), None)
       row = {"key": a["key"], "name": a["name"], "covered_m2": a["m2"], "pages": sorted(s.page_no for s in group), "rooms": 0, "rooms_m2": 0.0,
         "doors": 0, "windows": 0, "ventilators": 0, "openings_m2": 0.0, "walls_m": 0.0, "coverage_pct": None, "message": None,
-        "wall_height_mm": None, "wall_height_basis": None, "brick_9_m2": 0.0, "brick_45_m2": 0.0, "rcc_m2": 0.0}
-      h = (heights or {}).get(a["key"])
+        "wall_height_mm": None, "wall_height_basis": None, "brick_9_m2": 0.0, "brick_45_m2": 0.0, "rcc_m2": 0.0,
+        "columns": st["columns"] if st else 0, "footings": st["footings"] if st else 0, "beams": st["beams"] if st else 0,
+        "slab_panels": st["slab_panels"] if st else 0, "slab_thickness_mm": st["slab_thickness_mm"] if st else None}
       
+      h = (heights or {}).get(a["key"])
       if h:
         row["wall_height_mm"], row["wall_height_basis"] = h["clear_mm"], h["basis"]
       if not mine:

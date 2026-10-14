@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.modules.drawings_boq.models import DrawingElement, BuildingLevel, Drawing, DrawingFormat, TakeoffCandidate, TakeoffExtraction, TakeoffMeasurement, TakeoffSheet
 from app.modules.drawings_boq.takeoff import register as R
+from app.modules.drawings_boq.takeoff.sheet_reason import sheet_reason
+from app.modules.drawings_boq.takeoff.levels import view_level_id
 from sqlalchemy import delete, select
 from app.core.exceptions import TraceException
 
@@ -45,8 +47,9 @@ class RegisterService:
       for m in (await self.session.execute(select(TakeoffMeasurement).where(TakeoffMeasurement.organization_id == org,
           TakeoffMeasurement.id.in_(mids)))).scalars().all():
         measurements[m.id] = {"id": m.id, "status": m.status, "computed": m.computed or {}}
-    level_ids = {s.level_id for s in sheets if s.level_id}
+    level_ids = {s.level_id for s in sheets if s.level_id} | {lv for lv in (view_level_id(c) for c in cands) if lv}
     levels: dict = {}
+
     
     if level_ids:
       levels = {lv.id: lv.name for lv in (await self.session.execute(select(BuildingLevel).where(BuildingLevel.organization_id == org,
@@ -104,15 +107,16 @@ class RegisterService:
       else:
         status = "WAITING"
       reason = "NOT_PREPARED" if sh.prep_status != "READY" else "NOT_READ"
-      code, message, severity = issue.get("code"), issue.get("message") or sh.prep_error, issue.get("severity")
+      why = sheet_reason(status, sh.page_no, sh.prep_status, sh.prep_error, issue)
+      code, message, action, severity = why["code"], why["message"], why["action"], issue.get("severity")
       
       if status in ("WAITING", "NOT_PREPARED"):
-        waiting.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "error": sh.prep_error, "reason": reason, "code": code, "message": message})
+        waiting.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "error": sh.prep_error, "reason": reason, "code": code, "message": message, "action": action})
       elif status == "SET_ASIDE":
         set_aside.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "code": code, "message": message})
       sheet_status.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "title": title.get("title") or sh.label, "level": levels.get(sh.level_id) if sh.level_id else None,
         "status": status, "items": per_sheet.get(str(sh.id), 0), "code": code, "message": message if status != "READ" else None, "severity": severity,
-        "composite": bool(title.get("composite"))})
+        "action": action, "composite": bool(title.get("composite"))})
     by_cat: dict = {}
     
     for r in rows:

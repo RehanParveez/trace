@@ -14,7 +14,7 @@ import { elementsPdfFilename, isTooLargeError } from "../utils/elements-report";
 import { useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeoff";
 import type { ReadStage } from "../takeoff/hooks/useTakeoff";
 import type { RegisterSyncResult } from "../takeoff/types/takeoff.types";
-import { isPdfFormat, measureBadge, needsPerson, waitingPages } from "../takeoff/utils/register";
+import { isPdfFormat, measureBadge, needsPerson, pagesFor, waitingLines } from "../takeoff/utils/register";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -255,7 +255,11 @@ export function DrawingElementsDialog({
   
   const reg: RegisterSyncResult | null = readSheets.data?.register ?? syncRegister.data ?? null;
   const reading = readSheets.isPending;
-  const pages = waitingPages(reg);
+  const lines = waitingLines(reg, readSheets.data?.issues);
+  const readPages = pagesFor(lines, "READ_SHEETS");
+  const scalePages = pagesFor(lines, "CONFIRM_SCALE");
+  const handPages = pagesFor(lines, "MEASURE_BY_HAND");
+  const reportPages = pagesFor(lines, "REPORT_PROBLEM");
 
   const [showTools, setShowTools] = useState(true);
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -456,12 +460,46 @@ export function DrawingElementsDialog({
                   <p>{t("drawings.elements.pdfListing", "Listing the items read from this PDF\u2026")}</p>
                 ) : null}
                 {needsPerson(reg) ? (
-                  <p className="text-[var(--color-danger)]">
-                    {t("drawings.elements.pdfWaiting", {
-                      defaultValue: "Sheet {{pages}} is not read yet. Press Read sheets. If it stays unread, open Measure and confirm the scale of that sheet.",
-                      pages,
-                    })}
-                  </p>
+                  <div className="space-y-1">
+                    {lines.map((line) => (
+                      <p key={line.page_no} className="text-[var(--color-danger)]">
+                        {t("drawings.elements.pdfIssue", {
+                          defaultValue: "Sheet {{page}}: {{message}}",
+                          page: line.page_no,
+                          message: line.message || t("drawings.elements.pdfSheetUnread", "Not read yet."),
+                        })}
+                      </p>
+                    ))}
+                    {readPages ? (
+                      <p className="text-[var(--color-text-muted)]">
+                        {t("drawings.elements.pdfHintRead", { defaultValue: "Sheet {{pages}}: press Read sheets to try again.", pages: readPages })}
+                      </p>
+                    ) : null}
+                    {scalePages ? (
+                      <p className="text-[var(--color-text-muted)]">
+                        {t("drawings.elements.pdfHintScale", {
+                          defaultValue: "Sheet {{pages}}: open Measure and confirm the scale. Once confirmed, the whole sheet is read.",
+                          pages: scalePages,
+                        })}
+                      </p>
+                    ) : null}
+                    {handPages ? (
+                      <p className="text-[var(--color-text-muted)]">
+                        {t("drawings.elements.pdfHintHand", {
+                          defaultValue: "Sheet {{pages}} is not read automatically. Open Measure to take it off by hand.",
+                          pages: handPages,
+                        })}
+                      </p>
+                    ) : null}
+                    {reportPages ? (
+                      <p className="text-[var(--color-text-muted)]">
+                        {t("drawings.elements.pdfHintReport", {
+                          defaultValue: "Sheet {{pages}}: the program failed while reading this sheet. Press Read sheets once more. If the same line comes back, send it to support.",
+                          pages: reportPages,
+                        })}
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
                 {readSheets.isError || syncRegister.isError ? (
                   <p className="text-[var(--color-danger)]">

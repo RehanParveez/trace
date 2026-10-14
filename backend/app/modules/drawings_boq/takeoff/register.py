@@ -1,6 +1,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from uuid import NAMESPACE_URL, UUID, uuid5
+from app.modules.drawings_boq.takeoff.levels import view_level_id
 
 SOURCE = "pdf_takeoff"
 MAX_ROWS_PER_CANDIDATE = 2000
@@ -201,13 +202,17 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
     out.append(row)
   return out
 
+def level_of(cand, sheet):
+  """The level of an item: the floor of the drawing it was read from on a sheet that shows several floors, otherwise the sheet's own level."""
+  return view_level_id(cand) or getattr(sheet, "level_id", None)
+
 SHARED_MARKS = ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW") 
 
 def _primary(candidates, sheets: dict) -> tuple:
   groups: dict = {}
   for c in candidates:
     if c.category in SHARED_MARKS and c.tag and c.decision != "REJECTED" and c.sheet_id in sheets:
-      groups.setdefault((c.category, c.tag.strip().upper(), getattr(sheets[c.sheet_id], "level_id", None)), []).append(c)
+      groups.setdefault((c.category, c.tag.strip().upper(), level_of(c, sheets[c.sheet_id])), []).append(c)
   also, hidden = {}, set()
   for items in groups.values():
     if len(items) < 2:
@@ -228,7 +233,7 @@ def build_rows(candidates, sheets: dict, measurements: dict, levels: dict) -> li
     if sheet is None or cand.id in hidden:
       continue
     m = measurements.get(cand.measurement_id) if cand.measurement_id else None
-    lvl = getattr(sheet, "level_id", None)
+    lvl = level_of(cand, sheet)
     out.extend(rows_for_candidate(cand, sheet=sheet, level_id=lvl, level_name=levels.get(lvl) if lvl else None, measurement=m,
       also_on=also.get(cand.id, ())))
   return out

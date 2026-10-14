@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import type { DrawingFacts, FloorCheck } from "../types/takeoff.types";
 import { mmText, mmToFeetInches, pagesText } from "../utils/facts";
+import { ChecksSection } from "./ChecksSection";
+import { StructureSection } from "./StructureSection";
 import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, groupOpenings, hasSchedule, m2Text, metresText, sizeText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
 
 interface Props {
@@ -114,8 +116,10 @@ export function DrawingSchedulePanel({ facts }: Props) {
           <div className="space-y-1.5" data-testid="floor-checks">
             <div className="font-semibold text-[var(--color-text-primary)]">{t("drawings.schedule.floors", "Floor by floor")}</div>
             {floors.map((f) => <FloorRow key={f.key} f={f} />)}
-          </div>
+           </div>
         ) : null}
+        <StructureSection facts={facts} />
+        <ChecksSection facts={facts} />
         {groups.map((g) => (
           <div key={g.type} data-testid={`schedule-${g.type}`}>
             <div className="font-semibold text-[var(--color-text-primary)]">{t(`drawings.schedule.type.${g.type}`, OPENING_TYPE_TITLE[g.type] ?? g.type)}</div>

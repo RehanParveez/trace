@@ -29,7 +29,6 @@ def composite_issue(title: dict | None, others_read: bool):
   if not t.get("composite") or not others_read:
     return None
   if int(t.get("structural_views") or 0) >= 2:
-    return ("COMPOSITE_STRUCTURAL", "ACTION", "This sheet shows several structural drawings (foundation, framing, details) at different scales. "
-      "It is not read automatically yet. Measure it by hand on the Measure page.")
+    return None     
   return ("SET_ASIDE_COMPOSITE", "INFO", "This sheet shows several drawings at different scales (plans, sections, elevations, schedules). "
     "Its floor plans are read from their own sheets, so it is not read again here.")

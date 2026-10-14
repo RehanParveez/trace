@@ -1,5 +1,7 @@
 import type { DrawingFacts, FloorCheck, FloorCheckStatus, ScheduleOpening } from "../types/takeoff.types";
 import { mmText, mmToFeetInches } from "./facts";
+import { hasChecks } from "./check";
+import { hasStructure } from "./structure";
 
 export interface OpeningGroup { type: string; rows: ScheduleOpening[]; }
 
@@ -49,7 +51,7 @@ export function floorHasItems(f: FloorCheck): boolean {
 }
 
 export function hasSchedule(facts: DrawingFacts | undefined): boolean {
-  return (facts?.schedule?.openings?.length ?? 0) > 0 || (facts?.schedule?.areas?.length ?? 0) > 0 || (facts?.floors?.length ?? 0) > 0 || !!facts?.suggest?.wall_height;
+  return (facts?.schedule?.openings?.length ?? 0) > 0 || (facts?.schedule?.areas?.length ?? 0) > 0 || (facts?.floors?.length ?? 0) > 0 || !!facts?.suggest?.wall_height || hasStructure(facts) || hasChecks(facts);
 }
 
 export function suggestedHeightText(facts: DrawingFacts | undefined): string | null {

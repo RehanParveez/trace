@@ -5,10 +5,10 @@ from decimal import Decimal
 from app.modules.drawings_boq.takeoff.prep.extract import RawPage
 import math
 import time
-from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, schedules
+from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 
-ANALYSIS_VERSION = 4
+ANALYSIS_VERSION = 6
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -123,9 +123,9 @@ def _recommend(declared: dict, clusters: list, pairs: list, paper: dict, user_un
   d_trust = declared["primary"]["trust"] if declared.get("primary") else 0.0
   strong = [c for c in clusters if c.support >= STRONG_SUPPORT and c.spread_pct <= STRONG_SPREAD_PCT and
     (c.support / max(c.total_pairs, 1) >= 0.5 or c.support >= 5)]
-  
   weak = [c for c in clusters if c not in strong and c.support >= 2 and c.spread_pct <= STRONG_SPREAD_PCT]
   main = strong[0] if strong else (weak[0] if weak else None)
+
   others = [c for c in strong[1:] if abs(c.ratio / strong[0].ratio - 1.0) > 0.05] if strong else []
   rivals = [c for c in others if c.support >= max(STRONG_SUPPORT, RIVAL_SHARE * strong[0].support)]
   if rivals:
@@ -280,15 +280,18 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
   shapes = census.shape_groups(raw.rings, max(raw.width_pt * raw.height_pt, 1.0))
   tags = census.tag_census(raw.words)
   
+  found_views = sheet_views.find_views(index)
+  sheet_views.attach_scales(found_views, clusters, pairs, PT_MM, user_unit)
   meta = {
     "analysis_version": ANALYSIS_VERSION, "paper": paper, "title": title, "units_hint": hint, "content": content_info,
     "index": {"segments": len(raw.kinds), "rings": len(raw.rings), "words": len(raw.words), "truncated": bool(raw.stats.get("truncated")),
-      "path_objects": raw.stats.get("path_objects", 0), "elapsed_s": round(time.monotonic() - started + raw.stats.get("elapsed_s", 0.0), 2)},
+    "path_objects": raw.stats.get("path_objects", 0), "elapsed_s": round(time.monotonic() - started + raw.stats.get("elapsed_s", 0.0), 2)},
     "shapes_top": [{k: g[k] for k in ("id", "shape", "a_pt", "b_pt", "count")} for g in shapes[:8]],
     "tags_top": [{"tag": g["tag"], "in_drawing": g["in_drawing"], "count": g["count"]} for g in tags[:12]],
     "user_unit": user_unit,
     "facts": drawing_facts.read_facts(lines),
     "schedule": schedules.read_schedules(raw.words),
+    "views": sheet_views.summary(found_views),
   }
   return PageAnalysis(content_kind=content_kind, text_chars=int(raw.stats.get("text_chars", 0)), vector_ops=int(raw.stats.get("path_objects", 0)),
     detected_scale=detected, meta=meta, index=index)

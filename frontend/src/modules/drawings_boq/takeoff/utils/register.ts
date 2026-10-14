@@ -1,4 +1,4 @@
-import type { RegisterSyncResult } from "../types/takeoff.types";
+import type { RegisterSyncResult, RegisterWaiting, SheetAction } from "../types/takeoff.types";
 
 export type RegisterMeasureMode = "EXACT" | "APPROXIMATE" | "NONE" | "PDF_MEASURED" | "PDF_FOUND";
 
@@ -24,6 +24,37 @@ export function unreadPages(reg: Pick<RegisterSyncResult, "waiting"> | null | un
   if (!reg) return "";
   return [...new Set(reg.waiting.filter((w) => !w.code).map((w) => w.page_no))].sort((a, b) => a - b).join(", ");
 }
+
+export interface WaitingLine { page_no: number; message: string; action: SheetAction }
+
+export function actionOf(w: Pick<RegisterWaiting, "action" | "code">): SheetAction {
+  if (w.action) return w.action;
+  if (w.code && w.code.startsWith("SCALE_")) return "CONFIRM_SCALE";
+  if (w.code === "PROGRAM_ERROR") return "REPORT_PROBLEM";
+  if (w.code && w.code !== "PREPARE_FAILED" && w.code !== "NOT_PREPARED") return "MEASURE_BY_HAND";
+  return "READ_SHEETS";
+}
+
+export function waitingLines(
+  reg: Pick<RegisterSyncResult, "waiting"> | null | undefined,
+  issues: Array<{ page_no: number; message: string }> = [],
+): WaitingLine[] {
+  if (!reg) return [];
+  const fresh = new Map(issues.map((i) => [i.page_no, i.message]));
+  const seen = new Set<number>();
+  const lines: WaitingLine[] = [];
+  for (const w of [...reg.waiting].sort((a, b) => a.page_no - b.page_no)) {
+    if (seen.has(w.page_no)) continue;
+    seen.add(w.page_no);
+    lines.push({ page_no: w.page_no, message: w.message ?? w.error ?? fresh.get(w.page_no) ?? "", action: actionOf(w) });
+  }
+  return lines;
+}
+
+export function pagesFor(lines: WaitingLine[], action: SheetAction): string {
+  return lines.filter((l) => l.action === action).map((l) => l.page_no).join(", ");
+}
+
 
 export interface SheetRow {
   sheet_id: string;

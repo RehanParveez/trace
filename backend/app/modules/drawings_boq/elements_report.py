@@ -1,5 +1,6 @@
 from __future__ import annotations
 from reportlab.lib import colors
+from app.modules.drawings_boq.takeoff.sheet_reason import ACTION_HINT, sheet_reason
 import re
 from decimal import Decimal, InvalidOperation
 from collections import OrderedDict, Counter
@@ -173,10 +174,11 @@ def sheet_states(sheets: list, read_ids: set, per_sheet: dict, levels: dict) -> 
       state = "NOT_PREPARED"
     else:
       state = "WAITING"
+    why = sheet_reason(state, sh.page_no, getattr(sh, "prep_status", None), getattr(sh, "prep_error", None), issue)
     out.append({
       "page_no": sh.page_no, "sheet_id": str(sh.id), "title": title.get("title") or getattr(sh, "label", None) or f"Sheet {sh.page_no}",
       "level": levels.get(getattr(sh, "level_id", None)), "state": state, "items": per_sheet.get(str(sh.id), 0),
-      "message": None if state == "READ" else (issue.get("message") or getattr(sh, "prep_error", None)), "code": issue.get("code"),
+      "message": why["message"], "code": why["code"], "action": why["action"],
     })
   return out
 
@@ -377,7 +379,7 @@ def _flag_story(st, rows: list, numbers: dict, facts: dict | None, checks: list,
     
     for s in sheets_open:
       data.append([_p(str(s["page_no"]), st["cell"]), _p(SHEET_STATE_LABEL.get(s["state"], s["state"]), st["cell"]),
-        _p(clean(s["message"] or "Press Read sheets. If it stays unread, confirm the scale of that sheet on the Measure page.", 300), st["cell"])])
+        _p(clean(" ".join(x for x in (s["message"] or "No reason was recorded for this sheet.", ACTION_HINT.get(s.get("action") or "", "")) if x), 420), st["cell"])])
     story += [_table(data, [16 * mm, 30 * mm, 231 * mm]), Spacer(1, 6)]
     
   if checks:

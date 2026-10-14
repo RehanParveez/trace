@@ -42,3 +42,11 @@ async def ensure_level(session: AsyncSession, org: UUID, drawing_id: UUID, hint:
       pass
     row = await find()
   return row.id if row is not None else None
+
+def view_level_id(cand) -> UUID | None:
+  """The level of the drawing a candidate was read from, when its sheet shows several floors; None for an ordinary sheet."""
+  view = (getattr(cand, "facts", None) or {}).get("view") or {}
+  try:
+    return UUID(str(view["level_id"])) if view.get("level_id") else None
+  except (ValueError, TypeError):
+    return None

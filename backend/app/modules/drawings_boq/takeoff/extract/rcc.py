@@ -11,6 +11,9 @@ RCC_T_SIMILAR = 0.2
 OVERLAP_TOL_FACTOR = 0.75
 OVERLAP_MIN_SHARE = 0.6
 PARALLEL_DEG = 4.0
+ENVELOPE_SIDE_SHARE = 0.5     
+ENVELOPE_EDGE_TOL_MM = 600.0
+ENVELOPE_MARGIN_MM = 450.0
 
 def fill_strips(rings: list, mm_per_pt: float) -> list[dict]:
   """Solid rectangular strips (a rectangle is often drawn as two triangles, so equal boxes are counted once)."""
@@ -119,3 +122,48 @@ def covered_share(run: dict, p0, p1, mm_per_pt: float) -> float:
 
 def covered_by(runs: list, p0, p1, mm_per_pt: float) -> bool:
   return any(covered_share(r, p0, p1, mm_per_pt) >= OVERLAP_MIN_SHARE for r in runs)
+
+def envelope(runs: list, mm_per_pt: float) -> tuple | None:
+  """(x0, y0, x1, y1) the concrete walls enclose, when they bound at least three sides of a box (a basement: retaining walls on the earth sides).
+  Where a side is open, the box ends at the inner end of the two walls beside it. None when the concrete walls do not enclose anything."""
+  if len(runs) < 3:
+    return None
+
+  xs = [q[0] for r in runs for q in (r["p0"], r["p1"])]
+  ys = [q[1] for r in runs for q in (r["p0"], r["p1"])]
+  x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+  w, h = x1 - x0, y1 - y0
+  if w <= 0 or h <= 0:
+    return None
+  tol = ENVELOPE_EDGE_TOL_MM / mm_per_pt
+  vert = [r for r in runs if abs(r["p0"][0] - r["p1"][0]) < 1e-6]
+  horiz = [r for r in runs if abs(r["p0"][1] - r["p1"][1]) < 1e-6]
+  def side(group, axis, edge, span):
+    return [r for r in group if abs(r["p0"][axis] - edge) <= tol and abs(r["p1"][1 - axis] - r["p0"][1 - axis]) >= ENVELOPE_SIDE_SHARE * span]
+  sides = {"left": side(vert, 0, x0, h), "right": side(vert, 0, x1, h), "low": side(horiz, 1, y0, w), "high": side(horiz, 1, y1, w)}
+  closed = [k for k, v in sides.items() if v]
+  if len(closed) < 3:
+    return None
+
+  box = [x0, y0, x1, y1]
+  if len(closed) == 3:
+    open_side = next(k for k, v in sides.items() if not v)
+    if open_side in ("low", "high"):
+      beside = sides["left"] + sides["right"]
+      if open_side == "low":
+        box[1] = max(min(q[1] for q in (r["p0"], r["p1"])) for r in beside)
+      else:
+        box[3] = min(max(q[1] for q in (r["p0"], r["p1"])) for r in beside)
+    else:
+      beside = sides["low"] + sides["high"]
+      if open_side == "left":
+        box[0] = max(min(q[0] for q in (r["p0"], r["p1"])) for r in beside)
+      else:
+        box[2] = min(max(q[0] for q in (r["p0"], r["p1"])) for r in beside)
+  margin = ENVELOPE_MARGIN_MM / mm_per_pt
+  return (box[0] - margin, box[1] - margin, box[2] + margin, box[3] + margin)
+
+def outside(box: tuple, p0, p1) -> bool:
+  """True when the middle of the segment p0-p1 lies outside the box."""
+  mx, my = (p0[0] + p1[0]) / 2.0, (p0[1] + p1[1]) / 2.0
+  return not (box[0] <= mx <= box[2] and box[1] <= my <= box[3])

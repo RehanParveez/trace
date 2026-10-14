@@ -32,7 +32,7 @@ def _prior_table(hint: str | None) -> dict:
     base.update(cm_int=1.0, mm_int=0.2, m_dec=0.2)
   elif hint in ("ft-in", "ft"):
     base.update(mm_int=0.35, ft_dec=0.7 if hint == "ft" else 0.25, in_int=0.4 if hint == "ft-in" else 0.1, m_dec=0.2)
-    return base
+  return base
 
 _VULGAR = {"½": " 1/2", "¼": " 1/4", "¾": " 3/4", "⅛": " 1/8", "⅜": " 3/8", "⅝": " 5/8", "⅞": " 7/8"}
 _FEET_NO_MARK = re.compile(r"^(\d{1,3})\s*-\s*(\d{1,2}(?:\.\d+)?(?: \d+/\d+)?)\s*\"$")
@@ -295,7 +295,6 @@ def title_hints(lines: list[TextLine]) -> dict:
     for m in _PLAN_PHRASE.finditer(t):
       p = re.sub(r"\s+", " ", m.group("p")).strip().upper()
       views += 1
-      
       if _STRUCTURAL_VIEW.search(p):
         structural_views += 1
       if len(p.split()) >= 2:

@@ -6,6 +6,7 @@ from decimal import Decimal
 import time
 from uuid import UUID
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
+from app.modules.drawings_boq.takeoff.levels import ensure_level
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
 from app.modules.drawings_boq.takeoff.extract.scalegate import auto_scale_gate, composite_issue
@@ -19,6 +20,8 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.finish_schedule.common import work_item_catalog
 from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
 from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, run_extraction
+from app.modules.drawings_boq.takeoff.extract.structure import column_details
+from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff.schemas import MeasurementCreateRequest, MeasurementParams
 
 log = logging.getLogger(__name__)
@@ -174,7 +177,8 @@ class ExtractService:
     schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
     try:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
-        content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule)
+        content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
+        col_details=column_details(sheet.prep_meta))
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -184,6 +188,7 @@ class ExtractService:
     for c in found:
       if c.work_item and c.work_item not in catalog:
         c.work_item = None
+    await self._view_levels(org, sheet, found)
     added, updated, removed = await self._store(org, sheet, found, mm_per_pt)
     ext = await self.repo.extraction(org, sheet.id)
     
@@ -211,6 +216,19 @@ class ExtractService:
     out = await self._list(org, sheet)
     out.update(added=added, updated=updated, removed=removed, calibration_created=created)
     return out
+
+  async def _view_levels(self, org: UUID, sheet, found: list) -> None:
+    """A sheet that shows several floors (the structural sheet) has no level of its own: each item gets the level of the drawing it was read from."""
+    ids: dict = {}
+    for c in found:
+      view = (c.facts or {}).get("view")
+      hint = view.get("level_hint") if view else None
+      if not hint:
+        continue
+      if hint not in ids:
+        ids[hint] = await ensure_level(self.session, org, sheet.drawing_id, hint)
+      if ids[hint] is not None:
+        view["level_id"] = str(ids[hint])
 
   async def _store(self, org: UUID, sheet, found: list[Candidate], mm_per_pt: float) -> tuple:
     old = {r.ckey: r for r in await self.repo.candidates(org, [sheet.id])}
@@ -345,9 +363,10 @@ class ExtractService:
         
       if cand.sheet_id not in sheet_levels:
         sheet_levels[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).level_id
+      own_level = view_level_id(cand) or sheet_levels[cand.sheet_id]
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
-          params=MeasurementParams(**params), work_item_code=code, level_id=payload.level_id or sheet_levels[cand.sheet_id], label=cand.label, tag=cand.tag,
+          params=MeasurementParams(**params), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
           source=cand.source)
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))

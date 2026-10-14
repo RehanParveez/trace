@@ -401,7 +401,8 @@ export interface DecideResult { changed: string[]; failed: CandidateFailure[] }
 export interface DrawingExtractSkipped { sheet_id: string; page_no: number; code: string; message: string }
 export interface DrawingExtractResult { drawing_id: string; done: ExtractResult[]; skipped: DrawingExtractSkipped[] }
 
-export interface RegisterWaiting { page_no: number; sheet_id: string; reason: "NOT_PREPARED" | "NOT_READ" ; error?: string | null; code?: string | null; message?: string | null }
+export type SheetAction = "READ_SHEETS" | "CONFIRM_SCALE" | "MEASURE_BY_HAND" | "REPORT_PROBLEM" | "NONE";
+export interface RegisterWaiting { page_no: number; sheet_id: string; reason: "NOT_PREPARED" | "NOT_READ" ; error?: string | null; code?: string | null; message?: string | null; action?: SheetAction }
 export interface RegisterSetAside { page_no: number; sheet_id: string; code: string | null; message: string | null }
 export type SheetReadStatus = "READ" | "SET_ASIDE" | "WAITING" | "NOT_PREPARED";
 
@@ -415,6 +416,7 @@ export interface RegisterSheetStatus {
   code: string | null;
   message: string | null;
   severity: "INFO" | "ACTION" | null;
+  action?: SheetAction;
   composite: boolean;
 }
 export type FactKind = "SLAB_THICKNESS" | "RCC_WALL_THICKNESS" | "BRICK_COLUMN" | "CONCRETE_CLASS" | "STEEL_GRADE" | "CLEAR_COVER" | "BEARING_CAPACITY" | "PLASTER_THICKNESS" | "FILL_LAYER" | "STAIR_WIDTH";
@@ -478,8 +480,64 @@ export interface FloorCheck {
   brick_9_m2: number;
   brick_45_m2: number;
   rcc_m2: number;
+  columns: number;
+  footings: number;
+  beams: number;
+  slab_panels: number;
+  slab_thickness_mm: number | null;
 }
 
+export interface StructureMark {
+  tag: string | null;
+  count: number;
+  size_mm: Array<number | null> | null;
+  status?: string | null;
+  size_source?: "SCHEDULE" | "DETAIL" | "PLAN" | null;
+  warnings?: string[];
+}
+export interface ColumnDetail {
+  mark: string;
+  caption?: string | null;
+  page_no?: number | null;
+  read: "OCR" | "OCR_SQUARE" | "PARTIAL" | "NONE";
+  w_in: number | null;
+  h_in: number | null;
+}
+export interface DrawingCheck {
+  code: string;
+  severity: "warning" | "info";
+  title: string;
+  message: string;
+  marks: string[];
+  pages: number[];
+}
+
+export interface StructureLevel {
+  key: string;
+  name: string;
+  columns: number;
+  footings: number;
+  beams: number;
+  column_marks: StructureMark[];
+  footing_marks: StructureMark[];
+  beam_marks: StructureMark[];
+  slab_panels: number;
+  slab_thickness_mm: number | null;
+  pages: number[];
+}
+export interface SheetView {
+  page_no: number;
+  key: string;
+  kind: string | null;
+  caption: string | null;
+  level_hint: string | null;
+  structural: boolean;
+  foundation: boolean;
+  scale_ratio: number | null;
+  scale_support: number | null;
+  slab_note_mm: number | null;
+  slab_panels: number;
+}
 export interface SuggestedWallHeight {
   value_mm: number;
   floor_to_floor_mm: number;
@@ -501,7 +559,13 @@ export interface DrawingFacts {
   suggest?: DrawingSuggest;
   schedule?: DrawingSchedule;
   floors?: FloorCheck[];
+  views?: SheetView[];
+  structure?: StructureLevel[];
+  details?: ColumnDetail[];
+  details_reader?: string | null;
+  checks?: DrawingCheck[];
 }
+
 export interface RegisterSyncResult {
   drawing_id: string;
   total: number;

@@ -86,6 +86,61 @@ class FloorCheck(BaseModel):
   brick_9_m2: float = 0.0
   brick_45_m2: float = 0.0
   rcc_m2: float = 0.0
+  columns: int = 0
+  footings: int = 0
+  beams: int = 0
+  slab_panels: int = 0
+  slab_thickness_mm: float | None = None
+
+class StructureMark(BaseModel):
+  tag: str | None = None
+  count: int = 0
+  size_mm: list[float | None] | None = None
+  status: str | None = None
+  size_source: Literal["SCHEDULE", "DETAIL", "PLAN"] | None = None
+  warnings: list[str] = Field(default_factory=list)
+
+class ColumnDetail(BaseModel):
+  mark: str
+  caption: str | None = None
+  page_no: int | None = None
+  read: Literal["OCR", "OCR_SQUARE", "PARTIAL", "NONE"] = "NONE"
+  w_in: float | None = None
+  h_in: float | None = None
+
+class DrawingCheck(BaseModel):
+  code: str
+  severity: Literal["warning", "info"]
+  title: str
+  message: str
+  marks: list[str] = Field(default_factory=list)
+  pages: list[int] = Field(default_factory=list)
+
+class StructureLevel(BaseModel):
+  key: str
+  name: str
+  columns: int = 0
+  footings: int = 0
+  beams: int = 0
+  column_marks: list[StructureMark] = Field(default_factory=list)
+  footing_marks: list[StructureMark] = Field(default_factory=list)
+  beam_marks: list[StructureMark] = Field(default_factory=list)
+  slab_panels: int = 0
+  slab_thickness_mm: float | None = None
+  pages: list[int] = Field(default_factory=list)
+
+class SheetView(BaseModel):
+  page_no: int
+  key: str
+  kind: str | None = None
+  caption: str | None = None
+  level_hint: str | None = None
+  structural: bool = False
+  foundation: bool = False
+  scale_ratio: float | None = None
+  scale_support: int | None = None
+  slab_note_mm: float | None = None
+  slab_panels: int = 0
 
 class FactsResponse(BaseModel):
   drawing_id: UUID
@@ -97,6 +152,11 @@ class FactsResponse(BaseModel):
   suggest: dict = Field(default_factory=dict)
   schedule: DrawingSchedule = Field(default_factory=DrawingSchedule)
   floors: list[FloorCheck] = Field(default_factory=list)
+  views: list[SheetView] = Field(default_factory=list)
+  structure: list[StructureLevel] = Field(default_factory=list)
+  details: list[ColumnDetail] = Field(default_factory=list)
+  details_reader: str | None = None
+  checks: list[DrawingCheck] = Field(default_factory=list)
 
 class AutoCalibrateRequest(BaseModel):
   use: Literal["RECOMMENDED", "DECLARED", "DIMENSIONS"] = "RECOMMENDED"

@@ -9,8 +9,12 @@ from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
 from app.modules.drawings_boq.takeoff.extract import hosts as H
+from app.modules.drawings_boq.takeoff.extract import structure as ST
+from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.prep import census
 from app.modules.drawings_boq.takeoff.prep import schedules as S
+from app.modules.drawings_boq.takeoff.prep import views as VW
+from app.modules.drawings_boq.takeoff.prep.details import norm_mark as ST_norm
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint
 import time
 
@@ -40,6 +44,7 @@ class Extraction:
   stats: dict = field(default_factory=dict)
   notes: list = field(default_factory=list)
 
+VIEW_SCALE_TOL = 0.03
 _FEET_INCH = re.compile(r"\d+\s*['’′]\s*-\s*\d+")
 
 def _key(*parts) -> str:
@@ -59,20 +64,25 @@ def _finish(c: Candidate, ctx: dict, base: float) -> Candidate:
   c.confidence = round(max(0.0, min(1.0, base * ctx["cal_factor"] * ctx["content_factor"])), 4)
   return c
 
-def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None) -> list:
-  groups = M.tag_members(words, shapes, f, hint, openings)
+_snap_inch = ST.snap_inch
+
+def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None, view=None, groups=None, imperial: bool = False, footing: dict | None = None, col_details: dict | None = None) -> list:
+  """view: one drawing of a composite sheet (its marks are counted inside it only). groups: the marks already found in that view.
+  footing: {"assigned": {mark: (a, b)}, "assumed": bool, "options": [...]} the footing sizes read from the footing section details."""
+  if groups is None:
+    groups = M.tag_members(words, shapes, f, hint, openings)
   out = []
+  
   clusters: dict = {}
   for g in groups:
     if g["category"] in ("COLUMN", "FOOTING") and "drawn_mm" in g:
       a, b = g["drawn_mm"]
-      clusters.setdefault((g["category"], round(a / 10), round(b / 10)), []).append(g)
+      ids = tuple(i for i, s in enumerate(shapes) if s["fill"] and abs(s["a"] - a) <= 0.05 * a + 5 and abs(s["b"] - b) <= 0.05 * b + 5)
+      clusters.setdefault((g["category"], ids), []).append(g)
   tags_in = {}
-  for (cat, ra, rb), gs in clusters.items():
-    a, b = ra * 10.0, rb * 10.0
-    drawn = [s for s in shapes if s["fill"] and abs(s["a"] - a) <= 0.05 * a + 5 and abs(s["b"] - b) <= 0.05 * b + 5]
+  for (cat, ids), gs in clusters.items():
     for g in gs:
-      tags_in[g["tag"]] = (sum(x["count"] for x in gs), len(drawn))
+      tags_in[g["tag"]] = (sum(x["count"] for x in gs), len(ids))
   for g in groups:
     cat, tag = g["category"], g["tag"]
     work_item, mode, kind = C.SUGGESTIONS[cat]
@@ -85,7 +95,16 @@ def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None) 
     
     if cat in ("COLUMN", "FOOTING"):
       drawn, sched = g.get("drawn_mm"), g.get("schedule_mm")
+      if drawn and imperial and cat == "COLUMN":
+        snapped = (_snap_inch(drawn[0]), _snap_inch(drawn[1]))
+        if snapped != tuple(drawn):
+          facts["size_measured_mm"] = list(drawn)
+          drawn = snapped
+      detail = (footing or {}).get("assigned", {}).get(tag) if cat == "FOOTING" else None
+      cdet = (col_details or {}).get(ST_norm(tag)) if cat == "COLUMN" else None
+      cdet_mm = cdet.get("size_mm") if cdet and not cdet.get("disagree") else None
       facts["matched_shapes"] = g["matched"]
+      
       if drawn:
         facts["size_drawn_mm"] = list(drawn)
       if sched:
@@ -96,11 +115,34 @@ def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None) 
         if drawn and (abs(sched[0] - drawn[0]) > C.SIZE_TOL * drawn[0] or abs(sched[1] - drawn[1]) > C.SIZE_TOL * drawn[1]):
           notes.append(C.note("SIZE_DIFFERS_FROM_SCHEDULE", drawn_mm=list(drawn), schedule_mm=list(sched)))
           base *= 0.9
+          
+      elif cdet_mm:
+        used = cdet_mm
+        facts["size_detail_mm"] = list(cdet_mm)
+        notes.append(C.note("SIZE_FROM_COLUMN_DETAIL"))
+        if drawn and (abs(cdet_mm[0] - drawn[0]) > C.SIZE_TOL * cdet_mm[0] or abs(cdet_mm[1] - drawn[1]) > C.SIZE_TOL * cdet_mm[1]):
+          notes.append(C.note("COLUMN_PLAN_VS_DETAIL", drawn_mm=list(drawn), detail_mm=list(cdet_mm)))
+          base *= 0.9
       elif drawn:
         used = drawn
+        if view and cat == "COLUMN":
+          notes.append(C.note("COLUMN_SIZE_FROM_PLAN"))
+      elif detail:
+        used = detail
+        facts["size_detail_mm"] = list(detail)
+        notes.append(C.note("SIZE_FROM_DETAIL"))
+        
+        if footing.get("assumed"):
+          notes.append(C.note("FOOTING_SIZE_ORDER_ASSUMED", options_mm=footing["options"]))
+          base *= 0.8
       else:
         notes.append(C.note("SIZE_NOT_FOUND"))
+        if cat == "FOOTING" and footing and footing.get("options") and not g.get("stair"):
+          notes.append(C.note("FOOTING_SIZES_LISTED", options_mm=footing["options"]))
         base *= 0.8
+      if cdet and cdet.get("disagree"):
+        notes.append(C.note("COLUMN_DETAILS_DISAGREE", sizes_in=cdet["sizes_in"]))
+        base *= 0.9
       if drawn and g.get("spread", 0) > C.SIZE_TOL:
         notes.append(C.note("SIZE_VARIES"))
         base *= 0.9
@@ -150,11 +192,102 @@ def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None) 
         notes.append(C.note("SCHEDULE_MARK_NOT_FOUND"))
         base *= 0.9
       label = f"{tag}{' ventilator' if kind_of == 'VENTILATOR' else ''} ×{g['count']}" + (f" · {_fmt_mm(sched[0])}×{_fmt_mm(sched[1])} mm" if sched else "")
-    cand = Candidate(key=_key(cat, tag), category=cat, kind=kind, quantity_mode=mode, label=label, tag=tag,
+    if view:
+      facts["view"] = {"key": view["key"], "caption": view["caption"], "kind": view["kind"], "level_hint": view.get("level_hint")}
+      spec = level_spec(view.get("level_hint"))
+      
+      if spec:
+        label += f" · {spec[0]}"
+    cand = Candidate(key=_key(cat, tag, view["key"]) if view else _key(cat, tag), category=cat, kind=kind, quantity_mode=mode, label=label, tag=tag,
       geometry={"points": g["points"]}, params=params, missing=missing, work_item=work_item, status="VALID", confidence=0.0,
       facts=facts, notes=notes, source="TAG_SCAN", count=g["count"])
     out.append(_finish(cand, ctx, base))
   return out
+
+def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: bool) -> Candidate | None:
+  """A framing view with no column marks at all (a mumty or a stair head) still shows its columns as black squares."""
+  sized = [s for s in squares if 150.0 <= s["a"] <= 600.0 and s["b"] <= 900.0]
+  if not sized:
+    return None
+  a = sorted(s["a"] for s in sized)[len(sized) // 2]
+  b = sorted(s["b"] for s in sized)[len(sized) // 2]
+  a, b = (_snap_inch(a), _snap_inch(b)) if imperial else (M._round5(a), M._round5(b))
+  work_item, mode, kind = C.SUGGESTIONS["COLUMN"]
+  notes = [C.note("UNMARKED_COLUMNS"), C.note("COLUMN_SIZE_FROM_PLAN")]
+  spec = level_spec(v.get("level_hint"))
+  label = f"Columns (no mark) ×{len(sized)} · {_fmt_mm(a)}×{_fmt_mm(b)} mm" + (f" · {spec[0]}" if spec else "")
+  facts = {"tag": None, "count": len(sized), "size_drawn_mm": [a, b], "size_used_mm": [a, b], "matched_shapes": len(sized),
+    "view": {"key": v["key"], "caption": v["caption"], "kind": v["kind"], "level_hint": v.get("level_hint")}}
+  cand = Candidate(key=_key("COLUMN", "UNMARKED", v["key"]), category="COLUMN", kind=kind, quantity_mode=mode, label=label, tag=None,
+    geometry={"points": [[round(s["cx"], 4), round(s["cy"], 4)] for s in sized]}, params={"length_mm": a, "width_mm": b, "dims_basis": "DRAWN"},
+    missing=["height_mm"], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="TAG_SCAN", count=len(sized))
+  return _finish(cand, ctx, 0.6)
+
+def _structure_candidates(index, views: list, f: float, hint, heights, ctx, imperial: bool, view_scales: dict | None = None, col_details: dict | None = None) -> tuple:
+  """A sheet that shows several structural plans (foundation, basement / ground / first framing plans, mumty framing plan): each plan is read on
+  its own, so the C1 marks of the ground floor are not added to the C1 marks of the first floor. Footings are read from the foundation plan only
+  (the framing plans repeat the footing marks beside the columns)."""
+  plans = [v for v in views if v["structural"]]
+  squares = ST.dedupe_solid(ST.square_shapes(index.rings, f), f)
+  pool = ST.dedupe_solid(M.member_shapes(index.rings, f) + squares, f)
+  shapes_by = VW.split(pool, views, lambda s: (s["cx"], s["cy"]))
+  squares_by = VW.split(squares, views, lambda s: (s["cx"], s["cy"]))
+  words_by = VW.split(index.words, views, lambda w: (w.cx, w.cy))
+  sizes = ST.footing_sizes(index.words, hint, imperial)
+  out: list = []
+  stats: list = []
+  found: dict = {}
+  
+  for v in plans:
+    ws, sh = words_by.get(v["key"], []), shapes_by.get(v["key"], [])
+   
+    keep = ("FOOTING",) if v.get("foundation") else ("COLUMN", "BEAM")
+    found[v["key"]] = [g for g in M.tag_members(ws, sh, f, hint, None, plan_view=True) if g["category"] in keep]
+  
+  seen: dict = {}
+  for gs in found.values():
+    for g in gs:
+      if g["category"] == "COLUMN" and g.get("drawn_mm"):
+        seen.setdefault(g["tag"], []).append(g["drawn_mm"])
+  for v in plans:
+    groups = found[v["key"]]
+    ws, sh = words_by.get(v["key"], []), shapes_by.get(v["key"], [])
+    borrowed = set()
+    for g in groups:
+      if g["category"] == "COLUMN" and not g.get("drawn_mm") and seen.get(g["tag"]):
+        g["drawn_mm"] = max(set(seen[g["tag"]]), key=seen[g["tag"]].count)
+        g["spread"] = 0.0
+        borrowed.add(g["tag"])
+    footing = None
+    if v.get("foundation"):
+      footing = ST.assign_footing_sizes(groups, sizes)
+      for w in ST.stair_footings(ws):
+        groups.append({"tag": "STAIR-F", "category": "FOOTING", "points": [[round(w.cx, 4), round(w.cy, 4)]], "count": 1, "schedule_rows": 0,
+          "matched": 0, "stair": True})
+    cands = _tag_candidates(index, ws, sh, f, hint, heights, ctx, view=v, groups=groups, imperial=imperial, footing=footing, col_details=col_details)
+    for c in cands:
+      if c.tag in borrowed and c.category == "COLUMN":
+        c.notes.append(C.note("SIZE_FROM_OTHER_VIEW"))
+        c.status = _status(c.notes)
+    has_columns = any(g["category"] == "COLUMN" for g in groups)
+    if not has_columns and not v.get("foundation"):
+      extra = _unmarked_columns(v, squares_by.get(v["key"], []), f, ctx, imperial)
+      if extra is not None:
+        cands.append(extra)
+    own = (view_scales or {}).get(v["key"]) or {}
+    if own.get("mm_per_pt") and abs(own["mm_per_pt"] / f - 1.0) > VIEW_SCALE_TOL:
+      for c in cands:
+        c.notes.append(C.note("VIEW_SCALE_DIFFERS", view_mm_per_pt=own["mm_per_pt"], sheet_mm_per_pt=round(f, 5)))
+        c.status = _status(c.notes)
+    out.extend(cands)
+    by = {}
+    
+    for c in cands:
+      by[c.category] = by.get(c.category, 0) + int(c.count or 0)
+    stats.append({"key": v["key"], "caption": v["caption"], "level_hint": v.get("level_hint"), "foundation": bool(v.get("foundation")),
+      "columns": by.get("COLUMN", 0), "footings": by.get("FOOTING", 0), "beams": by.get("BEAM", 0), "squares": len(squares_by.get(v["key"], [])),
+      "slab_panels": v.get("slab_panels", 0), "slab_note_mm": v.get("slab_note_mm")})
+  return out, stats
 
 def _is_imperial(words) -> bool:
   """A drawing dimensioned in feet and inches: several words such as 30'-0" or 13'-6"."""
@@ -201,8 +334,11 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -
   stats["rcc_runs"] = len(rcc)
   stats["dropped_stubs"] = 0
   stats["dropped_on_rcc"] = 0
+  stats["dropped_outside_rcc"] = 0
+  box = RC.envelope(rcc, f) if rcc else None
   extra = W.bridge_ends(runs, frames, f)
   stats["bridged_ends"] = sum(1 for v in extra.values() for x in v if x > 0.0)
+  
   out = []
   for r in runs:
     fr = frames[r.peak]
@@ -218,6 +354,10 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -
   
     if rcc and RC.covered_by(rcc, p0, p1, f):
       stats["dropped_on_rcc"] += 1
+      continue
+    
+    if box is not None and RC.outside(box, p0, p1):
+      stats["dropped_outside_rcc"] += 1
       continue
     spans = list(r.gaps)
     if add0 > 0.0:
@@ -359,11 +499,36 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx) -> list:
       label=f"{p['name']} · {area:.2f} m²", tag=None, geometry=R.polygon_geometry(poly), params={"dims_basis": "SPECIFIED"},
       missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
     out.append(_finish(cand, ctx, 0.7))
+  _flag_nested_rooms(out)
   out.sort(key=lambda c: (c.facts["name"] or "~", -c.facts["area_m2"]))
   return out
 
+def _flag_nested_rooms(rooms: list) -> None:
+  """A room whose centre is inside a larger room's outline (a W/C drawn inside a stair hall) is counted twice in the room total. It is kept and
+  flagged, not removed: only the engineer can say which outline is the room."""
+  from shapely.geometry import Polygon
+  polys = []
+  for c in rooms:
+    g = c.geometry or {}
+    try:
+      polys.append(Polygon(g["outer"], g.get("holes") or []) if g.get("outer") else None)
+    except Exception:
+      polys.append(None)
+      
+  for i, a in enumerate(rooms):
+    pa = polys[i]
+    if pa is None or pa.is_empty:
+      continue
+    inside = [j for j, b in enumerate(rooms) if j != i and polys[j] is not None and b.facts["area_m2"] > a.facts["area_m2"] * 1.2
+              and polys[j].contains(pa.representative_point())]
+    if inside:
+      big = max(inside, key=lambda j: rooms[j].facts["area_m2"])
+      a.notes.append(C.note("ROOM_INSIDE_ROOM", enclosing=rooms[big].facts.get("name"), enclosing_m2=rooms[big].facts["area_m2"]))
+      a.facts["inside_room"] = rooms[big].facts.get("name")
+      a.status = _status(a.notes)
+
 def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unverified: bool = False, content_kind: str = "VECTOR",
-  budget_s: float = 25.0, schedule: dict | None = None) -> Extraction:
+  budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -376,13 +541,21 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
   heights = M.height_hints(lines, hint)
   shapes = M.member_shapes(index.rings, mm_per_pt)
   openings = S.opening_lookup(schedule)
-  res.candidates.extend(_tag_candidates(index, words, shapes, mm_per_pt, hint, heights, ctx, openings))
+  views = VW.find_views(index)
+  composite_structural = sum(1 for v in views if v["structural"]) >= 2
+  if composite_structural:
+    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, _is_imperial(words), {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details)
+    res.candidates.extend(found)
+    res.stats["views"] = vstats
+  else:
+    res.candidates.extend(_tag_candidates(index, words, shapes, mm_per_pt, hint, heights, ctx, openings, col_details=col_details))
   res.stats["schedule_marks"] = len(openings)
   kind = sheet_kind(words)
+  
   res.stats["sheet_kind"] = kind
   frames, runs = [], []
-  if kind["kind"] == "STRUCTURAL":
-    res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"]))
+  if kind["kind"] == "STRUCTURAL" or composite_structural:
+    res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"] or (views[0]["caption"] if views else None)))
   else:
     try:
       frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, heights, ctx, deadline, _is_imperial(words))
@@ -395,6 +568,8 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
           c.notes.append(C.note("OPENINGS_ASSIGNED", count=c.facts["openings"]["count"], marks=c.facts["openings"]["marks"]))
           c.status = _status(c.notes)
       res.stats["walls"] = wstats
+      if wstats.get("dropped_outside_rcc"):
+        res.notes.append(C.note("RUNS_OUTSIDE_CONCRETE_WALLS", count=wstats["dropped_outside_rcc"]))
       if wstats.get("wall_pen_pt"):
         res.notes.append(C.note("WALL_PEN_SELECTED", pen_pt=wstats["wall_pen_pt"], runs_all_pens=wstats.get("runs_all_pens"),
           wall_m_all_pens=wstats.get("wall_m_all_pens")))
