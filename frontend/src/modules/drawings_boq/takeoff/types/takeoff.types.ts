@@ -417,6 +417,91 @@ export interface RegisterSheetStatus {
   severity: "INFO" | "ACTION" | null;
   composite: boolean;
 }
+export type FactKind = "SLAB_THICKNESS" | "RCC_WALL_THICKNESS" | "BRICK_COLUMN" | "CONCRETE_CLASS" | "STEEL_GRADE" | "CLEAR_COVER" | "BEARING_CAPACITY" | "PLASTER_THICKNESS" | "FILL_LAYER" | "STAIR_WIDTH";
+export interface DrawingFact {
+  kind: FactKind;
+  scope: string | null;
+  text: string;
+  count: number;
+  pages: number[];
+  value_mm?: number | null;
+  value2_mm?: number | null;
+  value?: number | null;
+  unit?: string | null;
+  grade?: number | null;
+  concrete_class?: string | null;
+  mix?: string | null;
+  where?: string | null;
+}
+export interface DrawingFactConflictValue {
+  value_mm: number | null;
+  value: number | null;
+  unit: string | null;
+  scopes: string[];
+  pages: number[];
+  text: string;
+}
+export interface DrawingFactConflict { kind: FactKind; name: string; values: DrawingFactConflictValue[] }
+export type ScheduleOpeningType = "DOOR" | "WINDOW" | "VENTILATOR" | "OPENING";
+
+export interface ScheduleOpening {
+  mark: string;
+  type: ScheduleOpeningType | string;
+  width_mm: number;
+  height_mm: number;
+  area_m2: number;
+  text?: string | null;
+  pages: number[];
+}
+export interface ScheduleArea { key: string; kind: string; name: string; value: number; unit: string; m2: number; pages: number[] }
+export interface ScheduleConflict { kind: "OPENING_SIZE" | "FLOOR_AREA" | string; name: string; values: Array<{ width_mm?: number; height_mm?: number; m2?: number; pages: number[] }> }
+export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; conflicts: ScheduleConflict[] }
+export type FloorCheckStatus = "OK" | "LOW" | "HIGH" | "NOT_READ";
+
+export interface FloorCheck {
+  key: string;
+  name: string;
+  covered_m2: number;
+  status: FloorCheckStatus;
+  message: string | null;
+  pages: number[];
+  rooms: number;
+  rooms_m2: number;
+  coverage_pct: number | null;
+  doors: number;
+  windows: number;
+  ventilators: number;
+  openings_m2: number;
+  walls_m: number;
+  wall_height_mm: number | null;
+  wall_height_basis: string | null;
+  brick_9_m2: number;
+  brick_45_m2: number;
+  rcc_m2: number;
+}
+
+export interface SuggestedWallHeight {
+  value_mm: number;
+  floor_to_floor_mm: number;
+  slab_mm: number;
+  basis: string;
+  alternatives: Array<{ slab_mm: number; value_mm: number; pages: number[] }>;
+}
+
+export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number; basis: "LEVEL_MARKS" | "TYPICAL" | string }
+export interface DrawingSuggest { wall_height?: SuggestedWallHeight | null; wall_height_by_floor?: Record<string, FloorWallHeight> }
+
+export interface DrawingFacts {
+  drawing_id: string;
+  sheets_read: number;
+  sheets_total: number;
+  items: DrawingFact[];
+  conflicts: DrawingFactConflict[];
+  ladder: { levels_mm: number[]; gaps_mm: number[]; typical_floor_to_floor_mm: number | null };
+  suggest?: DrawingSuggest;
+  schedule?: DrawingSchedule;
+  floors?: FloorCheck[];
+}
 export interface RegisterSyncResult {
   drawing_id: string;
   total: number;

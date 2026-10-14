@@ -3,9 +3,9 @@ import re
 
 STRUCTURAL = re.compile(r"\b(?:FOUNDATIONS?|FOOTINGS?\s+(?:LAYOUT|PLAN)|COLUMN\s+(?:LAYOUT|PLAN|LOCATION)|COLUMNS?\s+AND\s+FOOTINGS?|"
   r"(?:ROOF|FLOOR|GROUND|FIRST|SECOND)\s+(?:BEAM|BEAMS|SLAB)\s*(?:LAYOUT|PLAN|AND|&|FRAMING)?|BEAMS?\s+(?:LAYOUT|PLAN)|SLAB\s+(?:LAYOUT|PLAN)|"
-  r"FRAMING\s+PLAN|STRUCTURAL|ROOF\s+PLAN|REINFORCEMENT|TIE\s+BEAM|PLINTH\s+BEAM)\b", re.I)
+  r"FRAMING\s+PLAN|STRUCTURAL|REINFORCEMENT|TIE\s+BEAM|PLINTH\s+BEAM)\b", re.I)
 PLAN = re.compile(r"\b(?:(?:GROUND|FIRST|SECOND|THIRD|TYPICAL|UPPER|LOWER|BASEMENT|MEZZANINE|MEZZ|TERRACE)\s+FLOOR\s+PLAN|FLOOR\s+PLAN|"
-  r"ARCHITECTURAL\s+PLAN|LAYOUT\s+PLAN|BASEMENT\s+PLAN|(?:GROUND|FIRST|SECOND|THIRD)\s+FLOOR)\b", re.I)
+  r"ARCHITECTURAL\s+PLAN|LAYOUT\s+PLAN|BASEMENT\s+PLAN|ROOF\s+PLAN|MUMTY|(?:GROUND|FIRST|SECOND|THIRD)\s+FLOOR)\b", re.I)
 
 def sheet_kind(words: list) -> dict:
   
@@ -20,7 +20,8 @@ def sheet_kind(words: list) -> dict:
     ws.sort(key=lambda o: o.x0)
     text = " ".join(o.text for o in ws)
     size = max(o.size for o in ws)
-    plan, struct = bool(PLAN.search(text)), bool(STRUCTURAL.search(text))
+    struct = bool(STRUCTURAL.search(text))
+    plan = bool(PLAN.search(text)) and not struct
     if not plan and not struct:
       continue
     cand = (size, plan, text[:80])

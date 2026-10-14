@@ -10,7 +10,7 @@ from app.core.database import get_db
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.schemas import SheetResponse
 from app.modules.drawings_boq.takeoff.prep_schemas import (PrepareRequest, AnalysisResponse, AutoCalibrateRequest, AutoCalibrateResponse, PickRequest,
-  PickResponse, PrepareResponse, ShapeDetailResponse, ShapeListResponse, SnapRequest, SnapResponse, TagDetailResponse,
+  PickResponse, PrepareResponse, FactsResponse, ShapeDetailResponse, ShapeListResponse, SnapRequest, SnapResponse, TagDetailResponse,
   TagListResponse, TextResponse, VectorResponse)
 from typing import Literal
 
@@ -36,6 +36,12 @@ async def prepare_drawing(
   current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
   return await PrepService(session).prepare_drawing(_org(current_user), drawing_id, current_user.id, payload or PrepareRequest())
+
+@router.get("/drawings/{drawing_id}/takeoff/facts", response_model=FactsResponse)
+async def get_drawing_facts(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await PrepService(session).drawing_facts(_org(current_user), drawing_id)
 
 @router.post("/takeoff/sheets/{sheet_id}/prepare", response_model=SheetResponse)
 async def prepare_sheet(

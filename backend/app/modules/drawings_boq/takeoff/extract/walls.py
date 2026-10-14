@@ -110,15 +110,16 @@ def angle_peaks(theta_deg: np.ndarray, weight: np.ndarray, max_peaks: int = 12, 
       work[b] = 0.0
   return peaks
 
-def collect_faces(index, mm_per_pt: float, deadline: float | None = None) -> tuple[list[Frame], list[Face]]:
+def collect_faces(index, mm_per_pt: float, deadline: float | None = None, min_width: float = 0.0) -> tuple[list[Frame], list[Face]]:
   if len(index.kinds) == 0:
     return [], []
+
   raw = np.frombuffer(index.segs, dtype=np.float32).reshape(-1, 5).astype(np.float64)
   segs, wid = raw[:, :4], raw[:, 4]
   kinds = np.frombuffer(index.kinds, dtype=np.uint8)
   dx, dy = segs[:, 2] - segs[:, 0], segs[:, 3] - segs[:, 1]
   ln = np.hypot(dx, dy)
-  keep = (kinds == 0) & (ln >= MIN_SEG_PT)
+  keep = (kinds == 0) & (ln >= MIN_SEG_PT) & (wid >= min_width)
   if not keep.any():
     return [], []
   segs, dx, dy, ln, wid = segs[keep], dx[keep], dy[keep], ln[keep], wid[keep]
@@ -394,8 +395,8 @@ def weight_reference(runs: list[Run]) -> float:
 def is_light(r: Run, ref: float) -> bool:
   return ref > 0.0 and r.w < LIGHT_RATIO * ref
 
-def detect_walls(index, mm_per_pt: float, deadline: float | None = None) -> tuple[list[Frame], list[Run], dict]:
-  frames, faces = collect_faces(index, mm_per_pt, deadline)
+def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: float) -> tuple[list[Frame], list[Run], dict]:
+  frames, faces = collect_faces(index, mm_per_pt, deadline, min_width)
   pieces = pair_faces(faces, mm_per_pt, deadline)
   runs = join_runs(pieces, frames, mm_per_pt, deadline)
   stats = settle_junctions(runs, frames, mm_per_pt)
@@ -412,9 +413,117 @@ def detect_walls(index, mm_per_pt: float, deadline: float | None = None) -> tupl
   stats.update({"faces": len(faces), "pieces": len(pieces), "runs": len(runs), "dropped_light_loose": len(loose), "weight_ref_pt": round(ref, 4)})
   return frames, runs, stats
 
+# A plan draws its walls with the heaviest pen; dimension lines, furniture, fittings and boundary lines use lighter ones. Pairs of parallel lines
+# in a light pen are not walls. The wall pen is the heaviest line weight that still finds a real share of the standard-thickness walls that
+# all pens together find. A drawing with one pen only, or with walls in a light pen, falls back to all pens.
+PEN_MIN_SHARE = 0.05
+PEN_KEEP_SHARE = 0.25
+PEN_MIN_RUNS = 4
+
+def pen_classes(index) -> list:
+  """(line weight, share of all straight line length), heaviest first."""
+  if len(index.kinds) == 0:
+    return []
+  raw = np.frombuffer(index.segs, dtype=np.float32).reshape(-1, 5).astype(np.float64)
+  kinds = np.frombuffer(index.kinds, dtype=np.uint8)
+  ln = np.hypot(raw[:, 2] - raw[:, 0], raw[:, 3] - raw[:, 1])
+  keep = (kinds == 0) & (ln >= MIN_SEG_PT)
+  total = float(ln[keep].sum())
+  if total <= 0:
+    return []
+  out: dict = {}
+  for w, length in zip(np.round(raw[keep, 4], 2).tolist(), ln[keep].tolist()):
+    out[w] = out.get(w, 0.0) + length
+  return sorted(((w, v / total) for w, v in out.items()), reverse=True)
+
+def _standard_length_mm(runs: list, mm_per_pt: float) -> float:
+  return sum((r.s1 - r.s0) * mm_per_pt for r in runs if standard_thickness(r.t_pt * mm_per_pt))
+
+def detect_walls(index, mm_per_pt: float, deadline: float | None = None) -> tuple[list[Frame], list[Run], dict]:
+  frames, runs, stats = _detect_once(index, mm_per_pt, deadline, 0.0)
+  classes = pen_classes(index)
+  stats["pens"] = [[w, round(s, 3)] for w, s in classes]
+  stats["wall_pen_pt"] = None
+  base = _standard_length_mm(runs, mm_per_pt)
+  if len(classes) < 2 or base <= 0:
+    return frames, runs, stats
+  lightest = classes[-1][0]
+  
+  for w, share in classes:
+    if w <= lightest + 1e-6:
+      break
+    if share < PEN_MIN_SHARE:
+      continue
+    f2, r2, s2 = _detect_once(index, mm_per_pt, deadline, w - 0.005)
+    if len(r2) >= PEN_MIN_RUNS and _standard_length_mm(r2, mm_per_pt) >= PEN_KEEP_SHARE * base:
+      s2["pens"] = stats["pens"]
+      s2["wall_pen_pt"] = w
+      s2["runs_all_pens"] = len(runs)
+      s2["wall_m_all_pens"] = round(sum((r.s1 - r.s0) for r in runs) * mm_per_pt / 1000.0, 1)
+      return f2, r2, s2
+  return frames, runs, stats
+
+def snap_thickness(t_mm: float, imperial: bool = False) -> tuple:
+  """(standard thickness found or None, thickness to use in mm). A drawing in feet and inches has 4.5 and 9 inch walls (114.3 and 228.6 mm);
+  any other drawing has the metric 115 and 230 mm walls."""
+  if imperial:
+    best = min(C.IMPERIAL_WALLS_MM, key=lambda s: abs(t_mm / s - 1.0))
+    if abs(t_mm / best - 1.0) <= C.IMPERIAL_TOL:
+      return best, best
+  std = standard_thickness(t_mm)
+  if std is not None:
+    return std, float(std)
+  return None, float(round(t_mm / 5.0) * 5)
+
 def standard_thickness(t_mm: float) -> int | None:
   best = min(C.STANDARD_WALLS_MM, key=lambda s: abs(t_mm / s - 1.0))
   return best if abs(t_mm / best - 1.0) <= C.STANDARD_TOL else None
+
+def bridge_ends(runs: list[Run], frames: list[Frame], mm_per_pt: float) -> dict:
+  """For each free wall end, how far the wall runs on to reach a cross wall straight ahead (a door or window opening of up to WALL_BRIDGE_MAX_MM
+  where the wall lines stop). Returns {id(run): [extra at start, extra at end]} in points; nothing is changed on the runs themselves.
+  The extra length is counted as wall, and the door or window that stands in it is deducted when the wall is measured."""
+  out: dict = {}
+  if not runs:
+    return out
+  reach = C.WALL_BRIDGE_MAX_MM / mm_per_pt
+  for ia, A in enumerate(runs):
+    fa = frames[A.peak]
+    for end in (0, 1):
+      if (A.end0 if end == 0 else A.end1) != "FREE":
+        continue
+    
+      s_e = (A.s0 - A.ext0) if end == 0 else (A.s1 + A.ext1)
+      sign = -1.0 if end == 0 else 1.0
+      ex, ey = fa.pt(s_e, A.dc)
+      dx, dy = sign * fa.ux, sign * fa.uy
+      best = None
+      for jb, B in enumerate(runs):
+        if jb == ia:
+          continue
+        fb = frames[B.peak]
+        if abs(fa.ux * fb.uy - fa.uy * fb.ux) < math.cos(math.radians(3.0)):
+          continue
+        dn = dx * fb.nx + dy * fb.ny
+        if abs(dn) < 0.7:
+          continue
+        t = (B.dc - fb.d_of(ex, ey)) / dn
+        hb = B.t_pt / 2.0
+        if t <= 0.0 or t - hb > reach:
+          continue
+      
+        hx, hy = ex + dx * t, ey + dy * t
+        sb = fb.s_of(hx, hy)
+        slack = A.t_pt / 2.0 + JUNCTION_TOL_PT
+        if sb < B.s0 - slack or sb > B.s1 + slack:
+          continue
+        through = (B.s0 < sb - slack) and (B.s1 > sb + slack)
+        run_on = t - hb if through else t
+        if run_on > 0.0 and (best is None or run_on < best):
+          best = run_on
+      if best is not None:
+        out.setdefault(id(A), [0.0, 0.0])[end] = best
+  return out
 
 def run_ends(r: Run, fr: Frame) -> tuple:
   return fr.pt(r.s0 - r.ext0, r.dc), fr.pt(r.s1 + r.ext1, r.dc)

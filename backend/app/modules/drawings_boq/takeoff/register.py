@@ -65,17 +65,21 @@ def _positions(cand, n: int) -> list:
 def _measured_text(cand, page_no: int, measurement) -> str:
   p, facts, codes = cand.params or {}, cand.facts or {}, {n.get("code") for n in (cand.notes or [])}
   parts = []
-  parts.append(f"Marks counted on sheet {page_no}" if cand.source == "TAG_SCAN" else f"Drawn outline on sheet {page_no}")
+  from_label = cand.category == "ROOM" and facts.get("outline_from") == "LABEL"
+  parts.append(f"Marks counted on sheet {page_no}" if cand.source == "TAG_SCAN" else f"Room label on sheet {page_no}" if from_label else f"Drawn outline on sheet {page_no}")
   cat = cand.category
   
   if cat in ("COLUMN", "FOOTING"):
     parts.append("size from schedule" if "SIZE_FROM_SCHEDULE" in codes else "size from drawing" if facts.get("size_used_mm") else "size not found")
   elif cat == "WALL":
-    parts.append("centre line x thickness")
+    parts.append("concrete wall (solid fill), centre line x thickness" if facts.get("construction") == "RCC" else "centre line x thickness")
+    if facts.get("enclosure") == "TANK":
+      parts.append("tank wall")
+      
   elif cat == "ROOM":
-    parts.append("area inside the wall faces" if facts.get("outline_from") == "WALLS" else "area of the drawn outline")
+    parts.append("area inside the wall faces" if facts.get("outline_from") == "WALLS" else "size printed in the label" if from_label else "area of the drawn outline")
   elif cat in ("DOOR", "WINDOW") and facts.get("size_schedule_mm"):
-    parts.append("size from schedule")
+    parts.append("ventilator, size from schedule" if facts.get("opening_kind") == "VENTILATOR" else "size from schedule")
     
   if cat in ("COLUMN", "FOOTING", "WALL"):
     has = p.get("height_mm" if cat == "WALL" else "depth_mm") is not None
@@ -85,8 +89,9 @@ def _measured_text(cand, page_no: int, measurement) -> str:
       parts.append("height typed" if cat != "FOOTING" else "depth typed")
     else:
       parts.append("height needed" if cat != "FOOTING" else "depth needed")
-  if cat == "WALL" and "WALL_OPENINGS_INCLUDED" in codes and measurement is None:
-    parts.append("openings not yet deducted")
+  if cat == "WALL" and measurement is None and ("WALL_OPENINGS_INCLUDED" in codes or (facts.get("openings") or {}).get("count")):
+    opened = (facts.get("openings") or {})
+    parts.append(f"{opened['count']} marked opening{'s' if opened['count'] != 1 else ''} ({opened['area_m2']:.2f} m²) deducted when measured" if opened.get("count") else "openings not yet deducted")
   if cand.decision == "ACCEPTED" and measurement is not None:
     parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
   else:
@@ -131,7 +136,8 @@ def _sizes(cand) -> dict:
   elif cat in ("DOOR", "WINDOW"):
     s = facts.get("size_schedule_mm")
     if s and len(s) >= 2:
-      out = {"width_mm": _num(s[0]), "height_mm": _num(s[1])}
+      w, h = _num(s[0]), _num(s[1])
+      out = {"width_mm": w, "height_mm": h, "area_mm2": (w * h) if (w and h) else None}
   elif cat == "ROOM":
     a = _num(facts.get("area_m2"))
     out = {"area_mm2": a * 1e6 if a else None}
@@ -180,13 +186,16 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
     
     if cand.category == "ROOM":
       props["_pdf"]["perimeter_m"] = (cand.facts or {}).get("perimeter_m")
+    opening_kind = (cand.facts or {}).get("opening_kind") if cand.category in ("DOOR", "WINDOW") else None
+    if opening_kind:
+      props["_pdf"]["opening_kind"] = opening_kind
     row = {
       "id": row_id(sheet.id, cand.ckey, i), "ifc_global_id": global_id(cand.ckey, i), "ifc_type": spec["ifc_type"],
-      "name": _name(cand, i, n)[:500], "raw_material_text": spec["material"], "unit": unit, "quantity": qty, "properties": props,
+      "name": _name(cand, i, n)[:500], "raw_material_text": "Reinforced concrete wall (retaining)" if (cand.facts or {}).get("construction") == "RCC" else spec["material"], "unit": unit, "quantity": qty, "properties": props,
       "discipline": spec["discipline"], "structural_role": spec["role"], "classification_source": "PDF_EXTRACT",
       "classification_confidence": _d(cand.confidence or 0), "quantity_source": qsrc, "level_id": level_id,
       "geometry_kind": None, "normalization_status": status, "normalization_issues": issues,
-      "type_mark": cand.tag, "type_name": None, "level_name": level_name or title,
+      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else None, "level_name": level_name or title,
     }
     row.update(sizes)
     out.append(row)

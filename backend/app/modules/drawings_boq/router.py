@@ -163,6 +163,36 @@ async def drawing_elements_summary(
   service = _service(session)
   return await service.element_summary(current_user.active_membership.organization_id, drawing_id)
 
+@router.get("/drawings/{drawing_id}/elements/export/pdf")
+async def export_drawing_elements_pdf(
+  drawing_id: UUID,
+  structural_role: str | None = Query(default=None, max_length=30),
+  discipline: str | None = Query(default=None, max_length=20),
+  level_id: UUID | None = Query(default=None),
+  normalization_status: Literal["PENDING", "VALID", "WARNING", "INVALID"] | None = Query(default=None),
+  ifc_type: str | None = Query(default=None, max_length=100),
+  current_user: User = Depends(
+    require_permission(PermissionKey.DRAWING_READ)
+  ),
+  session: AsyncSession = Depends(get_db),
+  
+):
+  service = _service(session)
+  pdf_bytes, filename = await service.export_elements_pdf(
+    current_user.active_membership.organization_id,
+    drawing_id,
+    structural_role=structural_role,
+    discipline=discipline,
+    level_id=level_id,
+    normalization_status=normalization_status,
+    ifc_type=ifc_type,
+  )
+  return Response(
+    content=pdf_bytes,
+    media_type="application/pdf",
+    headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+  )
+
 @router.get(
   "/drawings/{drawing_id}/levels",
   response_model=list[BuildingLevelResponse],

@@ -32,10 +32,24 @@ def _prior_table(hint: str | None) -> dict:
     base.update(cm_int=1.0, mm_int=0.2, m_dec=0.2)
   elif hint in ("ft-in", "ft"):
     base.update(mm_int=0.35, ft_dec=0.7 if hint == "ft" else 0.25, in_int=0.4 if hint == "ft-in" else 0.1, m_dec=0.2)
-  return base
+    return base
+
+_VULGAR = {"½": " 1/2", "¼": " 1/4", "¾": " 3/4", "⅛": " 1/8", "⅜": " 3/8", "⅝": " 5/8", "⅞": " 7/8"}
+_FEET_NO_MARK = re.compile(r"^(\d{1,3})\s*-\s*(\d{1,2}(?:\.\d+)?(?: \d+/\d+)?)\s*\"$")
+
+def normalize_dimension_text(text: str) -> str:
+  """Drawings print 7'-1½" with a fraction sign, or 12-0" with the foot mark left out. Both are read as feet and inches."""
+  s = (text or "").strip().replace("’", "'").replace("′", "'").replace("”", '"').replace("″", '"').replace("“", '"')
+  for sign, plain in _VULGAR.items():
+    s = s.replace(sign, plain)
+  s = re.sub(r"\s+", " ", s).strip()
+  m = _FEET_NO_MARK.match(s)
+  if m and float(m.group(2).split()[0]) < 12:
+    s = f"{m.group(1)}'-{m.group(2)}\""
+  return s
 
 def parse_dimension(text: str, hint: str | None = None) -> list[Reading]:
-  s = (text or "").strip().replace("’", "'").replace("′", "'").replace("”", '"').replace("″", '"').replace("“", '"')
+  s = normalize_dimension_text(text)
   if not s or len(s) > 24:
     return []
   out: list[Reading] = []

@@ -5,10 +5,10 @@ from decimal import Decimal
 from app.modules.drawings_boq.takeoff.prep.extract import RawPage
 import math
 import time
-from app.modules.drawings_boq.takeoff.prep import census, dimensions
+from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, schedules
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 
-ANALYSIS_VERSION = 2
+ANALYSIS_VERSION = 4
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -287,6 +287,8 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
     "shapes_top": [{k: g[k] for k in ("id", "shape", "a_pt", "b_pt", "count")} for g in shapes[:8]],
     "tags_top": [{"tag": g["tag"], "in_drawing": g["in_drawing"], "count": g["count"]} for g in tags[:12]],
     "user_unit": user_unit,
+    "facts": drawing_facts.read_facts(lines),
+    "schedule": schedules.read_schedules(raw.words),
   }
   return PageAnalysis(content_kind=content_kind, text_chars=int(raw.stats.get("text_chars", 0)), vector_ops=int(raw.stats.get("path_objects", 0)),
     detected_scale=detected, meta=meta, index=index)

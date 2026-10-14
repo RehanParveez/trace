@@ -2,12 +2,13 @@ from __future__ import annotations
 import re
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.texts import parse_dimension, is_tag
+from app.modules.drawings_boq.takeoff.prep import schedules as S
 from app.modules.drawings_boq.takeoff.prep.census import _is_rectangle, dense_flags
 import math
 from bisect import bisect_left, bisect_right
 from statistics import median
 
-_SIZE = re.compile(r"(?P<a>\d[\d.,'\"′″\-\s]*?)\s*[xX×]\s*(?P<b>\d[\d.,'\"′″\-\s]*)")
+_SIZE = re.compile(r"(?P<a>\d[\d.,'\"′″½¼¾\-\s]*?)\s*[xX×]\s*(?P<b>\d[\d.,'\"′″½¼¾\-\s]*)")
 
 def category_of(tag: str) -> str | None:
   t = (tag or "").strip().upper()
@@ -155,12 +156,18 @@ def height_hints(lines: list, hint: str | None) -> dict:
       mm = max(rs, key=lambda r: r.prior).value_mm
       if 1500.0 <= mm <= 6500.0:
         out[cat] = {"mm": _round5(mm), "text": ln.text[:80]}
-  return out
+    return out
 
-def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None) -> list[dict]:
+def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None, openings: dict | None = None) -> list[dict]:
+  """openings: mark -> (width_mm, height_mm, type) from the drawing's door / window / ventilator schedule (any sheet of the drawing)."""
+  openings = openings or {}
 
   flags = dense_flags(words) if words else []
   sched, row_ids = schedule_rows(words, hint)
+  table_ids = S.table_marks(words) if words else set()
+  if openings:
+
+    row_ids = row_ids - {id(w) for w in words if category_of(w.text) in ("DOOR", "WINDOW")}
   groups: dict = {}
   for w, dense in zip(words, flags):
     if not is_tag(w.text):
@@ -168,9 +175,12 @@ def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None) -
     cat = category_of(w.text)
     if cat is None:
       continue
+    mk = S.norm_mark(w.text)
+    if mk and S.mark_type(mk) == "VENTILATOR" and mk not in openings:
+      continue  
     key = w.text.strip().upper()
     g = groups.setdefault(key, {"tag": key, "category": cat, "points": [], "dense": 0})
-    if dense or id(w) in row_ids:
+    if dense or id(w) in row_ids or id(w) in table_ids:
       g["dense"] += 1
       
     else:
@@ -200,6 +210,13 @@ def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None) -
       entry["spread"] = spread
     if key in sched:
       entry["schedule_mm"] = sched[key]
+    if g["category"] in ("DOOR", "WINDOW") and openings:
+      row = openings.get(S.norm_mark(key) or key)
+      if row:
+        entry["schedule_mm"] = (row[0], row[1])
+        entry["opening_kind"] = row[2]
+      else:
+        entry["schedule_missing"] = True
     out.append(entry)
   out.sort(key=lambda e: (e["category"], e["tag"]))
   return out

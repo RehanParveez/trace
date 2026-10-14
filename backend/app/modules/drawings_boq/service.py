@@ -1,8 +1,10 @@
 from __future__ import annotations
 import asyncio
 import hashlib
+import re
 import os
 import tempfile
+from collections import Counter
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import PurePosixPath
@@ -13,7 +15,7 @@ from app.core.exceptions import TraceException
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
 from app.modules.drawings_boq.models import ( BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQVersionStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
-  DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ModelAuditResult
+  DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ModelAuditResult, TakeoffExtraction, TakeoffSheet
 )
 from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response
 from app.modules.drawings_boq.repository import ( AssemblyRecipeRepository, BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, ElementTypeMappingRepository, LabourRateRepository,
@@ -26,6 +28,7 @@ from app.shared.idempotency import get_cached_response, store_response
 from app.shared.storage import MAX_UPLOAD_BYTES, build_storage_key, delete_object, download_to_path, format_bytes, upload_fileobj
 from sqlalchemy import select
 from app.modules.drawings_boq.export import build_boq_pdf, build_boq_xlsx
+from app.modules.drawings_boq.elements_report import MAX_REPORT_ROWS, build_elements_pdf, pdf_meta, sheet_states
 from app.modules.drawings_boq.words import rupees_in_words
 from app.modules.identity.models import Organization
 from app.modules.audit.models import AuditAction, AuditEntityType
@@ -1300,6 +1303,79 @@ class DrawingBOQService:
     safe_label = version.label.replace(' ', '_').encode('ascii', 'ignore').decode('ascii')
     xlsx_bytes = build_boq_xlsx(version, items, organization_name)
     return xlsx_bytes, f"BOQ-{safe_label}.xlsx"
+
+  async def export_elements_pdf(
+    self,
+    organization_id: UUID,
+    drawing_id: UUID,
+    *,
+    structural_role: str | None = None,
+    discipline: str | None = None,
+    level_id: UUID | None = None,
+    normalization_status: str | None = None,
+    ifc_type: str | None = None,
+  ) -> tuple[bytes, str]:
+    """The elements register of a drawing as a PDF: the rows the elements screen lists for the same filter, every column that matters, the count that proves
+    nothing is missing, and the flags. The rows come through the same query as the screen, so the report and the screen cannot disagree."""
+    drawing = await self.get_drawing(organization_id, drawing_id)
+    filters = dict(structural_role=structural_role, discipline=discipline, level_id=level_id, normalization_status=normalization_status, ifc_type=ifc_type)
+    expected = await self.elements.count_filtered(drawing_id, organization_id, **filters)
+    everything = await self.elements.count_filtered(drawing_id, organization_id)
+    if expected > MAX_REPORT_ROWS:
+      raise TraceException(
+        f"This view has {expected} rows, more than one PDF holds ({MAX_REPORT_ROWS}). Filter by floor or kind and download each part.",
+        status_code=422, code="ELEMENTS_REPORT_TOO_LARGE",
+      )
+    rows: list = []
+    seen: set = set()
+    cursor = None
+    for _ in range(MAX_REPORT_ROWS // 500 + 5):
+      page, cursor = await self.list_elements_page(organization_id, drawing_id, limit=1000, cursor=cursor, **filters)
+      for row in page:
+        if row.id not in seen:
+          seen.add(row.id)
+          rows.append(row)
+      if cursor is None:
+        break
+    levels = {lv.id: lv.name for lv in await self.levels.list_by_drawing(drawing_id, organization_id)}
+    shown = {
+      "Structural role": structural_role, "Discipline": discipline, "Floor": levels.get(level_id) if level_id else None,
+      "Status": normalization_status, "Type": ifc_type,
+    }
+    organization_name = await self._get_organization_name(organization_id)
+    facts, checks = None, []
+    if drawing.format == DrawingFormat.PDF:
+      facts = await self._pdf_report_facts(organization_id, drawing_id, rows, levels)
+      checks = await self._pdf_report_checks(organization_id, drawing_id)
+    pdf_bytes = await asyncio.to_thread(
+      build_elements_pdf,
+      drawing_name=drawing.original_filename, drawing_format=getattr(drawing.format, "value", str(drawing.format)), revision=drawing.revision_label,
+      organization=organization_name, generated_at=datetime.now(timezone.utc), rows=rows, expected=expected, everything=everything, filters=shown,
+      level_names=levels, facts=facts, checks=checks,
+    )
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "_", PurePosixPath(drawing.original_filename or "drawing").stem).strip("_")[:80] or "drawing"
+    return pdf_bytes, f"Elements-{stem}{'-filtered' if any(filters.values()) else ''}.pdf"
+
+  async def _pdf_report_facts(self, organization_id: UUID, drawing_id: UUID, rows: list, levels: dict) -> dict:
+    """The sheets of a PDF drawing and whether each was read, for the report. Read only: it never lists the register again."""
+    sheets = list((await self.session.execute(
+      select(TakeoffSheet).where(TakeoffSheet.organization_id == organization_id, TakeoffSheet.drawing_id == drawing_id).order_by(TakeoffSheet.page_no)
+    )).scalars().all())
+    ids = [s.id for s in sheets]
+    read_ids = set((await self.session.execute(
+      select(TakeoffExtraction.sheet_id).where(TakeoffExtraction.organization_id == organization_id, TakeoffExtraction.sheet_id.in_(ids or [None]))
+    )).scalars().all())
+    per_sheet = Counter(str(pdf_meta(r).get("sheet_id")) for r in rows if pdf_meta(r))
+    return {"sheets_total": len(sheets), "sheets_read": len(read_ids), "sheets": sheet_states(sheets, read_ids, per_sheet, levels)}
+
+  async def _pdf_report_checks(self, organization_id: UUID, drawing_id: UUID) -> list:
+    """The checks made on the drawing (column details against plans and so on). A failure here never stops the report: the register is the report."""
+    try:
+      from app.modules.drawings_boq.takeoff.prep_service import PrepService
+      facts = await PrepService(self.session).drawing_facts(organization_id, drawing_id)
+      return [dict(c) for c in (facts.get("checks") or [])]
+    except Exception:
+      return []
 
   async def normalize_material(
     self,

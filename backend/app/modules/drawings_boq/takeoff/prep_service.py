@@ -5,7 +5,8 @@ from app.modules.drawings_boq.takeoff.prep.extract import PdfOpenError, extract_
 from app.modules.drawings_boq.takeoff.service import TakeoffService, build_calibration
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.prep_repository import PrepRepository
-from app.modules.drawings_boq.models import TakeoffCalibration
+from app.modules.drawings_boq.models import BuildingLevel, TakeoffCalibration, TakeoffCandidate
+from sqlalchemy import select
 from decimal import Decimal
 import asyncio
 from uuid import UUID, uuid4
@@ -15,7 +16,7 @@ import time
 from app.engine.measure import takeoff as tk
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
-from app.modules.drawings_boq.takeoff.prep import census
+from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules
 from app.modules.drawings_boq.takeoff.levels import ensure_level
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
 from app.modules.drawings_boq.takeoff.prep.codec import encode_index
@@ -205,6 +206,102 @@ class PrepService:
         f"Read sheet {locked.page_no} for takeoff ({result.content_kind.lower()}, scale check: {str(full.get('agreement')).lower().replace('_', ' ')})")
     await self.session.commit()
     return True
+
+  async def drawing_facts(self, org: UUID, drawing_id: UUID) -> dict:
+    """What the drawing's own words say (slab thickness, steel grade, concrete mix, covers, bearing capacity, level marks), gathered across its read sheets."""
+    await self.core._pdf_drawing(org, drawing_id)
+    sheets = await self.repo.sheets(org, drawing_id)
+    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+    out = {"drawing_id": drawing_id, "sheets_read": len(read), "sheets_total": len(sheets), **drawing_facts.gather(read)}
+    out["schedule"] = drawing_schedules.gather(self._schedule_sheets(sheets))
+    suggested = (out.get("suggest") or {}).get("wall_height")
+    keys = [a["key"] for a in out["schedule"]["areas"] if a.get("kind") == "FLOOR"]
+    heights = drawing_facts.floor_heights(keys, out["ladder"], suggested["slab_mm"] if suggested else None)
+    out["suggest"]["wall_height_by_floor"] = heights
+    out["floors"] = await self._floor_checks(org, sheets, out["schedule"]["areas"], heights)
+    return out
+
+  async def _floor_checks(self, org: UUID, sheets: list, areas: list, heights: dict | None = None) -> list:
+    """Each floor's covered area from the area table, beside what was found on that floor's plan: the rooms added up, and the openings counted."""
+    floors = [a for a in areas if a.get("kind") == "FLOOR"]
+    if not floors:
+      return []
+    level_ids = {s.level_id for s in sheets if s.level_id}
+    hint_of: dict = {}
+    if level_ids:
+      for lv in (await self.session.execute(select(BuildingLevel).where(BuildingLevel.organization_id == org, BuildingLevel.id.in_(list(level_ids))))).scalars().all():
+        hint_of[lv.id] = (lv.ifc_storey_id or "").removeprefix("PDF:")
+    by_hint: dict = {}
+    for s in sheets:
+      if s.level_id and not ((s.prep_meta or {}).get("title") or {}).get("composite"):
+        by_hint.setdefault(hint_of.get(s.level_id), []).append(s)
+    ids = [s.id for group in by_hint.values() for s in group]
+    cands = []
+    if ids:
+      cands = list((await self.session.execute(select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org,
+        TakeoffCandidate.sheet_id.in_(ids), TakeoffCandidate.decision != "REJECTED"))).scalars().all())
+      
+    out = []
+    for a in floors:
+      group = by_hint.get(a["key"], [])
+      sheet_ids = {s.id for s in group}
+      mine = [c for c in cands if c.sheet_id in sheet_ids]
+      row = {"key": a["key"], "name": a["name"], "covered_m2": a["m2"], "pages": sorted(s.page_no for s in group), "rooms": 0, "rooms_m2": 0.0,
+        "doors": 0, "windows": 0, "ventilators": 0, "openings_m2": 0.0, "walls_m": 0.0, "coverage_pct": None, "message": None,
+        "wall_height_mm": None, "wall_height_basis": None, "brick_9_m2": 0.0, "brick_45_m2": 0.0, "rcc_m2": 0.0}
+      h = (heights or {}).get(a["key"])
+      
+      if h:
+        row["wall_height_mm"], row["wall_height_basis"] = h["clear_mm"], h["basis"]
+      if not mine:
+        row.update(status="NOT_READ", message="No sheet of this floor has been read yet." if not group else "The sheet of this floor has not been read for items yet.")
+        out.append(row)
+        continue
+      for c in mine:
+        f = c.facts or {}
+        n = int(c.count or 1)
+        if c.category == "ROOM":
+          row["rooms"] += 1
+          row["rooms_m2"] += float(f.get("area_m2") or 0.0)
+        elif c.category in ("DOOR", "WINDOW"):
+          kind = f.get("opening_kind") or c.category
+          slot = "doors" if kind == "DOOR" else "ventilators" if kind == "VENTILATOR" else "windows"
+          row[slot] += n
+          row["openings_m2"] += n * float(f.get("area_each_m2") or 0.0)
+        elif c.category == "WALL":
+          if f.get("enclosure") == "TANK":
+            continue
+          length = float(f.get("length_cc_m") or 0.0)
+          row["walls_m"] += length
+          height = float((c.params or {}).get("height_mm") or row["wall_height_mm"] or 0.0)
+          
+          if height and length:
+            net = max(length * height / 1000.0 - float((f.get("openings") or {}).get("area_m2") or 0.0), 0.0)
+            thick = float(f.get("thickness_used_mm") or 0.0)
+            slot = "rcc_m2" if f.get("construction") == "RCC" else "brick_45_m2" if thick <= 150.0 else "brick_9_m2"
+            row[slot] += net
+      row["rooms_m2"], row["openings_m2"], row["walls_m"] = round(row["rooms_m2"], 2), round(row["openings_m2"], 2), round(row["walls_m"], 1)
+      for slot in ("brick_9_m2", "brick_45_m2", "rcc_m2"):
+        row[slot] = round(row[slot], 2)
+      share = row["rooms_m2"] / a["m2"] if a["m2"] else 0.0
+      row["coverage_pct"] = round(100.0 * share, 1)
+      if row["rooms"] == 0 or share < 0.6:
+        row.update(status="LOW", message=f"The rooms found add up to {row['coverage_pct']:.0f}% of the covered area on the area table. Some rooms may be missing.")
+      elif share > 1.0:
+        row.update(status="HIGH", message="The rooms found add up to more than the covered area on the area table. A room may be counted twice, or the table is for another floor.")
+      else:
+        row["status"] = "OK"
+      out.append(row)
+    return out
+
+  @staticmethod
+  def _schedule_sheets(sheets: list) -> list:
+    return [{"page_no": s.page_no, "schedule": (s.prep_meta or {}).get("schedule")} for s in sheets if (s.prep_meta or {}).get("schedule")]
+
+  async def drawing_schedule(self, org: UUID, drawing_id: UUID) -> dict:
+    """The door / window / ventilator sizes and floor areas printed anywhere on the drawing. A mark on the plan of one sheet is sized by the schedule on another."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return drawing_schedules.gather(self._schedule_sheets(sheets))
 
   async def analysis(self, org: UUID, sheet_id: UUID) -> dict:
     sheet = await self._sheet(org, sheet_id)

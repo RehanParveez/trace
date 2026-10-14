@@ -28,6 +28,76 @@ class AnalysisResponse(BaseModel):
   detected_scale: dict
   meta: dict
 
+class DrawingFact(BaseModel):
+  kind: str
+  scope: str | None = None
+  text: str
+  count: int
+  pages: list[int]
+  value_mm: float | None = None
+  value2_mm: float | None = None
+  value: float | None = None
+  unit: str | None = None
+  grade: int | None = None
+  concrete_class: str | None = None
+  mix: str | None = None
+  where: str | None = None
+
+class ScheduleOpening(BaseModel):
+  mark: str
+  type: str
+  width_mm: float
+  height_mm: float
+  area_m2: float
+  text: str | None = None
+  pages: list[int] = Field(default_factory=list)
+
+class ScheduleArea(BaseModel):
+  key: str
+  kind: str
+  name: str
+  value: float
+  unit: str
+  m2: float
+  pages: list[int] = Field(default_factory=list)
+
+class DrawingSchedule(BaseModel):
+  openings: list[ScheduleOpening] = Field(default_factory=list)
+  areas: list[ScheduleArea] = Field(default_factory=list)
+  conflicts: list[dict] = Field(default_factory=list)
+
+class FloorCheck(BaseModel):
+  key: str
+  name: str
+  covered_m2: float
+  status: Literal["OK", "LOW", "HIGH", "NOT_READ"]
+  message: str | None = None
+  pages: list[int] = Field(default_factory=list)
+  rooms: int = 0
+  rooms_m2: float = 0.0
+  coverage_pct: float | None = None
+  doors: int = 0
+  windows: int = 0
+  ventilators: int = 0
+  openings_m2: float = 0.0
+  walls_m: float = 0.0
+  wall_height_mm: float | None = None
+  wall_height_basis: str | None = None
+  brick_9_m2: float = 0.0
+  brick_45_m2: float = 0.0
+  rcc_m2: float = 0.0
+
+class FactsResponse(BaseModel):
+  drawing_id: UUID
+  sheets_read: int
+  sheets_total: int
+  items: list[DrawingFact]
+  conflicts: list[dict]
+  ladder: dict
+  suggest: dict = Field(default_factory=dict)
+  schedule: DrawingSchedule = Field(default_factory=DrawingSchedule)
+  floors: list[FloorCheck] = Field(default_factory=list)
+
 class AutoCalibrateRequest(BaseModel):
   use: Literal["RECOMMENDED", "DECLARED", "DIMENSIONS"] = "RECOMMENDED"
   make_default: bool = True

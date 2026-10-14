@@ -188,6 +188,30 @@ export const drawingsBoqApi = {
     );
   },
 
+  async exportDrawingElementsPdf(
+    drawingId: string,
+    filters: DrawingElementFilters = {},
+  ): Promise<Blob> {
+    if (!drawingId) throw new Error("Drawing ID is required");
+
+    const response = await apiClient.get(
+      `/drawings-boq/drawings/${drawingId}/elements/export/pdf`,
+      {
+        params: {
+          structural_role: filters.structural_role ?? undefined,
+          discipline: filters.discipline ?? undefined,
+          level_id: filters.level_id ?? undefined,
+          normalization_status: filters.normalization_status ?? undefined,
+          ifc_type: filters.ifc_type ?? undefined,
+        },
+        responseType: "blob",
+        timeout: 180_000,
+      },
+    );
+
+    return response.data;
+  },
+
   async listDrawingLevels(drawingId: string): Promise<BuildingLevel[]> {
     if (!drawingId) throw new Error("Drawing ID is required");
 

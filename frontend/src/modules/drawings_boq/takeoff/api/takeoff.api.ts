@@ -1,7 +1,7 @@
 import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
-  Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
+  DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
   TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
 
@@ -110,12 +110,17 @@ export const takeoffApi = {
   async restoreCandidates(ids: string[]): Promise<DecideResult> {
     return (await apiClient.post<DecideResult>(`${BASE}/takeoff/candidates/restore`, { ids })).data;
   },
-  /** Reads every prepared sheet of the drawing; the server stops starting new sheets after its time budget and lists them as skipped. */
+
   async extractDrawing(drawingId: string, body: { auto_calibrate?: boolean; budget_seconds?: number; only_unread?: boolean } = {}): Promise<DrawingExtractResult> {
     return (await apiClient.post<DrawingExtractResult>(`${BASE}/drawings/${drawingId}/takeoff/extract`, body)).data;
   },
-  /** Rebuilds the element register rows of a PDF drawing from what was read from its sheets. Safe to repeat. */
+  
+  async facts(drawingId: string): Promise<DrawingFacts> {
+    return (await apiClient.get<DrawingFacts>(`${BASE}/drawings/${drawingId}/takeoff/facts`)).data;
+  },
+  
   async syncRegister(drawingId: string): Promise<RegisterSyncResult> {
+
     return (await apiClient.post<RegisterSyncResult>(`${BASE}/drawings/${drawingId}/takeoff/register`)).data;
   },
 };

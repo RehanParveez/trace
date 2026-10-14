@@ -171,9 +171,10 @@ class ExtractService:
     mm_per_pt = float(ev.mm_per_pt)
     unverified = "PDF_RATIO_UNVERIFIED" in (ev.warnings or ())
     
+    schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
     try:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
-        content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds))
+        content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")

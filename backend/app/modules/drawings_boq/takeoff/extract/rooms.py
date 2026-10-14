@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
-from app.modules.drawings_boq.takeoff.prep.texts import TextLine
+import math
+from app.modules.drawings_boq.takeoff.prep.texts import TextLine, parse_dimension
 from app.modules.drawings_boq.takeoff.extract import config as C
 from shapely.geometry import Polygon, Point
 from shapely.ops import unary_union
@@ -10,7 +11,7 @@ from app.modules.drawings_boq.takeoff.extract.walls import run_polygon
 
 _QUAL = r"(?:MASTER|ATTACHED|COMMON|MAIN|SERVANT|FRONT|REAR|UPPER|LOWER|GUEST|KIDS|GIRLS|BOYS)\s+"
 _NAME = re.compile(r"(?<![A-Z0-9])(?:" + _QUAL + r")?(?:" + "|".join(re.escape(n) for n in sorted(C.ROOM_NAMES, key=len, reverse=True))
-  + r")(?:[\s\-]*\d{1,2}[A-Z]?(?![\d'\"′″\-.xX×]))?(?![A-Z])")
+  + r")(?:[\s\-]*\d{1,2}[A-Z]?(?![\d'\"′″\-.xX×½¼¾]))?(?![A-Z])")
 _CLOSE = 0.2
 
 def _clean(p: Polygon) -> Polygon:
@@ -48,9 +49,48 @@ def _without_marks(ln):
     text += w.text
   return TextLine(text, spans, ln.angle)
 
+_X_START = re.compile(r"^\s*[xX×]\s*\d")
+_X_END = re.compile(r"\d[\"'″”′½¼¾]?\s*[xX×]\s*$")
+
+def merge_split_sizes(lines: list) -> list:
+  out = list(lines)
+  for l2 in lines:
+    if l2.angle != 0 or not l2.spans:
+      continue
+    starts_x, ends_x = bool(_X_START.match(l2.text)), bool(_X_END.search(l2.text.strip()))
+    if not starts_x and not ends_x:
+      continue
+    size = max(w.size for _, _, w in l2.spans) or 1.0
+    x2, y2 = l2.locate(0, len(l2.text))
+    best = None
+    
+    for l1 in lines:
+      if l1 is l2 or l1.angle != 0 or not l1.spans:
+        continue
+      if starts_x and not parse_dimension(l1.text.strip()):
+        continue
+      if ends_x and not starts_x and not parse_dimension(l1.text.strip()):
+        continue
+    
+      x1, y1 = l1.locate(0, len(l1.text))
+      dy = abs(y1 - y2)
+      reach = max(len(l1.text), len(l2.text)) * size * 0.6 + size
+      if 0.3 * size <= dy <= 2.6 * size and abs(x1 - x2) <= reach and (best is None or dy < best[0]):
+        best = (dy, l1)
+    if best is None:
+      continue
+    l1 = best[1]
+    
+    first, second = (l1, l2) if starts_x else (l2, l1)
+    ft, st = first.text.strip(), second.text.strip()
+    shift = len(ft)
+    spans = [(a, b, w) for a, b, w in first.spans if a < shift] + [(a + shift, b + shift, w) for a, b, w in second.spans]
+    out.append(TextLine(ft + st, spans, 0))
+  return out
+
 def labels(lines: list, hint: str | None) -> tuple:
   names, sizes = [], []
-  for ln in (_without_marks(l) for l in lines):
+  for ln in merge_split_sizes([_without_marks(l) for l in lines]):
     t = ln.text.upper()
     for m in _NAME.finditer(t):
       x, y = ln.locate(m.start(), m.end())
@@ -111,3 +151,94 @@ def outline_rooms(index, names: list, taken: list, mm_per_pt: float, max_m2: flo
     seen.add(ring_i)
     out.append(poly)
   return out
+
+LABEL_REACH_MM = 2600.0
+LABEL_ROOM_MIN_M2 = 2.4
+_SMALL_ROOMS = ("W.C", "WC", "W/C", "BATH", "TOILET", "LAVATORY", "STORE", "PANTRY", "LOBBY", "WARDROBE", "DRESSING", "LIFT", "STAIR")
+
+def pair_labels(names: list, sizes: list, mm_per_pt: float) -> list:
+  
+  reach = LABEL_REACH_MM / mm_per_pt
+  cand = []
+  for ni, (_, nx, ny) in enumerate(names):
+    for si, (_, _, sx, sy) in enumerate(sizes):
+      d = math.hypot(nx - sx, ny - sy)
+      if d <= reach:
+        cand.append((d, ni, si))
+  cand.sort()
+  used_n, used_s, out = set(), set(), []
+  for _, ni, si in cand:
+    if ni in used_n or si in used_s:
+      continue
+    used_n.add(ni)
+    used_s.add(si)
+    nm, nx, ny = names[ni]
+    st, (a, b), sx, sy = sizes[si]
+    out.append({"name": nm, "size_text": st, "a_mm": float(a), "b_mm": float(b), "x": (nx + sx) / 2.0, "y": (ny + sy) / 2.0,
+      "sx": sx, "sy": sy})
+  return out
+
+def plausible_room(pair: dict) -> bool:
+  
+  a, b = pair["a_mm"], pair["b_mm"]
+  area = a * b / 1e6
+  small = any(t in pair["name"] for t in _SMALL_ROOMS)
+  if area > C.ROOM_MAX_M2 or area < (C.ROOM_MIN_M2 if small else LABEL_ROOM_MIN_M2):
+    return False
+  return min(a, b) >= 900.0
+
+def pairs_inside(poly: Polygon, pairs: list) -> list:
+  pp = prep(poly)
+  minx, miny, maxx, maxy = poly.bounds
+  return [i for i, p in enumerate(pairs) if minx <= p["sx"] <= maxx and miny <= p["sy"] <= maxy and pp.contains(Point(p["sx"], p["sy"]))]
+
+def label_polygon(pair: dict, mm_per_pt: float) -> Polygon:
+ 
+  w, h = pair["a_mm"] / mm_per_pt, pair["b_mm"] / mm_per_pt
+  cx, cy = pair["x"], pair["y"]
+  return Polygon([(cx - w / 2, cy - h / 2), (cx + w / 2, cy - h / 2), (cx + w / 2, cy + h / 2), (cx - w / 2, cy + h / 2)])
+
+LABEL_REACH_MM = 2600.0
+LABEL_ROOM_MIN_M2 = 2.4
+_SMALL_ROOMS = ("W.C", "WC", "W/C", "BATH", "TOILET", "LAVATORY", "STORE", "PANTRY", "LOBBY", "WARDROBE", "DRESSING", "LIFT", "STAIR")
+
+def pair_labels(names: list, sizes: list, mm_per_pt: float) -> list:
+  """Each size goes to the nearest room name that has no size yet. Names without a size (a lawn, a gate) get no room."""
+  reach = LABEL_REACH_MM / mm_per_pt
+  cand = []
+  for ni, (_, nx, ny) in enumerate(names):
+    for si, (_, _, sx, sy) in enumerate(sizes):
+      d = math.hypot(nx - sx, ny - sy)
+      if d <= reach:
+        cand.append((d, ni, si))
+  cand.sort()
+  used_n, used_s, out = set(), set(), []
+  for _, ni, si in cand:
+    if ni in used_n or si in used_s:
+      continue
+    used_n.add(ni)
+    used_s.add(si)
+    nm, nx, ny = names[ni]
+    st, (a, b), sx, sy = sizes[si]
+    out.append({"name": nm, "size_text": st, "a_mm": float(a), "b_mm": float(b), "x": (nx + sx) / 2.0, "y": (ny + sy) / 2.0,
+      "sx": sx, "sy": sy})
+  return out
+
+def plausible_room(pair: dict) -> bool:
+
+  a, b = pair["a_mm"], pair["b_mm"]
+  area = a * b / 1e6
+  small = any(t in pair["name"] for t in _SMALL_ROOMS)
+  if area > C.ROOM_MAX_M2 or area < (C.ROOM_MIN_M2 if small else LABEL_ROOM_MIN_M2):
+    return False
+  return min(a, b) >= 900.0
+
+def pairs_inside(poly: Polygon, pairs: list) -> list:
+  pp = prep(poly)
+  minx, miny, maxx, maxy = poly.bounds
+  return [i for i, p in enumerate(pairs) if minx <= p["sx"] <= maxx and miny <= p["sy"] <= maxy and pp.contains(Point(p["sx"], p["sy"]))]
+
+def label_polygon(pair: dict, mm_per_pt: float) -> Polygon:
+  w, h = pair["a_mm"] / mm_per_pt, pair["b_mm"] / mm_per_pt
+  cx, cy = pair["x"], pair["y"]
+  return Polygon([(cx - w / 2, cy - h / 2), (cx + w / 2, cy - h / 2), (cx + w / 2, cy + h / 2), (cx - w / 2, cy + h / 2)])

@@ -14,7 +14,16 @@ export const takeoffKeys = {
   shapes: (sheetId: string, stamp: string) => [...takeoffKeys.all, "shapes", sheetId, stamp] as const,
   projectDrawings: (projectId: string) => [...takeoffKeys.all, "project-drawings", projectId] as const,
   reconciliation: (projectId: string) => [...takeoffKeys.all, "reconciliation", projectId] as const,
+  facts: (drawingId: string) => [...takeoffKeys.all, "facts", drawingId] as const,
 };
+
+export function useDrawingFacts(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.facts(drawingId ?? ""),
+    queryFn: () => takeoffApi.facts(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
 
 export function useTakeoffModes() {
   return useQuery({ queryKey: takeoffKeys.modes(), queryFn: takeoffApi.modes, staleTime: 10 * 60_000 });
@@ -59,6 +68,7 @@ export interface ReadPdfOutcome { register: RegisterSyncResult; issues: ReadIssu
 export function useReadPdfDrawing(drawingId: string | undefined) {
   const invalidate = useInvalidateRegister(drawingId);
   const invalidateOverview = useInvalidateOverview(drawingId);
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async (args: { onStage?: (stage: ReadStage) => void } = {}) => {
       const id = drawingId as string;
@@ -95,6 +105,7 @@ export function useReadPdfDrawing(drawingId: string | undefined) {
     onSettled: () => {
       invalidate();
       invalidateOverview();
+      if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.facts(drawingId) });
     },
   });
 }
