@@ -100,11 +100,33 @@ class MeasurementInput:
   recon_mode: str = "AUTO"
   source: str = "MANUAL"
 
+
+@dataclass(frozen=True)
+class MemberInput:
+  """One mark of a counted member read from a PDF (a footing mark), placed on its drawing view. The element ids are the ones the PDF register
+  gave each mark, so the derived rows can point back to them. Positions are the mark positions in millimetres, not drawn outlines."""
+  measurement_id: UUID
+  candidate_id: UUID
+  sheet_id: UUID
+  page_no: int
+  category: str
+  tag: str | None
+  frame: str
+  level_id: UUID | None
+  element_ids: tuple
+  points_mm: tuple
+  length_mm: Decimal
+  width_mm: Decimal
+  depth_mm: Decimal
+  confidence: Decimal = ONE
+  position_basis: str = "MARK"
+
 @dataclass(frozen=True)
 class TakeoffInputs:
   sheets: tuple = ()
   calibrations: tuple = ()
   measurements: tuple = ()
+  members: tuple = ()
 
 @dataclass(frozen=True)
 class CalibrationEval:
@@ -817,4 +839,7 @@ def takeoff_payload(inputs: TakeoffInputs | None) -> dict:
       "mode": m.quantity_mode, "geometry": m.geometry, "params": m.params, "code": m.work_item_code,
       "level": str(m.level_id) if m.level_id else None, "grade": m.material_grade, "recon": m.recon_mode, "source": m.source,
     }) for m in sorted(inputs.measurements, key=lambda m: str(m.id))],
+    **({"members": [_enc([str(b.measurement_id), str(b.candidate_id), b.category, b.tag, b.frame, str(b.level_id) if b.level_id else None,
+      [str(i) for i in b.element_ids], [list(p) for p in b.points_mm], b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.position_basis])
+      for b in sorted(inputs.members, key=lambda b: str(b.measurement_id))]} if inputs.members else {}),
   }

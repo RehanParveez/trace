@@ -29,6 +29,8 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
           const standard =
             def.flag
               ? t("boq.derived.flagStandard", "Empty: standard choice")
+              : def.asked
+              ? t("boq.derived.askedStandard", "Empty: footings read from a drawing are not dug until this is given")
               : def.defaultMm === null
               ? t("boq.derived.nglStandard", "Empty: the model's zero level is taken as ground")
               : t("boq.derived.standard", {

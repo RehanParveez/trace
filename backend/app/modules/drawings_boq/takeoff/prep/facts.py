@@ -115,8 +115,9 @@ def level_mark_mm(text: str) -> float | None:
     return None
   return round(-mm if m.group("sign") == "-" else mm, 1)
 
-def read_facts(lines: list) -> dict:
-  """Facts and level marks from one sheet's text lines. Counts repeats, so a note printed on every view is one fact seen many times."""
+def read_facts(lines: list, words: list | None = None) -> dict:
+  """Facts and level marks from one sheet's text lines. Counts repeats, so a note printed on every view is one fact seen many times.
+  With the sheet's words, the storey heights printed on a building section are read as well."""
   seen: dict = {}
   marks: Counter = Counter()
   for ln in lines:
@@ -125,13 +126,20 @@ def read_facts(lines: list) -> dict:
     if lvl is not None:
       marks[lvl] += 1
       continue
+  
     for it in read_line(text):
       key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"))
       if key in seen:
         seen[key]["count"] += 1
       elif len(seen) < MAX_ITEMS_PER_SHEET:
         seen[key] = {**it, "count": 1}
-  return {"items": list(seen.values()), "level_marks": [{"mm": k, "count": v} for k, v in sorted(marks.items())]}
+  out = {"items": list(seen.values()), "level_marks": [{"mm": k, "count": v} for k, v in sorted(marks.items())]}
+  if words:
+    from app.modules.drawings_boq.takeoff.prep.storeys import read_storeys
+    found = read_storeys(words, lines)
+    if found:
+      out["storeys"] = found
+  return out
 
 def level_ladder(marks: list[dict]) -> dict:
   """The floor levels shown on the elevations and the height between each pair. A mark seen once may be a stray, so a level needs a repeat to count."""
@@ -168,6 +176,25 @@ def suggest_wall_height(items: list, ladder: dict) -> dict | None:
     return None
   return out
 
+GENERIC_SLAB_SCOPES = ("slab", "all slabs")
+
+def slab_values(items: list) -> list[dict]:
+  """The slab thicknesses the drawing prints for slabs in general (a note "ALL SLABS ARE 5" THICK", a section label "6" Thick R.c.c Slab"),
+  one row per distinct value: {"mm", "count", "pages", "scopes"}. Most often printed first. A slab named in a note of its own (a waist slab, a tank slab) is not general."""
+  by: dict = {}
+  
+  for it in items or []:
+    if it.get("kind") != "SLAB_THICKNESS" or not it.get("value_mm"):
+      continue
+    if (it.get("scope") or "slab") not in GENERIC_SLAB_SCOPES:
+      continue
+    row = by.setdefault(round(float(it["value_mm"]), 1), {"mm": round(float(it["value_mm"]), 1), "count": 0, "pages": set(), "scopes": set()})
+    row["count"] += int(it.get("count", 1))
+    row["pages"].update(it.get("pages") or [])
+    row["scopes"].add(it.get("scope") or "slab")
+  rows = sorted(by.values(), key=lambda r: (-r["count"], r["mm"]))
+  return [{"mm": r["mm"], "count": r["count"], "pages": sorted(r["pages"]), "scopes": sorted(r["scopes"])} for r in rows]
+
 FLOOR_ORDER = ("BASEMENT", "GROUND", "FIRST", "SECOND", "THIRD", "FOURTH", "ROOF")
 
 def floor_heights(floor_keys: list, ladder: dict, slab_mm: float | None) -> dict:
@@ -198,12 +225,18 @@ def gather(sheets: list[dict]) -> dict:
   rows: dict = {}
   marks: list = []
   
+  storeys = None
   for sh in sheets:
     facts = sh.get("facts") or {}
     marks.extend(facts.get("level_marks") or [])
+    got = facts.get("storeys")
+    
+    if got and (storeys is None or (got.get("consistent"), len(got.get("clusters") or [])) > (storeys.get("consistent"), len(storeys.get("clusters") or []))):
+      storeys = {**got, "page_no": sh["page_no"]}
     for it in facts.get("items") or []:
       key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"))
       row = rows.get(key)
+      
       if row is None:
         row = rows[key] = {**{k: v for k, v in it.items() if k != "count"}, "count": 0, "pages": []}
       row["count"] += int(it.get("count", 1))
@@ -223,5 +256,4 @@ def gather(sheets: list[dict]) -> dict:
     if len(by_value) > 1:
       conflicts.append({"kind": kind, "name": name, "values": list(by_value.values())})
   ladder = level_ladder(marks)
-  return {"items": items, "conflicts": conflicts, "ladder": ladder, "suggest": {"wall_height": suggest_wall_height(items, ladder)}}
-
+  return {"items": items, "conflicts": conflicts, "ladder": ladder, "storeys": storeys, "suggest": {"wall_height": suggest_wall_height(items, ladder)}}

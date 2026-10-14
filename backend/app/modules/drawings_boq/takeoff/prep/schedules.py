@@ -2,6 +2,7 @@ from __future__ import annotations
 import re
 import math
 from collections import Counter
+from app.modules.drawings_boq.takeoff.prep import lintels as lintel_reader
 
 MM_INCH = 25.4
 MM_FOOT = 304.8
@@ -29,6 +30,9 @@ _UNIT = r"(?:SFT|S\.?\s?F\.?\s?T\.?|SQ\.?\s?FT\.?|SQFT|SQ\.?\s?M\.?|SQM|M2|M²|S
 _TOTAL = re.compile(r"TOTAL\s+AREA\s+OF\s+(?P<name>[A-Z0-9/.&' -]+?)\s*=\s*(?:[^=]*?=\s*)?(?P<v>\d[\d,]*(?:\.\d+)?)\s*(?P<u>" + _UNIT + r")", re.I)
 _GRAND = re.compile(r"GRAND\s+TOTAL\s*(?:AREA)?\s*=\s*(?:[^=]*?=\s*)?(?P<v>\d[\d,]*(?:\.\d+)?)\s*(?P<u>" + _UNIT + r")", re.I)
 _FLOOR_AREA = re.compile(r"^(?P<name>[A-Z/ ]*?FLOOR|BASEMENT|MUMTY)\s+AREA\s*=\s*(?P<v>\d[\d,]*(?:\.\d+)?)\s*(?P<u>" + _UNIT + r")", re.I)
+_DIMS = re.compile(r"=\s*(?P<a>\d[^=xX×]*?)\s*[xX×]\s*(?P<b>\d[^=]*?)\s*=\s*(?P<v>\d[\d,]*(?:\.\d+)?)\s*(?P<u>" + _UNIT + r")", re.I)
+DIMS_AGREE_TOL = 0.015
+DIMS_REACH = 40.0
 _FEET_INCH = re.compile(r"(?P<ft>\d{1,3})\s*'\s*-?\s*(?P<in>\d{1,2}(?:\s+\d{1,2}/\d{1,2})?)?\s*(?:\"|″|”|'')?")
 _INCH_ONLY = re.compile(r"^(?P<in>\d{1,3})\s*(?:\"|″|”|'')$")
 _LENGTH = re.compile(r"\d{1,3}\s*'\s*-?\s*(?:\d{1,2}(?:\s+\d{1,2}/\d{1,2})?)?\s*(?:\"|''|″)?")
@@ -232,8 +236,32 @@ def _m2(v: float, unit: str) -> float:
     return v * 0.83612736
   return v * SFT_M2
 
+def _dims_of(text: str, m2: float, unit: str) -> dict | None:
+  """The length and width printed in a covered-area line ("A = 30'-0" X 48'-0" = 1440.00 SFT"), kept only when length x width gives the area printed on the same line."""
+  m = _DIMS.search(_fix(text))
+  if not m:
+    return None
+  size = parse_size_text(f"{m.group('a')} x {m.group('b')}")
+  
+  if size is None:
+    return None
+  v = float(m.group("v").replace(",", ""))
+  if abs(_m2(v, m.group("u")) - m2) > 0.02 * max(m2, 1.0):
+    return None
+  got = size[0] * size[1] / 1e6
+  if got <= 0 or abs(got - m2) > DIMS_AGREE_TOL * m2:
+    return None
+  return {"dims_mm": [round(size[0], 1), round(size[1], 1)], "dims_text": _tidy(f"{m.group('a')} x {m.group('b')}")}
+
+def _anchor_across(row: list) -> float:
+  for ac, _, w in row:
+    if _UNIT_WORD.match(w.text.strip()):
+      return ac
+  return sum(ac for ac, _, _ in row) / len(row)
+
 def read_areas(words: list) -> list[dict]:
-  """The area table: one row per floor ("TOTAL AREA OF GROUND FLOOR = 1440.00 SFT"), the grand total and the plot."""
+  """The area table: one row per floor ("TOTAL AREA OF GROUND FLOOR = 1440.00 SFT"), the grand total and the plot. A floor also carries the length and
+  width printed in its covered-area line ("B = 30'-0" X 48'-0" = 1440.00 SFT") when that line is beside the floor's total and its product agrees with the area."""
   rows_out: dict = {}
   by_angle: dict = {}
   
@@ -244,12 +272,15 @@ def read_areas(words: list) -> list[dict]:
     by_angle.setdefault(ang, []).append((across, along, w))
   for items in by_angle.values():
     size = sorted(w.size for _, _, w in items)[len(items) // 2] if items else 4.0
+    recs_here: list = []
+    dim_rows: list = []
     for row in _rows_by_anchor(items, max(2.0, 0.7 * size)):
       if len(row) < 3:
         continue
       text = _row_text(row)
       if len(text) > 200:
         continue
+      across = _anchor_across(row)
       m = _GRAND.search(text)
       
       if m:
@@ -257,6 +288,11 @@ def read_areas(words: list) -> list[dict]:
       else:
         m = _TOTAL.search(text) or _FLOOR_AREA.search(text)
         if not m:
+          dm = _DIMS.search(_fix(text))
+          if dm:
+            v = float(dm.group("v").replace(",", ""))
+            if 1.0 <= v <= 5e7:
+              dim_rows.append({"across": across, "text": text, "v": v, "u": dm.group("u"), "m2": round(_m2(v, dm.group("u")), 2)})
           continue
         name = _tidy(m.group("name")).upper()
         lk = level_key(name)
@@ -271,12 +307,37 @@ def read_areas(words: list) -> list[dict]:
       v = float(m.group("v").replace(",", ""))
       if not (1.0 <= v <= 5e7):
         continue
+    
       rec = {"key": key, "kind": kind, "name": name, "value": v, "unit": re.sub(r"[\s.]", "", m.group("u").upper()), "m2": round(_m2(v, m.group("u")), 2)}
+      own = _dims_of(text, rec["m2"], m.group("u"))
+      if own:
+        rec.update(own)
+      recs_here.append((rec, across))
       rows_out.setdefault(key, []).append(rec)
+    pairs = []
+    for i, (rec, across) in enumerate(recs_here):
+      if rec["kind"] != "FLOOR" or rec.get("dims_mm"):
+        continue
+      for j, d in enumerate(dim_rows):
+        gap = abs(d["across"] - across)
+        if gap <= DIMS_REACH and abs(d["m2"] - rec["m2"]) <= 0.02 * max(rec["m2"], 1.0):
+          pairs.append((gap, i, j))
+          
+    used_i: set = set()
+    used_j: set = set()
+    for gap, i, j in sorted(pairs):
+      if i in used_i or j in used_j:
+        continue
+      rec = recs_here[i][0]
+      got = _dims_of(dim_rows[j]["text"], rec["m2"], dim_rows[j]["u"])
+      if got:
+        rec.update(got)
+        used_i.add(i)
+        used_j.add(j)
       
   flat = []
   for key, recs in rows_out.items():
-    flat.append(max(recs, key=lambda r: sum(1 for x in recs if x["m2"] == r["m2"])))
+    flat.append(max(recs, key=lambda r: (1 if r.get("dims_mm") else 0, sum(1 for x in recs if x["m2"] == r["m2"]))))
   order = {"BASEMENT": 0, "GROUND": 1, "FIRST": 2, "SECOND": 3, "THIRD": 4, "FOURTH": 5, "ROOF": 6, "PLOT": 8, "GRAND": 9}
   flat.sort(key=lambda r: order.get(r["key"], 7))
   return flat[:MAX_AREAS]
@@ -291,14 +352,28 @@ def read_schedules(words: list) -> dict:
     areas = read_areas(words)
   except Exception:
     areas = []
-  return {"openings": openings, "areas": areas}
+  try:
+    lintels = lintel_reader.read_lintel_table(words)
+    tie_band = lintel_reader.read_tie_band(words)
+  except Exception:
+    lintels, tie_band = [], None
+  return {"openings": openings, "areas": areas, "lintels": lintels, "tie_band": tie_band}
 
 def gather(sheets: list[dict]) -> dict:
   """All sheets' schedules together. Each sheet is {"page_no", "schedule"}. A mark or a floor printed with two different sizes is a conflict."""
   ops: dict = {}
   areas: dict = {}
+  spans: dict = {}
+  tie_band = None
+  
+  tie_pages: list = []
   for sh in sheets:
     sc = sh.get("schedule") or {}
+    for r in sc.get("lintels") or []:
+      spans.setdefault(r["span_max_ft"], []).append((sh["page_no"], r))
+    if sc.get("tie_band"):
+      tie_band = tie_band or sc["tie_band"]
+      tie_pages.append(sh["page_no"])
     for o in sc.get("openings") or []:
       ops.setdefault(o["mark"], []).append((sh["page_no"], o))
     for a in sc.get("areas") or []:
@@ -318,13 +393,23 @@ def gather(sheets: list[dict]) -> dict:
   for key, recs in areas.items():
     vals = Counter(a["m2"] for _, a in recs)
     m2, _ = vals.most_common(1)[0]
-    base = next(a for _, a in recs if a["m2"] == m2)
+    base = next((a for _, a in recs if a["m2"] == m2 and a.get("dims_mm")), None) or next(a for _, a in recs if a["m2"] == m2)
     area_rows.append({**base, "pages": sorted({p for p, _ in recs})})
     if len(vals) > 1:
       conflicts.append({"kind": "FLOOR_AREA", "name": base["name"], "values": [{"m2": v, "pages": sorted({p for p, a in recs if a["m2"] == v})} for v in vals]})
   order = {"BASEMENT": 0, "GROUND": 1, "FIRST": 2, "SECOND": 3, "THIRD": 4, "FOURTH": 5, "ROOF": 6, "PLOT": 8, "GRAND": 9}
   area_rows.sort(key=lambda r: order.get(r["key"], 7))
-  return {"openings": openings, "areas": area_rows, "conflicts": conflicts}
+  lintel_rows = []
+  
+  for span in sorted(spans):
+    recs = spans[span]
+    sizes = Counter((r["width_mm"], r["depth_mm"]) for _, r in recs)
+    (w, d), _ = sizes.most_common(1)[0]
+    base = next(r for _, r in recs if (r["width_mm"], r["depth_mm"]) == (w, d))
+    lintel_rows.append({**base, "pages": sorted({p for p, _ in recs})})
+    if len(sizes) > 1:
+      conflicts.append({"kind": "LINTEL_SIZE", "name": f"up to {span:g} ft", "values": [{"width_mm": a, "depth_mm": b, "pages": sorted({p for p, r in recs if (r["width_mm"], r["depth_mm"]) == (a, b)})} for (a, b) in sizes]})
+  return {"openings": openings, "areas": area_rows, "lintels": lintel_rows, "tie_band": ({"text": tie_band, "pages": sorted(set(tie_pages))} if tie_band else None), "conflicts": conflicts}
 
 def opening_lookup(schedule: dict | None) -> dict:
   """mark -> (width_mm, height_mm, type) for the extraction step."""

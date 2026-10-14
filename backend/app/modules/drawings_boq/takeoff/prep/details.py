@@ -1,14 +1,14 @@
 from __future__ import annotations
-import re
+import io
 import math
-import shutil
 import os
+import re
+import shutil
 import subprocess
-from collections import Counter
 import tempfile
 import time
+from collections import Counter
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, to_visual
-from PIL import Image
 
 COLUMN_CAPTION = re.compile(r"^\s*(?:(?P<m1>[A-Z]{1,3}\s*-?\s*\d{1,2})\s+COLUMN(?:\s+DETAILS?)?|COLUMN\s+(?:DETAILS?\s+)?(?P<m2>[A-Z]{1,3}\s*-?\s*\d{1,2}))\s*$", re.I)
 LABEL = re.compile(r"^(\d{1,2}(?:\.\d)?)\s*[\"”″'’′]{1,2}$")
@@ -20,7 +20,8 @@ RENDER_SCALES = (8, 11)
 MIN_AGREE = 2
 EARLY_STOP_VOTES = 3
 SQUARE_TOL = 0.06
-OCR_BUDGET_S = 20.0
+
+OCR_BUDGET_S = float(os.environ.get("TRACE_OCR_BUDGET_S", "90"))
 
 def norm_mark(text: str) -> str:
   """C-2, C 2 and c2 are the same mark."""
@@ -34,13 +35,12 @@ def find_captions(words: list) -> list[dict]:
       continue
     ws = [w for _, _, w in ln.spans]
     out.append({"mark": norm_mark(m.group("m1") or m.group("m2")), "text": ln.text.strip(),
-                "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
+      "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
   return out
 
 def find_box(segs: list, x: float, y: float, vis) -> dict | None:
   """The drawn outline nearest above (on the page as read) the caption at (x, y): four straight segments forming a rectangle."""
   hs, vs = [], []
-  
   for x1, y1, x2, y2, kind in segs:
     if kind:
       continue
@@ -49,9 +49,9 @@ def find_box(segs: list, x: float, y: float, vis) -> dict | None:
     elif abs(x1 - x2) < 0.05 and abs(y1 - y2) > 6.0:
       vs.append((x1, min(y1, y2), max(y1, y2)))
   vx, vy = vis(x, y)
+  
   best, best_d = None, None
   tol = 0.5
-  
   for i, (xa, a0, a1) in enumerate(vs):
     for xb, b0, b1 in vs[i + 1:]:
       gap = abs(xb - xa)
@@ -66,7 +66,6 @@ def find_box(segs: list, x: float, y: float, vis) -> dict | None:
       corners = [vis(lo, a0), vis(hi, a1)]
       bx0, bx1 = sorted((corners[0][0], corners[1][0]))
       by0, by1 = sorted((corners[0][1], corners[1][1]))
-      
       if by1 > vy + 4.0:
         continue
       d = math.hypot((bx0 + bx1) / 2 - vx, by1 - vy)
@@ -94,7 +93,6 @@ def _tess(img, psm: str) -> str:
   from PIL import ImageOps
   img = ImageOps.expand(img, border=24, fill=255)
   fd, path = tempfile.mkstemp(suffix=".png")
-  
   try:
     with os.fdopen(fd, "wb") as fh:
       img.save(fh, format="PNG")
@@ -131,6 +129,7 @@ def _clean(img, vertical: bool, far_start: bool):
   """The label alone: erase the long straight lines (the dimension line, extension lines), keep the band of ink farthest from the box (the
   label sits outside its dimension line; leader texts sit between the line and the box), and drop stray pieces such as tick marks."""
   import numpy as np
+  from PIL import Image
   a = np.array(img.convert("L")) < 150
   h, w = a.shape
   if h < 8 or w < 8:
@@ -141,9 +140,9 @@ def _clean(img, vertical: bool, far_start: bool):
     for d in (-2, -1, 0, 1, 2):
       a[np.clip(rows + d, 0, h - 1), :] = False
       a[:, np.clip(cols + d, 0, w - 1)] = False
+      
   across = a.any(axis=0) if vertical else a.any(axis=1)
   bands = [r for r in _runs(across, 4) if r[1] - r[0] >= 8]
-  
   if not bands:
     return None
   lo, hi = bands[0] if far_start else bands[-1]
@@ -151,6 +150,7 @@ def _clean(img, vertical: bool, far_start: bool):
   along = a.any(axis=1) if vertical else a.any(axis=0)
   thick = hi - lo + 1
   pieces = _runs(along, max(4, int(0.7 * thick)))
+  
   if not pieces:
     return None
   s, e = max(pieces, key=lambda r: int(a[r[0]:r[1] + 1, :].sum() if vertical else a[:, r[0]:r[1] + 1].sum()))
@@ -194,7 +194,7 @@ def _pick(c: Counter, min_votes: int = MIN_AGREE):
   rival = top[1][1] if len(top) > 1 else 0
   return (top[0][0], n) if n >= min_votes and n - rival >= 2 else (None, n)
 
-READ_HEIGHTS_PX = (60, 40)     
+READ_HEIGHTS_PX = (60, 40)       
 
 def _variants(strip, vertical: bool, far_start: bool):
   """Readings of one strip, most useful first: the label at each height, plain and with thicker strokes."""
@@ -203,7 +203,7 @@ def _variants(strip, vertical: bool, far_start: bool):
   if c is None:
     return
   for thick, psm, h in ((False, "7", READ_HEIGHTS_PX[0]), (False, "7", READ_HEIGHTS_PX[1]), (True, "7", READ_HEIGHTS_PX[0]), (True, "7", READ_HEIGHTS_PX[1]),
-      (False, "8", READ_HEIGHTS_PX[0]), (False, "8", READ_HEIGHTS_PX[1])):
+    (False, "8", READ_HEIGHTS_PX[0]), (False, "8", READ_HEIGHTS_PX[1])):
     im = c.filter(ImageFilter.MinFilter(3)) if thick else c
     k = h / max(im.height, 1)
     im = im.resize((max(1, int(im.width * k)), h))
@@ -229,13 +229,13 @@ def read_box_labels(page, box_vis: list, page_wh: tuple, deadline: float) -> dic
       except Exception:
         renders[sc] = None
     return renders[sc]
-
   sides = ((False, True, "top"), (True, True, "left"), (False, False, "bottom"), (True, False, "right"))
   for sc in RENDER_SCALES:
     for vertical, far_start, side in sides:
       if done[vertical][0] is not None or time.monotonic() > deadline:
         continue
       img = image(sc)
+      
       if img is None:
         continue
       bx0, by0, bx1, by1 = (x0 - wx0) * sc, (y0 - wy0) * sc, (x1 - wx0) * sc, (y1 - wy0) * sc
@@ -248,7 +248,6 @@ def read_box_labels(page, box_vis: list, page_wh: tuple, deadline: float) -> dic
         continue
       strong = tally[vertical]
       got_any = False
-      
       for rot, psm, im in _variants(img.crop((l, t, r, b)), vertical, far_start):
         if got_any and rot != (-90 if vertical else 0):
           continue
@@ -275,7 +274,6 @@ def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, r
     return u * Wv, v * Hv
   deadline = time.monotonic() + budget_s
   out = []
-  
   for c in caps:
     segs, _, _ = index.window(c["x"] - SEARCH_REACH_PT, c["y"] - SEARCH_REACH_PT, c["x"] + SEARCH_REACH_PT, c["y"] + SEARCH_REACH_PT)
     box = find_box(segs, c["x"], c["y"], vis)
@@ -293,5 +291,7 @@ def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, r
         rec["read"] = "OCR_SQUARE"
       elif got["w_in"] or got["h_in"]:
         rec["read"] = "PARTIAL"
+      if rec["read"] in ("NONE", "PARTIAL") and time.monotonic() > deadline:
+        rec["read"] = "TIMEOUT"      
     out.append(rec)
   return {"ocr": "OK" if ocr else "UNAVAILABLE", "details": out}

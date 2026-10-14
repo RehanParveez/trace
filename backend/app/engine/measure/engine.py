@@ -22,7 +22,7 @@ from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, 
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.10"
+ENGINE_VERSION = "2026.10.11"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -559,7 +559,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     ledger = staged.ledger
     stage_info = staged.stats
   if ctx.derived_mode and profile is not None:
-    derived_res = measure_derived(ctx, profile, accepted, solids, ledger)
+    derived_res = measure_derived(ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += derived_res.solids
     extra_ledger += derived_res.ledger
     derived_info = derived_res.stats

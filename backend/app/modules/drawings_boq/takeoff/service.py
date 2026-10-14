@@ -117,8 +117,8 @@ class TakeoffService:
     self.audit = AuditLogService(session)
     self._profiles: dict = {}
 
-  async def _log(self, org, user_id, entity_id, action, message) -> None:
-    await self.audit.log(org, user_id, audit_entity("DRAWING"), entity_id, action, message)
+  async def _log(self, org, user_id, entity_id, action, message, commit: bool = True) -> None:
+    await self.audit.log(org, user_id, audit_entity("DRAWING"), entity_id, action, message, commit=commit)
 
   async def _profile(self, org: UUID, rule_set_code: str | None = None):
     if rule_set_code in self._profiles:
@@ -365,7 +365,7 @@ class TakeoffService:
     await self._log(org, user_id, calibration_id, AuditAction.DELETE, "Deleted a calibration")
     await self.session.commit()
 
-  async def create_measurement(self, org: UUID, sheet_id: UUID, user_id: UUID, payload) -> TakeoffMeasurement:
+  async def create_measurement(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, commit: bool = True) -> TakeoffMeasurement:
     sheet = await self._sheet(org, sheet_id, lock=True)
     self._check_mode(payload.kind, payload.quantity_mode)
     await self._check_level(org, payload.level_id)
@@ -398,8 +398,9 @@ class TakeoffService:
     m.computed = self._evaluate(m, sheet, cal, await self._profile(org))
     self.session.add(m)
     await self.session.flush()
-    await self._log(org, user_id, m.id, AuditAction.CREATE, f"Drew a {payload.kind.lower()} measurement on sheet {sheet.page_no}")
-    await self.session.commit()
+    await self._log(org, user_id, m.id, AuditAction.CREATE, f"Drew a {payload.kind.lower()} measurement on sheet {sheet.page_no}", commit=commit)
+    if commit:
+      await self.session.commit()
     return m
 
   async def update_measurement(self, org: UUID, measurement_id: UUID, user_id: UUID, payload) -> TakeoffMeasurement:

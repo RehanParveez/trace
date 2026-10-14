@@ -1,6 +1,8 @@
 from __future__ import annotations
 from app.engine.measure import takeoff as tk
-from app.modules.drawings_boq.models import TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement
+from app.modules.drawings_boq.models import TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
+from app.modules.drawings_boq.takeoff.register import row_id
+from dataclasses import replace
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
@@ -40,6 +42,55 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
     geometry=row.geometry or {}, params=row.params or {}, work_item_code=row.work_item_code, level_id=row.level_id,
     label=row.label, tag=row.tag, material_grade=row.material_grade, recon_mode=row.recon_mode, source=row.source)
 
+MEMBER_CATEGORIES = ("FOOTING",)
+
+def _mm(value) -> Decimal | None:
+  v = _dec(value)
+  return v if v is not None and v > 0 else None
+
+def member_input(cand: TakeoffCandidate, m: TakeoffMeasurement, sheet: TakeoffSheet) -> tk.MemberInput | None:
+  """A counted footing mark placed on its drawing view, or nothing when the mark has no position or no size to place it with."""
+  points = (m.geometry or {}).get("points") or []
+  scale = _mm(cand.mm_per_pt)
+  p = m.params or {}
+  length, width, depth = _mm(p.get("length_mm")), _mm(p.get("width_mm")), _mm(p.get("depth_mm"))
+  if scale is None or not points or length is None or width is None or depth is None:
+    return None
+  view = ((cand.facts or {}).get("view") or {})
+  frame = str(view.get("key") or f"SHEET:{sheet.id}")
+  try:
+    positions = tuple((round(float(pt[0]) * float(scale), 1), round(float(pt[1]) * float(scale), 1)) for pt in points)
+  except (TypeError, ValueError, IndexError):
+    return None
+  return tk.MemberInput(
+    measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=cand.category, tag=cand.tag, frame=frame,
+    level_id=m.level_id, element_ids=tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(positions))), points_mm=positions,
+    length_mm=length, width_mm=width, depth_mm=depth, confidence=_dec(cand.confidence) or Decimal(1))
+
+async def load_members(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
+  ids = [m.id for m in measurements if m.quantity_mode == "COUNT_X_VOLUME"]
+  if not ids:
+    return ()
+  
+  cands = (await session.execute(
+    select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.measurement_id.in_(ids),
+      TakeoffCandidate.category.in_(MEMBER_CATEGORIES), TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
+  by_measurement = {c.measurement_id: c for c in cands}
+  wanted = [row_id(sheets[m.sheet_id].id, by_measurement[m.id].ckey, i)
+    for m in measurements if m.id in by_measurement for i in range(len((m.geometry or {}).get("points") or []))]
+  present = set((await session.execute(select(DrawingElement.id).where(DrawingElement.organization_id == org, DrawingElement.id.in_(wanted)))).scalars().all()) if wanted else set()
+  out = []
+  for m in measurements:
+    cand = by_measurement.get(m.id)
+    
+    if cand is None:
+      continue
+    member = member_input(cand, m, sheets[m.sheet_id])
+    if member is not None:
+      member = replace(member, element_ids=tuple(e if e in present else None for e in member.element_ids))
+      out.append(member)
+  return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
+
 async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: list[UUID]) -> tk.TakeoffInputs | None:
   if not drawing_ids:
     return None
@@ -65,7 +116,8 @@ async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: lis
     sheets=tuple(sheet_input(s) for s in sorted(sheets.values(), key=lambda s: str(s.id))),
     calibrations=tuple(calibration_input(c, sheet_user_unit(sheets[c.sheet_id])) for c in sorted(cals, key=lambda c: str(c.id))
       if c.sheet_id in sheets),
-    measurements=tuple(measurement_input(m) for m in sorted(measurements, key=lambda m: str(m.id))))
+    measurements=tuple(measurement_input(m) for m in sorted(measurements, key=lambda m: str(m.id))),
+    members=await load_members(session, org, measurements, sheets))
 
 async def takeoff_drawing_ids(session: AsyncSession, org: UUID, project_id: UUID) -> set[UUID]:
   r = await session.execute(

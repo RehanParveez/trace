@@ -1,26 +1,29 @@
 import type { AreaGeometry, CandidateCategory, CountGeometry, LengthGeometry, Pt, TakeoffCandidate } from "../types/takeoff.types";
 
-export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW", "ROOM"];
+export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "SLAB", "LINTEL", "DOOR", "WINDOW", "ROOM"];
 
 export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: string }> = {
   WALL: { one: "Wall", many: "Walls" },
   COLUMN: { one: "Column", many: "Columns" },
   FOOTING: { one: "Footing", many: "Footings" },
   BEAM: { one: "Beam", many: "Beams" },
+  SLAB: { one: "Slab", many: "Slabs" },
+  LINTEL: { one: "Lintel", many: "Lintels" },
   DOOR: { one: "Door", many: "Doors" },
   WINDOW: { one: "Window", many: "Windows" },
   ROOM: { one: "Room", many: "Rooms" },
 };
 
-export type HeightField = "wall_height_mm" | "column_height_mm" | "footing_depth_mm";
+export type HeightField = "wall_height_mm" | "column_height_mm" | "footing_depth_mm" | "slab_thickness_mm";
 
 export type Heights = Record<HeightField, string>;
-export const NO_HEIGHTS: Heights = { wall_height_mm: "", column_height_mm: "", footing_depth_mm: "" };
+export const NO_HEIGHTS: Heights = { wall_height_mm: "", column_height_mm: "", footing_depth_mm: "", slab_thickness_mm: "" };
 
 export const HEIGHT_LABEL: Record<HeightField, string> = {
   wall_height_mm: "Wall height (mm)",
   column_height_mm: "Column height (mm)",
   footing_depth_mm: "Footing depth (mm)",
+  slab_thickness_mm: "Slab thickness (mm)",
 };
 
 export function heightFieldFor(c: Pick<TakeoffCandidate, "category" | "missing">): HeightField | null {
@@ -28,6 +31,7 @@ export function heightFieldFor(c: Pick<TakeoffCandidate, "category" | "missing">
   if (c.category === "WALL" && c.missing.includes("height_mm")) return "wall_height_mm";
   if (c.category === "COLUMN" && c.missing.includes("height_mm")) return "column_height_mm";
   if (c.category === "FOOTING" && c.missing.includes("depth_mm")) return "footing_depth_mm";
+  if (c.category === "SLAB" && c.missing.includes("thickness_mm")) return "slab_thickness_mm";
   return null;
 }
 
@@ -56,9 +60,9 @@ export function neededHeights(list: TakeoffCandidate[]): HeightField[] {
   const set = new Set<HeightField>();
   for (const c of list) {
     const f = heightFieldFor(c);
-    if (f) set.add(f);
+     if (f) set.add(f);
   }
-  return (["wall_height_mm", "column_height_mm", "footing_depth_mm"] as HeightField[]).filter((f) => set.has(f));
+  return (["wall_height_mm", "column_height_mm", "footing_depth_mm", "slab_thickness_mm"] as HeightField[]).filter((f) => set.has(f));
 }
 
 export function validHeight(text: string): number | null {
@@ -102,10 +106,25 @@ export function factLine(c: TakeoffCandidate): string {
     const label = num(f.label_area_m2);
     const p = num(f.perimeter_m);
     return [p !== null ? `perimeter ${p.toFixed(2)} m` : null, label !== null ? `label says ${label.toFixed(2)} m²` : null].filter(Boolean).join(" · ");
+   }
+
+  if (c.category === "SLAB") {
+    const dims = Array.isArray(f.dims_mm) ? (f.dims_mm as number[]) : null;
+    const t = num(f.thickness_mm);
+    const area = num(f.area_m2);
+    return [area !== null ? `${area.toFixed(2)} m² covered` : null, dims ? `${Math.round(dims[0])}×${Math.round(dims[1])} mm printed` : "size not printed", t !== null ? `${Math.round(t)} mm thick` : "thickness needed"].filter(Boolean).join(" · ");
+  }
+
+  if (c.category === "LINTEL") {
+    const sec = Array.isArray(f.section_mm) ? (f.section_mm as number[]) : null;
+    const span = Array.isArray(f.opening_size_mm) ? (f.opening_size_mm as number[]) : null;
+    const hosted = (f.hosted ?? null) as { thin?: number; rcc?: number } | null;
+    return [span ? `opening ${Math.round(span[0])} mm wide` : null, sec ? `section ${(sec[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(sec[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : "section needed", num(f.bearing_mm) !== null ? `bearing ${((f.bearing_mm as number) / 25.4).toFixed(1).replace(/\.0$/, "")} in assumed` : null, hosted?.thin ? `${hosted.thin} in 4.5 in walls` : null, hosted?.rcc ? `${hosted.rcc} in RCC walls` : null].filter(Boolean).join(" · ");
   }
 
   const sched = Array.isArray(f.size_schedule_mm) ? (f.size_schedule_mm as number[]) : null;
   const drawn = Array.isArray(f.size_drawn_mm) ? (f.size_drawn_mm as number[]) : null;
+
   const parts: string[] = [];
   if (sched) parts.push(`schedule ${Math.round(sched[0])}×${Math.round(sched[1])}`);
   if (drawn) parts.push(`drawn ${Math.round(drawn[0])}×${Math.round(drawn[1])}`);

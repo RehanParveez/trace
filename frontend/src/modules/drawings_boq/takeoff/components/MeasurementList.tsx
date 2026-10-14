@@ -21,7 +21,7 @@ interface Props {
   failures: Record<string, string>;
 }
 
-const SOURCE_TEXT: Record<string, string> = { MANUAL: "By hand", VECTOR_SNAP: "Snapped", TAG_SCAN: "Tag scan" };
+const SOURCE_TEXT: Record<string, string> = { MANUAL: "By hand", VECTOR_SNAP: "Snapped", TAG_SCAN: "Tag scan", PRINTED: "Printed" };
 
 export function MeasurementList(p: Props) {
   const { t } = useTranslation();

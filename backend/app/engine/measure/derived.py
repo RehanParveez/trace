@@ -1,5 +1,8 @@
 from __future__ import annotations
-from app.engine.measure.models import CalculationContext, LedgerEntry, Solid
+from app.engine.measure.models import CalculationContext, LedgerEntry, ModelElement, Solid
+from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE
+from shapely.affinity import translate
+from shapely.geometry import box
 from dataclasses import dataclass, field
 from decimal import Decimal
 from uuid import uuid5
@@ -28,8 +31,12 @@ PARAMS = {
   "wall_bed": (0.0, 0.0, 1.0),
   "shoring": (0.0, 0.0, 1.0),
 }
+
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
+FOOTING_LEVEL_PARAM = "footing_bottom_below_ngl_mm"
+ASKED_PARAMS = {FOOTING_LEVEL_PARAM: (1.0, 10000.0)}
+FRAME_STEP_MM = 1.0e7
 _BALLAST_PARAMS = ("ballast_clearance_mm", "ballast_thickness_mm")
 PARAM_USED_BY = {
   EXCAVATION: ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"),
@@ -47,11 +54,13 @@ def _used(kind: str, bed: str) -> tuple:
 CODE_ASSUMED = "DERIVED_ASSUMED"
 CODE_NGL_ASSUMED = "DERIVED_NGL_ASSUMED"
 CODE_BOX = "DERIVED_BOX_FOOTPRINT"
-DERIVED_CODES = (CODE_ASSUMED, CODE_NGL_ASSUMED, CODE_BOX)
+CODE_MARK = "DERIVED_MARK_POSITION"
+DERIVED_CODES = (CODE_ASSUMED, CODE_NGL_ASSUMED, CODE_BOX, CODE_MARK)
 
 FACTOR_ASSUMED = Decimal("0.75")
 FACTOR_CONFIRMED = Decimal("0.9")
 FACTOR_BOX = Decimal("0.9")
+FACTOR_MARK = Decimal("0.85")
 MAX_FOUNDATIONS = 2000
 EPS = 1e-6
 
@@ -127,6 +136,7 @@ class _Foundation:
   bed: str = "PCC"
   bed_proj: float = 0.0
   bed_t: float = 0.0
+  claim: dict | None = None
 
 @dataclass
 class _Buried:
@@ -174,10 +184,15 @@ def _row(ctx, f: _Foundation, kind: str, code: str, quantity: Decimal, params: d
     warnings.append(CODE_NGL_ASSUMED)
   if not f.exact:
     warnings.append(CODE_BOX)
+  if f.claim is not None:
+    warnings.append(CODE_MARK)
   base = f.solid.classification_confidence * f.solid.confidence_factor
   factor = FACTOR_ASSUMED if (assumed or (needs_ngl and ngl["source"] == "default")) else FACTOR_CONFIRMED
+  
   if not f.exact:
     factor *= FACTOR_BOX
+  if f.claim is not None:
+    factor *= FACTOR_MARK
   confidence = max(Decimal("0"), min(Decimal("1"), q4(base * factor)))
   el = f.element
   solid_id = uuid5(ctx.run_id, f"solid|derived|{el.id}|{kind}")
@@ -204,14 +219,106 @@ def _row(ctx, f: _Foundation, kind: str, code: str, quantity: Decimal, params: d
     trace={
       "formula_code": kind, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
       "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
-      "inputs": {"source_element_id": str(el.id), "recipe": RECIPE_CODE, "spec": spec, "ngl": ngl, **detail},
+      "inputs": {"source_element_id": str(el.id), "recipe": RECIPE_CODE, "spec": spec, "ngl": ngl,
+        **({"pdf_source": f.claim} if f.claim is not None else {}), **detail},
       "steps": steps, "net": {unit: str(quantity)}, "rounding": "half_up,6dp",
     },
     warnings=tuple(dict.fromkeys(warnings)), source_kind=DERIVED, spec=spec, spec_key="derived",
   )
   return solid, entry
 
-def measure_derived(ctx: CalculationContext, profile, elements: list, solids: list, ledger: list) -> DerivedResult:
+def resolve_asked(ctx: CalculationContext) -> dict:
+  given = getattr(ctx, "derived_params", None) or {}
+  convention = ctx.convention_params or {}
+  out = {}
+  for name, (low, high) in ASKED_PARAMS.items():
+    value = _number(given.get(name), low, high)
+    if value is not None:
+      out[name] = {"value": value, "source": "user"}
+      continue
+    value = _number(convention.get(name), low, high)
+    if value is not None:
+      out[name] = {"value": value, "source": "convention"}
+  return out
+
+def counted_measurement_ids(extra_ledger) -> set:
+  out = set()
+  for r in extra_ledger or ():
+    if getattr(r, "source_kind", None) != PDF_SOURCE or r.quantity <= 0:
+      continue
+    mid = ((r.trace or {}).get("inputs") or {}).get("measurement_id")
+    if mid:
+      out.add(str(mid))
+  return out
+
+def _count_up(d: dict, key: str, n: int = 1):
+  d[key] = d.get(key, 0) + n
+
+def claim_foundations(ctx: CalculationContext, members, counted: set, bottom_below, ngl_z: float, working_space: float, projection: float,
+  thickness: float) -> tuple:
+  """PDF footing marks that were counted in this run, as foundations that can be dug and bedded like model footings. The footprint is the
+  size of the footing centred on the mark, so the mark position stands in for the drawn outline. A mark cannot be placed without the level
+  of the footing bottom below natural ground, which the drawing does not carry, so it waits for that figure."""
+  frames = sorted({m.frame for m in members})
+  frame_no = {f: i for i, f in enumerate(frames)}
+  used = waiting = 0
+  ignored: dict = {}
+  waiting_list: list = []
+  found: list = []
+  for m in sorted(members, key=lambda b: str(b.measurement_id)):
+    n = len(m.points_mm)
+    if str(m.measurement_id) not in counted:
+      _count_up(ignored, "NOT_COUNTED", n)
+      continue
+    length, width, depth = float(m.length_mm), float(m.width_mm), float(m.depth_mm)
+    if not (length > 0 and width > 0 and depth > 0):
+      _count_up(ignored, "NO_SIZE", n)
+      continue
+    if bottom_below is None:
+      waiting += n
+      waiting_list.append({"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "tag": m.tag, "marks": n,
+        "page_no": m.page_no})
+      continue
+  
+    for i, (x, y) in enumerate(m.points_mm):
+      if i >= len(m.element_ids):
+        _count_up(ignored, "NOT_REGISTERED")
+        continue
+      eid = m.element_ids[i]
+      if eid is None:
+        _count_up(ignored, "NOT_REGISTERED")
+        continue
+      poly = translate(box(float(x) - length / 2, float(y) - width / 2, float(x) + length / 2, float(y) + width / 2), xoff=frame_no[m.frame] * FRAME_STEP_MM)
+      z0 = ngl_z - float(bottom_below)
+      z1 = z0 + depth
+      el = ModelElement(
+        id=eid, ifc_type="IfcFooting", role="FOOTING", level_id=m.level_id, geometry_kind="EXTRUDED_PROFILE", profile=None,
+        placement={"plan_mm": [list(c) for c in list(poly.exterior.coords)[:-1]], "z_min_mm": z0, "z_max_mm": z1},
+        volume_mm3=Decimal(repr(poly.area * depth)), bbox_min_mm=None, bbox_max_mm=None,
+        classification_confidence=m.confidence, normalization_status="VALID", ifc_global_id=None)
+      solid = Solid(
+        id=uuid5(ctx.run_id, f"solid|claim|{eid}"), element_id=eid, ifc_type="IfcFooting", role="FOOTING", level_id=m.level_id,
+        geometry_kind="EXTRUDED_PROFILE", classification_confidence=m.confidence, confidence_factor=Decimal("1"))
+      claim = {
+        "measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no,
+        "tag": m.tag, "instance": i + 1, "instances": n, "position_basis": m.position_basis, "position_mm": [round(float(x), 1), round(float(y), 1)],
+        "size_mm": [round(length, 1), round(width, 1), round(depth, 1)], "bottom_below_ngl_mm": round(float(bottom_below), 1), "view": m.frame,
+      }
+      
+      prism, _ = prism_and_polygon(el) or (None, None)
+      if prism is None:
+        _count_up(ignored, "NO_FOOTPRINT")
+        continue
+      found.append(_Foundation(
+        element=el, solid=solid, poly=poly, exact=True, bottom=float(prism.z0), top=float(prism.z1), claim=claim,
+        exc_poly=_grow(poly, projection + working_space), pcc_poly=_grow(poly, projection), exc_bottom=float(prism.z0) - thickness,
+        bed="PCC", bed_proj=float(projection), bed_t=float(thickness)))
+      used += 1
+  stats = {"used": used, "waiting": waiting, "ignored": dict(sorted(ignored.items())), "waiting_list": waiting_list,
+    "footing_bottom_below_ngl_mm": float(bottom_below) if bottom_below is not None else None}
+  return found, stats
+
+def measure_derived(ctx: CalculationContext, profile, elements: list, solids: list, ledger: list, extra_ledger=()) -> DerivedResult:
   stats: dict = {"enabled": True, "ran": False}
   components = {}
   if profile is not None:
@@ -228,7 +335,9 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   if EXCAVATION in components:
     codes[BACKFILL] = components.get(BACKFILL, DEFAULT_CODES[BACKFILL])
   model_codes = {r.work_item_code for r in ledger if r.source_kind == "MODEL"}
+  model_codes |= {r.work_item_code for r in (extra_ledger or ()) if getattr(r, "source_kind", None) == PDF_SOURCE and r.quantity > 0}
   skipped_items = {}
+  
   for kind in list(codes):
     if codes[kind] in model_codes:
       skipped_items[kind] = "MODEL_HAS_ITEM"
@@ -285,9 +394,26 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   stats["skipped"] = dict(sorted(skipped.items()))
   stats["wall_foundations"] = sum(1 for f in foundations if f.bed == "BALLAST" or f.element.role in WALL_BED_ROLES)
   
+  members = tuple(getattr(ctx.takeoff, "members", ()) or ())
+  if members:
+    asked = resolve_asked(ctx)
+    if foundations:
+      claim_f, claims = [], {"used": 0, "waiting": 0, "ignored": {"MODEL_HAS_FOUNDATIONS": sum(len(m.points_mm) for m in members)}, "waiting_list": [],
+        "footing_bottom_below_ngl_mm": None}
+    else:
+      if not elements and ngl["source"] == "default":
+        ngl = {"z_mm": 0.0, "source": "claim", "note": "footing levels from the PDF are measured down from natural ground level"}
+        stats["ngl"] = dict(ngl)
+      level = asked.get(FOOTING_LEVEL_PARAM)
+      claim_f, claims = claim_foundations(ctx, members, counted_measurement_ids(extra_ledger), level["value"] if level else None, float(ngl["z_mm"]), ws, pp, pt)
+      claims["footing_bottom_below_ngl_source"] = level["source"] if level else None
+    foundations += claim_f
+    buried += [_Buried(f.poly, f.bottom, f.top) for f in claim_f]
+    stats["claims"] = claims
   stats["foundations"] = len(foundations)
+  
   if not foundations:
-    stats["reason"] = "NO_FOUNDATIONS"
+    stats["reason"] = "NEEDS_FOOTING_LEVEL" if (stats.get("claims") or {}).get("waiting") else "NO_FOUNDATIONS"
     return DerivedResult(stats=stats)
   if len(foundations) > MAX_FOUNDATIONS:
     stats["reason"] = "TOO_MANY_FOUNDATIONS"
@@ -408,6 +534,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     "assumed": sorted({n for e in out_ledger for n, b in ((e.spec or {}).get("basis") or {}).items() if b == "default" and n != "ngl"}),
     "ngl_assumed": ngl["source"] == "default",
     "box_footprints": sum(1 for f in foundations if not f.exact),
+    "mark_positions": sum(1 for f in foundations if f.claim is not None),
   })
   return DerivedResult(solids=out_solids, ledger=out_ledger, stats=stats)
 

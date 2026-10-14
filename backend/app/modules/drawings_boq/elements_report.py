@@ -1,5 +1,6 @@
 from __future__ import annotations
 from reportlab.lib import colors
+from app.modules.drawings_boq.takeoff.evidence import GRADES, GRADE_TEXT, tally as evidence_tally
 from app.modules.drawings_boq.takeoff.sheet_reason import ACTION_HINT, sheet_reason
 import re
 from decimal import Decimal, InvalidOperation
@@ -17,7 +18,7 @@ MAX_REPORT_ROWS = 10000
 MAX_CELL = 400
 NO_FLOOR = "(no floor)"
 
-KIND_ORDER = ("IfcFooting", "IfcColumn", "IfcBeam", "IfcWall", "IfcSpace", "IfcDoor", "IfcWindow")
+KIND_ORDER = ("IfcFooting", "IfcColumn", "IfcBeam", "IfcSlab", "IfcWall", "IfcSpace", "IfcDoor", "IfcWindow")
 KIND_LABEL = {
   "IfcFooting": "Footings", "IfcColumn": "Columns", "IfcBeam": "Beams", "IfcWall": "Walls", "IfcSpace": "Rooms", "IfcDoor": "Doors",
   "IfcWindow": "Windows", "IfcSlab": "Slabs", "IfcStair": "Stairs", "IfcRoof": "Roofs", "IfcCovering": "Coverings", "IfcRailing": "Railings",
@@ -26,6 +27,8 @@ STATUS_ORDER = ("VALID", "WARNING", "INVALID", "PENDING")
 STATUS_COLOR = {"VALID": "#15803d", "WARNING": "#b45309", "INVALID": "#b91c1c", "PENDING": "#475569"}
 MODE_LABEL = {"EXACT": "Exact", "APPROXIMATE": "Bbox", "NONE": "No geometry", "PDF_MEASURED": "PDF measured", "PDF_FOUND": "PDF found"}
 SHEET_STATE_LABEL = {"READ": "Read", "WAITING": "Not read yet", "NOT_PREPARED": "Not prepared", "SET_ASIDE": "Set aside"}
+GRADE_LABEL = {"PRINTED": "Printed", "MEASURED": "Measured", "ASSUMED": "Assumed", "MISSING": "Missing"}
+GRADE_COLOR = {"PRINTED": "#15803d", "MEASURED": "#1d4ed8", "ASSUMED": "#b45309", "MISSING": "#b91c1c"}
 
 NAVY = colors.HexColor("#1e293b")
 GRID = colors.HexColor("#cbd5e1")
@@ -110,6 +113,26 @@ def size_lines(row) -> tuple[str, str]:
 def pdf_meta(row) -> dict:
   props = getattr(row, "properties", None) or {}
   return (props.get("_pdf") or {}) if props.get("source") == "pdf_takeoff" else {}
+
+def evidence_of(row) -> dict:
+  return pdf_meta(row).get("evidence") or {}
+
+def decision_groups(rows: list, numbers: dict) -> list[dict]:
+  groups: dict = {}
+  for row in rows:
+    if (getattr(row, "normalization_status", None) or "PENDING") == "VALID":
+      continue
+    key = pdf_meta(row).get("candidate_id") or f"row-{numbers.get(id(row))}"
+    g = groups.setdefault(key, {"name": re.sub(r"\s*\(\d+ of \d+\)$", "", getattr(row, "name", None) or ""), "rows": [], "codes": [], "ask": [], "messages": {}, "row": row})
+    g["rows"].append(numbers[id(row)])
+    
+    for i in issue_list(row):
+      if i.get("severity") == "warning" and i.get("code") and i["code"] not in g["codes"]:
+        g["codes"].append(i["code"])
+        g["messages"][i["code"]] = i.get("message") or ""
+    if not g["ask"]:
+      g["ask"] = list(evidence_of(row).get("ask") or [])
+  return sorted(groups.values(), key=lambda g: min(g["rows"]))
 
 def issue_list(row) -> list[dict]:
   return [i for i in (getattr(row, "normalization_issues", None) or []) if isinstance(i, dict)]
@@ -271,6 +294,13 @@ def _summary_block(st, reco: dict, is_pdf: bool, facts: dict | None, rows: list,
     lines.append(("Sheets read", f"{facts['sheets_read']} of {facts['sheets_total']}"))
   if is_pdf:
     lines.append(("Measured / need a look", f"{measured:,} measured, {review:,} need a look"))
+    grades = evidence_tally(rows)
+    
+    if sum(grades.values()):
+      lines.append(("What the rows stand on", " | ".join(f"{grades[g]:,} {GRADE_LABEL[g].lower()}" for g in GRADES)))
+    decisions = len(decision_groups(rows, {id(r): i for i, r in enumerate(rows, start=1)}))
+    if review:
+      lines.append(("Decisions", f"{decisions:,} decision{'s' if decisions != 1 else ''} cover the {review:,} rows that need a look (rows of one item share one decision)"))
   else:
     lines.append(("Need a look", f"{review:,} of {listed:,} rows are not VALID"))
   data = [[_p(clean(k), st["bold"]), _p(clean(v), st["cell"])] for k, v in lines]
@@ -391,7 +421,27 @@ def _flag_story(st, rows: list, numbers: dict, facts: dict | None, checks: list,
         _p(clean(c.get("message"), 420), st["cell"]), _p(clean(", ".join(c.get("marks") or []), 80), st["cell"]),
         _p(clean(", ".join(str(p) for p in (c.get("pages") or [])), 40), st["cell"])])
     story += [_table(data, [18 * mm, 48 * mm, 148 * mm, 40 * mm, 23 * mm]), Spacer(1, 6)]
+  groups = decision_groups(rows, numbers) if any(pdf_meta(r).get("candidate_id") for r in rows) else []
+  if groups:
+    story.append(_p(f"What needs a decision: {len(groups):,} decision{'s' if len(groups) != 1 else ''} cover {len(flagged):,} rows", st["bold"]))
+    story.append(_p("Rows of one item share one decision: answer it once for the item. The evidence column says which value the reader could not take from the drawing.", st["note"]))
+    data = [[_p("Item", st["head"]), _p("Floor", st["head"]), _p("Rows", st["headr"]), _p("What to check", st["head"]), _p("Row numbers", st["head"])]]
+    
+    for g in groups:
+      what = "; ".join(g["ask"]) if g["ask"] else "; ".join(c.replace("_", " ").lower() for c in g["codes"])
+      data.append([_p(clean(g["name"], 80), st["cell"]), _p(clean(level_of(g["row"], level_names) or "", 30), st["cell"]), _p(f"{len(g['rows']):,}", st["cellr"]),
+        _p(clean(what, 360), st["cell"]), _p(clean(ranges(g["rows"]), ROW_NUMBERS_CAP + 40), st["cell"])])
+    story += [_table(data, [46 * mm, 22 * mm, 12 * mm, 140 * mm, 57 * mm]), Spacer(1, 6)]
+    
+  if is_evidence(rows):
+    story.append(_p("What a row stands on", st["bold"]))
+    data = [[_p("Evidence", st["head"]), _p("Rows", st["headr"]), _p("Meaning", st["head"])]]
+    grades = evidence_tally(rows)
+    for g in GRADES:
+      data.append([_p(f'<font color="{GRADE_COLOR[g]}"><b>{GRADE_LABEL[g]}</b></font>', st["cell"]), _p(f"{grades[g]:,}", st["cellr"]), _p(GRADE_TEXT[g], st["cell"])])
+    story += [_table(data, [28 * mm, 16 * mm, 233 * mm]), Spacer(1, 6)]
   summary = flag_summary(rows, numbers)
+  
   if summary:
     story.append(_p(f"Flags on the rows: {len(flagged):,} of {len(rows):,} rows need a look", st["bold"]))
     story.append(_p("Each flag is explained once, with the numbers of the rows that carry it (the # column of the register).", st["note"]))
@@ -411,6 +461,13 @@ def _flag_story(st, rows: list, numbers: dict, facts: dict | None, checks: list,
   elif not sheets_open and not checks:
     story.append(_p("Nothing is flagged: every row is VALID and no sheet or check needs attention.", st["body"]))
   return story
+
+def is_evidence(rows: list) -> bool:
+  return any(evidence_of(r).get("grade") for r in rows)
+
+def _grade_tag(row) -> str:
+  grade = evidence_of(row).get("grade")
+  return f'<br/><font color="{GRADE_COLOR[grade]}" size="6">{GRADE_LABEL[grade]}</font>' if grade in GRADE_LABEL else ""
 
 def _register_story(st, rows: list, is_pdf: bool, level_names: dict | None) -> tuple[list, dict]:
   cols = _columns(is_pdf)
@@ -449,7 +506,7 @@ def _register_story(st, rows: list, is_pdf: bool, level_names: dict | None) -> t
       _p(str(index), st["cellr"]), _p(clean(getattr(row, "ifc_type", ""), 40), st["cell"]), _p(clean(getattr(row, "name", None) or "", 160), st["cell"]),
       _p(role, st["cell"]), _p(clean(getattr(row, "discipline", None) or ""), st["cell"]), _p(clean(level_of(row, level_names)), st["cell"]),
       _p(clean(getattr(row, "raw_material_text", None) or "", 160), st["cell"]), _p(quantity, st["cellr"]), _p(size, st["cell"]),
-      _p(f'<font color="{STATUS_COLOR.get(status, "#475569")}"><b>{clean(status)}</b></font>', st["cell"]), _p(measured, st["cell"]), _p(flags, st["cell"]),
+      _p(f'<font color="{STATUS_COLOR.get(status, "#475569")}"><b>{clean(status)}</b></font>' + _grade_tag(row), st["cell"]), _p(measured, st["cell"]), _p(flags, st["cell"]),
       _p(last, st["cell"]),
     ])
   return [_table(data, widths, extra)], numbers

@@ -19,6 +19,8 @@ def parameter_ranges() -> dict[str, tuple[float, float, float | None]]:
   out = {name: (low, high, default) for name, (default, low, high) in derived_module.PARAMS.items()}
   low, high = derived_module.NGL_RANGE
   out[derived_module.NGL_PARAM] = (low, high, None)
+  for name, (lo, hi) in derived_module.ASKED_PARAMS.items():
+    out[name] = (lo, hi, None)
   return out
 
 class MeasurementParametersResponse(BaseModel):

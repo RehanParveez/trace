@@ -1,14 +1,16 @@
 import { useTranslation } from "react-i18next";
 import { Badge } from "../../organizations/components/OrganizationUi";
-import type { BOQItemSpec } from "../types/drawings-boq.types";
-import { derivedBasisRows, derivedHasAssumption, isDerivedSpec } from "../utils/derived";
+import type { BOQItemSpec, LedgerTrace } from "../types/drawings-boq.types";
+import { derivedBasisRows, derivedHasAssumption, derivedPdfSourceView, isDerivedSpec } from "../utils/derived";
+import type { DerivedBasis } from "../utils/derived";
 
-function useBasisText(): (basis: "user" | "convention" | "default" | null) => string {
+function useBasisText(): (basis: DerivedBasis | null) => string {
   const { t } = useTranslation();
   return (basis) => {
     if (basis === "user") return t("boq.derived.basis.user", "given");
     if (basis === "convention") return t("boq.derived.basis.convention", "set on the convention");
     if (basis === "default") return t("boq.derived.basis.default", "assumed");
+    if (basis === "claim") return t("boq.derived.basis.claim", "reference level for the footing depth");
     return "";
   };
 }
@@ -56,3 +58,34 @@ export function DerivedBasisList({ spec }: { spec?: BOQItemSpec | null }) {
     </div>
   );
 }
+
+export function DerivedPdfSource({ trace }: { trace?: LedgerTrace | null }) {
+  const { t } = useTranslation();
+  const view = derivedPdfSourceView(trace);
+  if (!view) return null;
+  return (
+    <div className="space-y-1 rounded-[8px] bg-[var(--color-surface-muted)] p-3">
+      <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+        {t("boq.derived.pdfSourceTitle", "Read from the drawing")}
+      </div>
+      <p className="text-[12px] text-[var(--color-text-secondary)]">
+        {t("boq.derived.pdfSourceText", {
+          defaultValue:
+            "Footing {{tag}} ({{instance}} of {{instances}}) on sheet {{page}}, placed at its mark. Size {{l}} x {{w}} mm, {{d}} mm thick, bottom {{b}} mm below natural ground.",
+          tag: view.tag || "—",
+          instance: view.instance,
+          instances: view.instances,
+          page: view.page,
+          l: view.lengthMm,
+          w: view.widthMm,
+          d: view.thicknessMm,
+          b: view.bottomBelowGroundMm,
+        })}
+      </p>
+      <p className="text-[11px] text-[var(--color-warning)]">
+        {t("boq.derived.pdfSourceCaution", "The mark stands in for the drawn outline, so footings close together share a trench only approximately.")}
+      </p>
+    </div>
+  );
+}
+

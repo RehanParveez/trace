@@ -11,7 +11,7 @@ LengthUnit = Literal["mm", "cm", "m", "ft", "in"]
 ContentKind = Literal["VECTOR", "RASTER", "UNKNOWN"]
 Kind = Literal["LENGTH", "AREA", "COUNT"]
 ReconMode = Literal["AUTO", "ADD", "REPLACE_MODEL", "VERIFY_ONLY"]
-Source = Literal["MANUAL", "VECTOR_SNAP", "TAG_SCAN"]
+Source = Literal["MANUAL", "VECTOR_SNAP", "TAG_SCAN", "PRINTED"]
 
 class KnownDistance(BaseModel):
   p1: Point

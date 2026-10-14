@@ -142,7 +142,7 @@ def engine_derived_enabled(org_id) -> bool:
 
 def clean_derived_params(raw: dict | None) -> dict:
   out: dict = {}
-  for name in (*derived_module.PARAMS, derived_module.NGL_PARAM):
+  for name in (*derived_module.PARAMS, derived_module.NGL_PARAM, *derived_module.ASKED_PARAMS):
     value = (raw or {}).get(name)
     if value is None or isinstance(value, bool):
       continue
@@ -582,7 +582,7 @@ class CalculationService:
           "finish_excluded_m3": res.stats.get("finish_excluded_m3", "0"), "unpriced_m3": res.stats.get("unpriced_m3", "0")}
 
       async def derived_works():
-        res = await asyncio.to_thread(kernel.measure_derived, ctx, profile, state["accepted"], state["solids"], state["ledger"])
+        res = await asyncio.to_thread(kernel.measure_derived, ctx, profile, state["accepted"], state["solids"], state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in res.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in res.ledger])
         state["extra_solids"] += res.solids
@@ -623,7 +623,6 @@ class CalculationService:
       await self._stage(run, "measure", measure, 70)
       await self._stage(run, "finishes", finishes, 75)
       await self._stage(run, "schedules", schedules, 78)
-      await self._skip(run, "recipes", reason="not implemented in this engine version")
       await self._stage(run, "reinforcement", reinforcement, 79)
       if p6.takeoff is not None and getattr(p6.takeoff, "measurements", None):
         await self._stage(run, "pdf_takeoff", pdf_takeoff, 79)

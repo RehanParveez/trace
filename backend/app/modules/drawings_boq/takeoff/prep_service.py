@@ -19,6 +19,7 @@ from app.engine.measure import takeoff as tk
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules
+from app.modules.drawings_boq.takeoff.prep.storeys import storey_heights
 from app.modules.drawings_boq.takeoff.levels import ensure_level, level_spec
 from app.modules.drawings_boq.takeoff.prep import details
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
@@ -237,18 +238,53 @@ class PrepService:
     out = {"drawing_id": drawing_id, "sheets_read": len(read), "sheets_total": len(sheets), **drawing_facts.gather(read)}
     out["schedule"] = drawing_schedules.gather(self._schedule_sheets(sheets))
     suggested = (out.get("suggest") or {}).get("wall_height")
+    
     keys = [a["key"] for a in out["schedule"]["areas"] if a.get("kind") == "FLOOR"]
     heights = drawing_facts.floor_heights(keys, out["ladder"], suggested["slab_mm"] if suggested else None)
+    floor_keys = self._floor_keys(sheets)
+    printed = storey_heights(floor_keys, out.get("storeys"))
+    heights = {**heights, **printed}
     out["suggest"]["wall_height_by_floor"] = heights
     structure = await self._structure(org, sheets)
     out["views"] = structure["views"]
     out["structure"] = structure["levels"]
     out["details"], out["details_reader"], out["checks"] = await self._detail_checks(org, sheets)
+    out["checks"] = checks_mod.storey_checks(out.get("storeys"), printed, {k: (level_spec(k) or (k,))[0] for k in floor_keys}) + out["checks"]
+    plan_notes = [{"mm": v["slab_note_mm"], "pages": [v["page_no"]]} for v in structure["views"] if v.get("structural") and not v.get("foundation") and v.get("slab_note_mm")]
+    out["checks"] = out["checks"] + checks_mod.slab_checks(drawing_facts.slab_values(out["items"]), plan_notes)
+    out["checks"] = out["checks"] + checks_mod.lintel_checks(out["schedule"].get("lintels") or [], out["schedule"].get("tie_band"))
     out["floors"] = await self._floor_checks(org, sheets, out["schedule"]["areas"], heights, structure["levels"])
     return out
 
+  @staticmethod
+  def _floor_keys(sheets: list) -> list:
+    """The floors the drawing shows, lowest first: the floor of each single-floor sheet and of each structural framing plan on a composite sheet."""
+    keys: set = set()
+    for s in sheets:
+      meta = s.prep_meta or {}
+      title = meta.get("title") or {}
+      if title.get("level_hint") and not title.get("composite"):
+        keys.add(title["level_hint"])
+      for v in meta.get("views") or []:
+        if v.get("structural") and v.get("level_hint") and not v.get("foundation"):
+          keys.add(v["level_hint"])
+    return [k for k in drawing_facts.FLOOR_ORDER if k in keys]
+
+  async def drawing_storey_heights(self, org: UUID, drawing_id: UUID) -> dict:
+    """The clear storey height of each floor, from the building sections printed on any sheet of the drawing: {floor key: {clear_mm, ...}}."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+    return storey_heights(self._floor_keys(sheets), drawing_facts.gather(read).get("storeys"))
+  
+  async def drawing_slab_values(self, org: UUID, drawing_id: UUID) -> list:
+    """The slab thicknesses printed for slabs in general anywhere on the drawing: [{mm, count, pages, scopes}], most often printed first."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+    return drawing_facts.slab_values(drawing_facts.gather(read)["items"])
+
   async def _detail_checks(self, org: UUID, sheets: list) -> tuple:
     """The column details read on the drawing's sheets, and the checks between them and the plans."""
+    
     found, reader = [], None
     for s in sheets:
       meta = s.prep_meta or {}
@@ -287,6 +323,7 @@ class PrepService:
             shown.append({"page_no": s.page_no, "key": v["key"], "kind": v.get("kind"), "caption": v.get("caption"), "level_hint": v.get("level_hint"),
               "structural": bool(v.get("structural")), "foundation": bool(v.get("foundation")), "scale_ratio": (v.get("scale") or {}).get("ratio"),
               "scale_support": (v.get("scale") or {}).get("support"), "slab_note_mm": v.get("slab_note_mm"), "slab_panels": int(v.get("slab_panels") or 0)})
+            
     levels: dict = {}
     for v in shown:
       if not v["structural"] or not v["level_hint"]:
@@ -655,8 +692,8 @@ class PrepService:
 
   async def verified_source(self, org: UUID, sheet, kind: str, geometry: dict, source: str, tag: str | None = None) -> str:
     
-    if source == "MANUAL":
-      return "MANUAL"
+    if source in ("MANUAL", "PRINTED"):
+      return source
     index = await self.prep.load_index(org, sheet.id)
     if index is None:
       return "MANUAL"

@@ -8,7 +8,7 @@ interface Props {
 
 const text = (v: unknown): string | null => (v === null || v === undefined || v === "" ? null : String(v));
 
-const SOURCE: Record<string, string> = { MANUAL: "measured by hand", VECTOR_SNAP: "snapped to the drawing lines", TAG_SCAN: "counted from tags" };
+const SOURCE: Record<string, string> = { MANUAL: "measured by hand", VECTOR_SNAP: "snapped to the drawing lines", TAG_SCAN: "counted from tags", PRINTED: "read from the printed area table" };
 const DECISION: Record<string, string> = {
   COUNTED: "counted in the BOQ",
   VERIFIED: "only verified the model",

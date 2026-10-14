@@ -1,4 +1,4 @@
-import type {BOQItemSpec, DerivedParamName, DerivedParams, LayerSplitTrace, LedgerTrace,
+import type {BOQItemSpec, DerivedClaims, DerivedParamName, DerivedParams, DerivedPdfSource, LayerSplitTrace, LedgerTrace,
 } from "../types/drawings-boq.types";
 
 export interface DerivedFieldDef {
@@ -7,6 +7,7 @@ export interface DerivedFieldDef {
   min: number;
   max: number;
   flag?: boolean;
+  asked?: boolean;
 }
 
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
@@ -18,6 +19,7 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "wall_bed", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "shoring", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
+  { key: "footing_bottom_below_ngl_mm", defaultMm: null, min: 1, max: 10000, asked: true },
 ];
 
 export type DerivedInput = Partial<Record<DerivedParamName, string>>;
@@ -83,7 +85,7 @@ export function isDerivedSpec(spec: BOQItemSpec | null | undefined): boolean {
   return spec?.kind === "DERIVED";
 }
 
-export type DerivedBasis = "user" | "convention" | "default";
+export type DerivedBasis = "user" | "convention" | "default" | "claim";
 
 export interface DerivedBasisRow {
   key: string;
@@ -106,13 +108,58 @@ export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedB
       continue;
     }
     const b = basis[key];
-    rows.push({ key, value, basis: b === "user" || b === "convention" || b === "default" ? b : null });
+    rows.push({ key, value, basis: b === "user" || b === "convention" || b === "default" || b === "claim" ? b : null });
   }
   return rows;
 }
 
 export function derivedHasAssumption(spec: BOQItemSpec | null | undefined): boolean {
   return derivedBasisRows(spec).some((r) => r.basis === "default");
+}
+
+export interface DerivedWaitingView {
+  waiting: number;
+  tags: string[];
+  pages: number[];
+}
+
+export function derivedWaitingView(claims: DerivedClaims | null | undefined): DerivedWaitingView | null {
+  const waiting = Number(claims?.waiting ?? 0);
+  if (!claims || !Number.isFinite(waiting) || waiting <= 0) {
+    return null;
+  }
+  const list = Array.isArray(claims.waiting_list) ? claims.waiting_list : [];
+  const tags = Array.from(new Set(list.map((x) => x.tag).filter((x): x is string => typeof x === "string" && x !== ""))).sort();
+  const pages = Array.from(new Set(list.map((x) => x.page_no).filter((x) => Number.isFinite(x)))).sort((a, b) => a - b);
+  return { waiting, tags, pages };
+}
+
+export interface DerivedPdfSourceView {
+  page: number;
+  tag: string;
+  instance: number;
+  instances: number;
+  lengthMm: number;
+  widthMm: number;
+  thicknessMm: number;
+  bottomBelowGroundMm: number;
+}
+
+export function derivedPdfSourceView(trace: LedgerTrace | null | undefined): DerivedPdfSourceView | null {
+  const raw = (trace?.inputs as { pdf_source?: DerivedPdfSource } | undefined)?.pdf_source;
+  if (!raw || !Array.isArray(raw.size_mm) || raw.size_mm.length < 3) {
+    return null;
+  }
+  return {
+    page: Number(raw.page_no),
+    tag: raw.tag ?? "",
+    instance: Number(raw.instance),
+    instances: Number(raw.instances),
+    lengthMm: Number(raw.size_mm[0]),
+    widthMm: Number(raw.size_mm[1]),
+    thicknessMm: Number(raw.size_mm[2]),
+    bottomBelowGroundMm: Number(raw.bottom_below_ngl_mm),
+  };
 }
 
 export interface LayerSplitView {

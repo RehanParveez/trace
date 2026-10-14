@@ -1309,6 +1309,7 @@ export interface DerivedParams {
   ballast_clearance_mm?: number;
   wall_bed?: number;
   shoring?: number;
+  footing_bottom_below_ngl_mm?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1318,13 +1319,45 @@ export interface DerivedParamUsed {
   source: "user" | "convention" | "default";
 }
 
+export interface DerivedClaimWaiting {
+  measurement_id: string;
+  candidate_id: string;
+  tag: string | null;
+  marks: number;
+  page_no: number;
+}
+
+export interface DerivedClaims {
+  used: number;
+  waiting: number;
+  ignored: Record<string, number>;
+  waiting_list: DerivedClaimWaiting[];
+  footing_bottom_below_ngl_mm: number | null;
+  footing_bottom_below_ngl_source?: "user" | "convention" | null;
+}
+
+export interface DerivedPdfSource {
+  measurement_id: string;
+  candidate_id: string;
+  sheet_id: string;
+  page_no: number;
+  tag: string | null;
+  instance: number;
+  instances: number;
+  position_basis: "MARK";
+  position_mm: [number, number];
+  size_mm: [number, number, number];
+  bottom_below_ngl_mm: number;
+  view: string;
+}
+
 export interface DerivedStats {
   enabled: boolean;
   ran?: boolean;
   reason?: string;
   skipped_items?: Record<string, string>;
   params?: Record<string, DerivedParamUsed>;
-  ngl?: { z_mm: number; source: "user" | "convention" | "default"; note: string };
+  ngl?: { z_mm: number; source: "user" | "convention" | "default" | "claim"; note: string };
   skipped?: Record<string, number>;
   foundations?: number;
   rows?: number;
@@ -1338,6 +1371,8 @@ export interface DerivedStats {
   assumed?: string[];
   ngl_assumed?: boolean;
   box_footprints?: number;
+  mark_positions?: number;
+  claims?: DerivedClaims;
 }
 
 export interface LayerStats {

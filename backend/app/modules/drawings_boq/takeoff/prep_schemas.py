@@ -59,11 +59,27 @@ class ScheduleArea(BaseModel):
   value: float
   unit: str
   m2: float
+  dims_mm: list[float] | None = None
+  dims_text: str | None = None
+  pages: list[int] = Field(default_factory=list)
+
+class ScheduleLintel(BaseModel):
+  span_max_ft: float
+  span_max_mm: float
+  width_mm: float
+  depth_mm: float
+  text: str | None = None
+  pages: list[int] = Field(default_factory=list)
+
+class ScheduleTieBand(BaseModel):
+  text: str
   pages: list[int] = Field(default_factory=list)
 
 class DrawingSchedule(BaseModel):
   openings: list[ScheduleOpening] = Field(default_factory=list)
   areas: list[ScheduleArea] = Field(default_factory=list)
+  lintels: list[ScheduleLintel] = Field(default_factory=list)
+  tie_band: ScheduleTieBand | None = None
   conflicts: list[dict] = Field(default_factory=list)
 
 class FloorCheck(BaseModel):
@@ -104,7 +120,7 @@ class ColumnDetail(BaseModel):
   mark: str
   caption: str | None = None
   page_no: int | None = None
-  read: Literal["OCR", "OCR_SQUARE", "PARTIAL", "NONE"] = "NONE"
+  read: Literal["OCR", "OCR_SQUARE", "PARTIAL", "NONE", "TIMEOUT"] = "NONE"
   w_in: float | None = None
   h_in: float | None = None
 
@@ -149,6 +165,7 @@ class FactsResponse(BaseModel):
   items: list[DrawingFact]
   conflicts: list[dict]
   ladder: dict
+  storeys: dict | None = None
   suggest: dict = Field(default_factory=dict)
   schedule: DrawingSchedule = Field(default_factory=DrawingSchedule)
   floors: list[FloorCheck] = Field(default_factory=list)

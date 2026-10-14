@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.modules.drawings_boq.models import DrawingElement, BuildingLevel, Drawing, DrawingFormat, TakeoffCandidate, TakeoffExtraction, TakeoffMeasurement, TakeoffSheet
 from app.modules.drawings_boq.takeoff import register as R
+from app.modules.drawings_boq.takeoff.evidence import tally as evidence_tally
 from app.modules.drawings_boq.takeoff.sheet_reason import sheet_reason
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from sqlalchemy import delete, select
@@ -124,7 +125,9 @@ class RegisterService:
     return {"drawing_id": drawing_id, "total": len(rows), "added": added, "updated": updated, "removed": len(gone), "by_type": by_cat,
       "sheets": len(sheets), "sheets_read": len(read_ids), "waiting": waiting, "set_aside": set_aside, "sheet_status": sheet_status,
       "measured": sum(1 for r in rows if r["properties"]["_pdf"]["mode"] == "PDF_MEASURED"),
-      "needs_review": sum(1 for r in rows if r["normalization_status"] != "VALID")}
+      "needs_review": sum(1 for r in rows if r["normalization_status"] != "VALID"),
+      "decisions": len({r["properties"]["_pdf"]["candidate_id"] for r in rows if r["normalization_status"] != "VALID"}),
+      "evidence": evidence_tally(rows)}
 
   async def sync_and_commit(self, org: UUID, drawing_id: UUID) -> dict:
     out = await self.sync_drawing(org, drawing_id)

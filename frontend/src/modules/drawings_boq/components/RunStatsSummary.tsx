@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
+import { derivedWaitingView } from "../utils/derived";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
 import { useStageLabel } from "./StageBadge";
@@ -61,6 +62,7 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
   const st = stats.stages;
   const ly = stats.layers;
   const dv = stats.derived;
+  const waiting = derivedWaitingView(dv?.claims);
   const genericMaterial = Number(stats.material?.generic_elements ?? 0);
 
   return (
@@ -196,6 +198,9 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
               ) : null}
               <Stat label={t("boq.calculationRun.statDerivedBuried", "Structure in the trench (m³)")} value={formatPrecise(dv.buried_m3 ?? 0, 3)} />
               <Stat label={t("boq.calculationRun.statDerivedBox", "Footings taken as rectangles")} value={dv.box_footprints ?? 0} tone={Number(dv.box_footprints ?? 0) > 0 ? "gold" : undefined} />
+              {Number(dv.mark_positions ?? 0) > 0 ? (
+                <Stat label={t("boq.calculationRun.statDerivedMarks", "Footings placed at their drawing mark")} value={dv.mark_positions ?? 0} tone="gold" />
+              ) : null}
             </Section>
             {(dv.assumed?.length ?? 0) > 0 || dv.ngl_assumed ? (
               <div>
@@ -211,6 +216,15 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
                 </div>
               </div>
             ) : null}
+          </div>
+        ) : waiting ? (
+          <div className="rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-warning)]">
+            {t("boq.calculationRun.derivedNeedsLevel", {
+              defaultValue:
+                "{{count}} footings counted from the drawing{{tags}} are waiting for the depth of the footing bottom below natural ground. Give it in the site assumptions and calculate again.",
+              count: waiting.waiting,
+              tags: waiting.tags.length > 0 ? ` (${waiting.tags.join(", ")})` : "",
+            })}
           </div>
         ) : (
           <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">

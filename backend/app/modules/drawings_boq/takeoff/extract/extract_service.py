@@ -30,6 +30,7 @@ HEIGHT_FIELDS = {
   ("WALL", "height_mm"): ("wall_height_mm", "height_mm", "the wall height"),
   ("COLUMN", "height_mm"): ("column_height_mm", "depth_mm", "the column height"),
   ("FOOTING", "depth_mm"): ("footing_depth_mm", "depth_mm", "the footing depth"),
+  ("SLAB", "thickness_mm"): ("slab_thickness_mm", "depth_mm", "the slab thickness"),
 }
 
 def _now() -> datetime:
@@ -175,10 +176,14 @@ class ExtractService:
     unverified = "PDF_RATIO_UNVERIFIED" in (ev.warnings or ())
     
     schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
+    floor_heights = await self.prep.drawing_storey_heights(org, sheet.drawing_id)
+    slab_values = await self.prep.drawing_slab_values(org, sheet.drawing_id)
+    title = (sheet.prep_meta or {}).get("title") or {}
+    level_hint = None if title.get("composite") else title.get("level_hint")
     try:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
         content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
-        col_details=column_details(sheet.prep_meta))
+        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -273,12 +278,14 @@ class ExtractService:
     return out
 
   async def _note_issue(self, org: UUID, sheet_id: UUID, code: str, message: str, severity: str = "ACTION") -> None:
+    """Remembers why a sheet was not read, so the reason is still there after the page is reloaded. INFO needs nothing from the person."""
     sheet = await self.core._sheet(org, sheet_id, lock=True)
     sheet.prep_meta = {**(sheet.prep_meta or {}), "read_issue": {"code": code, "message": message, "severity": severity, "at": _now().isoformat()}}
     await self.session.flush()
     await self.session.commit()
 
   async def _set_aside(self, org: UUID, sheet_id: UUID, code: str, message: str, severity: str) -> None:
+    """A composite sheet whose floors are read from their own sheets: what it listed before is removed, except what was already measured."""
     rows = await self.repo.candidates(org, [sheet_id])
     await self.repo.delete_candidates(org, [r.id for r in rows if r.decision != "ACCEPTED"])
     ext = await self.repo.extraction(org, sheet_id)
@@ -329,7 +336,8 @@ class ExtractService:
     given = payload.work_items or {}
     wanted = {c for c in [*(given.values()), *(r.suggested_work_item for r in rows.values())] if c}
     catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
-    typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm}
+    typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm,
+      "slab_thickness_mm": payload.slab_thickness_mm}
     accepted: list = []
     failed: list = []
     sheet_levels: dict = {}

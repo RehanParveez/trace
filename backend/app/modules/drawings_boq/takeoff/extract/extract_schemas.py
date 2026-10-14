@@ -71,6 +71,7 @@ class AcceptRequest(BaseModel):
   wall_height_mm: Decimal | None = Field(default=None, gt=0, le=20000)
   column_height_mm: Decimal | None = Field(default=None, gt=0, le=20000)
   footing_depth_mm: Decimal | None = Field(default=None, gt=0, le=10000)
+  slab_thickness_mm: Decimal | None = Field(default=None, gt=0, le=2000)
   work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per category, e.g. {\"WALL\": \"MAS-BLOCK\"}.")
   level_id: UUID | None = None
 
@@ -99,3 +100,5 @@ class RegisterSyncResponse(BaseModel):
   sheet_status: list = Field(default_factory=list)
   measured: int = 0
   needs_review: int = 0
+  decisions: int = 0
+  evidence: dict = Field(default_factory=dict)

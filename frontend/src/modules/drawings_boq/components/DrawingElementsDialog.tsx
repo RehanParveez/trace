@@ -15,6 +15,7 @@ import { useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeo
 import type { ReadStage } from "../takeoff/hooks/useTakeoff";
 import type { RegisterSyncResult } from "../takeoff/types/takeoff.types";
 import { isPdfFormat, measureBadge, needsPerson, pagesFor, waitingLines } from "../takeoff/utils/register";
+import { EVIDENCE_LABEL, EVIDENCE_TONE, evidenceCheck, evidenceCounts, evidenceTitle, rowEvidence } from "../takeoff/utils/evidence";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -74,9 +75,11 @@ const COPY_COLUMNS: CopyColumn[] = [
   { header: "id", value: (e) => e.id },
   { header: "ifc_global_id", value: (e) => e.ifc_global_id },
   { header: "properties_json", value: (e) => (e.properties && Object.keys(e.properties).length > 0 ? JSON.stringify(e.properties) : "") },
+  { header: "evidence", value: (e) => rowEvidence(e.properties)?.grade ?? "" },
+  { header: "evidence_to_check", value: (e) => evidenceCheck(rowEvidence(e.properties)) },
 ];
 
-const KIND_ORDER = ["IfcFooting", "IfcColumn", "IfcBeam", "IfcWall", "IfcSpace", "IfcDoor", "IfcWindow"];
+const KIND_ORDER = ["IfcFooting", "IfcColumn", "IfcBeam", "IfcSlab", "IfcWall", "IfcSpace", "IfcDoor", "IfcWindow"];
 const NATURAL = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 
 function levelNameOf(e: DrawingElement, levelNames: Map<string, string>): string {
@@ -459,6 +462,18 @@ export function DrawingElementsDialog({
                 ) : syncRegister.isPending ? (
                   <p>{t("drawings.elements.pdfListing", "Listing the items read from this PDF\u2026")}</p>
                 ) : null}
+                {reg && evidenceCounts(reg.evidence) ? (
+                  <p className="text-[var(--color-text-secondary)]">
+                    {t("drawings.elements.pdfEvidence", {
+                      defaultValue: "{{printed}} printed, {{measured}} measured, {{assumed}} assumed, {{missing}} missing.",
+                      ...evidenceCounts(reg.evidence),
+                    })}
+                    {reg.needs_review > 0 && (reg.decisions ?? 0) > 0 ? ` ${t("drawings.elements.pdfDecisions", {
+                      defaultValue: "{{decisions}} decisions cover the {{review}} rows that need a look.",
+                      decisions: reg.decisions, review: reg.needs_review,
+                    })}` : ""}
+                  </p>
+                ) : null}
                 {needsPerson(reg) ? (
                   <div className="space-y-1">
                     {lines.map((line) => (
@@ -628,6 +643,7 @@ export function DrawingElementsDialog({
               <tbody>
                 {rowsShown.map((element, index) => {
                   const badge = measureBadge(element.measure_mode ?? elementMeasureMode(element));
+                  const evidence = rowEvidence(element.properties);
                   return (
                     <tr key={element.id} className="hover:bg-[var(--color-surface-muted)]">
                       <td className="border-b border-[var(--color-border)] px-3 py-2.5 font-mono text-[10px] text-[var(--color-text-muted)]">
@@ -676,6 +692,13 @@ export function DrawingElementsDialog({
                           .join("\n") || undefined}
                       >
                         {element.normalization_status ?? "\u2014"}
+                        {evidence ? (
+                          <div className="mt-1" title={evidenceTitle(evidence)}>
+                            <Badge tone={EVIDENCE_TONE[evidence.grade]}>
+                              {t(`drawings.elements.evidence.${evidence.grade}`, EVIDENCE_LABEL[evidence.grade])}
+                            </Badge>
+                          </div>
+                        ) : null}
                       </td>
 
                       <td className="border-b border-[var(--color-border)] px-3 py-2.5 text-[10px]">

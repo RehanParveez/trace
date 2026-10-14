@@ -195,32 +195,6 @@ QUANTITY_LOOKUP_ORDER: list[tuple[list[str], str]] = [
 
 READER_VERSION = "2026.10.7"
  
-ROLE_BY_IFC_TYPE: dict[str, str] = {
-  "IfcWall": "WALL",
-  "IfcWallStandardCase": "WALL",
-  "IfcSlab": "SLAB",
-  "IfcBeam": "BEAM",
-  "IfcColumn": "COLUMN",
-  "IfcDoor": "DOOR",
-  "IfcWindow": "WINDOW",
-  "IfcRoof": "ROOF",
-  "IfcStair": "STAIR",
-  "IfcStairFlight": "STAIR",
-  "IfcRamp": "RAMP",
-  "IfcRampFlight": "RAMP",
-  "IfcRailing": "RAILING",
-  "IfcFooting": "FOOTING",
-  "IfcPile": "PILE",
-  "IfcMember": "MEMBER",
-  "IfcPlate": "PLATE",
-  "IfcCovering": "COVERING",
-  "IfcCurtainWall": "CURTAIN_WALL",
-  "IfcPipeSegment": "PIPE",
-  "IfcFlowTerminal": "FIXTURE",
-  "IfcFurnishingElement": "FURNISHING",
-  "IfcBuildingElementProxy": "UNKNOWN",
-}
-
 EXCLUDED_IFC_TYPES = frozenset({
   "IfcOpeningElement",
   "IfcVoidingFeature",

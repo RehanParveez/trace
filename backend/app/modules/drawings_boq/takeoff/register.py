@@ -1,6 +1,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from uuid import NAMESPACE_URL, UUID, uuid5
+from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 
 SOURCE = "pdf_takeoff"
@@ -14,6 +15,8 @@ CATEGORY = {
   "WINDOW": {"ifc_type": "IfcWindow", "role": "WINDOW", "discipline": "ARCHITECTURAL", "material": "Window (type not stated)"},
   "WALL": {"ifc_type": "IfcWall", "role": "WALL", "discipline": "ARCHITECTURAL", "material": "Brick masonry (assumed)"},
   "ROOM": {"ifc_type": "IfcSpace", "role": "SPACE", "discipline": "ARCHITECTURAL", "material": None},
+  "SLAB": {"ifc_type": "IfcSlab", "role": "SLAB", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)"},
+  "LINTEL": {"ifc_type": "IfcBeam", "role": "LINTEL", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)"},
 }
 
 MISSING_TEXT = {
@@ -55,6 +58,8 @@ def _issues(cand) -> tuple[list, str]:
   return issues, status
 
 def _positions(cand, n: int) -> list:
+  if cand.category == "SLAB":
+    return [None] * n
   pts = (cand.geometry or {}).get("points") if cand.kind == "COUNT" else None
   mm = _num(cand.mm_per_pt)
   out = []
@@ -63,9 +68,44 @@ def _positions(cand, n: int) -> list:
     out.append([round(p[0] * mm, 1), round(p[1] * mm, 1)] if (p and mm) else None)
   return out
 
+def _slab_text(cand, page_no: int, measurement) -> str:
+  p, facts, codes = cand.params or {}, cand.facts or {}, {n.get("code") for n in (cand.notes or [])}
+  pages = ", ".join(str(x) for x in (facts.get("area_pages") or []))
+  parts = [f"Covered area of the floor from the area table{' on sheet ' + pages if pages else ''}"]
+  parts.append("length x width printed with it" if facts.get("dims_mm") else "length and width not printed")
+  
+  if p.get("depth_mm") is None:
+    parts.append("thickness needed")
+  elif facts.get("thickness_source") == "OTHER_SHEET":
+    parts.append("thickness printed on another sheet")
+  elif "SLAB_THICKNESS_DISAGREES" in codes:
+    parts.append(f"thickness from the slab note on sheet {page_no} (another sheet prints a different one)")
+  else:
+    parts.append(f"thickness from the slab note on sheet {page_no}")
+  if cand.decision == "ACCEPTED" and measurement is not None:
+    parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
+  else:
+    parts.append("found, not measured yet")
+  return " · ".join(parts)
+
+def _lintel_text(cand, page_no: int, measurement) -> str:
+  p, facts = cand.params or {}, cand.facts or {}
+  parts = [f"Opening marks counted on sheet {page_no}"]
+  parts.append("section from the lintel table, length = opening width + bearing each end (bearing assumed)" if p.get("depth_mm") is not None else "span wider than the lintel table, section needed")
+  if cand.decision == "ACCEPTED" and measurement is not None:
+    parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
+  else:
+    parts.append("found, not measured yet")
+  return " · ".join(parts)
+
 def _measured_text(cand, page_no: int, measurement) -> str:
+  if cand.category == "SLAB":
+    return _slab_text(cand, page_no, measurement)
+  if cand.category == "LINTEL":
+    return _lintel_text(cand, page_no, measurement)
   p, facts, codes = cand.params or {}, cand.facts or {}, {n.get("code") for n in (cand.notes or [])}
   parts = []
+  
   from_label = cand.category == "ROOM" and facts.get("outline_from") == "LABEL"
   parts.append(f"Marks counted on sheet {page_no}" if cand.source == "TAG_SCAN" else f"Room label on sheet {page_no}" if from_label else f"Drawn outline on sheet {page_no}")
   cat = cand.category
@@ -84,12 +124,15 @@ def _measured_text(cand, page_no: int, measurement) -> str:
     
   if cat in ("COLUMN", "FOOTING", "WALL"):
     has = p.get("height_mm" if cat == "WALL" else "depth_mm") is not None
-    if has and "HEIGHT_FROM_NOTE" in codes:
+    if has and "HEIGHT_FROM_SECTION" in codes:
+      parts.append("height from the building section")
+    elif has and "HEIGHT_FROM_NOTE" in codes:
       parts.append("height from drawing note")
     elif has:
       parts.append("height typed" if cat != "FOOTING" else "depth typed")
     else:
       parts.append("height needed" if cat != "FOOTING" else "depth needed")
+      
   if cat == "WALL" and measurement is None and ("WALL_OPENINGS_INCLUDED" in codes or (facts.get("openings") or {}).get("count")):
     opened = (facts.get("openings") or {})
     parts.append(f"{opened['count']} marked opening{'s' if opened['count'] != 1 else ''} ({opened['area_m2']:.2f} m²) deducted when measured" if opened.get("count") else "openings not yet deducted")
@@ -105,7 +148,7 @@ def _quantity(cand, n: int, measurement) -> tuple:
   if measurement is not None and q is not None and unit:
     return _d(q / max(n, 1)), unit, "PDF_MEASURED"
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
-  if cat in ("COLUMN", "FOOTING"):
+  if cat in ("COLUMN", "FOOTING", "LINTEL"):
     a, b, h = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
     if a and b and h:
       return _d(a * b * h / 1e9), "m3", "PDF_DRAWN"
@@ -113,17 +156,23 @@ def _quantity(cand, n: int, measurement) -> tuple:
 
   if cat == "WALL":
     length, t, h = _num(facts.get("length_cc_m")), _num(p.get("thickness_mm")), _num(p.get("height_mm"))
-    if length and t and h:
+    from_section = any(n.get("code") == "HEIGHT_FROM_SECTION" for n in (cand.notes or []))
+    if length and t and h and not from_section:
       return _d(length * (t / 1000.0) * (h / 1000.0)), "m3", "PDF_DRAWN"
     return _d(length or 0), "m", "PDF_DRAWN"
   if cat == "ROOM":
+    return _d(facts.get("area_m2") or 0), "m2", "PDF_DRAWN"
+  if cat == "SLAB":
+    a, b, t = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
+    if a and b and t:
+      return _d(a * b * t / 1e9), "m3", "PDF_DRAWN"
     return _d(facts.get("area_m2") or 0), "m2", "PDF_DRAWN"
   return Decimal("1"), "nos", "PDF_COUNT"
 
 def _sizes(cand) -> dict:
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
   out: dict = {}
-  if cat in ("COLUMN", "FOOTING"):
+  if cat in ("COLUMN", "FOOTING", "LINTEL"):
     out = {"length_mm": _num(p.get("length_mm")), "width_mm": _num(p.get("width_mm")), "height_mm": _num(p.get("depth_mm"))}
     if all(out.values()):
       out["volume_mm3"] = out["length_mm"] * out["width_mm"] * out["height_mm"]
@@ -142,12 +191,18 @@ def _sizes(cand) -> dict:
   elif cat == "ROOM":
     a = _num(facts.get("area_m2"))
     out = {"area_mm2": a * 1e6 if a else None}
+  elif cat == "SLAB":
+    a, b, t = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
+    area = _num(facts.get("area_m2"))
+    out = {"length_mm": a, "width_mm": b, "thickness_mm": t, "area_mm2": (a * b) if (a and b) else (area * 1e6 if area else None)}
+    if a and b and t:
+      out["volume_mm3"] = a * b * t
   return {k: _d(v, 3) for k, v in out.items() if v}
 
 def _name(cand, i: int, n: int) -> str:
   if cand.category == "ROOM":
     return (cand.facts or {}).get("name") or "Room (no name found)"
-  if cand.category == "WALL":
+  if cand.category in ("WALL", "SLAB"):
     return cand.label
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
@@ -157,7 +212,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
   spec = CATEGORY.get(cand.category)
   if spec is None or cand.decision == "REJECTED":
     return []
-  n = 1 if cand.category in ("WALL", "ROOM") else max(1, min(int(cand.count or 1), MAX_ROWS_PER_CANDIDATE))
+  n = 1 if cand.category in ("WALL", "ROOM", "SLAB") else max(1, min(int(cand.count or 1), MAX_ROWS_PER_CANDIDATE))
   issues, status = _issues(cand)
   also_on = sorted(set(also_on))
   
@@ -173,6 +228,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
   if also_on:
     text += " · also marked on sheet " + ", ".join(str(x) for x in also_on)
   pos = _positions(cand, n)
+  evidence = evidence_for(cand)
   out = []
   
   for i in range(n):
@@ -182,7 +238,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "measured_as": text, "work_item": cand.suggested_work_item, "tag": cand.tag, "position_mm": pos[i],
       "measurement_id": str(measurement["id"]) if measured else None,
       "measurement_status": measurement.get("status") if measured else None,
-      "missing": [] if cand.decision == "ACCEPTED" else list(cand.missing or []), "also_on_sheets": also_on,
+      "missing": [] if cand.decision == "ACCEPTED" else list(cand.missing or []), "also_on_sheets": also_on, "evidence": evidence,
     }}
     
     if cand.category == "ROOM":
@@ -196,7 +252,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "discipline": spec["discipline"], "structural_role": spec["role"], "classification_source": "PDF_EXTRACT",
       "classification_confidence": _d(cand.confidence or 0), "quantity_source": qsrc, "level_id": level_id,
       "geometry_kind": None, "normalization_status": status, "normalization_issues": issues,
-      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else None, "level_name": level_name or title,
+      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else None, "level_name": level_name or title,
     }
     row.update(sizes)
     out.append(row)
@@ -206,7 +262,7 @@ def level_of(cand, sheet):
   """The level of an item: the floor of the drawing it was read from on a sheet that shows several floors, otherwise the sheet's own level."""
   return view_level_id(cand) or getattr(sheet, "level_id", None)
 
-SHARED_MARKS = ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW") 
+SHARED_MARKS = ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW", "SLAB", "LINTEL") 
 
 def _primary(candidates, sheets: dict) -> tuple:
   groups: dict = {}

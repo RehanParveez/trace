@@ -4,7 +4,7 @@ export type ContentKind = "VECTOR" | "RASTER" | "UNKNOWN";
 export type PrepStatus = "PENDING" | "READY" | "FAILED";
 export type MeasureKind = "LENGTH" | "AREA" | "COUNT";
 export type ReconMode = "AUTO" | "ADD" | "REPLACE_MODEL" | "VERIFY_ONLY";
-export type MeasureSource = "MANUAL" | "VECTOR_SNAP" | "TAG_SCAN";
+export type MeasureSource = "MANUAL" | "VECTOR_SNAP" | "TAG_SCAN" | "PRINTED";
 export type MeasureStatus = "DRAFT" | "CONFIRMED";
 export type SnapKind = "ENDPOINT" | "INTERSECTION" | "MIDPOINT" | "EDGE";
 export type DimsBasis = "DRAWN" | "SPECIFIED" | "ASSUMED";
@@ -331,7 +331,7 @@ export interface ReconciliationStats {
 
 export interface Reconciliation { run_id: string | null; stats: ReconciliationStats; measurements: ReconciliationRow[] }
 
-export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM";
+export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM" | "SLAB" | "LINTEL";
 export type CandidateStatus = "VALID" | "WARNING" | "INVALID";
 export type CandidateDecision = "NEW" | "ACCEPTED" | "REJECTED";
 
@@ -393,6 +393,7 @@ export interface AcceptBody {
   wall_height_mm?: number | null;
   column_height_mm?: number | null;
   footing_depth_mm?: number | null;
+  slab_thickness_mm?: number | null;
   work_items?: Record<string, string>;
 }
 export interface CandidateFailure { id: string; code: string; message: string }
@@ -455,9 +456,12 @@ export interface ScheduleOpening {
   text?: string | null;
   pages: number[];
 }
-export interface ScheduleArea { key: string; kind: string; name: string; value: number; unit: string; m2: number; pages: number[] }
-export interface ScheduleConflict { kind: "OPENING_SIZE" | "FLOOR_AREA" | string; name: string; values: Array<{ width_mm?: number; height_mm?: number; m2?: number; pages: number[] }> }
-export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; conflicts: ScheduleConflict[] }
+
+export interface ScheduleArea { key: string; kind: string; name: string; value: number; unit: string; m2: number; pages: number[]; dims_mm?: number[] | null; dims_text?: string | null }
+export interface ScheduleConflict { kind: "OPENING_SIZE" | "FLOOR_AREA" | "LINTEL_SIZE" | string; name: string; values: Array<{ width_mm?: number; height_mm?: number; depth_mm?: number; m2?: number; pages: number[] }> }
+export interface ScheduleLintel { span_max_ft: number; span_max_mm: number; width_mm: number; depth_mm: number; text?: string | null; pages: number[] }
+export interface ScheduleTieBand { text: string; pages: number[] }
+export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; lintels?: ScheduleLintel[]; tie_band?: ScheduleTieBand | null; conflicts: ScheduleConflict[] }
 export type FloorCheckStatus = "OK" | "LOW" | "HIGH" | "NOT_READ";
 
 export interface FloorCheck {
@@ -546,7 +550,8 @@ export interface SuggestedWallHeight {
   alternatives: Array<{ slab_mm: number; value_mm: number; pages: number[] }>;
 }
 
-export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number; basis: "LEVEL_MARKS" | "TYPICAL" | string }
+export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number | null; basis: "SECTION" | "LEVEL_MARKS" | "TYPICAL" | string }
+export interface DrawingStoreys { consistent: boolean; page_no?: number; clusters: Array<{ clear_mm: number; count: number; agree: number; below_ground: boolean }> }
 export interface DrawingSuggest { wall_height?: SuggestedWallHeight | null; wall_height_by_floor?: Record<string, FloorWallHeight> }
 
 export interface DrawingFacts {
@@ -556,6 +561,7 @@ export interface DrawingFacts {
   items: DrawingFact[];
   conflicts: DrawingFactConflict[];
   ladder: { levels_mm: number[]; gaps_mm: number[]; typical_floor_to_floor_mm: number | null };
+  storeys?: DrawingStoreys | null;
   suggest?: DrawingSuggest;
   schedule?: DrawingSchedule;
   floors?: FloorCheck[];
@@ -580,4 +586,6 @@ export interface RegisterSyncResult {
   sheet_status: RegisterSheetStatus[];
   measured: number;
   needs_review: number;
+  decisions?: number;
+  evidence?: Record<string, number>;
 }

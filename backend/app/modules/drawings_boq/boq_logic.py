@@ -41,7 +41,7 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -414,6 +414,10 @@ LEDGER_WARNING_CATALOG = {
     "The foundation has no exact outline in the model, so its bounding rectangle was used for the excavation and PCC. "
     "A foundation that is not rectangular is overstated.",
     "Re-upload the model with the current reader so outlines are stored."),
+  "DERIVED_MARK_POSITION": ("warning", "NONE",
+    "This footing was read from a drawing, so it is placed at its mark with the size from the schedule or the drawing, not at a drawn outline. "
+    "Footings close together may share a trench in the drawing, and the shared part is only approximate here.",
+    "Check the excavation, PCC and backfill of these footings against the foundation plan, or measure the trench by hand."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
@@ -439,10 +443,24 @@ DERIVED_REASON_TEXT = {
   "ALL_ITEMS_IN_MODEL": "the model already draws these items",
   "NO_FOUNDATIONS": "the model has no footings",
   "TOO_MANY_FOUNDATIONS": "the model has more footings than the derived works can handle in one run",
+  "NEEDS_FOOTING_LEVEL": "the depth of the footing bottom below natural ground is not known",
 }
 
 def derived_issue_specs(stats: dict) -> list[IssueSpec]:
-  if not stats.get("enabled") or stats.get("ran"):
+  if not stats.get("enabled"):
+    return []
+  waiting = ((stats.get("claims") or {}).get("waiting")) or 0
+  if waiting:
+    tags = sorted({str(x.get("tag")) for x in stats["claims"].get("waiting_list") or [] if x.get("tag")})
+    return [IssueSpec(
+      code="DERIVED_NEEDS_FOOTING_LEVEL", severity="warning", blocks="NONE", dedupe_key="DERIVED_NEEDS_FOOTING_LEVEL",
+      message=f"{waiting} footing{'s' if waiting != 1 else ''} counted from the drawing"
+        + (f" ({', '.join(tags[:8])})" if tags else "")
+        + " could not be dug and bedded: the depth of the footing bottom below natural ground is not on the drawing, so excavation, PCC and backfill were not worked out for them.",
+      suggested_fix="Give the depth of the footing bottom below natural ground level in the site assumptions, then calculate again.",
+      details={"waiting": waiting, "tags": tags})]
+    
+  if stats.get("ran"):
     return []
   reason = stats.get("reason") or "UNKNOWN"
   if reason == "ALL_ITEMS_IN_MODEL":

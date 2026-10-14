@@ -321,6 +321,12 @@ export const LEDGER_WARNING_CATALOG: Record<string, WarningInfo> = {
     fix: "Re-upload the model with the current reader so outlines are stored.",
   },
 
+  DERIVED_MARK_POSITION: {
+    severity: "warning", blocks: "NONE",
+    message: "This footing was read from a drawing, so it is placed at its mark with the size from the schedule or the drawing, not at a drawn outline. Footings close together may share a trench in the drawing, and the shared part is only approximate here.",
+    fix: "Check the excavation, PCC and backfill of these footings against the foundation plan, or measure the trench by hand.",
+  },
+
   OVER_DEDUCTED: {
     severity: "error",
     blocks: "APPROVAL",

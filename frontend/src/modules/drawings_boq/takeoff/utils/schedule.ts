@@ -11,6 +11,14 @@ export function sizeText(widthMm: number, heightMm: number): string {
   return `${mmToFeetInches(widthMm)} × ${mmToFeetInches(heightMm)} (${Math.round(widthMm)} × ${Math.round(heightMm)} mm)`;
 }
 
+export function inchesText(mm: number): string {
+  return (mm / 25.4).toFixed(1).replace(/\.0$/, "");
+}
+
+export function lintelText(widthMm: number, depthMm: number): string {
+  return `${inchesText(widthMm)}×${inchesText(depthMm)} in`;
+}
+
 export function m2Text(v: number, digits = 1): string {
   return `${v.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })} m²`;
 }
@@ -37,6 +45,7 @@ export const OPENING_TYPE_TITLE: Record<string, string> = { DOOR: "Doors", WINDO
 export const FLOOR_STATUS_TONE: Record<FloorCheckStatus, "ok" | "warn" | "muted"> = { OK: "ok", LOW: "warn", HIGH: "warn", NOT_READ: "muted" };
 
 export function wallHeightBasisText(basis: string | null): string {
+  if (basis === "SECTION") return "printed on the building section";
   if (basis === "LEVEL_MARKS") return "level marks less slab";
   if (basis === "TYPICAL") return "typical floor height less slab";
   return "";
@@ -51,7 +60,7 @@ export function floorHasItems(f: FloorCheck): boolean {
 }
 
 export function hasSchedule(facts: DrawingFacts | undefined): boolean {
-  return (facts?.schedule?.openings?.length ?? 0) > 0 || (facts?.schedule?.areas?.length ?? 0) > 0 || (facts?.floors?.length ?? 0) > 0 || !!facts?.suggest?.wall_height || hasStructure(facts) || hasChecks(facts);
+  return (facts?.schedule?.openings?.length ?? 0) > 0 || (facts?.schedule?.areas?.length ?? 0) > 0 || (facts?.schedule?.lintels?.length ?? 0) > 0 || (facts?.floors?.length ?? 0) > 0 || !!facts?.suggest?.wall_height || hasStructure(facts) || hasChecks(facts);
 }
 
 export function suggestedHeightText(facts: DrawingFacts | undefined): string | null {
