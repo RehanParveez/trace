@@ -4,6 +4,7 @@ import math
 import ctypes
 import time
 from array import array
+from app.modules.drawings_boq.takeoff.prep import ocr_layer
 
 IDENT = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 MAX_PATH_OBJECTS = 1_500_000
@@ -341,6 +342,11 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
         stats["truncated"] = True
         break
     out.words = _text_words(page, stats)
+    if ocr_layer.needs_ocr(out.words, out.images, crop, stats):
+      found, info = ocr_layer.read_page(page, out.rotation, crop, out.images, budget_s=min(ocr_layer.SCAN_OCR_BUDGET_S, max(15.0, budget_s)))
+      stats.update(info)
+      if found:
+        out.words = found
     stats["elapsed_s"] = round(time.monotonic() - started, 3)
     stats["segments"] = len(out.segs) // 5
     stats["rings"] = len(out.rings)

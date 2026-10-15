@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Badge } from "../../organizations/components/OrganizationUi";
 import type { BOQItemSpec, LedgerTrace } from "../types/drawings-boq.types";
-import { derivedBasisRows, derivedHasAssumption, derivedPdfSourceView, isDerivedSpec } from "../utils/derived";
+import { derivedBasisRows, derivedHasAssumption, derivedPdfSourceView, formworkSourceView, isDerivedSpec, isFormworkSpec, isSteelSpec, steelSourceView } from "../utils/derived";
 import type { DerivedBasis } from "../utils/derived";
 
 function useBasisText(): (basis: DerivedBasis | null) => string {
@@ -21,7 +21,11 @@ export function DerivedBadge({ spec }: { spec?: BOQItemSpec | null }) {
   if (!isDerivedSpec(spec)) return null;
   const rows = derivedBasisRows(spec);
   const hint = [
-    t("boq.derived.badgeHint", "Not drawn in the model. Worked out from the foundations."),
+    isFormworkSpec(spec)
+      ? t("boq.derived.badgeHintFormwork", "Not drawn in the model. Worked out from the concrete members read from the drawing.")
+      : isSteelSpec(spec)
+      ? t("boq.derived.badgeHintSteel", "Not drawn in the model. Worked out from the bars printed on the drawing.")
+      : t("boq.derived.badgeHint", "Not drawn in the model. Worked out from the foundations."),
     ...rows.map((r) => `${t(`boq.derived.param.${r.key}`, r.key)}: ${r.value} (${basisText(r.basis)})`),
   ].join("\n");
   const assumed = derivedHasAssumption(spec);
@@ -88,4 +92,102 @@ export function DerivedPdfSource({ trace }: { trace?: LedgerTrace | null }) {
     </div>
   );
 }
+
+export function DerivedFormworkSource({ trace }: { trace?: LedgerTrace | null }) {
+  const { t } = useTranslation();
+  const view = formworkSourceView(trace);
+  if (!view) return null;
+  return (
+    <div className="space-y-1 rounded-[8px] bg-[var(--color-surface-muted)] p-3">
+      <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+        {t("boq.derived.formworkSourceTitle", "Read from the drawing")}
+      </div>
+      <p className="text-[12px] text-[var(--color-text-secondary)]">
+        {t("boq.derived.formworkSourceText", {
+          defaultValue: "{{category}} {{tag}} ({{instance}} of {{instances}}) on sheet {{page}}. Size {{l}} x {{w}} x {{d}} mm.",
+          category: t(`boq.derived.category.${view.category}`, view.category),
+          tag: view.tag || "—",
+          instance: view.instance,
+          instances: view.instances,
+          page: view.page,
+          l: view.lengthMm,
+          w: view.widthMm,
+          d: view.depthMm,
+        })}
+      </p>
+      <ul className="space-y-0.5 text-[12px] text-[var(--color-text-secondary)]">
+        {view.faces.map((f) => (
+          <li key={f.name} className="flex flex-wrap items-baseline gap-2">
+            <span>{t(`boq.derived.face.${f.name}`, f.name)}</span>
+            <span className="font-mono font-semibold text-[var(--color-text-primary)]">{f.m2} m²</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[11px] text-[var(--color-warning)]">
+        {t("boq.derived.formworkContact", "Gross area of the member. Faces that touch other concrete are not taken off.")}
+      {t("boq.derived.formworkContact", "Gross area of the member. Faces that touch other concrete are not taken off.")}
+      </p>
+    </div>
+  );
+}
+
+export function DerivedSteelSource({ trace }: { trace?: LedgerTrace | null }) {
+  const { t } = useTranslation();
+  const view = steelSourceView(trace);
+  if (!view) return null;
+  return (
+    <div className="space-y-1 rounded-[8px] bg-[var(--color-surface-muted)] p-3">
+      <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+        {t("boq.derived.steelSourceTitle", "Bars printed on the drawing")}
+      </div>
+      <p className="text-[12px] text-[var(--color-text-secondary)]">
+        {t("boq.derived.steelSourceText", {
+          defaultValue: "{{category}} {{tag}} ({{instance}} of {{instances}}) on sheet {{page}}. Size {{l}} x {{w}} x {{d}} mm.",
+          category: t(`boq.derived.category.${view.category}`, view.category),
+          tag: view.tag || "—",
+          instance: view.instance,
+          instances: view.instances,
+          page: view.page,
+          l: view.lengthMm,
+          w: view.widthMm,
+          d: view.depthMm,
+        })}
+      </p>
+      <ul className="space-y-0.5 text-[12px] text-[var(--color-text-secondary)]">
+        {view.bars.map((b) => (
+          <li key={b.role} className="flex flex-wrap items-baseline gap-2">
+            <span>
+              {t("boq.derived.steelBars", {
+                defaultValue: "{{n}} #{{bar}} {{role}}, {{length}} m long",
+                n: b.n,
+                bar: b.bar,
+                role: t(`boq.derived.steelRole.${b.role}`, b.role),
+                length: b.lengthM,
+              })}
+            </span>
+            <span className="font-mono font-semibold text-[var(--color-text-primary)]">{b.kg} kg</span>
+          </li>
+        ))}
+        {view.rings ? (
+          <li className="flex flex-wrap items-baseline gap-2">
+            <span>
+              {t("boq.derived.steelRings", {
+                defaultValue: "Rings #{{bar}} at {{spacing}} mm, {{count}} rings of {{cut}} m",
+                bar: view.rings.bar,
+                spacing: view.rings.spacingMm,
+                count: view.rings.count,
+                cut: view.rings.cutLengthM,
+              })}
+            </span>
+            <span className="font-mono font-semibold text-[var(--color-text-primary)]">{view.rings.kg} kg</span>
+          </li>
+        ) : null}
+      </ul>
+      <p className="text-[11px] text-[var(--color-warning)]">
+        {t("boq.derived.steelLap", "Weight of the bars and rings as printed. Laps, chairs, binding wire and wastage are not added.")}
+      </p>
+    </div>
+  );
+}
+
 

@@ -331,7 +331,7 @@ export interface ReconciliationStats {
 
 export interface Reconciliation { run_id: string | null; stats: ReconciliationStats; measurements: ReconciliationRow[] }
 
-export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM" | "SLAB" | "LINTEL";
+export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM" | "SLAB" | "LINTEL" | "STAIR";
 export type CandidateStatus = "VALID" | "WARNING" | "INVALID";
 export type CandidateDecision = "NEW" | "ACCEPTED" | "REJECTED";
 
@@ -458,10 +458,13 @@ export interface ScheduleOpening {
 }
 
 export interface ScheduleArea { key: string; kind: string; name: string; value: number; unit: string; m2: number; pages: number[]; dims_mm?: number[] | null; dims_text?: string | null }
-export interface ScheduleConflict { kind: "OPENING_SIZE" | "FLOOR_AREA" | "LINTEL_SIZE" | string; name: string; values: Array<{ width_mm?: number; height_mm?: number; depth_mm?: number; m2?: number; pages: number[] }> }
-export interface ScheduleLintel { span_max_ft: number; span_max_mm: number; width_mm: number; depth_mm: number; text?: string | null; pages: number[] }
+export interface ScheduleConflict { kind: "OPENING_SIZE" | "FLOOR_AREA" | "LINTEL_SIZE" | string; name: string; values: Array<{ width_mm?: number; height_mm?: number; depth_mm?: number; m2?: number; value?: number; pages: number[] }> }
+export interface LintelBars { n: number; bar: number }
+export interface LintelSteel { bottom?: LintelBars; top?: LintelBars; bars?: LintelBars; ring?: { bar: number; spacing_mm: number } }
+export interface ScheduleLintel { span_max_ft: number; span_max_mm: number; width_mm: number; depth_mm: number; text?: string | null; steel?: LintelSteel | null; pages: number[] }
+export interface ScheduleStair { riser_mm?: number | null; tread_mm?: number | null; width_mm?: number | null; steps?: number | null; waist_mm?: number | null; text?: string | null; pages: number[] }
 export interface ScheduleTieBand { text: string; pages: number[] }
-export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; lintels?: ScheduleLintel[]; tie_band?: ScheduleTieBand | null; conflicts: ScheduleConflict[] }
+export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; lintels?: ScheduleLintel[]; tie_band?: ScheduleTieBand | null; stair?: ScheduleStair | null; conflicts: ScheduleConflict[] }
 export type FloorCheckStatus = "OK" | "LOW" | "HIGH" | "NOT_READ";
 
 export interface FloorCheck {

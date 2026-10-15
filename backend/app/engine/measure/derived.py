@@ -12,6 +12,9 @@ from app.engine.measure.stages import _ffl, element_z
 from app.engine.measure.spatial import prism_and_polygon
 
 DERIVED = "DERIVED"
+FORMWORK_FORMULA = "SOLID_FORMWORK_AREA"
+STEEL_FORMULA = "PDF_MEMBER_STEEL_WEIGHT"
+EXEMPT_FORMULAS = (FORMWORK_FORMULA, STEEL_FORMULA)
 RECIPE_CODE = "FOOTING_PREP"
 EXCAVATION, PCC, BACKFILL = "EXCAVATION_VOLUME", "FOOTING_PCC_VOLUME", "BACKFILL_VOLUME"
 BALLAST, SHORING = "BRICK_BALLAST_VOLUME", "SHORING_AREA"
@@ -30,8 +33,11 @@ PARAMS = {
   "ballast_clearance_mm": (152.4, 0.0, 1000.0),
   "wall_bed": (0.0, 0.0, 1.0),
   "shoring": (0.0, 0.0, 1.0),
+  "footing_formwork": (0.0, 0.0, 1.0),
+  "slab_edge_formwork": (1.0, 0.0, 1.0),
+  "steel_cover_mm": (38.1, 10.0, 100.0),
+  "ring_hook_dia": (20.0, 0.0, 40.0),
 }
-
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
 FOOTING_LEVEL_PARAM = "footing_bottom_below_ngl_mm"
@@ -542,7 +548,7 @@ def derived_check(solids: list, ledger: list) -> list:
   failures: list = []
   by_id = {s.id for s in solids}
   for r in ledger:
-    if r.source_kind != DERIVED:
+    if r.source_kind != DERIVED or r.formula_code in EXEMPT_FORMULAS:
       continue
     if r.solid_id not in by_id:
       failures.append(f"derived row references unknown solid {r.solid_id}")

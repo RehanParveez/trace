@@ -1266,6 +1266,7 @@ export interface BOQItemSpec {
   basis?: Record<string, string>;
   recipe?: string;
   item?: string;
+  category?: string;
   params?: Record<string, number>;
   ngl_z_mm?: number;
 }
@@ -1310,6 +1311,10 @@ export interface DerivedParams {
   wall_bed?: number;
   shoring?: number;
   footing_bottom_below_ngl_mm?: number;
+  footing_formwork?: number;
+  slab_edge_formwork?: number;
+  steel_cover_mm?: number;
+  ring_hook_dia?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1351,6 +1356,81 @@ export interface DerivedPdfSource {
   view: string;
 }
 
+export interface FormworkSource {
+  measurement_id: string;
+  candidate_id: string;
+  sheet_id: string;
+  page_no: number;
+  category: string;
+  tag: string | null;
+  instance: number;
+  instances: number;
+  size_mm: [number, number, number];
+  faces: { name: string; m2: string }[];
+}
+
+export interface SteelBarLine {
+  role: "bottom" | "top" | "bars";
+  n: number;
+  bar: number;
+  dia_mm: string;
+  kg_per_m: string;
+  length_m: string;
+  kg: string;
+}
+
+export interface SteelRingLine {
+  bar: number;
+  dia_mm: string;
+  spacing_mm: string;
+  count: number;
+  cut_length_m: string;
+  kg_per_m: string;
+  kg: string;
+}
+
+export interface SteelSource {
+  measurement_id: string;
+  candidate_id: string;
+  sheet_id: string;
+  page_no: number;
+  category: string;
+  tag: string | null;
+  instance: number;
+  instances: number;
+  size_mm: [number, number, number];
+  bars: SteelBarLine[];
+  rings: SteelRingLine | null;
+}
+
+export interface DerivedSteelStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  rows?: number;
+  kg?: string;
+  code?: string;
+  by_category?: Record<string, { marks: number; kg: string }>;
+  skipped?: Record<string, number>;
+  params?: Record<string, DerivedParamUsed>;
+  assumed?: string[];
+  lap_and_wastage_not_added?: boolean;
+}
+
+export interface DerivedFormworkStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  rows?: number;
+  area_m2?: string;
+  code?: string;
+  by_category?: Record<string, { marks: number; m2: string }>;
+  skipped?: Record<string, number>;
+  params?: Record<string, DerivedParamUsed>;
+  assumed?: string[];
+  contact_not_deducted?: boolean;
+}
+
 export interface DerivedStats {
   enabled: boolean;
   ran?: boolean;
@@ -1373,6 +1453,8 @@ export interface DerivedStats {
   box_footprints?: number;
   mark_positions?: number;
   claims?: DerivedClaims;
+  formwork?: DerivedFormworkStats;
+  steel?: DerivedSteelStats;
 }
 
 export interface LayerStats {

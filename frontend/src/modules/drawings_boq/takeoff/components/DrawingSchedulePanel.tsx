@@ -3,7 +3,7 @@ import type { DrawingFacts, FloorCheck } from "../types/takeoff.types";
 import { mmText, mmToFeetInches, pagesText } from "../utils/facts";
 import { ChecksSection } from "./ChecksSection";
 import { StructureSection } from "./StructureSection";
-import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, groupOpenings, hasSchedule, lintelText, m2Text, metresText, sizeText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
+import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, groupOpenings, hasSchedule, lintelText, m2Text, metresText, sizeText, stairText, steelText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
 
 interface Props {
   facts: DrawingFacts | undefined;
@@ -71,6 +71,7 @@ export function DrawingSchedulePanel({ facts }: Props) {
   const areas = (facts.schedule?.areas ?? []).filter((a) => a.kind !== "FLOOR");
   const lintels = facts.schedule?.lintels ?? [];
   const tieBand = facts.schedule?.tie_band ?? null;
+  const stair = facts.schedule?.stair ?? null;
   return (
     <details className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5" data-testid="drawing-schedule">
       <summary className="cursor-pointer text-[12px] font-semibold text-[var(--color-text-primary)]">
@@ -88,12 +89,14 @@ export function DrawingSchedulePanel({ facts }: Props) {
                 ? t("drawings.schedule.sizeConflict", { defaultValue: "{{name}} is given two sizes. Trace uses the more common one; check it.", name: c.name })
                 : c.kind === "LINTEL_SIZE"
                   ? t("drawings.schedule.lintelConflict", { defaultValue: "The lintel table gives two sections for a span {{name}}. Trace uses the more common one; check it.", name: c.name })
-                  : t("drawings.schedule.areaConflict", { defaultValue: "{{name}} has two areas. Trace uses the more common one; check it.", name: c.name })}
+                  : c.kind.startsWith("STAIR_")
+                    ? t("drawings.schedule.stairConflict", { defaultValue: "The drawing gives two values for the stair {{name}}. Trace uses the more common one; check it.", name: c.name })
+                    : t("drawings.schedule.areaConflict", { defaultValue: "{{name}} has two areas. Trace uses the more common one; check it.", name: c.name })}
             </div>
             <ul className="mt-1 list-none space-y-0.5 pl-0">
               {c.values.map((v) => (
-                <li key={`${v.width_mm ?? ""}-${v.height_mm ?? ""}-${v.m2 ?? ""}`}>
-                  {v.width_mm != null && v.height_mm != null ? sizeText(v.width_mm, v.height_mm) : v.width_mm != null && v.depth_mm != null ? lintelText(v.width_mm, v.depth_mm) : v.m2 != null ? m2Text(v.m2) : ""} · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(v.pages) })}
+                <li key={`${v.width_mm ?? ""}-${v.height_mm ?? ""}-${v.m2 ?? ""}-${v.value ?? ""}`}>
+                  {v.width_mm != null && v.height_mm != null ? sizeText(v.width_mm, v.height_mm) : v.width_mm != null && v.depth_mm != null ? lintelText(v.width_mm, v.depth_mm) : v.m2 != null ? m2Text(v.m2) : v.value != null ? String(v.value) : ""} · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(v.pages) })}
                 </li>
               ))}
             </ul>
@@ -143,11 +146,20 @@ export function DrawingSchedulePanel({ facts }: Props) {
             <ul className="list-none space-y-0.5 pl-0 text-[var(--color-text-muted)]">
               {lintels.map((r) => (
                 <li key={r.span_max_ft}>
-                  {t("drawings.schedule.lintelRow", { defaultValue: "span up to {{ft}} ft", ft: r.span_max_ft })} · <span className="font-semibold text-[var(--color-text-primary)]">{lintelText(r.width_mm, r.depth_mm)}</span> · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(r.pages) })}
+                  {t("drawings.schedule.lintelRow", { defaultValue: "span up to {{ft}} ft", ft: r.span_max_ft })} · <span className="font-semibold text-[var(--color-text-primary)]">{lintelText(r.width_mm, r.depth_mm)}</span>{r.steel ? <> · <span data-testid="lintel-steel">{steelText(r.steel)}</span></> : null} · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(r.pages) })}
                 </li>
               ))}
             </ul>
             {tieBand ? <div className="mt-0.5 text-[var(--color-text-muted)]" data-testid="schedule-tie-band">{t("drawings.schedule.tieBand", { defaultValue: "A tie band is printed too ({{text}}). It is not measured; see the checks.", text: tieBand.text.toLowerCase() })}</div> : null}
+          </div>
+        ) : null}
+        {stair ? (
+          <div data-testid="schedule-stair">
+            <div className="font-semibold text-[var(--color-text-primary)]">{t("drawings.schedule.stair", "Staircase")}</div>
+            <div className="text-[var(--color-text-muted)]">
+              {stairText(stair)} · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(stair.pages) })}
+            </div>
+            {!stair.waist_mm ? <div className="mt-0.5 text-[var(--color-text-muted)]">{t("drawings.schedule.stairWaist", "The waist slab under the steps is not printed. 6 inches is assumed when the stair is listed.")}</div> : null}
           </div>
         ) : null}
         {areas.length > 0 ? (

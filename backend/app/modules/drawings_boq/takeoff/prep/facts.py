@@ -115,7 +115,23 @@ def level_mark_mm(text: str) -> float | None:
     return None
   return round(-mm if m.group("sign") == "-" else mm, 1)
 
-def read_facts(lines: list, words: list | None = None) -> dict:
+PLAUSIBLE_MM = {"SLAB_THICKNESS": (75.0, 400.0), "PLASTER_THICKNESS": (6.0, 40.0), "CLEAR_COVER": (10.0, 100.0), "FILL_LAYER": (50.0, 600.0),
+  "RCC_WALL_THICKNESS": (100.0, 600.0), "STAIR_WIDTH": (600.0, 3000.0)}
+PLAUSIBLE_BEARING_TSF = (0.1, 20.0)
+
+def plausible(item: dict) -> bool:
+  """A value read from a scan by character recognition is dropped when it is outside what a drawing can print (a half inch of plaster read as twelve inches)."""
+  kind = item.get("kind")
+  bounds = PLAUSIBLE_MM.get(kind)
+  if bounds is not None and item.get("value_mm") is not None:
+    return bounds[0] <= float(item["value_mm"]) <= bounds[1]
+  if kind == "BRICK_COLUMN":
+    return all(150.0 <= float(item.get(k) or 0.0) <= 500.0 for k in ("value_mm", "value2_mm"))
+  if kind == "BEARING_CAPACITY" and str(item.get("unit")) == "TSF":
+    return PLAUSIBLE_BEARING_TSF[0] <= float(item.get("value") or 0.0) <= PLAUSIBLE_BEARING_TSF[1]
+  return True
+
+def read_facts(lines: list, words: list | None = None, scanned: bool = False) -> dict:
   """Facts and level marks from one sheet's text lines. Counts repeats, so a note printed on every view is one fact seen many times.
   With the sheet's words, the storey heights printed on a building section are read as well."""
   seen: dict = {}
@@ -128,6 +144,10 @@ def read_facts(lines: list, words: list | None = None) -> dict:
       continue
   
     for it in read_line(text):
+      if scanned:
+        if not plausible(it):
+          continue
+        it = {**it, "ocr": True}
       key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"))
       if key in seen:
         seen[key]["count"] += 1

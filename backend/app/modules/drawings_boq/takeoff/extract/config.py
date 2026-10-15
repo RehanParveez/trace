@@ -1,9 +1,10 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 8
+EXTRACT_VERSION = 9
 
 LINTEL_BEARING_MM = 152.4
+STAIR_WAIST_DEFAULT_MM = 152.4
 
 SUGGESTIONS = {
   "COLUMN": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
@@ -15,6 +16,7 @@ SUGGESTIONS = {
   "ROOM": ("FIN-FLOOR", "DIRECT", "AREA"),
   "SLAB": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
   "LINTEL": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
+  "STAIR": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
 }
 CATEGORIES = tuple(SUGGESTIONS)
 
@@ -104,6 +106,14 @@ NOTES = {
   "SLAB_THICKNESSES_LISTED": ("warning", "This framing plan has no slab note and the drawing prints more than one slab thickness, so none was chosen. Pick the thickness for this slab."),
   "SLAB_AREA_NOT_FOUND": ("warning", "This framing plan shows a slab but the drawing's area table has no covered area for this floor, so the slab was not listed. Measure it with the area tool."),
   "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
+  "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
+  "LINTEL_STEEL_FROM_TABLE": ("info", "The bars and rings of this lintel are the reinforcement printed on the same row of the lintel table. Steel weight is worked out from them when the run is calculated."),
+  "STAIR_FROM_DETAILS": ("info", "The staircase is sized from the riser, tread, width and number of steps printed on the drawing. The concrete is measured as the plan run of the steps x the width x an equivalent thickness (the waist slab along the slope plus half a riser)."),
+  "STAIR_WAIST_ASSUMED": ("warning", "The drawing does not print the thickness of the waist slab under the steps. 6 inches (152.4 mm) is assumed. Change the depth if the stair section says otherwise."),
+  "STAIR_LANDINGS_NOT_INCLUDED": ("info", "Landings and the slab where the stair starts are not part of this quantity. Measure them as slabs."),
+  "STAIR_COUNT_FROM_LABELS": ("info", "The number of staircases is the number of times this plan names a staircase. Check it against the plan."),
+  "STAIR_DETAILS_INCOMPLETE": ("warning", "The drawing prints some of the stair details (riser, tread, width, number of steps) but not all of them, so the stair cannot be sized. Type the missing size when you measure it."),
+  "STAIR_DETAILS_NOT_FOUND": ("info", "This plan shows a staircase but no sheet of the drawing prints its riser, tread, width and number of steps. The staircase was not listed. Measure it by hand."),
   "LINTEL_BEARING_ASSUMED": ("info", "The drawing does not print how far a lintel bears on the wall at each end. 6 inches (152.4 mm) is assumed on each side. Change it if your practice differs."),
   "LINTEL_SPAN_ABOVE_TABLE": ("warning", "This opening is wider than every row of the lintel table, so no lintel section was chosen. Type the section when you measure it."),
   "LINTEL_IN_THIN_WALL": ("warning", "Some of these openings sit in 4.5 inch walls. The lintel table is 9 inches wide, so check the section for those."),

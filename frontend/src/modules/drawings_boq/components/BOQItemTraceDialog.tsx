@@ -6,7 +6,7 @@ import {activeAdjustments, DEDUCTION_RULE_LABEL, formatJsonValue, formatPrecise,
 import { TraceSteps } from "./TraceSteps";
 import { StageBadge } from "./StageBadge";
 import { ConfidenceBasis } from "./ConfidenceBasis";
-import { DerivedBasisList, DerivedPdfSource } from "./DerivedWorks";
+import { DerivedBasisList, DerivedFormworkSource, DerivedPdfSource, DerivedSteelSource } from "./DerivedWorks";
 import { LayerBreakdown } from "./LayerBreakdown";
 import { shapeDims } from "../../drawings_boq/rebar/utils/rebar.utils";
 
@@ -76,6 +76,8 @@ export function BOQItemTraceDialog({ itemId, itemName, onClose }: BOQItemTraceDi
                   <LayerBreakdown trace={l.trace} />
                   {l.spec?.kind === "DERIVED" ? <DerivedBasisList spec={l.spec} /> : null}
                   {l.spec?.kind === "DERIVED" ? <DerivedPdfSource trace={l.trace} /> : null}
+                  {l.spec?.kind === "DERIVED" ? <DerivedFormworkSource trace={l.trace} /> : null}
+                  {l.spec?.kind === "DERIVED" ? <DerivedSteelSource trace={l.trace} /> : null}
 
                   {l.trace?.label ? <div className="text-[12px] text-[var(--color-text-secondary)]">{l.trace.label}</div> : null}
                   <TraceSteps steps={l.trace?.steps ?? []} />

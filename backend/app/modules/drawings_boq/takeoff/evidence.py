@@ -127,6 +127,21 @@ def _lintel(inp: _Inputs, cand) -> None:
   if "LINTEL_IN_THIN_WALL" in codes:
     inp.add("host wall", ASSUMED, "some of these openings sit in 4.5 inch walls and the table section is 9 inches wide")
 
+def _stair(inp: _Inputs, cand) -> None:
+  """A stair is the riser, tread, width and number of steps printed on the drawing. The waist slab under the steps is rarely printed, and landings are not included."""
+  f, params = cand.facts or {}, cand.params or {}
+  inp.add("count", PRINTED, "staircases named on the plan")
+  if _value(params, "depth_mm") is None:
+    inp.add("size", MISSING, "the drawing does not print all of riser, tread, width and number of steps")
+    return
+  pages = ", ".join(str(x) for x in (f.get("stair_pages") or []))
+  inp.add("steps, riser, tread, width", PRINTED, f"printed on the drawing{' (sheet ' + pages + ')' if pages else ''}: {f.get('stair_text')}")
+  if f.get("waist_source") == "PRINTED":
+    inp.add("waist slab", PRINTED, f"{f.get('waist_mm', 0):g} mm printed on the drawing")
+  else:
+    inp.add("waist slab", ASSUMED, f"the drawing prints no waist thickness; {f.get('waist_mm', 0):g} mm assumed")
+  inp.add("landings", NOT_READ, "not included in this quantity; measure them as slabs")
+
 def evidence_for(cand) -> dict:
   """{"grade", "inputs": [{"name", "basis", "how"}], "ask": [what to check or type]} for one candidate."""
   codes = _codes(cand)
@@ -145,6 +160,8 @@ def evidence_for(cand) -> dict:
     _slab(inp, cand)
   elif cat == "LINTEL":
     _lintel(inp, cand)
+  elif cat == "STAIR":
+    _stair(inp, cand)
   elif cat in ("DOOR", "WINDOW"):
     inp.add("count", PRINTED, "marks counted on the sheet")
     if "SIZE_FROM_SCHEDULE" in codes:

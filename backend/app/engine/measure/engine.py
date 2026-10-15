@@ -18,11 +18,13 @@ from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UN
 from app.engine.measure.stages import split_stages
 from app.engine.measure.layers import layer_check, layer_excluded_by_solid, split_layers
 from app.engine.measure.derived import derived_check, measure_derived
+from app.engine.measure.formwork import formwork_check, measure_formwork
+from app.engine.measure.pdf_steel import measure_pdf_steel, steel_check
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.11"
+ENGINE_VERSION = "2026.10.16"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -420,6 +422,8 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
   failures.extend(steel_check(solids, ledger))
   failures.extend(layer_check(ledger))
   failures.extend(derived_check(solids, ledger))
+  failures.extend(formwork_check(solids, ledger))
+  failures.extend(steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
@@ -563,6 +567,13 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids += derived_res.solids
     extra_ledger += derived_res.ledger
     derived_info = derived_res.stats
+    formwork_res = measure_formwork(ctx, profile, ledger, extra_ledger)
+    extra_solids += formwork_res.solids
+    extra_ledger += formwork_res.ledger
+    steel_res = measure_pdf_steel(ctx, ledger, extra_ledger)
+    extra_solids += steel_res.solids
+    extra_ledger += steel_res.ledger
+    derived_info = {**derived_info, "formwork": formwork_res.stats, "steel": steel_res.stats}
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:

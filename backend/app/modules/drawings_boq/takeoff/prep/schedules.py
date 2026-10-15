@@ -3,6 +3,8 @@ import re
 import math
 from collections import Counter
 from app.modules.drawings_boq.takeoff.prep import lintels as lintel_reader
+from app.modules.drawings_boq.takeoff.prep import stairs as stair_reader
+from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
 MM_INCH = 25.4
 MM_FOOT = 304.8
@@ -357,18 +359,29 @@ def read_schedules(words: list) -> dict:
     tie_band = lintel_reader.read_tie_band(words)
   except Exception:
     lintels, tie_band = [], None
-  return {"openings": openings, "areas": areas, "lintels": lintels, "tie_band": tie_band}
+  try:
+    stair = stair_reader.read_stair_spec(build_lines(words))
+  except Exception:
+    stair = None
+  out = {"openings": openings, "areas": areas, "lintels": lintels, "tie_band": tie_band}
+  if stair:
+    out["stair"] = stair
+  return out
 
 def gather(sheets: list[dict]) -> dict:
+
   """All sheets' schedules together. Each sheet is {"page_no", "schedule"}. A mark or a floor printed with two different sizes is a conflict."""
   ops: dict = {}
   areas: dict = {}
   spans: dict = {}
   tie_band = None
-  
   tie_pages: list = []
+  stairs: list = []
+  
   for sh in sheets:
     sc = sh.get("schedule") or {}
+    if sc.get("stair"):
+      stairs.append((sh["page_no"], sc["stair"]))
     for r in sc.get("lintels") or []:
       spans.setdefault(r["span_max_ft"], []).append((sh["page_no"], r))
     if sc.get("tie_band"):
@@ -409,7 +422,22 @@ def gather(sheets: list[dict]) -> dict:
     lintel_rows.append({**base, "pages": sorted({p for p, _ in recs})})
     if len(sizes) > 1:
       conflicts.append({"kind": "LINTEL_SIZE", "name": f"up to {span:g} ft", "values": [{"width_mm": a, "depth_mm": b, "pages": sorted({p for p, r in recs if (r["width_mm"], r["depth_mm"]) == (a, b)})} for (a, b) in sizes]})
-  return {"openings": openings, "areas": area_rows, "lintels": lintel_rows, "tie_band": ({"text": tie_band, "pages": sorted(set(tie_pages))} if tie_band else None), "conflicts": conflicts}
+  stair = None
+  if stairs:
+    stair = {}
+    for key in ("riser_mm", "tread_mm", "width_mm", "steps", "waist_mm"):
+      votes = Counter(s[key] for _, s in stairs if s.get(key))
+      if votes:
+        stair[key] = votes.most_common(1)[0][0]
+        if len(votes) > 1:
+          conflicts.append({"kind": "STAIR_" + key.upper(), "name": key.replace("_mm", "").replace("_", " "), "values": [{"value": v, "pages": sorted({p for p, s in stairs if s.get(key) == v})} for v in votes]})
+          
+    stair["text"] = stair_reader.stair_text(stair)
+    stair["pages"] = sorted({p for p, _ in stairs})
+  out = {"openings": openings, "areas": area_rows, "lintels": lintel_rows, "tie_band": ({"text": tie_band, "pages": sorted(set(tie_pages))} if tie_band else None), "conflicts": conflicts}
+  if stair:
+    out["stair"] = stair
+  return out
 
 def opening_lookup(schedule: dict | None) -> dict:
   """mark -> (width_mm, height_mm, type) for the extraction step."""

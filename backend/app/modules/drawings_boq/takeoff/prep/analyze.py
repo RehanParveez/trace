@@ -8,7 +8,7 @@ import time
 from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 
-ANALYSIS_VERSION = 9
+ANALYSIS_VERSION = 10
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -268,7 +268,9 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
         measured["mismatches"] = flagged[:20]
   if raw.stats.get("truncated"):
     notes.append({"code": "PAGE_TRUNCATED", "message": "The sheet is very detailed and only part of its geometry was indexed. Snapping may be missing in some areas."})
-  if content_kind == "RASTER" and not raw.words:
+  if content_kind == "RASTER" and raw.stats.get("text_source") == "OCR" and raw.words:
+    notes.append({"code": "SCAN_TEXT_READ", "message": "This sheet is a scan. Its text was read by character recognition, so a figure or tag may be misread. Check the numbers that matter against the drawing."})
+  elif content_kind == "RASTER" and not raw.words:
     notes.append({"code": "NO_TEXT_LAYER", "message": "This sheet is a scan with no text layer. Scale and dimensions cannot be read automatically."})
   if content_kind == "RASTER":
     notes.append({"code": "RASTER_SHEET", "message": "This sheet is an image. Measurements carry lower confidence than on a vector drawing."})
@@ -288,8 +290,8 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
     "path_objects": raw.stats.get("path_objects", 0), "elapsed_s": round(time.monotonic() - started + raw.stats.get("elapsed_s", 0.0), 2)},
     "shapes_top": [{k: g[k] for k in ("id", "shape", "a_pt", "b_pt", "count")} for g in shapes[:8]],
     "tags_top": [{"tag": g["tag"], "in_drawing": g["in_drawing"], "count": g["count"]} for g in tags[:12]],
-    "user_unit": user_unit,
-    "facts": drawing_facts.read_facts(lines, raw.words),
+    "user_unit": user_unit, "text_source": "OCR" if raw.stats.get("text_source") == "OCR" and raw.words else "TEXT",
+    "facts": drawing_facts.read_facts(lines, raw.words, scanned=raw.stats.get("text_source") == "OCR"),
     "schedule": schedules.read_schedules(raw.words),
     "views": sheet_views.summary(found_views),
   }

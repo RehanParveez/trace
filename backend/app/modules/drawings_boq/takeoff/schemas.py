@@ -103,6 +103,20 @@ class AdjustmentParam(BaseModel):
   value: Decimal = Field(gt=0, max_digits=18, decimal_places=6)
   label: str | None = Field(default=None, max_length=120)
 
+class BarGroupParam(BaseModel):
+  n: int = Field(ge=1, le=30)
+  bar: int = Field(ge=2, le=12, description="Bar number: the diameter in eighths of an inch.")
+
+class RingParam(BaseModel):
+  bar: int = Field(ge=2, le=12)
+  spacing_mm: Decimal = Field(gt=0, le=1000, max_digits=9, decimal_places=2)
+
+class SteelParam(BaseModel):
+  bottom: BarGroupParam | None = None
+  top: BarGroupParam | None = None
+  bars: BarGroupParam | None = None
+  ring: RingParam | None = None
+
 class MeasurementParams(BaseModel):
   height_mm: Decimal | None = Field(default=None, gt=0)
   thickness_mm: Decimal | None = Field(default=None, gt=0)
@@ -113,6 +127,7 @@ class MeasurementParams(BaseModel):
   adjustments: list[AdjustmentParam] = Field(default_factory=list, max_length=50)
   repeat: int = Field(default=1, ge=1, le=1000)
   dims_basis: Literal["DRAWN", "SPECIFIED", "ASSUMED"] = "DRAWN"
+  steel: SteelParam | None = None
 
 class MeasurementCreateRequest(BaseModel):
   kind: Kind

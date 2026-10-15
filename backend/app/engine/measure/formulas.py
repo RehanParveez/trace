@@ -31,6 +31,7 @@ _SPECS = (
   FormulaSpec("WALL_FACE_AREA_NET", "m2", "Wall face area per face less openings at/above threshold; reveals per convention."),
   FormulaSpec("PAINT_AREA", "m2", "Plaster area x coats."),
   FormulaSpec("SOLID_FORMWORK_AREA", "m2", "Exposed faces by role less contact faces with other concrete."),
+  FormulaSpec("PDF_MEMBER_STEEL_WEIGHT", "kg", "Bars and rings printed for a member, from its size: bar length x unit weight plus rings x cut length x unit weight."),
   FormulaSpec("SLAB_SOFFIT_AREA", "m2", "Slab plan area less column footprints."),
   FormulaSpec("FLOOR_FINISH_AREA", "m2", "From space boundaries, else slab top net."),
   FormulaSpec("OPENING_COUNT", "nos", "Doors/windows by type mark and size.", "nos", _identity),

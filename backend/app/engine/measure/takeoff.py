@@ -121,12 +121,33 @@ class MemberInput:
   confidence: Decimal = ONE
   position_basis: str = "MARK"
 
+
+@dataclass(frozen=True)
+class FormworkInput:
+  """One counted concrete member read from a PDF (a column, footing, slab or lintel mark) with the size its measurement used. It carries no position,
+  so a member on a sheet whose scale is unusable can still be shuttered: the area comes from the size alone."""
+  measurement_id: UUID
+  candidate_id: UUID
+  sheet_id: UUID
+  page_no: int
+  category: str
+  tag: str | None
+  level_id: UUID | None
+  element_ids: tuple
+  count: int
+  length_mm: Decimal
+  width_mm: Decimal
+  depth_mm: Decimal
+  confidence: Decimal = ONE
+  steel: dict | None = None
+
 @dataclass(frozen=True)
 class TakeoffInputs:
   sheets: tuple = ()
   calibrations: tuple = ()
   measurements: tuple = ()
   members: tuple = ()
+  formwork: tuple = ()
 
 @dataclass(frozen=True)
 class CalibrationEval:
@@ -841,5 +862,8 @@ def takeoff_payload(inputs: TakeoffInputs | None) -> dict:
     }) for m in sorted(inputs.measurements, key=lambda m: str(m.id))],
     **({"members": [_enc([str(b.measurement_id), str(b.candidate_id), b.category, b.tag, b.frame, str(b.level_id) if b.level_id else None,
       [str(i) for i in b.element_ids], [list(p) for p in b.points_mm], b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.position_basis])
-      for b in sorted(inputs.members, key=lambda b: str(b.measurement_id))]} if inputs.members else {}),
+     for b in sorted(inputs.members, key=lambda b: str(b.measurement_id))]} if inputs.members else {}),
+    **({"formwork": [_enc([str(b.measurement_id), str(b.candidate_id), b.category, b.tag, str(b.level_id) if b.level_id else None,
+      [str(i) for i in b.element_ids], b.count, b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.steel])
+      for b in sorted(inputs.formwork, key=lambda b: str(b.measurement_id))]} if inputs.formwork else {}),
   }

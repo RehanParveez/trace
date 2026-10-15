@@ -1,4 +1,4 @@
-import type {BOQItemSpec, DerivedClaims, DerivedParamName, DerivedParams, DerivedPdfSource, LayerSplitTrace, LedgerTrace,
+import type {BOQItemSpec, DerivedClaims, DerivedParamName, DerivedParams, DerivedPdfSource, DerivedStats, FormworkSource, LayerSplitTrace, LedgerTrace, SteelBarLine, SteelRingLine, SteelSource,
 } from "../types/drawings-boq.types";
 
 export interface DerivedFieldDef {
@@ -8,6 +8,7 @@ export interface DerivedFieldDef {
   max: number;
   flag?: boolean;
   asked?: boolean;
+  unit?: "dia";
 }
 
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
@@ -18,6 +19,10 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "ballast_thickness_mm", defaultMm: 304.8, min: 0, max: 1500 },
   { key: "wall_bed", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "shoring", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "footing_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
+  { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100 },
+  { key: "ring_hook_dia", defaultMm: 20, min: 0, max: 40, unit: "dia" },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
   { key: "footing_bottom_below_ngl_mm", defaultMm: null, min: 1, max: 10000, asked: true },
 ];
@@ -93,7 +98,7 @@ export interface DerivedBasisRow {
   basis: DerivedBasis | null;
 }
 
-const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "ngl"];
+const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "steel_cover_mm", "ring_hook_dia", "ngl"];
 
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
@@ -159,6 +164,135 @@ export function derivedPdfSourceView(trace: LedgerTrace | null | undefined): Der
     widthMm: Number(raw.size_mm[1]),
     thicknessMm: Number(raw.size_mm[2]),
     bottomBelowGroundMm: Number(raw.bottom_below_ngl_mm),
+  };
+}
+
+export function isFormworkSpec(spec: BOQItemSpec | null | undefined): boolean {
+  return spec?.kind === "DERIVED" && spec?.recipe === "STRUCT_FORMWORK";
+}
+
+export function isSteelSpec(spec: BOQItemSpec | null | undefined): boolean {
+  return spec?.kind === "DERIVED" && spec?.recipe === "PDF_LINTEL_STEEL";
+}
+
+export interface SteelSourceView {
+  page: number;
+  category: string;
+  tag: string;
+  instance: number;
+  instances: number;
+  lengthMm: number;
+  widthMm: number;
+  depthMm: number;
+  bars: { role: string; n: number; bar: number; lengthM: string; kg: string }[];
+  rings: { bar: number; spacingMm: string; count: number; cutLengthM: string; kg: string } | null;
+}
+
+export function steelSourceView(trace: LedgerTrace | null | undefined): SteelSourceView | null {
+  const raw = (trace?.inputs as { steel_source?: SteelSource } | undefined)?.steel_source;
+  if (!raw || !Array.isArray(raw.size_mm) || raw.size_mm.length < 3 || !Array.isArray(raw.bars)) {
+    return null;
+  }
+  const ring: SteelRingLine | null = raw.rings ?? null;
+  return {
+    page: Number(raw.page_no),
+    category: String(raw.category ?? ""),
+    tag: raw.tag ?? "",
+    instance: Number(raw.instance),
+    instances: Number(raw.instances),
+    lengthMm: Number(raw.size_mm[0]),
+    widthMm: Number(raw.size_mm[1]),
+    depthMm: Number(raw.size_mm[2]),
+    bars: raw.bars.map((b: SteelBarLine) => ({ role: String(b.role), n: Number(b.n), bar: Number(b.bar), lengthM: String(b.length_m), kg: String(b.kg) })),
+    rings: ring ? { bar: Number(ring.bar), spacingMm: String(ring.spacing_mm), count: Number(ring.count), cutLengthM: String(ring.cut_length_m), kg: String(ring.kg) } : null,
+  };
+}
+
+export interface SteelStatsView {
+  ran: boolean;
+  reason: string | null;
+  kg: string;
+  rows: number;
+  categories: { category: string; marks: number; kg: string }[];
+  noBars: number;
+  assumed: string[];
+  lapAndWastageNotAdded: boolean;
+}
+
+export function steelStatsView(stats: DerivedStats | null | undefined): SteelStatsView | null {
+  const st = stats?.steel;
+  if (!st || !st.enabled || st.reason === "NO_MEMBERS") {
+    return null;
+  }
+  const categories = Object.entries(st.by_category ?? {}).map(([category, v]) => ({ category, marks: Number(v.marks), kg: String(v.kg) }));
+  return {
+    ran: Boolean(st.ran),
+    reason: st.reason ?? null,
+    kg: String(st.kg ?? "0"),
+    rows: Number(st.rows ?? 0),
+    categories,
+    noBars: Number(st.skipped?.NO_BARS ?? 0),
+    assumed: Array.isArray(st.assumed) ? st.assumed : [],
+    lapAndWastageNotAdded: Boolean(st.lap_and_wastage_not_added),
+  };
+}
+
+export interface FormworkSourceView {
+  page: number;
+  category: string;
+  tag: string;
+  instance: number;
+  instances: number;
+  lengthMm: number;
+  widthMm: number;
+  depthMm: number;
+  faces: { name: string; m2: string }[];
+}
+
+export function formworkSourceView(trace: LedgerTrace | null | undefined): FormworkSourceView | null {
+  const raw = (trace?.inputs as { formwork_source?: FormworkSource } | undefined)?.formwork_source;
+  if (!raw || !Array.isArray(raw.size_mm) || raw.size_mm.length < 3 || !Array.isArray(raw.faces)) {
+    return null;
+  }
+  return {
+    page: Number(raw.page_no),
+    category: String(raw.category ?? ""),
+    tag: raw.tag ?? "",
+    instance: Number(raw.instance),
+    instances: Number(raw.instances),
+    lengthMm: Number(raw.size_mm[0]),
+    widthMm: Number(raw.size_mm[1]),
+    depthMm: Number(raw.size_mm[2]),
+    faces: raw.faces.map((f) => ({ name: String(f.name), m2: String(f.m2) })),
+  };
+}
+
+export interface FormworkStatsView {
+  ran: boolean;
+  reason: string | null;
+  areaM2: string;
+  rows: number;
+  categories: { category: string; marks: number; m2: string }[];
+  footingsLeftOut: number;
+  assumed: string[];
+  contactNotDeducted: boolean;
+}
+
+export function formworkStatsView(stats: DerivedStats | null | undefined): FormworkStatsView | null {
+  const fw = stats?.formwork;
+  if (!fw || !fw.enabled || fw.reason === "NO_MEMBERS") {
+    return null;
+  }
+  const categories = Object.entries(fw.by_category ?? {}).map(([category, v]) => ({ category, marks: Number(v.marks), m2: String(v.m2) }));
+  return {
+    ran: Boolean(fw.ran),
+    reason: fw.reason ?? null,
+    areaM2: String(fw.area_m2 ?? "0"),
+    rows: Number(fw.rows ?? 0),
+    categories,
+    footingsLeftOut: Number(fw.skipped?.FOOTING_NOT_SHUTTERED_DEFAULT ?? 0),
+    assumed: Array.isArray(fw.assumed) ? fw.assumed : [],
+    contactNotDeducted: Boolean(fw.contact_not_deducted),
   };
 }
 

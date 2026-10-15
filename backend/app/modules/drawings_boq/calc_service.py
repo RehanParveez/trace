@@ -587,8 +587,19 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in res.ledger])
         state["extra_solids"] += res.solids
         state["extra_ledger"] += res.ledger
-        state["derived_stats"] = res.stats
-        return {"rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
+        fw = await asyncio.to_thread(kernel.measure_formwork, ctx, profile, state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fw.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fw.ledger])
+        state["extra_solids"] += fw.solids
+        state["extra_ledger"] += fw.ledger
+        st = await asyncio.to_thread(kernel.measure_pdf_steel, ctx, state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in st.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in st.ledger])
+        state["extra_solids"] += st.solids
+        state["extra_ledger"] += st.ledger
+        state["derived_stats"] = {**res.stats, "formwork": fw.stats, "steel": st.stats}
+        return {"steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
+          "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),
           "backfill_m3": res.stats.get("backfill_m3", "0"), **({"reason": res.stats["reason"]} if res.stats.get("reason") else {})}
 

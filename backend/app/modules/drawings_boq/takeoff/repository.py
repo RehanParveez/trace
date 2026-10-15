@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.engine.measure import takeoff as tk
+from app.engine.measure.pdf_steel import clean_steel
 from app.modules.drawings_boq.models import TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
 from app.modules.drawings_boq.takeoff.register import row_id
 from dataclasses import replace
@@ -43,6 +44,7 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
     label=row.label, tag=row.tag, material_grade=row.material_grade, recon_mode=row.recon_mode, source=row.source)
 
 MEMBER_CATEGORIES = ("FOOTING",)
+FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL")
 
 def _mm(value) -> Decimal | None:
   v = _dec(value)
@@ -91,6 +93,38 @@ async def load_members(session: AsyncSession, org: UUID, measurements: list, she
       out.append(member)
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
 
+async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
+  """The accepted column, footing, slab and lintel candidates behind the confirmed measurements, with the size each measurement used. A member needs no
+  position or scale here: the shuttering of a member comes from its size alone."""
+  ids = [m.id for m in measurements if m.quantity_mode == "COUNT_X_VOLUME"]
+  if not ids:
+    return ()
+  cands = (await session.execute(
+    select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.measurement_id.in_(ids),
+      TakeoffCandidate.category.in_(FORMWORK_CATEGORIES), TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
+  by_measurement = {c.measurement_id: c for c in cands}
+  wanted = [row_id(sheets[m.sheet_id].id, by_measurement[m.id].ckey, i)
+    for m in measurements if m.id in by_measurement for i in range(len((m.geometry or {}).get("points") or []))]
+  present = set((await session.execute(select(DrawingElement.id).where(DrawingElement.organization_id == org, DrawingElement.id.in_(wanted)))).scalars().all()) if wanted else set()
+  out = []
+  
+  for m in measurements:
+    cand = by_measurement.get(m.id)
+    if cand is None:
+      continue
+    p = m.params or {}
+    length, width, depth = _mm(p.get("length_mm")), _mm(p.get("width_mm")), _mm(p.get("depth_mm"))
+    points = (m.geometry or {}).get("points") or []
+    if length is None or width is None or depth is None or not points:
+      continue
+    sheet = sheets[m.sheet_id]
+    ids_here = tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(points)))
+    out.append(tk.FormworkInput(
+      measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=cand.category, tag=cand.tag, level_id=m.level_id,
+      element_ids=tuple(e if e in present else None for e in ids_here), count=len(points), length_mm=length, width_mm=width, depth_mm=depth,
+      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category == "LINTEL" else None))
+  return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
+
 async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: list[UUID]) -> tk.TakeoffInputs | None:
   if not drawing_ids:
     return None
@@ -117,7 +151,8 @@ async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: lis
     calibrations=tuple(calibration_input(c, sheet_user_unit(sheets[c.sheet_id])) for c in sorted(cals, key=lambda c: str(c.id))
       if c.sheet_id in sheets),
     measurements=tuple(measurement_input(m) for m in sorted(measurements, key=lambda m: str(m.id))),
-    members=await load_members(session, org, measurements, sheets))
+    members=await load_members(session, org, measurements, sheets),
+    formwork=await load_formwork(session, org, measurements, sheets))
 
 async def takeoff_drawing_ids(session: AsyncSession, org: UUID, project_id: UUID) -> set[UUID]:
   r = await session.execute(

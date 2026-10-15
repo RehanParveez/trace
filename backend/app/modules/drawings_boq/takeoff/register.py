@@ -17,6 +17,7 @@ CATEGORY = {
   "ROOM": {"ifc_type": "IfcSpace", "role": "SPACE", "discipline": "ARCHITECTURAL", "material": None},
   "SLAB": {"ifc_type": "IfcSlab", "role": "SLAB", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)"},
   "LINTEL": {"ifc_type": "IfcBeam", "role": "LINTEL", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)"},
+  "STAIR": {"ifc_type": "IfcStair", "role": "STAIR", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)"},
 }
 
 MISSING_TEXT = {
@@ -98,7 +99,19 @@ def _lintel_text(cand, page_no: int, measurement) -> str:
     parts.append("found, not measured yet")
   return " · ".join(parts)
 
+def _stair_text(cand, page_no: int, measurement) -> str:
+  p, facts = cand.params or {}, cand.facts or {}
+  parts = [f"Stair named on the plan of sheet {page_no}"]
+  parts.append(f"{facts.get('steps')} steps, plan run x width x equivalent thickness (waist {'printed' if facts.get('waist_source') == 'PRINTED' else 'assumed'})" if p.get("depth_mm") is not None else "stair details incomplete")
+  if cand.decision == "ACCEPTED" and measurement is not None:
+    parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
+  else:
+    parts.append("found, not measured yet")
+  return " · ".join(parts)
+
 def _measured_text(cand, page_no: int, measurement) -> str:
+  if cand.category == "STAIR":
+    return _stair_text(cand, page_no, measurement)
   if cand.category == "SLAB":
     return _slab_text(cand, page_no, measurement)
   if cand.category == "LINTEL":
@@ -148,7 +161,7 @@ def _quantity(cand, n: int, measurement) -> tuple:
   if measurement is not None and q is not None and unit:
     return _d(q / max(n, 1)), unit, "PDF_MEASURED"
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
-  if cat in ("COLUMN", "FOOTING", "LINTEL"):
+  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR"):
     a, b, h = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
     if a and b and h:
       return _d(a * b * h / 1e9), "m3", "PDF_DRAWN"
@@ -172,7 +185,7 @@ def _quantity(cand, n: int, measurement) -> tuple:
 def _sizes(cand) -> dict:
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
   out: dict = {}
-  if cat in ("COLUMN", "FOOTING", "LINTEL"):
+  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR"):
     out = {"length_mm": _num(p.get("length_mm")), "width_mm": _num(p.get("width_mm")), "height_mm": _num(p.get("depth_mm"))}
     if all(out.values()):
       out["volume_mm3"] = out["length_mm"] * out["width_mm"] * out["height_mm"]
@@ -252,7 +265,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "discipline": spec["discipline"], "structural_role": spec["role"], "classification_source": "PDF_EXTRACT",
       "classification_confidence": _d(cand.confidence or 0), "quantity_source": qsrc, "level_id": level_id,
       "geometry_kind": None, "normalization_status": status, "normalization_issues": issues,
-      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else None, "level_name": level_name or title,
+      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else "Staircase" if cand.category == "STAIR" else None, "level_name": level_name or title,
     }
     row.update(sizes)
     out.append(row)

@@ -122,6 +122,14 @@ def spec_key(spec: dict | None) -> str | None:
 def describe_spec(spec: dict | None) -> str | None:
   if not spec:
     return None
+  if spec.get("kind") == "DERIVED" and spec.get("recipe") == "PDF_LINTEL_STEEL":
+    return "bars and rings printed for the lintel"
+  if spec.get("kind") == "DERIVED" and spec.get("recipe") == "STRUCT_FORMWORK":
+    p = spec.get("params") or {}
+    cat = spec.get("category")
+    if cat == "SLAB":
+      return "soffit and edges" if p.get("slab_edge_formwork", 1) >= 0.5 else "soffit only"
+    return {"COLUMN": "all four faces", "FOOTING": "four sides", "LINTEL": "soffit and both sides"}.get(cat or "", "worked out from the concrete read from the drawing")
   if spec.get("kind") == "DERIVED":
     p = spec.get("params") or {}
     bits: list[str] = []

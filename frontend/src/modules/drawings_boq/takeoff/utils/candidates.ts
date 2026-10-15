@@ -1,6 +1,6 @@
 import type { AreaGeometry, CandidateCategory, CountGeometry, LengthGeometry, Pt, TakeoffCandidate } from "../types/takeoff.types";
 
-export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "SLAB", "LINTEL", "DOOR", "WINDOW", "ROOM"];
+export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "SLAB", "LINTEL", "STAIR", "DOOR", "WINDOW", "ROOM"];
 
 export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: string }> = {
   WALL: { one: "Wall", many: "Walls" },
@@ -9,6 +9,7 @@ export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: strin
   BEAM: { one: "Beam", many: "Beams" },
   SLAB: { one: "Slab", many: "Slabs" },
   LINTEL: { one: "Lintel", many: "Lintels" },
+  STAIR: { one: "Stair", many: "Stairs" },
   DOOR: { one: "Door", many: "Doors" },
   WINDOW: { one: "Window", many: "Windows" },
   ROOM: { one: "Room", many: "Rooms" },
@@ -120,6 +121,14 @@ export function factLine(c: TakeoffCandidate): string {
     const span = Array.isArray(f.opening_size_mm) ? (f.opening_size_mm as number[]) : null;
     const hosted = (f.hosted ?? null) as { thin?: number; rcc?: number } | null;
     return [span ? `opening ${Math.round(span[0])} mm wide` : null, sec ? `section ${(sec[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(sec[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : "section needed", num(f.bearing_mm) !== null ? `bearing ${((f.bearing_mm as number) / 25.4).toFixed(1).replace(/\.0$/, "")} in assumed` : null, hosted?.thin ? `${hosted.thin} in 4.5 in walls` : null, hosted?.rcc ? `${hosted.rcc} in RCC walls` : null].filter(Boolean).join(" · ");
+   }
+
+  if (c.category === "STAIR") {
+    const inch = (v: unknown) => (typeof v === "number" ? (v / 25.4).toFixed(1).replace(/\.0$/, "") : null);
+    const steps = num(f.steps);
+    const width = num(f.stair_width_mm);
+    const waist = num(f.waist_mm);
+    return [steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, width !== null ? `${Math.round(width)} mm wide` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : null].filter(Boolean).join(" · ");
   }
 
   const sched = Array.isArray(f.size_schedule_mm) ? (f.size_schedule_mm as number[]) : null;

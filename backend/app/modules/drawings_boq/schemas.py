@@ -284,6 +284,11 @@ class DerivedParamsRequest(BaseModel):
   ballast_clearance_mm: float | None = Field(default=None, ge=0, le=1000)
   wall_bed: float | None = Field(default=None, ge=0, le=1, description="1 puts a PCC bed under masonry foundation walls instead of brick ballast.")
   shoring: float | None = Field(default=None, ge=0, le=1, description="1 adds shoring to the trench sides.")
+  footing_bottom_below_ngl_mm: float | None = Field(default=None, ge=1, le=10000, description="Depth of the footing bottom below natural ground, for footings read from a drawing.")
+  footing_formwork: float | None = Field(default=None, ge=0, le=1, description="1 shutters the four sides of footings read from a drawing.")
+  slab_edge_formwork: float | None = Field(default=None, ge=0, le=1, description="0 leaves the slab edges out of the formwork, 1 includes them.")
+  steel_cover_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover at the ends of the bars of a member whose steel is read from a drawing.")
+  ring_hook_dia: float | None = Field(default=None, ge=0, le=40, description="Length added to a ring for its hooks, in bar diameters.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

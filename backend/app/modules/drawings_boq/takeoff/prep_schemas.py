@@ -69,10 +69,20 @@ class ScheduleLintel(BaseModel):
   width_mm: float
   depth_mm: float
   text: str | None = None
+  steel: dict | None = None
   pages: list[int] = Field(default_factory=list)
 
 class ScheduleTieBand(BaseModel):
   text: str
+  pages: list[int] = Field(default_factory=list)
+
+class ScheduleStair(BaseModel):
+  riser_mm: float | None = None
+  tread_mm: float | None = None
+  width_mm: float | None = None
+  steps: int | None = None
+  waist_mm: float | None = None
+  text: str | None = None
   pages: list[int] = Field(default_factory=list)
 
 class DrawingSchedule(BaseModel):
@@ -80,6 +90,7 @@ class DrawingSchedule(BaseModel):
   areas: list[ScheduleArea] = Field(default_factory=list)
   lintels: list[ScheduleLintel] = Field(default_factory=list)
   tie_band: ScheduleTieBand | None = None
+  stair: ScheduleStair | None = None
   conflicts: list[dict] = Field(default_factory=list)
 
 class FloorCheck(BaseModel):

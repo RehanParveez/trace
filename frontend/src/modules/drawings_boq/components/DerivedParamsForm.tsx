@@ -13,14 +13,14 @@ interface DerivedParamsFormProps {
 export function DerivedParamsForm({ value, onChange, disabled = false, onSave, saving = false }: DerivedParamsFormProps) {
   const { t } = useTranslation();
   return (
-    <details className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">
+     <details className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">
       <summary className="cursor-pointer text-[12px] font-semibold text-[var(--color-text-primary)]">
-        {t("boq.derived.formTitle", "Site assumptions for excavation, PCC and backfill")}
+        {t("boq.derived.formTitle", "Site assumptions for below-ground works, formwork and steel")}
       </summary>
       <p className="mt-2 text-[11px] leading-snug text-[var(--color-text-muted)]">
         {t(
           "boq.derived.formHint",
-          "Used when the run works out excavation, PCC and backfill from the footings. Leave a box empty to use the standard value; the result is then marked as assumed.",
+          "Used when the run works out excavation, PCC and backfill from the footings, and formwork and steel for the concrete read from a drawing. Leave a box empty to use the standard value; the result is then marked as assumed.",
         )}
       </p>
       <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -31,6 +31,8 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
               ? t("boq.derived.flagStandard", "Empty: standard choice")
               : def.asked
               ? t("boq.derived.askedStandard", "Empty: footings read from a drawing are not dug until this is given")
+              : def.unit === "dia"
+              ? t("boq.derived.standardDia", { defaultValue: "Standard {{n}} bar diameters", n: def.defaultMm })
               : def.defaultMm === null
               ? t("boq.derived.nglStandard", "Empty: the model's zero level is taken as ground")
               : t("boq.derived.standard", {

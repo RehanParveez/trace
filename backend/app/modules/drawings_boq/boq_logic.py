@@ -41,7 +41,7 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "FORMWORK_ASSUMED", "STEEL_ASSUMED",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -418,6 +418,14 @@ LEDGER_WARNING_CATALOG = {
     "This footing was read from a drawing, so it is placed at its mark with the size from the schedule or the drawing, not at a drawn outline. "
     "Footings close together may share a trench in the drawing, and the shared part is only approximate here.",
     "Check the excavation, PCC and backfill of these footings against the foundation plan, or measure the trench by hand."),
+  "STEEL_ASSUMED": ("warning", "NONE",
+    "This steel was worked out from the bars printed for the member, using a site choice that was not given (the concrete cover at the ends of the bars, "
+    "or the length added to a ring for its hooks), so the standard value was used.",
+    "Give the cover and the ring hook allowance in the site assumptions, then calculate again."),
+  "FORMWORK_ASSUMED": ("warning", "NONE",
+    "This formwork was worked out from concrete read from a drawing, using a site choice that was not given (whether slab edges are shuttered, or "
+    "whether footing sides are shuttered), so the standard choice was used.",
+    "Say whether slab edges and footing sides are shuttered in the site assumptions, then calculate again."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
@@ -470,6 +478,74 @@ def derived_issue_specs(stats: dict) -> list[IssueSpec]:
     message=f"Excavation, PCC and backfill were not worked out because {DERIVED_REASON_TEXT.get(reason, reason)}.",
     suggested_fix="Add the footing preparation recipe to the rule set, or measure these items another way.",
     details={"reason": reason})]
+
+FORMWORK_REASON_TEXT = {
+  "NO_RECIPE": "the rule set has no structural formwork recipe",
+  "ALL_ITEMS_IN_MODEL": "the model or a hand measurement already carries formwork",
+  "TOO_MANY_MARKS": "the drawing has more marks than the formwork stage can handle in one run",
+}
+
+def formwork_issue_specs(stats: dict) -> list[IssueSpec]:
+  """Notes about the formwork worked out from concrete read from a drawing. Silent when the run had no such concrete."""
+  fw = (stats or {}).get("formwork") or {}
+  if not fw or fw.get("reason") == "NO_MEMBERS":
+    return []
+  specs: list[IssueSpec] = []
+  reason = fw.get("reason")
+  if reason in FORMWORK_REASON_TEXT:
+    specs.append(IssueSpec(
+      code="FORMWORK_NOT_RUN", severity="info", blocks="NONE", dedupe_key="FORMWORK_NOT_RUN",
+      message=f"Formwork was not worked out for the concrete read from the drawing because {FORMWORK_REASON_TEXT[reason]}.",
+      suggested_fix="Add the structural formwork recipe to the rule set, or measure formwork another way.", details={"reason": reason}))
+    return specs
+  skipped = fw.get("skipped") or {}
+  n = int(skipped.get("FOOTING_NOT_SHUTTERED_DEFAULT") or 0)
+  
+  if n:
+    specs.append(IssueSpec(
+      code="FORMWORK_FOOTING_NOT_SHUTTERED", severity="info", blocks="NONE", dedupe_key="FORMWORK_FOOTING_NOT_SHUTTERED",
+      message=f"No formwork was taken for {n} footing mark{'s' if n != 1 else ''} read from the drawing: footings are taken as cast against the earth unless you say otherwise.",
+      suggested_fix="If the footings are cast in shuttering, set 'footing sides shuttered' to yes in the site assumptions and calculate again.",
+      details={"marks": n}))
+  if fw.get("contact_not_deducted"):
+    specs.append(IssueSpec(
+      code="FORMWORK_CONTACT_NOT_DEDUCTED", severity="info", blocks="NONE", dedupe_key="FORMWORK_CONTACT_NOT_DEDUCTED",
+      message="Formwork is the gross shuttering of each member read from the drawing. Faces where concrete meets other concrete (a slab over its beams, a column through a slab) "
+        "are not taken off, because the members of a drawing are not placed in one frame yet. The total is slightly overstated there.",
+      suggested_fix="Check the formwork total against a hand take-off of one floor.", details={"area_m2": fw.get("area_m2")}))
+  return specs
+
+STEEL_REASON_TEXT = {
+  "ALL_ITEMS_IN_MODEL": "the model or a hand measurement already carries reinforcement steel",
+  "TOO_MANY_MARKS": "the drawing has more marks than the steel stage can handle in one run",
+}
+
+def steel_issue_specs(stats: dict) -> list[IssueSpec]:
+  """Notes about the steel worked out from the bars printed for concrete read from a drawing. Silent when the run had no such concrete."""
+  st = (stats or {}).get("steel") or {}
+  if not st or st.get("reason") == "NO_MEMBERS":
+    return []
+  reason = st.get("reason")
+  if reason in STEEL_REASON_TEXT:
+    return [IssueSpec(
+      code="STEEL_NOT_RUN", severity="info", blocks="NONE", dedupe_key="STEEL_NOT_RUN",
+      message=f"Steel was not worked out from the bars printed on the drawing because {STEEL_REASON_TEXT[reason]}.",
+      suggested_fix="Measure the reinforcement one way only, or remove the other.", details={"reason": reason})]
+  specs: list[IssueSpec] = []
+  skipped = st.get("skipped") or {}
+  n = int(skipped.get("NO_BARS") or 0)
+  if n:
+    specs.append(IssueSpec(
+      code="STEEL_BARS_NOT_PRINTED", severity="info", blocks="NONE", dedupe_key="STEEL_BARS_NOT_PRINTED",
+      message=f"{n} lintel mark{'s' if n != 1 else ''} had no bars printed on their row of the lintel table, so no steel was taken for them.",
+      suggested_fix="Add the steel for these lintels by hand.", details={"marks": n}))
+  if st.get("lap_and_wastage_not_added"):
+    specs.append(IssueSpec(
+      code="STEEL_LAP_WASTAGE_NOT_ADDED", severity="info", blocks="NONE", dedupe_key="STEEL_LAP_WASTAGE_NOT_ADDED",
+      message="Steel is the weight of the bars and rings as printed: bar length is the member length less the cover, rings are the cage perimeter plus hooks. "
+        "Laps, chairs, binding wire and wastage are not added.",
+      suggested_fix="Add wastage on the rate or on the item, as your estimating practice does.", details={"kg": st.get("kg")}))
+  return specs
 
 def takeoff_issue_specs(stats: dict) -> list[IssueSpec]:
   specs: list[IssueSpec] = []

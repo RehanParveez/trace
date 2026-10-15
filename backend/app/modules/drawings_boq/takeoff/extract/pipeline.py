@@ -14,10 +14,13 @@ from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.prep import census
 from app.modules.drawings_boq.takeoff.prep import lintels as LT
 from app.modules.drawings_boq.takeoff.prep import schedules as S
+from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.prep import views as VW
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark as ST_norm
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint
 import time
+
+SCAN_TEXT_FACTOR = 0.8
 
 @dataclass
 class Candidate:
@@ -706,8 +709,11 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict) -> 
       facts["table_span_max_mm"] = sec["span_max_mm"]
       facts["table_pages"] = list(sec.get("pages") or [])
       notes.append(C.note("LINTEL_SECTION_FROM_TABLE"))
+      if sec.get("steel"):
+        params["steel"] = dict(sec["steel"])
+        facts["steel_text"] = LT.steel_text(sec["steel"])
+        notes.append(C.note("LINTEL_STEEL_FROM_TABLE"))
       label = f"Lintel {o.tag} ×{o.count} · {_inch_text(sec['width_mm'])}×{_inch_text(sec['depth_mm'])} · {_fmt_mm(params['length_mm'])} mm long"
-      
     else:
       missing.append("size")
       notes.append(C.note("LINTEL_SPAN_ABOVE_TABLE"))
@@ -730,6 +736,46 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict) -> 
     cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
     out.append(cand)
   return out
+
+def _stair_candidates(lines: list, spec: dict | None, ctx: dict) -> tuple[list, list]:
+  """One stair candidate per plan that names a staircase, sized from the riser, tread, width and number of steps printed elsewhere on the drawing. The
+  concrete is the plan run of the steps x the width x an equivalent thickness (waist slab along the slope plus half a riser). The waist slab is rarely
+  printed, so 6 inches is assumed and said so. Landings are not included."""
+  labels = STR.find_labels(lines)
+  if not labels:
+    return [], []
+  if not spec:
+    return [], [C.note("STAIR_DETAILS_NOT_FOUND")]
+  waist = spec.get("waist_mm")
+  assumed = not waist
+  waist_used = float(waist or C.STAIR_WAIST_DEFAULT_MM)
+  box = STR.flight_box(spec, waist_used)
+  notes = [C.note("STAIR_FROM_DETAILS"), C.note("STAIR_LANDINGS_NOT_INCLUDED"), C.note("STAIR_COUNT_FROM_LABELS", count=len(labels))]
+  facts = {"stair_text": spec.get("text"), "riser_mm": spec.get("riser_mm"), "tread_mm": spec.get("tread_mm"), "stair_width_mm": spec.get("width_mm"),
+    "steps": spec.get("steps"), "waist_mm": round(waist_used, 1), "waist_source": "ASSUMED" if assumed else "PRINTED", "stair_pages": list(spec.get("pages") or [])}
+  params: dict = {"dims_basis": "SPECIFIED"}
+  missing: list = []
+  base = 0.8
+  
+  if box:
+    params.update(box)
+    facts["equivalent_depth_mm"] = box["depth_mm"]
+    if assumed:
+      notes.append(C.note("STAIR_WAIST_ASSUMED"))
+      base *= 0.85
+    label = f"Stair ×{len(labels)} · {spec['steps']} steps · {_fmt_mm(spec['riser_mm'])}/{_fmt_mm(spec['tread_mm'])} mm · {_fmt_mm(spec['width_mm'])} mm wide"
+  else:
+    missing = ["size"]
+    notes.append(C.note("STAIR_DETAILS_INCOMPLETE"))
+    base *= 0.6
+    label = f"Stair ×{len(labels)}"
+  work_item, mode, kind = C.SUGGESTIONS["STAIR"]
+  cand = Candidate(key=_key("STAIR", round(labels[0]["x"], 1), round(labels[0]["y"], 1), len(labels)), category="STAIR", kind=kind, quantity_mode=mode, label=label,
+    tag="STAIR", geometry={"points": [[round(l["x"], 3), round(l["y"], 3)] for l in labels]}, params=params, missing=missing, work_item=work_item, status="VALID",
+    confidence=0.0, facts=facts, notes=notes, source="TAG_SCAN", count=len(labels))
+  cand.status = _status(cand.notes)
+  cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
+  return [cand], []
 
 def _view_plans(views: list) -> list:
   """The framing plans of a composite structural sheet (not the foundation plan) as slab plans."""
@@ -760,13 +806,15 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
 
 def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unverified: bool = False, content_kind: str = "VECTOR",
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
-  floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None) -> Extraction:
+  floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT") -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
-    "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95)}
+    "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source == "OCR" else 1.0)}
   
   res = Extraction()
+  if text_source == "OCR":
+    res.notes.append(C.note("SCAN_TEXT_READ"))
   words = index.words
   lines = build_lines(words)
   hint = find_units_hint(lines)
@@ -822,7 +870,10 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
         _hosted_by_tag(hosted.get("by_wall"), walls), ctx)
       res.candidates.extend(lintels)
       res.stats["lintels"] = len(lintels)
-      
+      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx)
+      res.candidates.extend(stairs)
+      res.notes.extend(stair_notes)
+      res.stats["stairs"] = len(stairs)
       if wstats.get("dropped_outside_rcc"):
         res.notes.append(C.note("RUNS_OUTSIDE_CONCRETE_WALLS", count=wstats["dropped_outside_rcc"]))
       if wstats.get("wall_pen_pt"):
