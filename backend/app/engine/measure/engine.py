@@ -19,12 +19,12 @@ from app.engine.measure.stages import split_stages
 from app.engine.measure.layers import layer_check, layer_excluded_by_solid, split_layers
 from app.engine.measure.derived import derived_check, measure_derived
 from app.engine.measure.formwork import formwork_check, measure_formwork
-from app.engine.measure.pdf_steel import measure_pdf_steel, steel_check
+from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.17"
+ENGINE_VERSION = "2026.10.20"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -423,7 +423,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
   failures.extend(layer_check(ledger))
   failures.extend(derived_check(solids, ledger))
   failures.extend(formwork_check(solids, ledger))
-  failures.extend(steel_check(solids, ledger))
+  failures.extend(pdf_steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
     raise InvariantViolation(failures)
@@ -562,6 +562,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     staged = split_stages(ctx, accepted, solids, alloc, ledger)
     ledger = staged.ledger
     stage_info = staged.stats
+  steel_marks: list = []
   if ctx.derived_mode and profile is not None:
     derived_res = measure_derived(ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += derived_res.solids
@@ -571,6 +572,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids += formwork_res.solids
     extra_ledger += formwork_res.ledger
     steel_res = measure_pdf_steel(ctx, ledger, extra_ledger)
+    steel_marks = steel_res.marks
     extra_solids += steel_res.solids
     extra_ledger += steel_res.ledger
     derived_info = {**derived_info, "formwork": formwork_res.stats, "steel": steel_res.stats}
@@ -599,4 +601,4 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
   }
   return CalculationResult(solids=solids + extra_solids, ledger=ledger + extra_ledger, rejected=rejected,
     skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=alloc.deductions,
-    bar_marks=rebar_res.marks if rebar_res else [], stats=stats)
+    bar_marks=(rebar_res.marks if rebar_res else []) + steel_marks, stats=stats)

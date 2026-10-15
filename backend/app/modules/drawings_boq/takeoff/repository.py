@@ -1,9 +1,10 @@
 from __future__ import annotations
 from app.engine.measure import takeoff as tk
-from app.engine.measure.pdf_steel import clean_steel
-from app.modules.drawings_boq.models import TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
+from app.engine.measure.member_steel import STEEL_FAMILIES, clean_steel
+from app.modules.drawings_boq.models import TakeoffViewAlignment, TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.register import row_id
+from app.modules.drawings_boq.takeoff import frame_views as FV
 from dataclasses import replace
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -44,7 +45,6 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
     geometry=row.geometry or {}, params=row.params or {}, work_item_code=row.work_item_code, level_id=row.level_id,
     label=row.label, tag=row.tag, material_grade=row.material_grade, recon_mode=row.recon_mode, source=row.source)
 
-
 MEMBER_CATEGORIES = ("FOOTING",)
 FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL", "BEAM", "STAIR")
 
@@ -62,6 +62,20 @@ def stair_detail(cand: TakeoffCandidate, depth_mm: Decimal) -> dict | None:
   if waist <= 0:
     return None
   return {"riser_mm": float(riser), "tread_mm": float(tread), "steps": int(steps), "waist_mm": round(waist, 1)}
+
+def view_key(cand: TakeoffCandidate, sheet: TakeoffSheet) -> str:
+  return str((((cand.facts or {}).get("view") or {}).get("key")) or f"SHEET:{sheet.id}")
+
+def sheet_positions(cand: TakeoffCandidate, m: TakeoffMeasurement) -> tuple:
+  """Where each counted mark sits on its sheet in millimetres, or () when the sheet has no scale or the points do not read."""
+  points = (m.geometry or {}).get("points") or []
+  scale = _mm(cand.mm_per_pt)
+  if scale is None or not points:
+    return ()
+  try:
+    return tuple((round(float(pt[0]) * float(scale), 1), round(float(pt[1]) * float(scale), 1)) for pt in points)
+  except (TypeError, ValueError, IndexError):
+    return ()
 
 def member_input(cand: TakeoffCandidate, m: TakeoffMeasurement, sheet: TakeoffSheet) -> tk.MemberInput | None:
   """A counted footing mark placed on its drawing view, or nothing when the mark has no position or no size to place it with."""
@@ -138,19 +152,38 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
       
       out.append(tk.FormworkInput(
         measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category="RCC_WALL", tag=cand.tag or cand.label, level_id=m.level_id,
-        element_ids=(None,), count=1, length_mm=run, width_mm=thickness, depth_mm=height, confidence=_dec(cand.confidence) or Decimal(1)))
+        element_ids=(None,), count=1, length_mm=run, width_mm=thickness, depth_mm=height, confidence=_dec(cand.confidence) or Decimal(1),
+        steel=clean_steel(p.get("steel"))))
       continue
     length, width, depth = _mm(p.get("length_mm")), _mm(p.get("width_mm")), _mm(p.get("depth_mm"))
     points = (m.geometry or {}).get("points") or []
     if length is None or width is None or depth is None or not points:
       continue
     ids_here = tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(points)))
+    positions = sheet_positions(cand, m) if len(points) else ()
     out.append(tk.FormworkInput(
       measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=cand.category, tag=cand.tag, level_id=m.level_id,
       element_ids=tuple(e if e in present else None for e in ids_here), count=len(points), length_mm=length, width_mm=width, depth_mm=depth,
-      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category == "LINTEL" else None,
-      stair=stair_detail(cand, depth) if cand.category == "STAIR" else None))
+      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category in STEEL_FAMILIES else None,
+      stair=stair_detail(cand, depth) if cand.category == "STAIR" else None,
+      frame=view_key(cand, sheet) if positions else None, points_mm=positions))
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
+
+async def load_stored_alignments(session: AsyncSession, org: UUID, drawing_ids: list) -> dict:
+  """What people decided about where views sit, per drawing: {drawing id: {"reference": key or None, "placements": {key: (dx, dy)}}}."""
+  if not drawing_ids:
+    return {}
+  rows = (await session.execute(
+    select(TakeoffViewAlignment).where(TakeoffViewAlignment.organization_id == org, TakeoffViewAlignment.drawing_id.in_(drawing_ids))
+    .order_by(TakeoffViewAlignment.frame_key))).scalars().all()
+  out: dict = {}
+  for r in rows:
+    d = out.setdefault(str(r.drawing_id), {"reference": None, "placements": {}})
+    if r.role == "REFERENCE":
+      d["reference"] = r.frame_key
+    else:
+      d["placements"][r.frame_key] = (float(r.dx_mm), float(r.dy_mm))
+  return out
 
 async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: list[UUID]) -> tk.TakeoffInputs | None:
   if not drawing_ids:
@@ -173,13 +206,16 @@ async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: lis
     cals = list((await session.execute(
       select(TakeoffCalibration).where(TakeoffCalibration.organization_id == org,
         TakeoffCalibration.id.in_(cal_ids)))).scalars().all())
+  formwork = await load_formwork(session, org, measurements, sheets)
+  group_of_sheet = {s.id: str(s.drawing_id) for s in sheets.values()}
+  stored = await load_stored_alignments(session, org, sorted({s.drawing_id for s in sheets.values()}, key=str))
   return tk.TakeoffInputs(
     sheets=tuple(sheet_input(s) for s in sorted(sheets.values(), key=lambda s: str(s.id))),
     calibrations=tuple(calibration_input(c, sheet_user_unit(sheets[c.sheet_id])) for c in sorted(cals, key=lambda c: str(c.id))
       if c.sheet_id in sheets),
     measurements=tuple(measurement_input(m) for m in sorted(measurements, key=lambda m: str(m.id))),
     members=await load_members(session, org, measurements, sheets),
-    formwork=await load_formwork(session, org, measurements, sheets))
+    formwork=formwork, alignments=FV.build_alignments(formwork, group_of_sheet, stored))
 
 async def takeoff_drawing_ids(session: AsyncSession, org: UUID, project_id: UUID) -> set[UUID]:
   r = await session.execute(

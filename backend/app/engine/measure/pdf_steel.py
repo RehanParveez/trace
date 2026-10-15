@@ -1,26 +1,35 @@
 from __future__ import annotations
 from decimal import Decimal
 from dataclasses import dataclass, field
-from app.engine.measure.rebar import KG_M_DIVISOR, REBAR_WORK_ITEM
+from app.engine.measure.rebar import REBAR_WORK_ITEM, ESTIMATE_BANDS
 from app.engine.measure.models import CalculationContext, LedgerEntry, Solid
-import math
 from uuid import uuid5
 from app.engine.measure.derived import DERIVED, FACTOR_ASSUMED, FACTOR_CONFIRMED, counted_measurement_ids, resolve_params
+from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, bar_dia_mm_of, clean_steel, member_lines, kg_per_m  # noqa: F401
 from app.engine.measure.units import q4, q6
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE
 
+"""Reinforcement weight (kg) for the concrete members read from a PDF whose bars are printed with them: lintels from the lintel table, and columns,
+beams, footings, slabs and RCC walls from the notes printed for their marks or typed at accept. One row per mark."""
+
 FORMULA = "PDF_MEMBER_STEEL_WEIGHT"
-RECIPE_CODE = "PDF_LINTEL_STEEL"
-COVER_PARAM, HOOK_PARAM = "steel_cover_mm", "ring_hook_dia"
-STEEL_PARAMS = (COVER_PARAM, HOOK_PARAM)
-PARAMS_USED = {"LINTEL": STEEL_PARAMS}
-IFC_OF = {"LINTEL": "IfcBeam"}
+RECIPE_CODE = "PDF_MEMBER_STEEL"
+LEGACY_RECIPE = "PDF_LINTEL_STEEL"
+COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM, WASTAGE_PARAM = "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct"
+STEEL_PARAMS = (COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM, WASTAGE_PARAM)
+CONVENTION_PARAMS = {
+  "LINTEL": (COVER_PARAM, HOOK_PARAM, ANCHOR_PARAM), "BEAM": (COVER_PARAM, HOOK_PARAM, ANCHOR_PARAM),
+  "COLUMN": (COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM), "FOOTING": (COVER_PARAM,), "SLAB": (COVER_PARAM,), "RCC_WALL": (COVER_PARAM,)}
+PARAMS_USED = CONVENTION_PARAMS
+IFC_OF = {"LINTEL": "IfcBeam", "BEAM": "IfcBeam", "COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "RCC_WALL": "IfcWall"}
+ROLE_OF = {"RCC_WALL": "WALL"}
 MAX_MARKS = 5000
 CODE_ASSUMED = "STEEL_ASSUMED"
-STEEL_CODES = (CODE_ASSUMED,)
-BAR_ROLES = ("bottom", "top", "bars")
-EIGHTH_IN_MM = Decimal("3.175")
+CODE_INTENSITY = "STEEL_INTENSITY_OUT_OF_RANGE"
+STEEL_CODES = (CODE_ASSUMED, CODE_INTENSITY)
 MM = Decimal("1000")
+MM3_PER_M3 = Decimal("1000000000")
+INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB"}
 
 @dataclass(frozen=True)
 class SteelResult:
@@ -28,76 +37,22 @@ class SteelResult:
   ledger: list = field(default_factory=list)
   stats: dict = field(default_factory=dict)
 
-def bar_dia_mm(bar: int) -> Decimal:
-  """A bar number is the diameter in eighths of an inch: #3 is 3/8 in (9.525 mm), #4 is 1/2 in (12.7 mm)."""
-  return Decimal(int(bar)) * EIGHTH_IN_MM
+def _plate(category: str, length: Decimal, width: Decimal, depth: Decimal) -> tuple:
+  """The size a member's steel is worked out from. A wall's mesh covers its run and height; its thickness is not a mesh side."""
+  if category == "RCC_WALL":
+    return length, depth, width
+  return length, width, depth
 
-def kg_per_m(bar: int) -> Decimal:
-  d = bar_dia_mm(bar)
-  return (d * d / KG_M_DIVISOR).quantize(Decimal("0.0001"))
-
-def _num(v) -> Decimal | None:
-  try:
-    d = Decimal(str(v))
-  except Exception:
-    return None
-  return d if d > 0 else None
-
-def clean_steel(raw) -> dict | None:
-  """The bars and rings of a member as plain numbers; anything that does not read is dropped. None when nothing is left."""
-  if not isinstance(raw, dict):
-    return None
-  out: dict = {}
-  for role in BAR_ROLES:
-    g = raw.get(role)
-    if isinstance(g, dict):
-      n, bar = _num(g.get("n")), _num(g.get("bar"))
-      if n is not None and bar is not None and n == n.to_integral_value() and bar == bar.to_integral_value() and 2 <= bar <= 12 and n <= 30:
-        out[role] = {"n": int(n), "bar": int(bar)}
-  ring = raw.get("ring")
-  if isinstance(ring, dict):
-    bar, spacing = _num(ring.get("bar")), _num(ring.get("spacing_mm"))
-    if bar is not None and spacing is not None and bar == bar.to_integral_value() and 2 <= bar <= 12 and spacing <= 1000:
-      out["ring"] = {"bar": int(bar), "spacing_mm": float(spacing)}
-  return out or None
-
-def steel_for(category: str, length: Decimal, width: Decimal, depth: Decimal, steel: dict, cover: Decimal, hook_dia: Decimal) -> tuple:
-  """Weight of the bars and rings of one member, as (bar lines, ring line or None, kg). Bars run the member length less the cover at each end. Rings
-  are spaced from the first to the last, so there is one more than the number of spaces; a ring is the perimeter of the cage inside the cover plus the
-  hook allowance, given as a number of bar diameters. Lap and wastage are not added."""
-  run = length - 2 * cover
-  if run <= 0:
-    return [], None, Decimal("0")
-  lines = []
-  total = Decimal("0")
-  for role in BAR_ROLES:
-    g = steel.get(role)
-    if not g:
-      continue
-  
-    w = kg_per_m(g["bar"])
-    kg = q6(Decimal(g["n"]) * w * run / MM)
-    lines.append({"role": role, "n": g["n"], "bar": g["bar"], "dia_mm": str(bar_dia_mm(g["bar"])), "kg_per_m": str(w), "length_m": str(q6(run / MM)), "kg": str(kg)})
-    total += kg
-  ring_line = None
-  r = steel.get("ring")
-  if r:
-    inner_w, inner_d = width - 2 * cover, depth - 2 * cover
-    if inner_w > 0 and inner_d > 0:
-      spacing = Decimal(str(r["spacing_mm"]))
-      count = int(run // spacing) + 1
-      cut = 2 * (inner_w + inner_d) + hook_dia * bar_dia_mm(r["bar"])
-      w = kg_per_m(r["bar"])
-      kg = q6(Decimal(count) * cut * w / MM)
-      ring_line = {"bar": r["bar"], "dia_mm": str(bar_dia_mm(r["bar"])), "spacing_mm": str(spacing), "count": count, "cut_length_m": str(q6(cut / MM)),
-        "kg_per_m": str(w), "kg": str(kg)}
-      total += kg
-  return lines, ring_line, q6(total)
+def intensity_range(category: str) -> tuple | None:
+  family = INTENSITY_FAMILY.get(category)
+  band = ESTIMATE_BANDS.get(family or "")
+  return (band[0], band[2]) if band else None
 
 def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) -> SteelResult:
-  """Reinforcement weight (kg) for the members read from a PDF whose bars are printed with them: today the lintels, from the row of the lintel table.
-  One row per mark, so a row opens the mark it came from. It stands aside when the model or the PDF already carries a row on the steel item. The cover and
-  the hook allowance are site assumptions; a lintel whose row printed no bars is skipped and counted."""
+  """Reinforcement weight (kg) for the members read from a PDF whose bars are printed or typed with them. One row per mark, so a row opens the mark it
+  came from. It stands aside when the model or the PDF already carries a row on the steel item. Cover, hook, lap and anchorage are site conventions that
+  fall back to flagged defaults; a member with no bars is skipped and counted. Wastage is a project parameter, 0 unless set. The intensity (kg per m3)
+  of each family is compared with the working range and flagged, never changed."""
   stats: dict = {"enabled": True, "ran": False}
   inputs = tuple(m for m in (getattr(ctx.takeoff, "formwork", ()) or ()) if m.category in PARAMS_USED and m.steel)
   if not inputs:
@@ -113,77 +68,108 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     stats["reason"] = "TOO_MANY_MARKS"
     return SteelResult(stats=stats)
   params = resolve_params(ctx)
-  cover = Decimal(str(params[COVER_PARAM]["value"]))
-  hook = Decimal(str(params[HOOK_PARAM]["value"]))
+  value = {n: Decimal(str(params[n]["value"])) for n in STEEL_PARAMS}
+  wastage = value[WASTAGE_PARAM]
   counted = counted_measurement_ids(extra_ledger)
   skipped: dict = {}
   by_category: dict = {}
+  by_dia: dict = {}
+  family_volume: dict = {}
+  family_kg: dict = {}
   solids: list = []
   rows: list = []
-  
+
   for m in sorted(inputs, key=lambda b: str(b.measurement_id)):
     cat = m.category
     if str(m.measurement_id) not in counted:
       skipped["NOT_COUNTED"] = skipped.get("NOT_COUNTED", 0) + m.count
       continue
+  
     steel = clean_steel(m.steel)
     if not steel:
       skipped["NO_BARS"] = skipped.get("NO_BARS", 0) + m.count
       continue
-    lines, ring, kg = steel_for(cat, m.length_mm, m.width_mm, m.depth_mm, steel, cover, hook)
-    if kg <= 0:
+    length, width, depth = _plate(cat, m.length_mm, m.width_mm, m.depth_mm)
+    lines, bare = member_lines(cat, length, width, depth, steel, value[COVER_PARAM], value[HOOK_PARAM], value[LAP_PARAM], value[ANCHOR_PARAM])
+    if bare <= 0:
       skipped["NO_SIZE"] = skipped.get("NO_SIZE", 0) + m.count
       continue
   
+    kg = q6(bare * (1 + wastage / 100))
     used = PARAMS_USED[cat]
     assumed = [n for n in used if params[n]["source"] == "default"]
     factor = FACTOR_ASSUMED if assumed else FACTOR_CONFIRMED
     confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * factor)))
     warnings = [CODE_ASSUMED] if assumed else []
     spec = {"kind": DERIVED, "recipe": RECIPE_CODE, "item": "STEEL", "category": cat,
-      "params": {n: params[n]["value"] for n in used}, "basis": {n: params[n]["source"] for n in used}}
-    step_lines = [{"op": "bars", **ln} for ln in lines] + ([{"op": "rings", **ring}] if ring else [])
+      "params": {n: params[n]["value"] for n in (*used, WASTAGE_PARAM)}, "basis": {n: params[n]["source"] for n in used}}
+    step_lines = [{"op": ln["kind"], **ln} for ln in lines]
+    volume = q6(m.length_mm * m.width_mm * m.depth_mm / MM3_PER_M3)
     for i in range(m.count):
       eid = m.element_ids[i] if i < len(m.element_ids) else None
       solid_id = uuid5(ctx.run_id, f"solid|steel|{m.measurement_id}|{i}")
+      
       solids.append(Solid(
-        id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=cat, level_id=m.level_id, geometry_kind="QTO_ONLY",
+        id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=ROLE_OF.get(cat, cat), level_id=m.level_id, geometry_kind="QTO_ONLY",
         classification_confidence=m.confidence, confidence_factor=factor, component_type="DERIVED_STEEL",
         gross_length_m=q6(m.length_mm / MM), status="REVIEW_REQUIRED" if warnings else "OK"))
       source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no,
         "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count, "size_mm": [float(m.length_mm), float(m.width_mm), float(m.depth_mm)],
-        "bars": lines, "rings": ring}
-      
+        "steel": steel, "lines": lines, "bare_kg": str(bare), "wastage_pct": str(wastage), "concrete_m3": str(volume)}
       rows.append(LedgerEntry(
         solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=None,
         confidence=confidence, formula_code=FORMULA,
         trace={"formula_code": FORMULA, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
           "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
           "inputs": {"recipe": RECIPE_CODE, "spec": spec, "steel_source": source},
-          "steps": [*step_lines, {"op": "total_kg", "kg": str(kg)}], "net": {"kg": str(kg)}, "rounding": "half_up,6dp"},
+          "steps": [*step_lines, {"op": "total_kg", "bare_kg": str(bare), "wastage_pct": str(wastage), "kg": str(kg)}], "net": {"kg": str(kg)},
+          "rounding": "half_up,6dp"},
         warnings=tuple(warnings), source_kind=DERIVED, spec=spec, spec_key="derived"))
-      slot = by_category.setdefault(cat, {"marks": 0, "kg": Decimal("0")})
+      slot = by_category.setdefault(cat, {"marks": 0, "kg": Decimal("0"), "bare_kg": Decimal("0")})
+      
       slot["marks"] += 1
       slot["kg"] += kg
-      
+      slot["bare_kg"] += bare
+      for ln in lines:
+        d = by_dia.setdefault(ln["dia_mm"], {"kg": Decimal("0"), "length_m": Decimal("0")})
+        d["kg"] += Decimal(ln["kg"])
+        d["length_m"] += Decimal(ln["length_m"])
+      fam = INTENSITY_FAMILY.get(cat)
+      if fam:
+        family_volume[fam] = family_volume.get(fam, Decimal("0")) + volume
+        family_kg[fam] = family_kg.get(fam, Decimal("0")) + bare
+
   rows.sort(key=lambda r: (str(r.level_id), r.trace["inputs"]["steel_source"]["category"], str(r.solid_id)))
   total = sum((r.quantity for r in rows), Decimal("0"))
+  bare_total = sum((v["bare_kg"] for v in by_category.values()), Decimal("0"))
+  intensity: dict = {}
+  
+  for fam, vol in sorted(family_volume.items()):
+    if vol <= 0:
+      continue
+    value_kgm3 = family_kg[fam] / vol
+    low, high = ESTIMATE_BANDS[fam][0], ESTIMATE_BANDS[fam][2]
+    status = "BELOW_RANGE" if value_kgm3 < low else "ABOVE_RANGE" if value_kgm3 > high else "IN_RANGE"
+    intensity[fam] = {"kg": str(q6(family_kg[fam])), "concrete_m3": str(q6(vol)), "kg_per_m3": str(q4(value_kgm3)), "range": [str(low), str(high)], "status": status}
   stats.update({
-    "ran": bool(rows), "rows": len(rows), "kg": str(q6(total)), "code": REBAR_WORK_ITEM,
-    "by_category": {k: {"marks": v["marks"], "kg": str(q6(v["kg"]))} for k, v in sorted(by_category.items())},
+    "ran": bool(rows), "rows": len(rows), "kg": str(q6(total)), "bare_kg": str(q6(bare_total)), "code": REBAR_WORK_ITEM,
+    "wastage_pct": str(wastage), "with_5pct_kg": str(q6(bare_total * Decimal("1.05"))),
+    "by_category": {k: {"marks": v["marks"], "kg": str(q6(v["kg"])), "bare_kg": str(q6(v["bare_kg"]))} for k, v in sorted(by_category.items())},
+    "by_diameter": {k: {"kg": str(q6(v["kg"])), "length_m": str(q6(v["length_m"]))} for k, v in sorted(by_dia.items(), key=lambda kv: Decimal(kv[0]))},
+    "intensity": intensity,
     "skipped": dict(sorted(skipped.items())),
     "params": {n: dict(params[n]) for n in STEEL_PARAMS},
     "assumed": sorted({n for r in rows for n, b in ((r.spec or {}).get("basis") or {}).items() if b == "default"}),
-    "lap_and_wastage_not_added": bool(rows),
+    "lap_and_wastage_not_added": bool(rows) and wastage == 0,
   })
   if not rows:
     stats["reason"] = "NOTHING_TO_REINFORCE"
   return SteelResult(solids=solids, ledger=rows, stats=stats)
 
-def steel_check(solids: list, ledger: list) -> list:
+def pdf_steel_check(solids: list, ledger: list) -> list:
   failures: list = []
   by_id = {s.id for s in solids}
-  
+
   for r in ledger:
     if r.source_kind != DERIVED or r.formula_code != FORMULA:
       continue
@@ -194,13 +180,13 @@ def steel_check(solids: list, ledger: list) -> list:
     if r.work_stage is not None:
       failures.append(f"steel row {r.solid_id} carries a work stage")
     src = (((r.trace or {}).get("inputs") or {}).get("steel_source") or {})
+    
     try:
-      total = sum((Decimal(b["kg"]) for b in src.get("bars") or []), Decimal("0"))
-      if src.get("rings"):
-        total += Decimal(src["rings"]["kg"])
+      bare = sum((Decimal(b["kg"]) for b in src.get("lines") or []), Decimal("0"))
+      pct = Decimal(src["wastage_pct"])
     except Exception:
       failures.append(f"steel row {r.solid_id} has no bar lines in its trace")
       continue
-    if abs(total - r.quantity) > Decimal("0.000004"):
-      failures.append(f"steel weight != sum of its bars and rings on solid {r.solid_id}")
+    if abs(q6(bare * (1 + pct / 100)) - r.quantity) > Decimal("0.000004"):
+      failures.append(f"steel weight != sum of its bars, rings and mesh on solid {r.solid_id}")
   return failures

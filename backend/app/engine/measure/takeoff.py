@@ -141,6 +141,25 @@ class FormworkInput:
   confidence: Decimal = ONE
   steel: dict | None = None
   stair: dict | None = None
+  frame: str | None = None
+  points_mm: tuple = ()
+
+@dataclass(frozen=True)
+class AlignmentInput:
+  """Where one drawing view sits on the building frame (see frame.py): the shift that takes its sheet positions to the reference view, how it was found and
+  whether a person confirmed it."""
+  view: str
+  dx_mm: Decimal
+  dy_mm: Decimal
+  method: str
+  grade: str = "ASSUMED"
+  supporters: int = 0
+  compared: int = 0
+  residual_mm: Decimal = Decimal("0")
+  reference: bool = False
+  group: str = ""
+  origin_x_mm: Decimal = Decimal("0")
+  origin_y_mm: Decimal = Decimal("0")
 
 @dataclass(frozen=True)
 class TakeoffInputs:
@@ -149,6 +168,7 @@ class TakeoffInputs:
   measurements: tuple = ()
   members: tuple = ()
   formwork: tuple = ()
+  alignments: tuple = ()
 
 @dataclass(frozen=True)
 class CalibrationEval:
@@ -865,6 +885,9 @@ def takeoff_payload(inputs: TakeoffInputs | None) -> dict:
       [str(i) for i in b.element_ids], [list(p) for p in b.points_mm], b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.position_basis])
      for b in sorted(inputs.members, key=lambda b: str(b.measurement_id))]} if inputs.members else {}),
     **({"formwork": [_enc([str(b.measurement_id), str(b.candidate_id), b.category, b.tag, str(b.level_id) if b.level_id else None,
-      [str(i) for i in b.element_ids], b.count, b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.steel, *([b.stair] if b.stair else [])])
+      [str(i) for i in b.element_ids], b.count, b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.steel, *([b.stair] if b.stair else []),
+      *([b.frame, [list(p) for p in b.points_mm]] if b.frame else [])])
       for b in sorted(inputs.formwork, key=lambda b: str(b.measurement_id))]} if inputs.formwork else {}),
+    **({"alignments": [_enc([a.view, a.group, a.dx_mm, a.dy_mm, a.method, a.grade, a.supporters, a.compared, a.residual_mm, a.reference, a.origin_x_mm, a.origin_y_mm])
+      for a in sorted(inputs.alignments, key=lambda a: (a.group, a.view))]} if inputs.alignments else {}),
   }

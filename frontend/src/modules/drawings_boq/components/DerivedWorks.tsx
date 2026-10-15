@@ -154,40 +154,35 @@ export function DerivedSteelSource({ trace }: { trace?: LedgerTrace | null }) {
         })}
       </p>
       <ul className="space-y-0.5 text-[12px] text-[var(--color-text-secondary)]">
-        {view.bars.map((b) => (
-          <li key={b.role} className="flex flex-wrap items-baseline gap-2">
+        {view.lines.map((l, i) => (
+          <li key={`${l.kind}-${l.role}-${i}`} className="flex flex-wrap items-baseline gap-2">
             <span>
-              {t("boq.derived.steelBars", {
-                defaultValue: "{{n}} #{{bar}} {{role}}, {{length}} m long",
-                n: b.n,
-                bar: b.bar,
-                role: t(`boq.derived.steelRole.${b.role}`, b.role),
-                length: b.lengthM,
+              {t(`boq.derived.steelLine.${l.kind}`, {
+                defaultValue: l.kind === "bars" ? "{{n}} {{size}} {{role}}, {{cut}} m each" : l.kind === "rings" ? "Rings {{size}}: {{n}} of {{cut}} m" : "Mesh {{size}} {{role}}: {{n}} bars of {{cut}} m",
+                n: l.count,
+                size: l.size,
+                role: t(`boq.derived.steelRole.${l.role}`, l.role),
+                cut: l.cutLengthM,
               })}
             </span>
-            <span className="font-mono font-semibold text-[var(--color-text-primary)]">{b.kg} kg</span>
+            <span className="font-mono font-semibold text-[var(--color-text-primary)]">{l.kg} kg</span>
           </li>
         ))}
-        {view.rings ? (
-          <li className="flex flex-wrap items-baseline gap-2">
-            <span>
-              {t("boq.derived.steelRings", {
-                defaultValue: "Rings #{{bar}} at {{spacing}} mm, {{count}} rings of {{cut}} m",
-                bar: view.rings.bar,
-                spacing: view.rings.spacingMm,
-                count: view.rings.count,
-                cut: view.rings.cutLengthM,
-              })}
-            </span>
-            <span className="font-mono font-semibold text-[var(--color-text-primary)]">{view.rings.kg} kg</span>
-          </li>
-        ) : null}
       </ul>
+      {view.concreteM3 && view.bareKg && Number(view.concreteM3) > 0 ? (
+        <p className="text-[11px] text-[var(--color-text-muted)]" data-testid="steel-intensity">
+          {t("boq.derived.steelIntensity", {
+            defaultValue: "{{kg}} kg of bars in {{m3}} m3 of concrete: {{per}} kg per m3",
+            kg: view.bareKg,
+            m3: view.concreteM3,
+            per: (Number(view.bareKg) / Number(view.concreteM3)).toFixed(1),
+          })}
+        </p>
+      ) : null}
       <p className="text-[11px] text-[var(--color-warning)]">
         {t("boq.derived.steelLap", "Weight of the bars and rings as printed. Laps, chairs, binding wire and wastage are not added.")}
+        {view.wastagePct && Number(view.wastagePct) > 0 ? ` ${t("boq.derived.steelWastage", { defaultValue: "Includes {{pct}} percent wastage.", pct: view.wastagePct })}` : ""}
       </p>
     </div>
   );
 }
-
-

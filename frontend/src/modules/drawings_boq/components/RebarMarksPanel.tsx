@@ -81,7 +81,7 @@ export function RebarMarksPanel({ runId, solidId }: { runId: string; solidId?: s
                     <td className="px-3 py-2.5 text-right font-mono text-[13px] font-semibold">{formatPrecise(m.total_kg, 3)}</td>
                     <td className="px-3 py-2.5">
                       <Badge tone={estimate ? "gold" : "blue"}>
-                        {estimate ? t("boq.rebar.estimate", "Estimate") : t("boq.rebar.schedule", "Schedule")}
+                        {estimate ? t("boq.rebar.estimate", "Estimate") : m.provenance === "MANUAL" ? t("boq.rebar.drawing", "From drawing") : t("boq.rebar.schedule", "Schedule")}
                       </Badge>
                       <div className={`mt-1 text-[11px] ${isLowConfidence(m.confidence) ? "text-[var(--color-warning)]" : "text-[var(--color-text-muted)]"}`}>
                         {Math.round(Number(m.confidence) * 100)}%
@@ -132,4 +132,4 @@ export function RebarMarksPanel({ runId, solidId }: { runId: string; solidId?: s
       ) : null}
     </div>
   );
-}
+}

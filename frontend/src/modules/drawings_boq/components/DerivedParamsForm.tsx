@@ -31,6 +31,8 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
               ? t("boq.derived.flagStandard", "Empty: standard choice")
               : def.asked
               ? t("boq.derived.askedStandard", "Empty: footings read from a drawing are not dug until this is given")
+              : def.unit === "pct"
+              ? t("boq.derived.standardPct", { defaultValue: "Standard {{n}} percent: the bare weight", n: def.defaultMm })
               : def.unit === "dia"
               ? t("boq.derived.standardDia", { defaultValue: "Standard {{n}} bar diameters", n: def.defaultMm })
               : def.defaultMm === null

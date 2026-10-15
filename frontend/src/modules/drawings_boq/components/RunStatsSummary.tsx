@@ -295,6 +295,11 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
           <div className="space-y-3">
             <Section title={t("boq.calculationRun.statsSteel", "Steel (bars printed on the drawing)")}>
               <Stat label={t("boq.calculationRun.statSteelTotal", "Steel (kg)")} value={formatPrecise(sv.kg, 3)} />
+              {Number(sv.wastagePct) === 0 ? (
+                <Stat label={t("boq.calculationRun.statSteelWith5", "With 5 percent added (kg)")} value={formatPrecise(sv.withFivePctKg, 3)} />
+              ) : (
+                <Stat label={t("boq.calculationRun.statSteelBare", "Bare weight before {{pct}} percent wastage (kg)", { pct: sv.wastagePct })} value={formatPrecise(sv.bareKg, 3)} />
+              )}
               {sv.categories.map((c) => (
                 <Stat
                   key={c.category}
@@ -307,6 +312,25 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
                 />
               ))}
             </Section>
+            {sv.diameters.length > 0 ? (
+              <Section title={t("boq.calculationRun.statsSteelDia", "Steel by bar diameter")}>
+                {sv.diameters.map((d) => (
+                  <Stat key={d.diaMm} label={t("boq.calculationRun.statSteelDia", { defaultValue: "{{dia}} mm, {{len}} m (kg)", dia: Number(d.diaMm).toFixed(1), len: formatPrecise(d.lengthM, 1) })} value={formatPrecise(d.kg, 3)} />
+                ))}
+              </Section>
+            ) : null}
+            {sv.intensity.length > 0 ? (
+              <Section title={t("boq.calculationRun.statsSteelIntensity", "Steel per m3 of concrete")}>
+                {sv.intensity.map((r) => (
+                  <Stat
+                    key={r.family}
+                    label={t("boq.calculationRun.statSteelIntensity", { defaultValue: "{{family}} (usual {{low}} to {{high}})", family: t(`boq.derived.family.${r.family}`, r.family), low: r.low, high: r.high })}
+                    value={formatPrecise(r.kgPerM3, 1)}
+                    tone={r.status === "IN_RANGE" ? undefined : "gold"}
+                  />
+                ))}
+              </Section>
+            ) : null}
             {sv.assumed.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
                 {sv.assumed.map((name) => (
@@ -319,14 +343,14 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
             {sv.noBars > 0 ? (
               <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
                 {t("boq.calculationRun.steelNoBars", {
-                  defaultValue: "{{count}} lintels had no bars printed, so no steel was taken for them.",
+                  defaultValue: "{{count}} members had no bars printed or typed, so no steel was taken for them.",
                   count: sv.noBars,
                 })}
               </div>
             ) : null}
             {sv.lapAndWastageNotAdded ? (
               <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
-                {t("boq.calculationRun.steelLap", "Steel is the weight of the bars and rings as printed. Laps, chairs, binding wire and wastage are not added.")}
+                {t("boq.calculationRun.steelLap", "Steel is the weight of the bars, rings and mesh as printed, cut by the cover, hook, lap and anchorage of the site assumptions. Chairs, binding wire and wastage are not added.")}
               </div>
             ) : null}
           </div>

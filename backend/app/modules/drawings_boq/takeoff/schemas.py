@@ -103,19 +103,42 @@ class AdjustmentParam(BaseModel):
   value: Decimal = Field(gt=0, max_digits=18, decimal_places=6)
   label: str | None = Field(default=None, max_length=120)
 
+def _one_size(m):
+  if (m.bar is None) == (m.dia_mm is None):
+    raise ValueError("give either a bar number or a diameter in millimetres")
+  return m
+
 class BarGroupParam(BaseModel):
   n: int = Field(ge=1, le=30)
-  bar: int = Field(ge=2, le=12, description="Bar number: the diameter in eighths of an inch.")
+  bar: int | None = Field(default=None, ge=2, le=12, description="Bar number: the diameter in eighths of an inch.")
+  dia_mm: Decimal | None = Field(default=None, ge=6, le=40, max_digits=6, decimal_places=2, description="Diameter of a metric bar.")
+  _check = model_validator(mode="after")(_one_size)
 
 class RingParam(BaseModel):
-  bar: int = Field(ge=2, le=12)
+  bar: int | None = Field(default=None, ge=2, le=12)
+  dia_mm: Decimal | None = Field(default=None, ge=6, le=40, max_digits=6, decimal_places=2)
   spacing_mm: Decimal = Field(gt=0, le=1000, max_digits=9, decimal_places=2)
+  dense_spacing_mm: Decimal | None = Field(default=None, gt=0, le=1000, max_digits=9, decimal_places=2, description="Closer spacing at the ends of a member.")
+  dense_zone_mm: Decimal | None = Field(default=None, gt=0, le=3000, max_digits=9, decimal_places=2, description="How far from each end the closer spacing runs.")
+  _check = model_validator(mode="after")(_one_size)
+
+class MeshParam(BaseModel):
+  bar: int | None = Field(default=None, ge=2, le=12)
+  dia_mm: Decimal | None = Field(default=None, ge=6, le=40, max_digits=6, decimal_places=2)
+  spacing_mm: Decimal = Field(gt=0, le=1000, max_digits=9, decimal_places=2)
+  ways: Literal[1, 2] = 2
+  layers: Literal[1, 2] = 1
+  layer: Literal["top", "bottom"] | None = None
+  _check = model_validator(mode="after")(_one_size)
 
 class SteelParam(BaseModel):
   bottom: BarGroupParam | None = None
   top: BarGroupParam | None = None
   bars: BarGroupParam | None = None
+  vertical: BarGroupParam | None = None
+  extra: BarGroupParam | None = None
   ring: RingParam | None = None
+  mesh: MeshParam | None = None
 
 class MeasurementParams(BaseModel):
   height_mm: Decimal | None = Field(default=None, gt=0)

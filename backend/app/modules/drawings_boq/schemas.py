@@ -287,8 +287,12 @@ class DerivedParamsRequest(BaseModel):
   footing_bottom_below_ngl_mm: float | None = Field(default=None, ge=1, le=10000, description="Depth of the footing bottom below natural ground, for footings read from a drawing.")
   footing_formwork: float | None = Field(default=None, ge=0, le=1, description="1 shutters the four sides of footings read from a drawing.")
   slab_edge_formwork: float | None = Field(default=None, ge=0, le=1, description="0 leaves the slab edges out of the formwork, 1 includes them.")
+  formwork_shared_faces: float | None = Field(default=None, ge=0, le=1, description="1 takes off the column faces that a slab of the same floor covers, once the views of the drawing are placed on the building frame.")
   steel_cover_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover at the ends of the bars of a member whose steel is read from a drawing.")
   ring_hook_dia: float | None = Field(default=None, ge=0, le=40, description="Length added to a ring for its hooks, in bar diameters.")
+  bar_lap_dia: float | None = Field(default=None, ge=0, le=80, description="Lap of a column's vertical bars with the lift above, in bar diameters.")
+  bar_anchor_dia: float | None = Field(default=None, ge=0, le=80, description="Anchorage added at each end of a beam bar, and as a dowel at the foot of a column bar, in bar diameters.")
+  steel_wastage_pct: float | None = Field(default=None, ge=0, le=15, description="Percent added to the steel weight of members read from a drawing. 0 leaves the bare weight.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

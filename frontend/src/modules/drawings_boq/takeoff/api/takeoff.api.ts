@@ -2,7 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
+  Frame, FramePlaceBody, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
@@ -91,6 +91,15 @@ export const takeoffApi = {
   },
   async projectDrawings(projectId: string): Promise<{ drawings: ProjectTakeoffDrawing[] }> {
     return (await apiClient.get<{ drawings: ProjectTakeoffDrawing[] }>(`${BASE}/projects/${projectId}/takeoff/drawings`)).data;
+  },
+  async frame(drawingId: string): Promise<Frame> {
+    return (await apiClient.get<Frame>(`${BASE}/drawings/${drawingId}/takeoff/frame`)).data;
+  },
+  async placeFrameView(drawingId: string, body: FramePlaceBody): Promise<Frame> {
+    return (await apiClient.put<Frame>(`${BASE}/drawings/${drawingId}/takeoff/frame/placement`, body)).data;
+  },
+  async setFrameReference(drawingId: string, view: string): Promise<Frame> {
+    return (await apiClient.put<Frame>(`${BASE}/drawings/${drawingId}/takeoff/frame/reference`, { view })).data;
   },
   async reconciliation(projectId: string): Promise<Reconciliation> {
     return (await apiClient.get<Reconciliation>(`${BASE}/projects/${projectId}/takeoff/reconciliation`)).data;

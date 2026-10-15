@@ -379,7 +379,6 @@ class ExtractService:
     sheet_levels: dict = {}
     for cid in payload.ids:
       cand = rows.get(cid)
-
       
       if cand is None:
         failed.append(_fail(cid, "CANDIDATE_NOT_FOUND", "This item no longer exists. Read the sheet again."))
@@ -398,6 +397,9 @@ class ExtractService:
         failed.append(_fail(cid, *problem))
         continue
     
+      typed_steel = (payload.steel or {}).get(cid)
+      if typed_steel is not None:
+        params = {**params, "steel": typed_steel.model_dump(mode="json", exclude_none=True)}
       code = given.get(cand.category) or cand.suggested_work_item
       if code and code not in catalog and given.get(cand.category):
         failed.append(_fail(cid, "WORK_ITEM_NOT_FOUND", f"Work item '{code}' is not in the catalog."))
@@ -424,6 +426,8 @@ class ExtractService:
               cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}
             if FD.is_foundation(cand):
               cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": {k: params[k] for k in ("width_mm", "depth_mm") if params.get(k) is not None}}
+            if typed_steel is not None:
+              cand.facts = {**(cand.facts or {}), "steel_source": {"grade": "TYPED", "text": None}}
             cand.params = params
       except TraceException as exc:
         failed.append(_fail(cid, exc.code, exc.message))

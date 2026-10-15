@@ -13,6 +13,10 @@ import { MeasurementList } from "../components/MeasurementList";
 import { PdfSheetViewer } from "../components/PdfSheetViewer";
 import type { PointerInfo, ViewerHandle } from "../components/PdfSheetViewer";
 import { ResultsPanel } from "../components/ResultsPanel";
+import { FramePanel } from "../components/FramePanel";
+import { FoundTab } from "../components/FoundTab";
+import { candidatePoints } from "../utils/candidates";
+import type { TakeoffCandidate } from "../types/takeoff.types";
 import { ScalePanel } from "../components/ScalePanel";
 import type { CaptureState } from "../components/ScalePanel";
 import { SheetStrip } from "../components/SheetStrip";
@@ -20,7 +24,7 @@ import { sheetTitle } from "../utils/sheetTitle";
 import { Toolbar } from "../components/Toolbar";
 import {takeoffKeys, useAutoCalibrate, useBulkConfirm, useConfirmMeasurement, useCreateCalibration, useCreateMeasurement, useDeleteCalibration, useDeleteMeasurement,
   useMakeDefaultCalibration, usePrepareSheet, usePrepareSheets, useProjectTakeoffDrawings, useSheetAnalysis, useSheetShapes, useSheetTags, useSheetVector,
-  useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useUnconfirmMeasurement, useUpdateMeasurement,
+  useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useTakeoffFrame, usePlaceFrameView, useSetFrameReference, useUnconfirmMeasurement, useUpdateMeasurement,
 } from "../hooks/useTakeoff";
 import { useLivePreview } from "../hooks/useLivePreview";
 import { usePdfDocument } from "../hooks/usePdfDocument";
@@ -45,7 +49,7 @@ import type { Matrix, ViewState } from "../utils/viewport";
 type Capture = CaptureState;
 const NO_CAPTURE: Capture = { target: null, ref: [], check: [] };
 const DRAW_TOOLS: Tool[] = ["length", "area", "count", "wall", "room"];
-const TABS = ["measure", "list", "scale", "counts", "results"] as const;
+const TABS = ["measure", "list", "scale", "counts", "found", "results", "frame"] as const;
 
 function isTyping(target: EventTarget | null): boolean {
   return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement || (target instanceof HTMLElement && target.isContentEditable);
@@ -100,6 +104,9 @@ export function TakeoffPage() {
   const tags = useSheetTags(sheet);
   const shapes = useSheetShapes(sheet);
   const recon = useTakeoffReconciliation(projectId, tab === "results");
+  const frame = useTakeoffFrame(drawingId, tab === "frame");
+  const placeFrame = usePlaceFrameView(drawingId);
+  const frameRef = useSetFrameReference(drawingId);
 
   const snapIndex = useMemo(() => (vector.data && vector.data.segments.length ? new SnapIndex(vector.data.segments, vector.data.bbox) : null), [vector.data]);
 
@@ -448,6 +455,19 @@ export function TakeoffPage() {
     } catch (e) {
       showToast({ tone: "error", title: t("boq.takeoff.counts.tagFailed", "Could not count that tag"), description: takeoffErrorMessage(e) });
     }
+  }
+
+  function showCandidate(c: TakeoffCandidate) {
+    const pts = candidatePoints(c);
+    setSuggestionPts(pts);
+    const b = bboxOf(pts);
+    if (b) viewerRef.current?.focusBox(b);
+  }
+
+  function openMeasurementById(mid: string) {
+    deepLinked.current = null;
+    view.setTab("list");
+    setSearch((p) => { const n = new URLSearchParams(p); n.set("m", mid); return n; }, { replace: true });
   }
 
   async function previewTag(tag: string) {
@@ -903,7 +923,7 @@ export function TakeoffPage() {
                 onClick={() => view.setTab(x)}
                 className={`flex-1 px-2 py-2.5 text-[12.5px] font-semibold ${tab === x ? "border-b-2 border-[var(--color-trace-gold)] text-[var(--color-text-primary)]" : "text-[var(--color-text-muted)]"}`}
               >
-                {x === "measure" ? t("boq.takeoff.tab.measure", "Measure") : x === "list" ? `${t("boq.takeoff.tab.list", "List")} ${measurements.length || ""}` : x === "scale" ? t("boq.takeoff.tab.scale", "Scale") : x === "counts" ? t("boq.takeoff.tab.counts", "Counts") : t("boq.takeoff.tab.results", "Results")}
+                {x === "measure" ? t("boq.takeoff.tab.measure", "Measure") : x === "list" ? `${t("boq.takeoff.tab.list", "List")} ${measurements.length || ""}` : x === "scale" ? t("boq.takeoff.tab.scale", "Scale") : x === "counts" ? t("boq.takeoff.tab.counts", "Counts") : x === "found" ? t("boq.takeoff.tab.found", "Found") : x === "frame" ? t("boq.takeoff.tab.frame", "Frame") : t("boq.takeoff.tab.results", "Results")}
               </button>
             ))}
           </div>
@@ -981,6 +1001,30 @@ export function TakeoffPage() {
                 onPreviewShape={(id) => void applyShape(id, true)}
                 onUseShape={(id) => void applyShape(id, false)}
                 onClear={() => setSuggestionPts([])}
+              />
+            ) : null}
+            {tab === "found" && sheet ? (
+              <FoundTab
+                key={sheet.id}
+                sheet={sheet}
+                drawingId={drawingId}
+                canEdit={canEdit}
+                scaleReady={Boolean(defaultCal)}
+                onGoScale={() => view.setTab("scale")}
+                onShow={showCandidate}
+                onOpenMeasurement={openMeasurementById}
+              />
+            ) : null}
+            {tab === "frame" ? (
+              <FramePanel
+                frame={frame.data}
+                loading={frame.isLoading}
+                error={frame.isError}
+                onRetry={() => void frame.refetch()}
+                canEdit={canEdit}
+                busy={placeFrame.isPending || frameRef.isPending}
+                onPlace={(body) => placeFrame.mutate(body, { onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.frame.failed", "Could not save the placement"), description: takeoffErrorMessage(e) }) })}
+                onReference={(v) => frameRef.mutate(v, { onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.frame.failed", "Could not save the placement"), description: takeoffErrorMessage(e) }) })}
               />
             ) : null}
             {tab === "results" ? (

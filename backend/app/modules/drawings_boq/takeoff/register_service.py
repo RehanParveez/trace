@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.modules.drawings_boq.models import DrawingElement, BuildingLevel, Drawing, DrawingFormat, TakeoffCandidate, TakeoffExtraction, TakeoffMeasurement, TakeoffSheet
 from app.modules.drawings_boq.takeoff import register as R
+from app.modules.drawings_boq.takeoff import repository as repo_mod
+from app.modules.drawings_boq.takeoff import frame_views as FV
 from app.modules.drawings_boq.takeoff.evidence import tally as evidence_tally
 from app.modules.drawings_boq.takeoff.sheet_reason import sheet_reason
 from app.modules.drawings_boq.takeoff.levels import view_level_id
@@ -55,7 +57,7 @@ class RegisterService:
     if level_ids:
       levels = {lv.id: lv.name for lv in (await self.session.execute(select(BuildingLevel).where(BuildingLevel.organization_id == org,
         BuildingLevel.id.in_(list(level_ids))))).scalars().all()}
-    rows = R.build_rows(cands, by_sheet, measurements, levels)
+    rows = R.build_rows(cands, by_sheet, measurements, levels, await self._frame_positions(org, drawing_id))
     
     if len(rows) > MAX_ROWS:
       raise TraceException("This drawing has too many items to list.", status_code=422, code="REGISTER_TOO_LARGE")
@@ -129,7 +131,17 @@ class RegisterService:
       "decisions": len({r["properties"]["_pdf"]["candidate_id"] for r in rows if r["normalization_status"] != "VALID"}),
       "evidence": evidence_tally(rows)}
 
+  async def _frame_positions(self, org: UUID, drawing_id: UUID) -> dict:
+    """{(measurement id, instance): where the mark sits on the building frame} for the confirmed measurements of this drawing, so the register carries the positions the
+    engine used. Nothing is written for a mark whose view is not placed."""
+    inputs = await repo_mod.load_takeoff_inputs(self.session, org, [drawing_id])
+    if inputs is None or not inputs.formwork:
+      return {}
+    group = str(drawing_id)
+    stored = (await repo_mod.load_stored_alignments(self.session, org, [drawing_id])).get(group)
+    return FV.register_positions(inputs.formwork, {f.sheet_id: group for f in inputs.formwork}, {group: stored} if stored else None)
+
   async def sync_and_commit(self, org: UUID, drawing_id: UUID) -> dict:
     out = await self.sync_drawing(org, drawing_id)
     await self.session.commit()
-    return out
+    return out

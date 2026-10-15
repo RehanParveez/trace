@@ -390,6 +390,8 @@ export interface ExtractResult extends CandidateList { added: number; updated: n
 
 export interface AcceptBody {
   ids: string[];
+ 
+  steel?: Record<string, import("../utils/steel").SteelSet>;
   wall_height_mm?: number | null;
   column_height_mm?: number | null;
   footing_depth_mm?: number | null;
@@ -616,3 +618,48 @@ export interface RegisterSyncResult {
   decisions?: number;
   evidence?: Record<string, number>;
 }
+
+export interface FrameMember {
+  measurement_id: string;
+  instance: number;
+  category: string;
+  tag: string | null;
+  length_mm: number;
+  width_mm: number;
+  sheet_x_mm: number;
+  sheet_y_mm: number;
+  x_mm: number | null;
+  y_mm: number | null;
+}
+
+export type FrameMethod = "REFERENCE" | "COLUMN_MATCH" | "ENVELOPE" | "UNALIGNED" | "MANUAL";
+
+export interface FrameView {
+  key: string;
+  reference: boolean;
+  method: FrameMethod;
+  grade: "ASSUMED" | "CONFIRMED";
+  dx_mm: number;
+  dy_mm: number;
+  supporters: number;
+  compared: number;
+  residual_mm: number;
+  confidence: number;
+  anchors: number;
+  decided: boolean;
+  members: FrameMember[];
+}
+
+export interface Frame {
+  drawing_id: string;
+  reference: string | null;
+  origin_mm: number[];
+  views: FrameView[];
+  status: "NONE" | "ASSUMED" | "CONFIRMED";
+  open_views: string[];
+  unplaced: string[];
+  unconfirmed: string[];
+  cleared_placements: number;
+}
+
+export interface FramePlaceBody { view: string; action: "CONFIRM" | "SET" | "CLEAR"; dx_mm?: number; dy_mm?: number }

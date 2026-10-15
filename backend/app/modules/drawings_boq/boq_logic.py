@@ -41,7 +41,7 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "FORMWORK_ASSUMED", "STEEL_ASSUMED",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "STEEL_ASSUMED",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -419,13 +419,17 @@ LEDGER_WARNING_CATALOG = {
     "Footings close together may share a trench in the drawing, and the shared part is only approximate here.",
     "Check the excavation, PCC and backfill of these footings against the foundation plan, or measure the trench by hand."),
   "STEEL_ASSUMED": ("warning", "NONE",
-    "This steel was worked out from the bars printed for the member, using a site choice that was not given (the concrete cover at the ends of the bars, "
-    "or the length added to a ring for its hooks), so the standard value was used.",
-    "Give the cover and the ring hook allowance in the site assumptions, then calculate again."),
+    "This steel was worked out from the bars printed for the member, using a site choice that was not given (the concrete cover, the length added to a "
+    "ring for its hooks, the lap of a column bar or the anchorage of a bar), so the standard value was used.",
+    "Give the cover, ring hook, lap and anchorage in the site assumptions, then calculate again."),
   "FORMWORK_ASSUMED": ("warning", "NONE",
     "This formwork was worked out from concrete read from a drawing, using a site choice that was not given (whether slab edges are shuttered, or "
     "whether footing sides are shuttered), so the standard choice was used.",
     "Say whether slab edges and footing sides are shuttered in the site assumptions, then calculate again."),
+  "FORMWORK_FRAME_ASSUMED": ("warning", "NONE",
+    "Part of this column's formwork was taken off because a slab covers it, but where the two drawing views sit on the building was found by the program, "
+    "or the floor of one of them was not given, and no one has confirmed it.",
+    "Open the frame view of the drawing, confirm or move the placement of each view, give the floors, then calculate again."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }
@@ -534,17 +538,26 @@ def steel_issue_specs(stats: dict) -> list[IssueSpec]:
   specs: list[IssueSpec] = []
   skipped = st.get("skipped") or {}
   n = int(skipped.get("NO_BARS") or 0)
+  
   if n:
     specs.append(IssueSpec(
       code="STEEL_BARS_NOT_PRINTED", severity="info", blocks="NONE", dedupe_key="STEEL_BARS_NOT_PRINTED",
-      message=f"{n} lintel mark{'s' if n != 1 else ''} had no bars printed on their row of the lintel table, so no steel was taken for them.",
-      suggested_fix="Add the steel for these lintels by hand.", details={"marks": n}))
+      message=f"{n} member mark{'s' if n != 1 else ''} had no bars printed or typed, so no steel was taken for them.",
+      suggested_fix="Type the bars when you accept the member, or add the steel for these members by hand.", details={"marks": n}))
+  for family, row in sorted((st.get("intensity") or {}).items()):
+    if row.get("status") in ("BELOW_RANGE", "ABOVE_RANGE"):
+      low, high = row["range"]
+      specs.append(IssueSpec(
+        code="STEEL_INTENSITY_OUT_OF_RANGE", severity="warning", blocks="NONE", dedupe_key=f"STEEL_INTENSITY_OUT_OF_RANGE:{family}",
+        message=f"Steel in {family.lower()} members works out to {row['kg_per_m3']} kg per m3 of concrete, {'below' if row['status'] == 'BELOW_RANGE' else 'above'} the usual "
+          f"range of {low} to {high}. The figure is not changed.",
+        suggested_fix="Check the bar callouts and the member sizes read for these members.", details={"family": family, **row}))
   if st.get("lap_and_wastage_not_added"):
     specs.append(IssueSpec(
       code="STEEL_LAP_WASTAGE_NOT_ADDED", severity="info", blocks="NONE", dedupe_key="STEEL_LAP_WASTAGE_NOT_ADDED",
-      message="Steel is the weight of the bars and rings as printed: bar length is the member length less the cover, rings are the cage perimeter plus hooks. "
-        "Laps, chairs, binding wire and wastage are not added.",
-      suggested_fix="Add wastage on the rate or on the item, as your estimating practice does.", details={"kg": st.get("kg")}))
+      message="Steel is the weight of the bars, rings and mesh as printed, cut by the site conventions in the assumptions (cover, hooks, column laps, anchorage). "
+        "Chairs, binding wire and wastage are not added.",
+      suggested_fix="Set the wastage percent in the site assumptions, or add it on the rate, as your estimating practice does.", details={"kg": st.get("kg"), "with_5pct_kg": st.get("with_5pct_kg")}))
   return specs
 
 def takeoff_issue_specs(stats: dict) -> list[IssueSpec]:

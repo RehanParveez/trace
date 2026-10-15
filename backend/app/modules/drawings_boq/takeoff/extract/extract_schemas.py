@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.modules.drawings_boq.takeoff.schemas import SteelParam
 from pydantic import BaseModel, ConfigDict, Field
 from uuid import UUID
 from datetime import datetime
@@ -90,6 +91,7 @@ class AcceptRequest(BaseModel):
   stair_waist_mm: Decimal | None = Field(default=None, gt=0, le=500)
   work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per category, e.g. {\"WALL\": \"MAS-BLOCK\"}.")
   level_id: UUID | None = None
+  steel: dict[UUID, SteelParam] | None = Field(default=None, description="Bars, rings or mesh typed for a candidate, by candidate id. They replace the ones read from the drawing.")
 
 class AcceptResponse(BaseModel):
   accepted: list[dict]
@@ -117,4 +119,4 @@ class RegisterSyncResponse(BaseModel):
   measured: int = 0
   needs_review: int = 0
   decisions: int = 0
-  evidence: dict = Field(default_factory=dict)
+  evidence: dict = Field(default_factory=dict)

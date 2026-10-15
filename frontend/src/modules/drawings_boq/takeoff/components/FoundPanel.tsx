@@ -5,6 +5,8 @@ import type { CandidateList, TakeoffCandidate, TakeoffSheet } from "../types/tak
 import {blockedByHeight, CATEGORY_TEXT, confidenceLevel, factLine, groupByCategory, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, validHeight,
 } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
+import { SteelEditor } from "./SteelEditor";
+import type { SteelSet } from "../utils/steel";
 
 interface Props {
   sheet: TakeoffSheet;
@@ -30,6 +32,9 @@ interface Props {
   onRead: (autoCalibrate: boolean) => void;
   onGoScale: () => void;
   onShow: (c: TakeoffCandidate) => void;
+ 
+  steel?: Record<string, SteelSet>;
+  onSteel?: (id: string, steel: SteelSet | null) => void;
   onAccept: (ids: string[]) => void;
   onReject: (ids: string[]) => void;
   onRestore: (ids: string[]) => void;
@@ -198,7 +203,7 @@ function FoundList(p: Props & { data: CandidateList }) {
               </div>
               <ul className="space-y-1.5">
                 {g.items.map((c) => (
-                  <Row key={c.id} c={c} selected={p.selected.has(c.id)} focused={p.focusId === c.id} canEdit={p.canEdit} onToggle={() => toggle(c.id)} onShow={() => p.onShow(c)} onReject={() => p.onReject([c.id])} />
+                  <Row key={c.id} c={c} steel={p.steel?.[c.id]} onSteel={p.onSteel} selected={p.selected.has(c.id)} focused={p.focusId === c.id} canEdit={p.canEdit} onToggle={() => toggle(c.id)} onShow={() => p.onShow(c)} onReject={() => p.onReject([c.id])} />
                 ))}
               </ul>
             </section>
@@ -261,12 +266,12 @@ function FoundList(p: Props & { data: CandidateList }) {
   );
 }
 
-function Row({ c, selected, focused, canEdit, onToggle, onShow, onReject }: {
-  c: TakeoffCandidate; selected: boolean; focused: boolean; canEdit: boolean; onToggle: () => void; onShow: () => void; onReject: () => void;
+function Row({ c, steel, onSteel, selected, focused, canEdit, onToggle, onShow, onReject }: {
+  c: TakeoffCandidate; steel?: SteelSet; onSteel?: (id: string, steel: SteelSet | null) => void; selected: boolean; focused: boolean; canEdit: boolean; onToggle: () => void; onShow: () => void; onReject: () => void;
 }) {
   const { t } = useTranslation();
   const level = confidenceLevel(c.confidence);
-  // The unchecked-scale warning applies to the whole sheet and is shown once at the top, not on every row.
+
   const warnings = c.notes.filter((n) => n.severity !== "info" && n.code !== "SCALE_UNVERIFIED");
   const infos = c.notes.filter((n) => n.severity === "info");
   const facts = factLine(c);
@@ -291,6 +296,7 @@ function Row({ c, selected, focused, canEdit, onToggle, onShow, onReject }: {
               {infos.map((n) => <div key={n.code} className="mt-0.5 text-[11.5px] text-[var(--color-text-secondary)]">{n.message}</div>)}
             </details>
           ) : null}
+          {onSteel && !unmeasurable ? <SteelEditor c={c} typed={steel} canEdit={canEdit} onChange={onSteel} /> : null}
           <div className="mt-1.5 flex gap-2">
             <Button size="sm" variant="ghost" onClick={onShow} data-testid="found-show">{t("boq.takeoff.counts.show", "Show")}</Button>
             {canEdit ? <Button size="sm" variant="ghost" onClick={onReject}>{t("boq.takeoff.found.reject", "Reject")}</Button> : null}

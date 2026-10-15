@@ -1,4 +1,4 @@
-import type {BOQItemSpec, DerivedClaims, DerivedParamName, DerivedParams, DerivedPdfSource, DerivedStats, FormworkSource, LayerSplitTrace, LedgerTrace, SteelBarLine, SteelRingLine, SteelSource,
+import type {BOQItemSpec, DerivedClaims, DerivedParamName, DerivedParams, DerivedPdfSource, DerivedStats, FormworkSource, LayerSplitTrace, LedgerTrace, SteelLine, SteelSource,
 } from "../types/drawings-boq.types";
 
 export interface DerivedFieldDef {
@@ -8,7 +8,7 @@ export interface DerivedFieldDef {
   max: number;
   flag?: boolean;
   asked?: boolean;
-  unit?: "dia";
+  unit?: "dia" | "pct";
 }
 
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
@@ -21,8 +21,12 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "shoring", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "footing_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
+  { key: "formwork_shared_faces", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100 },
   { key: "ring_hook_dia", defaultMm: 20, min: 0, max: 40, unit: "dia" },
+  { key: "bar_lap_dia", defaultMm: 40, min: 0, max: 80, unit: "dia" },
+  { key: "bar_anchor_dia", defaultMm: 0, min: 0, max: 80, unit: "dia" },
+  { key: "steel_wastage_pct", defaultMm: 0, min: 0, max: 15, unit: "pct" },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
   { key: "footing_bottom_below_ngl_mm", defaultMm: null, min: 1, max: 10000, asked: true },
 ];
@@ -98,7 +102,7 @@ export interface DerivedBasisRow {
   basis: DerivedBasis | null;
 }
 
-const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "steel_cover_mm", "ring_hook_dia", "ngl"];
+const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "ngl"];
 
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
@@ -172,7 +176,16 @@ export function isFormworkSpec(spec: BOQItemSpec | null | undefined): boolean {
 }
 
 export function isSteelSpec(spec: BOQItemSpec | null | undefined): boolean {
-  return spec?.kind === "DERIVED" && spec?.recipe === "PDF_LINTEL_STEEL";
+  return spec?.kind === "DERIVED" && (spec?.recipe === "PDF_MEMBER_STEEL" || spec?.recipe === "PDF_LINTEL_STEEL");
+}
+
+export interface SteelLineView {
+  kind: "bars" | "rings" | "mesh";
+  role: string;
+  count: number;
+  size: string;
+  cutLengthM: string;
+  kg: string;
 }
 
 export interface SteelSourceView {
@@ -184,16 +197,35 @@ export interface SteelSourceView {
   lengthMm: number;
   widthMm: number;
   depthMm: number;
-  bars: { role: string; n: number; bar: number; lengthM: string; kg: string }[];
-  rings: { bar: number; spacingMm: string; count: number; cutLengthM: string; kg: string } | null;
+  lines: SteelLineView[];
+  bareKg: string | null;
+  wastagePct: string | null;
+  concreteM3: string | null;
+}
+
+function sizeLabel(bar: number | null | undefined, diaMm: string): string {
+  return bar ? `#${bar}` : `${Number(diaMm)} mm`;
+}
+
+function legacyLines(raw: SteelSource): SteelLine[] {
+  const lines: SteelLine[] = (raw.bars ?? []).map((b) => ({
+    kind: "bars", role: String(b.role), bar: Number(b.bar), dia_mm: String(Number(b.bar) * 3.175), count: Number(b.n), cut_length_m: "", kg_per_m: "", length_m: String(b.length_m), kg: String(b.kg),
+  }));
+  if (raw.rings) {
+    lines.push({ kind: "rings", role: "ring", bar: Number(raw.rings.bar), dia_mm: String(Number(raw.rings.bar) * 3.175), count: Number(raw.rings.count), cut_length_m: String(raw.rings.cut_length_m), kg_per_m: "", length_m: "", kg: String(raw.rings.kg) });
+  }
+  return lines;
 }
 
 export function steelSourceView(trace: LedgerTrace | null | undefined): SteelSourceView | null {
   const raw = (trace?.inputs as { steel_source?: SteelSource } | undefined)?.steel_source;
-  if (!raw || !Array.isArray(raw.size_mm) || raw.size_mm.length < 3 || !Array.isArray(raw.bars)) {
+  if (!raw || !Array.isArray(raw.size_mm) || raw.size_mm.length < 3) {
     return null;
   }
-  const ring: SteelRingLine | null = raw.rings ?? null;
+  const lines = Array.isArray(raw.lines) ? raw.lines : Array.isArray(raw.bars) ? legacyLines(raw) : null;
+  if (!lines) {
+    return null;
+  }
   return {
     page: Number(raw.page_no),
     category: String(raw.category ?? ""),
@@ -203,8 +235,10 @@ export function steelSourceView(trace: LedgerTrace | null | undefined): SteelSou
     lengthMm: Number(raw.size_mm[0]),
     widthMm: Number(raw.size_mm[1]),
     depthMm: Number(raw.size_mm[2]),
-    bars: raw.bars.map((b: SteelBarLine) => ({ role: String(b.role), n: Number(b.n), bar: Number(b.bar), lengthM: String(b.length_m), kg: String(b.kg) })),
-    rings: ring ? { bar: Number(ring.bar), spacingMm: String(ring.spacing_mm), count: Number(ring.count), cutLengthM: String(ring.cut_length_m), kg: String(ring.kg) } : null,
+    lines: lines.map((l) => ({ kind: l.kind, role: String(l.role), count: Number(l.count), size: sizeLabel(l.bar, l.dia_mm), cutLengthM: String(l.cut_length_m), kg: String(l.kg) })),
+    bareKg: raw.bare_kg ?? null,
+    wastagePct: raw.wastage_pct ?? null,
+    concreteM3: raw.concrete_m3 ?? null,
   };
 }
 
@@ -212,8 +246,13 @@ export interface SteelStatsView {
   ran: boolean;
   reason: string | null;
   kg: string;
+  bareKg: string;
+  withFivePctKg: string;
+  wastagePct: string;
   rows: number;
   categories: { category: string; marks: number; kg: string }[];
+  diameters: { diaMm: string; kg: string; lengthM: string }[];
+  intensity: { family: string; kgPerM3: string; concreteM3: string; low: string; high: string; status: "IN_RANGE" | "BELOW_RANGE" | "ABOVE_RANGE" }[];
   noBars: number;
   assumed: string[];
   lapAndWastageNotAdded: boolean;
@@ -225,12 +264,23 @@ export function steelStatsView(stats: DerivedStats | null | undefined): SteelSta
     return null;
   }
   const categories = Object.entries(st.by_category ?? {}).map(([category, v]) => ({ category, marks: Number(v.marks), kg: String(v.kg) }));
+  const diameters = Object.entries(st.by_diameter ?? {})
+    .map(([diaMm, v]) => ({ diaMm, kg: String(v.kg), lengthM: String(v.length_m) }))
+    .sort((a, b) => Number(a.diaMm) - Number(b.diaMm));
+  const intensity = Object.entries(st.intensity ?? {}).map(([family, v]) => ({
+    family, kgPerM3: String(v.kg_per_m3), concreteM3: String(v.concrete_m3), low: String(v.range[0]), high: String(v.range[1]), status: v.status,
+  }));
   return {
     ran: Boolean(st.ran),
     reason: st.reason ?? null,
     kg: String(st.kg ?? "0"),
+    bareKg: String(st.bare_kg ?? st.kg ?? "0"),
+    withFivePctKg: String(st.with_5pct_kg ?? st.kg ?? "0"),
+    wastagePct: String(st.wastage_pct ?? "0"),
     rows: Number(st.rows ?? 0),
     categories,
+    diameters,
+    intensity,
     noBars: Number(st.skipped?.NO_BARS ?? 0),
     assumed: Array.isArray(st.assumed) ? st.assumed : [],
     lapAndWastageNotAdded: Boolean(st.lap_and_wastage_not_added),

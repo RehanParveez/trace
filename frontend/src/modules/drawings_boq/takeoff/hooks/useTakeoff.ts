@@ -1,8 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { AcceptBody, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
+import type { AcceptBody, FramePlaceBody, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
-
 
 export const takeoffKeys = {
   all: ["takeoff"] as const,
@@ -15,6 +14,8 @@ export const takeoffKeys = {
   projectDrawings: (projectId: string) => [...takeoffKeys.all, "project-drawings", projectId] as const,
   reconciliation: (projectId: string) => [...takeoffKeys.all, "reconciliation", projectId] as const,
   facts: (drawingId: string) => [...takeoffKeys.all, "facts", drawingId] as const,
+  frame: (drawingId: string) => [...takeoffKeys.all, "frame", drawingId] as const,
+  candidates: (sheetId: string) => [...takeoffKeys.all, "candidates", sheetId] as const,
 };
 
 export function useDrawingFacts(drawingId: string | undefined, enabled = true) {
@@ -270,6 +271,72 @@ export function useTakeoffReconciliation(projectId: string | undefined, enabled 
     queryKey: takeoffKeys.reconciliation(projectId ?? ""),
     queryFn: () => takeoffApi.reconciliation(projectId as string),
     enabled: Boolean(projectId) && enabled,
+  });
+}
+
+export function useSheetCandidates(sheet: TakeoffSheet | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.candidates(sheet?.id ?? ""),
+    queryFn: () => takeoffApi.candidates(sheet!.id),
+    enabled: Boolean(sheet && sheet.prep_status === "READY" && sheet.content_kind !== "RASTER") && enabled,
+  });
+}
+
+export function useExtractSheet(drawingId: string | undefined) {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateOverview(drawingId);
+  return useMutation({
+    mutationFn: (a: { sheetId: string; autoCalibrate: boolean }) => takeoffApi.extract(a.sheetId, { auto_calibrate: a.autoCalibrate }),
+    onSuccess: (data) => { qc.setQueryData(takeoffKeys.candidates(data.sheet_id), data); },
+    onSettled: invalidate,
+  });
+}
+
+export function useAcceptCandidates(drawingId: string | undefined, sheetId: string | undefined) {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateOverview(drawingId);
+  return useMutation({
+    mutationFn: (body: AcceptBody) => takeoffApi.acceptCandidates(body),
+    onSettled: () => {
+      invalidate();
+      if (sheetId) void qc.invalidateQueries({ queryKey: takeoffKeys.candidates(sheetId) });
+    },
+  });
+}
+
+export function useDecideCandidates(drawingId: string | undefined, sheetId: string | undefined) {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateOverview(drawingId);
+  return useMutation({
+    mutationFn: (a: { ids: string[]; action: "reject" | "restore" }) => (a.action === "reject" ? takeoffApi.rejectCandidates(a.ids) : takeoffApi.restoreCandidates(a.ids)),
+    onSettled: () => {
+      invalidate();
+      if (sheetId) void qc.invalidateQueries({ queryKey: takeoffKeys.candidates(sheetId) });
+    },
+  });
+}
+
+export function useTakeoffFrame(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.frame(drawingId ?? ""),
+    queryFn: () => takeoffApi.frame(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function usePlaceFrameView(drawingId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: FramePlaceBody) => takeoffApi.placeFrameView(drawingId as string, body),
+    onSuccess: (frame) => { qc.setQueryData(takeoffKeys.frame(drawingId ?? ""), frame); },
+  });
+}
+
+export function useSetFrameReference(drawingId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (view: string) => takeoffApi.setFrameReference(drawingId as string, view),
+    onSuccess: (frame) => { qc.setQueryData(takeoffKeys.frame(drawingId ?? ""), frame); },
   });
 }
 

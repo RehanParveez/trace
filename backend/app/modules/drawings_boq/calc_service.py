@@ -595,6 +595,7 @@ class CalculationService:
         st = await asyncio.to_thread(kernel.measure_pdf_steel, ctx, state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in st.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in st.ledger])
+        await self.runs.stage_bar_marks([_bar_mark_row(run, m, "derived") for m in st.marks])
         state["extra_solids"] += st.solids
         state["extra_ledger"] += st.ledger
         state["derived_stats"] = {**res.stats, "formwork": fw.stats, "steel": st.stats}
@@ -824,4 +825,4 @@ class CalculationService:
     return await self._page("solids", QuantitySolidResponse, self.runs.list_solids, organization_id, run_id, kwargs, cached)
 
   async def list_deductions(self, organization_id: UUID, run_id: UUID, cached: bool = False, **kwargs):
-    return await self._page("deductions", DeductionResponse, self.runs.list_deductions, organization_id, run_id, kwargs, cached)
+    return await self._page("deductions", DeductionResponse, self.runs.list_deductions, organization_id, run_id, kwargs, cached)

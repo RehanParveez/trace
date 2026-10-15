@@ -35,8 +35,12 @@ PARAMS = {
   "shoring": (0.0, 0.0, 1.0),
   "footing_formwork": (0.0, 0.0, 1.0),
   "slab_edge_formwork": (1.0, 0.0, 1.0),
+  "formwork_shared_faces": (1.0, 0.0, 1.0),
   "steel_cover_mm": (38.1, 10.0, 100.0),
   "ring_hook_dia": (20.0, 0.0, 40.0),
+  "bar_lap_dia": (40.0, 0.0, 80.0),
+  "bar_anchor_dia": (0.0, 0.0, 80.0),
+  "steel_wastage_pct": (0.0, 0.0, 15.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)

@@ -4329,6 +4329,44 @@ class TakeoffCandidate(Base, TimestampMixin):
   
   decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
   
+class TakeoffViewAlignment(Base, TimestampMixin):
+  """A person's decision about where a drawing view sits on the building frame: a placement they confirmed or nudged (dx, dy), or the view they marked as the
+  reference. Views that nobody has decided are placed by the engine and graded ASSUMED; they are not stored."""
+  __tablename__ = "takeoff_view_alignments"
+
+  __table_args__ = (
+    UniqueConstraint("drawing_id", "frame_key", name="uq_takeoff_view_alignments_key"),
+    ForeignKeyConstraint(
+      ["drawing_id", "organization_id"], ["drawings.id", "drawings.organization_id"],
+      ondelete="CASCADE", name="fk_takeoff_view_alignments_drawing_tenant",
+    ),
+    CheckConstraint("role IN ('PLACEMENT','REFERENCE')", name="ck_takeoff_view_alignments_role"),
+    Index("ix_takeoff_view_alignments_org_project", "organization_id", "project_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False,
+  )
+
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False,
+  )
+
+  drawing_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  frame_key: Mapped[str] = mapped_column(String(200), nullable=False)
+  role: Mapped[str] = mapped_column(String(12), nullable=False, default="PLACEMENT", server_default="PLACEMENT")
+  dx_mm: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False, default=Decimal("0"), server_default="0")
+  dy_mm: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False, default=Decimal("0"), server_default="0")
+  method: Mapped[str] = mapped_column(String(20), nullable=False, default="MANUAL", server_default="MANUAL")
+
+  updated_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_takeoff_view_alignments_updated_by"),
+    nullable=True,
+  )
+
 class ProjectMeasurementParameter(Base, TimestampMixin):
   __tablename__ = "project_measurement_parameters"
 

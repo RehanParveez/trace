@@ -16,6 +16,7 @@ from app.modules.drawings_boq.takeoff.extract import structure as ST
 from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.prep import census
 from app.modules.drawings_boq.takeoff.prep import lintels as LT
+from app.modules.drawings_boq.takeoff.prep import steel_notes as SN
 from app.modules.drawings_boq.takeoff.prep import schedules as S
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.prep import views as VW
@@ -1112,6 +1113,7 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       res.stats["wall_beams"] = len(beams)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
       wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
+      
       for c in walls:
         if c.params.get("openings"):
           c.notes.append(C.note("OPENINGS_ASSIGNED", count=c.facts["openings"]["count"], marks=c.facts["openings"]["marks"]))
@@ -1132,6 +1134,7 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
           wall_m_all_pens=wstats.get("wall_m_all_pens")))
       rooms = _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx)
       res.candidates.extend(rooms)
+      
       if with_finishes:
         finishes = _finish_candidates(walls, rooms, [c for c in res.candidates if c.category == "DOOR"], mm_per_pt, ctx, level_hint)
         res.candidates.extend(finishes)
@@ -1142,6 +1145,12 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
         res.stats["foundation_items"] = len(below)
     except W.TimeLimit:
       res.notes.append(C.note("TIME_LIMIT"))
+      
+  found_steel = SN.read(lines)
+  res.stats["steel"] = SN.attach(res.candidates, found_steel, C.note)
+  res.stats["steel_notes"] = found_steel["notes"]
+  for c in res.candidates:
+    c.status = _status(c.notes)
   mapped = {c.tag for c in res.candidates if c.tag}
   unmapped: dict = {}
   for g in census.tag_census(words):

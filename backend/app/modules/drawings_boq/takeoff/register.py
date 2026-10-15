@@ -241,7 +241,7 @@ def _name(cand, i: int, n: int) -> str:
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
 
-def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=()) -> list:
+def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=(), frame_positions=None) -> list:
 
   spec = CATEGORY.get(cand.category)
   if spec is None or cand.decision == "REJECTED" or (cand.facts or {}).get("foundation_item"):
@@ -275,6 +275,10 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "missing": [] if cand.decision == "ACCEPTED" else list(cand.missing or []), "also_on_sheets": also_on, "evidence": evidence,
     }}
     
+    placed = (frame_positions or {}).get((str(measurement["id"]), i)) if measured else None
+    if placed:
+      # where the mark sits on the building frame, and whether a person confirmed the placement of its view; the engine's own guess is only ever ASSUMED
+      props["_pdf"]["frame"] = {"view": placed["view"], "position_mm": placed["position_mm"], "grade": placed["grade"], "method": placed["method"]}
     if cand.category == "ROOM":
       props["_pdf"]["perimeter_m"] = (cand.facts or {}).get("perimeter_m")
     opening_kind = (cand.facts or {}).get("opening_kind") if cand.category in ("DOOR", "WINDOW") else None
@@ -314,7 +318,7 @@ def _primary(candidates, sheets: dict) -> tuple:
     hidden.update(c.id for c in items[1:])
   return also, hidden
 
-def build_rows(candidates, sheets: dict, measurements: dict, levels: dict) -> list:
+def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame_positions: dict | None = None) -> list:
   
   also, hidden = _primary(candidates, sheets)
   out = []
@@ -325,7 +329,7 @@ def build_rows(candidates, sheets: dict, measurements: dict, levels: dict) -> li
     m = measurements.get(cand.measurement_id) if cand.measurement_id else None
     lvl = level_of(cand, sheet)
     out.extend(rows_for_candidate(cand, sheet=sheet, level_id=lvl, level_name=levels.get(lvl) if lvl else None, measurement=m,
-      also_on=also.get(cand.id, ())))
+      also_on=also.get(cand.id, ()), frame_positions=frame_positions))
   return out
 
 def is_pdf_row(row) -> bool:

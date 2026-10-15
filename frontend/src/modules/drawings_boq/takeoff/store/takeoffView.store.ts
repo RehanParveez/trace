@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { MeasureKind, MeasureSource, Pt, SnapKind } from "../types/takeoff.types";
 
 export type Tool = "select" | "pan" | "ruler" | "calibrate" | "length" | "area" | "count" | "wall" | "room";
-export type PanelTab = "measure" | "list" | "scale" | "counts" | "results";
+export type PanelTab = "measure" | "list" | "scale" | "counts" | "results" | "frame" | "found";
 
 export interface Draft {
   kind: MeasureKind;

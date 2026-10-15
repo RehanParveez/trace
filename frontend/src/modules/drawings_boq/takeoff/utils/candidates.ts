@@ -1,4 +1,6 @@
-import type { AreaGeometry, CandidateCategory, CountGeometry, LengthGeometry, Pt, TakeoffCandidate } from "../types/takeoff.types";
+import type { AcceptBody, AreaGeometry, CandidateCategory, CountGeometry, LengthGeometry, Pt, TakeoffCandidate } from "../types/takeoff.types";
+import { steelForAccept } from "./steel";
+import type { SteelSet } from "./steel";
 
 export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "SLAB", "LINTEL", "STAIR", "DOOR", "WINDOW", "ROOM"];
 
@@ -396,4 +398,17 @@ export function factLine(c: TakeoffCandidate): string {
   if (sched) parts.push(`schedule ${Math.round(sched[0])}×${Math.round(sched[1])}`);
   if (drawn) parts.push(`drawn ${Math.round(drawn[0])}×${Math.round(drawn[1])}`);
   return parts.join(" · ");
+}
+/** The body of an accept call: only the heights that read as numbers, only the work items typed, and the steel typed for the members being accepted. */
+export function buildAcceptBody(ids: string[], heights: Heights, workItems: Record<string, string>, steel: Record<string, SteelSet>): AcceptBody {
+  const body: AcceptBody = { ids };
+  for (const f of HEIGHT_ORDER) {
+    const n = validHeight(heights[f]);
+    if (n !== null) (body as unknown as Record<string, number>)[f] = n;
+  }
+  const items = Object.fromEntries(ids.map((id) => [id, (workItems[id] ?? "").trim()]).filter(([, v]) => v !== ""));
+  if (Object.keys(items).length) body.work_items = items;
+  const typed = steelForAccept(ids, steel);
+  if (typed) body.steel = typed;
+  return body;
 }

@@ -1313,8 +1313,12 @@ export interface DerivedParams {
   footing_bottom_below_ngl_mm?: number;
   footing_formwork?: number;
   slab_edge_formwork?: number;
+  formwork_shared_faces?: number;
   steel_cover_mm?: number;
   ring_hook_dia?: number;
+  bar_lap_dia?: number;
+  bar_anchor_dia?: number;
+  steel_wastage_pct?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1369,23 +1373,15 @@ export interface FormworkSource {
   faces: { name: string; m2: string }[];
 }
 
-export interface SteelBarLine {
-  role: "bottom" | "top" | "bars";
-  n: number;
-  bar: number;
+export interface SteelLine {
+  kind: "bars" | "rings" | "mesh";
+  role: string;
+  bar?: number | null;
   dia_mm: string;
-  kg_per_m: string;
-  length_m: string;
-  kg: string;
-}
-
-export interface SteelRingLine {
-  bar: number;
-  dia_mm: string;
-  spacing_mm: string;
   count: number;
   cut_length_m: string;
   kg_per_m: string;
+  length_m: string;
   kg: string;
 }
 
@@ -1399,8 +1395,13 @@ export interface SteelSource {
   instance: number;
   instances: number;
   size_mm: [number, number, number];
-  bars: SteelBarLine[];
-  rings: SteelRingLine | null;
+  steel?: Record<string, unknown>;
+  lines?: SteelLine[];
+  bare_kg?: string;
+  wastage_pct?: string;
+  concrete_m3?: string;
+  bars?: { role: string; n: number; bar: number; length_m: string; kg: string }[];
+  rings?: { bar: number; spacing_mm: string; count: number; cut_length_m: string; kg: string } | null;
 }
 
 export interface DerivedSteelStats {
@@ -1410,11 +1411,24 @@ export interface DerivedSteelStats {
   rows?: number;
   kg?: string;
   code?: string;
-  by_category?: Record<string, { marks: number; kg: string }>;
+  by_category?: Record<string, { marks: number; kg: string; bare_kg?: string }>;
+  by_diameter?: Record<string, { kg: string; length_m: string }>;
+  intensity?: Record<string, SteelIntensity>;
+  bare_kg?: string;
+  wastage_pct?: string;
+  with_5pct_kg?: string;
   skipped?: Record<string, number>;
   params?: Record<string, DerivedParamUsed>;
   assumed?: string[];
   lap_and_wastage_not_added?: boolean;
+}
+
+export interface SteelIntensity {
+  kg: string;
+  concrete_m3: string;
+  kg_per_m3: string;
+  range: [string, string];
+  status: "IN_RANGE" | "BELOW_RANGE" | "ABOVE_RANGE";
 }
 
 export interface DerivedFormworkStats {
