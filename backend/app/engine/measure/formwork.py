@@ -12,10 +12,12 @@ RECIPE_CODE = "STRUCT_FORMWORK"
 RECIPE_TYPES = ("IfcColumn", "IfcBeam", "IfcSlab", "IfcFooting")
 FOOTING_PARAM, SLAB_EDGE_PARAM = "footing_formwork", "slab_edge_formwork"
 FORMWORK_PARAMS = (FOOTING_PARAM, SLAB_EDGE_PARAM)
-PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": (), "BEAM": ()}
+PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": (), "BEAM": (), "STAIR": (), "RCC_WALL": ()}
 CATEGORIES = tuple(PARAMS_USED)
-IFC_OF = {"COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "LINTEL": "IfcBeam", "BEAM": "IfcBeam"}
+IFC_OF = {"COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "LINTEL": "IfcBeam", "BEAM": "IfcBeam", "STAIR": "IfcStair", "RCC_WALL": "IfcWall"}
+ROLE_OF = {"RCC_WALL": "WALL"}
 MM2_PER_M2 = Decimal("1000000")
+MM_PER_M = Decimal("1000")
 MAX_MARKS = 5000
 
 CODE_ASSUMED = "FORMWORK_ASSUMED"
@@ -30,10 +32,20 @@ class FormworkResult:
 def _m2(mm2: Decimal) -> Decimal:
   return q6(mm2 / MM2_PER_M2)
 
-def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, edges: bool) -> list:
+def stair_faces(width: Decimal, stair: dict) -> list:
+  """The shuttered faces of one flight of steps: the sloped soffit of the waist slab, the risers, and the two sides (the waist slab's edge plus the triangle of
+  steps above it). The treads are the top of the concrete and are not shuttered."""
+  riser, tread, waist = Decimal(str(stair["riser_mm"])), Decimal(str(stair["tread_mm"])), Decimal(str(stair["waist_mm"]))
+  steps = Decimal(str(stair["steps"]))
+  slope = steps * (riser * riser + tread * tread).sqrt()
+  return [("soffit", slope * width), ("risers", steps * riser * width), ("sides", 2 * (slope * waist + steps * riser * tread / 2))]
+
+def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, edges: bool, stair: dict | None = None) -> list:
   """The shuttered faces of one member, as (name, area in mm2). A column carries all four vertical faces over its height; a footing its four sides over its
-  depth; a slab its soffit and, when edge forms are wanted, the four edges over its thickness; a lintel or a beam its soffit and both sides (the top is open)."""
+  depth; a slab its soffit and, when edge forms are wanted, the four edges over its thickness; a lintel or a beam its soffit and both sides (the top is open);
+  a flight of steps its soffit, risers and sides."""
   perimeter = 2 * (length + width)
+  
   if category == "COLUMN":
     return [("vertical_faces", perimeter * depth)]
   if category == "FOOTING":
@@ -45,6 +57,8 @@ def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, ed
     return out
   if category in ("LINTEL", "BEAM"):
     return [("soffit", length * width), ("sides", 2 * length * depth)]
+  if category == "STAIR" and stair:
+    return stair_faces(width, stair)
   return []
 
 def _recipe_code(profile) -> str | None:
@@ -59,7 +73,7 @@ def _recipe_code(profile) -> str | None:
   return None
 
 def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledger=()) -> FormworkResult:
-  """Formwork area for the concrete members read from a PDF and counted in this run: columns, footings, slabs, lintels and beams. One row per mark, so a row
+  """Formwork area for the concrete members read from a PDF and counted in this run: columns, footings, slabs, lintels, beams, flights of steps and RCC walls (both faces over the net area the wall's own measurement worked out). One row per mark, so a row
   opens the mark it came from. Faces that touch other concrete (a slab over its beams, a column through a slab) are not taken off: the members of a PDF
   are not placed in one building frame yet, so that contact cannot be found, and the area is reported as the gross shuttering of each member."""
   stats: dict = {"enabled": True, "ran": False}
@@ -82,6 +96,8 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
 
   params = resolve_params(ctx)
   counted = counted_measurement_ids(extra_ledger)
+  measured = {str(((r.trace or {}).get("inputs") or {}).get("measurement_id")): r for r in (extra_ledger or ())
+    if getattr(r, "source_kind", None) == PDF_SOURCE and r.quantity > 0 and r.unit == "m3"}
   skipped: dict = {}
   by_category: dict = {}
   solids: list = []
@@ -102,11 +118,22 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
     if not (length > 0 and width > 0 and depth > 0):
       skipped["NO_SIZE"] = skipped.get("NO_SIZE", 0) + m.count
       continue
-  
     edges = params[SLAB_EDGE_PARAM]["value"] >= 0.5
-    faces = faces_for(cat, length, width, depth, edges)
+    if cat == "STAIR" and not m.stair:
+      skipped["STAIR_NO_DETAIL"] = skipped.get("STAIR_NO_DETAIL", 0) + m.count
+      continue
+  
+    if cat == "RCC_WALL":
+      row = measured.get(str(m.measurement_id))
+      if row is None:
+        skipped["NOT_COUNTED"] = skipped.get("NOT_COUNTED", 0) + m.count
+        continue
+      faces = [("both_faces", 2 * row.quantity / (width / MM_PER_M) * MM2_PER_M2)]
+    else:
+      faces = faces_for(cat, length, width, depth, edges, m.stair)
     used = PARAMS_USED[cat]
     assumed = [n for n in used if params[n]["source"] == "default"]
+    
     factor = FACTOR_ASSUMED if assumed else FACTOR_CONFIRMED
     confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * factor)))
     warnings = [CODE_ASSUMED] if assumed else []
@@ -117,14 +144,14 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
     for i in range(m.count):
       eid = m.element_ids[i] if i < len(m.element_ids) else None
       solid_id = uuid5(ctx.run_id, f"solid|formwork|{m.measurement_id}|{i}")
-      
       solids.append(Solid(
-        id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=cat, level_id=m.level_id, geometry_kind="QTO_ONLY",
+        id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=ROLE_OF.get(cat, cat), level_id=m.level_id, geometry_kind="QTO_ONLY",
         classification_confidence=m.confidence, confidence_factor=factor, component_type="DERIVED_FORMWORK",
         gross_area_m2=quantity, status="REVIEW_REQUIRED" if warnings else "OK"))
       source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id),
         "page_no": m.page_no, "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count,
-        "size_mm": [float(length), float(width), float(depth)], "faces": [{"name": n, "m2": str(_m2(a))} for n, a in faces]}
+        "size_mm": [float(length), float(width), float(depth)], **({"stair": m.stair} if m.stair else {}), "faces": [{"name": n, "m2": str(_m2(a))} for n, a in faces]}
+      
       rows.append(LedgerEntry(
         solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=code, quantity=quantity, unit="m2", material_grade=None,
         confidence=confidence, formula_code=FORMULA,

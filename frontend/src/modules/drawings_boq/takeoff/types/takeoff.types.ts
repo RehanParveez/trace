@@ -396,6 +396,20 @@ export interface AcceptBody {
   slab_thickness_mm?: number | null;
   beam_depth_mm?: number | null;
   plinth_beam_depth_mm?: number | null;
+  excavation_depth_mm?: number | null;
+  trench_depth_mm?: number | null;
+  pcc_thickness_mm?: number | null;
+  pcc_strip_width_mm?: number | null;
+  pcc_strip_width_thin_mm?: number | null;
+  brick_step_1_height_mm?: number | null;
+  brick_step_2_height_mm?: number | null;
+  brick_step_3_height_mm?: number | null;
+  brick_step_4_height_mm?: number | null;
+  brick_step_offset_mm?: number | null;
+  membrane_width_mm?: number | null;
+  door_frame_width_mm?: number | null;
+  door_frame_width_thin_mm?: number | null;
+  stair_waist_mm?: number | null;
   work_items?: Record<string, string>;
 }
 

@@ -244,7 +244,7 @@ def _name(cand, i: int, n: int) -> str:
 def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=()) -> list:
 
   spec = CATEGORY.get(cand.category)
-  if spec is None or cand.decision == "REJECTED":
+  if spec is None or cand.decision == "REJECTED" or (cand.facts or {}).get("foundation_item"):
     return []
   n = 1 if cand.category in ("WALL", "ROOM", "SLAB") else max(1, min(int(cand.count or 1), MAX_ROWS_PER_CANDIDATE))
   issues, status = _issues(cand)

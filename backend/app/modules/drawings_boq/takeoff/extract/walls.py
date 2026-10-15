@@ -13,6 +13,8 @@ PEAK_CLAIM_DEG = 0.6
 JUNCTION_TOL_PT = 1.5
 MAX_FACE_SPAN_PT = 1.0
 MIN_SEG_PT = 0.5
+BAND_SLACK_PT = 1.0
+BAND_MIN_OVERLAP_PT = 2.0
 
 @dataclass
 class Frame:
@@ -228,10 +230,33 @@ def pair_faces(faces: list[Face], mm_per_pt: float, deadline: float | None = Non
 def _piece_polygon(p: Piece, fr: Frame) -> Polygon:
   return Polygon([fr.pt(p.s0, p.d0), fr.pt(p.s1, p.d0), fr.pt(p.s1, p.d1), fr.pt(p.s0, p.d1)])
 
-def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadline: float | None = None) -> list[Run]:
+def straight_lines(index) -> np.ndarray:
+  """Every straight line of the sheet as rows of (x0, y0, x1, y1)."""
+  if len(index.kinds) == 0:
+    return np.empty((0, 4))
+  raw = np.frombuffer(index.segs, dtype=np.float32).reshape(-1, 5).astype(np.float64)
+  kinds = np.frombuffer(index.kinds, dtype=np.uint8)
+  return raw[kinds == 0][:, :4]
+
+def band_is_clear(lines, fr: Frame, dc: float, a: float, b: float, t_pt: float) -> bool:
+  """True when nothing is drawn along the wall line between a and b: no dashed beam line, no sill line, nothing inside the wall's thickness."""
+  if lines is None or len(lines) == 0:
+    return True
+  sa = lines[:, 0] * fr.ux + lines[:, 1] * fr.uy
+  sb = lines[:, 2] * fr.ux + lines[:, 3] * fr.uy
+  da = lines[:, 0] * fr.nx + lines[:, 1] * fr.ny
+  db = lines[:, 2] * fr.nx + lines[:, 3] * fr.ny
+  along = np.abs(sb - sa)
+  across = np.abs(db - da)
+  inside = (np.abs((da + db) / 2.0 - dc) <= t_pt / 2.0 + BAND_SLACK_PT) & (across <= 0.2 * along + 0.5)
+  over = np.minimum(np.maximum(sa, sb), b) - np.maximum(np.minimum(sa, sb), a)
+  return not bool((inside & (over > BAND_MIN_OVERLAP_PT)).any())
+
+def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadline: float | None = None, lines=None) -> list[Run]:
   if not pieces:
     return []
   gap_max = C.WALL_GAP_MAX_MM / mm_per_pt
+  gap_clear_max = C.WALL_GAP_CLEAR_MAX_MM / mm_per_pt
   polys = [_piece_polygon(p, frames[p.peak]) for p in pieces]
   tree = STRtree(polys)
 
@@ -285,7 +310,10 @@ def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadli
       
         gap = p.s0 - cur.s1
         join = gap <= MERGE_GAP_PT
-        if not join and gap <= gap_max:
+        reach = gap_max
+        if not join and gap_max < gap <= gap_clear_max and band_is_clear(lines, frames[peak], dc, cur.s1, p.s0, cur.t_pt):
+          reach = gap_clear_max
+        if not join and gap <= reach:
           kind = bridge_kind(peak, dc, cur.s1, p.s0, cur.t_pt)
           if kind == "OPENING":
             cur.gaps.append((cur.s1, p.s0))
@@ -398,7 +426,7 @@ def is_light(r: Run, ref: float) -> bool:
 def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: float) -> tuple[list[Frame], list[Run], dict]:
   frames, faces = collect_faces(index, mm_per_pt, deadline, min_width)
   pieces = pair_faces(faces, mm_per_pt, deadline)
-  runs = join_runs(pieces, frames, mm_per_pt, deadline)
+  runs = join_runs(pieces, frames, mm_per_pt, deadline, straight_lines(index))
   stats = settle_junctions(runs, frames, mm_per_pt)
   ref = weight_reference(runs)
   
@@ -413,9 +441,6 @@ def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: flo
   stats.update({"faces": len(faces), "pieces": len(pieces), "runs": len(runs), "dropped_light_loose": len(loose), "weight_ref_pt": round(ref, 4)})
   return frames, runs, stats
 
-# A plan draws its walls with the heaviest pen; dimension lines, furniture, fittings and boundary lines use lighter ones. Pairs of parallel lines
-# in a light pen are not walls. The wall pen is the heaviest line weight that still finds a real share of the standard-thickness walls that
-# all pens together find. A drawing with one pen only, or with walls in a light pen, falls back to all pens.
 PEN_MIN_SHARE = 0.05
 PEN_KEEP_SHARE = 0.25
 PEN_MIN_RUNS = 4

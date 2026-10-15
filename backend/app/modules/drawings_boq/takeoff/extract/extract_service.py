@@ -19,6 +19,9 @@ from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.finish_schedule.common import work_item_catalog
 from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
+from app.modules.drawings_boq.takeoff.extract import foundation as FD
+from app.modules.drawings_boq.takeoff.extract import finishes as FN
+from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, run_extraction
 from app.modules.drawings_boq.takeoff.extract.structure import column_details
 from app.modules.drawings_boq.takeoff.levels import view_level_id
@@ -50,10 +53,26 @@ def _fail(ident: UUID, code: str, message: str) -> dict:
   return {"id": str(ident), "code": code, "message": message}
 
 def fill_missing(category: str, missing: list, params: dict, typed: dict, notes: list | None = None, facts: dict | None = None) -> tuple:
+  item = (facts or {}).get("foundation_item") if category == "WALL" else None
+  if item in FD.ITEMS:
+    return FD.fill_foundation(item, missing, params, typed, facts or {})
+  if item in FN.ITEMS:
+    return FN.fill_finish(item, missing, params, typed, facts or {})
   out = dict(params or {})
   if category == "SLAB" and typed.get("slab_thickness_mm") is not None and any(n.get("code") == "SLAB_THICKNESS_DISAGREES" for n in notes or []):
     out["depth_mm"] = float(typed["slab_thickness_mm"])
     out["dims_basis"] = "SPECIFIED"
+  if category == "STAIR" and "waist_mm" in (missing or []):
+    value = typed.get("stair_waist_mm")
+    
+    if value is None:
+      return out, ("CANDIDATE_NEEDS_DIMENSIONS", "Give the thickness of the waist slab under the steps to measure this stair.")
+    f = facts or {}
+    if not f.get("riser_mm") or not f.get("tread_mm"):
+      return out, ("CANDIDATE_NEEDS_DIMENSIONS", "No size was found for this item. Draw it by hand.")
+    out["depth_mm"] = round(STR.equivalent_depth_mm(float(f["riser_mm"]), float(f["tread_mm"]), float(value)), 1)
+    out["dims_basis"] = "SPECIFIED"
+    missing = [m for m in missing if m != "waist_mm"]
   for need in missing or []:
     spec = HEIGHT_FIELDS.get((category, need))
     
@@ -190,9 +209,9 @@ class ExtractService:
     lowest_level = bool(level_hint) and bool(floors) and floors[0] == level_hint
     try:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
-        content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
+         content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
-        lowest_level=lowest_level)
+        lowest_level=lowest_level, with_finishes=True)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -347,7 +366,14 @@ class ExtractService:
     wanted = {c for c in [*(given.values()), *(r.suggested_work_item for r in rows.values())] if c}
     catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
     typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm,
-      "slab_thickness_mm": payload.slab_thickness_mm}
+      "slab_thickness_mm": payload.slab_thickness_mm, "beam_depth_mm": payload.beam_depth_mm,
+      "plinth_beam_depth_mm": payload.plinth_beam_depth_mm, "excavation_depth_mm": payload.excavation_depth_mm, "trench_depth_mm": payload.trench_depth_mm,
+      "pcc_thickness_mm": payload.pcc_thickness_mm, "pcc_strip_width_mm": payload.pcc_strip_width_mm, "pcc_strip_width_thin_mm": payload.pcc_strip_width_thin_mm,
+      "brick_step_1_height_mm": payload.brick_step_1_height_mm, "brick_step_2_height_mm": payload.brick_step_2_height_mm,
+      "brick_step_3_height_mm": payload.brick_step_3_height_mm, "brick_step_4_height_mm": payload.brick_step_4_height_mm,
+      "brick_step_offset_mm": payload.brick_step_offset_mm, "membrane_width_mm": payload.membrane_width_mm,
+      "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm,
+      "stair_waist_mm": payload.stair_waist_mm}
     accepted: list = []
     failed: list = []
     sheet_levels: dict = {}
@@ -396,6 +422,8 @@ class ExtractService:
           if params != (cand.params or {}):
             if cand.category == "SLAB":
               cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}
+            if FD.is_foundation(cand):
+              cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": {k: params[k] for k in ("width_mm", "depth_mm") if params.get(k) is not None}}
             cand.params = params
       except TraceException as exc:
         failed.append(_fail(cid, exc.code, exc.message))

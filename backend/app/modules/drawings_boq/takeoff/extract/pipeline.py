@@ -9,6 +9,9 @@ from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
 from app.modules.drawings_boq.takeoff.extract import hosts as H
+from app.modules.drawings_boq.takeoff.extract import foundation as FD
+from app.modules.drawings_boq.takeoff.extract import finishes as FN
+from app.modules.drawings_boq.takeoff.extract import flights as FL
 from app.modules.drawings_boq.takeoff.extract import structure as ST
 from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.prep import census
@@ -303,6 +306,7 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
     for g in gs:
       if g["category"] == "COLUMN" and g.get("drawn_mm"):
         seen.setdefault(g["tag"], []).append(g["drawn_mm"])
+        
   for v in plans:
     groups = found[v["key"]]
     ws, sh = words_by.get(v["key"], []), shapes_by.get(v["key"], [])
@@ -313,6 +317,7 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
         g["spread"] = 0.0
         borrowed.add(g["tag"])
     footing = None
+    
     if v.get("foundation"):
       footing = ST.assign_footing_sizes(groups, sizes)
       for w in ST.stair_footings(ws):
@@ -376,6 +381,7 @@ def _mark_tanks(words, walls: list, f: float) -> int:
     if not C.TANK_LABEL.search(w.text or ""):
       continue
     near = []
+    
     for c in walls:
       if c.facts.get("enclosure"):
         continue
@@ -386,6 +392,7 @@ def _mark_tanks(words, walls: list, f: float) -> int:
         near.append(c)
     if len(near) < 3:
       continue
+  
     xs = [p[0] for c in near for p in c.geometry["points"]]
     ys = [p[1] for c in near for p in c.geometry["points"]]
     x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
@@ -444,6 +451,8 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -
     if gaps:
       notes.append(C.note("WALL_OPENINGS_INCLUDED", gaps_mm=gaps, total_mm=sum(gaps)))
       base *= 0.95
+      if max(gaps) > C.WALL_GAP_MAX_MM:
+        notes.append(C.note("WALL_WIDE_OPENING", widest_mm=max(gaps)))
     if r.end0 == "FREE" and r.end1 == "FREE":
       base *= 0.9
     params = {"thickness_mm": use_t}
@@ -494,6 +503,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -
       "construction": "RCC", "gap_pts": [[[round(x, 3) for x in a], [round(x, 3) for x in b]] for a, b in rc["gap_pts"]]}
     key = _key("WALL", round(rc["p0"][0] / 2), round(rc["p0"][1] / 2), round(rc["p1"][0] / 2), round(rc["p1"][1] / 2))
     _, mode, kind = C.SUGGESTIONS["WALL"]
+    
     cand = Candidate(key=key, category="WALL", kind=kind, quantity_mode=mode, label=f"RCC wall {_fmt_mm(use_t)} mm · {cc_m:.2f} m", tag=None,
       geometry={"points": [[round(rc["p0"][0], 4), round(rc["p0"][1], 4)], [round(rc["p1"][0], 4), round(rc["p1"][1], 4)]], "closed": False},
       params=params, missing=missing, work_item="CON-RCC", status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
@@ -512,6 +522,7 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx) -> list:
   out = []
   used: set = set()
   replaced: dict = {}
+  
   for poly, how in items:
     poly = R._clean(poly)
     d = R.describe(poly, names, sizes, f)
@@ -566,6 +577,7 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx) -> list:
     facts = {"name": p["name"], "area_m2": round(area, 3), "perimeter_m": round(2.0 * (p["a_mm"] + p["b_mm"]) / 1000.0, 3), "holes": 0,
       "bbox_mm": [round(p["a_mm"]), round(p["b_mm"])], "size_text": p["size_text"], "label_area_m2": round(area, 3), "outline_from": "LABEL"}
     work_item, mode, kind = C.SUGGESTIONS["ROOM"]
+    
     cand = Candidate(key=_key("ROOM", round(p["x"] / 3), round(p["y"] / 3)), category="ROOM", kind=kind, quantity_mode=mode,
       label=f"{p['name']} · {area:.2f} m²", tag=None, geometry=R.polygon_geometry(poly), params={"dims_basis": "SPECIFIED"},
       missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
@@ -833,10 +845,58 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict) -> 
     out.append(cand)
   return out
 
-def _stair_candidates(lines: list, spec: dict | None, ctx: dict) -> tuple[list, list]:
+def _located_stairs(places: list, spec: dict, ctx: dict) -> list:
+  """One candidate per staircase found by its treads on the plan, with the way it goes when UP or DN is written beside it. The whole stair is measured from
+  the printed detail (steps x tread x width x equivalent thickness); the thickness of the waist slab is typed when the drawing does not print it."""
+  waist = spec.get("waist_mm")
+  printed = bool(waist)
+  box = STR.flight_box(spec, float(waist)) if printed else STR.run_box(spec)
+  work_item, mode, kind = C.SUGGESTIONS["STAIR"]
+  out = []
+  for p in places:
+    notes = [C.note("STAIR_FROM_DETAILS"), C.note("STAIR_LANDINGS_NOT_INCLUDED"), C.note("STAIR_LOCATED_BY_TREADS")]
+    way = p.get("direction")
+    if way == "DOWN":
+      notes.append(C.note("STAIR_DOWN_FLIGHT"))
+    elif way is None:
+      notes.append(C.note("STAIR_DIRECTION_UNKNOWN"))
+    facts = {"stair_text": spec.get("text"), "riser_mm": spec.get("riser_mm"), "tread_mm": spec.get("tread_mm"), "stair_width_mm": spec.get("width_mm"),
+      "steps": spec.get("steps"), "stair_pages": list(spec.get("pages") or []), "direction": way, "treads_drawn": p["treads_drawn"], "width_drawn_mm": p["width_drawn_mm"]}
+    params: dict = {"dims_basis": "SPECIFIED"}
+    missing: list = []
+    base = 0.8 if way else 0.7
+    
+    if box:
+      params.update(box)
+      if printed:
+        facts.update({"waist_mm": round(float(waist), 1), "waist_source": "PRINTED", "equivalent_depth_mm": box["depth_mm"]})
+      else:
+        missing = ["waist_mm"]
+        notes.append(C.note("STAIR_WAIST_NEEDED"))
+        base *= 0.9
+      label = f"Stair {'up' if way == 'UP' else 'down' if way == 'DOWN' else ''}".strip() + f" · {spec['steps']} steps · {_fmt_mm(spec['riser_mm'])}/{_fmt_mm(spec['tread_mm'])} mm · {_fmt_mm(spec['width_mm'])} mm wide"
+    else:
+      missing = ["size"]
+      notes.append(C.note("STAIR_DETAILS_INCOMPLETE"))
+      base *= 0.6
+      label = "Stair"
+    cand = Candidate(key=_key("STAIR", round(p["x"], 1), round(p["y"], 1), 1), category="STAIR", kind=kind, quantity_mode=mode, label=label, tag="STAIR",
+      geometry={"points": [[round(p["x"], 3), round(p["y"], 3)]]}, params=params, missing=missing, work_item=work_item, status="VALID", confidence=0.0,
+      facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
+    cand.status = _status(cand.notes)
+    cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
+    out.append(cand)
+  return out
+
+def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_per_pt: float | None = None) -> tuple[list, list]:
   """One stair candidate per plan that names a staircase, sized from the riser, tread, width and number of steps printed elsewhere on the drawing. The
   concrete is the plan run of the steps x the width x an equivalent thickness (waist slab along the slope plus half a riser). The waist slab is rarely
   printed, so 6 inches is assumed and said so. Landings are not included."""
+  
+  if spec and index is not None and mm_per_pt:
+    places = FL.find_stairs(W.straight_lines(index), spec, mm_per_pt, FL.direction_labels(lines))
+    if places:
+      return _located_stairs(places, spec, ctx), []
   labels = STR.find_labels(lines)
   if not labels:
     return [], []
@@ -922,6 +982,44 @@ def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: boo
     out.extend(_wall_beams(walls, "PLINTH", ctx, level_hint, C.PLINTH_BEAM_MIN_WALL_MM))
   return out
 
+def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None) -> list:
+  """The work under the lowest floor that is worked out from what is already read: a trench, a concrete bed and termite treatment under the walls, the
+  termite treatment under the floor, and, on a basement, the dig over the whole outline of the basement."""
+  spec = level_spec(level_hint)
+  out = FD.strip_candidates(walls, ctx, level_hint, spec, Candidate, _finish)
+  out.extend(FD.brick_step_candidates(walls, ctx, level_hint, spec, Candidate, _finish))
+  membrane = FD.membrane_candidate(walls, ctx, level_hint, spec, Candidate, _finish)
+  if membrane is not None:
+    out.append(membrane)
+  floor = FD.under_floor_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
+  if floor is not None:
+    out.append(floor)
+    
+  if level_hint == "BASEMENT":
+    area = next((a for a in ((schedule or {}).get("areas") or []) if a.get("kind") == "FLOOR" and a.get("key") == level_hint), None)
+    dims = (area or {}).get("dims_mm")
+    if dims and len(dims) == 2:
+      outline, facts, _ = _slab_outline(dims, ((schedule or {}).get("projections") or {}).get(level_hint))
+      pts = [p for w in walls for p in ((w.geometry or {}).get("points") or [])]
+      centre = [round(sum(p[0] for p in pts) / len(pts), 4), round(sum(p[1] for p in pts) / len(pts), 4)] if pts else [0.0, 0.0]
+      cand = FD.excavation_candidate(outline or dims, facts, ctx, level_hint, spec, Candidate, _finish, centre)
+      if cand is not None:
+        out.append(cand)
+  return out
+
+def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None) -> list:
+  """The finishes of every floor that are worked out from what is already read: the kacha bed and the ceiling plaster from the room areas, the plaster on
+  the faces of the walls, and the frames of the doors."""
+  spec = level_spec(level_hint)
+  out = []
+  for build in (FN.kacha_candidate, FN.ceiling_candidate):
+    cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
+    if cand is not None:
+      out.append(cand)
+  out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
+  out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
+  return out
+
 def _view_plans(views: list) -> list:
   """The framing plans of a composite structural sheet (not the foundation plan) as slab plans."""
   out = []
@@ -952,7 +1050,7 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
 def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unverified: bool = False, content_kind: str = "VECTOR",
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
-  lowest_level: bool = False) -> Extraction:
+  lowest_level: bool = False, with_finishes: bool = False) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -995,6 +1093,9 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       res.candidates.append(cand)
     res.notes.extend(notes)
   res.stats["slabs"] = sum(1 for c in res.candidates if c.category == "SLAB")
+  pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish)
+  res.candidates.extend(pads)
+  res.stats["concrete_beds"] = len(pads)
   
   res.stats["sheet_kind"] = kind
   frames, runs = [], []
@@ -1020,7 +1121,7 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
         _hosted_by_tag(hosted.get("by_wall"), walls), ctx)
       res.candidates.extend(lintels)
       res.stats["lintels"] = len(lintels)
-      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx)
+      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt)
       res.candidates.extend(stairs)
       res.notes.extend(stair_notes)
       res.stats["stairs"] = len(stairs)
@@ -1029,7 +1130,16 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       if wstats.get("wall_pen_pt"):
         res.notes.append(C.note("WALL_PEN_SELECTED", pen_pt=wstats["wall_pen_pt"], runs_all_pens=wstats.get("runs_all_pens"),
           wall_m_all_pens=wstats.get("wall_m_all_pens")))
-      res.candidates.extend(_room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx))
+      rooms = _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx)
+      res.candidates.extend(rooms)
+      if with_finishes:
+        finishes = _finish_candidates(walls, rooms, [c for c in res.candidates if c.category == "DOOR"], mm_per_pt, ctx, level_hint)
+        res.candidates.extend(finishes)
+        res.stats["finish_items"] = len(finishes)
+      if lowest_level:
+        below = _foundation_candidates(walls, rooms, schedule, ctx, level_hint)
+        res.candidates.extend(below)
+        res.stats["foundation_items"] = len(below)
     except W.TimeLimit:
       res.notes.append(C.note("TIME_LIMIT"))
   mapped = {c.tag for c in res.candidates if c.tag}

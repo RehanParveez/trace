@@ -414,7 +414,7 @@ class PrepService:
           row[slot] += n
           row["openings_m2"] += n * float(f.get("area_each_m2") or 0.0)
         elif c.category == "WALL":
-          if f.get("enclosure") == "TANK":
+          if f.get("enclosure") == "TANK" or f.get("foundation_item"):
             continue
           length = float(f.get("length_cc_m") or 0.0)
           row["walls_m"] += length

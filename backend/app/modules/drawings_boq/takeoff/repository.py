@@ -2,6 +2,7 @@ from __future__ import annotations
 from app.engine.measure import takeoff as tk
 from app.engine.measure.pdf_steel import clean_steel
 from app.modules.drawings_boq.models import TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
+from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.register import row_id
 from dataclasses import replace
 from decimal import Decimal
@@ -43,12 +44,24 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
     geometry=row.geometry or {}, params=row.params or {}, work_item_code=row.work_item_code, level_id=row.level_id,
     label=row.label, tag=row.tag, material_grade=row.material_grade, recon_mode=row.recon_mode, source=row.source)
 
+
 MEMBER_CATEGORIES = ("FOOTING",)
-FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL", "BEAM")
+FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL", "BEAM", "STAIR")
 
 def _mm(value) -> Decimal | None:
   v = _dec(value)
   return v if v is not None and v > 0 else None
+
+def stair_detail(cand: TakeoffCandidate, depth_mm: Decimal) -> dict | None:
+  """What a flight's formwork needs beyond its box: riser, tread, number of steps and the waist slab, the last found from the equivalent depth the stair was measured with."""
+  f = cand.facts or {}
+  riser, tread, steps = _mm(f.get("riser_mm")), _mm(f.get("tread_mm")), f.get("steps")
+  if riser is None or tread is None or not steps:
+    return None
+  waist = STR.waist_from_depth_mm(float(riser), float(tread), float(depth_mm))
+  if waist <= 0:
+    return None
+  return {"riser_mm": float(riser), "tread_mm": float(tread), "steps": int(steps), "waist_mm": round(waist, 1)}
 
 def member_input(cand: TakeoffCandidate, m: TakeoffMeasurement, sheet: TakeoffSheet) -> tk.MemberInput | None:
   """A counted footing mark placed on its drawing view, or nothing when the mark has no position or no size to place it with."""
@@ -93,18 +106,22 @@ async def load_members(session: AsyncSession, org: UUID, measurements: list, she
       out.append(member)
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
 
+def _rcc_wall(cand: TakeoffCandidate) -> bool:
+  return cand.category == "WALL" and (cand.facts or {}).get("construction") == "RCC"
+
 async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
-  """The accepted column, footing, slab, lintel and beam candidates behind the confirmed measurements, with the size each measurement used. A member needs no
-  position or scale here: the shuttering of a member comes from its size alone."""
-  ids = [m.id for m in measurements if m.quantity_mode == "COUNT_X_VOLUME"]
+  """The accepted column, footing, slab, lintel, beam and stair candidates behind the confirmed measurements, with the size each measurement used, and the
+  RCC walls measured as length x height x thickness. A member needs no position or scale here: the shuttering of a member comes from its size alone, and an
+  RCC wall's from the net area its own measurement worked out."""
+  ids = [m.id for m in measurements if m.quantity_mode in ("COUNT_X_VOLUME", "LENGTH_X_HEIGHT_X_THICKNESS")]
   if not ids:
     return ()
   cands = (await session.execute(
     select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.measurement_id.in_(ids),
-      TakeoffCandidate.category.in_(FORMWORK_CATEGORIES), TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
-  by_measurement = {c.measurement_id: c for c in cands}
+      TakeoffCandidate.category.in_(FORMWORK_CATEGORIES + ("WALL",)), TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
+  by_measurement = {c.measurement_id: c for c in cands if c.category != "WALL" or _rcc_wall(c)}
   wanted = [row_id(sheets[m.sheet_id].id, by_measurement[m.id].ckey, i)
-    for m in measurements if m.id in by_measurement for i in range(len((m.geometry or {}).get("points") or []))]
+    for m in measurements if m.id in by_measurement and by_measurement[m.id].category != "WALL" for i in range(len((m.geometry or {}).get("points") or []))]
   present = set((await session.execute(select(DrawingElement.id).where(DrawingElement.organization_id == org, DrawingElement.id.in_(wanted)))).scalars().all()) if wanted else set()
   out = []
   
@@ -113,16 +130,26 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
     if cand is None:
       continue
     p = m.params or {}
+    sheet = sheets[m.sheet_id]
+    if cand.category == "WALL":
+      thickness, height, run = _mm(p.get("thickness_mm")), _mm(p.get("height_mm")), _mm(((cand.facts or {}).get("length_cc_m") or 0) * 1000)
+      if m.quantity_mode != "LENGTH_X_HEIGHT_X_THICKNESS" or thickness is None or height is None or run is None:
+        continue
+      
+      out.append(tk.FormworkInput(
+        measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category="RCC_WALL", tag=cand.tag or cand.label, level_id=m.level_id,
+        element_ids=(None,), count=1, length_mm=run, width_mm=thickness, depth_mm=height, confidence=_dec(cand.confidence) or Decimal(1)))
+      continue
     length, width, depth = _mm(p.get("length_mm")), _mm(p.get("width_mm")), _mm(p.get("depth_mm"))
     points = (m.geometry or {}).get("points") or []
     if length is None or width is None or depth is None or not points:
       continue
-    sheet = sheets[m.sheet_id]
     ids_here = tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(points)))
     out.append(tk.FormworkInput(
       measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=cand.category, tag=cand.tag, level_id=m.level_id,
       element_ids=tuple(e if e in present else None for e in ids_here), count=len(points), length_mm=length, width_mm=width, depth_mm=depth,
-      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category == "LINTEL" else None))
+      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category == "LINTEL" else None,
+      stair=stair_detail(cand, depth) if cand.category == "STAIR" else None))
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
 
 async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: list[UUID]) -> tk.TakeoffInputs | None:

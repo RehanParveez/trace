@@ -133,6 +133,11 @@ def equivalent_depth_mm(riser_mm: float, tread_mm: float, waist_mm: float) -> fl
   slope = math.hypot(riser_mm, tread_mm) / tread_mm
   return waist_mm * slope + riser_mm / 2.0
 
+def waist_from_depth_mm(riser_mm: float, tread_mm: float, depth_mm: float) -> float:
+  """The waist slab thickness that goes with an equivalent depth: the reverse of equivalent_depth_mm."""
+  slope = math.hypot(riser_mm, tread_mm) / tread_mm
+  return (depth_mm - riser_mm / 2.0) / slope
+
 def flight_box(spec: dict, waist_mm: float) -> dict | None:
   """The box a flight is measured as: plan run (steps x tread) x width x equivalent thickness."""
   for k in ("riser_mm", "tread_mm", "width_mm", "steps"):
@@ -140,3 +145,10 @@ def flight_box(spec: dict, waist_mm: float) -> dict | None:
       return None
   depth = equivalent_depth_mm(float(spec["riser_mm"]), float(spec["tread_mm"]), float(waist_mm))
   return {"length_mm": round(float(spec["steps"]) * float(spec["tread_mm"]), 1), "width_mm": round(float(spec["width_mm"]), 1), "depth_mm": round(depth, 1)}
+
+def run_box(spec: dict) -> dict | None:
+  """The plan run of a flight and its width, with no thickness: the size of a stair whose waist slab is not printed and has to be typed."""
+  for k in ("tread_mm", "width_mm", "steps"):
+    if not spec.get(k):
+      return None
+  return {"length_mm": round(float(spec["steps"]) * float(spec["tread_mm"]), 1), "width_mm": round(float(spec["width_mm"]), 1)}

@@ -140,6 +140,7 @@ class FormworkInput:
   depth_mm: Decimal
   confidence: Decimal = ONE
   steel: dict | None = None
+  stair: dict | None = None
 
 @dataclass(frozen=True)
 class TakeoffInputs:
@@ -864,6 +865,6 @@ def takeoff_payload(inputs: TakeoffInputs | None) -> dict:
       [str(i) for i in b.element_ids], [list(p) for p in b.points_mm], b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.position_basis])
      for b in sorted(inputs.members, key=lambda b: str(b.measurement_id))]} if inputs.members else {}),
     **({"formwork": [_enc([str(b.measurement_id), str(b.candidate_id), b.category, b.tag, str(b.level_id) if b.level_id else None,
-      [str(i) for i in b.element_ids], b.count, b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.steel])
+      [str(i) for i in b.element_ids], b.count, b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.steel, *([b.stair] if b.stair else [])])
       for b in sorted(inputs.formwork, key=lambda b: str(b.measurement_id))]} if inputs.formwork else {}),
   }

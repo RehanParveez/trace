@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 11
+EXTRACT_VERSION = 15
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 152.4
@@ -9,6 +9,12 @@ PLINTH_BEAM_MIN_WALL_MM = 150.0
 SLAB_SECTION_MIN_MM = 75.0
 SLAB_SECTION_MAX_MM = 400.0
 SLAB_SECTION_TOL_MM = 2.0
+FOUNDATION_THIN_WALL_MAX_MM = 150.0
+TRENCH_SIDE_ALLOWANCE_MM = 76.2
+BRICK_STEPS_THICK = 4
+BRICK_STEPS_THIN = 3
+OUTER_WALL_TOL_FACTOR = 1.5
+DOOR_FRAME_THIN_SHARE = 0.5
 
 SUGGESTIONS = {
   "COLUMN": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
@@ -40,8 +46,15 @@ WALL_MIN_FACE_MM = 200.0
 WALL_MIN_OVERLAP_MM = 300.0   
 WALL_MIN_RUN_MM = 900.0       
 WALL_GAP_MAX_MM = 2500.0      
+WALL_GAP_CLEAR_MAX_MM = 3200.0
+STAIR_MIN_TREADS = 4
+STAIR_TREAD_TOL = 0.12
+STAIR_LINE_MIN = 0.6
+STAIR_LINE_MAX = 1.3
+STAIR_ALIGN_PT = 2.5
+STAIR_LABEL_REACH_MM = 6000.0
 STANDARD_TOL = 0.04           
-IMPERIAL_WALLS_MM = (76.2, 114.3, 152.4, 228.6, 342.9, 457.2)     
+IMPERIAL_WALLS_MM = (76.2, 114.3, 152.4, 228.6, 342.9, 457.2)           
 IMPERIAL_TOL = 0.06
 TANK_LABEL = re.compile(r"O\.?\s?H\.?\s?W\.?\s?T|U\.?\s?G\.?\s?W\.?\s?T|\bTANK\b|SEPTIC|\bSUMP\b|MANHOLE", re.I)
 TANK_REACH_MM = 2200.0        
@@ -74,6 +87,7 @@ NOTES = {
   "SCALE_UNVERIFIED": ("warning", "The scale of this sheet is not checked against a printed dimension, so every size here is only as good as that scale."),
   "THICKNESS_OFF_STANDARD": ("warning", "The drawn thickness is not a standard wall size. Check it before measuring."),
   "WALL_OPENINGS_INCLUDED": ("info", "The length runs through the door and window openings. Deduct the openings in the measurement."),
+  "WALL_WIDE_OPENING": ("info", "The wall runs through an opening wider than 2.5 m with nothing drawn in it, so it is counted as one wall. Deduct the opening when you measure."),
   "WALL_BRIDGED": ("info", "The wall lines stop at an opening (a door or window) and the wall runs on to the cross wall. The length includes that opening."),
   "TANK_WALL": ("info", "These walls close in a tank (a tank label is inside them). They are listed so nothing is lost, but they are tank work, not part of the building walls."),
   "OPENINGS_ASSIGNED": ("info", "The doors, windows and ventilators marked beside this wall are listed with it and are deducted when the wall is measured. Check that each belongs to this wall."),
@@ -117,11 +131,41 @@ NOTES = {
   "SLAB_PROJECTION_CONFLICT": ("warning", "The plans of this floor print different roof projection widths for the same side, so that side was not added to the slab. Check the drawing."),
   "SLAB_PROJECTION_AXIS_UNKNOWN": ("warning", "The plans of this floor print roof projections, but the overall lengths printed on them do not match the area table's length and width, so it is not known which sides they widen. They were not added to the slab."),
   "SLAB_AREA_NOT_FOUND": ("warning", "This framing plan shows a slab but the drawing's area table has no covered area for this floor, so the slab was not listed. Measure it with the area tool."),
-  "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),  "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
+  "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
+  "SLAB_PROJECTION_CONFLICT": ("warning", "The plans of this floor print different roof projection widths for the same side, so that side was not added to the slab. Check the drawing."),
+  "SLAB_PROJECTION_AXIS_UNKNOWN": ("warning", "The plans of this floor print roof projections, but the overall lengths printed on them do not match the area table's length and width, so it is not known which sides they widen. They were not added to the slab."),
+  "FOUNDATION_FROM_WALLS": ("info", "This item is not drawn on the plan. It is worked out from the walls measured on the lowest floor: a strip as long as the walls of this thickness laid end to end, concrete walls included, tank walls left out."),
+  "FOUNDATION_WIDTH_TYPED": ("warning", "The widths of the footing strips are drawn on the footing section details as dimension lines, not as text that can be read. Type the width of the strip under walls of this thickness when you accept the item. Walls of the same thickness take one width, whether they stand on the outside of the plan or inside."),
+  "TRENCH_WORKING_SPACE_ASSUMED": ("warning", "The trench is taken 3 inches wider than the concrete bed on each side. The drawing does not print the working space; change the width of the measurement if your practice differs."),
+  "TERMITE_BOTTOM_ONLY": ("info", "Termite treatment is taken on the bottom of the trench only, as wide as the concrete bed. The sides of the trench are not included."),
+  "TERMITE_NO_WORK_ITEM": ("info", "The work item catalog has no termite treatment item, so this measurement is left without one. Assign it when you build the bill."),
+  "EXCAVATION_AREA_FROM_OUTLINE": ("info", "The area is the covered area of the basement printed in the area table, widened by the roof projections printed on the plans (the same outline as the basement slab). The depth is not printed; type the depth dug over the whole building."),
+  "EXCAVATION_OVERLAPS_FOOTING_PITS": ("info", "If you also give the level of the footing bottom when you calculate, the footing pits the calculation derives start at natural ground, so they overlap this dig. Take the pits from one of the two, not both."),
+  "UNDER_FLOOR_FROM_ROOMS": ("info", "The area is the total of the room areas found on this floor. Walls and the area under them are not included; they are taken in the wall strips."),
+  "PCC_PAD_FROM_FOOTINGS": ("info", "The concrete bed under each footing is taken as large as the footing it carries, as many beds as there are footings of this mark. The bed thickness is printed on the footing section details as a dimension line; type it when you accept the item."),
+  "NO_WORK_ITEM": ("info", "The work item catalog has no item for this, so this measurement is left without one. Assign it when you build the bill."),
+  "BRICK_STEPS_ASSUMED": ("warning", "The steps of the brick foundation are drawn on the footing section details as dimension lines, not as text that can be read. Four steps are listed under walls of 6 inches and thicker and three under thinner walls, as is usual for a stepped footing. Reject the steps your section does not show, and type the height of each step and how much each step is narrower than the one below it when you accept."),
+  "BRICK_STEPS_BRICK_ONLY": ("info", "The steps run under the brick walls only. Concrete walls of the same thickness stand on their own footing and are left out."),
+  "MEMBRANE_FROM_WALLS": ("info", "This item is not drawn on the plan. It is the damp-proof membrane along the top of the plinth under all the walls of the lowest floor laid end to end, concrete walls included, tank walls left out. The width of the membrane is not printed as text; type it when you accept the item."),
+  "KACHA_FROM_ROOMS": ("info", "The area of the concrete or kacha bed under the floor is the total of the room areas found on this floor. The walls and the area under them are not included."),
+  "CEILING_FROM_ROOMS": ("info", "The area of the ceiling plaster is the total of the room areas found on this floor. The undersides of the roof projections are not included; they are on the slab sheet."),
+  "PLASTER_FROM_WALLS": ("info", "This item is not drawn on the plan. It is worked out from the walls measured on this floor: the length of each wall, centre to centre, times its height, less the doors and windows set in it, for every face that is plastered."),
+  "PLASTER_OUTER_BY_OUTLINE": ("warning", "A wall is taken as an outer wall when it lies on the outline of the walls of this floor. An outer wall has one inside face and one outside face; any other wall has two inside faces. A wall set back from the outline is taken as an inside wall. Check this against the plan."),
+  "PLASTER_OUTSIDE_SEPARATE": ("info", "The outside faces of the outer walls are a separate item, so that you can accept them on the floors where outside plaster is part of the bill and reject them where it is not."),
+  "PLASTER_HEIGHT_FROM_WALLS": ("info", "The height of each wall is the height found for it. Where it was not found, type the wall height when you accept the item."),
+  "DOOR_FRAME_FROM_DOORS": ("info", "The frame area is the two sides and the top of the door (two heights plus one width) times the width of the frame, for every door of this mark. The width of the frame is not printed as text; type it when you accept the item."),
+  "DOOR_FRAME_WIDTH_BY_WALL": ("warning", "The frame is as wide as the wall it stands in. Doors of this mark were found mostly in walls of this class, so the matching frame width is asked for. Check it against the plan."),
+  "SLAB_AREA_NOT_FOUND": ("warning", "This framing plan shows a slab but the drawing's area table has no covered area for this floor, so the slab was not listed. Measure it with the area tool."),
+  "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
+  "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
   "LINTEL_STEEL_FROM_TABLE": ("info", "The bars and rings of this lintel are the reinforcement printed on the same row of the lintel table. Steel weight is worked out from them when the run is calculated."),
   "STAIR_FROM_DETAILS": ("info", "The staircase is sized from the riser, tread, width and number of steps printed on the drawing. The concrete is measured as the plan run of the steps x the width x an equivalent thickness (the waist slab along the slope plus half a riser)."),
   "STAIR_WAIST_ASSUMED": ("warning", "The drawing does not print the thickness of the waist slab under the steps. 6 inches (152.4 mm) is assumed. Change the depth if the stair section says otherwise."),
   "STAIR_LANDINGS_NOT_INCLUDED": ("info", "Landings and the slab where the stair starts are not part of this quantity. Measure them as slabs."),
+  "STAIR_LOCATED_BY_TREADS": ("info", "This staircase was found from its treads drawn on the plan. The plan may stop drawing the treads at the cut line, so the steps of the whole stair come from the printed detail."),
+  "STAIR_DOWN_FLIGHT": ("warning", "This flight is marked DN. It is the same staircase as the UP flight on the floor below. Accept it only once, on one of the two plans."),
+  "STAIR_DIRECTION_UNKNOWN": ("info", "No UP or DN is written beside this staircase. Check on the plan whether it is the same staircase as one on another floor."),
+  "STAIR_WAIST_NEEDED": ("warning", "The drawing does not print the thickness of the waist slab under the steps. Type it when you accept the stair."),
   "STAIR_COUNT_FROM_LABELS": ("info", "The number of staircases is the number of times this plan names a staircase. Check it against the plan."),
   "STAIR_DETAILS_INCOMPLETE": ("warning", "The drawing prints some of the stair details (riser, tread, width, number of steps) but not all of them, so the stair cannot be sized. Type the missing size when you measure it."),
   "STAIR_DETAILS_NOT_FOUND": ("info", "This plan shows a staircase but no sheet of the drawing prints its riser, tread, width and number of steps. The staircase was not listed. Measure it by hand."),
