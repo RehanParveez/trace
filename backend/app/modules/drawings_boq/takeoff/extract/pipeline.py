@@ -615,7 +615,84 @@ def _slab_thickness(note_mm, slab_values: list) -> tuple:
     return None, None, [C.note("SLAB_THICKNESSES_LISTED", options_mm=[v["mm"] for v in values])]
   return None, None, []
 
-def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict) -> tuple:
+def _slab_options(t, source, slab_values: list, implied) -> list:
+  """Every thickness the drawing supports for one slab, each with the places that print it: the plan note or the one used, the other sheets that print a
+  slab thickness, and the thickness the building sections imply (floor-to-floor height less clear storey height)."""
+  out: list = []
+  def add(mm, src, pages=None):
+    if not mm:
+      return
+    for o in out:
+      if abs(o["mm"] - mm) <= 1.0:
+        if src not in o["sources"]:
+          o["sources"].append(src)
+        o["pages"] = sorted(set(o["pages"]) | set(pages or []))
+        return
+    out.append({"mm": float(mm), "sources": [src], "pages": sorted(set(pages or []))})
+  add(t, source or "PLAN_NOTE")
+  for v in slab_values or []:
+    add(v.get("mm"), "OTHER_SHEET", v.get("pages"))
+  add(implied, "SECTIONS")
+  return out
+
+def _implied_slab_mm(floor_heights: dict | None, hint: str | None) -> float | None:
+  """The slab thickness the building sections imply for one floor: the floor-to-floor height less the clear storey height."""
+  fh = (floor_heights or {}).get(hint or "") or {}
+  ftf, clear = fh.get("floor_to_floor_mm"), fh.get("clear_mm")
+  if not ftf or not clear:
+    return None
+  mm = float(ftf) - float(clear)
+  return round(mm, 1) if C.SLAB_SECTION_MIN_MM <= mm <= C.SLAB_SECTION_MAX_MM else None
+
+def _outline_axes(dims, printed: list) -> tuple | None:
+  """(horizontal mm, vertical mm) of the covered area: the overall lengths printed on the plans along each direction are matched to the two sides of the
+  area table's rectangle. None when they cannot be matched."""
+  a, b = float(dims[0]), float(dims[1])
+  def has(axis: str, v: float) -> bool:
+    return any(d.get("axis") == axis and abs(float(d["mm"]) - v) <= 0.015 * v for d in printed)
+  ah, av, bh, bv = has("H", a), has("V", a), has("H", b), has("V", b)
+  if ah and bv and not (av and bh):
+    return a, b
+  if bh and av and not (ah and bv):
+    return b, a
+  if ah and bv and av and bh and abs(a - b) <= 0.015 * a:
+    return a, b
+  return None
+
+def _slab_outline(dims, proj: dict | None) -> tuple:
+  """(outline (length, width) mm or None, facts, notes): the covered area of a floor widened by the roof projections its plans print, one width per side.
+  The slab is the plan outline plus the projection on each side, corners included. A side printed twice with different widths, or a label that sits in no
+  clear side of the page, is not added."""
+  if not proj or not dims or len(dims) != 2:
+    return None, {}, []
+
+  sides = dict(proj.get("sides") or {})
+  unplaced, conflicts = proj.get("unplaced") or [], proj.get("conflicts") or []
+  if not sides and not unplaced and not conflicts:
+    return None, {}, []
+  notes: list = []
+  
+  facts: dict = {"projections": {"sides": {k: v["width_mm"] for k, v in sides.items()}, "text": {k: v["text"] for k, v in sides.items()},
+    "pages": sorted({p for v in sides.values() for p in v.get("pages", [])}), "applied": False}}
+  if unplaced:
+    notes.append(C.note("SLAB_PROJECTION_UNPLACED", labels=[u["text"] for u in unplaced]))
+  if conflicts:
+    notes.append(C.note("SLAB_PROJECTION_CONFLICT", sides=[{"side": c["side"], "widths_mm": c["widths_mm"]} for c in conflicts]))
+  if not sides:
+    return None, facts, notes
+  axes = _outline_axes(dims, proj.get("dims") or [])
+  if axes is None:
+    notes.append(C.note("SLAB_PROJECTION_AXIS_UNKNOWN"))
+    return None, facts, notes
+  h, v = axes
+  w = {k: float(sides[k]["width_mm"]) if k in sides else 0.0 for k in ("TOP", "BOTTOM", "LEFT", "RIGHT")}
+  outline = (h + w["LEFT"] + w["RIGHT"], v + w["TOP"] + w["BOTTOM"])
+  facts["projections"]["applied"] = True
+  facts["projections"]["table_dims_mm"] = [h, v]
+  notes.append(C.note("SLAB_PROJECTIONS_ADDED", sides={k: v_["text"] for k, v_ in sides.items()}))
+  return outline, facts, notes
+
+def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict, implied_mm: float | None = None, projections: dict | None = None) -> tuple:
   """One slab per floor from a structural framing plan: the covered area printed for that floor in the area table, as the rectangle (length x width)
   printed beside it, with the thickness of the plan's slab note. Nothing is measured from the drawn lines, so the scale of the sheet does not enter.
   Returns (candidate or None, notes for the sheet)."""
@@ -625,14 +702,24 @@ def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict) -> tu
   if area is None:
     return None, [C.note("SLAB_AREA_NOT_FOUND", floor=spec[0] if spec else hint, caption=plan.get("caption"))]
   t, source, notes = _slab_thickness(plan.get("note_mm"), slab_values)
+  options = _slab_options(t, source, slab_values, implied_mm)
+  if implied_mm:
+    notes.append(C.note("SLAB_THICKNESS_SECTIONS", implied_mm=implied_mm))
+    for n in notes:
+      if n["code"] == "SLAB_THICKNESS_DISAGREES":
+        n["sections_mm"] = implied_mm
+        
   params: dict = {"dims_basis": "SPECIFIED"}
   missing: list = []
   dims = area.get("dims_mm")
   base = 0.9
-  
+  outline, outline_facts, outline_notes = _slab_outline(dims, (projections or {}).get(hint) if hint else None)
   if dims and len(dims) == 2:
-    params["length_mm"], params["width_mm"] = float(dims[0]), float(dims[1])
+    params["length_mm"], params["width_mm"] = (float(outline[0]), float(outline[1])) if outline else (float(dims[0]), float(dims[1]))
     notes.append(C.note("SLAB_AREA_FROM_TABLE"))
+    notes.extend(outline_notes)
+    if outline_notes:
+      base *= 0.95
   else:
     missing.append("size")
     notes.append(C.note("SLAB_SIZE_NOT_PRINTED"))
@@ -645,16 +732,25 @@ def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict) -> tu
   if any(n["code"] == "SLAB_THICKNESS_DISAGREES" for n in notes):
     base *= 0.9
   m2 = float(area["m2"])
-  label = "Slab" + (f" {_inch_text(t)}" if t else "") + f" · {m2:.2f} m²" + (f" · {spec[0]}" if spec else "")
+  gross_m2 = float(outline[0]) * float(outline[1]) / 1e6 if outline else m2
+  label = "Slab" + (f" {_inch_text(t)}" if t else "") + f" · {gross_m2:.2f} m²" + (f" · {spec[0]}" if spec else "")
   facts = {"floor": hint, "area_m2": m2, "area_text": f"{area['value']:g} {area['unit']}", "area_name": area.get("name"), "area_pages": area.get("pages", []),
-    "thickness_mm": t, "thickness_source": source, "panels": plan.get("panels", 0), "panel_marks": plan.get("marks", [])}
+    "thickness_mm": t, "thickness_source": source, "thickness_options": options, "thickness_sections_mm": implied_mm, "panels": plan.get("panels", 0),
+    "panel_marks": plan.get("marks", [])}
+  
   if dims:
     facts["dims_mm"] = [float(dims[0]), float(dims[1])]
     facts["dims_text"] = area.get("dims_text")
+  facts.update(outline_facts)
+  if outline:
+    facts["outline_dims_mm"] = [round(float(outline[0]), 1), round(float(outline[1]), 1)]
+    facts["gross_area_m2"] = round(gross_m2, 3)
+    facts["projection_area_m2"] = round(gross_m2 - m2, 3)
   if t and dims:
-    facts["volume_m3"] = round(float(dims[0]) * float(dims[1]) * t / 1e9, 4)
+    facts["volume_m3"] = round(float(params["length_mm"]) * float(params["width_mm"]) * t / 1e9, 4)
   if plan.get("view"):
     facts["view"] = plan["view"]
+    
   work_item, mode, kind = C.SUGGESTIONS["SLAB"]
   cand = Candidate(key=_key("SLAB", hint, plan.get("key") or ""), category="SLAB", kind=kind, quantity_mode=mode, label=label, tag="SLAB",
     geometry={"points": [[round(plan["centre"][0], 4), round(plan["centre"][1], 4)]]}, params=params, missing=missing, work_item=work_item,
@@ -777,6 +873,55 @@ def _stair_candidates(lines: list, spec: dict | None, ctx: dict) -> tuple[list, 
   cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
   return [cand], []
 
+def _inch_label(mm: float) -> str:
+  return f"{mm / 25.4:g}"
+
+def _wall_beams(walls: list, role: str, ctx: dict, level_hint: str | None, min_wall_mm: float = 0.0) -> list:
+  """One beam candidate per wall thickness: the brick walls of this floor laid end to end, as wide as the wall. The depth is not drawn, so it is left to be
+  typed when the beam is accepted."""
+  groups: dict = {}
+  for w in walls:
+    f = w.facts or {}
+    if w.category != "WALL" or f.get("construction") == "RCC" or f.get("enclosure") == "TANK" or w.status == "INVALID":
+      continue
+    t = float(f.get("thickness_used_mm") or 0.0)
+    if t <= 0.0 or t < min_wall_mm:
+      continue
+    groups.setdefault(round(t, 1), []).append(w)
+  out = []
+  spec = level_spec(level_hint)
+  work_item, mode, kind = ("CON-RCC", "COUNT_X_VOLUME", "COUNT")
+  for t, ws in sorted(groups.items(), reverse=True):
+    length_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws)
+    if length_m <= 0.0:
+      continue
+  
+    pts = [p for w in ws for p in ((w.geometry or {}).get("points") or [])]
+    cx = sum(p[0] for p in pts) / len(pts) if pts else 0.0
+    cy = sum(p[1] for p in pts) / len(pts) if pts else 0.0
+    prefix = "PLINTH-BEAM" if role == "PLINTH" else "ROOF-BEAM"
+    tag = f"{prefix}-{_inch_label(t)}IN"
+    notes = [C.note("BEAM_FROM_WALLS"), C.note("BEAM_OVER_OPENINGS")]
+    if role == "PLINTH":
+      notes.append(C.note("PLINTH_BEAM_UNDER_9IN"))
+    facts = {"derived_from": "WALLS", "beam_role": role, "wall_thickness_mm": t, "wall_count": len(ws), "length_m": round(length_m, 3),
+      "wall_keys": [w.key for w in ws], "openings_m": round(sum(sum((w.facts or {}).get("gaps_mm") or []) for w in ws) / 1000.0, 3)}
+    kindname = "Plinth beam" if role == "PLINTH" else "Roof beam"
+    label = f"{kindname} under {_inch_label(t)} in walls · {length_m:.2f} m" + (f" · {spec[0]}" if spec else "")
+    cand = Candidate(key=_key("BEAM", role, round(t), level_hint or ""), category="BEAM", kind=kind, quantity_mode=mode, label=label, tag=tag,
+      geometry={"points": [[round(cx, 4), round(cy, 4)]]}, params={"length_mm": round(length_m * 1000.0, 1), "width_mm": t, "dims_basis": "SPECIFIED"},
+      missing=["depth_mm"], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
+    out.append(_finish(cand, ctx, 0.7))
+  return out
+
+def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: bool) -> list:
+  """The beams that sit on the brick walls of a floor plan: a roof beam under the slab above the walls of this floor, and, on the lowest floor, a plinth
+  beam under the walls of 6 inches and thicker."""
+  out = _wall_beams(walls, "ROOF", ctx, level_hint)
+  if lowest:
+    out.extend(_wall_beams(walls, "PLINTH", ctx, level_hint, C.PLINTH_BEAM_MIN_WALL_MM))
+  return out
+
 def _view_plans(views: list) -> list:
   """The framing plans of a composite structural sheet (not the foundation plan) as slab plans."""
   out = []
@@ -806,7 +951,8 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
 
 def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unverified: bool = False, content_kind: str = "VECTOR",
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
-  floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT") -> Extraction:
+  floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
+  lowest_level: bool = False) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -842,9 +988,10 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
   areas = {a["key"]: a for a in ((schedule or {}).get("areas") or []) if a.get("kind") == "FLOOR"}
   seen_floor: set = set()
   for plan in plans:
-    cand, notes = _slab_candidate(plan, areas, slab_values or [], ctx)
+    cand, notes = _slab_candidate(plan, areas, slab_values or [], ctx, _implied_slab_mm(floor_heights, plan.get("level_hint")), (schedule or {}).get("projections"))
     if cand is not None and plan["level_hint"] not in seen_floor:
       seen_floor.add(plan["level_hint"])
+
       res.candidates.append(cand)
     res.notes.extend(notes)
   res.stats["slabs"] = sum(1 for c in res.candidates if c.category == "SLAB")
@@ -859,6 +1006,9 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       res.candidates.extend(walls)
       wstats["tank_walls"] = _mark_tanks(words, walls, mm_per_pt)
       _drop_tank_heights(walls)
+      beams = _beam_candidates(walls, ctx, level_hint, lowest_level)
+      res.candidates.extend(beams)
+      res.stats["wall_beams"] = len(beams)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
       wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
       for c in walls:

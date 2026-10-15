@@ -441,7 +441,14 @@ class PrepService:
 
   @staticmethod
   def _schedule_sheets(sheets: list) -> list:
-    return [{"page_no": s.page_no, "schedule": (s.prep_meta or {}).get("schedule")} for s in sheets if (s.prep_meta or {}).get("schedule")]
+    out = []
+    for s in sheets:
+      meta = s.prep_meta or {}
+      title = meta.get("title") or {}
+      if not meta.get("schedule") and not meta.get("projections"):
+        continue
+      out.append({"page_no": s.page_no, "schedule": meta.get("schedule"), "level_hint": None if title.get("composite") else title.get("level_hint"), "projections": meta.get("projections")})
+    return out
 
   async def drawing_schedule(self, org: UUID, drawing_id: UUID) -> dict:
     """The door / window / ventilator sizes and floor areas printed anywhere on the drawing. A mark on the plan of one sheet is sized by the schedule on another."""

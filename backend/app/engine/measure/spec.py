@@ -129,7 +129,7 @@ def describe_spec(spec: dict | None) -> str | None:
     cat = spec.get("category")
     if cat == "SLAB":
       return "soffit and edges" if p.get("slab_edge_formwork", 1) >= 0.5 else "soffit only"
-    return {"COLUMN": "all four faces", "FOOTING": "four sides", "LINTEL": "soffit and both sides"}.get(cat or "", "worked out from the concrete read from the drawing")
+    return {"COLUMN": "all four faces", "FOOTING": "four sides", "LINTEL": "soffit and both sides", "BEAM": "soffit and both sides"}.get(cat or "", "worked out from the concrete read from the drawing")
   if spec.get("kind") == "DERIVED":
     p = spec.get("params") or {}
     bits: list[str] = []

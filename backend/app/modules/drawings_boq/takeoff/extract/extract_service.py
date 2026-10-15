@@ -31,6 +31,7 @@ HEIGHT_FIELDS = {
   ("COLUMN", "height_mm"): ("column_height_mm", "depth_mm", "the column height"),
   ("FOOTING", "depth_mm"): ("footing_depth_mm", "depth_mm", "the footing depth"),
   ("SLAB", "thickness_mm"): ("slab_thickness_mm", "depth_mm", "the slab thickness"),
+  ("BEAM", "depth_mm"): ("beam_depth_mm", "depth_mm", "the beam depth"),
 }
 
 def _now() -> datetime:
@@ -48,14 +49,19 @@ def index_stamp(meta) -> str:
 def _fail(ident: UUID, code: str, message: str) -> dict:
   return {"id": str(ident), "code": code, "message": message}
 
-def fill_missing(category: str, missing: list, params: dict, typed: dict) -> tuple:
+def fill_missing(category: str, missing: list, params: dict, typed: dict, notes: list | None = None, facts: dict | None = None) -> tuple:
   out = dict(params or {})
+  if category == "SLAB" and typed.get("slab_thickness_mm") is not None and any(n.get("code") == "SLAB_THICKNESS_DISAGREES" for n in notes or []):
+    out["depth_mm"] = float(typed["slab_thickness_mm"])
+    out["dims_basis"] = "SPECIFIED"
   for need in missing or []:
     spec = HEIGHT_FIELDS.get((category, need))
     
     if spec is None:
       return out, ("CANDIDATE_NEEDS_DIMENSIONS", "No size was found for this item. Draw it by hand.")
     field, target, words = spec
+    if category == "BEAM" and (facts or {}).get("beam_role") == "PLINTH":
+      field, words = "plinth_beam_depth_mm", "the plinth beam depth"
     value = typed.get(field)
     if value is None:
       return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {words} to measure this item.")
@@ -180,13 +186,17 @@ class ExtractService:
     slab_values = await self.prep.drawing_slab_values(org, sheet.drawing_id)
     title = (sheet.prep_meta or {}).get("title") or {}
     level_hint = None if title.get("composite") else title.get("level_hint")
+    floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
+    lowest_level = bool(level_hint) and bool(floors) and floors[0] == level_hint
     try:
-       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
+      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
         content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
-        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"))
+        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
+        lowest_level=lowest_level)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
+  
     found = result.candidates
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
@@ -354,10 +364,10 @@ class ExtractService:
       if cand.status == "INVALID":
         failed.append(_fail(cid, "CANDIDATE_INVALID", "This item has an error and cannot be measured."))
         continue
-      if cand.category == "BEAM":
+      if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") != "WALLS":
         failed.append(_fail(cid, "CANDIDATE_NOT_MEASURABLE", "Beam marks are only counted. Draw the beam lengths with the length tool."))
         continue
-      params, problem = fill_missing(cand.category, cand.missing or [], cand.params or {}, typed)
+      params, problem = fill_missing(cand.category, cand.missing or [], cand.params or {}, typed, cand.notes or [], cand.facts or {})
       if problem:
         failed.append(_fail(cid, *problem))
         continue
@@ -383,6 +393,10 @@ class ExtractService:
         async with self.session.begin_nested():
           m = await self.core.create_measurement(org, cand.sheet_id, user_id, request, commit=False)
           cand.decision, cand.measurement_id, cand.decided_by_user_id, cand.decided_at = "ACCEPTED", m.id, user_id, _now()
+          if params != (cand.params or {}):
+            if cand.category == "SLAB":
+              cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}
+            cand.params = params
       except TraceException as exc:
         failed.append(_fail(cid, exc.code, exc.message))
         continue

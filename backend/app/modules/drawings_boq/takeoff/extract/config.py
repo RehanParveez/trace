@@ -1,10 +1,14 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 9
+EXTRACT_VERSION = 11
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 152.4
+PLINTH_BEAM_MIN_WALL_MM = 150.0
+SLAB_SECTION_MIN_MM = 75.0
+SLAB_SECTION_MAX_MM = 400.0
+SLAB_SECTION_TOL_MM = 2.0
 
 SUGGESTIONS = {
   "COLUMN": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
@@ -101,12 +105,19 @@ NOTES = {
   "ROOM_OUTLINE_REPLACED": ("info", "The walls drawn around this label gave another area than the printed size, so the printed size is used."),
   "SLAB_AREA_FROM_TABLE": ("info", "The slab area is the covered area of this floor printed in the area table of the drawing, taken as one rectangle (its printed length x width). Openings in the slab (a stair well, a shaft) are not deducted and cantilevers beyond the covered area (sunshades, porch roofs) are not added. Check both against the framing plan."),
   "SLAB_SIZE_NOT_PRINTED": ("warning", "The area table gives the covered area of this floor but not its length and width, so the slab cannot be measured from it. Measure the slab with the area tool."),
-  "SLAB_THICKNESS_DISAGREES": ("warning", "The slab note on the framing plan and another sheet of the drawing print different slab thicknesses. The framing plan note is used. Check which one is right before measuring."),
+  "SLAB_THICKNESS_DISAGREES": ("warning", "The slab note on the framing plan and another sheet of the drawing print different slab thicknesses. The framing plan note is used unless you type another thickness when you accept the slab. Check which one is right before measuring."),
   "SLAB_THICKNESS_FROM_OTHER_SHEET": ("info", "This framing plan has no slab note. The slab thickness printed elsewhere on the drawing is used."),
   "SLAB_THICKNESSES_LISTED": ("warning", "This framing plan has no slab note and the drawing prints more than one slab thickness, so none was chosen. Pick the thickness for this slab."),
+  "SLAB_THICKNESS_SECTIONS": ("info", "The building sections of the drawing give a floor-to-floor height and a clear storey height; their difference is the slab thickness they imply. It is a second witness for this slab, not a decision: type the thickness you want to measure with."),
+  "BEAM_FROM_WALLS": ("info", "This beam is not drawn on the plan. It is worked out from the walls measured on this floor: a beam runs on top of each brick wall, as wide as the wall, over the whole wall length. The section printed on the drawing is not read."),
+  "BEAM_OVER_OPENINGS": ("info", "The length is the full length of the walls, door and window openings included, because the beam runs on over them."),
+  "PLINTH_BEAM_UNDER_9IN": ("info", "A plinth beam is taken under the brick walls of 6 inches or more on the lowest floor. Walls thinner than that and concrete walls get none."),
+  "SLAB_PROJECTIONS_ADDED": ("info", "The plans of this floor print roof projections (the slab reaches past the walls). They are added to the covered area of the floor on the sides where they are printed, corners included, so this slab is the plan outline plus its projections, as a quantity surveyor takes it. The widths are printed; which side each belongs to is read from where its label sits on the plan."),
+  "SLAB_PROJECTION_UNPLACED": ("warning", "A roof projection label of this floor sits too near the middle of the page for its side to be read, so it was not added to the slab. Check which side it belongs to."),
+  "SLAB_PROJECTION_CONFLICT": ("warning", "The plans of this floor print different roof projection widths for the same side, so that side was not added to the slab. Check the drawing."),
+  "SLAB_PROJECTION_AXIS_UNKNOWN": ("warning", "The plans of this floor print roof projections, but the overall lengths printed on them do not match the area table's length and width, so it is not known which sides they widen. They were not added to the slab."),
   "SLAB_AREA_NOT_FOUND": ("warning", "This framing plan shows a slab but the drawing's area table has no covered area for this floor, so the slab was not listed. Measure it with the area tool."),
-  "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
-  "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
+  "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),  "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
   "LINTEL_STEEL_FROM_TABLE": ("info", "The bars and rings of this lintel are the reinforcement printed on the same row of the lintel table. Steel weight is worked out from them when the run is calculated."),
   "STAIR_FROM_DETAILS": ("info", "The staircase is sized from the riser, tread, width and number of steps printed on the drawing. The concrete is measured as the plan run of the steps x the width x an equivalent thickness (the waist slab along the slope plus half a riser)."),
   "STAIR_WAIST_ASSUMED": ("warning", "The drawing does not print the thickness of the waist slab under the steps. 6 inches (152.4 mm) is assumed. Change the depth if the stair section says otherwise."),

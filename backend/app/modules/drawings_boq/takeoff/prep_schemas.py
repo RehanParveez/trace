@@ -85,11 +85,23 @@ class ScheduleStair(BaseModel):
   text: str | None = None
   pages: list[int] = Field(default_factory=list)
 
+class ProjectionSide(BaseModel):
+  width_mm: float
+  text: str | None = None
+  pages: list[int] = Field(default_factory=list)
+
+class FloorProjections(BaseModel):
+  sides: dict[str, ProjectionSide] = Field(default_factory=dict)
+  unplaced: list[dict] = Field(default_factory=list)
+  conflicts: list[dict] = Field(default_factory=list)
+  dims: list[dict] = Field(default_factory=list)
+
 class DrawingSchedule(BaseModel):
   openings: list[ScheduleOpening] = Field(default_factory=list)
   areas: list[ScheduleArea] = Field(default_factory=list)
   lintels: list[ScheduleLintel] = Field(default_factory=list)
   tie_band: ScheduleTieBand | None = None
+  projections: dict[str, FloorProjections] = Field(default_factory=dict)
   stair: ScheduleStair | None = None
   conflicts: list[dict] = Field(default_factory=list)
 

@@ -12,9 +12,9 @@ RECIPE_CODE = "STRUCT_FORMWORK"
 RECIPE_TYPES = ("IfcColumn", "IfcBeam", "IfcSlab", "IfcFooting")
 FOOTING_PARAM, SLAB_EDGE_PARAM = "footing_formwork", "slab_edge_formwork"
 FORMWORK_PARAMS = (FOOTING_PARAM, SLAB_EDGE_PARAM)
-PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": ()}
+PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": (), "BEAM": ()}
 CATEGORIES = tuple(PARAMS_USED)
-IFC_OF = {"COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "LINTEL": "IfcBeam"}
+IFC_OF = {"COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "LINTEL": "IfcBeam", "BEAM": "IfcBeam"}
 MM2_PER_M2 = Decimal("1000000")
 MAX_MARKS = 5000
 
@@ -32,7 +32,7 @@ def _m2(mm2: Decimal) -> Decimal:
 
 def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, edges: bool) -> list:
   """The shuttered faces of one member, as (name, area in mm2). A column carries all four vertical faces over its height; a footing its four sides over its
-  depth; a slab its soffit and, when edge forms are wanted, the four edges over its thickness; a lintel its soffit and both sides (the top is open)."""
+  depth; a slab its soffit and, when edge forms are wanted, the four edges over its thickness; a lintel or a beam its soffit and both sides (the top is open)."""
   perimeter = 2 * (length + width)
   if category == "COLUMN":
     return [("vertical_faces", perimeter * depth)]
@@ -43,7 +43,7 @@ def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, ed
     if edges:
       out.append(("edges", perimeter * depth))
     return out
-  if category == "LINTEL":
+  if category in ("LINTEL", "BEAM"):
     return [("soffit", length * width), ("sides", 2 * length * depth)]
   return []
 
@@ -59,7 +59,7 @@ def _recipe_code(profile) -> str | None:
   return None
 
 def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledger=()) -> FormworkResult:
-  """Formwork area for the concrete members read from a PDF and counted in this run: columns, footings, slabs and lintels. One row per mark, so a row
+  """Formwork area for the concrete members read from a PDF and counted in this run: columns, footings, slabs, lintels and beams. One row per mark, so a row
   opens the mark it came from. Faces that touch other concrete (a slab over its beams, a column through a slab) are not taken off: the members of a PDF
   are not placed in one building frame yet, so that contact cannot be found, and the area is reported as the gross shuttering of each member."""
   stats: dict = {"enabled": True, "ran": False}

@@ -74,11 +74,14 @@ def _slab_text(cand, page_no: int, measurement) -> str:
   pages = ", ".join(str(x) for x in (facts.get("area_pages") or []))
   parts = [f"Covered area of the floor from the area table{' on sheet ' + pages if pages else ''}"]
   parts.append("length x width printed with it" if facts.get("dims_mm") else "length and width not printed")
-  
+  if (facts.get("projections") or {}).get("applied"):
+    parts.append(f"plus roof projections printed on the floor plan ({facts.get('projection_area_m2', 0):.2f} m2)")
   if p.get("depth_mm") is None:
     parts.append("thickness needed")
   elif facts.get("thickness_source") == "OTHER_SHEET":
     parts.append("thickness printed on another sheet")
+  elif facts.get("thickness_source") == "TYPED":
+    parts.append("thickness typed")
   elif "SLAB_THICKNESS_DISAGREES" in codes:
     parts.append(f"thickness from the slab note on sheet {page_no} (another sheet prints a different one)")
   else:
@@ -93,6 +96,17 @@ def _lintel_text(cand, page_no: int, measurement) -> str:
   p, facts = cand.params or {}, cand.facts or {}
   parts = [f"Opening marks counted on sheet {page_no}"]
   parts.append("section from the lintel table, length = opening width + bearing each end (bearing assumed)" if p.get("depth_mm") is not None else "span wider than the lintel table, section needed")
+  if cand.decision == "ACCEPTED" and measurement is not None:
+    parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
+  else:
+    parts.append("found, not measured yet")
+  return " · ".join(parts)
+
+def _beam_text(cand, page_no: int, measurement) -> str:
+  p, facts = cand.params or {}, cand.facts or {}
+  role = "plinth beam" if facts.get("beam_role") == "PLINTH" else "roof beam"
+  parts = [f"Brick walls measured on sheet {page_no}", f"{role} laid over {facts.get('wall_count', 0)} walls of {(facts.get('wall_thickness_mm') or 0) / 25.4:g} in, as wide as the wall",
+    "depth typed" if p.get("depth_mm") is not None else "depth needed"]
   if cand.decision == "ACCEPTED" and measurement is not None:
     parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
   else:
@@ -116,6 +130,8 @@ def _measured_text(cand, page_no: int, measurement) -> str:
     return _slab_text(cand, page_no, measurement)
   if cand.category == "LINTEL":
     return _lintel_text(cand, page_no, measurement)
+  if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") == "WALLS":
+    return _beam_text(cand, page_no, measurement)
   p, facts, codes = cand.params or {}, cand.facts or {}, {n.get("code") for n in (cand.notes or [])}
   parts = []
   
@@ -161,10 +177,12 @@ def _quantity(cand, n: int, measurement) -> tuple:
   if measurement is not None and q is not None and unit:
     return _d(q / max(n, 1)), unit, "PDF_MEASURED"
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
-  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR"):
+  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR") or _wall_beam(cand):
     a, b, h = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
     if a and b and h:
       return _d(a * b * h / 1e9), "m3", "PDF_DRAWN"
+    if _wall_beam(cand):
+      return _d((a or 0) / 1000.0), "m", "PDF_DRAWN"
     return Decimal("1"), "nos", "PDF_COUNT"
 
   if cat == "WALL":
@@ -185,7 +203,7 @@ def _quantity(cand, n: int, measurement) -> tuple:
 def _sizes(cand) -> dict:
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
   out: dict = {}
-  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR"):
+  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR") or _wall_beam(cand):
     out = {"length_mm": _num(p.get("length_mm")), "width_mm": _num(p.get("width_mm")), "height_mm": _num(p.get("depth_mm"))}
     if all(out.values()):
       out["volume_mm3"] = out["length_mm"] * out["width_mm"] * out["height_mm"]
@@ -212,10 +230,13 @@ def _sizes(cand) -> dict:
       out["volume_mm3"] = a * b * t
   return {k: _d(v, 3) for k, v in out.items() if v}
 
+def _wall_beam(cand) -> bool:
+  return cand.category == "BEAM" and (cand.facts or {}).get("derived_from") == "WALLS"
+
 def _name(cand, i: int, n: int) -> str:
   if cand.category == "ROOM":
     return (cand.facts or {}).get("name") or "Room (no name found)"
-  if cand.category in ("WALL", "SLAB"):
+  if cand.category in ("WALL", "SLAB") or _wall_beam(cand):
     return cand.label
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
@@ -265,7 +286,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "discipline": spec["discipline"], "structural_role": spec["role"], "classification_source": "PDF_EXTRACT",
       "classification_confidence": _d(cand.confidence or 0), "quantity_source": qsrc, "level_id": level_id,
       "geometry_kind": None, "normalization_status": status, "normalization_issues": issues,
-      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else "Staircase" if cand.category == "STAIR" else None, "level_name": level_name or title,
+      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else "Staircase" if cand.category == "STAIR" else "Beam over walls" if _wall_beam(cand) else None, "level_name": level_name or title,
     }
     row.update(sizes)
     out.append(row)

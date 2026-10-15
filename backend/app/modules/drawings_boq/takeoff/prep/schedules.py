@@ -369,8 +369,8 @@ def read_schedules(words: list) -> dict:
   return out
 
 def gather(sheets: list[dict]) -> dict:
-
   """All sheets' schedules together. Each sheet is {"page_no", "schedule"}. A mark or a floor printed with two different sizes is a conflict."""
+  from app.modules.drawings_boq.takeoff.prep import projections as projection_reader
   ops: dict = {}
   areas: dict = {}
   spans: dict = {}
@@ -437,6 +437,9 @@ def gather(sheets: list[dict]) -> dict:
   out = {"openings": openings, "areas": area_rows, "lintels": lintel_rows, "tie_band": ({"text": tie_band, "pages": sorted(set(tie_pages))} if tie_band else None), "conflicts": conflicts}
   if stair:
     out["stair"] = stair
+  projections = projection_reader.gather(sheets)
+  if projections:
+    out["projections"] = projections
   return out
 
 def opening_lookup(schedule: dict | None) -> dict:

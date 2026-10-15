@@ -72,6 +72,8 @@ class AcceptRequest(BaseModel):
   column_height_mm: Decimal | None = Field(default=None, gt=0, le=20000)
   footing_depth_mm: Decimal | None = Field(default=None, gt=0, le=10000)
   slab_thickness_mm: Decimal | None = Field(default=None, gt=0, le=2000)
+  beam_depth_mm: Decimal | None = Field(default=None, gt=0, le=3000)
+  plinth_beam_depth_mm: Decimal | None = Field(default=None, gt=0, le=3000)
   work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per category, e.g. {\"WALL\": \"MAS-BLOCK\"}.")
   level_id: UUID | None = None
 

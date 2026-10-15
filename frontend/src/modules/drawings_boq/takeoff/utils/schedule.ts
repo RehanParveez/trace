@@ -81,7 +81,34 @@ export function floorHasItems(f: FloorCheck): boolean {
 }
 
 export function hasSchedule(facts: DrawingFacts | undefined): boolean {
-  return (facts?.schedule?.openings?.length ?? 0) > 0 || (facts?.schedule?.areas?.length ?? 0) > 0 || (facts?.schedule?.lintels?.length ?? 0) > 0 || !!facts?.schedule?.stair || (facts?.floors?.length ?? 0) > 0 || !!facts?.suggest?.wall_height || hasStructure(facts) || hasChecks(facts);
+  return (facts?.schedule?.openings?.length ?? 0) > 0 || projectionRows(facts).length > 0 || (facts?.schedule?.areas?.length ?? 0) > 0 || (facts?.schedule?.lintels?.length ?? 0) > 0 || !!facts?.schedule?.stair || (facts?.floors?.length ?? 0) > 0 || !!facts?.suggest?.wall_height || hasStructure(facts) || hasChecks(facts);
+}
+
+export const PROJECTION_SIDES = ["TOP", "BOTTOM", "LEFT", "RIGHT"] as const;
+
+export const SIDE_TEXT: Record<string, string> = { TOP: "Top", BOTTOM: "Bottom", LEFT: "Left", RIGHT: "Right" };
+
+const FLOOR_ORDER = ["BASEMENT", "GROUND", "FIRST", "SECOND", "THIRD", "FOURTH", "ROOF"];
+
+export interface ProjectionRow {
+  floor: string;
+  name: string;
+  sides: Array<{ side: string; widthMm: number; pages: number[] }>;
+  unplaced: string[];
+  conflicts: Array<{ side: string; widthsMm: number[] }>;
+}
+
+export function projectionRows(facts: DrawingFacts | undefined): ProjectionRow[] {
+  const by = facts?.schedule?.projections ?? {};
+  const names = new Map((facts?.floors ?? []).map((f) => [f.key, f.name]));
+  const rows: ProjectionRow[] = [];
+  for (const [floor, p] of Object.entries(by)) {
+    const sides = PROJECTION_SIDES.filter((s) => p.sides?.[s]).map((s) => ({ side: s, widthMm: p.sides[s].width_mm, pages: p.sides[s].pages }));
+    const unplaced = (p.unplaced ?? []).map((u) => u.text);
+    const conflicts = (p.conflicts ?? []).map((c) => ({ side: c.side, widthsMm: c.widths_mm }));
+    if (sides.length || unplaced.length || conflicts.length) rows.push({ floor, name: names.get(floor) ?? floor.charAt(0) + floor.slice(1).toLowerCase(), sides, unplaced, conflicts });
+  }
+  return rows.sort((a, b) => (FLOOR_ORDER.indexOf(a.floor) + 1 || 99) - (FLOOR_ORDER.indexOf(b.floor) + 1 || 99));
 }
 
 export function suggestedHeightText(facts: DrawingFacts | undefined): string | null {

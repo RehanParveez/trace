@@ -95,22 +95,46 @@ def _slab(inp: _Inputs, cand) -> None:
     inp.add("size", MISSING, "the area table prints the covered area but not its length and width")
   else:
     inp.add("size", MISSING, "no covered area for this floor on the drawing")
+  proj = f.get("projections") or {}
+  if proj.get("applied"):
+    sides = proj.get("sides") or {}
+    shown = ", ".join(f"{k.lower()} {v / 304.8:g} ft" for k, v in sorted(sides.items()))
+    inp.measured("projections", f"roof projection widths printed on the floor plan ({shown}); which side each belongs to is read from where its label sits")
+  elif proj:
+    inp.add("projections", ASSUMED, "the plan prints roof projections but they could not be placed on a side, so the slab is the covered area only")
+  else:
+    inp.add("projections", NOT_READ, "no roof projection is printed on the plans of this floor, so the slab is the covered area only")
   t = _value(params, "depth_mm")
   if t is None:
     if "SLAB_THICKNESSES_LISTED" in codes:
       inp.add("thickness", MISSING, "the drawing prints more than one slab thickness and this plan has no slab note")
     else:
       inp.add("thickness", MISSING, "no slab thickness on the drawing")
+  elif f.get("thickness_source") == "TYPED":
+    inp.add("thickness", CONFIRMED, f"{t / 25.4:g}\" typed by you")
   elif "SLAB_THICKNESS_DISAGREES" in codes:
     note = next((n for n in (cand.notes or []) if n.get("code") == "SLAB_THICKNESS_DISAGREES"), {})
-    
     other = ", ".join(f"{o['mm'] / 25.4:g}\"" for o in (note.get("others") or []) if o.get("mm"))
-    inp.add("thickness", ASSUMED, f"the slab note on the plan says {t / 25.4:g}\" but another sheet prints {other}; the plan note is used")
+    sections = f"; the building sections imply {note['sections_mm'] / 25.4:g}\"" if note.get("sections_mm") else ""
+    inp.add("thickness", ASSUMED, f"the slab note on the plan says {t / 25.4:g}\" but another sheet prints {other}{sections}; the plan note is used")
   elif f.get("thickness_source") == "OTHER_SHEET":
     inp.add("thickness", PRINTED, "this plan has no slab note; the one thickness the drawing prints elsewhere is used")
   else:
     inp.add("thickness", PRINTED, "the slab note on the framing plan")
-  inp.add("openings", NOT_READ, "stair wells, shafts and cantilevers beyond the covered area are not adjusted")
+  inp.add("openings", NOT_READ, "stair wells and shafts in the slab are not deducted; type them as a deduction on the measurement")
+
+def _beam_from_walls(inp: _Inputs, cand) -> None:
+  """A beam over the walls of a floor is not drawn: it is the measured brick walls laid end to end, as wide as the wall, with a depth the drawing's beam
+  sections print but the reader does not take, so it is typed."""
+  f, params = cand.facts or {}, cand.params or {}
+  t = f.get("wall_thickness_mm") or 0.0
+  inp.measured("length", f"{f.get('wall_count', 0)} brick walls of {t / 25.4:g} in measured on this floor, laid end to end ({f.get('length_m', 0):g} m, openings included)")
+  inp.measured("width", "as wide as the wall: the measured wall thickness snapped to a standard size")
+  if _value(params, "depth_mm") is None:
+    inp.add("depth", MISSING, "the beam section printed on the drawing is not read; type the depth when you accept the beam")
+  else:
+    inp.add("depth", CONFIRMED, "typed by you")
+  inp.add("position", ASSUMED, "a beam is assumed on top of every brick wall; the plan does not draw it")
 
 def _lintel(inp: _Inputs, cand) -> None:
   """A lintel is the opening's schedule width, the section of the lintel table printed on the drawing, and a bearing at each end that the drawing does not print."""
@@ -153,6 +177,8 @@ def evidence_for(cand) -> dict:
     _count(inp, cand)
     _size(inp, cand)
     inp.height("height" if cat == "COLUMN" else "depth", _value(params, "depth_mm"))
+  elif cat == "BEAM" and facts.get("derived_from") == "WALLS":
+    _beam_from_walls(inp, cand)
   elif cat == "BEAM":
     _count(inp, cand)
     inp.add("length", NOT_READ, "beam marks are counted only; the length is not read yet")

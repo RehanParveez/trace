@@ -44,7 +44,7 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
     label=row.label, tag=row.tag, material_grade=row.material_grade, recon_mode=row.recon_mode, source=row.source)
 
 MEMBER_CATEGORIES = ("FOOTING",)
-FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL")
+FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL", "BEAM")
 
 def _mm(value) -> Decimal | None:
   v = _dec(value)
@@ -94,7 +94,7 @@ async def load_members(session: AsyncSession, org: UUID, measurements: list, she
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
 
 async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
-  """The accepted column, footing, slab and lintel candidates behind the confirmed measurements, with the size each measurement used. A member needs no
+  """The accepted column, footing, slab, lintel and beam candidates behind the confirmed measurements, with the size each measurement used. A member needs no
   position or scale here: the shuttering of a member comes from its size alone."""
   ids = [m.id for m in measurements if m.quantity_mode == "COUNT_X_VOLUME"]
   if not ids:

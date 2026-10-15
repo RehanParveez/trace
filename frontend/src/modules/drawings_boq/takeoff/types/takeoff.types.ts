@@ -394,8 +394,11 @@ export interface AcceptBody {
   column_height_mm?: number | null;
   footing_depth_mm?: number | null;
   slab_thickness_mm?: number | null;
+  beam_depth_mm?: number | null;
+  plinth_beam_depth_mm?: number | null;
   work_items?: Record<string, string>;
 }
+
 export interface CandidateFailure { id: string; code: string; message: string }
 export interface AcceptResult { accepted: Array<{ id: string; measurement_id: string; work_item_code: string | null }>; failed: CandidateFailure[] }
 export interface DecideResult { changed: string[]; failed: CandidateFailure[] }
@@ -464,7 +467,14 @@ export interface LintelSteel { bottom?: LintelBars; top?: LintelBars; bars?: Lin
 export interface ScheduleLintel { span_max_ft: number; span_max_mm: number; width_mm: number; depth_mm: number; text?: string | null; steel?: LintelSteel | null; pages: number[] }
 export interface ScheduleStair { riser_mm?: number | null; tread_mm?: number | null; width_mm?: number | null; steps?: number | null; waist_mm?: number | null; text?: string | null; pages: number[] }
 export interface ScheduleTieBand { text: string; pages: number[] }
-export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; lintels?: ScheduleLintel[]; tie_band?: ScheduleTieBand | null; stair?: ScheduleStair | null; conflicts: ScheduleConflict[] }
+export interface ProjectionSide { width_mm: number; text?: string | null; pages: number[] }
+export interface FloorProjections {
+  sides: Record<string, ProjectionSide>;
+  unplaced: Array<{ text: string; width_mm: number; page: number }>;
+  conflicts: Array<{ side: string; widths_mm: number[]; pages: number[] }>;
+  dims: Array<{ mm: number; axis: "H" | "V"; pages: number[] }>;
+}
+export interface DrawingSchedule { openings: ScheduleOpening[]; areas: ScheduleArea[]; lintels?: ScheduleLintel[]; tie_band?: ScheduleTieBand | null; stair?: ScheduleStair | null; projections?: Record<string, FloorProjections>; conflicts: ScheduleConflict[] }
 export type FloorCheckStatus = "OK" | "LOW" | "HIGH" | "NOT_READ";
 
 export interface FloorCheck {

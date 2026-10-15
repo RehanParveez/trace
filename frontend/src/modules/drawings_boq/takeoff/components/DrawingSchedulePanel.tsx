@@ -3,7 +3,7 @@ import type { DrawingFacts, FloorCheck } from "../types/takeoff.types";
 import { mmText, mmToFeetInches, pagesText } from "../utils/facts";
 import { ChecksSection } from "./ChecksSection";
 import { StructureSection } from "./StructureSection";
-import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, groupOpenings, hasSchedule, lintelText, m2Text, metresText, sizeText, stairText, steelText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
+import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, SIDE_TEXT, groupOpenings, hasSchedule, lintelText, m2Text, metresText, projectionRows, sizeText, stairText, steelText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
 
 interface Props {
   facts: DrawingFacts | undefined;
@@ -72,6 +72,7 @@ export function DrawingSchedulePanel({ facts }: Props) {
   const lintels = facts.schedule?.lintels ?? [];
   const tieBand = facts.schedule?.tie_band ?? null;
   const stair = facts.schedule?.stair ?? null;
+  const projections = projectionRows(facts);
   return (
     <details className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5" data-testid="drawing-schedule">
       <summary className="cursor-pointer text-[12px] font-semibold text-[var(--color-text-primary)]">
@@ -125,6 +126,27 @@ export function DrawingSchedulePanel({ facts }: Props) {
             <div className="font-semibold text-[var(--color-text-primary)]">{t("drawings.schedule.floors", "Floor by floor")}</div>
             {floors.map((f) => <FloorRow key={f.key} f={f} />)}
            </div>
+        ) : null}
+        {projections.length > 0 ? (
+          <div data-testid="schedule-projections">
+            <div className="font-semibold text-[var(--color-text-primary)]">{t("drawings.schedule.projections", "Roof projections")}</div>
+            <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">{t("drawings.schedule.projectionsHint", "The slab reaches past the walls by these widths. They are added to the covered area of the floor when its slab is found. Which side a label belongs to is read from where it sits on the plan.")}</p>
+            <ul className="list-none space-y-0.5 pl-0 text-[var(--color-text-muted)]">
+              {projections.map((r) => (
+                <li key={r.floor} data-testid={`projection-${r.floor}`}>
+                  <span className="font-semibold text-[var(--color-text-primary)]">{r.name}</span>
+                  {r.sides.map((s) => ` · ${t(`drawings.schedule.side.${s.side}`, SIDE_TEXT[s.side] ?? s.side)} ${mmToFeetInches(s.widthMm)}`).join("")}
+                  {r.sides.length > 0 ? ` · ${t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText([...new Set(r.sides.flatMap((s) => s.pages))].sort((a, b) => a - b)) })}` : ""}
+                  {r.conflicts.map((c) => (
+                    <div key={c.side} className="text-[var(--color-danger)]">{t("drawings.schedule.projectionConflict", { defaultValue: "{{side}} is printed with different widths ({{widths}}). It is not added.", side: t(`drawings.schedule.side.${c.side}`, SIDE_TEXT[c.side] ?? c.side), widths: c.widthsMm.map((w) => mmToFeetInches(w)).join(", ") })}</div>
+                  ))}
+                  {r.unplaced.map((u) => (
+                    <div key={u} className="text-[var(--color-warning)]">{t("drawings.schedule.projectionUnplaced", { defaultValue: "A label could not be placed on a side: {{text}}. It is not added.", text: u })}</div>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : null}
         <StructureSection facts={facts} />
         <ChecksSection facts={facts} />
