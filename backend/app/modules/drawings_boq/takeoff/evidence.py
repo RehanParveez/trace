@@ -124,7 +124,19 @@ def _slab(inp: _Inputs, cand) -> None:
     inp.add("thickness", PRINTED, "this plan has no slab note; the one thickness the drawing prints elsewhere is used")
   else:
     inp.add("thickness", PRINTED, "the slab note on the framing plan")
-  inp.add("openings", NOT_READ, "stair wells and shafts in the slab are not deducted; type them as a deduction on the measurement")
+  opens = f.get("openings") or []
+  if not opens:
+    inp.add("openings", NOT_READ, "no stair well, shaft or duct was found for this slab on the floor plans; type any as a deduction on the measurement")
+  else:
+    big = [o for o in opens if o.get("deduct")]
+    wells = [o for o in big if o.get("kind") == "STAIR_WELL"]
+    named = ", ".join(f"{o['name']} {o['area_m2']:.2f} m2" for o in big) or "none"
+    small = f"; {len(opens) - len(big)} of 0.1 m2 or less left in (IS 1200 Part 2 cl. 4.1.6)" if len(big) < len(opens) else ""
+    text = f"taken off: {named}{small}"
+    if wells:
+      inp.measured("openings", f"{text}. A stair well is the area the treads drawn cover on the plan, so a stair drawn short of its cut line takes off less than the well")
+    else:
+      inp.add("openings", PRINTED, f"{text}. Sizes are printed on the floor plans")
 
 def _beam_from_walls(inp: _Inputs, cand) -> None:
   """A beam over the walls of a floor is not drawn: it is the measured brick walls laid end to end, as wide as the wall, with a depth the drawing's beam
@@ -188,7 +200,11 @@ def _stair(inp: _Inputs, cand) -> None:
     inp.add("waist slab", PRINTED, f"{f.get('waist_mm', 0):g} mm printed on the drawing")
   else:
     inp.add("waist slab", ASSUMED, f"the drawing prints no waist thickness; {f.get('waist_mm', 0):g} mm assumed")
-  inp.add("landings", NOT_READ, "not included in this quantity; measure them as slabs")
+  if f.get("landings"):
+    sizes = ", ".join(l["text"] for l in f["landings"])
+    inp.add("landings", PRINTED, f"{len(f['landings'])} printed beside this stair ({sizes}); added as flat slabs of the waist thickness")
+  else:
+    inp.add("landings", NOT_READ, "no landing size is printed beside this stair, so none is included; measure the landings as slabs")
 
 def _site(inp: _Inputs, cand) -> None:
   """An item outside the building: its label or caption is on the sheet; a size is printed on the elevation, or it is missing and typed. Nothing is measured from lines."""

@@ -175,6 +175,7 @@ def find_stairs(lines, spec: dict, mm_per_pt: float, labels: list | None = None,
     way = g.get("direction") or _nearest_way(g["box"], labels, reach, used)
     drawn = g["span_pt"] * mm_per_pt
     own = printed_width(g["box"], drawn, dims, mm_per_pt)
-    out.append({"x": cx, "y": cy, "box": [round(v, 3) for v in g["box"]], "treads_drawn": g["treads"], "axis": g["axis"],
+    area_m2 = (x1 - x0) * (y1 - y0) * mm_per_pt * mm_per_pt / 1e6
+    out.append({"x": cx, "y": cy, "box": [round(v, 3) for v in g["box"]], "treads_drawn": g["treads"], "axis": g["axis"], "flight_area_m2": round(area_m2, 3),
       "width_drawn_mm": round(drawn, 1), "direction": way, "width_printed_mm": own["mm"] if own else None, "width_printed_text": own["text"] if own else None})
   return out

@@ -26,6 +26,7 @@ from app.modules.drawings_boq.takeoff.extract import plan_regions as PR
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import flights as FL
+from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract import structure as ST
 from app.modules.drawings_boq.takeoff.extract import column_census as CS
 from app.modules.drawings_boq.takeoff.extract import beam_strips as BSP
@@ -1038,7 +1039,7 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict) -> 
     out.append(cand)
   return out
 
-def _located_stairs(places: list, spec: dict, ctx: dict) -> list:
+def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None = None) -> list:
   waist = spec.get("waist_mm")
   printed = bool(waist)
   waist_used = float(waist or C.STAIR_WAIST_DEFAULT_MM)
@@ -1060,7 +1061,8 @@ def _located_stairs(places: list, spec: dict, ctx: dict) -> list:
     box = STR.flight_box({**spec, "width_mm": width}, waist_used)
     facts = {"stair_text": spec.get("text"), "riser_mm": spec.get("riser_mm"), "tread_mm": spec.get("tread_mm"), "stair_width_mm": round(width, 1),
       "detail_width_mm": spec.get("width_mm"), "width_source": "PRINTED_BESIDE" if own else "STAIR_DETAIL", "steps": spec.get("steps"),
-      "stair_pages": list(spec.get("pages") or []), "direction": way, "treads_drawn": p["treads_drawn"], "width_drawn_mm": p["width_drawn_mm"]}
+      "stair_pages": list(spec.get("pages") or []), "direction": way, "treads_drawn": p["treads_drawn"], "width_drawn_mm": p["width_drawn_mm"],
+      "flight_area_m2": p.get("flight_area_m2"), "flight_box": p.get("box"), "floor_hint": level_hint}
     params: dict = {"dims_basis": "SPECIFIED"}
     missing: list = []
     
@@ -1085,7 +1087,7 @@ def _located_stairs(places: list, spec: dict, ctx: dict) -> list:
     out.append(cand)
   return out
 
-def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_per_pt: float | None = None) -> tuple[list, list]:
+def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_per_pt: float | None = None, level_hint: str | None = None) -> tuple[list, list]:
   """One stair candidate per plan that names a staircase, sized from the riser, tread, width and number of steps printed elsewhere on the drawing. The
   concrete is the plan run of the steps x the width x an equivalent thickness (waist slab along the slope plus half a riser). The waist slab is rarely
   printed, so 6 inches is assumed and said so. Landings are not included."""
@@ -1093,7 +1095,7 @@ def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_
   if spec and index is not None and mm_per_pt:
     places = FL.find_stairs(W.straight_lines(index), spec, mm_per_pt, FL.direction_labels(lines), FL.length_labels(lines, S.feet_inches_mm))
     if places:
-      return _located_stairs(places, spec, ctx), []
+      return _located_stairs(places, spec, ctx, level_hint), []
   labels = STR.find_labels(lines)
   if not labels:
     return [], []
@@ -1370,10 +1372,20 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         c.status = _status(c.notes)
       res.stats["lintels"] = len(lintels) + len(wide)
       res.stats["lintels_unmarked_openings"] = len(wide)
-      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt)
+      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt, level_hint)
       res.candidates.extend(stairs)
       res.notes.extend(stair_notes)
       res.stats["stairs"] = len(stairs)
+      labels = SO.read_labels(lines, hint, mm_per_pt)
+      attached, unplaced = SO.attach_landings(stairs, labels["landings"], mm_per_pt, FL._gap)
+      for c in stairs:
+        c.status = _status(c.notes)
+      for lan in unplaced:
+        res.notes.append(C.note("STAIR_LANDING_NOT_PLACED", size=lan["text"], area_m2=lan["area_m2"]))
+      if labels["unsized"]:
+        res.notes.append(C.note("SLAB_OPENING_SIZE_NOT_PRINTED", count=labels["unsized"]))
+      res.stats["slab_openings"] = SO.sheet_entries(stairs, labels["voids"], level_hint)
+      res.stats["stair_landings"] = {"printed": len(labels["landings"]), "attached": attached}
       if wstats.get("dropped_treads"):
         res.notes.append(C.note("STAIR_TREADS_NOT_WALLS", count=wstats["dropped_treads"], metres=wstats["treads_m"]))
       if wstats.get("dropped_outside_plan"):
@@ -1448,6 +1460,7 @@ def _read_regions(index, mm_per_pt: float, regions: list, found: dict, *, starte
   seen: set = set()
   merged: dict = {}
   unmapped: dict = {}
+  openings: list = []
   per: list = []
   left = len(regions)
   for r in regions:
@@ -1477,6 +1490,7 @@ def _read_regions(index, mm_per_pt: float, regions: list, found: dict, *, starte
         res.notes.append(n)
     for t in part.unmapped_tags:
       unmapped[t["tag"]] = unmapped.get(t["tag"], 0) + int(t["count"])
+    openings.extend(part.stats.get("slab_openings") or [])
     for k, v in (part.stats.get("walls") or {}).items():
       if isinstance(v, (int, float)) and not isinstance(v, bool):
         merged[k] = round(merged.get(k, 0) + v, 3)
@@ -1488,6 +1502,7 @@ def _read_regions(index, mm_per_pt: float, regions: list, found: dict, *, starte
       "items": by, "walls": (part.stats.get("walls") or {}).get("runs"), "seconds": part.stats.get("seconds")})
   res.unmapped_tags = [{"tag": t, "count": n} for t, n in sorted(unmapped.items(), key=lambda kv: (-kv[1], kv[0]))][:30]
   res.stats["walls"] = merged
+  res.stats["slab_openings"] = openings
   res.stats["plan_regions"] = {**found, "count": len(regions), "plans": per}
   res.notes.insert(0, C.note("PLAN_REGIONS_READ", plans=[{"caption": r["caption"], "level_hint": r["level_hint"]} for r in regions]))
   return res

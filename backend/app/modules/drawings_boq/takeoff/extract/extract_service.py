@@ -30,6 +30,8 @@ from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
+from app.modules.drawings_boq.takeoff.extract.slab_openings_service import reconcile_slab_openings
+from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import CandidateResponse
 from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _status, run_extraction
 from app.modules.drawings_boq.takeoff.extract.structure import column_details
@@ -107,6 +109,17 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
     out[target] = float(value)
     out["dims_basis"] = "SPECIFIED"
   return out, None
+
+def _openings_params(cand, params: dict, typed: dict) -> dict:
+  """The lines the measurement carries besides the sizes: a slab takes off the stair wells and shafts found in it (area x thickness), a stair adds the landings
+  printed beside it (area x waist). Nothing is added when none was found."""
+  if cand.category == "SLAB":
+    adj = SO.slab_adjustments(cand.facts, params.get("depth_mm"))
+  elif cand.category == "STAIR":
+    adj = SO.stair_adjustments(cand.facts, (cand.facts or {}).get("waist_mm") or typed.get("stair_waist_mm"))
+  else:
+    adj = []
+  return {"adjustments": adj} if adj else {}
 
 class ExtractService:
   def __init__(self, session):
@@ -292,6 +305,7 @@ class ExtractService:
     from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
     touched = await reconcile_columns(self, org, sheet.drawing_id)
     touched |= await reconcile_beams(self, org, sheet.drawing_id)
+    touched |= await reconcile_slab_openings(self, org, sheet.drawing_id)
     await self._sync_register(org, {sheet.id} | touched)
     await self.session.commit()
     out = await self._list(org, sheet)
@@ -495,7 +509,7 @@ class ExtractService:
       own_level = view_level_id(cand) or sheet_levels[cand.sheet_id]
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
-          params=MeasurementParams(**params), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
+          params=MeasurementParams(**{**params, **_openings_params(cand, params, typed)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
           source=cand.source)
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))

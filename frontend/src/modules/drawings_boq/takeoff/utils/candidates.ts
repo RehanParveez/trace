@@ -523,8 +523,13 @@ export function factLine(c: TakeoffCandidate): string {
     const strip = num(f.projection_area_m2);
     const sideText = proj?.sides ? Object.entries(proj.sides).map(([s, w]) => `${s.toLowerCase()} ${(w / 304.8).toFixed(1).replace(/\.0$/, "")} ft`).join(", ") : "";
     const covered = proj?.applied && gross !== null && strip !== null ? `${gross.toFixed(2)} m² with ${strip.toFixed(2)} m² of roof projection (${sideText})` : area !== null ? `${area.toFixed(2)} m² covered` : null;
-    return [covered, dims ? `${Math.round(dims[0])}×${Math.round(dims[1])} mm printed` : "size not printed", t !== null ? `${Math.round(t)} mm thick` : "thickness needed", options].filter(Boolean).join(" · ");
+    const openings = Array.isArray(f.openings) ? (f.openings as { deduct?: boolean; name?: string }[]) : [];
+    const taken = openings.filter((o) => o.deduct === true);
+    const less = num(f.openings_area_m2);
+    const openingText = taken.length > 0 && less !== null ? `less ${less.toFixed(2)} m² of openings (${[...new Set(taken.map((o) => String(o.name ?? "opening").toLowerCase()))].join(", ")})` : null;
+    return [covered, dims ? `${Math.round(dims[0])}×${Math.round(dims[1])} mm printed` : "size not printed", t !== null ? `${Math.round(t)} mm thick` : "thickness needed", openingText, options].filter(Boolean).join(" · ");
   }
+
 
   if (c.category === "LINTEL") {
     const sec = Array.isArray(f.section_mm) ? (f.section_mm as number[]) : null;
@@ -539,7 +544,10 @@ export function factLine(c: TakeoffCandidate): string {
     const width = num(f.stair_width_mm);
     const waist = num(f.waist_mm);
     const way = f.direction === "UP" ? "going up" : f.direction === "DOWN" ? "going down" : null;
-    return [way, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null].filter(Boolean).join(" · ");
+    const landings = Array.isArray(f.landings) ? f.landings.length : 0;
+    const landingArea = num(f.landings_area_m2);
+    const landingText = landings > 0 ? `plus ${landings} landing${landings === 1 ? "" : "s"}${landingArea !== null ? ` (${landingArea.toFixed(2)} m²)` : ""}` : null;
+    return [way, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null, landingText].filter(Boolean).join(" · ");
   }
 
   if (c.category === "SITE") return siteLine(c);

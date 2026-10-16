@@ -5,6 +5,7 @@ from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff import stair_twins
 from app.modules.drawings_boq.takeoff import placement as PL
+from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 
 SOURCE = "pdf_takeoff"
 MAX_ROWS_PER_CANDIDATE = 2000
@@ -93,6 +94,10 @@ def _slab_text(cand, page_no: int, measurement) -> str:
   parts.append("length x width printed with it" if facts.get("dims_mm") else "length and width not printed")
   if (facts.get("projections") or {}).get("applied"):
     parts.append(f"plus roof projections printed on the floor plan ({facts.get('projection_area_m2', 0):.2f} m2)")
+  if facts.get("openings"):
+    n_big = sum(1 for o in facts["openings"] if o.get("deduct"))
+    parts.append(f"less {facts.get('openings_area_m2', 0):.2f} m2 of openings ({n_big} bigger than 0.1 m2: stair well, shaft or duct found on the plans)" if n_big else
+      "openings found on the plans are 0.1 m2 or smaller, not deducted")
   if p.get("depth_mm") is None:
     parts.append("thickness needed")
   elif facts.get("thickness_source") == "OTHER_SHEET":
@@ -141,6 +146,8 @@ def _stair_text(cand, page_no: int, measurement) -> str:
   parts = [f"Stair named on the plan of sheet {page_no}"]
   width = f", {(facts.get('stair_width_mm') or 0) / 25.4:g} in wide as printed beside the flight" if facts.get("width_source") == "PRINTED_BESIDE" else ""
   parts.append(f"{facts.get('steps')} steps{width}, plan run x width x equivalent thickness (waist {'printed' if facts.get('waist_source') == 'PRINTED' else 'assumed'})" if p.get("depth_mm") is not None else "stair details incomplete")
+  if facts.get("landings"):
+    parts.append(f"plus {len(facts['landings'])} landing{'s' if len(facts['landings']) > 1 else ''} printed beside it ({facts.get('landings_area_m2', 0):.2f} m2, flat slab of the waist thickness)")
   if cand.decision == "ACCEPTED" and measurement is not None:
     parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
   else:
@@ -234,7 +241,8 @@ def _quantity(cand, n: int, measurement) -> tuple:
   if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR") or _wall_beam(cand):
     a, b, h = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
     if a and b and h:
-      return _d(a * b * h / 1e9), "m3", "PDF_DRAWN"
+      more = SO.landing_m3(facts, facts.get("waist_mm")) if cat == "STAIR" else 0.0
+      return _d(a * b * h / 1e9 + more), "m3", "PDF_DRAWN"
     if _wall_beam(cand):
       return _d((a or 0) / 1000.0), "m", "PDF_DRAWN"
     return Decimal("1"), "nos", "PDF_COUNT"
@@ -250,7 +258,7 @@ def _quantity(cand, n: int, measurement) -> tuple:
   if cat == "SLAB":
     a, b, t = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
     if a and b and t:
-      return _d(a * b * t / 1e9), "m3", "PDF_DRAWN"
+      return _d(SO.net_slab_m3(a * b * t / 1e9, facts, t)), "m3", "PDF_DRAWN"
     return _d(facts.get("area_m2") or 0), "m2", "PDF_DRAWN"
   return Decimal("1"), "nos", "PDF_COUNT"
 

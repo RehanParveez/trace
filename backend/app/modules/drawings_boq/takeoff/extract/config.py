@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 25
+EXTRACT_VERSION = 26
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0   
@@ -69,8 +69,14 @@ STAIR_LINE_MIN = 0.6
 STAIR_LINE_MAX = 1.3
 STAIR_ALIGN_PT = 2.5
 STAIR_LABEL_REACH_MM = 6000.0
-STAIR_DIM_REACH_MM = 2500.0     
+STAIR_DIM_REACH_MM = 2500.0    
 STAIR_DIM_MATCH = 0.12          
+SLAB_OPENING_FREE_M2 = 0.1       
+VOID_LABEL_REACH_MM = 1500.0     
+VOID_MIN_SIDE_MM = 150.0
+LANDING_MIN_SIDE_MM = 600.0
+OPENING_MAX_M2 = 25.0            
+STAIR_LANDING_REACH_MM = 2500.0  
 STAIR_OWN_WIDTH_TOL = 0.02      
 STANDARD_TOL = 0.04           
 IMPERIAL_WALLS_MM = (76.2, 114.3, 152.4, 228.6, 342.9, 457.2)             
@@ -217,6 +223,11 @@ NOTES = {
   "STEEL_DETAILS_DISAGREE": ("warning", "Two details on the drawing print different reinforcement for this mark, so none was chosen. Type the bars you want when you accept it."),
   "STAIR_FROM_DETAILS": ("info", "The staircase is sized from the riser, tread, width and number of steps printed on the drawing. The concrete is measured as the plan run of the steps x the width x an equivalent thickness (the waist slab along the slope plus half a riser)."),
   "STAIR_WAIST_ASSUMED": ("warning", "The drawing does not print the thickness of the waist slab under the steps. 5 inches (127 mm) is assumed, as the general slab note of a plan gives. Change the depth if the stair section says otherwise."),
+  "STAIR_LANDINGS_ADDED": ("info", "Landings printed on the plan next to this stair are added to it as flat slabs of the waist thickness. Landings are measured as slabs (IS 1200 Part 2 cl. 4.2.1(h): a staircase is measured without its landings), here kept with the stair so they are not forgotten."),
+  "STAIR_LANDING_NOT_PLACED": ("info", "The plan prints a landing that is not next to any flight found on it, so it was not added to a stair. Measure it as a slab."),
+  "SLAB_OPENINGS_DEDUCTED": ("info", "Openings in this slab are taken off when it is measured: the stair well (the area of the flight, as drawn on the plan of the floor above or below) and the shafts and ducts the plans print with a size. The framing plan is taken as the slab over the floor it is named for."),
+  "SLAB_OPENINGS_SMALL": ("info", "Some openings in this slab are 0.1 m2 or smaller. They are not deducted (IS 1200 Part 2 cl. 4.1.6)."),
+  "SLAB_OPENING_SIZE_NOT_PRINTED": ("info", "The plan names a duct, shaft or void at this floor but prints no size beside it, so nothing is deducted for it. Type it as a deduction on the slab measurement."),
   "STAIR_LANDINGS_NOT_INCLUDED": ("info", "Landings and the slab where the stair starts are not part of this quantity. Measure them as slabs."),
   "STAIR_LOCATED_BY_TREADS": ("info", "This staircase was found from its treads drawn on the plan. The plan may stop drawing the treads at the cut line, so the steps of the whole stair come from the printed detail."),
   "STAIR_DOWN_FLIGHT": ("warning", "This flight is marked DN. It is the same staircase as the UP flight on the floor below. Accept it only once, on one of the two plans."),
