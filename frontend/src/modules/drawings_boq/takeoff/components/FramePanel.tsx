@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, ErrorState, LoadingState } from "../../../organizations/components/OrganizationUi";
 import type { Frame, FrameView } from "../types/takeoff.types";
-import { addNudge, fitTo, frameBounds, memberBox, methodLabel, openCount, shiftToSave, toScreen, viewColor, viewState } from "../utils/frame";
+import { addNudge, columnIssueText, fitTo, frameBounds, memberBox, methodLabel, openCount, shiftToSave, toScreen, viewColor, viewState } from "../utils/frame";
 
 interface Props {
   frame: Frame | undefined;
@@ -129,6 +129,19 @@ export function FramePanel(p: Props) {
           );
         })}
       </ul>
+      {frame.columns && frame.columns.shared > 0 ? (
+        <div className="rounded-[8px] border border-[var(--color-border)] p-2 text-[12px]" data-testid="frame-columns">
+          <div className="font-semibold">{t("boq.takeoff.frame.columnsTitle", "Columns at the same place")}</div>
+          <p className="text-[11.5px] text-[var(--color-text-secondary)]" data-testid="frame-columns-summary">
+            {t("boq.takeoff.frame.columnsSummary", "{{agree}} of {{shared}} places carry the same column in every view.", { agree: frame.columns.agree, shared: frame.columns.shared })}
+          </p>
+          {frame.columns.issues.length > 0 ? (
+            <ul className="mt-1 space-y-1 text-[11.5px] text-[var(--color-warning)]" data-testid="frame-column-issues">
+              {frame.columns.issues.map((i, n) => <li key={`${i.code}-${n}`}>{columnIssueText(i)}</li>)}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       {frame.cleared_placements > 0 ? <p className="text-[11.5px] text-[var(--color-warning)]" data-testid="frame-cleared">{t("boq.takeoff.frame.cleared", "{{n}} earlier placement(s) were cleared.", { n: frame.cleared_placements })}</p> : null}
       <p className="text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.frame.runAgain", "Run the calculation again after changing a placement.")}</p>
     </div>

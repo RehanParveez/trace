@@ -14,6 +14,9 @@ import { PdfSheetViewer } from "../components/PdfSheetViewer";
 import type { PointerInfo, ViewerHandle } from "../components/PdfSheetViewer";
 import { ResultsPanel } from "../components/ResultsPanel";
 import { FramePanel } from "../components/FramePanel";
+import { ReconcilePanel } from "../components/ReconcilePanel";
+import { shiftQuery } from "../utils/reconcile";
+import { FloorLevels } from "../components/FloorLevels";
 import { FoundTab } from "../components/FoundTab";
 import { candidatePoints } from "../utils/candidates";
 import type { TakeoffCandidate } from "../types/takeoff.types";
@@ -24,7 +27,7 @@ import { sheetTitle } from "../utils/sheetTitle";
 import { Toolbar } from "../components/Toolbar";
 import {takeoffKeys, useAutoCalibrate, useBulkConfirm, useConfirmMeasurement, useCreateCalibration, useCreateMeasurement, useDeleteCalibration, useDeleteMeasurement,
   useMakeDefaultCalibration, usePrepareSheet, usePrepareSheets, useProjectTakeoffDrawings, useSheetAnalysis, useSheetShapes, useSheetTags, useSheetVector,
-  useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useTakeoffFrame, usePlaceFrameView, useSetFrameReference, useUnconfirmMeasurement, useUpdateMeasurement,
+  useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useTakeoffFrame, useTakeoffFloors, useTakeoffReconcile, usePlaceFrameView, useSetFrameReference, useUnconfirmMeasurement, useUpdateMeasurement,
 } from "../hooks/useTakeoff";
 import { useLivePreview } from "../hooks/useLivePreview";
 import { usePdfDocument } from "../hooks/usePdfDocument";
@@ -105,6 +108,10 @@ export function TakeoffPage() {
   const shapes = useSheetShapes(sheet);
   const recon = useTakeoffReconciliation(projectId, tab === "results");
   const frame = useTakeoffFrame(drawingId, tab === "frame");
+  const floors = useTakeoffFloors(drawingId, tab === "frame");
+  const [reconcileModel, setReconcileModel] = useState<string | null>(null);
+  const [reconcileShift, setReconcileShift] = useState<[string, string]>(["", ""]);
+  const reconcile = useTakeoffReconcile(drawingId, shiftQuery(reconcileModel, reconcileShift[0], reconcileShift[1]), tab === "frame");
   const placeFrame = usePlaceFrameView(drawingId);
   const frameRef = useSetFrameReference(drawingId);
 
@@ -1026,6 +1033,11 @@ export function TakeoffPage() {
                 onPlace={(body) => placeFrame.mutate(body, { onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.frame.failed", "Could not save the placement"), description: takeoffErrorMessage(e) }) })}
                 onReference={(v) => frameRef.mutate(v, { onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.frame.failed", "Could not save the placement"), description: takeoffErrorMessage(e) }) })}
               />
+            ) : null}
+            {tab === "frame" ? <FloorLevels datums={floors.data} loading={floors.isLoading} error={floors.isError} onRetry={() => void floors.refetch()} /> : null}
+            {tab === "frame" ? (
+              <ReconcilePanel data={reconcile.data} loading={reconcile.isLoading} error={reconcile.isError} onRetry={() => void reconcile.refetch()}
+                model={reconcileModel} onModel={setReconcileModel} onShift={(dx, dy) => setReconcileShift([dx, dy])} />
             ) : null}
             {tab === "results" ? (
               <ResultsPanel

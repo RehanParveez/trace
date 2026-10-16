@@ -2,7 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  Frame, FramePlaceBody, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
+  Frame, FramePlaceBody, FloorDatums, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
@@ -94,6 +94,12 @@ export const takeoffApi = {
   },
   async frame(drawingId: string): Promise<Frame> {
     return (await apiClient.get<Frame>(`${BASE}/drawings/${drawingId}/takeoff/frame`)).data;
+  },
+  async reconcileColumns(drawingId: string, query: ReconcileQuery = {}): Promise<ColumnReconcile> {
+    return (await apiClient.get<ColumnReconcile>(`${BASE}/drawings/${drawingId}/takeoff/reconcile`, { params: query })).data;
+  },
+  async floors(drawingId: string): Promise<FloorDatums> {
+    return (await apiClient.get<FloorDatums>(`${BASE}/drawings/${drawingId}/takeoff/floors`)).data;
   },
   async placeFrameView(drawingId: string, body: FramePlaceBody): Promise<Frame> {
     return (await apiClient.put<Frame>(`${BASE}/drawings/${drawingId}/takeoff/frame/placement`, body)).data;

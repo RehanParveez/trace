@@ -67,16 +67,7 @@ def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, ed
 
 def _frames_of(takeoff) -> dict:
   """One frame per group of views (a drawing): {group: Frame}. Views of different drawings are never placed in one frame."""
-  by_group: dict = {}
-  for a in tuple(getattr(takeoff, "alignments", ()) or ()):
-    by_group.setdefault(a.group, []).append(a)
-  out = {}
-  for group, items in by_group.items():
-    made = {a.view: FR.Alignment(a.view, float(a.dx_mm), float(a.dy_mm), a.method, a.grade, a.supporters, a.compared, float(a.residual_mm),
-      1.0 if a.grade == FR.CONFIRMED else 0.5) for a in items}
-    ref = next((a for a in items if a.reference), items[0])
-    out[group] = FR.Frame(ref.view, (float(ref.origin_x_mm), float(ref.origin_y_mm)), made)
-  return out
+  return FR.frames_of(takeoff)
 
 def shared_faces(inputs: tuple, takeoff, enabled: bool) -> tuple:
   """The side faces of each column instance that a slab of its floor covers, found in the building frame. Returns ({(measurement id, instance): [faces]},
@@ -182,8 +173,11 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
   params = resolve_params(ctx)
   counted = counted_measurement_ids(extra_ledger)
   removals, frame_stats = shared_faces(tuple(m for m in inputs if str(m.measurement_id) in counted), ctx.takeoff, params[SHARED_PARAM]["value"] >= 0.5)
-  measured = {str(((r.trace or {}).get("inputs") or {}).get("measurement_id")): r for r in (extra_ledger or ())
-    if getattr(r, "source_kind", None) == PDF_SOURCE and r.quantity > 0 and r.unit == "m3"}
+  measured: dict = {}
+  for r in (extra_ledger or ()):
+    if getattr(r, "source_kind", None) == PDF_SOURCE and r.quantity > 0 and r.unit == "m3":
+      key = str(((r.trace or {}).get("inputs") or {}).get("measurement_id"))
+      measured[key] = measured.get(key, Decimal("0")) + r.quantity   
   skipped: dict = {}
   by_category: dict = {}
   solids: list = []
@@ -211,11 +205,11 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
       continue
   
     if cat == "RCC_WALL":
-      row = measured.get(str(m.measurement_id))
-      if row is None:
+      volume = measured.get(str(m.measurement_id))
+      if volume is None:
         skipped["NOT_COUNTED"] = skipped.get("NOT_COUNTED", 0) + m.count
         continue
-      faces = [("both_faces", 2 * row.quantity / (width / MM_PER_M) * MM2_PER_M2)]
+      faces = [("both_faces", 2 * volume / (width / MM_PER_M) * MM2_PER_M2)]
     else:
       faces = faces_for(cat, length, width, depth, edges, m.stair)
     used = PARAMS_USED[cat]

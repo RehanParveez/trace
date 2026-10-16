@@ -76,6 +76,7 @@ class AcceptRequest(BaseModel):
   slab_thickness_mm: Decimal | None = Field(default=None, gt=0, le=2000)
   beam_depth_mm: Decimal | None = Field(default=None, gt=0, le=3000)
   plinth_beam_depth_mm: Decimal | None = Field(default=None, gt=0, le=3000)
+  tie_band_depth_mm: Decimal | None = Field(default=None, gt=0, le=1000)
   excavation_depth_mm: Decimal | None = Field(default=None, gt=0, le=20000)
   trench_depth_mm: Decimal | None = Field(default=None, gt=0, le=10000)
   pcc_thickness_mm: Decimal | None = Field(default=None, gt=0, le=1000)

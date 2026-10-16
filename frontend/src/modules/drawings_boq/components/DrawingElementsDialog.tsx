@@ -16,6 +16,7 @@ import type { ReadStage } from "../takeoff/hooks/useTakeoff";
 import type { RegisterSyncResult } from "../takeoff/types/takeoff.types";
 import { isPdfFormat, measureBadge, needsPerson, pagesFor, waitingLines } from "../takeoff/utils/register";
 import { EVIDENCE_LABEL, EVIDENCE_TONE, evidenceCheck, evidenceCounts, evidenceTitle, rowEvidence } from "../takeoff/utils/evidence";
+import { memberZ, zText } from "../takeoff/utils/floors";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -65,6 +66,7 @@ const COPY_COLUMNS: CopyColumn[] = [
   { header: "level_sequence", numeric: true, value: (e) => e.level_sequence },
   { header: "elevation_base_mm", numeric: true, value: (e) => e.elevation_base_mm },
   { header: "elevation_top_mm", numeric: true, value: (e) => e.elevation_top_mm },
+  { header: "height_range", value: (e) => zText(memberZ(e.properties)) },
   { header: "bbox_min_x_mm", numeric: true, value: (e) => e.bbox_min_x_mm },
   { header: "bbox_min_y_mm", numeric: true, value: (e) => e.bbox_min_y_mm },
   { header: "bbox_min_z_mm", numeric: true, value: (e) => e.bbox_min_z_mm },
@@ -644,6 +646,7 @@ export function DrawingElementsDialog({
                 {rowsShown.map((element, index) => {
                   const badge = measureBadge(element.measure_mode ?? elementMeasureMode(element));
                   const evidence = rowEvidence(element.properties);
+                  const heightRange = zText(memberZ(element.properties));
                   return (
                     <tr key={element.id} className="hover:bg-[var(--color-surface-muted)]">
                       <td className="border-b border-[var(--color-border)] px-3 py-2.5 font-mono text-[10px] text-[var(--color-text-muted)]">
@@ -711,6 +714,11 @@ export function DrawingElementsDialog({
                           {element.measured_as ? (
                             <div className="mt-1 text-[10px] text-[var(--color-text-muted)]">
                               {element.measured_as}
+                            </div>
+                          ) : null}
+                          {heightRange ? (
+                            <div className="mt-1 text-[10px] text-[var(--color-text-muted)]" data-testid="element-height-range">
+                              {t("drawings.elements.heightRange", "Height {{range}}", { range: heightRange })}
                             </div>
                           ) : null}
                         </div>

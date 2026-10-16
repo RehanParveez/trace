@@ -28,6 +28,7 @@ export type HeightField =
   | "slab_thickness_mm"
   | "beam_depth_mm"
   | "plinth_beam_depth_mm"
+  | "tie_band_depth_mm"
   | "excavation_depth_mm"
   | "trench_depth_mm"
   | "pcc_thickness_mm"
@@ -52,6 +53,7 @@ const HEIGHT_ORDER: HeightField[] = [
   "slab_thickness_mm",
   "beam_depth_mm",
   "plinth_beam_depth_mm",
+  "tie_band_depth_mm",
   "excavation_depth_mm",
   "trench_depth_mm",
   "pcc_thickness_mm",
@@ -78,6 +80,7 @@ export const NO_HEIGHTS: Heights = {
   slab_thickness_mm: "",
   beam_depth_mm: "",
   plinth_beam_depth_mm: "",
+  tie_band_depth_mm: "",
   excavation_depth_mm: "",
   trench_depth_mm: "",
   pcc_thickness_mm: "",
@@ -103,6 +106,7 @@ export const HEIGHT_LABEL: Record<HeightField, string> = {
   slab_thickness_mm: "Slab thickness (mm)",
   beam_depth_mm: "Roof beam depth (mm)",
   plinth_beam_depth_mm: "Plinth beam depth (mm)",
+  tie_band_depth_mm: "Tie band depth (mm)",
   excavation_depth_mm: "Excavation depth over the basement (mm)",
   trench_depth_mm: "Trench depth below the dug floor (mm)",
   pcc_thickness_mm: "Concrete bed thickness (mm)",
@@ -220,7 +224,10 @@ export function heightFieldFor(c: Pick<TakeoffCandidate, "category" | "missing">
   if (c.category === "FOOTING" && c.missing.includes("depth_mm")) return "footing_depth_mm";
   if (c.category === "SLAB" && c.missing.includes("thickness_mm")) return "slab_thickness_mm";
   if (c.category === "SLAB" && slabThicknessDisputed({ category: c.category, notes: c.notes ?? [] })) return "slab_thickness_mm";
-  if (c.category === "BEAM" && c.missing.includes("depth_mm")) return (c.facts as Record<string, unknown> | undefined)?.beam_role === "PLINTH" ? "plinth_beam_depth_mm" : "beam_depth_mm";
+  if (c.category === "BEAM" && c.missing.includes("depth_mm")) {
+    const role = (c.facts as Record<string, unknown> | undefined)?.beam_role;
+    return role === "PLINTH" ? "plinth_beam_depth_mm" : role === "BAND" ? "tie_band_depth_mm" : "beam_depth_mm";
+  }
   if (c.category === "STAIR" && c.missing.includes("waist_mm")) return "stair_waist_mm";
   return null;
 }
@@ -283,7 +290,7 @@ export function groupByCategory(list: TakeoffCandidate[]): Array<{ category: Can
   return out;
 }
 
-const BEAM_DEPTH_FIELDS: HeightField[] = ["beam_depth_mm", "plinth_beam_depth_mm"];
+const BEAM_DEPTH_FIELDS: HeightField[] = ["beam_depth_mm", "plinth_beam_depth_mm", "tie_band_depth_mm"];
 
 export function fieldsStillNeeded(c: TakeoffCandidate, picks?: Record<string, string>): HeightField[] {
   const given = c.category === "BEAM" && pickGivesDepth(c, picks);

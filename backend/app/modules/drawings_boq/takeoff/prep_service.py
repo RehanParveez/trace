@@ -300,7 +300,24 @@ class PrepService:
     sheets = await self.repo.sheets(org, drawing_id)
     read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
     return storey_heights(self._floor_keys(sheets), drawing_facts.gather(read).get("storeys"))
-  
+
+  async def drawing_floor_heights(self, org: UUID, drawing_id: UUID) -> dict:
+    """What the drawing prints about the heights of its floors, for placing members in height: {"heights": {floor key: {clear_mm, floor_to_floor_mm, basis,
+    level_mm}}, "floor_keys": the floors the drawing shows, "levels_mm": the level marks printed on the elevations}. The same heights the Facts tab offers for
+    walls, section heights over level marks over the typical floor-to-floor height; level_mm is the printed level of the floor where there is one."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+    gathered = drawing_facts.gather(read)
+    schedule = drawing_schedules.gather(self._schedule_sheets(sheets))
+    suggested = (gathered.get("suggest") or {}).get("wall_height")
+    keys = [a["key"] for a in schedule["areas"] if a.get("kind") == "FLOOR"]
+    heights = drawing_facts.floor_heights(keys, gathered["ladder"], suggested["slab_mm"] if suggested else None)
+    
+    floor_keys = self._floor_keys(sheets)
+    heights = {**heights, **storey_heights(floor_keys, gathered.get("storeys"))}
+    levels = (gathered.get("ladder") or {}).get("levels_mm") or []
+    return {"heights": heights, "floor_keys": floor_keys, "levels_mm": [float(x) for x in levels]}
+
   async def drawing_slab_values(self, org: UUID, drawing_id: UUID) -> list:
     """The slab thicknesses printed for slabs in general anywhere on the drawing: [{mm, count, pages, scopes}], most often printed first."""
     sheets = await self.repo.sheets(org, drawing_id)
@@ -378,6 +395,7 @@ class PrepService:
         p = c.params or {}
         size = [p.get("length_mm"), p.get("width_mm")] if p.get("length_mm") and p.get("width_mm") else None
         lv[slot + "s"] += n
+        
         codes = [x.get("code") for x in (c.notes or [])]
         source = "SCHEDULE" if "SIZE_FROM_SCHEDULE" in codes else "DETAIL" if ("SIZE_FROM_COLUMN_DETAIL" in codes or "SIZE_FROM_DETAIL" in codes) else "PLAN" if size else None
         warns = [x.get("code") for x in (c.notes or []) if x.get("severity") == "warning"]
@@ -433,6 +451,7 @@ class PrepService:
         if c.category == "ROOM":
           row["rooms"] += 1
           row["rooms_m2"] += float(f.get("area_m2") or 0.0)
+          
         elif c.category in ("DOOR", "WINDOW"):
           kind = f.get("opening_kind") or c.category
           slot = "doors" if kind == "DOOR" else "ventilators" if kind == "VENTILATOR" else "windows"

@@ -120,4 +120,5 @@ def lintel_checks(lintels: list, tie_band: dict | None) -> list[dict]:
   pages = sorted(set(tie_band.get("pages") or []) | {p for r in lintels for p in (r.get("pages") or [])})
   return [_check("LINTEL_AND_TIE_BAND_PRINTED", "warning", "Lintels and a tie band are both printed",
     f"The drawing prints a lintel table and also a tie band at lintel level ({tie_band['text'].lower()}). A band that runs over an opening takes the place of a separate lintel there. "
-    "The lintels are listed here for every door, window and ventilator, and the tie band is not measured. Accept the lintels only where no band runs over the opening.", [], pages)]
+    "The tie band is listed as a beam over the brick walls of each plan, at lintel level, and the lintels are listed too, each marked as covered by the band. "
+    "Switch on 'tie band replaces lintel' in the site assumptions to leave the covered lintels out once the band is measured; until then both are counted.", [], pages)]

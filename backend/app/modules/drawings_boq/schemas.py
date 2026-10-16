@@ -48,6 +48,12 @@ class DrawingElementResponse(BaseModel):
   thickness_mm: Decimal | None = None
   elevation_base_mm: Decimal | None = None
   elevation_top_mm: Decimal | None = None
+  bbox_min_x_mm: Decimal | None = None
+  bbox_min_y_mm: Decimal | None = None
+  bbox_min_z_mm: Decimal | None = None
+  bbox_max_x_mm: Decimal | None = None
+  bbox_max_y_mm: Decimal | None = None
+  bbox_max_z_mm: Decimal | None = None
   area_mm2: Decimal | None = None
   volume_mm3: Decimal | None = None
   geometry_kind: str | None = None
@@ -293,6 +299,8 @@ class DerivedParamsRequest(BaseModel):
   bar_lap_dia: float | None = Field(default=None, ge=0, le=80, description="Lap of a column's vertical bars with the lift above, in bar diameters.")
   bar_anchor_dia: float | None = Field(default=None, ge=0, le=80, description="Anchorage added at each end of a beam bar, and as a dowel at the foot of a column bar, in bar diameters.")
   steel_wastage_pct: float | None = Field(default=None, ge=0, le=15, description="Percent added to the steel weight of members read from a drawing. 0 leaves the bare weight.")
+  beam_depth_includes_slab: float | None = Field(default=None, ge=0, le=1, description="1 takes the depth of a beam read from a drawing as its overall depth, so the part inside the slab is counted with the slab; 0 takes it as the web below the slab.")
+  tie_band_replaces_lintel: float | None = Field(default=None, ge=0, le=1, description="1 leaves out the lintels a measured tie band at lintel level runs over; 0 counts both.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

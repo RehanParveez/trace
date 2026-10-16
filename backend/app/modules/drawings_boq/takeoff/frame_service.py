@@ -1,6 +1,7 @@
 from __future__ import annotations
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.drawings_boq.takeoff.repository import TakeoffRepository
+from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.audit.service import AuditLogService
 from uuid import UUID
 from app.core.exceptions import TraceException
@@ -82,6 +83,7 @@ class FrameService:
         await self._set_reference(org, drawing, user_id, view, s)
         what = "confirmed the reference view"
         await self._log(org, user_id, drawing_id, f"Frame: {what} {view}")
+        await self._refresh_register(org, drawing_id)
         await self.session.commit()
         return await self.frame(org, drawing_id)
       if row is None:
@@ -93,6 +95,7 @@ class FrameService:
       what = "confirmed" if action == "CONFIRM" else "placed"
     await self.session.flush()
     await self._log(org, user_id, drawing_id, f"Frame: {what} {view}")
+    await self._refresh_register(org, drawing_id)
     await self.session.commit()
     return await self.frame(org, drawing_id)
 
@@ -119,10 +122,20 @@ class FrameService:
     cleared = await self._set_reference(org, drawing, user_id, view, s)
     await self.session.flush()
     await self._log(org, user_id, drawing_id, f"Frame: reference view {view}" + (f" ({cleared} earlier placements cleared)" if cleared else ""))
+    await self._refresh_register(org, drawing_id)
     await self.session.commit()
     out = await self.frame(org, drawing_id)
     out["cleared_placements"] = cleared
     return out
+
+  async def _refresh_register(self, org: UUID, drawing_id: UUID) -> None:
+    """The register rows carry where each mark sits on the frame and how sure that is, so they are written again whenever a placement changes. A drawing whose
+    register is too large to list keeps the placement all the same."""
+    try:
+      await RegisterService(self.session).sync_drawing(org, drawing_id)
+    except TraceException as e:
+      if e.code != "REGISTER_TOO_LARGE":
+        raise
 
   async def _log(self, org: UUID, user_id: UUID, drawing_id: UUID, message: str) -> None:
     await self.audit.log(org, user_id, audit_entity("DRAWING"), drawing_id, AuditAction.UPDATE, message, commit=False)

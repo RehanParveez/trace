@@ -233,7 +233,7 @@ def floor_heights(floor_keys: list, ladder: dict, slab_mm: float | None) -> dict
     for i, k in enumerate(above):
       gap = marks[i + 1] - marks[i]
       if 1500.0 <= gap - slab_mm <= 6500.0:
-        out[k] = {"clear_mm": round(gap - slab_mm, 1), "floor_to_floor_mm": round(gap, 1), "basis": "LEVEL_MARKS"}
+        out[k] = {"clear_mm": round(gap - slab_mm, 1), "floor_to_floor_mm": round(gap, 1), "basis": "LEVEL_MARKS", "level_mm": round(marks[i], 1)}
   for k in keys:
     if k not in out and typical and 1500.0 <= typical - slab_mm <= 6500.0:
       out[k] = {"clear_mm": round(typical - slab_mm, 1), "floor_to_floor_mm": typical, "basis": "TYPICAL"}

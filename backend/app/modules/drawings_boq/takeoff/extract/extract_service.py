@@ -82,6 +82,10 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
     field, target, words = spec
     if category == "BEAM" and (facts or {}).get("beam_role") == "PLINTH":
       field, words = "plinth_beam_depth_mm", "the plinth beam depth"
+    if category == "BEAM" and (facts or {}).get("beam_role") == "BAND":
+      field, words = "tie_band_depth_mm", "the tie band depth"
+    if category == "COLUMN" and (facts or {}).get("neck_of"):
+      field, words = "neck_height_mm", "the neck column height (top of the footing to the floor)"
     value = typed.get(field)
     if value is None:
       return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {words} to measure this item.")
@@ -368,7 +372,7 @@ class ExtractService:
     catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
     typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm,
       "slab_thickness_mm": payload.slab_thickness_mm, "beam_depth_mm": payload.beam_depth_mm,
-      "plinth_beam_depth_mm": payload.plinth_beam_depth_mm, "excavation_depth_mm": payload.excavation_depth_mm, "trench_depth_mm": payload.trench_depth_mm,
+      "plinth_beam_depth_mm": payload.plinth_beam_depth_mm, "tie_band_depth_mm": payload.tie_band_depth_mm, "excavation_depth_mm": payload.excavation_depth_mm, "trench_depth_mm": payload.trench_depth_mm,
       "pcc_thickness_mm": payload.pcc_thickness_mm, "pcc_strip_width_mm": payload.pcc_strip_width_mm, "pcc_strip_width_thin_mm": payload.pcc_strip_width_thin_mm,
       "brick_step_1_height_mm": payload.brick_step_1_height_mm, "brick_step_2_height_mm": payload.brick_step_2_height_mm,
       "brick_step_3_height_mm": payload.brick_step_3_height_mm, "brick_step_4_height_mm": payload.brick_step_4_height_mm,

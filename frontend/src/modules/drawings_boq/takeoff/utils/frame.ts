@@ -1,4 +1,4 @@
-import type { Frame, FrameMember, FrameView } from "../types/takeoff.types";
+import type { Frame, FrameColumnIssue, FrameMember, FrameView } from "../types/takeoff.types";
 
 export const VIEW_COLORS = ["#2563eb", "#d97706", "#059669", "#9333ea", "#dc2626", "#0891b2", "#65a30d", "#db2777"];
 
@@ -66,5 +66,11 @@ export function shiftToSave(v: FrameView, nudge: [number, number] | undefined): 
 }
 
 export function openCount(frame: Frame): number {
-  return frame.views.filter((v) => viewState(v) !== "DONE").length;
+ return frame.views.filter((v) => viewState(v) !== "DONE").length;
+}
+
+export function columnIssueText(i: FrameColumnIssue): string {
+  const what = i.columns.map((c) => (i.code === "COLUMN_TAG_DIFFERS" ? `${c.view}: ${c.tag ?? "no mark"}` : `${c.view}: ${Math.round(c.length_mm)} × ${Math.round(c.width_mm)} mm`)).join(" · ");
+  const head = i.code === "COLUMN_TAG_DIFFERS" ? "Different marks at the same place" : "Different sizes at the same place";
+  return `${head} (${(i.x_mm / 1000).toFixed(2)}, ${(i.y_mm / 1000).toFixed(2)} m): ${what}${i.grade === "CONFIRMED" ? "" : " — the placement is only assumed"}`;
 }

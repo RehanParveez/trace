@@ -162,6 +162,36 @@ class AlignmentInput:
   origin_y_mm: Decimal = Decimal("0")
 
 @dataclass(frozen=True)
+class SpaceInput:
+  measurement_id: UUID
+  candidate_id: UUID
+  sheet_id: UUID
+  group: str
+  page_no: int
+  category: str
+  tag: str | None
+  level_id: UUID | None
+  frame: str
+  shape: str = "NONE"
+  parts: tuple = ()
+  length_mm: Decimal = ZERO
+  width_mm: Decimal = ZERO
+  z0_mm: float | None = None
+  z1_mm: float | None = None
+  z_grade: str = "ASSUMED"
+  floor: str | None = None
+  covered_by_band: bool = False
+
+@dataclass(frozen=True)
+class FloorDatum:
+  group: str
+  key: str
+  level_mm: float
+  soffit_mm: float | None = None
+  top_mm: float | None = None
+  grade: str = "ASSUMED"
+
+@dataclass(frozen=True)
 class TakeoffInputs:
   sheets: tuple = ()
   calibrations: tuple = ()
@@ -169,6 +199,8 @@ class TakeoffInputs:
   members: tuple = ()
   formwork: tuple = ()
   alignments: tuple = ()
+  space: tuple = ()
+  floors: tuple = ()
 
 @dataclass(frozen=True)
 class CalibrationEval:
@@ -830,10 +862,17 @@ def apply_replacements(ledger: list, dropped_keys) -> list:
     return list(ledger)
   return [r for r in ledger if (r.solid_id, r.work_item_code) not in dropped_keys]
 
-def takeoff_check(solids: list, ledger: list) -> list:
+def takeoff_check(solids: list, ledger: list, deductions=()) -> list:
   by_id = {s.id: s for s in solids}
   failures: list = []
+  taken: dict = defaultdict(lambda: ZERO)
   
+  for d in deductions or ():
+    if d.quantity < 0:
+      failures.append(f"negative PDF deduction on solid {d.from_solid_id}")
+    taken[d.from_solid_id] += d.quantity
+  held_rows: dict = defaultdict(lambda: ZERO)
+  units: dict = {}
   for r in ledger:
     if getattr(r, "source_kind", "MODEL") != SOURCE_KIND:
       continue
@@ -846,14 +885,25 @@ def takeoff_check(solids: list, ledger: list) -> list:
       failures.append(f"takeoff row without measurement reference on solid {r.solid_id}")
     if inputs.get("kind") in ("LENGTH", "AREA") and not inputs.get("calibration"):
       failures.append(f"takeoff row without calibration on solid {r.solid_id}")
-    s = by_id.get(r.solid_id)
-    
+    held_rows[(r.solid_id, r.work_item_code)] += r.quantity
+    units[(r.solid_id, r.work_item_code)] = r.unit
+  for (solid_id, code), total in held_rows.items():
+    s = by_id.get(solid_id)
     if s is None:
       continue
+    
+    unit = units[(solid_id, code)]
     held = {"m3": s.gross_volume_m3, "m2": s.gross_area_m2, "m": s.gross_length_m,
-      "nos": Decimal(s.count) if s.count is not None else None}.get(r.unit)
-    if held is None or q6(held) != r.quantity:
-      failures.append(f"takeoff quantity {r.quantity} != solid quantity {held} on solid {r.solid_id}")
+      "nos": Decimal(s.count) if s.count is not None else None}.get(unit)
+    if held is None:
+      failures.append(f"takeoff quantity {total} != solid quantity {held} on solid {solid_id}")
+      continue
+    
+    expected = q6(held)
+    if unit == "m3" and taken.get(solid_id):
+      expected = max(ZERO, q6(held - taken[solid_id]))
+    if total != expected:
+      failures.append(f"takeoff quantity {total} != solid quantity {expected} on solid {solid_id}")
   return failures
 
 def _enc(v):
@@ -890,4 +940,8 @@ def takeoff_payload(inputs: TakeoffInputs | None) -> dict:
       for b in sorted(inputs.formwork, key=lambda b: str(b.measurement_id))]} if inputs.formwork else {}),
     **({"alignments": [_enc([a.view, a.group, a.dx_mm, a.dy_mm, a.method, a.grade, a.supporters, a.compared, a.residual_mm, a.reference, a.origin_x_mm, a.origin_y_mm])
       for a in sorted(inputs.alignments, key=lambda a: (a.group, a.view))]} if inputs.alignments else {}),
+    **({"space": [_enc([str(b.measurement_id), b.group, b.category, b.frame, b.shape, [list(p) for p in b.parts], b.length_mm, b.width_mm, b.z0_mm, b.z1_mm, b.z_grade, b.floor,
+      str(b.level_id) if b.level_id else None, b.covered_by_band])
+      for b in sorted(inputs.space, key=lambda b: str(b.measurement_id))]} if inputs.space else {}),
+    **({"floors": [_enc([f.group, f.key, f.level_mm, f.soffit_mm, f.top_mm, f.grade]) for f in sorted(inputs.floors, key=lambda f: (f.group, f.key))]} if inputs.floors else {}),
   }

@@ -400,6 +400,7 @@ export interface AcceptBody {
   slab_thickness_mm?: number | null;
   beam_depth_mm?: number | null;
   plinth_beam_depth_mm?: number | null;
+  tie_band_depth_mm?: number | null;
   excavation_depth_mm?: number | null;
   trench_depth_mm?: number | null;
   pcc_thickness_mm?: number | null;
@@ -603,7 +604,7 @@ export interface SuggestedWallHeight {
   alternatives: Array<{ slab_mm: number; value_mm: number; pages: number[] }>;
 }
 
-export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number | null; basis: "SECTION" | "LEVEL_MARKS" | "TYPICAL" | string }
+export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number | null; basis: "SECTION" | "LEVEL_MARKS" | "TYPICAL" | string; level_mm?: number | null }
 export interface DrawingStoreys { consistent: boolean; page_no?: number; clusters: Array<{ clear_mm: number; count: number; agree: number; below_ground: boolean }> }
 export interface DrawingSuggest { wall_height?: SuggestedWallHeight | null; wall_height_by_floor?: Record<string, FloorWallHeight> }
 
@@ -677,11 +678,24 @@ export interface FrameView {
   members: FrameMember[];
 }
 
+export interface FrameColumnAtPlace { view: string; tag: string | null; length_mm: number; width_mm: number }
+
+export interface FrameColumnIssue {
+  code: "COLUMN_TAG_DIFFERS" | "COLUMN_SIZE_DIFFERS";
+  x_mm: number;
+  y_mm: number;
+  grade: "ASSUMED" | "CONFIRMED";
+  columns: FrameColumnAtPlace[];
+}
+
+export interface FrameColumns { places: number; shared: number; agree: number; issues: FrameColumnIssue[] }
+
 export interface Frame {
   drawing_id: string;
   reference: string | null;
   origin_mm: number[];
   views: FrameView[];
+  columns?: FrameColumns;
   status: "NONE" | "ASSUMED" | "CONFIRMED";
   open_views: string[];
   unplaced: string[];
@@ -689,4 +703,57 @@ export interface Frame {
   cleared_placements: number;
 }
 
+export interface ReconcilePdfPlace { marks: string[]; views: string[] }
+export interface ReconcileModelPlace { names: string[]; element_ids: string[] }
+export interface ReconcilePair { pdf: ReconcilePdfPlace; model: ReconcileModelPlace; distance_mm: number }
+export interface ReconcileSizeDiffers { pdf: ReconcilePdfPlace; model: ReconcileModelPlace; pdf_size: number[] | null; model_size: number[] | null }
+export interface ReconcileModelChoice { drawing_id: string; filename: string; columns: number }
+
+export interface ColumnReconcile {
+  drawing_id: string;
+  model_drawing_id: string | null;
+  models: ReconcileModelChoice[];
+  status: "NONE" | "MATCHED" | "UNMATCHED";
+  reason: "NO_MODEL" | "NO_PDF_COLUMNS" | null;
+  grade: "ASSUMED" | "CONFIRMED";
+  method: string;
+  dx_mm: number;
+  dy_mm: number;
+  supporters: number;
+  compared: number;
+  pdf_places: number;
+  model_places: number;
+  agrees: boolean;
+  pairs: ReconcilePair[];
+  pdf_only: ReconcilePdfPlace[];
+  model_only: ReconcileModelPlace[];
+  size_differs: ReconcileSizeDiffers[];
+}
+
+export interface ReconcileQuery { model_drawing_id?: string; dx_mm?: number; dy_mm?: number }
+
 export interface FramePlaceBody { view: string; action: "CONFIRM" | "SET" | "CLEAR"; dx_mm?: number; dy_mm?: number }
+export interface FramePlaceBody { view: string; action: "CONFIRM" | "SET" | "CLEAR"; dx_mm?: number; dy_mm?: number }
+
+export type ZGrade = "PRINTED" | "TYPED" | "ASSUMED";
+
+export interface FloorLevel {
+  key: string;
+  level_mm: number | null;
+  clear_mm: number | null;
+  floor_to_floor_mm: number | null;
+  soffit_mm: number | null;
+  top_mm: number | null;
+  source: "SECTION" | "LEVEL_MARKS" | "TYPICAL" | "DATUM" | null;
+  level_source: "PRINTED_MARK" | "SUM_OF_STOREYS" | "AT_DATUM" | null;
+  grade: ZGrade;
+  reason: string | null;
+}
+
+export type ZDatum = "DRAWING_LEVEL_ZERO" | "GROUND_FLOOR_LEVEL";
+
+export interface FootingLevelState { ngl_mm: number | null; ngl_source: "TYPED" | "LEVEL_MARK" | null; bottom_below_ngl_mm: number | null; usable: boolean }
+
+export interface FloorDatums { drawing_id: string; datum: ZDatum; floors: FloorLevel[]; footing: FootingLevelState }
+
+export interface MemberZ { base_mm: number | null; top_mm: number | null; base_source: string; top_source: string; grade: ZGrade; notes: string[]; floor: string | null; datum: ZDatum | string }

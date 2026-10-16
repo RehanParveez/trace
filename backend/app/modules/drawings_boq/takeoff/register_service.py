@@ -5,16 +5,20 @@ from app.modules.drawings_boq.models import DrawingElement, BuildingLevel, Drawi
 from app.modules.drawings_boq.takeoff import register as R
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff import frame_views as FV
+from app.modules.drawings_boq.takeoff import z_range as Z
 from app.modules.drawings_boq.takeoff.evidence import tally as evidence_tally
 from app.modules.drawings_boq.takeoff.sheet_reason import sheet_reason
 from app.modules.drawings_boq.takeoff.levels import view_level_id
+from app.modules.drawings_boq.takeoff.prep_service import PrepService
+from app.modules.drawings_boq.measurement_params import MeasurementParametersService
 from sqlalchemy import delete, select
 from app.core.exceptions import TraceException
 
 MAX_ROWS = 20000
 ROW_FIELDS = ("ifc_global_id", "ifc_type", "name", "raw_material_text", "unit", "quantity", "properties", "discipline", "structural_role",
   "classification_source", "classification_confidence", "quantity_source", "level_id", "length_mm", "width_mm", "height_mm", "thickness_mm",
-  "area_mm2", "volume_mm3", "geometry_kind", "normalization_status", "normalization_issues", "type_mark", "type_name")
+  "area_mm2", "volume_mm3", "geometry_kind", "normalization_status", "normalization_issues", "type_mark", "type_name",
+  "elevation_base_mm", "elevation_top_mm", "bbox_min_x_mm", "bbox_min_y_mm", "bbox_min_z_mm", "bbox_max_x_mm", "bbox_max_y_mm", "bbox_max_z_mm", "placement")
 CLEARED = ("length_mm", "width_mm", "height_mm", "thickness_mm", "area_mm2", "volume_mm3")
 
 def _is_pdf_row_clause():
@@ -52,12 +56,15 @@ class RegisterService:
         measurements[m.id] = {"id": m.id, "status": m.status, "computed": m.computed or {}}
     level_ids = {s.level_id for s in sheets if s.level_id} | {lv for lv in (view_level_id(c) for c in cands) if lv}
     levels: dict = {}
+    floor_of: dict = {}
 
-    
     if level_ids:
-      levels = {lv.id: lv.name for lv in (await self.session.execute(select(BuildingLevel).where(BuildingLevel.organization_id == org,
-        BuildingLevel.id.in_(list(level_ids))))).scalars().all()}
-    rows = R.build_rows(cands, by_sheet, measurements, levels, await self._frame_positions(org, drawing_id))
+      level_rows = (await self.session.execute(select(BuildingLevel).where(BuildingLevel.organization_id == org,
+        BuildingLevel.id.in_(list(level_ids))))).scalars().all()
+      levels = {lv.id: lv.name for lv in level_rows}
+      floor_of = {lv.id: (lv.ifc_storey_id or "").removeprefix("PDF:") for lv in level_rows}
+    floors, footing = await self._datums(org, drawing)
+    rows = R.build_rows(cands, by_sheet, measurements, levels, await self._frame_positions(org, drawing_id), floors, floor_of, footing)
     
     if len(rows) > MAX_ROWS:
       raise TraceException("This drawing has too many items to list.", status_code=422, code="REGISTER_TOO_LARGE")
@@ -131,6 +138,35 @@ class RegisterService:
       "decisions": len({r["properties"]["_pdf"]["candidate_id"] for r in rows if r["normalization_status"] != "VALID"}),
       "evidence": evidence_tally(rows)}
 
+  async def floor_datums(self, org: UUID, drawing_id: UUID) -> dict:
+    """The floors of a drawing with the level of each, as the register places members in height, and the natural ground and footing level used for footings.
+    {"floors": [rows for the screen], "datum": what z = 0 is, "footing": {...}}."""
+    drawing = await self._drawing(org, drawing_id)
+    prepared = await PrepService(self.session).drawing_floor_heights(org, drawing_id)
+    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"])
+    
+    footing = await self._footing_level(org, drawing, floors, prepared["levels_mm"])
+    return {"drawing_id": drawing_id, "datum": Z.datum_of(floors), "floors": Z.floors_report(floors, prepared["floor_keys"], prepared["heights"]),
+      "footing": {"ngl_mm": footing.ngl_mm, "ngl_source": footing.ngl_source if footing.ngl_mm is not None else None,
+        "bottom_below_ngl_mm": footing.bottom_below_ngl_mm, "usable": footing.usable}}
+
+  async def _datums(self, org: UUID, drawing) -> tuple:
+    prepared = await PrepService(self.session).drawing_floor_heights(org, drawing.id)
+    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"])
+    return floors, await self._footing_level(org, drawing, floors, prepared["levels_mm"])
+
+  async def _footing_level(self, org: UUID, drawing, floors: dict, levels_mm: list) -> Z.FootingLevel:
+    """Natural ground level and the footing level below it. The ground level is the site assumption a person saved (how far natural ground lies below the
+    finished floor level of the ground floor), else the lowest level mark printed below the ground floor when the drawing's own zero is the datum; the footing
+    level is the answer a person gave for the footings."""
+    stored = await MeasurementParametersService(self.session).stored_for_run(org, drawing.project_id)
+    below = float(stored["footing_bottom_below_ngl_mm"]) if stored.get("footing_bottom_below_ngl_mm") is not None else None
+    ground, datum = floors.get("GROUND"), Z.datum_of(floors)
+    
+    if stored.get("ngl_below_ffl_mm") is not None and ground is not None:
+      return Z.FootingLevel(round(ground.level_mm - float(stored["ngl_below_ffl_mm"]), 1), below, Z.TYPED_NGL, datum)
+    return Z.FootingLevel(Z.ngl_from_marks(floors, levels_mm), below, Z.MARK_NGL, datum)
+
   async def _frame_positions(self, org: UUID, drawing_id: UUID) -> dict:
     """{(measurement id, instance): where the mark sits on the building frame} for the confirmed measurements of this drawing, so the register carries the positions the
     engine used. Nothing is written for a mark whose view is not placed."""
@@ -144,4 +180,4 @@ class RegisterService:
   async def sync_and_commit(self, org: UUID, drawing_id: UUID) -> dict:
     out = await self.sync_drawing(org, drawing_id)
     await self.session.commit()
-    return out
+    return out

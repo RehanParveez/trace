@@ -4,6 +4,7 @@ from uuid import NAMESPACE_URL, UUID, uuid5
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff import stair_twins
+from app.modules.drawings_boq.takeoff import placement as PL
 
 SOURCE = "pdf_takeoff"
 MAX_ROWS_PER_CANDIDATE = 2000
@@ -105,7 +106,7 @@ def _lintel_text(cand, page_no: int, measurement) -> str:
 
 def _beam_text(cand, page_no: int, measurement) -> str:
   p, facts = cand.params or {}, cand.facts or {}
-  role = "plinth beam" if facts.get("beam_role") == "PLINTH" else "roof beam"
+  role = {"PLINTH": "plinth beam", "BAND": "tie band at lintel level"}.get(facts.get("beam_role"), "roof beam")
   parts = [f"Brick walls measured on sheet {page_no}", f"{role} laid over {facts.get('wall_count', 0)} walls of {(facts.get('wall_thickness_mm') or 0) / 25.4:g} in, as wide as the wall",
     "depth typed" if p.get("depth_mm") is not None else "depth needed"]
   if cand.decision == "ACCEPTED" and measurement is not None:
@@ -242,7 +243,7 @@ def _name(cand, i: int, n: int) -> str:
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
 
-def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=(), frame_positions=None) -> list:
+def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=(), frame_positions=None, floors=None, floor_key=None, footing=None) -> list:
 
   spec = CATEGORY.get(cand.category)
   if spec is None or cand.decision == "REJECTED" or (cand.facts or {}).get("foundation_item"):
@@ -267,6 +268,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
     text += " · also marked on sheet " + ", ".join(str(x) for x in also_on)
   pos = _positions(cand, n)
   evidence = evidence_for(cand)
+  zr = PL.z_of(cand, floors or {}, floor_key, footing)
   out = []
   
   for i in range(n):
@@ -281,8 +283,9 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
     
     placed = (frame_positions or {}).get((str(measurement["id"]), i)) if measured else None
     if placed:
-      # where the mark sits on the building frame, and whether a person confirmed the placement of its view; the engine's own guess is only ever ASSUMED
       props["_pdf"]["frame"] = {"view": placed["view"], "position_mm": placed["position_mm"], "grade": placed["grade"], "method": placed["method"]}
+    where = PL.fields(cand, sizes, placed, zr, floor_key)
+    props["_pdf"].update(where["meta"])
     if cand.category == "ROOM":
       props["_pdf"]["perimeter_m"] = (cand.facts or {}).get("perimeter_m")
     opening_kind = (cand.facts or {}).get("opening_kind") if cand.category in ("DOOR", "WINDOW") else None
@@ -297,6 +300,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else "Staircase" if cand.category == "STAIR" else "Beam over walls" if _wall_beam(cand) else None, "level_name": level_name or title,
     }
     row.update(sizes)
+    row.update(where["row"])
     out.append(row)
   return out
 
@@ -322,7 +326,8 @@ def _primary(candidates, sheets: dict) -> tuple:
     hidden.update(c.id for c in items[1:])
   return also, hidden
 
-def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame_positions: dict | None = None) -> list:
+def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame_positions: dict | None = None, floors: dict | None = None,
+  floor_of: dict | None = None, footing=None) -> list:
   
   also, hidden = _primary(candidates, sheets)
   stair_also, stair_hidden = stair_twins.twins(candidates, sheets)
@@ -337,7 +342,7 @@ def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame
     m = measurements.get(cand.measurement_id) if cand.measurement_id else None
     lvl = level_of(cand, sheet)
     out.extend(rows_for_candidate(cand, sheet=sheet, level_id=lvl, level_name=levels.get(lvl) if lvl else None, measurement=m,
-      also_on=also.get(cand.id, ()), frame_positions=frame_positions))
+      also_on=also.get(cand.id, ()), frame_positions=frame_positions, floors=floors, floor_key=(floor_of or {}).get(lvl) if lvl else None, footing=footing))
   return out
 
 def is_pdf_row(row) -> bool:

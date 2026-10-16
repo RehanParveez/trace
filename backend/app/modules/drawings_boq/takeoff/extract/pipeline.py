@@ -12,12 +12,14 @@ from app.modules.drawings_boq.takeoff.extract import rcc_ring as RR
 from app.modules.drawings_boq.takeoff.extract import completion as CP
 from app.modules.drawings_boq.takeoff.extract import neck as NK
 from app.modules.drawings_boq.takeoff.extract import wide_openings as WO
+from app.modules.drawings_boq.takeoff.extract import lintel_heads as LH
 from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
 from app.modules.drawings_boq.takeoff.extract import dashed_openings as DO
 from app.modules.drawings_boq.takeoff.extract import hosts as H
+from app.modules.drawings_boq.takeoff.extract import beam_marks as BM
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import flights as FL
@@ -951,7 +953,7 @@ def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_
 def _inch_label(mm: float) -> str:
   return f"{mm / 25.4:g}"
 
-def _wall_beams(walls: list, role: str, ctx: dict, level_hint: str | None, min_wall_mm: float = 0.0) -> list:
+def _wall_beams(walls: list, role: str, ctx: dict, level_hint: str | None, min_wall_mm: float = 0.0, tie_band: dict | None = None) -> list:
   """One beam candidate per wall thickness: the brick walls of this floor laid end to end, as wide as the wall. The depth is not drawn, so it is left to be
   typed when the beam is accepted."""
   groups: dict = {}
@@ -962,11 +964,12 @@ def _wall_beams(walls: list, role: str, ctx: dict, level_hint: str | None, min_w
     t = float(f.get("thickness_used_mm") or 0.0)
     if t <= 0.0 or t < min_wall_mm:
       continue
-    groups.setdefault(round(t, 1), []).append(w)
+  
+    groups.setdefault((round(t, 1), BM.mark_of(w, BS.KIND_OF_ROLE.get(role, role)) or ""), []).append(w)
   out = []
   spec = level_spec(level_hint)
   work_item, mode, kind = ("CON-RCC", "COUNT_X_VOLUME", "COUNT")
-  for t, ws in sorted(groups.items(), reverse=True):
+  for (t, mark), ws in sorted(groups.items(), key=lambda kv: (-kv[0][0], kv[0][1])):
     length_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws)
     if length_m <= 0.0:
       continue
@@ -974,27 +977,36 @@ def _wall_beams(walls: list, role: str, ctx: dict, level_hint: str | None, min_w
     pts = [p for w in ws for p in ((w.geometry or {}).get("points") or [])]
     cx = sum(p[0] for p in pts) / len(pts) if pts else 0.0
     cy = sum(p[1] for p in pts) / len(pts) if pts else 0.0
-    prefix = "PLINTH-BEAM" if role == "PLINTH" else "ROOF-BEAM"
-    tag = f"{prefix}-{_inch_label(t)}IN"
+    prefix = {"PLINTH": "PLINTH-BEAM", "BAND": "TIE-BAND"}.get(role, "ROOF-BEAM")
+    tag = f"{prefix}-{_inch_label(t)}IN" + (f"-{mark}" if mark else "")
     notes = [C.note("BEAM_FROM_WALLS"), C.note("BEAM_OVER_OPENINGS")]
     if role == "PLINTH":
       notes.append(C.note("PLINTH_BEAM_UNDER_9IN"))
+    if role == "BAND":
+      notes.append(C.note("TIE_BAND_FROM_NOTE"))
     facts = {"derived_from": "WALLS", "beam_role": role, "wall_thickness_mm": t, "wall_count": len(ws), "length_m": round(length_m, 3),
       "wall_keys": [w.key for w in ws], "openings_m": round(sum(sum((w.facts or {}).get("gaps_mm") or []) for w in ws) / 1000.0, 3)}
-    kindname = "Plinth beam" if role == "PLINTH" else "Roof beam"
-    label = f"{kindname} under {_inch_label(t)} in walls · {length_m:.2f} m" + (f" · {spec[0]}" if spec else "")
-    cand = Candidate(key=_key("BEAM", role, round(t), level_hint or ""), category="BEAM", kind=kind, quantity_mode=mode, label=label, tag=tag,
+    if role == "BAND" and tie_band:
+      facts["tie_band_text"] = tie_band.get("text")
+    if mark:
+      facts["beam_mark"] = mark
+    kindname = {"PLINTH": "Plinth beam", "BAND": "Tie band at lintel level"}.get(role, "Roof beam")
+    label = f"{kindname} {mark} under {_inch_label(t)} in walls · {length_m:.2f} m" if mark else f"{kindname} under {_inch_label(t)} in walls · {length_m:.2f} m"
+    label += f" · {spec[0]}" if spec else ""
+    cand = Candidate(key=_key("BEAM", role, round(t), level_hint or "", *([mark] if mark else [])), category="BEAM", kind=kind, quantity_mode=mode, label=label, tag=tag,
       geometry={"points": [[round(cx, 4), round(cy, 4)]]}, params={"length_mm": round(length_m * 1000.0, 1), "width_mm": t, "dims_basis": "SPECIFIED"},
       missing=["depth_mm"], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
     out.append(_finish(cand, ctx, 0.7))
   return out
 
-def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: bool) -> list:
+def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: bool, tie_band: dict | None = None) -> list:
   """The beams that sit on the brick walls of a floor plan: a roof beam under the slab above the walls of this floor, and, on the lowest floor, a plinth
-  beam under the walls of 6 inches and thicker."""
+  beam under the walls of 6 inches and thicker. When the drawing prints a continuous tie band at lintel level, the band over the same walls too."""
   out = _wall_beams(walls, "ROOF", ctx, level_hint)
   if lowest:
     out.extend(_wall_beams(walls, "PLINTH", ctx, level_hint, C.PLINTH_BEAM_MIN_WALL_MM))
+  if tie_band:
+    out.extend(_wall_beams(walls, "BAND", ctx, level_hint, 0.0, tie_band))
   return out
 
 def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None) -> list:
@@ -1123,7 +1135,8 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       wstats["tank_walls"] = _mark_tanks(words, walls, mm_per_pt)
       _drop_tank_heights(walls)
       wstats["tank_drawings_listed"] = TS.apply(walls, tank_details or [])
-      beams = _beam_candidates(walls, ctx, level_hint, lowest_level)
+      res.stats["beam_marks"] = BM.assign(walls, BM.mark_words(words, beam_sections or []), mm_per_pt)
+      beams = _beam_candidates(walls, ctx, level_hint, lowest_level, (schedule or {}).get("tie_band"))
       res.stats["beam_sections"] = BS.apply(beams, beam_sections or [])
       res.candidates.extend(beams)
       res.stats["wall_beams"] = len(beams)
@@ -1151,6 +1164,16 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       wide = WO.candidates(walls, (schedule or {}).get("lintels") or [], ctx, Candidate, _finish, _inch_text, _fmt_mm, dashed, marks, mm_per_pt)
       wstats["dashed_openings"] = len(dashed)
       res.candidates.extend(wide)
+      bands = [c for c in beams if (c.facts or {}).get("beam_role") == "BAND"]
+      res.stats["lintel_heads"] = LH.apply([*lintels, *wide, *bands], [c for c in res.candidates if c.category in ("DOOR", "WINDOW")])
+      if bands:
+        for c in [*lintels, *wide]:
+          if not (c.facts.get("hosted") or {}).get("rcc"):
+            c.facts["tie_band"] = {"text": (bands[0].facts or {}).get("tie_band_text"), "candidate_key": bands[0].key}
+            c.notes.append(C.note("LINTEL_COVERED_BY_TIE_BAND"))
+            
+      for c in [*lintels, *wide, *bands]:
+        c.status = _status(c.notes)
       res.stats["lintels"] = len(lintels) + len(wide)
       res.stats["lintels_unmarked_openings"] = len(wide)
       stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt)

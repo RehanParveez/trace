@@ -5,6 +5,7 @@ from app.modules.drawings_boq.models import TakeoffViewAlignment, TakeoffSheet, 
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.register import row_id
 from app.modules.drawings_boq.takeoff import frame_views as FV
+from app.modules.drawings_boq.takeoff.space_loader import load_space
 from dataclasses import replace
 from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -209,13 +210,14 @@ async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: lis
   formwork = await load_formwork(session, org, measurements, sheets)
   group_of_sheet = {s.id: str(s.drawing_id) for s in sheets.values()}
   stored = await load_stored_alignments(session, org, sorted({s.drawing_id for s in sheets.values()}, key=str))
+  space, floors = await load_space(session, org, measurements, sheets)
   return tk.TakeoffInputs(
     sheets=tuple(sheet_input(s) for s in sorted(sheets.values(), key=lambda s: str(s.id))),
     calibrations=tuple(calibration_input(c, sheet_user_unit(sheets[c.sheet_id])) for c in sorted(cals, key=lambda c: str(c.id))
       if c.sheet_id in sheets),
     measurements=tuple(measurement_input(m) for m in sorted(measurements, key=lambda m: str(m.id))),
     members=await load_members(session, org, measurements, sheets),
-    formwork=formwork, alignments=FV.build_alignments(formwork, group_of_sheet, stored))
+    formwork=formwork, alignments=FV.build_alignments(formwork, group_of_sheet, stored), space=space, floors=floors)
 
 async def takeoff_drawing_ids(session: AsyncSession, org: UUID, project_id: UUID) -> set[UUID]:
   r = await session.execute(

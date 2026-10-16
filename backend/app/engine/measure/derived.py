@@ -10,6 +10,7 @@ from app.engine.measure.units import mm3_to_m3, q4, q6
 from shapely.ops import unary_union
 from app.engine.measure.stages import _ffl, element_z
 from app.engine.measure.spatial import prism_and_polygon
+from app.engine.measure import frame as FR
 
 DERIVED = "DERIVED"
 FORMWORK_FORMULA = "SOLID_FORMWORK_AREA"
@@ -41,6 +42,8 @@ PARAMS = {
   "bar_lap_dia": (40.0, 0.0, 80.0),
   "bar_anchor_dia": (0.0, 0.0, 80.0),
   "steel_wastage_pct": (0.0, 0.0, 15.0),
+  "beam_depth_includes_slab": (1.0, 0.0, 1.0),
+  "tie_band_replaces_lintel": (0.0, 0.0, 1.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
@@ -269,12 +272,16 @@ def claim_foundations(ctx: CalculationContext, members, counted: set, bottom_bel
   """PDF footing marks that were counted in this run, as foundations that can be dug and bedded like model footings. The footprint is the
   size of the footing centred on the mark, so the mark position stands in for the drawn outline. A mark cannot be placed without the level
   of the footing bottom below natural ground, which the drawing does not carry, so it waits for that figure."""
-  frames = sorted({m.frame for m in members})
-  frame_no = {f: i for i, f in enumerate(frames)}
+  views = sorted({m.frame for m in members})
+  placed_frames = FR.frames_of(getattr(ctx, "takeoff", None))
+  group_of = {a.view: a.group for a in tuple(getattr(getattr(ctx, "takeoff", None), "alignments", ()) or ())}
+  group_no = {g: i for i, g in enumerate(sorted(placed_frames))}
+  frame_no = {f: i + len(group_no) for i, f in enumerate(views)}
   used = waiting = 0
   ignored: dict = {}
   waiting_list: list = []
   found: list = []
+  
   for m in sorted(members, key=lambda b: str(b.measurement_id)):
     n = len(m.points_mm)
     if str(m.measurement_id) not in counted:
@@ -289,7 +296,7 @@ def claim_foundations(ctx: CalculationContext, members, counted: set, bottom_bel
       waiting_list.append({"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "tag": m.tag, "marks": n,
         "page_no": m.page_no})
       continue
-  
+
     for i, (x, y) in enumerate(m.points_mm):
       if i >= len(m.element_ids):
         _count_up(ignored, "NOT_REGISTERED")
@@ -298,9 +305,13 @@ def claim_foundations(ctx: CalculationContext, members, counted: set, bottom_bel
       if eid is None:
         _count_up(ignored, "NOT_REGISTERED")
         continue
-      poly = translate(box(float(x) - length / 2, float(y) - width / 2, float(x) + length / 2, float(y) + width / 2), xoff=frame_no[m.frame] * FRAME_STEP_MM)
+      group = group_of.get(m.frame)
+      spot = FR.frame_xy(placed_frames[group], m.frame, float(x), float(y)) if group in placed_frames else None
+      cx, cy, xoff = (spot[0], spot[1], group_no[group] * FRAME_STEP_MM) if spot is not None else (float(x), float(y), frame_no[m.frame] * FRAME_STEP_MM)
+      poly = translate(box(cx - length / 2, cy - width / 2, cx + length / 2, cy + width / 2), xoff=xoff)
       z0 = ngl_z - float(bottom_below)
       z1 = z0 + depth
+      
       el = ModelElement(
         id=eid, ifc_type="IfcFooting", role="FOOTING", level_id=m.level_id, geometry_kind="EXTRUDED_PROFILE", profile=None,
         placement={"plan_mm": [list(c) for c in list(poly.exterior.coords)[:-1]], "z_min_mm": z0, "z_max_mm": z1},
@@ -311,10 +322,13 @@ def claim_foundations(ctx: CalculationContext, members, counted: set, bottom_bel
         geometry_kind="EXTRUDED_PROFILE", classification_confidence=m.confidence, confidence_factor=Decimal("1"))
       claim = {
         "measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no,
-        "tag": m.tag, "instance": i + 1, "instances": n, "position_basis": m.position_basis, "position_mm": [round(float(x), 1), round(float(y), 1)],
+        "tag": m.tag, "instance": i + 1, "instances": n, "position_basis": "FRAME" if spot is not None else m.position_basis, "position_mm": [round(float(x), 1), round(float(y), 1)],
         "size_mm": [round(length, 1), round(width, 1), round(depth, 1)], "bottom_below_ngl_mm": round(float(bottom_below), 1), "view": m.frame,
       }
-      
+      if spot is not None:
+        claim["frame_position_mm"] = [round(spot[0], 1), round(spot[1], 1)]
+        claim["frame_grade"] = placed_frames[group].alignments[m.frame].grade
+
       prism, _ = prism_and_polygon(el) or (None, None)
       if prism is None:
         _count_up(ignored, "NO_FOOTPRINT")

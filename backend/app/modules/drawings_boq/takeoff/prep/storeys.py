@@ -129,5 +129,5 @@ def storey_heights(floor_keys: list, storeys: dict | None) -> dict:
   for key, c in zip(keys, clusters):
     between = c.get("between_mm")
     out[key] = {"clear_mm": c["clear_mm"], "floor_to_floor_mm": round(between[1] - between[0], 1) if between else None, "basis": "SECTION",
-      "count": c["count"]}
+      "count": c["count"], "level_mm": between[0] if between else None}
   return out

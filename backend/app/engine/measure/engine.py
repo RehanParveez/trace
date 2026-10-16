@@ -20,11 +20,12 @@ from app.engine.measure.layers import layer_check, layer_excluded_by_solid, spli
 from app.engine.measure.derived import derived_check, measure_derived
 from app.engine.measure.formwork import formwork_check, measure_formwork
 from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
+from app.engine.measure.pdf_space import split_space, space_check
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
-from app.engine.measure.takeoff import TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
+from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.20"
+ENGINE_VERSION = "2026.10.21"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -368,7 +369,7 @@ def _expected_unit(formula_code: str) -> str | None:
     return spec.output_unit
   return FORMULA_UNITS.get(formula_code)
 
-def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: AllocationResult | None = None) -> None:
+def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: AllocationResult | None = None, pdf_deductions=()) -> None:
   alloc = alloc or AllocationResult.empty()
   failures: list[str] = []
   by_id = {s.id: s for s in solids}
@@ -402,7 +403,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
     seen.add(key)
     if not row.trace or "formula_code" not in row.trace:
       failures.append(f"missing trace on solid {row.solid_id}")
-    if row.work_stage is not None and row.source_kind != "MODEL":
+    if row.work_stage is not None and row.source_kind not in ("MODEL", PDF_SOURCE):
       failures.append(f"work stage {row.work_stage} on a row not measured from the model ({row.solid_id})")
 
     layered = bool((((row.trace or {}).get("inputs") or {}).get("layer_split")))
@@ -418,7 +419,8 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
     if total != expected:
       failures.append(f"net volume != gross - deductions on solid {solid_id}")
 
-  failures.extend(takeoff_check(solids, ledger))
+  failures.extend(takeoff_check(solids, ledger, pdf_deductions))
+  failures.extend(space_check(solids, ledger, pdf_deductions))
   failures.extend(steel_check(solids, ledger))
   failures.extend(layer_check(ledger))
   failures.extend(derived_check(solids, ledger))
@@ -541,6 +543,8 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_ledger += rebar_res.ledger
     
   takeoff_res = None
+  pdf_deductions: list = []
+  space_info: dict = {}
   stage_info: dict = stage_stats(ctx)
   layer_info: dict = layer_stats(ctx)
   derived_info: dict = derived_stats(ctx)
@@ -553,6 +557,10 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids = [s for s in extra_solids if s.id not in gone]
     extra_solids += takeoff_res.solids
     extra_ledger += takeoff_res.ledger
+    space_res = split_space(ctx, extra_ledger)
+    extra_ledger = space_res.ledger
+    pdf_deductions = space_res.deductions
+    space_info = space_res.stats
 
   if ctx.layer_mode and ctx.spec_mode:
     layered = split_layers(ctx, accepted, solids, ledger)
@@ -586,6 +594,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     **(rebar_res.stats if rebar_res else {}),
     "rebar_skipped": rebar_res.skipped if rebar_res else {},
     "pdf_takeoff": takeoff_res.stats if takeoff_res else {},
+    "pdf_space": space_info,
     "skipped_by_role": skipped,
     "wall_material": wall_material_stats(solids, ledger),
     "spec": spec_stats(ctx, ledger),
@@ -600,5 +609,5 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "rejected": [{"element_id": str(r.element_id), "ifc_type": r.ifc_type, "code": r.code, "message": r.message} for r in rejected],
   }
   return CalculationResult(solids=solids + extra_solids, ledger=ledger + extra_ledger, rejected=rejected,
-    skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=alloc.deductions,
-    bar_marks=(rebar_res.marks if rebar_res else []) + steel_marks, stats=stats)
+    skipped_by_role=skipped, unmapped_by_type=unmapped, deductions=list(alloc.deductions) + list(pdf_deductions),
+    bar_marks=(rebar_res.marks if rebar_res else []) + steel_marks, stats=stats)

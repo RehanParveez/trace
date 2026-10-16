@@ -2,6 +2,7 @@ from __future__ import annotations
 from decimal import Decimal
 from app.engine.measure import frame as FR
 from app.engine.measure import takeoff as tk
+from app.modules.drawings_boq.takeoff import frame_columns as FC
 
 ANCHORS = ("COLUMN", "FOOTING")
 MARKS = ("COLUMN", "FOOTING", "SLAB", "BEAM", "LINTEL")
@@ -88,7 +89,8 @@ def describe(frame, members: dict, anchors: dict, stored: dict | None) -> dict:
   unconfirmed = [v["key"] for v in views if v["grade"] != FR.CONFIRMED and not (v["reference"] and v["decided"])]
  
   open_views = [v["key"] for v in views if not v["decided"]]
-  return {"reference": frame.reference, "origin_mm": list(frame.origin_mm), "views": views,
+  columns = FC.check(members, {v["key"]: (FR.CONFIRMED if v["grade"] == FR.CONFIRMED or v["decided"] else v["grade"]) for v in views})
+  return {"reference": frame.reference, "origin_mm": list(frame.origin_mm), "views": views, "columns": columns,
     "status": "CONFIRMED" if views and not open_views else "ASSUMED", "open_views": open_views, "unplaced": [v["key"] for v in views if v["method"] == FR.UNALIGNED and not v["decided"]],
     "unconfirmed": unconfirmed}
 

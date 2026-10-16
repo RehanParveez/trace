@@ -571,6 +571,19 @@ class CalculationService:
         return {"measurements": res.stats.get("measurements", 0), "counted": res.stats.get("counted", 0),
           "verified": res.stats.get("verified", 0), "skipped": res.stats.get("skipped", {}),
           "replaced_work_items": len(res.stats.get("replaced", []))}
+      async def pdf_space():
+        res = await asyncio.to_thread(kernel.split_space, ctx, state["extra_ledger"])
+        old_ids, added = restage_plan(run_id, state["extra_ledger"], res)
+        await self.runs.drop_staged_ledger(run_id, old_ids)
+        await self.runs.stage_ledger([_ledger_row(run, e, "pdf_space") for e in added])
+        await self.runs.stage_deductions([_deduction_row(run, d, ctx, "pdf_space") for d in res.deductions])
+        
+        state["extra_ledger"] = res.ledger
+        state["pdf_deductions"] = res.deductions
+        state["space_stats"] = res.stats
+        return {"deductions": len(res.deductions), "rows_cut": res.stats.get("rows_cut", 0), "rows_netted": res.stats.get("rows_netted", 0),
+          "deducted_m3": res.stats.get("deducted_m3", "0"), **({"reason": res.stats["reason"]} if res.stats.get("reason") else {})}
+
       async def layer_split():
         res = await asyncio.to_thread(kernel.split_layers, ctx, state["accepted"], state["solids"], state["ledger"])
         old_ids, added = restage_plan(run_id, state["ledger"], res)
@@ -615,7 +628,7 @@ class CalculationService:
 
       async def check():
         await asyncio.to_thread(kernel.self_check, state["solids"] + state["extra_solids"],
-          state["ledger"] + state["extra_ledger"], state["alloc"])
+          state["ledger"] + state["extra_ledger"], state["alloc"], state.get("pdf_deductions") or ())
         failures = rb.self_check_rebar(state["marks"], state["extra_ledger"])
         if failures:
           raise kernel.InvariantViolation(failures)
@@ -641,6 +654,11 @@ class CalculationService:
       else:
         await self._skip(run, "pdf_takeoff", reason="no confirmed PDF takeoff measurements in this run")
         
+      if p6.takeoff is not None and getattr(p6.takeoff, "space", None) and (ctx.derived_mode or ctx.stage_mode):
+        await self._stage(run, "pdf_space", pdf_space, 79)
+      else:
+        await self._skip(run, "pdf_space", reason="no placed PDF members, or neither derived works nor work stages are switched on for this company")
+
       if ctx.layer_mode and ctx.spec_mode:
         await self._stage(run, "layer_split", layer_split, 79)
       else:
@@ -714,6 +732,7 @@ class CalculationService:
         "spaces": len(p6.spaces),
         "rebar": state["rebar_stats"],
         "pdf_takeoff": state.get("takeoff_stats", {}),
+        "pdf_space": state.get("space_stats", {}),
         "spec": kernel.spec_stats(ctx, state["ledger"] + state["extra_ledger"]),
         "stages": state.get("stage_stats") or kernel.stage_stats(ctx),
         "layers": state.get("layer_stats") or kernel.layer_stats(ctx),
@@ -825,4 +844,4 @@ class CalculationService:
     return await self._page("solids", QuantitySolidResponse, self.runs.list_solids, organization_id, run_id, kwargs, cached)
 
   async def list_deductions(self, organization_id: UUID, run_id: UUID, cached: bool = False, **kwargs):
-    return await self._page("deductions", DeductionResponse, self.runs.list_deductions, organization_id, run_id, kwargs, cached)
+    return await self._page("deductions", DeductionResponse, self.runs.list_deductions, organization_id, run_id, kwargs, cached)

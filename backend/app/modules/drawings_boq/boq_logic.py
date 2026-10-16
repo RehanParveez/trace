@@ -42,6 +42,7 @@ REVIEW_WARNING_CODES = frozenset({
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
     "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "STEEL_ASSUMED",
+    "SPACE_OVER_DEDUCTED", "SPACE_VIEW_NOT_PLACED", "SPACE_NO_HEIGHT", "SPACE_SAME_ROLE_OVERLAP",
 })
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
@@ -430,6 +431,24 @@ LEDGER_WARNING_CATALOG = {
     "Part of this column's formwork was taken off because a slab covers it, but where the two drawing views sit on the building was found by the program, "
     "or the floor of one of them was not given, and no one has confirmed it.",
     "Open the frame view of the drawing, confirm or move the placement of each view, give the floors, then calculate again."),
+  "SPACE_OVER_DEDUCTED": ("error", "APPROVAL",
+    "The parts of the drawing that overlap this member took more than its own volume, so what was taken off was scaled down to fit. The total is kept, "
+    "but which member the overlap belongs to is uncertain.",
+    "Check the views of this member for a duplicate mark or a view placed on top of another, then calculate again."),
+  "SPACE_VIEW_NOT_PLACED": ("warning", "NONE",
+    "The drawing view this member was measured on has no placement on the building, so it was only compared with members of its own view.",
+    "Open the frame view of the drawing and confirm the placement of this view, then calculate again."),
+  "SPACE_NO_HEIGHT": ("warning", "NONE",
+    "The height range of this member is not known (its floor has no level, or the lintel head or footing level is not given), so it could not be "
+    "compared with other members or placed in a stage of work.",
+    "Give the floor levels, the lintel head or the footing level, then calculate again."),
+  "SPACE_SAME_ROLE_OVERLAP": ("warning", "NONE",
+    "Two measurements of the same kind of member lie over each other on the drawing, so the shared part was counted once.",
+    "Check that the same wall or beam was not measured twice."),
+  "STAGE_DATUM_DEFAULTED": ("info", "NONE",
+    "The stage this quantity falls in depends on a reference level the drawing does not give (the DPC or the lintel level), so an assumed level was used. "
+    "The total quantity is not affected, only which stage it is shown under.",
+    "Set the DPC drop below floor level or the lintel height on the measurement convention, or confirm the levels with the engineer."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }

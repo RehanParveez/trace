@@ -1319,6 +1319,8 @@ export interface DerivedParams {
   bar_lap_dia?: number;
   bar_anchor_dia?: number;
   steel_wastage_pct?: number;
+  beam_depth_includes_slab?: number;
+  tie_band_replaces_lintel?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;

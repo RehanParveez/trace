@@ -1,7 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import config as C
 
-KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF"}
+KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF", "BAND": "TIE"}
 
 def _text(s: dict) -> str:
   size = f"{s['depth_mm'] / 25.4:g} in deep" if s.get("depth_mm") else "depth not read"
@@ -22,14 +22,18 @@ def apply(beams: list, sections: list) -> dict:
     opts = options_for(f.get("beam_role"), sections)
     if not opts:
       continue
-    if len(opts) == 1 and opts[0].get("depth_mm"):
-      s = opts[0]
+    marked = next((o for o in opts if o.get("mark") == f.get("beam_mark")), None) if f.get("beam_mark") else None
+    if f.get("beam_mark") and marked is None:
+      c.notes.append(C.note("BEAM_MARK_SECTION_UNUSABLE", mark=f["beam_mark"]))
+    chosen_one = marked if marked is not None and marked.get("depth_mm") else opts[0] if len(opts) == 1 and opts[0].get("depth_mm") else None
+    if chosen_one is not None:
+      s = chosen_one
+      
       c.params["depth_mm"] = s["depth_mm"]
       c.missing = [m for m in c.missing if m != "depth_mm"]
       f["section_mark"] = s["mark"]
       f["section_pages"] = list(s.get("pages") or [])
-      c.notes.append(C.note("BEAM_SECTION_FROM_DETAIL", mark=s["mark"], depth_mm=s["depth_mm"]))
-      
+      c.notes.append(C.note("BEAM_SECTION_FROM_MARK" if marked is not None and marked is s else "BEAM_SECTION_FROM_DETAIL", mark=s["mark"], depth_mm=s["depth_mm"]))
       if s.get("steel"):
         c.params["steel"] = dict(s["steel"])
         f["steel_text"] = s.get("steel_text")

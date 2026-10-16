@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { AcceptBody, FramePlaceBody, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
+import type { AcceptBody, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
 
 export const takeoffKeys = {
@@ -15,6 +15,8 @@ export const takeoffKeys = {
   reconciliation: (projectId: string) => [...takeoffKeys.all, "reconciliation", projectId] as const,
   facts: (drawingId: string) => [...takeoffKeys.all, "facts", drawingId] as const,
   frame: (drawingId: string) => [...takeoffKeys.all, "frame", drawingId] as const,
+  floors: (drawingId: string) => [...takeoffKeys.all, "floors", drawingId] as const,
+  reconcile: (drawingId: string, query: ReconcileQuery) => [...takeoffKeys.all, "reconcile", drawingId, query.model_drawing_id ?? "", query.dx_mm ?? null, query.dy_mm ?? null] as const,
   candidates: (sheetId: string) => [...takeoffKeys.all, "candidates", sheetId] as const,
 };
 
@@ -320,6 +322,22 @@ export function useTakeoffFrame(drawingId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: takeoffKeys.frame(drawingId ?? ""),
     queryFn: () => takeoffApi.frame(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useTakeoffReconcile(drawingId: string | undefined, query: ReconcileQuery, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.reconcile(drawingId ?? "", query),
+    queryFn: () => takeoffApi.reconcileColumns(drawingId as string, query),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useTakeoffFloors(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.floors(drawingId ?? ""),
+    queryFn: () => takeoffApi.floors(drawingId as string),
     enabled: Boolean(drawingId) && enabled,
   });
 }
