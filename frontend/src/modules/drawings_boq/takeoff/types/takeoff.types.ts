@@ -331,7 +331,7 @@ export interface ReconciliationStats {
 
 export interface Reconciliation { run_id: string | null; stats: ReconciliationStats; measurements: ReconciliationRow[] }
 
-export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM" | "SLAB" | "LINTEL" | "STAIR";
+export type CandidateCategory = "COLUMN" | "FOOTING" | "BEAM" | "DOOR" | "WINDOW" | "WALL" | "ROOM" | "SLAB" | "LINTEL" | "STAIR" | "SITE";
 export type CandidateStatus = "VALID" | "WARNING" | "INVALID";
 export type CandidateDecision = "NEW" | "ACCEPTED" | "REJECTED";
 
@@ -386,7 +386,9 @@ export interface CandidateSummary {
 }
 
 export interface CandidateList { sheet_id: string; extraction: ExtractionMeta; candidates: TakeoffCandidate[]; summary: CandidateSummary }
-export interface ExtractResult extends CandidateList { added: number; updated: number; removed: number; calibration_created: boolean }
+export interface ExtractResult extends CandidateList { added: number; updated: number; removed: number; calibration_created: boolean;
+  
+  floors_chosen?: Array<{ floor: string; sheet_id: string; page_no: number; set_aside: number; restored: number }> }
 
 export interface AcceptBody {
   ids: string[];
@@ -415,6 +417,10 @@ export interface AcceptBody {
   door_frame_width_mm?: number | null;
   door_frame_width_thin_mm?: number | null;
   stair_waist_mm?: number | null;
+  site_length_mm?: number | null;
+  site_width_mm?: number | null;
+  site_height_mm?: number | null;
+  site_thickness_mm?: number | null;
   work_items?: Record<string, string>;
 }
 
@@ -757,3 +763,42 @@ export interface FootingLevelState { ngl_mm: number | null; ngl_source: "TYPED" 
 export interface FloorDatums { drawing_id: string; datum: ZDatum; floors: FloorLevel[]; footing: FootingLevelState }
 
 export interface MemberZ { base_mm: number | null; top_mm: number | null; base_source: string; top_source: string; grade: ZGrade; notes: string[]; floor: string | null; datum: ZDatum | string }
+
+export interface FloorSource {
+  sheet_id: string;
+  page_no: number;
+  from_plans: boolean;
+  caption: string | null;
+  wall_m: number;
+  walls: number;
+  items: number;
+  open: number;
+  accepted: number;
+  rejected: number;
+  set_aside: boolean;
+}
+
+export interface FloorEntry {
+  floor: string;
+  state: "SINGLE" | "LISTED" | "DOUBLE" | "CHOSEN" | "NONE";
+  choosable: boolean;
+  chosen_sheet_id: string | null;
+  suggested_sheet_id: string | null;
+  conflict: boolean;
+  sources: FloorSource[];
+}
+
+export interface FloorSources { drawing_id: string; floors: FloorEntry[]; to_decide: number }
+
+export type FloorChoiceBody = { choices: Array<{ floor: string; sheet_id: string }> } | { use_suggested: true };
+
+export interface FloorChoiceResult {
+  chosen: Array<{ floor: string; sheet_id: string; page_no: number; set_aside: number; restored: number }>;
+  set_aside: number;
+  restored: number;
+  blocked: Array<{ floor: string; code: string; message: string }>;
+  floors: FloorSources;
+}
+
+export interface PlanRead { key: string; caption: string; level_hint: string | null; bbox: number[]; wall_m_found: number; walls: number | null; items: Record<string, number> }
+export interface LeftOut { caption: string | null; kind: string | null; bbox: number[]; wall_m: number }

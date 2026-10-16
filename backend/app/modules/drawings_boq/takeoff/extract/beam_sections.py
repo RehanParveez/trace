@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 
 KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF", "BAND": "TIE"}
 

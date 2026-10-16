@@ -12,6 +12,14 @@ def _line(d: dict) -> str:
   bars = "; ".join(d.get("bar_notes") or [])
   return f"{d['view'].lower()}: {sizes or 'no size read'}" + (f" ({bars})" if bars else "")
 
+def describe(kind: str | None, details: list) -> dict | None:
+  """What the tank drawings of this kind print: {"drawings": [{view, page_no, sizes, bar_notes}], "message": the sentence listing them}; None when there are none."""
+  mine = _drawings(kind, details)
+  if not mine:
+    return None
+  return {"drawings": [{"view": d["view"], "page_no": d.get("page_no"), "sizes": [x["text"] for x in d.get("lengths") or []], "bar_notes": list(d.get("bar_notes") or [])} for d in mine],
+    "message": " | ".join(_line(d) for d in mine)}
+
 def apply(walls: list, details: list) -> int:
   """List the tank drawings on every tank wall. Returns the number of walls that got a list."""
   n = 0
@@ -19,13 +27,12 @@ def apply(walls: list, details: list) -> int:
     f = c.facts or {}
     if f.get("enclosure") != "TANK":
       continue
-  
-    mine = _drawings(f.get("tank_kind"), details)
-    if not mine:
+    listed = describe(f.get("tank_kind"), details)
+    if listed is None:
       continue
-    f["tank_drawings"] = [{"view": d["view"], "page_no": d.get("page_no"), "sizes": [x["text"] for x in d.get("lengths") or []], "bar_notes": list(d.get("bar_notes") or [])} for d in mine]
+    f["tank_drawings"] = listed["drawings"]
     note = C.note("TANK_SECTIONS_LISTED", kind=f.get("tank_kind"))
-    note["message"] += " Printed: " + " | ".join(_line(d) for d in mine) + "."
+    note["message"] += " Printed: " + listed["message"] + "."
     c.notes.append(note)
     n += 1
   return n

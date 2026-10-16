@@ -54,6 +54,9 @@ def _chains(lines, axis: int, tread_pt: float, width_pt: float) -> list:
         run = [p]
   return out
 
+def _same_way(a, b) -> bool:
+  return a is None or b is None or a == b
+
 def _merge(items: list, reach: float) -> list:
   groups = [dict(g, treads=g["treads"]) for g in items]
   changed = True
@@ -62,8 +65,9 @@ def _merge(items: list, reach: float) -> list:
     for i in range(len(groups)):
       for j in range(i + 1, len(groups)):
         a, b = groups[i]["box"], groups[j]["box"]
-        if a[0] - reach <= b[2] and b[0] - reach <= a[2] and a[1] - reach <= b[3] and b[1] - reach <= a[3]:
+        if _same_way(groups[i].get("direction"), groups[j].get("direction")) and a[0] - reach <= b[2] and b[0] - reach <= a[2] and a[1] - reach <= b[3] and b[1] - reach <= a[3]:
           groups[i] = {"axis": groups[i]["axis"], "treads": max(groups[i]["treads"], groups[j]["treads"]), "span_pt": max(groups[i]["span_pt"], groups[j]["span_pt"]),
+            "direction": groups[i].get("direction") or groups[j].get("direction"),
             "box": (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))}
           del groups[j]
           changed = True
@@ -89,29 +93,88 @@ def direction_labels(lines: list) -> list:
     out.append({"direction": "UP" if word == "UP" else "DOWN", "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
   return out
 
-def find_stairs(lines, spec: dict, mm_per_pt: float, labels: list | None = None) -> list:
-  """The flights drawn on a plan, one entry per staircase: where it is, how many treads are drawn, how wide it is on the plan and, when an UP or DN is written
-  beside it, which way it goes. The treads are lines one printed tread apart; the sheet may stop drawing them at the cut line, so the count drawn is
-  only a lower bound and the steps of the whole stair come from the printed detail."""
+def length_labels(lines: list, parse) -> list:
+  """The lengths a plan prints as text (3'-0", 36"), each with the point it stands at (page units). `parse` turns the text into millimetres or None."""
+  out = []
+  for ln in lines:
+    text = (getattr(ln, "text", "") or "").strip()
+    if not text or len(text) > 12:
+      continue
+    mm = parse(text)
+    if mm is None:
+      continue
+    ws = [w for _, _, w in ln.spans]
+    if not ws:
+      continue
+    out.append({"mm": float(mm), "text": text, "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
+  return out
+
+def _gap(box, x: float, y: float) -> float:
+  x0, y0, x1, y1 = box
+  return math.hypot(max(x0 - x, 0.0, x - x1), max(y0 - y, 0.0, y - y1))
+
+def _nearest_way(box, labels: list, reach_pt: float, skip: set | None = None) -> str | None:
+  best, best_d = None, reach_pt
+  for i, lab in enumerate(labels or []):
+    if skip and i in skip:
+      continue
+    d = _gap(box, lab["x"], lab["y"])
+    if d <= best_d:
+      best, best_d = lab["direction"], d
+  return best
+
+def _assign_ways(chains: list, labels: list, reach_pt: float) -> set:
+  pairs = []
+  for ci, ch in enumerate(chains):
+    for li, lab in enumerate(labels or []):
+      d = _gap(ch["box"], lab["x"], lab["y"])
+      if d <= reach_pt:
+        pairs.append((d, ci, li))
+  pairs.sort()
+  done_c, used = set(), set()
+  for d, ci, li in pairs:
+    if ci in done_c or li in used:
+      continue
+    chains[ci]["direction"] = labels[li]["direction"]
+    done_c.add(ci)
+    used.add(li)
+  return used
+
+def printed_width(box, drawn_mm: float, dims: list, mm_per_pt: float) -> dict | None:
+  reach = C.STAIR_DIM_REACH_MM / mm_per_pt
+  best = None
+  for d in dims or []:
+    if abs(d["mm"] - drawn_mm) > C.STAIR_DIM_MATCH * drawn_mm:
+      continue
+  
+    gap = _gap(box, d["x"], d["y"])
+    if gap > reach:
+      continue
+    key = (abs(d["mm"] - drawn_mm), gap)
+    if best is None or key < best[0]:
+      best = (key, d)
+  return None if best is None else {"mm": round(best[1]["mm"], 1), "text": best[1]["text"]}
+
+def find_stairs(lines, spec: dict, mm_per_pt: float, labels: list | None = None, dims: list | None = None) -> list:
   tread_mm, width_mm = spec.get("tread_mm"), spec.get("width_mm")
   if not tread_mm or not width_mm or mm_per_pt <= 0:
     return []
+
   tread_pt, width_pt = float(tread_mm) / mm_per_pt, float(width_mm) / mm_per_pt
-  found = _chains(lines, 0, tread_pt, width_pt) + _chains(lines, 1, tread_pt, width_pt)
-  groups = _merge(found, tread_pt)
   reach = C.STAIR_LABEL_REACH_MM / mm_per_pt
-  
+  found = _chains(lines, 0, tread_pt, width_pt) + _chains(lines, 1, tread_pt, width_pt)
+  for ch in found:
+    ch["direction"] = None
+  used = _assign_ways(found, labels, reach)
+  groups = _merge(found, tread_pt)
+
   out = []
   for g in sorted(groups, key=lambda g: (-g["box"][3], g["box"][0])):
     x0, y0, x1, y1 = g["box"]
     cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
-    best, best_d = None, reach
-    for lab in labels or []:
-      dx = max(x0 - lab["x"], 0.0, lab["x"] - x1)
-      dy = max(y0 - lab["y"], 0.0, lab["y"] - y1)
-      d = math.hypot(dx, dy)
-      if d <= best_d:
-        best, best_d = lab, d
+    way = g.get("direction") or _nearest_way(g["box"], labels, reach, used)
+    drawn = g["span_pt"] * mm_per_pt
+    own = printed_width(g["box"], drawn, dims, mm_per_pt)
     out.append({"x": cx, "y": cy, "box": [round(v, 3) for v in g["box"]], "treads_drawn": g["treads"], "axis": g["axis"],
-      "width_drawn_mm": round(g["span_pt"] * mm_per_pt, 1), "direction": best["direction"] if best else None})
+      "width_drawn_mm": round(drawn, 1), "direction": way, "width_printed_mm": own["mm"] if own else None, "width_printed_text": own["text"] if own else None})
   return out

@@ -2,7 +2,7 @@ import type { AcceptBody, AreaGeometry, CandidateCategory, CountGeometry, Length
 import { steelForAccept } from "./steel";
 import type { SteelSet } from "./steel";
 
-export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "SLAB", "LINTEL", "STAIR", "DOOR", "WINDOW", "ROOM"];
+export const CATEGORY_ORDER: CandidateCategory[] = ["WALL", "COLUMN", "FOOTING", "BEAM", "SLAB", "LINTEL", "STAIR", "DOOR", "WINDOW", "ROOM", "SITE"];
 
 export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: string }> = {
   WALL: { one: "Wall", many: "Walls" },
@@ -15,6 +15,7 @@ export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: strin
   DOOR: { one: "Door", many: "Doors" },
   WINDOW: { one: "Window", many: "Windows" },
   ROOM: { one: "Room", many: "Rooms" },
+  SITE: { one: "Site item", many: "Site items" },
 };
 
 import { isNeckColumn, isTankWall, pickGivesDepth } from "./choices";
@@ -42,7 +43,11 @@ export type HeightField =
   | "membrane_width_mm"
   | "door_frame_width_mm"
   | "door_frame_width_thin_mm"
-  | "stair_waist_mm";
+  | "stair_waist_mm"
+  | "site_length_mm"
+  | "site_width_mm"
+  | "site_height_mm"
+  | "site_thickness_mm";
 
 const HEIGHT_ORDER: HeightField[] = [
   "wall_height_mm",
@@ -68,6 +73,10 @@ const HEIGHT_ORDER: HeightField[] = [
   "door_frame_width_mm",
   "door_frame_width_thin_mm",
   "stair_waist_mm",
+  "site_length_mm",
+  "site_width_mm",
+  "site_height_mm",
+  "site_thickness_mm",
 ];
 
 export type Heights = Record<HeightField, string>;
@@ -95,6 +104,10 @@ export const NO_HEIGHTS: Heights = {
   door_frame_width_mm: "",
   door_frame_width_thin_mm: "",
   stair_waist_mm: "",
+  site_length_mm: "",
+  site_width_mm: "",
+  site_height_mm: "",
+  site_thickness_mm: "",
 };
 
 export const HEIGHT_LABEL: Record<HeightField, string> = {
@@ -121,6 +134,10 @@ export const HEIGHT_LABEL: Record<HeightField, string> = {
   door_frame_width_mm: "Door frame width in walls of 6 in and thicker (mm)",
   door_frame_width_thin_mm: "Door frame width in thin walls (mm)",
   stair_waist_mm: "Stair waist slab thickness under the steps (mm)",
+  site_length_mm: "Site item: outside length of the tank, length of the ramp, or width of the gate (mm)",
+  site_width_mm: "Site item: outside width of the tank or width of the ramp (mm)",
+  site_height_mm: "Site item: outside height of the tank, or height of the boundary wall or gate (mm)",
+  site_thickness_mm: "Site item: thickness of the tank walls and slabs, of the boundary wall, or of the ramp slab (mm)",
 };
 
 export type FoundationItem =
@@ -154,6 +171,28 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "DOOR_FRAME",
 ];
 
+export type SiteKind = "OHWT" | "UGWT" | "SEPTIC" | "BOUNDARY_WALL" | "GATE" | "PORCH_RAMP";
+
+const SITE_KINDS: SiteKind[] = ["OHWT", "UGWT", "SEPTIC", "BOUNDARY_WALL", "GATE", "PORCH_RAMP"];
+
+const SITE_TOKEN_FIELD: Record<string, HeightField> = {
+  length_mm: "site_length_mm",
+  width_mm: "site_width_mm",
+  height_mm: "site_height_mm",
+  thickness_mm: "site_thickness_mm",
+};
+
+export function siteKind(c: Pick<TakeoffCandidate, "category" | "facts">): SiteKind | null {
+  if (c.category !== "SITE") return null;
+  const kind = (c.facts as Record<string, unknown> | null)?.site_kind;
+  return SITE_KINDS.find((x) => x === kind) ?? null;
+}
+
+function siteFields(c: Pick<TakeoffCandidate, "category" | "missing" | "facts">): HeightField[] {
+  if (c.category !== "SITE") return [];
+  return c.missing.map((m) => SITE_TOKEN_FIELD[m]).filter((f): f is HeightField => f !== undefined);
+}
+
 const BRICK_STEP_FIELDS: HeightField[] = ["brick_step_1_height_mm", "brick_step_2_height_mm", "brick_step_3_height_mm", "brick_step_4_height_mm"];
 
 export function foundationItem(c: Pick<TakeoffCandidate, "category" | "facts">): FoundationItem | null {
@@ -168,7 +207,7 @@ export function slabThicknessDisputed(c: Pick<TakeoffCandidate, "category" | "no
 
 export interface SlabThicknessChoice { mm: number; sources: string[]; pages: number[] }
 
-const SLAB_SOURCE_TEXT: Record<string, string> = { PLAN_NOTE: "plan note", OTHER_SHEET: "other sheet", SECTIONS: "building sections" };
+const SLAB_SOURCE_TEXT: Record<string, string> = { PLAN_NOTE: "plan note", OTHER_SHEET: "other sheet", SECTIONS: "building sections", SECTION_LABEL: "section label" };
 
 export function slabThicknessChoices(c: Pick<TakeoffCandidate, "category" | "facts">): SlabThicknessChoice[] {
   if (c.category !== "SLAB") return [];
@@ -181,6 +220,10 @@ export function slabThicknessChoices(c: Pick<TakeoffCandidate, "category" | "fac
 
 export function isWallBeam(c: Pick<TakeoffCandidate, "category" | "facts">): boolean {
   return c.category === "BEAM" && (c.facts as Record<string, unknown> | null)?.derived_from === "WALLS";
+}
+
+export function isMeasuredBeam(c: Pick<TakeoffCandidate, "category" | "facts">): boolean {
+  return isWallBeam(c) || (c.category === "BEAM" && (c.facts as Record<string, unknown> | null)?.from_strips === true);
 }
 
 function foundationFields(c: Pick<TakeoffCandidate, "category" | "missing" | "facts">): HeightField[] {
@@ -207,6 +250,7 @@ function foundationFields(c: Pick<TakeoffCandidate, "category" | "missing" | "fa
 
 export function heightFieldsFor(c: Pick<TakeoffCandidate, "category" | "missing"> & Partial<Pick<TakeoffCandidate, "notes" | "facts">>): HeightField[] {
   if (c.missing.includes("size")) return [];
+  if (c.category === "SITE") return siteFields({ category: c.category, missing: c.missing, facts: c.facts ?? {} });
   const found = foundationFields({ category: c.category, missing: c.missing, facts: c.facts ?? {} });
   if (found.length) return found;
   const one = heightFieldFor(c);
@@ -215,6 +259,7 @@ export function heightFieldsFor(c: Pick<TakeoffCandidate, "category" | "missing"
 
 export function heightFieldFor(c: Pick<TakeoffCandidate, "category" | "missing"> & Partial<Pick<TakeoffCandidate, "notes" | "facts">>): HeightField | null {
   if (c.missing.includes("size")) return null;
+  if (c.category === "SITE") return siteFields({ category: c.category, missing: c.missing, facts: c.facts ?? {} })[0] ?? null;
   const found = foundationFields({ category: c.category, missing: c.missing, facts: c.facts ?? {} });
   if (found.length) return found[0];
   if (isTankWall(c) && c.missing.includes("height_mm")) return "tank_wall_height_mm";
@@ -233,7 +278,7 @@ export function heightFieldFor(c: Pick<TakeoffCandidate, "category" | "missing">
 }
 
 export function notMeasurable(c: Pick<TakeoffCandidate, "category" | "missing" | "status"> & Partial<Pick<TakeoffCandidate, "facts">>): boolean {
-  return (c.category === "BEAM" && !isWallBeam({ category: c.category, facts: c.facts ?? {} })) || c.missing.includes("size") || c.status === "INVALID";
+  return (c.category === "BEAM" && !isMeasuredBeam({ category: c.category, facts: c.facts ?? {} })) || c.missing.includes("size") || c.status === "INVALID";
 }
 
 export type Level = "high" | "medium" | "low";
@@ -260,19 +305,28 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   DOOR_FRAME: "Door frames",
 };
 
-export type KindKey = CandidateCategory | FoundationItem;
+export const SITE_TEXT: Record<SiteKind, string> = {
+  OHWT: "Over head water tank",
+  UGWT: "Underground water tank",
+  SEPTIC: "Septic tank",
+  BOUNDARY_WALL: "Boundary wall",
+  GATE: "Gate",
+  PORCH_RAMP: "Porch ramp",
+};
+
+export type KindKey = CandidateCategory | FoundationItem | SiteKind;
 
 export function kindKey(c: Pick<TakeoffCandidate, "category" | "facts">): KindKey {
-  return foundationItem(c) ?? c.category;
+  return siteKind(c) ?? foundationItem(c) ?? c.category;
 }
 
 export function groupByKind(list: TakeoffCandidate[]): Array<{ key: KindKey; title: string; items: TakeoffCandidate[] }> {
   const out: Array<{ key: KindKey; title: string; items: TakeoffCandidate[] }> = [];
-  const keys: KindKey[] = [...CATEGORY_ORDER, ...FOUNDATION_ITEMS];
+  const keys: KindKey[] = [...CATEGORY_ORDER, ...FOUNDATION_ITEMS, ...SITE_KINDS];
   for (const key of keys) {
     const items = list.filter((c) => kindKey(c) === key);
     if (!items.length) continue;
-    out.push({ key, title: key in CATEGORY_TEXT ? CATEGORY_TEXT[key as CandidateCategory].many : ITEM_TEXT[key as FoundationItem], items });
+    out.push({ key, title: key in CATEGORY_TEXT ? CATEGORY_TEXT[key as CandidateCategory].many : key in SITE_TEXT ? SITE_TEXT[key as SiteKind] : ITEM_TEXT[key as FoundationItem], items });
   }
   return out;
 }
@@ -397,6 +451,25 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
   return [...base, ...tail].filter(Boolean).join(" · ");
 }
 
+function siteLine(c: TakeoffCandidate): string {
+  const f = c.facts as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
+  const ft = (mm: number | null) => (mm === null ? null : `${(mm / 304.8).toFixed(2).replace(/\.?0+$/, "")} ft`);
+  const kind = siteKind(c);
+  const need = c.missing.length ? `${c.missing.map((m) => ({ length_mm: "length", width_mm: "width", height_mm: "height", thickness_mm: "thickness" })[m as "length_mm"] ?? m).join(", ")} to type` : null;
+  if (kind === "BOUNDARY_WALL") {
+    const gate = f.gate_deducted === true ? num(f.gate_mm) : null;
+    return [ft(num(f.length_mm)) ? `${ft(num(f.length_mm))} long` : null, ft(num(f.height_mm)) ? `${ft(num(f.height_mm))} high` : null, f.overall_text ? `of ${String(f.overall_text)} overall` : null, gate !== null ? `gate ${ft(gate)} taken out` : null, need].filter(Boolean).join(" · ");
+  }
+  if (kind === "GATE") return [ft(num(f.width_mm)) ? `${ft(num(f.width_mm))} wide` : null, ft(num(f.height_mm)) ? `${ft(num(f.height_mm))} high` : null, need].filter(Boolean).join(" · ");
+  if (kind === "PORCH_RAMP") {
+    const levels = Array.isArray(f.levels_printed) ? (f.levels_printed as string[]) : [];
+    return [levels.length ? `levels ${levels.join(", ")}` : null, need].filter(Boolean).join(" · ");
+  }
+  const repeats = num(f.labels_on_sheet);
+  return [repeats !== null && repeats > 1 ? `labelled ${repeats} times on this sheet` : null, need].filter(Boolean).join(" · ");
+}
+
 export function factLine(c: TakeoffCandidate): string {
   const f = c.facts as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : null);
@@ -430,6 +503,11 @@ export function factLine(c: TakeoffCandidate): string {
     const walls = num(f.wall_count);
     const gaps = num(f.openings_m);
     const depth = num((c.params as Record<string, unknown>).depth_mm);
+    if (f.from_strips === true) {
+      const strips = num(f.strip_count);
+      const w = num(f.beam_width_mm);
+      return [len !== null ? `${len.toFixed(2)} m along ${strips ?? 0} hatched strip${strips === 1 ? "" : "s"}` : null, w !== null ? `${(w / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
+    }
     if (f.derived_from !== "WALLS") return "";
     return [f.beam_role === "PLINTH" ? "plinth beam" : "roof beam", len !== null ? `${len.toFixed(2)} m over ${walls ?? 0} wall${walls === 1 ? "" : "s"}` : null, t !== null ? `${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, gaps ? `${gaps.toFixed(2)} m of it over openings` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
   }
@@ -461,7 +539,22 @@ export function factLine(c: TakeoffCandidate): string {
     const width = num(f.stair_width_mm);
     const waist = num(f.waist_mm);
     const way = f.direction === "UP" ? "going up" : f.direction === "DOWN" ? "going down" : null;
-    return [way, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, width !== null ? `${Math.round(width)} mm wide` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null].filter(Boolean).join(" · ");
+    return [way, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null].filter(Boolean).join(" · ");
+  }
+
+  if (c.category === "SITE") return siteLine(c);
+
+  if (c.category === "COLUMN" && f.from_shapes === true) {
+    const size = Array.isArray(f.size_drawn_mm) ? (f.size_drawn_mm as number[]) : null;
+    const inch = (v: number) => (v / 25.4).toFixed(1).replace(/\.0$/, "");
+    const seen = num(f.shapes_drawn);
+    const inferred = num(f.inferred);
+    return [
+      size ? `${inch(size[0])}×${inch(size[1])} in drawn on the floor plan, no mark` : "drawn on the floor plan, no mark",
+      seen !== null && seen > 0 ? `${seen} seen on this plan` : null,
+      inferred !== null && inferred > 0 ? `${inferred} taken from the floor above` : null,
+      c.missing.includes("height_mm") ? "height needed" : null,
+    ].filter(Boolean).join(" · ");
   }
 
   const sched = Array.isArray(f.size_schedule_mm) ? (f.size_schedule_mm as number[]) : null;

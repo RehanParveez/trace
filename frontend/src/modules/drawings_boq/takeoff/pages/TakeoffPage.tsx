@@ -16,6 +16,7 @@ import { ResultsPanel } from "../components/ResultsPanel";
 import { FramePanel } from "../components/FramePanel";
 import { ReconcilePanel } from "../components/ReconcilePanel";
 import { shiftQuery } from "../utils/reconcile";
+import { planBoxes as planBoxesOf } from "../utils/floorSources";
 import { FloorLevels } from "../components/FloorLevels";
 import { FoundTab } from "../components/FoundTab";
 import { candidatePoints } from "../utils/candidates";
@@ -27,7 +28,7 @@ import { sheetTitle } from "../utils/sheetTitle";
 import { Toolbar } from "../components/Toolbar";
 import {takeoffKeys, useAutoCalibrate, useBulkConfirm, useConfirmMeasurement, useCreateCalibration, useCreateMeasurement, useDeleteCalibration, useDeleteMeasurement,
   useMakeDefaultCalibration, usePrepareSheet, usePrepareSheets, useProjectTakeoffDrawings, useSheetAnalysis, useSheetShapes, useSheetTags, useSheetVector,
-  useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useTakeoffFrame, useTakeoffFloors, useTakeoffReconcile, usePlaceFrameView, useSetFrameReference, useUnconfirmMeasurement, useUpdateMeasurement,
+  useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useTakeoffFrame, useTakeoffFloors, useTakeoffReconcile, useSheetCandidates, usePlaceFrameView, useSetFrameReference, useUnconfirmMeasurement, useUpdateMeasurement,
 } from "../hooks/useTakeoff";
 import { useLivePreview } from "../hooks/useLivePreview";
 import { usePdfDocument } from "../hooks/usePdfDocument";
@@ -109,6 +110,9 @@ export function TakeoffPage() {
   const recon = useTakeoffReconciliation(projectId, tab === "results");
   const frame = useTakeoffFrame(drawingId, tab === "frame");
   const floors = useTakeoffFloors(drawingId, tab === "frame");
+  const [showPlans, setShowPlans] = useState(true);
+  const foundOnSheet = useSheetCandidates(sheet, tab === "found");
+  const planBoxes = useMemo(() => (showPlans && tab === "found" ? planBoxesOf(foundOnSheet.data?.extraction.stats) : []), [showPlans, tab, foundOnSheet.data]);
   const [reconcileModel, setReconcileModel] = useState<string | null>(null);
   const [reconcileShift, setReconcileShift] = useState<[string, string]>(["", ""]);
   const reconcile = useTakeoffReconcile(drawingId, shiftQuery(reconcileModel, reconcileShift[0], reconcileShift[1]), tab === "frame");
@@ -791,6 +795,7 @@ export function TakeoffPage() {
     dimensionPairs: showDimensions ? analysis.data?.detected_scale.measured?.pairs ?? null : null,
     suggestionPts,
     focusId,
+    planBoxes,
     disabledNote: misaligned ? t("boq.takeoff.block.misalignedShort", "Sheet display is not aligned: measuring locked") : null,
   };
   const sceneRef = useRef(scene);
@@ -802,7 +807,7 @@ export function TakeoffPage() {
   }, []);
   const paintKey = useMemo(
     () => ({}),
-    [measurements, selectedIds, showMeasurements, tool, draft, editing, mmPerPt, wallPick, regionPick, capture, rulerPts, showDimensions, analysis.data, suggestionPts, focusId, misaligned],
+    [measurements, selectedIds, showMeasurements, tool, draft, editing, mmPerPt, wallPick, regionPick, capture, rulerPts, showDimensions, analysis.data, suggestionPts, focusId, misaligned, planBoxes],
   );
 
   useEffect(() => {
@@ -1020,6 +1025,10 @@ export function TakeoffPage() {
                 onGoScale={() => view.setTab("scale")}
                 onShow={showCandidate}
                 onOpenMeasurement={openMeasurementById}
+                showPlans={showPlans}
+                onShowPlans={setShowPlans}
+                onOpenSheet={selectSheet}
+                onShowBox={(b) => { const padX = (b.x1 - b.x0) * 0.04, padY = (b.y1 - b.y0) * 0.04; viewerRef.current?.focusBox({ x0: b.x0 - padX, y0: b.y0 - padY, x1: b.x1 + padX, y1: b.y1 + padY }); }}
               />
             ) : null}
             {tab === "frame" ? (

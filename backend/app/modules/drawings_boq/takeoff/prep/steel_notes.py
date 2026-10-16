@@ -132,7 +132,7 @@ def attach(candidates: list, found: dict, note, imperial: bool = True) -> dict:
     elif c.tag:
       entry = marks.get(norm_mark(c.tag))
     if entry is None:
-      if c.category != "BEAM" or (c.facts or {}).get("derived_from") != "WALLS":
+      if (c.category != "BEAM" or (c.facts or {}).get("derived_from") != "WALLS") and not c.params.get("steel"):
         c.notes.append(note("STEEL_NOT_PRINTED"))
       stats["not_read"] += 1
       continue

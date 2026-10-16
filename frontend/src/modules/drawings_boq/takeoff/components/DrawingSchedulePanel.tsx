@@ -181,7 +181,7 @@ export function DrawingSchedulePanel({ facts }: Props) {
             <div className="text-[var(--color-text-muted)]">
               {stairText(stair)} · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(stair.pages) })}
             </div>
-            {!stair.waist_mm ? <div className="mt-0.5 text-[var(--color-text-muted)]">{t("drawings.schedule.stairWaist", "The waist slab under the steps is not printed. 6 inches is assumed when the stair is listed.")}</div> : null}
+            {!stair.waist_mm ? <div className="mt-0.5 text-[var(--color-text-muted)]">{t("drawings.schedule.stairWaist", "The waist slab under the steps is not printed. 5 inches is assumed when the stair is listed.")}</div> : null}
           </div>
         ) : null}
         {areas.length > 0 ? (

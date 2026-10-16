@@ -2,10 +2,11 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, inputClass } from "../../../organizations/components/OrganizationUi";
 import type { CandidateList, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
-import {blockedByHeight, confidenceLevel, factLine, groupByKind, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
+import {blockedByHeight, confidenceLevel, factLine, fieldsStillNeeded, groupByKind, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
 } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
-import { offersSectionChoice, sectionLabel, sectionOptions, tankSizeChoices } from "../utils/choices";
+import { groupByFloor, metres, setAsideBy } from "../utils/floorSources";
+import { isTankItem, offersSectionChoice, sectionLabel, sectionOptions, tankSizeChoices } from "../utils/choices";
 import { SteelEditor } from "./SteelEditor";
 import type { SteelSet } from "../utils/steel";
 
@@ -33,16 +34,19 @@ interface Props {
   onRead: (autoCalibrate: boolean) => void;
   onGoScale: () => void;
   onShow: (c: TakeoffCandidate) => void;
-  /** Steel typed per found member; sent with the accept. Optional so a parent that does not edit steel still works. */
   steel?: Record<string, SteelSet>;
   onSteel?: (id: string, steel: SteelSet | null) => void;
-  /** The printed beam section chosen per beam (mark, by candidate id); sent with the accept. Optional so a parent that does not offer the choice still works. */
   picks?: Record<string, string>;
   onPick?: (id: string, mark: string | null) => void;
   onAccept: (ids: string[]) => void;
   onReject: (ids: string[]) => void;
-  onRestore: (ids: string[]) => void;
+ onRestore: (ids: string[]) => void;
   onOpenMeasurement: (measurementId: string) => void;
+}
+
+/** Centre-line metres of the walls in a list of items (the walls that carry a length). */
+function wallMetres(list: TakeoffCandidate[]): number {
+  return list.reduce((sum, c) => sum + (c.category === "WALL" ? Number((c.facts as { length_cc_m?: number }).length_cc_m ?? 0) || 0 : 0), 0);
 }
 
 const LEVEL_TONE = { high: "green", medium: "gold", low: "red" } as const;
@@ -98,15 +102,16 @@ function FoundList(p: Props & { data: CandidateList }) {
   const fresh = useMemo(() => data.candidates.filter((c) => c.decision === "NEW"), [data.candidates]);
   const done = useMemo(() => data.candidates.filter((c) => c.decision === "ACCEPTED"), [data.candidates]);
   const rejected = useMemo(() => data.candidates.filter((c) => c.decision === "REJECTED"), [data.candidates]);
-  const groups = useMemo(() => groupByKind(fresh), [fresh]);
+  const floorGroups = useMemo(() => groupByFloor(fresh), [fresh]);
   const needed = useMemo(() => neededHeights(fresh, p.picks), [fresh, p.picks]);
   const tankSizes = useMemo(() => tankSizeChoices(fresh), [fresh]);
+  const tankFields = useMemo(() => new Set(fresh.filter(isTankItem).flatMap((c) => fieldsStillNeeded(c, p.picks))), [fresh, p.picks]);
   const chosen = useMemo(() => fresh.filter((c) => p.selected.has(c.id)), [fresh, p.selected]);
   const pending = blockedByHeight(fresh, p.selected, p.heights, p.picks);
   const refused = chosen.filter(notMeasurable);
   const ready = chosen.length - refused.length - pending.length;
   const toggle = (id: string) => {
-    const next = new Set(p.selected);
+   const next = new Set(p.selected);
     if (next.has(id)) next.delete(id);
     else next.add(id);
     p.onSelected(next);
@@ -169,7 +174,7 @@ function FoundList(p: Props & { data: CandidateList }) {
                     onChange={(e) => p.onHeights({ ...p.heights, [f]: e.target.value })}
                   />
                   {bad ? <span className="mt-0.5 block text-[11.5px] text-[var(--color-danger)]">{t("boq.takeoff.found.heightBad", "Type a number between 100 and 20000.")}</span> : null}
-                  {f === "tank_wall_height_mm" && tankSizes.length > 0 ? (
+                  {(f === "tank_wall_height_mm" || tankFields.has(f)) && tankSizes.length > 0 ? (
                     <span className="mt-1 flex flex-wrap items-center gap-1" data-testid="found-tank-sizes">
                       <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.tankSizes", "Printed on the tank drawings (the drawing does not say which is the inside depth; tap one to use it):")}</span>
                       {tankSizes.map((sz) => (
@@ -184,16 +189,24 @@ function FoundList(p: Props & { data: CandidateList }) {
           </div>
           <div className="mt-2 text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.heightsHint", "The drawing gave no value for these. They are saved on each accepted item as given by you.")}</div>
         </div>
-      ) : null}
+) : null}
 
-      {groups.length === 0 && fresh.length === 0 ? (
+      {fresh.length === 0 ? (
         <div className="px-4 pb-4 text-[13px] text-[var(--color-text-muted)]" data-testid="found-none-left">
-          {data.candidates.length === 0 ? t("boq.takeoff.found.nothing", "Nothing could be read from this sheet. Measure it by hand with the tools above.") : t("boq.takeoff.found.allDone", "Everything found has been accepted or rejected.")}
-        </div>
+          {data.candidates.length === 0 ? t("boq.takeoff.found.nothing", "Nothing could be read from this sheet. Measure it by hand with the tools above.") : t("boq.takeoff.found.allDone", "Everything found has been accepted or rejected.")}        </div>
       ) : null}
 
-      <div className="space-y-4 px-4 pb-4">
-        {groups.map((g) => {
+      <div className="space-y-5 px-4 pb-4">
+        {floorGroups.map((fg) => (
+        <div key={fg.key || "all"} className="space-y-4" data-testid={fg.key ? `found-floor-${fg.key}` : undefined}>
+        {fg.key ? (
+          <div className="flex items-center gap-2 border-b border-[var(--color-border)] pb-1">
+            {p.canEdit ? <input type="checkbox" aria-label={t("boq.takeoff.found.selectFloor", "Select all of {{what}}", { what: fg.title })} checked={fg.items.every((c) => p.selected.has(c.id))} onChange={() => setMany(fg.items, !fg.items.every((c) => p.selected.has(c.id)))} /> : null}
+            <h2 className="text-[13px] font-semibold">{fg.title}</h2>
+            <span className="text-[11.5px] text-[var(--color-text-muted)]">{fg.items.length} {t("boq.takeoff.found.toCheck", "to check")}{wallMetres(fg.items) > 0 ? ` · ${metres(wallMetres(fg.items))} ${t("boq.takeoff.found.ofWall", "of wall")}` : ""}</span>
+          </div>
+        ) : null}
+        {groupByKind(fg.items).map((g) => {
           const allOn = g.items.every((c) => p.selected.has(c.id));
           const code = p.workItems[g.key] ?? "";
           const suggested = g.items.find((c) => c.suggested_work_item)?.suggested_work_item ?? null;
@@ -225,6 +238,8 @@ function FoundList(p: Props & { data: CandidateList }) {
             </section>
           );
         })}
+        </div>
+        ))}
       </div>
       <datalist id="found-work-items">{p.workItemCodes.map((c) => <option key={c} value={c} />)}</datalist>
 
@@ -248,6 +263,7 @@ function FoundList(p: Props & { data: CandidateList }) {
             {rejected.map((c) => (
               <li key={c.id} className="flex items-center gap-2 rounded-[8px] border border-[var(--color-border)] px-2.5 py-1.5 text-[12.5px]">
                 <span className="truncate text-[var(--color-text-secondary)]">{c.label}</span>
+                {setAsideBy(c) !== null ? <Badge tone="slate">{t("boq.takeoff.found.setAside", "set aside: page {{n}} is in use", { n: setAsideBy(c) })}</Badge> : null}
                 {p.canEdit ? <Button size="sm" variant="ghost" className="ml-auto" onClick={() => p.onRestore([c.id])}>{t("boq.takeoff.found.restore", "Restore")}</Button> : null}
               </li>
             ))}

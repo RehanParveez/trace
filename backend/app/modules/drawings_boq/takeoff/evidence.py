@@ -116,7 +116,10 @@ def _slab(inp: _Inputs, cand) -> None:
     note = next((n for n in (cand.notes or []) if n.get("code") == "SLAB_THICKNESS_DISAGREES"), {})
     other = ", ".join(f"{o['mm'] / 25.4:g}\"" for o in (note.get("others") or []) if o.get("mm"))
     sections = f"; the building sections imply {note['sections_mm'] / 25.4:g}\"" if note.get("sections_mm") else ""
-    inp.add("thickness", ASSUMED, f"the slab note on the plan says {t / 25.4:g}\" but another sheet prints {other}{sections}; the plan note is used")
+    if f.get("thickness_source") == "SECTION_LABEL":
+      inp.add("thickness", ASSUMED, f"the plan's general slab note says {note['plan_mm'] / 25.4:g}\" but the sections of the drawing label {t / 25.4:g}\"{sections}; the label is used, type another thickness to override")
+    else:
+      inp.add("thickness", ASSUMED, f"the slab note on the plan says {t / 25.4:g}\" but another sheet prints {other}{sections}; the plan note is used")
   elif f.get("thickness_source") == "OTHER_SHEET":
     inp.add("thickness", PRINTED, "this plan has no slab note; the one thickness the drawing prints elsewhere is used")
   else:
@@ -135,6 +138,22 @@ def _beam_from_walls(inp: _Inputs, cand) -> None:
   else:
     inp.add("depth", CONFIRMED, "typed by you")
   inp.add("position", ASSUMED, "a beam is assumed on top of every brick wall; the plan does not draw it")
+
+def _beam_from_strips(inp: _Inputs, cand) -> None:
+  """A beam the framing plan draws as hatched strips: the length and width are measured from the strips, the depth is printed only on a section with the same mark."""
+  f, params = cand.facts or {}, cand.params or {}
+  inp.measured("length", f"{f.get('strip_count', 0)} hatched strips measured along their centre line ({f.get('length_m', 0):g} m, corners counted once)")
+  inp.measured("width", "the width of the hatched strip" + (", taken to a whole number of inches" if f.get("beam_width_mm") else ""))
+  if "BEAM_STRIP_MARK_FROM_NEIGHBOUR" in inp.codes:
+    inp.add("mark", ASSUMED, "some strips have no mark beside them and take the mark of the beam they carry on")
+  if "BEAM_STRIP_NO_MARK" in inp.codes:
+    inp.add("mark", MISSING, "no beam mark is written beside these strips")
+  if _value(params, "depth_mm") is None:
+    inp.add("depth", MISSING, "no section with this mark gives a depth; type it when you accept the beam")
+  elif f.get("section_mark"):
+    inp.add("depth", PICTURE, f"read from the picture of the beam section {f['section_mark']}")
+  else:
+    inp.add("depth", CONFIRMED, "typed by you")
 
 def _lintel(inp: _Inputs, cand) -> None:
   """A lintel is the opening's schedule width, the section of the lintel table printed on the drawing, and a bearing at each end that the drawing does not print."""
@@ -159,12 +178,66 @@ def _stair(inp: _Inputs, cand) -> None:
     inp.add("size", MISSING, "the drawing does not print all of riser, tread, width and number of steps")
     return
   pages = ", ".join(str(x) for x in (f.get("stair_pages") or []))
-  inp.add("steps, riser, tread, width", PRINTED, f"printed on the drawing{' (sheet ' + pages + ')' if pages else ''}: {f.get('stair_text')}")
+  where = f" (sheet {pages})" if pages else ""
+  if f.get("width_source") == "PRINTED_BESIDE":
+    inp.add("steps, riser, tread", PRINTED, f"printed on the drawing{where}: {f.get('steps')} steps, riser {f.get('riser_mm', 0):g} mm, tread {f.get('tread_mm', 0):g} mm")
+    inp.add("width", PRINTED, f"{f.get('stair_width_mm', 0):g} mm printed beside this flight on the plan; the stair detail gives {f.get('detail_width_mm', 0):g} mm for the main stair")
+  else:
+    inp.add("steps, riser, tread, width", PRINTED, f"printed on the drawing{where}: {f.get('stair_text')}")
   if f.get("waist_source") == "PRINTED":
     inp.add("waist slab", PRINTED, f"{f.get('waist_mm', 0):g} mm printed on the drawing")
   else:
     inp.add("waist slab", ASSUMED, f"the drawing prints no waist thickness; {f.get('waist_mm', 0):g} mm assumed")
   inp.add("landings", NOT_READ, "not included in this quantity; measure them as slabs")
+
+def _site(inp: _Inputs, cand) -> None:
+  """An item outside the building: its label or caption is on the sheet; a size is printed on the elevation, or it is missing and typed. Nothing is measured from lines."""
+  f, params, codes = cand.facts or {}, cand.params or {}, inp.codes
+  kind = f.get("site_kind")
+  sizes = f.get("sizes_mm") or {}
+  inp.add("count", PRINTED, "label or caption on the sheet" + (f" (written {f['labels_on_sheet']} times on the sheet; one item)" if f.get("labels_on_sheet", 1) > 1 else ""))
+  def typed(token: str, name: str, value) -> None:
+    if value is None:
+      inp.add(name, MISSING, "not printed on the drawing in a form the reader takes")
+    else:
+      inp.add(name, CONFIRMED, f"{value / 25.4:g}\" typed by you")
+  if kind in ("OHWT", "UGWT", "SEPTIC"):
+    listed = f.get("tank_drawings")
+    if listed:
+      inp.add("tank drawings", PICTURE if any(any(x for x in d.get("sizes") or []) for d in listed) else NOT_READ, "the sizes the tank drawings print are listed with the item; none is applied because the drawing does not say which is the outside size and which the wall")
+    for token, name in (("length_mm", "outside length"), ("width_mm", "outside width"), ("height_mm", "outside height"), ("thickness_mm", "wall and slab thickness")):
+      typed(token, name, sizes.get(token))
+    if all(sizes.get(t) for t in ("length_mm", "width_mm", "height_mm", "thickness_mm")):
+      inp.add("slabs", ASSUMED, "the top and bottom slab are taken as thick as the walls")
+  elif kind == "BOUNDARY_WALL":
+    pieces = f.get("pieces_mm") or []
+    if pieces:
+      inp.add("length", PRINTED, f"the pieces of the elevation add up to the printed overall length {f.get('overall_text')}" + ("; the gate piece is taken out" if f.get("gate_deducted") else ""))
+    elif f.get("overall_mm"):
+      inp.add("length", ASSUMED, f"the overall length {f.get('overall_text')} is printed but no row of dimensions adds up to it, so the gate could not be taken out")
+    else:
+      inp.add("length", MISSING, "no overall length on the drawing")
+    if f.get("height_mm") is None:
+      inp.add("height", MISSING, "no height printed on the elevation")
+    elif f.get("height_pick") == "NEAREST":
+      inp.add("height", ASSUMED, "the elevation prints more than one height; the one nearest to the wall pieces is used")
+    else:
+      inp.add("height", PRINTED, "the height printed on the elevation")
+    typed("thickness_mm", "thickness", sizes.get("thickness_mm"))
+    inp.add("piers", ASSUMED, "piers taller than the wall are measured at the wall height")
+  elif kind == "GATE":
+    inp.add("width", PRINTED, "the piece of the elevation the word GATE is written on, " + (f"{f.get('width_mm', 0) / 304.8:g} ft" if f.get("width_mm") else "not found"))
+    if f.get("height_mm") is None:
+      inp.add("height", MISSING, "no height printed on the elevation")
+    elif f.get("height_pick") == "NEAREST":
+      inp.add("height", ASSUMED, "the elevation prints more than one height; the one nearest to the gate is used")
+    else:
+      inp.add("height", PRINTED, "the height printed on the elevation")
+  elif kind == "PORCH_RAMP":
+    for token, name in (("length_mm", "length"), ("width_mm", "width"), ("thickness_mm", "slab thickness")):
+      typed(token, name, sizes.get(token))
+    levels = f.get("levels_printed") or []
+    inp.add("levels", NOT_READ if not levels else PRINTED, "levels printed on the section: " + ", ".join(levels) if levels else "no level printed on the section")
 
 def evidence_for(cand) -> dict:
   """{"grade", "inputs": [{"name", "basis", "how"}], "ask": [what to check or type]} for one candidate."""
@@ -179,6 +252,8 @@ def evidence_for(cand) -> dict:
     inp.height("height" if cat == "COLUMN" else "depth", _value(params, "depth_mm"))
   elif cat == "BEAM" and facts.get("derived_from") == "WALLS":
     _beam_from_walls(inp, cand)
+  elif cat == "BEAM" and facts.get("from_strips"):
+    _beam_from_strips(inp, cand)
   elif cat == "BEAM":
     _count(inp, cand)
     inp.add("length", NOT_READ, "beam marks are counted only; the length is not read yet")
@@ -188,6 +263,8 @@ def evidence_for(cand) -> dict:
     _lintel(inp, cand)
   elif cat == "STAIR":
     _stair(inp, cand)
+  elif cat == "SITE":
+    _site(inp, cand)
   elif cat in ("DOOR", "WINDOW"):
     inp.add("count", PRINTED, "marks counted on the sheet")
     if "SIZE_FROM_SCHEDULE" in codes:

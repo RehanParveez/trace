@@ -42,6 +42,11 @@ export function pickGivesDepth(c: Pick<TakeoffCandidate, "category" | "facts" | 
   return sectionOptions(c).some((o) => o.mark === mark && o.depth_mm != null);
 }
 
+export function isTankItem(c: Pick<TakeoffCandidate, "category" | "facts">): boolean {
+  const kind = facts(c).site_kind;
+  return c.category === "SITE" && (kind === "OHWT" || kind === "UGWT" || kind === "SEPTIC");
+}
+
 export function sizeTextToMm(text: string): number | null {
   const t = text.replace(/\s+/g, "").replace(/[’′]/g, "'").replace(/[”″]/g, '"');
   const ft = /^(\d{1,2})'-?(\d{1,2})?"?$/.exec(t);
@@ -56,7 +61,7 @@ export interface SizeChoice { text: string; mm: number }
 export function tankSizeChoices(list: Array<Pick<TakeoffCandidate, "category" | "facts">>): SizeChoice[] {
   const seen = new Map<number, string>();
   for (const c of list) {
-    if (!isTankWall(c)) continue;
+    if (!isTankWall(c) && !isTankItem(c)) continue;
     const drawings = facts(c).tank_drawings;
     if (!Array.isArray(drawings)) continue;
     for (const d of drawings) {

@@ -1,15 +1,17 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
+from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import config as C
 
-ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS)))
+ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *SI.SITE_KINDS)))
 KINDS = (*C.CATEGORIES, *ITEM_KINDS)
-DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM}
+DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **SI.WORK_ITEM}
 
 def kind_of(cand) -> str:
   """The category of the item, or the name of the piece of work for the items that are not drawn on the plan."""
-  item = (getattr(cand, "facts", None) or {}).get("foundation_item")
+  facts = getattr(cand, "facts", None) or {}
+  item = facts.get("site_kind") if cand.category == "SITE" else facts.get("foundation_item")
   return item if item in ITEM_KINDS else cand.category
 
 def default_code(cand) -> str | None:

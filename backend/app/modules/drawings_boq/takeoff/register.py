@@ -22,6 +22,21 @@ CATEGORY = {
   "STAIR": {"ifc_type": "IfcStair", "role": "STAIR", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)"},
 }
 
+SITE_SPEC = {
+  "OHWT": {"ifc_type": "IfcTank", "role": "TANK", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)", "type_name": "Over head water tank"},
+  "UGWT": {"ifc_type": "IfcTank", "role": "TANK", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)", "type_name": "Underground water tank"},
+  "SEPTIC": {"ifc_type": "IfcTank", "role": "TANK", "discipline": "STRUCTURAL", "material": "Reinforced concrete (assumed)", "type_name": "Septic tank"},
+  "BOUNDARY_WALL": {"ifc_type": "IfcWall", "role": "WALL", "discipline": "ARCHITECTURAL", "material": "Brick masonry (assumed)", "type_name": "Boundary wall"},
+  "GATE": {"ifc_type": "IfcDoor", "role": "GATE", "discipline": "ARCHITECTURAL", "material": "Gate (type not stated)", "type_name": "Gate"},
+  "PORCH_RAMP": {"ifc_type": "IfcRamp", "role": "RAMP", "discipline": "ARCHITECTURAL", "material": "Reinforced concrete (assumed)", "type_name": "Porch ramp"},
+}
+
+def _spec(cand):
+  """The IFC type, role, discipline and material of the row of an item. An item outside the building has one per kind (a tank, the boundary wall, the gate)."""
+  if cand.category == "SITE":
+    return SITE_SPEC.get((cand.facts or {}).get("site_kind"))
+  return CATEGORY.get(cand.category)
+
 MISSING_TEXT = {
   "height_mm": ("MISSING_HEIGHT", "The height is not on the drawing. Type it when you accept this item."),
   "depth_mm": ("MISSING_DEPTH", "The depth is not on the drawing. Type it when you accept this item."),
@@ -84,6 +99,8 @@ def _slab_text(cand, page_no: int, measurement) -> str:
     parts.append("thickness printed on another sheet")
   elif facts.get("thickness_source") == "TYPED":
     parts.append("thickness typed")
+  elif facts.get("thickness_source") == "SECTION_LABEL":
+    parts.append("thickness labelled on the sections of the drawing (the plan's general slab note prints a different one)")
   elif "SLAB_THICKNESS_DISAGREES" in codes:
     parts.append(f"thickness from the slab note on sheet {page_no} (another sheet prints a different one)")
   else:
@@ -106,9 +123,13 @@ def _lintel_text(cand, page_no: int, measurement) -> str:
 
 def _beam_text(cand, page_no: int, measurement) -> str:
   p, facts = cand.params or {}, cand.facts or {}
-  role = {"PLINTH": "plinth beam", "BAND": "tie band at lintel level"}.get(facts.get("beam_role"), "roof beam")
-  parts = [f"Brick walls measured on sheet {page_no}", f"{role} laid over {facts.get('wall_count', 0)} walls of {(facts.get('wall_thickness_mm') or 0) / 25.4:g} in, as wide as the wall",
-    "depth typed" if p.get("depth_mm") is not None else "depth needed"]
+  if facts.get("from_strips"):
+    depth = "depth from the section " + str(facts["section_mark"]) if facts.get("section_mark") else "depth typed" if p.get("depth_mm") is not None else "depth needed"
+    parts = [f"Hatched beam strips measured on sheet {page_no}", f"{facts.get('strip_count', 0)} strips, {facts.get('length_m', 0):g} m along their centre line, {(facts.get('beam_width_mm') or 0) / 25.4:g} in wide", depth]
+  else:
+    role = {"PLINTH": "plinth beam", "BAND": "tie band at lintel level"}.get(facts.get("beam_role"), "roof beam")
+    parts = [f"Brick walls measured on sheet {page_no}", f"{role} laid over {facts.get('wall_count', 0)} walls of {(facts.get('wall_thickness_mm') or 0) / 25.4:g} in, as wide as the wall",
+      "depth typed" if p.get("depth_mm") is not None else "depth needed"]
   if cand.decision == "ACCEPTED" and measurement is not None:
     parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
   else:
@@ -118,7 +139,28 @@ def _beam_text(cand, page_no: int, measurement) -> str:
 def _stair_text(cand, page_no: int, measurement) -> str:
   p, facts = cand.params or {}, cand.facts or {}
   parts = [f"Stair named on the plan of sheet {page_no}"]
-  parts.append(f"{facts.get('steps')} steps, plan run x width x equivalent thickness (waist {'printed' if facts.get('waist_source') == 'PRINTED' else 'assumed'})" if p.get("depth_mm") is not None else "stair details incomplete")
+  width = f", {(facts.get('stair_width_mm') or 0) / 25.4:g} in wide as printed beside the flight" if facts.get("width_source") == "PRINTED_BESIDE" else ""
+  parts.append(f"{facts.get('steps')} steps{width}, plan run x width x equivalent thickness (waist {'printed' if facts.get('waist_source') == 'PRINTED' else 'assumed'})" if p.get("depth_mm") is not None else "stair details incomplete")
+  if cand.decision == "ACCEPTED" and measurement is not None:
+    parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
+  else:
+    parts.append("found, not measured yet")
+  return " · ".join(parts)
+
+def _site_text(cand, page_no: int, measurement) -> str:
+  p, facts = cand.params or {}, cand.facts or {}
+  kind = facts.get("site_kind")
+  parts = [f"{SITE_SPEC.get(kind, {}).get('type_name', 'Site item')} named on sheet {page_no}"]
+  
+  if kind in ("OHWT", "UGWT", "SEPTIC"):
+    parts.append("concrete of the walls, top slab and bottom slab (outside length x width x equivalent depth)" if p.get("depth_mm") is not None else "outside sizes and wall thickness needed")
+  elif kind == "BOUNDARY_WALL":
+    got = [w for w, v in (("length", p.get("length_mm")), ("height", p.get("depth_mm")), ("thickness", p.get("width_mm"))) if v is None]
+    parts.append("length x height x thickness" + (", gate taken out" if facts.get("gate_deducted") else "") + (f", {' and '.join(got)} needed" if got else ""))
+  elif kind == "GATE":
+    parts.append("width x height of the gate piece of the boundary wall elevation" if p.get("width_mm") is not None else "gate height needed")
+  elif kind == "PORCH_RAMP":
+    parts.append("length x width x thickness of the ramp slab" if p.get("depth_mm") is not None else "length, width and thickness needed")
   if cand.decision == "ACCEPTED" and measurement is not None:
     parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
   else:
@@ -126,13 +168,15 @@ def _stair_text(cand, page_no: int, measurement) -> str:
   return " · ".join(parts)
 
 def _measured_text(cand, page_no: int, measurement) -> str:
+  if cand.category == "SITE":
+    return _site_text(cand, page_no, measurement)
   if cand.category == "STAIR":
     return _stair_text(cand, page_no, measurement)
   if cand.category == "SLAB":
     return _slab_text(cand, page_no, measurement)
   if cand.category == "LINTEL":
     return _lintel_text(cand, page_no, measurement)
-  if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") == "WALLS":
+  if _wall_beam(cand):
     return _beam_text(cand, page_no, measurement)
   p, facts, codes = cand.params or {}, cand.facts or {}, {n.get("code") for n in (cand.notes or [])}
   parts = []
@@ -179,6 +223,14 @@ def _quantity(cand, n: int, measurement) -> tuple:
   if measurement is not None and q is not None and unit:
     return _d(q / max(n, 1)), unit, "PDF_MEASURED"
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
+  if cat == "SITE":
+    a, b, h = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
+    if facts.get("site_kind") == "GATE":
+      return (_d(a * b / 1e6), "m2", "PDF_DRAWN") if a and b else (Decimal("1"), "nos", "PDF_COUNT")
+    if a and b and h:
+      return _d(a * b * h / 1e9), "m3", "PDF_DRAWN"
+    return Decimal("1"), "nos", "PDF_COUNT"
+
   if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR") or _wall_beam(cand):
     a, b, h = _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
     if a and b and h:
@@ -205,7 +257,24 @@ def _quantity(cand, n: int, measurement) -> tuple:
 def _sizes(cand) -> dict:
   p, facts, cat = cand.params or {}, cand.facts or {}, cand.category
   out: dict = {}
-  if cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR") or _wall_beam(cand):
+  if cat == "SITE":
+    kind, a, b, h = facts.get("site_kind"), _num(p.get("length_mm")), _num(p.get("width_mm")), _num(p.get("depth_mm"))
+    sz = facts.get("sizes_mm") or {}
+    if kind == "GATE":
+      out = {"width_mm": a, "height_mm": b, "area_mm2": (a * b) if (a and b) else None}
+    elif kind == "BOUNDARY_WALL":
+      out = {"length_mm": a, "thickness_mm": b, "height_mm": h}
+      if a and b and h:
+        out["volume_mm3"] = a * b * h
+    elif kind == "PORCH_RAMP":
+      out = {"length_mm": a, "width_mm": b, "thickness_mm": h}
+      if a and b and h:
+        out["volume_mm3"] = a * b * h
+    else:
+      out = {"length_mm": a, "width_mm": b, "height_mm": _num(sz.get("height_mm")), "thickness_mm": _num(sz.get("thickness_mm"))}
+      if a and b and h:
+        out["volume_mm3"] = a * b * h
+  elif cat in ("COLUMN", "FOOTING", "LINTEL", "STAIR") or _wall_beam(cand):
     out = {"length_mm": _num(p.get("length_mm")), "width_mm": _num(p.get("width_mm")), "height_mm": _num(p.get("depth_mm"))}
     if all(out.values()):
       out["volume_mm3"] = out["length_mm"] * out["width_mm"] * out["height_mm"]
@@ -233,19 +302,19 @@ def _sizes(cand) -> dict:
   return {k: _d(v, 3) for k, v in out.items() if v}
 
 def _wall_beam(cand) -> bool:
-  return cand.category == "BEAM" and (cand.facts or {}).get("derived_from") == "WALLS"
+  return cand.category == "BEAM" and ((cand.facts or {}).get("derived_from") == "WALLS" or bool((cand.facts or {}).get("from_strips")))
 
 def _name(cand, i: int, n: int) -> str:
   if cand.category == "ROOM":
     return (cand.facts or {}).get("name") or "Room (no name found)"
-  if cand.category in ("WALL", "SLAB") or _wall_beam(cand):
+  if cand.category in ("WALL", "SLAB", "SITE") or _wall_beam(cand):
     return cand.label
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
 
 def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=(), frame_positions=None, floors=None, floor_key=None, footing=None) -> list:
 
-  spec = CATEGORY.get(cand.category)
+  spec = _spec(cand)
   if spec is None or cand.decision == "REJECTED" or (cand.facts or {}).get("foundation_item"):
     return []
   n = 1 if cand.category in ("WALL", "ROOM", "SLAB") else max(1, min(int(cand.count or 1), MAX_ROWS_PER_CANDIDATE))
@@ -297,7 +366,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       "discipline": spec["discipline"], "structural_role": spec["role"], "classification_source": "PDF_EXTRACT",
       "classification_confidence": _d(cand.confidence or 0), "quantity_source": qsrc, "level_id": level_id,
       "geometry_kind": None, "normalization_status": status, "normalization_issues": issues,
-      "type_mark": cand.tag, "type_name": "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else "Staircase" if cand.category == "STAIR" else "Beam over walls" if _wall_beam(cand) else None, "level_name": level_name or title,
+      "type_mark": cand.tag, "type_name": spec.get("type_name") if cand.category == "SITE" else "Ventilator" if opening_kind == "VENTILATOR" else "Lintel" if cand.category == "LINTEL" else "Staircase" if cand.category == "STAIR" else ("Beam" if (cand.facts or {}).get("from_strips") else "Beam over walls") if _wall_beam(cand) else None, "level_name": level_name or title,
     }
     row.update(sizes)
     row.update(where["row"])
@@ -308,19 +377,19 @@ def level_of(cand, sheet):
   """The level of an item: the floor of the drawing it was read from on a sheet that shows several floors, otherwise the sheet's own level."""
   return view_level_id(cand) or getattr(sheet, "level_id", None)
 
-SHARED_MARKS = ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW", "SLAB", "LINTEL") 
+SHARED_MARKS = ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW", "SLAB", "LINTEL", "SITE")
 
 def _primary(candidates, sheets: dict) -> tuple:
   groups: dict = {}
   for c in candidates:
     if c.category in SHARED_MARKS and c.tag and c.decision != "REJECTED" and c.sheet_id in sheets:
-      groups.setdefault((c.category, c.tag.strip().upper(), level_of(c, sheets[c.sheet_id])), []).append(c)
+      groups.setdefault((c.category, c.tag.strip().upper(), None if c.category == "SITE" else level_of(c, sheets[c.sheet_id])), []).append(c)
   also, hidden = {}, set()
   for items in groups.values():
     if len(items) < 2:
       continue
   
-    items.sort(key=lambda c: (c.decision != "ACCEPTED", -int(c.count or 0), len(c.missing or []), sheets[c.sheet_id].page_no))
+    items.sort(key=lambda c: (c.decision != "ACCEPTED", -int(c.count or 0), len(c.missing or []), not (c.facts or {}).get("tank_drawings"), sheets[c.sheet_id].page_no))
     owner = items[0]
     also[owner.id] = [sheets[c.sheet_id].page_no for c in items[1:] if sheets[c.sheet_id].page_no != sheets[owner.sheet_id].page_no]
     hidden.update(c.id for c in items[1:])

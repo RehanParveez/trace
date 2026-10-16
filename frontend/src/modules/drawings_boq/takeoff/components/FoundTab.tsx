@@ -2,12 +2,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../organizations/components/OrganizationUi";
 import { useWorkItems } from "../../standards/hooks";
-import { useAcceptCandidates, useDecideCandidates, useExtractSheet, useSheetCandidates } from "../hooks/useTakeoff";
-import type { TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
+import { useAcceptCandidates, useChooseFloorSources, useDecideCandidates, useExtractSheet, useSheetCandidates, useTakeoffFloorSources } from "../hooks/useTakeoff";
+import type { FloorChoiceBody, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
 import { buildAcceptBody, kindKey, NO_HEIGHTS } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { takeoffErrorMessage } from "../utils/errors";
+import { autoChoiceLine, choiceToast, hasPlans, planBoxOf } from "../utils/floorSources";
 import type { SteelSet } from "../utils/steel";
+import { FloorSourcesPanel } from "./FloorSourcesPanel";
 import { FoundPanel } from "./FoundPanel";
 
 interface Props {
@@ -19,6 +21,10 @@ interface Props {
   onGoScale: () => void;
   onShow: (c: TakeoffCandidate) => void;
   onOpenMeasurement: (measurementId: string) => void;
+  showPlans: boolean;
+  onShowPlans: (on: boolean) => void;
+  onOpenSheet: (sheetId: string) => void;
+  onShowBox: (box: { x0: number; y0: number; x1: number; y1: number }) => void;
 }
 
 export function FoundTab(p: Props) {
@@ -30,6 +36,10 @@ export function FoundTab(p: Props) {
   const accept = useAcceptCandidates(p.drawingId, sheet.id);
   const decide = useDecideCandidates(p.drawingId, sheet.id);
   const workItems = useWorkItems();
+  const floorSources = useTakeoffFloorSources(p.drawingId);
+  const choose = useChooseFloorSources(p.drawingId);
+  const stats = list.data?.extraction.stats;
+  const planFloors = useMemo(() => ["FOUNDATION", "BASEMENT", "GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH", "TYPICAL", "ROOF"].filter((f) => planBoxOf(stats, f) !== null), [stats]);
 
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [heights, setHeights] = useState<Heights>(NO_HEIGHTS);
@@ -66,7 +76,36 @@ export function FoundTab(p: Props) {
     });
   }
 
+  function onChoose(body: FloorChoiceBody) {
+    choose.mutate(body, {
+      onSuccess: (r) => {
+        setSelected(new Set());
+        const msg = choiceToast(r);
+        if (msg.ok) showToast({ tone: "success", title: t("boq.takeoff.floorSources.chosen", "Floors updated"), description: msg.ok });
+        if (msg.problem) showToast({ tone: "error", title: t("boq.takeoff.floorSources.blocked", "Some floors could not be changed"), description: msg.problem });
+      },
+      onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.floorSources.failed", "Could not choose the sheet"), description: takeoffErrorMessage(e) }),
+    });
+  }
+
   return (
+    <>
+    <FloorSourcesPanel
+      data={floorSources.data}
+      loading={floorSources.isLoading}
+      error={floorSources.isError}
+      onRetry={() => void floorSources.refetch()}
+      canEdit={p.canEdit}
+      busy={choose.isPending}
+      currentSheetId={sheet.id}
+      planFloors={planFloors}
+      sheetHasPlans={hasPlans(stats)}
+      showPlans={p.showPlans}
+      onShowPlans={p.onShowPlans}
+      onChoose={onChoose}
+      onOpenSheet={p.onOpenSheet}
+      onShowPlan={(floor) => { const b = planBoxOf(stats, floor); if (b) p.onShowBox(b); }}
+    />
     <FoundPanel
       sheet={sheet}
       data={list.data}
@@ -88,7 +127,12 @@ export function FoundTab(p: Props) {
       workItems={items}
       onWorkItems={setItems}
       workItemCodes={codes}
-      onRead={(auto) => extract.mutate({ sheetId: sheet.id, autoCalibrate: auto })}
+      onRead={(auto) => extract.mutate({ sheetId: sheet.id, autoCalibrate: auto }, {
+        onSuccess: (r) => {
+          const line = autoChoiceLine(r.floors_chosen);
+          if (line) showToast({ tone: "info", title: t("boq.takeoff.floorSources.autoChosen", "Floors drawn on two sheets are counted once"), description: line });
+        },
+      })}
       onGoScale={p.onGoScale}
       onShow={p.onShow}
       steel={steel}
@@ -100,5 +144,6 @@ export function FoundTab(p: Props) {
       onRestore={(ids) => onDecide("restore", ids)}
       onOpenMeasurement={p.onOpenMeasurement}
     />
+    </>
   );
 }

@@ -6,12 +6,22 @@ def level_key(sheet) -> str | None:
   title = ((getattr(sheet, "prep_meta", None) or {}).get("title")) or {}
   return None if title.get("composite") else title.get("level_hint")
 
+def _view_floor(cand) -> str | None:
+  """The floor a stair was read for on a sheet that shows several plans."""
+  return (((cand.facts or {}).get("view") or {}).get("level_hint")) if getattr(cand, "facts", None) else None
+
 def _way(cand) -> str | None:
   return ((cand.facts or {}).get("direction") if getattr(cand, "facts", None) else None)
 
+def _width(cand) -> float | None:
+  w = (cand.facts or {}).get("stair_width_mm") if getattr(cand, "facts", None) else None
+  return float(w) if isinstance(w, (int, float)) else None
+
+def _unlike(a, b) -> float:
+  wa, wb = _width(a), _width(b)
+  return 0.0 if wa is None or wb is None else abs(wa - wb)
+
 def twins(candidates, sheets: dict) -> tuple:
-  """(also, hidden): also[owner id] = [page numbers of the sheets the same stair is drawn on], hidden = ids of the DN candidates that are the same stair as an UP
-  candidate. candidates carry category, decision, sheet_id, count and facts["direction"] ("UP" or "DOWN")."""
   up: dict = {}
   down: dict = {}
   
@@ -44,6 +54,7 @@ def twins(candidates, sheets: dict) -> tuple:
       need = max(1, int(d.count or 1))
       if len(pool) < need:
         continue
+      pool.sort(key=lambda c: _unlike(c, d))
       owners, pool = pool[:need], pool[need:]
       for o in owners:
         taken.add(o.id)

@@ -21,14 +21,25 @@ from app.modules.drawings_boq.finish_schedule.common import work_item_catalog
 from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
+from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
-from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, run_extraction
+from app.modules.drawings_boq.takeoff import stair_twins as ST
+from app.modules.drawings_boq.takeoff.extract import kinds as KD
+from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
+from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
+from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
+from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
+from app.modules.drawings_boq.takeoff.extract.extract_schemas import CandidateResponse
+from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _status, run_extraction
 from app.modules.drawings_boq.takeoff.extract.structure import column_details
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff.schemas import MeasurementCreateRequest, MeasurementParams
-from app.modules.drawings_boq.takeoff.extract import kinds as KD
 
 log = logging.getLogger(__name__)
+
+class NoPlanRegions(Exception):
+  """The sheet does not split into floor plans."""
 
 HEIGHT_FIELDS = {
   ("WALL", "height_mm"): ("wall_height_mm", "height_mm", "the wall height"),
@@ -54,6 +65,8 @@ def _fail(ident: UUID, code: str, message: str) -> dict:
   return {"id": str(ident), "code": code, "message": message}
 
 def fill_missing(category: str, missing: list, params: dict, typed: dict, notes: list | None = None, facts: dict | None = None) -> tuple:
+  if category == "SITE":
+    return SI.fill_site((facts or {}).get("site_kind"), missing, params, typed, facts or {})
   item = (facts or {}).get("foundation_item") if category == "WALL" else None
   if item in FD.ITEMS:
     return FD.fill_foundation(item, missing, params, typed, facts or {})
@@ -86,6 +99,8 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
       field, words = "tie_band_depth_mm", "the tie band depth"
     if category == "COLUMN" and (facts or {}).get("neck_of"):
       field, words = "neck_height_mm", "the neck column height (top of the footing to the floor)"
+    if category == "WALL" and (facts or {}).get("enclosure") == "TANK":
+      field, words = "tank_wall_height_mm", "the tank wall height"
     value = typed.get(field)
     if value is None:
       return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {words} to measure this item.")
@@ -164,9 +179,30 @@ class ExtractService:
   async def _list(self, org: UUID, sheet) -> dict:
     rows = await self.repo.candidates(org, [sheet.id])
     if await self._heal(org, rows):
-      await self.session.commit()
+            await self.session.commit()
     ext = await self.repo.extraction(org, sheet.id)
-    return {"sheet_id": sheet.id, "extraction": await self._meta(org, sheet, ext), "candidates": rows, "summary": self._summary(rows)}
+    return {"sheet_id": sheet.id, "extraction": await self._meta(org, sheet, ext), "candidates": await self._with_stair_twins(org, sheet, rows), "summary": self._summary(rows)}
+
+  async def _with_stair_twins(self, org: UUID, sheet, rows: list) -> list:
+    """A DN flight that is the same stair as an UP flight on the floor below gets a warning in the list (the register already lists the stair once); accepting
+    both would count it twice. The rows are copied for the answer; the stored items are not changed."""
+    if not any(r.category == "STAIR" and (r.facts or {}).get("direction") == "DOWN" and r.decision != "REJECTED" for r in rows):
+      return rows
+    sheets = {s.id: s for s in await self.core.repo.sheets(org, sheet.drawing_id)}
+    _, _, owners = ST.pairs(await self.repo.candidates(org, list(sheets)), sheets)
+    
+    out = []
+    for r in rows:
+      pages = owners.get(r.id)
+      if not pages:
+        out.append(r)
+        continue
+      copy = CandidateResponse.model_validate(r)
+      note = C.note("STAIR_SAME_AS_UP_FLIGHT", pages=pages)
+      note["message"] += f" The UP flight is on sheet {', '.join(str(p) for p in pages)}."
+      copy.notes = [*copy.notes, note]
+      out.append(copy)
+    return out
 
   async def candidates(self, org: UUID, sheet_id: UUID) -> dict:
     sheet = await self.core._sheet(org, sheet_id)
@@ -195,7 +231,7 @@ class ExtractService:
       raise TraceException("The recommended scale could not be used. Set the scale by hand.", status_code=409, code="SHEET_NOT_CALIBRATED")
     return cal, ev, True
 
-  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload) -> dict:
+  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, regions_only: bool = False) -> dict:
     sheet = await self.core._sheet(org, sheet_id, lock=True)
     if sheet.prep_status != "READY":
       raise TraceException("Prepare this sheet first; its drawing has not been read yet.", status_code=409, code="SHEET_NOT_PREPARED")
@@ -215,7 +251,7 @@ class ExtractService:
     floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
     lowest_level = bool(level_hint) and bool(floors) and floors[0] == level_hint
     try:
-      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
+      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details)
@@ -223,7 +259,10 @@ class ExtractService:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
   
+    if regions_only and not (result.stats.get("plan_regions") or {}).get("count"):
+      raise NoPlanRegions()
     found = result.candidates
+    result.stats["floors_read_elsewhere"] = await self._repeated_floors(org, sheet, title, result)
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
     KD.drop_unknown_codes(found, catalog)
@@ -250,11 +289,21 @@ class ExtractService:
     await self.core._log(org, user_id, sheet.drawing_id, AuditAction.UPDATE,
       f"Read sheet {sheet.page_no} automatically: {len(found)} items found")
     await self.session.flush()
-    await self._sync_register(org, [sheet.id])
+    from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
+    touched = await reconcile_columns(self, org, sheet.drawing_id)
+    touched |= await reconcile_beams(self, org, sheet.drawing_id)
+    await self._sync_register(org, {sheet.id} | touched)
     await self.session.commit()
     out = await self._list(org, sheet)
     out.update(added=added, updated=updated, removed=removed, calibration_created=created)
     return out
+
+  async def _repeated_floors(self, org: UUID, sheet, title: dict, result) -> list:
+    """The floors of this sheet that another sheet of the drawing was also read for (see floor_overlap)."""
+    sheets = [s for s in await self.core.repo.sheets(org, sheet.drawing_id) if s.id != sheet.id]
+    exts = {e.sheet_id: e for e in await self.repo.extractions(org, [s.id for s in sheets])}
+    others = [(s.page_no, exts[s.id].stats, (s.prep_meta or {}).get("title")) for s in sheets if s.id in exts]
+    return FO.apply(result.candidates, result.notes, result.stats, title, FO.elsewhere(others), _status)
 
   async def _view_levels(self, org: UUID, sheet, found: list) -> None:
     """A sheet that shows several floors (the structural sheet) has no level of its own: each item gets the level of the drawing it was read from."""
@@ -272,6 +321,9 @@ class ExtractService:
   async def _store(self, org: UUID, sheet, found: list[Candidate], mm_per_pt: float) -> tuple:
     old = {r.ckey: r for r in await self.repo.candidates(org, [sheet.id])}
     await self._heal(org, list(old.values()))
+    title = (sheet.prep_meta or {}).get("title") or {}
+    sheet_floor = None if title.get("composite") else title.get("level_hint")
+    aside = FS.set_aside_floors(list(old.values()), sheet_floor)
     added = updated = 0
     seen: set = set()
     for c in found:
@@ -282,19 +334,25 @@ class ExtractService:
       row = old.get(c.key)
       if row is not None and row.decision == "ACCEPTED":
         continue
+    
+      mark = None
       if row is None:
         row = TakeoffCandidate(organization_id=org, project_id=sheet.project_id, sheet_id=sheet.id, ckey=c.key, decision="NEW")
         self.session.add(row)
         added += 1
+        mark = aside.get(FO.level_of(c) or sheet_floor) if c.category != "SLAB" else None
+        if mark:
+          row.decision, row.decided_at = "REJECTED", _now()
       else:
         updated += 1
         
       row.category, row.kind, row.quantity_mode, row.label, row.tag = c.category, c.kind, c.quantity_mode, c.label[:200], c.tag
       row.geometry, row.params, row.missing = c.geometry, c.params, c.missing
       row.suggested_work_item, row.count, row.status = c.work_item, c.count, c.status
-      row.confidence, row.facts, row.notes, row.source = Decimal(str(c.confidence)), c.facts, c.notes, c.source
+      kept = mark or ((row.facts or {}).get(FS.SET_ASIDE) if row.decision == "REJECTED" else None)
+      row.confidence, row.facts, row.notes, row.source = Decimal(str(c.confidence)), ({**c.facts, FS.SET_ASIDE: kept} if kept else c.facts), c.notes, c.source
       row.extract_version, row.mm_per_pt = C.EXTRACT_VERSION, Decimal(str(mm_per_pt))
-    gone = [r.id for k, r in old.items() if k not in seen and r.decision != "ACCEPTED"]
+    gone = [r.id for k, r in old.items() if k not in seen and r.decision != "ACCEPTED" and not (r.facts or {}).get("from_shapes")]
     await self.repo.delete_candidates(org, gone)
     await self.session.flush()
     return added, updated, len(gone)
@@ -341,16 +399,24 @@ class ExtractService:
     plan = [(s.id, s.page_no) for s in sheets if s.id not in composite] + [(s.id, s.page_no) for s in sheets if s.id in composite]
     singles_read = any(e.sheet_id not in composite for e in await self.repo.extractions(org, [s.id for s in sheets]))
     for sheet_id, page_no in plan:
+      if sheet_id in current:
+        continue
       if sheet_id in composite:
         issue = composite_issue(titles[sheet_id], singles_read)
         if issue is not None:
+          try:
+            done.append(await self.extract_sheet(org, sheet_id, user_id, payload, regions_only=True))
+            continue
+        
+          except NoPlanRegions:
+            pass
+          except TraceException:
+            await self.session.rollback()
           code, severity, message = issue
           await self._set_aside(org, sheet_id, code, message, severity)
           skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": code, "message": message, "severity": severity})
           continue
       
-      if sheet_id in current:
-        continue
       if time.monotonic() - started > 80 and done:
         skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": "TIME_BUDGET", "message": "Run it again for the remaining sheets."})
         continue
@@ -378,7 +444,8 @@ class ExtractService:
       "brick_step_3_height_mm": payload.brick_step_3_height_mm, "brick_step_4_height_mm": payload.brick_step_4_height_mm,
       "brick_step_offset_mm": payload.brick_step_offset_mm, "membrane_width_mm": payload.membrane_width_mm,
       "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm,
-      "stair_waist_mm": payload.stair_waist_mm}
+      "stair_waist_mm": payload.stair_waist_mm, "neck_height_mm": payload.neck_height_mm, "tank_wall_height_mm": payload.tank_wall_height_mm,
+      "site_length_mm": payload.site_length_mm, "site_width_mm": payload.site_width_mm, "site_height_mm": payload.site_height_mm, "site_thickness_mm": payload.site_thickness_mm}
     accepted: list = []
     failed: list = []
     sheet_levels: dict = {}
@@ -394,10 +461,21 @@ class ExtractService:
       if cand.status == "INVALID":
         failed.append(_fail(cid, "CANDIDATE_INVALID", "This item has an error and cannot be measured."))
         continue
-      if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") != "WALLS":
+      if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") != "WALLS" and not (cand.facts or {}).get("from_strips"):
+                
         failed.append(_fail(cid, "CANDIDATE_NOT_MEASURABLE", "Beam marks are only counted. Draw the beam lengths with the length tool."))
         continue
-      params, problem = fill_missing(cand.category, cand.missing or [], cand.params or {}, typed, cand.notes or [], cand.facts or {})
+      missing, start, section = cand.missing or [], cand.params or {}, None
+      pick = (payload.section_picks or {}).get(cid)
+      if pick is not None:
+        section, problem = BS.chosen(cand.facts, pick)
+        if problem:
+          failed.append(_fail(cid, *problem))
+          continue
+        start = BS.with_section(start, section)
+        if section.get("depth_mm"):
+          missing = [m for m in missing if m != "depth_mm"]
+      params, problem = fill_missing(cand.category, missing, start, typed, cand.notes or [], cand.facts or {})
       if problem:
         failed.append(_fail(cid, *problem))
         continue
@@ -429,8 +507,13 @@ class ExtractService:
           if params != (cand.params or {}):
             if cand.category == "SLAB":
               cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}
+            if cand.category == "SITE":
+              cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": SI.typed_sizes((cand.facts or {}).get("site_kind"), missing, typed, cand.facts or {})}
             if FD.is_foundation(cand):
               cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": {k: params[k] for k in ("width_mm", "depth_mm") if params.get(k) is not None}}
+            if section is not None:
+              cand.facts = {**(cand.facts or {}), "section_mark": section["mark"], "section_chosen": True, "steel_text": section.get("steel_text"),
+                "steel_source": {"grade": "PRINTED", "text": f"beam section {section['mark']} (chosen)"}}
             if typed_steel is not None:
               cand.facts = {**(cand.facts or {}), "steel_source": {"grade": "TYPED", "text": None}}
             cand.params = params

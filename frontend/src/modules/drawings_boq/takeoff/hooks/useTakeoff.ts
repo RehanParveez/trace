@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { AcceptBody, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
+import type { AcceptBody, FloorChoiceBody, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
 
 export const takeoffKeys = {
@@ -16,6 +16,7 @@ export const takeoffKeys = {
   facts: (drawingId: string) => [...takeoffKeys.all, "facts", drawingId] as const,
   frame: (drawingId: string) => [...takeoffKeys.all, "frame", drawingId] as const,
   floors: (drawingId: string) => [...takeoffKeys.all, "floors", drawingId] as const,
+  floorSources: (drawingId: string) => [...takeoffKeys.all, "floor-sources", drawingId] as const,
   reconcile: (drawingId: string, query: ReconcileQuery) => [...takeoffKeys.all, "reconcile", drawingId, query.model_drawing_id ?? "", query.dx_mm ?? null, query.dy_mm ?? null] as const,
   candidates: (sheetId: string) => [...takeoffKeys.all, "candidates", sheetId] as const,
 };
@@ -108,7 +109,11 @@ export function useReadPdfDrawing(drawingId: string | undefined) {
     onSettled: () => {
       invalidate();
       invalidateOverview();
-      if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.facts(drawingId) });
+      if (drawingId) {
+        void qc.invalidateQueries({ queryKey: takeoffKeys.facts(drawingId) });
+        void qc.invalidateQueries({ queryKey: takeoffKeys.floorSources(drawingId) });
+      }
+      void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "candidates"] });
     },
   });
 }
@@ -289,8 +294,14 @@ export function useExtractSheet(drawingId: string | undefined) {
   const invalidate = useInvalidateOverview(drawingId);
   return useMutation({
     mutationFn: (a: { sheetId: string; autoCalibrate: boolean }) => takeoffApi.extract(a.sheetId, { auto_calibrate: a.autoCalibrate }),
-    onSuccess: (data) => { qc.setQueryData(takeoffKeys.candidates(data.sheet_id), data); },
-    onSettled: invalidate,
+    onSuccess: (data) => {
+      qc.setQueryData(takeoffKeys.candidates(data.sheet_id), data);
+      if (data.floors_chosen?.length) void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "candidates"] });
+    },
+    onSettled: () => {
+      invalidate();
+      if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.floorSources(drawingId) });
+    },
   });
 }
 
@@ -339,6 +350,28 @@ export function useTakeoffFloors(drawingId: string | undefined, enabled = true) 
     queryKey: takeoffKeys.floors(drawingId ?? ""),
     queryFn: () => takeoffApi.floors(drawingId as string),
     enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useTakeoffFloorSources(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.floorSources(drawingId ?? ""),
+    queryFn: () => takeoffApi.floorSources(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useChooseFloorSources(drawingId: string | undefined) {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateOverview(drawingId);
+  return useMutation({
+    mutationFn: (body: FloorChoiceBody) => takeoffApi.chooseFloorSources(drawingId as string, body),
+    onSuccess: (data) => { qc.setQueryData(takeoffKeys.floorSources(drawingId ?? ""), data.floors); },
+    onSettled: () => {
+      invalidate();
+      void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "candidates"] });
+      if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.floorSources(drawingId) });
+    },
   });
 }
 

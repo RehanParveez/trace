@@ -2,6 +2,7 @@ import type { Draft, Tool } from "../store/takeoffView.store";
 import type { AreaGeometry, CountGeometry, LengthGeometry, Pt, RegionPick, ScalePair, SnapKind, TakeoffMeasurement, WallPick } from "../types/takeoff.types";
 import { dist, polygonArea, polylineLength } from "./geometry";
 import { fmtMm } from "./format";
+import type { PlanBox } from "./floorSources";
 import { applyMatrix } from "./viewport";
 import type { Matrix } from "./viewport";
 
@@ -24,6 +25,7 @@ export interface Scene {
   suggestionPts: Pt[];
   focusId: string | null;
   disabledNote: string | null;
+  planBoxes?: PlanBox[];
 }
 
 const PALETTE = ["#2f68a8", "#1e9d63", "#c24a3a", "#8a5cc2", "#d98a1f", "#1d9aa3", "#b0407e", "#6b7a1f"];
@@ -137,7 +139,36 @@ function drawMeasurement(ctx: CanvasRenderingContext2D, m: Matrix, meas: Takeoff
   ctx.restore();
 }
 
+function paintPlanBoxes(ctx: CanvasRenderingContext2D, m: Matrix, all: PlanBox[]): void {
+
+  const boxes = [...all].sort((a, b) => Number(a.kind === "READ") - Number(b.kind === "READ"));
+  ctx.save();
+  ctx.lineJoin = "round";
+  for (const b of boxes) {
+    const [x0, y0, x1, y1] = b.bbox;
+    const pts: Pt[] = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    const read = b.kind === "READ";
+    ctx.fillStyle = read ? "rgba(30,157,99,0.06)" : "rgba(90,96,104,0.16)";
+    ctx.strokeStyle = read ? "#1e9d63" : "#6b6f76";
+    ctx.lineWidth = read ? 2.5 : 1.5;
+    ctx.setLineDash(read ? [] : [8, 5]);
+    path(ctx, m, pts, true);
+    ctx.fill();
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  for (const b of boxes) {
+    const [x0, y0, x1, y1] = b.bbox;
+    const sp = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map((p) => applyMatrix(m, p[0], p[1]));
+    const left = Math.min(...sp.map((p) => p[0]));
+    const top = Math.min(...sp.map((p) => p[1]));
+    label(ctx, b.label, left + 4, top + 17, b.kind === "READ" ? "#1e9d63" : "#6b6f76");
+  }
+  ctx.restore();
+}
+
 export function paintScene(ctx: CanvasRenderingContext2D, m: Matrix, size: { w: number; h: number }, scene: Scene): void {
+  if (scene.planBoxes && scene.planBoxes.length > 0) paintPlanBoxes(ctx, m, scene.planBoxes);
   if (scene.showMeasurements) {
     for (const meas of scene.measurements) drawMeasurement(ctx, m, meas, scene.selectedIds.has(meas.id), scene.focusId === meas.id);
   }
@@ -266,7 +297,6 @@ export function paintScene(ctx: CanvasRenderingContext2D, m: Matrix, size: { w: 
     ctx.restore();
   }
 
-  // Calibration / ruler points.
   for (const [pts, colour] of [[scene.calibrationPts, "#c24a3a"], [scene.rulerPts, "#1d9aa3"]] as Array<[Pt[], string]>) {
     if (pts.length === 0) continue;
     ctx.save();

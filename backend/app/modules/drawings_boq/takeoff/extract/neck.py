@@ -39,9 +39,8 @@ def candidates(cands: list, ctx: dict, Candidate, finish) -> list:
     return []
   low = _level(footings[0])
   columns = [c for c in cands if c.category == "COLUMN" and _level(c) == low and "UNMARKED_COLUMNS" not in {n.get("code") for n in c.notes}
-    and not (c.facts or {}).get("neck_of")]
+    and not (c.facts or {}).get("neck_of") and not (c.facts or {}).get("from_shapes")]
   out = []
-  
   for f, c in pair(footings, columns):
     p = {"length_mm": c.params["length_mm"], "width_mm": c.params["width_mm"], "dims_basis": "SPECIFIED"}
     facts = {"tag": c.tag, "count": f.count, "neck_of": f.tag, "column_key": c.key, "footing_key": f.key, "size_used_mm": [p["length_mm"], p["width_mm"]],

@@ -2,7 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  Frame, FramePlaceBody, FloorDatums, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
+  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
@@ -97,6 +97,12 @@ export const takeoffApi = {
   },
   async reconcileColumns(drawingId: string, query: ReconcileQuery = {}): Promise<ColumnReconcile> {
     return (await apiClient.get<ColumnReconcile>(`${BASE}/drawings/${drawingId}/takeoff/reconcile`, { params: query })).data;
+  },
+  async floorSources(drawingId: string): Promise<FloorSources> {
+    return (await apiClient.get<FloorSources>(`${BASE}/drawings/${drawingId}/takeoff/floor-sources`)).data;
+  },
+  async chooseFloorSources(drawingId: string, body: FloorChoiceBody): Promise<FloorChoiceResult> {
+    return (await apiClient.post<FloorChoiceResult>(`${BASE}/drawings/${drawingId}/takeoff/floor-sources/choose`, body)).data;
   },
   async floors(drawingId: string): Promise<FloorDatums> {
     return (await apiClient.get<FloorDatums>(`${BASE}/drawings/${drawingId}/takeoff/floors`)).data;

@@ -10,6 +10,7 @@ class ExtractRequest(BaseModel):
   auto_calibrate: bool = Field(default=False, description="If the sheet has no scale yet, set the recommended one, but only when the drawn scale and the printed dimensions agree.")
   budget_seconds: int = Field(default=25, ge=5, le=90)
   only_unread: bool = Field(default=False, description="Whole-drawing reads only: leave out sheets that were already read from the current prepared version of the sheet.")
+  choose_floors: bool = Field(default=True, description="After the read, a floor that is open on two sheets (its own sheet and a sheet of several plans) uses the suggested sheet and the other is set aside, so the floor is not counted twice. It can be changed afterwards.")
 
 class CandidateResponse(BaseModel):
   model_config = ConfigDict(from_attributes=True)
@@ -62,6 +63,7 @@ class ExtractResponse(CandidateListResponse):
   updated: int = 0
   removed: int = 0
   calibration_created: bool = False
+  floors_chosen: list[dict] = Field(default_factory=list, description="The floors that were read twice and the sheet that was put in use for each by this read.")
 
 class DrawingExtractResponse(BaseModel):
   drawing_id: UUID
@@ -93,6 +95,10 @@ class AcceptRequest(BaseModel):
   stair_waist_mm: Decimal | None = Field(default=None, gt=0, le=500)
   neck_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Neck columns: top of the footing to the lowest floor.")
   tank_wall_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Walls of water tanks.")
+  site_length_mm: Decimal | None = Field(default=None, gt=0, le=60000, description="Items outside the building (tanks, boundary wall, gate, ramp): the length, or the width of a gate.")
+  site_width_mm: Decimal | None = Field(default=None, gt=0, le=60000, description="Items outside the building: the width of a tank or a ramp.")
+  site_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Items outside the building: the height of a tank, a boundary wall or a gate.")
+  site_thickness_mm: Decimal | None = Field(default=None, gt=0, le=3000, description="Items outside the building: the thickness of the walls and slabs of a tank, of a boundary wall or of a ramp slab.")
   work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per kind of item: a category, or the name of a piece of work worked out from other readings (TERMITE_STRIP, MEMBRANE, DOOR_FRAME and the rest), e.g. {\"WALL\": \"MAS-BLOCK\", \"TERMITE_STRIP\": \"PRO-TERMITE\"}.")
   level_id: UUID | None = None
   section_picks: dict[UUID, str] | None = Field(default=None, max_length=500, description="The beam section (mark) chosen for a beam that lists several, by candidate id. Its depth and bars are put on the beam.")
