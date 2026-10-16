@@ -8,6 +8,15 @@ from app.modules.drawings_boq.takeoff.extract import rooms as R
 from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
+from app.modules.drawings_boq.takeoff.extract import rcc_ring as RR
+from app.modules.drawings_boq.takeoff.extract import completion as CP
+from app.modules.drawings_boq.takeoff.extract import neck as NK
+from app.modules.drawings_boq.takeoff.extract import wide_openings as WO
+from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
+from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
+from app.modules.drawings_boq.takeoff.extract import opening_check as OK
+from app.modules.drawings_boq.takeoff.prep import tank_details as TD
+from app.modules.drawings_boq.takeoff.extract import dashed_openings as DO
 from app.modules.drawings_boq.takeoff.extract import hosts as H
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
@@ -401,13 +410,14 @@ def _mark_tanks(words, walls: list, f: float) -> int:
       continue
     for c in near:
       c.facts["enclosure"] = "TANK"
+      c.facts["tank_kind"] = TD.kind_of(w.text)
       c.notes.append(C.note("TANK_WALL"))
       c.status = _status(c.notes)
       marked += 1
   return marked
 
-def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -> tuple:
-  frames, runs, stats = W.detect_walls(index, f, deadline)
+def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False) -> tuple:
+  frames, runs, stats = W.detect_walls(index, f, deadline, at_grade)
   rcc = RC.rcc_runs(index.rings, f)
   stats["rcc_runs"] = len(rcc)
   stats["dropped_stubs"] = 0
@@ -472,6 +482,9 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -
       "length_clear_m": round(clear_m, 3), "gaps_mm": gaps, "ends": [r.end0, r.end1], "method": "CENTRE_LINE",
       "gap_pts": [[[round(x, 3) for x in fr.pt(a, r.dc)], [round(x, 3) for x in fr.pt(b, r.dc)]] for a, b in spans]}
     
+    if r.pen_kept:
+      facts["light_pen"] = True
+      notes.append(C.note("LIGHT_PEN_WALL"))
     if add0 > 0.0 or add1 > 0.0:
       facts["bridged_mm"] = [round(add0 * f), round(add1 * f)]
       notes.append(C.note("WALL_BRIDGED"))
@@ -510,6 +523,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False) -
       params=params, missing=missing, work_item="CON-RCC", status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
     out.append(_finish(cand, ctx, 0.75))
   stats["rcc_walls"] = len(rcc)
+  stats["rcc_ring"] = RR.ring_gaps(rcc, f) if rcc else None
   out.sort(key=lambda c: (c.facts.get("construction") == "RCC", -c.facts["thickness_used_mm"], -c.facts["length_cc_m"]))
   return frames, runs, out, stats
 
@@ -1051,7 +1065,7 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
 def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unverified: bool = False, content_kind: str = "VECTOR",
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
-  lowest_level: bool = False, with_finishes: bool = False) -> Extraction:
+  lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -1104,25 +1118,41 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
     res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"] or (views[0]["caption"] if views else None)))
   else:
     try:
-      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, _is_imperial(words))
+      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, _is_imperial(words), bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"))
       res.candidates.extend(walls)
       wstats["tank_walls"] = _mark_tanks(words, walls, mm_per_pt)
       _drop_tank_heights(walls)
+      wstats["tank_drawings_listed"] = TS.apply(walls, tank_details or [])
       beams = _beam_candidates(walls, ctx, level_hint, lowest_level)
+      res.stats["beam_sections"] = BS.apply(beams, beam_sections or [])
       res.candidates.extend(beams)
       res.stats["wall_beams"] = len(beams)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
       wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
+      marked = [c for c in res.candidates if c.category in ("DOOR", "WINDOW")]
+      wstats["opening_marks"] = OK.check(marked, walls, (schedule or {}).get("openings") or [], mm_per_pt)
+      for c in marked:
+        if c.facts.get("gap_check"):
+          c.status = _status(c.notes)
       
       for c in walls:
         if c.params.get("openings"):
           c.notes.append(C.note("OPENINGS_ASSIGNED", count=c.facts["openings"]["count"], marks=c.facts["openings"]["marks"]))
           c.status = _status(c.notes)
+      ring = wstats.pop("rcc_ring", None)
+      completion = CP.candidates(ring, CP.rcc_notes(lines), sheet_heights, ctx, _is_imperial(words), Candidate, _finish, _height_note)
+      wstats["rcc_completion"] = {"pieces": len(completion), "sides_drawn": ring["sides"]} if ring else None
       res.stats["walls"] = wstats
       lintels = _lintel_candidates([c for c in res.candidates if c.category in ("DOOR", "WINDOW")], (schedule or {}).get("lintels") or [],
         _hosted_by_tag(hosted.get("by_wall"), walls), ctx)
       res.candidates.extend(lintels)
-      res.stats["lintels"] = len(lintels)
+      dashed = DO.find(index, mm_per_pt, wstats.get("wall_pen_pt"))
+      marks = [tuple(q) for c in res.candidates if c.category in ("DOOR", "WINDOW") for q in ((c.geometry or {}).get("points") or [])]
+      wide = WO.candidates(walls, (schedule or {}).get("lintels") or [], ctx, Candidate, _finish, _inch_text, _fmt_mm, dashed, marks, mm_per_pt)
+      wstats["dashed_openings"] = len(dashed)
+      res.candidates.extend(wide)
+      res.stats["lintels"] = len(lintels) + len(wide)
+      res.stats["lintels_unmarked_openings"] = len(wide)
       stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt)
       res.candidates.extend(stairs)
       res.notes.extend(stair_notes)
@@ -1132,8 +1162,11 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
       if wstats.get("wall_pen_pt"):
         res.notes.append(C.note("WALL_PEN_SELECTED", pen_pt=wstats["wall_pen_pt"], runs_all_pens=wstats.get("runs_all_pens"),
           wall_m_all_pens=wstats.get("wall_m_all_pens")))
+      if wstats.get("light_walls_kept"):
+        res.notes.append(C.note("LIGHT_PEN_WALLS_KEPT", count=wstats["light_walls_kept"], metres=wstats.get("light_walls_m")))
       rooms = _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx)
       res.candidates.extend(rooms)
+      res.candidates.extend(completion)
       
       if with_finishes:
         finishes = _finish_candidates(walls, rooms, [c for c in res.candidates if c.category == "DOOR"], mm_per_pt, ctx, level_hint)
@@ -1149,6 +1182,10 @@ def run_extraction(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_un
   found_steel = SN.read(lines)
   res.stats["steel"] = SN.attach(res.candidates, found_steel, C.note)
   res.stats["steel_notes"] = found_steel["notes"]
+  if composite_structural:
+    neck = NK.candidates(res.candidates, ctx, Candidate, _finish)
+    res.candidates.extend(neck)
+    res.stats["neck_columns"] = len(neck)
   for c in res.candidates:
     c.status = _status(c.notes)
   mapped = {c.tag for c in res.candidates if c.tag}

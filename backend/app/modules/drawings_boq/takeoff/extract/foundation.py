@@ -11,8 +11,8 @@ BRICK_STEP = "BRICK_STEP"
 MEMBRANE = "MEMBRANE"
 ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE)
 
-WORK_ITEM = {EXCAVATION_AREA: "EXC-FOUND", TRENCH: "EXC-FOUND", PCC_STRIP: "CON-PCC", PCC_PAD: "CON-PCC", TERMITE_STRIP: None, TERMITE_FLOOR: None,
-  BRICK_STEP: "MAS-BRICK", MEMBRANE: None}
+WORK_ITEM = {EXCAVATION_AREA: "EXC-FOUND", TRENCH: "EXC-FOUND", PCC_STRIP: "CON-PCC", PCC_PAD: "CON-PCC", TERMITE_STRIP: "PRO-TERMITE", TERMITE_FLOOR: "PRO-TERMITE",
+  BRICK_STEP: "MAS-BRICK", MEMBRANE: "FIN-WATERPROOF-DPC"}
 MODE = {EXCAVATION_AREA: "COUNT_X_VOLUME", TRENCH: "COUNT_X_VOLUME", PCC_STRIP: "COUNT_X_VOLUME", PCC_PAD: "COUNT_X_VOLUME",
   TERMITE_STRIP: "COUNT_X_AREA", TERMITE_FLOOR: "COUNT_X_AREA", BRICK_STEP: "COUNT_X_VOLUME", MEMBRANE: "COUNT_X_AREA"}
 
@@ -80,9 +80,9 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
     out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre, dict(params),
       ["strip_width_mm", "depth_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED")], dict(base_facts), 0.65))
     out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
-      dict(params), ["strip_width_mm", "depth_mm"], [walls_note, width_note], dict(base_facts), 0.7))
+       dict(params), ["strip_width_mm", "depth_mm"], [walls_note, width_note], dict(base_facts), 0.7))
     out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
-      centre, dict(params), ["strip_width_mm"], [walls_note, width_note, C.note("TERMITE_BOTTOM_ONLY"), C.note("TERMITE_NO_WORK_ITEM")], dict(base_facts), 0.65))
+      centre, dict(params), ["strip_width_mm"], [walls_note, width_note, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.65))
   return out
 
 def under_floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
@@ -104,7 +104,7 @@ def under_floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, 
   facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3)}
   label = f"Termite treatment under the floor · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
   return _make(cls, ctx, finish, (TERMITE_FLOOR, level_hint or ""), TERMITE_FLOOR, label, "TERMITE-UNDER-FLOOR", [_centre(pts)],
-    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("UNDER_FLOOR_FROM_ROOMS"), C.note("TERMITE_NO_WORK_ITEM")], facts, 0.75)
+    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("UNDER_FLOOR_FROM_ROOMS")], facts, 0.75)
 
 def excavation_candidate(dims, outline_facts: dict, ctx: dict, level_hint: str | None, spec, cls, finish, centre: list):
   """The dig over the whole basement: the outline of the basement slab (covered area widened by its projections) x a depth that is typed."""
@@ -174,7 +174,7 @@ def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls
   facts = {"derived_from": "WALLS", "wall_count": len(ws), "length_m": round(length_m, 3), "rcc_length_m": round(rcc_m, 3), "wall_keys": [w.key for w in ws]}
   label = f"Damp-proof membrane under walls · {length_m:.2f} m" + (f" · {spec[0]}" if spec else "")
   return _make(cls, ctx, finish, (MEMBRANE, level_hint or ""), MEMBRANE, label, "MEMBRANE", [_centre(pts)], {"length_mm": round(length_m * 1000.0, 1)},
-    ["membrane_width_mm"], [C.note("MEMBRANE_FROM_WALLS"), C.note("NO_WORK_ITEM")], facts, 0.65)
+    ["membrane_width_mm"], [C.note("MEMBRANE_FROM_WALLS")], facts, 0.65)
 
 STRIP_FIELDS = {"THICK": "pcc_strip_width_mm", "THIN": "pcc_strip_width_thin_mm"}
 DEPTH_FIELDS = {EXCAVATION_AREA: ("excavation_depth_mm", "the depth of the excavation over the basement"),

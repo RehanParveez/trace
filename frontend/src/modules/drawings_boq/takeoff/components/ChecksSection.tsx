@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { DrawingCheck, DrawingFacts } from "../types/takeoff.types";
+import { PictureReadsSection } from "./PictureReadsSection";
+import { hasPictureReads } from "../utils/pictures";
 import { detailRows, detailSizeText, detailState, hasChecks, readerMissing, sortedChecks, warningCount } from "../utils/check";
 
 interface Props {
@@ -18,7 +20,7 @@ function CheckRow({ c }: { c: DrawingCheck }) {
 
 export function ChecksSection({ facts }: Props) {
   const { t } = useTranslation();
-  if (!hasChecks(facts)) return null;
+  if (!hasChecks(facts) && !hasPictureReads(facts)) return null;
   const checks = sortedChecks(facts);
   const details = detailRows(facts);
   const warnings = warningCount(facts);
@@ -56,6 +58,7 @@ export function ChecksSection({ facts }: Props) {
           </ul>
         </details>
       ) : null}
+      <PictureReadsSection facts={facts} />
     </div>
   );
 }

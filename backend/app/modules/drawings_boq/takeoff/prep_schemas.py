@@ -196,6 +196,9 @@ class FactsResponse(BaseModel):
   structure: list[StructureLevel] = Field(default_factory=list)
   details: list[ColumnDetail] = Field(default_factory=list)
   details_reader: str | None = None
+  beam_details: list[dict] = Field(default_factory=list)
+  tank_details: list[dict] = Field(default_factory=list)
+  picture_reader: dict | None = None
   checks: list[DrawingCheck] = Field(default_factory=list)
 
 class AutoCalibrateRequest(BaseModel):

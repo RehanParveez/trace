@@ -390,10 +390,12 @@ export interface ExtractResult extends CandidateList { added: number; updated: n
 
 export interface AcceptBody {
   ids: string[];
- 
   steel?: Record<string, import("../utils/steel").SteelSet>;
   wall_height_mm?: number | null;
+  tank_wall_height_mm?: number | null;
   column_height_mm?: number | null;
+  neck_height_mm?: number | null;
+  section_picks?: Record<string, string>;
   footing_depth_mm?: number | null;
   slab_thickness_mm?: number | null;
   beam_depth_mm?: number | null;
@@ -536,6 +538,28 @@ export interface ColumnDetail {
   w_in: number | null;
   h_in: number | null;
 }
+export type PictureReadState = "TEXT" | "TEXT+OCR" | "OCR" | "PARTIAL" | "NONE" | "TIMEOUT" | "FAILED";
+export interface BeamSectionRead {
+  mark: string | null;
+  kind: string | null;
+  page_no: number | null;
+  read: PictureReadState;
+  depth_in: number | null;
+  steel_text: string | null;
+  from_text: boolean;
+}
+export interface TankSizeRead { text: string | null; source: "TEXT" | "PICTURE"; votes: number | null }
+export interface TankDrawingRead {
+  kind: string | null;
+  view: string | null;
+  caption: string | null;
+  page_no: number | null;
+  read: PictureReadState;
+  sizes: TankSizeRead[];
+  bar_notes: string[];
+  from_text: boolean;
+}
+export interface PictureReaderStatus { installed: boolean; version: string | null; packages: boolean; usable: boolean }
 export interface DrawingCheck {
   code: string;
   severity: "warning" | "info";
@@ -598,6 +622,9 @@ export interface DrawingFacts {
   structure?: StructureLevel[];
   details?: ColumnDetail[];
   details_reader?: string | null;
+  beam_details?: BeamSectionRead[];
+  tank_details?: TankDrawingRead[];
+  picture_reader?: PictureReaderStatus | null;
   checks?: DrawingCheck[];
 }
 

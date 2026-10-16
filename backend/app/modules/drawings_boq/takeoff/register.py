@@ -3,6 +3,7 @@ from decimal import Decimal
 from uuid import NAMESPACE_URL, UUID, uuid5
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.levels import view_level_id
+from app.modules.drawings_boq.takeoff import stair_twins
 
 SOURCE = "pdf_takeoff"
 MAX_ROWS_PER_CANDIDATE = 2000
@@ -250,7 +251,10 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
   issues, status = _issues(cand)
   also_on = sorted(set(also_on))
   
-  if also_on:
+  if also_on and cand.category == "STAIR":
+    issues.append({"code": "STAIR_DRAWN_ON_OTHER_SHEET", "severity": "info",
+      "message": "This staircase is also drawn as a DN flight on sheet " + ", ".join(str(x) for x in also_on) + ". It is one stair, listed once here. Measure it once."})
+  elif also_on:
     issues.append({"code": "SAME_MARK_ON_OTHER_SHEET", "severity": "info",
       "message": "This mark is also on sheet " + ", ".join(str(x) for x in also_on) + ". It is listed once here. Measure it once, not on every sheet."})
   qty, unit, qsrc = _quantity(cand, n, measurement)
@@ -321,6 +325,10 @@ def _primary(candidates, sheets: dict) -> tuple:
 def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame_positions: dict | None = None) -> list:
   
   also, hidden = _primary(candidates, sheets)
+  stair_also, stair_hidden = stair_twins.twins(candidates, sheets)
+  for k, v in stair_also.items():
+    also[k] = sorted(set(also.get(k, [])) | set(v))
+  hidden |= stair_hidden
   out = []
   for cand in candidates:
     sheet = sheets.get(cand.sheet_id)

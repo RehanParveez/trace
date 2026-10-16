@@ -26,6 +26,7 @@ from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, run_ext
 from app.modules.drawings_boq.takeoff.extract.structure import column_details
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff.schemas import MeasurementCreateRequest, MeasurementParams
+from app.modules.drawings_boq.takeoff.extract import kinds as KD
 
 log = logging.getLogger(__name__)
 
@@ -203,6 +204,8 @@ class ExtractService:
     schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
     floor_heights = await self.prep.drawing_storey_heights(org, sheet.drawing_id)
     slab_values = await self.prep.drawing_slab_values(org, sheet.drawing_id)
+    beam_sections = await self.prep.drawing_beam_sections(org, sheet.drawing_id)
+    tank_details = await self.prep.drawing_tank_details(org, sheet.drawing_id)
     title = (sheet.prep_meta or {}).get("title") or {}
     level_hint = None if title.get("composite") else title.get("level_hint")
     floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
@@ -211,7 +214,7 @@ class ExtractService:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
-        lowest_level=lowest_level, with_finishes=True)
+        lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -219,9 +222,7 @@ class ExtractService:
     found = result.candidates
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
-    for c in found:
-      if c.work_item and c.work_item not in catalog:
-        c.work_item = None
+    KD.drop_unknown_codes(found, catalog)
     await self._view_levels(org, sheet, found)
     added, updated, removed = await self._store(org, sheet, found, mm_per_pt)
     ext = await self.repo.extraction(org, sheet.id)
@@ -363,7 +364,7 @@ class ExtractService:
     rows = {r.id: r for r in await self.repo.candidates_by_ids(org, list(payload.ids), lock=True)}
     await self._heal(org, list(rows.values()))
     given = payload.work_items or {}
-    wanted = {c for c in [*(given.values()), *(r.suggested_work_item for r in rows.values())] if c}
+    wanted = {c for c in [*(given.values()), *(KD.default_code(r) for r in rows.values())] if c}
     catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
     typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm,
       "slab_thickness_mm": payload.slab_thickness_mm, "beam_depth_mm": payload.beam_depth_mm,
@@ -400,8 +401,8 @@ class ExtractService:
       typed_steel = (payload.steel or {}).get(cid)
       if typed_steel is not None:
         params = {**params, "steel": typed_steel.model_dump(mode="json", exclude_none=True)}
-      code = given.get(cand.category) or cand.suggested_work_item
-      if code and code not in catalog and given.get(cand.category):
+      code = KD.code_for(cand, given)
+      if code and code not in catalog and given.get(KD.kind_of(cand)):
         failed.append(_fail(cid, "WORK_ITEM_NOT_FOUND", f"Work item '{code}' is not in the catalog."))
         continue
       if code and code not in catalog:

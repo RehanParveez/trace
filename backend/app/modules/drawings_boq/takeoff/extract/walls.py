@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import time
 import numpy as np
 import math
@@ -79,6 +79,7 @@ class Run:
   end1: str = "FREE"
   overlap_pt: float = 0.0
   w: float = 0.0         
+  pen_kept: bool = False   
 
 class TimeLimit(Exception):
   pass
@@ -464,7 +465,71 @@ def pen_classes(index) -> list:
 def _standard_length_mm(runs: list, mm_per_pt: float) -> float:
   return sum((r.s1 - r.s0) * mm_per_pt for r in runs if standard_thickness(r.t_pt * mm_per_pt))
 
-def detect_walls(index, mm_per_pt: float, deadline: float | None = None) -> tuple[list[Frame], list[Run], dict]:
+LIGHT_KEEP_MIN_MM = 3000.0     
+LIGHT_KEEP_LONG_MM = 8000.0    
+LIGHT_KEEP_MAX_MM = 160.0      
+
+def _wall_like_thickness(t_mm: float) -> bool:
+  """A thin brick wall (4.5 or 6 inch; 90 to 160 mm) as boundary, lawn and partition walls are, not a stair tread (250 mm) or a beam or a slab edge."""
+  if t_mm > LIGHT_KEEP_MAX_MM or t_mm < 90.0:
+    return False
+  if standard_thickness(t_mm) is not None:
+    return True
+  return any(abs(t_mm / s - 1.0) <= C.IMPERIAL_TOL for s in C.IMPERIAL_WALLS_MM[:3])
+
+def _seg(run: Run, frames: list) -> tuple:
+  fr = frames[run.peak]
+  return fr.pt(run.s0, run.dc), fr.pt(run.s1, run.dc)
+
+def _lies_on(a: tuple, b: tuple, c: tuple, d: tuple, reach: float) -> bool:
+  """True when segment a-b runs along segment c-d (parallel, within reach across, and over half of a-b alongside)."""
+  la = math.hypot(b[0] - a[0], b[1] - a[1])
+  lc = math.hypot(d[0] - c[0], d[1] - c[1])
+  if la <= 0.0 or lc <= 0.0:
+    return False
+  ux, uy = (d[0] - c[0]) / lc, (d[1] - c[1]) / lc
+  if abs((b[0] - a[0]) * uy - (b[1] - a[1]) * ux) > 0.05 * la:
+    return False
+  across = max(abs((p[0] - c[0]) * uy - (p[1] - c[1]) * ux) for p in (a, b))
+  if across > reach:
+    return False
+  t0 = (a[0] - c[0]) * ux + (a[1] - c[1]) * uy
+  t1 = (b[0] - c[0]) * ux + (b[1] - c[1]) * uy
+  lo, hi = max(min(t0, t1), 0.0), min(max(t0, t1), lc)
+  return hi - lo > 0.5 * la
+
+def add_light_walls(frames: list, runs: list, all_frames: list, all_runs: list, wall_pen: float, mm_per_pt: float) -> tuple:
+  keep = []
+  
+  for r in all_runs:
+    if r.w >= wall_pen - 0.005:
+      continue
+    t = r.t_pt * mm_per_pt
+    length = (r.s1 - r.s0) * mm_per_pt
+    if not _wall_like_thickness(t) or length < LIGHT_KEEP_MIN_MM:
+      continue
+    if length < LIGHT_KEEP_LONG_MM and r.end0 == "FREE" and r.end1 == "FREE":
+      continue
+    a, b = _seg(r, all_frames)
+    if any(_lies_on(a, b, *_seg(h, frames), max(h.t_pt, r.t_pt) * 1.5) for h in runs):
+      continue
+  
+    keep.append(r)
+  if not keep:
+    return frames, runs, {"light_walls_kept": 0, "light_walls_m": 0.0}
+  base = len(frames)
+  frames = list(frames) + list(all_frames)
+  runs = list(runs)
+  for r in keep:
+    runs.append(replace(r, peak=base + r.peak, end0="FREE", end1="FREE", ext0=0.0, ext1=0.0, pen_kept=True, gaps=list(r.gaps)))
+  for r in runs:
+    r.end0 = r.end1 = "FREE"
+    r.ext0 = r.ext1 = 0.0
+  settle_junctions(runs, frames, mm_per_pt)
+  metres = sum((r.s1 - r.s0) for r in keep) * mm_per_pt / 1000.0
+  return frames, runs, {"light_walls_kept": len(keep), "light_walls_m": round(metres, 1)}
+
+def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grade: bool = False) -> tuple[list[Frame], list[Run], dict]:
   frames, runs, stats = _detect_once(index, mm_per_pt, deadline, 0.0)
   classes = pen_classes(index)
   stats["pens"] = [[w, round(s, 3)] for w, s in classes]
@@ -481,6 +546,9 @@ def detect_walls(index, mm_per_pt: float, deadline: float | None = None) -> tupl
       continue
     f2, r2, s2 = _detect_once(index, mm_per_pt, deadline, w - 0.005)
     if len(r2) >= PEN_MIN_RUNS and _standard_length_mm(r2, mm_per_pt) >= PEN_KEEP_SHARE * base:
+      if at_grade:
+        f2, r2, kept = add_light_walls(f2, r2, frames, runs, w, mm_per_pt)
+        s2 = dict(s2, **kept)
       s2["pens"] = stats["pens"]
       s2["wall_pen_pt"] = w
       s2["runs_all_pens"] = len(runs)

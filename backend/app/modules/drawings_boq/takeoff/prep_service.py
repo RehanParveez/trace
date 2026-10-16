@@ -22,7 +22,10 @@ from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts
 from app.modules.drawings_boq.takeoff.prep.storeys import storey_heights
 from app.modules.drawings_boq.takeoff.levels import ensure_level, level_spec
 from app.modules.drawings_boq.takeoff.prep import details
+from app.modules.drawings_boq.takeoff.prep import beam_details
+from app.modules.drawings_boq.takeoff.prep import tank_details
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
+from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
 from app.modules.drawings_boq.takeoff.prep.codec import encode_index
 from app.modules.drawings_boq.takeoff.sheet_reason import failure_text
@@ -72,17 +75,35 @@ def _analyze_one(doc, page_no: int, user_unit: float, budget_s: float):
   return result, raw.stats
 
 def _read_details(doc, page_no: int, raw, result) -> None:
-  """Column details drawn on the sheet: their marks, and (when the character reader is installed) the sizes written beside them. This is the one
-  place the PDF is still open, so the pictures are read here and only their result is stored."""
+  """Column details, beam sections and water tank drawings on the sheet: their marks, and (when the character reader is installed) the sizes written beside
+  them. This is the one place the PDF is still open, so the pictures are read here and only their result is stored. Each reader fails on its own."""
   try:
     page = doc[page_no - 1]
-    found = details.read_column_details(result.index.words, result.index, page, page.get_size(), raw.cropbox, raw.rotation)
   except Exception:
     result.meta["details_reader"] = "FAILED"
     return
-  if found["details"]:
-    result.meta["details"] = found["details"]
-    result.meta["details_reader"] = found["ocr"]
+  size = page.get_size()
+  try:
+    found = details.read_column_details(result.index.words, result.index, page, size, raw.cropbox, raw.rotation)
+    if found["details"]:
+      result.meta["details"] = found["details"]
+      result.meta["details_reader"] = found["ocr"]
+  except Exception:
+    result.meta["details_reader"] = "FAILED"
+  try:
+    beams = beam_details.read_beam_details(result.index.words, result.index, page, size, raw.cropbox, raw.rotation)
+    if beams["details"]:
+      result.meta["beam_details"] = beams["details"]
+      result.meta["beam_details_reader"] = beams["ocr"]
+  except Exception:
+    result.meta["beam_details_reader"] = "FAILED"
+  try:
+    tanks = tank_details.read_tank_details(result.index.words, page, size, raw.cropbox, raw.rotation)
+    if tanks["details"]:
+      result.meta["tank_details"] = tanks["details"]
+      result.meta["tank_details_reader"] = tanks["ocr"]
+  except Exception:
+    result.meta["tank_details_reader"] = "FAILED"
 
 class PrepService:
   def __init__(self, session):
@@ -253,6 +274,10 @@ class PrepService:
     plan_notes = [{"mm": v["slab_note_mm"], "pages": [v["page_no"]]} for v in structure["views"] if v.get("structural") and not v.get("foundation") and v.get("slab_note_mm")]
     out["checks"] = out["checks"] + checks_mod.slab_checks(drawing_facts.slab_values(out["items"]), plan_notes)
     out["checks"] = out["checks"] + checks_mod.lintel_checks(out["schedule"].get("lintels") or [], out["schedule"].get("tie_band"))
+    out["beam_details"], out["tank_details"] = picture_checks.rows([{"page_no": s.page_no, "beam_details": (s.prep_meta or {}).get("beam_details"),
+      "tank_details": (s.prep_meta or {}).get("tank_details")} for s in sheets])
+    out["picture_reader"] = reader_status.status() if (out["beam_details"] or out["tank_details"]) else None
+    out["checks"] = out["checks"] + picture_checks.checks(out["beam_details"], out["tank_details"], out["picture_reader"] or reader_status.status())
     out["floors"] = await self._floor_checks(org, sheets, out["schedule"]["areas"], heights, structure["levels"])
     return out
 
@@ -449,6 +474,16 @@ class PrepService:
         continue
       out.append({"page_no": s.page_no, "schedule": meta.get("schedule"), "level_hint": None if title.get("composite") else title.get("level_hint"), "projections": meta.get("projections")})
     return out
+
+  async def drawing_beam_sections(self, org: UUID, drawing_id: UUID) -> list:
+    """The beam sections (plinth, roof, grade beams) read from the details printed on any sheet of the drawing: [{mark, kind, depth_mm, steel, pages, disagree}]."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return beam_details.gather([{"page_no": s.page_no, "details": (s.prep_meta or {}).get("beam_details")} for s in sheets if (s.prep_meta or {}).get("beam_details")])
+
+  async def drawing_tank_details(self, org: UUID, drawing_id: UUID) -> list:
+    """The plan and section of every water tank drawn on any sheet of the drawing: [{kind, view, caption, page_no, lengths, bar_notes}]."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return tank_details.gather([{"page_no": s.page_no, "details": (s.prep_meta or {}).get("tank_details")} for s in sheets if (s.prep_meta or {}).get("tank_details")])
 
   async def drawing_schedule(self, org: UUID, drawing_id: UUID) -> dict:
     """The door / window / ventilator sizes and floor areas printed anywhere on the drawing. A mark on the plan of one sheet is sized by the schedule on another."""

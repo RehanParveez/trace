@@ -8,7 +8,7 @@ import time
 from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, projections as projection_reader, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 
-ANALYSIS_VERSION = 11
+ANALYSIS_VERSION = 13
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015

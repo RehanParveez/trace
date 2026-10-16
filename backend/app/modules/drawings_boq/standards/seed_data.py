@@ -48,6 +48,9 @@ WORK_ITEMS = [
   ("STL-PILE", "Steel piles (driven length)", "m", "Piling", "DEFAULT"),
   ("DOR-NOS", "Doors", "nos", "Joinery", "DEFAULT"),
   ("WIN-NOS", "Windows", "nos", "Joinery", "DEFAULT"),
+  ("PRO-TERMITE", "Anti-termite treatment", "m2", "Protection", "DEFAULT"),
+  ("FLR-KACHA-BED", "Concrete or kacha bed under the floor", "m2", "Finishes", "DEFAULT"),
+  ("JOI-DOOR-FRAME", "Door frames (area of the frame)", "m2", "Joinery", "DEFAULT"),
 ]
 
 MAPPINGS = [

@@ -9,7 +9,7 @@ PLASTER_OUTSIDE = "PLASTER_OUTSIDE"
 DOOR_FRAME = "DOOR_FRAME"
 ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME)
 
-WORK_ITEM = {KACHA_FLOOR: None, CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: None}
+WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: "JOI-DOOR-FRAME"}
 SIDE = {PLASTER_INSIDE: "in", PLASTER_OUTSIDE: "out"}
 
 def _make(cls, ctx: dict, finish, key_parts: tuple, item: str, label: str, tag: str, points: list, params: dict, missing: list, notes: list, facts: dict,
@@ -193,7 +193,7 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
       facts["view"] = f["view"]
     where = f" · {spec[0]}" if spec else ""
     out.append(_make(cls, ctx, finish, (DOOR_FRAME, d.key), DOOR_FRAME, f"Door frames {d.tag} ×{len(pts)} · {width:g}×{height:g} mm{where}", f"FRAME-{d.tag}", pts,
-      {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"], [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL"), C.note("NO_WORK_ITEM")],
+      {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"], [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL")],
       facts, 0.7, count=len(pts)))
   return out
 

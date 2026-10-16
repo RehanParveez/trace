@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, inputClass } from "../../../organizations/components/OrganizationUi";
 import type { CandidateList, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
-import {blockedByHeight, CATEGORY_TEXT, confidenceLevel, factLine, groupByCategory, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, validHeight,
+import {blockedByHeight, confidenceLevel, factLine, groupByKind, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
 } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
+import { offersSectionChoice, sectionLabel, sectionOptions, tankSizeChoices } from "../utils/choices";
 import { SteelEditor } from "./SteelEditor";
 import type { SteelSet } from "../utils/steel";
 
@@ -32,9 +33,12 @@ interface Props {
   onRead: (autoCalibrate: boolean) => void;
   onGoScale: () => void;
   onShow: (c: TakeoffCandidate) => void;
- 
+  /** Steel typed per found member; sent with the accept. Optional so a parent that does not edit steel still works. */
   steel?: Record<string, SteelSet>;
   onSteel?: (id: string, steel: SteelSet | null) => void;
+  /** The printed beam section chosen per beam (mark, by candidate id); sent with the accept. Optional so a parent that does not offer the choice still works. */
+  picks?: Record<string, string>;
+  onPick?: (id: string, mark: string | null) => void;
   onAccept: (ids: string[]) => void;
   onReject: (ids: string[]) => void;
   onRestore: (ids: string[]) => void;
@@ -94,10 +98,11 @@ function FoundList(p: Props & { data: CandidateList }) {
   const fresh = useMemo(() => data.candidates.filter((c) => c.decision === "NEW"), [data.candidates]);
   const done = useMemo(() => data.candidates.filter((c) => c.decision === "ACCEPTED"), [data.candidates]);
   const rejected = useMemo(() => data.candidates.filter((c) => c.decision === "REJECTED"), [data.candidates]);
-  const groups = useMemo(() => groupByCategory(fresh), [fresh]);
-  const needed = useMemo(() => neededHeights(fresh), [fresh]);
+  const groups = useMemo(() => groupByKind(fresh), [fresh]);
+  const needed = useMemo(() => neededHeights(fresh, p.picks), [fresh, p.picks]);
+  const tankSizes = useMemo(() => tankSizeChoices(fresh), [fresh]);
   const chosen = useMemo(() => fresh.filter((c) => p.selected.has(c.id)), [fresh, p.selected]);
-  const pending = blockedByHeight(fresh, p.selected, p.heights);
+  const pending = blockedByHeight(fresh, p.selected, p.heights, p.picks);
   const refused = chosen.filter(notMeasurable);
   const ready = chosen.length - refused.length - pending.length;
   const toggle = (id: string) => {
@@ -164,6 +169,15 @@ function FoundList(p: Props & { data: CandidateList }) {
                     onChange={(e) => p.onHeights({ ...p.heights, [f]: e.target.value })}
                   />
                   {bad ? <span className="mt-0.5 block text-[11.5px] text-[var(--color-danger)]">{t("boq.takeoff.found.heightBad", "Type a number between 100 and 20000.")}</span> : null}
+                  {f === "tank_wall_height_mm" && tankSizes.length > 0 ? (
+                    <span className="mt-1 flex flex-wrap items-center gap-1" data-testid="found-tank-sizes">
+                      <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.tankSizes", "Printed on the tank drawings (the drawing does not say which is the inside depth; tap one to use it):")}</span>
+                      {tankSizes.map((sz) => (
+                        <button key={sz.mm} type="button" className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11.5px] hover:border-[var(--color-trace-gold)]" data-testid={`found-tank-size-${sz.mm}`}
+                          onClick={() => p.onHeights({ ...p.heights, [f]: String(sz.mm) })}>{sz.text}</button>
+                      ))}
+                    </span>
+                  ) : null}
                 </label>
               );
             })}
@@ -180,30 +194,32 @@ function FoundList(p: Props & { data: CandidateList }) {
 
       <div className="space-y-4 px-4 pb-4">
         {groups.map((g) => {
-          const text = CATEGORY_TEXT[g.category];
           const allOn = g.items.every((c) => p.selected.has(c.id));
-          const code = p.workItems[g.category] ?? "";
+          const code = p.workItems[g.key] ?? "";
           const suggested = g.items.find((c) => c.suggested_work_item)?.suggested_work_item ?? null;
+          const unknown = unknownWorkItem(code, p.workItemCodes);
           return (
-            <section key={g.category} data-testid={`found-group-${g.category}`}>
+            <section key={g.key} data-testid={`found-group-${g.key}`}>
               <div className="mb-1.5 flex items-center gap-2">
-                {p.canEdit ? <input type="checkbox" aria-label={t("boq.takeoff.found.selectGroup", "Select all {{what}}", { what: text.many })} checked={allOn} onChange={() => setMany(g.items, !allOn)} /> : null}
-                <h3 className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">{text.many} ({g.items.length})</h3>
-                {g.category !== "BEAM" && p.canEdit ? (
+                {p.canEdit ? <input type="checkbox" aria-label={t("boq.takeoff.found.selectGroup", "Select all {{what}}", { what: g.title })} checked={allOn} onChange={() => setMany(g.items, !allOn)} /> : null}
+                <h3 className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">{g.title} ({g.items.length})</h3>
+                {g.key !== "BEAM" && p.canEdit ? (
                   <input
-                    className={`${inputClass} ml-auto !h-7 !w-[130px] !px-2 !text-[12px]`}
+                    className={`${inputClass} ml-auto !h-7 !w-[130px] !px-2 !text-[12px] ${unknown ? "!border-[var(--color-danger)]" : ""}`}
                     list="found-work-items"
                     value={code}
                     placeholder={suggested ?? t("boq.takeoff.found.workItem", "Work item")}
-                    title={t("boq.takeoff.found.workItemTip", "Work item for the {{what}} you accept. Leave empty to use the suggestion.", { what: text.many.toLowerCase() })}
-                    data-testid={`found-workitem-${g.category}`}
-                    onChange={(e) => p.onWorkItems({ ...p.workItems, [g.category]: e.target.value.toUpperCase() })}
+                    title={t("boq.takeoff.found.workItemTip", "Work item for the {{what}} you accept. Leave empty to use the suggestion.", { what: g.title.toLowerCase() })}
+                    data-testid={`found-workitem-${g.key}`}
+                    onChange={(e) => p.onWorkItems({ ...p.workItems, [g.key]: e.target.value.toUpperCase() })}
                   />
                 ) : null}
               </div>
+              {unknown ? <div className="mb-1.5 text-[11.5px] text-[var(--color-danger)]" data-testid={`found-workitem-bad-${g.key}`}>{t("boq.takeoff.found.workItemUnknown", "{{code}} is not a work item in your catalog. Pick one from the list.", { code })}</div> : null}
+              {!suggested && !code && g.key !== "BEAM" && p.canEdit ? <div className="mb-1.5 text-[11.5px] text-[var(--color-text-muted)]" data-testid={`found-workitem-none-${g.key}`}>{t("boq.takeoff.found.workItemNone", "No work item is proposed for these. Choose one above, or choose it later when you build the bill.")}</div> : null}
               <ul className="space-y-1.5">
                 {g.items.map((c) => (
-                  <Row key={c.id} c={c} steel={p.steel?.[c.id]} onSteel={p.onSteel} selected={p.selected.has(c.id)} focused={p.focusId === c.id} canEdit={p.canEdit} onToggle={() => toggle(c.id)} onShow={() => p.onShow(c)} onReject={() => p.onReject([c.id])} />
+                  <Row key={c.id} c={c} steel={p.steel?.[c.id]} onSteel={p.onSteel} pick={p.picks?.[c.id]} onPick={p.onPick} selected={p.selected.has(c.id)} focused={p.focusId === c.id} canEdit={p.canEdit} onToggle={() => toggle(c.id)} onShow={() => p.onShow(c)} onReject={() => p.onReject([c.id])} />
                 ))}
               </ul>
             </section>
@@ -266,12 +282,12 @@ function FoundList(p: Props & { data: CandidateList }) {
   );
 }
 
-function Row({ c, steel, onSteel, selected, focused, canEdit, onToggle, onShow, onReject }: {
-  c: TakeoffCandidate; steel?: SteelSet; onSteel?: (id: string, steel: SteelSet | null) => void; selected: boolean; focused: boolean; canEdit: boolean; onToggle: () => void; onShow: () => void; onReject: () => void;
+function Row({ c, steel, onSteel, pick, onPick, selected, focused, canEdit, onToggle, onShow, onReject }: {
+  c: TakeoffCandidate; steel?: SteelSet; onSteel?: (id: string, steel: SteelSet | null) => void; pick?: string; onPick?: (id: string, mark: string | null) => void; selected: boolean; focused: boolean; canEdit: boolean; onToggle: () => void; onShow: () => void; onReject: () => void;
 }) {
   const { t } = useTranslation();
   const level = confidenceLevel(c.confidence);
-
+  // The unchecked-scale warning applies to the whole sheet and is shown once at the top, not on every row.
   const warnings = c.notes.filter((n) => n.severity !== "info" && n.code !== "SCALE_UNVERIFIED");
   const infos = c.notes.filter((n) => n.severity === "info");
   const facts = factLine(c);
@@ -295,6 +311,15 @@ function Row({ c, steel, onSteel, selected, focused, canEdit, onToggle, onShow, 
               <summary className="cursor-pointer text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.more", "More")}</summary>
               {infos.map((n) => <div key={n.code} className="mt-0.5 text-[11.5px] text-[var(--color-text-secondary)]">{n.message}</div>)}
             </details>
+          ) : null}
+          {onPick && canEdit && offersSectionChoice(c) ? (
+            <label className="mt-1.5 block text-[11.5px]" data-testid="found-section-pick">
+              <span className="mb-0.5 block text-[var(--color-text-muted)]">{t("boq.takeoff.found.sectionPick", "The sheet prints several sections for this kind of beam and does not say which lies under which wall. Choose one, or type a depth above.")}</span>
+              <select className={`${inputClass} !h-8 !px-2 !text-[12px]`} value={pick ?? ""} data-testid="found-section-select" onChange={(e) => onPick(c.id, e.target.value || null)}>
+                <option value="">{t("boq.takeoff.found.sectionNone", "Choose a section…")}</option>
+                {sectionOptions(c).map((o) => <option key={o.mark} value={o.mark}>{sectionLabel(o)}</option>)}
+              </select>
+            </label>
           ) : null}
           {onSteel && !unmeasurable ? <SteelEditor c={c} typed={steel} canEdit={canEdit} onChange={onSteel} /> : null}
           <div className="mt-1.5 flex gap-2">

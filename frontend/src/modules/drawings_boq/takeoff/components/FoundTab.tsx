@@ -4,7 +4,7 @@ import { useToast } from "../../../organizations/components/OrganizationUi";
 import { useWorkItems } from "../../standards/hooks";
 import { useAcceptCandidates, useDecideCandidates, useExtractSheet, useSheetCandidates } from "../hooks/useTakeoff";
 import type { TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
-import { buildAcceptBody, NO_HEIGHTS } from "../utils/candidates";
+import { buildAcceptBody, kindKey, NO_HEIGHTS } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { takeoffErrorMessage } from "../utils/errors";
 import type { SteelSet } from "../utils/steel";
@@ -14,7 +14,6 @@ interface Props {
   sheet: TakeoffSheet;
   drawingId: string | undefined;
   canEdit: boolean;
-  
   scaleReady: boolean;
   focusId?: string | null;
   onGoScale: () => void;
@@ -36,17 +35,20 @@ export function FoundTab(p: Props) {
   const [heights, setHeights] = useState<Heights>(NO_HEIGHTS);
   const [items, setItems] = useState<Record<string, string>>({});
   const [steel, setSteel] = useState<Record<string, SteelSet>>({});
+  const [picks, setPicks] = useState<Record<string, string>>({});
 
+  const kinds = useMemo(() => Object.fromEntries((list.data?.candidates ?? []).map((c) => [c.id, kindKey(c)])), [list.data]);
   const codes = useMemo(() => (workItems.data ?? []).filter((w) => w.is_active).map((w) => w.code).sort(), [workItems.data]);
 
   const forget = (ids: string[]) => {
     setSelected((s) => { const n = new Set(s); ids.forEach((id) => n.delete(id)); return n; });
     setSteel((s) => { const n = { ...s }; ids.forEach((id) => delete n[id]); return n; });
+    setPicks((s) => { const n = { ...s }; ids.forEach((id) => delete n[id]); return n; });
   };
 
   function onAccept(ids: string[]) {
     if (ids.length === 0) return;
-    accept.mutate(buildAcceptBody(ids, heights, items, steel), {
+    accept.mutate(buildAcceptBody(ids, heights, items, steel, picks, kinds), {
       onSuccess: (r) => {
         forget(r.accepted.map((a) => a.id));
         if (r.accepted.length) showToast({ tone: "success", title: t("boq.takeoff.found.accepted", "{{n}} added to your measurements", { n: r.accepted.length }) });
@@ -91,6 +93,8 @@ export function FoundTab(p: Props) {
       onShow={p.onShow}
       steel={steel}
       onSteel={(id, s) => setSteel((cur) => { const n = { ...cur }; if (s) n[id] = s; else delete n[id]; return n; })}
+      picks={picks}
+      onPick={(id, mark) => setPicks((cur) => { const n = { ...cur }; if (mark) n[id] = mark; else delete n[id]; return n; })}
       onAccept={onAccept}
       onReject={(ids) => onDecide("reject", ids)}
       onRestore={(ids) => onDecide("restore", ids)}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 16
+EXTRACT_VERSION = 20
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 152.4
@@ -91,6 +91,13 @@ NOTES = {
   "WALL_BRIDGED": ("info", "The wall lines stop at an opening (a door or window) and the wall runs on to the cross wall. The length includes that opening."),
   "TANK_WALL": ("info", "These walls close in a tank (a tank label is inside them). They are listed so nothing is lost, but they are tank work, not part of the building walls."),
   "OPENINGS_ASSIGNED": ("info", "The doors, windows and ventilators marked beside this wall are listed with it and are deducted when the wall is measured. Check that each belongs to this wall."),
+  "RCC_WALL_COMPLETES_ENCLOSURE": ("warning", "The concrete walls of this basement are drawn solid on three sides, and a note on the sheet calls the walls concrete. This stretch of the fourth side (or the end of a side) is drawn thin or not at all, but a retaining wall has to go round the building, so it is listed here to confirm. It is not counted in the trench, membrane or plaster items. Accept it only if the plan or the sections show a concrete wall here."),
+  "NECK_COLUMN_FROM_FOOTINGS": ("warning", "Each footing carries a column up to the lowest floor. This is that stretch (the neck column). Its section is the section of the column mark that has as many columns as this footing mark; check the pairing. The height is the depth from the top of the footing to the floor and is not printed: type it when you accept the item."),
+  "LINTEL_OVER_UNMARKED_OPENING": ("warning", "The wall is open for this width but no door, window or ventilator mark is written in the opening. A lintel is still needed over it, so one is listed, sized from the lintel table for this span. Check that the opening is real (not a drawing gap) and that it is not an arch or a beam that is measured elsewhere."),
+   "BEAM_SECTION_FROM_DETAIL": ("info", "The depth (and the bars, if they were read) are those of the one beam section of this kind printed on the structural sheet. They were read from the drawing picture, so check them against the detail."),
+  "BEAM_SECTIONS_LISTED": ("warning", "The structural sheet prints more than one beam section of this kind and does not say which lies under which wall, so no depth was chosen. The sections are listed below; type the depth of the one that applies when you accept the beam."),
+  "TANK_SECTIONS_LISTED": ("info", "The structural sheet draws this tank in a plan and a section. The sizes are listed below: those written as text in the PDF are exact; those read from the picture show the number of readings that agreed (a size read only twice can be a misreading, so check it on the drawing). The drawing does not say which size is the inside depth, which is the water level and which is the wall, so none is applied: type the height and thickness from them when you accept the wall."),
+  "OPENING_GAP_IS_ANOTHER_MARK": ("warning", "At least one of these marks stands beside a gap in a wall that is exactly the width of a different mark of the same kind, and is not the width of this mark. Either the mark was read wrongly or the wrong mark is drawn. Check the mark on the plan before accepting the count."),
   "RCC_WALL_FROM_FILL": ("info", "This wall is drawn as a solid black strip, so it is a concrete wall (a retaining wall below ground), not brick."),
   "SIZE_FROM_SCHEDULE": ("info", "The size comes from the schedule on the drawing."),
   "SIZE_DIFFERS_FROM_SCHEDULE": ("warning", "The drawn size is different from the schedule. The schedule size is used."),
@@ -180,6 +187,8 @@ NOTES = {
   "COUNT_MATCHES_OTHER_FLOOR": ("info", "Fewer columns of this size are drawn than there are marks (some are hidden inside the walls), but the same marks and the same number appear on another floor where every column is drawn. The marks are counted."),
   "HEIGHT_FROM_SECTION": ("info", "The height is the clear storey height printed on the building section (slab to slab, as dimensioned there). Check that it is the height you want to measure with."),
   "WALL_PEN_SELECTED": ("info", "Walls were read from the heaviest line weight on this sheet. Lines in lighter weights (dimensions, furniture, fittings, boundary lines) were not read as walls."),
+  "LIGHT_PEN_WALLS_KEPT": ("info", "Some walls on this ground-level sheet are drawn in a lighter line weight than the main walls (boundary, lawn and thin partition walls). The long ones of 4.5 to 6 inch thickness were read as walls. Stair treads and furniture lines were not."),
+  "LIGHT_PEN_WALL": ("info", "This wall is drawn in a lighter line weight than the main walls on the sheet. Check it is a wall and not a boundary line."),
   "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
   "SAME_MARK_ON_OTHER_SHEET": ("info", "This mark is also on another sheet of the same drawing. It is listed once in the element register."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),

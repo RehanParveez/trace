@@ -1,6 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.schemas import SteelParam
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from app.modules.drawings_boq.takeoff.extract import kinds as KD
 from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
@@ -89,9 +90,22 @@ class AcceptRequest(BaseModel):
   door_frame_width_mm: Decimal | None = Field(default=None, gt=0, le=1000)
   door_frame_width_thin_mm: Decimal | None = Field(default=None, gt=0, le=1000)
   stair_waist_mm: Decimal | None = Field(default=None, gt=0, le=500)
-  work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per category, e.g. {\"WALL\": \"MAS-BLOCK\"}.")
+  neck_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Neck columns: top of the footing to the lowest floor.")
+  tank_wall_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Walls of water tanks.")
+  work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per kind of item: a category, or the name of a piece of work worked out from other readings (TERMITE_STRIP, MEMBRANE, DOOR_FRAME and the rest), e.g. {\"WALL\": \"MAS-BLOCK\", \"TERMITE_STRIP\": \"PRO-TERMITE\"}.")
   level_id: UUID | None = None
+  section_picks: dict[UUID, str] | None = Field(default=None, max_length=500, description="The beam section (mark) chosen for a beam that lists several, by candidate id. Its depth and bars are put on the beam.")
   steel: dict[UUID, SteelParam] | None = Field(default=None, description="Bars, rings or mesh typed for a candidate, by candidate id. They replace the ones read from the drawing.")
+
+  @field_validator("work_items")
+  @classmethod
+  def _work_item_kinds(cls, value):
+    if not value:
+      return None
+    bad = sorted(k for k in value if k not in KD.KINDS)
+    if bad:
+      raise ValueError(f"Work items are chosen per kind of item; these are not kinds: {', '.join(bad[:5])}. Read the page again.")
+    return {k: v.strip().upper() for k, v in value.items() if v and v.strip()} or None
 
 class AcceptResponse(BaseModel):
   accepted: list[dict]
@@ -119,4 +133,4 @@ class RegisterSyncResponse(BaseModel):
   measured: int = 0
   needs_review: int = 0
   decisions: int = 0
-  evidence: dict = Field(default_factory=dict)
+  evidence: dict = Field(default_factory=dict)

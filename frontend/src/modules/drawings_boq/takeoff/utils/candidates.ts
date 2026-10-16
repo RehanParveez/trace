@@ -17,9 +17,13 @@ export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: strin
   ROOM: { one: "Room", many: "Rooms" },
 };
 
+import { isNeckColumn, isTankWall, pickGivesDepth } from "./choices";
+
 export type HeightField =
   | "wall_height_mm"
   | "column_height_mm"
+  | "neck_height_mm"
+  | "tank_wall_height_mm"
   | "footing_depth_mm"
   | "slab_thickness_mm"
   | "beam_depth_mm"
@@ -41,7 +45,9 @@ export type HeightField =
 
 const HEIGHT_ORDER: HeightField[] = [
   "wall_height_mm",
+  "tank_wall_height_mm",
   "column_height_mm",
+  "neck_height_mm",
   "footing_depth_mm",
   "slab_thickness_mm",
   "beam_depth_mm",
@@ -65,7 +71,9 @@ const HEIGHT_ORDER: HeightField[] = [
 export type Heights = Record<HeightField, string>;
 export const NO_HEIGHTS: Heights = {
   wall_height_mm: "",
+  tank_wall_height_mm: "",
   column_height_mm: "",
+  neck_height_mm: "",
   footing_depth_mm: "",
   slab_thickness_mm: "",
   beam_depth_mm: "",
@@ -88,7 +96,9 @@ export const NO_HEIGHTS: Heights = {
 
 export const HEIGHT_LABEL: Record<HeightField, string> = {
   wall_height_mm: "Wall height (mm)",
+  tank_wall_height_mm: "Water tank wall height (mm)",
   column_height_mm: "Column height (mm)",
+  neck_height_mm: "Neck column height, top of the footing to the floor (mm)",
   footing_depth_mm: "Footing depth (mm)",
   slab_thickness_mm: "Slab thickness (mm)",
   beam_depth_mm: "Roof beam depth (mm)",
@@ -203,7 +213,9 @@ export function heightFieldFor(c: Pick<TakeoffCandidate, "category" | "missing">
   if (c.missing.includes("size")) return null;
   const found = foundationFields({ category: c.category, missing: c.missing, facts: c.facts ?? {} });
   if (found.length) return found[0];
+  if (isTankWall(c) && c.missing.includes("height_mm")) return "tank_wall_height_mm";
   if (c.category === "WALL" && c.missing.includes("height_mm")) return "wall_height_mm";
+  if (isNeckColumn(c) && c.missing.includes("height_mm")) return "neck_height_mm";
   if (c.category === "COLUMN" && c.missing.includes("height_mm")) return "column_height_mm";
   if (c.category === "FOOTING" && c.missing.includes("depth_mm")) return "footing_depth_mm";
   if (c.category === "SLAB" && c.missing.includes("thickness_mm")) return "slab_thickness_mm";
@@ -225,6 +237,43 @@ export function confidenceLevel(confidence: string | number): Level {
   return n >= 0.85 ? "high" : "medium";
 }
 
+export const ITEM_TEXT: Record<FoundationItem, string> = {
+  EXCAVATION_AREA: "Excavation (whole area)",
+  TRENCH: "Trenches under walls",
+  PCC_STRIP: "Concrete bed under walls",
+  TERMITE_STRIP: "Termite treatment under walls",
+  TERMITE_UNDER_FLOOR: "Termite treatment under the floor",
+  PCC_PAD: "Concrete bed under footings",
+  BRICK_STEP: "Brick steps",
+  MEMBRANE: "Damp-proof membrane",
+  KACHA_FLOOR: "Bed under the floor",
+  CEILING_PLASTER: "Ceiling plaster",
+  PLASTER_INSIDE: "Plaster inside the walls",
+  PLASTER_OUTSIDE: "Plaster outside the walls",
+  DOOR_FRAME: "Door frames",
+};
+
+export type KindKey = CandidateCategory | FoundationItem;
+
+export function kindKey(c: Pick<TakeoffCandidate, "category" | "facts">): KindKey {
+  return foundationItem(c) ?? c.category;
+}
+
+export function groupByKind(list: TakeoffCandidate[]): Array<{ key: KindKey; title: string; items: TakeoffCandidate[] }> {
+  const out: Array<{ key: KindKey; title: string; items: TakeoffCandidate[] }> = [];
+  const keys: KindKey[] = [...CATEGORY_ORDER, ...FOUNDATION_ITEMS];
+  for (const key of keys) {
+    const items = list.filter((c) => kindKey(c) === key);
+    if (!items.length) continue;
+    out.push({ key, title: key in CATEGORY_TEXT ? CATEGORY_TEXT[key as CandidateCategory].many : ITEM_TEXT[key as FoundationItem], items });
+  }
+  return out;
+}
+
+export function unknownWorkItem(code: string, codes: string[]): boolean {
+  return code.trim() !== "" && codes.length > 0 && !codes.includes(code.trim().toUpperCase());
+}
+
 export function groupByCategory(list: TakeoffCandidate[]): Array<{ category: CandidateCategory; items: TakeoffCandidate[] }> {
   const out: Array<{ category: CandidateCategory; items: TakeoffCandidate[] }> = [];
   for (const category of CATEGORY_ORDER) {
@@ -234,10 +283,17 @@ export function groupByCategory(list: TakeoffCandidate[]): Array<{ category: Can
   return out;
 }
 
-export function neededHeights(list: TakeoffCandidate[]): HeightField[] {
+const BEAM_DEPTH_FIELDS: HeightField[] = ["beam_depth_mm", "plinth_beam_depth_mm"];
+
+export function fieldsStillNeeded(c: TakeoffCandidate, picks?: Record<string, string>): HeightField[] {
+  const given = c.category === "BEAM" && pickGivesDepth(c, picks);
+  return heightFieldsFor(c).filter((f) => !(given && BEAM_DEPTH_FIELDS.includes(f)));
+}
+
+export function neededHeights(list: TakeoffCandidate[], picks?: Record<string, string>): HeightField[] {
   const set = new Set<HeightField>();
   for (const c of list) {
-    for (const f of heightFieldsFor(c)) set.add(f);
+    for (const f of fieldsStillNeeded(c, picks)) set.add(f);
   }
   return HEIGHT_ORDER.filter((f) => set.has(f));
 }
@@ -247,10 +303,10 @@ export function validHeight(text: string): number | null {
   return Number.isFinite(n) && n >= 75 && n <= 20000 ? n : null;
 }
 
-export function blockedByHeight(list: TakeoffCandidate[], ids: Set<string>, typed: Heights): TakeoffCandidate[] {
+export function blockedByHeight(list: TakeoffCandidate[], ids: Set<string>, typed: Heights, picks?: Record<string, string>): TakeoffCandidate[] {
   return list.filter((c) => {
     if (!ids.has(c.id)) return false;
-    return heightFieldsFor(c).some((f) => validHeight(typed[f]) === null);
+    return fieldsStillNeeded(c, picks).some((f) => validHeight(typed[f]) === null);
   });
 }
 
@@ -339,6 +395,16 @@ export function factLine(c: TakeoffCandidate): string {
   const num = (v: unknown) => (typeof v === "number" ? v : null);
   const item = foundationItem(c);
   if (item !== null) return foundationLine(c, item);
+  if (isTankWall(c)) {
+    const gaps = Array.isArray(f.gaps_mm) ? (f.gaps_mm as number[]) : [];
+    const t = num(f.thickness_used_mm);
+    const kind = f.tank_kind === "OHWT" ? "overhead tank wall" : f.tank_kind === "UGWT" ? "underground tank wall" : "tank wall";
+    return [kind, t !== null ? `${Math.round(t)} mm thick` : null, gaps.length ? `${gaps.length} opening${gaps.length > 1 ? "s" : ""} inside` : null, "height needed"].filter(Boolean).join(" · ");
+  }
+  if (isNeckColumn(c)) {
+    const size = Array.isArray(f.size_used_mm) ? (f.size_used_mm as number[]) : null;
+    return [`neck of footing ${String(f.neck_of)}`, size ? `${(size[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(size[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : null, `${c.count} nos`, "height needed"].filter(Boolean).join(" · ");
+  }
   if (c.category === "WALL") {
     const gaps = Array.isArray(f.gaps_mm) ? (f.gaps_mm as number[]) : [];
     const t = num(f.thickness_used_mm);
@@ -399,16 +465,24 @@ export function factLine(c: TakeoffCandidate): string {
   if (drawn) parts.push(`drawn ${Math.round(drawn[0])}×${Math.round(drawn[1])}`);
   return parts.join(" · ");
 }
-/** The body of an accept call: only the heights that read as numbers, only the work items typed, and the steel typed for the members being accepted. */
-export function buildAcceptBody(ids: string[], heights: Heights, workItems: Record<string, string>, steel: Record<string, SteelSet>): AcceptBody {
+
+export function buildAcceptBody(ids: string[], heights: Heights, workItems: Record<string, string>, steel: Record<string, SteelSet>, picks: Record<string, string> = {},
+  kinds: Record<string, string> = {}): AcceptBody {
   const body: AcceptBody = { ids };
   for (const f of HEIGHT_ORDER) {
     const n = validHeight(heights[f]);
     if (n !== null) (body as unknown as Record<string, number>)[f] = n;
   }
-  const items = Object.fromEntries(ids.map((id) => [id, (workItems[id] ?? "").trim()]).filter(([, v]) => v !== ""));
+  const items: Record<string, string> = {};
+  for (const id of ids) {
+    const kind = kinds[id];
+    const code = kind ? (workItems[kind] ?? "").trim() : "";
+    if (code) items[kind] = code;
+  }
   if (Object.keys(items).length) body.work_items = items;
   const typed = steelForAccept(ids, steel);
   if (typed) body.steel = typed;
+  const chosen = Object.fromEntries(ids.filter((id) => picks[id]).map((id) => [id, picks[id]]));
+  if (Object.keys(chosen).length) body.section_picks = chosen;
   return body;
 }
