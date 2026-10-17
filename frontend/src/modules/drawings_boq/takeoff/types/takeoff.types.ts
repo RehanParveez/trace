@@ -790,6 +790,21 @@ export interface FloorEntry {
 
 export interface FloorSources { drawing_id: string; floors: FloorEntry[]; to_decide: number }
 
+export interface TypedValue { kind: string; field: string; value_mm: number; times: number; at: string }
+
+export interface TypedMemory { drawing_id: string; values: TypedValue[] }
+
+export interface CrossCheck {
+  code: string;
+  status: "WARN" | "INFO" | "PASS";
+  floor: string | null;
+  message: string;
+  pages: number[];
+  numbers: Record<string, unknown>;
+}
+
+export interface CrossChecks { drawing_id: string; checks: CrossCheck[]; warnings: number; info: number; passed: number }
+
 export type FloorChoiceBody = { choices: Array<{ floor: string; sheet_id: string }> } | { use_suggested: true };
 
 export interface FloorChoiceResult {

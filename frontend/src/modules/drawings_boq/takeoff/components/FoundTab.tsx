@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../organizations/components/OrganizationUi";
 import { useWorkItems } from "../../standards/hooks";
-import { useAcceptCandidates, useChooseFloorSources, useDecideCandidates, useExtractSheet, useSheetCandidates, useTakeoffFloorSources } from "../hooks/useTakeoff";
+import { useAcceptCandidates, useChooseFloorSources, useDecideCandidates, useExtractSheet, useSheetCandidates, useTakeoffCrossChecks, useTakeoffFloorSources, useTakeoffTypedMemory } from "../hooks/useTakeoff";
 import type { FloorChoiceBody, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
 import { buildAcceptBody, kindKey, NO_HEIGHTS } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { takeoffErrorMessage } from "../utils/errors";
 import { autoChoiceLine, choiceToast, hasPlans, planBoxOf } from "../utils/floorSources";
 import type { SteelSet } from "../utils/steel";
+import { CrossChecksPanel } from "./CrossChecksPanel";
 import { FloorSourcesPanel } from "./FloorSourcesPanel";
 import { FoundPanel } from "./FoundPanel";
 
@@ -37,6 +38,8 @@ export function FoundTab(p: Props) {
   const decide = useDecideCandidates(p.drawingId, sheet.id);
   const workItems = useWorkItems();
   const floorSources = useTakeoffFloorSources(p.drawingId);
+  const crossChecks = useTakeoffCrossChecks(p.drawingId);
+  const typedMemory = useTakeoffTypedMemory(p.drawingId);
   const choose = useChooseFloorSources(p.drawingId);
   const stats = list.data?.extraction.stats;
   const planFloors = useMemo(() => ["FOUNDATION", "BASEMENT", "GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH", "TYPICAL", "ROOF"].filter((f) => planBoxOf(stats, f) !== null), [stats]);
@@ -106,6 +109,7 @@ export function FoundTab(p: Props) {
       onOpenSheet={p.onOpenSheet}
       onShowPlan={(floor) => { const b = planBoxOf(stats, floor); if (b) p.onShowBox(b); }}
     />
+    <CrossChecksPanel data={crossChecks.data} loading={crossChecks.isLoading} error={crossChecks.isError} onRetry={() => void crossChecks.refetch()} />
     <FoundPanel
       sheet={sheet}
       data={list.data}
@@ -123,6 +127,7 @@ export function FoundTab(p: Props) {
       onSelected={setSelected}
       focusId={p.focusId ?? null}
       heights={heights}
+      memory={typedMemory.data?.values}
       onHeights={setHeights}
       workItems={items}
       onWorkItems={setItems}

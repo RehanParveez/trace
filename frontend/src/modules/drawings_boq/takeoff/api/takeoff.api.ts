@@ -2,7 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
+  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, CrossChecks, TypedMemory, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
@@ -100,6 +100,12 @@ export const takeoffApi = {
   },
   async floorSources(drawingId: string): Promise<FloorSources> {
     return (await apiClient.get<FloorSources>(`${BASE}/drawings/${drawingId}/takeoff/floor-sources`)).data;
+  },
+  async crossChecks(drawingId: string): Promise<CrossChecks> {
+    return (await apiClient.get<CrossChecks>(`${BASE}/drawings/${drawingId}/takeoff/checks`)).data;
+  },
+  async typedMemory(drawingId: string): Promise<TypedMemory> {
+    return (await apiClient.get<TypedMemory>(`${BASE}/drawings/${drawingId}/takeoff/typed-memory`)).data;
   },
   async chooseFloorSources(drawingId: string, body: FloorChoiceBody): Promise<FloorChoiceResult> {
     return (await apiClient.post<FloorChoiceResult>(`${BASE}/drawings/${drawingId}/takeoff/floor-sources/choose`, body)).data;

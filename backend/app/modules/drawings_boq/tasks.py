@@ -27,8 +27,7 @@ from app.dependencies.tenancy import scope_session_as_platform_admin, scope_sess
 from app.modules.drawings_boq.finish_schedule.common import carry_over_space_finishes
 from app.modules.drawings_boq.calc_tasks import auto_run_task
 from app.modules.drawings_boq.recalculation.calc_limits import RETRYABLE_CODES
-from app.modules.drawings_boq.takeoff.extract.extract_schemas import ExtractRequest
-from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
+from app.modules.drawings_boq.takeoff.extract.extract_schemas import ExtractRequest 
 from app.modules.drawings_boq.takeoff.prep_schemas import PrepareRequest
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
@@ -434,6 +433,7 @@ def read_pdf_drawing_task(drawing_id: str) -> str:
 
 async def _read_pdf_drawing(drawing_id: UUID) -> None:
   from app.modules.drawings_boq.models import DrawingFormat
+  from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
   
   async with WorkerSessionLocal() as session:
     await scope_session_as_platform_admin(session)

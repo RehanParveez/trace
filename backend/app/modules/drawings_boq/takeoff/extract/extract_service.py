@@ -31,6 +31,7 @@ from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
 from app.modules.drawings_boq.takeoff.extract.slab_openings_service import reconcile_slab_openings
+from app.modules.drawings_boq.takeoff.extract import typed_memory as TM
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import CandidateResponse
 from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _status, run_extraction
@@ -50,6 +51,24 @@ HEIGHT_FIELDS = {
   ("SLAB", "thickness_mm"): ("slab_thickness_mm", "depth_mm", "the slab thickness"),
   ("BEAM", "depth_mm"): ("beam_depth_mm", "depth_mm", "the beam depth"),
 }
+
+def height_field(category: str, need: str, facts: dict | None) -> tuple | None:
+  """(request field, measurement target, words) for a size a candidate is missing, or None when no field types it. Some members take another field: a plinth beam, a
+  tie band, a neck column, a tank wall."""
+  spec = HEIGHT_FIELDS.get((category, need))
+  if spec is None:
+    return None
+  field, target, words = spec
+  f = facts or {}
+  if category == "BEAM" and f.get("beam_role") == "PLINTH":
+    field, words = "plinth_beam_depth_mm", "the plinth beam depth"
+  if category == "BEAM" and f.get("beam_role") == "BAND":
+    field, words = "tie_band_depth_mm", "the tie band depth"
+  if category == "COLUMN" and f.get("neck_of"):
+    field, words = "neck_height_mm", "the neck column height (top of the footing to the floor)"
+  if category == "WALL" and f.get("enclosure") == "TANK":
+    field, words = "tank_wall_height_mm", "the tank wall height"
+  return field, target, words
 
 def _now() -> datetime:
   return datetime.now(timezone.utc)
@@ -90,19 +109,11 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
     out["dims_basis"] = "SPECIFIED"
     missing = [m for m in missing if m != "waist_mm"]
   for need in missing or []:
-    spec = HEIGHT_FIELDS.get((category, need))
+    spec = height_field(category, need, facts)
     
     if spec is None:
       return out, ("CANDIDATE_NEEDS_DIMENSIONS", "No size was found for this item. Draw it by hand.")
     field, target, words = spec
-    if category == "BEAM" and (facts or {}).get("beam_role") == "PLINTH":
-      field, words = "plinth_beam_depth_mm", "the plinth beam depth"
-    if category == "BEAM" and (facts or {}).get("beam_role") == "BAND":
-      field, words = "tie_band_depth_mm", "the tie band depth"
-    if category == "COLUMN" and (facts or {}).get("neck_of"):
-      field, words = "neck_height_mm", "the neck column height (top of the footing to the floor)"
-    if category == "WALL" and (facts or {}).get("enclosure") == "TANK":
-      field, words = "tank_wall_height_mm", "the tank wall height"
     value = typed.get(field)
     if value is None:
       return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {words} to measure this item.")
@@ -111,8 +122,6 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
   return out, None
 
 def _openings_params(cand, params: dict, typed: dict) -> dict:
-  """The lines the measurement carries besides the sizes: a slab takes off the stair wells and shafts found in it (area x thickness), a stair adds the landings
-  printed beside it (area x waist). Nothing is added when none was found."""
   if cand.category == "SLAB":
     adj = SO.slab_adjustments(cand.facts, params.get("depth_mm"))
   elif cand.category == "STAIR":
@@ -518,6 +527,9 @@ class ExtractService:
         async with self.session.begin_nested():
           m = await self.core.create_measurement(org, cand.sheet_id, user_id, request, commit=False)
           cand.decision, cand.measurement_id, cand.decided_by_user_id, cand.decided_at = "ACCEPTED", m.id, user_id, _now()
+          used = TM.fields_used(cand.category, missing, cand.facts, typed, cand.notes, height_field)
+          if used:
+            cand.facts = {**(cand.facts or {}), TM.KEY: used}
           if params != (cand.params or {}):
             if cand.category == "SLAB":
               cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}

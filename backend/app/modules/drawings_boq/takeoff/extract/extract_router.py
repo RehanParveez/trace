@@ -13,6 +13,10 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest, ChooseFloorSourcesResponse, FloorSourcesResponse
 from app.modules.drawings_boq.takeoff.extract.floor_sources_service import FloorSourceService
+from app.modules.drawings_boq.takeoff.extract.crosschecks_schemas import CrossChecksResponse
+from app.modules.drawings_boq.takeoff.extract.crosschecks_service import CrossCheckService
+from app.modules.drawings_boq.takeoff.extract.typed_memory_schemas import TypedMemoryResponse
+from app.modules.drawings_boq.takeoff.extract.typed_memory_service import TypedMemoryService
 
 router = APIRouter()
 
@@ -83,3 +87,15 @@ async def choose_floor_sources(
   drawing_id: UUID, payload: ChooseFloorSourcesRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
   return await FloorSourceService(session).choose(_org(current_user), current_user.id, drawing_id, payload)
+
+@router.get("/drawings/{drawing_id}/takeoff/checks", response_model=CrossChecksResponse)
+async def cross_checks(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await CrossCheckService(session).checks(_org(current_user), drawing_id)
+
+@router.get("/drawings/{drawing_id}/takeoff/typed-memory", response_model=TypedMemoryResponse)
+async def typed_memory(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await TypedMemoryService(session).memory(_org(current_user), drawing_id)

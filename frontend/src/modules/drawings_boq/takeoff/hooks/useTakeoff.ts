@@ -17,6 +17,8 @@ export const takeoffKeys = {
   frame: (drawingId: string) => [...takeoffKeys.all, "frame", drawingId] as const,
   floors: (drawingId: string) => [...takeoffKeys.all, "floors", drawingId] as const,
   floorSources: (drawingId: string) => [...takeoffKeys.all, "floor-sources", drawingId] as const,
+  crossChecks: (drawingId: string) => [...takeoffKeys.all, "checks", drawingId] as const,
+  typedMemory: (drawingId: string) => [...takeoffKeys.all, "typed-memory", drawingId] as const,
   reconcile: (drawingId: string, query: ReconcileQuery) => [...takeoffKeys.all, "reconcile", drawingId, query.model_drawing_id ?? "", query.dx_mm ?? null, query.dy_mm ?? null] as const,
   candidates: (sheetId: string) => [...takeoffKeys.all, "candidates", sheetId] as const,
 };
@@ -45,6 +47,8 @@ function useInvalidateOverview(drawingId: string | undefined) {
   const qc = useQueryClient();
   return () => {
     if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.overview(drawingId) });
+    if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.crossChecks(drawingId) });
+    if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.typedMemory(drawingId) });
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "project-drawings"] });
     };
 }
@@ -349,6 +353,22 @@ export function useTakeoffFloors(drawingId: string | undefined, enabled = true) 
   return useQuery({
     queryKey: takeoffKeys.floors(drawingId ?? ""),
     queryFn: () => takeoffApi.floors(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useTakeoffTypedMemory(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.typedMemory(drawingId ?? ""),
+    queryFn: () => takeoffApi.typedMemory(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useTakeoffCrossChecks(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.crossChecks(drawingId ?? ""),
+    queryFn: () => takeoffApi.crossChecks(drawingId as string),
     enabled: Boolean(drawingId) && enabled,
   });
 }

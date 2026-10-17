@@ -25,6 +25,12 @@ class ExtractRepository:
       select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.sheet_id.in_(sheet_ids))
       .order_by(TakeoffCandidate.category, TakeoffCandidate.label, TakeoffCandidate.id))).scalars().all())
 
+  async def accepted_with_typed(self, org: UUID, project_id: UUID, limit: int = 600) -> list[TakeoffCandidate]:
+    """The newest accepted items of a project. The ones that took a typed size say so in their facts."""
+    return list((await self.session.execute(
+      select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.project_id == project_id, TakeoffCandidate.decision == "ACCEPTED",
+        TakeoffCandidate.decided_at.is_not(None)).order_by(TakeoffCandidate.decided_at.desc()).limit(limit))).scalars().all())
+
   async def candidates_by_ids(self, org: UUID, ids: list[UUID], lock: bool = False) -> list[TakeoffCandidate]:
     if not ids:
       return []

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, inputClass } from "../../../organizations/components/OrganizationUi";
-import type { CandidateList, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
+import type { CandidateList, TakeoffCandidate, TakeoffSheet, TypedValue } from "../types/takeoff.types";
 import {blockedByHeight, confidenceLevel, factLine, fieldsStillNeeded, groupByKind, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
 } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { groupByFloor, metres, setAsideBy } from "../utils/floorSources";
+import { offerText, offersFor } from "../utils/typedMemory";
 import { isTankItem, offersSectionChoice, sectionLabel, sectionOptions, tankSizeChoices } from "../utils/choices";
 import { SteelEditor } from "./SteelEditor";
 import type { SteelSet } from "../utils/steel";
@@ -28,6 +29,8 @@ interface Props {
   focusId: string | null;
   heights: Heights;
   onHeights: (next: Heights) => void;
+  
+  memory?: TypedValue[];
   workItems: Record<string, string>;
   onWorkItems: (next: Record<string, string>) => void;
   workItemCodes: string[];
@@ -44,7 +47,6 @@ interface Props {
   onOpenMeasurement: (measurementId: string) => void;
 }
 
-/** Centre-line metres of the walls in a list of items (the walls that carry a length). */
 function wallMetres(list: TakeoffCandidate[]): number {
   return list.reduce((sum, c) => sum + (c.category === "WALL" ? Number((c.facts as { length_cc_m?: number }).length_cc_m ?? 0) || 0 : 0), 0);
 }
@@ -174,6 +176,15 @@ function FoundList(p: Props & { data: CandidateList }) {
                     onChange={(e) => p.onHeights({ ...p.heights, [f]: e.target.value })}
                   />
                   {bad ? <span className="mt-0.5 block text-[11.5px] text-[var(--color-danger)]">{t("boq.takeoff.found.heightBad", "Type a number between 100 and 20000.")}</span> : null}
+                  {offersFor(f, fresh, p.memory, p.picks).filter((o) => String(o.mm) !== p.heights[f].trim()).length > 0 ? (
+                    <span className="mt-1 flex flex-wrap items-center gap-1" data-testid={`found-last-${f}`}>
+                      <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.lastTyped", "Typed before in this project (tap to use):")}</span>
+                      {offersFor(f, fresh, p.memory, p.picks).filter((o) => String(o.mm) !== p.heights[f].trim()).map((o) => (
+                        <button key={o.mm} type="button" className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[11.5px] hover:border-[var(--color-trace-gold)]" data-testid={`found-last-${f}-${o.mm}`}
+                          onClick={() => p.onHeights({ ...p.heights, [f]: String(o.mm) })}>{offerText(o)}</button>
+                      ))}
+                    </span>
+                  ) : null}
                   {(f === "tank_wall_height_mm" || tankFields.has(f)) && tankSizes.length > 0 ? (
                     <span className="mt-1 flex flex-wrap items-center gap-1" data-testid="found-tank-sizes">
                       <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.tankSizes", "Printed on the tank drawings (the drawing does not say which is the inside depth; tap one to use it):")}</span>
