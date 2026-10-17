@@ -134,7 +134,8 @@ def schedule_marks(read: list) -> list:
 
 def run(read: list) -> dict:
   """read: [{"sheet_id", "page_no", "title", "stats", "candidates", "schedule"}] of the sheets that have been read. -> {"checks": [...], "warnings", "info", "passed"}"""
-  checks = [*rooms_and_slab(read), *columns_up(read), *columns_and_footings(read), *schedule_marks(read)]
+  from app.modules.drawings_boq.takeoff.extract import shape_checks as SC
+  checks = [*rooms_and_slab(read), *columns_up(read), *columns_and_footings(read), *schedule_marks(read), *SC.run(read)]
   order = {WARN: 0, INFO: 1, PASS: 2}
   checks.sort(key=lambda c: (order[c["status"]], _rank(c["floor"]) if c["floor"] else 99, c["code"]))
   return {"checks": checks, "warnings": sum(1 for c in checks if c["status"] == WARN), "info": sum(1 for c in checks if c["status"] == INFO),

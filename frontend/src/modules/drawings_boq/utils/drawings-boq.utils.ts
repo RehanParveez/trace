@@ -896,6 +896,8 @@ const STAGE_FALLBACK: Record<string, string> = {
   PLINTH_TO_LINTEL: "Plinth to lintel",
   LINTEL_TO_SLAB: "Lintel to slab",
   TOP: "Above roof slab",
+  PARAPET: "Roof parapet",
+  MUMTY: "Mumty and above",
 };
 
 export function stageDescriptor(code: string): { key: string; fallback: string; n?: number } {
@@ -910,6 +912,8 @@ export function stageSortKey(code: string | null | undefined): number {
   if (order >= 0) return order;
   const m = /^UPPER_FLOOR_(\d+)$/.exec(code);
   if (m) return 10 + Number(m[1]);
+  if (code === "PARAPET") return 890;
+  if (code === "MUMTY") return 895;
   return code === "TOP" ? 900 : 500;
 }
 

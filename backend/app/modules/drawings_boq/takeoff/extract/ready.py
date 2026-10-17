@@ -1,0 +1,71 @@
+from __future__ import annotations
+from app.modules.drawings_boq.takeoff.extract import crosschecks as CK
+from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
+from app.modules.drawings_boq.takeoff.evidence import evidence_for
+
+HELD_BY = {
+  "COLUMNS_FOOTINGS_DIFFER": ("COLUMN", "FOOTING"), "COLUMNS_MORE_THAN_BELOW": ("COLUMN", "FOOTING"),
+  "FLOOR_HAS_NO_SLAB": ("SLAB", "ROOM"), "SLAB_HAS_NO_ROOMS": ("SLAB", "ROOM"), "ROOMS_EXCEED_SLAB": ("SLAB", "ROOM"), "ROOMS_MISSING": ("SLAB", "ROOM"),
+  "SCHEDULE_MARKS_NOT_FOUND": ("DOOR", "WINDOW"),
+  "FLOOR_HAS_NO_WALLS": ("WALL",), "OPENINGS_IN_NO_WALL": ("DOOR", "WINDOW", "WALL"), "OPENINGS_WIDER_THAN_WALL": ("DOOR", "WINDOW", "WALL"),
+  "PARAPET_DIFFERS_FROM_RING": ("SITE",), "BALCONY_OUTSIDE_SLAB": ("SITE", "SLAB"),
+  "WALLS_OPEN_ROUND_ROOMS": ("WALL", "ROOM"), "WALL_LONGER_THAN_ROOMS": ("WALL", "ROOM"), "WALL_SHORT_FOR_ROOMS": ("WALL", "ROOM"),
+}
+
+REASON_TEXT = {
+  "ALREADY_DECIDED": "Already accepted or rejected.",
+  "ERROR": "The reader found an error on it.",
+  "WARNING": "The reader raised a warning on it.",
+  "NOT_MEASURABLE": "A beam mark is only counted; its lengths are drawn by hand.",
+  "VALUE_MISSING": "A value is missing; type it when accepting this item.",
+  "ASSUMED": "A value was paired, defaulted or is disputed on the drawing.",
+  "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
+}
+
+def _warned(checks: list) -> list:
+  return [(c["floor"], HELD_BY.get(c["code"]), c["code"]) for c in checks if c["status"] == CK.WARN]
+
+def ready(read: list, checks: list | None = None) -> dict:
+  checks = checks if checks is not None else CK.run(read)["checks"]
+  warned = _warned(checks)
+  ok: list = []
+  held: list = []
+  
+  for sh in read:
+    sf = _sheet_floor(sh)
+    for c in sh["candidates"]:
+      if not _live(c):
+        continue
+    
+      fl = _floor(c, sf)
+      item = {"id": str(c.id), "category": c.category, "tag": c.tag, "floor": fl, "page_no": sh["page_no"], "grade": None, "reasons": []}
+      why = item["reasons"]
+      if c.decision != "NEW":
+        why.append("ALREADY_DECIDED")
+      if c.status == "INVALID":
+        why.append("ERROR")
+      elif c.status == "WARNING":
+        why.append("WARNING")
+      f = c.facts or {}
+      
+      if c.category == "BEAM" and f.get("derived_from") != "WALLS" and not f.get("from_strips"):
+        why.append("NOT_MEASURABLE")
+      if c.missing:
+        why.append("VALUE_MISSING")
+      ev = evidence_for(c)
+      item["grade"] = ev["grade"]
+      if ev["grade"] in ("ASSUMED", "MISSING") and "VALUE_MISSING" not in why:
+        why.append("ASSUMED" if ev["grade"] == "ASSUMED" else "VALUE_MISSING")
+      if any((wf is None or wf == fl) and (kinds is None or c.category in kinds) for wf, kinds, _ in warned):
+        why.append("CHECK_WARNS")
+      (held if why else ok).append(item)
+      
+  by: dict = {}
+  for h in held:
+    for r in h["reasons"]:
+      by[r] = by.get(r, 0) + 1
+  for h in held:
+    h["reasons"] = [{"code": r, "message": REASON_TEXT[r]} for r in h["reasons"]]
+  for o in ok:
+    o.pop("reasons")
+  return {"ready": ok, "held": held, "held_by_reason": by, "checks_warning": len(warned)}

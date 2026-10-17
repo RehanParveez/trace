@@ -76,6 +76,29 @@ function LineRow({ line, onClassChange }: { line: BillCompareLine; onClassChange
           />
         </div>
       ) : null}
+      {line.floors && line.floors.length > 0 ? (
+        <table className="mt-2 w-full max-w-[28rem] text-[11.5px]" data-testid={`bill-floors-${line.key}`}>
+          <thead>
+            <tr className="text-left text-[var(--color-text-muted)]">
+              <th className="font-medium">{t("drawings.bill.floor", "Floor")}</th>
+              <th className="text-right font-medium">{t("drawings.bill.qs", "QS")}</th>
+              <th className="text-right font-medium">{t("drawings.bill.software", "Software")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {line.floors.map((f) => (
+              <tr key={f.floor}>
+                <td>{f.label}</td>
+                <td className="text-right">{qtyText(f.qs, line.unit)}</td>
+                <td className="text-right">{qtyText(f.software, line.unit)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : null}
+      {line.assumed_rows ? (
+        <p className="mt-1 text-[var(--color-warning)]">{t("drawings.bill.assumedRows", "{{n}} of the software's rows rest on an assumed value.", { n: line.assumed_rows })}</p>
+      ) : null}
       <details className="mt-1 text-[var(--color-text-muted)]">
         <summary className="cursor-pointer">{t("drawings.bill.detail", "Where the figures come from")}</summary>
         <ul className="mt-1 list-none space-y-0.5 pl-0">

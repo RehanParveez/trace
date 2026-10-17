@@ -13,8 +13,10 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest, ChooseFloorSourcesResponse, FloorSourcesResponse
 from app.modules.drawings_boq.takeoff.extract.floor_sources_service import FloorSourceService
-from app.modules.drawings_boq.takeoff.extract.crosschecks_schemas import CrossChecksResponse
+from app.modules.drawings_boq.takeoff.extract.crosschecks_schemas import CrossChecksResponse, ReadyToAcceptResponse
 from app.modules.drawings_boq.takeoff.extract.crosschecks_service import CrossCheckService
+from app.modules.drawings_boq.takeoff.proof.schemas import FactsCheckRequest, FactsCheckResponse, TraceResponse
+from app.modules.drawings_boq.takeoff.proof.service import ProofService
 from app.modules.drawings_boq.takeoff.extract.typed_memory_schemas import TypedMemoryResponse
 from app.modules.drawings_boq.takeoff.extract.typed_memory_service import TypedMemoryService
 
@@ -94,8 +96,26 @@ async def cross_checks(
 ):
   return await CrossCheckService(session).checks(_org(current_user), drawing_id)
 
+@router.get("/drawings/{drawing_id}/takeoff/ready", response_model=ReadyToAcceptResponse)
+async def ready_to_accept(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await CrossCheckService(session).ready_to_accept(_org(current_user), drawing_id)
+
 @router.get("/drawings/{drawing_id}/takeoff/typed-memory", response_model=TypedMemoryResponse)
 async def typed_memory(
   drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
   return await TypedMemoryService(session).memory(_org(current_user), drawing_id)
+
+@router.post("/drawings/{drawing_id}/takeoff/facts-check", response_model=FactsCheckResponse)
+async def facts_check(
+  drawing_id: UUID, payload: FactsCheckRequest, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await ProofService(session).facts_check(_org(current_user), drawing_id, payload)
+
+@router.get("/drawings/{drawing_id}/takeoff/trace", response_model=TraceResponse)
+async def reader_trace(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await ProofService(session).trace(_org(current_user), drawing_id)

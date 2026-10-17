@@ -36,6 +36,7 @@ WORK_ITEMS = [
   ("CON-PCC", "Plain cement concrete (blinding)", "m3", "Concrete", "CONCRETE"),
   ("MAS-BRICK", "Brick masonry", "m3", "Masonry", "MASONRY"),
   ("MAS-BALLAST", "Brick ballast under foundation", "m3", "Masonry", "MASONRY"),
+  ("MAS-DPC", "Damp-proof course", "m2", "Masonry", "DEFAULT"),
   ("FIN-PLASTER", "Cement plaster", "m2", "Finishes", "PLASTER"),
   ("FIN-PAINT", "Wall paint", "m2", "Finishes", "PAINT"),
   ("FIN-FLOOR", "Floor finish", "m2", "Finishes", "TILING"),

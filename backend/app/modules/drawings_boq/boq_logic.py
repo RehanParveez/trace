@@ -41,7 +41,7 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "STEEL_ASSUMED",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "STEEL_ASSUMED",
     "SPACE_OVER_DEDUCTED", "SPACE_VIEW_NOT_PLACED", "SPACE_NO_HEIGHT", "SPACE_SAME_ROLE_OVERLAP",
 })
 
@@ -419,6 +419,16 @@ LEDGER_WARNING_CATALOG = {
     "This footing was read from a drawing, so it is placed at its mark with the size from the schedule or the drawing, not at a drawn outline. "
     "Footings close together may share a trench in the drawing, and the shared part is only approximate here.",
     "Check the excavation, PCC and backfill of these footings against the foundation plan, or measure the trench by hand."),
+  "DERIVED_ELEMENT_OVERRIDE": ("info", "NONE",
+    "A value was typed for this one footing or wall (its working space, or its bed projection or thickness) and is used here in place of the project's value.",
+    "Check the typed value in the element parameters of the project."),
+  "DPC_LEVEL_ASSUMED": ("warning", "NONE",
+    "The level of the damp-proof course is not in the model or on the drawing, so it was taken at the floor level less the DPC drop (none, unless one is set). "
+    "A wall that starts or stops near that level may or may not be counted.",
+    "Type the DPC level in the stage levels of the project, or set the DPC drop below floor level on the measurement convention."),
+  "DPC_DOOR_NOT_DEDUCTED": ("warning", "NONE",
+    "A door reaches the DPC level of this wall but the model gives it no outline, so the width of the door was not taken out of the DPC.",
+    "Re-upload the model with the current reader so doors carry their outline, or take the door width off by hand."),
   "STEEL_ASSUMED": ("warning", "NONE",
     "This steel was worked out from the bars printed for the member, using a site choice that was not given (the concrete cover, the length added to a "
     "ring for its hooks, the lap of a column bar or the anchorage of a bar), so the standard value was used.",
@@ -501,6 +511,89 @@ def derived_issue_specs(stats: dict) -> list[IssueSpec]:
     message=f"Excavation, PCC and backfill were not worked out because {DERIVED_REASON_TEXT.get(reason, reason)}.",
     suggested_fix="Add the footing preparation recipe to the rule set, or measure these items another way.",
     details={"reason": reason})]
+
+BALANCE_NOTICE_M3 = Decimal("0.05")
+BALANCE_NOTICE_SHARE = Decimal("0.01")
+
+def balance_issue_specs(stats: dict) -> list[IssueSpec]:
+  """The earth balance of the trenches (derived works). Backfill is the excavation less the structure in the trench, so a gap, or more backfill than excavation, is
+  a fault in the working; structure below natural ground that has no trench around it is a missing excavation."""
+  bal = (stats or {}).get("balance") or {}
+  if not (stats or {}).get("ran") or not bal:
+    return []
+  
+  specs: list[IssueSpec] = []
+  negative = int(bal.get("negative_backfill_rows") or 0)
+  if negative or not bal.get("closes", True):
+    specs.append(IssueSpec(
+      code="BACKFILL_NEGATIVE", severity="error", blocks="APPROVAL", dedupe_key="BACKFILL_NEGATIVE",
+      message=("Backfill does not balance with the excavation: " + (f"{negative} trench(es) hold more structure than was dug. " if negative else "")
+        + f"Excavation {bal.get('excavation_m3')} m3, backfill {bal.get('backfill_m3')} m3, structure in the trenches {bal.get('buried_m3')} m3 (gap {bal.get('gap_m3')} m3)."),
+      suggested_fix="A footing outline or a level in the model is wrong. Check the footings and the natural ground level, then calculate again.",
+      details={k: bal.get(k) for k in ("excavation_m3", "backfill_m3", "buried_m3", "gap_m3", "negative_backfill_rows")}))
+  try:
+    outside, structure = Decimal(str(bal.get("structure_outside_trench_m3") or "0")), Decimal(str(bal.get("structure_below_ground_m3") or "0"))
+  except Exception:
+    return specs
+  if outside > BALANCE_NOTICE_M3 and (structure <= 0 or outside / structure > BALANCE_NOTICE_SHARE):
+    specs.append(IssueSpec(
+      code="EXCAVATION_BALANCE", severity="warning", blocks="NONE", dedupe_key="EXCAVATION_BALANCE",
+      message=f"{fmt(outside, 3)} m3 of the structure below natural ground level has no trench dug around it, so no excavation or backfill was taken for it "
+        f"(of {fmt(structure, 3)} m3 below ground in all). A basement or a retaining wall is dug in a different way from a footing trench.",
+      suggested_fix="Measure the excavation for the basement or the retaining wall by hand, or add it as a measurement.",
+      details={"structure_outside_trench_m3": str(outside), "structure_below_ground_m3": str(structure)}))
+  return specs
+
+def dpc_issue_specs(stats: dict) -> list[IssueSpec]:
+  dpc = (stats or {}).get("dpc") or {}
+  if not dpc or dpc.get("reason") in (None, "ALL_ITEMS_IN_MODEL", "NO_PROFILE") and not dpc.get("ran"):
+    return []
+  if dpc.get("ran"):
+    return [IssueSpec(
+      code="DPC_VERTICAL_NOT_TAKEN", severity="info", blocks="NONE", dedupe_key="DPC_VERTICAL_NOT_TAKEN",
+      message="The damp-proof course is measured as the horizontal layer under the walls. A vertical DPC (against earth on the face of a wall below ground level) is not taken.",
+      suggested_fix="Add the vertical DPC by hand where the specification asks for it.", details={"area_m2": dpc.get("area_m2")})]
+    
+  return [IssueSpec(
+    code="DPC_NOT_MEASURED", severity="info", blocks="NONE", dedupe_key="DPC_NOT_MEASURED",
+    message="The damp-proof course was not measured because " + (
+      "no wall was found standing across the DPC level." if dpc.get("reason") == "NO_WALL_ON_DPC" else "the DPC level could not be found (there are no doors in the model, and no ground floor on the drawing, to give the floor level)."),
+    suggested_fix="Type the DPC level in the stage levels of the project, then calculate again.", details={"reason": dpc.get("reason"), "model": dpc.get("model"), "pdf": dpc.get("pdf")})]
+
+ASSUMED_DATUM_TEXT = {"DPC": "the damp-proof course level", "LINTEL": "the lintel level", "PARAPET_TOP": "the top of the parapet"}
+
+def datum_issue_specs(stats: dict) -> list[IssueSpec]:
+  stages = (stats or {}).get("stages") or {}
+  pdf = ((stats or {}).get("pdf_space") or {}).get("datums") or {}
+  sets = [stages] if stages.get("resolved") else [pdf[g] for g in sorted(pdf) if (pdf[g] or {}).get("resolved")]
+  specs: list[IssueSpec] = []
+  assumed = sorted({d["name"] for s in sets for d in s.get("datums") or [] if d.get("source") == "default" and d.get("name") in ASSUMED_DATUM_TEXT})
+  
+  if assumed:
+    names = ", ".join(ASSUMED_DATUM_TEXT[n] for n in assumed)
+    specs.append(IssueSpec(
+      code="DATUMS_ASSUMED", severity="info", blocks="NONE", dedupe_key="DATUMS_ASSUMED",
+      message=f"The stages of work stand on levels that were assumed because the model or drawing does not give them: {names}. The total of each item is not affected, "
+        "only which stage it is shown under (and, for the DPC, whether a wall at that level is counted).",
+      suggested_fix="Type the levels in the stage levels of the project, or confirm them with the engineer.", details={"datums": assumed}))
+  unused = sorted(set(stages.get("unused_overrides") or []) | set(((stats or {}).get("pdf_space") or {}).get("unused_overrides") or []))
+  if unused and (stages.get("enabled") or pdf):
+    specs.append(IssueSpec(
+      code="DATUM_OVERRIDE_UNUSED", severity="warning", blocks="NONE", dedupe_key="DATUM_OVERRIDE_UNUSED",
+      message=f"A level typed for {', '.join(unused)} was not used: the building has no such level, or the stages could not be worked out.",
+      suggested_fix="Open the stage levels of the project and remove or correct it.", details={"datums": unused}))
+  return specs
+
+def element_override_issue_specs(stats: dict) -> list[IssueSpec]:
+  over = (stats or {}).get("element_overrides") or {}
+  unmatched = over.get("unmatched") or []
+  if not unmatched:
+    return []
+  return [IssueSpec(
+    code="ELEMENT_OVERRIDE_UNMATCHED", severity="warning", blocks="NONE", dedupe_key="ELEMENT_OVERRIDE_UNMATCHED",
+    message=f"{len(unmatched)} value(s) typed for a single footing or wall were not used: the element is not a footing or wall dug in this run (it may be gone from the model, or "
+      "the footing level is not known).",
+    suggested_fix="Open the element parameters of the project and remove the values for elements that are gone.", details={"elements": unmatched[:50]})]
 
 FORMWORK_REASON_TEXT = {
   "NO_RECIPE": "the rule set has no structural formwork recipe",

@@ -14,6 +14,8 @@ from app.engine.measure.fingerprint import compute_fingerprint
 from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from app.modules.drawings_boq.calc_repository import CalculationRunRepository
 from app.modules.drawings_boq.measurement_params import MeasurementParametersService
+from app.modules.drawings_boq.datums import DatumsService
+from app.modules.drawings_boq.element_params import ElementParametersService
 from app.modules.drawings_boq.models import CalculationRun, DrawingElement, DrawingFormat, DrawingStatus, MeasurementConvention
 from app.modules.drawings_boq.repository import DrawingElementRepository, DrawingRepository, MeasurementRuleSetRepository
 from app.modules.drawings_boq.standards.service import StandardsService
@@ -261,6 +263,13 @@ class CalculationService:
       cleaned = clean_derived_params({**stored_params, **(derived_params or {})})
       if cleaned:
         settings["derived_params"] = cleaned
+      element_values = await ElementParametersService(self.session).stored_for_run(organization_id, project_id)
+      if element_values:
+        settings["element_overrides"] = element_values
+    if settings.get("stages") or settings.get("derived"):
+      typed_levels = await DatumsService(self.session).stored_for_run(organization_id, project_id)
+      if typed_levels:
+        settings["datum_overrides"] = typed_levels
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
@@ -415,6 +424,8 @@ class CalculationService:
         spec_mode=bool(run_settings.get("spec")), stage_mode=bool(run_settings.get("stages")),
         layer_mode=bool(run_settings.get("layers")), derived_mode=bool(run_settings.get("derived")),
         derived_params=dict(run_settings.get("derived_params") or {}),
+        datum_overrides=dict(run_settings.get("datum_overrides") or {}),
+        element_overrides={k: dict(v) for k, v in (run_settings.get("element_overrides") or {}).items()},
       )
       state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
@@ -600,6 +611,11 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in res.ledger])
         state["extra_solids"] += res.solids
         state["extra_ledger"] += res.ledger
+        dp = await asyncio.to_thread(kernel.measure_dpc, ctx, profile, state["accepted"], state["solids"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in dp.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in dp.ledger])
+        state["extra_solids"] += dp.solids
+        state["extra_ledger"] += dp.ledger
         fw = await asyncio.to_thread(kernel.measure_formwork, ctx, profile, state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fw.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fw.ledger])
@@ -611,8 +627,8 @@ class CalculationService:
         await self.runs.stage_bar_marks([_bar_mark_row(run, m, "derived") for m in st.marks])
         state["extra_solids"] += st.solids
         state["extra_ledger"] += st.ledger
-        state["derived_stats"] = {**res.stats, "formwork": fw.stats, "steel": st.stats}
-        return {"steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
+        state["derived_stats"] = {**res.stats, "dpc": dp.stats, "formwork": fw.stats, "steel": st.stats}
+        return {"dpc_rows": len(dp.ledger), "dpc_m2": dp.stats.get("area_m2", "0"), "steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
           "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),
           "backfill_m3": res.stats.get("backfill_m3", "0"), **({"reason": res.stats["reason"]} if res.stats.get("reason") else {})}
@@ -741,6 +757,8 @@ class CalculationService:
         "coverage": kernel.coverage_stats(elements, state["rejected"], state["skipped"], state["unmapped"], state["ledger"]),
         "confidence": kernel.confidence_stats(state["ledger"] + state["extra_ledger"]),
       })
+      await DatumsService(self.session).record_run(org, project_id, run_id,
+        {"stages": state.get("stage_stats") or {}, "pdf_space": state.get("space_stats") or {}})
       if planner is not None:
         await self.runs.prune_state(org, project_id, int(settings.calc_state_keep_runs))
 

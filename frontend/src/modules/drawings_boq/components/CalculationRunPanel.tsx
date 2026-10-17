@@ -12,6 +12,8 @@ import type {LedgerRowResponse, QuantitySolidResponse, DeductionResponse,
 import { RunStatsSummary } from "./RunStatsSummary";
 import { ledgerRangeText } from "./SteelRebarRange";
 import { RebarMarksPanel } from "./RebarMarksPanel";
+import { StagesPanel } from "./StagesPanel";
+import { SteelCompare } from "../lab/components/SteelCompare";
 import { RunDrawingPicker } from "./RunDrawingPicker";
 import { RunScope } from "./RunScope";
 import { DerivedParamsForm } from "./DerivedParamsForm";
@@ -31,11 +33,13 @@ interface CalculationRunPanelProps {
 }
 
 type View =
+  | "stages"
   | "overview"
   | "solids"
   | "ledger"
   | "deductions"
   | "rebar"
+  | "steelqs"
   | "metrics";
 
 export function CalculationRunPanel({
@@ -452,6 +456,18 @@ export function CalculationRunPanel({
                    ),
                  ],
                 [
+                  "stages",
+                  t(
+                    "boq.calculationRun.tabStages", "Levels and stages"
+                  ),
+                ],
+                [
+                  "steelqs",
+                  t(
+                    "boq.calculationRun.tabSteelQs", "Steel vs QS"
+                  ),
+                ],
+                [
                   "metrics",
                   ts(
                     "scale.tab.performance",
@@ -531,6 +547,10 @@ export function CalculationRunPanel({
               status={run.status}
             />
           ) : null}
+
+          {view === "stages" ? <StagesPanel projectId={projectId} stats={run.stats} /> : null}
+
+          {view === "steelqs" ? <SteelCompare runId={run.id} /> : null}
 
           {view === "rebar" ?
            <RebarMarksPanel

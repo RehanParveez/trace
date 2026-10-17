@@ -38,6 +38,19 @@ async def compare_bill(
     current_user.active_membership.organization_id, run_id, data, tolerance_pct,
     _json_field(overrides, "overrides"), _json_field(classes, "classes"))
 
+@router.post("/calculation-runs/{run_id}/compare-steel")
+async def compare_steel(
+  run_id: UUID,
+  file: UploadFile = File(...),
+  tolerance_pct: float | None = Form(default=None),
+  classes: str | None = Form(default=None),
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  data = await file.read()
+  return await BillCompareService(session).compare_steel(
+    current_user.active_membership.organization_id, run_id, data, tolerance_pct, _json_field(classes, "classes"))
+
 @router.post("/compare-bill/export")
 async def export_compare_bill(
   result: dict = Body(...),

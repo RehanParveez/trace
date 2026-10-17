@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff import frame_views as FV
 from app.modules.drawings_boq.takeoff import z_range as Z
 from app.modules.drawings_boq.takeoff.evidence import tally as evidence_tally
+from app.modules.drawings_boq.takeoff import ranges as RG
 from app.modules.drawings_boq.takeoff.sheet_reason import sheet_reason
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
@@ -136,7 +137,7 @@ class RegisterService:
       "measured": sum(1 for r in rows if r["properties"]["_pdf"]["mode"] == "PDF_MEASURED"),
       "needs_review": sum(1 for r in rows if r["normalization_status"] != "VALID"),
       "decisions": len({r["properties"]["_pdf"]["candidate_id"] for r in rows if r["normalization_status"] != "VALID"}),
-      "evidence": evidence_tally(rows)}
+      "evidence": evidence_tally(rows), "totals": RG.totals(rows), "source_mix": RG.source_mix(rows)}
 
   async def floor_datums(self, org: UUID, drawing_id: UUID) -> dict:
     """The floors of a drawing with the level of each, as the register places members in height, and the natural ground and footing level used for footings.

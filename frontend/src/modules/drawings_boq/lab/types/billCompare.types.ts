@@ -10,6 +10,13 @@ export interface BillRowRef {
   quantity: number;
 }
 
+export interface BillFloorFigure {
+  floor: string;
+  label: string;
+  qs: number | null;
+  software: number | null;
+}
+
 export interface BillCompareLine {
   key: string;
   label: string;
@@ -25,6 +32,8 @@ export interface BillCompareLine {
   bill_rows: BillRowRef[];
   software_rows: number;
   software_tags: { tag: string; quantity: number }[];
+  floors?: BillFloorFigure[];
+  assumed_rows?: number;
 }
 
 export interface BillMeasures {

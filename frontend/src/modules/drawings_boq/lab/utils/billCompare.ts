@@ -103,3 +103,10 @@ export function parseTolerance(text: string, fallback = 5): number {
   if (!Number.isFinite(n) || text.trim() === "") return fallback;
   return Math.min(100, Math.max(0, n));
 }
+
+export function compareErrorText(err: unknown, fallback: string): string {
+  const detail = (err as { response?: { data?: { detail?: unknown } } } | null)?.response?.data?.detail;
+  if (detail && typeof detail === "object" && typeof (detail as { message?: unknown }).message === "string") return (detail as { message: string }).message;
+  if (typeof detail === "string" && detail) return detail;
+  return fallback;
+}

@@ -1285,8 +1285,16 @@ export interface SpecStats {
 export interface StageDatum {
   name: string;
   z_mm: number;
-  source: "model" | "param" | "default";
+  source: "model" | "drawing" | "param" | "default" | "typed";
   note: string;
+}
+
+export interface StageBand {
+  stage: string;
+  from_mm: number | null;
+  to_mm: number | null;
+  defaulted: boolean;
+  soft: boolean;
 }
 
 export interface StageStats {
@@ -1294,6 +1302,8 @@ export interface StageStats {
   resolved?: boolean;
   reason?: string;
   datums?: StageDatum[];
+  bands?: StageBand[];
+  unused_overrides?: string[];
   rows_split?: number;
   rows_tagged?: number;
   rows_not_split?: number;
@@ -1321,6 +1331,8 @@ export interface DerivedParams {
   steel_wastage_pct?: number;
   beam_depth_includes_slab?: number;
   tie_band_replaces_lintel?: number;
+  dpc_thickness_mm?: number;
+  dpc_door_deduction?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1447,8 +1459,51 @@ export interface DerivedFormworkStats {
   contact_not_deducted?: boolean;
 }
 
+export interface EarthBalance {
+  excavation_m3: string;
+  backfill_m3: string;
+  buried_m3: string;
+  carted_m3: string;
+  gap_m3: string;
+  closes: boolean;
+  structure_below_ground_m3: string;
+  structure_outside_trench_m3: string;
+  negative_backfill_rows: number;
+}
+
+export interface DerivedFoundationParam {
+  value: number;
+  source: "user" | "convention" | "default" | "element";
+}
+
+export interface DerivedFoundationEntry {
+  element_id: string;
+  label: string | null;
+  role: string;
+  bed: string;
+  mark: boolean;
+  page_no: number | null;
+  params: Record<string, DerivedFoundationParam>;
+}
+
+export interface DpcStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: "NO_PROFILE" | "ALL_ITEMS_IN_MODEL" | "NO_WALL_ON_DPC" | "NO_DPC_LEVEL";
+  vertical?: string;
+  rows?: number;
+  area_m2?: string;
+  params?: Record<string, DerivedParamUsed>;
+  model?: { walls?: number; doors_taken_out?: number; gross_m2?: string; net_m2?: string; level?: { z_mm: number; source: string }; reason?: string };
+  pdf?: { walls?: number; doors_taken_out?: number; net_m2?: string; no_level?: number; no_height?: number };
+}
+
 export interface DerivedStats {
   enabled: boolean;
+  balance?: EarthBalance;
+  dpc?: DpcStats;
+  foundation_list?: DerivedFoundationEntry[];
+  element_overrides?: { given: number; applied: number; unmatched: string[] };
   ran?: boolean;
   reason?: string;
   skipped_items?: Record<string, string>;

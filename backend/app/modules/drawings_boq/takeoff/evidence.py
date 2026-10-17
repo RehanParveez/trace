@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.modules.drawings_boq.takeoff.ranges import range_for
 
 PRINTED, VERIFIED, CONFIRMED, PICTURE, MEASURED, ASSUMED, MISSING, NOT_READ = ("PRINTED", "VERIFIED", "CONFIRMED", "PICTURE", "MEASURED", "ASSUMED", "MISSING", "NOT_READ")
 TIER = {PRINTED: 0, VERIFIED: 0, CONFIRMED: 0, PICTURE: 1, MEASURED: 1, ASSUMED: 2, MISSING: 3}
@@ -327,7 +328,7 @@ def evidence_for(cand) -> dict:
   graded = [TIER[i["basis"]] for i in inp.items if i["basis"] in TIER]
   grade = GRADES[max(graded)] if graded else "PRINTED"
   ask = [f"{i['name']}: {i['how']}" for i in inp.items if i["basis"] in (ASSUMED, MISSING)]
-  return {"grade": grade, "inputs": inp.items, "ask": ask}
+  return {"grade": grade, "inputs": inp.items, "ask": ask, "range": range_for(cand, inp.items)}
 
 def tally(rows: list) -> dict:
   """{"PRINTED": n, "MEASURED": n, "ASSUMED": n, "MISSING": n} over register rows (each a dict with properties._pdf.evidence)."""

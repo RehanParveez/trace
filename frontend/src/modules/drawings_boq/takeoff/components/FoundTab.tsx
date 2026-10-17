@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../organizations/components/OrganizationUi";
 import { useWorkItems } from "../../standards/hooks";
-import { useAcceptCandidates, useChooseFloorSources, useDecideCandidates, useExtractSheet, useSheetCandidates, useTakeoffCrossChecks, useTakeoffFloorSources, useTakeoffTypedMemory } from "../hooks/useTakeoff";
+import { useAcceptCandidates, useChooseFloorSources, useCheckKnownFacts, useDecideCandidates, useExtractSheet, useReadyToAccept, useReaderTrace, useSheetCandidates, useTakeoffCrossChecks, useTakeoffFloorSources, useTakeoffTypedMemory } from "../hooks/useTakeoff";
 import type { FloorChoiceBody, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
 import { buildAcceptBody, kindKey, NO_HEIGHTS } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
@@ -10,6 +10,9 @@ import { takeoffErrorMessage } from "../utils/errors";
 import { autoChoiceLine, choiceToast, hasPlans, planBoxOf } from "../utils/floorSources";
 import type { SteelSet } from "../utils/steel";
 import { CrossChecksPanel } from "./CrossChecksPanel";
+import { KnownFactsPanel } from "./KnownFactsPanel";
+import { ReaderTracePanel } from "./ReaderTracePanel";
+import { ReadyToAcceptPanel } from "./ReadyToAcceptPanel";
 import { FloorSourcesPanel } from "./FloorSourcesPanel";
 import { FoundPanel } from "./FoundPanel";
 
@@ -40,6 +43,9 @@ export function FoundTab(p: Props) {
   const floorSources = useTakeoffFloorSources(p.drawingId);
   const crossChecks = useTakeoffCrossChecks(p.drawingId);
   const typedMemory = useTakeoffTypedMemory(p.drawingId);
+  const knownFacts = useCheckKnownFacts(p.drawingId);
+  const readerTrace = useReaderTrace(p.drawingId);
+  const ready = useReadyToAccept(p.drawingId);
   const choose = useChooseFloorSources(p.drawingId);
   const stats = list.data?.extraction.stats;
   const planFloors = useMemo(() => ["FOUNDATION", "BASEMENT", "GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH", "TYPICAL", "ROOF"].filter((f) => planBoxOf(stats, f) !== null), [stats]);
@@ -109,7 +115,9 @@ export function FoundTab(p: Props) {
       onOpenSheet={p.onOpenSheet}
       onShowPlan={(floor) => { const b = planBoxOf(stats, floor); if (b) p.onShowBox(b); }}
     />
-    <CrossChecksPanel data={crossChecks.data} loading={crossChecks.isLoading} error={crossChecks.isError} onRetry={() => void crossChecks.refetch()} />
+    <KnownFactsPanel result={knownFacts.data} busy={knownFacts.isPending} failed={knownFacts.isError} onCheck={(facts) => knownFacts.mutate(facts)} />
+    <ReaderTracePanel data={readerTrace.data} loading={readerTrace.isLoading} error={readerTrace.isError} onRetry={() => void readerTrace.refetch()} />
+    <ReadyToAcceptPanel data={ready.data} pageNo={sheet.page_no} canEdit={p.canEdit} busy={accept.isPending || decide.isPending} onAccept={onAccept} />
     <FoundPanel
       sheet={sheet}
       data={list.data}

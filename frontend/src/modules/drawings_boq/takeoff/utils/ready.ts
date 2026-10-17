@@ -1,0 +1,25 @@
+import type { HeldItem, ReadyItem, ReadyToAccept } from "../types/takeoff.types";
+
+export const HELD_TEXT: Record<string, string> = {
+  ALREADY_DECIDED: "already accepted or rejected",
+  ERROR: "an error found on it",
+  WARNING: "a warning on it",
+  NOT_MEASURABLE: "beam marks only counted",
+  VALUE_MISSING: "a value is missing",
+  ASSUMED: "an assumed value",
+  CHECK_WARNS: "a check warns about it",
+};
+
+export function readyOnSheet(data: ReadyToAccept | undefined, pageNo: number): ReadyItem[] {
+  return (data?.ready ?? []).filter((r) => r.page_no === pageNo);
+}
+
+export function heldOnSheet(data: ReadyToAccept | undefined, pageNo: number): HeldItem[] {
+  return (data?.held ?? []).filter((r) => r.page_no === pageNo && !r.reasons.every((x) => x.code === "ALREADY_DECIDED"));
+}
+
+export function heldLine(held: HeldItem[]): string {
+  const n: Record<string, number> = {};
+  for (const h of held) for (const r of h.reasons) if (r.code !== "ALREADY_DECIDED") n[r.code] = (n[r.code] ?? 0) + 1;
+  return Object.entries(n).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([code, k]) => `${k} ${HELD_TEXT[code] ?? code}`).join(", ");
+}

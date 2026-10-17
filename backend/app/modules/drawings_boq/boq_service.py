@@ -357,6 +357,10 @@ class BOQEngineService:
     specs.extend(logic.takeoff_issue_specs(stats.get("pdf_takeoff") or {}))
     specs.extend(logic.stage_issue_specs(stats.get("stages") or {}))
     specs.extend(logic.derived_issue_specs(stats.get("derived") or {}))
+    specs.extend(logic.balance_issue_specs(stats.get("derived") or {}))
+    specs.extend(logic.dpc_issue_specs(stats.get("derived") or {}))
+    specs.extend(logic.element_override_issue_specs(stats.get("derived") or {}))
+    specs.extend(logic.datum_issue_specs(stats))
     specs.extend(logic.formwork_issue_specs(stats.get("derived") or {}))
     specs.extend(logic.steel_issue_specs(stats.get("derived") or {}))
     mapped = [m.ifc_type for m in profile.mappings if m.work_item_code]

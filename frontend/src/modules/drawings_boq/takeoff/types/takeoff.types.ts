@@ -651,7 +651,11 @@ export interface RegisterSyncResult {
   needs_review: number;
   decisions?: number;
   evidence?: Record<string, number>;
+  totals?: RangeTotal[];
+  source_mix?: Record<string, Record<string, number>>;
 }
+
+export interface RangeTotal { unit: string; likely: number; low: number; high: number; rows: number; unbounded: number; leaves_out: number }
 
 export interface FrameMember {
   measurement_id: string;
@@ -803,7 +807,59 @@ export interface CrossCheck {
   numbers: Record<string, unknown>;
 }
 
+export interface ReadyItem { id: string; category: string; tag: string | null; floor: string | null; page_no: number; grade: string | null }
+export interface HeldItem extends ReadyItem { reasons: Array<{ code: string; message: string }> }
+export interface ReadyToAccept { drawing_id: string; ready: ReadyItem[]; held: HeldItem[]; held_by_reason: Record<string, number>; checks_warning: number }
+
 export interface CrossChecks { drawing_id: string; checks: CrossCheck[]; warnings: number; info: number; passed: number }
+
+export interface KnownFact {
+  kind: "TOTAL" | "COUNT" | "ROOM_AREA" | "SLAB_AREA" | "SCHEDULE";
+  category?: string;
+  tag?: string;
+  floor?: string;
+  count?: number;
+  name?: string;
+  area_m2?: number;
+  mark?: string;
+  width_mm?: number;
+  height_mm?: number;
+  tolerance_pct?: number;
+}
+
+export interface FactResult {
+  index: number;
+  text: string;
+  status: "PASS" | "FAIL" | "MISSING";
+  expected: unknown;
+  found: unknown;
+  message: string;
+  pages: number[];
+}
+
+export interface FactsCheck { drawing_id: string; results: FactResult[]; passed: number; failed: number; missing: number }
+
+/** One rule of the reader that decided something on a sheet, with the basis its numbers stand on. */
+export interface TraceRule {
+  id: string;
+  label: string;
+  basis: "TUNED" | "STANDARD" | "DEFAULT";
+  items: number;
+  notes: number;
+  codes: string[];
+  examples: string[];
+  thresholds: Record<string, number | string>;
+}
+
+export interface TraceScale { agreement: string | null; support: number; trust: number | null; gate: string | null; decided_by: string }
+
+export interface TraceSheet { sheet_id: string; page_no: number; scale: TraceScale; rules: TraceRule[]; silent: string[] }
+
+export interface ReaderTrace {
+  drawing_id: string;
+  sheets: TraceSheet[];
+  summary: { sheets: number; tuned_rules_fired: string[]; default_rules_fired: string[]; tuned_items: number };
+}
 
 export type FloorChoiceBody = { choices: Array<{ floor: string; sheet_id: string }> } | { use_suggested: true };
 

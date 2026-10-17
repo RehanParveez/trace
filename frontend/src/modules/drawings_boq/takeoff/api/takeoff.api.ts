@@ -2,7 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, CrossChecks, TypedMemory, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
+  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, CrossChecks, ReadyToAccept, TypedMemory, KnownFact, FactsCheck, ReaderTrace, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
 } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
@@ -103,6 +103,15 @@ export const takeoffApi = {
   },
   async crossChecks(drawingId: string): Promise<CrossChecks> {
     return (await apiClient.get<CrossChecks>(`${BASE}/drawings/${drawingId}/takeoff/checks`)).data;
+  },
+  async readyToAccept(drawingId: string): Promise<ReadyToAccept> {
+    return (await apiClient.get<ReadyToAccept>(`${BASE}/drawings/${drawingId}/takeoff/ready`)).data;
+  },
+  async checkKnownFacts(drawingId: string, facts: KnownFact[]): Promise<FactsCheck> {
+    return (await apiClient.post<FactsCheck>(`${BASE}/drawings/${drawingId}/takeoff/facts-check`, { facts })).data;
+  },
+  async readerTrace(drawingId: string): Promise<ReaderTrace> {
+    return (await apiClient.get<ReaderTrace>(`${BASE}/drawings/${drawingId}/takeoff/trace`)).data;
   },
   async typedMemory(drawingId: string): Promise<TypedMemory> {
     return (await apiClient.get<TypedMemory>(`${BASE}/drawings/${drawingId}/takeoff/typed-memory`)).data;

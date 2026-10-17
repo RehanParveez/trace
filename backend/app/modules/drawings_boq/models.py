@@ -4398,3 +4398,79 @@ class ProjectMeasurementParameter(Base, TimestampMixin):
     ForeignKey("users.id", ondelete="SET NULL", name="fk_project_measurement_parameters_updated_by"),
     nullable=True,
   )
+
+class ProjectDatum(Base, TimestampMixin):
+  __tablename__ = "project_datums"
+
+  __table_args__ = (
+    UniqueConstraint("project_id", "name", "source", name="uq_project_datums_name_source"),
+    CheckConstraint("source IN ('TYPED','RUN')", name="ck_project_datums_source"),
+    Index("ix_project_datums_org_project", "organization_id", "project_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+
+  name: Mapped[str] = mapped_column(String(40), nullable=False)
+  source: Mapped[str] = mapped_column(String(8), nullable=False)
+  z_mm: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+  basis: Mapped[str | None] = mapped_column(String(20), nullable=True)
+  note: Mapped[str | None] = mapped_column(String(300), nullable=True)
+
+  run_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("calculation_runs.id", ondelete="SET NULL", name="fk_project_datums_run"),
+    nullable=True,
+  )
+
+  updated_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_project_datums_updated_by"),
+    nullable=True,
+  )
+
+class ProjectElementParameter(Base, TimestampMixin):
+  __tablename__ = "project_element_parameters"
+
+  __table_args__ = (
+    UniqueConstraint("project_id", "element_id", "code", name="uq_project_element_parameters_code"),
+    Index("ix_project_element_parameters_org_project", "organization_id", "project_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+    index=True,
+  )
+
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+
+  element_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  code: Mapped[str] = mapped_column(String(50), nullable=False)
+  value: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+  label: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+  updated_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_project_element_parameters_updated_by"),
+    nullable=True,
+  )

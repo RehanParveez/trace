@@ -220,59 +220,82 @@ def _slice_in(slices: list, lo: float, hi: float) -> float:
       total += m * ov / (zb - za)
   return total
 
-def pdf_datums(ctx, floors: list, lintel_z: float | None = None) -> S.StageSetup:
-  """The stage bands of one drawing from the floors its register gave: floor level of the ground floor, the DPC a set drop below it, the lintel level, and
-  the top of every floor's slab above it. A drawing with no ground floor, or no slab top, cannot be cut."""
+def dpc_datum(ctx, floors: list) -> S.Datum | None:
+  """The damp-proof course level of a drawing on its own: the typed level, or the ground floor level less the DPC drop."""
+  typed = S.typed_overrides(ctx)
+  if "DPC" in typed:
+    return S._typed("DPC", typed["DPC"], "damp-proof course level")
   ground = next((f for f in floors if f.key == "GROUND"), None)
-  if ground is None:
-    return S.StageSetup(reason="NO_GROUND_FLOOR")
-  tops = sorted(f.top_mm for f in floors if f.top_mm is not None and f.level_mm >= ground.level_mm)
-  if not tops:
-    return S.StageSetup(reason="NO_SLAB_LEVEL")
-  ffl = float(ground.level_mm)
+  if "FFL" in typed:
+    ffl = typed["FFL"]
+  elif ground is not None:
+    ffl = float(ground.level_mm)
+  else:
+    return None
   given = (ctx.convention_params or {}).get("dpc_below_ffl_mm") is not None
-  dpc = S.Datum("DPC", ffl - S._p(ctx, "dpc_below_ffl_mm"), "param" if given else "default",
+  return S.Datum("DPC", ffl - S._p(ctx, "dpc_below_ffl_mm"), "param" if given else "default",
     "floor level less the DPC drop" if given else "no DPC level on the drawing; taken at floor level")
+
+def pdf_datums(ctx, floors: list, lintel_z: float | None = None) -> S.StageSetup:
+  typed = S.typed_overrides(ctx)
+  ground = next((f for f in floors if f.key == "GROUND"), None)
+  if ground is None and "FFL" not in typed:
+    return S.StageSetup(reason="NO_GROUND_FLOOR")
+  base = float(ground.level_mm) if ground is not None else typed["FFL"]
+  tops = sorted(f.top_mm for f in floors if f.top_mm is not None and f.level_mm >= base)
+  slabs = []
   
-  if lintel_z is not None:
+  for i, z in enumerate(tops):
+    name = f"SLAB_{i + 1}"
+    slabs.append(S._typed(name, typed[name], "top of the floor slab") if name in typed else S.Datum(name, z, "drawing", "top of the floor slab"))
+  if not slabs and "SLAB_1" in typed:
+    slabs = [S._typed("SLAB_1", typed["SLAB_1"], "top of the floor slab")]
+  if not slabs:
+    return S.StageSetup(reason="NO_SLAB_LEVEL")
+  ffl = S._typed("FFL", typed["FFL"], "finished level of the ground floor") if "FFL" in typed else S.Datum("FFL", base, "drawing", "finished level of the ground floor")
+  given = (ctx.convention_params or {}).get("dpc_below_ffl_mm") is not None
+  
+  if "DPC" in typed:
+    dpc = S._typed("DPC", typed["DPC"], "damp-proof course level")
+  else:
+    dpc = S.Datum("DPC", ffl.z_mm - S._p(ctx, "dpc_below_ffl_mm"), "param" if given else "default",
+      "floor level less the DPC drop" if given else "no DPC level on the drawing; taken at floor level")
+  if "LINTEL" in typed:
+    lintel = S._typed("LINTEL", typed["LINTEL"], "lintel level")
+  elif lintel_z is not None:
     lintel = S.Datum("LINTEL", lintel_z, "drawing", "opening heads of the ground floor")
   else:
-    lintel = S.Datum("LINTEL", ffl + S._p(ctx, "lintel_height_mm"), "param" if (ctx.convention_params or {}).get("lintel_height_mm") is not None else "default",
+    lintel = S.Datum("LINTEL", ffl.z_mm + S._p(ctx, "lintel_height_mm"), "param" if (ctx.convention_params or {}).get("lintel_height_mm") is not None else "default",
       "no opening heights on the drawing; floor level plus the lintel height")
-    
-  if not dpc.z_mm < lintel.z_mm < tops[0]:
-    return S.StageSetup(reason="DATUMS_OUT_OF_ORDER")
-  datums = [S.Datum("FFL", ffl, "drawing", "finished level of the ground floor"), dpc, lintel]
-  datums += [S.Datum(f"SLAB_{i + 1}", z, "drawing", "top of the floor slab") for i, z in enumerate(tops)]
-  bands = [S.Band(S.BELOW_PLINTH, S.NEG, dpc.z_mm, dpc.source == "default"),
-    S.Band(S.PLINTH_TO_LINTEL, dpc.z_mm, lintel.z_mm, dpc.source == "default" or lintel.source == "default"),
-    S.Band(S.LINTEL_TO_SLAB, lintel.z_mm, tops[0], lintel.source == "default")]
-  for i in range(1, len(tops)):
-    bands.append(S.Band(S.upper_floor(i), tops[i - 1], tops[i], False))
-  bands.append(S.Band(S.TOP, tops[-1], S.POS, False))
-  return S.StageSetup(datums=tuple(datums), bands=tuple(bands))
+  return S.build_setup(ctx, ffl, dpc, lintel, slabs)
 
 def _lintel_z(members, group) -> float | None:
-  """The lintel level of a drawing: the lowest base of a lintel on its ground floor, when the lintels carry a height."""
   bases = [float(m.z0_mm) for m in members if m.group == group and m.category == "LINTEL" and m.z0_mm is not None and m.floor == "GROUND"]
   return min(bases) if bases else None
 
-def _stage_pieces(setup, z0: float, z1: float, area: float, slices: list) -> dict:
-  """{stage: net mm3} of one prism cut at the bands of the datums, less what the deductions took from each band."""
-  out: dict = {}
+def _groups(setup) -> list:
+  groups: list = []
   for band in setup.bands:
-    lo, hi = max(z0, band.lo), min(z1, band.hi)
+    if band.soft and groups:
+      groups[-1].append(band)
+    else:
+      groups.append([band])
+  return groups
+
+def _stage_pieces(setup, z0: float, z1: float, area: float, slices: list) -> dict:
+  out: dict = {}
+  for group in _groups(setup):
+    lo, hi = max(z0, group[0].lo), min(z1, group[-1].hi)
     if hi - lo < MIN_PIECE_MM:
       continue
-    gross = area * (hi - lo)
-    net = gross - _slice_in(slices, lo, hi)
+  
+    mid = (lo + hi) / 2.0
+    band = next((b for b in group if b.lo <= mid < b.hi), group[-1])
+    net = area * (hi - lo) - _slice_in(slices, lo, hi)
     if net > 0:
       out[band.stage] = out.get(band.stage, 0.0) + net
-  return out
 
 def split_space(ctx, ledger: list, solids: list = ()) -> SpaceResult:
-  """Allocation (when derived works are on) and stage cut (when work stages are on) of the counted PDF members. ledger is every ledger row of the run so far; the
-  rows returned are the PDF rows with their net quantities and stages, to be put in place of the ones they replace."""
   takeoff = getattr(ctx, "takeoff", None)
   members = tuple(getattr(takeoff, "space", ()) or ())
   
@@ -409,6 +432,7 @@ def split_space(ctx, ledger: list, solids: list = ()) -> SpaceResult:
     for group in sorted({m.group for m in members}):
       setups[group] = pdf_datums(ctx, floors_by_group.get(group, []), _lintel_z(members, group))
     stats["datums"] = {g: S.datum_payload(s) for g, s in sorted(setups.items())}
+    stats["unused_overrides"] = S.unused_overrides(ctx, list(setups.values()))
 
   parts_of: dict = defaultdict(list)
   for p in parts:

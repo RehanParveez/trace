@@ -29,6 +29,8 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "steel_wastage_pct", defaultMm: 0, min: 0, max: 15, unit: "pct" },
   { key: "beam_depth_includes_slab", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tie_band_replaces_lintel", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "dpc_thickness_mm", defaultMm: 38.1, min: 0, max: 300 },
+  { key: "dpc_door_deduction", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
   { key: "footing_bottom_below_ngl_mm", defaultMm: null, min: 1, max: 10000, asked: true },
 ];
@@ -104,7 +106,7 @@ export interface DerivedBasisRow {
   basis: DerivedBasis | null;
 }
 
-const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "ngl"];
+const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {

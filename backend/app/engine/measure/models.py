@@ -54,6 +54,8 @@ class CalculationContext:
   layer_mode: bool = False
   derived_mode: bool = False
   derived_params: dict = field(default_factory=dict)
+  datum_overrides: dict = field(default_factory=dict)
+  element_overrides: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class Solid:

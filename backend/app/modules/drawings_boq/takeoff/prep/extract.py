@@ -252,6 +252,26 @@ def _subpaths(obj, matrix):
   emit()
   return yield_list
 
+def _overlaps(x0: float, y0: float, x1: float, y1: float, crop: tuple) -> bool:
+  return not (max(x0, x1) < crop[0] or min(x0, x1) > crop[2] or max(y0, y1) < crop[1] or min(y0, y1) > crop[3])
+  
+def clip_to_crop(out: RawPage) -> dict:
+  c = out.cropbox
+  keep = [_overlaps(out.segs[5 * i], out.segs[5 * i + 1], out.segs[5 * i + 2], out.segs[5 * i + 3], c) for i in range(len(out.kinds))]
+  rings = [r for r in out.rings if _overlaps(*r.bbox, c)]
+  words = [w for w in out.words if _overlaps(w.x0, w.y0, w.x1, w.y1, c)]
+  dropped = {"segments": keep.count(False), "rings": len(out.rings) - len(rings), "words": len(out.words) - len(words)}
+  if not any(dropped.values()):
+    return {}
+  
+  segs, kinds = array("f"), array("B")
+  for i, k in enumerate(keep):
+    if k:
+      segs.extend(out.segs[5 * i:5 * i + 5])
+      kinds.append(out.kinds[i])
+  out.segs, out.kinds, out.rings, out.words = segs, kinds, rings, words
+  return dropped
+
 def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawPage:
   import pypdfium2.raw as raw
   started = time.monotonic()
@@ -347,6 +367,9 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
       stats.update(info)
       if found:
         out.words = found
+    clipped = clip_to_crop(out)
+    if clipped:
+      stats["clipped_to_crop"] = clipped
     stats["elapsed_s"] = round(time.monotonic() - started, 3)
     stats["segments"] = len(out.segs) // 5
     stats["rings"] = len(out.rings)

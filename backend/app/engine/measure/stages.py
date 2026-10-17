@@ -11,12 +11,16 @@ BELOW_PLINTH = "BELOW_PLINTH"
 PLINTH_TO_LINTEL = "PLINTH_TO_LINTEL"
 LINTEL_TO_SLAB = "LINTEL_TO_SLAB"
 TOP = "TOP"
+PARAPET = "PARAPET"
+MUMTY = "MUMTY"
 
 STAGE_LABELS = {
   BELOW_PLINTH: "below plinth",
   PLINTH_TO_LINTEL: "plinth to lintel",
   LINTEL_TO_SLAB: "lintel to slab",
   TOP: "above roof slab",
+  PARAPET: "roof parapet",
+  MUMTY: "mumty and above",
 }
 
 def upper_floor(k: int) -> str:
@@ -36,7 +40,10 @@ DEFAULTS = {
   "slab_cluster_mm": 300.0,
   "floor_slab_min_area_frac": 0.5,
   "stage_snap_mm": 5.0,
+  "parapet_height_mm": 914.4,
 }
+OVERRIDE_RANGE = (-100000.0, 300000.0)
+MIN_PARAPET_MM = 100.0
 FFL_BIN_MM = 5.0
 HEAD_CLEARANCE_MM = 100.0
 OPENING_ROLES = ("DOOR", "WINDOW")
@@ -60,6 +67,7 @@ class Band:
   lo: float
   hi: float
   defaulted: bool
+  soft: bool = False
 
 @dataclass(frozen=True)
 class StageSetup:
@@ -80,6 +88,23 @@ def _p(ctx: CalculationContext, key: str) -> float:
 
 def _given(ctx: CalculationContext, key: str) -> bool:
   return (ctx.convention_params or {}).get(key) is not None
+
+def typed_overrides(ctx: CalculationContext) -> dict:
+  out: dict = {}
+  for name, value in (getattr(ctx, "datum_overrides", None) or {}).items():
+    if isinstance(value, bool):
+      continue
+    try:
+      z = float(value)
+    except (TypeError, ValueError):
+      continue
+  
+    if z == z and OVERRIDE_RANGE[0] <= z <= OVERRIDE_RANGE[1]:
+      out[str(name).upper()] = z
+  return out
+
+def _typed(name: str, z: float, what: str) -> Datum:
+  return Datum(name, z, "typed", f"{what}; the level you typed")
 
 def element_z(el: ModelElement):
   
@@ -126,7 +151,7 @@ def _ffl(ctx: CalculationContext, doors: list) -> float | None:
   top = max(counts.values())
   return min(b for b, n in counts.items() if n == top)
 
-def _floor_slab_tops(ctx: CalculationContext, elements: list, ffl: float) -> list:
+def _slab_clusters(ctx: CalculationContext, elements: list, ffl: float) -> list:
   tol, storey = _p(ctx, "slab_cluster_mm"), _p(ctx, "min_storey_mm")
   slabs = []
   for el in elements:
@@ -145,6 +170,11 @@ def _floor_slab_tops(ctx: CalculationContext, elements: list, ffl: float) -> lis
       clusters[-1]["area"] += area
     else:
       clusters.append({"first": top, "top": top, "area": area})
+  return clusters
+
+def _floor_slab_tops(ctx: CalculationContext, elements: list, ffl: float) -> list:
+  storey = _p(ctx, "min_storey_mm")
+  clusters = _slab_clusters(ctx, elements, ffl)
   if not clusters:
     return []
   biggest = max(c["area"] for c in clusters)
@@ -156,8 +186,73 @@ def _floor_slab_tops(ctx: CalculationContext, elements: list, ffl: float) -> lis
     tops.append(t)
   return tops
 
+def _mumty_top(ctx: CalculationContext, elements: list, ffl: float, roof: float) -> float | None:
+  """The top of a small slab standing a storey above the roof slab: the roof of a stair room (mumty). It is not a floor, so it is not a slab datum; it is
+  shown beside the datums so the stage above the parapet can be read as the mumty."""
+  storey = _p(ctx, "min_storey_mm")
+  small = [c["top"] for c in _slab_clusters(ctx, elements, ffl) if c["top"] >= roof + storey]
+  return max(small) if small else None
+
+def build_setup(ctx: CalculationContext, ffl: Datum, dpc: Datum, lintel: Datum, slabs: list, extra: tuple = ()) -> StageSetup:
+  """The bands of work from the datums found on the model or the drawing, after the levels typed by the person have been put in. Shared by the model and the PDF.
+  Below the roof slab: below plinth, plinth to lintel, lintel to slab, one band for every upper floor. Above it: the parapet (a set height, taken as a default
+  unless the convention gives it or the person types its top) and above that the mumty, a soft band. With no parapet height the whole of it is one band."""
+  zs = [s.z_mm for s in slabs]
+  if not zs:
+    return StageSetup(reason="NO_FLOOR_SLAB_FOUND")
+  if not dpc.z_mm < lintel.z_mm < zs[0] or any(b <= a for a, b in zip(zs, zs[1:])):
+    return StageSetup(reason="DATUMS_OUT_OF_ORDER")
+  datums = [ffl, dpc, lintel, *slabs]
+  bands = [
+    Band(BELOW_PLINTH, NEG, dpc.z_mm, dpc.source == "default"),
+    Band(PLINTH_TO_LINTEL, dpc.z_mm, lintel.z_mm, dpc.source == "default" or lintel.source == "default"),
+    Band(LINTEL_TO_SLAB, lintel.z_mm, zs[0], lintel.source == "default"),
+  ]
+  for i in range(1, len(zs)):
+    bands.append(Band(upper_floor(i), zs[i - 1], zs[i], False))
+  roof = zs[-1]
+  typed = typed_overrides(ctx).get("PARAPET_TOP")
+  height = _p(ctx, "parapet_height_mm")
+  if typed is not None and typed >= roof + MIN_PARAPET_MM:
+    top = Datum("PARAPET_TOP", typed, "typed", "top of the parapet; the level you typed")
+  elif height >= MIN_PARAPET_MM:
+    given = _given(ctx, "parapet_height_mm")
+    top = Datum("PARAPET_TOP", roof + height, "param" if given else "default",
+      "roof slab top plus the parapet height" if given else "no parapet level in the model; roof slab top plus an assumed parapet height")
+  else:
+    top = None
+  if top is None:
+    bands.append(Band(TOP, roof, POS, False))
+  else:
+    datums.append(top)
+    bands.append(Band(PARAPET, roof, top.z_mm, top.source == "default"))
+    bands.append(Band(MUMTY, top.z_mm, POS, top.source == "default", soft=True))
+  datums.extend(extra)
+  return StageSetup(datums=tuple(datums), bands=tuple(bands))
+
+def dpc_datum(ctx: CalculationContext, elements: list) -> Datum | None:
+  typed = typed_overrides(ctx)
+  if "DPC" in typed:
+    return _typed("DPC", typed["DPC"], "damp-proof course level")
+  if "FFL" in typed:
+    ffl = typed["FFL"]
+  else:
+    doors = []
+    
+    for el in elements:
+      if (el.role or "").upper() == "DOOR":
+        z = element_z(el)
+        if z is not None:
+          doors.append(z)
+    ffl = _ffl(ctx, doors)
+  if ffl is None:
+    return None
+  given = _given(ctx, "dpc_below_ffl_mm")
+  return Datum("DPC", ffl - _p(ctx, "dpc_below_ffl_mm"), "param" if given else "default",
+    "floor level less the DPC drop" if given else "no DPC level in the model; taken at floor level")
+
 def derive_datums(ctx: CalculationContext, elements: list) -> StageSetup:
-  
+  typed = typed_overrides(ctx)
   doors, heads = [], []
   for el in elements:
     if (el.role or "").upper() in OPENING_ROLES:
@@ -166,37 +261,44 @@ def derive_datums(ctx: CalculationContext, elements: list) -> StageSetup:
         heads.append(z)
         if el.role.upper() == "DOOR":
           doors.append(z)
-  ffl = _ffl(ctx, doors)
-  if ffl is None:
+  found_ffl = _ffl(ctx, doors)
+  if "FFL" in typed:
+    ffl = _typed("FFL", typed["FFL"], "finished level of the lowest storey")
+  elif found_ffl is not None:
+    ffl = Datum("FFL", found_ffl, "model", "most common door threshold on the lowest storey")
+  else:
     return StageSetup(reason="NO_DOORS_FOR_FLOOR_LEVEL")
-  slabs = _floor_slab_tops(ctx, elements, ffl)
+  tops = _floor_slab_tops(ctx, elements, ffl.z_mm)
+  slabs = []
+  
+  for i, z in enumerate(tops):
+    name = f"SLAB_{i + 1}"
+    slabs.append(_typed(name, typed[name], "top of the floor slab") if name in typed else Datum(name, z, "model", "top of the floor slab"))
+  if not slabs and "SLAB_1" in typed:
+    slabs = [_typed("SLAB_1", typed["SLAB_1"], "top of the floor slab")]
   if not slabs:
     return StageSetup(reason="NO_FLOOR_SLAB_FOUND")
 
   dpc_given = _given(ctx, "dpc_below_ffl_mm")
-  dpc = Datum("DPC", ffl - _p(ctx, "dpc_below_ffl_mm"), "param" if dpc_given else "default",
-    "floor level less the DPC drop" if dpc_given else "no DPC level in the model; taken at floor level")
-  first = slabs[0]
+  if "DPC" in typed:
+    dpc = _typed("DPC", typed["DPC"], "damp-proof course level")
+  else:
+    dpc = Datum("DPC", ffl.z_mm - _p(ctx, "dpc_below_ffl_mm"), "param" if dpc_given else "default",
+      "floor level less the DPC drop" if dpc_given else "no DPC level in the model; taken at floor level")
+  first = slabs[0].z_mm
   below = [hi for lo, hi in heads if lo < first and dpc.z_mm < hi < first - HEAD_CLEARANCE_MM]
-  if below:
+  if "LINTEL" in typed:
+    lintel = _typed("LINTEL", typed["LINTEL"], "lintel level")
+  elif below:
     lintel = Datum("LINTEL", max(below), "model", "highest door or window head below the first slab")
   else:
-    lintel = Datum("LINTEL", ffl + _p(ctx, "lintel_height_mm"), "param" if _given(ctx, "lintel_height_mm") else "default",
+    lintel = Datum("LINTEL", ffl.z_mm + _p(ctx, "lintel_height_mm"), "param" if _given(ctx, "lintel_height_mm") else "default",
       "no opening heads below the first slab; floor level plus the lintel height")
-  if not dpc.z_mm < lintel.z_mm < first:
-    return StageSetup(reason="DATUMS_OUT_OF_ORDER")
-
-  datums = [Datum("FFL", ffl, "model", "most common door threshold on the lowest storey"), dpc, lintel]
-  datums += [Datum(f"SLAB_{i + 1}", z, "model", "top of the floor slab") for i, z in enumerate(slabs)]
-  bands = [
-    Band(BELOW_PLINTH, NEG, dpc.z_mm, dpc.source == "default"),
-    Band(PLINTH_TO_LINTEL, dpc.z_mm, lintel.z_mm, dpc.source == "default" or lintel.source == "default"),
-    Band(LINTEL_TO_SLAB, lintel.z_mm, slabs[0], lintel.source == "default"),
-  ]
-  for i in range(1, len(slabs)):
-    bands.append(Band(upper_floor(i), slabs[i - 1], slabs[i], False))
-  bands.append(Band(TOP, slabs[-1], POS, False))
-  return StageSetup(datums=tuple(datums), bands=tuple(bands))
+  extra = []
+  mumty = _mumty_top(ctx, elements, ffl.z_mm, slabs[-1].z_mm)
+  if mumty is not None:
+    extra.append(Datum("MUMTY_SLAB", mumty, "model", "top of a small slab a storey above the roof: taken as the roof of the stair room (mumty)"))
+  return build_setup(ctx, ffl, dpc, lintel, slabs, tuple(extra))
 
 def stage_of(setup: StageSetup, z: float) -> Band:
   for band in setup.bands:
@@ -205,12 +307,19 @@ def stage_of(setup: StageSetup, z: float) -> Band:
   return setup.bands[-1]
 
 def _crossings(setup: StageSetup, z0: float, z1: float, snap: float) -> list:
-  return [b.lo for b in setup.bands if b.lo != NEG and z0 + snap < b.lo < z1 - snap]
+  return [b.lo for b in setup.bands if b.lo != NEG and not b.soft and z0 + snap < b.lo < z1 - snap]
 
 def datum_payload(setup: StageSetup) -> dict:
   if not setup.resolved:
     return {"resolved": False, "reason": setup.reason}
-  return {"resolved": True, "datums": [{"name": d.name, "z_mm": round(d.z_mm, 1), "source": d.source, "note": d.note} for d in setup.datums]}
+  return {"resolved": True, "datums": [{"name": d.name, "z_mm": round(d.z_mm, 1), "source": d.source, "note": d.note} for d in setup.datums],
+    "bands": [{"stage": b.stage, "from_mm": None if b.lo == NEG else round(b.lo, 1), "to_mm": None if b.hi == POS else round(b.hi, 1),
+      "defaulted": b.defaulted, "soft": b.soft} for b in setup.bands]}
+
+def unused_overrides(ctx: CalculationContext, setups) -> list:
+  typed = typed_overrides(ctx)
+  names = {d.name for s in setups if s.resolved for d in s.datums if d.source == "typed"}
+  return sorted(n for n in typed if n not in names)
 
 def _d(x: float) -> Decimal:
   return Decimal(repr(float(x)))
@@ -278,7 +387,7 @@ def _pieces_of(row: LedgerEntry, solid: Solid, host_deds: list, cuts: list, z0: 
 
 def split_stages(ctx: CalculationContext, elements: list, solids: list, alloc, ledger: list, setup: StageSetup | None = None) -> StageResult:
   setup = setup if setup is not None else derive_datums(ctx, elements)
-  stats = {"enabled": True, **datum_payload(setup)}
+  stats = {"enabled": True, **datum_payload(setup), "unused_overrides": unused_overrides(ctx, [setup])}
   if not setup.resolved:
     stats.update({"rows_split": 0, "rows_tagged": 0})
     return StageResult(ledger=list(ledger), stats=stats)

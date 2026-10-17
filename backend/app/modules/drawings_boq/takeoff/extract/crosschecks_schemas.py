@@ -16,3 +16,26 @@ class CrossChecksResponse(BaseModel):
   warnings: int = 0
   info: int = 0
   passed: int = 0
+
+
+class ReadyItem(BaseModel):
+  id: str
+  category: str
+  tag: str | None = None
+  floor: str | None = None
+  page_no: int
+  grade: str | None = None
+
+class HeldReason(BaseModel):
+  code: str
+  message: str
+
+class HeldItem(ReadyItem):
+  reasons: list[HeldReason] = Field(default_factory=list)
+
+class ReadyToAcceptResponse(BaseModel):
+  drawing_id: UUID
+  ready: list[ReadyItem]
+  held: list[HeldItem]
+  held_by_reason: dict[str, int] = Field(default_factory=dict)
+  checks_warning: int = 0

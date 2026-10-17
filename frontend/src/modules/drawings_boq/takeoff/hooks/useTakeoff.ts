@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { AcceptBody, FloorChoiceBody, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
+import type { AcceptBody, FloorChoiceBody, KnownFact, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
 
 export const takeoffKeys = {
@@ -18,6 +18,7 @@ export const takeoffKeys = {
   floors: (drawingId: string) => [...takeoffKeys.all, "floors", drawingId] as const,
   floorSources: (drawingId: string) => [...takeoffKeys.all, "floor-sources", drawingId] as const,
   crossChecks: (drawingId: string) => [...takeoffKeys.all, "checks", drawingId] as const,
+  ready: (drawingId: string) => [...takeoffKeys.all, "ready", drawingId] as const,
   typedMemory: (drawingId: string) => [...takeoffKeys.all, "typed-memory", drawingId] as const,
   reconcile: (drawingId: string, query: ReconcileQuery) => [...takeoffKeys.all, "reconcile", drawingId, query.model_drawing_id ?? "", query.dx_mm ?? null, query.dy_mm ?? null] as const,
   candidates: (sheetId: string) => [...takeoffKeys.all, "candidates", sheetId] as const,
@@ -49,6 +50,8 @@ function useInvalidateOverview(drawingId: string | undefined) {
     if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.overview(drawingId) });
     if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.crossChecks(drawingId) });
     if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.typedMemory(drawingId) });
+    if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.ready(drawingId) });
+    if (drawingId) void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "trace", drawingId] });
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "project-drawings"] });
     };
 }
@@ -369,6 +372,28 @@ export function useTakeoffCrossChecks(drawingId: string | undefined, enabled = t
   return useQuery({
     queryKey: takeoffKeys.crossChecks(drawingId ?? ""),
     queryFn: () => takeoffApi.crossChecks(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useReadyToAccept(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.ready(drawingId ?? ""),
+    queryFn: () => takeoffApi.readyToAccept(drawingId as string),
+    enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useCheckKnownFacts(drawingId: string | undefined) {
+  return useMutation({
+    mutationFn: (facts: KnownFact[]) => takeoffApi.checkKnownFacts(drawingId as string, facts),
+  });
+}
+
+export function useReaderTrace(drawingId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: [...takeoffKeys.all, "trace", drawingId ?? ""],
+    queryFn: () => takeoffApi.readerTrace(drawingId as string),
     enabled: Boolean(drawingId) && enabled,
   });
 }

@@ -15,7 +15,8 @@ import { useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeo
 import type { ReadStage } from "../takeoff/hooks/useTakeoff";
 import type { RegisterSyncResult } from "../takeoff/types/takeoff.types";
 import { isPdfFormat, measureBadge, needsPerson, pagesFor, waitingLines } from "../takeoff/utils/register";
-import { EVIDENCE_LABEL, EVIDENCE_TONE, evidenceCheck, evidenceCounts, evidenceTitle, rowEvidence } from "../takeoff/utils/evidence";
+import { EVIDENCE_LABEL, EVIDENCE_TONE, evidenceCheck, evidenceCounts, evidenceTitle, rangeText, rowEvidence } from "../takeoff/utils/evidence";
+import { CoveragePanel } from "../takeoff/components/CoveragePanel";
 import { memberZ, zText } from "../takeoff/utils/floors";
 
 interface DrawingElementsDialogProps {
@@ -79,7 +80,17 @@ const COPY_COLUMNS: CopyColumn[] = [
   { header: "properties_json", value: (e) => (e.properties && Object.keys(e.properties).length > 0 ? JSON.stringify(e.properties) : "") },
   { header: "evidence", value: (e) => rowEvidence(e.properties)?.grade ?? "" },
   { header: "evidence_to_check", value: (e) => evidenceCheck(rowEvidence(e.properties)) },
+  { header: "quantity_low", numeric: true, value: (e) => rangeFigure(e, "low") },
+  { header: "quantity_high", numeric: true, value: (e) => rangeFigure(e, "high") },
 ];
+
+function rangeFigure(e: { quantity: unknown; properties?: Record<string, unknown> | null }, side: "low" | "high"): number | "" {
+  const r = rowEvidence(e.properties)?.range;
+  const q = Number(e.quantity);
+  if (!r || !r.bounded || !Number.isFinite(q)) return "";
+  const pct = side === "low" ? r.low_pct : r.high_pct;
+  return pct === null ? "" : Math.round(q * (1 + pct / 100) * 10000) / 10000;
+}
 
 const KIND_ORDER = ["IfcFooting", "IfcColumn", "IfcBeam", "IfcSlab", "IfcWall", "IfcSpace", "IfcDoor", "IfcWindow"];
 const NATURAL = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
@@ -476,6 +487,7 @@ export function DrawingElementsDialog({
                     })}` : ""}
                   </p>
                 ) : null}
+                {reg ? <CoveragePanel register={reg} /> : null}
                 {needsPerson(reg) ? (
                   <div className="space-y-1">
                     {lines.map((line) => (
@@ -696,10 +708,15 @@ export function DrawingElementsDialog({
                       >
                         {element.normalization_status ?? "\u2014"}
                         {evidence ? (
-                          <div className="mt-1" title={evidenceTitle(evidence)}>
+                          <div className="mt-1" title={evidenceTitle(evidence, Number(element.quantity), element.unit)}>
                             <Badge tone={EVIDENCE_TONE[evidence.grade]}>
                               {t(`drawings.elements.evidence.${evidence.grade}`, EVIDENCE_LABEL[evidence.grade])}
                             </Badge>
+                            {evidence.range ? (
+                              <div className="mt-0.5 font-mono text-[10px] text-[var(--color-text-muted)]" data-testid="row-range">
+                                {rangeText(evidence.range, Number(element.quantity), element.unit)}
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
                       </td>
