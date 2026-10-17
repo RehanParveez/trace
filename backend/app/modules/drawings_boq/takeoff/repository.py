@@ -3,6 +3,7 @@ from app.engine.measure import takeoff as tk
 from app.engine.measure.member_steel import STEEL_FAMILIES, clean_steel
 from app.modules.drawings_boq.models import TakeoffViewAlignment, TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
+from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.register import row_id
 from app.modules.drawings_boq.takeoff import frame_views as FV
 from app.modules.drawings_boq.takeoff.space_loader import load_space
@@ -48,6 +49,7 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
 
 MEMBER_CATEGORIES = ("FOOTING",)
 FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL", "BEAM", "STAIR")
+FORMWORK_SITE = {"OHWT": "TANK", "UGWT": "TANK", "SEPTIC": "TANK", "COPING": "COPING", "CHAJJA": "CHAJJA", "BALCONY_SLAB": "BALCONY_SLAB"}
 
 def _mm(value) -> Decimal | None:
   v = _dec(value)
@@ -124,6 +126,15 @@ async def load_members(session: AsyncSession, org: UUID, measurements: list, she
 def _rcc_wall(cand: TakeoffCandidate) -> bool:
   return cand.category == "WALL" and (cand.facts or {}).get("construction") == "RCC"
 
+def _site_formwork(cand: TakeoffCandidate) -> str | None:
+  """The formwork category of a site item that is cast in concrete and shuttered (a tank, a coping, a chajja, a balcony slab), or None."""
+  return FORMWORK_SITE.get((cand.facts or {}).get("site_kind")) if cand.category == "SITE" else None
+
+def _tank_detail(p: dict) -> dict | None:
+  """The outside height and the wall thickness a tank was accepted with, which its shuttering needs; None for a tank accepted before they were kept."""
+  height, wall = _mm(p.get("height_mm")), _mm(p.get("wall_mm"))
+  return {"height_mm": float(height), "wall_mm": float(wall)} if height is not None and wall is not None else None
+
 async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
   """The accepted column, footing, slab, lintel, beam and stair candidates behind the confirmed measurements, with the size each measurement used, and the
   RCC walls measured as length x height x thickness. A member needs no position or scale here: the shuttering of a member comes from its size alone, and an
@@ -133,8 +144,8 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
     return ()
   cands = (await session.execute(
     select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.measurement_id.in_(ids),
-      TakeoffCandidate.category.in_(FORMWORK_CATEGORIES + ("WALL",)), TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
-  by_measurement = {c.measurement_id: c for c in cands if c.category != "WALL" or _rcc_wall(c)}
+      TakeoffCandidate.category.in_(FORMWORK_CATEGORIES + ("WALL", "SITE")), TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
+  by_measurement = {c.measurement_id: c for c in cands if (c.category not in ("WALL", "SITE") or _rcc_wall(c) or _site_formwork(c))}
   wanted = [row_id(sheets[m.sheet_id].id, by_measurement[m.id].ckey, i)
     for m in measurements if m.id in by_measurement and by_measurement[m.id].category != "WALL" for i in range(len((m.geometry or {}).get("points") or []))]
   present = set((await session.execute(select(DrawingElement.id).where(DrawingElement.organization_id == org, DrawingElement.id.in_(wanted)))).scalars().all()) if wanted else set()
@@ -160,6 +171,16 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
     points = (m.geometry or {}).get("points") or []
     if length is None or width is None or depth is None or not points:
       continue
+    site = _site_formwork(cand)
+    if site is not None:
+      ids_site = tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(points)))
+      out.append(tk.FormworkInput(
+        measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=site, tag=cand.tag, level_id=m.level_id,
+        element_ids=tuple(e if e in present else None for e in ids_site), count=len(points),
+        length_mm=length, width_mm=width, depth_mm=depth, confidence=_dec(cand.confidence) or Decimal(1),
+        site=_tank_detail(p) if site == "TANK" else None))
+      continue
+    
     ids_here = tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(points)))
     positions = sheet_positions(cand, m) if len(points) else ()
     out.append(tk.FormworkInput(
@@ -167,7 +188,8 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
       element_ids=tuple(e if e in present else None for e in ids_here), count=len(points), length_mm=length, width_mm=width, depth_mm=depth,
       confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category in STEEL_FAMILIES else None,
       stair=stair_detail(cand, depth) if cand.category == "STAIR" else None,
-      frame=view_key(cand, sheet) if positions else None, points_mm=positions))
+      frame=view_key(cand, sheet) if positions else None, points_mm=positions,
+      role=(cand.facts or {}).get("beam_role") if cand.category == "BEAM" else None))
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
 
 async def load_stored_alignments(session: AsyncSession, org: UUID, drawing_ids: list) -> dict:
@@ -185,6 +207,24 @@ async def load_stored_alignments(session: AsyncSession, org: UUID, drawing_ids: 
     else:
       d["placements"][r.frame_key] = (float(r.dx_mm), float(r.dy_mm))
   return out
+
+async def load_ranges(session: AsyncSession, org: UUID, measurements: list) -> tuple:
+  ids = [m.id for m in measurements]
+  if not ids:
+    return ()
+  cands = (await session.execute(
+    select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.measurement_id.in_(ids),
+      TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
+  out = []
+  
+  for c in sorted(cands, key=lambda c: str(c.measurement_id)):
+    ev = evidence_for(c)
+    rg = ev["range"]
+    out.append(tk.RangeInput(
+      measurement_id=c.measurement_id, grade=str(ev["grade"]), bounded=bool(rg.get("bounded")), low_pct=rg.get("low_pct"), high_pct=rg.get("high_pct"),
+      leaves_out=bool(rg.get("leaves_out")),
+      drivers=tuple({"name": str(d["name"]), "basis": str(d["basis"]), "low_pct": d.get("low_pct"), "high_pct": d.get("high_pct")} for d in rg.get("drivers") or [])))
+  return tuple(out)
 
 async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: list[UUID]) -> tk.TakeoffInputs | None:
   if not drawing_ids:
@@ -217,7 +257,8 @@ async def load_takeoff_inputs(session: AsyncSession, org: UUID, drawing_ids: lis
       if c.sheet_id in sheets),
     measurements=tuple(measurement_input(m) for m in sorted(measurements, key=lambda m: str(m.id))),
     members=await load_members(session, org, measurements, sheets),
-    formwork=formwork, alignments=FV.build_alignments(formwork, group_of_sheet, stored), space=space, floors=floors)
+    formwork=formwork, alignments=FV.build_alignments(formwork, group_of_sheet, stored), space=space, floors=floors,
+    ranges=await load_ranges(session, org, measurements))
 
 async def takeoff_drawing_ids(session: AsyncSession, org: UUID, project_id: UUID) -> set[UUID]:
   r = await session.execute(

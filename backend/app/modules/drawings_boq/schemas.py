@@ -129,6 +129,7 @@ class BOQItemResponse(BaseModel):
   spec_key: str | None = None
   spec: dict | None = None
   work_stage: str | None = None
+  quantity_range: dict | None = None
 
 class BOQItemUpdateRequest(BaseModel):
   version: int = Field(
@@ -294,6 +295,7 @@ class DerivedParamsRequest(BaseModel):
   footing_formwork: float | None = Field(default=None, ge=0, le=1, description="1 shutters the four sides of footings read from a drawing.")
   slab_edge_formwork: float | None = Field(default=None, ge=0, le=1, description="0 leaves the slab edges out of the formwork, 1 includes them.")
   formwork_shared_faces: float | None = Field(default=None, ge=0, le=1, description="1 takes off the column faces that a slab of the same floor covers, once the views of the drawing are placed on the building frame.")
+  tank_base_formwork: float | None = Field(default=None, ge=0, le=1, description="1 shutters the soffit of the base slab of a tank read from a drawing; 0 takes the base as cast on the earth or on a slab.")
   steel_cover_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover at the ends of the bars of a member whose steel is read from a drawing.")
   ring_hook_dia: float | None = Field(default=None, ge=0, le=40, description="Length added to a ring for its hooks, in bar diameters.")
   bar_lap_dia: float | None = Field(default=None, ge=0, le=80, description="Lap of a column's vertical bars with the lift above, in bar diameters.")
@@ -614,6 +616,14 @@ class SnapshotItemResponse(BaseModel):
   source_kind: str
   ledger_row_count: int
   ledger_hash: str | None
+  work_stage: str | None = None
+  spec_key: str | None = None
+  spec: dict | None = None
+  quantity_range: dict | None = None
+
+class StageReportResponse(BaseModel):
+  stages: list[dict]
+  totals: list[dict]
 
 class ItemTraceResponse(BaseModel):
   item: BOQItemResponse

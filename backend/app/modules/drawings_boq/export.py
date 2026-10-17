@@ -141,6 +141,210 @@ def build_boq_pdf(
 
   doc.build(story)
   return buffer.getvalue()
+def _range_text(qr: dict | None, unit: str) -> str:
+  if not qr:
+    return "no range"
+  text = f"{_q(qr['low'])} to {_q(qr['high'])} {unit}"
+  if qr.get("weakest"):
+    text += f"; weakest input {qr['weakest']}"
+  if qr.get("unbounded_rows"):
+    text += f"; {qr['unbounded_rows']} row(s) with no range, so the band is a minimum"
+  if qr.get("leaves_out_rows"):
+    text += f"; {qr['leaves_out_rows']} row(s) leave something out"
+  return text
+
+def _sheet_cells(l: dict) -> list:
+  from app.modules.drawings_boq.measurement_sheet import fmt_dim, fmt_qty
+  return [l["nos"] if l["nos"] is not None else "", fmt_dim(l["length"]), fmt_dim(l["breadth"]), fmt_dim(l["height"]), fmt_qty(l["quantity"]), l["remark"]]
+
+def build_measurement_sheet_pdf(snapshot: dict, rows: list[dict], sheets: dict, meta: dict, company: str) -> bytes:
+  """The bill measured the way a quantity surveyor writes it: for each item, each mark's sheet of Nos, Length, Breadth, Height or Depth, Quantity and Remark."""
+  from app.modules.drawings_boq.measurement_sheet import steel_by_diameter, fmt_qty
+  buffer = BytesIO()
+  doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15 * mm, bottomMargin=15 * mm, leftMargin=12 * mm, rightMargin=12 * mm)
+  styles, cell, small = _styles()
+  story = [Paragraph(f"{company} - MEASUREMENT SHEET", styles["Heading2"]), Paragraph(_stamp(snapshot), small),
+    Paragraph("Dimensions in metres. Only the dimensions the drawing gave are printed; a model quantity shows its working in the remark.", small), Spacer(1, 6)]
+  all_sheets: list = []
+  
+  for r in rows:
+    story.append(Paragraph(f"<b>{r['line_no']}. {r['material_name']}</b> - contract {_q(r['quantity'])} {r['unit']} (calculated {_q(r['net_quantity'])}); "
+      f"range: {_range_text(r.get('quantity_range'), r['unit'])}", styles["Normal"]))
+    blocks = sheets.get(str(r["source_item_id"]), [])
+    if not blocks:
+      story.append(Paragraph("Manual or imported line - no measurement behind it.", small))
+    
+    for b in blocks:
+      all_sheets.append(b)
+      data = [["Nos", "Length", "Breadth", "Height / Depth", f"Quantity ({b['unit']})", "Remark"]]
+      data.extend([_sheet_cells(l)[:5] + [Paragraph(str(l["remark"]), cell)] for l in b["lines"]])
+      t = Table(data, colWidths=[16 * mm, 24 * mm, 24 * mm, 28 * mm, 32 * mm, 140 * mm], repeatRows=1)
+      style = list(_GRID)
+      for n, l in enumerate(b["lines"], start=1):
+        if l["kind"] == "total":
+          style.append(("FONTNAME", (0, n), (-1, n), "Helvetica-Bold"))
+        elif l["kind"] == "less":
+          style.append(("TEXTCOLOR", (0, n), (-1, n), colors.HexColor("#b91c1c")))
+      t.setStyle(TableStyle(style))
+      story.append(Paragraph(f"{b.get('element', '-')} ({b.get('level', '-')}) - {b['label']}", small))
+      story.append(t)
+      story.append(Spacer(1, 3))
+    story.append(Spacer(1, 6))
+  by_dia = steel_by_diameter(all_sheets)
+  
+  if by_dia["rows"]:
+    data = [["Diameter (mm)", "Length (m)", "Weight (kg)"]] + [[r["dia_mm"], fmt_qty(r["length_m"]), fmt_qty(r["kg"])] for r in by_dia["rows"]]
+    data += [["Wastage", "", fmt_qty(by_dia["wastage_kg"])], ["Total", "", fmt_qty(by_dia["total_kg"])]]
+    story.append(Paragraph("<b>Reinforcement read from the drawing, by diameter</b>", styles["Normal"]))
+    t = Table(data, colWidths=[40 * mm, 40 * mm, 40 * mm], repeatRows=1)
+    t.setStyle(TableStyle(_GRID))
+    story.append(t)
+  doc.build(story)
+  return buffer.getvalue()
+
+def build_measurement_sheet_xlsx(snapshot: dict, rows: list[dict], sheets: dict, meta: dict, company: str) -> bytes:
+  from app.modules.drawings_boq.measurement_sheet import steel_by_diameter, fmt_dim
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "Measurement Sheet"
+  bold = Font(bold=True)
+  ws.append([f"{company} - MEASUREMENT SHEET"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append([_stamp(snapshot)])
+  ws.append(["Dimensions in metres. Only the dimensions the drawing gave are printed."])
+  ws.append([])
+  all_sheets: list = []
+  
+  for r in rows:
+    ws.append([f"{r['line_no']}. {r['material_name']}", "", "", "", "", f"Contract {r['quantity']} {r['unit']}", "", f"Range: {_range_text(r.get('quantity_range'), r['unit'])}"])
+    for c in ws[ws.max_row]:
+      c.font = bold
+    for b in sheets.get(str(r["source_item_id"]), []):
+      all_sheets.append(b)
+      ws.append([f"{b.get('element', '-')} ({b.get('level', '-')}) - {b['label']}"])
+      ws.append(["", "Nos", "Length", "Breadth", "Height / Depth", "Quantity", "Unit", "Remark"])
+      for c in ws[ws.max_row]:
+        c.font = bold
+        
+      for l in b["lines"]:
+        ws.append(["", l["nos"], float(l["length"]) if l["length"] is not None else None, float(l["breadth"]) if l["breadth"] is not None else None,
+          float(l["height"]) if l["height"] is not None else None, float(l["quantity"]) if l["quantity"] is not None else None, b["unit"], l["remark"]])
+        if l["kind"] == "total":
+          for c in ws[ws.max_row]:
+            c.font = bold
+    ws.append([])
+  by_dia = steel_by_diameter(all_sheets)
+  
+  if by_dia["rows"]:
+    ws.append(["Reinforcement read from the drawing, by diameter"])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    ws.append(["", "Diameter (mm)", "Length (m)", "Weight (kg)"])
+    for r in by_dia["rows"]:
+      ws.append(["", r["dia_mm"], float(r["length_m"]), float(r["kg"])])
+    ws.append(["", "Wastage", None, float(by_dia["wastage_kg"])])
+    ws.append(["", "Total", None, float(by_dia["total_kg"])])
+  for col, width in zip("ABCDEFGH", (52, 8, 12, 12, 16, 14, 8, 90)):
+    ws.column_dimensions[col].width = width
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
+def _stage_item_row(i: dict) -> list:
+  qr = i.get("quantity_range")
+  return [i["name"] or "", i["unit"], float(Decimal(i["quantity"])), qr["low"] if qr else None, qr["high"] if qr else None,
+    (qr.get("weakest") or "") if qr else "not graded", "yes" if i.get("derived") else "", i.get("review_status") or ""]
+
+def build_stage_report_xlsx(snapshot: dict, report: dict, by_dia: dict, meta: dict, company: str) -> bytes:
+  wb = Workbook()
+  ws = wb.active
+  ws.title = "By stage and trade"
+  bold = Font(bold=True)
+  ws.append([f"{company} - QUANTITIES BY STAGE AND TRADE"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append([_stamp(snapshot)])
+  ws.append(["Low and high are the range of the quantity from how each input was found on the drawing. A total is the sum in one unit with the range of its items combined."])
+  ws.append([])
+  
+  for st in report["stages"]:
+    ws.append([st["label"].upper()])
+    ws.cell(row=ws.max_row, column=1).font = Font(bold=True, size=12)
+    for tr in st["trades"]:
+      ws.append([tr["trade"]])
+      ws.cell(row=ws.max_row, column=1).font = bold
+      ws.append(["Item", "Unit", "Quantity", "Low", "High", "Weakest input", "Derived", "Review"])
+      
+      for c in ws[ws.max_row]:
+        c.font = bold
+      for i in tr["items"]:
+        ws.append(_stage_item_row(i))
+      for t in tr["totals"]:
+        ws.append([f"Total {tr['trade']}", t["unit"], t["likely"], t["low"], t["high"], f"{t['unbounded']} item(s) not fully bounded" if t["unbounded"] else ""])
+    ws.append([f"Total {st['label']}"])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    for t in st["totals"]:
+      ws.append(["", t["unit"], t["likely"], t["low"], t["high"]])
+    ws.append([])
+  ws.append(["WHOLE BILL"])
+  ws.cell(row=ws.max_row, column=1).font = Font(bold=True, size=12)
+  for t in report["totals"]:
+    ws.append(["", t["unit"], t["likely"], t["low"], t["high"], f"{t['unbounded']} item(s) not fully bounded" if t["unbounded"] else ""])
+  for col, width in zip("ABCDEFGH", (56, 8, 14, 14, 14, 22, 9, 16)):
+    ws.column_dimensions[col].width = width
+  
+  if by_dia["rows"]:
+    s2 = wb.create_sheet("Steel by diameter")
+    s2.append(["Diameter (mm)", "Length (m)", "Weight (kg)"])
+    for c in s2[1]:
+      c.font = bold
+    for r in by_dia["rows"]:
+      s2.append([r["dia_mm"], float(r["length_m"]), float(r["kg"])])
+    s2.append(["Wastage", None, float(by_dia["wastage_kg"])])
+    s2.append(["Total", None, float(by_dia["total_kg"])])
+    for col, width in zip("ABC", (16, 14, 14)):
+      s2.column_dimensions[col].width = width
+  buffer = BytesIO()
+  wb.save(buffer)
+  return buffer.getvalue()
+
+def build_stage_report_pdf(snapshot: dict, report: dict, by_dia: dict, meta: dict, company: str) -> bytes:
+  from app.modules.drawings_boq.measurement_sheet import fmt_qty
+  buffer = BytesIO()
+  doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15 * mm, bottomMargin=15 * mm, leftMargin=12 * mm, rightMargin=12 * mm)
+  styles, cell, small = _styles()
+  story = [Paragraph(f"{company} - QUANTITIES BY STAGE AND TRADE", styles["Heading2"]), Paragraph(_stamp(snapshot), small), Spacer(1, 6)]
+  
+  for st in report["stages"]:
+    story.append(Paragraph(f"<b>{st['label'].upper()}</b>", styles["Heading3"]))
+    for tr in st["trades"]:
+      data = [["Item", "Unit", "Quantity", "Low", "High", "Weakest input", "Derived"]]
+      for i in tr["items"]:
+        qr = i.get("quantity_range")
+        data.append([Paragraph(i["name"] or "", cell), i["unit"], fmt_qty(Decimal(i["quantity"])), fmt_qty(qr["low"]) if qr else "-", fmt_qty(qr["high"]) if qr else "-",
+          (qr.get("weakest") or "") if qr else "not graded", "yes" if i.get("derived") else ""])
+      for t in tr["totals"]:
+        data.append([f"Total {tr['trade']}", t["unit"], fmt_qty(t["likely"]), fmt_qty(t["low"]), fmt_qty(t["high"]), "", ""])
+      story.append(Paragraph(tr["trade"], small))
+      table = Table(data, colWidths=[110 * mm, 16 * mm, 30 * mm, 30 * mm, 30 * mm, 36 * mm, 18 * mm], repeatRows=1)
+      table.setStyle(TableStyle(_GRID))
+      story.append(table)
+      story.append(Spacer(1, 4))
+      
+  data = [["Whole bill", "Unit", "Quantity", "Low", "High", "Items not fully bounded"]]
+  data += [["", t["unit"], fmt_qty(t["likely"]), fmt_qty(t["low"]), fmt_qty(t["high"]), t["unbounded"]] for t in report["totals"]]
+  table = Table(data, colWidths=[110 * mm, 16 * mm, 30 * mm, 30 * mm, 30 * mm, 40 * mm])
+  table.setStyle(TableStyle(_GRID))
+  story.append(table)
+  
+  if by_dia["rows"]:
+    story.append(Spacer(1, 8))
+    story.append(Paragraph("<b>Reinforcement read from the drawing, by diameter</b>", styles["Normal"]))
+    data = [["Diameter (mm)", "Length (m)", "Weight (kg)"]] + [[r["dia_mm"], fmt_qty(r["length_m"]), fmt_qty(r["kg"])] for r in by_dia["rows"]]
+    data += [["Wastage", "", fmt_qty(by_dia["wastage_kg"])], ["Total", "", fmt_qty(by_dia["total_kg"])]]
+    table = Table(data, colWidths=[40 * mm, 40 * mm, 40 * mm], repeatRows=1)
+    table.setStyle(TableStyle(_GRID))
+    story.append(table)
+  doc.build(story)
+  return buffer.getvalue()
 
 _STATUS_FILL = {"ADDED": "DCFCE7", "REMOVED": "FEE2E2", "CHANGED": "FEF9C3"}
 

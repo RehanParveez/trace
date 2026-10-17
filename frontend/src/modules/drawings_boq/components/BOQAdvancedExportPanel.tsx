@@ -30,6 +30,12 @@ const EXPORTS: Array<{
     kind: "MEASUREMENT_BOOK", labelKey: "boq.advancedExport.measurementBook",
   },
   {
+    kind: "MEASUREMENT_SHEET", labelKey: "boq.advancedExport.measurementSheet",
+  },
+  {
+    kind: "STAGE_REPORT", labelKey: "boq.advancedExport.stageReport",
+  },
+  {
     kind: "AUDIT_REPORT", labelKey: "boq.advancedExport.auditReport",
   },
   {
@@ -44,6 +50,8 @@ const FORMATS: Record<ExportKind, Array<"pdf" | "xlsx">> = {
   CONTRACT_BOQ: ["pdf", "xlsx"],
   PROCUREMENT: ["xlsx"],
   MEASUREMENT_BOOK: ["pdf", "xlsx"],
+  MEASUREMENT_SHEET: ["pdf", "xlsx"],
+  STAGE_REPORT: ["pdf", "xlsx"],
   AUDIT_REPORT: ["pdf"],
   REVISION_COMPARISON: ["xlsx"],
   BBS: ["xlsx"],

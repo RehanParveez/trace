@@ -123,10 +123,25 @@ export function DerivedFormworkSource({ trace }: { trace?: LedgerTrace | null })
           </li>
         ))}
       </ul>
-      <p className="text-[11px] text-[var(--color-warning)]">
-        {t("boq.derived.formworkContact", "Gross area of the member. Faces that touch other concrete are not taken off.")}
-      {t("boq.derived.formworkContact", "Gross area of the member. Faces that touch other concrete are not taken off.")}
-      </p>
+      {view.shared.length > 0 ? (
+        <div data-testid="formwork-shared">
+          <div className="text-[11px] font-semibold text-[var(--color-text-secondary)]">{t("boq.derived.sharedTitle", "Taken off where this member meets another")}</div>
+          <ul className="space-y-0.5 text-[12px] text-[var(--color-text-secondary)]">
+            {view.shared.map((f, i) => (
+              <li key={`${f.face}-${f.by}-${i}`} className="flex flex-wrap items-baseline gap-2">
+                <span>
+                  {t("boq.derived.sharedLine", { defaultValue: "{{face}} against {{by}}", face: t(`boq.derived.face.${f.face}`, f.face), by: f.by })}
+                </span>
+                <span className="font-mono font-semibold text-[var(--color-text-primary)]">−{f.m2} m²</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="text-[11px] text-[var(--color-warning)]" data-testid="formwork-gross-note">
+          {t("boq.derived.formworkContact", "Gross area of the member. Faces that touch other concrete are not taken off.")}
+        </p>
+      )}
     </div>
   );
 }

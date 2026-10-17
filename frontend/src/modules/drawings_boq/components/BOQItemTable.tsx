@@ -10,6 +10,8 @@ import { computeLineTotal, formatBOQItemStatus, formatBOQItemType, formatCurrenc
 } from "../utils/drawings-boq.utils";
 import { useStageLabel } from "./StageBadge";
 import { DerivedBadge } from "./DerivedWorks";
+import { RangeCell, RangeTotalsStrip } from "./RangeViews";
+import { rangeTotals } from "../utils/quantityRange";
 import { BOQItemTraceDialog } from "./BOQItemTraceDialog";
 import { BOQItemAdjustmentsDialog } from "./BOQItemAdjustmentsDialog";
 import { OverrideFormDialog } from "../pricing/components/OverrideFormDialog";
@@ -153,6 +155,8 @@ export function BOQItemTable({
         </div>
       ) : null}
 
+      {items.some((i) => i.quantity_range) ? <RangeTotalsStrip totals={rangeTotals(shownItems.filter((i) => i.item_type !== "LABOUR"))} /> : null}
+
       {stages.length > 0 ? (
         <div className="flex flex-wrap items-center gap-1.5 border-b border-[var(--color-border)] px-5 py-3">
           <button type="button" onClick={() => setStageFilter(null)} className={chip(stageFilter === null)}>
@@ -189,7 +193,7 @@ export function BOQItemTable({
         />
       ) : (
         <TableShell>
-          <table className="w-full min-w-[1250px] text-left">
+          <table className="w-full min-w-[1420px] text-left">
             <thead className="bg-[var(--color-surface-muted)]">
               <tr className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                 <th className="px-4 py-3">
@@ -212,6 +216,10 @@ export function BOQItemTable({
 
                 <th className="px-4 py-3 text-right">
                   {t("boq.items.colQuantity")}
+                </th>
+
+                <th className="px-4 py-3 text-right">
+                  {t("boq.items.colRange", "Range")}
                 </th>
 
                 <th className="px-4 py-3 text-right">
@@ -358,6 +366,10 @@ export function BOQItemTable({
                       {formatQuantity(
                         item.quantity,
                       )}
+                    </td>
+
+                    <td className="px-4 py-3.5 text-right">
+                      <RangeCell range={item.quantity_range} />
                     </td>
 
                     <td className="px-4 py-3.5 text-right font-mono text-[12.5px] text-[var(--color-text-primary)]">
@@ -822,6 +834,10 @@ function BOQItemEditRow({
             )
           }
         />
+      </td>
+
+      <td className="px-4 py-3 text-right">
+        <RangeCell range={item.quantity_range} />
       </td>
 
       <td className="px-4 py-3">

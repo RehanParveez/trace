@@ -6,6 +6,7 @@ import hashlib
 import json
 from app.engine.measure.spec import describe_spec
 from app.engine.measure.stages import stage_label
+from app.modules.drawings_boq import quantity_range as QR
 
 ZERO = Decimal("0")
 ONE = Decimal("1")
@@ -41,7 +42,7 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "STEEL_ASSUMED",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "FORMWORK_ITEM_ASSUMED", "FORMWORK_BEAM_SLAB_ASSUMED", "STEEL_ASSUMED",
     "SPACE_OVER_DEDUCTED", "SPACE_VIEW_NOT_PLACED", "SPACE_NO_HEIGHT", "SPACE_SAME_ROLE_OVERLAP",
 })
 
@@ -101,6 +102,7 @@ class LedgerLine:
   spec_key: str | None = None
   spec: dict | None = None
   work_stage: str | None = None
+  range: dict | None = None
 
 @dataclass(frozen=True)
 class WorkItemInfo:
@@ -139,6 +141,7 @@ class ItemDraft:
   spec_key: str | None = None
   spec: dict | None = None
   work_stage: str | None = None
+  quantity_range: dict | None = None
 
 def make_item_key(code: str, unit: str, grade: str | None, level, spec_key: str | None = None, stage: str | None = None) -> str:
   key = f"{code}|{unit}|{grade or '-'}|{level or '-'}"
@@ -190,6 +193,7 @@ def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict 
       formula_text=f"Sum of {len(group)} ledger row(s) in {unit} x {factor} = {display}"[:500],
       element_count=len({l.element_id for l in group if l.element_id is not None}),
       lines=group, spec_key=spec_key, spec=spec, work_stage=stage,
+      quantity_range=QR.combine([(l.quantity, l.range) for l in group], factor, net),
     ))
   return drafts, sorted(unknown), sorted(mismatch)
 
@@ -250,6 +254,7 @@ def build_snapshot(items: list[dict], header: dict):
       "confidence": i.get("confidence"), "review_status": i.get("review_status") or "OK",
       "source_kind": i.get("source_kind") or "MODEL", "is_manual": bool(i.get("is_manual")),
       "ledger_row_count": int(i.get("ledger_row_count") or 0), "ledger_hash": i.get("ledger_hash"),
+      **{k: i[k] for k in ("work_stage", "spec_key", "spec", "quantity_range") if i.get(k)},
     })
 
   grand = sum(sums.values(), ZERO)
@@ -434,9 +439,17 @@ LEDGER_WARNING_CATALOG = {
     "ring for its hooks, the lap of a column bar or the anchorage of a bar), so the standard value was used.",
     "Give the cover, ring hook, lap and anchorage in the site assumptions, then calculate again."),
   "FORMWORK_ASSUMED": ("warning", "NONE",
-    "This formwork was worked out from concrete read from a drawing, using a site choice that was not given (whether slab edges are shuttered, or "
-    "whether footing sides are shuttered), so the standard choice was used.",
-    "Say whether slab edges and footing sides are shuttered in the site assumptions, then calculate again."),
+    "This formwork was worked out from concrete read from a drawing, using a site choice that was not given (whether slab edges are shuttered, whether "
+    "footing sides are shuttered, whether the base of a tank is shuttered, or whether a beam's depth includes the slab), so the standard choice was used.",
+    "Say these in the site assumptions, then calculate again."),
+  "FORMWORK_ITEM_ASSUMED": ("warning", "NONE",
+    "This formwork is for a tank, coping, chajja or balcony slab. Which of its faces are shuttered follows the usual way of casting it (a coping is cast on the "
+    "parapet so its underside is not shuttered; a chajja is cast against the wall; one long side of a balcony slab joins the floor slab) and is not on the drawing.",
+    "Check the faces in the trace against how the item is cast on site."),
+  "FORMWORK_BEAM_SLAB_ASSUMED": ("warning", "NONE",
+    "Part of this beam's or slab's formwork was taken off where the beam meets the slab, but the floor has slabs of different thickness (so which one covers the "
+    "beam is a guess), or the beams were more than a third of the slab soffit and the take-off was limited.",
+    "Check the slab thickness of this floor, then calculate again."),
   "FORMWORK_FRAME_ASSUMED": ("warning", "NONE",
     "Part of this column's formwork was taken off because a slab covers it, but where the two drawing views sit on the building was found by the program, "
     "or the floor of one of them was not given, and no one has confirmed it.",
@@ -623,12 +636,26 @@ def formwork_issue_specs(stats: dict) -> list[IssueSpec]:
       message=f"No formwork was taken for {n} footing mark{'s' if n != 1 else ''} read from the drawing: footings are taken as cast against the earth unless you say otherwise.",
       suggested_fix="If the footings are cast in shuttering, set 'footing sides shuttered' to yes in the site assumptions and calculate again.",
       details={"marks": n}))
+  n = int(skipped.get("TANK_NO_DETAIL") or 0)
+  if n:
+    specs.append(IssueSpec(
+      code="FORMWORK_TANK_NO_DETAIL", severity="warning", blocks="NONE", dedupe_key="FORMWORK_TANK_NO_DETAIL",
+      message=f"No formwork was taken for {n} tank{'s' if n != 1 else ''}: the outside height and wall thickness were not kept when the tank was accepted.",
+      suggested_fix="Open the tank in the register, give its height and wall thickness again, accept it, then calculate again.", details={"marks": n}))
   if fw.get("contact_not_deducted"):
     specs.append(IssueSpec(
       code="FORMWORK_CONTACT_NOT_DEDUCTED", severity="info", blocks="NONE", dedupe_key="FORMWORK_CONTACT_NOT_DEDUCTED",
-      message="Formwork is the gross shuttering of each member read from the drawing. Faces where concrete meets other concrete (a slab over its beams, a column through a slab) "
-        "are not taken off, because the members of a drawing are not placed in one frame yet. The total is slightly overstated there.",
+      message="Formwork is the gross shuttering of each member read from the drawing. No face where concrete meets other concrete was taken off in this run: a beam needs a slab "
+        "counted on its floor, and a column needs its drawing view placed on the building frame. The total is overstated by those faces.",
       suggested_fix="Check the formwork total against a hand take-off of one floor.", details={"area_m2": fw.get("area_m2")}))
+  cmp = fw.get("comparison") or {}
+  
+  if cmp and fw.get("ran") and cmp.get("gross_m2") not in (None, fw.get("area_m2")):
+    specs.append(IssueSpec(
+      code="FORMWORK_SHARED_TAKEN_OFF", severity="info", blocks="NONE", dedupe_key="FORMWORK_SHARED_TAKEN_OFF",
+      message=f"Faces where members meet were taken off once: gross shuttering {cmp['gross_m2']} m², net {fw.get('area_m2')} m².",
+      suggested_fix="Open the formwork trace of a beam or a column to see each face that was taken off.",
+      details={"gross_m2": cmp.get("gross_m2"), "net_m2": fw.get("area_m2")}))
   return specs
 
 STEEL_REASON_TEXT = {

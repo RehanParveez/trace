@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
 import { derivedWaitingView, formworkStatsView, steelStatsView } from "../utils/derived";
+import { FormworkPanel } from "./FormworkPanel";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
 import { useStageLabel } from "./StageBadge";
@@ -235,60 +236,9 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
               : `${t("boq.calculationRun.derivedNotRun", "Excavation, PCC and backfill were not worked out")}: ${dv.reason ?? "—"}`}
           </div>
         )
-      ) : null}
+       ) : null}
 
-      {fw ? (
-        fw.ran ? (
-          <div className="space-y-3">
-            <Section title={t("boq.calculationRun.statsFormwork", "Formwork (concrete read from the drawing)")}>
-              <Stat label={t("boq.calculationRun.statFormworkTotal", "Formwork (m²)")} value={formatPrecise(fw.areaM2, 3)} />
-              {fw.categories.map((c) => (
-                <Stat
-                  key={c.category}
-                  label={t("boq.calculationRun.statFormworkCategory", {
-                    defaultValue: "{{category}}, {{marks}} marks (m²)",
-                    category: t(`boq.derived.category.${c.category}`, c.category),
-                    marks: c.marks,
-                  })}
-                  value={formatPrecise(c.m2, 3)}
-                />
-              ))}
-            </Section>
-            {fw.assumed.length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {fw.assumed.map((name) => (
-                  <span key={name} className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 text-[11px] text-[var(--color-warning)]">
-                    {t(`boq.derived.param.${name}`, name)}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            {fw.footingsLeftOut > 0 ? (
-              <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
-                {t("boq.calculationRun.formworkFootingsOff", {
-                  defaultValue: "{{count}} footings were left without formwork. Footing sides are not shuttered unless the site assumptions say so.",
-                  count: fw.footingsLeftOut,
-                })}
-              </div>
-            ) : null}
-            {fw.contactNotDeducted ? (
-              <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
-                {t("boq.calculationRun.formworkContact", "Each member is shuttered on its own. Faces that touch other concrete, such as a slab over its beams, are not taken off.")}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
-            {t(`boq.calculationRun.formworkReason.${fw.reason ?? "NOTHING_TO_SHUTTER"}`, "Formwork was not worked out for the concrete read from the drawing.")}
-            {fw.footingsLeftOut > 0
-              ? ` ${t("boq.calculationRun.formworkFootingsOff", {
-                  defaultValue: "{{count}} footings were left without formwork. Footing sides are not shuttered unless the site assumptions say so.",
-                  count: fw.footingsLeftOut,
-                })}`
-              : ""}
-          </div>
-        )
-      ) : null}
+      {fw ? <FormworkPanel view={fw} /> : null}
       
       {sv ? (
         sv.ran ? (

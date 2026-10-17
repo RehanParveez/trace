@@ -301,7 +301,8 @@ def fill_site(kind: str, missing: list, params: dict, typed: dict, facts: dict) 
     depth = equivalent_depth_mm(sizes["length_mm"], sizes["width_mm"], sizes["height_mm"], sizes["thickness_mm"])
     if depth is None:
       return out, ("CANDIDATE_BAD_VALUES", "The walls are thicker than half the tank. Check the sizes you typed.")
-    out.update({"length_mm": sizes["length_mm"], "width_mm": sizes["width_mm"], "depth_mm": round(depth, 1), "dims_basis": "SPECIFIED"})
+    out.update({"length_mm": sizes["length_mm"], "width_mm": sizes["width_mm"], "depth_mm": round(depth, 1), "dims_basis": "SPECIFIED",
+      "height_mm": sizes["height_mm"], "wall_mm": sizes["thickness_mm"]})
     return out, None
   targets = TARGETS.get(kind) or {}
   

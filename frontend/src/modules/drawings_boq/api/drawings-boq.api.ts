@@ -5,7 +5,7 @@ import type {Adjustment, AdjustmentCreateRequest, BOQBuildResponse, BOQCustomIte
   DrawingOrganizationSummary, CalculationRunResponse, BOQVersionResponse, TransitionAction, DeductionKind, DeductionResponse, LedgerRowResponse, Page, QuantitySolidResponse,
   BoundaryCandidate, BulkReviewResponse, ConfirmImportResponse, FinishPreviewResponse, LevelOption, RematchResponse, RowDecision, ScheduleFromPdfRequest, ScheduleImportDetailResponse, ScheduleImportResponse, ScheduleKind, 
   ScheduleManualCreateRequest, ScheduleRowCreateRequest, ScheduleRowResponse, ScheduleRowUpdateRequest, SpaceCreateRequest, SpaceDetailResponse, SpaceFinishCreateRequest, SpaceFinishResponse,
-   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse
+   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse, StageReport
 } from "../types/drawings-boq.types";
 
 function getNextCursor(response: { headers: Record<string, unknown> }): string | null {
@@ -309,6 +309,16 @@ export const drawingsBoqApi = {
     return response.data;
   },
 
+  async getStageReport(boqVersionId: string): Promise<StageReport> {
+    if (!boqVersionId) throw new Error("BOQ Version ID is required");
+
+    const response = await apiClient.get<StageReport>(
+      `/drawings-boq/boq-versions/${boqVersionId}/stage-report`,
+    );
+
+    return response.data;
+  },
+
   async updateBOQItem(
     itemId: string,
     payload: BOQItemUpdateRequest,
@@ -464,6 +474,8 @@ export const drawingsBoqApi = {
   async exportAdvancedBOQ(
    versionId: string,
    kind:
+    | "MEASUREMENT_SHEET"
+    | "STAGE_REPORT"
     | "CONTRACT_BOQ"
     | "PROCUREMENT"
     | "MEASUREMENT_BOOK"

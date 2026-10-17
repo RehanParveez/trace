@@ -143,11 +143,21 @@ class FormworkInput:
   stair: dict | None = None
   frame: str | None = None
   points_mm: tuple = ()
+  role: str | None = None
+  site: dict | None = None
+
+@dataclass(frozen=True)
+class RangeInput:
+  measurement_id: UUID
+  grade: str
+  bounded: bool
+  low_pct: float | None = None
+  high_pct: float | None = None
+  leaves_out: bool = False
+  drivers: tuple = ()
 
 @dataclass(frozen=True)
 class AlignmentInput:
-  """Where one drawing view sits on the building frame (see frame.py): the shift that takes its sheet positions to the reference view, how it was found and
-  whether a person confirmed it."""
   view: str
   dx_mm: Decimal
   dy_mm: Decimal
@@ -201,6 +211,7 @@ class TakeoffInputs:
   alignments: tuple = ()
   space: tuple = ()
   floors: tuple = ()
+  ranges: tuple = ()
 
 @dataclass(frozen=True)
 class CalibrationEval:
@@ -671,6 +682,14 @@ def _variance_tolerance(profile) -> Decimal:
   except TakeoffError:
     return DEFAULT_VARIANCE_TOLERANCE_PCT
 
+def range_trace(inputs, measurement_id) -> dict | None:
+  """The range of the mark behind a measurement, as it is written on a ledger row's trace, or None when the mark was graded by no one (a hand measurement)."""
+  for r in tuple(getattr(inputs, "ranges", ()) or ()):
+    if str(r.measurement_id) == str(measurement_id):
+      return {"grade": r.grade, "bounded": bool(r.bounded), "low_pct": r.low_pct, "high_pct": r.high_pct, "leaves_out": bool(r.leaves_out),
+        "drivers": [dict(d) for d in r.drivers]}
+  return None
+
 def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=()) -> TakeoffResult:
   if inputs is None or not inputs.measurements:
     return TakeoffResult(stats={"measurements": 0})
@@ -838,6 +857,7 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=())
         "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
         "inputs": trace_inputs, "steps": comp.steps, "net": {comp.unit: str(comp.quantity)},
         "label": f"PDF p.{sheet.page_no} {m.label or m.tag or m.kind.title()}".strip(), "rounding": "half_up,6dp",
+        **({"range": rg} if (rg := range_trace(inputs, m.id)) else {}),
       },
       warnings=tuple(dict.fromkeys(warnings)), source_kind=SOURCE_KIND,
     ))
@@ -936,8 +956,11 @@ def takeoff_payload(inputs: TakeoffInputs | None) -> dict:
      for b in sorted(inputs.members, key=lambda b: str(b.measurement_id))]} if inputs.members else {}),
     **({"formwork": [_enc([str(b.measurement_id), str(b.candidate_id), b.category, b.tag, str(b.level_id) if b.level_id else None,
       [str(i) for i in b.element_ids], b.count, b.length_mm, b.width_mm, b.depth_mm, b.confidence, b.steel, *([b.stair] if b.stair else []),
-      *([b.frame, [list(p) for p in b.points_mm]] if b.frame else [])])
+      *([b.frame, [list(p) for p in b.points_mm]] if b.frame else []),
+      *([{"role": b.role, "site": b.site}] if (b.role or b.site) else [])])
       for b in sorted(inputs.formwork, key=lambda b: str(b.measurement_id))]} if inputs.formwork else {}),
+    **({"ranges": [_enc([str(r.measurement_id), r.grade, r.bounded, r.low_pct, r.high_pct, r.leaves_out, [dict(d) for d in r.drivers]])
+      for r in sorted(inputs.ranges, key=lambda r: str(r.measurement_id))]} if inputs.ranges else {}),
     **({"alignments": [_enc([a.view, a.group, a.dx_mm, a.dy_mm, a.method, a.grade, a.supporters, a.compared, a.residual_mm, a.reference, a.origin_x_mm, a.origin_y_mm])
       for a in sorted(inputs.alignments, key=lambda a: (a.group, a.view))]} if inputs.alignments else {}),
     **({"space": [_enc([str(b.measurement_id), b.group, b.category, b.frame, b.shape, [list(p) for p in b.parts], b.length_mm, b.width_mm, b.z0_mm, b.z1_mm, b.z_grade, b.floor,

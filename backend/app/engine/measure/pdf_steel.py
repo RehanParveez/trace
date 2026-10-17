@@ -7,7 +7,7 @@ from uuid import uuid5
 from app.engine.measure.derived import DERIVED, FACTOR_ASSUMED, FACTOR_CONFIRMED, counted_measurement_ids, resolve_params
 from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, bar_dia_mm_of, clean_steel, member_lines, kg_per_m  # noqa: F401
 from app.engine.measure.units import q4, q6
-from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE
+from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, range_trace
 
 """Reinforcement weight (kg) for the concrete members read from a PDF whose bars are printed with them: lintels from the lintel table, and columns,
 beams, footings, slabs and RCC walls from the notes printed for their marks or typed at accept. One row per mark."""
@@ -123,7 +123,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
           "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
           "inputs": {"recipe": RECIPE_CODE, "spec": spec, "steel_source": source},
           "steps": [*step_lines, {"op": "total_kg", "bare_kg": str(bare), "wastage_pct": str(wastage), "kg": str(kg)}], "net": {"kg": str(kg)},
-          "rounding": "half_up,6dp"},
+          "rounding": "half_up,6dp", **({"range": rg} if (rg := range_trace(ctx.takeoff, m.measurement_id)) else {})},
         warnings=tuple(warnings), source_kind=DERIVED, spec=spec, spec_key="derived"))
       slot = by_category.setdefault(cat, {"marks": 0, "kg": Decimal("0"), "bare_kg": Decimal("0")})
       

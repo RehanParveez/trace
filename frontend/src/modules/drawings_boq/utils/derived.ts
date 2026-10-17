@@ -22,6 +22,7 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "footing_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "formwork_shared_faces", defaultMm: 1, min: 0, max: 1, flag: true },
+  { key: "tank_base_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100 },
   { key: "ring_hook_dia", defaultMm: 20, min: 0, max: 40, unit: "dia" },
   { key: "bar_lap_dia", defaultMm: 40, min: 0, max: 80, unit: "dia" },
@@ -106,7 +107,7 @@ export interface DerivedBasisRow {
   basis: DerivedBasis | null;
 }
 
-const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
+const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
@@ -301,6 +302,7 @@ export interface FormworkSourceView {
   widthMm: number;
   depthMm: number;
   faces: { name: string; m2: string }[];
+  shared: { face: string; by: string; m2: string }[];
 }
 
 export function formworkSourceView(trace: LedgerTrace | null | undefined): FormworkSourceView | null {
@@ -317,7 +319,8 @@ export function formworkSourceView(trace: LedgerTrace | null | undefined): Formw
     lengthMm: Number(raw.size_mm[0]),
     widthMm: Number(raw.size_mm[1]),
     depthMm: Number(raw.size_mm[2]),
-    faces: raw.faces.map((f) => ({ name: String(f.name), m2: String(f.m2) })),
+    faces: raw.faces.filter((f) => !String(f.name).startsWith("shared ")).map((f) => ({ name: String(f.name), m2: String(f.m2) })),
+    shared: Array.isArray(raw.shared_faces) ? raw.shared_faces.map((f) => ({ face: String(f.face), by: String(f.by), m2: String(f.m2) })) : [],
   };
 }
 
@@ -326,18 +329,37 @@ export interface FormworkStatsView {
   reason: string | null;
   areaM2: string;
   rows: number;
-  categories: { category: string; marks: number; m2: string }[];
+  categories: { category: string; marks: number; m2: string; grossM2: string | null }[];
   footingsLeftOut: number;
+  tanksLeftOut: number;
   assumed: string[];
   contactNotDeducted: boolean;
+  takenOffM2: string | null;
+  comparison: { grossM2: string; slabSoffitOnlyM2: string; beamPerRftM2: string; beamNetM2: string } | null;
+  beamsMatched: number;
+  beamsUnmatched: number;
+}
+
+export function takenOff(gross: string | null | undefined, net: string | null | undefined): string | null {
+  const g = Number(gross);
+  const n = Number(net);
+  if (gross == null || net == null || !Number.isFinite(g) || !Number.isFinite(n)) return null;
+  const d = Math.round((g - n) * 1e6) / 1e6;
+  return d > 0 ? d.toFixed(6) : null;
 }
 
 export function formworkStatsView(stats: DerivedStats | null | undefined): FormworkStatsView | null {
   const fw = stats?.formwork;
   if (!fw || !fw.enabled || fw.reason === "NO_MEMBERS") {
-    return null;
+     return null;
   }
-  const categories = Object.entries(fw.by_category ?? {}).map(([category, v]) => ({ category, marks: Number(v.marks), m2: String(v.m2) }));
+  const categories = Object.entries(fw.by_category ?? {}).map(([category, v]) => ({
+    category,
+    marks: Number(v.marks),
+    m2: String(v.m2),
+    grossM2: v.gross_m2 != null ? String(v.gross_m2) : null,
+  }));
+  const cmp = fw.comparison;
   return {
     ran: Boolean(fw.ran),
     reason: fw.reason ?? null,
@@ -345,8 +367,15 @@ export function formworkStatsView(stats: DerivedStats | null | undefined): Formw
     rows: Number(fw.rows ?? 0),
     categories,
     footingsLeftOut: Number(fw.skipped?.FOOTING_NOT_SHUTTERED_DEFAULT ?? 0),
+    tanksLeftOut: Number(fw.skipped?.TANK_NO_DETAIL ?? 0),
     assumed: Array.isArray(fw.assumed) ? fw.assumed : [],
     contactNotDeducted: Boolean(fw.contact_not_deducted),
+    takenOffM2: takenOff(cmp?.gross_m2, fw.area_m2),
+    comparison: cmp
+      ? { grossM2: String(cmp.gross_m2), slabSoffitOnlyM2: String(cmp.slab_soffit_only_m2), beamPerRftM2: String(cmp.beam_per_rft_m2), beamNetM2: String(cmp.beam_net_m2) }
+      : null,
+    beamsMatched: Number(fw.beam_slab?.beams_matched ?? 0),
+    beamsUnmatched: Number(fw.beam_slab?.beams_unmatched ?? 0),
   };
 }
 

@@ -142,6 +142,8 @@ class ExportKind(str, enum.Enum):
   CONTRACT_BOQ = "CONTRACT_BOQ"
   PROCUREMENT = "PROCUREMENT"
   MEASUREMENT_BOOK = "MEASUREMENT_BOOK"
+  MEASUREMENT_SHEET = "MEASUREMENT_SHEET"
+  STAGE_REPORT = "STAGE_REPORT"
   AUDIT_REPORT = "AUDIT_REPORT"
   REVISION_COMPARISON = "REVISION_COMPARISON"
   BBS = "BBS"
@@ -274,7 +276,7 @@ _REVIEW_SEVERITIES = "'error','warning','info'"
 _REVIEW_BLOCKS = "'NONE','APPROVAL','ISSUE'"
 _REVIEW_STATUSES = "'OPEN','RESOLVED','WAIVED'"
 _SNAPSHOT_PURPOSES = "'APPROVAL','ISSUE','MANUAL'"
-_EXPORT_KINDS = "'CONTRACT_BOQ','PROCUREMENT','MEASUREMENT_BOOK','AUDIT_REPORT','REVISION_COMPARISON','BBS'"
+_EXPORT_KINDS = "'CONTRACT_BOQ','PROCUREMENT','MEASUREMENT_BOOK','MEASUREMENT_SHEET','STAGE_REPORT','AUDIT_REPORT','REVISION_COMPARISON','BBS'"
 _EXPORT_FORMATS = "'PDF','XLSX'"
 _EXPORT_STATUSES = "'QUEUED','RUNNING','SUCCEEDED','FAILED'"
 _SPACE_SOURCES = "'IFC','MANUAL'"
@@ -924,6 +926,7 @@ class BOQItem(Base, TimestampMixin):
   work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
   spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
   spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  quantity_range: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
   canonical_unit: Mapped[str | None] = mapped_column(String(20), nullable=True)
   unit_factor: Mapped[Decimal | None] = mapped_column(Numeric(20, 10), nullable=True)
 
@@ -2457,6 +2460,10 @@ class BOQSnapshotItem(Base, TimestampMixin):
   is_manual: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
   ledger_row_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
   ledger_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  work_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
+  spec_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
+  spec: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+  quantity_range: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
 class ReviewIssue(Base, TimestampMixin):
   __tablename__ = "review_issues"

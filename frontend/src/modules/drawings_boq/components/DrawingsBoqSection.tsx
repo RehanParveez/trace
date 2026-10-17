@@ -12,6 +12,7 @@ import { DrawingUploadDialog } from "./DrawingUploadDialog";
 import { DrawingElementsDialog } from "./DrawingElementsDialog";
 import { BOQVersionTabs } from "./BOQVersionTabs";
 import { BOQItemTable } from "./BOQItemTable";
+import { StageReportPanel } from "./StageReportPanel";
 import { BOQSummaryPanel } from "./BOQSummaryPanel";
 import { AddCustomBOQItemDialog } from "./AddCustomBOQItemDialog";
 import { BOQVersionMetaDialog } from "./BOQVersionMetaDialog";
@@ -298,6 +299,8 @@ export function DrawingsBoqSection({
             canOverrideRate={canAdjust}
             projectId={projectId}
           />
+
+          {isEngineVersion ? <StageReportPanel versionId={selectedVersion.id} /> : null}
 
           <BOQReviewIssuesPanel
             projectId={projectId}

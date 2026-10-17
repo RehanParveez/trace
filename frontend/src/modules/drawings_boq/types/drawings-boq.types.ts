@@ -214,6 +214,7 @@ export interface BOQItem {
   spec_key?: string | null;
   spec?: BOQItemSpec | null;
   work_stage?: string | null;
+  quantity_range?: QuantityRange | null;
   canonical_unit?: string | null;
   unit_factor?: number | string | null;
   adjustment_total?: number | string;
@@ -260,6 +261,7 @@ export interface BOQItemResponse {
   spec_key?: string | null;
   spec?: BOQItemSpec | null;
   work_stage?: string | null;
+  quantity_range?: QuantityRange | null;
   rate_book_id: string | null;
   base_rate: number | string | null;
   escalation_factor: number | string | null;
@@ -846,6 +848,9 @@ export interface SnapshotItemResponse {
   source_kind: string;
   ledger_row_count: number;
   ledger_hash: string | null;
+  work_stage?: string | null;
+  spec_key?: string | null;
+  quantity_range?: QuantityRange | null;
 }
 
 export interface NormalizationIssue {
@@ -1324,6 +1329,7 @@ export interface DerivedParams {
   footing_formwork?: number;
   slab_edge_formwork?: number;
   formwork_shared_faces?: number;
+  tank_base_formwork?: number;
   steel_cover_mm?: number;
   ring_hook_dia?: number;
   bar_lap_dia?: number;
@@ -1385,6 +1391,7 @@ export interface FormworkSource {
   instances: number;
   size_mm: [number, number, number];
   faces: { name: string; m2: string }[];
+  shared_faces?: { face: string; by: string; m2: string }[];
 }
 
 export interface SteelLine {
@@ -1452,11 +1459,14 @@ export interface DerivedFormworkStats {
   rows?: number;
   area_m2?: string;
   code?: string;
-  by_category?: Record<string, { marks: number; m2: string }>;
+  by_category?: Record<string, { marks: number; m2: string; gross_m2?: string }>;
   skipped?: Record<string, number>;
   params?: Record<string, DerivedParamUsed>;
   assumed?: string[];
   contact_not_deducted?: boolean;
+  comparison?: { gross_m2: string; slab_soffit_only_m2: string; beam_per_rft_m2: string; beam_net_m2: string };
+  beam_slab?: { enabled?: boolean; beams_matched?: number; beams_adjusted?: number; beams_unmatched?: number; slabs_with_removal?: number; capped_slabs?: number; uncertain_members?: number; removed_m2?: string };
+  shared_faces?: { enabled?: boolean; placed_columns?: number; unplaced_columns?: number; removed_m2?: string; members_with_removal?: number; uncertain_members?: number };
 }
 
 export interface EarthBalance {
@@ -1655,6 +1665,8 @@ export type DeductionType =
 export type SnapshotPurpose = "APPROVAL" | "ISSUE" | "MANUAL";
 
 export type ExportKind =
+  | "MEASUREMENT_SHEET"
+  | "STAGE_REPORT"
   | "CONTRACT_BOQ"
   | "PROCUREMENT"
   | "MEASUREMENT_BOOK"
@@ -1806,4 +1818,59 @@ export interface RebarSummary {
   tier2_kg: Num;
   tier3_estimate_kg: Num;
   bbs_exportable: boolean;
+}
+
+export interface QuantityRange {
+  likely: number;
+  low: number;
+  high: number;
+  low_pct: number | null;
+  high_pct: number | null;
+  rows: number;
+  bounded_rows: number;
+  unbounded_rows: number;
+  leaves_out_rows: number;
+  complete: boolean;
+  weakest: string | null;
+  mix: Record<string, number>;
+}
+
+export interface RangeTotal {
+  unit: string;
+  likely: number;
+  low: number;
+  high: number;
+  items: number;
+  unbounded: number;
+  leaves_out: number;
+}
+
+export interface StageReportItem {
+  name: string | null;
+  code: string | null;
+  unit: string;
+  quantity: string;
+  quantity_range: QuantityRange | null;
+  derived: boolean;
+  weakest: string | null;
+  review_status: string;
+  item_id: string;
+}
+
+export interface StageReportTrade {
+  trade: string;
+  items: StageReportItem[];
+  totals: RangeTotal[];
+}
+
+export interface StageReportStage {
+  stage: string;
+  label: string;
+  trades: StageReportTrade[];
+  totals: RangeTotal[];
+}
+
+export interface StageReport {
+  stages: StageReportStage[];
+  totals: RangeTotal[];
 }

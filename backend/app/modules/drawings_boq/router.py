@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, File, Header, Query, UploadFile, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
-from app.modules.drawings_boq.schemas import ( BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
+from app.modules.drawings_boq.schemas import ( StageReportResponse, BOQCustomItemCreateRequest, BOQItemResponse, BOQItemUpdateRequest, BOQSummaryResponse, BOQVersionCreateRequest, BOQVersionResponse, BOQVersionUpdateRequest, 
   DrawingElementResponse, DrawingResponse, LabourRateCreateRequest, LabourRateResponse, LabourRateUpdateRequest, MaterialLibraryCreateRequest, MaterialLibraryResponse, MaterialLibraryUpdateRequest,
    PDFExtractionResultResponse, ProjectBOQCountResponse, BuildingLevelResponse, ModelAuditResponse, CalculationRunResponse, CalculationRunCreateRequest, RunStageResponse, QuantitySolidResponse, LedgerRowResponse,
    DeductionResponse, AdjustmentCreateRequest, AdjustmentResponse, BOQBuildResponse, ItemTraceResponse, ReasonRequest, ReviewIssueResponse, ReviewIssueUpdateRequest, SnapshotItemResponse, SnapshotResponse, 
@@ -870,6 +870,14 @@ async def list_boq_snapshot_items(
 ):
   return await _engine(session).snapshot_items(current_user.active_membership.organization_id, snapshot_id)
 
+@router.get("/boq-versions/{boq_version_id}/stage-report", response_model=StageReportResponse)
+async def get_boq_stage_report(
+  boq_version_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).stage_report(current_user.active_membership.organization_id, boq_version_id)
+
 @router.get("/boq-versions/{boq_version_id}/ledger", response_model=list[LedgerRowResponse])
 async def list_boq_version_ledger(
   boq_version_id: UUID,
@@ -965,7 +973,7 @@ async def update_review_issue(
 @router.get("/boq-versions/{boq_version_id}/exports/{kind}", responses={202: {"model": ExportJobResponse}})
 async def export_boq_snapshot(
   boq_version_id: UUID,
-  kind: Literal["CONTRACT_BOQ", "PROCUREMENT", "MEASUREMENT_BOOK", "AUDIT_REPORT", "REVISION_COMPARISON", "BBS"],
+  kind: Literal["CONTRACT_BOQ", "PROCUREMENT", "MEASUREMENT_BOOK", "MEASUREMENT_SHEET", "STAGE_REPORT", "AUDIT_REPORT", "REVISION_COMPARISON", "BBS"],
   fmt: Literal["pdf", "xlsx"] = Query(default="pdf"),
   snapshot_id: UUID | None = Query(default=None),
   compare_snapshot_id: UUID | None = Query(default=None),

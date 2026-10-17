@@ -13,6 +13,9 @@ from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.audit.service import AuditLogService
 from app.modules.drawings_boq.standards.material_class import classify_material_class
 from app.modules.drawings_boq import boq_logic as logic
+from app.modules.drawings_boq import quantity_range as QR
+from app.modules.drawings_boq import measurement_sheet as MS
+from app.modules.drawings_boq import stage_report as SR
 from decimal import Decimal
 from uuid import UUID, uuid4
 from app.modules.audit.models import AuditAction, AuditEntityType
@@ -29,8 +32,8 @@ _NON_WAIVABLE = logic.NON_WAIVABLE_CODES
 _COPY = ("material_name", "category", "unit", "quantity", "unit_rate", "rate_source", "item_type", "description",
   "work_item_code", "canonical_unit", "unit_factor", "net_quantity", "waste_factor_applied", "confidence",
   "level_id", "material_grade", "item_key", "calculation_formula", "source_element_count",
-  "rate_book_id", "base_rate", "escalation_factor", "rate_resolution")
-_EXPORTS = {"CONTRACT_BOQ": {"pdf", "xlsx"}, "PROCUREMENT": {"xlsx"}, "MEASUREMENT_BOOK": {"pdf", "xlsx"},
+  "rate_book_id", "base_rate", "escalation_factor", "rate_resolution", "work_stage", "spec_key", "spec", "quantity_range")
+_EXPORTS = {"CONTRACT_BOQ": {"pdf", "xlsx"}, "PROCUREMENT": {"xlsx"}, "MEASUREMENT_BOOK": {"pdf", "xlsx"}, "MEASUREMENT_SHEET": {"pdf", "xlsx"}, "STAGE_REPORT": {"pdf", "xlsx"},
   "AUDIT_REPORT": {"pdf"}, "BBS": {"xlsx"}, "REVISION_COMPARISON": {"xlsx"}}
 
 logger = logging.getLogger("trace.boq")
@@ -119,7 +122,7 @@ class BOQEngineService:
     lines = [logic.LedgerLine(
       id=r.id, solid_id=r.solid_id, element_id=r.element_id, level_id=r.level_id, work_item_code=r.work_item_code,
       quantity=r.quantity_net, unit=r.unit, material_grade=r.material_grade, confidence=r.confidence,
-      warnings=tuple(r.warnings or ()), spec_key=r.spec_key, spec=r.spec, work_stage=r.work_stage) for r in ledger]
+      warnings=tuple(r.warnings or ()), spec_key=r.spec_key, spec=r.spec, work_stage=r.work_stage, range=QR.row_range(r.trace)) for r in ledger]
     catalog = await self.repo.work_items_by_codes(org, {l.work_item_code for l in lines})
     work_items = {
       code: logic.WorkItemInfo(
@@ -196,6 +199,7 @@ class BOQEngineService:
       item.review_status = "WAIVED" if keep_waived else d.review_status
       item.level_id, item.material_grade, item.calculation_formula = d.level_id, d.material_grade, d.formula_text
       item.spec_key, item.spec, item.work_stage = d.spec_key, d.spec, d.work_stage
+      item.quantity_range = d.quantity_range
       item.rule_set_id, item.calculation_run_id, item.engine_version = run.rule_set_id, run.id, run.engine_version
       item.source_element_count, item.drawing_element_id = d.element_count, None
 
@@ -632,6 +636,7 @@ class BOQEngineService:
         "base_rate": i.base_rate, "escalation_factor": i.escalation_factor, "rate_resolution": i.rate_resolution,
         "confidence": i.confidence,
         "review_status": i.review_status, "source_kind": i.source_kind, "is_manual": i.is_manual,
+        "work_stage": i.work_stage, "spec_key": i.spec_key, "spec": i.spec, "quantity_range": i.quantity_range,
         "ledger_row_count": len(pairs), "ledger_hash": logic.ledger_hash(pairs)})
     header = {"version_id": str(version.id), "run_id": str(version.calculation_run_id),
               "rule_set": [rule_set.code, rule_set.immutable_version] if rule_set else None,
@@ -789,6 +794,13 @@ class BOQEngineService:
       base_snapshot = {k: getattr(base, k) for k in snapshot}
       data = exp.build_revision_comparison_xlsx(snapshot, base_snapshot, pricing.diff_lines(base_rows, rows),
         version_meta, company)
+    elif kind == "MEASUREMENT_SHEET":
+      sheets = await self._sheets(org, version.id)
+      data = (exp.build_measurement_sheet_pdf if fmt == "pdf" else exp.build_measurement_sheet_xlsx)(snapshot, rows, sheets, version_meta, company)
+    elif kind == "STAGE_REPORT":
+      sheets = await self._sheets(org, version.id)
+      by_dia = MS.steel_by_diameter([b for blocks in sheets.values() for b in blocks])
+      data = (exp.build_stage_report_pdf if fmt == "pdf" else exp.build_stage_report_xlsx)(snapshot, SR.build(rows), by_dia, version_meta, company)
     elif kind == "MEASUREMENT_BOOK":
       evidence = await self._evidence(org, version.id)
       data = (exp.build_measurement_book_pdf if fmt == "pdf" else exp.build_measurement_book_xlsx)(
@@ -942,6 +954,34 @@ class BOQEngineService:
       "member": names.get(m.element_id) if m.element_id else ((m.trace or {}).get("member_mark") or "-"),
       "level": levels.get(m.level_id, "-") if m.level_id else "-"} for m in scheduled]
     return exp.build_bbs_xlsx(snapshot, rows, version_meta, company, estimated_kg)
+
+  async def stage_report(self, org: UUID, version_id: UUID) -> dict:
+    """The live bill by stage and trade, with the range of each item and of each total. Labour lines are left out: they repeat the quantity of the material they follow."""
+    await self._engine_version(org, version_id)
+    items = [i for i in await self.items.list_by_version(version_id, org) if i.item_type != BOQItemType.LABOUR]
+    return SR.build(items)
+
+  async def _sheets(self, org: UUID, version_id: UUID) -> dict[str, list[dict]]:
+    """For each item, the measurement sheet of every ledger row behind it, in the layout a quantity surveyor writes (measurement_sheet.py)."""
+    links = await self.repo.link_pairs(version_id, org)
+    ledger = {l.id: l for l in await self.repo.ledger_by_ids([lid for pairs in links.values() for lid, _ in pairs])}
+    names = await self.repo.element_names([l.element_id for l in ledger.values() if l.element_id])
+    levels = await self.repo.level_names(org, [l.level_id for l in ledger.values() if l.level_id])
+    out: dict[str, list[dict]] = {}
+    
+    for item_id, pairs in links.items():
+      blocks = []
+      for lid, qty in pairs[:300]:
+        l = ledger.get(lid)
+        if l is None:
+          continue
+        
+        sheet = MS.sheet_for(l.trace, l.unit, qty)
+        sheet["element"] = names.get(l.element_id, "-") if l.element_id else (l.trace or {}).get("label", "-")
+        sheet["level"] = levels.get(l.level_id, "-") if l.level_id else "-"
+        blocks.append(sheet)
+      out[str(item_id)] = blocks
+    return out
 
   async def _evidence(self, org: UUID, version_id: UUID) -> dict[str, list[dict]]:
     links = await self.repo.link_pairs(version_id, org)

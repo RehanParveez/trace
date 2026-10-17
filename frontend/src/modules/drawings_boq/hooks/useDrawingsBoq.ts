@@ -281,6 +281,19 @@ export function useBOQItems(
   });
 }
 
+export function useBOQStageReport(
+  boqVersionId: string | undefined,
+) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.boqItems(boqVersionId ?? ""), "stage-report"] as const,
+    queryFn: () =>
+      drawingsBoqApi.getStageReport(
+        boqVersionId as string,
+      ),
+    enabled: Boolean(boqVersionId),
+  });
+}
+
 export function useUpdateBOQItem(
   boqVersionId: string,
 ) {
@@ -1388,6 +1401,8 @@ export function useExportAdvancedBOQ(
       delivery,
     }: {
       kind:
+        | "MEASUREMENT_SHEET"
+        | "STAGE_REPORT"
         | "CONTRACT_BOQ"
         | "PROCUREMENT"
         | "MEASUREMENT_BOOK"

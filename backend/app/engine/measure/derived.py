@@ -37,6 +37,7 @@ PARAMS = {
   "footing_formwork": (0.0, 0.0, 1.0),
   "slab_edge_formwork": (1.0, 0.0, 1.0),
   "formwork_shared_faces": (1.0, 0.0, 1.0),
+  "tank_base_formwork": (0.0, 0.0, 1.0),
   "steel_cover_mm": (38.1, 10.0, 100.0),
   "ring_hook_dia": (20.0, 0.0, 40.0),
   "bar_lap_dia": (40.0, 0.0, 80.0),
