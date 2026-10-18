@@ -113,6 +113,13 @@ def _slab(inp: _Inputs, cand) -> None:
       inp.add("thickness", MISSING, "no slab thickness on the drawing")
   elif f.get("thickness_source") == "TYPED":
     inp.add("thickness", CONFIRMED, f"{t / 25.4:g}\" typed by you")
+  elif f.get("thickness_source") == "CHOSEN":
+    printed = ", ".join(f"{o['mm'] / 25.4:g}\"" for o in (f.get("thickness_options") or []) if o.get("mm"))
+    inp.add("thickness", CONFIRMED, f"{t / 25.4:g}\" chosen by you between the thicknesses the drawing prints ({printed})")
+  elif f.get("thickness_source") == "POLICY":
+    pol = (f.get("conflict") or {}).get("policy") or "the policy"
+    printed = ", ".join(f"{o['mm'] / 25.4:g}\"" for o in (f.get("thickness_options") or []) if o.get("mm"))
+    inp.add("thickness", ASSUMED, f"{t / 25.4:g}\" taken by the {pol.lower()} policy between the thicknesses the drawing prints ({printed}); choose one to confirm it")
   elif "SLAB_THICKNESS_DISAGREES" in codes:
     note = next((n for n in (cand.notes or []) if n.get("code") == "SLAB_THICKNESS_DISAGREES"), {})
     other = ", ".join(f"{o['mm'] / 25.4:g}\"" for o in (note.get("others") or []) if o.get("mm"))

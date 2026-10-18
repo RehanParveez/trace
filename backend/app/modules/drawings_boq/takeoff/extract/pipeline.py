@@ -567,8 +567,7 @@ def _tread_ladders(walls: list, f: float) -> set:
       chain = [t] if t is not None else []
   return gone
 
-def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False) -> tuple:
-  """outer_only: the plan is one of several on a sheet, so what lies outside its outer walls (dimension lines, outlines of projections) is no wall."""
+def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None) -> tuple:
   frames, runs, stats = W.detect_walls(index, f, deadline, at_grade)
   rcc = RC.rcc_runs(index.rings, f)
   stats["rcc_runs"] = len(rcc)
@@ -588,7 +587,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     add0, add1 = extra.get(id(r), (0.0, 0.0))
     p0, p1 = fr.pt(r.s0 - r.ext0 - add0, r.dc), fr.pt(r.s1 + r.ext1 + add1, r.dc)
     t_mm = r.t_pt * f
-    std, use_t = W.snap_thickness(t_mm, imperial)
+    std, use_t = W.snap_thickness(t_mm, imperial, wall_vocab)
     cc_m = ((r.s1 + r.ext1 + add1) - (r.s0 - r.ext0 - add0)) * f / 1000.0
     clear_m = r.clear_pt * f / 1000.0
     if std is None and cc_m * 1000.0 < C.WALL_STUB_MAX_MM:
@@ -662,7 +661,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
       out = [c for c in out if id(c) not in treads]
   for rc in rcc:
     t_mm = rc["t_mm"]
-    std, use_t = W.snap_thickness(t_mm, imperial)
+    std, use_t = W.snap_thickness(t_mm, imperial, wall_vocab)
     cc_m = rc["length_mm"] / 1000.0
     notes = [C.note("RCC_WALL_FROM_FILL")]
     if rc["gaps_mm"]:
@@ -1183,8 +1182,6 @@ def _wall_beams(walls: list, role: str, ctx: dict, level_hint: str | None, min_w
   return out
 
 def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: bool, tie_band: dict | None = None) -> list:
-  """The beams that sit on the brick walls of a floor plan: a roof beam under the slab above the walls of this floor, and, on the lowest floor, a plinth
-  beam under the walls of 6 inches and thicker. When the drawing prints a continuous tie band at lintel level, the band over the same walls too."""
   out = _wall_beams(walls, "ROOF", ctx, level_hint)
   if lowest:
     out.extend(_wall_beams(walls, "PLINTH", ctx, level_hint, C.PLINTH_BEAM_MIN_WALL_MM))
@@ -1192,12 +1189,12 @@ def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: boo
     out.extend(_wall_beams(walls, "BAND", ctx, level_hint, 0.0, tie_band))
   return out
 
-def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None) -> list:
+def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None, sections: list | None = None) -> list:
   """The work under the lowest floor that is worked out from what is already read: a trench, a concrete bed and termite treatment under the walls, the
   termite treatment under the floor, and, on a basement, the dig over the whole outline of the basement."""
   spec = level_spec(level_hint)
-  out = FD.strip_candidates(walls, ctx, level_hint, spec, Candidate, _finish)
-  out.extend(FD.brick_step_candidates(walls, ctx, level_hint, spec, Candidate, _finish))
+  out = FD.strip_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections)
+  out.extend(FD.brick_step_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections))
   membrane = FD.membrane_candidate(walls, ctx, level_hint, spec, Candidate, _finish)
   if membrane is not None:
     out.append(membrane)
@@ -1261,8 +1258,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
-  sheet_words: list | None = None, outer_only: bool = False) -> Extraction:
-  """sheet_words: when only one plan of a sheet is read, the text of the whole sheet (its notes, its storey heights, its units)."""
+  sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
+  footing_sections: list | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -1272,6 +1269,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   if text_source == "OCR":
     res.notes.append(C.note("SCAN_TEXT_READ"))
   words = index.words
+  imp_here = imperial if imperial is not None else _is_imperial(words)
+  imp_sheet = imperial if imperial is not None else _is_imperial(sheet_words if sheet_words is not None else words)
   lines = build_lines(words)
   notes_lines = build_lines(sheet_words) if sheet_words is not None else lines
   hint = find_units_hint(notes_lines)
@@ -1283,7 +1282,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   
   composite_structural = sum(1 for v in views if v["structural"]) >= 2
   if composite_structural:
-    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, _is_imperial(words), {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details, floor_heights, beam_sections)
+    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, imp_here, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details, floor_heights, beam_sections)
     res.candidates.extend(found)
     res.stats["views"] = vstats
     res.stats["column_details"] = {t: {"sizes_in": r.get("sizes_in") or []} for t, r in (col_details or {}).items()}
@@ -1293,7 +1292,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     only = [v for v in views if v["structural"] and not v.get("foundation")]
     if len(only) == 1:
       in_view = [w for w in words if VW.contains(only[0], w.cx, w.cy)]
-      strips = _apply_strips(index, only[0], in_view, found, mm_per_pt, ctx, _is_imperial(words), beam_sections, only[0].get("level_hint") or level_hint)
+      strips = _apply_strips(index, only[0], in_view, found, mm_per_pt, ctx, imp_here, beam_sections, only[0].get("level_hint") or level_hint)
       if strips is not None:
         res.stats["beam_strips"] = strips
     res.candidates.extend(found)
@@ -1320,13 +1319,13 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   
   res.stats["sheet_kind"] = kind
   if kind["kind"] != "STRUCTURAL" and not composite_structural and level_hint and sheet_words is None:
-    res.stats["column_shapes"] = CS.census(index.rings, mm_per_pt, _is_imperial(words), _snap_inch, level_hint)
+    res.stats["column_shapes"] = CS.census(index.rings, mm_per_pt, imp_here, _snap_inch, level_hint)
   frames, runs = [], []
   if kind["kind"] == "STRUCTURAL" or composite_structural:
     res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"] or (views[0]["caption"] if views else None)))
   else:
     try:
-      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, _is_imperial(sheet_words if sheet_words is not None else words), bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"), outer_only)
+      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, imp_sheet, bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"), outer_only, wall_vocab)
       res.candidates.extend(walls)
       wstats["tank_walls"] = _mark_tanks(words, walls, mm_per_pt)
       _drop_tank_heights(walls)
@@ -1349,7 +1348,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           c.notes.append(C.note("OPENINGS_ASSIGNED", count=c.facts["openings"]["count"], marks=c.facts["openings"]["marks"]))
           c.status = _status(c.notes)
       ring = wstats.pop("rcc_ring", None)
-      completion = CP.candidates(ring, CP.rcc_notes(notes_lines), sheet_heights, ctx, _is_imperial(sheet_words if sheet_words is not None else words), Candidate, _finish, _height_note)
+      completion = CP.candidates(ring, CP.rcc_notes(notes_lines), sheet_heights, ctx, imp_sheet, Candidate, _finish, _height_note)
       wstats["rcc_completion"] = {"pieces": len(completion), "sides_drawn": ring["sides"]} if ring else None
       res.stats["walls"] = wstats
       lintels = _lintel_candidates([c for c in res.candidates if c.category in ("DOOR", "WINDOW")], (schedule or {}).get("lintels") or [],
@@ -1407,7 +1406,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
       if lowest_level:
-        below = _foundation_candidates(walls, rooms, schedule, ctx, level_hint)
+        below = _foundation_candidates(walls, rooms, schedule, ctx, level_hint, footing_sections)
         res.candidates.extend(below)
         res.stats["foundation_items"] = len(below)
     except W.TimeLimit:
@@ -1431,6 +1430,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   res.unmapped_tags = [{"tag": t, "count": n} for t, n in sorted(unmapped.items(), key=lambda kv: (-kv[1], kv[0]))][:30]
   res.stats["seconds"] = round(time.monotonic() - started, 3)
   res.stats["units_hint"] = hint
+  res.stats["units"] = {"imperial": imp_sheet, "basis": "DRAWING" if imperial is not None else "SHEET", "wall_vocab_mm": list(wall_vocab or [])}
   res.stats["height_notes"] = heights
   return res
 

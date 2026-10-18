@@ -104,6 +104,10 @@ def _slab_text(cand, page_no: int, measurement) -> str:
     parts.append("thickness printed on another sheet")
   elif facts.get("thickness_source") == "TYPED":
     parts.append("thickness typed")
+  elif facts.get("thickness_source") == "CHOSEN":
+    parts.append("thickness chosen by you between the ones the drawing prints")
+  elif facts.get("thickness_source") == "POLICY":
+    parts.append("thickness picked by the policy between the ones the drawing prints")
   elif facts.get("thickness_source") == "SECTION_LABEL":
     parts.append("thickness labelled on the sections of the drawing (the plan's general slab note prints a different one)")
   elif "SLAB_THICKNESS_DISAGREES" in codes:

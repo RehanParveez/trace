@@ -13,11 +13,14 @@ class FloorSource(BaseModel):
   open: int = 0
   accepted: int = 0
   rejected: int = 0
+  combined: int = Field(default=0, description="Items of this sheet set aside because the floor's other sheet holds the same item.")
+  added: int = Field(default=0, description="Items of this sheet that the floor's other sheet does not show, kept so the floor is complete.")
+  added_wall_m: float = Field(default=0.0, description="Length of the walls among the added items. Beams, plaster, termite treatment and the other items worked out from the walls follow the floor's own sheet and do not include these walls.")
   set_aside: bool = False
 
 class FloorEntry(BaseModel):
   floor: str
-  state: str = Field(description="SINGLE (one source), LISTED (several, none of them a sheet of many plans), DOUBLE (two sources are open), CHOSEN (one source is in use), NONE (nothing is open).")
+  state: str = Field(description="SINGLE (one source), LISTED (several, none of them a sheet of many plans), DOUBLE (two sources are open), COMBINED (two sources are open and the items they share were merged), CHOSEN (one source is in use), NONE (nothing is open).")
   choosable: bool
   chosen_sheet_id: UUID | None = None
   suggested_sheet_id: UUID | None = None

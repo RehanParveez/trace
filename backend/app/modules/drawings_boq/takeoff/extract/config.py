@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 26
+EXTRACT_VERSION = 27
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0   
@@ -211,6 +211,11 @@ NOTES = {
   "NO_WORK_ITEM": ("info", "The work item catalog has no item for this, so this measurement is left without one. Assign it when you build the bill."),
   "BRICK_STEPS_ASSUMED": ("warning", "The steps of the brick foundation are drawn on the footing section details as dimension lines, not as text that can be read. Four steps are listed under walls of 6 inches and thicker and three under thinner walls, as is usual for a stepped footing. Reject the steps your section does not show, and type the height of each step and how much each step is narrower than the one below it when you accept."),
   "BRICK_STEPS_BRICK_ONLY": ("info", "The steps run under the brick walls only. Concrete walls of the same thickness stand on their own footing and are left out."),
+  "FOUNDATION_FROM_SECTION": ("info", "The widths and depths are those of the footing section the drawing prints for this wall, measured from its lines (the section is drawn to its own scale, which is set from the wall thickness and the widths written inside its steps, and the two agree). Check them against the section."),
+  "BRICK_STEPS_FROM_SECTION": ("info", "The number of steps, and the width and height of each, are those of the footing section the drawing prints for this wall, measured from its lines. Check them against the section."),
+  "RCC_STRIP_FROM_SECTION": ("info", "The reinforced concrete strip footing under the brick steps is the one drawn on the footing section for this wall: its width and depth are measured from the section, its length is the brick walls laid end to end."),
+  "RCC_STRIP_STEEL_NOT_READ": ("warning", "The bars of the strip footing are written on the footing section as drawn lines, not as text that could be read, so no steel is taken for it. Add the bars by hand from the section."),
+  "RCC_STRIP_STEEL_PRINTED": ("info", "The footing section prints these bars. They are listed for you; steel weight for a strip footing is not worked out from them."),
   "MEMBRANE_FROM_WALLS": ("info", "This item is not drawn on the plan. It is the damp-proof membrane along the top of the plinth under all the walls of the lowest floor laid end to end, concrete walls included, tank walls left out. The width of the membrane is not printed as text; type it when you accept the item."),
   "KACHA_FROM_ROOMS": ("info", "The area of the concrete or kacha bed under the floor is the total of the room areas found on this floor. The walls and the area under them are not included."),
   "CEILING_FROM_ROOMS": ("info", "The area of the ceiling plaster is the total of the room areas found on this floor. The undersides of the roof projections are not included; they are on the slab sheet."),

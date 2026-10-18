@@ -172,6 +172,7 @@ export interface BulkConfirmResult { confirmed: string[]; failed: Array<{ id?: s
 export interface ApproveReadyBody {
   accept_assumed?: boolean;
   accept_warned?: boolean;
+  accept_added?: boolean;
   confirm?: boolean;
   dry_run?: boolean;
   batch?: number;
@@ -812,11 +813,14 @@ export interface FloorSource {
   accepted: number;
   rejected: number;
   set_aside: boolean;
+  combined?: number;
+  added?: number;
+  added_wall_m?: number;
 }
 
 export interface FloorEntry {
   floor: string;
-  state: "SINGLE" | "LISTED" | "DOUBLE" | "CHOSEN" | "NONE";
+  state: "SINGLE" | "LISTED" | "DOUBLE" | "COMBINED" | "CHOSEN" | "NONE";
   choosable: boolean;
   chosen_sheet_id: string | null;
   suggested_sheet_id: string | null;

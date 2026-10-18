@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.prep import footing_sections as FSEC
 
 EXCAVATION_AREA = "EXCAVATION_AREA"
 TRENCH = "TRENCH"
@@ -9,12 +10,13 @@ TERMITE_FLOOR = "TERMITE_UNDER_FLOOR"
 PCC_PAD = "PCC_PAD"
 BRICK_STEP = "BRICK_STEP"
 MEMBRANE = "MEMBRANE"
-ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE)
+RCC_STRIP = "RCC_STRIP"
+ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE, RCC_STRIP)
 
 WORK_ITEM = {EXCAVATION_AREA: "EXC-FOUND", TRENCH: "EXC-FOUND", PCC_STRIP: "CON-PCC", PCC_PAD: "CON-PCC", TERMITE_STRIP: "PRO-TERMITE", TERMITE_FLOOR: "PRO-TERMITE",
-  BRICK_STEP: "MAS-BRICK", MEMBRANE: "FIN-WATERPROOF-DPC"}
+  BRICK_STEP: "MAS-BRICK", MEMBRANE: "FIN-WATERPROOF-DPC", RCC_STRIP: "CON-RCC"}
 MODE = {EXCAVATION_AREA: "COUNT_X_VOLUME", TRENCH: "COUNT_X_VOLUME", PCC_STRIP: "COUNT_X_VOLUME", PCC_PAD: "COUNT_X_VOLUME",
-  TERMITE_STRIP: "COUNT_X_AREA", TERMITE_FLOOR: "COUNT_X_AREA", BRICK_STEP: "COUNT_X_VOLUME", MEMBRANE: "COUNT_X_AREA"}
+  TERMITE_STRIP: "COUNT_X_AREA", TERMITE_FLOOR: "COUNT_X_AREA", BRICK_STEP: "COUNT_X_VOLUME", MEMBRANE: "COUNT_X_AREA", RCC_STRIP: "COUNT_X_VOLUME"}
 
 def strip_class(thickness_mm: float) -> str:
   return "THIN" if thickness_mm < C.FOUNDATION_THIN_WALL_MAX_MM else "THICK"
@@ -59,9 +61,11 @@ def wall_groups(walls: list) -> dict:
     groups.setdefault(round(t, 1), []).append(w)
   return groups
 
-def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
-  """For each wall thickness on the lowest floor: the trench, the concrete bed and the termite treatment under the walls laid end to end. The width of a
-  strip is not printed as text, so it is typed when the item is accepted; the depth of the trench and the thickness of the bed are typed too."""
+def _section_facts(sec: dict) -> dict:
+  return {"footing_section": {"caption": sec.get("caption"), "calibration": sec.get("calibration"), "scale_mm_per_pt": sec.get("scale_mm_per_pt"),
+    "pcc": sec.get("pcc"), "footing": sec.get("footing"), "steps": sec.get("steps"), "total_depth_mm": sec.get("total_depth_mm"), "steel": sec.get("steel") or []}}
+
+def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None) -> list:
   out: list = []
   for t, ws in sorted(wall_groups(walls).items(), reverse=True):
     length_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws)
@@ -76,6 +80,21 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
     centre = [_centre(pts)]
     params = {"length_mm": round(length_m * 1000.0, 1)}
     walls_note = C.note("FOUNDATION_FROM_WALLS")
+    sec = FSEC.for_wall(sections, t)
+    if sec and sec.get("pcc") and sec.get("total_depth_mm"):
+      base_facts.update(_section_facts(sec))
+      
+      sec_note = C.note("FOUNDATION_FROM_SECTION", caption=sec.get("caption"), total_depth_mm=sec["total_depth_mm"])
+      bed_w, bed_t = float(sec["pcc"]["width_mm"]), float(sec["pcc"]["depth_mm"])
+      out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre,
+        {**params, "width_mm": round(bed_w + 2.0 * C.TRENCH_SIDE_ALLOWANCE_MM, 1), "depth_mm": float(sec["total_depth_mm"])}, [],
+        [walls_note, sec_note, C.note("TRENCH_WORKING_SPACE_ASSUMED")], dict(base_facts), 0.72))
+      out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
+        {**params, "width_mm": bed_w, "depth_mm": bed_t}, [], [walls_note, sec_note], dict(base_facts), 0.78))
+      out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
+        centre, {**params, "width_mm": bed_w}, [], [walls_note, sec_note, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.72))
+      continue
+  
     width_note = C.note("FOUNDATION_WIDTH_TYPED")
     out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre, dict(params),
       ["strip_width_mm", "depth_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED")], dict(base_facts), 0.65))
@@ -138,21 +157,42 @@ def pad_candidates(footings: list, ctx: dict, cls, finish) -> list:
       {"length_mm": float(length), "width_mm": float(width)}, ["depth_mm"], [C.note("PCC_PAD_FROM_FOOTINGS")], facts, 0.75, count=len(pts)))
   return out
 
-def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
-  """The stepped brick foundation under the brick walls of the lowest floor. For each wall thickness, one item per step, counted from the bottom. How many
-  steps there are, how high each one is and how much each is narrower than the one below are dimension lines on the footing section, so the steps are
-  assumed and the sizes are typed when the item is accepted."""
+def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None) -> list:
   out: list = []
   for t, ws in sorted(wall_groups(walls).items(), reverse=True):
     brick = [w for w in ws if (w.facts or {}).get("construction") != "RCC"]
     length_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in brick)
     if length_m <= 0.0:
       continue
+  
     pts = [p for w in brick for p in ((w.geometry or {}).get("points") or [])]
     cls_name = strip_class(t)
-    steps = C.BRICK_STEPS_THIN if cls_name == "THIN" else C.BRICK_STEPS_THICK
+    sec = FSEC.for_wall(sections, t)
     where = f" · {spec[0]}" if spec else ""
     centre = [_centre(pts)]
+    if sec and sec.get("steps"):
+      n = len(sec["steps"])
+      
+      for i, st in enumerate(sec["steps"], start=1):
+        facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
+          "step_no": i, "steps_in_class": n, "wall_keys": [w.key for w in brick], **_section_facts(sec)}
+        label = f"Brick foundation step {i} of {n} under {_inch_label(t)} in walls · {length_m:.2f} m{where}"
+        out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or ""), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}", centre,
+          {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(st["width_mm"]), "depth_mm": float(st["height_mm"])}, [],
+          [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_FROM_SECTION", steps=n, caption=sec.get("caption")), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.74))
+      foot = sec.get("footing")
+      
+      if foot:
+        facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
+          "wall_keys": [w.key for w in brick], **_section_facts(sec)}
+        notes = [C.note("FOUNDATION_FROM_WALLS"), C.note("RCC_STRIP_FROM_SECTION", caption=sec.get("caption")), C.note("BRICK_STEPS_BRICK_ONLY")]
+        notes.append(C.note("RCC_STRIP_STEEL_PRINTED", bars=sec["steel"]) if sec.get("steel") else C.note("RCC_STRIP_STEEL_NOT_READ"))
+        out.append(_make(cls, ctx, finish, (RCC_STRIP, round(t), level_hint or ""), RCC_STRIP, f"Reinforced concrete strip footing under {_inch_label(t)} in walls · {length_m:.2f} m{where}",
+          f"RCC-STRIP-{_inch_label(t)}IN", centre, {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(foot["width_mm"]), "depth_mm": float(foot["depth_mm"])}, [],
+          notes, facts, 0.74))
+      continue
+  
+    steps = C.BRICK_STEPS_THIN if cls_name == "THIN" else C.BRICK_STEPS_THICK
     for i in range(1, steps + 1):
       facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
         "step_no": i, "steps_in_class": steps, "wall_keys": [w.key for w in brick]}

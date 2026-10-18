@@ -1,5 +1,5 @@
 from __future__ import annotations
-from app.modules.drawings_boq.takeoff.extract.floor_sources_service import FloorSourceService
+from app.modules.drawings_boq.takeoff.extract.floor_union_service import FloorUnionService
 from uuid import UUID
 from app.modules.drawings_boq.takeoff import approve_pick as AP
 from app.modules.drawings_boq.takeoff.extract.crosschecks_service import CrossCheckService
@@ -12,12 +12,12 @@ from app.modules.drawings_boq.takeoff.register_service import RegisterService
 
 CHUNK = 200
 
-class ApproveService(FloorSourceService):
+class ApproveService(FloorUnionService):
 
   async def approve(self, org: UUID, user_id: UUID, drawing_id: UUID, payload) -> dict:
     await self.core._pdf_drawing(org, drawing_id)
     steps = _Steps(self, org, user_id, drawing_id)
-    out = await AP.run(steps, accept_assumed=payload.accept_assumed, accept_warned=payload.accept_warned, typed=dict(payload.typed),
+    out = await AP.run(steps, accept_assumed=payload.accept_assumed, accept_warned=payload.accept_warned, accept_added=payload.accept_added, typed=dict(payload.typed),
       exclude={str(i) for i in payload.exclude_ids}, batch=payload.batch, confirm=payload.confirm, dry_run=payload.dry_run)
     return {"drawing_id": drawing_id, **out}
 

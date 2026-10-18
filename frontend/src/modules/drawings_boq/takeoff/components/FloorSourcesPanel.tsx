@@ -41,7 +41,9 @@ export function FloorSourcesPanel(p: Props) {
       ) : null}
       {toDecide === 0 && repeated ? (
         <p className="text-[11.5px] text-[var(--color-text-secondary)]" data-testid="floor-sources-auto">
-          {t("boq.takeoff.floorSources.auto", "A floor drawn on its own sheet and again among the plans is counted once: the floor's own sheet is used and the other is set aside. To use the other sheet instead, press its “Use page” button; nothing is deleted.")}
+           {floors.some((f) => f.state === "COMBINED")
+            ? t("boq.takeoff.floorSources.autoCombined", "A floor drawn on its own sheet and again among the plans was laid over itself by its marks and positions: items both sheets show are counted once and items only one of them shows are kept. To use one sheet only, press its “Use page” button; nothing is deleted.")
+            : t("boq.takeoff.floorSources.auto", "A floor drawn on its own sheet and again among the plans is counted once: the floor's own sheet is used and the other is set aside. To use the other sheet instead, press its “Use page” button; nothing is deleted.")}
         </p>
       ) : null}
       {p.sheetHasPlans ? (
@@ -64,7 +66,7 @@ export function FloorSourcesPanel(p: Props) {
 
 function FloorRow({ f, p }: { f: FloorEntry; p: Props }) {
   const { t } = useTranslation();
-  const state = floorState(f);
+  const state = f.state === "COMBINED" ? { tone: "green" as const, text: t("takeoff.floorState.COMBINED", "combined") } : floorState(f);
   const gap = f.sources.length > 1 ? wallGap(f) : "";
   return (
     <li className="rounded-[8px] border border-[var(--color-border)] p-2" data-testid={`floor-source-${f.floor}`} data-state={f.state}>
@@ -80,6 +82,11 @@ function FloorRow({ f, p }: { f: FloorEntry; p: Props }) {
             <li key={s.sheet_id} className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid={`floor-source-${f.floor}-${s.page_no}`} data-in-use={inUse}>
               <span className={s.set_aside ? "text-[var(--color-text-muted)] line-through" : ""}>{sourceName(s)}</span>
               <span className="text-[11.5px] text-[var(--color-text-secondary)]">{sourceLine(s)}</span>
+              {f.state === "COMBINED" && ((s.combined ?? 0) > 0 || (s.added ?? 0) > 0) ? (
+                <span className="text-[11.5px] text-[var(--color-text-secondary)]" data-testid={`floor-merge-${f.floor}-${s.page_no}`}>
+                  {t("boq.takeoff.floorSources.merge", "{{m}} repeated set aside · {{a}} only on this sheet kept", { m: s.combined ?? 0, a: s.added ?? 0 })}
+                </span>
+              ) : null}
               {f.suggested_sheet_id === s.sheet_id && f.state === "DOUBLE" ? <Badge tone="blue">{t("boq.takeoff.floorSources.suggested", "suggested")}</Badge> : null}
               <span className="ml-auto flex items-center gap-1">
                 {f.choosable && p.canEdit && !inUse ? (

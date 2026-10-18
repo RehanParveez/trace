@@ -22,6 +22,7 @@ REASON_TEXT = {
   "VALUE_MISSING": "A value is missing; type it when accepting this item.",
   "ASSUMED": "A value was paired, defaulted or is disputed on the drawing.",
   "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
+  "ADDED_FROM_SECOND_SHEET": "Only the sheet that shows every plan has this item, not the floor's own sheet. That sheet is drawn small, so check it on the sheet before accepting.",
   "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
 }
 
@@ -57,6 +58,8 @@ def ready(read: list, checks: list | None = None) -> dict:
         why.append("ALREADY_DECIDED")
       elif c.category != "SLAB" and (sh["sheet_id"], FO.level_of(c) or sf) in undecided:
         why.append("FLOOR_SOURCE_UNDECIDED")
+      if c.decision == "NEW" and ((c.facts or {}).get("floor_union") or {}).get("role") == "ADDED":
+        why.append("ADDED_FROM_SECOND_SHEET")
       if c.status == "INVALID":
         why.append("ERROR")
       elif c.status == "WARNING":

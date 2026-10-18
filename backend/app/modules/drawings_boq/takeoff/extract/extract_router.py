@@ -12,7 +12,9 @@ from app.core.database import get_db
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest, ChooseFloorSourcesResponse, FloorSourcesResponse
-from app.modules.drawings_boq.takeoff.extract.floor_sources_service import FloorSourceService
+from app.modules.drawings_boq.takeoff.extract.floor_union_service import FloorUnionService
+from app.modules.drawings_boq.takeoff.extract.review_schemas import ConflictsResponse, LinksResponse, ResolveConflictsRequest, ResolveConflictsResponse, SteelRollupResponse
+from app.modules.drawings_boq.takeoff.extract.review_service import ReviewService
 from app.modules.drawings_boq.takeoff.approve_schemas import ApproveReadyRequest, ApproveReadyResponse
 from app.modules.drawings_boq.takeoff.approve_service import ApproveService
 from app.modules.drawings_boq.takeoff.extract.crosschecks_schemas import CrossChecksResponse, ReadyToAcceptResponse
@@ -35,7 +37,7 @@ async def extract_sheet(
   sheet_id: UUID, payload: ExtractRequest | None = None,
   current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
-  return await FloorSourceService(session).extract_sheet(_org(current_user), sheet_id, current_user.id, payload or ExtractRequest())
+  return await FloorUnionService(session).extract_sheet(_org(current_user), sheet_id, current_user.id, payload or ExtractRequest())
 
 @router.get("/takeoff/sheets/{sheet_id}/candidates", response_model=CandidateListResponse)
 async def sheet_candidates(
@@ -48,7 +50,7 @@ async def extract_drawing(
   drawing_id: UUID, payload: ExtractRequest | None = None,
    current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
-  return await FloorSourceService(session).extract_drawing(_org(current_user), drawing_id, current_user.id, payload or ExtractRequest())
+  return await FloorUnionService(session).extract_drawing(_org(current_user), drawing_id, current_user.id, payload or ExtractRequest())
 
 @router.get("/drawings/{drawing_id}/takeoff/candidates", response_model=DrawingCandidatesResponse)
 async def drawing_candidates(
@@ -84,13 +86,55 @@ async def sync_register(
 async def floor_sources(
   drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
-  return await FloorSourceService(session).floor_sources(_org(current_user), drawing_id)
+   return await FloorUnionService(session).floor_sources(_org(current_user), drawing_id)
 
 @router.post("/drawings/{drawing_id}/takeoff/floor-sources/choose", response_model=ChooseFloorSourcesResponse)
 async def choose_floor_sources(
   drawing_id: UUID, payload: ChooseFloorSourcesRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
-  return await FloorSourceService(session).choose(_org(current_user), current_user.id, drawing_id, payload)
+  return await FloorUnionService(session).choose(_org(current_user), current_user.id, drawing_id, payload)
+
+@router.post("/drawings/{drawing_id}/takeoff/floor-sources/combine", response_model=ChooseFloorSourcesResponse)
+async def combine_floor_sources(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  """Lay the two sheets of each floor over each other, count what both show once, and keep what only one shows."""
+  svc = FloorUnionService(session)
+  out = await svc.combine(_org(current_user), current_user.id, drawing_id)
+  return {"chosen": out["combined"], "set_aside": sum(c["set_aside"] for c in out["combined"]), "restored": sum(c["restored"] for c in out["combined"]),
+    "blocked": out["skipped"], "floors": out["floors"]}
+
+@router.get("/drawings/{drawing_id}/takeoff/conflicts", response_model=ConflictsResponse)
+async def value_conflicts(
+  drawing_id: UUID, slab_policy: str | None = None, beam_policy: str | None = None,
+  current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  """Values the drawing prints differently (a slab thickness on the architectural and the structural sheet, a beam section listed more than once, a mark counted
+  differently by the two sheets of a floor), each with the quantity it gives and the one in force."""
+  policy = {k: v for k, v in (("SLAB_THICKNESS", slab_policy), ("BEAM_SECTION", beam_policy)) if v}
+  return await ReviewService(session).conflicts(_org(current_user), drawing_id, policy)
+
+@router.post("/drawings/{drawing_id}/takeoff/conflicts/resolve", response_model=ResolveConflictsResponse)
+async def resolve_value_conflicts(
+  drawing_id: UUID, payload: ResolveConflictsRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await ReviewService(session).resolve(_org(current_user), current_user.id, drawing_id, payload)
+
+@router.get("/drawings/{drawing_id}/takeoff/links", response_model=LinksResponse)
+async def member_links(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  """For each beam, plinth beam, footing, neck column and tank: whether the detail the drawing prints for it was found and put on it."""
+  return await ReviewService(session).links(_org(current_user), drawing_id)
+
+@router.get("/drawings/{drawing_id}/takeoff/steel-rollup", response_model=SteelRollupResponse)
+async def steel_rollup(
+  drawing_id: UUID, cover_mm: float | None = None, hook_dia: float | None = None, lap_dia: float | None = None, anchor_dia: float | None = None, wastage_pct: float | None = None,
+  current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  """The reinforcement weight of the items as they stand, from the bars printed or typed with them, before a calculation run."""
+  given = {k: v for k, v in (("cover_mm", cover_mm), ("hook_dia", hook_dia), ("lap_dia", lap_dia), ("anchor_dia", anchor_dia), ("wastage_pct", wastage_pct)) if v is not None}
+  return await ReviewService(session).steel_rollup(_org(current_user), drawing_id, given or None)
 
 @router.post("/drawings/{drawing_id}/takeoff/approve", response_model=ApproveReadyResponse)
 async def approve_ready(

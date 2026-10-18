@@ -18,6 +18,7 @@ export const REASON_LABEL: Record<string, string> = {
   ERROR: "the reader found an error",
   NOT_MEASURABLE: "beam marks are only counted; draw the lengths by hand",
   FLOOR_SOURCE_UNDECIDED: "the floor is open on two sheets",
+  ADDED_FROM_SECOND_SHEET: "only the sheet that shows every plan has it",
 };
 
 export type SizeState = { kind: "empty" } | { kind: "ok"; mm: number } | { kind: "bad" };

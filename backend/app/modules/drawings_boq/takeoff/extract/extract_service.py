@@ -17,6 +17,7 @@ from app.core.exceptions import TraceException
 from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import conflicts as CF
 from app.modules.drawings_boq.finish_schedule.common import work_item_catalog
 from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
@@ -268,6 +269,9 @@ class ExtractService:
     slab_values = await self.prep.drawing_slab_values(org, sheet.drawing_id)
     beam_sections = await self.prep.drawing_beam_sections(org, sheet.drawing_id)
     tank_details = await self.prep.drawing_tank_details(org, sheet.drawing_id)
+    footing_sections = await self.prep.drawing_footing_sections(org, sheet.drawing_id)
+    units = await self.prep.drawing_units(org, sheet.drawing_id)
+    wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
     title = (sheet.prep_meta or {}).get("title") or {}
     level_hint = None if title.get("composite") else title.get("level_hint")
     floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
@@ -276,7 +280,8 @@ class ExtractService:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
-        lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details)
+        lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
+        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -369,12 +374,14 @@ class ExtractService:
       else:
         updated += 1
         
+      chosen = (row.facts or {}).get(CF.CHOICE_KEY) if row.decision == "NEW" else None
       row.category, row.kind, row.quantity_mode, row.label, row.tag = c.category, c.kind, c.quantity_mode, c.label[:200], c.tag
       row.geometry, row.params, row.missing = c.geometry, c.params, c.missing
       row.suggested_work_item, row.count, row.status = c.work_item, c.count, c.status
       kept = mark or ((row.facts or {}).get(FS.SET_ASIDE) if row.decision == "REJECTED" else None)
       row.confidence, row.facts, row.notes, row.source = Decimal(str(c.confidence)), ({**c.facts, FS.SET_ASIDE: kept} if kept else c.facts), c.notes, c.source
       row.extract_version, row.mm_per_pt = C.EXTRACT_VERSION, Decimal(str(mm_per_pt))
+      CF.reapply(row, chosen)
     gone = [r.id for k, r in old.items() if k not in seen and r.decision != "ACCEPTED" and not (r.facts or {}).get("from_shapes")]
     await self.repo.delete_candidates(org, gone)
     await self.session.flush()

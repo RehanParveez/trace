@@ -12,6 +12,33 @@ def options_for(role: str, sections: list) -> list:
   kind = KIND_OF_ROLE.get(role)
   return [s for s in sections or [] if s.get("kind") == kind and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
 
+def apply_marked(c, sections: list) -> bool:
+  """A beam the plan marks (B2, GB4) takes the depth and bars of the section printed for that mark. A section that two details print differently (disagree), or that
+  prints neither a depth nor bars, is not used. Returns whether a section was found."""
+  mark = norm_mark(str(c.tag)) if c.tag else None
+  
+  if not mark:
+    return False
+  s = next((s for s in sections or [] if s.get("mark") and norm_mark(str(s["mark"])) == mark and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))), None)
+  if s is None:
+    return False
+  if c.facts is None:
+    c.facts = {}
+  f = c.facts
+  
+  if s.get("depth_mm"):
+    c.params["depth_mm"] = s["depth_mm"]
+    c.missing = [m for m in (c.missing or []) if m != "depth_mm"]
+    c.notes.append(C.note("BEAM_SECTION_FROM_MARK", mark=s["mark"], depth_mm=s["depth_mm"]))
+  f["section_mark"] = s["mark"]
+  f["section_pages"] = list(s.get("pages") or [])
+  if s.get("steel"):
+    c.params["steel"] = dict(s["steel"])
+    f["steel_text"] = s.get("steel_text")
+    f["steel_source"] = {"grade": "PRINTED", "text": f"beam section {s['mark']}"}
+    c.notes.append(C.note("STEEL_FROM_DETAIL", text=s.get("steel_text")))
+  return True
+
 def apply(beams: list, sections: list) -> dict:
   """Put the depth and bars of the beam section on each wall-derived beam, or list the sections to pick from. Returns {"applied": n, "listed": n}."""
   stats = {"applied": 0, "listed": 0}

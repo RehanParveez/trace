@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.approve_pick import DEFAULT_BATCH, MAX_BAT
 class ApproveReadyRequest(BaseModel):
   accept_assumed: bool = Field(default=False, description="Also accept items whose size the reader paired, defaulted or found disputed on the drawing. They stay marked as assumed.")
   accept_warned: bool = Field(default=False, description="Also accept items the reader or a check between readers warns about.")
+  accept_added: bool = Field(default=False, description="Also accept the items that only the sheet showing every plan has, not the floor's own sheet. Check them on the sheet first.")
   confirm: bool = Field(default=True, description="Confirm the measurements made from accepted items, so the calculation run uses them.")
   dry_run: bool = Field(default=False, description="Only count what would be done. Nothing is changed.")
   batch: int = Field(default=DEFAULT_BATCH, ge=1, le=MAX_BATCH, description="Items accepted in one call. The answer says how many remain.")

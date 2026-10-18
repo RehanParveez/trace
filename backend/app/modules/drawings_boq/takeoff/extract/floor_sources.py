@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.modules.drawings_boq.takeoff.extract import combine_plan as CP
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 
 SET_ASIDE = "set_aside"         
@@ -11,7 +12,8 @@ def in_floor(c, floor: str, sheet_floor: str | None) -> bool:
   return c.category != "SLAB" and (FO.level_of(c) or sheet_floor) == floor
 
 def is_set_aside(c) -> bool:
-  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") == SET_ASIDE_BY
+  """Rejected because the floor's other sheet was chosen, or because the other sheet holds the same item (a combine)."""
+  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY)
 
 def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   title = sheet["title"] or {}
@@ -26,6 +28,9 @@ def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
     "caption": plan["caption"] if plan else title.get("title"),
     "wall_m": round(sum(float((c.facts or {}).get("length_cc_m") or 0.0) for c in walls), 1), "walls": len(walls), "items": len(rows),
     "open": open_n, "accepted": accepted, "rejected": sum(1 for c in rows if c.decision == "REJECTED"),
+    "combined": sum(1 for c in rows if CP.combined_away(c)),
+    "added": sum(1 for c in rows if c.decision != "REJECTED" and ((c.facts or {}).get(CP.STAMP) or {}).get("role") == CP.ADDED),
+    "added_wall_m": round(sum(float((c.facts or {}).get("length_cc_m") or 0.0) for c in walls if c.decision != "REJECTED" and ((c.facts or {}).get(CP.STAMP) or {}).get("role") == CP.ADDED), 1),
     "set_aside": bool(rows) and open_n == 0 and accepted == 0}
 
 def _suggest(sources: list) -> str | None:
@@ -57,7 +62,7 @@ def build(sheets: list) -> dict:
     elif not choosable:
       state = "LISTED"
     elif len(live) > 1:
-      state = "DOUBLE"
+      state = "COMBINED" if any(s["combined"] for s in sources) else "DOUBLE"
     elif len(live) == 1:
       state = "CHOSEN"
     else:

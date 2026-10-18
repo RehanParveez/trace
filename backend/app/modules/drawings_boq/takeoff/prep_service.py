@@ -24,6 +24,7 @@ from app.modules.drawings_boq.takeoff.levels import ensure_level, level_spec
 from app.modules.drawings_boq.takeoff.prep import details
 from app.modules.drawings_boq.takeoff.prep import beam_details
 from app.modules.drawings_boq.takeoff.prep import tank_details
+from app.modules.drawings_boq.takeoff.prep import footing_sections, units as unit_reader
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
@@ -104,6 +105,12 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["tank_details_reader"] = tanks["ocr"]
   except Exception:
     result.meta["tank_details_reader"] = "FAILED"
+  try:
+    sections = footing_sections.read(result.index, result.index.words)
+    if sections:
+      result.meta["footing_sections"] = sections
+  except Exception:
+    result.meta["footing_sections_reader"] = "FAILED"
 
 class PrepService:
   def __init__(self, session):
@@ -503,6 +510,27 @@ class PrepService:
     """The plan and section of every water tank drawn on any sheet of the drawing: [{kind, view, caption, page_no, lengths, bar_notes}]."""
     sheets = await self.repo.sheets(org, drawing_id)
     return tank_details.gather([{"page_no": s.page_no, "details": (s.prep_meta or {}).get("tank_details")} for s in sheets if (s.prep_meta or {}).get("tank_details")])
+
+  async def drawing_footing_sections(self, org: UUID, drawing_id: UUID) -> list:
+    """The footing sections read from the pictures on any sheet of the drawing: [{caption, wall_width_mm, steps, footing, pcc, total_depth_mm, read, issues, page_no}]."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return [{**sec, "page_no": s.page_no} for s in sheets for sec in ((s.prep_meta or {}).get("footing_sections") or [])]
+
+  async def drawing_units(self, org: UUID, drawing_id: UUID) -> dict:
+    """Whether the whole drawing is dimensioned in feet and inches, decided from every sheet's text together: {"imperial": True | False | None, "basis", "pages"}."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return unit_reader.drawing_imperial([{"page_no": s.page_no, "units": (s.prep_meta or {}).get("units"), "hint": (s.prep_meta or {}).get("units_hint")} for s in sheets])
+
+  async def drawing_wall_vocab(self, org: UUID, drawing_id: UUID, imperial: bool | None) -> list:
+    """The wall thicknesses (mm) the drawing's own floor sheets snapped to at least twice. The sheet that shows every plan at small size does not vote."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    own = [s.id for s in sheets if not ((s.prep_meta or {}).get("title") or {}).get("composite")]
+    if not own:
+      return []
+    got = (await self.session.execute(select(TakeoffCandidate.facts).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.sheet_id.in_(own),
+      TakeoffCandidate.category == "WALL", TakeoffCandidate.decision != "REJECTED"))).scalars().all()
+    rows = [((f or {}).get("thickness_used_mm"), (f or {}).get("thickness_standard_mm"), False) for f in got if (f or {}).get("thickness_used_mm")]
+    return unit_reader.wall_vocabulary(rows, imperial)
 
   async def drawing_schedule(self, org: UUID, drawing_id: UUID) -> dict:
     """The door / window / ventilator sizes and floor areas printed anywhere on the drawing. A mark on the plan of one sheet is sized by the schedule on another."""

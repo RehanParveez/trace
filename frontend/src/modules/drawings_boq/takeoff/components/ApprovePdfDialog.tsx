@@ -6,6 +6,7 @@ import { useApprovePreview, useApproveReady } from "../hooks/useTakeoff";
 import { REASON_LABEL, SIZE_FIELDS, failureLines, sizeState, typedFromInputs } from "../utils/approve";
 import type { ApproveSummary } from "../utils/approve";
 import type { ApproveReadyResult } from "../types/takeoff.types";
+import { ReviewPanel } from "./ReviewPanel";
 
 interface ApprovePdfDialogProps {
   projectId: string;
@@ -14,7 +15,7 @@ interface ApprovePdfDialogProps {
   onClose: () => void;
 }
 
-const HELD_ORDER = ["ASSUMED", "VALUE_MISSING", "WARNING", "CHECK_WARNS", "ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED"];
+const HELD_ORDER = ["ASSUMED", "VALUE_MISSING", "WARNING", "CHECK_WARNS", "ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED", "ADDED_FROM_SECOND_SHEET"];
 
 export function PreviewBlock({ data }: { data: ApproveReadyResult }) {
   const { t } = useTranslation();
@@ -98,6 +99,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
   const navigate = useNavigate();
   const [assumed, setAssumed] = useState(false);
   const [warned, setWarned] = useState(false);
+  const [added, setAdded] = useState(false);
   const [sizes, setSizes] = useState<Record<string, string>>({});
   const [applied, setApplied] = useState<Record<string, number>>({});
   const [progress, setProgress] = useState<ApproveSummary | null>(null);
@@ -105,7 +107,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
   const closeRef = useRef<HTMLButtonElement>(null);
   const { typed, bad } = useMemo(() => typedFromInputs(sizes), [sizes]);
 
-  const preview = useApprovePreview(drawingId, { accept_assumed: assumed, accept_warned: warned, typed: applied }, result === null);
+  const preview = useApprovePreview(drawingId, { accept_assumed: assumed, accept_warned: warned, accept_added: added, typed: applied }, result === null);
   const approve = useApproveReady(drawingId);
 
   useEffect(() => {
@@ -129,7 +131,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
   function start() {
     setResult(null);
     approve.mutate(
-      { body: { accept_assumed: assumed, accept_warned: warned, confirm: true, typed }, onProgress: setProgress },
+      { body: { accept_assumed: assumed, accept_warned: warned, accept_added: added, confirm: true, typed }, onProgress: setProgress },
       { onSuccess: (sum) => setResult(sum) },
     );
   }
@@ -137,7 +139,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--color-trace-navy)]/70 p-3 backdrop-blur-[2px]">
       <div role="dialog" aria-modal="true" aria-label={filename}
-        className="flex max-h-[92vh] w-full max-w-[680px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(8,13,24,0.35)]">
+        className="flex max-h-[92vh] w-full max-w-[760px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_24px_70px_rgba(8,13,24,0.35)]">
         <div className="flex items-start justify-between gap-3 border-b border-[var(--color-border)] px-5 py-4">
           <div className="min-w-0">
             <h2 className="font-[Archivo] text-[16px] font-bold text-[var(--color-text-primary)]">
@@ -167,6 +169,8 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
                 <PreviewBlock data={data} />
               ) : null}
 
+              <ReviewPanel drawingId={drawingId} />
+
               <div className="space-y-2">
                 <label className="flex items-start gap-2">
                   <input type="checkbox" checked={assumed} disabled={approve.isPending} onChange={(e) => setAssumed(e.target.checked)} />
@@ -185,6 +189,18 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
                     {(skipped.WARNING ?? 0) + (skipped.CHECK_WARNS ?? 0) > 0 ? <Badge tone="gold">{(skipped.WARNING ?? 0) + (skipped.CHECK_WARNS ?? 0)}</Badge> : null}
                   </span>
                 </label>
+                {(skipped.ADDED_FROM_SECOND_SHEET ?? 0) > 0 || added ? (
+                  <label className="flex items-start gap-2" data-testid="approve-added">
+                    <input type="checkbox" checked={added} disabled={approve.isPending} onChange={(e) => setAdded(e.target.checked)} />
+                    <span>
+                      {t("takeoff.approve.acceptAdded", "Also approve items only the second sheet shows")}
+                      {(skipped.ADDED_FROM_SECOND_SHEET ?? 0) > 0 ? <Badge tone="gold">{skipped.ADDED_FROM_SECOND_SHEET}</Badge> : null}
+                      <span className="block text-[11px] text-[var(--color-text-muted)]">
+                        {t("takeoff.approve.acceptAddedHint", "Walls, beams, rooms or openings that the floor's own sheet does not show. The other sheet is drawn small and can show lines that are not walls, so check them on the sheet first.")}
+                      </span>
+                    </span>
+                  </label>
+                ) : null}
               </div>
 
               {showSizes ? (

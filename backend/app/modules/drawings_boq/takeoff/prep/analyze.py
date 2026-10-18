@@ -7,8 +7,9 @@ import math
 import time
 from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, projections as projection_reader, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
+from app.modules.drawings_boq.takeoff.prep import units as UN
 
-ANALYSIS_VERSION = 13
+ANALYSIS_VERSION = 14
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -285,7 +286,7 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
   found_views = sheet_views.find_views(index)
   sheet_views.attach_scales(found_views, clusters, pairs, PT_MM, user_unit)
   meta = {
-    "analysis_version": ANALYSIS_VERSION, "paper": paper, "title": title, "units_hint": hint, "content": content_info,
+    "analysis_version": ANALYSIS_VERSION, "paper": paper, "title": title, "units_hint": hint, "units": UN.count_words(raw.words), "content": content_info,
     "index": {"segments": len(raw.kinds), "rings": len(raw.rings), "words": len(raw.words), "truncated": bool(raw.stats.get("truncated")),
     "path_objects": raw.stats.get("path_objects", 0), "elapsed_s": round(time.monotonic() - started + raw.stats.get("elapsed_s", 0.0), 2)},
     "shapes_top": [{k: g[k] for k in ("id", "shape", "a_pt", "b_pt", "count")} for g in shapes[:8]],

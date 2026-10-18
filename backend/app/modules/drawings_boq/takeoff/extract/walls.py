@@ -4,6 +4,7 @@ import time
 import numpy as np
 import math
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.prep import units as UN
 from shapely.geometry import Polygon, box
 from shapely.strtree import STRtree
 
@@ -556,17 +557,11 @@ def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grad
       return f2, r2, s2
   return frames, runs, stats
 
-def snap_thickness(t_mm: float, imperial: bool = False) -> tuple:
-  """(standard thickness found or None, thickness to use in mm). A drawing in feet and inches has 4.5 and 9 inch walls (114.3 and 228.6 mm);
-  any other drawing has the metric 115 and 230 mm walls."""
-  if imperial:
-    best = min(C.IMPERIAL_WALLS_MM, key=lambda s: abs(t_mm / s - 1.0))
-    if abs(t_mm / best - 1.0) <= C.IMPERIAL_TOL:
-      return best, best
-  std = standard_thickness(t_mm)
-  if std is not None:
-    return std, float(std)
-  return None, float(round(t_mm / 5.0) * 5)
+def snap_thickness(t_mm: float, imperial: bool = False, vocab: list | None = None) -> tuple:
+  """(standard thickness found or None, thickness to use in mm). In a drawing in feet and inches a wall is a thickness this drawing uses (vocab, within 15%), a usual
+  inch wall, or the nearest half inch; the metric list (230, 250 mm ...) is not tried, because 250 mm in an inch drawing is a 9 inch wall measured loosely. Any
+  other drawing has the metric 115 and 230 mm walls."""
+  return UN.snap_wall(t_mm, imperial, vocab, C.IMPERIAL_WALLS_MM, standard_thickness)
 
 def standard_thickness(t_mm: float) -> int | None:
   best = min(C.STANDARD_WALLS_MM, key=lambda s: abs(t_mm / s - 1.0))
