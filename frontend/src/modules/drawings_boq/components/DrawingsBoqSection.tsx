@@ -13,6 +13,7 @@ import { DrawingElementsDialog } from "./DrawingElementsDialog";
 import { BOQVersionTabs } from "./BOQVersionTabs";
 import { BOQItemTable } from "./BOQItemTable";
 import { StageReportPanel } from "./StageReportPanel";
+import { RangeDriversPanel } from "./RangeDriversPanel";
 import { BOQSummaryPanel } from "./BOQSummaryPanel";
 import { AddCustomBOQItemDialog } from "./AddCustomBOQItemDialog";
 import { BOQVersionMetaDialog } from "./BOQVersionMetaDialog";
@@ -301,6 +302,7 @@ export function DrawingsBoqSection({
           />
 
           {isEngineVersion ? <StageReportPanel versionId={selectedVersion.id} /> : null}
+          {isEngineVersion ? <RangeDriversPanel versionId={selectedVersion.id} /> : null}
 
           <BOQReviewIssuesPanel
             projectId={projectId}

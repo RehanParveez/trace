@@ -624,6 +624,10 @@ class SnapshotItemResponse(BaseModel):
 class StageReportResponse(BaseModel):
   stages: list[dict]
   totals: list[dict]
+  
+class RangeDriversResponse(BaseModel):
+  stale: dict = Field(default_factory=dict)
+  units: list[dict]
 
 class ItemTraceResponse(BaseModel):
   item: BOQItemResponse

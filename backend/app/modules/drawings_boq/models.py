@@ -4481,3 +4481,47 @@ class ProjectElementParameter(Base, TimestampMixin):
     ForeignKey("users.id", ondelete="SET NULL", name="fk_project_element_parameters_updated_by"),
     nullable=True,
   )
+  
+class RunCheckpoint(Base, TimestampMixin):
+  __tablename__ = "run_checkpoints"
+
+  __table_args__ = (
+    UniqueConstraint("run_id", "kind", "label", name="uq_run_checkpoints_run_kind_label"),
+    
+    ForeignKeyConstraint(
+      ["run_id", "organization_id"], ["calculation_runs.id", "calculation_runs.organization_id"],
+      ondelete="CASCADE", name="fk_run_checkpoints_run_tenant",
+    ),
+    
+    CheckConstraint("kind IN ('COMPARE','RANGE')", name="ck_run_checkpoints_kind"),
+    Index("ix_run_checkpoints_org_project_kind", "organization_id", "project_id", "kind"),
+  )
+
+  id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    primary_key=True,
+    default=uuid.uuid4
+  )
+
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+
+  run_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), nullable=False)
+  kind: Mapped[str] = mapped_column(String(10), nullable=False)
+  label: Mapped[str] = mapped_column(String(200), nullable=False, default="", server_default="")
+  payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+  created_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL"),
+    nullable=True,
+  )

@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from app.modules.drawings_boq.lab.bill import parse_bill
 from app.modules.drawings_boq.lab.compare import CLASSES, DEFAULT_TOLERANCE_PCT, compare
 from app.modules.drawings_boq.lab import steel_groups as SG
+from app.modules.drawings_boq.lab import sanity as SN
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 
@@ -45,6 +46,9 @@ class BillCompareService:
     out["software_rows"] = len(rows)
     return out
 
+  async def reasonableness(self, org: UUID, run_id: UUID) -> dict:
+    return SN.run(await self._rows(org, run_id))
+
   async def _steel_rows(self, org: UUID, run_id: UUID) -> list[dict]:
     """The steel rows of a run, with the kind of member, its mark and the floor of its level."""
     run = (await self.session.execute(
@@ -79,7 +83,7 @@ def export_comparison(result: dict) -> bytes:
   wb = Workbook()
   ws = wb.active
   ws.title = "Comparison"
-  head = ["Item", "Status", "Unit", "QS", "Software", "Difference", "Error %", "Class", "Note", "Bill rows"]
+  head = ["Item", "Status", "Unit", "QS", "Software", "Difference", "Error %", "Class", "Note", "Bill rows", "Closeness %"]
   ws.append(head)
   
   for c in ws[1]:
@@ -87,8 +91,8 @@ def export_comparison(result: dict) -> bytes:
     c.fill = PatternFill("solid", fgColor="1F3864")
   for x in result.get("lines", []):
     ws.append([x["label"], x["status"], x["unit"], x["qs"], x["software"], x["difference"], x["error_pct"], x.get("class") or x.get("suggested_class") or "", x.get("note", ""),
-      "; ".join(f'{b["item"]} ({b["quantity"]})' for b in x.get("bill_rows", []))])
-  for col, w in zip("ABCDEFGHIJ", (30, 14, 8, 14, 14, 14, 10, 18, 40, 60)):
+      "; ".join(f'{b["item"]} ({b["quantity"]})' for b in x.get("bill_rows", [])), x.get("closeness")])
+  for col, w in zip("ABCDEFGHIJK", (30, 14, 8, 14, 14, 14, 10, 18, 40, 60, 12)):
     ws.column_dimensions[col].width = w
   m = wb.create_sheet("Measures")
   

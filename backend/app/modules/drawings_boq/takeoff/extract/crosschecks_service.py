@@ -6,7 +6,7 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 class CrossCheckService(ExtractService):
   """The checks between the readers of a drawing, worked out from what is stored now (nothing is saved, so they are never out of date)."""
 
-  async def checks(self, org: UUID, drawing_id: UUID) -> dict:
+  async def _read(self, org: UUID, drawing_id: UUID) -> list:
     await self.core._pdf_drawing(org, drawing_id)
     sheets = await self.core.repo.sheets(org, drawing_id)
     exts = {e.sheet_id: e for e in await self.repo.extractions(org, [s.id for s in sheets])}

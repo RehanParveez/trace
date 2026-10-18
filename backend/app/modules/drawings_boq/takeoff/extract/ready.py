@@ -1,5 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import crosschecks as CK
+from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
+from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 
@@ -8,7 +10,7 @@ HELD_BY = {
   "FLOOR_HAS_NO_SLAB": ("SLAB", "ROOM"), "SLAB_HAS_NO_ROOMS": ("SLAB", "ROOM"), "ROOMS_EXCEED_SLAB": ("SLAB", "ROOM"), "ROOMS_MISSING": ("SLAB", "ROOM"),
   "SCHEDULE_MARKS_NOT_FOUND": ("DOOR", "WINDOW"),
   "FLOOR_HAS_NO_WALLS": ("WALL",), "OPENINGS_IN_NO_WALL": ("DOOR", "WINDOW", "WALL"), "OPENINGS_WIDER_THAN_WALL": ("DOOR", "WINDOW", "WALL"),
-  "PARAPET_DIFFERS_FROM_RING": ("SITE",), "BALCONY_OUTSIDE_SLAB": ("SITE", "SLAB"),
+  "PARAPET_DIFFERS_FROM_RING": ("SITE",), "BALCONY_OUTSIDE_SLAB": ("SITE", "sSLAB"),
   "WALLS_OPEN_ROUND_ROOMS": ("WALL", "ROOM"), "WALL_LONGER_THAN_ROOMS": ("WALL", "ROOM"), "WALL_SHORT_FOR_ROOMS": ("WALL", "ROOM"),
 }
 
@@ -20,14 +22,25 @@ REASON_TEXT = {
   "VALUE_MISSING": "A value is missing; type it when accepting this item.",
   "ASSUMED": "A value was paired, defaulted or is disputed on the drawing.",
   "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
+  "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
 }
 
 def _warned(checks: list) -> list:
   return [(c["floor"], HELD_BY.get(c["code"]), c["code"]) for c in checks if c["status"] == CK.WARN]
 
+def undecided_sources(read: list) -> set:
+  """(sheet id, floor) of every source of a floor that is open on two sheets and not yet chosen. Accepting from both would count the floor twice."""
+  out: set = set()
+  for f in FS.build([s for s in read if "title" in s and "stats" in s])["floors"]:
+    if f["state"] == "DOUBLE":
+      out.update((s["sheet_id"], f["floor"]) for s in f["sources"] if s["open"] + s["accepted"] > 0)
+  return out
+
 def ready(read: list, checks: list | None = None) -> dict:
   checks = checks if checks is not None else CK.run(read)["checks"]
   warned = _warned(checks)
+  undecided = undecided_sources(read)
+  undecided = undecided_sources(read)
   ok: list = []
   held: list = []
   
@@ -42,6 +55,8 @@ def ready(read: list, checks: list | None = None) -> dict:
       why = item["reasons"]
       if c.decision != "NEW":
         why.append("ALREADY_DECIDED")
+      elif c.category != "SLAB" and (sh["sheet_id"], FO.level_of(c) or sf) in undecided:
+        why.append("FLOOR_SOURCE_UNDECIDED")
       if c.status == "INVALID":
         why.append("ERROR")
       elif c.status == "WARNING":

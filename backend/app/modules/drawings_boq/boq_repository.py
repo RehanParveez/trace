@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.modules.drawings_boq.models import (BOQVersion, BOQItem, BOQItemAdjustment, BOQItemLedgerLink, BOQItemSourceElement, BOQItemStatus, BOQSnapshot, BOQSnapshotItem, BOQVersionStatus,
-  BuildingLevel, CalculationRun, Drawing, DrawingElement, ExportJob, LedgerDeduction, ModelAuditResult, QuantityLedger, ReviewIssue, WorkItem, QuantitySolid
+  BuildingLevel, CalculationRun, Drawing, DrawingElement, ExportJob, LedgerDeduction, ModelAuditResult, QuantityLedger, ReviewIssue, TakeoffMeasurement, TakeoffSheet, WorkItem, QuantitySolid
 )
 from sqlalchemy import and_, select, delete, func, insert, or_, update
 from app.engine.measure.steel import STEEL_ROLE_PREFIXES
@@ -141,6 +141,36 @@ class BOQEngineRepository:
       return []
     r = await self.session.execute(select(QuantityLedger).where(QuantityLedger.id.in_(ids)))
     return list(r.scalars().all())
+
+  @staticmethod
+  def _uuids(values: list) -> list[UUID]:
+    out = []
+    for v in values:
+      try:
+        out.append(UUID(str(v)))
+      except ValueError:
+        continue
+    return out
+
+  async def sheet_drawings(self, org: UUID, sheet_ids: list) -> dict[str, tuple]:
+    """For each sheet, the drawing and project it belongs to, which is what the link to the Measure page needs."""
+    ids = self._uuids(sheet_ids)
+    if not ids:
+      return {}
+    r = await self.session.execute(
+      select(TakeoffSheet.id, TakeoffSheet.drawing_id, TakeoffSheet.project_id)
+      .where(TakeoffSheet.organization_id == org, TakeoffSheet.id.in_(ids)))
+    return {str(i): (str(d), str(p)) for i, d, p in r.all()}
+
+  async def measurement_states(self, org: UUID, measurement_ids: list) -> dict[str, tuple]:
+    """For each measurement that still exists, its status and when it was last confirmed."""
+    ids = self._uuids(measurement_ids)
+    if not ids:
+      return {}
+    r = await self.session.execute(
+      select(TakeoffMeasurement.id, TakeoffMeasurement.status, TakeoffMeasurement.confirmed_at)
+      .where(TakeoffMeasurement.organization_id == org, TakeoffMeasurement.id.in_(ids)))
+    return {str(i): (s, c) for i, s, c in r.all()}
 
   async def deductions_for_solids(self, run_id: UUID, org: UUID, solid_ids: list[UUID]) -> list[LedgerDeduction]:
     if not solid_ids:

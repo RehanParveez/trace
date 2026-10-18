@@ -9,6 +9,7 @@ from app.dependencies.permissions import require_permission
 from app.core.database import get_db
 from fastapi.responses import Response
 from app.modules.drawings_boq.lab.service import BillCompareService, export_comparison
+from app.modules.drawings_boq.lab.history_service import RunHistoryService
 
 router = APIRouter(prefix="/drawings-boq", tags=["Drawings & BOQ"])
 
@@ -34,9 +35,10 @@ async def compare_bill(
   session: AsyncSession = Depends(get_db),
 ):
   data = await file.read()
-  return await BillCompareService(session).compare_bill(
-    current_user.active_membership.organization_id, run_id, data, tolerance_pct,
-    _json_field(overrides, "overrides"), _json_field(classes, "classes"))
+  org = current_user.active_membership.organization_id
+  out = await BillCompareService(session).compare_bill(org, run_id, data, tolerance_pct, _json_field(overrides, "overrides"), _json_field(classes, "classes"))
+  await RunHistoryService(session).record_compare(org, current_user.id, run_id, "BILL", file.filename, out)
+  return out
 
 @router.post("/calculation-runs/{run_id}/compare-steel")
 async def compare_steel(
@@ -48,8 +50,26 @@ async def compare_steel(
   session: AsyncSession = Depends(get_db),
 ):
   data = await file.read()
-  return await BillCompareService(session).compare_steel(
-    current_user.active_membership.organization_id, run_id, data, tolerance_pct, _json_field(classes, "classes"))
+  org = current_user.active_membership.organization_id
+  out = await BillCompareService(session).compare_steel(org, run_id, data, tolerance_pct, _json_field(classes, "classes"))
+  await RunHistoryService(session).record_compare(org, current_user.id, run_id, "STEEL", file.filename, out)
+  return out
+  
+@router.get("/calculation-runs/{run_id}/reasonableness")
+async def reasonableness(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await BillCompareService(session).reasonableness(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/history")
+async def run_history(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await RunHistoryService(session).history(current_user.active_membership.organization_id, current_user.id, run_id)
 
 @router.post("/compare-bill/export")
 async def export_compare_bill(

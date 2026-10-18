@@ -5,7 +5,7 @@ import type {Adjustment, AdjustmentCreateRequest, BOQBuildResponse, BOQCustomIte
   DrawingOrganizationSummary, CalculationRunResponse, BOQVersionResponse, TransitionAction, DeductionKind, DeductionResponse, LedgerRowResponse, Page, QuantitySolidResponse,
   BoundaryCandidate, BulkReviewResponse, ConfirmImportResponse, FinishPreviewResponse, LevelOption, RematchResponse, RowDecision, ScheduleFromPdfRequest, ScheduleImportDetailResponse, ScheduleImportResponse, ScheduleKind, 
   ScheduleManualCreateRequest, ScheduleRowCreateRequest, ScheduleRowResponse, ScheduleRowUpdateRequest, SpaceCreateRequest, SpaceDetailResponse, SpaceFinishCreateRequest, SpaceFinishResponse,
-   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse, StageReport
+   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse, StageReport, RangeDrivers
 } from "../types/drawings-boq.types";
 
 function getNextCursor(response: { headers: Record<string, unknown> }): string | null {
@@ -314,6 +314,16 @@ export const drawingsBoqApi = {
 
     const response = await apiClient.get<StageReport>(
       `/drawings-boq/boq-versions/${boqVersionId}/stage-report`,
+    );
+
+    return response.data;
+  },
+
+    async getRangeDrivers(boqVersionId: string): Promise<RangeDrivers> {
+    if (!boqVersionId) throw new Error("BOQ Version ID is required");
+
+    const response = await apiClient.get<RangeDrivers>(
+      `/drawings-boq/boq-versions/${boqVersionId}/range-drivers`,
     );
 
     return response.data;

@@ -48,6 +48,43 @@ export function errorText(pct: number | null): string {
   return `${sign}${pct.toFixed(1)}%`;
 }
 
+export interface BillScore {
+  overall: number | null;
+  found: number | null;
+  adjusted: number | null;
+  scored: number;
+  left_out: number;
+}
+
+export function closenessOf(line: BillCompareLine): number | null {
+  if (line.status === "MISSING") return 0;
+  if ((line.status === "MATCH" || line.status === "DIFF") && line.error_pct !== null && Number.isFinite(line.error_pct)) {
+    return Math.max(0, 100 - Math.abs(line.error_pct));
+  }
+  return null;
+}
+
+function meanOf(values: number[]): number | null {
+  if (values.length === 0) return null;
+  return Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 10) / 10;
+}
+
+export function scoreLines(lines: BillCompareLine[]): BillScore {
+  const scored = lines.map((line) => ({ line, c: closenessOf(line) })).filter((x): x is { line: BillCompareLine; c: number } => x.c !== null);
+  const kept = scored.filter((x) => x.line.class !== "QS_ERROR" && x.line.class !== "CONVENTION");
+  return {
+    overall: meanOf(scored.map((x) => x.c)),
+    found: meanOf(scored.filter((x) => x.line.status !== "MISSING").map((x) => x.c)),
+    adjusted: meanOf(kept.map((x) => x.c)),
+    scored: scored.length,
+    left_out: scored.length - kept.length,
+  };
+}
+
+export function scoreText(value: number | null): string {
+  return value === null ? "—" : `${value.toFixed(1)}%`;
+}
+
 export function withClass(classes: BillClasses, key: string, cls: BillClass | null, note: string): BillClasses {
   const next = { ...classes };
   if (!cls) {

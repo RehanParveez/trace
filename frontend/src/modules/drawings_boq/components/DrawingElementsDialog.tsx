@@ -488,6 +488,15 @@ export function DrawingElementsDialog({
                   </p>
                 ) : null}
                 {reg ? <CoveragePanel register={reg} /> : null}
+                {reg && (reg.floors_to_decide ?? 0) > 0 ? (
+                  <p className="text-[var(--color-warning)]" data-testid="floors-undecided">
+                    {t("drawings.elements.pdfFloorsUndecided", {
+                      defaultValue: "{{n}} floor(s) are open on two sheets ({{floors}}), so their quantities may be counted twice until you choose the sheet to use.",
+                      n: reg.floors_to_decide,
+                      floors: (reg.floors_undecided ?? []).map((f) => f.floor.toLowerCase()).join(", "),
+                    })}
+                  </p>
+                ) : null}
                 {needsPerson(reg) ? (
                   <div className="space-y-1">
                     {lines.map((line) => (

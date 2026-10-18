@@ -1,10 +1,18 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from statistics import median
+from statistics import median, mean
 from app.modules.drawings_boq.lab.aliases import KEY_LABEL, NOT_MEASURED, SOFTWARE_UNIT, bill_key, bill_quantity, software_key, software_to_bill_unit
 
 CLASSES = ("READING", "CONVENTION", "QS_ERROR", "MISSING_FEATURE", "NEEDS_DECISION")
 DEFAULT_TOLERANCE_PCT = 5.0
+
+def closeness_of(status: str, error_pct) -> float | None:
+  """How close one bill line is, from 0 to 100. A line that is found is 100 less its error (never below 0); a line the software did not find is 0; a line with nothing to compare against is not scored."""
+  if status == "MISSING":
+    return 0.0
+  if status in ("MATCH", "DIFF") and error_pct is not None:
+    return round(max(0.0, 100.0 - abs(float(error_pct))), 1)
+  return None
 
 @dataclass
 class _Agg:
@@ -99,6 +107,7 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
       "qs": round(a.qs_bill, 3) if in_bill else None, "software": round(sw_bill, 3) if sw_bill is not None else None,
       "difference": round(sw_bill - a.qs_bill, 3) if (sw_bill is not None and in_bill) else None,
       "error_pct": round(err, 2) if err is not None else None,
+      "closeness": closeness_of(status, err),
       "suggested_class": suggested, "class": cls, "note": user.get("note") or "",
       "bill_rows": a.bill_rows, "software_rows": a.sw_rows,
       "software_tags": [{"tag": t, "quantity": round(q, 4)} for t, q in sorted(a.sw_tags.items(), key=lambda x: -x[1])[:12]],
@@ -110,6 +119,7 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
   both = [x for x in scoped if x["error_pct"] is not None]
   sum_qs = sum(abs(x["qs"]) for x in both)
   covered = [x for x in scoped if x["software"] is not None]
+  scores = [x["closeness"] for x in scoped if x["closeness"] is not None]
   open_diffs = [x for x in lines if x["status"] in ("DIFF", "MISSING", "EXTRA") and not x["class"]]
   
   measures = {
@@ -117,6 +127,8 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
     "within_tolerance": sum(1 for x in both if abs(x["error_pct"]) <= tolerance_pct),
     "line_error_median_pct": round(median(abs(x["error_pct"]) for x in both), 2) if both else None,
     "coverage_pct": round(100.0 * len(covered) / len(scoped), 1) if scoped else None,
+    "closeness_pct": round(mean(scores), 1) if scores else None,
+    "closeness_measured_pct": round(mean(x["closeness"] for x in both), 1) if both else None,
     "extra_lines": sum(1 for x in lines if x["status"] == "EXTRA"),
     "unclassified_differences": len(open_diffs),
   }

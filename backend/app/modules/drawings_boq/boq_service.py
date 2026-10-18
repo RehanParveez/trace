@@ -16,6 +16,8 @@ from app.modules.drawings_boq import boq_logic as logic
 from app.modules.drawings_boq import quantity_range as QR
 from app.modules.drawings_boq import measurement_sheet as MS
 from app.modules.drawings_boq import stage_report as SR
+from app.modules.drawings_boq import range_drivers as RD
+from app.modules.drawings_boq import driver_marks as DM
 from decimal import Decimal
 from uuid import UUID, uuid4
 from app.modules.audit.models import AuditAction, AuditEntityType
@@ -960,6 +962,24 @@ class BOQEngineService:
     await self._engine_version(org, version_id)
     items = [i for i in await self.items.list_by_version(version_id, org) if i.item_type != BOQItemType.LABOUR]
     return SR.build(items)
+  
+  async def range_drivers(self, org: UUID, version_id: UUID) -> dict:
+    await self._engine_version(org, version_id)
+    items = [i for i in await self.items.list_by_version(version_id, org) if i.item_type != BOQItemType.LABOUR]
+    links = await self.repo.link_pairs(version_id, org)
+    ledger = {l.id: l for l in await self.repo.ledger_by_ids([lid for pairs in links.values() for lid, _ in pairs])}
+    shaped = []
+    
+    for i in items:
+      rows = [(qty, QR.row_range(ledger[lid].trace), DM.mark_of(ledger[lid].trace)) for lid, qty in links.get(i.id, []) if lid in ledger]
+      if rows:
+        shaped.append({"item_id": str(i.id), "name": i.material_name, "unit": i.unit, "factor": i.unit_factor, "rows": rows})
+    result = RD.build(shaped)
+    need = DM.lookups(result)
+    sheets = await self.repo.sheet_drawings(org, need["sheets"])
+    states = await self.repo.measurement_states(org, need["measurements"])
+    run_at = min((l.created_at for l in ledger.values() if l.created_at is not None), default=None)
+    return DM.annotate(result, sheets, states, run_at)
 
   async def _sheets(self, org: UUID, version_id: UUID) -> dict[str, list[dict]]:
     """For each item, the measurement sheet of every ledger row behind it, in the layout a quantity surveyor writes (measurement_sheet.py)."""

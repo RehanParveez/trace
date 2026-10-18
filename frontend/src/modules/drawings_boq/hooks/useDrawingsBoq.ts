@@ -294,6 +294,19 @@ export function useBOQStageReport(
   });
 }
 
+export function useBOQRangeDrivers(
+  boqVersionId: string | undefined,
+) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.boqItems(boqVersionId ?? ""), "range-drivers"] as const,
+    queryFn: () =>
+      drawingsBoqApi.getRangeDrivers(
+        boqVersionId as string,
+      ),
+    enabled: Boolean(boqVersionId),
+  });
+}
+
 export function useUpdateBOQItem(
   boqVersionId: string,
 ) {

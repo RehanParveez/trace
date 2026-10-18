@@ -653,6 +653,8 @@ export interface RegisterSyncResult {
   evidence?: Record<string, number>;
   totals?: RangeTotal[];
   source_mix?: Record<string, Record<string, number>>;
+  floors_to_decide?: number;
+  floors_undecided?: Array<{ floor: string; pages: number[] }>;
 }
 
 export interface RangeTotal { unit: string; likely: number; low: number; high: number; rows: number; unbounded: number; leaves_out: number }

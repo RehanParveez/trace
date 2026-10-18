@@ -143,3 +143,5 @@ class RegisterSyncResponse(BaseModel):
   evidence: dict = Field(default_factory=dict)
   totals: list = Field(default_factory=list)
   source_mix: dict = Field(default_factory=dict)
+  floors_to_decide: int = 0
+  floors_undecided: list = Field(default_factory=list)

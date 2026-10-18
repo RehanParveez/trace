@@ -8,6 +8,7 @@ export const HELD_TEXT: Record<string, string> = {
   VALUE_MISSING: "a value is missing",
   ASSUMED: "an assumed value",
   CHECK_WARNS: "a check warns about it",
+  FLOOR_SOURCE_UNDECIDED: "a floor open on two sheets",
 };
 
 export function readyOnSheet(data: ReadyToAccept | undefined, pageNo: number): ReadyItem[] {

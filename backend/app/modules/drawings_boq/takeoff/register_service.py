@@ -14,6 +14,7 @@ from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.measurement_params import MeasurementParametersService
 from sqlalchemy import delete, select
 from app.core.exceptions import TraceException
+from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 
 MAX_ROWS = 20000
 ROW_FIELDS = ("ifc_global_id", "ifc_type", "name", "raw_material_text", "unit", "quantity", "properties", "discipline", "structural_role",
@@ -96,8 +97,18 @@ class RegisterService:
       await self.session.execute(delete(DrawingElement).where(DrawingElement.organization_id == org, DrawingElement.drawing_id == drawing_id,
         DrawingElement.id.in_(gone)))
     await self.session.flush()
-    read_ids = {x for x in (await self.session.execute(select(TakeoffExtraction.sheet_id).where(TakeoffExtraction.organization_id == org,
+    extractions = {e.sheet_id: e for e in (await self.session.execute(select(TakeoffExtraction).where(TakeoffExtraction.organization_id == org,
       TakeoffExtraction.sheet_id.in_(list(by_sheet) or [None])))).scalars().all()}
+    read_ids = set(extractions)
+    cands_by_sheet: dict = {}
+    
+    for c in cands:
+      cands_by_sheet.setdefault(c.sheet_id, []).append(c)
+    floor_view = FS.build([{"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": extractions[s.id].stats,
+      "candidates": cands_by_sheet.get(s.id, [])} for s in sheets if s.id in extractions])
+    undecided = [{"floor": f["floor"], "pages": [x["page_no"] for x in f["sources"] if x["open"] + x["accepted"] > 0]}
+      for f in floor_view["floors"] if f["state"] == "DOUBLE"]
+    
     per_sheet: dict = {}
     for r in rows:
       sid = r["properties"]["_pdf"]["sheet_id"]
@@ -137,7 +148,8 @@ class RegisterService:
       "measured": sum(1 for r in rows if r["properties"]["_pdf"]["mode"] == "PDF_MEASURED"),
       "needs_review": sum(1 for r in rows if r["normalization_status"] != "VALID"),
       "decisions": len({r["properties"]["_pdf"]["candidate_id"] for r in rows if r["normalization_status"] != "VALID"}),
-      "evidence": evidence_tally(rows), "totals": RG.totals(rows), "source_mix": RG.source_mix(rows)}
+      "evidence": evidence_tally(rows), "totals": RG.totals(rows), "source_mix": RG.source_mix(rows),
+      "floors_to_decide": len(undecided), "floors_undecided": undecided}
 
   async def floor_datums(self, org: UUID, drawing_id: UUID) -> dict:
     """The floors of a drawing with the level of each, as the register places members in height, and the natural ground and footing level used for footings.

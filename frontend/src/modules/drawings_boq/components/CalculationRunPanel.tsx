@@ -14,6 +14,9 @@ import { ledgerRangeText } from "./SteelRebarRange";
 import { RebarMarksPanel } from "./RebarMarksPanel";
 import { StagesPanel } from "./StagesPanel";
 import { SteelCompare } from "../lab/components/SteelCompare";
+import { BillCompareRun } from "../lab/components/BillCompareRun";
+import { ReasonablenessPanel } from "../lab/components/ReasonablenessPanel";
+import { RunHistoryPanel } from "../lab/components/RunHistoryPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
 import { RunScope } from "./RunScope";
 import { DerivedParamsForm } from "./DerivedParamsForm";
@@ -40,6 +43,9 @@ type View =
   | "deductions"
   | "rebar"
   | "steelqs"
+  | "billqs"
+  | "reason"
+  | "history"
   | "metrics";
 
 export function CalculationRunPanel({
@@ -468,6 +474,24 @@ export function CalculationRunPanel({
                   ),
                 ],
                 [
+                  "billqs",
+                  t(
+                    "boq.calculationRun.tabBillQs", "Bill vs QS"
+                  ),
+                ],
+                [
+                  "reason",
+                  t(
+                    "boq.calculationRun.tabReason", "Do the quantities fit?"
+                  ),
+                ],
+                [
+                  "history",
+                  t(
+                    "boq.calculationRun.tabHistory", "History"
+                  ),
+                ],
+                [
                   "metrics",
                   ts(
                     "scale.tab.performance",
@@ -551,6 +575,12 @@ export function CalculationRunPanel({
           {view === "stages" ? <StagesPanel projectId={projectId} stats={run.stats} /> : null}
 
           {view === "steelqs" ? <SteelCompare runId={run.id} /> : null}
+
+          {view === "billqs" ? <BillCompareRun runId={run.id} /> : null}
+
+          {view === "reason" ? <ReasonablenessPanel runId={run.id} /> : null}
+
+          {view === "history" ? <RunHistoryPanel runId={run.id} /> : null}
 
           {view === "rebar" ?
            <RebarMarksPanel

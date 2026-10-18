@@ -1874,3 +1874,105 @@ export interface StageReport {
   stages: StageReportStage[];
   totals: RangeTotal[];
 }
+
+export type MarkState = "confirmed" | "reopened" | "changed" | "gone";
+
+export interface DriverMark {
+  measurement_id: string;
+  sheet_id: string | null;
+  drawing_id: string | null;
+  project_id: string | null;
+  candidate_id: string | null;
+  page_no: number | null;
+  tag: string | null;
+  rows: number;
+  item_count: number;
+  items: string[];
+  state: MarkState;
+  weight: number;
+}
+
+export interface ConfirmMark extends Omit<DriverMark, "weight"> {
+  share_pct: number;
+  low_after: number;
+  high_after: number;
+  narrows_pct: number;
+  cum_low: number;
+  cum_high: number;
+}
+
+export interface OpenMark extends Omit<DriverMark, "weight"> {
+  quantity: number;
+  share_of_quantity_pct: number | null;
+}
+
+export interface ConfirmFirst {
+  marks: ConfirmMark[];
+  total_marks: number;
+  halved_after: number | null;
+  unmarked_share_pct: number;
+}
+
+export interface OpenMarks {
+  marks: OpenMark[];
+  total_marks: number;
+  unmarked_quantity: number;
+}
+
+export interface RangeStale {
+  marks: number;
+  gone: number;
+  reopened: number;
+  changed: number;
+}
+
+export interface RangeDriverItem {
+  item_id: string;
+  name: string | null;
+  swing: number;
+}
+
+export interface RangeDriver {
+  name: string;
+  basis: string;
+  rows: number;
+  items: number;
+  swing_down: number;
+  swing_up: number;
+  share_pct: number;
+  low_after: number;
+  high_after: number;
+  marks?: DriverMark[];
+  top_items: RangeDriverItem[];
+}
+
+export interface RangeOpenInput {
+  name: string;
+  rows: number;
+  items: number;
+  quantity: number;
+  share_of_quantity_pct: number | null;
+  marks?: DriverMark[];
+  top_items: RangeDriverItem[];
+}
+
+export interface RangeDriversUnit {
+  unit: string;
+  likely: number;
+  low: number;
+  high: number;
+  rows: number;
+  bounded_rows: number;
+  unbounded_rows: number;
+  no_range_rows: number;
+  leaves_out_rows: number;
+  drivers: RangeDriver[];
+  open_inputs: RangeOpenInput[];
+  confirm_first?: ConfirmFirst;
+  open_marks?: OpenMarks;
+}
+
+export interface RangeDrivers {
+  units: RangeDriversUnit[];
+  stale?: RangeStale;
+}

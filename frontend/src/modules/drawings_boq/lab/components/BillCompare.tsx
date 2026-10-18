@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { BillClass, BillClasses, BillCompareLine, BillCompareResult, BillFilter } from "../types/billCompare.types";
-import { BILL_CLASSES, BILL_CLASS_TEXT, BILL_STATUS_TEXT, BILL_STATUS_TONE, applyClasses, errorText, filterLines, parseTolerance, qtyText } from "../utils/billCompare";
+import { BILL_CLASSES, BILL_CLASS_TEXT, BILL_STATUS_TEXT, BILL_STATUS_TONE, applyClasses, errorText, filterLines, parseTolerance, qtyText, scoreLines, scoreText } from "../utils/billCompare";
 
 const TONE: Record<string, string> = {
   ok: "bg-[var(--color-success-bg)] text-[var(--color-success)]",
@@ -125,6 +125,7 @@ export function BillCompare({ result, classes, busy, error, tolerancePct, onTole
   const view = result ? applyClasses(result, classes) : undefined;
   const lines = view ? filterLines(view.lines, filter) : [];
   const m = view?.measures;
+  const score = view ? scoreLines(view.lines) : undefined;
   return (
     <section className="space-y-3 text-[12.5px]" data-testid="bill-compare">
       <div className="flex flex-wrap items-end gap-3">
@@ -168,6 +169,22 @@ export function BillCompare({ result, classes, busy, error, tolerancePct, onTole
       {!view && !busy && !error ? <p className="text-[var(--color-text-muted)]">{t("drawings.bill.empty", "Upload the QS bill to compare it with this run, item by item.")}</p> : null}
       {view && m ? (
         <>
+          {score ? (
+            <div data-testid="bill-closeness">
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+                <Measure label={t("drawings.bill.close.overall", "Closeness to the QS")} value={scoreText(score.overall)} />
+                <Measure label={t("drawings.bill.close.found", "On the lines the software found")} value={scoreText(score.found)} />
+                <Measure label={t("drawings.bill.close.adjusted", "Without QS-side differences")} value={scoreText(score.adjusted)} />
+              </div>
+              <p className="mt-1 text-[11.5px] text-[var(--color-text-muted)]">
+                {t(
+                  "drawings.bill.close.note",
+                  "Each bill line scores 100 less its error, and 0 when the software did not find it. The last figure leaves out {{n}} line(s) you marked as the QS's convention or the QS's error.",
+                  { n: score.left_out },
+                )}
+              </p>
+            </div>
+          ) : null}
           <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
             <Measure label={t("drawings.bill.m.within", "Within tolerance")} value={`${m.within_tolerance} / ${m.compared}`} />
             <Measure label={t("drawings.bill.m.median", "Median line error")} value={m.line_error_median_pct === null ? "—" : `${m.line_error_median_pct}%`} />

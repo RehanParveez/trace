@@ -26,6 +26,7 @@ export interface BillCompareLine {
   software: number | null;
   difference: number | null;
   error_pct: number | null;
+  closeness?: number | null;
   suggested_class: BillClass | null;
   class: BillClass | null;
   note: string;
@@ -42,6 +43,8 @@ export interface BillMeasures {
   within_tolerance: number;
   line_error_median_pct: number | null;
   coverage_pct: number | null;
+  closeness_pct?: number | null;
+  closeness_measured_pct?: number | null;
   extra_lines: number;
   unclassified_differences: number;
 }
