@@ -169,6 +169,36 @@ export interface CalibrationCreate {
 
 export interface BulkConfirmResult { confirmed: string[]; failed: Array<{ id?: string; measurement_id?: string; code?: string; message?: string }> }
 
+export interface ApproveReadyBody {
+  accept_assumed?: boolean;
+  accept_warned?: boolean;
+  confirm?: boolean;
+  dry_run?: boolean;
+  batch?: number;
+  exclude_ids?: string[];
+  typed?: Record<string, number>;
+}
+
+export interface ApproveReadyResult {
+  drawing_id: string;
+  dry_run: boolean;
+  floors_chosen: Array<{ floor: string; sheet_id?: string; page_no?: number; set_aside?: number; restored?: number }>;
+  floors_pending: number;
+  would_accept: number;
+  would_confirm: number | null;
+  accepted: number;
+  accept_failed: Array<{ id: string; code: string; message: string }>;
+  failed_ids: string[];
+  failed_by_code: Record<string, number>;
+  confirmed: number;
+  confirm_failed: Array<{ id?: string; code?: string; message?: string }>;
+  already_decided: number;
+  skipped_by_reason: Record<string, number>;
+  remaining: number;
+  confirmed_total: number;
+  draft_total: number;
+}
+
 export interface PrepareResult {
   drawing_id: string;
   prepared: string[];

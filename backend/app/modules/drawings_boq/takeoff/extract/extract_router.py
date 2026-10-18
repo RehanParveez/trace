@@ -13,6 +13,8 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest, ChooseFloorSourcesResponse, FloorSourcesResponse
 from app.modules.drawings_boq.takeoff.extract.floor_sources_service import FloorSourceService
+from app.modules.drawings_boq.takeoff.approve_schemas import ApproveReadyRequest, ApproveReadyResponse
+from app.modules.drawings_boq.takeoff.approve_service import ApproveService
 from app.modules.drawings_boq.takeoff.extract.crosschecks_schemas import CrossChecksResponse, ReadyToAcceptResponse
 from app.modules.drawings_boq.takeoff.extract.crosschecks_service import CrossCheckService
 from app.modules.drawings_boq.takeoff.proof.schemas import FactsCheckRequest, FactsCheckResponse, TraceResponse
@@ -89,6 +91,12 @@ async def choose_floor_sources(
   drawing_id: UUID, payload: ChooseFloorSourcesRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
   return await FloorSourceService(session).choose(_org(current_user), current_user.id, drawing_id, payload)
+
+@router.post("/drawings/{drawing_id}/takeoff/approve", response_model=ApproveReadyResponse)
+async def approve_ready(
+  drawing_id: UUID, payload: ApproveReadyRequest | None = None, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await ApproveService(session).approve(_org(current_user), current_user.id, drawing_id, payload or ApproveReadyRequest())
 
 @router.get("/drawings/{drawing_id}/takeoff/checks", response_model=CrossChecksResponse)
 async def cross_checks(

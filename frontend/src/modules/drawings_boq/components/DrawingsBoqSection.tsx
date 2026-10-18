@@ -19,6 +19,9 @@ import { AddCustomBOQItemDialog } from "./AddCustomBOQItemDialog";
 import { BOQVersionMetaDialog } from "./BOQVersionMetaDialog";
 import { DrawingAuditPanel } from "./DrawingAuditPanel";
 import { CalculationRunPanel } from "./CalculationRunPanel";
+import { ApprovePdfDialog } from "../takeoff/components/ApprovePdfDialog";
+import { useProjectTakeoffDrawings } from "../takeoff/hooks/useTakeoff";
+import { runDrawings } from "../takeoff/utils/runDrawings";
 import { BOQSourceDrawings } from "./BOQSourceDrawings";
 import { BOQLifecycleActions } from "./BOQLifecycleActions";
 import { BOQReviewIssuesPanel } from "./BOQReviewIssuesPanel";
@@ -61,6 +64,9 @@ export function DrawingsBoqSection({
 
   const [editingDetails, setEditingDetails] =
     useState(false);
+
+  const [approving, setApproving] =
+    useState<Drawing | null>(null);
 
   const drawingsQuery = useDrawings(projectId);
   const boqVersionsQuery = useBOQVersions(projectId);
@@ -110,17 +116,17 @@ export function DrawingsBoqSection({
   const boqVersions =
     boqVersionsQuery.data ?? [];
 
-  const parsedDrawings =
+  const takeoffQuery =
+    useProjectTakeoffDrawings(projectId, canRead);
+
+  const runnable =
     useMemo(
       () =>
-        (drawingsQuery.data ?? []).filter(
-          (drawing) =>
-            drawing.format === "IFC" &&
-            drawing.status ===
-              "PARSED" &&
-            drawing.is_current_revision,
+        runDrawings(
+          drawingsQuery.data ?? [],
+          takeoffQuery.data ?? [],
         ),
-      [drawingsQuery.data],
+      [drawingsQuery.data, takeoffQuery.data],
     );
 
   const selectedVersion:
@@ -211,6 +217,7 @@ export function DrawingsBoqSection({
           setUploadOpen(true)
         }
         onView={setViewingDrawing}
+        onApprove={canUpdateBOQ ? setApproving : undefined}
         onItemsSuggested={(
           versionId,
         ) =>
@@ -367,7 +374,9 @@ export function DrawingsBoqSection({
           projectId={
             projectId
           }
-          drawings={parsedDrawings}
+          drawings={runnable.eligible}
+          waitingPdfs={runnable.waiting}
+          takeoff={runnable.takeoff}
           activeRunId={
             selectedVersion?.calculation_run_id ??
             null
@@ -399,6 +408,15 @@ export function DrawingsBoqSection({
               null,
             )
           }
+        />
+      ) : null}
+
+      {approving ? (
+        <ApprovePdfDialog
+          projectId={projectId}
+          drawingId={approving.id}
+          filename={approving.original_filename}
+          onClose={() => setApproving(null)}
         />
       ) : null}
 

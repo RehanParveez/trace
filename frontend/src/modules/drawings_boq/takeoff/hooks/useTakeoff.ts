@@ -1,6 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { takeoffApi } from "../api/takeoff.api";
-import type { AcceptBody, FloorChoiceBody, KnownFact, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
+import { approveAll} from "../utils/approve";
+import type { ApproveSummary } from "../utils/approve";
+import type { AcceptBody, ApproveReadyBody, FloorChoiceBody, KnownFact, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
 
 export const takeoffKeys = {
@@ -269,6 +271,33 @@ export function useUnconfirmMeasurement(drawingId: string | undefined) {
 export function useBulkConfirm(drawingId: string | undefined) {
   const invalidate = useInvalidateOverview(drawingId);
   return useMutation({ mutationFn: (ids: string[]) => takeoffApi.bulkConfirm(ids), onSettled: invalidate });
+}
+
+export function useApproveReady(drawingId: string | undefined) {
+  const qc = useQueryClient();
+  const invalidate = useInvalidateOverview(drawingId);
+  const invalidateRegister = useInvalidateRegister(drawingId);
+  return useMutation({
+    mutationFn: (v: { body: ApproveReadyBody; onProgress?: (sum: ApproveSummary) => void }) =>
+      approveAll((b) => takeoffApi.approveReady(drawingId as string, b), v.body, v.onProgress),
+    onSettled: () => {
+      invalidate();
+      invalidateRegister();
+      void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "candidates"] });
+      void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "approve-preview"] });
+      if (drawingId) void qc.invalidateQueries({ queryKey: takeoffKeys.floorSources(drawingId) });
+    },
+  });
+}
+
+export function useApprovePreview(drawingId: string | undefined, body: ApproveReadyBody, enabled = true) {
+  return useQuery({
+    queryKey: [...takeoffKeys.all, "approve-preview", drawingId ?? "", JSON.stringify(body)],
+    queryFn: () => takeoffApi.approveReady(drawingId as string, { ...body, dry_run: true }),
+    enabled: Boolean(drawingId) && enabled,
+    staleTime: 0,
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useProjectTakeoffDrawings(projectId: string | undefined, enabled = true) {

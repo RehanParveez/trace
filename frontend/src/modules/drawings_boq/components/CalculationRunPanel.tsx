@@ -18,6 +18,8 @@ import { BillCompareRun } from "../lab/components/BillCompareRun";
 import { ReasonablenessPanel } from "../lab/components/ReasonablenessPanel";
 import { RunHistoryPanel } from "../lab/components/RunHistoryPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
+import { PdfRunReadiness } from "../takeoff/components/PdfRunReadiness";
+import type { WaitingPdf } from "../takeoff/utils/runDrawings";
 import { RunScope } from "./RunScope";
 import { DerivedParamsForm } from "./DerivedParamsForm";
 import { derivedInputFromParams, derivedParamsFromInput, derivedUpdateFromInput } from "../utils/derived";
@@ -30,6 +32,8 @@ import type { RunOptions, StartRunError } from "../recalculation";
 interface CalculationRunPanelProps {
   projectId: string;
   drawings: Drawing[];
+  waitingPdfs?: WaitingPdf[];
+  takeoff?: Record<string, { confirmed: number; draft: number }>;
   activeRunId?: string | null;
   onRunCreated?: (run: CalculationRun) => void;
   onBOQBuilt?: () => void;
@@ -51,6 +55,8 @@ type View =
 export function CalculationRunPanel({
   projectId,
   drawings,
+  waitingPdfs = [],
+  takeoff,
   activeRunId,
   onRunCreated,
   onBOQBuilt,
@@ -268,7 +274,10 @@ export function CalculationRunPanel({
           selectedIds={selectedIds}
           onChange={setSelectedIds}
           disabled={startRun.isPending}
+          takeoff={takeoff}
         />
+
+        <PdfRunReadiness projectId={projectId} waiting={waitingPdfs} />
       </div>
 
       <div className="space-y-3 border-b border-[var(--color-border)] p-5">

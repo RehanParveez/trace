@@ -1,5 +1,5 @@
 import { apiClient } from "../../../../shared/api/client";
-import type {AcceptBody, AcceptResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
+import type {AcceptBody, AcceptResult, ApproveReadyBody, ApproveReadyResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
   Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, CrossChecks, ReadyToAccept, TypedMemory, KnownFact, FactsCheck, ReaderTrace, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
@@ -106,6 +106,9 @@ export const takeoffApi = {
   },
   async readyToAccept(drawingId: string): Promise<ReadyToAccept> {
     return (await apiClient.get<ReadyToAccept>(`${BASE}/drawings/${drawingId}/takeoff/ready`)).data;
+  },
+  async approveReady(drawingId: string, body: ApproveReadyBody): Promise<ApproveReadyResult> {
+    return (await apiClient.post<ApproveReadyResult>(`${BASE}/drawings/${drawingId}/takeoff/approve`, body)).data;
   },
   async checkKnownFacts(drawingId: string, facts: KnownFact[]): Promise<FactsCheck> {
     return (await apiClient.post<FactsCheck>(`${BASE}/drawings/${drawingId}/takeoff/facts-check`, { facts })).data;

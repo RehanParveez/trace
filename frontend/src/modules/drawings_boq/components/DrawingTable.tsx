@@ -15,6 +15,7 @@ interface DrawingTableProps {
   quotaBlocked?: boolean;
   onUpload: () => void;
   onView: (drawing: Drawing) => void;
+  onApprove?: (drawing: Drawing) => void;
   onItemsSuggested?: (boqVersionId: string) => void;
 }
 
@@ -26,6 +27,7 @@ export function DrawingTable({
   quotaBlocked = false,
   onUpload,
   onView,
+  onApprove,
   onItemsSuggested,
 }: DrawingTableProps) {
   const { t } = useTranslation();
@@ -217,6 +219,17 @@ export function DrawingTable({
                             >
                               {t("drawings.table.viewElements")}
                             </Button>
+                            {onApprove ? (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={() => onApprove(drawing)}
+                                title={t("takeoff.approve.tableTitle", "Accept and confirm the items read from this PDF so the calculation run can use it")}
+                              >
+                                <Icon name="check" size={12} />
+                                {t("takeoff.approve.tableButton", "Approve items")}
+                              </Button>
+                            ) : null}
                           </>
                         ) : (
                           <Button

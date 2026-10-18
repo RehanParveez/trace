@@ -8,9 +8,10 @@ interface RunDrawingPickerProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   disabled?: boolean;
+  takeoff?: Record<string, { confirmed: number; draft: number }>;
 }
 
-export function RunDrawingPicker({ drawings, selectedIds, onChange, disabled }: RunDrawingPickerProps) {
+export function RunDrawingPicker({ drawings, selectedIds, onChange, disabled, takeoff }: RunDrawingPickerProps) {
   const { t } = useTranslation();
   const selected = new Set(selectedIds);
 
@@ -42,7 +43,7 @@ export function RunDrawingPicker({ drawings, selectedIds, onChange, disabled }: 
 
       {drawings.length === 0 ? (
         <div className="mt-1.5 text-[12px] text-[var(--color-text-secondary)]">
-          {t("boq.calculationRun.noEligibleDrawings", "This project has no current, parsed IFC drawing yet.")}
+          {t("boq.calculationRun.noEligibleDrawings", "This project has no current, parsed IFC drawing and no PDF with confirmed measurements yet.")}
         </div>
       ) : (
         <ul className="mt-1.5 divide-y divide-[var(--color-border)] rounded-[8px] border border-[var(--color-border)]">
@@ -69,6 +70,11 @@ export function RunDrawingPicker({ drawings, selectedIds, onChange, disabled }: 
                       ].filter(Boolean).join(" · ")}
                     </span>
                   </span>
+                  {takeoff?.[drawing.id] ? (
+                    <Badge tone="blue">
+                      {t("boq.calculationRun.pdfBadge", { defaultValue: "PDF \u00b7 {{n}} confirmed measurements", n: takeoff[drawing.id].confirmed })}
+                    </Badge>
+                  ) : null}
                   {duplicate ? (
                     <Badge tone="gold">{t("boq.calculationRun.sameNameBadge", "Same file name as another drawing")}</Badge>
                   ) : null}

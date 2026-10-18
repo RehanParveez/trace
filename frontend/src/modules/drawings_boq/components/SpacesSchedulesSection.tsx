@@ -32,6 +32,14 @@ export function SpacesSchedulesSection({ projectId, drawings }: SpacesSchedulesS
         <button type="button" className={tabCls(tab === "schedules")} onClick={() => setTab("schedules")}>{t("section.schedules", "Schedules")}</button>
         <button type="button" className={tabCls(tab === "rebar")} onClick={() => setTab("rebar")}>{t("section.rebar", "Bar schedules")}</button>
       </Panel>
+      {drawings.some((d) => d.format === "PDF" && d.is_current_revision) ? (
+        <Panel className="p-4 text-[12px] text-[var(--color-text-secondary)]" data-testid="pdf-spaces-note">
+          {t(
+            "section.pdfNote",
+            "These tabs read the IFC model. A PDF drawing is not listed here: its rooms, floor finish and plaster are counted from its measurements. Approve its items under Drawings, then run the calculation.",
+          )}
+        </Panel>
+      ) : null}
       {tab === "spaces" ? (
         <SpacesPanel projectId={projectId} drawings={drawings} canManage={canManageSpaces} canManageFinish={canManageFinish} />
       ) : tab === "schedules" ? (

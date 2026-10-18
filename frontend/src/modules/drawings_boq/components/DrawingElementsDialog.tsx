@@ -11,7 +11,9 @@ import type {Drawing, DrawingElement, DrawingElementFilters, NormalizationStatus
 import {formatQuantity, elementMeasureMode, triggerBlobDownload,
 } from "../utils/drawings-boq.utils";
 import { elementsPdfFilename, isTooLargeError } from "../utils/elements-report";
-import { useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeoff";
+import { useDecideCandidates, useReadPdfDrawing, useSyncPdfRegister } from "../takeoff/hooks/useTakeoff";
+import { ApprovePdfDialog } from "../takeoff/components/ApprovePdfDialog";
+import { canHide, measureUrl, pdfRowRef } from "../takeoff/utils/pdfRow";
 import type { ReadStage } from "../takeoff/hooks/useTakeoff";
 import type { RegisterSyncResult } from "../takeoff/types/takeoff.types";
 import { isPdfFormat, measureBadge, needsPerson, pagesFor, waitingLines } from "../takeoff/utils/register";
@@ -263,6 +265,11 @@ export function DrawingElementsDialog({
   const navigate = useNavigate();
   const syncRegister = useSyncPdfRegister(drawing.id);
   const readSheets = useReadPdfDrawing(drawing.id);
+  const [approving, setApproving] = useState(false);
+  const approvingRef = useRef(false);
+  approvingRef.current = approving;
+  const decide = useDecideCandidates(drawing.id, undefined);
+
   const [stage, setStage] = useState<ReadStage | null>(null);
   const { mutate: syncNow } = syncRegister;
   useEffect(() => {
@@ -282,7 +289,7 @@ export function DrawingElementsDialog({
   useEffect(() => {
     closeRef.current?.focus();
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !approvingRef.current) {
         event.preventDefault();
         onClose();
       }
@@ -564,6 +571,10 @@ export function DrawingElementsDialog({
                   >
                     {t("drawings.elements.pdfReview", "Review and measure")}
                   </Button>
+                  <Button variant="primary" size="sm" onClick={() => setApproving(true)} disabled={reading || syncRegister.isPending}>
+                    <Icon name="check" size={13} />
+                    {t("takeoff.approve.tableButton", "Approve items")}
+                  </Button>
                 </div>
               </div>
             ) : null}
@@ -652,7 +663,7 @@ export function DrawingElementsDialog({
             <table className="w-full min-w-[1100px] border-separate border-spacing-0 text-left">
               <thead>
                 <tr>
-                  {headers.map((header) => (
+                  {(isPdf ? [...headers, { key: "actions", label: t("drawings.elements.actions", "Actions") }] : headers).map((header) => (
                     <th
                       key={header.key}
                       className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2.5 text-[10px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]"
@@ -749,6 +760,34 @@ export function DrawingElementsDialog({
                           ) : null}
                         </div>
                       </td>
+
+                      {isPdf ? (
+                        <td className="whitespace-nowrap border-b border-[var(--color-border)] px-3 py-2.5 text-[11px]">
+                          <Button variant="ghost" size="sm" onClick={() => navigate(measureUrl(drawing.project_id, drawing.id, pdfRowRef(element.properties)))}>
+                            {t("drawings.elements.open", "Open")}
+                          </Button>
+                          {canHide(pdfRowRef(element.properties)) ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={decide.isPending}
+                              title={t("drawings.elements.hideHint", "Set this item aside. It leaves this list and the calculation. Bring it back on the Measure page.")}
+                              onClick={() => {
+                                const ref = pdfRowRef(element.properties);
+                                if (!ref?.candidateId) return;
+                                decide.mutate({ ids: [ref.candidateId], action: "reject" }, {
+                                  onSuccess: () => {
+                                    setItems((previous) => previous.filter((e) => e.id !== element.id));
+                                    void elementsQuery.refetch();
+                                  },
+                                });
+                              }}
+                            >
+                              {t("drawings.elements.hide", "Hide")}
+                            </Button>
+                          ) : null}
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })}
@@ -784,6 +823,9 @@ export function DrawingElementsDialog({
           ) : null}
         </div>
       </div>
+      {approving ? (
+        <ApprovePdfDialog projectId={drawing.project_id} drawingId={drawing.id} filename={drawing.original_filename} onClose={() => setApproving(false)} />
+      ) : null}
     </div>
   );
 }
