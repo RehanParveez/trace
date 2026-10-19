@@ -16,6 +16,8 @@ import { ResultsPanel } from "../components/ResultsPanel";
 import { FramePanel } from "../components/FramePanel";
 import { ReconcilePanel } from "../components/ReconcilePanel";
 import { shiftQuery } from "../utils/reconcile";
+import { useSourceTotals } from "../hooks/useSourceTotals";
+import { SourceTotalsPanel } from "../components/SourceTotalsPanel";
 import { planBoxes as planBoxesOf } from "../utils/floorSources";
 import { FloorLevels } from "../components/FloorLevels";
 import { FoundTab } from "../components/FoundTab";
@@ -26,6 +28,9 @@ import type { CaptureState } from "../components/ScalePanel";
 import { SheetStrip } from "../components/SheetStrip";
 import { sheetTitle } from "../utils/sheetTitle";
 import { Toolbar } from "../components/Toolbar";
+import { OverlayColourMenu } from "../components/OverlayColourMenu";
+import { markColours } from "../utils/overlayColour";
+import type { OverlayMode } from "../utils/overlayColour";
 import {takeoffKeys, useAutoCalibrate, useBulkConfirm, useConfirmMeasurement, useCreateCalibration, useCreateMeasurement, useDeleteCalibration, useDeleteMeasurement,
   useMakeDefaultCalibration, usePrepareSheet, usePrepareSheets, useProjectTakeoffDrawings, useSheetAnalysis, useSheetShapes, useSheetTags, useSheetVector,
   useSyncTakeoff, useTakeoffModes, useTakeoffOverview, useTakeoffReconciliation, useTakeoffFrame, useTakeoffFloors, useTakeoffReconcile, useSheetCandidates, usePlaceFrameView, useSetFrameReference, useUnconfirmMeasurement, useUpdateMeasurement,
@@ -108,10 +113,12 @@ export function TakeoffPage() {
   const tags = useSheetTags(sheet);
   const shapes = useSheetShapes(sheet);
   const recon = useTakeoffReconciliation(projectId, tab === "results");
+  const sourceTotals = useSourceTotals(projectId, tab === "results");
   const frame = useTakeoffFrame(drawingId, tab === "frame");
   const floors = useTakeoffFloors(drawingId, tab === "frame");
   const [showPlans, setShowPlans] = useState(true);
-  const foundOnSheet = useSheetCandidates(sheet, tab === "found");
+  const [colourMode, setColourMode] = useState<OverlayMode>("ITEM");
+  const foundOnSheet = useSheetCandidates(sheet, tab === "found" || colourMode !== "ITEM");
   const planBoxes = useMemo(() => (showPlans && tab === "found" ? planBoxesOf(foundOnSheet.data?.extraction.stats) : []), [showPlans, tab, foundOnSheet.data]);
   const [reconcileModel, setReconcileModel] = useState<string | null>(null);
   const [reconcileShift, setReconcileShift] = useState<[string, string]>(["", ""]);
@@ -795,7 +802,7 @@ export function TakeoffPage() {
     dimensionPairs: showDimensions ? analysis.data?.detected_scale.measured?.pairs ?? null : null,
     suggestionPts,
     focusId,
-    planBoxes,
+    markColours: colourMode === "ITEM" ? undefined : markColours(colourMode, foundOnSheet.data?.candidates ?? []),
     disabledNote: misaligned ? t("boq.takeoff.block.misalignedShort", "Sheet display is not aligned: measuring locked") : null,
   };
   const sceneRef = useRef(scene);
@@ -807,7 +814,7 @@ export function TakeoffPage() {
   }, []);
   const paintKey = useMemo(
     () => ({}),
-    [measurements, selectedIds, showMeasurements, tool, draft, editing, mmPerPt, wallPick, regionPick, capture, rulerPts, showDimensions, analysis.data, suggestionPts, focusId, misaligned, planBoxes],
+    [measurements, selectedIds, showMeasurements, tool, draft, editing, mmPerPt, wallPick, regionPick, capture, rulerPts, showDimensions, analysis.data, suggestionPts, focusId, misaligned, planBoxes, colourMode, foundOnSheet.data],
   );
 
   useEffect(() => {
@@ -893,6 +900,8 @@ export function TakeoffPage() {
         onZoomOut={() => viewerRef.current?.zoomBy(1 / 1.3)}
         onFit={() => viewerRef.current?.fit()}
       />
+
+      <OverlayColourMenu mode={colourMode} onMode={setColourMode} />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="relative min-h-[320px] flex-1">

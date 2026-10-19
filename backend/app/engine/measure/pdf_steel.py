@@ -7,6 +7,7 @@ from uuid import uuid5
 from app.engine.measure.derived import DERIVED, FACTOR_ASSUMED, FACTOR_CONFIRMED, counted_measurement_ids, resolve_params
 from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, bar_dia_mm_of, clean_steel, member_lines, kg_per_m  # noqa: F401
 from app.engine.measure.units import q4, q6
+from app.engine.measure import steel_review as SRV
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, range_trace
 
 """Reinforcement weight (kg) for the concrete members read from a PDF whose bars are printed with them: lintels from the lintel table, and columns,
@@ -16,12 +17,25 @@ FORMULA = "PDF_MEMBER_STEEL_WEIGHT"
 RECIPE_CODE = "PDF_MEMBER_STEEL"
 LEGACY_RECIPE = "PDF_LINTEL_STEEL"
 COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM, WASTAGE_PARAM = "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct"
-STEEL_PARAMS = (COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM, WASTAGE_PARAM)
+COVER_OF = {"LINTEL": "steel_cover_beam_mm", "BEAM": "steel_cover_beam_mm", "COLUMN": "steel_cover_column_mm", "FOOTING": "steel_cover_footing_mm",
+  "SLAB": "steel_cover_slab_mm", "RCC_WALL": "steel_cover_wall_mm",
+  "STAIR": "steel_cover_slab_mm", "CHAJJA": "steel_cover_slab_mm", "BALCONY_SLAB": "steel_cover_slab_mm", "PARAPET": "steel_cover_wall_mm"}
+STEEL_PARAMS = (COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM, WASTAGE_PARAM, *dict.fromkeys(COVER_OF.values()))
+
+def extra_of(m) -> dict | None:
+  """The stair or tank detail a member's lines need beyond its box (the slope of a flight; the height and walls of a tank)."""
+  return {k: v for k, v in (("stair", getattr(m, "stair", None)), ("site", getattr(m, "site", None))) if v} or None
+
+def cover_name(category: str, params: dict) -> str:
+  """The cover parameter a member uses: the one for its kind when it was given (typed, convention, drawing, QS), else the general cover."""
+  name = COVER_OF.get(category, COVER_PARAM)
+  return name if params[name]["source"] != "default" else COVER_PARAM
 CONVENTION_PARAMS = {
   "LINTEL": (COVER_PARAM, HOOK_PARAM, ANCHOR_PARAM), "BEAM": (COVER_PARAM, HOOK_PARAM, ANCHOR_PARAM),
-  "COLUMN": (COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM), "FOOTING": (COVER_PARAM,), "SLAB": (COVER_PARAM,), "RCC_WALL": (COVER_PARAM,)}
+  "COLUMN": (COVER_PARAM, HOOK_PARAM, LAP_PARAM, ANCHOR_PARAM), "FOOTING": (COVER_PARAM,), "SLAB": (COVER_PARAM,), "RCC_WALL": (COVER_PARAM,),
+  "STAIR": (COVER_PARAM,), "TANK": (COVER_PARAM,), "PARAPET": (COVER_PARAM,), "CHAJJA": (COVER_PARAM,), "BALCONY_SLAB": (COVER_PARAM,)}
 PARAMS_USED = CONVENTION_PARAMS
-IFC_OF = {"LINTEL": "IfcBeam", "BEAM": "IfcBeam", "COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "RCC_WALL": "IfcWall"}
+IFC_OF = {"LINTEL": "IfcBeam", "BEAM": "IfcBeam", "COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "RCC_WALL": "IfcWall", "STAIR": "IfcStair", "TANK": "IfcTank", "PARAPET": "IfcWall", "CHAJJA": "IfcSlab", "BALCONY_SLAB": "IfcSlab"}
 ROLE_OF = {"RCC_WALL": "WALL"}
 MAX_MARKS = 5000
 CODE_ASSUMED = "STEEL_ASSUMED"
@@ -29,7 +43,7 @@ CODE_INTENSITY = "STEEL_INTENSITY_OUT_OF_RANGE"
 STEEL_CODES = (CODE_ASSUMED, CODE_INTENSITY)
 MM = Decimal("1000")
 MM3_PER_M3 = Decimal("1000000000")
-INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB"}
+INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB"}
 
 @dataclass(frozen=True)
 class SteelResult:
@@ -39,7 +53,7 @@ class SteelResult:
 
 def _plate(category: str, length: Decimal, width: Decimal, depth: Decimal) -> tuple:
   """The size a member's steel is worked out from. A wall's mesh covers its run and height; its thickness is not a mesh side."""
-  if category == "RCC_WALL":
+  if category in ("RCC_WALL", "PARAPET"):
     return length, depth, width
   return length, width, depth
 
@@ -70,12 +84,14 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
   params = resolve_params(ctx)
   value = {n: Decimal(str(params[n]["value"])) for n in STEEL_PARAMS}
   wastage = value[WASTAGE_PARAM]
+  lap_table = ((getattr(ctx, "drawing_params", None) or {}).get("lap_table_mm") or None) if params[LAP_PARAM]["source"] == "drawing" else None
   counted = counted_measurement_ids(extra_ledger)
   skipped: dict = {}
   by_category: dict = {}
   by_dia: dict = {}
   family_volume: dict = {}
   family_kg: dict = {}
+  reviewable: list = []
   solids: list = []
   rows: list = []
 
@@ -90,13 +106,15 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
       skipped["NO_BARS"] = skipped.get("NO_BARS", 0) + m.count
       continue
     length, width, depth = _plate(cat, m.length_mm, m.width_mm, m.depth_mm)
-    lines, bare = member_lines(cat, length, width, depth, steel, value[COVER_PARAM], value[HOOK_PARAM], value[LAP_PARAM], value[ANCHOR_PARAM])
+    cover_n = cover_name(cat, params)
+    lines, bare = member_lines(cat, length, width, depth, steel, value[cover_n], value[HOOK_PARAM], value[LAP_PARAM], value[ANCHOR_PARAM], lap_table, extra_of(m))
+    reviewable.append({"cat": cat, "length": length, "width": width, "depth": depth, "steel": steel, "count": m.count, "cover": value[cover_n], "hook": value[HOOK_PARAM]})
     if bare <= 0:
       skipped["NO_SIZE"] = skipped.get("NO_SIZE", 0) + m.count
       continue
   
     kg = q6(bare * (1 + wastage / 100))
-    used = PARAMS_USED[cat]
+    used = tuple(cover_n if n == COVER_PARAM else n for n in PARAMS_USED[cat])
     assumed = [n for n in used if params[n]["source"] == "default"]
     factor = FACTOR_ASSUMED if assumed else FACTOR_CONFIRMED
     confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * factor)))
@@ -161,6 +179,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     "params": {n: dict(params[n]) for n in STEEL_PARAMS},
     "assumed": sorted({n for r in rows for n, b in ((r.spec or {}).get("basis") or {}).items() if b == "default"}),
     "lap_and_wastage_not_added": bool(rows) and wastage == 0,
+    "review": SRV.review(reviewable, value[ANCHOR_PARAM], value[LAP_PARAM], params[LAP_PARAM]["source"] == "default", lap_table) if reviewable else {},
   })
   if not rows:
     stats["reason"] = "NOTHING_TO_REINFORCE"

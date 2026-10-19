@@ -6,6 +6,7 @@ from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff.extract import links as LK
 from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
+from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
 
 DROP_AFTER_CHOICE = {"BEAM_SECTION": ("BEAM_SECTIONS_LISTED",), "SLAB_THICKNESS": (), "SOURCE_COUNT": ()}
 
@@ -94,4 +95,5 @@ class ReviewService(FloorUnionService):
 
   async def steel_rollup(self, org: UUID, drawing_id: UUID, conventions: dict | None = None) -> dict:
     rows, _ = await self._everything(org, drawing_id)
-    return {"drawing_id": drawing_id, **SR.rollup(rows, conventions, _intensity_ranges())}
+    printed = await printed_for_drawings(self.session, org, [drawing_id])
+    return {"drawing_id": drawing_id, **SR.rollup(rows, conventions, _intensity_ranges(), printed)}

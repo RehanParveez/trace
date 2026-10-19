@@ -27,6 +27,8 @@ from app.modules.drawings_boq.spatial_repository import load_reinforcements_inpu
 from app.engine.measure import rebar as rb
 from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff.repository import takeoff_drawing_ids
+from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
+from app.modules.drawings_boq.takeoff.prep import printed_params
 from datetime import timedelta, timezone, datetime
 import json
 import random
@@ -263,6 +265,9 @@ class CalculationService:
       cleaned = clean_derived_params({**stored_params, **(derived_params or {})})
       if cleaned:
         settings["derived_params"] = cleaned
+      printed = printed_params.for_run(await printed_for_drawings(self.session, organization_id, [d.id for d in chosen if d.format == DrawingFormat.PDF]))
+      if printed["params"] or printed["lap_table_mm"]:
+        settings["drawing_params"] = printed
       element_values = await ElementParametersService(self.session).stored_for_run(organization_id, project_id)
       if element_values:
         settings["element_overrides"] = element_values
@@ -424,6 +429,7 @@ class CalculationService:
         spec_mode=bool(run_settings.get("spec")), stage_mode=bool(run_settings.get("stages")),
         layer_mode=bool(run_settings.get("layers")), derived_mode=bool(run_settings.get("derived")),
         derived_params=dict(run_settings.get("derived_params") or {}),
+        drawing_params=dict(run_settings.get("drawing_params") or {}),
         datum_overrides=dict(run_settings.get("datum_overrides") or {}),
         element_overrides={k: dict(v) for k, v in (run_settings.get("element_overrides") or {}).items()},
       )
@@ -616,7 +622,17 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in dp.ledger])
         state["extra_solids"] += dp.solids
         state["extra_ledger"] += dp.ledger
-        fw = await asyncio.to_thread(kernel.measure_formwork, ctx, profile, state["ledger"], state["extra_ledger"])
+        fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
+        state["extra_solids"] += fl_solids
+        state["extra_ledger"] += fl_rows
+        fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
+        state["extra_solids"] += fl_solids
+        state["extra_ledger"] += fl_rows
+        fw = await asyncio.to_thread(kernel.measure_formwork, ctx, profile, state["ledger"], state["extra_ledger"], state["accepted"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fw.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fw.ledger])
         state["extra_solids"] += fw.solids
@@ -627,7 +643,7 @@ class CalculationService:
         await self.runs.stage_bar_marks([_bar_mark_row(run, m, "derived") for m in st.marks])
         state["extra_solids"] += st.solids
         state["extra_ledger"] += st.ledger
-        state["derived_stats"] = {**res.stats, "dpc": dp.stats, "formwork": fw.stats, "steel": st.stats}
+        state["derived_stats"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats}
         return {"dpc_rows": len(dp.ledger), "dpc_m2": dp.stats.get("area_m2", "0"), "steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
           "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),

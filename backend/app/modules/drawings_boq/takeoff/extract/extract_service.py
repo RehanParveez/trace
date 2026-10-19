@@ -29,6 +29,7 @@ from app.modules.drawings_boq.takeoff.extract import kinds as KD
 from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
 from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
 from app.modules.drawings_boq.takeoff.extract.slab_openings_service import reconcile_slab_openings
@@ -464,11 +465,12 @@ class ExtractService:
     rows = {r.id: r for r in await self.repo.candidates_by_ids(org, list(payload.ids), lock=True)}
     await self._heal(org, list(rows.values()))
     given = payload.work_items or {}
+    guard = AG.Guard() if payload.allow_repeat_marks or not rows else await AG.load(self.session, org, next(iter(rows.values())).project_id, list(rows.values()))
     wanted = {c for c in [*(given.values()), *(KD.default_code(r) for r in rows.values())] if c}
     catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
     typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm,
       "slab_thickness_mm": payload.slab_thickness_mm, "beam_depth_mm": payload.beam_depth_mm,
-      "plinth_beam_depth_mm": payload.plinth_beam_depth_mm, "tie_band_depth_mm": payload.tie_band_depth_mm, "excavation_depth_mm": payload.excavation_depth_mm, "trench_depth_mm": payload.trench_depth_mm,
+      "plinth_beam_depth_mm": payload.plinth_beam_depth_mm, "tie_band_depth_mm": payload.tie_band_depth_mm, "excavation_depth_mm": payload.excavation_depth_mm, "fill_depth_mm": payload.fill_depth_mm, "trench_depth_mm": payload.trench_depth_mm,
       "pcc_thickness_mm": payload.pcc_thickness_mm, "pcc_strip_width_mm": payload.pcc_strip_width_mm, "pcc_strip_width_thin_mm": payload.pcc_strip_width_thin_mm,
       "brick_step_1_height_mm": payload.brick_step_1_height_mm, "brick_step_2_height_mm": payload.brick_step_2_height_mm,
       "brick_step_3_height_mm": payload.brick_step_3_height_mm, "brick_step_4_height_mm": payload.brick_step_4_height_mm,
@@ -523,6 +525,10 @@ class ExtractService:
       if cand.sheet_id not in sheet_levels:
         sheet_levels[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).level_id
       own_level = view_level_id(cand) or sheet_levels[cand.sheet_id]
+      held_by = guard.clash(cand, own_level)
+      if held_by is not None:
+        failed.append(_fail(cid, AG.CODE, held_by))
+        continue
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
           params=MeasurementParams(**{**params, **_openings_params(cand, params, typed)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
@@ -554,6 +560,7 @@ class ExtractService:
         failed.append(_fail(cid, exc.code, exc.message))
         continue
     
+      guard.add(cand, own_level)
       accepted.append({"id": str(cid), "measurement_id": str(m.id), "work_item_code": code})
     if accepted:
       first = next(r for r in rows.values() if str(r.id) == accepted[0]["id"])

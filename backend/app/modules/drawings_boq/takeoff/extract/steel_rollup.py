@@ -1,10 +1,16 @@
 from __future__ import annotations
 from decimal import Decimal
 from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, clean_steel, member_lines
+from app.engine.measure.derived import PARAMS as ENGINE_PARAMS
+from app.engine.measure.member_steel_more import MORE_FAMILIES
+from app.modules.drawings_boq.takeoff import repository as TR
 
-CONVENTIONS = {"cover_mm": 40.0, "hook_dia": 16.0, "lap_dia": 0.0, "anchor_dia": 0.0, "wastage_pct": 0.0}
-CONVENTION_NOTE = ("Cover, hook, lap and anchorage are site conventions. This roll-up uses the values above (laps and anchorage are not added unless you set them); "
-  "the calculation run uses the steel parameters of your project, so its weight can differ by what those add.")
+CONVENTIONS = {"cover_mm": ENGINE_PARAMS["steel_cover_mm"][0], "hook_dia": ENGINE_PARAMS["ring_hook_dia"][0], "lap_dia": ENGINE_PARAMS["bar_lap_dia"][0],
+  "anchor_dia": ENGINE_PARAMS["bar_anchor_dia"][0], "wastage_pct": ENGINE_PARAMS["steel_wastage_pct"][0]}
+COVER_OF = {"LINTEL": "steel_cover_beam_mm", "BEAM": "steel_cover_beam_mm", "COLUMN": "steel_cover_column_mm", "FOOTING": "steel_cover_footing_mm", "SLAB": "steel_cover_slab_mm", "RCC_WALL": "steel_cover_wall_mm"}
+ESTIMATE_NOTE = "This is an estimate from the bars as they stand, before a calculation run; the run adds the project's own steel parameters and can differ by what those add."
+CONVENTION_NOTE = ("Cover, hook, lap and anchorage are site conventions. Where the drawing prints a cover or a lap table this roll-up uses it; "
+  "otherwise it uses the same defaults as the calculation run, and they are flagged as defaults.")
 MM3_PER_M3 = Decimal("1000000000")
 
 def _d(v) -> Decimal | None:
@@ -18,18 +24,31 @@ def _floor(f: dict) -> str | None:
   return f.get("floor") or f.get("level_hint") or (f.get("view") or {}).get("level_hint") or (f.get("floor_union") or {}).get("floor")
 
 def _plate(category: str, length: Decimal, width: Decimal, depth: Decimal) -> tuple:
-  if category == "RCC_WALL":
+  if category in ("RCC_WALL", "PARAPET"):
     return length, depth, width
   return length, width, depth
 
-def member(row, conv: dict) -> dict:
+def kind_of(row) -> str:
+  """The reinforced kind of a register row: its category, or for a site item the cast item it is (a tank, a parapet)."""
+  if row.category == "SITE":
+    return TR.FORMWORK_SITE.get((row.facts or {}).get("site_kind"), "SITE")
+  return row.category
+
+def _extra(row, cat: str, depth) -> dict | None:
+  if cat == "STAIR" and depth:
+    return {"stair": TR.stair_detail(row, depth)}
+  if cat == "TANK":
+    return {"site": TR._tank_detail(row.params or {})}
+  return None
+
+def member(row, conv: dict, cat: str | None = None) -> dict:
   p = row.params or {}
   
   steel = clean_steel(p.get("steel"))
   if not steel:
     return {"reason": "NO_BARS", "kg_each": Decimal("0"), "lines": []}
   L, W, D = _d(p.get("length_mm")), _d(p.get("width_mm")), _d(p.get("depth_mm"))
-  cat = row.category
+  cat = cat or row.category
   need = (L, W) if cat in ("FOOTING", "SLAB") else (L, W, D)
   if cat == "COLUMN":
     need = (L, W, D)
@@ -37,13 +56,33 @@ def member(row, conv: dict) -> dict:
     return {"reason": "NO_SIZE", "kg_each": Decimal("0"), "lines": [], "steel": steel}
 
   length, width, depth = _plate(cat, L, W, D or Decimal("0"))
-  lines, bare = member_lines(cat, length, width, depth, steel, Decimal(str(conv["cover_mm"])), Decimal(str(conv["hook_dia"])), Decimal(str(conv["lap_dia"])), Decimal(str(conv["anchor_dia"])))
+  cover = (conv.get("cover_by_category") or {}).get(cat, conv["cover_mm"])
+  lines, bare = member_lines(cat, length, width, depth, steel, Decimal(str(cover)), Decimal(str(conv["hook_dia"])), Decimal(str(conv["lap_dia"])), Decimal(str(conv["anchor_dia"])),
+    conv.get("lap_table_mm") or None, _extra(row, cat, D))
   if bare <= 0:
     return {"reason": "NO_SIZE", "kg_each": Decimal("0"), "lines": [], "steel": steel}
   return {"reason": None, "kg_each": bare, "lines": lines, "steel": steel}
 
-def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = None) -> dict:
-  conv = {**CONVENTIONS, **{k: v for k, v in (conventions or {}).items() if k in CONVENTIONS and v is not None}}
+def resolve(conventions: dict | None, printed: dict | None) -> tuple:
+  """The values a roll-up uses and where each came from: what was typed, else what the drawing prints, else the engine default."""
+  given = {k: v for k, v in (conventions or {}).items() if k in CONVENTIONS and v is not None}
+  conv: dict = {**CONVENTIONS, **given}
+  sources = {k: ("user" if k in given else "default") for k in CONVENTIONS}
+  params = (printed or {}).get("params") or {}
+  by_cat = {c: float(params[n]) for c, n in COVER_OF.items() if params.get(n) is not None}
+  
+  if "cover_mm" not in given and by_cat:
+    conv["cover_by_category"] = by_cat
+    sources["cover_mm"] = "drawing"
+  table = (printed or {}).get("lap_table_mm") or {}
+  if "lap_dia" not in given and table:
+    conv["lap_table_mm"] = {k: float(v) for k, v in table.items()}
+    sources["lap_dia"] = "drawing"
+  return conv, sources
+
+def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = None, printed: dict | None = None) -> dict:
+
+  conv, sources = resolve(conventions, printed)
   wastage = Decimal(str(conv["wastage_pct"]))
   marks: list = []
   without: dict = {}
@@ -52,12 +91,13 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
   by_dia: dict = {}
   total = Decimal("0")
   for r in rows:
-    if r.decision == "REJECTED" or r.category not in STEEL_FAMILIES:
+    cat = kind_of(r)
+    if r.decision == "REJECTED" or (cat not in STEEL_FAMILIES and cat not in MORE_FAMILIES):
       continue
   
     n = int(r.count or 1)
-    got = member(r, conv)
-    fam = FAMILY_OF.get(r.category, r.category)
+    got = member(r, conv, cat)
+    fam = FAMILY_OF.get(cat, cat)
     if got["reason"] == "NO_BARS":
       slot = without.setdefault(fam, {"members": 0, "marks": []})
       slot["members"] += n
@@ -102,7 +142,9 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
       status = "BELOW_RANGE" if value < band[0] else "ABOVE_RANGE" if value > band[1] else "IN_RANGE"
     fam_out[fam] = {"marks": s["marks"], "members": s["members"], "kg": float(s["kg"]), "concrete_m3": float(s["concrete_m3"]) if s["concrete_m3"] > 0 else None,
       "kg_per_m3": round(value, 1) if value is not None else None, "range": list(band) if band else None, "status": status}
-  return {"ran": bool(marks), "kg": float(total), "conventions": conv, "conventions_assumed": conventions is None, "convention_note": CONVENTION_NOTE,
+  scalars = {k: float(conv[k]) for k in CONVENTIONS}
+  return {"ran": bool(marks), "kg": float(total), "conventions": scalars, "sources": sources, "printed": {"cover_mm_by_category": conv.get("cover_by_category") or {}, "lap_table_mm": conv.get("lap_table_mm") or {}},
+    "estimate": True, "estimate_note": ESTIMATE_NOTE, "conventions_assumed": conventions is None, "convention_note": CONVENTION_NOTE,
     "by_family": fam_out, "by_diameter": {k: {"kg": float(v["kg"]), "length_m": float(v["length_m"])} for k, v in sorted(by_dia.items(), key=lambda kv: float(kv[0]))},
     "marks": sorted(marks, key=lambda m: (m["family"], str(m["floor"] or ""), str(m["tag"] or ""))),
     "without_steel": {"members": sum(v["members"] for v in without.values()), "by_family": without},

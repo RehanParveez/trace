@@ -13,8 +13,10 @@ RECIPE_CODE = "STRUCT_FORMWORK"
 RECIPE_TYPES = ("IfcColumn", "IfcBeam", "IfcSlab", "IfcFooting")
 FOOTING_PARAM, SLAB_EDGE_PARAM, SHARED_PARAM = "footing_formwork", "slab_edge_formwork", "formwork_shared_faces"
 TANK_PARAM, BEAM_PARAM = "tank_base_formwork", "beam_depth_includes_slab"
-FORMWORK_PARAMS = (FOOTING_PARAM, SLAB_EDGE_PARAM, SHARED_PARAM, TANK_PARAM, BEAM_PARAM)
-PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": (), "BEAM": (BEAM_PARAM,), "STAIR": (), "RCC_WALL": (),
+STAIR_PARAM, RATE_PARAM = "stair_formwork_soffit_only", "beam_lintel_qs_rate"
+WALLS_PARAM, BEAMS_PARAM, REVEAL_PARAM = "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals"
+FORMWORK_PARAMS = (FOOTING_PARAM, SLAB_EDGE_PARAM, SHARED_PARAM, TANK_PARAM, BEAM_PARAM, STAIR_PARAM, RATE_PARAM, WALLS_PARAM, BEAMS_PARAM, REVEAL_PARAM)
+PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": (RATE_PARAM,), "BEAM": (BEAM_PARAM, RATE_PARAM), "STAIR": (STAIR_PARAM,), "RCC_WALL": (REVEAL_PARAM,),
   "TANK": (TANK_PARAM,), "COPING": (), "CHAJJA": (SLAB_EDGE_PARAM,), "BALCONY_SLAB": (SLAB_EDGE_PARAM,)}
 CATEGORIES = tuple(PARAMS_USED)
 IFC_OF = {"COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "SLAB": "IfcSlab", "LINTEL": "IfcBeam", "BEAM": "IfcBeam", "STAIR": "IfcStair", "RCC_WALL": "IfcWall",
@@ -23,7 +25,8 @@ ROLE_OF = {"RCC_WALL": "WALL", "TANK": "TANK", "COPING": "SLAB", "CHAJJA": "SLAB
 ROOF_ITEMS = ("TANK", "COPING", "CHAJJA", "BALCONY_SLAB")
 BEAM_SLAB_ROLES = (None, "ROOF")
 BEAM_SLAB_MAX_SHARE = Decimal("0.35")
-BEAM_PER_RFT_MM = Decimal("228.6")   
+BEAM_PER_RFT_MM = Decimal("228.6")
+LINTEL_PER_RFT_MM = Decimal("152.4")   
 MM2_PER_M2 = Decimal("1000000")
 MM_PER_M = Decimal("1000")
 MAX_MARKS = 5000
@@ -51,8 +54,10 @@ def stair_faces(width: Decimal, stair: dict) -> list:
   slope = steps * (riser * riser + tread * tread).sqrt()
   return [("soffit", slope * width), ("risers", steps * riser * width), ("sides", 2 * (slope * waist + steps * riser * tread / 2))]
 
-def tank_faces(length: Decimal, width: Decimal, height: Decimal, wall: Decimal, base: bool) -> list:
-  li, wi, hi = length - 2 * wall, width - 2 * wall, height - 2 * wall
+def tank_faces(length: Decimal, width: Decimal, height: Decimal, wall: Decimal, base: bool, top: Decimal | None = None, bottom: Decimal | None = None) -> list:
+  top = wall if top is None else top
+  bottom = wall if bottom is None else bottom
+  li, wi, hi = length - 2 * wall, width - 2 * wall, height - top - bottom
   if min(li, wi, hi) <= 0 or wall <= 0:
     return []
   out = [("outside_walls", 2 * (length + width) * height), ("inside_walls", 2 * (li + wi) * hi), ("top_slab_soffit", li * wi)]
@@ -60,7 +65,8 @@ def tank_faces(length: Decimal, width: Decimal, height: Decimal, wall: Decimal, 
     out.append(("base_soffit", length * width))
   return out
 
-def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, edges: bool, stair: dict | None = None, site: dict | None = None, base: bool = False) -> list:
+def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, edges: bool, stair: dict | None = None, site: dict | None = None, base: bool = False,
+  stair_soffit_only: bool = False, qs_rate: bool = False) -> list:
   perimeter = 2 * (length + width)
   
   if category == "COLUMN":
@@ -73,11 +79,16 @@ def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, ed
       out.append(("edges", perimeter * depth))
     return out
   if category in ("LINTEL", "BEAM"):
+    if qs_rate:
+      return [("soffit_by_qs_rate", length * (BEAM_PER_RFT_MM if category == "BEAM" else LINTEL_PER_RFT_MM))]
     return [("soffit", length * width), ("sides", 2 * length * depth)]
   if category == "STAIR" and stair:
-    return stair_faces(width, stair)
+    faces = stair_faces(width, stair)
+    return faces[:1] if stair_soffit_only else faces
   if category == "TANK" and site and site.get("height_mm") and site.get("wall_mm"):
-    return tank_faces(length, width, Decimal(str(site["height_mm"])), Decimal(str(site["wall_mm"])), base)
+    top, bottom = site.get("top_mm"), site.get("bottom_mm")
+    return tank_faces(length, width, Decimal(str(site["height_mm"])), Decimal(str(site["wall_mm"])), base,
+      Decimal(str(top)) if top else None, Decimal(str(bottom)) if bottom else None)
   if category == "COPING":
     return [("sides", 2 * length * depth)]
   if category == "CHAJJA":
@@ -233,10 +244,12 @@ def _recipe_code(profile) -> str | None:
             return c.work_item_code
   return None
 
-def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledger=()) -> FormworkResult:
+def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledger=(), elements=()) -> FormworkResult:
   stats: dict = {"enabled": True, "ran": False}
   inputs = tuple(getattr(ctx.takeoff, "formwork", ()) or ())
-  if not inputs:
+  model_in, model_items, model_stats = FM.model_inputs(elements, {r.element_id for r in ledger if r.source_kind == "MODEL" and r.quantity > 0})
+  if not inputs and not model_in:
+    stats["model"] = model_stats
     stats["reason"] = "NO_MEMBERS"
     return FormworkResult(stats=stats)
   code = _recipe_code(profile)
@@ -254,12 +267,16 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
     return FormworkResult(stats=stats)
 
   params = resolve_params(ctx)
-  counted = counted_measurement_ids(extra_ledger)
+  counted = counted_measurement_ids(extra_ledger) | {str(m.measurement_id) for m in model_in}
   shared_on = params[SHARED_PARAM]["value"] >= 0.5
-  removals, frame_stats = shared_faces(tuple(m for m in inputs if str(m.measurement_id) in counted), ctx.takeoff, shared_on)
-  beam_cuts, beam_stats = beam_slab_cuts(inputs, counted, params[BEAM_PARAM]["value"] >= 0.5) if shared_on else ({}, {"enabled": False})
+  removals, frame_stats = FS.shared_faces(tuple(m for m in inputs if str(m.measurement_id) in counted), ctx.takeoff, shared_on,
+    params[WALLS_PARAM]["value"] >= 0.5, params[BEAMS_PARAM]["value"] >= 0.5)
+  rate_on = params[RATE_PARAM]["value"] >= 0.5
+  beam_cuts, beam_stats = beam_slab_cuts(inputs, counted, params[BEAM_PARAM]["value"] >= 0.5 and not rate_on) if shared_on else ({}, {"enabled": False})
   beam_stats["enabled"] = shared_on
-  removals = {**removals, **beam_cuts}
+  model_cuts, model_cut_stats = FM.removals(model_items, shared_on, params[WALLS_PARAM]["value"] >= 0.5, params[BEAMS_PARAM]["value"] >= 0.5,
+    params[BEAM_PARAM]["value"] >= 0.5 and not rate_on)
+  removals = {**removals, **beam_cuts, **model_cuts}
   measured: dict = {}
   
   for r in (extra_ledger or ()):
@@ -267,12 +284,15 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
       key = str(((r.trace or {}).get("inputs") or {}).get("measurement_id"))
       measured[key] = measured.get(key, Decimal("0")) + r.quantity   
   skipped: dict = {}
+  for key_, (el_, _box, cat_) in model_items.items():
+    if cat_ == "RCC_WALL" and el_.volume_mm3:
+      measured[key_] = Decimal(str(el_.volume_mm3)) / Decimal("1000000000")
   by_category: dict = {}
   solids: list = []
   rows: list = []
   soffit_only = Decimal("0")
   beam_shortcut = Decimal("0")
-  for m in sorted(inputs, key=lambda b: str(b.measurement_id)):
+  for m in sorted(inputs + model_in, key=lambda b: str(b.measurement_id)):
     cat = m.category
     if cat not in PARAMS_USED:
       skipped["CATEGORY_NOT_SHUTTERED"] = skipped.get("CATEGORY_NOT_SHUTTERED", 0) + m.count
@@ -301,9 +321,10 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
       if volume is None:
         skipped["NOT_COUNTED"] = skipped.get("NOT_COUNTED", 0) + m.count
         continue
-      faces = [("both_faces", 2 * volume / (width / MM_PER_M) * MM2_PER_M2)]
+      faces = [("both_faces", 2 * volume / (width / MM_PER_M) * MM2_PER_M2)] + (FS.reveal_faces(m) if params[REVEAL_PARAM]["value"] >= 0.5 else [])
     else:
-      faces = faces_for(cat, length, width, depth, edges, m.stair, m.site, params[TANK_PARAM]["value"] >= 0.5)
+      faces = faces_for(cat, length, width, depth, edges, m.stair, m.site, params[TANK_PARAM]["value"] >= 0.5,
+        params[STAIR_PARAM]["value"] >= 0.5, rate_on)
       if not faces:
         skipped["NO_FACES"] = skipped.get("NO_FACES", 0) + m.count
         continue
@@ -339,7 +360,7 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
         id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=ROLE_OF.get(cat, cat), level_id=m.level_id, geometry_kind="QTO_ONLY",
         classification_confidence=m.confidence, confidence_factor=inst_factor, component_type="DERIVED_FORMWORK",
         gross_area_m2=quantity, status="REVIEW_REQUIRED" if inst_warnings else "OK"))
-      source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id),
+      source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id) if m.sheet_id else None, "model_element": m.sheet_id is None,
         "page_no": m.page_no, "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count,
         "size_mm": [float(length), float(width), float(depth)], **({"stair": m.stair} if m.stair else {}),
         "faces": [{"name": n, "m2": str(_m2(a))} for n, a in inst_faces],
@@ -375,9 +396,10 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
     "skipped": dict(sorted(skipped.items())),
     "params": {n: dict(params[n]) for n in FORMWORK_PARAMS},
     "assumed": sorted({n for r in rows for n, b in ((r.spec or {}).get("basis") or {}).items() if b == "default"}),
-    "contact_not_deducted": bool(rows) and not frame_stats.get("members_with_removal") and not beam_cuts,
+    "contact_not_deducted": bool(rows) and not frame_stats.get("members_with_removal") and not beam_cuts and not model_cuts,
     "shared_faces": frame_stats,
     "beam_slab": beam_stats,
+    "model": {**model_stats, "shared": model_cut_stats},
   })
   if not rows:
     stats["reason"] = "NOTHING_TO_SHUTTER"

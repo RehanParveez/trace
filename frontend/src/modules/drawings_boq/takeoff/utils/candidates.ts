@@ -31,6 +31,7 @@ export type HeightField =
   | "plinth_beam_depth_mm"
   | "tie_band_depth_mm"
   | "excavation_depth_mm"
+  | "fill_depth_mm"
   | "trench_depth_mm"
   | "pcc_thickness_mm"
   | "pcc_strip_width_mm"
@@ -60,6 +61,7 @@ const HEIGHT_ORDER: HeightField[] = [
   "plinth_beam_depth_mm",
   "tie_band_depth_mm",
   "excavation_depth_mm",
+  "fill_depth_mm",
   "trench_depth_mm",
   "pcc_thickness_mm",
   "pcc_strip_width_mm",
@@ -91,6 +93,7 @@ export const NO_HEIGHTS: Heights = {
   plinth_beam_depth_mm: "",
   tie_band_depth_mm: "",
   excavation_depth_mm: "",
+  fill_depth_mm: "",
   trench_depth_mm: "",
   pcc_thickness_mm: "",
   pcc_strip_width_mm: "",
@@ -121,6 +124,7 @@ export const HEIGHT_LABEL: Record<HeightField, string> = {
   plinth_beam_depth_mm: "Plinth beam depth (mm)",
   tie_band_depth_mm: "Tie band depth (mm)",
   excavation_depth_mm: "Excavation depth over the basement (mm)",
+  fill_depth_mm: "Depth of the earth filling under the floor (mm)",
   trench_depth_mm: "Trench depth below the dug floor (mm)",
   pcc_thickness_mm: "Concrete bed thickness (mm)",
   pcc_strip_width_mm: "Strip width under walls of 6 in and thicker (mm)",
@@ -153,7 +157,11 @@ export type FoundationItem =
   | "CEILING_PLASTER"
   | "PLASTER_INSIDE"
   | "PLASTER_OUTSIDE"
-  | "DOOR_FRAME";
+  | "DOOR_FRAME"
+  | "DOOR_AREA"
+  | "WINDOW_AREA"
+  | "EARTH_FILL"
+  | "ROOF_TREATMENT";
 
 const FOUNDATION_ITEMS: FoundationItem[] = [
   "EXCAVATION_AREA",
@@ -169,6 +177,10 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "PLASTER_INSIDE",
   "PLASTER_OUTSIDE",
   "DOOR_FRAME",
+  "DOOR_AREA",
+  "WINDOW_AREA",
+  "EARTH_FILL",
+  "ROOF_TREATMENT",
 ];
 
 export type SiteKind = "OHWT" | "UGWT" | "SEPTIC" | "BOUNDARY_WALL" | "GATE" | "PORCH_RAMP";
@@ -234,7 +246,7 @@ function foundationFields(c: Pick<TakeoffCandidate, "category" | "missing" | "fa
     out.push((c.facts as Record<string, unknown> | null)?.strip_class === "THIN" ? "pcc_strip_width_thin_mm" : "pcc_strip_width_mm");
   }
   if (c.missing.includes("depth_mm")) {
-    out.push(item === "EXCAVATION_AREA" ? "excavation_depth_mm" : item === "TRENCH" ? "trench_depth_mm" : "pcc_thickness_mm");
+    out.push(item === "EXCAVATION_AREA" ? "excavation_depth_mm" : item === "TRENCH" ? "trench_depth_mm" : item === "EARTH_FILL" ? "fill_depth_mm" : "pcc_thickness_mm");
   }
   if (c.missing.includes("step_height_mm")) {
     const step = Number((c.facts as Record<string, unknown> | null)?.step_no);
@@ -303,6 +315,10 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   PLASTER_INSIDE: "Plaster inside the walls",
   PLASTER_OUTSIDE: "Plaster outside the walls",
   DOOR_FRAME: "Door frames",
+  DOOR_AREA: "Door area",
+  WINDOW_AREA: "Window area",
+  EARTH_FILL: "Earth filling under the floor",
+  ROOF_TREATMENT: "Roof treatment",
 };
 
 export const SITE_TEXT: Record<SiteKind, string> = {
@@ -435,6 +451,26 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
     const count = num(f.door_count);
     const size = Array.isArray(f.size_mm) ? (f.size_mm as number[]) : null;
     return [count !== null ? `${count} door${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, f.frame_class === "THIN" ? "in thin walls" : "in thick walls", width !== null ? `${Math.round(width)} mm frame` : "frame width needed"].filter(Boolean).join(" · ");
+  }
+
+  if (item === "EARTH_FILL") {
+    const area = num(f.area_m2);
+    const rooms = num(f.room_count);
+    return [area !== null ? `${area.toFixed(2)} m² of floor` : null, rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed (not printed on the plan)"].filter(Boolean).join(" · ");
+  }
+
+  if (item === "ROOF_TREATMENT") {
+    const area = num(f.area_m2);
+    const basis = f.area_basis === "OUTLINE" ? "slab outline" : f.area_basis === "TABLE" ? "covered area of the table" : null;
+    return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? null : "layers and slope not read"].filter(Boolean).join(" · ");
+  }
+
+  if (item === "DOOR_AREA" || item === "WINDOW_AREA") {
+    const count = num(f.opening_count);
+    const size = Array.isArray(f.size_mm) ? (f.size_mm as number[]) : null;
+    const each = num(f.area_each_m2);
+    const total = num(f.area_m2);
+    return [count !== null ? `${count} ${item === "DOOR_AREA" ? "door" : "window"}${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, each !== null ? `${each.toFixed(2)} m² each` : null, total !== null ? `${total.toFixed(2)} m² in all` : null, f.size_source === "SCHEDULE" ? "size from the schedule" : "size as drawn", "material not read"].filter(Boolean).join(" · ");
   }
 
   if (item === "PCC_PAD") {

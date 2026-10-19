@@ -46,6 +46,12 @@ const EXPORTS: Array<{
   },
 ];
 
+const EXPORT_NOTE: Partial<Record<ExportKind, string>> = {
+  CONTRACT_BOQ: "Each line also shows its stage of work, the range the quantity may fall in and the grade of its weakest input. Reinforcement read from the drawings is totalled by bar diameter before the grand total.",
+  PROCUREMENT: "Four columns are added: stage of work, range low, range high and grade. The reinforcement by diameter follows the table.",
+  MEASUREMENT_BOOK: "Stage, range and grade are written under each item, and the reinforcement by diameter is added.",
+};
+
 const FORMATS: Record<ExportKind, Array<"pdf" | "xlsx">> = {
   CONTRACT_BOQ: ["pdf", "xlsx"],
   PROCUREMENT: ["xlsx"],
@@ -289,6 +295,9 @@ export function BOQAdvancedExportPanel({
           </select>
         </label>
         
+        {EXPORT_NOTE[kind] ? (
+          <p className="text-[11.5px] text-[var(--color-text-secondary)] md:col-span-3" data-testid="export-note">{t(`boq.advancedExport.note.${kind}`, EXPORT_NOTE[kind] as string)}</p>
+        ) : null}
         {kind === "REVISION_COMPARISON" && projectId ? (
           <label className="block">
             <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">

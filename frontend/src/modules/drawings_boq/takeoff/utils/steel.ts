@@ -20,7 +20,7 @@ export interface MeshSet {
   spacing_mm: number;
   ways: 1 | 2;
   layers: 1 | 2;
-  layer?: "top" | "bottom";
+  across?: { bar?: number; dia_mm?: number; spacing_mm: number };
 }
 
 export interface SteelSet {
@@ -31,13 +31,20 @@ export interface SteelSet {
   extra?: BarSet;
   ring?: RingSet;
   mesh?: MeshSet;
+  slab_mesh?: MeshSet;
 }
 
 export type SteelFamily = "FRAME" | "MESH";
 
+export const MORE_CATEGORIES = ["STAIR", "TANK", "PARAPET", "CHAJJA", "BALCONY_SLAB"] as const;
+
+export function isMoreCategory(category: string): boolean {
+  return (MORE_CATEGORIES as readonly string[]).includes(category);
+}
+
 export function steelFamily(category: string): SteelFamily | null {
   if (category === "COLUMN" || category === "BEAM") return "FRAME";
-  if (category === "FOOTING" || category === "SLAB") return "MESH";
+  if (category === "FOOTING" || category === "SLAB" || isMoreCategory(category)) return "MESH";
   return null;
 }
 
@@ -62,6 +69,12 @@ export function steelLine(steel: SteelSet | null | undefined): string {
   }
   if (steel.mesh) {
     parts.push(`mesh ${sizeText(steel.mesh)} at ${inchText(steel.mesh.spacing_mm)} in ${steel.mesh.ways === 1 ? "one way" : "both ways"}${steel.mesh.layers === 2 ? ", 2 layers" : ""}`);
+    if (steel.mesh.across) {
+      parts.push(`across ${sizeText(steel.mesh.across)} at ${inchText(steel.mesh.across.spacing_mm)} in`);
+    }
+  }
+  if (steel.slab_mesh) {
+    parts.push(`slab mesh ${sizeText(steel.slab_mesh)} at ${inchText(steel.slab_mesh.spacing_mm)} in ${steel.slab_mesh.ways === 1 ? "one way" : "both ways"}${steel.slab_mesh.layers === 2 ? ", 2 layers" : ""}`);
   }
   return parts.join(", ");
 }
@@ -74,12 +87,18 @@ export interface SteelForm {
   meshSpacingIn: string;
   ways: "1" | "2";
   layers: "1" | "2";
+  acrossBar: string;
+  acrossSpacingIn: string;
+  slabBar: string;
+  slabSpacingIn: string;
+  slabWays: "1" | "2";
+  slabLayers: "1" | "2";
 }
 
 const EMPTY_BAR = { n: "", bar: "" };
 
 export function emptyForm(): SteelForm {
-  return { bars: {}, ringBar: "", ringSpacingIn: "", meshBar: "", meshSpacingIn: "", ways: "2", layers: "1" };
+  return { bars: {}, ringBar: "", ringSpacingIn: "", meshBar: "", meshSpacingIn: "", ways: "2", layers: "1", acrossBar: "", acrossSpacingIn: "", slabBar: "", slabSpacingIn: "", slabWays: "2", slabLayers: "1" };
 }
 
 export function formFromSteel(steel: SteelSet | null | undefined): SteelForm {
@@ -98,6 +117,16 @@ export function formFromSteel(steel: SteelSet | null | undefined): SteelForm {
     form.meshSpacingIn = inchText(steel.mesh.spacing_mm);
     form.ways = steel.mesh.ways === 1 ? "1" : "2";
     form.layers = steel.mesh.layers === 2 ? "2" : "1";
+    if (steel.mesh.across?.bar) {
+      form.acrossBar = String(steel.mesh.across.bar);
+      form.acrossSpacingIn = inchText(steel.mesh.across.spacing_mm);
+    }
+  }
+  if (steel.slab_mesh?.bar) {
+    form.slabBar = String(steel.slab_mesh.bar);
+    form.slabSpacingIn = inchText(steel.slab_mesh.spacing_mm);
+    form.slabWays = steel.slab_mesh.ways === 1 ? "1" : "2";
+    form.slabLayers = steel.slab_mesh.layers === 2 ? "2" : "1";
   }
   return form;
 }
@@ -117,7 +146,29 @@ function inches(raw: string): number | null {
   return Math.round(n * MM_PER_INCH * 10) / 10;
 }
 
-export type SteelFormError = "BARS_INCOMPLETE" | "BAR_OUT_OF_RANGE" | "COUNT_OUT_OF_RANGE" | "SPACING_OUT_OF_RANGE" | "RING_INCOMPLETE" | "MESH_INCOMPLETE" | "NOTHING_TYPED";
+export type SteelFormError = "BARS_INCOMPLETE" | "BAR_OUT_OF_RANGE" | "COUNT_OUT_OF_RANGE" | "SPACING_OUT_OF_RANGE" | "RING_INCOMPLETE" | "MESH_INCOMPLETE" | "ACROSS_INCOMPLETE" | "SLAB_MESH_INCOMPLETE" | "NOTHING_TYPED";
+
+function acrossFromForm(form: SteelForm, errors: SteelFormError[]): { bar: number; spacing_mm: number } | null {
+  if (form.acrossBar.trim() === "" && form.acrossSpacingIn.trim() === "") return null;
+  const bar = whole(form.acrossBar, 2, 12);
+  const spacing = inches(form.acrossSpacingIn);
+  if (form.acrossBar.trim() === "" || form.acrossSpacingIn.trim() === "") errors.push("ACROSS_INCOMPLETE");
+  else if (bar === null) errors.push("BAR_OUT_OF_RANGE");
+  else if (spacing === null) errors.push("SPACING_OUT_OF_RANGE");
+  else return { bar, spacing_mm: spacing };
+  return null;
+}
+
+function slabMeshFromForm(form: SteelForm, errors: SteelFormError[]): MeshSet | null {
+  if (form.slabBar.trim() === "" && form.slabSpacingIn.trim() === "") return null;
+  const bar = whole(form.slabBar, 2, 12);
+  const spacing = inches(form.slabSpacingIn);
+  if (form.slabBar.trim() === "" || form.slabSpacingIn.trim() === "") errors.push("SLAB_MESH_INCOMPLETE");
+  else if (bar === null) errors.push("BAR_OUT_OF_RANGE");
+  else if (spacing === null) errors.push("SPACING_OUT_OF_RANGE");
+  else return { bar, spacing_mm: spacing, ways: form.slabWays === "1" ? 1 : 2, layers: form.slabLayers === "2" ? 2 : 1 };
+  return null;
+}
 
 export interface SteelFormResult {
   steel: SteelSet | null;
@@ -154,8 +205,16 @@ export function steelFromForm(form: SteelForm, category: string): SteelFormResul
       if (form.meshBar.trim() === "" || form.meshSpacingIn.trim() === "") errors.push("MESH_INCOMPLETE");
       else if (bar === null) errors.push("BAR_OUT_OF_RANGE");
       else if (spacing === null) errors.push("SPACING_OUT_OF_RANGE");
-      else steel.mesh = { bar, spacing_mm: spacing, ways: form.ways === "1" ? 1 : 2, layers: form.layers === "2" ? 2 : 1 };
+      else {
+        steel.mesh = { bar, spacing_mm: spacing, ways: form.ways === "1" ? 1 : 2, layers: form.layers === "2" ? 2 : 1 };
+        const across = isMoreCategory(category) ? acrossFromForm(form, errors) : null;
+        if (across) steel.mesh.across = across;
+      }
     }
+  }
+  if (category === "TANK") {
+    const slab = slabMeshFromForm(form, errors);
+    if (slab) steel.slab_mesh = slab;
   }
   if (errors.length === 0 && Object.keys(steel).length === 0) errors.push("NOTHING_TYPED");
   return { steel: errors.length === 0 ? steel : null, errors };

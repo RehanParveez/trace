@@ -1,10 +1,12 @@
 from __future__ import annotations
 from app.engine.measure import derived as derived_module
+from app.engine.measure import qs_answers as QS
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select
 from uuid import UUID, uuid4
 from app.modules.drawings_boq.models import ProjectMeasurementParameter
+from app.modules.drawings_boq.takeoff.printed_service import printed_for_project
 from decimal import Decimal
 from app.modules.projects.repository import ProjectRepository
 from datetime import datetime, timezone
@@ -27,6 +29,11 @@ class MeasurementParametersResponse(BaseModel):
   values: dict[str, float] = Field(default_factory=dict,
     description="Site assumptions saved for this project. A name that is missing uses the engine default.")
   defaults: dict[str, float] = Field(default_factory=dict)
+  qs: dict[str, float] = Field(default_factory=dict, description="Site assumptions the QS answered. They apply when the project has no saved value.")
+  drawing: dict[str, float] = Field(default_factory=dict, description="Values the project's PDF drawings print in their notes. They apply when the project has no saved value.")
+  drawing_notes: dict[str, dict] = Field(default_factory=dict, description="For each such value, the note it was read from and the pages.")
+  drawing_conflicts: list[dict] = Field(default_factory=list, description="Notes printed twice with different values; nothing is set from them.")
+  lap_table_mm: dict[str, float] = Field(default_factory=dict, description="Lap length in mm printed for each bar number.")
 
 class MeasurementParametersUpdate(BaseModel):
   values: dict[str, float | None] = Field(default_factory=dict,
@@ -84,7 +91,10 @@ class MeasurementParametersService:
     await self._require_project(organization_id, project_id)
     stored = await self.repo.list_for_project(organization_id, project_id)
     known = parameter_ranges()
-    return MeasurementParametersResponse(values={k: v for k, v in stored.items() if k in known}, defaults=self.defaults())
+    printed = await printed_for_project(self.session, organization_id, project_id)
+    return MeasurementParametersResponse(values={k: v for k, v in stored.items() if k in known}, defaults=self.defaults(),
+      qs={k: float(v) for k, v in QS.PARAM_VALUES.items() if k in known}, drawing={k: float(v) for k, v in printed["params"].items() if k in known},
+      drawing_notes=printed["notes"], drawing_conflicts=printed["conflicts"], lap_table_mm=printed["lap_table_mm"])
 
   async def stored_for_run(self, organization_id: UUID, project_id: UUID) -> dict[str, float]:
     stored = await self.repo.list_for_project(organization_id, project_id)
@@ -113,6 +123,11 @@ class MeasurementParametersService:
     return await self.get(organization_id, project_id)
 
 router = APIRouter(prefix="/drawings-boq", tags=["Drawings & BOQ"])
+
+@router.get("/qs-answers")
+async def get_qs_answers(current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ))):
+  """The QS's answers to the measurement questions: what each one changed, what still needs his word and what belongs to one plot."""
+  return QS.public()
 
 @router.get("/projects/{project_id}/measurement-parameters", response_model=MeasurementParametersResponse)
 async def get_measurement_parameters(

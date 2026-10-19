@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 TYPED_KEYS = ("wall_height_mm", "column_height_mm", "footing_depth_mm", "slab_thickness_mm", "beam_depth_mm", "plinth_beam_depth_mm", "tie_band_depth_mm",
-  "neck_height_mm", "excavation_depth_mm", "trench_depth_mm", "pcc_thickness_mm", "pcc_strip_width_mm", "tank_wall_height_mm", "stair_waist_mm")
+  "neck_height_mm", "excavation_depth_mm", "fill_depth_mm", "trench_depth_mm", "pcc_thickness_mm", "pcc_strip_width_mm", "tank_wall_height_mm", "stair_waist_mm")
 NEVER = ("ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED")
 DEFAULT_BATCH = 150
 MAX_BATCH = 400

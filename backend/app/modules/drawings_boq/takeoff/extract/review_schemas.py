@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from uuid import UUID
 
 POLICY_KINDS = ("SLAB_THICKNESS", "BEAM_SECTION", "SOURCE_COUNT")
-POLICIES = ("STRUCTURAL", "ARCHITECTURAL", "LARGER", "SMALLER", "AS_READ")
+POLICIES = ("STRUCTURAL", "ARCHITECTURAL", "LARGER", "SMALLER", "AS_READ", "QS")
 
 class ConflictSource(BaseModel):
   discipline: str = Field(description="STRUCTURAL, ARCHITECTURAL or UNKNOWN: the kind of sheet that prints this value.")
@@ -92,6 +92,10 @@ class SteelRollupResponse(BaseModel):
   kg: float
   conventions: dict[str, float]
   conventions_assumed: bool
+  sources: dict[str, str] = {}
+  printed: dict = {}
+  estimate: bool = True
+  estimate_note: str = ""
   convention_note: str
   by_family: dict[str, dict]
   by_diameter: dict[str, dict]

@@ -210,7 +210,9 @@ def _measured_text(cand, page_no: int, measurement) -> str:
     
   if cat in ("COLUMN", "FOOTING", "WALL"):
     has = p.get("height_mm" if cat == "WALL" else "depth_mm") is not None
-    if has and "HEIGHT_FROM_SECTION" in codes:
+    if has and "HEIGHT_FROM_QS" in codes:
+      parts.append("height given by the QS")
+    elif has and "HEIGHT_FROM_SECTION" in codes:
       parts.append("height from the building section")
     elif has and "HEIGHT_FROM_NOTE" in codes:
       parts.append("height from drawing note")
@@ -253,7 +255,7 @@ def _quantity(cand, n: int, measurement) -> tuple:
 
   if cat == "WALL":
     length, t, h = _num(facts.get("length_cc_m")), _num(p.get("thickness_mm")), _num(p.get("height_mm"))
-    from_section = any(n.get("code") == "HEIGHT_FROM_SECTION" for n in (cand.notes or []))
+    from_section = any(n.get("code") in ("HEIGHT_FROM_SECTION", "HEIGHT_FROM_QS") for n in (cand.notes or []))
     if length and t and h and not from_section:
       return _d(length * (t / 1000.0) * (h / 1000.0)), "m3", "PDF_DRAWN"
     return _d(length or 0), "m", "PDF_DRAWN"

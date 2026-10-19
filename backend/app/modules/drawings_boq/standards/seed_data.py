@@ -43,6 +43,7 @@ WORK_ITEMS = [
   ("FRM-STRUCT", "Formwork to structural concrete", "m2", "Formwork", "FORMWORK"),
   ("EXC-FOUND", "Excavation for foundations", "m3", "Earthwork", "EARTHWORK"),
   ("EXC-BACKFILL", "Backfilling around foundations", "m3", "Earthwork", "EARTHWORK"),
+  ("EXC-FILL", "Earth filling under floors (compacted)", "m3", "Earthwork", "EARTHWORK"),
   ("EXC-SHORING", "Shoring to excavation", "m2", "Earthwork", "EARTHWORK"),
   ("STL-REBAR", "Reinforcement steel", "kg", "Steel", "STEEL"),
   ("STL-STRUCT", "Structural steel sections", "kg", "Steel", "STEEL"),
@@ -51,7 +52,10 @@ WORK_ITEMS = [
   ("WIN-NOS", "Windows", "nos", "Joinery", "DEFAULT"),
   ("PRO-TERMITE", "Anti-termite treatment", "m2", "Protection", "DEFAULT"),
   ("FLR-KACHA-BED", "Concrete or kacha bed under the floor", "m2", "Finishes", "DEFAULT"),
+  ("FIN-ROOF-TREAT", "Roof treatment (area of the roof)", "m2", "Finishes", "DEFAULT"),
   ("JOI-DOOR-FRAME", "Door frames (area of the frame)", "m2", "Joinery", "DEFAULT"),
+  ("JOI-DOOR-AREA", "Doors (area of the openings)", "m2", "Joinery", "DEFAULT"),
+  ("JOI-WIN-AREA", "Windows and ventilators (area of the openings)", "m2", "Joinery", "DEFAULT"),
 ]
 
 MAPPINGS = [

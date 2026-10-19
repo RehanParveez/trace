@@ -145,6 +145,7 @@ class FormworkInput:
   points_mm: tuple = ()
   role: str | None = None
   site: dict | None = None
+  openings: tuple = ()
 
 @dataclass(frozen=True)
 class RangeInput:

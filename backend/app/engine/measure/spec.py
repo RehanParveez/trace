@@ -133,6 +133,10 @@ def describe_spec(spec: dict | None) -> str | None:
       return "walls inside and out and the top slab soffit" + (" and the base soffit" if p.get("tank_base_formwork", 0) >= 0.5 else "")
     if cat in ("CHAJJA", "BALCONY_SLAB"):
       return "soffit and edges" if p.get("slab_edge_formwork", 1) >= 0.5 else "soffit only"
+    if cat == "STAIR":
+      return "soffit of the waist slab only" if p.get("stair_formwork_soffit_only", 0) >= 0.5 else "soffit, risers and sides"
+    if cat in ("BEAM", "LINTEL") and p.get("beam_lintel_qs_rate", 0) >= 0.5:
+      return "soffit by the QS rate per running foot"
     return {"COLUMN": "all four faces", "FOOTING": "four sides", "LINTEL": "soffit and both sides", "BEAM": "soffit and both sides", "COPING": "both sides"}.get(cat or "", "worked out from the concrete read from the drawing")
   if spec.get("kind") == "DERIVED":
     p = spec.get("params") or {}

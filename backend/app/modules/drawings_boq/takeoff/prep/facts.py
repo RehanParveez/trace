@@ -21,6 +21,8 @@ _BEARING = re.compile(r"BEARING\s+CAPACITY[^0-9]{0,40}(?P<v>\d+(?:\.\d+)?)\s*(?P
 _PLASTER = re.compile(_IN + r"\s*TH\.?\s*C\.?\s?M\.?\s*PLASTER", re.I)
 _FILL_LAYER = re.compile(_IN + r"\s*THICK\s+COMPACTED\s+LAYERS", re.I)
 _STAIR_WIDTH = re.compile(r"STAIR\s+WIDTH\s*=\s*(?P<ft>\d+)\s*'\s*-?\s*(?P<in>\d+)?", re.I)
+_LAP = re.compile(r"\(\s*[a-f]\s*\)\s*(?P<d>\d{1,2}(?:\s*/\s*\d{1,2})?)\s*(?:\"|″|”|'')\s*\S{0,2}\s*=\s*" + _IN, re.I)
+_PCC_THICK = re.compile(_IN + r"\s*(?:THICK\s+)?P\.?\s?C\.?\s?C\b", re.I)
 _LEVEL = re.compile(r"^\s*(?P<sign>[+\-±]|\+/-)\s*(?P<ft>\d{1,3})\s*'\s*-?\s*(?P<in>\d{1,2}(?:\s+\d/\d)?)?\s*(?:\"|″|”|'')?\s*$")
 
 SINGLE_VALUE = {"SLAB_THICKNESS": "slab thickness", "BEARING_CAPACITY": "soil bearing capacity", "RCC_WALL_THICKNESS": "RCC wall thickness"}
@@ -97,6 +99,13 @@ def read_line(text: str) -> list[dict]:
   m = _FILL_LAYER.search(t)
   if m and inches_mm(m.group("in")):
     out.append(_item("FILL_LAYER", t, value_mm=inches_mm(m.group("in")), scope="compacted fill layer"))
+  m = _LAP.search(t)
+  if m and inches_mm(m.group("in")) and inches_mm(m.group("d")):
+    dia = inches_mm(m.group("d"))
+    out.append(_item("LAP_LENGTH", t, value_mm=inches_mm(m.group("in")), bar_dia_mm=dia, scope=f"lap bar {round(dia / 3.175)}"))
+  m = _PCC_THICK.search(t)
+  if m and inches_mm(m.group("in")):
+    out.append(_item("PCC_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope="pcc bed"))
   m = _STAIR_WIDTH.search(t)
   if m:
     out.append(_item("STAIR_WIDTH", t, value_mm=round(int(m.group("ft")) * MM_FOOT + int(m.group("in") or 0) * MM_INCH, 2), scope="stair"))
@@ -115,7 +124,7 @@ def level_mark_mm(text: str) -> float | None:
     return None
   return round(-mm if m.group("sign") == "-" else mm, 1)
 
-PLAUSIBLE_MM = {"SLAB_THICKNESS": (75.0, 400.0), "PLASTER_THICKNESS": (6.0, 40.0), "CLEAR_COVER": (10.0, 100.0), "FILL_LAYER": (50.0, 600.0),
+PLAUSIBLE_MM = {"SLAB_THICKNESS": (75.0, 400.0), "PLASTER_THICKNESS": (6.0, 40.0), "CLEAR_COVER": (10.0, 100.0), "FILL_LAYER": (50.0, 600.0), "LAP_LENGTH": (150.0, 3000.0), "PCC_THICKNESS": (25.0, 300.0),
   "RCC_WALL_THICKNESS": (100.0, 600.0), "STAIR_WIDTH": (600.0, 3000.0)}
 PLAUSIBLE_BEARING_TSF = (0.1, 20.0)
 

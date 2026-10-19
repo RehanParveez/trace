@@ -1,16 +1,22 @@
 import { useTranslation } from "react-i18next";
-import { DERIVED_FIELDS, mmToInches, parseDerivedField } from "../utils/derived";
-import type { DerivedInput } from "../utils/derived";
+import { DERIVED_FIELDS, mmToInches, paramSourceView, parseDerivedField } from "../utils/derived";
+import type { DerivedInput, PrintedNotes } from "../utils/derived";
+import type { DerivedParamName } from "../types/drawings-boq.types";
+import { qsFlagText } from "../utils/qsReadings";
 
 interface DerivedParamsFormProps {
   value: DerivedInput;
   onChange: (next: DerivedInput) => void;
   disabled?: boolean;
   onSave?: () => void;
+  printed?: PrintedNotes;
+  conflicts?: { param: string; values: { value_mm: number; text?: string | null; pages?: number[] }[] }[];
+  lapTable?: Record<string, number>;
+  qs?: Partial<Record<DerivedParamName, number>>;
   saving?: boolean;
 }
 
-export function DerivedParamsForm({ value, onChange, disabled = false, onSave, saving = false }: DerivedParamsFormProps) {
+export function DerivedParamsForm({ value, onChange, disabled = false, onSave, saving = false, printed = {}, conflicts = [], lapTable = {}, qs }: DerivedParamsFormProps) {
   const { t } = useTranslation();
   return (
      <details className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">
@@ -26,9 +32,12 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
       <div className="mt-3 grid gap-3 md:grid-cols-2">
         {DERIVED_FIELDS.map((def) => {
           const parsed = parseDerivedField(value[def.key], def);
+          const src = paramSourceView(def, value[def.key], printed);
           const standard =
             def.flag
-              ? t("boq.derived.flagStandard", "Empty: standard choice")
+              ? qs?.[def.key] !== undefined
+                ? t("boq.derived.flagQs", { defaultValue: "Empty: {{v}}, as the QS gave it", v: qsFlagText(qs?.[def.key]) })
+                : t("boq.derived.flagStandard", "Empty: standard choice")
               : def.asked
               ? t("boq.derived.askedStandard", "Empty: footings read from a drawing are not dug until this is given")
               : def.unit === "pct"
@@ -45,7 +54,7 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
           return (
             <label key={def.key} className="block">
               <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
-                {t(`boq.derived.param.${def.key}`, def.key)}
+                {t(`boq.derived.param.${def.key}`, def.label ?? def.key)}
               </span>
               {def.flag ? (
                 <select
@@ -63,7 +72,7 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
                   value={value[def.key] ?? ""}
                   disabled={disabled}
                   inputMode="decimal"
-                  placeholder={def.defaultMm === null ? "" : String(def.defaultMm)}
+                  placeholder={src.source === "default" ? (def.defaultMm === null ? "" : String(def.defaultMm)) : String(src.value ?? "")}
                   onChange={(event) => onChange({ ...value, [def.key]: event.target.value })}
                   className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-[12px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]"
                 />
@@ -79,12 +88,42 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
                       })}
                 </span>
               ) : (
-                <span className="mt-1 block text-[11px] text-[var(--color-text-muted)]">{standard}</span>
+                <span className="mt-1 block text-[11px] text-[var(--color-text-muted)]" data-testid={`param-source-${def.key}`} data-source={src.source}>
+                  {src.source === "drawing"
+                    ? t("boq.derived.fromDrawing", {
+                        defaultValue: "From the drawing: {{value}}{{note}}{{pages}}",
+                        value: src.value,
+                        note: src.text ? ` (${src.text})` : "",
+                        pages: src.pages.length > 0 ? `, page ${src.pages.join(", ")}` : "",
+                      })
+                    : src.source === "qs"
+                    ? t("boq.derived.fromQs", { defaultValue: "From the QS answer: {{value}}", value: src.value })
+                    : def.hint && src.source === "default"
+                    ? def.hint
+                    : standard}
+                </span>
               )}
             </label>
           );
         })}
       </div>
+      {conflicts.length > 0 ? (
+        <div className="mt-3 rounded-[8px] border border-[var(--color-warning)] px-3 py-2 text-[11px] text-[var(--color-text-secondary)]" data-testid="param-conflicts">
+          <div className="font-semibold">{t("boq.derived.conflictsTitle", "The drawings print different values, so none is used")}</div>
+          <ul className="mt-1 space-y-0.5">
+            {conflicts.map((c) => (
+              <li key={c.param}>
+                {t(`boq.derived.param.${c.param}`, c.param)}: {c.values.map((v) => `${v.value_mm} mm${v.pages && v.pages.length > 0 ? ` (page ${v.pages.join(", ")})` : ""}`).join(" / ")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {Object.keys(lapTable).length > 0 ? (
+        <p className="mt-3 text-[11px] text-[var(--color-text-muted)]" data-testid="param-lap-table">
+          {t("boq.derived.lapTable", "Lap lengths printed on the drawing")}: {Object.entries(lapTable).map(([bar, mm]) => `#${bar} = ${mm} mm`).join(", ")}
+        </p>
+      ) : null}
       {onSave ? (
         <div className="mt-3 flex items-center gap-3">
           <button

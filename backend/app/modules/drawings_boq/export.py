@@ -8,6 +8,7 @@ from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from app.modules.drawings_boq.words import rupees_in_words
+from app.modules.drawings_boq import export_columns as XC
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from reportlab.lib.pagesizes import landscape
@@ -513,7 +514,7 @@ def _styles():
   return base, ParagraphStyle("Cell", parent=base["Normal"], fontSize=8, leading=10), \
     ParagraphStyle("Small", parent=base["Normal"], fontSize=7, textColor=colors.HexColor("#475569"))
 
-def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company: str) -> bytes:
+def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company: str, by_dia: dict | None = None) -> bytes:
   buffer = BytesIO()
   doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=18 * mm, bottomMargin=18 * mm, leftMargin=16 * mm, rightMargin=16 * mm)
   styles, cell, small = _styles()
@@ -538,7 +539,7 @@ def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company
     story.append(Paragraph(_SECTION_TITLES[key], styles["Heading3"]))
     data = [["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"]]
     for n, r in enumerate(rows_k, 1):
-      data.append([str(n), Paragraph(r["material_name"] + _flag(r), cell), r["unit"], _q(r["quantity"]),
+      data.append([str(n), Paragraph(r["material_name"] + _flag(r) + '<br/><font size="6" color="#475569">' + XC.note_line(r) + "</font>", cell), r["unit"], _q(r["quantity"]),
         _m(r["unit_rate"]), _m(r["amount"])])
     sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
     data.append(["", "", "", "", "Sub-total", _m(sub)])
@@ -546,6 +547,12 @@ def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company
     t.setStyle(TableStyle(_GRID + [("ALIGN", (3, 0), (-1, -1), "RIGHT"), ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold")]))
     story += [t, Spacer(1, 8)]
     
+  steel = XC.steel_table(by_dia)
+  if steel:
+    story.append(Paragraph("Reinforcement read from the drawings, by diameter (included in the lines above)", styles["Heading3"]))
+    t = Table(XC.steel_table_text(by_dia), colWidths=[40 * mm, 40 * mm, 40 * mm], repeatRows=1)
+    t.setStyle(TableStyle(_GRID + [("ALIGN", (1, 0), (-1, -1), "RIGHT")]))
+    story += [t, Spacer(1, 8)]
   grand = Decimal(totals["grand"])
   story.append(Paragraph(f"<b>GRAND TOTAL: Rs {grand:,.2f}</b>", styles["Heading2"]))
   story.append(Paragraph(f"In words: {rupees_in_words(grand)}", styles["Normal"]))
@@ -562,7 +569,7 @@ def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company
   doc.build(story)
   return buffer.getvalue()
 
-def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str) -> bytes:
+def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str, by_dia: dict | None = None) -> bytes:
   wb = Workbook()
   ws = wb.active
   ws.title = "Bill of Quantities"
@@ -583,7 +590,7 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
       continue
     ws.append([_SECTION_TITLES[key]])
     ws.cell(row=ws.max_row, column=1).font = bold
-    ws.append(["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)", "Base rate (Rs)", "Escalation (x)"])
+    ws.append(["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)", "Base rate (Rs)", "Escalation (x)", *XC.head_cells()])
     for c in ws[ws.max_row]:
       c.fill, c.font = head_fill, head_font
     for n, r in enumerate(rows_k, 1):
@@ -591,12 +598,21 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
         float(r["unit_rate"]) if r["unit_rate"] is not None else None,
         float(r["amount"]) if r["amount"] is not None else None,
         float(r["base_rate"]) if r.get("base_rate") is not None else None,
-        float(r["escalation_factor"]) if r.get("escalation_factor") is not None else None])
+        float(r["escalation_factor"]) if r.get("escalation_factor") is not None else None, *XC.cells(r)])
     sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
     ws.append(["", "", "", "", "Sub-total", float(sub)])
     ws.cell(row=ws.max_row, column=5).font = ws.cell(row=ws.max_row, column=6).font = bold
     ws.append([])
     
+  steel = XC.steel_table(by_dia)
+  if steel:
+    ws.append(["Reinforcement read from the drawings, by diameter (included in the lines above)"])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    for n, row in enumerate(steel):
+      ws.append(["", *row])
+      if n == 0 or row[0] in ("Wastage", "Total"):
+        ws.cell(row=ws.max_row, column=2).font = bold
+    ws.append([])
   grand = Decimal(snapshot["totals"]["grand"])
   ws.append(["GRAND TOTAL", float(grand)])
   ws.cell(row=ws.max_row, column=1).font = bold
@@ -604,13 +620,13 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
   area = meta.get("covered_area_sqft")
   if area and Decimal(area) > 0:
     ws.append(["Cost per Sft", float(grand / Decimal(area))])
-  for col, width in zip("ABCDEFGH", (22, 50, 12, 14, 14, 16, 16, 14)):
+  for col, width in zip("ABCDEFGHIJKL", (22, 50, 12, 14, 14, 16, 16, 14, 22, 14, 14, 12)):
     ws.column_dimensions[col].width = width
   buffer = BytesIO()
   wb.save(buffer)
   return buffer.getvalue()
 
-def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str) -> bytes:
+def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str, by_dia: dict | None = None) -> bytes:
   wb = Workbook()
   ws = wb.active
   ws.title = "Procurement"
@@ -620,7 +636,7 @@ def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company
   ws.append(["Gross quantities include waste and are for purchasing only; contract pricing uses the contract quantity."])
   ws.append([])
   ws.append(["#", "Work item", "Description", "Unit", "Net (calculated)", "Adjustments", "Contract qty",
-    "Waste factor", "Gross (procure)", "Confidence", "Review"])
+    "Waste factor", "Gross (procure)", "Confidence", "Review", *XC.head_cells()])
   for c in ws[ws.max_row]:
     c.fill, c.font = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True)
   for n, r in enumerate(rows, 1):
@@ -628,9 +644,16 @@ def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company
       float(r["net_quantity"]) if r["net_quantity"] is not None else None, float(r["adjustment_total"]),
       float(r["quantity"]), float(r["waste_factor_applied"]) if r["waste_factor_applied"] is not None else None,
       float(r["gross_quantity"]) if r["gross_quantity"] is not None else None,
-      float(r["confidence"]) if r["confidence"] is not None else None, r["review_status"]])
+      float(r["confidence"]) if r["confidence"] is not None else None, r["review_status"], *XC.cells(r)])
     
-  for col, width in zip("ABCDEFGHIJK", (5, 16, 44, 8, 16, 14, 14, 12, 16, 12, 18)):
+  steel = XC.steel_table(by_dia)
+  if steel:
+    ws.append([])
+    ws.append(["", "Reinforcement read from the drawings, by diameter (net of the lines above, before waste)"])
+    ws.cell(row=ws.max_row, column=2).font = Font(bold=True)
+    for row in steel:
+      ws.append(["", *row])
+  for col, width in zip("ABCDEFGHIJKLMNO", (5, 16, 44, 8, 16, 14, 14, 12, 16, 12, 18, 22, 14, 14, 12)):
     ws.column_dimensions[col].width = width
   buffer = BytesIO()
   wb.save(buffer)
@@ -712,15 +735,21 @@ def build_bbs_xlsx(snapshot: dict, marks: list[dict], meta: dict, company: str, 
 def _evidence_text(e: dict) -> str:
   return "; ".join(e["steps"]) + (f"  [{', '.join(e['warnings'])}]" if e["warnings"] else "")
 
-def build_measurement_book_pdf(snapshot: dict, rows: list[dict], evidence: dict, meta: dict, company: str) -> bytes:
+def build_measurement_book_pdf(snapshot: dict, rows: list[dict], evidence: dict, meta: dict, company: str, by_dia: dict | None = None) -> bytes:
   buffer = BytesIO()
   doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=15 * mm, bottomMargin=15 * mm, leftMargin=12 * mm, rightMargin=12 * mm)
   styles, cell, small = _styles()
   story = [Paragraph(f"{company} - MEASUREMENT BOOK", styles["Heading2"]), Paragraph(_stamp(snapshot), small), Spacer(1, 6)]
+  if XC.steel_table(by_dia):
+    story.append(Paragraph("Reinforcement read from the drawings, by diameter", styles["Heading3"]))
+    t = Table(XC.steel_table_text(by_dia), colWidths=[40 * mm, 40 * mm, 40 * mm], repeatRows=1)
+    t.setStyle(TableStyle(_GRID + [("ALIGN", (1, 0), (-1, -1), "RIGHT")]))
+    story += [t, Spacer(1, 8)]
   
   for r in rows:
     story.append(Paragraph(f"<b>{r['line_no']}. {r['material_name']}</b> - contract {_q(r['quantity'])} {r['unit']} "
       f"(calculated {_q(r['net_quantity'])}, adjustments {_q(r['adjustment_total'])})", styles["Normal"]))
+    story.append(Paragraph(XC.note_line(r), small))
     lines = evidence.get(str(r["source_item_id"]), [])
     if lines:
       data = [["Element", "Level", "Qty (canonical)", "Working"]]
@@ -738,7 +767,7 @@ def build_measurement_book_pdf(snapshot: dict, rows: list[dict], evidence: dict,
   doc.build(story)
   return buffer.getvalue()
 
-def build_measurement_book_xlsx(snapshot: dict, rows: list[dict], evidence: dict, meta: dict, company: str) -> bytes:
+def build_measurement_book_xlsx(snapshot: dict, rows: list[dict], evidence: dict, meta: dict, company: str, by_dia: dict | None = None) -> bytes:
   wb = Workbook()
   ws = wb.active
   ws.title = "Measurement Book"
@@ -752,11 +781,18 @@ def build_measurement_book_xlsx(snapshot: dict, rows: list[dict], evidence: dict
       f"Calculated {r['net_quantity']}", f"Adjustments {r['adjustment_total']}"])
     for c in ws[ws.max_row]:
       c.font = Font(bold=True)
+    ws.append(["", XC.note_line(r)])
     ws.append(["Element", "Level", "Qty", "Unit", "Working"])
     for e in evidence.get(str(r["source_item_id"]), []):
       ws.append([e["element"], e["level"], float(e["quantity"]), e["unit"], _evidence_text(e)])
     ws.append([])
     
+  steel = XC.steel_table(by_dia)
+  if steel:
+    ws.append(["Reinforcement read from the drawings, by diameter"])
+    ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+    for row in steel:
+      ws.append(["", *row])
   for col, width in zip("ABCDE", (46, 18, 16, 10, 100)):
     ws.column_dimensions[col].width = width
   buffer = BytesIO()

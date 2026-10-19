@@ -49,7 +49,7 @@ def measurement_input(row: TakeoffMeasurement) -> tk.MeasurementInput:
 
 MEMBER_CATEGORIES = ("FOOTING",)
 FORMWORK_CATEGORIES = ("COLUMN", "FOOTING", "SLAB", "LINTEL", "BEAM", "STAIR")
-FORMWORK_SITE = {"OHWT": "TANK", "UGWT": "TANK", "SEPTIC": "TANK", "COPING": "COPING", "CHAJJA": "CHAJJA", "BALCONY_SLAB": "BALCONY_SLAB"}
+FORMWORK_SITE = {"OHWT": "TANK", "UGWT": "TANK", "SEPTIC": "TANK", "COPING": "COPING", "CHAJJA": "CHAJJA", "BALCONY_SLAB": "BALCONY_SLAB", "PARAPET": "PARAPET"}
 
 def _mm(value) -> Decimal | None:
   v = _dec(value)
@@ -133,7 +133,10 @@ def _site_formwork(cand: TakeoffCandidate) -> str | None:
 def _tank_detail(p: dict) -> dict | None:
   """The outside height and the wall thickness a tank was accepted with, which its shuttering needs; None for a tank accepted before they were kept."""
   height, wall = _mm(p.get("height_mm")), _mm(p.get("wall_mm"))
-  return {"height_mm": float(height), "wall_mm": float(wall)} if height is not None and wall is not None else None
+  top, bottom = _mm(p.get("top_mm")), _mm(p.get("bottom_mm"))
+  if height is None or wall is None:
+    return None
+  return {"height_mm": float(height), "wall_mm": float(wall), **({"top_mm": float(top)} if top is not None else {}), **({"bottom_mm": float(bottom)} if bottom is not None else {})}
 
 async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
   """The accepted column, footing, slab, lintel, beam and stair candidates behind the confirmed measurements, with the size each measurement used, and the
@@ -165,7 +168,8 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
       out.append(tk.FormworkInput(
         measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category="RCC_WALL", tag=cand.tag or cand.label, level_id=m.level_id,
         element_ids=(None,), count=1, length_mm=run, width_mm=thickness, depth_mm=height, confidence=_dec(cand.confidence) or Decimal(1),
-        steel=clean_steel(p.get("steel"))))
+        steel=clean_steel(p.get("steel")), frame=view_key(cand, sheet) if sheet_positions(cand, m) else None, points_mm=sheet_positions(cand, m),
+        openings=tuple(o for o in (p.get("openings") or []) if isinstance(o, dict))))
       continue
     length, width, depth = _mm(p.get("length_mm")), _mm(p.get("width_mm")), _mm(p.get("depth_mm"))
     points = (m.geometry or {}).get("points") or []
@@ -178,7 +182,8 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
         measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=site, tag=cand.tag, level_id=m.level_id,
         element_ids=tuple(e if e in present else None for e in ids_site), count=len(points),
         length_mm=length, width_mm=width, depth_mm=depth, confidence=_dec(cand.confidence) or Decimal(1),
-        site=_tank_detail(p) if site == "TANK" else None))
+        site=_tank_detail(p) if site == "TANK" else None, steel=clean_steel(p.get("steel")), frame=view_key(cand, sheet) if sheet_positions(cand, m) else None, points_mm=sheet_positions(cand, m),
+        openings=tuple(o for o in (p.get("openings") or []) if isinstance(o, dict))))
       continue
     
     ids_here = tuple(row_id(sheet.id, cand.ckey, i) for i in range(len(points)))
@@ -186,7 +191,7 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
     out.append(tk.FormworkInput(
       measurement_id=m.id, candidate_id=cand.id, sheet_id=sheet.id, page_no=sheet.page_no, category=cand.category, tag=cand.tag, level_id=m.level_id,
       element_ids=tuple(e if e in present else None for e in ids_here), count=len(points), length_mm=length, width_mm=width, depth_mm=depth,
-      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category in STEEL_FAMILIES else None,
+      confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category in (*STEEL_FAMILIES, "STAIR") else None,
       stair=stair_detail(cand, depth) if cand.category == "STAIR" else None,
       frame=view_key(cand, sheet) if positions else None, points_mm=positions,
       role=(cand.facts or {}).get("beam_role") if cand.category == "BEAM" else None))

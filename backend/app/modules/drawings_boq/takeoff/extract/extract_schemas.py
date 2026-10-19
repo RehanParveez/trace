@@ -81,6 +81,7 @@ class AcceptRequest(BaseModel):
   tie_band_depth_mm: Decimal | None = Field(default=None, gt=0, le=1000)
   excavation_depth_mm: Decimal | None = Field(default=None, gt=0, le=20000)
   trench_depth_mm: Decimal | None = Field(default=None, gt=0, le=10000)
+  fill_depth_mm: Decimal | None = Field(default=None, gt=0, le=5000, description="Earth filling under the floor: the depth of the fill.")
   pcc_thickness_mm: Decimal | None = Field(default=None, gt=0, le=1000)
   pcc_strip_width_mm: Decimal | None = Field(default=None, gt=0, le=10000)
   pcc_strip_width_thin_mm: Decimal | None = Field(default=None, gt=0, le=10000)
@@ -103,6 +104,7 @@ class AcceptRequest(BaseModel):
   level_id: UUID | None = None
   section_picks: dict[UUID, str] | None = Field(default=None, max_length=500, description="The beam section (mark) chosen for a beam that lists several, by candidate id. Its depth and bars are put on the beam.")
   steel: dict[UUID, SteelParam] | None = Field(default=None, description="Bars, rings or mesh typed for a candidate, by candidate id. They replace the ones read from the drawing.")
+  allow_repeat_marks: bool = Field(default=False, description="True accepts a column, footing, door or window mark even when the same mark of the same floor is already accepted from another sheet. Left false, the second one is refused (MARK_ACCEPTED_ELSEWHERE) so the mark is not counted twice.")
 
   @field_validator("work_items")
   @classmethod

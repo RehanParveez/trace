@@ -11,11 +11,13 @@ PCC_PAD = "PCC_PAD"
 BRICK_STEP = "BRICK_STEP"
 MEMBRANE = "MEMBRANE"
 RCC_STRIP = "RCC_STRIP"
-ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE, RCC_STRIP)
+EARTH_FILL = "EARTH_FILL"
+ROOF_TREATMENT = "ROOF_TREATMENT"
+ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE, RCC_STRIP, EARTH_FILL, ROOF_TREATMENT)
 
-WORK_ITEM = {EXCAVATION_AREA: "EXC-FOUND", TRENCH: "EXC-FOUND", PCC_STRIP: "CON-PCC", PCC_PAD: "CON-PCC", TERMITE_STRIP: "PRO-TERMITE", TERMITE_FLOOR: "PRO-TERMITE",
+WORK_ITEM = {EXCAVATION_AREA: "EXC-FOUND", TRENCH: "EXC-FOUND", EARTH_FILL: "EXC-FILL", ROOF_TREATMENT: "FIN-ROOF-TREAT", PCC_STRIP: "CON-PCC", PCC_PAD: "CON-PCC", TERMITE_STRIP: "PRO-TERMITE", TERMITE_FLOOR: "PRO-TERMITE",
   BRICK_STEP: "MAS-BRICK", MEMBRANE: "FIN-WATERPROOF-DPC", RCC_STRIP: "CON-RCC"}
-MODE = {EXCAVATION_AREA: "COUNT_X_VOLUME", TRENCH: "COUNT_X_VOLUME", PCC_STRIP: "COUNT_X_VOLUME", PCC_PAD: "COUNT_X_VOLUME",
+MODE = {EXCAVATION_AREA: "COUNT_X_VOLUME", EARTH_FILL: "COUNT_X_VOLUME", ROOF_TREATMENT: "COUNT_X_AREA", TRENCH: "COUNT_X_VOLUME", PCC_STRIP: "COUNT_X_VOLUME", PCC_PAD: "COUNT_X_VOLUME",
   TERMITE_STRIP: "COUNT_X_AREA", TERMITE_FLOOR: "COUNT_X_AREA", BRICK_STEP: "COUNT_X_VOLUME", MEMBRANE: "COUNT_X_AREA", RCC_STRIP: "COUNT_X_VOLUME"}
 
 def strip_class(thickness_mm: float) -> str:
@@ -202,7 +204,30 @@ def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, 
         [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_ASSUMED"), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.6))
   return out
 
-def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish):
+def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float | None = None):
+  """The membrane: on a basement, up the outside of every outer wall for the full wall height (the QS, S1); otherwise along the top of the plinth."""
+  if str(level_hint or "").upper() == "BASEMENT" and mm_per_pt:
+    cand = _outside_membrane(walls, ctx, level_hint, spec, cls, finish, mm_per_pt)
+    if cand is not None:
+      return cand
+  return _plinth_membrane(walls, ctx, level_hint, spec, cls, finish)
+
+def _outside_membrane(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float):
+  from app.modules.drawings_boq.takeoff.extract import finishes as FN
+  from app.engine.measure import qs_answers as QS
+  faces = FN.plaster_faces(walls, mm_per_pt)
+  outer = [r for r in faces if r["out"]]
+  length_m = sum(float(r["l"]) for r in outer)
+  if length_m <= 0.0:
+    return None
+  height = float(QS.convention("basement_wall_height_mm"))
+  pts = [p for w in FN.plaster_walls(walls) for p in w.geometry["points"]]
+  facts = {"derived_from": "WALLS", "membrane_kind": "OUTSIDE_FACE", "outer_wall_count": len(outer), "length_m": round(length_m, 3), "height_mm": height, "qs": ["S1", "S5", "S8"]}
+  label = f"Membrane on the outside of the basement walls · {length_m:.2f} m × {height / 304.8:g} ft" + (f" · {spec[0]}" if spec else "")
+  return _make(cls, ctx, finish, (MEMBRANE, level_hint or ""), MEMBRANE, label, "MEMBRANE", [_centre(pts)], {"length_mm": round(length_m * 1000.0, 1), "width_mm": height}, [],
+    [C.note("MEMBRANE_OUTSIDE_QS")], facts, 0.8)
+
+def _plinth_membrane(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish):
   """The damp-proof membrane along the top of the plinth: the walls of the lowest floor laid end to end, times a width that is typed."""
   groups = wall_groups(walls)
   ws = [w for group in groups.values() for w in group]
@@ -218,6 +243,7 @@ def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls
 
 STRIP_FIELDS = {"THICK": "pcc_strip_width_mm", "THIN": "pcc_strip_width_thin_mm"}
 DEPTH_FIELDS = {EXCAVATION_AREA: ("excavation_depth_mm", "the depth of the excavation over the basement"),
+  EARTH_FILL: ("fill_depth_mm", "the depth of the earth filling under the floor"),
 
   TRENCH: ("trench_depth_mm", "the depth of the trench below the dug floor"), PCC_STRIP: ("pcc_thickness_mm", "the thickness of the concrete bed"),
   PCC_PAD: ("pcc_thickness_mm", "the thickness of the concrete bed")}

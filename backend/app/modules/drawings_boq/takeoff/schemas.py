@@ -122,6 +122,12 @@ class RingParam(BaseModel):
   dense_zone_mm: Decimal | None = Field(default=None, gt=0, le=3000, max_digits=9, decimal_places=2, description="How far from each end the closer spacing runs.")
   _check = model_validator(mode="after")(_one_size)
 
+class MeshAcrossParam(BaseModel):
+  bar: int | None = Field(default=None, ge=2, le=12)
+  dia_mm: Decimal | None = Field(default=None, ge=6, le=40, max_digits=6, decimal_places=2)
+  spacing_mm: Decimal = Field(gt=0, le=1000, max_digits=9, decimal_places=2)
+  _check = model_validator(mode="after")(_one_size)
+
 class MeshParam(BaseModel):
   bar: int | None = Field(default=None, ge=2, le=12)
   dia_mm: Decimal | None = Field(default=None, ge=6, le=40, max_digits=6, decimal_places=2)
@@ -129,6 +135,7 @@ class MeshParam(BaseModel):
   ways: Literal[1, 2] = 2
   layers: Literal[1, 2] = 1
   layer: Literal["top", "bottom"] | None = None
+  across: MeshAcrossParam | None = Field(default=None, description="The bar and spacing of the second way where it differs from the first (a tank wall: horizontal and vertical bars).")
   _check = model_validator(mode="after")(_one_size)
 
 class SteelParam(BaseModel):
@@ -139,6 +146,7 @@ class SteelParam(BaseModel):
   extra: BarGroupParam | None = None
   ring: RingParam | None = None
   mesh: MeshParam | None = None
+  slab_mesh: MeshParam | None = Field(default=None, description="A tank: the mesh of the top and bottom slabs. The mesh above is that of the walls.")
 
 class MeasurementParams(BaseModel):
   height_mm: Decimal | None = Field(default=None, gt=0)

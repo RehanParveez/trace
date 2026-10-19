@@ -7,9 +7,11 @@ CEILING_PLASTER = "CEILING_PLASTER"
 PLASTER_INSIDE = "PLASTER_INSIDE"
 PLASTER_OUTSIDE = "PLASTER_OUTSIDE"
 DOOR_FRAME = "DOOR_FRAME"
-ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME)
+DOOR_AREA = "DOOR_AREA"
+WINDOW_AREA = "WINDOW_AREA"
+ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME, DOOR_AREA, WINDOW_AREA)
 
-WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: "JOI-DOOR-FRAME"}
+WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: "JOI-DOOR-FRAME", DOOR_AREA: "JOI-DOOR-AREA", WINDOW_AREA: "JOI-WIN-AREA"}
 SIDE = {PLASTER_INSIDE: "in", PLASTER_OUTSIDE: "out"}
 
 def _make(cls, ctx: dict, finish, key_parts: tuple, item: str, label: str, tag: str, points: list, params: dict, missing: list, notes: list, facts: dict,
@@ -97,7 +99,7 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
   out = []
   for w in ws:
     outer = _is_outer(w, box, mm_per_pt)
-    h = (w.params or {}).get("height_mm")
+    h = (w.facts or {}).get("clear_height_mm") or (w.params or {}).get("height_mm")
     out.append({"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": 1 if outer else 2,
       "out": 1 if outer else 0})
   return out

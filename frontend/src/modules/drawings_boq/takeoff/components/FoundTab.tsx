@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useToast } from "../../../organizations/components/OrganizationUi";
 import { useWorkItems } from "../../standards/hooks";
 import { useAcceptCandidates, useChooseFloorSources, useCheckKnownFacts, useDecideCandidates, useExtractSheet, useReadyToAccept, useReaderTrace, useSheetCandidates, useTakeoffCrossChecks, useTakeoffFloorSources, useTakeoffTypedMemory } from "../hooks/useTakeoff";
-import type { FloorChoiceBody, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
+import type { CandidateFailure, FloorChoiceBody, TakeoffCandidate, TakeoffSheet } from "../types/takeoff.types";
 import { buildAcceptBody, kindKey, NO_HEIGHTS } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { takeoffErrorMessage } from "../utils/errors";
@@ -13,6 +13,8 @@ import { CrossChecksPanel } from "./CrossChecksPanel";
 import { KnownFactsPanel } from "./KnownFactsPanel";
 import { ReaderTracePanel } from "./ReaderTracePanel";
 import { ReadyToAcceptPanel } from "./ReadyToAcceptPanel";
+import { RepeatMarksNotice } from "./RepeatMarksNotice";
+import { otherFailures, repeatMarks } from "../utils/repeatMarks";
 import { FloorSourcesPanel } from "./FloorSourcesPanel";
 import { FoundPanel } from "./FoundPanel";
 
@@ -55,6 +57,7 @@ export function FoundTab(p: Props) {
   const [items, setItems] = useState<Record<string, string>>({});
   const [steel, setSteel] = useState<Record<string, SteelSet>>({});
   const [picks, setPicks] = useState<Record<string, string>>({});
+  const [repeat, setRepeat] = useState<CandidateFailure[]>([]);
 
   const kinds = useMemo(() => Object.fromEntries((list.data?.candidates ?? []).map((c) => [c.id, kindKey(c)])), [list.data]);
   const codes = useMemo(() => (workItems.data ?? []).filter((w) => w.is_active).map((w) => w.code).sort(), [workItems.data]);
@@ -65,13 +68,14 @@ export function FoundTab(p: Props) {
     setPicks((s) => { const n = { ...s }; ids.forEach((id) => delete n[id]); return n; });
   };
 
-  function onAccept(ids: string[]) {
+  function onAccept(ids: string[], allowRepeat = false) {
     if (ids.length === 0) return;
-    accept.mutate(buildAcceptBody(ids, heights, items, steel, picks, kinds), {
+     accept.mutate({ ...buildAcceptBody(ids, heights, items, steel, picks, kinds), ...(allowRepeat ? { allow_repeat_marks: true } : {}) }, {
       onSuccess: (r) => {
         forget(r.accepted.map((a) => a.id));
+        setRepeat(repeatMarks(r.failed));
         if (r.accepted.length) showToast({ tone: "success", title: t("boq.takeoff.found.accepted", "{{n}} added to your measurements", { n: r.accepted.length }) });
-        if (r.failed.length) showToast({ tone: "error", title: t("boq.takeoff.found.acceptFailed", "{{n}} could not be added", { n: r.failed.length }), description: r.failed[0]?.message });
+        if (otherFailures(r.failed).length) showToast({ tone: "error", title: t("boq.takeoff.found.acceptFailed", "{{n}} could not be added", { n: otherFailures(r.failed).length }), description: otherFailures(r.failed)[0]?.message });
       },
       onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.found.acceptError", "Could not add the items"), description: takeoffErrorMessage(e) }),
     });
@@ -117,6 +121,14 @@ export function FoundTab(p: Props) {
     />
     <KnownFactsPanel result={knownFacts.data} busy={knownFacts.isPending} failed={knownFacts.isError} onCheck={(facts) => knownFacts.mutate(facts)} />
     <ReaderTracePanel data={readerTrace.data} loading={readerTrace.isLoading} error={readerTrace.isError} onRetry={() => void readerTrace.refetch()} />
+    <RepeatMarksNotice
+      failures={repeat}
+      canEdit={p.canEdit}
+      busy={accept.isPending || decide.isPending}
+      onAcceptAnyway={(ids) => { setRepeat([]); onAccept(ids, true); }}
+      onReject={(ids) => { setRepeat([]); onDecide("reject", ids); }}
+      onDismiss={() => setRepeat([])}
+    />
     <ReadyToAcceptPanel data={ready.data} pageNo={sheet.page_no} canEdit={p.canEdit} busy={accept.isPending || decide.isPending} onAccept={onAccept} />
     <FoundPanel
       sheet={sheet}

@@ -11,6 +11,7 @@ export const reviewApi = {
     const params: Record<string, string> = {};
     if (policy.SLAB_THICKNESS) params.slab_policy = policy.SLAB_THICKNESS;
     if (policy.BEAM_SECTION) params.beam_policy = policy.BEAM_SECTION;
+    if (policy.SOURCE_COUNT) params.count_policy = policy.SOURCE_COUNT
     return (await apiClient.get<ConflictsResult>(`${BASE}/drawings/${drawingId}/takeoff/conflicts`, { params })).data;
   },
   async resolveConflicts(drawingId: string, body: ResolveConflictsBody): Promise<ResolveConflictsResult> {

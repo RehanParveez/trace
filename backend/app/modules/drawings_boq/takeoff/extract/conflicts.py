@@ -1,10 +1,11 @@
 from __future__ import annotations
 import hashlib
+from app.engine.measure import qs_answers as QS
 
 STRUCTURAL, ARCHITECTURAL, UNKNOWN = "STRUCTURAL", "ARCHITECTURAL", "UNKNOWN"
-POLICIES = ("STRUCTURAL", "ARCHITECTURAL", "LARGER", "SMALLER", "AS_READ")
+POLICIES = ("STRUCTURAL", "ARCHITECTURAL", "LARGER", "SMALLER", "AS_READ", "QS")
 SLAB, BEAM, COUNT = "SLAB_THICKNESS", "BEAM_SECTION", "SOURCE_COUNT"
-DEFAULT_POLICY = {SLAB: "STRUCTURAL", BEAM: "AS_READ", COUNT: "AS_READ"}
+DEFAULT_POLICY = {SLAB: "QS", BEAM: "AS_READ", COUNT: "AS_READ"}
 SUBSTANTIVE_MM = 1.0
 CHOICE_KEY = "conflict"      
 MM = 25.4
@@ -59,6 +60,10 @@ def _disciplines(option: dict, own_page: int | None, own_discipline: str, by_pag
   return merged
 
 def _pick(values: list, policy: str, used_mm=None) -> int | None:
+  if policy == "QS":
+    qs = float(QS.convention("slab_thickness_mm"))
+    hit = [i for i, v in enumerate(values) if v.get("value_mm") is not None and abs(v["value_mm"] - qs) <= SUBSTANTIVE_MM]
+    return hit[0] if len(hit) == 1 else _pick(values, "STRUCTURAL", used_mm)
   if policy == "AS_READ":
     return next((i for i, v in enumerate(values) if used_mm is not None and abs(v["value_mm"] - used_mm) <= SUBSTANTIVE_MM), None)
   if policy in ("STRUCTURAL", "ARCHITECTURAL"):
@@ -141,7 +146,7 @@ def beam_conflicts(rows: list, sections: list, policy: str) -> list:
     out.append(_finish(c, policy if policy in ("LARGER", "SMALLER") else "AS_READ", None, chosen))
   return out
 
-def count_conflicts(rows: list, sheets: dict) -> list:
+def count_conflicts(rows: list, sheets: dict, policy: str = "AS_READ") -> list:
   out = []
   
   for r in rows:
@@ -161,7 +166,10 @@ def count_conflicts(rows: list, sheets: dict) -> list:
       "attribute": "count", "unit": "nos", "item_ids": [str(r.id)], "decision": r.decision, "used_mm": None, "page_no": sh.get("page_no"), "values": values}
     _finish(c, "AS_READ", None, None)
     gi = 0 if chosen.get("kind") != COUNT else next((i for i, v in enumerate(values) if v["count"] == chosen.get("value")), 0)
-    c["governing_index"], c["governing_by"] = gi, ("CHOSEN" if chosen.get("kind") == COUNT else "AS_READ")
+    by = "CHOSEN" if chosen.get("kind") == COUNT else "AS_READ"
+    if by == "AS_READ" and policy in ("LARGER", "SMALLER"):
+      gi, by = (max if policy == "LARGER" else min)(range(len(values)), key=lambda i: values[i]["count"]), "POLICY"
+    c["governing_index"], c["governing_by"] = gi, by
     base = values[gi]["quantity"]
     
     for i, v in enumerate(values):
@@ -175,11 +183,11 @@ def build(rows: list, sheets: dict, sections: list | None = None, policy: dict |
   """-> {"conflicts": [...], "policy": {kind: policy}, "undecided": n, "by_kind": {...}}. policy: {kind: STRUCTURAL | ARCHITECTURAL | LARGER | SMALLER | AS_READ}."""
   pol = {**DEFAULT_POLICY, **{k: v for k, v in (policy or {}).items() if v in POLICIES}}
   live = [r for r in rows if r.decision != "REJECTED"]
-  found = [*slab_conflicts(live, sheets, pol[SLAB]), *beam_conflicts(live, sections or [], pol[BEAM]), *count_conflicts(live, sheets)]
+  found = [*slab_conflicts(live, sheets, pol[SLAB]), *beam_conflicts(live, sections or [], pol[BEAM]), *count_conflicts(live, sheets, pol[COUNT])]
   by_kind: dict = {}
   for c in found:
     by_kind[c["kind"]] = by_kind.get(c["kind"], 0) + 1
-  return {"conflicts": found, "policy": pol, "by_kind": by_kind, "undecided": sum(1 for c in found if c["governing_index"] is None)}
+  return {"conflicts": found, "policy": pol, "defaults": dict(DEFAULT_POLICY), "by_kind": by_kind, "undecided": sum(1 for c in found if c["governing_index"] is None)}
 
 def resolutions(conflicts: list, choices: dict | None = None, use_policy: bool = True) -> list:
   out = []

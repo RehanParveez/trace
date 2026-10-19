@@ -4,7 +4,7 @@ import { Badge, Button } from "../../../organizations/components/OrganizationUi"
 import { useCombineFloorSources, useMemberLinks, useResolveConflicts, useReviewFloors, useSteelRollup, useValueConflicts } from "../hooks/useReview";
 import type { CombineResult, ConflictsResult, LinksResult, SteelRollup, ValueConflict } from "../types/review.types";
 import type { FloorSources } from "../types/takeoff.types";
-import {BY_LABEL, KIND_LABEL, LINK_GROUP_LABEL, LINK_REASON, LINK_STATUS_LABEL, POLICY_KINDS, POLICY_OPTIONS, STEEL_FIELDS, STEEL_STATUS_LABEL, canChoose, choiceOf, conflictsByKind, conventionsFromInputs,
+import {BY_LABEL, KIND_LABEL, LINK_GROUP_LABEL, LINK_REASON, LINK_STATUS_LABEL, POLICY_KINDS, policyOptionsFor, STEEL_FIELDS, STEEL_STATUS_LABEL, canChoose, choiceOf, conflictsByKind, conventionsFromInputs,
    deltaText, kgText, linkTone, mmText, needsText, quantityText, rangeText, sourcesText, steelTone,
 } from "../utils/review";
 
@@ -91,7 +91,7 @@ export function ConflictsBlock(p: ConflictsProps) {
                 <span className="text-[11px] font-semibold text-[var(--color-text-primary)]">{t(`takeoff.review.kind.${k}`, KIND_LABEL[k])}</span>
                 <select value={p.policy[k] ?? p.data?.policy?.[k] ?? "AS_READ"} onChange={(e) => p.onPolicy(k, e.target.value)} disabled={p.busy} data-testid={`review-policy-${k}`}
                   className="mt-1 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-[12px]">
-                  {POLICY_OPTIONS.map((o) => <option key={o.key} value={o.key}>{t(`takeoff.review.policy.${o.key}`, o.label)}</option>)}
+                  {policyOptionsFor(k).map((o) => <option key={o.key} value={o.key}>{t(`takeoff.review.policy.${o.key}`, o.label)}</option>)}
                 </select>
               </label>
             ))}

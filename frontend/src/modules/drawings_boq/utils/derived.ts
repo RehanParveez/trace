@@ -9,6 +9,8 @@ export interface DerivedFieldDef {
   flag?: boolean;
   asked?: boolean;
   unit?: "dia" | "pct";
+  label?: string;
+  hint?: string;
 }
 
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
@@ -23,7 +25,22 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "formwork_shared_faces", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tank_base_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
-  { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100 },
+  { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: general (mm)" },
+  { key: "steel_cover_slab_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: slab (mm)", hint: "Empty: the general cover, or the cover the drawing prints for slabs" },
+  { key: "steel_cover_beam_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: beam and lintel (mm)", hint: "Empty: the general cover, or the cover the drawing prints for beams" },
+  { key: "steel_cover_column_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: column (mm)", hint: "Empty: the general cover, or the cover the drawing prints for columns" },
+  { key: "steel_cover_footing_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: footing (mm)", hint: "Empty: the general cover, or the cover the drawing prints for footings" },
+  { key: "steel_cover_wall_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: RCC wall (mm)", hint: "Empty: the general cover, or the cover the drawing prints for walls" },
+  { key: "fill_layer_mm", defaultMm: 152.4, min: 50, max: 600, label: "Compacted fill layer (mm)" },
+  { key: "earth_swell_pct", defaultMm: 0, min: 0, max: 50, unit: "pct", label: "Swell of dug earth (percent)", hint: "Standard 0 percent: dug earth is counted as the bank volume" },
+  { key: "fill_compaction_pct", defaultMm: 0, min: 0, max: 40, unit: "pct", label: "Extra loose earth for compacting the filling (percent)", hint: "Standard 0 percent: the filling needs its own volume only" },
+  { key: "fill_from_excavation", defaultMm: 0, min: 0, max: 1, flag: true, label: "Use the surplus of the dig for the filling under floors" },
+  { key: "floor_works_from_spaces", defaultMm: 0, min: 0, max: 1, flag: true, label: "Bed and termite treatment under the floor from the model's rooms" },
+  { key: "stair_formwork_soffit_only", defaultMm: 0, min: 0, max: 1, flag: true, label: "Stair formwork: soffit only" },
+  { key: "beam_lintel_qs_rate", defaultMm: 0, min: 0, max: 1, flag: true, label: "Beam and lintel: rate as the QS does" },
+  { key: "formwork_shared_walls", defaultMm: 1, min: 0, max: 1, flag: true, label: "Take off column faces that an RCC wall covers" },
+  { key: "formwork_shared_beams", defaultMm: 1, min: 0, max: 1, flag: true, label: "Take off column faces that a beam covers" },
+  { key: "rcc_wall_reveals", defaultMm: 0, min: 0, max: 1, flag: true, label: "Add the reveals of openings in RCC walls to the formwork" },
   { key: "ring_hook_dia", defaultMm: 20, min: 0, max: 40, unit: "dia" },
   { key: "bar_lap_dia", defaultMm: 40, min: 0, max: 80, unit: "dia" },
   { key: "bar_anchor_dia", defaultMm: 0, min: 0, max: 80, unit: "dia" },
@@ -32,6 +49,8 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "tie_band_replaces_lintel", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "dpc_thickness_mm", defaultMm: 38.1, min: 0, max: 300 },
   { key: "dpc_door_deduction", defaultMm: 1, min: 0, max: 1, flag: true },
+  { key: "stair_formwork_soffit_only", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "beam_lintel_qs_rate", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
   { key: "footing_bottom_below_ngl_mm", defaultMm: null, min: 1, max: 10000, asked: true },
 ];
@@ -90,6 +109,35 @@ export function derivedUpdateFromInput(input: DerivedInput): Partial<Record<Deri
   return update;
 }
 
+export interface ParamSourceView {
+  source: "typed" | "drawing" | "qs" | "default";
+  value: number | null;
+  text: string | null;
+  pages: number[];
+}
+
+export interface PrintedNotes {
+  drawing?: Partial<Record<DerivedParamName, number>>;
+  qs?: Partial<Record<DerivedParamName, number>>;
+  notes?: Record<string, { text?: string | null; pages?: number[]; count?: number }>;
+}
+
+export function paramSourceView(def: DerivedFieldDef, typed: string | undefined, from: PrintedNotes): ParamSourceView {
+  if ((typed ?? "").trim() !== "") {
+    return { source: "typed", value: null, text: null, pages: [] };
+  }
+  const printed = from.drawing?.[def.key];
+  if (typeof printed === "number") {
+    const note = from.notes?.[def.key];
+    return { source: "drawing", value: printed, text: note?.text ?? null, pages: note?.pages ?? [] };
+  }
+  const answered = from.qs?.[def.key];
+  if (typeof answered === "number") {
+    return { source: "qs", value: answered, text: null, pages: [] };
+  }
+  return { source: "default", value: def.defaultMm, text: null, pages: [] };
+}
+
 export function mmToInches(mm: number): string {
   const inches = mm / 25.4;
   return Number.isInteger(inches) ? String(inches) : inches.toFixed(1);
@@ -99,7 +147,7 @@ export function isDerivedSpec(spec: BOQItemSpec | null | undefined): boolean {
   return spec?.kind === "DERIVED";
 }
 
-export type DerivedBasis = "user" | "convention" | "default" | "claim";
+export type DerivedBasis = "user" | "convention" | "drawing" | "qs" | "default" | "claim";
 
 export interface DerivedBasisRow {
   key: string;
@@ -107,8 +155,9 @@ export interface DerivedBasisRow {
   basis: DerivedBasis | null;
 }
 
-const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
-
+const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", 
+  "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "steel_cover_slab_mm", "steel_cover_beam_mm", "steel_cover_column_mm", "steel_cover_footing_mm", "steel_cover_wall_mm",
+   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
     return [];
@@ -122,7 +171,7 @@ export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedB
       continue;
     }
     const b = basis[key];
-    rows.push({ key, value, basis: b === "user" || b === "convention" || b === "default" || b === "claim" ? b : null });
+    rows.push({ key, value, basis: b === "user" || b === "convention" || b === "drawing" || b === "qs" || b === "default" || b === "claim" ? b : null });
   }
   return rows;
 }
@@ -303,6 +352,7 @@ export interface FormworkSourceView {
   depthMm: number;
   faces: { name: string; m2: string }[];
   shared: { face: string; by: string; m2: string }[];
+  fromModel: boolean;
 }
 
 export function formworkSourceView(trace: LedgerTrace | null | undefined): FormworkSourceView | null {
@@ -321,6 +371,7 @@ export function formworkSourceView(trace: LedgerTrace | null | undefined): Formw
     depthMm: Number(raw.size_mm[2]),
     faces: raw.faces.filter((f) => !String(f.name).startsWith("shared ")).map((f) => ({ name: String(f.name), m2: String(f.m2) })),
     shared: Array.isArray(raw.shared_faces) ? raw.shared_faces.map((f) => ({ face: String(f.face), by: String(f.by), m2: String(f.m2) })) : [],
+    fromModel: Boolean(raw.model_element),
   };
 }
 
@@ -338,6 +389,9 @@ export interface FormworkStatsView {
   comparison: { grossM2: string; slabSoffitOnlyM2: string; beamPerRftM2: string; beamNetM2: string } | null;
   beamsMatched: number;
   beamsUnmatched: number;
+  removedBy: { kind: string; m2: string }[];
+  model: { members: number; notBox: number; columnsWithRemoval: number; beamsAdjusted: number; skipped: { reason: string; count: number }[] } | null;
+  leftAlone: { reason: string; count: number }[];
 }
 
 export function takenOff(gross: string | null | undefined, net: string | null | undefined): string | null {
@@ -346,6 +400,20 @@ export function takenOff(gross: string | null | undefined, net: string | null | 
   if (gross == null || net == null || !Number.isFinite(g) || !Number.isFinite(n)) return null;
   const d = Math.round((g - n) * 1e6) / 1e6;
   return d > 0 ? d.toFixed(6) : null;
+}
+
+function addMap(into: Map<string, number>, from: Record<string, string> | undefined) {
+  for (const [k, v] of Object.entries(from ?? {})) {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 0) into.set(k, (into.get(k) ?? 0) + n);
+  }
+}
+
+export function removedByKind(fw: DerivedStats["formwork"] | undefined): { kind: string; m2: string }[] {
+  const sum = new Map<string, number>();
+  addMap(sum, fw?.shared_faces?.removed_by);
+  addMap(sum, fw?.model?.shared?.removed_by);
+  return [...sum.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([kind, m2]) => ({ kind, m2: m2.toFixed(6) }));
 }
 
 export function formworkStatsView(stats: DerivedStats | null | undefined): FormworkStatsView | null {
@@ -375,7 +443,22 @@ export function formworkStatsView(stats: DerivedStats | null | undefined): Formw
       ? { grossM2: String(cmp.gross_m2), slabSoffitOnlyM2: String(cmp.slab_soffit_only_m2), beamPerRftM2: String(cmp.beam_per_rft_m2), beamNetM2: String(cmp.beam_net_m2) }
       : null,
     beamsMatched: Number(fw.beam_slab?.beams_matched ?? 0),
-    beamsUnmatched: Number(fw.beam_slab?.beams_unmatched ?? 0),
+        beamsUnmatched: Number(fw.beam_slab?.beams_unmatched ?? 0),
+    removedBy: removedByKind(fw),
+    model: fw.model && Number(fw.model.members ?? 0) > 0
+      ? {
+          members: Number(fw.model.members ?? 0),
+          notBox: Number(fw.model.not_box ?? 0),
+          columnsWithRemoval: Number(fw.model.shared?.columns_with_removal ?? 0),
+          beamsAdjusted: Number(fw.model.shared?.beams_adjusted ?? 0),
+          skipped: Object.entries(fw.model.skipped ?? {}).map(([reason, count]) => ({ reason, count: Number(count) })),
+        }
+      : null,
+    leftAlone: [
+      ["WALL_NOT_PLACED", Number(fw.shared_faces?.unplaced_walls ?? 0)],
+      ["WALL_NOT_SQUARE", Number(fw.shared_faces?.walls_not_square ?? 0)],
+      ["BEAM_NOT_MATCHED", Number(fw.shared_faces?.unmatched_beams ?? 0)],
+    ].filter(([, n]) => Number(n) > 0).map(([reason, count]) => ({ reason: String(reason), count: Number(count) })),
   };
 }
 

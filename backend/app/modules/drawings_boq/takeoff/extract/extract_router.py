@@ -106,12 +106,12 @@ async def combine_floor_sources(
 
 @router.get("/drawings/{drawing_id}/takeoff/conflicts", response_model=ConflictsResponse)
 async def value_conflicts(
-  drawing_id: UUID, slab_policy: str | None = None, beam_policy: str | None = None,
+  drawing_id: UUID, slab_policy: str | None = None, beam_policy: str | None = None, count_policy: str | None = None,
   current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
   """Values the drawing prints differently (a slab thickness on the architectural and the structural sheet, a beam section listed more than once, a mark counted
   differently by the two sheets of a floor), each with the quantity it gives and the one in force."""
-  policy = {k: v for k, v in (("SLAB_THICKNESS", slab_policy), ("BEAM_SECTION", beam_policy)) if v}
+  policy = {k: v for k, v in (("SLAB_THICKNESS", slab_policy), ("BEAM_SECTION", beam_policy), ("SOURCE_COUNT", count_policy)) if v}
   return await ReviewService(session).conflicts(_org(current_user), drawing_id, policy)
 
 @router.post("/drawings/{drawing_id}/takeoff/conflicts/resolve", response_model=ResolveConflictsResponse)

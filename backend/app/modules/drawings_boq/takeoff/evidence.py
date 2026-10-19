@@ -41,6 +41,8 @@ class _Inputs:
   def height(self, name: str, value, section_how: str = "clear storey height printed on the building section") -> None:
     if value is None:
       self.add(name, MISSING, "not on the drawing")
+    elif "HEIGHT_FROM_QS" in self.codes:
+      self.add(name, CONFIRMED, "given by the QS")
     elif "HEIGHT_FROM_SECTION" in self.codes:
       self.add(name, PRINTED, section_how)
     elif "HEIGHT_FROM_NOTE" in self.codes:

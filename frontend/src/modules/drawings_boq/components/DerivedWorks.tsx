@@ -9,8 +9,11 @@ function useBasisText(): (basis: DerivedBasis | null) => string {
   return (basis) => {
     if (basis === "user") return t("boq.derived.basis.user", "given");
     if (basis === "convention") return t("boq.derived.basis.convention", "set on the convention");
+    if (basis === "qs") return t("boq.derived.basis.qs", "given by the QS");
     if (basis === "default") return t("boq.derived.basis.default", "assumed");
     if (basis === "claim") return t("boq.derived.basis.claim", "reference level for the footing depth");
+    if (basis === "drawing") return t("boq.derived.basis.drawing", "printed on the drawing");
+    if (basis === "qs") return t("boq.derived.basis.qs", "answered by the QS");
     return "";
   };
 }
@@ -103,7 +106,7 @@ export function DerivedFormworkSource({ trace }: { trace?: LedgerTrace | null })
         {t("boq.derived.formworkSourceTitle", "Read from the drawing")}
       </div>
       <p className="text-[12px] text-[var(--color-text-secondary)]">
-        {t("boq.derived.formworkSourceText", {
+         {view.fromModel ? t("boq.derived.formworkModelText", { defaultValue: "{{category}} {{tag}} of the model. Size {{l}} x {{w}} x {{d}} mm.", category: t(`boq.derived.category.${view.category}`, view.category), tag: view.tag || "—", l: view.lengthMm, w: view.widthMm, d: view.depthMm }) : t("boq.derived.formworkSourceText", {
           defaultValue: "{{category}} {{tag}} ({{instance}} of {{instances}}) on sheet {{page}}. Size {{l}} x {{w}} x {{d}} mm.",
           category: t(`boq.derived.category.${view.category}`, view.category),
           tag: view.tag || "—",

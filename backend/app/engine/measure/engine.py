@@ -21,13 +21,14 @@ from app.engine.measure.dpc import measure_dpc
 from app.engine.measure.layers import layer_check, layer_excluded_by_solid, split_layers
 from app.engine.measure.derived import derived_check, measure_derived
 from app.engine.measure.formwork import formwork_check, measure_formwork
+from app.engine.measure.model_floor_works import floor_works_check, measure_floor_works
 from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
 from app.engine.measure.pdf_space import split_space, space_check
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
 from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.24"
+ENGINE_VERSION = "2026.10.25"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -429,6 +430,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
   failures.extend(stage_split_check(ledger)[1])
   failures.extend(allocation_check(solids, alloc.deductions)[1])
   failures.extend(formwork_check(solids, ledger))
+  failures.extend(floor_works_check(solids, ledger))
   failures.extend(pdf_steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
@@ -583,14 +585,17 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     dpc_res = measure_dpc(ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += dpc_res.solids
     extra_ledger += dpc_res.ledger
-    formwork_res = measure_formwork(ctx, profile, ledger, extra_ledger)
+    floor_solids, floor_rows, floor_stats = measure_floor_works(ctx, accepted, ledger, extra_ledger)
+    extra_solids += floor_solids
+    extra_ledger += floor_rows
+    formwork_res = measure_formwork(ctx, profile, ledger, extra_ledger, accepted)
     extra_solids += formwork_res.solids
     extra_ledger += formwork_res.ledger
     steel_res = measure_pdf_steel(ctx, ledger, extra_ledger)
     steel_marks = steel_res.marks
     extra_solids += steel_res.solids
     extra_ledger += steel_res.ledger
-    derived_info = {**derived_info, "dpc": dpc_res.stats, "formwork": formwork_res.stats, "steel": steel_res.stats}
+    derived_info = {**derived_info, "dpc": dpc_res.stats, "floor_works": floor_stats, "formwork": formwork_res.stats, "steel": steel_res.stats}
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:

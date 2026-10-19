@@ -3,7 +3,7 @@ import type { DrawingFacts, FloorCheck } from "../types/takeoff.types";
 import { mmText, mmToFeetInches, pagesText } from "../utils/facts";
 import { ChecksSection } from "./ChecksSection";
 import { StructureSection } from "./StructureSection";
-import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, SIDE_TEXT, groupOpenings, hasSchedule, lintelText, m2Text, metresText, projectionRows, sizeText, stairText, steelText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
+import { FLOOR_STATUS_TONE, OPENING_TYPE_TITLE, SIDE_TEXT, groupOpenings, hasSchedule, lintelText, m2Text, metresText, openingAreaM2, projectionRows, sizeText, stairText, steelText, suggestedHeightText, wallHeightBasisText } from "../utils/schedule";
 
 interface Props {
   facts: DrawingFacts | undefined;
@@ -156,7 +156,7 @@ export function DrawingSchedulePanel({ facts }: Props) {
             <ul className="list-none space-y-0.5 pl-0 text-[var(--color-text-muted)]">
               {g.rows.map((r) => (
                 <li key={`${g.type}-${r.mark}`}>
-                  <span className="font-semibold text-[var(--color-text-primary)]">{r.mark}</span> · {sizeText(r.width_mm, r.height_mm)} · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(r.pages) })}
+                  <span className="font-semibold text-[var(--color-text-primary)]">{r.mark}</span> · {sizeText(r.width_mm, r.height_mm)} · <span data-testid={`opening-area-${r.mark}`}>{t("drawings.schedule.openingArea", { defaultValue: "{{area}} each", area: m2Text(openingAreaM2(r), 2) })}</span> · {t("drawings.facts.onSheets", { defaultValue: "sheet {{pages}}", pages: pagesText(r.pages) })}
                 </li>
               ))}
             </ul>

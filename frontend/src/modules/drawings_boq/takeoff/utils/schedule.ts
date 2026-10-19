@@ -40,6 +40,10 @@ export function stairText(stair: ScheduleStair | null | undefined): string {
   return parts.join(", ");
 }
 
+export function openingAreaM2(r: { width_mm: number; height_mm: number; area_m2?: number | null }): number {
+  return typeof r.area_m2 === "number" && r.area_m2 > 0 ? r.area_m2 : (r.width_mm * r.height_mm) / 1_000_000;
+}
+
 export function m2Text(v: number, digits = 1): string {
   return `${v.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits })} m²`;
 }

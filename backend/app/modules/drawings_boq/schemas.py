@@ -301,8 +301,23 @@ class DerivedParamsRequest(BaseModel):
   bar_lap_dia: float | None = Field(default=None, ge=0, le=80, description="Lap of a column's vertical bars with the lift above, in bar diameters.")
   bar_anchor_dia: float | None = Field(default=None, ge=0, le=80, description="Anchorage added at each end of a beam bar, and as a dowel at the foot of a column bar, in bar diameters.")
   steel_wastage_pct: float | None = Field(default=None, ge=0, le=15, description="Percent added to the steel weight of members read from a drawing. 0 leaves the bare weight.")
+  steel_cover_slab_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of a slab. Left out, the general cover applies.")
+  steel_cover_beam_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of a beam or lintel. Left out, the general cover applies.")
+  steel_cover_column_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of a column. Left out, the general cover applies.")
+  steel_cover_footing_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of a footing. Left out, the general cover applies.")
+  steel_cover_wall_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of an RCC wall. Left out, the general cover applies.")
+  fill_layer_mm: float | None = Field(default=None, ge=50, le=600, description="Thickness of a compacted fill layer, for the earth filling under floors.")
+  earth_swell_pct: float | None = Field(default=None, ge=0, le=50, description="Percent that dug earth swells when loose, for the earth that is carted away or reused. 0 leaves the bank volume.")
+  fill_compaction_pct: float | None = Field(default=None, ge=0, le=40, description="Percent of loose earth needed over the finished volume of the filling under floors. 0 takes none.")
+  fill_from_excavation: float | None = Field(default=None, ge=0, le=1, description="1 reuses the surplus of the dig for the filling under floors before earth is brought in; 0 treats all the filling as brought in.")
+  floor_works_from_spaces: float | None = Field(default=None, ge=0, le=1, description="1 takes the concrete or kacha bed and the anti-termite treatment under the floor of the lowest storey from the rooms of a model; 0 leaves them out.")
   beam_depth_includes_slab: float | None = Field(default=None, ge=0, le=1, description="1 takes the depth of a beam read from a drawing as its overall depth, so the part inside the slab is counted with the slab; 0 takes it as the web below the slab.")
   tie_band_replaces_lintel: float | None = Field(default=None, ge=0, le=1, description="1 leaves out the lintels a measured tie band at lintel level runs over; 0 counts both.")
+  stair_formwork_soffit_only: float | None = Field(default=None, ge=0, le=1, description="1 shutters only the soffit of the waist slab of a stair; 0 adds the risers and the sides.")
+  beam_lintel_qs_rate: float | None = Field(default=None, ge=0, le=1, description="1 takes the formwork of a beam as 0.75 ft per running foot and of a lintel as 0.5 ft, the QS rate; 0 measures the soffit and both sides.")
+  formwork_shared_walls: float | None = Field(default=None, ge=0, le=1, description="1 takes off the column faces that an RCC wall covers, once the views are placed; 0 leaves them.")
+  formwork_shared_beams: float | None = Field(default=None, ge=0, le=1, description="1 takes off the column faces that a beam covers, for beams that sit between two columns of the placed view; 0 leaves them.")
+  rcc_wall_reveals: float | None = Field(default=None, ge=0, le=1, description="1 adds the sides of the doors and windows in an RCC wall to its formwork; 0 takes the two faces only, as the QS sheet does.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

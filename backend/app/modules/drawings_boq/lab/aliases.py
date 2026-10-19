@@ -26,6 +26,7 @@ BILL_ALIASES = (
   (r"\bdoors?\b", "DOORS"),
   (r"window|ventilator", "WINDOWS"),
   (r"kacha|pcc\s*/\s*kacha", "KACHA"),
+  (r"earth\s*fill|sand\s*fill|\bfilling\b", "FILLING"),
   (r"roof\s*treatment", "ROOF_TREATMENT"),
   (r"form\s*work|shuttering", "FORMWORK"),
   (r"ugwt|ohwt|septic|tank", "TANKS"),
@@ -38,17 +39,17 @@ KEY_LABEL = {
   "RCC_WALLS": "RCC walls", "RCC_LINTELS": "RCC lintels", "RCC_ROOF_BEAMS": "RCC roof beams", "RCC_STAIR": "RCC staircase",
   "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "BRICK_WALLS": "Brick work above plinth",
   "STEEL": "Reinforcement steel", "DOOR_FRAMES": "Door frames", "DOORS": "Doors", "WINDOWS": "Windows and ventilators",
-  "KACHA": "Kacha or PCC on floor", "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
+  "KACHA": "Kacha or PCC on floor", "FILLING": "Earth filling under floors",  "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
 }
 
 SOFTWARE_UNIT = {
   "EXCAVATION": "m3", "TERMITE": "m2", "MEMBRANE": "m2", "BRICK_FOUNDATION": "m3", "PCC": "m3", "RCC_FOOTINGS": "m3",
   "RCC_PLINTH_BEAM": "m3", "RCC_COLUMNS": "m3", "RCC_WALLS": "m3", "RCC_LINTELS": "m3", "RCC_ROOF_BEAMS": "m3", "RCC_STAIR": "m3",
   "RCC_SLABS": "m3", "CEILING_PLASTER": "m2", "WALL_PLASTER": "m2", "BRICK_WALLS": "m3", "STEEL": "kg", "DOOR_FRAMES": "m2",
-  "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3",
+  "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3",
 }
 
-NOT_MEASURED = ("DOORS", "WINDOWS", "ROOF_TREATMENT", "TANKS", "LUMP_SUM")
+NOT_MEASURED = ("TANKS", "LUMP_SUM")
 
 _COMPILED = tuple((re.compile(p, re.I), k) for p, k in BILL_ALIASES)
 
@@ -106,12 +107,22 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "RCC_PLINTH_BEAM"
   if t.startswith("ROOF-BEAM"):
     return "RCC_ROOF_BEAMS"
+  if t.startswith("ROOF-TREATMENT"):
+    return "ROOF_TREATMENT"
+  if t.startswith("ROOF-TREATMENT"):
+    return "ROOF_TREATMENT"
   if t.startswith("CEILING-PLASTER"):
     return "CEILING_PLASTER"
   if t.startswith("PLASTER"):
     return "WALL_PLASTER"
+  if t.startswith("DOOR-AREA"):
+    return "DOORS"
+  if t.startswith("WINDOW-AREA"):
+    return "WINDOWS"
   if t.startswith("FRAME-"):
     return "DOOR_FRAMES"
+  if t.startswith("EARTH-FILL"):
+    return "FILLING"
   if t.startswith("KACHA"):
     return "KACHA"
   if t.startswith("L-"):

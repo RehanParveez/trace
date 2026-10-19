@@ -2,6 +2,7 @@ from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import crosschecks as CK
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 
@@ -24,6 +25,7 @@ REASON_TEXT = {
   "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
   "ADDED_FROM_SECOND_SHEET": "Only the sheet that shows every plan has this item, not the floor's own sheet. That sheet is drawn small, so check it on the sheet before accepting.",
   "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
+  "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet. Accepting it here as well counts it twice.",
 }
 
 def _warned(checks: list) -> list:
@@ -43,6 +45,7 @@ def ready(read: list, checks: list | None = None) -> dict:
   undecided = undecided_sources(read)
   undecided = undecided_sources(read)
   ok: list = []
+  guard = AG.Guard(AG.held_marks(read, lambda c, sh: _floor(c, _sheet_floor(sh))))
   held: list = []
   
   for sh in read:
@@ -58,6 +61,8 @@ def ready(read: list, checks: list | None = None) -> dict:
         why.append("ALREADY_DECIDED")
       elif c.category != "SLAB" and (sh["sheet_id"], FO.level_of(c) or sf) in undecided:
         why.append("FLOOR_SOURCE_UNDECIDED")
+      if c.decision == "NEW" and guard.clash(c, fl) is not None:
+        why.append("MARK_ACCEPTED_ELSEWHERE")
       if c.decision == "NEW" and ((c.facts or {}).get("floor_union") or {}).get("role") == "ADDED":
         why.append("ADDED_FROM_SECOND_SHEET")
       if c.status == "INVALID":

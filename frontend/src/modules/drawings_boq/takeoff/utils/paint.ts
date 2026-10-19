@@ -26,6 +26,7 @@ export interface Scene {
   focusId: string | null;
   disabledNote: string | null;
   planBoxes?: PlanBox[];
+  markColours?: Record<string, string>;
 }
 
 const PALETTE = ["#2f68a8", "#1e9d63", "#c24a3a", "#8a5cc2", "#d98a1f", "#1d9aa3", "#b0407e", "#6b7a1f"];
@@ -93,8 +94,8 @@ export function markerFor(ctx: CanvasRenderingContext2D, kind: SnapKind, x: numb
   ctx.stroke();
 }
 
-function drawMeasurement(ctx: CanvasRenderingContext2D, m: Matrix, meas: TakeoffMeasurement, selected: boolean, focused: boolean): void {
-  const colour = colourFor(meas.work_item_code ?? meas.kind);
+function drawMeasurement(ctx: CanvasRenderingContext2D, m: Matrix, meas: TakeoffMeasurement, selected: boolean, focused: boolean, override?: string): void {
+  const colour = override ?? colourFor(meas.work_item_code ?? meas.kind);
   const confirmed = meas.status === "CONFIRMED";
   ctx.save();
   ctx.lineJoin = "round";
@@ -170,7 +171,7 @@ function paintPlanBoxes(ctx: CanvasRenderingContext2D, m: Matrix, all: PlanBox[]
 export function paintScene(ctx: CanvasRenderingContext2D, m: Matrix, size: { w: number; h: number }, scene: Scene): void {
   if (scene.planBoxes && scene.planBoxes.length > 0) paintPlanBoxes(ctx, m, scene.planBoxes);
   if (scene.showMeasurements) {
-    for (const meas of scene.measurements) drawMeasurement(ctx, m, meas, scene.selectedIds.has(meas.id), scene.focusId === meas.id);
+     for (const meas of scene.measurements) drawMeasurement(ctx, m, meas, scene.selectedIds.has(meas.id), scene.focusId === meas.id, scene.markColours?.[meas.id]);
   }
 
   if (scene.dimensionPairs) {

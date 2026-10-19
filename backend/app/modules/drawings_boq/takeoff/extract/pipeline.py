@@ -11,11 +11,13 @@ from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
 from app.modules.drawings_boq.takeoff.extract import rcc_ring as RR
 from app.modules.drawings_boq.takeoff.extract import completion as CP
+from app.modules.drawings_boq.takeoff.extract import qs_rules as QR
 from app.modules.drawings_boq.takeoff.extract import neck as NK
 from app.modules.drawings_boq.takeoff.extract import wide_openings as WO
 from app.modules.drawings_boq.takeoff.extract import lintel_heads as LH
 from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
+from app.modules.drawings_boq.takeoff.extract import tank_steel as TSTEEL
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
@@ -25,6 +27,9 @@ from app.modules.drawings_boq.takeoff.extract import beam_marks as BM
 from app.modules.drawings_boq.takeoff.extract import plan_regions as PR
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
+from app.modules.drawings_boq.takeoff.extract import openings_area as OA
+from app.modules.drawings_boq.takeoff.extract import earth_fill as EF
+from app.modules.drawings_boq.takeoff.extract import roof_treatment as RF
 from app.modules.drawings_boq.takeoff.extract import flights as FL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract import structure as ST
@@ -234,6 +239,10 @@ def _ft_in(mm: float) -> str:
   return f"{inches // 12}'-{inches % 12}\""
 
 def _with_floor_height(heights: dict, floor_heights: dict | None, level_hint: str | None) -> dict:
+  """A wall and a column take the floor-to-floor height of the floor (the QS, S5); the clear height is the fallback."""
+  return QR.floor_heights(heights, floor_heights, level_hint, _ft_in, _with_clear_height)
+
+def _with_clear_height(heights: dict, floor_heights: dict | None, level_hint: str | None) -> dict:
   """The height notes of the sheet, with the clear storey height printed on the building sections added for the floor this plan shows. A height
   written as a note on the plan itself is kept; the section height only fills a gap."""
   fh = (floor_heights or {}).get(level_hint or "")
@@ -247,7 +256,7 @@ def _with_floor_height(heights: dict, floor_heights: dict | None, level_hint: st
   return out
 
 def _height_note(h: dict) -> dict:
-  return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_NOTE", text=h["text"])
+   return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"])
 
 def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: bool, heights: dict | None = None) -> Candidate | None:
   """A framing view with no column marks at all (a mumty or a stair head) still shows its columns as black squares."""
@@ -1189,15 +1198,18 @@ def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: boo
     out.extend(_wall_beams(walls, "BAND", ctx, level_hint, 0.0, tie_band))
   return out
 
-def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None, sections: list | None = None) -> list:
+def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None, sections: list | None = None, mm_per_pt: float | None = None) -> list:
   """The work under the lowest floor that is worked out from what is already read: a trench, a concrete bed and termite treatment under the walls, the
   termite treatment under the floor, and, on a basement, the dig over the whole outline of the basement."""
   spec = level_spec(level_hint)
   out = FD.strip_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections)
   out.extend(FD.brick_step_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections))
-  membrane = FD.membrane_candidate(walls, ctx, level_hint, spec, Candidate, _finish)
+  membrane = FD.membrane_candidate(walls, ctx, level_hint, spec, Candidate, _finish, mm_per_pt)
   if membrane is not None:
     out.append(membrane)
+  fill = EF.fill_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
+  if fill is not None:
+    out.append(fill)
   floor = FD.under_floor_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
   if floor is not None:
     out.append(floor)
@@ -1214,7 +1226,7 @@ def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx:
         out.append(cand)
   return out
 
-def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None) -> list:
+def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, windows: list | None = None) -> list:
   """The finishes of every floor that are worked out from what is already read: the kacha bed and the ceiling plaster from the room areas, the plaster on
   the faces of the walls, and the frames of the doors."""
   spec = level_spec(level_hint)
@@ -1225,6 +1237,7 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
       out.append(cand)
   out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
+  out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   return out
 
 def _view_plans(views: list) -> list:
@@ -1313,6 +1326,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.candidates.append(cand)
     res.notes.extend(notes)
   res.stats["slabs"] = sum(1 for c in res.candidates if c.category == "SLAB")
+  res.candidates.extend(RF.roof_candidates([c for c in res.candidates if c.category == "SLAB"], ctx, Candidate, _finish))
   pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish)
   res.candidates.extend(pads)
   res.stats["concrete_beds"] = len(pads)
@@ -1349,6 +1363,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           c.status = _status(c.notes)
       ring = wstats.pop("rcc_ring", None)
       completion = CP.candidates(ring, CP.rcc_notes(notes_lines), sheet_heights, ctx, imp_sheet, Candidate, _finish, _height_note)
+      QR.mark_clear([*walls, *completion], floor_heights, level_hint)
+      wstats["qs_rcc_heights"] = QR.rcc_heights([*walls, *completion], level_hint)
       wstats["rcc_completion"] = {"pieces": len(completion), "sides_drawn": ring["sides"]} if ring else None
       res.stats["walls"] = wstats
       lintels = _lintel_candidates([c for c in res.candidates if c.category in ("DOOR", "WINDOW")], (schedule or {}).get("lintels") or [],
@@ -1402,11 +1418,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.candidates.extend(completion)
       
       if with_finishes:
-        finishes = _finish_candidates(walls, rooms, [c for c in res.candidates if c.category == "DOOR"], mm_per_pt, ctx, level_hint)
+        finishes = _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"], mm_per_pt, ctx, level_hint,
+          [c for c in res.candidates if c.category == "WINDOW"])
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
       if lowest_level:
-        below = _foundation_candidates(walls, rooms, schedule, ctx, level_hint, footing_sections)
+        below = _foundation_candidates([*walls, *QR.counted_completion(completion)], rooms, schedule, ctx, level_hint, footing_sections, mm_per_pt)
         res.candidates.extend(below)
         res.stats["foundation_items"] = len(below)
     except W.TimeLimit:
@@ -1419,6 +1436,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     neck = NK.candidates(res.candidates, ctx, Candidate, _finish)
     res.candidates.extend(neck)
     res.stats["neck_columns"] = len(neck)
+  for c in res.candidates:
+    c.status = _status(c.notes)
+  res.stats["qs"] = QR.apply(res.candidates, level_hint)
   for c in res.candidates:
     c.status = _status(c.notes)
   mapped = {c.tag for c in res.candidates if c.tag}
@@ -1554,6 +1574,7 @@ def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction
   ctx = {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") == "OCR" else 1.0)}
   sites = _site_candidates(SI.find(index.words, mm_per_pt, kw.get("tank_details")), ctx)
   res.candidates.extend(sites)
+  res.stats["qs_site"] = QR.apply(sites, None)
   res.stats["site_items"] = {c.facts["site_kind"]: 1 for c in sites}
   res.stats["site_tank_walls"] = _tank_twin_walls(res, sites)
   return res

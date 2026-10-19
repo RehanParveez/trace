@@ -1339,13 +1339,28 @@ export interface DerivedParams {
   tie_band_replaces_lintel?: number;
   dpc_thickness_mm?: number;
   dpc_door_deduction?: number;
+  steel_cover_slab_mm?: number;
+  steel_cover_beam_mm?: number;
+  steel_cover_column_mm?: number;
+  steel_cover_footing_mm?: number;
+  steel_cover_wall_mm?: number;
+  fill_layer_mm?: number;
+  earth_swell_pct?: number;
+  fill_compaction_pct?: number;
+  fill_from_excavation?: number;
+  floor_works_from_spaces?: number;
+  stair_formwork_soffit_only?: number;
+  formwork_shared_walls?: number;
+  formwork_shared_beams?: number;
+  rcc_wall_reveals?: number;
+  beam_lintel_qs_rate?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
 
 export interface DerivedParamUsed {
   value: number;
-  source: "user" | "convention" | "default";
+  source: "user" | "convention" | "qs" | "default";
 }
 
 export interface DerivedClaimWaiting {
@@ -1392,6 +1407,7 @@ export interface FormworkSource {
   size_mm: [number, number, number];
   faces: { name: string; m2: string }[];
   shared_faces?: { face: string; by: string; m2: string }[];
+  model_element?: boolean;
 }
 
 export interface SteelLine {
@@ -1466,7 +1482,10 @@ export interface DerivedFormworkStats {
   contact_not_deducted?: boolean;
   comparison?: { gross_m2: string; slab_soffit_only_m2: string; beam_per_rft_m2: string; beam_net_m2: string };
   beam_slab?: { enabled?: boolean; beams_matched?: number; beams_adjusted?: number; beams_unmatched?: number; slabs_with_removal?: number; capped_slabs?: number; uncertain_members?: number; removed_m2?: string };
-  shared_faces?: { enabled?: boolean; placed_columns?: number; unplaced_columns?: number; removed_m2?: string; members_with_removal?: number; uncertain_members?: number };
+  shared_faces?: { enabled?: boolean; placed_columns?: number; unplaced_columns?: number; removed_m2?: string; members_with_removal?: number; uncertain_members?: number;
+    placed_walls?: number; unplaced_walls?: number; walls_not_square?: number; matched_beams?: number; unmatched_beams?: number; unplaced_beams?: number; removed_by?: Record<string, string> };
+  model?: { members?: number; not_box?: number; skipped?: Record<string, number>;
+    shared?: { enabled?: boolean; columns_with_removal?: number; beams_matched?: number; beams_adjusted?: number; slabs_with_removal?: number; removed_m2?: string; removed_by?: Record<string, string> } };
 }
 
 export interface EarthBalance {
@@ -1479,11 +1498,20 @@ export interface EarthBalance {
   structure_below_ground_m3: string;
   structure_outside_trench_m3: string;
   negative_backfill_rows: number;
+  floor_fill_m3?: string;
+  floor_fill_need_m3?: string;
+  surplus_loose_m3?: string;
+  fill_reused_m3?: string;
+  fill_imported_m3?: string;
+  carted_loose_m3?: string;
+  fill_reuse_on?: boolean;
+  fill_assumed?: string[];
+  fill_note?: "NO_FILL_ITEM" | "FILL_REPORTED";
 }
 
 export interface DerivedFoundationParam {
   value: number;
-  source: "user" | "convention" | "default" | "element";
+  source: "user" | "convention" | "default" | "qs" | "element";
 }
 
 export interface DerivedFoundationEntry {
@@ -1506,6 +1534,19 @@ export interface DpcStats {
   params?: Record<string, DerivedParamUsed>;
   model?: { walls?: number; doors_taken_out?: number; gross_m2?: string; net_m2?: string; level?: { z_mm: number; source: string }; reason?: string };
   pdf?: { walls?: number; doors_taken_out?: number; net_m2?: string; no_level?: number; no_height?: number };
+}
+
+export interface FloorWorksStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  param_source?: string;
+  level_id?: string;
+  level_how?: "ONLY_LEVEL" | "LOWEST_MEMBERS";
+  rooms?: number;
+  area_m2?: string;
+  rows?: number;
+  skipped?: Record<string, string>;
 }
 
 export interface DerivedStats {
@@ -1536,6 +1577,7 @@ export interface DerivedStats {
   claims?: DerivedClaims;
   formwork?: DerivedFormworkStats;
   steel?: DerivedSteelStats;
+  floor_works?: FloorWorksStats;
 }
 
 export interface LayerStats {

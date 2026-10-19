@@ -784,9 +784,11 @@ class BOQEngineService:
     version_meta = {**meta, "covered_area_sqft": version.covered_area_sqft}
 
     if kind == "CONTRACT_BOQ":
-      data = (exp.build_contract_boq_pdf if fmt == "pdf" else exp.build_contract_boq_xlsx)(snapshot, rows, version_meta, company)
+      steel = MS.steel_by_diameter([b for blocks in (await self._sheets(org, version.id)).values() for b in blocks])
+      data = (exp.build_contract_boq_pdf if fmt == "pdf" else exp.build_contract_boq_xlsx)(snapshot, rows, version_meta, company, steel)
     elif kind == "PROCUREMENT":
-      data = exp.build_procurement_xlsx(snapshot, rows, version_meta, company)
+      steel = MS.steel_by_diameter([b for blocks in (await self._sheets(org, version.id)).values() for b in blocks])
+      data = exp.build_procurement_xlsx(snapshot, rows, version_meta, company, steel)
     elif kind == "BBS":
       data = await self._bbs_workbook(org, snap, snapshot, version_meta, company)
       
@@ -805,8 +807,9 @@ class BOQEngineService:
       data = (exp.build_stage_report_pdf if fmt == "pdf" else exp.build_stage_report_xlsx)(snapshot, SR.build(rows), by_dia, version_meta, company)
     elif kind == "MEASUREMENT_BOOK":
       evidence = await self._evidence(org, version.id)
+      steel = MS.steel_by_diameter([b for blocks in (await self._sheets(org, version.id)).values() for b in blocks])
       data = (exp.build_measurement_book_pdf if fmt == "pdf" else exp.build_measurement_book_xlsx)(
-        snapshot, rows, evidence, version_meta, company)
+        snapshot, rows, evidence, version_meta, company, steel)
     else:
       issues = [{"code": i.code, "severity": i.severity, "blocks": i.blocks, "status": i.status,
         "message": i.message, "note": i.resolution_note} for i in await self.repo.issues_for_version(version.id, org)]

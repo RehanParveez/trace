@@ -1,13 +1,20 @@
 import type { ConflictValue, LinkGroup, LinkItem, LinkStatus, SteelConventions, SteelFamily, ValueConflict } from "../types/review.types";
 
-export const POLICY_KINDS = ["SLAB_THICKNESS", "BEAM_SECTION"] as const;
+export const POLICY_KINDS = ["SLAB_THICKNESS", "BEAM_SECTION", "SOURCE_COUNT"] as const;
 export const POLICY_OPTIONS: Array<{ key: string; label: string }> = [
+  { key: "QS", label: "The QS's 6 inches (else structural sheet)" },
   { key: "STRUCTURAL", label: "Structural sheet" },
   { key: "ARCHITECTURAL", label: "Architectural sheet" },
   { key: "LARGER", label: "Larger quantity" },
   { key: "SMALLER", label: "Smaller quantity" },
   { key: "AS_READ", label: "As read (no policy)" },
 ];
+export const COUNT_POLICY_KEYS = ["AS_READ", "LARGER", "SMALLER"];
+
+export function policyOptionsFor(kind: string): Array<{ key: string; label: string }> {
+  return kind === "SOURCE_COUNT" ? POLICY_OPTIONS.filter((o) => COUNT_POLICY_KEYS.includes(o.key)) : POLICY_OPTIONS;
+}
+
 export const KIND_LABEL: Record<string, string> = {
   SLAB_THICKNESS: "Slab thickness",
   BEAM_SECTION: "Beam section",

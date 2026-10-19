@@ -435,6 +435,7 @@ export interface AcceptBody {
   plinth_beam_depth_mm?: number | null;
   tie_band_depth_mm?: number | null;
   excavation_depth_mm?: number | null;
+  fill_depth_mm?: number | null;
   trench_depth_mm?: number | null;
   pcc_thickness_mm?: number | null;
   pcc_strip_width_mm?: number | null;

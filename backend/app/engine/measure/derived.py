@@ -11,6 +11,10 @@ from shapely.ops import unary_union
 from app.engine.measure.stages import _ffl, element_z
 from app.engine.measure.spatial import prism_and_polygon
 from app.engine.measure import frame as FR
+from app.engine.measure import formwork_shared as FS
+from app.engine.measure import formwork_model as FM
+from app.engine.measure import qs_answers as QS
+from app.engine.measure import fill_balance as FB
 
 DERIVED = "DERIVED"
 FORMWORK_FORMULA = "SOLID_FORMWORK_AREA"
@@ -43,10 +47,25 @@ PARAMS = {
   "bar_lap_dia": (40.0, 0.0, 80.0),
   "bar_anchor_dia": (0.0, 0.0, 80.0),
   "steel_wastage_pct": (0.0, 0.0, 15.0),
+  "steel_cover_slab_mm": (38.1, 10.0, 100.0),
+  "steel_cover_beam_mm": (38.1, 10.0, 100.0),
+  "steel_cover_column_mm": (38.1, 10.0, 100.0),
+  "steel_cover_footing_mm": (38.1, 10.0, 100.0),
+  "steel_cover_wall_mm": (38.1, 10.0, 100.0),
+  "fill_layer_mm": (152.4, 50.0, 600.0),
+  "earth_swell_pct": (0.0, 0.0, 50.0),
+  "fill_compaction_pct": (0.0, 0.0, 40.0),
+  "fill_from_excavation": (0.0, 0.0, 1.0),
+  "floor_works_from_spaces": (0.0, 0.0, 1.0),
   "beam_depth_includes_slab": (1.0, 0.0, 1.0),
   "tie_band_replaces_lintel": (0.0, 0.0, 1.0),
   "dpc_thickness_mm": (38.1, 0.0, 300.0),
   "dpc_door_deduction": (1.0, 0.0, 1.0),
+  "stair_formwork_soffit_only": (0.0, 0.0, 1.0),
+  "beam_lintel_qs_rate": (0.0, 0.0, 1.0),
+  "formwork_shared_walls": (1.0, 0.0, 1.0),
+  "formwork_shared_beams": (1.0, 0.0, 1.0),
+  "rcc_wall_reveals": (0.0, 0.0, 1.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
@@ -74,7 +93,7 @@ CODE_MARK = "DERIVED_MARK_POSITION"
 CODE_ELEMENT = "DERIVED_ELEMENT_OVERRIDE"
 DERIVED_CODES = (CODE_ASSUMED, CODE_NGL_ASSUMED, CODE_BOX, CODE_MARK, CODE_ELEMENT)
 ELEMENT_PARAMS = ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_thickness_mm", "ballast_clearance_mm")
-AREA_FORMULAS = (SHORING, "DPC_AREA")
+AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA")
 MAX_LISTED = 400
 BALANCE_TOLERANCE_M3 = Decimal("0.00001")
 
@@ -110,6 +129,16 @@ def resolve_params(ctx: CalculationContext) -> dict:
     value = _number(convention.get(name), low, high)
     if value is not None:
       out[name] = {"value": value, "source": "convention"}
+      continue
+  
+    value = _number(((getattr(ctx, "drawing_params", None) or {}).get("params") or {}).get(name), low, high)
+    if value is not None:
+      out[name] = {"value": value, "source": "drawing"}
+      continue
+    given_qs = QS.param(name)
+    value = _number(given_qs, low, high) if given_qs is not None else None
+    if value is not None:
+      out[name] = {"value": value, "source": QS.SOURCE}
       continue
     out[name] = {"value": default, "source": "default"}
   return out
@@ -625,11 +654,11 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     "box_footprints": sum(1 for f in foundations if not f.exact),
     "mark_positions": sum(1 for f in foundations if f.claim is not None),
     "balance": balance_of({EXCAVATION: sum(exc.values(), Decimal("0")), BACKFILL: sum(back.values(), Decimal("0")), "buried": sum(bur.values(), Decimal("0"))},
-      structure_m3, outside_m3, len(negative_rows)),
+      structure_m3, outside_m3, len(negative_rows), FB.fill_of(extra_ledger, params)),
   })
   return DerivedResult(solids=out_solids, ledger=out_ledger, stats=stats)
 
-def balance_of(totals: dict, structure_m3: Decimal, outside_m3: Decimal, negative_rows: int) -> dict:
+def balance_of(totals: dict, structure_m3: Decimal, outside_m3: Decimal, negative_rows: int, fill: dict | None = None) -> dict:
   exc, back, buried = totals[EXCAVATION], totals[BACKFILL], totals["buried"]
   gap = q6(exc - back - buried)
   
@@ -637,6 +666,7 @@ def balance_of(totals: dict, structure_m3: Decimal, outside_m3: Decimal, negativ
     "excavation_m3": str(q6(exc)), "backfill_m3": str(q6(back)), "buried_m3": str(q6(buried)), "carted_m3": str(q6(max(Decimal("0"), exc - back))),
     "gap_m3": str(gap), "closes": abs(gap) <= BALANCE_TOLERANCE_M3 and back <= exc + BALANCE_TOLERANCE_M3,
     "structure_below_ground_m3": str(q6(structure_m3)), "structure_outside_trench_m3": str(q6(outside_m3)), "negative_backfill_rows": negative_rows,
+    **FB.balance_fill(exc, back, fill),
   }
 
 def derived_check(solids: list, ledger: list) -> list:

@@ -4,6 +4,7 @@ import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
 import { derivedWaitingView, formworkStatsView, steelStatsView } from "../utils/derived";
 import { FormworkPanel } from "./FormworkPanel";
+import { DerivedExtras } from "./DerivedExtras";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
 import { useStageLabel } from "./StageBadge";
@@ -238,6 +239,7 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
         )
        ) : null}
 
+      {dv?.enabled ? <DerivedExtras stats={dv} /> : null}
       {fw ? <FormworkPanel view={fw} /> : null}
       
       {sv ? (

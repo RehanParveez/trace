@@ -1,6 +1,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from app.engine.measure.units import q6
+from app.engine.measure import member_steel_more as MORE
 
 MM = Decimal("1000")
 EIGHTH_IN_MM = Decimal("3.175")
@@ -9,7 +10,7 @@ BAR_ROLES = ("bottom", "top", "bars", "vertical", "extra")
 RING_FAMILIES = ("BEAM", "LINTEL", "COLUMN")
 MESH_FAMILIES = ("FOOTING", "SLAB", "RCC_WALL")
 STEEL_FAMILIES = RING_FAMILIES + MESH_FAMILIES
-FAMILY_OF = {"COLUMN": "COLUMN", "BEAM": "BEAM", "LINTEL": "BEAM", "FOOTING": "FOOTING", "SLAB": "SLAB", "RCC_WALL": "WALL"}
+FAMILY_OF = {"COLUMN": "COLUMN", "BEAM": "BEAM", "LINTEL": "BEAM", "FOOTING": "FOOTING", "SLAB": "SLAB", "RCC_WALL": "WALL", "STAIR": "STAIR", "TANK": "TANK", "PARAPET": "PARAPET", "CHAJJA": "CHAJJA", "BALCONY_SLAB": "BALCONY_SLAB"}
 MAX_COUNT = 30
 
 def _num(v) -> Decimal | None:
@@ -74,6 +75,7 @@ def clean_steel(raw) -> dict | None:
     if mesh.get("layer") in ("top", "bottom"):
       clean["layer"] = mesh["layer"]
     out["mesh"] = clean
+  MORE.clean_more(raw, out)
   return out or None
 
 def _ring_count(run: Decimal, ring: dict) -> int:
@@ -92,11 +94,27 @@ def _line(kind: str, role: str, g: dict, count: int, cut: Decimal) -> dict:
   return {"kind": kind, "role": role, "dia_mm": str(dia_mm(g)), "bar": g.get("bar"), "count": count, "cut_length_m": str(q6(cut / MM)),
     "kg_per_m": str(w), "length_m": str(q6(Decimal(count) * cut / MM)), "kg": str(kg)}
 
+def lap_of(g: dict, lap_dia: Decimal, lap_table: dict | None) -> Decimal:
+  """The lap of a bar with the lift above: the length the drawing prints for its size, else the lap in diameters."""
+  if lap_table and g.get("bar") is not None:
+    printed = _num(lap_table.get(str(int(g["bar"]))))
+    if printed is not None:
+      return printed
+  return lap_dia * dia_mm(g)
+
+def lap_of(g: dict, lap_dia: Decimal, lap_table: dict | None) -> Decimal:
+  """The lap of a bar with the lift above: the length the drawing prints for its size, else the lap in diameters."""
+  if lap_table and g.get("bar") is not None:
+    printed = _num(lap_table.get(str(int(g["bar"]))))
+    if printed is not None:
+      return printed
+  return lap_dia * dia_mm(g)
+
 def member_lines(category: str, length: Decimal, width: Decimal, depth: Decimal, steel: dict, cover: Decimal, hook_dia: Decimal,
-    lap_dia: Decimal = Decimal("0"), anchor_dia: Decimal = Decimal("0")) -> tuple:
-  """The weighed lines of one member as (lines, kg). Each line is a bar set, a ring set or one direction of a mesh with its count, cut length and
-  weight, so the trace of a mark can be checked by hand. Dimensions in mm; length, width and depth are those of the measurement (a column's depth is its height)."""
+    lap_dia: Decimal = Decimal("0"), anchor_dia: Decimal = Decimal("0"), lap_table: dict | None = None, extra: dict | None = None) -> tuple:
   lines: list = []
+  if category in MORE.MORE_FAMILIES:
+    return MORE.more_lines(category, length, width, depth, steel, cover, extra)
   
   if category in ("BEAM", "LINTEL"):
     run = length - 2 * cover
@@ -119,7 +137,7 @@ def member_lines(category: str, length: Decimal, width: Decimal, depth: Decimal,
     for role in BAR_ROLES:
       g = steel.get(role)
       if g:
-        lines.append(_line("bars", role, g, g["n"], height + (lap_dia + anchor_dia) * dia_mm(g)))
+        lines.append(_line("bars", role, g, g["n"], height + lap_of(g, lap_dia, lap_table) + anchor_dia * dia_mm(g)))
     ring = steel.get("ring")
     inner_l, inner_w = length - 2 * cover, width - 2 * cover
     if ring and inner_l > 0 and inner_w > 0:
@@ -127,6 +145,9 @@ def member_lines(category: str, length: Decimal, width: Decimal, depth: Decimal,
       lines.append(_line("rings", "ring", ring, _ring_count(height - 2 * cover if height > 2 * cover else height, ring), cut))
   elif category in MESH_FAMILIES:
     mesh = steel.get("mesh")
+    if mesh and mesh.get("across") and int(mesh.get("ways", 2)) == 2:
+      lines = MORE.two_way(length, width, mesh, cover)
+      return lines, q6(sum((Decimal(ln["kg"]) for ln in lines), Decimal("0")))
     
     if mesh:
       a, b = length - 2 * cover, width - 2 * cover

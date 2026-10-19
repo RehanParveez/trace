@@ -1,5 +1,5 @@
 export type ConflictKind = "SLAB_THICKNESS" | "BEAM_SECTION" | "SOURCE_COUNT";
-export type ConflictPolicy = "STRUCTURAL" | "ARCHITECTURAL" | "LARGER" | "SMALLER" | "AS_READ";
+export type ConflictPolicy = "STRUCTURAL" | "ARCHITECTURAL" | "LARGER" | "SMALLER" | "AS_READ" | "QS";
 export type ConflictDiscipline = "STRUCTURAL" | "ARCHITECTURAL" | "UNKNOWN";
 
 export interface ConflictSource { discipline: ConflictDiscipline | string; page_no: number | null; basis: string }

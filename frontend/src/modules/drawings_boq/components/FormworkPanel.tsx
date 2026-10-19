@@ -65,8 +65,26 @@ export function FormworkPanel({ view }: { view: FormworkStatsView }) {
             ))}
           </tbody>
         </table>
-      </div>
+      </div>{view.removedBy.length > 0 ? (
+        <div className={NOTE} data-testid="formwork-removed-by">
+          <span className="font-semibold">{t("boq.formwork.removedByTitle", "Taken off where members meet, by what covered the face:")}</span>{" "}
+          {view.removedBy.map((r) => `${t(`boq.formwork.removedBy.${r.kind}`, r.kind)} ${formatPrecise(r.m2, 3)} m²`).join(" · ")}
+        </div>
+      ) : null}
+      {view.leftAlone.length > 0 ? (
+        <div className={`${NOTE} text-[var(--color-warning)]`} data-testid="formwork-left-alone">
+          {view.leftAlone.map((l) => t(`boq.formwork.leftAlone.${l.reason}`, { defaultValue: "{{count}} left with their faces whole: {{reason}}", count: l.count, reason: l.reason })).join(" ")}
+        </div>
+      ) : null}
+      {view.model ? (
+        <div className={NOTE} data-testid="formwork-model">
+          {t("boq.formwork.modelMembers", { defaultValue: "{{count}} members of the model were shuttered from their boxes.", count: view.model.members })}
+          {view.model.notBox > 0 ? ` ${t("boq.formwork.modelNotBox", { defaultValue: "{{count}} are not box-shaped (L-shaped or skewed) and keep all their faces, so their contact with other members is not taken off.", count: view.model.notBox })}` : ""}
+          {view.model.skipped.length > 0 ? ` ${t("boq.formwork.modelSkipped", "Not shuttered:")} ${view.model.skipped.map((s) => `${s.count} ${t(`boq.formwork.modelSkip.${s.reason}`, s.reason)}`).join(", ")}.` : ""}
+        </div>
+      ) : null}
       {view.assumed.length > 0 ? (
+      
         <div className="flex flex-wrap gap-1.5" data-testid="formwork-assumed">
           {view.assumed.map((name) => (
             <span key={name} className="rounded-full bg-[var(--color-surface-muted)] px-2.5 py-1 text-[11px] text-[var(--color-warning)]">

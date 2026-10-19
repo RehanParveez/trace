@@ -22,6 +22,7 @@ import { PdfRunReadiness } from "../takeoff/components/PdfRunReadiness";
 import type { WaitingPdf } from "../takeoff/utils/runDrawings";
 import { RunScope } from "./RunScope";
 import { DerivedParamsForm } from "./DerivedParamsForm";
+import { QsAnswersPanel } from "./QsReadingsPanel";
 import { derivedInputFromParams, derivedParamsFromInput, derivedUpdateFromInput } from "../utils/derived";
 import { useMeasurementParameters, useSaveMeasurementParameters } from "../hooks/useMeasurementParams";
 import type { DerivedInput } from "../utils/derived";
@@ -295,8 +296,14 @@ export function CalculationRunPanel({
           }}
           disabled={startRun.isPending}
           onSave={saveDerivedDefaults}
+          printed={{ drawing: storedParams.data?.drawing, qs: storedParams.data?.qs, notes: storedParams.data?.drawing_notes }}
+          conflicts={storedParams.data?.drawing_conflicts}
+          lapTable={storedParams.data?.lap_table_mm}
           saving={saveParams.isPending}
+          qs={storedParams.data?.qs}
         />
+
+        <QsAnswersPanel />
 
         {startError ? (
           <RunStartNotice

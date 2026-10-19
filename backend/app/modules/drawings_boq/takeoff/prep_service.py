@@ -16,6 +16,7 @@ import math
 import os
 import time
 from app.engine.measure import takeoff as tk
+from app.engine.measure import qs_answers as QS
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules
@@ -447,7 +448,7 @@ class PrepService:
       
       h = (heights or {}).get(a["key"])
       if h:
-        row["wall_height_mm"], row["wall_height_basis"] = h["clear_mm"], h["basis"]
+        row["wall_height_mm"], row["wall_height_basis"] = ((h.get("floor_to_floor_mm") or h["clear_mm"]) if QS.flag("wall_height_floor_to_floor") else h["clear_mm"]), h["basis"]
       if not mine:
         row.update(status="NOT_READ", message="No sheet of this floor has been read yet." if not group else "The sheet of this floor has not been read for items yet.")
         out.append(row)

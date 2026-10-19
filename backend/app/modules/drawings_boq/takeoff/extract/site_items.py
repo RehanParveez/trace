@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import re
+from app.engine.measure import qs_answers as QS
 from app.modules.drawings_boq.takeoff.prep import schedules as S
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.prep import views as VW
@@ -86,6 +87,9 @@ def _tank_item(kind: str, labels: list, details: list) -> dict:
   listed = TS.describe(kind if kind != "SEPTIC" else None, details if kind != "SEPTIC" else [])
   if listed is not None:
     facts["tank_drawings"] = listed["drawings"]
+    facts["steel_options"] = TSTEEL.options(listed["drawings"])
+    if facts["steel_options"]:
+      codes.append(("TANK_STEEL_NOTES_LISTED", {"kind": kind, "count": len(facts["steel_options"])}))
     codes.append(("SITE_TANK_SIZES_LISTED", {"kind": kind, "printed": listed["message"]}))
   if len(labels) > 1:
     codes.append(("SITE_LABEL_REPEATED", {"count": len(labels)}))
@@ -273,10 +277,12 @@ def find(words: list, mm_per_pt: float, tank_details: list | None = None) -> lis
     keep.append(it)
   return keep
 
-def equivalent_depth_mm(length: float, width: float, height: float, wall: float) -> float | None:
-  if min(length, width, height) <= 2.0 * wall or wall <= 0:
+def equivalent_depth_mm(length: float, width: float, height: float, wall: float, top: float | None = None, bottom: float | None = None) -> float | None:
+  top = wall if top is None else top
+  bottom = wall if bottom is None else bottom
+  if min(length, width) <= 2.0 * wall or height <= top + bottom or wall <= 0:
     return None
-  concrete = length * width * height - (length - 2 * wall) * (width - 2 * wall) * (height - 2 * wall)
+  concrete = length * width * height - (length - 2 * wall) * (width - 2 * wall) * (height - top - bottom)
   return concrete / (length * width)
 
 def typed_sizes(kind: str, missing: list, typed: dict, facts: dict) -> dict:
@@ -298,11 +304,12 @@ def fill_site(kind: str, missing: list, params: dict, typed: dict, facts: dict) 
     for token in ("length_mm", "width_mm", "height_mm", "thickness_mm"):
       if sizes.get(token) is None:
         return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {TANK_WORDS_FOR[token]} to measure this item.")
-    depth = equivalent_depth_mm(sizes["length_mm"], sizes["width_mm"], sizes["height_mm"], sizes["thickness_mm"])
+    top, bottom = float(QS.convention("tank_top_slab_mm")), float(QS.convention("tank_bottom_slab_mm"))
+    depth = equivalent_depth_mm(sizes["length_mm"], sizes["width_mm"], sizes["height_mm"], sizes["thickness_mm"], top, bottom)
     if depth is None:
       return out, ("CANDIDATE_BAD_VALUES", "The walls are thicker than half the tank. Check the sizes you typed.")
     out.update({"length_mm": sizes["length_mm"], "width_mm": sizes["width_mm"], "depth_mm": round(depth, 1), "dims_basis": "SPECIFIED",
-      "height_mm": sizes["height_mm"], "wall_mm": sizes["thickness_mm"]})
+      "height_mm": sizes["height_mm"], "wall_mm": sizes["thickness_mm"], "top_mm": top, "bottom_mm": bottom})
     return out, None
   targets = TARGETS.get(kind) or {}
   
