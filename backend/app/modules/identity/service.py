@@ -18,6 +18,7 @@ from app.modules.identity.email import EmailService
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.modules.subscriptions.service import SubscriptionService
+from app.dependencies.tenancy import scope_session_to_org
 from urllib.parse import quote
 
 MAX_FAILED_LOGIN_ATTEMPTS = 5
@@ -284,6 +285,7 @@ class IdentityService:
     invitation.accepted_at = datetime.now(timezone.utc)
     invitation.accepted_by_user_id = user.id
    else:
+    await scope_session_to_org(self.session, organization_id)
     subscription_service = SubscriptionService(self.session)
     if organization is None:  
       organization = await self.repository.get_organization_by_id(organization_id)

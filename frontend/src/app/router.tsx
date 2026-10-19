@@ -17,6 +17,7 @@ import { SitePhotosPage, WhatsAppSettingsPage } from "../modules/whatsapp";
 import { ProgressClaimsReviewPage } from "../modules/verification";
 import { NotificationsPage } from "../modules/notifications";
 import { AuditLogPage } from "../modules/audit";
+import { DataPrivacyPage } from "../modules/privacy";
 import { AIRequestsPage } from "../modules/ai_requests";
 import { BudgetsPage } from "../modules/budgets";
 import { SiteProgressPage } from "../modules/site_progress";
@@ -159,6 +160,11 @@ export const router = createBrowserRouter([
     {
       path: "invitations",
       element: <OrganizationInvitationsPage />,
+    },
+
+    {
+      path: "privacy",
+      element: <DataPrivacyPage />,
     },
   ],
 },

@@ -41,10 +41,13 @@ from app.modules.sales_tax.router import router as salex_tax_router
 from app.modules.bank_guarantees.router import router as bank_guarantees_router
 from app.modules.cash_flow.router import router as cash_flow_router
 from app.modules.alerts.router import router as alerts_router
+from app.modules.privacy.router import router as privacy_router
+from app.core.crypto import check_settings as check_encryption_settings
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
   configure_logging()
+  check_encryption_settings()
   yield
   await dispose_engine()
 
@@ -137,6 +140,8 @@ app.include_router(bank_guarantees_router, prefix=settings.api_v1_prefix)
 app.include_router(cash_flow_router, prefix=settings.api_v1_prefix)
 
 app.include_router(alerts_router, prefix=settings.api_v1_prefix)
+
+app.include_router(privacy_router, prefix=settings.api_v1_prefix)
 
 @app.get("/health", tags=["system"])
 async def health() -> dict[str, str]:

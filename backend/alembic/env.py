@@ -14,6 +14,7 @@ from app.modules.whatsapp import models as whatsapp_models
 from app.modules.verification import models as verification_models
 from app.modules.notifications import models as notifications_models
 from app.modules.audit import models as audit_models
+from app.modules.privacy import models as privacy_models
 from app.modules.ai_requests import models as ai_requests_models
 from app.modules.budgets import models as budgets_models
 from app.modules.site_progress import models as site_progress_models
@@ -68,7 +69,7 @@ async def run_migrations_online() -> None:
     config.config_ini_section
   ) or {}
 
-  configuration["sqlalchemy.url"] = settings.database_url
+  configuration["sqlalchemy.url"] = settings.migrations_database_url
   connectable = async_engine_from_config(
     configuration,
     prefix="sqlalchemy.",

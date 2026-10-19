@@ -27,7 +27,7 @@ from app.modules.notifications.service import NotificationService
 from app.modules.notifications.schemas import NotificationType
 from app.modules.audit.models import AuditAction, AuditEntityType
 from app.modules.audit.service import AuditLogService
-from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
+from app.dependencies.tenancy import scope_session_as_dispatch, scope_session_to_org
 from app.modules.identity.enums import PermissionKey
 import logging
 from fastapi import UploadFile
@@ -210,7 +210,7 @@ class WhatsAppService:
         if not phone_number_id:
           continue
 
-        await scope_session_as_platform_admin(self.session)
+        await scope_session_as_dispatch(self.session)
         channel = await self.channels.get_by_phone_number_id(
           phone_number_id
         )

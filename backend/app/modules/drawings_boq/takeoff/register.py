@@ -101,6 +101,7 @@ def _slab_text(cand, page_no: int, measurement) -> str:
   if p.get("depth_mm") is None:
     parts.append("thickness needed")
   elif facts.get("thickness_source") == "OTHER_SHEET":
+        
     parts.append("thickness printed on another sheet")
   elif facts.get("thickness_source") == "TYPED":
     parts.append("thickness typed")
@@ -119,7 +120,6 @@ def _slab_text(cand, page_no: int, measurement) -> str:
   else:
     parts.append("found, not measured yet")
   return " · ".join(parts)
-
 def _lintel_text(cand, page_no: int, measurement) -> str:
   p, facts = cand.params or {}, cand.facts or {}
   parts = [f"Opening marks counted on sheet {page_no}"]

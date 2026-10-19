@@ -5,7 +5,7 @@ from app.core.database import WorkerSessionLocal, dispose_worker_engine
 from uuid import UUID
 from app.workers.celery_app import celery_app
 from app.core.exceptions import TraceException
-from app.dependencies.tenancy import scope_session_as_platform_admin
+from app.dependencies.tenancy import scope_session_as_dispatch
 from app.core.config import settings
 from app.modules.drawings_boq.recalculation.calc_limits import RETRYABLE_CODES
 
@@ -20,7 +20,7 @@ def calculate_run_task(run_id: str) -> str:
   async def _run() -> None:
     try:
       async with WorkerSessionLocal() as session:
-        await scope_session_as_platform_admin(session)   
+        await scope_session_as_dispatch(session)
         await CalculationService(session).execute_run(UUID(run_id))
     finally:
       await dispose_worker_engine()
@@ -59,7 +59,7 @@ def _maintenance(name: str):
     from app.modules.drawings_boq.recalculation import calc_maintenance
     try:
       async with WorkerSessionLocal() as session:
-        await scope_session_as_platform_admin(session)
+        await scope_session_as_dispatch(session)
         return await getattr(calc_maintenance, name)(session)
     finally:
       await dispose_worker_engine()

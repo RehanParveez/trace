@@ -78,6 +78,7 @@ export const NAV_SEARCH_DESTINATIONS: SearchDestination[] = [
   { label: "Members", to: "/app/organization/members", icon: "users", group: "Organization" },
   { label: "Roles & access", to: "/app/organization/roles", icon: "shield", group: "Organization" },
   { label: "Invitations", to: "/app/organization/invitations", icon: "mail", group: "Organization" },
+  { label: "Data privacy", to: "/app/organization/privacy", icon: "shield", group: "Organization" },
   { label: "Subscription", to: "/app/subscription", icon: "budget", group: "Organization" },
   { label: "Material library", to: "/app/drawings_boq", icon: "materials", group: "Organization" },
   { label: "Standards", to: "/app/drawings_boq/standards", icon: "budget", group: "Organization" },

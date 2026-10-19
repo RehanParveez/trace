@@ -23,7 +23,7 @@ from app.core.config import settings
 from app.modules.drawings_boq.calc_service import CalculationService, engine_v2_enabled
 from app.modules.drawings_boq.spatial_repository import persist_spatial
 from app.core.exceptions import TraceException
-from app.dependencies.tenancy import scope_session_as_platform_admin, scope_session_to_org
+from app.dependencies.tenancy import scope_session_as_dispatch, scope_session_to_org
 from app.modules.drawings_boq.finish_schedule.common import carry_over_space_finishes
 from app.modules.drawings_boq.calc_tasks import auto_run_task
 from app.modules.drawings_boq.recalculation.calc_limits import RETRYABLE_CODES
@@ -98,7 +98,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 
   async with WorkerSessionLocal() as session:
     drawings = DrawingRepository(session)
-    await scope_session_as_platform_admin(session)   
+    await scope_session_as_dispatch(session)
 
     result = await session.execute(
       select(Drawing)
@@ -436,7 +436,7 @@ async def _read_pdf_drawing(drawing_id: UUID) -> None:
   from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
   
   async with WorkerSessionLocal() as session:
-    await scope_session_as_platform_admin(session)
+    await scope_session_as_dispatch(session)
     drawing = (await session.execute(select(Drawing).where(Drawing.id == drawing_id))).scalar_one_or_none()
     if drawing is None or drawing.format != DrawingFormat.PDF or not drawing.is_current_revision or drawing.uploaded_by_user_id is None:
       return

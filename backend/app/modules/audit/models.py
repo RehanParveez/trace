@@ -36,6 +36,9 @@ class AuditEntityType(str, enum.Enum):
   REVIEW_ISSUE = "REVIEW_ISSUE"
   RATE_BOOK = "RATE_BOOK"
   RATE_OVERRIDE = "RATE_OVERRIDE"
+  SUPPORT_ACCESS = "SUPPORT_ACCESS"
+  DATA_EXPORT = "DATA_EXPORT"
+  DATA_DELETION = "DATA_DELETION"
 
 class AuditAction(str, enum.Enum):
   CREATE = "CREATE"

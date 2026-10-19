@@ -7,6 +7,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Index, Integer, JSON, String,
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
+from app.core.crypto import EncryptedJSON, EncryptedText
 
 class AIRequestPurpose(str, enum.Enum):
   MATERIAL_NORMALIZATION = "MATERIAL_NORMALIZATION"
@@ -89,7 +90,7 @@ class AIRequest(Base):
   )
 
   prompt_text: Mapped[str] = mapped_column(
-    Text,
+    EncryptedText("ai_requests.prompt_text"),
     nullable=False,
   )
 
@@ -142,12 +143,12 @@ class AIResponse(Base):
   )
 
   raw_response: Mapped[str | None] = mapped_column(
-    Text,
+    EncryptedText("ai_responses.raw_response"),
     nullable=True,
   )
 
   parsed_output: Mapped[dict | None] = mapped_column(
-    JSON,
+    EncryptedJSON("ai_responses.parsed_output"),
     nullable=True,
   )
 

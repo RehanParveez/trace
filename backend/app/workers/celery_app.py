@@ -13,6 +13,7 @@ celery_app = Celery(
     "app.modules.drawings_boq.tasks",
     "app.modules.drawings_boq.calc_tasks",
     "app.modules.drawings_boq.recalculation.export_task",
+    "app.modules.privacy.tasks",
   ],
 )
 
@@ -30,6 +31,7 @@ celery_app.conf.update(
     "app.modules.drawings_boq.calc_tasks.expire_*": {"queue": "default"},
     "app.modules.drawings_boq.tasks.parse_drawing_task": {"queue": "bim_parsing"},
     "app.modules.drawings_boq.recalculation.export_task.*": {"queue": "export"},
+    "app.modules.privacy.*": {"queue": "default"},
   },
   task_acks_late=True,
   worker_prefetch_multiplier=1,
@@ -68,6 +70,10 @@ celery_app.conf.update(
     "expire-export-files": {
       "task": "app.modules.drawings_boq.calc_tasks.expire_export_files_task",
       "schedule": crontab(hour=3, minute=15),
+    },
+    "privacy-sweep": {
+      "task": "app.modules.privacy.tasks.privacy_sweep_task",
+      "schedule": 600.0,
     },
   },
 )

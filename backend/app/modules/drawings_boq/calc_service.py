@@ -31,7 +31,7 @@ from datetime import timedelta, timezone, datetime
 import json
 import random
 import time
-from app.dependencies.tenancy import scope_session_to_org, scope_session_as_platform_admin
+from app.dependencies.tenancy import scope_session_to_org, scope_session_as_dispatch
 from app.engine.measure.incremental import AllocationPlanner, alloc_signature, equivalent
 from app.engine.measure.spatial import BaselineMismatch
 from app.modules.drawings_boq.recalculation.calc_limits import CalcLimits
@@ -362,7 +362,7 @@ class CalculationService:
         pass
       try:
         async with factory() as session:
-          await scope_session_as_platform_admin(session)
+          await scope_session_as_dispatch(session)
           alive = await CalculationRunRepository(session).touch_heartbeat(run_id, attempt)
           await session.commit()
         if not alive:

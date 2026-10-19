@@ -109,7 +109,18 @@ class Settings(BaseSettings):
   export_soft_time_limit_seconds: int = 780
   export_retention_days: int = 14
   
+  encryption_provider: str = "none"
+  encryption_master_key: str = ""
+  encryption_kms_key_id: str = ""
+  encryption_kms_region: str = ""
+  encryption_dek_cache_seconds: int = 900
+  support_grant_default_hours: int = 24
+  data_export_retention_hours: int = 72
+  data_export_url_ttl_seconds: int = 900
+  org_deletion_grace_days: int = 7
+
   frontend_base_url: str = "http://localhost:5094"
+
   ai_enabled: bool = False
   ollama_base_url: str = "http://ollama:11434"
   ollama_model: str = "qwen2.5:7b-instruct"
