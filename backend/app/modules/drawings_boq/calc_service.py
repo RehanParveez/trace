@@ -14,6 +14,8 @@ from app.engine.measure.fingerprint import compute_fingerprint
 from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from app.modules.drawings_boq.calc_repository import CalculationRunRepository
 from app.modules.drawings_boq.measurement_params import MeasurementParametersService
+from app.modules.drawings_boq.one_total_business import OneTotalService
+from app.engine.measure import one_total_rules as ONE_TOTAL_RULES
 from app.modules.drawings_boq.datums import DatumsService
 from app.modules.drawings_boq.element_params import ElementParametersService
 from app.modules.drawings_boq.models import CalculationRun, DrawingElement, DrawingFormat, DrawingStatus, MeasurementConvention
@@ -276,6 +278,7 @@ class CalculationService:
       typed_levels = await DatumsService(self.session).stored_for_run(organization_id, project_id)
       if typed_levels:
         settings["datum_overrides"] = typed_levels
+    settings.update(await OneTotalService(self.session).run_settings(organization_id, project_id, chosen, derived_params))
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
@@ -431,6 +434,9 @@ class CalculationService:
         layer_mode=bool(run_settings.get("layers")), derived_mode=bool(run_settings.get("derived")),
         derived_params=dict(run_settings.get("derived_params") or {}),
         drawing_params=dict(run_settings.get("drawing_params") or {}),
+        one_total_rules=ONE_TOTAL_RULES.clean(run_settings.get("one_total_rules")),
+        detected_params=dict(run_settings.get("detected_params") or {}),
+        level_names=dict(run_settings.get("level_names") or {}),
         datum_overrides=dict(run_settings.get("datum_overrides") or {}),
         element_overrides={k: dict(v) for k, v in (run_settings.get("element_overrides") or {}).items()},
       )

@@ -59,6 +59,9 @@ class CalculationContext:
   datum_overrides: dict = field(default_factory=dict)
   element_overrides: dict = field(default_factory=dict)
   drawing_params: dict = field(default_factory=dict)
+  one_total_rules: tuple = ()
+  detected_params: dict = field(default_factory=dict)
+  level_names: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class Solid:

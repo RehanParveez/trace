@@ -14,7 +14,7 @@ function useBasisText(): (basis: DerivedBasis | null) => string {
     if (basis === "default") return t("boq.derived.basis.default", "assumed");
     if (basis === "claim") return t("boq.derived.basis.claim", "reference level for the footing depth");
     if (basis === "drawing") return t("boq.derived.basis.drawing", "printed on the drawing");
-    if (basis === "qs") return t("boq.derived.basis.qs", "answered by the QS");
+    if (basis === "detected") return t("boq.derived.basis.detected", "found from the project's drawings");
     return "";
   };
 }

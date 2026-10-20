@@ -162,7 +162,7 @@ export function isDerivedSpec(spec: BOQItemSpec | null | undefined): boolean {
   return spec?.kind === "DERIVED";
 }
 
-export type DerivedBasis = "user" | "convention" | "drawing" | "qs" | "default" | "claim";
+export type DerivedBasis = "user" | "convention" | "drawing" | "qs" | "default" | "claim" | "detected";
 
 export interface DerivedBasisRow {
   key: string;

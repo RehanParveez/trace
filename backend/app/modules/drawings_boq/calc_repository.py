@@ -364,7 +364,7 @@ class CalculationRunRepository:
         material_basis=steel_material_basis(r.structural_role, r.raw_material_text, r.material_family),
         thickness_mm=r.thickness_mm, material_text=r.raw_material_text,
         volume_check=volume_check(r.normalization_issues),
-        height_mm=r.height_mm, type_mark=r.type_mark, name=r.name, type_mark=r.type_mark, name=r.name,
+        height_mm=r.height_mm, type_mark=r.type_mark, name=r.name,
         layers=tuple(r.layers) if isinstance(r.layers, list) and r.layers else None,
         generic_material=any(isinstance(i, dict) and i.get("code") == "MISSING_MATERIAL" for i in (r.normalization_issues or ())),
       )

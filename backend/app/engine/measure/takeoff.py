@@ -706,6 +706,11 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(),
   skipped: dict = {}
   results: list = []
   ok: list = []
+  from app.engine.measure import one_total_rules as RU
+  import dataclasses as _dc
+  item_rules = tuple(r for r in (getattr(ctx, "one_total_rules", ()) or ()) if r.kind == RU.ITEM)
+  item_ruled: dict = {}
+  item_ruled_groups: dict = {}
 
   def skip(m, code: str, reason: str):
     skipped[code] = skipped.get(code, 0) + 1
@@ -741,15 +746,17 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(),
     if comp.quantity <= 0:
       skip(m, "ZERO_QUANTITY", "The measurement came to zero.")
       continue
+    rule = RU.find(item_rules, RU.ITEM, m.work_item_code, m.level_id) if (item_rules and m.recon_mode == "AUTO") else None
+    if rule is not None:
+      item_ruled[str(m.id)] = rule.prefer
+      item_ruled_groups[(m.work_item_code, m.level_id)] = rule.prefer
+      m = _dc.replace(m, recon_mode={RU.DRAWING: "REPLACE_MODEL", RU.BOTH: "ADD", RU.MODEL: "AUTO"}[rule.prefer])
     ok.append((m, sheet, cals.get(m.calibration_id), comp))
 
   model_rows = [r for r in model_ledger if getattr(r, "source_kind", "MODEL") != SOURCE_KIND and r.quantity > 0]
   from app.engine.measure import one_total as OT
   one_total_on = OT.is_on(ctx)
-  one_total_ids = (OT.adjudicable_ids(ctx) & {str(m.id) for m, _, _, _ in ok if m.recon_mode == "AUTO"}) if (one_total_on and elements) else frozenset()
-  from app.engine.measure import one_total as OT
-  one_total_on = OT.is_on(ctx)
-  one_total_ids = (OT.adjudicable_ids(ctx) & {str(m.id) for m, _, _, _ in ok if m.recon_mode == "AUTO"}) if (one_total_on and elements) else frozenset()
+  one_total_ids = (OT.adjudicable_ids(ctx) & {str(m.id) for m, _, _, _ in ok if m.recon_mode == "AUTO" and item_ruled.get(str(m.id)) != "MODEL"}) if (one_total_on and elements) else frozenset()
 
   def rows_for(code: str, level) -> list:
     if level is None:
@@ -790,7 +797,7 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(),
         not_counted[key] = not_counted.get(key, 0) + 1
       else:
         decision, reason = "COUNTED", ("Decided member by member against the model (one total)." if (covered and str(m.id) in one_total_ids) else "No model quantity for this work item.")
-    decided.append((m, sheet, cal_in, comp, decision, reason, model_qty, covered))
+    decided.append((m, sheet, cal_in, comp, decision, ("By your rule for this item. " + reason) if str(m.id) in item_ruled else reason, model_qty, covered))
 
   groups: dict = defaultdict(lambda: [ZERO, ZERO])
   for m, sheet, cal_in, comp, decision, reason, model_qty, covered in decided:
@@ -808,7 +815,8 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(),
       variance_by_key[(code, level, unit)] = pct
       variances.append({"work_item_code": code, "level_id": str(level) if level else None, "unit": unit,
         "pdf_quantity": str(q6(pdf_qty)), "model_quantity": str(q6(model_qty)), "variance_pct": str(pct),
-        "over_tolerance": abs(pct) > tolerance, "tolerance_pct": str(tolerance)})
+        "over_tolerance": abs(pct) > tolerance, "tolerance_pct": str(tolerance), "rule": item_ruled_groups.get((code, level)),
+        "level_name": (getattr(ctx, "level_names", None) or {}).get(str(level)) if level else None})
 
   counted = verified = 0
   for m, sheet, cal_in, comp, decision, reason, model_qty, covered in decided:
@@ -816,7 +824,7 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(),
     record = {"measurement_id": str(m.id), "decision": decision, "reason": reason, "work_item_code": m.work_item_code,
       "level_id": str(m.level_id) if m.level_id else None, "quantity": str(comp.quantity), "unit": comp.unit,
       "model_quantity": str(q6(model_qty)) if covered else None, "variance_pct": str(pct) if pct is not None else None,
-      "confidence": str(comp.confidence), "warnings": list(comp.warnings), "mode": m.recon_mode}
+      "confidence": str(comp.confidence), "warnings": list(comp.warnings), "mode": m.recon_mode, "rule": item_ruled.get(str(m.id))}
     
     if decision == "VERIFIED":
       verified += 1

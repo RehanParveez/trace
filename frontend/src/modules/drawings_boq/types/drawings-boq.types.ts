@@ -1651,7 +1651,9 @@ export interface OneTotalDecision {
   matched: number;
   drawing_m3: string;
   state: "COMPLETE" | "PARTIAL" | "NOT_MATCHED";
-  used: "MODEL" | "DRAWING";
+  used: "MODEL" | "DRAWING" | "BOTH";
+  level_name?: string | null;
+  rule?: "DRAWING" | "MODEL" | "BOTH" | null;
   reason: string;
   conflict: boolean;
   size_differs: boolean;
@@ -1717,6 +1719,9 @@ export interface OneTotalStats {
   conflicts_total?: number;
   used_model?: number;
   used_drawing?: number;
+  used_both?: number;
+  rules_given?: number;
+  rules_applied?: number;
   truncated?: boolean;
   decisions?: OneTotalDecision[];
   conflicts?: OneTotalDecision[];
@@ -1727,8 +1732,22 @@ export interface OneTotalStats {
   alignment?: { group: string; method: string; supporters?: number; compared?: number; [key: string]: unknown }[];
 }
 
+export interface PdfVariance {
+  work_item_code: string;
+  level_id: string | null;
+  level_name?: string | null;
+  unit: string;
+  pdf_quantity: string;
+  model_quantity: string;
+  variance_pct: string;
+  over_tolerance: boolean;
+  tolerance_pct?: string;
+  rule?: "DRAWING" | "MODEL" | "BOTH" | null;
+}
+
 export interface PdfTakeoffStats {
   one_total?: OneTotalStats;
+  variances?: PdfVariance[];
   [key: string]: unknown;
 }
 

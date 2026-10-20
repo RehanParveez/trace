@@ -52,7 +52,7 @@ def software_totals(rows) -> tuple:
       d["tags"][str(tag)] = d["tags"].get(str(tag), 0.0) + q
   return totals, sorted(unclassified.values(), key=lambda x: -x["quantity"])
 
-def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_PCT, overrides: dict | None = None, classes: dict | None = None) -> dict:
+def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_PCT, overrides: dict | None = None, classes: dict | None = None, tolerances: dict | None = None) -> dict:
   totals, unclassified = software_totals(software_rows)
   aggs = {}
   unmapped = []
@@ -89,13 +89,14 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
     err = None
     if in_bill and a.sw_rows and a.qs_si:
       err = (a.sw_si - a.qs_si) / a.qs_si * 100.0
+    tol = float((tolerances or {}).get(key, tolerance_pct))
     if not scope:
       status, suggested = "OUT_OF_SCOPE", None
     elif not in_bill:
       status, suggested = "EXTRA", "NEEDS_DECISION"
     elif not a.sw_rows:
       status, suggested = "MISSING", ("MISSING_FEATURE" if key in NOT_MEASURED else "NEEDS_DECISION")
-    elif err is not None and abs(err) <= tolerance_pct:
+    elif err is not None and abs(err) <= tol:
       status, suggested = "MATCH", None
     else:
       status, suggested = "DIFF", "NEEDS_DECISION"
@@ -103,7 +104,7 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
     cls = user.get("class") if user.get("class") in CLASSES else None
     
     lines.append({
-      "key": key, "label": KEY_LABEL.get(key, key), "status": status, "unit": a.bill_unit or a.unit,
+      "key": key, "label": KEY_LABEL.get(key, key), "status": status, "unit": a.bill_unit or a.unit, "tolerance_pct": tol,
       "qs": round(a.qs_bill, 3) if in_bill else None, "software": round(sw_bill, 3) if sw_bill is not None else None,
       "difference": round(sw_bill - a.qs_bill, 3) if (sw_bill is not None and in_bill) else None,
       "error_pct": round(err, 2) if err is not None else None,
@@ -124,7 +125,7 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
   
   measures = {
     "bill_lines": len(scoped), "compared": len(both),
-    "within_tolerance": sum(1 for x in both if abs(x["error_pct"]) <= tolerance_pct),
+    "within_tolerance": sum(1 for x in both if abs(x["error_pct"]) <= x["tolerance_pct"]),
     "line_error_median_pct": round(median(abs(x["error_pct"]) for x in both), 2) if both else None,
     "coverage_pct": round(100.0 * len(covered) / len(scoped), 1) if scoped else None,
     "closeness_pct": round(mean(scores), 1) if scores else None,

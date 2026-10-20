@@ -156,6 +156,10 @@ def resolve_params(ctx: CalculationContext) -> dict:
     if value is not None:
       out[name] = {"value": value, "source": QS.SOURCE}
       continue
+    value = _number(((getattr(ctx, "detected_params", None)) or {}).get(name), low, high)
+    if value is not None:
+      out[name] = {"value": value, "source": "detected"}
+      continue
     out[name] = {"value": default, "source": "default", "proposed": True} if QP.is_proposed(name) else {"value": default, "source": "default"}
   return out
 

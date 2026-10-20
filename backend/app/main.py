@@ -14,10 +14,12 @@ from app.modules.drawings_boq.standards.router import router as standards_router
 from app.modules.drawings_boq.finish_schedule.router import router as finish_schedule_router
 from app.modules.drawings_boq.takeoff.router import router as takeoff_router
 from app.modules.drawings_boq.lab.router import router as bill_compare_router
+from backend.app.modules.drawings_boq.lab.expected_business import router as expected_boq_router
 from app.modules.drawings_boq.rebar.rebar_router import router as rebar_router
 from app.modules.drawings_boq.pricing.router import router as pricing_router
 from app.modules.drawings_boq.pricing.rate_import_router import router as rate_import_router
 from app.modules.drawings_boq.measurement_params import router as measurement_params_router
+from app.modules.drawings_boq.one_total_business import router as one_total_router
 from app.modules.drawings_boq.datums import router as datums_router
 from app.modules.drawings_boq.element_params import router as element_params_router
 from app.modules.whatsapp.router import router as  whatsapp_router
@@ -88,6 +90,8 @@ app.include_router(takeoff_router, prefix=f"{settings.api_v1_prefix}/drawings-bo
 
 app.include_router(bill_compare_router, prefix=settings.api_v1_prefix)
 
+app.include_router(expected_boq_router, prefix=settings.api_v1_prefix)
+
 app.include_router(rebar_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(pricing_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
@@ -95,6 +99,8 @@ app.include_router(pricing_router, prefix=f"{settings.api_v1_prefix}/drawings-bo
 app.include_router(rate_import_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(measurement_params_router, prefix=settings.api_v1_prefix)
+
+app.include_router(one_total_router, prefix=settings.api_v1_prefix)
 
 app.include_router(datums_router, prefix=settings.api_v1_prefix)
 

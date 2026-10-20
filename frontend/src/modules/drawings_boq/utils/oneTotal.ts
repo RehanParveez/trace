@@ -35,6 +35,12 @@ export function decisionWords(reason: string | null | undefined): string {
       return "The setting keeps the drawing.";
     case "CHOICE_MODEL":
       return "The setting keeps the model.";
+    case "RULE_DRAWING":
+      return "Your choice for this member: the drawing counts and the model's is set aside.";
+    case "RULE_MODEL":
+      return "Your choice for this member: the model counts and the drawing's is set aside.";
+    case "RULE_BOTH":
+      return "Your choice for this member: both count.";
     case "PARTIAL_DRAWING_COVERS_ALL":
       return "Only some of the members were found in the model. The drawing says how many there are, so its mark was kept whole and the model's partners were set aside.";
     case "MATCHING_NOT_TRUSTED":
@@ -76,6 +82,8 @@ export function preferWords(prefer: string | null | undefined): string {
       return "the drawing";
     case "MODEL":
       return "the model";
+    case "BOTH":
+      return "both";
     default:
       return "the more exact source";
   }
@@ -110,6 +118,10 @@ export interface OneTotalView {
   truncated: boolean;
   kinds: KindTotalView[];
   conflicts: OneTotalDecision[];
+  decisions: OneTotalDecision[];
+  usedBoth: number;
+  rulesGiven: number;
+  rulesApplied: number;
   drawingOnly: { tag: string; kind: string; members: number; m3: string; why: string }[];
   modelOnly: { mark: string; kind: string; m3: string; elementId: string }[];
   notTrusted: { kind: string; drawingMembers: number; modelMembers: number; matched: number; sharePct: number }[];
@@ -142,6 +154,10 @@ export function oneTotalView(takeoff: PdfTakeoffStats | OneTotalStats | null | u
       }))
       .sort((a, b) => a.label.localeCompare(b.label)),
     conflicts: stats.conflicts ?? [],
+    decisions: stats.decisions ?? [],
+    usedBoth: Number(stats.used_both ?? 0),
+    rulesGiven: Number(stats.rules_given ?? 0),
+    rulesApplied: Number(stats.rules_applied ?? 0),
     drawingOnly: (stats.drawing_only ?? []).map((d) => ({ tag: d.tag ?? "—", kind: kindWords(d.category), members: d.members, m3: d.drawing_m3, why: drawingOnlyWords(d.why) })),
     modelOnly: (stats.model_only ?? []).map((m) => ({ mark: m.mark ?? "—", kind: kindWords(m.category), m3: m.model_m3, elementId: m.element_id })),
     notTrusted: (stats.not_trusted ?? []).map((n) => ({ kind: kindWords(n.category), drawingMembers: n.drawing_members, modelMembers: n.model_members, matched: n.matched, sharePct: n.share_pct })),

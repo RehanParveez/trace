@@ -3,6 +3,9 @@ import { useTranslation } from "react-i18next";
 import type { PdfTakeoffStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
 import { decisionWords, kindWords, matchWords, oneTotalReasonWords, oneTotalView } from "../utils/oneTotal";
+import { ruleKindOf } from "../utils/oneTotalRules";
+import { OneTotalRuleButtons } from "./OneTotalRuleButtons";
+import { OneTotalRulesList } from "./OneTotalRulesList";
 
 const TITLE = "text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]";
 const NOTE = "rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]";
@@ -19,7 +22,7 @@ function Cell({ label, value, testId, tone }: { label: string; value: ReactNode;
   );
 }
 
-export function OneTotalPanel({ takeoff }: { takeoff: PdfTakeoffStats | null | undefined }) {
+export function OneTotalPanel({ takeoff, projectId }: { takeoff: PdfTakeoffStats | null | undefined; projectId?: string }) {
   const { t } = useTranslation();
   const v = oneTotalView(takeoff);
   if (!v) return null;
@@ -95,6 +98,7 @@ export function OneTotalPanel({ takeoff }: { takeoff: PdfTakeoffStats | null | u
                   <th className={TH}>{t("boq.oneTotal.modelQty", "Model (m³)")}</th>
                   <th className={TH}>{t("boq.oneTotal.used", "Used")}</th>
                   <th className={TH}>{t("boq.oneTotal.why", "Why")}</th>
+                  <th className={TH}>{t("boq.oneTotal.choose", "Which counts")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -112,10 +116,13 @@ export function OneTotalPanel({ takeoff }: { takeoff: PdfTakeoffStats | null | u
                       {c.model_m3 !== null ? formatPrecise(c.model_m3, 3) : "—"}
                       {c.difference_pct !== null ? <span className="block text-[10px] text-[var(--color-text-muted)]">{Number(c.difference_pct) > 0 ? "+" : ""}{c.difference_pct}%</span> : null}
                     </td>
-                    <td className={TD}>{c.used === "MODEL" ? t("boq.oneTotal.usedModel", "Model") : t("boq.oneTotal.usedDrawing", "Drawing")}</td>
+                    <td className={TD}>{c.used === "MODEL" ? t("boq.oneTotal.usedModel", "Model") : c.used === "BOTH" ? t("boq.oneTotal.usedBoth", "Both") : t("boq.oneTotal.usedDrawing", "Drawing")}</td>
                     <td className="px-2 py-1.5 text-[12px] text-[var(--color-text-secondary)]">
                       {decisionWords(c.reason)}
                       {c.size_differs ? ` ${t("boq.oneTotal.sizeDiffers", "The sizes differ.")}` : ""}
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <OneTotalRuleButtons projectId={projectId} kind={ruleKindOf(c.category)} mark={c.tag} levelName={c.level_name} used={c.used} />
                     </td>
                   </tr>
                 ))}
@@ -124,6 +131,42 @@ export function OneTotalPanel({ takeoff }: { takeoff: PdfTakeoffStats | null | u
           </div>
         </div>
       ) : null}
+
+      {v.decisions.length > 0 && projectId ? (
+        <details data-testid="one-total-decisions">
+          <summary className="cursor-pointer text-[12px] font-semibold text-[var(--color-text-primary)]">
+            {t("boq.oneTotal.allDecisions", { defaultValue: "Every member decided ({{n}}): choose which source counts", n: v.decisions.length })}
+          </summary>
+          <div className="mt-2 overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse">
+              <thead>
+                <tr className="border-b border-[var(--color-border)]">
+                  <th className={TH}>{t("boq.oneTotal.mark", "Mark")}</th>
+                  <th className={TH}>{t("boq.oneTotal.storey", "Storey")}</th>
+                  <th className={TH}>{t("boq.oneTotal.used", "Used")}</th>
+                  <th className={TH}>{t("boq.oneTotal.choose", "Which counts")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {v.decisions.map((c) => (
+                  <tr key={c.measurement_id} className="border-b border-[var(--color-border)] align-top" data-testid={`one-total-decision-${c.measurement_id}`}>
+                    <td className={TD}>{c.tag ?? "—"} <span className="text-[var(--color-text-muted)]">{t(`boq.oneTotal.kinds.${c.category}`, kindWords(c.category))}</span></td>
+                    <td className={TD}>{c.level_name ?? "—"}</td>
+                    <td className={TD}>{c.used === "MODEL" ? t("boq.oneTotal.usedModel", "Model") : c.used === "BOTH" ? t("boq.oneTotal.usedBoth", "Both") : t("boq.oneTotal.usedDrawing", "Drawing")}{c.rule ? <span className="block text-[10px] text-[var(--color-text-muted)]">{t("boq.oneTotal.byChoice", "by your choice")}</span> : null}</td>
+                    <td className="px-2 py-1.5"><OneTotalRuleButtons projectId={projectId} kind={ruleKindOf(c.category)} mark={c.tag} levelName={c.level_name} used={c.used} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ) : null}
+      {v.rulesGiven > 0 ? (
+        <div className={NOTE} data-testid="one-total-rules-applied">
+          {t("boq.oneTotal.rulesApplied", { defaultValue: "Your choices: {{given}} given to this run, {{applied}} applied to a member.", given: v.rulesGiven, applied: v.rulesApplied })}
+        </div>
+      ) : null}
+      <OneTotalRulesList projectId={projectId} />
 
       {v.notTrusted.length > 0 ? (
         <div className={WARN} data-testid="one-total-not-trusted">

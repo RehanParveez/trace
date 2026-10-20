@@ -8,6 +8,7 @@ import { FormworkPanel } from "./FormworkPanel";
 import { DerivedExtras } from "./DerivedExtras";
 import { ModelWorksPanel } from "./ModelWorksPanel";
 import { OneTotalPanel } from "./OneTotalPanel";
+import { ItemClaimsPanel } from "./ItemClaimsPanel";
 import { AreaWorksPanel } from "./AreaWorksPanel";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
@@ -52,7 +53,7 @@ function Counts({ title, data }: { title: string; data?: Record<string, number> 
   );
 }
 
-export function RunStatsSummary({ stats }: { stats?: RunStats }) {
+export function RunStatsSummary({ stats, projectId }: { stats?: RunStats; projectId?: string }) {
   const { t } = useTranslation();
   const stageLabel = useStageLabel();
   if (!stats || Object.keys(stats).length === 0) return null;
@@ -246,7 +247,8 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
       {dv?.enabled ? <DerivedExtras stats={dv} /> : null}
       <ModelWorksPanel derived={dv} ranges={stats.ranges} />
       <AreaWorksPanel derived={dv} />
-      <OneTotalPanel takeoff={stats.pdf_takeoff} />
+      <OneTotalPanel takeoff={stats.pdf_takeoff} projectId={projectId} />
+      <ItemClaimsPanel takeoff={stats.pdf_takeoff} projectId={projectId} />
       {fw ? <FormworkPanel view={fw} /> : null}
       
       {sv ? (

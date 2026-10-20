@@ -18,5 +18,5 @@
     "jsx": "react-jsx",
     "strict": true
   },
-  "include": ["src"]
+  "include": ["src", "src/modules/drawings_boq/hooks/useOneTotal.ts"]
 }

@@ -15,6 +15,7 @@ import { RebarMarksPanel } from "./RebarMarksPanel";
 import { StagesPanel } from "./StagesPanel";
 import { SteelCompare } from "../lab/components/SteelCompare";
 import { BillCompareRun } from "../lab/components/BillCompareRun";
+import { ExpectedBoqPanel } from "../lab/components/ExpectedBoqPanel";
 import { ReasonablenessPanel } from "../lab/components/ReasonablenessPanel";
 import { RunHistoryPanel } from "../lab/components/RunHistoryPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
@@ -22,6 +23,7 @@ import { PdfRunReadiness } from "../takeoff/components/PdfRunReadiness";
 import type { WaitingPdf } from "../takeoff/utils/runDrawings";
 import { RunScope } from "./RunScope";
 import { DerivedParamsForm } from "./DerivedParamsForm";
+import { OneTotalSourcesNotice } from "./OneTotalSourcesNotice";
 import { QsAnswersPanel } from "./QsReadingsPanel";
 import { derivedInputFromParams, derivedParamsFromInput, derivedUpdateFromInput } from "../utils/derived";
 import { useMeasurementParameters, useSaveMeasurementParameters } from "../hooks/useMeasurementParams";
@@ -49,6 +51,7 @@ type View =
   | "rebar"
   | "steelqs"
   | "billqs"
+  | "expected"
   | "reason"
   | "history"
   | "metrics";
@@ -288,6 +291,8 @@ export function CalculationRunPanel({
           disabled={startRun.isPending}
         />
 
+        <OneTotalSourcesNotice projectId={projectId} />
+
         <DerivedParamsForm
           value={derivedInput}
           onChange={(next) => {
@@ -496,7 +501,14 @@ export function CalculationRunPanel({
                   ),
                 ],
                 [
+                  "expected",
+                  t(
+                    "boq.calculationRun.tabExpected", "Expected BOQ"
+                  ),
+                ],
+                [
                   "reason",
+
                   t(
                     "boq.calculationRun.tabReason", "Do the quantities fit?"
                   ),
@@ -594,6 +606,8 @@ export function CalculationRunPanel({
 
           {view === "billqs" ? <BillCompareRun runId={run.id} /> : null}
 
+          {view === "expected" ? <ExpectedBoqPanel projectId={projectId} runId={run.id} /> : null}
+
           {view === "reason" ? <ReasonablenessPanel runId={run.id} /> : null}
 
           {view === "history" ? <RunHistoryPanel runId={run.id} /> : null}
@@ -685,7 +699,7 @@ function RunOverview({
         ))
       )}
 
-      <RunStatsSummary stats={run.stats} />
+      <RunStatsSummary stats={run.stats} projectId={run.project_id} />
       {Object.keys(run.stats ?? {}).length > 0 ? (
         <details>
           <summary className="cursor-pointer text-[11.5px] text-[var(--color-text-muted)]">Raw stats</summary>

@@ -359,7 +359,15 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
   prefer = int(round(p[PREFER_PARAM]))
   tol_mm = p[POSITION_PARAM]
   trust = p[TRUST_PARAM]
+  from app.engine.measure import one_total_rules as RU
+  rules = tuple(getattr(ctx, "one_total_rules", ()) or ())
+  names = dict(getattr(ctx, "level_names", None) or {})
+
+  def lvl(level):
+    return names.get(str(level)) if level else None
+
   out = Outcome()
+
   stats: dict = {"enabled": True, "ran": False, "prefer": PREFER_NAMES.get(prefer, "EXACT"), "tolerance_pct": str(tolerance_pct),
     "position_tolerance_mm": tol_mm, "trusted_share_pct": trust}
   
@@ -407,7 +415,7 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
     if share + 1e-9 < trust:
       distrusted.add(key)
       not_trusted.append({"category": key[0], "level_id": str(key[1]) if key[1] else None, "drawing_members": g["drawing"], "model_members": n_model,
-        "matched": g["matched"], "share_pct": round(share, 1)})
+        "matched": g["matched"], "share_pct": round(share, 1), "level_name": lvl(key[1])})
       
   for mk in sorted(marks, key=lambda x: x.mid):
     key = (mk.cls, mk.level)
@@ -415,9 +423,11 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
     k = len(got)
     base = {"measurement_id": mk.mid, "tag": mk.tag, "category": mk.category, "level_id": str(mk.level) if mk.level else None, "members": mk.count,
       "matched": k, "drawing_m3": str(q6(mk.qty))}
-    if key in distrusted:
+    rule = RU.find(rules, mk.cls, mk.tag, mk.level)
+    base = {**base, "level_name": lvl(mk.level), "rule": rule.prefer if rule else None}
+    if key in distrusted and not (rule is not None and rule.prefer != RU.MODEL):
       out.drop_pdf.add(mk.mid)
-      decisions.append({**base, "state": "NOT_MATCHED", "used": "MODEL", "reason": "MATCHING_NOT_TRUSTED", "conflict": True, "element_ids": [], "by": None,
+      decisions.append({**base, "state": "NOT_MATCHED", "used": "MODEL", "reason": "RULE_MODEL" if rule else "MATCHING_NOT_TRUSTED", "conflict": True, "element_ids": [], "by": None,
         "model_m3": None, "difference_pct": None, "size_differs": False})
       continue
   
@@ -436,6 +446,8 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
       state = "COMPLETE"
     else:
       used, why, state = "DRAWING", "PARTIAL_DRAWING_COVERS_ALL", "PARTIAL"
+    if rule is not None:
+      used, why = rule.prefer, "RULE_" + rule.prefer
     conflict = (not complete) or size_differs or (diff is not None and abs(diff) > tolerance_pct)
     bys = sorted({by for _, _, by, _ in got})
     rec = {**base, "state": state, "used": used, "reason": why, "conflict": bool(conflict), "size_differs": bool(size_differs),
@@ -448,6 +460,9 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
       other = _pct(model_qty, share_qty)
       out.annotate[mk.mid] = {"state": state, "model_m3": str(q6(model_qty)), "difference_pct": rec["difference_pct"], "conflict": bool(conflict), "reason": why,
         "elements": len(got), "other_pct": str(other) if other is not None else None}
+    elif used == "BOTH":
+      out.annotate[mk.mid] = {"state": state, "model_m3": str(q6(model_qty)), "difference_pct": rec["difference_pct"], "conflict": False, "reason": why,
+        "elements": len(got), "other_pct": None, "rule": "BOTH"}
     else:
       out.drop_pdf.add(mk.mid)
     decisions.append(rec)
@@ -462,7 +477,7 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
     if any((c == m.cls and _level_ok(lv, m.level)) and (c, lv) in distrusted for c, lv in covered_classes):
       continue
     member_only.append({"element_id": str(m.element.id), "mark": getattr(m.element, "type_mark", None) or getattr(m.element, "name", None),
-      "category": m.cls, "level_id": str(m.level) if m.level else None, "model_m3": str(q6(m.qty))})
+      "category": m.cls, "level_id": str(m.level) if m.level else None, "level_name": lvl(m.level), "model_m3": str(q6(m.qty))})
 
   kept: dict = {}
   def put(cls, source, row):
@@ -488,7 +503,7 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
       put(mk.cls, "DRAWING", r)
       
   for d in decisions:
-    if not d["conflict"] or d["state"] == "NOT_MATCHED" or d["model_m3"] is None:
+    if not d["conflict"] or d["state"] == "NOT_MATCHED" or d["model_m3"] is None or d["used"] == "BOTH":
       continue
     cls = PDF_CLASS.get(d["category"])
     k = kept.get(cls)
@@ -516,6 +531,8 @@ def adjudicate(ctx, profile, elements, model_rows, pdf_rows, dropped=frozenset()
     "not_trusted": _cap(not_trusted), "totals": totals,
     "used_model": sum(1 for d in decisions if d["used"] == "MODEL" and d["state"] != "NOT_MATCHED"),
     "used_drawing": sum(1 for d in decisions if d["used"] == "DRAWING"),
+    "used_both": sum(1 for d in decisions if d["used"] == "BOTH"),
+    "rules_given": len(rules), "rules_applied": sum(1 for d in decisions if d.get("rule")),
     "truncated": any(len(x) > MAX_LIST for x in (decisions, conflicts, drawing_only, member_only, not_trusted)),
   })
   out.stats = stats
