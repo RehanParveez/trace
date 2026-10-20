@@ -11,7 +11,7 @@ from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
 from app.modules.drawings_boq.takeoff.extract import rcc_ring as RR
 from app.modules.drawings_boq.takeoff.extract import completion as CP
-from app.modules.drawings_boq.takeoff.extract import qs_rules as QR
+from app.modules.drawings_boq.takeoff.extract import rules as QR
 from app.modules.drawings_boq.takeoff.extract import neck as NK
 from app.modules.drawings_boq.takeoff.extract import wide_openings as WO
 from app.modules.drawings_boq.takeoff.extract import lintel_heads as LH

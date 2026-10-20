@@ -16,12 +16,12 @@ export interface DerivedFieldDef {
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "working_space_mm", defaultMm: 150, min: 0, max: 3000 },
   { key: "pcc_projection_mm", defaultMm: 100, min: 0, max: 1000 },
-  { key: "pcc_thickness_mm", defaultMm: 100, min: 0, max: 600 },
+  { key: "pcc_thickness_mm", defaultMm: 76.2, min: 0, max: 600 },
   { key: "ballast_clearance_mm", defaultMm: 152.4, min: 0, max: 1000 },
   { key: "ballast_thickness_mm", defaultMm: 304.8, min: 0, max: 1500 },
   { key: "wall_bed", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "shoring", defaultMm: 0, min: 0, max: 1, flag: true },
-  { key: "footing_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "footing_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "formwork_shared_faces", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tank_base_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
@@ -36,6 +36,9 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "fill_compaction_pct", defaultMm: 0, min: 0, max: 40, unit: "pct", label: "Extra loose earth for compacting the filling (percent)", hint: "Standard 0 percent: the filling needs its own volume only" },
   { key: "fill_from_excavation", defaultMm: 0, min: 0, max: 1, flag: true, label: "Use the surplus of the dig for the filling under floors" },
   { key: "floor_works_from_spaces", defaultMm: 0, min: 0, max: 1, flag: true, label: "Bed and termite treatment under the floor from the model's rooms" },
+  { key: "wall_foundation_works", defaultMm: 0, min: 0, max: 1, flag: true, label: "Brick steps and termite trench under the model's masonry walls" },
+  { key: "wall_membrane", defaultMm: 0, min: 0, max: 1, flag: true, label: "Membrane along the plinth under the model's walls" },
+  { key: "wall_finishes_from_walls", defaultMm: 0, min: 0, max: 1, flag: true, label: "Plaster and paint from the model's walls when it has no rooms" },
   { key: "stair_formwork_soffit_only", defaultMm: 0, min: 0, max: 1, flag: true, label: "Stair formwork: soffit only" },
   { key: "beam_lintel_qs_rate", defaultMm: 0, min: 0, max: 1, flag: true, label: "Beam and lintel: rate as the QS does" },
   { key: "formwork_shared_walls", defaultMm: 1, min: 0, max: 1, flag: true, label: "Take off column faces that an RCC wall covers" },
@@ -44,7 +47,7 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "ring_hook_dia", defaultMm: 20, min: 0, max: 40, unit: "dia" },
   { key: "bar_lap_dia", defaultMm: 40, min: 0, max: 80, unit: "dia" },
   { key: "bar_anchor_dia", defaultMm: 0, min: 0, max: 80, unit: "dia" },
-  { key: "steel_wastage_pct", defaultMm: 0, min: 0, max: 15, unit: "pct" },
+  { key: "steel_wastage_pct", defaultMm: 5, min: 0, max: 15, unit: "pct" },
   { key: "beam_depth_includes_slab", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tie_band_replaces_lintel", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "dpc_thickness_mm", defaultMm: 38.1, min: 0, max: 300 },
@@ -157,7 +160,7 @@ export interface DerivedBasisRow {
 
 const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", 
   "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "steel_cover_slab_mm", "steel_cover_beam_mm", "steel_cover_column_mm", "steel_cover_footing_mm", "steel_cover_wall_mm",
-   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
+   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "wall_foundation_works", "wall_membrane", "wall_finishes_from_walls", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
     return [];

@@ -27,6 +27,8 @@ _CONCRETE_TEXT = re.compile(r"concrete|cement|\brcc\b|grout", re.I)
 _PILE_CAP_NAME = re.compile(r"(?<![a-z])pile[\s_\-]*caps?(?![a-z])", re.I)
 _PILE_NAME = re.compile(r"(?<![a-z])piles?(?![a-z])", re.I)
 _PILE_REFINABLE_ROLES = frozenset({"SLAB", "SLAB_FOUNDATION", "FOOTING", "COLUMN", "MEMBER", "UNKNOWN"})
+_FOUNDATION_WALL_ROLES = frozenset({"WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "WALL_LOAD_BEARING"})
+_FOUNDATION_WALL_NAME = re.compile(r"(?<![a-z])(foundation|footing|plinth)[\s_\-]*walls?(?![a-z])|(?<![a-z])walls?[\s_\-]*(foundation|plinth)(?![a-z])", re.I)
 _STEEL_NAME = re.compile(r"\bsteel\b|\b(UB|UC|PFC|RHS|SHS|CHS|IPE|HEA|HEB)\s?\d{2,4}", re.I)
 _NON_CONCRETE_PATTERNS = (
   ("ALUMINIUM", re.compile(r"\b(aluminium|aluminum)\b", re.I)),
@@ -328,6 +330,10 @@ def _classify(element, psets: dict, schema_id: str) -> tuple[str, str, float]:
       return "PILE_CAP", "NAME_REFINED", 0.8
     if _PILE_NAME.search(text):
       return "PILE", "NAME_REFINED", 0.8
+  if role in _FOUNDATION_WALL_ROLES:
+    wall_text = " ".join(str(v) for v in (getattr(element, "Name", None), getattr(element, "ObjectType", None)) if v)
+    if _FOUNDATION_WALL_NAME.search(wall_text):
+      return "WALL_FOUNDATION", "NAME_REFINED", 0.8
   return role, source, confidence
 
 def _classify_base(element, psets: dict, schema_id: str) -> tuple[str, str, float]:

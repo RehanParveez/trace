@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.engine.measure import proposed
 
 QS_NAME = "M. Junaid"
 ANSWERED_ON = "2026-10-19"
@@ -57,7 +58,7 @@ READINGS = [
     "Walls and columns take the floor-to-floor height printed on the building sections; the basement takes 10.75 ft; a basement concrete wall and the membrane take 11 ft.",
     conventions=["basement_wall_height_mm", "basement_floor_to_floor_mm"]),
   _a("S6", "A", "Height of brick foundation step 2", "What is the height of step 2 for the thin wall?",
-    "Not answered.", OPEN, "Typed when the step is accepted; nothing is assumed.", "Ask again."),
+    "Not answered.", OPEN, "Typed when the step is accepted. The step heights of his workbook are shown as a suggestion on each step; nothing is filled in.", "Ask again."),
   _a("S7", "A", "Ground floor 4.5 in boundary walls", "The sheet has 66 ft. Is that measured along the boundary or his estimate?",
     "It is an estimate. The boundary is about 6 ft high and the wall is 4.5 in thick.", APPLIED,
     "The 66 ft is shown beside the drawing length as the QS estimate; the drawing length is what is measured. The 4.5 in thickness is offered when the wall is accepted.",
@@ -123,9 +124,9 @@ READINGS = [
     "The drawing is CAD, so the thickness can be read from the elevation. The 100 ft frontage is taken from the drawing. The thickness has to be typed.", CONFIRM,
     "The length and height are read; the thickness is typed at accept, with 4.5 in offered for the 4.5 in wall.",
     "Reading the thickness from the elevation is not built."),
-  _a("S14", "B", "Footing formwork", "Are all footings shuttered?", "Not answered.", OPEN, "Footings are not shuttered until the switch is set.", "Ask again."),
+  _a("S14", "B", "Footing formwork", "Are all footings shuttered?", "Not answered.", OPEN, "Proposed from his Form Work sheet: every footing, four sides. Still marked assumed.", "Ask again."),
   _a("S15", "B", "Steel conventions", "Cover, lap, hook, anchorage, ring rule and the 5 percent.", "Not answered. Bars on both sides of a beam are counted separately.", OPEN,
-    "The flagged defaults stay.", "Ask again."),
+    "The flagged defaults stay, and the 5 percent of his Steel Summary is proposed as the wastage. Still marked assumed.", "Ask again."),
   _a("S16", "B", "Slab steel", "Is any slab steel counted that the drawing does not print?", "Not answered.", OPEN, "Asked at accept; none assumed.", "Ask again."),
   _a("S17", "D", "Rates", "Which rate system, edition and district; wastage and overhead inside the rate?", "Not answered.", OPEN, "Components are shown as stored.", "Ask again."),
 ]
@@ -152,7 +153,7 @@ def by_status() -> dict:
 def public() -> dict:
   """What the API shows: the answers, the site assumptions the QS set and the conventions used while reading."""
   return {"qs": QS_NAME, "answered_on": ANSWERED_ON, "sections": [{"key": k, "title": v} for k, v in SECTIONS.items()], "answers": [dict(a) for a in READINGS],
-    "params": dict(PARAM_VALUES), "conventions": dict(CONVENTIONS), "counts": by_status()}
+    "params": dict(PARAM_VALUES), "conventions": dict(CONVENTIONS), "counts": by_status(), "proposed": proposed.public()}
 
 def note_text(*ids: str) -> str:
   return "The QS readings are (" + ", ".join(ids) + ")."

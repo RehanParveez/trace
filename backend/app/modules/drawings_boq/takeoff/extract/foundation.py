@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.engine.measure import proposed as QP
 from app.modules.drawings_boq.takeoff.prep import footing_sections as FSEC
 
 EXCAVATION_AREA = "EXCAVATION_AREA"
@@ -99,7 +100,7 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
   
     width_note = C.note("FOUNDATION_WIDTH_TYPED")
     out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre, dict(params),
-      ["strip_width_mm", "depth_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED")], dict(base_facts), 0.65))
+      ["strip_width_mm", "depth_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_DEPTH_QS_SHEET", **QP.trench_extra())], dict(base_facts), 0.65))
     out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
        dict(params), ["strip_width_mm", "depth_mm"], [walls_note, width_note], dict(base_facts), 0.7))
     out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
@@ -138,7 +139,7 @@ def excavation_candidate(dims, outline_facts: dict, ctx: dict, level_hint: str |
   label = f"Excavation over the basement · {area:.2f} m²" + (f" · {spec[0]}" if spec else "")
   return _make(cls, ctx, finish, (EXCAVATION_AREA, level_hint or ""), EXCAVATION_AREA, label, "EXCAVATION-BASEMENT", [centre],
     {"length_mm": round(length, 1), "width_mm": round(width, 1)}, ["depth_mm"],
-    [C.note("EXCAVATION_AREA_FROM_OUTLINE"), C.note("EXCAVATION_OVERLAPS_FOOTING_PITS")], facts, 0.8)
+    [C.note("EXCAVATION_AREA_FROM_OUTLINE"), C.note("EXCAVATION_OVERLAPS_FOOTING_PITS"), C.note("EXCAVATION_DEPTH_QS_SHEET", **QP.excavation_extra())], facts, 0.8)
 
 def pad_candidates(footings: list, ctx: dict, cls, finish) -> list:
   """The concrete bed under each footing mark: as many beds as marks, each as large as the footing."""
@@ -201,7 +202,7 @@ def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, 
       label = f"Brick foundation step {i} of {steps} under {_inch_label(t)} in walls · {length_m:.2f} m{where}"
       out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or ""), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}", centre,
         {"length_mm": round(length_m * 1000.0, 1)}, ["step_height_mm", "step_offset_mm"],
-        [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_ASSUMED"), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.6))
+        [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_ASSUMED"), C.note("BRICK_STEPS_QS_SHEET", **QP.brick_step_extra(cls_name, i)), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.6))
   return out
 
 def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float | None = None):

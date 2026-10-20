@@ -1242,6 +1242,7 @@ export interface RunStats {
   stages?: StageStats;
   layers?: LayerStats;
   derived?: DerivedStats;
+  ranges?: RangeStampStats;
   material?: MaterialStats;
   coverage?: CoverageStats;
   confidence?: ConfidenceStats;
@@ -1349,6 +1350,9 @@ export interface DerivedParams {
   fill_compaction_pct?: number;
   fill_from_excavation?: number;
   floor_works_from_spaces?: number;
+  wall_foundation_works?: number;
+  wall_membrane?: number;
+  wall_finishes_from_walls?: number;
   stair_formwork_soffit_only?: number;
   formwork_shared_walls?: number;
   formwork_shared_beams?: number;
@@ -1549,6 +1553,52 @@ export interface FloorWorksStats {
   skipped?: Record<string, string>;
 }
 
+export interface WallFoundationStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  param_source?: string;
+  rows?: number;
+  walls?: number;
+  left_alone_going_below_dpc?: number;
+  no_footprint?: number;
+  length_m?: string;
+  brick_steps_m3?: string;
+  termite_trench_m2?: string;
+  membrane_m2?: string;
+  classes?: Record<string, { walls: number; length_m: number }>;
+  level?: { z_mm: number; source: string };
+  step_offset_mm?: number;
+  step_heights_mm?: Record<string, number[]>;
+  pcc_projection_mm?: number;
+  skipped?: Record<string, string>;
+}
+
+export interface WallFinishStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  param_source?: string;
+  rows?: number;
+  walls?: number;
+  openings?: number;
+  openings_given_to_a_wall?: number;
+  plaster_inside_m2?: string;
+  plaster_outside_m2?: string;
+  openings_deducted_m2?: string;
+  sides_from_geometry?: number;
+  no_height?: number;
+  dpc_level?: { z_mm: number; source: string } | null;
+  skipped?: Record<string, string>;
+}
+
+export interface RangeStampStats {
+  rows: number;
+  grades: Record<string, number>;
+  stamped: number;
+  unbounded: number;
+}
+
 export interface DerivedStats {
   enabled: boolean;
   balance?: EarthBalance;
@@ -1578,6 +1628,8 @@ export interface DerivedStats {
   formwork?: DerivedFormworkStats;
   steel?: DerivedSteelStats;
   floor_works?: FloorWorksStats;
+  wall_foundation?: WallFoundationStats;
+  wall_finishes?: WallFinishStats;
 }
 
 export interface LayerStats {

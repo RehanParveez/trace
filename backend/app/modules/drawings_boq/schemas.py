@@ -318,6 +318,9 @@ class DerivedParamsRequest(BaseModel):
   formwork_shared_walls: float | None = Field(default=None, ge=0, le=1, description="1 takes off the column faces that an RCC wall covers, once the views are placed; 0 leaves them.")
   formwork_shared_beams: float | None = Field(default=None, ge=0, le=1, description="1 takes off the column faces that a beam covers, for beams that sit between two columns of the placed view; 0 leaves them.")
   rcc_wall_reveals: float | None = Field(default=None, ge=0, le=1, description="1 adds the sides of the doors and windows in an RCC wall to its formwork; 0 takes the two faces only, as the QS sheet does.")
+  wall_foundation_works: float | None = Field(default=None, ge=0, le=1, description="1 works out the brick steps of the foundation and the termite treatment of the trench under the masonry walls of a model that has none; 0 leaves them out.")
+  wall_membrane: float | None = Field(default=None, ge=0, le=1, description="1 adds the damp-proof membrane along the top of the plinth under the walls (with wall_foundation_works); 0 leaves it out.")
+  wall_finishes_from_walls: float | None = Field(default=None, ge=0, le=1, description="1 takes plaster and paint from the walls of a model that has no rooms; 0 leaves them out.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

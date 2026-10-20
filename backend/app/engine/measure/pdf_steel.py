@@ -47,6 +47,7 @@ INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTI
 
 @dataclass(frozen=True)
 class SteelResult:
+  marks: list = field(default_factory=list)
   solids: list = field(default_factory=list)
   ledger: list = field(default_factory=list)
   stats: dict = field(default_factory=dict)

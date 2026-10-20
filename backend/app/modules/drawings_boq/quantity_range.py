@@ -1,7 +1,7 @@
 from __future__ import annotations
 from math import sqrt
 
-GRADE_ORDER = ("PRINTED", "VERIFIED", "CONFIRMED", "PICTURE", "MEASURED", "ASSUMED", "MISSING", "NOT_READ")
+GRADE_ORDER = ("PRINTED", "VERIFIED", "CONFIRMED", "MODEL", "PICTURE", "MEASURED", "ASSUMED", "MISSING", "NOT_READ")
 
 def _f(v) -> float:
   try:

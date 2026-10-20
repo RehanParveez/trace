@@ -3,6 +3,9 @@ import { DERIVED_FIELDS, mmToInches, paramSourceView, parseDerivedField } from "
 import type { DerivedInput, PrintedNotes } from "../utils/derived";
 import type { DerivedParamName } from "../types/drawings-boq.types";
 import { qsFlagText } from "../utils/qsReadings";
+import { useQsProposed } from "../hooks/useProposed";
+import { proposedParamText } from "../utils/qsProposed";
+import { ProposedAnswersPanel } from "./ProposedAnswersPanel";
 
 interface DerivedParamsFormProps {
   value: DerivedInput;
@@ -18,6 +21,7 @@ interface DerivedParamsFormProps {
 
 export function DerivedParamsForm({ value, onChange, disabled = false, onSave, saving = false, printed = {}, conflicts = [], lapTable = {}, qs }: DerivedParamsFormProps) {
   const { t } = useTranslation();
+  const { data: proposedSet } = useQsProposed();
   return (
      <details className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-3">
       <summary className="cursor-pointer text-[12px] font-semibold text-[var(--color-text-primary)]">
@@ -98,6 +102,8 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
                       })
                     : src.source === "qs"
                     ? t("boq.derived.fromQs", { defaultValue: "From the QS answer: {{value}}", value: src.value })
+                    : src.source === "default" && proposedParamText(def.key, proposedSet, { flag: def.flag, unit: def.unit })
+                    ? proposedParamText(def.key, proposedSet, { flag: def.flag, unit: def.unit })
                     : def.hint && src.source === "default"
                     ? def.hint
                     : standard}
@@ -124,6 +130,7 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
           {t("boq.derived.lapTable", "Lap lengths printed on the drawing")}: {Object.entries(lapTable).map(([bar, mm]) => `#${bar} = ${mm} mm`).join(", ")}
         </p>
       ) : null}
+      <ProposedAnswersPanel />
       {onSave ? (
         <div className="mt-3 flex items-center gap-3">
           <button

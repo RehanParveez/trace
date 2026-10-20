@@ -17,6 +17,6 @@ export * from "./hooks";
 export * from "./pages/RateBookDetailPage";
 export * from "./pages/RateBooksPage";
 export * from "./permissions";
-export * from "./schedule";
+export * from "./schedules";
 export * from "./types/pricing.types";
 export * from "./utils/pricing.utils";

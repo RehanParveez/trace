@@ -37,7 +37,7 @@ import { BankGuaranteesPage } from "../modules/bank_guarantees";
 import { CashFlowPage } from "../modules/cash_flow";
 import { StandardsPage } from "../modules/drawings_boq/standards";
 import { RateBookDetailPage, RateBooksPage } from "../modules/drawings_boq/pricing";
-import { RateImportReviewPage, RateImportsPage } from "../modules/drawings_boq/pricing/schedule";
+import { RateImportReviewPage, RateImportsPage } from "../modules/drawings_boq/pricing/schedules";
 import { CalculationInsightsPage } from "../modules/drawings_boq/recalculation";
 import { TakeoffPage } from "../modules/drawings_boq/takeoff";
 

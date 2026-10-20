@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from decimal import Decimal, ROUND_HALF_UP
+from app.engine.measure import model_works_text as MW_TEXT
 
 CONCRETE = "CONCRETE"
 MASONRY = "MASONRY"
@@ -122,6 +123,8 @@ def spec_key(spec: dict | None) -> str | None:
 def describe_spec(spec: dict | None) -> str | None:
   if not spec:
     return None
+  if MW_TEXT.describe(spec):
+    return MW_TEXT.describe(spec)
   if spec.get("kind") == "DERIVED" and spec.get("recipe") == "PDF_LINTEL_STEEL":
     return "bars and rings printed for the lintel"
   if spec.get("kind") == "DERIVED" and spec.get("recipe") == "STRUCT_FORMWORK":

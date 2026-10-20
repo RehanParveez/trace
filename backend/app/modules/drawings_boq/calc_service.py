@@ -26,6 +26,7 @@ from app.engine.measure import finishes as fin
 from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
 from app.engine.measure import rebar as rb
 from app.engine.measure import takeoff as tk
+from app.engine.measure import model_range as MR
 from app.modules.drawings_boq.takeoff.repository import takeoff_drawing_ids
 from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
 from app.modules.drawings_boq.takeoff.prep import printed_params
@@ -93,7 +94,7 @@ def _ledger_row(run: CalculationRun, e, stage: str = "measure") -> dict:
     "element_id": e.element_id, "level_id": e.level_id, "work_item_code": e.work_item_code,
     "quantity_net": e.quantity, "unit": e.unit, "material_grade": e.material_grade,
     "source_kind": getattr(e, "source_kind", "MODEL"), "confidence": e.confidence, "formula_code": e.formula_code,
-     "trace": e.trace, "warnings": list(e.warnings),
+    "trace": MR.with_range(e), "warnings": list(e.warnings),
     "spec_key": getattr(e, "spec_key", None), "spec": getattr(e, "spec", None),
     "work_stage": getattr(e, "work_stage", None),
     "engine_version": run.engine_version, "stage": stage,
@@ -622,6 +623,16 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in dp.ledger])
         state["extra_solids"] += dp.solids
         state["extra_ledger"] += dp.ledger
+        ww = await asyncio.to_thread(kernel.measure_wall_foundation, ctx, profile, state["accepted"], state["solids"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in ww.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in ww.ledger])
+        state["extra_solids"] += ww.solids
+        state["extra_ledger"] += ww.ledger
+        wf = await asyncio.to_thread(kernel.measure_wall_finishes, ctx, profile, state["accepted"], state["solids"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in wf.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in wf.ledger])
+        state["extra_solids"] += wf.solids
+        state["extra_ledger"] += wf.ledger
         fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
@@ -643,7 +654,8 @@ class CalculationService:
         await self.runs.stage_bar_marks([_bar_mark_row(run, m, "derived") for m in st.marks])
         state["extra_solids"] += st.solids
         state["extra_ledger"] += st.ledger
-        state["derived_stats"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats}
+        state["derived_stats"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats,
+          "wall_foundation": ww.stats, "wall_finishes": wf.stats}
         return {"dpc_rows": len(dp.ledger), "dpc_m2": dp.stats.get("area_m2", "0"), "steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
           "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),

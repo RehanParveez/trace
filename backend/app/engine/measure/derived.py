@@ -12,6 +12,7 @@ from app.engine.measure.stages import _ffl, element_z
 from app.engine.measure.spatial import prism_and_polygon
 from app.engine.measure import frame as FR
 from app.engine.measure import readings as QS
+from app.engine.measure import proposed as QP
 from app.engine.measure import fill_balance as FB
 
 DERIVED = "DERIVED"
@@ -31,12 +32,12 @@ NOT_BURIED_ROLES = frozenset({"DOOR", "WINDOW"})
 PARAMS = {
   "working_space_mm": (150.0, 0.0, 3000.0),
   "pcc_projection_mm": (100.0, 0.0, 1000.0),
-  "pcc_thickness_mm": (100.0, 0.0, 600.0),
+  "pcc_thickness_mm": (76.2, 0.0, 600.0),
   "ballast_thickness_mm": (304.8, 0.0, 1500.0),
   "ballast_clearance_mm": (152.4, 0.0, 1000.0),
   "wall_bed": (0.0, 0.0, 1.0),
   "shoring": (0.0, 0.0, 1.0),
-  "footing_formwork": (0.0, 0.0, 1.0),
+  "footing_formwork": (1.0, 0.0, 1.0),
   "slab_edge_formwork": (1.0, 0.0, 1.0),
   "formwork_shared_faces": (1.0, 0.0, 1.0),
   "tank_base_formwork": (0.0, 0.0, 1.0),
@@ -44,7 +45,7 @@ PARAMS = {
   "ring_hook_dia": (20.0, 0.0, 40.0),
   "bar_lap_dia": (40.0, 0.0, 80.0),
   "bar_anchor_dia": (0.0, 0.0, 80.0),
-  "steel_wastage_pct": (0.0, 0.0, 15.0),
+  "steel_wastage_pct": (5.0, 0.0, 15.0),
   "steel_cover_slab_mm": (38.1, 10.0, 100.0),
   "steel_cover_beam_mm": (38.1, 10.0, 100.0),
   "steel_cover_column_mm": (38.1, 10.0, 100.0),
@@ -64,6 +65,9 @@ PARAMS = {
   "formwork_shared_walls": (1.0, 0.0, 1.0),
   "formwork_shared_beams": (1.0, 0.0, 1.0),
   "rcc_wall_reveals": (0.0, 0.0, 1.0),
+  "wall_foundation_works": (0.0, 0.0, 1.0),
+  "wall_membrane": (0.0, 0.0, 1.0),
+  "wall_finishes_from_walls": (0.0, 0.0, 1.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
@@ -91,7 +95,7 @@ CODE_MARK = "DERIVED_MARK_POSITION"
 CODE_ELEMENT = "DERIVED_ELEMENT_OVERRIDE"
 DERIVED_CODES = (CODE_ASSUMED, CODE_NGL_ASSUMED, CODE_BOX, CODE_MARK, CODE_ELEMENT)
 ELEMENT_PARAMS = ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_thickness_mm", "ballast_clearance_mm")
-AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA")
+AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA", "WALL_FOUNDATION_AREA", "WALL_FINISH_AREA")
 MAX_LISTED = 400
 BALANCE_TOLERANCE_M3 = Decimal("0.00001")
 
@@ -138,7 +142,7 @@ def resolve_params(ctx: CalculationContext) -> dict:
     if value is not None:
       out[name] = {"value": value, "source": QS.SOURCE}
       continue
-    out[name] = {"value": default, "source": "default"}
+    out[name] = {"value": default, "source": "default", "proposed": True} if QP.is_proposed(name) else {"value": default, "source": "default"}
   return out
 
 def element_overrides(ctx: CalculationContext) -> dict:

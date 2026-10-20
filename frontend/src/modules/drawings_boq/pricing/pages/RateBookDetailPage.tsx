@@ -14,9 +14,9 @@ import { AnalysesPanel } from "../components/AnalysesPanel";
 import { EscalationsPanel } from "../components/EscalationsPanel";
 import { RateBookFormDialog } from "../components/RateBookFormDialog";
 import { RateItemsPanel } from "../components/RateItemsPanel";
-import { BookExportButtons } from "../schedule/components/BookExportButtons";
-import { BookToolsPanel } from "../schedule/components/BookToolsPanel";
-import { RefreshBookDialog } from "../schedule/components/RefreshBookDialog";
+import { BookExportButtons } from "../schedules/components/BookExportButtons";
+import { BookToolsPanel } from "../schedules/components/BookToolsPanel";
+import { RefreshBookDialog } from "../schedules/components/RefreshBookDialog";
 
 type Tab = "rates" | "escalations" | "analyses" | "tools";
 type Action = "publish" | "version" | "archive" | "delete";

@@ -23,9 +23,12 @@ from app.engine.measure.derived import derived_check, measure_derived
 from app.engine.measure.formwork import formwork_check, measure_formwork
 from app.engine.measure.model_floor_works import floor_works_check, measure_floor_works
 from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
+from app.engine.measure import model_range as MR
+from app.engine.measure.wall_finishes import measure_wall_finishes, wall_finishes_check
+from app.engine.measure.wall_foundation import measure_wall_foundation, wall_works_check
 from app.engine.measure.pdf_space import split_space, space_check
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
-from app.engine.measure.spec import derive_spec, describe_spec, missing_spec_warnings, spec_grade, spec_key
+from app.engine.measure.spec import derive_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
 ENGINE_VERSION = "2026.10.25"
@@ -431,6 +434,8 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
   failures.extend(allocation_check(solids, alloc.deductions)[1])
   failures.extend(formwork_check(solids, ledger))
   failures.extend(floor_works_check(solids, ledger))
+  failures.extend(wall_works_check(solids, ledger))
+  failures.extend(wall_finishes_check(solids, ledger))
   failures.extend(pdf_steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
   if failures:
@@ -585,6 +590,12 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     dpc_res = measure_dpc(ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += dpc_res.solids
     extra_ledger += dpc_res.ledger
+    wall_works_res = measure_wall_foundation(ctx, profile, accepted, solids, ledger, extra_ledger)
+    extra_solids += wall_works_res.solids
+    extra_ledger += wall_works_res.ledger
+    wall_fin_res = measure_wall_finishes(ctx, profile, accepted, solids, ledger, extra_ledger)
+    extra_solids += wall_fin_res.solids
+    extra_ledger += wall_fin_res.ledger
     floor_solids, floor_rows, floor_stats = measure_floor_works(ctx, accepted, ledger, extra_ledger)
     extra_solids += floor_solids
     extra_ledger += floor_rows
@@ -595,12 +606,15 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     steel_marks = steel_res.marks
     extra_solids += steel_res.solids
     extra_ledger += steel_res.ledger
-    derived_info = {**derived_info, "dpc": dpc_res.stats, "floor_works": floor_stats, "formwork": formwork_res.stats, "steel": steel_res.stats}
+    derived_info = {**derived_info, "dpc": dpc_res.stats, "floor_works": floor_stats, "formwork": formwork_res.stats, "steel": steel_res.stats,
+      "wall_foundation": wall_works_res.stats, "wall_finishes": wall_fin_res.stats}
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:
       raise InvariantViolation(rebar_failures)
 
+  ledger = MR.stamp_all(ledger)
+  extra_ledger = MR.stamp_all(extra_ledger)
   stats = {
     **alloc.stats,
     **(rebar_res.stats if rebar_res else {}),
@@ -613,6 +627,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "stages": stage_info,
     "layers": layer_info,
     "derived": derived_info,
+    "ranges": MR.summary(ledger + extra_ledger),
     "material": material_stats(solids, ledger),
     "coverage": coverage_stats(elements, rejected, skipped, unmapped, ledger),
     "confidence": confidence_stats(ledger + extra_ledger),
