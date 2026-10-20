@@ -3,6 +3,7 @@ import { Badge } from "../../organizations/components/OrganizationUi";
 import type { BOQItemSpec, LedgerTrace } from "../types/drawings-boq.types";
 import { derivedBasisRows, derivedHasAssumption, derivedPdfSourceView, formworkSourceView, isDerivedSpec, isFormworkSpec, isSteelSpec, steelSourceView } from "../utils/derived";
 import type { DerivedBasis } from "../utils/derived";
+import { estimateSourceView } from "../utils/steelEstimate";
 
 function useBasisText(): (basis: DerivedBasis | null) => string {
   const { t } = useTranslation();
@@ -27,7 +28,9 @@ export function DerivedBadge({ spec }: { spec?: BOQItemSpec | null }) {
     isFormworkSpec(spec)
       ? t("boq.derived.badgeHintFormwork", "Not drawn in the model. Worked out from the concrete members read from the drawing.")
       : isSteelSpec(spec)
-      ? t("boq.derived.badgeHintSteel", "Not drawn in the model. Worked out from the bars printed on the drawing.")
+      ? spec?.recipe === "PDF_MEMBER_STEEL_ESTIMATE"
+        ? t("boq.derived.badgeHintSteelEstimate", "Not drawn in the model. The drawing prints no bars for this member, so the steel is estimated from its size.")
+        : t("boq.derived.badgeHintSteel", "Not drawn in the model. Worked out from the bars printed on the drawing.")
       : t("boq.derived.badgeHint", "Not drawn in the model. Worked out from the foundations."),
     ...rows.map((r) => `${t(`boq.derived.param.${r.key}`, r.key)}: ${r.value} (${basisText(r.basis)})`),
   ].join("\n");
@@ -151,6 +154,38 @@ export function DerivedFormworkSource({ trace }: { trace?: LedgerTrace | null })
 
 export function DerivedSteelSource({ trace }: { trace?: LedgerTrace | null }) {
   const { t } = useTranslation();
+  const estimate = estimateSourceView(trace);
+  if (estimate) {
+    return (
+      <div className="space-y-1 rounded-[8px] border border-[var(--color-warning)] bg-[var(--color-surface-muted)] p-3" data-testid="steel-estimate-source">
+        <div className="text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
+          {t("boq.derived.steelEstimateTitle", "No bars printed: steel estimated")}
+        </div>
+        <p className="text-[12px] text-[var(--color-text-secondary)]">
+          {t("boq.derived.steelSourceText", {
+            defaultValue: "{{category}} {{tag}} ({{instance}} of {{instances}}) on sheet {{page}}. Size {{l}} x {{w}} x {{d}} mm.",
+            category: t(`boq.derived.category.${estimate.category}`, estimate.category),
+            tag: estimate.tag || "—",
+            instance: estimate.instance,
+            instances: estimate.instances,
+            page: estimate.page,
+            l: estimate.lengthMm,
+            w: estimate.widthMm,
+            d: estimate.depthMm,
+          })}
+        </p>
+        <p className="text-[12px] text-[var(--color-text-secondary)]">
+          {estimate.basis === "QS_RULE"
+            ? t("boq.derived.steelEstimateRule", { defaultValue: "{{q}} m2 of slab at {{rate}} kg per m2 (the QS rule), between {{low}} and {{high}}.", q: estimate.quantity, rate: estimate.rate, low: estimate.rateLow, high: estimate.rateHigh })
+            : t("boq.derived.steelEstimateBand", { defaultValue: "{{q}} m3 of concrete at the usual {{rate}} kg per m3, between {{low}} and {{high}}.", q: estimate.quantity, rate: estimate.rate, low: estimate.rateLow, high: estimate.rateHigh })}
+          {estimate.kg && estimate.kgLow && estimate.kgHigh ? ` ${t("boq.derived.steelEstimateKg", { defaultValue: "{{kg}} kg, between {{low}} and {{high}} kg.", kg: estimate.kg, low: estimate.kgLow, high: estimate.kgHigh })}` : ""}
+        </p>
+        <p className="text-[11px] text-[var(--color-warning)]">
+          {t("boq.derived.steelEstimateCaution", "A guess from the size, not read from bars. Print or type the bars to replace it.")}
+        </p>
+      </div>
+    );
+  }
   const view = steelSourceView(trace);
   if (!view) return null;
   return (

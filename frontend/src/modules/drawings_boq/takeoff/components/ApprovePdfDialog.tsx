@@ -7,6 +7,8 @@ import { REASON_LABEL, SIZE_FIELDS, failureLines, sizeState, typedFromInputs } f
 import type { ApproveSummary } from "../utils/approve";
 import type { ApproveReadyResult } from "../types/takeoff.types";
 import { ReviewPanel } from "./ReviewPanel";
+import { useQsProposed } from "../../hooks/useProposed";
+import { proposedSize } from "../../utils/qsProposed";
 
 interface ApprovePdfDialogProps {
   projectId: string;
@@ -109,6 +111,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
 
   const preview = useApprovePreview(drawingId, { accept_assumed: assumed, accept_warned: warned, accept_added: added, typed: applied }, result === null);
   const approve = useApproveReady(drawingId);
+  const { data: proposedSet } = useQsProposed();
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -221,6 +224,17 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
                             onChange={(e) => setSizes((s) => ({ ...s, [field.key]: e.target.value }))}
                             onBlur={() => setApplied(typed)}
                             className="mt-1 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1.5 text-[12px]" />
+                          {proposedSize(field.key, proposedSet) && state.kind === "empty" ? (
+                            <button type="button" data-testid={`workbook-size-${field.key}`} title={proposedSize(field.key, proposedSet)?.evidence}
+                              onClick={() => {
+                                const next = { ...sizes, [field.key]: proposedSize(field.key, proposedSet)?.text ?? "" };
+                                setSizes(next);
+                                setApplied(typedFromInputs(next).typed);
+                              }}
+                              className="mt-0.5 block text-left text-[10.5px] font-semibold text-[var(--color-trace-gold-dark)] underline">
+                              {t("takeoff.approve.useWorkbookSize", { defaultValue: "Use the QS workbook size: {{size}}", size: proposedSize(field.key, proposedSet)?.text })}
+                            </button>
+                          ) : null}
                           <span className={`block text-[10.5px] ${state.kind === "bad" ? "text-[var(--color-danger)]" : "text-[var(--color-text-muted)]"}`}>
                             {state.kind === "ok" ? `= ${state.mm} mm` : state.kind === "bad" ? t("takeoff.approve.sizeBad", "Not a size I can read") : " "}
                           </span>

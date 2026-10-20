@@ -5,6 +5,7 @@ import {activeAdjustments, DEDUCTION_RULE_LABEL, formatJsonValue, formatPrecise,
 } from "../utils/drawings-boq.utils";
 import { TraceSteps } from "./TraceSteps";
 import { StageBadge } from "./StageBadge";
+import { SourceBadge } from "./SourceBadge";
 import { ConfidenceBasis } from "./ConfidenceBasis";
 import { DerivedBasisList, DerivedFormworkSource, DerivedPdfSource, DerivedSteelSource } from "./DerivedWorks";
 import { LayerBreakdown } from "./LayerBreakdown";
@@ -61,7 +62,7 @@ export function BOQItemTraceDialog({ itemId, itemName, onClose }: BOQItemTraceDi
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-[12.5px] font-semibold">{l.work_item_code}</span>
                     <span className="font-mono text-[11.5px] text-[var(--color-text-secondary)]">{l.formula_code}</span>
-                    <Badge tone="slate">{l.source_kind}</Badge>
+                    <SourceBadge kind={l.source_kind} trace={l.trace} />
                     <StageBadge stage={l.work_stage} />
                     <span className={`font-mono text-[12px] ${isLowConfidence(l.confidence) ? "text-[var(--color-warning)]" : ""}`}>
                       {Math.round(Number(l.confidence) * 100)}%

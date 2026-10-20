@@ -321,6 +321,20 @@ class DerivedParamsRequest(BaseModel):
   wall_foundation_works: float | None = Field(default=None, ge=0, le=1, description="1 works out the brick steps of the foundation and the termite treatment of the trench under the masonry walls of a model that has none; 0 leaves them out.")
   wall_membrane: float | None = Field(default=None, ge=0, le=1, description="1 adds the damp-proof membrane along the top of the plinth under the walls (with wall_foundation_works); 0 leaves it out.")
   wall_finishes_from_walls: float | None = Field(default=None, ge=0, le=1, description="1 takes plaster and paint from the walls of a model that has no rooms; 0 leaves them out.")
+  steel_estimate_from_volume: float | None = Field(default=None, ge=0, le=1, description="1 estimates the steel of a beam, column, footing or slab whose bars the drawing does not print (flagged, with a range); 0 leaves those members without steel.")
+  slab_steel_kg_per_m2: float | None = Field(default=None, ge=0, le=200, description="Kilograms of steel per square metre of a slab whose bars are not printed (the QS workbook uses 1.6 kg per sq ft = 17.2223); 0 uses the usual kg per m3 instead.")
+  one_total: float | None = Field(default=None, ge=0, le=1, description="1 decides each member of the drawings against the model (the same member counted once); 0 keeps the old rule, which sets a drawing measurement aside whenever the model has the work item on that storey.")
+  one_total_prefer: float | None = Field(default=None, ge=0, le=2, description="Which source is kept for a member found in both: 0 the more exact one (narrower range), 1 the drawing, 2 the model.")
+  one_total_position_tol_mm: float | None = Field(default=None, ge=10, le=1000, description="How far apart (mm) a drawing member and a model member may stand and still be the same member, once the drawing is placed on the model.")
+  one_total_trust_pct: float | None = Field(default=None, ge=0, le=100, description="The share of the members of a kind on a storey that must find a partner before the matching is trusted; below it the model is kept and the drawing set aside, as before.")
+  opening_area_from_model: float | None = Field(default=None, ge=0, le=1, description="1 adds the area of each door and window of the model (JOI-DOOR-AREA, JOI-WIN-AREA); 0 leaves it out.")
+  roof_treatment_from_slabs: float | None = Field(default=None, ge=0, le=1, description="1 adds the treatment of the roof (FIN-ROOF-TREAT) from the plan area of the roof slabs of the model; 0 leaves it out.")
+  one_total: float | None = Field(default=None, ge=0, le=1, description="1 decides each member of the drawings against the model (the same member counted once); 0 keeps the old rule, which sets a drawing measurement aside whenever the model has the work item on that storey.")
+  one_total_prefer: float | None = Field(default=None, ge=0, le=2, description="Which source is kept for a member found in both: 0 the more exact one (narrower range), 1 the drawing, 2 the model.")
+  one_total_position_tol_mm: float | None = Field(default=None, ge=10, le=1000, description="How far apart (mm) a drawing member and a model member may stand and still be the same member, once the drawing is placed on the model.")
+  one_total_trust_pct: float | None = Field(default=None, ge=0, le=100, description="The share of the members of a kind on a storey that must find a partner before the matching is trusted; below it the model is kept and the drawing set aside, as before.")
+  opening_area_from_model: float | None = Field(default=None, ge=0, le=1, description="1 adds the area of each door and window of the model (JOI-DOOR-AREA, JOI-WIN-AREA); 0 leaves it out.")
+  roof_treatment_from_slabs: float | None = Field(default=None, ge=0, le=1, description="1 adds the treatment of the roof (FIN-ROOF-TREAT) from the plan area of the roof slabs of the model; 0 leaves it out.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

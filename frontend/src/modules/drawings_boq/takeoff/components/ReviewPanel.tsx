@@ -254,6 +254,21 @@ export function SteelBlock({ data, loading, error, inputs, onInput, bad }: Steel
           </tbody>
         </table>
       ) : null}
+      {data?.unprinted?.enabled && data.unprinted.members > 0 ? (
+        <p data-testid="review-steel-unprinted" className="text-[var(--color-warning)]">
+          {t("takeoff.review.steel.unprinted", {
+            defaultValue: "{{n}} members print no bars. Estimated, they would add {{kg}} (between {{low}} and {{high}}), {{total}} with the printed bars. This is a guess from their size, not read from the drawing.",
+            n: data.unprinted.members,
+            kg: kgText(data.unprinted.kg),
+            low: kgText(data.unprinted.kg_low),
+            high: kgText(data.unprinted.kg_high),
+            total: kgText(data.unprinted.kg_with_printed),
+          })}
+          {Object.keys(data.unprinted.not_estimated).length > 0
+            ? ` ${t("takeoff.review.steel.notEstimated", { defaultValue: "Not estimated, size or usual figure missing: {{list}}.", list: Object.entries(data.unprinted.not_estimated).map(([f, n]) => `${f.toLowerCase()} ${n}`).join(", ") })}`
+            : ""}
+        </p>
+      ) : null}
       {without > 0 ? (
         <p data-testid="review-steel-without">
           {t("takeoff.review.steel.without", { defaultValue: "{{n}} members have no bars printed or typed, so they carry no steel here.", n: without })}

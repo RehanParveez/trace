@@ -48,6 +48,8 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
               ? t("boq.derived.standardPct", { defaultValue: "Standard {{n}} percent: the bare weight", n: def.defaultMm })
               : def.unit === "dia"
               ? t("boq.derived.standardDia", { defaultValue: "Standard {{n}} bar diameters", n: def.defaultMm })
+              : def.unit === "kgm2"
+              ? t("boq.derived.standardKgm2", { defaultValue: "Standard {{n}} kg per square metre", n: def.defaultMm })
               : def.defaultMm === null
               ? t("boq.derived.nglStandard", "Empty: the model's zero level is taken as ground")
               : t("boq.derived.standard", {
@@ -60,7 +62,19 @@ export function DerivedParamsForm({ value, onChange, disabled = false, onSave, s
               <span className="text-[9px] font-bold uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
                 {t(`boq.derived.param.${def.key}`, def.label ?? def.key)}
               </span>
-              {def.flag ? (
+              {def.choices ? (
+                <select
+                  value={value[def.key] ?? ""}
+                  disabled={disabled}
+                  onChange={(event) => onChange({ ...value, [def.key]: event.target.value })}
+                  className="mt-1.5 w-full rounded-[7px] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[12px] text-[var(--color-text-primary)] outline-none focus:border-[var(--color-trace-gold-dark)]"
+                >
+                  <option value="">{t("boq.derived.flag.standard", "Standard")}</option>
+                  {def.choices.map((c) => (
+                    <option key={c.value} value={c.value}>{t(`boq.derived.choice.${def.key}.${c.value}`, c.label)}</option>
+                  ))}
+                </select>
+              ) : def.flag ? (
                 <select
                   value={value[def.key] ?? ""}
                   disabled={disabled}

@@ -45,6 +45,8 @@ _SPECS = (
   FormulaSpec("WALL_FOUNDATION_VOLUME", "m3", "Length of a wall times the width and height of each step of its brick foundation."),
   FormulaSpec("WALL_FOUNDATION_AREA", "m2", "Length of a wall times the width of the trench bottom (termite) or the plan area of the wall at the plinth (membrane)."),
   FormulaSpec("WALL_FINISH_AREA", "m2", "Face of a wall from the plinth to its top, less the doors and windows that cross it, times the faces that are finished."),
+  FormulaSpec("OPENING_AREA", "m2", "Width of the footprint box of a door or window times its height."),
+  FormulaSpec("ROOF_TREATMENT_AREA", "m2", "Plan area of a roof slab, taken flat."),
   FormulaSpec("REBAR_KG", "kg", "Sum of bar marks."),
   FormulaSpec("FINISH_FLOOR_AREA", "m2", "Net floor finish area."),
   FormulaSpec("FINISH_CEILING_AREA", "m2", "Ceiling finish area."),

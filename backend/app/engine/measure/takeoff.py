@@ -691,7 +691,7 @@ def range_trace(inputs, measurement_id) -> dict | None:
         "drivers": [dict(d) for d in r.drivers]}
   return None
 
-def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=()) -> TakeoffResult:
+def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(), elements=()) -> TakeoffResult:
   if inputs is None or not inputs.measurements:
     return TakeoffResult(stats={"measurements": 0})
   sheets = {s.id: s for s in inputs.sheets}
@@ -744,6 +744,12 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=())
     ok.append((m, sheet, cals.get(m.calibration_id), comp))
 
   model_rows = [r for r in model_ledger if getattr(r, "source_kind", "MODEL") != SOURCE_KIND and r.quantity > 0]
+  from app.engine.measure import one_total as OT
+  one_total_on = OT.is_on(ctx)
+  one_total_ids = (OT.adjudicable_ids(ctx) & {str(m.id) for m, _, _, _ in ok if m.recon_mode == "AUTO"}) if (one_total_on and elements) else frozenset()
+  from app.engine.measure import one_total as OT
+  one_total_on = OT.is_on(ctx)
+  one_total_ids = (OT.adjudicable_ids(ctx) & {str(m.id) for m, _, _, _ in ok if m.recon_mode == "AUTO"}) if (one_total_on and elements) else frozenset()
 
   def rows_for(code: str, level) -> list:
     if level is None:
@@ -778,12 +784,12 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=())
       decision, reason = "COUNTED", "Replaces the model quantity by choice." if covered else "No model quantity to replace."
       
     else:
-      if covered and not replaced(m.work_item_code, m.level_id):
+      if covered and not replaced(m.work_item_code, m.level_id) and str(m.id) not in one_total_ids:
         decision, reason = "VERIFIED", "The model already measures this work item; not counted. Choose Add or Replace to count it."
         key = (m.work_item_code, str(m.level_id) if m.level_id else None)
         not_counted[key] = not_counted.get(key, 0) + 1
       else:
-        decision, reason = "COUNTED", "No model quantity for this work item."
+        decision, reason = "COUNTED", ("Decided member by member against the model (one total)." if (covered and str(m.id) in one_total_ids) else "No model quantity for this work item.")
     decided.append((m, sheet, cal_in, comp, decision, reason, model_qty, covered))
 
   groups: dict = defaultdict(lambda: [ZERO, ZERO])
@@ -862,6 +868,21 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=())
       },
       warnings=tuple(dict.fromkeys(warnings)), source_kind=SOURCE_KIND,
     ))
+  one_total_stats: dict = {"enabled": False}
+  one_total_drop: frozenset = frozenset()
+  
+  if one_total_on:
+    ot = OT.adjudicate(ctx, profile, elements, [r for r in model_rows if (r.solid_id, r.work_item_code) not in dropped], ledger, frozenset(dropped), _variance_tolerance(profile), one_total_ids)
+    one_total_stats, one_total_drop = ot.stats, frozenset(ot.drop_model)
+    if ot.drop_pdf:
+      gone_solids = {r.solid_id for r in ledger if str(((r.trace or {}).get("inputs") or {}).get("measurement_id")) in ot.drop_pdf}
+      ledger = [r for r in ledger if r.solid_id not in gone_solids]
+      solids = [s for s in solids if s.id not in gone_solids]
+      for rec in results:
+        if rec["measurement_id"] in ot.drop_pdf and rec["decision"] in ("COUNTED", "REPLACED_MODEL"):
+          rec["decision"], rec["reason"] = "VERIFIED", "The model has this member; its quantity is used (one total)."
+          counted, verified = counted - 1, verified + 1
+    ledger = [OT.annotate_row(r, ot.annotate[str(((r.trace or {}).get("inputs") or {}).get("measurement_id"))]) if str(((r.trace or {}).get("inputs") or {}).get("measurement_id")) in ot.annotate else r for r in ledger]
   ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.solid_id)))
   solids.sort(key=lambda s: str(s.id))
   results.sort(key=lambda r: r["measurement_id"])
@@ -876,7 +897,10 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=())
       for code, level in sorted(replace_keys, key=lambda k: (k[0], str(k[1])))],
     "tolerance_pct": str(tolerance),
   }
-  return TakeoffResult(solids=solids, ledger=ledger, results=results, dropped_keys=frozenset(dropped), stats=stats)
+  stats["one_total"] = one_total_stats if one_total_on else {"enabled": False}
+  if one_total_on and not elements:
+    stats["one_total"] = {"enabled": True, "ran": False, "reason": "NO_MODEL_ELEMENTS"}
+  return TakeoffResult(solids=solids, ledger=ledger, results=results, dropped_keys=frozenset(dropped) | one_total_drop, stats=stats)
 
 def apply_replacements(ledger: list, dropped_keys) -> list:
   if not dropped_keys:

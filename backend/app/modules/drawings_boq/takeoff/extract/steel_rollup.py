@@ -3,10 +3,12 @@ from decimal import Decimal
 from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, clean_steel, member_lines
 from app.engine.measure.derived import PARAMS as ENGINE_PARAMS
 from app.engine.measure.member_steel_more import MORE_FAMILIES
+from app.engine.measure import steel_estimate as SE
 from app.modules.drawings_boq.takeoff import repository as TR
 
 CONVENTIONS = {"cover_mm": ENGINE_PARAMS["steel_cover_mm"][0], "hook_dia": ENGINE_PARAMS["ring_hook_dia"][0], "lap_dia": ENGINE_PARAMS["bar_lap_dia"][0],
-  "anchor_dia": ENGINE_PARAMS["bar_anchor_dia"][0], "wastage_pct": ENGINE_PARAMS["steel_wastage_pct"][0]}
+  "anchor_dia": ENGINE_PARAMS["bar_anchor_dia"][0], "wastage_pct": ENGINE_PARAMS["steel_wastage_pct"][0],
+  "steel_estimate_from_volume": ENGINE_PARAMS["steel_estimate_from_volume"][0], "slab_steel_kg_per_m2": ENGINE_PARAMS["slab_steel_kg_per_m2"][0]}
 COVER_OF = {"LINTEL": "steel_cover_beam_mm", "BEAM": "steel_cover_beam_mm", "COLUMN": "steel_cover_column_mm", "FOOTING": "steel_cover_footing_mm", "SLAB": "steel_cover_slab_mm", "RCC_WALL": "steel_cover_wall_mm"}
 ESTIMATE_NOTE = "This is an estimate from the bars as they stand, before a calculation run; the run adds the project's own steel parameters and can differ by what those add."
 CONVENTION_NOTE = ("Cover, hook, lap and anchorage are site conventions. Where the drawing prints a cover or a lap table this roll-up uses it; "
@@ -87,6 +89,9 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
   marks: list = []
   without: dict = {}
   no_size = 0
+  est_on = float(conv["steel_estimate_from_volume"]) >= 0.5
+  est_rule = Decimal(str(conv["slab_steel_kg_per_m2"]))
+  est: dict = {"members": 0, "kg": Decimal("0"), "kg_low": Decimal("0"), "kg_high": Decimal("0"), "by_family": {}, "not_estimated": {}}
   by_family: dict = {}
   by_dia: dict = {}
   total = Decimal("0")
@@ -103,6 +108,18 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
       slot["members"] += n
       if r.tag and r.tag not in slot["marks"]:
         slot["marks"].append(r.tag)
+      if est_on:
+        p_ = r.params or {}
+        fg = SE.figure(cat, p_.get("length_mm"), p_.get("width_mm"), p_.get("depth_mm"), est_rule, wastage)
+        if fg is None:
+          est["not_estimated"][fam] = est["not_estimated"].get(fam, 0) + n
+        else:
+          est["members"] += n
+          slot_e = est["by_family"].setdefault(fam, {"members": 0, "kg": Decimal("0"), "kg_low": Decimal("0"), "kg_high": Decimal("0")})
+          for key in ("kg", "kg_low", "kg_high"):
+            est[key] += fg[key] * n
+            slot_e[key] += fg[key] * n
+          slot_e["members"] += n
       continue
     if got["reason"] == "NO_SIZE":
       no_size += n
@@ -148,4 +165,9 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
     "by_family": fam_out, "by_diameter": {k: {"kg": float(v["kg"]), "length_m": float(v["length_m"])} for k, v in sorted(by_dia.items(), key=lambda kv: float(kv[0]))},
     "marks": sorted(marks, key=lambda m: (m["family"], str(m["floor"] or ""), str(m["tag"] or ""))),
     "without_steel": {"members": sum(v["members"] for v in without.values()), "by_family": without},
+    "unprinted": {"enabled": est_on, "members": est["members"], "kg": float(est["kg"]), "kg_low": float(est["kg_low"]), "kg_high": float(est["kg_high"]),
+      "kg_with_printed": float(total + est["kg"]), "kg_low_with_printed": float(total + est["kg_low"]), "kg_high_with_printed": float(total + est["kg_high"]),
+      "slab_rule_kg_per_m2": float(est_rule) if est_rule > 0 else None,
+      "by_family": {k: {"members": v["members"], "kg": float(v["kg"]), "kg_low": float(v["kg_low"]), "kg_high": float(v["kg_high"])} for k, v in sorted(est["by_family"].items())},
+      "not_estimated": dict(sorted(est["not_estimated"].items()))},
     "without_size": no_size}

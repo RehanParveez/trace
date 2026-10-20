@@ -1,6 +1,9 @@
 import type {BOQItemSpec, DerivedClaims, DerivedParamName, DerivedParams, DerivedPdfSource, DerivedStats, FormworkSource, LayerSplitTrace, LedgerTrace, SteelLine, SteelSource,
 } from "../types/drawings-boq.types";
 
+import { steelEstimateView } from "./steelEstimate";
+import type { SteelEstimateView } from "./steelEstimate";
+
 export interface DerivedFieldDef {
   key: DerivedParamName;
   defaultMm: number | null;
@@ -8,9 +11,10 @@ export interface DerivedFieldDef {
   max: number;
   flag?: boolean;
   asked?: boolean;
-  unit?: "dia" | "pct";
+  unit?: "dia" | "pct" | "kgm2";
   label?: string;
   hint?: string;
+  choices?: readonly { value: string; label: string }[];
 }
 
 export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
@@ -39,6 +43,12 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "wall_foundation_works", defaultMm: 0, min: 0, max: 1, flag: true, label: "Brick steps and termite trench under the model's masonry walls" },
   { key: "wall_membrane", defaultMm: 0, min: 0, max: 1, flag: true, label: "Membrane along the plinth under the model's walls" },
   { key: "wall_finishes_from_walls", defaultMm: 0, min: 0, max: 1, flag: true, label: "Plaster and paint from the model's walls when it has no rooms" },
+  { key: "one_total", defaultMm: 0, min: 0, max: 1, flag: true, label: "One total: count a member once across the model and the drawings" },
+  { key: "one_total_prefer", defaultMm: 0, min: 0, max: 2, label: "One total: which source is kept when both have the member", hint: "Empty: the source with the narrower range", choices: [{ value: "0", label: "The more exact source" }, { value: "1", label: "The drawing" }, { value: "2", label: "The model" }] },
+  { key: "one_total_position_tol_mm", defaultMm: 100, min: 10, max: 1000, label: "One total: how far apart two members may stand and be the same (mm)", hint: "Counted once the drawing is placed on the model" },
+  { key: "one_total_trust_pct", defaultMm: 50, min: 0, max: 100, unit: "pct", label: "One total: share of a kind that must find a partner (percent)", hint: "Below it the model is kept and the drawing set aside" },
+  { key: "opening_area_from_model", defaultMm: 0, min: 0, max: 1, flag: true, label: "Area of doors and windows from the model" },
+  { key: "roof_treatment_from_slabs", defaultMm: 0, min: 0, max: 1, flag: true, label: "Roof treatment from the model's roof slabs" },
   { key: "stair_formwork_soffit_only", defaultMm: 0, min: 0, max: 1, flag: true, label: "Stair formwork: soffit only" },
   { key: "beam_lintel_qs_rate", defaultMm: 0, min: 0, max: 1, flag: true, label: "Beam and lintel: rate as the QS does" },
   { key: "formwork_shared_walls", defaultMm: 1, min: 0, max: 1, flag: true, label: "Take off column faces that an RCC wall covers" },
@@ -48,6 +58,8 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "bar_lap_dia", defaultMm: 40, min: 0, max: 80, unit: "dia" },
   { key: "bar_anchor_dia", defaultMm: 0, min: 0, max: 80, unit: "dia" },
   { key: "steel_wastage_pct", defaultMm: 5, min: 0, max: 15, unit: "pct" },
+  { key: "steel_estimate_from_volume", defaultMm: 1, min: 0, max: 1, flag: true, label: "Estimate the steel of members whose drawing prints no bars", hint: "Empty: yes. The estimate is shown apart from the printed bars, with a range" },
+  { key: "slab_steel_kg_per_m2", defaultMm: 17.2223, min: 0, max: 200, unit: "kgm2", label: "Slab steel by rule (kg per square metre)", hint: "Empty: 17.2223, the 1.6 kg per sq ft of the QS workbook. 0 uses the usual kg per m3 instead" },
   { key: "beam_depth_includes_slab", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tie_band_replaces_lintel", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "dpc_thickness_mm", defaultMm: 38.1, min: 0, max: 300 },
@@ -160,7 +172,7 @@ export interface DerivedBasisRow {
 
 const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", 
   "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "steel_cover_slab_mm", "steel_cover_beam_mm", "steel_cover_column_mm", "steel_cover_footing_mm", "steel_cover_wall_mm",
-   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "wall_foundation_works", "wall_membrane", "wall_finishes_from_walls", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
+   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "wall_foundation_works", "wall_membrane", "wall_finishes_from_walls", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "steel_estimate_from_volume", "slab_steel_kg_per_m2", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
     return [];
@@ -233,7 +245,7 @@ export function isFormworkSpec(spec: BOQItemSpec | null | undefined): boolean {
 }
 
 export function isSteelSpec(spec: BOQItemSpec | null | undefined): boolean {
-  return spec?.kind === "DERIVED" && (spec?.recipe === "PDF_MEMBER_STEEL" || spec?.recipe === "PDF_LINTEL_STEEL");
+  return spec?.kind === "DERIVED" && (spec?.recipe === "PDF_MEMBER_STEEL" || spec?.recipe === "PDF_LINTEL_STEEL" || spec?.recipe === "PDF_MEMBER_STEEL_ESTIMATE");
 }
 
 export interface SteelLineView {
@@ -313,6 +325,7 @@ export interface SteelStatsView {
   noBars: number;
   assumed: string[];
   lapAndWastageNotAdded: boolean;
+  estimate: SteelEstimateView | null;
 }
 
 export function steelStatsView(stats: DerivedStats | null | undefined): SteelStatsView | null {
@@ -341,6 +354,7 @@ export function steelStatsView(stats: DerivedStats | null | undefined): SteelSta
     noBars: Number(st.skipped?.NO_BARS ?? 0),
     assumed: Array.isArray(st.assumed) ? st.assumed : [],
     lapAndWastageNotAdded: Boolean(st.lap_and_wastage_not_added),
+    estimate: steelEstimateView(st),
   };
 }
 

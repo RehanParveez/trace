@@ -5,6 +5,9 @@ WALL_FINISHES = "WALL_FINISHES_FROM_WALLS"
 RECIPES = (WALL_FOUNDATION, WALL_FINISHES)
 
 def describe(spec: dict | None) -> str | None:
+  if spec and spec.get("kind") == "DERIVED" and spec.get("recipe") in ("OPENING_AREA_FROM_MODEL", "ROOF_TREATMENT_FROM_SLABS"):
+    return {"DOOR_AREA": "area of the doors: width of the footprint box times the height, from the model", "WINDOW_AREA": "area of the windows: width of the footprint box times the height, from the model",
+      "ROOF_TREATMENT": "plan area of the roof slab, flat roof assumed"}.get(str(spec.get("item")), "worked out from the model")
   if not spec or spec.get("kind") != "DERIVED":
     return None
 

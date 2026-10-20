@@ -74,7 +74,7 @@ def _to_model_element(e: DrawingElement) -> ModelElement:
     geometry_kind=e.geometry_kind, profile=e.profile, placement=e.placement, volume_mm3=e.volume_mm3,
     bbox_min_mm=_bbox(e, "min"), bbox_max_mm=_bbox(e, "max"),
     classification_confidence=e.classification_confidence if e.classification_confidence is not None else Decimal("0"),
-    normalization_status=e.normalization_status, ifc_global_id=e.ifc_global_id,
+    normalization_status=e.normalization_status, ifc_global_id=e.ifc_global_id, type_mark=e.type_mark, name=e.name,
   )
 
 def _solid_row(run: CalculationRun, s, stage: str = "build_solids") -> dict:
@@ -571,7 +571,7 @@ class CalculationService:
         return {**res.stats, "skipped": res.skipped}
       
       async def pdf_takeoff():
-        res = await asyncio.to_thread(tk.measure_takeoff, ctx, profile, p6.takeoff, state["ledger"] + state["extra_ledger"])
+        res = await asyncio.to_thread(tk.measure_takeoff, ctx, profile, p6.takeoff, state["ledger"] + state["extra_ledger"], state["accepted"])
         if res.dropped_keys:
           gone_ids = ids_for_keys(run_id, state["ledger"] + state["extra_ledger"], res.dropped_keys)
           state["ledger"] = tk.apply_replacements(state["ledger"], res.dropped_keys)
@@ -588,7 +588,8 @@ class CalculationService:
         state["takeoff_stats"], state["takeoff_results"] = res.stats, res.results
         return {"measurements": res.stats.get("measurements", 0), "counted": res.stats.get("counted", 0),
           "verified": res.stats.get("verified", 0), "skipped": res.stats.get("skipped", {}),
-          "replaced_work_items": len(res.stats.get("replaced", []))}
+          "replaced_work_items": len(res.stats.get("replaced", [])),
+          "one_total": {k: (res.stats.get("one_total") or {}).get(k) for k in ("ran", "complete", "partial", "conflicts_total", "drawing_only_marks", "model_only_members")}}
       async def pdf_space():
         res = await asyncio.to_thread(kernel.split_space, ctx, state["extra_ledger"])
         old_ids, added = restage_plan(run_id, state["extra_ledger"], res)
@@ -633,6 +634,16 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in wf.ledger])
         state["extra_solids"] += wf.solids
         state["extra_ledger"] += wf.ledger
+        oa = await asyncio.to_thread(kernel.measure_opening_area, ctx, state["accepted"], state["solids"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in oa.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in oa.ledger])
+        state["extra_solids"] += oa.solids
+        state["extra_ledger"] += oa.ledger
+        rt = await asyncio.to_thread(kernel.measure_roof_treatment, ctx, state["accepted"], state["solids"], state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in rt.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in rt.ledger])
+        state["extra_solids"] += rt.solids
+        state["extra_ledger"] += rt.ledger
         fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
@@ -655,7 +666,7 @@ class CalculationService:
         state["extra_solids"] += st.solids
         state["extra_ledger"] += st.ledger
         state["derived_stats"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats,
-          "wall_foundation": ww.stats, "wall_finishes": wf.stats}
+          "wall_foundation": ww.stats, "wall_finishes": wf.stats, "opening_area": oa.stats, "roof_treatment": rt.stats}
         return {"dpc_rows": len(dp.ledger), "dpc_m2": dp.stats.get("area_m2", "0"), "steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
           "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),

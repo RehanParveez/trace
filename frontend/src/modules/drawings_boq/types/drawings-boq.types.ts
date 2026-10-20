@@ -1243,6 +1243,7 @@ export interface RunStats {
   layers?: LayerStats;
   derived?: DerivedStats;
   ranges?: RangeStampStats;
+  pdf_takeoff?: PdfTakeoffStats;
   material?: MaterialStats;
   coverage?: CoverageStats;
   confidence?: ConfidenceStats;
@@ -1353,6 +1354,14 @@ export interface DerivedParams {
   wall_foundation_works?: number;
   wall_membrane?: number;
   wall_finishes_from_walls?: number;
+  steel_estimate_from_volume?: number;
+  slab_steel_kg_per_m2?: number;
+  one_total?: number;
+  one_total_prefer?: number;
+  one_total_position_tol_mm?: number;
+  one_total_trust_pct?: number;
+  opening_area_from_model?: number;
+  roof_treatment_from_slabs?: number;
   stair_formwork_soffit_only?: number;
   formwork_shared_walls?: number;
   formwork_shared_beams?: number;
@@ -1462,6 +1471,23 @@ export interface DerivedSteelStats {
   params?: Record<string, DerivedParamUsed>;
   assumed?: string[];
   lap_and_wastage_not_added?: boolean;
+  estimate?: SteelEstimateStats;
+  measured_kg?: string;
+  total_low_kg?: string;
+  total_high_kg?: string;
+  estimated_share_pct?: string;
+}
+
+export interface SteelEstimateStats {
+  enabled: boolean;
+  members?: number;
+  kg?: string;
+  kg_low?: string;
+  kg_high?: string;
+  by_family?: Record<string, { members: number; kg: string; kg_low: string; kg_high: string; concrete_m3?: string; area_m2?: string }>;
+  skipped?: Record<string, number>;
+  slab_rule_kg_per_m2?: string | null;
+  slab_rule_source?: string | null;
 }
 
 export interface SteelIntensity {
@@ -1599,6 +1625,113 @@ export interface RangeStampStats {
   unbounded: number;
 }
 
+export interface AreaWorksStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  param_source?: string;
+  rows?: number;
+  skipped?: Record<string, string>;
+  doors?: number;
+  windows?: number;
+  door_area_m2?: string;
+  window_area_m2?: string;
+  no_size?: number;
+  roof_slabs?: number;
+  no_plan?: number;
+  area_m2?: string;
+}
+
+export interface OneTotalDecision {
+  measurement_id: string;
+  tag?: string | null;
+  category: string;
+  level_id?: string | null;
+  members: number;
+  matched: number;
+  drawing_m3: string;
+  state: "COMPLETE" | "PARTIAL" | "NOT_MATCHED";
+  used: "MODEL" | "DRAWING";
+  reason: string;
+  conflict: boolean;
+  size_differs: boolean;
+  model_m3: string | null;
+  drawing_matched_m3?: string;
+  difference_pct: string | null;
+  by: string | null;
+  element_ids: string[];
+}
+
+export interface OneTotalDrawingOnly {
+  measurement_id: string;
+  tag?: string | null;
+  category: string;
+  members: number;
+  drawing_m3: string;
+  why: string;
+}
+
+export interface OneTotalModelOnly {
+  element_id: string;
+  mark?: string | null;
+  category: string;
+  level_id?: string | null;
+  model_m3: string;
+}
+
+export interface OneTotalNotTrusted {
+  category: string;
+  level_id?: string | null;
+  drawing_members: number;
+  model_members: number;
+  matched: number;
+  share_pct: number;
+}
+
+export interface OneTotalKindTotal {
+  model_m3: string;
+  drawing_m3: string;
+  total_m3: string;
+  low_m3: string;
+  high_m3: string;
+  bounded: boolean;
+  unbounded_rows?: number;
+}
+
+export interface OneTotalStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  prefer?: string;
+  tolerance_pct?: string;
+  position_tolerance_mm?: number;
+  trusted_share_pct?: number;
+  pairs_found?: number;
+  marks?: number;
+  model_members?: number;
+  complete?: number;
+  partial?: number;
+  set_aside_not_matched?: number;
+  drawing_only_marks?: number;
+  model_only_members?: number;
+  conflicts_total?: number;
+  used_model?: number;
+  used_drawing?: number;
+  truncated?: boolean;
+  decisions?: OneTotalDecision[];
+  conflicts?: OneTotalDecision[];
+  drawing_only?: OneTotalDrawingOnly[];
+  model_only?: OneTotalModelOnly[];
+  not_trusted?: OneTotalNotTrusted[];
+  totals?: Record<string, OneTotalKindTotal>;
+  alignment?: { group: string; method: string; supporters?: number; compared?: number; [key: string]: unknown }[];
+}
+
+export interface PdfTakeoffStats {
+  one_total?: OneTotalStats;
+  [key: string]: unknown;
+}
+
 export interface DerivedStats {
   enabled: boolean;
   balance?: EarthBalance;
@@ -1630,6 +1763,8 @@ export interface DerivedStats {
   floor_works?: FloorWorksStats;
   wall_foundation?: WallFoundationStats;
   wall_finishes?: WallFinishStats;
+  opening_area?: AreaWorksStats;
+  roof_treatment?: AreaWorksStats;
 }
 
 export interface LayerStats {
@@ -1747,7 +1882,8 @@ export type LedgerSourceKind =
   | "SCHEDULE_IMPORT"
   | "MANUAL"
   | "ESTIMATE"
-  | "DERIVED";
+  | "DERIVED"
+  | "PDF_TAKEOFF";
 
 export type DeductionType =
   | "OVERLAP_ALLOCATION"

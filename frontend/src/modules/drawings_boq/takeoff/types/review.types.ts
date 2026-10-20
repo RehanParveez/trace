@@ -111,6 +111,7 @@ export interface SteelRollup {
   marks: SteelMark[];
   without_steel: { members: number; by_family: Record<string, { members: number; marks: string[] }> };
   without_size: number;
+  unprinted?: import("../../utils/steelEstimate").UnprintedSteel;
 }
 
 export interface CombineResult {

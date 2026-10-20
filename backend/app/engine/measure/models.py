@@ -27,6 +27,8 @@ class ModelElement:
   layers: tuple | None = None
   generic_material: bool = False
   height_mm: Decimal | None = None
+  type_mark: str | None = None
+  name: str | None = None
 
 @dataclass(frozen=True)
 class MappingInput:

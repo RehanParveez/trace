@@ -3,9 +3,12 @@ import { useTranslation } from "react-i18next";
 import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
 import { derivedWaitingView, formworkStatsView, steelStatsView } from "../utils/derived";
+import { SteelEstimateNotes } from "./SteelEstimateNotes";
 import { FormworkPanel } from "./FormworkPanel";
 import { DerivedExtras } from "./DerivedExtras";
 import { ModelWorksPanel } from "./ModelWorksPanel";
+import { OneTotalPanel } from "./OneTotalPanel";
+import { AreaWorksPanel } from "./AreaWorksPanel";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
 import { useStageLabel } from "./StageBadge";
@@ -242,6 +245,8 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
 
       {dv?.enabled ? <DerivedExtras stats={dv} /> : null}
       <ModelWorksPanel derived={dv} ranges={stats.ranges} />
+      <AreaWorksPanel derived={dv} />
+      <OneTotalPanel takeoff={stats.pdf_takeoff} />
       {fw ? <FormworkPanel view={fw} /> : null}
       
       {sv ? (
@@ -294,7 +299,8 @@ export function RunStatsSummary({ stats }: { stats?: RunStats }) {
                 ))}
               </div>
             ) : null}
-            {sv.noBars > 0 ? (
+            {sv.estimate ? <SteelEstimateNotes view={sv.estimate} /> : null}
+            {sv.noBars > 0 && !sv.estimate ? (
               <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] px-3 py-2 text-[12px] text-[var(--color-text-secondary)]">
                 {t("boq.calculationRun.steelNoBars", {
                   defaultValue: "{{count}} members had no bars printed or typed, so no steel was taken for them.",

@@ -24,11 +24,13 @@ PARAM_VALUES = {
   "footing_formwork": 1.0,
   "steel_wastage_pct": 5.0,
   "pcc_thickness_mm": 76.2,
+  "slab_steel_kg_per_m2": 17.2223,
 }
 PARAM_EVIDENCE = {
   "footing_formwork": "Form Work, FOOTING: F-1 x10, F-2 x4, F-3 x3, perimeter x 0.75 ft = 179.25 sft. Every footing, all four sides, 0.75 ft deep.",
   "steel_wastage_pct": "Steel Summary: 22.62 t plus 'Steel Waistage 5%' of 1.13 t = 23.75 t.",
   "pcc_thickness_mm": "PCC 1:4:8: every line is 0.25 ft thick (3 in, 76.2 mm).",
+  "slab_steel_kg_per_m2": "Steel Summary: slab steel = slab area x 1.6 kg/sft (1,554.547 sft x 1.6 = 2,487.275 kg), a rule of thumb, not bar by bar. 1.6 kg/sft = 17.2223 kg/m2.",
 }
 
 BASEMENT_DIG_MM = 2438.4    
@@ -83,8 +85,9 @@ PROPOSALS = [
     PARAM_EVIDENCE["steel_wastage_pct"], params=["steel_wastage_pct"],
     confirm="Is the 5 percent wastage only, with no lap or hook allowance inside it?"),
   _p("S16", "F", "Slab steel", "Is any slab steel counted that the drawing does not print?",
-    "No. Only the bars the drawing prints are counted.", SOFTWARE, KEPT,
-    "His answers kept the drawing as the source where it prints a value (S7, X5, X10)."),
+    "Yes, by his rule: slab area x 1.6 kg per sq ft (17.2223 kg per m2) for a slab whose bars the drawing does not print. A slab with printed bars is weighed from them. Beams, columns and footings with no bars printed are estimated from the usual kg per m3 of concrete, flagged and ranged.", WORKBOOK, VALUE,
+    PARAM_EVIDENCE["slab_steel_kg_per_m2"], params=["slab_steel_kg_per_m2"],
+    confirm="Is 1.6 kg per sq ft the rule for every slab, the roof and the stair landings included?"),
   
   _p("Q30", "G", "Bill order", "Should the BOQ run by trade or by stage, and in what chapter order?",
     "By trade, with the stage (up to plinth, plinth to lintel, lintel to slab) as a sort. Chapters follow his Breakdown of Summary.", WORKBOOK, KEPT,
@@ -125,6 +128,16 @@ PROPOSALS = [
   _p("Q-B", "G", "Punjab rate system", "Which Punjab rate system and edition?", "No proposal.", SOFTWARE, HOLD, "Rates wait for the full rate list."),
 ]
 
+SIZE_VALUES = {
+  "beam_depth_mm": {"mm": 228.6, "text": "0.75 ft", "evidence": "Concrete Work, ROOF BEAMS on every floor: 0.75 ft wide (0.375 ft on a 4.5 in wall) and 0.75 ft deep."},
+  "plinth_beam_depth_mm": {"mm": 457.2, "text": "1.5 ft", "evidence": "Plinth Beam sheet: 0.75 ft wide and 1.5 ft deep under a 9 in wall; none under a 4.5 in wall."},
+  "neck_height_mm": {"mm": 1066.8, "text": "3.5 ft", "evidence": "Concrete Work, NECK COLUMNS: C-1, C-2 and C-3 are 3.5 ft high."},
+  "tank_wall_height_mm": {"mm": 1524.0, "text": "5 ft", "evidence": "Concrete Work, UGWT and OHWT: the long and short walls are 5 ft high."},
+}
+
+def sizes() -> dict:
+  return {k: dict(v) for k, v in SIZE_VALUES.items()}
+
 def param(name: str):
   return PARAM_VALUES.get(name)
 
@@ -138,7 +151,7 @@ def by_effect() -> dict:
   return out
 
 def public() -> dict:
-  return {"note": PROPOSED_BY, "bases": dict(BASIS_TEXT), "effects": dict(EFFECT_TEXT), "params": dict(PARAM_VALUES), "evidence": dict(PARAM_EVIDENCE),
+  return {"note": PROPOSED_BY, "bases": dict(BASIS_TEXT), "effects": dict(EFFECT_TEXT), "params": dict(PARAM_VALUES), "evidence": dict(PARAM_EVIDENCE), "sizes": sizes(),
     "items": [dict(p) for p in PROPOSALS], "counts": by_effect()}
 
 def _inch(mm: float) -> str:

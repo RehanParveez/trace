@@ -22,6 +22,18 @@ export interface QsProposedSet {
   evidence: Record<string, string>;
   items: QsProposal[];
   counts: Record<string, number>;
+  sizes?: Record<string, QsProposedSize>;
+}
+
+export interface QsProposedSize {
+  mm: number;
+  text: string;
+  evidence: string;
+}
+
+export function proposedSize(key: string, set: QsProposedSet | null | undefined): QsProposedSize | null {
+  const size = set?.sizes?.[key];
+  return size && Number.isFinite(size.mm) && size.mm > 0 ? size : null;
 }
 
 export const SECTION_TITLES: Record<string, string> = {
@@ -62,7 +74,7 @@ export function proposedValue(key: string, set: QsProposedSet | null | undefined
 
 export interface ProposedTextOptions {
   flag?: boolean;
-  unit?: "dia" | "pct";
+  unit?: "dia" | "pct" | "kgm2";
 }
 
 export function proposedParamText(key: string, set: QsProposedSet | null | undefined, options: ProposedTextOptions = {}): string | null {
@@ -76,6 +88,8 @@ export function proposedParamText(key: string, set: QsProposedSet | null | undef
     ? `${value} percent`
     : options.unit === "dia"
     ? `${value} bar diameters`
+    : options.unit === "kgm2"
+    ? `${value} kg per square metre`
     : `${value} mm (about ${(value / 25.4).toFixed(1)} in)`;
   const why = set.evidence[key];
   return `Empty: ${shown}, proposed from the QS workbook and not yet confirmed by the QS${why ? `. ${why}` : ""}`;

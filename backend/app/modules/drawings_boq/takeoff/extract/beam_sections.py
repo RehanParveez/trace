@@ -3,6 +3,7 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 
 KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF", "BAND": "TIE"}
+ALSO_OFFERED = {"ROOF": ("BEAM",), "PLINTH": ("GRADE",)}
 
 def _text(s: dict) -> str:
   size = f"{s['depth_mm'] / 25.4:g} in deep" if s.get("depth_mm") else "depth not read"
@@ -10,7 +11,8 @@ def _text(s: dict) -> str:
 
 def options_for(role: str, sections: list) -> list:
   kind = KIND_OF_ROLE.get(role)
-  return [s for s in sections or [] if s.get("kind") == kind and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
+  kinds = (kind, *ALSO_OFFERED.get(role, ()))
+  return [s for s in sections or [] if s.get("kind") in kinds and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
 
 def apply_marked(c, sections: list) -> bool:
   """A beam the plan marks (B2, GB4) takes the depth and bars of the section printed for that mark. A section that two details print differently (disagree), or that

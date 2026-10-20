@@ -5,9 +5,10 @@ from app.engine.measure.rebar import REBAR_WORK_ITEM, ESTIMATE_BANDS
 from app.engine.measure.models import CalculationContext, LedgerEntry, Solid
 from uuid import uuid5
 from app.engine.measure.derived import DERIVED, FACTOR_ASSUMED, FACTOR_CONFIRMED, counted_measurement_ids, resolve_params
-from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, bar_dia_mm_of, clean_steel, member_lines, kg_per_m  # noqa: F401
+from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, bar_dia_mm_of, clean_steel, member_lines, kg_per_m  
 from app.engine.measure.units import q4, q6
 from app.engine.measure import steel_review as SRV
+from app.engine.measure import steel_estimate as SE
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, range_trace
 
 """Reinforcement weight (kg) for the concrete members read from a PDF whose bars are printed with them: lintels from the lintel table, and columns,
@@ -69,8 +70,9 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
   fall back to flagged defaults; a member with no bars is skipped and counted. Wastage is a project parameter, 0 unless set. The intensity (kg per m3)
   of each family is compared with the working range and flagged, never changed."""
   stats: dict = {"enabled": True, "ran": False}
-  inputs = tuple(m for m in (getattr(ctx.takeoff, "formwork", ()) or ()) if m.category in PARAMS_USED and m.steel)
-  if not inputs:
+  members = tuple(getattr(ctx.takeoff, "formwork", ()) or ())
+  inputs = tuple(m for m in members if m.category in PARAMS_USED and m.steel)
+  if not inputs and not SE.unbarred(members):
     stats["reason"] = "NO_MEMBERS"
     return SteelResult(stats=stats)
 
@@ -158,6 +160,10 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
         family_volume[fam] = family_volume.get(fam, Decimal("0")) + volume
         family_kg[fam] = family_kg.get(fam, Decimal("0")) + bare
 
+  measured_rows = list(rows)
+  est = SE.estimate_steel(ctx, params, members, counted)
+  rows = measured_rows + list(est.ledger)
+  solids = solids + list(est.solids)
   rows.sort(key=lambda r: (str(r.level_id), r.trace["inputs"]["steel_source"]["category"], str(r.solid_id)))
   total = sum((r.quantity for r in rows), Decimal("0"))
   bare_total = sum((v["bare_kg"] for v in by_category.values()), Decimal("0"))
@@ -179,9 +185,16 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     "skipped": dict(sorted(skipped.items())),
     "params": {n: dict(params[n]) for n in STEEL_PARAMS},
     "assumed": sorted({n for r in rows for n, b in ((r.spec or {}).get("basis") or {}).items() if b == "default"}),
-    "lap_and_wastage_not_added": bool(rows) and wastage == 0,
+    "lap_and_wastage_not_added": bool(measured_rows) and wastage == 0,
     "review": SRV.review(reviewable, value[ANCHOR_PARAM], value[LAP_PARAM], params[LAP_PARAM]["source"] == "default", lap_table) if reviewable else {},
   })
+  measured_total = sum((r.quantity for r in measured_rows), Decimal("0"))
+  stats["estimate"] = est.stats
+  stats["measured_kg"] = str(q6(measured_total))
+  if est.stats.get("enabled"):
+    stats["total_low_kg"] = str(q6(measured_total + Decimal(est.stats["kg_low"])))
+    stats["total_high_kg"] = str(q6(measured_total + Decimal(est.stats["kg_high"])))
+    stats["estimated_share_pct"] = str(q4(Decimal(est.stats["kg"]) / total * 100)) if total > 0 else "0"
   if not rows:
     stats["reason"] = "NOTHING_TO_REINFORCE"
   return SteelResult(solids=solids, ledger=rows, stats=stats)
@@ -191,7 +204,7 @@ def pdf_steel_check(solids: list, ledger: list) -> list:
   by_id = {s.id for s in solids}
 
   for r in ledger:
-    if r.source_kind != DERIVED or r.formula_code != FORMULA:
+    if r.source_kind != DERIVED or r.formula_code != FORMULA or ((r.trace or {}).get("inputs") or {}).get("recipe") == SE.RECIPE:
       continue
     if r.solid_id not in by_id:
       failures.append(f"steel row references unknown solid {r.solid_id}")
@@ -209,4 +222,4 @@ def pdf_steel_check(solids: list, ledger: list) -> list:
       continue
     if abs(q6(bare * (1 + pct / 100)) - r.quantity) > Decimal("0.000004"):
       failures.append(f"steel weight != sum of its bars, rings and mesh on solid {r.solid_id}")
-  return failures
+  return failures + SE.estimate_check(solids, ledger)

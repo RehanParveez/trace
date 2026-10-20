@@ -68,6 +68,20 @@ PARAMS = {
   "wall_foundation_works": (0.0, 0.0, 1.0),
   "wall_membrane": (0.0, 0.0, 1.0),
   "wall_finishes_from_walls": (0.0, 0.0, 1.0),
+  "steel_estimate_from_volume": (1.0, 0.0, 1.0),
+  "slab_steel_kg_per_m2": (17.2223, 0.0, 200.0),
+  "one_total": (0.0, 0.0, 1.0),
+  "one_total_prefer": (0.0, 0.0, 2.0),
+  "one_total_position_tol_mm": (100.0, 10.0, 1000.0),
+  "one_total_trust_pct": (50.0, 0.0, 100.0),
+  "opening_area_from_model": (0.0, 0.0, 1.0),
+  "roof_treatment_from_slabs": (0.0, 0.0, 1.0),
+  "one_total": (0.0, 0.0, 1.0),
+  "one_total_prefer": (0.0, 0.0, 2.0),
+  "one_total_position_tol_mm": (100.0, 10.0, 1000.0),
+  "one_total_trust_pct": (50.0, 0.0, 100.0),
+  "opening_area_from_model": (0.0, 0.0, 1.0),
+  "roof_treatment_from_slabs": (0.0, 0.0, 1.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
@@ -95,7 +109,7 @@ CODE_MARK = "DERIVED_MARK_POSITION"
 CODE_ELEMENT = "DERIVED_ELEMENT_OVERRIDE"
 DERIVED_CODES = (CODE_ASSUMED, CODE_NGL_ASSUMED, CODE_BOX, CODE_MARK, CODE_ELEMENT)
 ELEMENT_PARAMS = ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_thickness_mm", "ballast_clearance_mm")
-AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA", "WALL_FOUNDATION_AREA", "WALL_FINISH_AREA")
+AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA", "WALL_FOUNDATION_AREA", "WALL_FINISH_AREA", "OPENING_AREA", "ROOF_TREATMENT_AREA")
 MAX_LISTED = 400
 BALANCE_TOLERANCE_M3 = Decimal("0.00001")
 

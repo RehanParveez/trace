@@ -683,6 +683,24 @@ def steel_issue_specs(stats: dict) -> list[IssueSpec]:
       code="STEEL_BARS_NOT_PRINTED", severity="info", blocks="NONE", dedupe_key="STEEL_BARS_NOT_PRINTED",
       message=f"{n} member mark{'s' if n != 1 else ''} had no bars printed or typed, so no steel was taken for them.",
       suggested_fix="Type the bars when you accept the member, or add the steel for these members by hand.", details={"marks": n}))
+  est = st.get("estimate") or {}
+  if est.get("enabled") and int(est.get("members") or 0):
+    total = float(st.get("kg") or 0)
+    share = round(float(est["kg"]) / total * 100) if total > 0 else 0
+    specs.append(IssueSpec(
+      
+      code="STEEL_ESTIMATED", severity="warning", blocks="NONE", dedupe_key="STEEL_ESTIMATED",
+      message=f"{est['members']} member{' prints' if est['members'] == 1 else 's print'} no bars, so {'its' if est['members'] == 1 else 'their'} steel is an estimate: {float(est['kg']):.0f} kg, between {float(est['kg_low']):.0f} and {float(est['kg_high']):.0f} kg, "
+        f"{share} percent of the {total:.0f} kg of steel. Slabs use the slab rule (kg per m2) and the other members the usual kg per m3 of concrete.",
+      suggested_fix="Type the bars when you accept a member, and its estimate is replaced by its weight. Set the slab rule in the site assumptions if your surveyor uses another.",
+      details={"members": est["members"], "kg": est["kg"], "kg_low": est["kg_low"], "kg_high": est["kg_high"], "by_family": est.get("by_family") or {}}))
+  left = int((est.get("skipped") or {}).get("NO_USUAL_FIGURE") or 0)
+  
+  if est.get("enabled") and left:
+    specs.append(IssueSpec(
+      code="STEEL_NOT_ESTIMATED", severity="info", blocks="NONE", dedupe_key="STEEL_NOT_ESTIMATED",
+      message=f"{left} wall, stair, tank or parapet member{'s' if left != 1 else ''} print no bars and have no usual steel figure, so no steel was taken for them.",
+      suggested_fix="Type the bars when you accept the member, or add the steel for these members by hand.", details={"members": left}))
   for family, row in sorted((st.get("intensity") or {}).items()):
     if row.get("status") in ("BELOW_RANGE", "ABOVE_RANGE"):
       low, high = row["range"]

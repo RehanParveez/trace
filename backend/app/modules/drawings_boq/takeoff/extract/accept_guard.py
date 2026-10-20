@@ -4,19 +4,24 @@ from sqlalchemy import select
 from app.modules.drawings_boq.models import TakeoffCandidate, TakeoffMeasurement, TakeoffSheet
 
 CODE = "MARK_ACCEPTED_ELSEWHERE"
-MARKED = ("COLUMN", "FOOTING", "DOOR", "WINDOW")
+MARKED = ("COLUMN", "FOOTING", "DOOR", "WINDOW", "SITE")
 
 def norm(tag) -> str:
   """C-2, C 2 and c2 are the same mark."""
   return re.sub(r"[^A-Z0-9]", "", str(tag or "").upper())
 
 def key_of(category: str, tag, floor) -> tuple | None:
+  if category == "SITE":
+    floor = "SITE"
   if category not in MARKED or not norm(tag) or floor is None:
     return None
   return (category, norm(tag), str(floor))
 
-def message(tag, pages: list) -> str:
+def message(tag, pages: list, site: bool = False) -> str:
   where = ", ".join(f"page {p}" for p in sorted(set(pages))) if pages else "another sheet"
+  if site:
+    return (f"{tag} is already accepted from {where}. The same tank, ramp, wall or gate is drawn on several sheets (the plans, the elevations, the details), so accepting it here as well counts it twice. "
+      f"Reject this one, or accept it anyway if the project has a second one.")
   return (f"Mark {tag} on this floor is already accepted from {where}. Accepting it here as well counts it twice. Reject this one, or accept it anyway "
     f"once you have checked that it is not the same mark.")
 
@@ -29,7 +34,7 @@ class Guard:
     if k is None:
       return None
     other = {s: p for s, p in self.held.get(k, {}).items() if s != cand.sheet_id}
-    return message(cand.tag, list(other.values())) if other else None
+    return message(cand.tag, list(other.values()), cand.category == "SITE") if other else None
 
   def add(self, cand, floor, page=None) -> None:
     k = key_of(cand.category, cand.tag, floor)
