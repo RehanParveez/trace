@@ -9,6 +9,7 @@ import type { RateBook, RateBookOwner, RateBookStatus } from "../types/pricing.t
 import { rateBookPath } from "../utils/pricing.utils";
 import { RateBookFormDialog } from "../components/RateBookFormDialog";
 import { RateBookTable } from "../components/RateBookTable";
+import { ScheduleLinks } from "../schedules/components/ScheduleLinks";
 
 export function RateBooksPage() {
   const { t } = useTranslation();
@@ -48,6 +49,7 @@ export function RateBooksPage() {
       <PageHeader
         eyebrow={t("pricing.eyebrow", "PRICING")}
         title={t("pricing.books.pageTitle", "Rate books")}
+        actions={<ScheduleLinks canManage={canManage} />}
         description={t(
           "pricing.books.pageDesc",
           "Schedules of rates that price your BOQs. Published versions are frozen, escalations are dated, and every priced line records which book and factor it used.",

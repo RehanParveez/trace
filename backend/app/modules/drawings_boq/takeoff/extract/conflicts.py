@@ -1,6 +1,6 @@
 from __future__ import annotations
 import hashlib
-from app.engine.measure import qs_answers as QS
+from app.engine.measure import readings as QS
 
 STRUCTURAL, ARCHITECTURAL, UNKNOWN = "STRUCTURAL", "ARCHITECTURAL", "UNKNOWN"
 POLICIES = ("STRUCTURAL", "ARCHITECTURAL", "LARGER", "SMALLER", "AS_READ", "QS")

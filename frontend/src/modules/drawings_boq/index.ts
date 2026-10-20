@@ -49,3 +49,4 @@ export * from "./rebar/components/RebarSummaryPanel";
 export * from "./components/RebarMarksPanel";
 export * from "./pricing";
 export * from "./recalculation";
+export { formatBytes } from "./pricing";

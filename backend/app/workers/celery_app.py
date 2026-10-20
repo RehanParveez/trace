@@ -14,6 +14,7 @@ celery_app = Celery(
     "app.modules.drawings_boq.calc_tasks",
     "app.modules.drawings_boq.recalculation.export_task",
     "app.modules.privacy.tasks",
+    "app.modules.drawings_boq.pricing.import_tasks",
   ],
 )
 
@@ -32,6 +33,8 @@ celery_app.conf.update(
     "app.modules.drawings_boq.tasks.parse_drawing_task": {"queue": "bim_parsing"},
     "app.modules.drawings_boq.recalculation.export_task.*": {"queue": "export"},
     "app.modules.privacy.*": {"queue": "default"},
+    "app.modules.drawings_boq.pricing.import_tasks.*": {"queue": "default"},
+
   },
   task_acks_late=True,
   worker_prefetch_multiplier=1,

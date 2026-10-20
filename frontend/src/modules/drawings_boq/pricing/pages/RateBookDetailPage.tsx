@@ -14,8 +14,11 @@ import { AnalysesPanel } from "../components/AnalysesPanel";
 import { EscalationsPanel } from "../components/EscalationsPanel";
 import { RateBookFormDialog } from "../components/RateBookFormDialog";
 import { RateItemsPanel } from "../components/RateItemsPanel";
+import { BookExportButtons } from "../schedule/components/BookExportButtons";
+import { BookToolsPanel } from "../schedule/components/BookToolsPanel";
+import { RefreshBookDialog } from "../schedule/components/RefreshBookDialog";
 
-type Tab = "rates" | "escalations" | "analyses";
+type Tab = "rates" | "escalations" | "analyses" | "tools";
 type Action = "publish" | "version" | "archive" | "delete";
 
 export function RateBookDetailPage() {
@@ -36,6 +39,7 @@ export function RateBookDetailPage() {
   const [tab, setTab] = useState<Tab>("rates");
   const [action, setAction] = useState<Action | null>(null);
   const [editing, setEditing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!canRead && permissions.length > 0) {
@@ -51,10 +55,11 @@ export function RateBookDetailPage() {
   const editable = canManage && isBookEditable(book);
   const pending = publish.isPending || newVersion.isPending || archive.isPending || remove.isPending;
 
-  const tabs: Array<{ id: Tab; label: string; count: number }> = [
+  const tabs: Array<{ id: Tab; label: string; count: number | null }> = [
     { id: "rates", label: t("pricing.book.tabRates", "Rates"), count: book.item_count },
     { id: "escalations", label: t("pricing.book.tabEscalations", "Escalations"), count: book.escalation_count },
     { id: "analyses", label: t("pricing.book.tabAnalyses", "Analyses"), count: book.analysis_count },
+    { id: "tools", label: t("schedules.book.tabTools", "Compare & history"), count: null },
   ];
 
   function run() {
@@ -134,6 +139,8 @@ export function RateBookDetailPage() {
         actions={
           <>
             <Badge tone={rateBookStatusTone(book.status)}>{t(`pricing.status.${book.status}`, RATE_BOOK_STATUS_LABEL[book.status])}</Badge>
+            <BookExportButtons bookId={book.id} code={book.code} version={book.immutable_version} />
+            {editable ? <Button variant="secondary" size="sm" onClick={() => setRefreshing(true)}>{t("schedules.book.refresh", "Refresh from edition")}</Button> : null}
             {editable ? (
               <>
                 <Button variant="secondary" size="sm" onClick={() => setEditing(true)}>{t("pricing.book.editDetails", "Edit details")}</Button>
@@ -189,7 +196,7 @@ export function RateBookDetailPage() {
               tab === item.id ? "border-[var(--color-trace-gold)] bg-[var(--color-warning-bg)]" : "border-[var(--color-border)]"
             }`}
           >
-            {item.label} <span className="text-[var(--color-text-muted)]">({item.count})</span>
+            {item.label}{item.count !== null ? <span className="text-[var(--color-text-muted)]"> ({item.count})</span> : null}
           </button>
         ))}
       </div>
@@ -197,8 +204,10 @@ export function RateBookDetailPage() {
       {tab === "rates" ? <RateItemsPanel book={book} canManage={canManage} /> : null}
       {tab === "escalations" ? <EscalationsPanel book={book} canManage={canManage} /> : null}
       {tab === "analyses" ? <AnalysesPanel book={book} canManage={canManage} /> : null}
+      {tab === "tools" ? <BookToolsPanel book={book} /> : null}
 
       {editing ? <RateBookFormDialog mode="edit" book={book} onClose={() => setEditing(false)} /> : null}
+      {refreshing ? <RefreshBookDialog book={book} onClose={() => setRefreshing(false)} /> : null}
       {action ? (
         <ConfirmDialog
           title={confirm[action].title}

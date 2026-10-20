@@ -1,7 +1,7 @@
 from __future__ import annotations
 import math
 import re
-from app.engine.measure import qs_answers as QS
+from app.engine.measure import readings as QS
 from app.modules.drawings_boq.takeoff.prep import schedules as S
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.prep import views as VW

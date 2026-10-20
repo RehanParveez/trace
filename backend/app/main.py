@@ -16,6 +16,7 @@ from app.modules.drawings_boq.takeoff.router import router as takeoff_router
 from app.modules.drawings_boq.lab.router import router as bill_compare_router
 from app.modules.drawings_boq.rebar.rebar_router import router as rebar_router
 from app.modules.drawings_boq.pricing.router import router as pricing_router
+from app.modules.drawings_boq.pricing.rate_import_router import router as rate_import_router
 from app.modules.drawings_boq.measurement_params import router as measurement_params_router
 from app.modules.drawings_boq.datums import router as datums_router
 from app.modules.drawings_boq.element_params import router as element_params_router
@@ -90,6 +91,8 @@ app.include_router(bill_compare_router, prefix=settings.api_v1_prefix)
 app.include_router(rebar_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(pricing_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
+
+app.include_router(rate_import_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 
 app.include_router(measurement_params_router, prefix=settings.api_v1_prefix)
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from app.engine.measure import derived as derived_module
-from app.engine.measure import qs_answers as QS
+from app.engine.measure import readings as QS
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import delete, select

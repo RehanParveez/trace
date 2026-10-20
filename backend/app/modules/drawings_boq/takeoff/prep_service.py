@@ -16,7 +16,7 @@ import math
 import os
 import time
 from app.engine.measure import takeoff as tk
-from app.engine.measure import qs_answers as QS
+from app.engine.measure import readings as QS
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules

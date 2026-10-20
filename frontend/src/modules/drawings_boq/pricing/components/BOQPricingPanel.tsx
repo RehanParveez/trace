@@ -7,6 +7,7 @@ import { usePricingSummary } from "../hooks";
 import type { PriceVersionResult } from "../types/pricing.types";
 import { formatDate, rateSourceLabel, rateSourceTone } from "../utils/pricing.utils";
 import { PriceRunDialog } from "./PriceRunDialog";
+import { RateGapsPanel } from "../schedules/components/RateGapsPanel";
 
 interface BOQPricingPanelProps {
   projectId: string;
@@ -114,6 +115,8 @@ export function BOQPricingPanel({ projectId, versionId, canPrice }: BOQPricingPa
               </ol>
             </div>
           ) : null}
+
+          {summary.unpriced_count > 0 ? <RateGapsPanel versionId={versionId} /> : null}
 
           {lastRun ? (
             <div className="rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface-muted)] p-4 text-[13px]">

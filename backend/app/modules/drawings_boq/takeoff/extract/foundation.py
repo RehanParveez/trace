@@ -214,7 +214,7 @@ def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls
 
 def _outside_membrane(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float):
   from app.modules.drawings_boq.takeoff.extract import finishes as FN
-  from app.engine.measure import qs_answers as QS
+  from app.engine.measure import readings as QS
   faces = FN.plaster_faces(walls, mm_per_pt)
   outer = [r for r in faces if r["out"]]
   length_m = sum(float(r["l"]) for r in outer)
