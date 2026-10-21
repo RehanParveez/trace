@@ -148,15 +148,18 @@ def _slab(inp: _Inputs, cand) -> None:
     else:
       inp.add("openings", PRINTED, f"{text}. Sizes are printed on the floor plans")
 
+def _depth_choice_text(choice: dict) -> str:
+  return f"the section of this mark prints no depth that could be read; {choice.get('mm', 0) / 25.4:g}\" was chosen by a person from the depth printed for {', '.join(choice.get('from') or [])}"
+
 def _beam_from_walls(inp: _Inputs, cand) -> None:
-  """A beam over the walls of a floor is not drawn: it is the measured brick walls laid end to end, as wide as the wall, with a depth the drawing's beam
-  sections print but the reader does not take, so it is typed."""
   f, params = cand.facts or {}, cand.params or {}
   t = f.get("wall_thickness_mm") or 0.0
   inp.measured("length", f"{f.get('wall_count', 0)} brick walls of {t / 25.4:g} in measured on this floor, laid end to end ({f.get('length_m', 0):g} m, openings included)")
   inp.measured("width", "as wide as the wall: the measured wall thickness snapped to a standard size")
   if _value(params, "depth_mm") is None:
     inp.add("depth", MISSING, "the beam section printed on the drawing is not read; type the depth when you accept the beam")
+  elif f.get("depth_choice"):
+    inp.add("depth", ASSUMED, _depth_choice_text(f["depth_choice"]))
   else:
     inp.add("depth", CONFIRMED, "typed by you")
   inp.add("position", ASSUMED, "a beam is assumed on top of every brick wall; the plan does not draw it")
@@ -174,6 +177,8 @@ def _beam_from_strips(inp: _Inputs, cand) -> None:
     inp.add("depth", MISSING, "no section with this mark gives a depth; type it when you accept the beam")
   elif f.get("section_mark"):
     inp.add("depth", PICTURE, f"read from the picture of the beam section {f['section_mark']}")
+  elif f.get("depth_choice"):
+    inp.add("depth", ASSUMED, _depth_choice_text(f["depth_choice"]))
   else:
     inp.add("depth", CONFIRMED, "typed by you")
 

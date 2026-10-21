@@ -29,8 +29,10 @@ import { SheetStrip } from "../components/SheetStrip";
 import { sheetTitle } from "../utils/sheetTitle";
 import { Toolbar } from "../components/Toolbar";
 import { OverlayColourMenu } from "../components/OverlayColourMenu";
-import { LeftOutBar } from "../components/ReadingGapsBar";
-import { useLeftOut } from "../hooks/useReadingGaps";
+import { ReadingGapsBar } from "../components/ReadingGapsBar";
+import { useDetailOnly } from "../../detail_only/hooks/useDetailOnly";
+import { useReadingGaps } from "../hooks/useReadingGaps";
+import { detailOnlyMarks } from "../../detail_only/utils/detailOnly";
 import { readingGapsMarks } from "../utils/readingGaps";
 import { markColours } from "../utils/overlayColour";
 import type { OverlayMode } from "../utils/overlayColour";
@@ -121,8 +123,9 @@ export function TakeoffPage() {
   const floors = useTakeoffFloors(drawingId, tab === "frame");
   const [showPlans, setShowPlans] = useState(true);
   const [colourMode, setColourMode] = useState<OverlayMode>("ITEM");
-  const [showLeftOut, setShowLeftOut] = useState(false);
-  const leftOut = useLeftOut(sheet, showLeftOut);
+  const [showReadingGaps, setShowReadingGaps] = useState(false);
+  const readingGaps = useReadingGaps(sheet, showReadingGaps);
+  const detailOnly = useDetailOnly(drawingId, showReadingGaps);
   const foundOnSheet = useSheetCandidates(sheet, tab === "found" || colourMode !== "ITEM");
   const planBoxes = useMemo(() => (showPlans && tab === "found" ? planBoxesOf(foundOnSheet.data?.extraction.stats) : []), [showPlans, tab, foundOnSheet.data]);
   const [reconcileModel, setReconcileModel] = useState<string | null>(null);
@@ -808,7 +811,7 @@ export function TakeoffPage() {
     suggestionPts,
     focusId,
     markColours: colourMode === "ITEM" ? undefined : markColours(colourMode, foundOnSheet.data?.candidates ?? []),
-    leftOut: showLeftOut ? readingGapsMarks(leftOut.data) : undefined,
+    readingGaps: showReadingGaps ? [...readingGapsMarks(readingGaps.data), ...detailOnlyMarks(detailOnly.data, sheet?.id)] : undefined,
     disabledNote: misaligned ? t("boq.takeoff.block.misalignedShort", "Sheet display is not aligned: measuring locked") : null,
   };
 
@@ -821,7 +824,7 @@ export function TakeoffPage() {
   }, []);
   const paintKey = useMemo(
     () => ({}),
-    [measurements, selectedIds, showMeasurements, tool, draft, editing, mmPerPt, wallPick, regionPick, capture, rulerPts, showDimensions, analysis.data, suggestionPts, focusId, misaligned, planBoxes, colourMode, foundOnSheet.data, showLeftOut, leftOut.data],
+    [measurements, selectedIds, showMeasurements, tool, draft, editing, mmPerPt, wallPick, regionPick, capture, rulerPts, showDimensions, analysis.data, suggestionPts, focusId, misaligned, planBoxes, colourMode, foundOnSheet.data, showReadingGaps, readingGaps.data, detailOnly.data],
   );
 
   useEffect(() => {
@@ -909,7 +912,7 @@ export function TakeoffPage() {
       />
 
       <OverlayColourMenu mode={colourMode} onMode={setColourMode} />
-      <LeftOutBar on={showLeftOut} onToggle={setShowLeftOut} data={leftOut.data} loading={leftOut.isFetching} error={leftOut.error} />
+      <ReadingGapsBar on={showReadingGaps} onToggle={setShowReadingGaps} data={readingGaps.data} loading={readingGaps.isFetching} error={readingGaps.error} />
 
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
         <div className="relative min-h-[320px] flex-1">

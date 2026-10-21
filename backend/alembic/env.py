@@ -34,6 +34,9 @@ from app.modules.bank_guarantees import models as bank_guarantees_models
 from app.modules.cash_flow import models as cash_flow_models
 from app.modules.drawings_boq.pricing import models as rate_import_models
 from app.engine.measure import models as engine_models
+from app.modules.drawings_boq.takeoff.reading_score import models as reading_models
+from app.modules.drawings_boq.takeoff.detail_only import models as detail_only_models
+
 
 config = context.config
 

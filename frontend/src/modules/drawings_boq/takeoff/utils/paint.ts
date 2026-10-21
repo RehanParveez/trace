@@ -3,7 +3,7 @@ import type { AreaGeometry, CountGeometry, LengthGeometry, Pt, RegionPick, Scale
 import { dist, polygonArea, polylineLength } from "./geometry";
 import { fmtMm } from "./format";
 import type { PlanBox } from "./floorSources";
-import type { readingGapsMark } from "../types/readingGaps.types";
+import type { ReadingGapsMark } from "../types/readingGaps.types";
 import { applyMatrix } from "./viewport";
 import type { Matrix } from "./viewport";
 
@@ -28,7 +28,7 @@ export interface Scene {
   disabledNote: string | null;
   planBoxes?: PlanBox[];
   markColours?: Record<string, string>;
-  leftOut?: readingGapsMark[];
+  readingGaps?: ReadingGapsMark[];
 }
 
 const PALETTE = ["#2f68a8", "#1e9d63", "#c24a3a", "#8a5cc2", "#d98a1f", "#1d9aa3", "#b0407e", "#6b7a1f"];
@@ -176,11 +176,11 @@ export function paintScene(ctx: CanvasRenderingContext2D, m: Matrix, size: { w: 
      for (const meas of scene.measurements) drawMeasurement(ctx, m, meas, scene.selectedIds.has(meas.id), scene.focusId === meas.id, scene.markColours?.[meas.id]);
   }
 
-  if (scene.leftOut && scene.leftOut.length > 0) {
+  if (scene.readingGaps && scene.readingGaps.length > 0) {
     ctx.save();
     ctx.lineWidth = 2.5;
     ctx.setLineDash([5, 3]);
-    for (const mk of scene.leftOut) {
+    for (const mk of scene.readingGaps) {
       const [x, y] = applyMatrix(m, mk.x, mk.y);
       ctx.beginPath();
       ctx.arc(x, y, 13, 0, Math.PI * 2);
@@ -190,7 +190,7 @@ export function paintScene(ctx: CanvasRenderingContext2D, m: Matrix, size: { w: 
       ctx.stroke();
     }
     ctx.setLineDash([]);
-    for (const mk of scene.leftOut) {
+    for (const mk of scene.readingGaps) {
       const [x, y] = applyMatrix(m, mk.x, mk.y);
       label(ctx, mk.text, x + 15, y - 6, mk.colour);
     }

@@ -123,8 +123,12 @@ async def reconciliation(
 
 from app.modules.drawings_boq.takeoff.prep_router import router as _prep_router 
 router.include_router(_prep_router)
-from app.modules.drawings_boq.takeoff.reading_gaps_router import router as _left_out_router
-router.include_router(_left_out_router)
+from app.modules.drawings_boq.takeoff.reading_gaps_router import router as _reading_gaps_router
+router.include_router(_reading_gaps_router)
+from app.modules.drawings_boq.takeoff.reading_score.router import router as _reading_score_router
+router.include_router(_reading_score_router)
+from app.modules.drawings_boq.takeoff.detail_only.router import router as _detail_only_router
+router.include_router(_detail_only_router)
 
 router.include_router(_extract_router)
 router.include_router(_summary_router)

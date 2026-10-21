@@ -1,12 +1,21 @@
 export type ReadingGapsReason = "NO_MEMBER" | "UNKNOWN_KIND";
+export type UnclaimedKind = "FILLED_SHAPE" | "LINE_RUN";
 export type SetAsideReason = "REJECTED" | "INVALID";
 
-export interface readingGapsTag {
+export interface ReadingGapsTag {
   tag: string;
   category: string | null;
   reason: ReadingGapsReason;
   count: number;
   points: number[][];
+}
+
+export interface UnclaimedItem {
+  reason: "UNCLAIMED_GEOMETRY";
+  kind: UnclaimedKind;
+  anchor: number[];
+  size_pt: number;
+  bbox: number[];
 }
 
 export interface SetAsideItem {
@@ -19,7 +28,7 @@ export interface SetAsideItem {
   anchor: number[] | null;
 }
 
-export interface readingGapsSummary {
+export interface ReadingGapsSummary {
   tags: number;
   tag_marks: number;
   no_member: number;
@@ -29,17 +38,21 @@ export interface readingGapsSummary {
   invalid: number;
   tags_cut: number;
   set_aside_cut: number;
+  unclaimed: number;
+  unclaimed_cut: number;
+  unclaimed_whole_sheet: boolean;
 }
 
-export interface readingGapsResponse {
+export interface ReadingGapsResponse {
   sheet_id: string;
   read: boolean;
-  tags: readingGapsTag[];
+  tags: ReadingGapsTag[];
   set_aside: SetAsideItem[];
-  summary: Partial<readingGapsSummary>;
+  unclaimed?: UnclaimedItem[];
+  summary: Partial<ReadingGapsSummary>;
 }
 
-export interface readingGapsMark {
+export interface ReadingGapsMark {
   x: number;
   y: number;
   text: string;

@@ -13,7 +13,7 @@ from app.modules.identity.enums import PermissionKey
 
 router = APIRouter()
 
-class LeftOutTag(BaseModel):
+class ReadingGapsTag(BaseModel):
   tag: str
   category: str | None = None
   reason: str
@@ -29,14 +29,22 @@ class SetAsideItem(BaseModel):
   codes: list[str] = Field(default_factory=list)
   anchor: list[float] | None = None
 
-class LeftOutResponse(BaseModel):
+class UnclaimedItem(BaseModel):
+  reason: str
+  kind: str
+  anchor: list[float]
+  size_pt: float
+  bbox: list[float] = Field(default_factory=list)
+
+class ReadingGapsResponse(BaseModel):
   sheet_id: UUID
   read: bool = Field(description="False when the sheet has not been read yet; then every mark would look left out, so none is listed.")
-  tags: list[LeftOutTag] = Field(default_factory=list)
+  tags: list[ReadingGapsTag] = Field(default_factory=list)
   set_aside: list[SetAsideItem] = Field(default_factory=list)
+  unclaimed: list[UnclaimedItem] = Field(default_factory=list)
   summary: dict = Field(default_factory=dict)
 
-class LeftOutService:
+class ReadingGapsService:
   def __init__(self, session: AsyncSession):
     self.session = session
     self.prep = PrepService(session)
@@ -49,10 +57,13 @@ class LeftOutService:
     if extraction is None:
       return {"sheet_id": sheet_id, "read": False}
     candidates = await self.repo.candidates(org, [sheet_id])
-    return {"sheet_id": sheet_id, "read": True, **reading_gaps(index.words, candidates)}
+    plans = ((extraction.stats or {}).get("plan_regions") or {}).get("plans") or []
+    boxes = [p["bbox"] for p in plans if isinstance(p, dict) and p.get("bbox")]
+    return {"sheet_id": sheet_id, "read": True, **reading_gaps(index.words, candidates, index=index, plan_boxes=boxes)}
 
-@router.get("/takeoff/sheets/{sheet_id}/left-out", response_model=LeftOutResponse)
-async def get_left_out(
+@router.get("/takeoff/sheets/{sheet_id}/reading-gaps", response_model=ReadingGapsResponse)
+@router.get("/takeoff/sheets/{sheet_id}/left-out", response_model=ReadingGapsResponse, deprecated=True)
+async def get_reading_gaps(
   sheet_id: UUID, current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)), session: AsyncSession = Depends(get_db),
 ):
-  return await LeftOutService(session).sheet(current_user.active_membership.organization_id, sheet_id)
+  return await ReadingGapsService(session).sheet(current_user.active_membership.organization_id, sheet_id)
