@@ -16,6 +16,8 @@ import { StagesPanel } from "./StagesPanel";
 import { SteelCompare } from "../lab/components/SteelCompare";
 import { BillCompareRun } from "../lab/components/BillCompareRun";
 import { ExpectedBoqPanel } from "../lab/components/ExpectedBoqPanel";
+import { FixListPanel } from "../lab/components/FixListPanel";
+import { RunDifferencePanel } from "../lab/components/RunDifferencePanel";
 import { ReasonablenessPanel } from "../lab/components/ReasonablenessPanel";
 import { RunHistoryPanel } from "../lab/components/RunHistoryPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
@@ -52,6 +54,8 @@ type View =
   | "steelqs"
   | "billqs"
   | "expected"
+  | "difference"
+  | "fixlist"
   | "reason"
   | "history"
   | "metrics";
@@ -501,7 +505,20 @@ export function CalculationRunPanel({
                   ),
                 ],
                 [
+                  "difference",
+                  t(
+                    "boq.calculationRun.tabDifference", "Compare runs"
+                  ),
+                ],
+                [
+                  "fixlist",
+                  t(
+                    "boq.calculationRun.tabFixList", "Fix list"
+                  ),
+                ],
+                [
                   "expected",
+
                   t(
                     "boq.calculationRun.tabExpected", "Expected BOQ"
                   ),
@@ -607,6 +624,10 @@ export function CalculationRunPanel({
           {view === "billqs" ? <BillCompareRun runId={run.id} /> : null}
 
           {view === "expected" ? <ExpectedBoqPanel projectId={projectId} runId={run.id} /> : null}
+
+          {view === "difference" ? <RunDifferencePanel projectId={projectId} runId={run.id} /> : null}
+
+          {view === "fixlist" ? <FixListPanel runId={run.id} /> : null}
 
           {view === "reason" ? <ReasonablenessPanel runId={run.id} /> : null}
 
