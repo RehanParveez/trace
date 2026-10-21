@@ -650,6 +650,11 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in rt.ledger])
         state["extra_solids"] += rt.solids
         state["extra_ledger"] += rt.ledger
+        rd = await asyncio.to_thread(kernel.measure_roof_deck, ctx, state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in rd.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in rd.ledger])
+        state["extra_solids"] += rd.solids
+        state["extra_ledger"] += rd.ledger
         fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
@@ -671,8 +676,13 @@ class CalculationService:
         await self.runs.stage_bar_marks([_bar_mark_row(run, m, "derived") for m in st.marks])
         state["extra_solids"] += st.solids
         state["extra_ledger"] += st.ledger
+        sa = await asyncio.to_thread(kernel.measure_steel_allowances, ctx, state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in sa.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in sa.ledger])
+        state["extra_solids"] += sa.solids
+        state["extra_ledger"] += sa.ledger
         state["derived_stats"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats,
-          "wall_foundation": ww.stats, "wall_finishes": wf.stats, "opening_area": oa.stats, "roof_treatment": rt.stats}
+          "wall_foundation": ww.stats, "wall_finishes": wf.stats, "opening_area": oa.stats, "roof_treatment": rt.stats, "roof_deck": rd.stats, "steel_allowances": sa.stats}
         return {"dpc_rows": len(dp.ledger), "dpc_m2": dp.stats.get("area_m2", "0"), "steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
           "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),

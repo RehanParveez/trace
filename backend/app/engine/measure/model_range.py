@@ -31,6 +31,9 @@ WARNING_DRIVERS = {
   "WALL_FINISH_SIDES_ASSUMED": "which face of the wall is outside",
   "OPENING_SIZE_FROM_BOX": "size of the opening taken from its box",
   "ROOF_AREA_FROM_PLAN": "flat roof assumed",
+  "ROOF_DECK_LAYERS_ASSUMED": "roof layers not drawn",
+  "STEEL_ALLOWANCE_ASSUMED": "binding wire and chairs not drawn",
+  "STEEL_RING_ZONE_ASSUMED": "ring zone at the joints not printed",
 }
 
 EXACT_SOURCES = {"SCHEDULE_IMPORT": PRINTED, "MANUAL": CONFIRMED}

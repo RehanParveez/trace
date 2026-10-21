@@ -9,6 +9,7 @@ from app.engine.measure.member_steel import FAMILY_OF, STEEL_FAMILIES, bar_dia_m
 from app.engine.measure.units import q4, q6
 from app.engine.measure import steel_review as SRV
 from app.engine.measure import steel_estimate as SE
+from app.engine.measure import steel_rings as RINGS
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, range_trace
 
 """Reinforcement weight (kg) for the concrete members read from a PDF whose bars are printed with them: lintels from the lintel table, and columns,
@@ -41,7 +42,8 @@ ROLE_OF = {"RCC_WALL": "WALL"}
 MAX_MARKS = 5000
 CODE_ASSUMED = "STEEL_ASSUMED"
 CODE_INTENSITY = "STEEL_INTENSITY_OUT_OF_RANGE"
-STEEL_CODES = (CODE_ASSUMED, CODE_INTENSITY)
+CODE_RING_ZONE = "STEEL_RING_ZONE_ASSUMED"
+STEEL_CODES = (CODE_ASSUMED, CODE_INTENSITY, CODE_RING_ZONE)
 MM = Decimal("1000")
 MM3_PER_M3 = Decimal("1000000000")
 INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB"}
@@ -87,6 +89,9 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
   params = resolve_params(ctx)
   value = {n: Decimal(str(params[n]["value"])) for n in STEEL_PARAMS}
   wastage = value[WASTAGE_PARAM]
+  ring_on = params["ring_dense_default"]["value"] >= 0.5
+  ring_spacing = Decimal(repr(float(params["ring_dense_spacing_mm"]["value"])))
+  ring_zone: dict = {"enabled": ring_on, "marks": 0, "skipped": {}}
   lap_table = ((getattr(ctx, "drawing_params", None) or {}).get("lap_table_mm") or None) if params[LAP_PARAM]["source"] == "drawing" else None
   counted = counted_measurement_ids(extra_ledger)
   skipped: dict = {}
@@ -109,6 +114,14 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
       skipped["NO_BARS"] = skipped.get("NO_BARS", 0) + m.count
       continue
     length, width, depth = _plate(cat, m.length_mm, m.width_mm, m.depth_mm)
+    ring_info = None
+    if ring_on:
+      steel, ring_info = RINGS.default_dense_ring(cat, length, width, depth, steel, ring_spacing)
+      if ring_info and ring_info["applied"]:
+        ring_zone["marks"] += m.count
+      elif ring_info:
+        ring_zone["skipped"][ring_info["reason"]] = ring_zone["skipped"].get(ring_info["reason"], 0) + m.count
+      ring_info = ring_info if (ring_info and ring_info["applied"]) else None
     cover_n = cover_name(cat, params)
     lines, bare = member_lines(cat, length, width, depth, steel, value[cover_n], value[HOOK_PARAM], value[LAP_PARAM], value[ANCHOR_PARAM], lap_table, extra_of(m))
     reviewable.append({"cat": cat, "length": length, "width": width, "depth": depth, "steel": steel, "count": m.count, "cover": value[cover_n], "hook": value[HOOK_PARAM]})
@@ -119,12 +132,13 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     kg = q6(bare * (1 + wastage / 100))
     used = tuple(cover_n if n == COVER_PARAM else n for n in PARAMS_USED[cat])
     assumed = [n for n in used if params[n]["source"] == "default"]
-    factor = FACTOR_ASSUMED if assumed else FACTOR_CONFIRMED
+    factor = FACTOR_ASSUMED if (assumed or ring_info) else FACTOR_CONFIRMED
     confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * factor)))
-    warnings = [CODE_ASSUMED] if assumed else []
+    warnings = ([CODE_ASSUMED] if assumed else []) + ([CODE_RING_ZONE] if ring_info else [])
     spec = {"kind": DERIVED, "recipe": RECIPE_CODE, "item": "STEEL", "category": cat,
-      "params": {n: params[n]["value"] for n in (*used, WASTAGE_PARAM)}, "basis": {n: params[n]["source"] for n in used}}
-    step_lines = [{"op": ln["kind"], **ln} for ln in lines]
+      "params": {n: params[n]["value"] for n in (*used, WASTAGE_PARAM, *(("ring_dense_default", "ring_dense_spacing_mm") if ring_info else ()))},
+      "basis": {n: params[n]["source"] for n in (*used, *(("ring_dense_spacing_mm",) if ring_info else ()))}}
+    step_lines = [{"op": ln["kind"], **ln} for ln in lines] + ([{"op": "ring_zone_default", **ring_info}] if ring_info else [])
     volume = q6(m.length_mm * m.width_mm * m.depth_mm / MM3_PER_M3)
     for i in range(m.count):
       eid = m.element_ids[i] if i < len(m.element_ids) else None
@@ -182,6 +196,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     "by_category": {k: {"marks": v["marks"], "kg": str(q6(v["kg"])), "bare_kg": str(q6(v["bare_kg"]))} for k, v in sorted(by_category.items())},
     "by_diameter": {k: {"kg": str(q6(v["kg"])), "length_m": str(q6(v["length_m"]))} for k, v in sorted(by_dia.items(), key=lambda kv: Decimal(kv[0]))},
     "intensity": intensity,
+    "ring_zone": {**ring_zone, "dense_spacing_mm": str(ring_spacing) if ring_on else None, "skipped": dict(sorted(ring_zone["skipped"].items()))},
     "skipped": dict(sorted(skipped.items())),
     "params": {n: dict(params[n]) for n in STEEL_PARAMS},
     "assumed": sorted({n for r in rows for n, b in ((r.spec or {}).get("basis") or {}).items() if b == "default"}),

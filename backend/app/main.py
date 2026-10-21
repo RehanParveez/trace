@@ -13,6 +13,7 @@ from app.modules.drawings_boq.router import router as drawings_boq_router
 from app.modules.drawings_boq.standards.router import router as standards_router
 from app.modules.drawings_boq.finish_schedule.router import router as finish_schedule_router
 from app.modules.drawings_boq.difference.business import router as run_difference_router
+from app.modules.drawings_boq.steel_view.business import router as steel_summary_router
 from app.modules.drawings_boq.takeoff.router import router as takeoff_router
 from app.modules.drawings_boq.lab.router import router as bill_compare_router
 from app.modules.drawings_boq.lab.expected_business import router as expected_boq_router
@@ -94,6 +95,8 @@ app.include_router(bill_compare_router, prefix=settings.api_v1_prefix)
 app.include_router(expected_boq_router, prefix=settings.api_v1_prefix)
 
 app.include_router(run_difference_router, prefix=settings.api_v1_prefix)
+
+app.include_router(steel_summary_router, prefix=settings.api_v1_prefix)
 
 app.include_router(rebar_router, prefix=f"{settings.api_v1_prefix}/drawings-boq",)
 

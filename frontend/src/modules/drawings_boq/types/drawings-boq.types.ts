@@ -76,6 +76,7 @@ export interface DrawingElement {
   measured_as?: string | null;
   predefined_type?: string | null;
   measure_mode?: "EXACT" | "APPROXIMATE" | "NONE" | "PDF_MEASURED" | "PDF_FOUND" | null;
+  frame?: { xM: number | null; yM: number | null; label: string } | null;
 }
 
 export interface BuildingLevel {
@@ -1362,6 +1363,17 @@ export interface DerivedParams {
   one_total_trust_pct?: number;
   opening_area_from_model?: number;
   roof_treatment_from_slabs?: number;
+  roof_deck_assembly?: number;
+  roof_coba_thickness_mm?: number;
+  roof_membrane?: number;
+  roof_screed?: number;
+  steel_binding_wire?: number;
+  steel_binding_wire_pct?: number;
+  steel_chairs?: number;
+  steel_chairs_kg_per_m2?: number;
+  ring_dense_default?: number;
+  ring_dense_spacing_mm?: number;
+  shoring_from_depth_mm?: number;
   stair_formwork_soffit_only?: number;
   formwork_shared_walls?: number;
   formwork_shared_beams?: number;
@@ -1472,6 +1484,7 @@ export interface DerivedSteelStats {
   assumed?: string[];
   lap_and_wastage_not_added?: boolean;
   estimate?: SteelEstimateStats;
+  ring_zone?: SteelRingZoneStats;
   measured_kg?: string;
   total_low_kg?: string;
   total_high_kg?: string;
@@ -1625,7 +1638,53 @@ export interface RangeStampStats {
   unbounded: number;
 }
 
+export interface RoofDeckStats {
+  enabled: boolean;
+  ran?: boolean;
+  reason?: string;
+  param_source?: string;
+  rows?: number;
+  roofs?: number;
+  layers?: string[];
+  skipped?: Record<string, string>;
+  roof_area_m2?: string;
+  membrane_m2?: string;
+  coba_m3?: string;
+  screed_m2?: string;
+  coba_thickness_mm?: string | null;
+  coba_thickness_source?: string | null;
+}
+
+export interface SteelAllowanceStats {
+  enabled: boolean;
+  ran?: boolean;
+  wire_on?: boolean;
+  chairs_on?: boolean;
+  reason?: string;
+  rows?: number;
+  levels?: number;
+  reinforcement_kg?: string;
+  wire_kg?: string;
+  wire_pct?: string | null;
+  wire_source?: string | null;
+  chairs_kg?: string;
+  chairs_kg_per_m2?: string | null;
+  chairs_source?: string | null;
+  slab_area_m2?: string;
+  kg?: string;
+  skipped?: Record<string, number>;
+  share_of_reinforcement_pct?: string;
+}
+
+export interface SteelRingZoneStats {
+  enabled: boolean;
+  marks?: number;
+  dense_spacing_mm?: string | null;
+  skipped?: Record<string, number>;
+}
+
 export interface AreaWorksStats {
+
   enabled: boolean;
   ran?: boolean;
   reason?: string;
@@ -1784,6 +1843,9 @@ export interface DerivedStats {
   wall_finishes?: WallFinishStats;
   opening_area?: AreaWorksStats;
   roof_treatment?: AreaWorksStats;
+  roof_deck?: RoofDeckStats;
+  steel_allowances?: SteelAllowanceStats;
+  shoring_from_depth_mm?: number | null;
 }
 
 export interface LayerStats {

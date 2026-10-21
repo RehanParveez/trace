@@ -20,6 +20,7 @@ import { isPdfFormat, measureBadge, needsPerson, pagesFor, waitingLines } from "
 import { EVIDENCE_LABEL, EVIDENCE_TONE, evidenceCheck, evidenceCounts, evidenceTitle, rangeText, rowEvidence } from "../takeoff/utils/evidence";
 import { CoveragePanel } from "../takeoff/components/CoveragePanel";
 import { memberZ, zText } from "../takeoff/utils/floors";
+import { coordText, frameText, withFrames } from "../utils/frameGrid";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -84,7 +85,10 @@ const COPY_COLUMNS: CopyColumn[] = [
   { header: "evidence_to_check", value: (e) => evidenceCheck(rowEvidence(e.properties)) },
   { header: "quantity_low", numeric: true, value: (e) => rangeFigure(e, "low") },
   { header: "quantity_high", numeric: true, value: (e) => rangeFigure(e, "high") },
-];
+  { header: "frame_line", value: (e) => frameText(e) },
+  { header: "x_from_corner_m", numeric: true, value: (e) => e.frame?.xM ?? "" },
+  { header: "y_from_corner_m", numeric: true, value: (e) => e.frame?.yM ?? "" },
+]
 
 function rangeFigure(e: { quantity: unknown; properties?: Record<string, unknown> | null }, side: "low" | "high"): number | "" {
   const r = rowEvidence(e.properties)?.range;
@@ -257,7 +261,7 @@ export function DrawingElementsDialog({
     [levelsQuery.data],
   );
   
-  const rowsShown = useMemo(() => sortRegister(items, levelNames), [items, levelNames]);
+  const rowsShown = useMemo(() => sortRegister(withFrames(items), levelNames), [items, levelNames]);
   const total = elementsQuery.data?.total ?? null;
   const hasFilter = Boolean(structuralRole.trim() || discipline.trim() || levelId || normalizationStatus);
 
@@ -334,7 +338,7 @@ export function DrawingElementsDialog({
         }
         rows = all;
       }
-      await copyTable(sortRegister(rows, levelNames), levelNames);
+      await copyTable(sortRegister(withFrames(rows), levelNames), levelNames);
       setCopy({ kind: "done", rows: rows.length });
     } catch {
       setCopy({ kind: "error" });
@@ -388,6 +392,7 @@ export function DrawingElementsDialog({
     { key: "role", label: t("drawings.elements.role") },
     { key: "discipline", label: t("drawings.elements.discipline") },
     { key: "level", label: t("drawings.elements.level") },
+    { key: "frame", label: t("drawings.elements.frame", "Frame") },
     { key: "material", label: t("drawings.elements.material") },
     { key: "quantity", label: t("drawings.elements.quantity") },
     { key: "normalization", label: t("drawings.elements.normalization") },
@@ -708,6 +713,10 @@ export function DrawingElementsDialog({
                         {element.level_name
                           ?? (element.level_id ? levelNames.get(element.level_id) : undefined)
                           ?? "\u2014"}
+                      </td>
+
+                      <td className="border-b border-[var(--color-border)] px-3 py-2.5 font-mono text-[11px]" title={coordText(element) ? t("drawings.elements.frameTitle", "Metres from the corner of the model: {{xy}}", { xy: coordText(element) }) : undefined} data-testid="element-frame">
+                        {frameText(element) || "\u2014"}
                       </td>
 
                       <td className="border-b border-[var(--color-border)] px-3 py-2.5 text-[11px]">

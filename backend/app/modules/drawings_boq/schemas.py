@@ -329,12 +329,22 @@ class DerivedParamsRequest(BaseModel):
   one_total_trust_pct: float | None = Field(default=None, ge=0, le=100, description="The share of the members of a kind on a storey that must find a partner before the matching is trusted; below it the model is kept and the drawing set aside, as before.")
   opening_area_from_model: float | None = Field(default=None, ge=0, le=1, description="1 adds the area of each door and window of the model (JOI-DOOR-AREA, JOI-WIN-AREA); 0 leaves it out.")
   roof_treatment_from_slabs: float | None = Field(default=None, ge=0, le=1, description="1 adds the treatment of the roof (FIN-ROOF-TREAT) from the plan area of the roof slabs of the model; 0 leaves it out.")
+  roof_deck_assembly: float | None = Field(default=None, ge=0, le=1, description="1 adds the layers of the roof deck (membrane, coba, screed) over every roof treatment area; 0 leaves them out.")
+  roof_coba_thickness_mm: float | None = Field(default=None, ge=0, le=600, description="Average thickness of the coba (mm) that gives the roof its fall; 0 leaves the coba out. The drawings do not print it.")
+  roof_membrane: float | None = Field(default=None, ge=0, le=1, description="1 adds the waterproofing membrane over the roof area (with roof_deck_assembly); 0 leaves it out.")
+  roof_screed: float | None = Field(default=None, ge=0, le=1, description="1 adds the cement screed over the coba (with roof_deck_assembly); 0 leaves it out.")
+  steel_binding_wire: float | None = Field(default=None, ge=0, le=1, description="1 adds binding wire to the steel of every storey; 0 leaves it out.")
+  steel_binding_wire_pct: float | None = Field(default=None, ge=0, le=5, description="Binding wire as a percentage of the weight of the reinforcement. The drawings do not print it.")
+  steel_chairs: float | None = Field(default=None, ge=0, le=1, description="1 adds chairs under the top steel of slabs; 0 leaves them out.")
+  steel_chairs_kg_per_m2: float | None = Field(default=None, ge=0, le=5, description="Kilograms of chairs per square metre of slab. The drawings do not print it.")
+  ring_dense_default: float | None = Field(default=None, ge=0, le=1, description="1 gives a column or beam whose drawing prints one ring spacing a closer zone at each end; 0 counts every ring at the printed spacing.")
+  ring_dense_spacing_mm: float | None = Field(default=None, ge=50, le=300, description="Ring spacing (mm) in the closer zone when the drawing prints none; 101.6 is 4 in.")
+  shoring_from_depth_mm: float | None = Field(default=None, ge=0, le=10000, description="Shore only the part of a trench deeper than this (mm) and switch shoring on by itself; 0 keeps shoring to the switch and the whole depth.")
   one_total: float | None = Field(default=None, ge=0, le=1, description="1 decides each member of the drawings against the model (the same member counted once); 0 keeps the old rule, which sets a drawing measurement aside whenever the model has the work item on that storey.")
   one_total_prefer: float | None = Field(default=None, ge=0, le=2, description="Which source is kept for a member found in both: 0 the more exact one (narrower range), 1 the drawing, 2 the model.")
   one_total_position_tol_mm: float | None = Field(default=None, ge=10, le=1000, description="How far apart (mm) a drawing member and a model member may stand and still be the same member, once the drawing is placed on the model.")
   one_total_trust_pct: float | None = Field(default=None, ge=0, le=100, description="The share of the members of a kind on a storey that must find a partner before the matching is trusted; below it the model is kept and the drawing set aside, as before.")
   opening_area_from_model: float | None = Field(default=None, ge=0, le=1, description="1 adds the area of each door and window of the model (JOI-DOOR-AREA, JOI-WIN-AREA); 0 leaves it out.")
-  roof_treatment_from_slabs: float | None = Field(default=None, ge=0, le=1, description="1 adds the treatment of the roof (FIN-ROOF-TREAT) from the plan area of the roof slabs of the model; 0 leaves it out.")
   
 class CalculationRunCreateRequest(BaseModel):
   drawing_ids: list[UUID] | None = None

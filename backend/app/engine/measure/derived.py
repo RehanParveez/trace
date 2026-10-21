@@ -18,7 +18,8 @@ from app.engine.measure import fill_balance as FB
 DERIVED = "DERIVED"
 FORMWORK_FORMULA = "SOLID_FORMWORK_AREA"
 STEEL_FORMULA = "PDF_MEMBER_STEEL_WEIGHT"
-EXEMPT_FORMULAS = (FORMWORK_FORMULA, STEEL_FORMULA)
+BINDING_WIRE_FORMULA, CHAIRS_FORMULA = "STEEL_BINDING_WIRE_WEIGHT", "STEEL_CHAIRS_WEIGHT"
+EXEMPT_FORMULAS = (FORMWORK_FORMULA, STEEL_FORMULA, BINDING_WIRE_FORMULA, CHAIRS_FORMULA)
 RECIPE_CODE = "FOOTING_PREP"
 EXCAVATION, PCC, BACKFILL = "EXCAVATION_VOLUME", "FOOTING_PCC_VOLUME", "BACKFILL_VOLUME"
 BALLAST, SHORING = "BRICK_BALLAST_VOLUME", "SHORING_AREA"
@@ -76,12 +77,22 @@ PARAMS = {
   "one_total_trust_pct": (50.0, 0.0, 100.0),
   "opening_area_from_model": (0.0, 0.0, 1.0),
   "roof_treatment_from_slabs": (0.0, 0.0, 1.0),
+  "roof_deck_assembly": (0.0, 0.0, 1.0),
+  "roof_coba_thickness_mm": (100.0, 0.0, 600.0),
+  "roof_membrane": (1.0, 0.0, 1.0),
+  "roof_screed": (1.0, 0.0, 1.0),
+  "steel_binding_wire": (0.0, 0.0, 1.0),
+  "steel_binding_wire_pct": (1.0, 0.0, 5.0),
+  "steel_chairs": (0.0, 0.0, 1.0),
+  "steel_chairs_kg_per_m2": (0.25, 0.0, 5.0),
+  "ring_dense_default": (0.0, 0.0, 1.0),
+  "ring_dense_spacing_mm": (101.6, 50.0, 300.0),
+  "shoring_from_depth_mm": (0.0, 0.0, 10000.0),
   "one_total": (0.0, 0.0, 1.0),
   "one_total_prefer": (0.0, 0.0, 2.0),
   "one_total_position_tol_mm": (100.0, 10.0, 1000.0),
   "one_total_trust_pct": (50.0, 0.0, 100.0),
   "opening_area_from_model": (0.0, 0.0, 1.0),
-  "roof_treatment_from_slabs": (0.0, 0.0, 1.0),
 }
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
@@ -94,7 +105,7 @@ PARAM_USED_BY = {
   PCC: ("pcc_projection_mm", "pcc_thickness_mm"),
   BACKFILL: ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"),
   BALLAST: _BALLAST_PARAMS,
-  SHORING: ("working_space_mm", "shoring", *_BALLAST_PARAMS),
+  SHORING: ("working_space_mm", "shoring", "shoring_from_depth_mm", *_BALLAST_PARAMS),
 }
 
 def _used(kind: str, bed: str) -> tuple:
@@ -109,7 +120,7 @@ CODE_MARK = "DERIVED_MARK_POSITION"
 CODE_ELEMENT = "DERIVED_ELEMENT_OVERRIDE"
 DERIVED_CODES = (CODE_ASSUMED, CODE_NGL_ASSUMED, CODE_BOX, CODE_MARK, CODE_ELEMENT)
 ELEMENT_PARAMS = ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_thickness_mm", "ballast_clearance_mm")
-AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA", "WALL_FOUNDATION_AREA", "WALL_FINISH_AREA", "OPENING_AREA", "ROOF_TREATMENT_AREA")
+AREA_FORMULAS = (SHORING, "DPC_AREA", "FLOOR_WORKS_AREA", "WALL_FOUNDATION_AREA", "WALL_FINISH_AREA", "OPENING_AREA", "ROOF_TREATMENT_AREA", "ROOF_DECK_AREA")
 MAX_LISTED = 400
 BALANCE_TOLERANCE_M3 = Decimal("0.00001")
 
@@ -234,8 +245,10 @@ def _retune(f: _Foundation, over: dict, params: dict) -> None:
     proj, thick = mine["pcc_projection_mm"]["value"], mine["pcc_thickness_mm"]["value"]
   f.exc_poly, f.pcc_poly = _grow(f.poly, proj + ws), _grow(f.poly, proj)
   f.exc_bottom, f.bed_proj, f.bed_t, f.ws, f.params = f.bottom - thick, float(proj), float(thick), float(ws), mine
+@dataclass
 class _Buried:
   poly: object
+
   z0: float
   z1: float
 
@@ -549,7 +562,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   if EXCAVATION in codes:
     if any(f.bed == "BALLAST" for f in foundations) and DEFAULT_CODES[BALLAST] not in model_codes:
       codes[BALLAST] = DEFAULT_CODES[BALLAST]
-    if params["shoring"]["value"] >= 0.5 and DEFAULT_CODES[SHORING] not in model_codes:
+    if (params["shoring"]["value"] >= 0.5 or params["shoring_from_depth_mm"]["value"] > 0) and DEFAULT_CODES[SHORING] not in model_codes:
       codes[SHORING] = DEFAULT_CODES[SHORING]
   shoring_on = SHORING in codes
 
@@ -559,6 +572,8 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   bur: dict = {}
   shr: dict = {}
   ngl_z = float(ngl["z_mm"])
+  shore_from = float(params["shoring_from_depth_mm"]["value"])
+  shore_cut = ngl_z - shore_from if shore_from > 0 else None
   levels = _levels(foundations, buried, ngl_z)
   structure_m3 = outside_m3 = Decimal("0")
   negative_rows: set = set()
@@ -583,7 +598,8 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
       key = f.element.id
       if whole is not None:
         exposed = owned.boundary.intersection(whole.boundary.buffer(0.5)).length
-        shr[key] = shr.get(key, 0.0) + exposed * h
+        h_shore = h if shore_cut is None else max(0.0, min(zb, shore_cut) - za)
+        shr[key] = shr.get(key, 0.0) + exposed * h_shore
       if inside > owned.area + 1.0:
         negative_rows.add(key)
         
@@ -656,6 +672,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
       steps = [
         {"op": "excavation_side_length_exposed_to_ground", "note": "sides of the trench not shared with a neighbouring trench"},
         {"op": "depth", "from_mm": round(ngl_z, 1), "to_mm": round(f.exc_bottom, 1)},
+        *([{"op": "shoring_below_depth", "mm": shore_from, "note": "only the part of the trench deeper than this is shored"}] if shore_from > 0 else []),
         {"op": "net_area", "m2": str(area)},
       ]
       s, e = _row(ctx, f, SHORING, codes[SHORING], area, f.params, ngl, common, steps, [], unit="m2")
@@ -668,6 +685,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     "ran": True, "rows": len(out_ledger),
     "excavation_m3": str(q6(totals[EXCAVATION])), "pcc_m3": str(q6(totals[PCC])),
     "ballast_m3": str(q6(totals[BALLAST])), "shoring_m2": str(q6(totals[SHORING])),
+    "shoring_from_depth_mm": shore_from if shore_from > 0 else None,
     "backfill_m3": str(q6(totals[BACKFILL])), "buried_m3": str(q6(totals["buried"])),
     "assumed": sorted({n for e in out_ledger for n, b in ((e.spec or {}).get("basis") or {}).items() if b == "default" and n != "ngl"}),
     "ngl_assumed": ngl["source"] == "default",

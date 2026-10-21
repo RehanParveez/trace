@@ -18,6 +18,7 @@ import { BillCompareRun } from "../lab/components/BillCompareRun";
 import { ExpectedBoqPanel } from "../lab/components/ExpectedBoqPanel";
 import { FixListPanel } from "../lab/components/FixListPanel";
 import { RunDifferencePanel } from "../lab/components/RunDifferencePanel";
+import { SteelSummaryPanel } from "../steel/components/SteelSummaryPanel";
 import { ReasonablenessPanel } from "../lab/components/ReasonablenessPanel";
 import { RunHistoryPanel } from "../lab/components/RunHistoryPanel";
 import { RunDrawingPicker } from "./RunDrawingPicker";
@@ -55,6 +56,7 @@ type View =
   | "billqs"
   | "expected"
   | "difference"
+  | "steelsummary"
   | "fixlist"
   | "reason"
   | "history"
@@ -493,6 +495,12 @@ export function CalculationRunPanel({
                   ),
                 ],
                 [
+                  "steelsummary",
+                  t(
+                    "boq.calculationRun.tabSteelSummary", "Steel summary"
+                  ),
+                ],
+                [
                   "steelqs",
                   t(
                     "boq.calculationRun.tabSteelQs", "Steel vs QS"
@@ -620,6 +628,8 @@ export function CalculationRunPanel({
           {view === "stages" ? <StagesPanel projectId={projectId} stats={run.stats} /> : null}
 
           {view === "steelqs" ? <SteelCompare runId={run.id} /> : null}
+
+          {view === "steelsummary" ? <SteelSummaryPanel runId={run.id} /> : null}
 
           {view === "billqs" ? <BillCompareRun runId={run.id} /> : null}
 

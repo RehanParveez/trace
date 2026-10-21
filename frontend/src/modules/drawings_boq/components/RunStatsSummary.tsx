@@ -10,6 +10,8 @@ import { ModelWorksPanel } from "./ModelWorksPanel";
 import { OneTotalPanel } from "./OneTotalPanel";
 import { ItemClaimsPanel } from "./ItemClaimsPanel";
 import { AreaWorksPanel } from "./AreaWorksPanel";
+import { RoofDeckPanel } from "./RoofDeckPanel";
+import { SteelAllowancesPanel } from "./SteelAllowancesPanel";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
 import { useStageLabel } from "./StageBadge";
@@ -203,7 +205,10 @@ export function RunStatsSummary({ stats, projectId }: { stats?: RunStats; projec
                 <Stat label={t("boq.calculationRun.statDerivedBallast", "Brick ballast (m³)")} value={formatPrecise(dv.ballast_m3 ?? 0, 3)} />
               ) : null}
               {Number(dv.shoring_m2 ?? 0) > 0 ? (
-                <Stat label={t("boq.calculationRun.statDerivedShoring", "Shoring (m²)")} value={formatPrecise(dv.shoring_m2 ?? 0, 3)} />
+                <Stat
+                  label={dv.shoring_from_depth_mm ? t("boq.calculationRun.statDerivedShoringBelow", { defaultValue: "Shoring below {{mm}} mm (m²)", mm: dv.shoring_from_depth_mm }) : t("boq.calculationRun.statDerivedShoring", "Shoring (m²)")}
+                  value={formatPrecise(dv.shoring_m2 ?? 0, 3)}
+                />
               ) : null}
               <Stat label={t("boq.calculationRun.statDerivedBuried", "Structure in the trench (m³)")} value={formatPrecise(dv.buried_m3 ?? 0, 3)} />
               <Stat label={t("boq.calculationRun.statDerivedBox", "Footings taken as rectangles")} value={dv.box_footprints ?? 0} tone={Number(dv.box_footprints ?? 0) > 0 ? "gold" : undefined} />
@@ -247,6 +252,8 @@ export function RunStatsSummary({ stats, projectId }: { stats?: RunStats; projec
       {dv?.enabled ? <DerivedExtras stats={dv} /> : null}
       <ModelWorksPanel derived={dv} ranges={stats.ranges} />
       <AreaWorksPanel derived={dv} />
+      <RoofDeckPanel derived={dv} />
+      <SteelAllowancesPanel derived={dv} />
       <OneTotalPanel takeoff={stats.pdf_takeoff} projectId={projectId} />
       <ItemClaimsPanel takeoff={stats.pdf_takeoff} projectId={projectId} />
       {fw ? <FormworkPanel view={fw} /> : null}

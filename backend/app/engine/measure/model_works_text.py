@@ -12,6 +12,19 @@ def describe(spec: dict | None) -> str | None:
     return None
   
   recipe, item = spec.get("recipe"), spec.get("item")
+  if recipe == "STEEL_ALLOWANCE":
+    p = spec.get("params") or {}
+    if item == "WIRE":
+      pct = p.get("steel_binding_wire_pct")
+      return f"binding wire at {pct:g} % of the weight of the bars of the storey, not drawn" if isinstance(pct, (int, float)) else "binding wire for the bars, not drawn"
+    rate = p.get("steel_chairs_kg_per_m2")
+    return f"chairs under the slab steel at {rate:g} kg per m2 of slab, not drawn" if isinstance(rate, (int, float)) else "chairs under the slab steel, not drawn"
+  if recipe == "ROOF_DECK_FROM_TREATMENT":
+    thick = (spec.get("params") or {}).get("roof_coba_thickness_mm")
+    return {"MEMBRANE": "waterproofing over the whole roof area, layers not drawn",
+      "COBA": f"coba over the roof area at an average of {thick:g} mm, layers not drawn" if isinstance(thick, (int, float)) else "coba over the roof area, layers not drawn",
+      "SCREED": "cement screed over the coba, layers not drawn"}.get(str(item), "worked out from the roof treatment")
+    
   if recipe == WALL_FOUNDATION:
     cls = str(spec.get("strip_class") or "").lower()
     if item == "BRICK_STEP":
