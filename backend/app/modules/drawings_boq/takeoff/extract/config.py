@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 29
+EXTRACT_VERSION = 31
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0   
@@ -244,6 +244,8 @@ NOTES = {
   "LINTEL_COVERED_BY_TIE_BAND": ("warning", "The drawing prints a tie band at lintel level, and it is listed as a beam on this plan. A band that runs over an opening takes the place of a separate lintel there, so switch on 'tie band replaces lintel' in the site assumptions to leave this lintel out once the band is measured; until then both are counted."),
   "TIE_BAND_FROM_NOTE": ("warning", "The drawing prints a continuous tie band at lintel level (see the note on the drawing). It is laid over the brick walls of this plan, as wide as the wall, at the level of the openings' heads. Its depth is the one printed on a section, or the depth you type; IS 4326 asks for at least 75 mm."),
   "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
+    "SCAN_FIGURES_ASKED": ("warning", "Some figures on this scan were read two different ways when the character reader looked at them again (a 6 or an 8, a 5 or an S ...), so none of them was taken. Where the sheet needs one of them the item asks for it; type it from the drawing."),
+  "SCAN_FIGURES_REPAIRED": ("info", "Some look-alike characters on this scan (6/8, 5/S, 0/O, 1/I) were put right because repeated readings of the same figure agreed. The first few are listed with the sheet; check them against the drawing."),
   "LINTEL_STEEL_FROM_TABLE": ("info", "The bars and rings of this lintel are the reinforcement printed on the same row of the lintel table. Steel weight is worked out from them when the run is calculated."),
   "STEEL_FROM_DETAIL": ("info", "The bars, rings or mesh of this member are the reinforcement printed in the detail or note for its mark. Steel weight is worked out from them when the run is calculated, using the cover, hook, lap and anchorage in the site assumptions."),
   "STEEL_NOT_PRINTED": ("info", "No reinforcement note could be tied to this member on the sheet. Type the bars when you accept it, or no steel is taken for it."),
@@ -291,6 +293,7 @@ NOTES = {
   "LIGHT_PEN_WALL": ("info", "This wall is drawn in a lighter line weight than the main walls on the sheet. Check it is a wall and not a boundary line."),
   "STAIR_SAME_AS_UP_FLIGHT": ("warning", "This DN flight is the same staircase as the UP flight drawn on the floor below. It is one concrete stair: accept only one of them, or it is counted twice."),
   "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
+  "SHEET_READ_UPRIGHT": ("info", "The drawing on this sheet is turned or crooked on the page (its text does not run left to right). It was straightened before it was read, so its text, marks and schedule are read as on an upright sheet; positions shown on the drawing are the page's own."),
   "PLAN_REGIONS_READ": ("info", "This sheet shows several drawings (plans, elevations, sections, schedules). Each floor plan was read on its own, with its own floor. Elevations, sections, the boundary wall, the key plan, the site plan and the block plans were not read as walls."),
   "FLOOR_READ_ON_OTHER_SHEET": ("warning", "This floor was also read from another sheet of the same drawing. Accept the walls and openings of one of the two, or they are counted twice."),
   "SAME_MARK_ON_OTHER_SHEET": ("info", "This mark is also on another sheet of the same drawing. It is listed once in the element register."),

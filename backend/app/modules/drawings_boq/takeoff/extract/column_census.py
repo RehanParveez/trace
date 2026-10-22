@@ -2,19 +2,32 @@ from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import config as C
 from collections import Counter
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
+from app.modules.drawings_boq.takeoff.prep.census import _is_rectangle
 
 def _inch_class(a: float, b: float, imperial: bool, snap) -> tuple:
   a, b = (snap(a), snap(b)) if imperial else (round(a / 5.0) * 5.0, round(b / 5.0) * 5.0)
   return (a, b) if a <= b else (b, a)
 
+def _upright_box(r) -> tuple:
+  x0, y0, x1, y1 = r.bbox
+  sides = _is_rectangle(r.pts) if len(r.pts) == 4 else None
+  if sides is None:
+    return x0, y0, x1, y1
+  a, b = sides
+  
+  if abs((x1 - x0) - a) <= 0.02 * a + 0.1 and abs((y1 - y0) - b) <= 0.02 * b + 0.1:
+    return x0, y0, x1, y1
+  if abs((x1 - x0) - b) <= 0.02 * b + 0.1 and abs((y1 - y0) - a) <= 0.02 * a + 0.1:
+    return x0, y0, x1, y1
+  cx, cy = (x0 + x1) / 2.0, (y0 + y1) / 2.0
+  return cx - a / 2.0, cy - b / 2.0, cx + a / 2.0, cy + b / 2.0
+
 def pieces(rings: list, f: float) -> list:
-  """The filled rectangles of a plan that could be (a part of) a column symbol: [x0, y0, x1, y1] in page units. A square drawn as two triangles, or
-  as a rectangle and two triangles, is one piece."""
   out: list = []
   for r in rings:
     if not r.fill or r.curved or len(r.pts) > 8:
       continue
-    x0, y0, x1, y1 = r.bbox
+    x0, y0, x1, y1 = _upright_box(r)
     w, h = (x1 - x0) * f, (y1 - y0) * f
     if min(w, h) < C.COLUMN_PIECE_MIN_MM or max(w, h) > C.COLUMN_PIECE_MAX_MM or r.area < C.COLUMN_FILL_MIN * (x1 - x0) * (y1 - y0):
       continue

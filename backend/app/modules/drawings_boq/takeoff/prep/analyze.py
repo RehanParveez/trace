@@ -8,8 +8,9 @@ import time
 from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, projections as projection_reader, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 from app.modules.drawings_boq.takeoff.prep import units as UN
+from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 16
+ANALYSIS_VERSION = 17
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -216,7 +217,7 @@ def _recommend(declared: dict, clusters: list, pairs: list, paper: dict, user_un
       "check": None, "support": 0}
   return {"agreement": agreement, "recommended": rec}, notes
 
-def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -> PageAnalysis:
+def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0, paper_pt: tuple | None = None) -> PageAnalysis:
   started = time.monotonic()
   deadline = started + budget_s
   index = VectorIndex(raw.segs, raw.kinds, raw.rings, raw.words, raw.cropbox)
@@ -224,7 +225,7 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
   cands = find_scale_candidates(lines)
   nts = has_not_to_scale(lines)
   hint = find_units_hint(lines)
-  paper = paper_size(raw.width_pt, raw.height_pt, user_unit)
+  paper = paper_size(*(paper_pt or (raw.width_pt, raw.height_pt)), user_unit)
   title = title_hints(lines)
   content_kind, content_info = classify_content(raw)
   declared = _pick_declared(cands, raw.cropbox, raw.rotation)
@@ -271,6 +272,10 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
     notes.append({"code": "PAGE_TRUNCATED", "message": "The sheet is very detailed and only part of its geometry was indexed. Snapping may be missing in some areas."})
   if content_kind == "RASTER" and raw.stats.get("text_source") == "OCR" and raw.words:
     notes.append({"code": "SCAN_TEXT_READ", "message": "This sheet is a scan. Its text was read by character recognition, so a figure or tag may be misread. Check the numbers that matter against the drawing."})
+    if raw.stats.get("ocr_split"):
+      notes.append({"code": "SCAN_FIGURES_ASKED", "message": "Some figures on this scan were read two different ways by the character reader, so none was taken. Type them from the drawing."})
+    if raw.stats.get("ocr_repaired"):
+      notes.append({"code": "SCAN_FIGURES_REPAIRED", "message": "Some look-alike characters on this scan (6/8, 5/S, 0/O, 1/I) were put right after repeated readings agreed. They are listed with the sheet."})
   elif content_kind == "RASTER" and not raw.words:
     notes.append({"code": "NO_TEXT_LAYER", "message": "This sheet is a scan with no text layer. Scale and dimensions cannot be read automatically."})
   if content_kind == "RASTER":
@@ -297,8 +302,21 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
     "projections": _projections(lines, raw),
     "views": sheet_views.summary(found_views),
   }
+  if meta["text_source"] == "OCR":
+    meta["scan_reading"] = {k: raw.stats[k] for k in ("ocr_checked", "ocr_repaired", "ocr_split", "ocr_unchecked", "ocr_repairs", "ocr_split_at") if k in raw.stats}
   return PageAnalysis(content_kind=content_kind, text_chars=int(raw.stats.get("text_chars", 0)), vector_ops=int(raw.stats.get("path_objects", 0)),
     detected_scale=detected, meta=meta, index=index)
+
+def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -> PageAnalysis:
+  frame = orient_frame.detect(raw.words, raw.cropbox, raw.segs, raw.kinds)
+  if frame.identity:
+    out = _analyze_upright(raw, user_unit, budget_s)
+  else:
+    out = _analyze_upright(orient_turn.turn_page(raw, frame), user_unit, budget_s, paper_pt=(raw.width_pt, raw.height_pt))
+    orient_carry.analysis_to_page(out, frame)
+    out.index = VectorIndex(raw.segs, raw.kinds, raw.rings, raw.words, raw.cropbox)
+  out.meta["frame"] = frame.to_json()
+  return out
 
 def _projections(lines, raw) -> dict:
   try:

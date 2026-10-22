@@ -1,5 +1,6 @@
 from __future__ import annotations
 import io
+import math
 from pypdf import PdfReader, PdfWriter, Transformation
 from pypdf.generic import RectangleObject, ContentStream
 
@@ -106,6 +107,28 @@ def drop_title_block(pdf: bytes, left: float = 0.72, bottom: float = 0.0, right:
     _strip_text(page, reader, lambda x, y: not (lo_x <= x <= hi_x and lo_y <= y <= hi_y))
   return _rewrite(pdf, fn)
 
+def turn_by_map(w: float, h: float, degrees: float) -> tuple:
+  a = math.radians(degrees)
+  c, s = math.cos(a), math.sin(a)
+  corners = ((0, 0), (w, 0), (w, h), (0, h))
+  mx = min(c * x - s * y for x, y in corners)
+  my = min(s * x + c * y for x, y in corners)
+  return (lambda x, y: (c * x - s * y - mx, s * x + c * y - my)), (lambda x, y: (c * (x + mx) + s * (y + my), -s * (x + mx) + c * (y + my)))
+
+def turn_by(pdf: bytes, degrees: float) -> bytes:
+  
+  def fn(i, page, reader):
+    box = page.mediabox
+    w, h = float(box.width), float(box.height)
+    fwd, _ = turn_by_map(w, h, degrees)
+    ends = [fwd(x, y) for x, y in ((0, 0), (w, 0), (w, h), (0, h))]
+    nw, nh = max(p[0] for p in ends), max(p[1] for p in ends)
+    shift = fwd(0.0, 0.0)
+    page.add_transformation(Transformation().rotate(degrees).translate(tx=shift[0], ty=shift[1]))
+    page.mediabox = RectangleObject([0, 0, nw, nh])
+    page.cropbox = RectangleObject([0, 0, nw, nh])
+  return _rewrite(pdf, fn)
+
 SUITE = (
   ("rotate view 90", lambda p: rotate_view(p, 90)),
   ("rotate view 180", lambda p: rotate_view(p, 180)),
@@ -117,3 +140,5 @@ SUITE = (
   ("drop the title block", drop_title_block),
   ("strip all text", strip_text),
 )
+
+SUITE_ANGLED = tuple((f"turn drawing {d:+g}", (lambda p, d=d: turn_by(p, d))) for d in (3, 12, 30, -20, 77))

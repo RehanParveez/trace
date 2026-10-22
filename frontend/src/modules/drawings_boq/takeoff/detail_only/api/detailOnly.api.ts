@@ -1,4 +1,4 @@
-import { apiClient } from "../../../../shared/api/client";
+import { apiClient } from "../../../../../shared/api/client";
 import type { ChooseDepthBody, ChooseMarkBody, DetailOnlyReport } from "../types/detailOnly.types";
 
 const BASE = "/drawings-boq";

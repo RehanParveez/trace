@@ -1,4 +1,6 @@
 from __future__ import annotations
+import math
+from app.modules.drawings_boq.takeoff.orientation import axes as AX
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import config as C
 
@@ -75,9 +77,12 @@ def plaster_walls(walls: list) -> list:
     out.append(w)
   return out
 
-def _is_outer(w, box: tuple, mm_per_pt: float) -> bool:
+def _turned(p, turn: float) -> tuple:
+  return (p[0], p[1]) if not turn else AX.turn(p[0], p[1], -turn)
+
+def _is_outer(w, box: tuple, mm_per_pt: float, turn: float = 0.0) -> bool:
   pts = w.geometry["points"]
-  (a, b), (c, d) = pts[0], pts[-1]
+  (a, b), (c, d) = _turned(pts[0], turn), _turned(pts[-1], turn)
   t = float((w.facts or {}).get("thickness_used_mm") or 228.6)
   tol = t * C.OUTER_WALL_TOL_FACTOR / mm_per_pt
   x0, y0, x1, y1 = box
@@ -87,18 +92,27 @@ def _is_outer(w, box: tuple, mm_per_pt: float) -> bool:
     return abs(b - y0) <= tol or abs(b - y1) <= tol
   return False
 
+def plan_angle(ws: list) -> float:
+  items = []
+  for w in ws:
+    (a, b), (c, d) = w.geometry["points"][0], w.geometry["points"][-1]
+    items.append((math.degrees(math.atan2(d - b, c - a)), float((w.facts or {}).get("length_cc_m") or 0.0)))
+  return AX.axes(items)
+
 def plaster_faces(walls: list, mm_per_pt: float) -> list:
-  """One record per wall: its centre to centre length, its height if known, the doors and windows set in it, how many faces are plastered inside and how
-  many outside. A wall on the outline of the walls of the floor is an outer wall (one face each side); any other wall plasters on both faces."""
   ws = plaster_walls(walls)
   if not ws:
     return []
-  xs = [p[0] for w in ws for p in (w.geometry["points"][0], w.geometry["points"][-1])]
-  ys = [p[1] for w in ws for p in (w.geometry["points"][0], w.geometry["points"][-1])]
+  turn = plan_angle(ws)
+  
+  ends = [_turned(p, turn) for w in ws for p in (w.geometry["points"][0], w.geometry["points"][-1])]
+  xs = [p[0] for p in ends]
+  ys = [p[1] for p in ends]
   box = (min(xs), min(ys), max(xs), max(ys))
+  
   out = []
   for w in ws:
-    outer = _is_outer(w, box, mm_per_pt)
+    outer = _is_outer(w, box, mm_per_pt, turn)
     h = (w.facts or {}).get("clear_height_mm") or (w.params or {}).get("height_mm")
     out.append({"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": 1 if outer else 2,
       "out": 1 if outer else 0})

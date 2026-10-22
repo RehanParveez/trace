@@ -122,9 +122,27 @@ class TextLine:
       return (0.0, 0.0)
     return (sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws))
 
+def _line_rows(placed: list) -> list:
+  rows = [0] * len(placed)
+  by_direction: dict = {}
+  
+  for i, p in enumerate(placed):
+    by_direction.setdefault(p[0], []).append(i)
+  for ids in by_direction.values():
+    ids.sort(key=lambda i: placed[i][1])
+    row, last = 0, None
+    for i in ids:
+      across, tol = placed[i][1], placed[i][4]
+      if last is not None and across - last[0] > min(tol, last[1]):
+        row += 1
+      rows[i] = row
+      last = (across, tol)
+  return rows
+
 def build_lines(words: list) -> list[TextLine]:
 
   buckets: dict = {}
+  placed: list = []
   for w in words:
     a = round(w.angle / 90.0) % 4
     if abs(((w.angle + 45) % 90) - 45) > 6:  
@@ -135,7 +153,9 @@ def build_lines(words: list) -> list[TextLine]:
     along = w.cx * ux + w.cy * uy
     across = -w.cx * uy + w.cy * ux
     tol = max(w.size, 1.0) * 0.7
-    buckets.setdefault((ang, round(across / tol)), []).append((along, w, across))
+    placed.append((ang, across, along, w, tol))
+  for (ang, across, along, w, tol), row in zip(placed, _line_rows(placed)):
+    buckets.setdefault((ang, row), []).append((along, w, across))
   lines = []
   
   for (ang, _), items in buckets.items():

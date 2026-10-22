@@ -7,6 +7,7 @@ import csv
 import subprocess
 import time
 from concurrent.futures import ThreadPoolExecutor
+from app.modules.drawings_boq.takeoff.prep import scan_lookalike as SL
 
 SCAN_OCR_BUDGET_S = float(os.environ.get("TRACE_SCAN_OCR_BUDGET_S", "75"))
 MIN_COVER = 0.5
@@ -22,6 +23,10 @@ UPSCALE = 2
 BLANK_DARK_FRACTION = 0.002
 MAX_WORKERS = 4
 NATIVE_WORDS_OK = 25
+RECHECK_ON = os.environ.get("TRACE_SCAN_RECHECK", "1") != "0"
+RECHECK_BUDGET_S = float(os.environ.get("TRACE_SCAN_RECHECK_S", "20"))
+REREAD_SCALES = (3, 4, 5)
+REREAD_PAD_PX = 6
 
 def available() -> bool:
   if shutil.which("tesseract") is None:
@@ -63,7 +68,7 @@ def view_to_user(a: float, b: float, rotation: int, crop: tuple) -> tuple:
 def user_angle(view_angle: float, rotation: int) -> float:
   return (view_angle + rotation) % 360.0
 
-def _tsv(img, timeout: float) -> list[dict]:
+def _tsv(img, timeout: float, psm: str = "11") -> list[dict]:
   from PIL import ImageOps
   img = ImageOps.expand(img, border=20, fill=255)
   fd, path = tempfile.mkstemp(suffix=".png")
@@ -72,7 +77,7 @@ def _tsv(img, timeout: float) -> list[dict]:
       img.save(fh, format="PNG")
     env = dict(os.environ)
     env["OMP_THREAD_LIMIT"] = "1"
-    proc = subprocess.run(["tesseract", path, "-", "--psm", "11", "-l", "eng", "tsv"], capture_output=True, text=True,
+    proc = subprocess.run(["tesseract", path, "-", "--psm", psm, "-l", "eng", "tsv"], capture_output=True, text=True,
       timeout=max(5.0, timeout), env=env)
     text = proc.stdout
   except Exception:
@@ -109,6 +114,54 @@ def _keep(row: dict) -> bool:
   if row["h"] < 6 or row["w"] < 4:
     return False
   return True
+
+def _reread(view, row: dict, k: int, deadline: float):
+  """One more reading of a single word: its box cut out of the sheet, magnified k times, read as a line. None when it failed or gave more than one word."""
+  from PIL import Image
+  left = max(0, int(row["l"] - REREAD_PAD_PX))
+  top = max(0, int(row["t"] - REREAD_PAD_PX))
+  right = min(view.size[0], int(row["l"] + row["w"] + REREAD_PAD_PX + 1))
+  bottom = min(view.size[1], int(row["t"] + row["h"] + REREAD_PAD_PX + 1))
+  if right - left < 4 or bottom - top < 4:
+    return None
+  part = view.crop((left, top, right, bottom))
+  big = part.resize((part.width * k, part.height * k), Image.LANCZOS)
+  rows = _tsv(big, max(2.0, min(10.0, deadline - time.monotonic())), psm="7")
+  rows = [r for r in rows if any(ch.isalnum() for ch in r["text"])]
+  if len(rows) != 1:
+    return None
+  return rows[0]["text"]
+
+def _room_names() -> set:
+  try:
+    from app.modules.drawings_boq.takeoff.extract import config as C
+    return set(C.ROOM_NAMES)
+  except Exception:
+    return set()
+
+def _settle(rows: list, views: dict, partial: bool) -> tuple[list, dict]:
+  names = _room_names()
+  todo = SL.plan(rows) if rows else []
+  verdicts: dict = {}
+  if todo and RECHECK_ON and not partial:
+    deadline = time.monotonic() + RECHECK_BUDGET_S
+
+    def work(i: int):
+      reads = []
+      for k in REREAD_SCALES[:SL.REREADS]:
+        reads.append(_reread(views[rows[i]["angle"]], rows[i], k, deadline) if time.monotonic() < deadline else None)
+      return i, reads
+    workers = max(1, min(MAX_WORKERS, os.cpu_count() or 1))
+    try:
+      with ThreadPoolExecutor(max_workers=workers) as pool:
+        for i, reads in pool.map(work, todo):
+          verdicts[i] = SL.decide(rows[i]["text"], reads)
+    except Exception:
+      verdicts = {}
+  kept, report = SL.apply(rows, verdicts, names)
+  if todo and not verdicts:
+    report["unchecked"] = len(todo)
+  return kept, report
 
 def _build_word(text: str, a0: float, b0: float, a1: float, b1: float, view_angle: float, rotation: int, crop: tuple):
   from app.modules.drawings_boq.takeoff.prep.extract import Word
@@ -175,6 +228,24 @@ def _read_tile(img, crop: tuple, core: tuple, deadline: float) -> list[dict]:
       continue
     out.append({"text": r["text"], "conf": r["conf"], "l": l, "t": t, "w": w, "h": h})
   return out
+
+def _record(info: dict, report: dict, rows: list, rotation: int, cropbox: tuple) -> None:
+  repaired = report["repaired"]
+  split = report["split"]
+  info["ocr_checked"] = report["checked"]
+  info["ocr_repaired"] = len(repaired) + report["figure_repaired"] + report["label_repaired"]
+  info["ocr_split"] = len(split)
+  info["ocr_unchecked"] = report["unchecked"]
+  if repaired:
+    info["ocr_repairs"] = [{"from": r["from"], "to": r["to"]} for r in repaired[:SL.MAX_LISTED]]
+  if split:
+    at = []
+    for sp in split[:SL.MAX_LISTED]:
+      row = rows[sp["row"]]
+      a0, b0, a1, b1 = row["box"]
+      w = _build_word(row["text"], a0, b0, a1, b1, row["va"], rotation, cropbox)
+      at.append({"x": round(w.cx, 1), "y": round(w.cy, 1), "reads": sp["reads"]})
+    info["ocr_split_at"] = at
 
 def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float = SCAN_OCR_BUDGET_S) -> tuple[list, dict]:
   """Words recovered from a scanned sheet, placed in the same unrotated page space as the words of a text layer."""

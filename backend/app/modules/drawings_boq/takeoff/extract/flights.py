@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 import re
 import numpy as np
+from app.modules.drawings_boq.takeoff.orientation import axes as AX
 from app.modules.drawings_boq.takeoff.extract import config as C
 
 ALIGN_TOL_PT = 0.3
@@ -9,8 +10,6 @@ _DIRECTION = re.compile(r"\b(UP|DN|DOWN)\b", re.I)
 _NOT_A_DIRECTION = re.compile(r"\bUP\s+TO\b", re.I)
 
 def _chains(lines, axis: int, tread_pt: float, width_pt: float) -> list:
-  """Stacks of equal-length lines laid one tread apart across the plan: the treads of a flight. axis 0 is treads that run left to right (steps climb
-  up the page), axis 1 treads that run up the page. A tread line missing from the drawing is bridged when two treads are the gap."""
   if len(lines) == 0:
     return []
 
@@ -155,7 +154,7 @@ def printed_width(box, drawn_mm: float, dims: list, mm_per_pt: float) -> dict | 
       best = (key, d)
   return None if best is None else {"mm": round(best[1]["mm"], 1), "text": best[1]["text"]}
 
-def find_stairs(lines, spec: dict, mm_per_pt: float, labels: list | None = None, dims: list | None = None) -> list:
+def _find_along_page(lines, spec: dict, mm_per_pt: float, labels: list | None = None, dims: list | None = None) -> list:
   tread_mm, width_mm = spec.get("tread_mm"), spec.get("width_mm")
   if not tread_mm or not width_mm or mm_per_pt <= 0:
     return []
@@ -178,4 +177,37 @@ def find_stairs(lines, spec: dict, mm_per_pt: float, labels: list | None = None,
     area_m2 = (x1 - x0) * (y1 - y0) * mm_per_pt * mm_per_pt / 1e6
     out.append({"x": cx, "y": cy, "box": [round(v, 3) for v in g["box"]], "treads_drawn": g["treads"], "axis": g["axis"], "flight_area_m2": round(area_m2, 3),
       "width_drawn_mm": round(drawn, 1), "direction": way, "width_printed_mm": own["mm"] if own else None, "width_printed_text": own["text"] if own else None})
+  return out
+
+def _turn_rows(lines, deg: float):
+  a = math.radians(deg)
+  c, s = math.cos(a), math.sin(a)
+  out = np.array(lines, dtype=float, copy=True)
+  out[:, 0], out[:, 1] = c * lines[:, 0] - s * lines[:, 1], s * lines[:, 0] + c * lines[:, 1]
+  out[:, 2], out[:, 3] = c * lines[:, 2] - s * lines[:, 3], s * lines[:, 2] + c * lines[:, 3]
+  return out
+
+def _turn_points(items: list | None, deg: float) -> list:
+  out = []
+  for it in items or []:
+    x, y = AX.turn(it["x"], it["y"], deg)
+    out.append({**it, "x": x, "y": y})
+  return out
+
+def find_stairs(lines, spec: dict, mm_per_pt: float, labels: list | None = None, dims: list | None = None) -> list:
+  out = _find_along_page(lines, spec, mm_per_pt, labels, dims)
+  if len(lines) == 0 or mm_per_pt <= 0:
+    return out
+  
+  tread_pt = float(spec.get("tread_mm") or 0.0) / mm_per_pt
+  for turn in AX.directions_of_lines(lines):
+    for p in _find_along_page(_turn_rows(lines, -turn), spec, mm_per_pt, _turn_points(labels, -turn), _turn_points(dims, -turn)):
+      x0, y0, x1, y1 = p["box"]
+      corners = [AX.turn(x, y, turn) for x, y in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
+      cx, cy = AX.turn(p["x"], p["y"], turn)
+      if any(q["box"][0] - tread_pt <= cx <= q["box"][2] + tread_pt and q["box"][1] - tread_pt <= cy <= q["box"][3] + tread_pt for q in out):
+        continue
+      xs, ys = [q[0] for q in corners], [q[1] for q in corners]
+      out.append({**p, "x": cx, "y": cy, "box": [round(min(xs), 3), round(min(ys), 3), round(max(xs), 3), round(max(ys), 3)], "corners": [[round(a, 3), round(b, 3)] for a, b in corners],
+        "angle_deg": round(turn, 2)})
   return out

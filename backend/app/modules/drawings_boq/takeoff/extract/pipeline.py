@@ -4,6 +4,7 @@ import hashlib
 import math
 import re
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.orientation import carry as OC, frame as OF, turn as OT
 from app.modules.drawings_boq.takeoff.extract import members as M
 from app.modules.drawings_boq.takeoff.extract import rooms as R
 from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
@@ -1071,6 +1072,8 @@ def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None 
       "detail_width_mm": spec.get("width_mm"), "width_source": "PRINTED_BESIDE" if own else "STAIR_DETAIL", "steps": spec.get("steps"),
       "stair_pages": list(spec.get("pages") or []), "direction": way, "treads_drawn": p["treads_drawn"], "width_drawn_mm": p["width_drawn_mm"],
       "flight_area_m2": p.get("flight_area_m2"), "flight_box": p.get("box"), "floor_hint": level_hint}
+    if p.get("corners"):
+      facts.update({"flight_corners": p["corners"], "plan_angle_deg": p["angle_deg"]})
     params: dict = {"dims_basis": "SPECIFIED"}
     missing: list = []
     
@@ -1579,7 +1582,7 @@ def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction
   res.stats["site_tank_walls"] = _tank_twin_walls(res, sites)
   return res
 
-def run_extraction(index, mm_per_pt: float, *, composite: bool = False, regions_only: bool = False, **kw) -> Extraction:
+def _run_extraction_upright(index, mm_per_pt: float, *, composite: bool = False, regions_only: bool = False, **kw) -> Extraction:
   started = time.monotonic()
   budget_s = float(kw.get("budget_s", 25.0))
   regions, found = [], {}
@@ -1596,3 +1599,29 @@ def run_extraction(index, mm_per_pt: float, *, composite: bool = False, regions_
       return res
     return _with_site(_read_sheet(index, mm_per_pt, **kw), index, mm_per_pt, kw)
   return _with_site(_read_regions(index, mm_per_pt, regions, found, started=started, budget_s=budget_s, **{k: v for k, v in kw.items() if k != "budget_s"}), index, mm_per_pt, kw)
+
+def _scan_reading_notes(res: Extraction, scan: dict | None) -> None:
+  if not scan:
+    return
+  if scan.get("ocr_split"):
+    res.notes.append(C.note("SCAN_FIGURES_ASKED", count=int(scan["ocr_split"]), at=list(scan.get("ocr_split_at") or [])))
+  if scan.get("ocr_repaired"):
+    res.notes.append(C.note("SCAN_FIGURES_REPAIRED", count=int(scan["ocr_repaired"]), repairs=list(scan.get("ocr_repairs") or [])))
+
+def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
+  scan = kw.pop("scan_reading", None)
+  res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)
+  _scan_reading_notes(res, scan)
+  return res
+
+def _run_extraction_framed(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
+  fr = OF.Frame.from_json(frame) if frame else OF.detect(index.words, index.bbox, index.segs, index.kinds)
+  
+  if fr.identity:
+    return _run_extraction_upright(index, mm_per_pt, **kw)
+  kw = {**kw, "views_meta": OC.views_to_upright(kw.get("views_meta"), fr)}
+  res = _run_extraction_upright(OT.turn_index(index, fr), mm_per_pt, **kw)
+  OC.extraction_to_page(res, fr)
+  res.stats["sheet_frame"] = fr.to_json()
+  res.notes.insert(0, C.note("SHEET_READ_UPRIGHT", turn_deg=fr.turn_deg, skew_deg=round(fr.skew_deg, 2)))
+  return res
