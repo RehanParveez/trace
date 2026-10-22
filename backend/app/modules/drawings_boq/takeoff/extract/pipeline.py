@@ -1231,14 +1231,18 @@ def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx:
 
 def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, windows: list | None = None) -> list:
   """The finishes of every floor that are worked out from what is already read: the kacha bed and the ceiling plaster from the room areas, the plaster on
-  the faces of the walls, and the frames of the doors."""
+   the faces of the walls, and the frames of the doors."""
   spec = level_spec(level_hint)
   out = []
-  for build in (FN.kacha_candidate, FN.ceiling_candidate):
+  for build in (FN.kacha_candidate, FN.ceiling_candidate, FN.floor_candidate, FN.ceiling_paint_candidate):
     cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
     if cand is not None:
       out.append(cand)
+  skirting = FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
+  dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
+  out.extend(c for c in (skirting, dado) if c is not None)
   out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
+  out.extend(FN.paint_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, float(((dado.facts if dado is not None else {}) or {}).get("area_m2") or 0.0)))
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
   out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   return out

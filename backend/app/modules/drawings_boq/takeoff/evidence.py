@@ -256,6 +256,9 @@ def _site(inp: _Inputs, cand) -> None:
       inp.add("height", PRINTED, "the height printed on the elevation")
     typed("thickness_mm", "thickness", sizes.get("thickness_mm"))
     inp.add("piers", ASSUMED, "piers taller than the wall are measured at the wall height")
+    if f.get("faces_area_mm2"):
+      inp.add("faces", ASSUMED, f"a free-standing wall has two faces: {f['faces_area_mm2'] / 1e6:.2f} m2 of plaster and paint if both are finished (length x height x 2, gate taken out); "
+        "listed with the item and not added to the bill, because the drawing does not say which faces are finished")
   elif kind == "GATE":
     inp.add("width", PRINTED, "the piece of the elevation the word GATE is written on, " + (f"{f.get('width_mm', 0) / 304.8:g} ft" if f.get("width_mm") else "not found"))
     if f.get("height_mm") is None:

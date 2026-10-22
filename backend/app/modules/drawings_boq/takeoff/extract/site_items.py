@@ -216,6 +216,7 @@ def boundary_wall(words: list, cap: dict, caps: list, mm_per_pt: float) -> list:
   else:
     wall_codes.append(("SITE_GATE_TAKEN_OUT", {"gate_mm": round(pieces[gate][2], 1)}))
   wall_facts = {**facts, "site_kind": "BOUNDARY_WALL", "length_mm": round(wall_len, 1), "height_mm": round(wall_h[1], 1) if wall_h else None,
+    "faces": 2, "faces_area_mm2": round(2.0 * wall_len * wall_h[1], 1) if wall_h else None,
     "gate_deducted": gate is not None, "height_pick": ("NEAREST" if several else "ONLY") if wall_h else None, "sizes_mm": {"length_mm": round(wall_len, 1), **({"height_mm": round(wall_h[1], 1)} if wall_h else {})}}
   out.append({"site_kind": "BOUNDARY_WALL", "tag": "BOUNDARY WALL", "label": f"Boundary wall · {wall_len / 304.8:g} ft long" + (f" · {wall_h[1] / 304.8:g} ft high" if wall_h else ""),
     "x": x, "y": y, "facts": wall_facts, "params": wall_params, "missing": wall_missing, "codes": wall_codes, "base": 0.8 if pieces else 0.65})

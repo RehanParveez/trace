@@ -66,6 +66,19 @@ def faces_of(role: str, poly, length: float, outline) -> tuple[int, int, bool]:
   on_outline = poly.boundary.intersection(outline.buffer(OUTLINE_TOLERANCE_MM)).length
   return (1, 1, True) if on_outline >= OUTER_SHARE * length else (2, 0, True)
 
+def opening_faces(area_m2: float, rule: float, min_m2: float, one_face_max_m2: float, faces_in: int, faces_out: int) -> tuple[int, int, bool]:
+  if area_m2 < min_m2:
+    return 0, 0, False
+  if rule < 0.5:
+    return faces_in, faces_out, False
+  if area_m2 <= one_face_max_m2:
+    return (1, 0, False) if faces_in > 0 else (0, 1 if faces_out > 0 else 0, False)
+  return faces_in, faces_out, True
+
+def reveal_mm2(role: str, width: float, height: float, thickness: float) -> float:
+  """The returns of an opening: both jambs and the head, and the sill too for a window."""
+  return ((2.0 * height + (2.0 * width if role == "WINDOW" else width)) * thickness)
+
 def _span(z: tuple | None, lo: float, hi: float) -> float:
   if z is None:
     return 0.0
@@ -103,7 +116,7 @@ def _row(ctx, el, solid_of_el: Solid, item: str, code: str, area: Decimal, steps
 
 def measure_wall_finishes(ctx: CalculationContext, profile, elements: list, solids: list, ledger: list, extra_ledger=()) -> WallFinishResult:
   params = resolve_params(ctx)
-  
+  rule, min_m2, one_face_max = (params[n]["value"] for n in ("finish_opening_rule", "finish_opening_min_m2", "finish_opening_one_face_max_m2"))
   on = params[PARAM]["value"] >= 0.5
   stats: dict = {"enabled": on, "ran": False, "param_source": params[PARAM]["source"]}
   if not on:
@@ -174,25 +187,38 @@ def measure_wall_finishes(ctx: CalculationContext, profile, elements: list, soli
       if width > 0 and h > 0:
         cuts.append({"opening_element_id": str(op.id), "role": (op.role or "").upper(), "width_mm": round(width, 1), "height_mm": round(h, 1), "mm2": width * h})
         
-    cut = sum(c["mm2"] for c in cuts)
     face = length * height
     sides_assumed_walls += 1 if assumed else 0
-    shown = [{k: v for k, v in c.items() if k != "mm2"} for c in cuts]
+    for c in cuts:
+      fi, fo, rev = opening_faces(c["mm2"] / 1_000_000.0, rule, min_m2, one_face_max, inside, outside)
+      c["faces_in"], c["faces_out"], c["reveals"] = fi, fo, rev
+      c["reveal_mm2"] = reveal_mm2(c["role"], c["width_mm"], c["height_mm"], thickness) if rev else 0.0
+    shown = [{k: v for k, v in c.items() if k not in ("mm2", "faces_in", "faces_out", "reveal_mm2")} for c in cuts]
     for item, code, side in items:
       faces = inside if side == "in" else outside
       if faces <= 0:
         continue
+      
       gross = face * faces
-      net = gross - cut * faces
+      key = "faces_in" if side == "in" else "faces_out"
+      cut = sum(c["mm2"] * c[key] for c in cuts)
+      reveals = sum(c["reveal_mm2"] for c in cuts) if (side == "in" or inside <= 0) else 0.0
+      net = gross - cut + reveals
       area = _m2(net)
       if area <= 0:
         continue
     
       steps = [{"op": "wall_face_area", "m2": str(_m2(gross)), "faces": faces, "length_mm": round(length, 1), "height_mm": round(height, 1)}]
-      steps += [{"op": "less_opening", **c, "faces": faces} for c in shown]
+      steps += [{"op": "less_opening", **{k: v for k, v in c.items() if k not in ("mm2", "faces_in", "faces_out", "reveal_mm2")}, "faces": c[key]} for c in cuts
+        if c[key] > 0]
+      steps += [{"op": "not_deducted_under_smallest_size", "opening_element_id": c["opening_element_id"], "m2": str(_m2(c["mm2"])), "smallest_m2": min_m2}
+        for c in cuts if c["faces_in"] == 0 and c["faces_out"] == 0]
+      if reveals > 0:
+        steps.append({"op": "plus_reveals", "m2": str(_m2(reveals)), "note": "jambs, head and sill of the openings that are deducted on every face; added to the inside"})
       steps.append({"op": "net_area", "m2": str(area)})
       lvl = level if level is not None else Datum("DPC", prism.z0, "default", "no floor level in the model; taken at the foot of the wall")
       detail = {"faces": faces, "wall_length_mm": round(length, 1), "wall_thickness_mm": round(thickness, 1), "height_mm": round(height, 1)}
+      
       if item.startswith("PLASTER"):
         pname = "plaster_inside_mm" if side == "in" else "plaster_outside_mm"
         detail["plaster_thickness_mm"] = params[pname]["value"]
@@ -202,12 +228,14 @@ def measure_wall_finishes(ctx: CalculationContext, profile, elements: list, soli
       out_rows.append(r_)
       if item.startswith("PLASTER"):
         totals[side] += float(area)
-        cut_total += cut * faces / 1_000_000.0
+        cut_total += cut / 1_000_000.0
         
   out_rows.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
   stats.update({"ran": bool(out_rows), "rows": len(out_rows), "walls": len(walls) - no_height, "openings": len(openings), "openings_given_to_a_wall": len(owner),
     "plaster_thickness_mm": {"inside": params["plaster_inside_mm"]["value"], "outside": params["plaster_outside_mm"]["value"],
       "inside_source": params["plaster_inside_mm"]["source"], "outside_source": params["plaster_outside_mm"]["source"]},
+    "opening_rule": {"rule": "IS_1200" if rule >= 0.5 else "EVERY_FACE", "smallest_deducted_m2": min_m2, "one_face_up_to_m2": one_face_max,
+      "sources": {n: params[n]["source"] for n in ("finish_opening_rule", "finish_opening_min_m2", "finish_opening_one_face_max_m2")}},
     "plaster_inside_m2": str(q6(Decimal(repr(totals["in"])))), "plaster_outside_m2": str(q6(Decimal(repr(totals["out"])))),
     "openings_deducted_m2": str(q6(Decimal(repr(cut_total)))), "sides_from_geometry": sides_assumed_walls, "no_height": no_height,
     "dpc_level": {"z_mm": round(level.z_mm, 1), "source": level.source} if level is not None else None})

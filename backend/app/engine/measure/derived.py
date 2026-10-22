@@ -33,6 +33,9 @@ NOT_BURIED_ROLES = frozenset({"DOOR", "WINDOW"})
 
 PARAMS = {
   "working_space_mm": (150.0, 0.0, 3000.0),
+  "finish_opening_min_m2": (0.5, 0.0, 5.0),
+  "finish_opening_rule": (0.0, 0.0, 1.0),
+  "finish_opening_one_face_max_m2": (3.0, 0.5, 20.0),
   "plaster_inside_mm": (12.7, 3.0, 40.0),
   "plaster_outside_mm": (19.05, 3.0, 40.0),
   "plaster_ceiling_mm": (9.525, 3.0, 40.0),
