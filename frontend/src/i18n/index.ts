@@ -2042,6 +2042,7 @@ const resources = {
       "drawings.facts.kind.BEARING_CAPACITY": "Soil bearing capacity",
       "drawings.facts.kind.PLASTER_THICKNESS": "Plaster",
       "drawings.facts.kind.FILL_LAYER": "Filling",
+      "drawings.facts.kind.SOIL_STABILISATION": "Soil stabilisation",
       "drawings.facts.kind.STAIR_WIDTH": "Stair width",
 
       "drawings.schedule.title": "Schedules and floor checks",
@@ -6406,6 +6407,7 @@ const resources = {
       "drawings.facts.kind.BEARING_CAPACITY": "مٹی کی برداشت کی صلاحیت",
       "drawings.facts.kind.PLASTER_THICKNESS": "پلاستر",
       "drawings.facts.kind.FILL_LAYER": "بھرائی",
+      "drawings.facts.kind.SOIL_STABILISATION": "مٹی کی مضبوطی",
       "drawings.facts.kind.STAIR_WIDTH": "سیڑھی کی چوڑائی",
 
       "drawings.schedule.title": "شیڈول اور منزل وار جانچ",

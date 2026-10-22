@@ -4,7 +4,7 @@ import { triggerBlobDownload } from "../../utils/drawings-boq.utils";
 import { allowancesLine } from "../../utils/steelAllowances";
 import { useDownloadSteelSummary, useSteelSummary } from "../hooks/useSteelSummary";
 import type { SteelFamilyRow } from "../types/steelSummary.types";
-import { BASIS_TONE, BASIS_WORDS, STATUS_TONE, STATUS_WORDS, WASTAGE_CHOICES, apiErrorText, asRunText, diaKgOf, diaText, estimateWarning, filterWords, intensityText, kgText, marksFor, parseWastage, rangeText, tonnesText, type MarkFilter } from "../utils/steelSummary";
+import { BASIS_TONE, BASIS_WORDS, STATUS_TONE, STATUS_WORDS, WASTAGE_CHOICES, apiErrorText, asRunText, diaKgOf, diaText, estimateWarning, filterWords, gradeNote, gradeRows, intensityText, kgText, marksFor, parseWastage, rangeText, tonnesText, type MarkFilter } from "../utils/steelSummary";
 
 const TONE: Record<string, string> = {
   ok: "bg-[var(--color-success-bg)] text-[var(--color-success)]",
@@ -28,6 +28,7 @@ export function SteelSummaryPanel({ runId }: { runId: string }) {
   const marks = s ? marksFor(s.marks, filter) : [];
   const toggle = (next: MarkFilter) => setFilter((cur) => ({ family: next.family !== undefined ? (cur.family === next.family ? null : next.family) : cur.family, dia: next.dia !== undefined ? (cur.dia === next.dia ? null : next.dia) : cur.dia }));
   const warning = s ? estimateWarning(s) : "";
+  const grades = s ? gradeRows(s) : [];
   return (
     <div className="space-y-3 px-4 py-3 text-[12.5px]" data-testid="steel-summary-panel">
       <p className="text-[12px] text-[var(--color-text-muted)]">
@@ -103,6 +104,35 @@ export function SteelSummaryPanel({ runId }: { runId: string }) {
               ) : null}
             </tbody>
           </table>
+
+          {grades.length ? (
+            <table className="w-full text-[12px]" data-testid="steel-by-grade">
+              <caption className="pb-1 text-left font-semibold">{t("drawings.steelSummary.byGrade", "By steel grade")}</caption>
+              <thead>
+                <tr className="text-left text-[var(--color-text-muted)]">
+                  <th className="font-medium">{t("drawings.steelSummary.grade", "Grade")}</th>
+                  <th className="text-right font-medium">{t("drawings.steelSummary.members", "Members")}</th>
+                  <th className="text-right font-medium">{t("drawings.steelSummary.weight", "Weight (kg)")}</th>
+                  <th className="text-right font-medium">{t("drawings.steelSummary.share", "Share")}</th>
+                  <th className="font-medium">{t("drawings.steelSummary.usedIn", "Used in")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {grades.map((g) => (
+                  <tr key={g.grade} data-testid={`steel-grade-${g.grade}`}>
+                    <td>{g.label}</td>
+                    <td className="text-right">{g.members}</td>
+                    <td className="text-right" title={rangeText(g.kg_low, g.kg_high, g.kg) || undefined}>{kgText(g.kg)}</td>
+                    <td className="text-right">{g.share_pct.toFixed(1)}%</td>
+                    <td className="text-[var(--color-text-muted)]">{Object.entries(g.by_family).map(([f, k]) => `${labelOf(f)} ${kgText(k)}`).join(", ")}</td>
+                  </tr>
+                ))}
+                {gradeNote(grades) ? (
+                  <tr data-testid="steel-grade-none-note"><td colSpan={5} className="pt-1 text-[var(--color-text-muted)]">{gradeNote(grades)}</td></tr>
+                ) : null}
+              </tbody>
+            </table>
+          ) : null}
 
           <table className="w-full text-[12px]" data-testid="steel-by-family">
             <caption className="pb-1 text-left font-semibold">{t("drawings.steelSummary.byFamily", "By kind of member")}</caption>

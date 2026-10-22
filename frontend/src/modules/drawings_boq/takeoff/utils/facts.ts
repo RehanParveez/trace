@@ -28,7 +28,7 @@ export function mmText(mm: number): string {
   return `${Math.round(mm).toLocaleString("en-US")} mm`;
 }
 
-export const FACT_ORDER: FactKind[] = ["SLAB_THICKNESS", "RCC_WALL_THICKNESS", "BRICK_COLUMN", "CONCRETE_CLASS", "STEEL_GRADE", "CLEAR_COVER", "BEARING_CAPACITY", "PLASTER_THICKNESS", "FILL_LAYER", "STAIR_WIDTH"];
+export const FACT_ORDER: FactKind[] = ["SLAB_THICKNESS", "RCC_WALL_THICKNESS", "BRICK_COLUMN", "CONCRETE_CLASS", "STEEL_GRADE", "CLEAR_COVER", "BEARING_CAPACITY", "PLASTER_THICKNESS", "FILL_LAYER", "SOIL_STABILISATION", "STAIR_WIDTH"];
 
 export const FACT_TITLE: Record<FactKind, string> = {
   SLAB_THICKNESS: "Slab thickness",
@@ -40,6 +40,7 @@ export const FACT_TITLE: Record<FactKind, string> = {
   BEARING_CAPACITY: "Soil bearing capacity",
   PLASTER_THICKNESS: "Plaster",
   FILL_LAYER: "Filling",
+  SOIL_STABILISATION: "Soil stabilisation",
   STAIR_WIDTH: "Stair width",
 };
 
@@ -71,11 +72,19 @@ export function factDetail(f: DrawingFact): string {
       return inchAndMm(f.value_mm);
     case "FILL_LAYER":
       return `${inchAndMm(f.value_mm)} per compacted layer`;
+    case "SOIL_STABILISATION":
+      return soilNoteText(f);
     case "STAIR_WIDTH":
       return f.value_mm != null ? `${mmToFeetInches(f.value_mm)} (${mmText(f.value_mm)})` : "";
     default:
       return f.text;
   }
+}
+
+export function soilNoteText(f: DrawingFact): string {
+  const pct = f.cement_pct != null ? `${f.cement_pct} % cement` : "cement";
+  const depth = f.value_mm != null ? ` · ${inchAndMm(f.value_mm)} deep` : "";
+  return `${pct}${f.loose ? " · loose soil only" : ""}${depth}`;
 }
 
 export function pagesText(pages: number[]): string {

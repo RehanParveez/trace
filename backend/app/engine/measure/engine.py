@@ -29,6 +29,8 @@ from app.engine.measure.wall_finishes import measure_wall_finishes, wall_finishe
 from app.engine.measure.wall_foundation import measure_wall_foundation, wall_works_check
 from app.engine.measure.opening_roof import measure_opening_area, measure_roof_treatment, opening_roof_check
 from app.engine.measure.roof_deck import measure_roof_deck, roof_deck_check
+from app.engine.measure.plaster_mortar import measure_plaster_mortar, plaster_mortar_check
+from app.engine.measure.soil_stabilisation import measure_soil_stabilisation, soil_stabilisation_check
 from app.engine.measure.steel_allowances import measure_steel_allowances, steel_allowances_check
 from app.engine.measure.pdf_space import split_space, space_check
 from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, stands_on_its_own
@@ -443,6 +445,8 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
   failures.extend(one_total_check(solids, ledger))
   failures.extend(opening_roof_check(solids, ledger))
   failures.extend(roof_deck_check(solids, ledger))
+  failures.extend(plaster_mortar_check(solids, ledger))
+  failures.extend(soil_stabilisation_check(solids, ledger))
   failures.extend(steel_allowances_check(solids, ledger))
   failures.extend(pdf_steel_check(solids, ledger))
   failures.extend(f"NON_CONSERVING_ALLOCATION: {m}" for m in alloc.conservation_failures)
@@ -613,6 +617,12 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     deck_res = measure_roof_deck(ctx, ledger, extra_ledger)
     extra_solids += deck_res.solids
     extra_ledger += deck_res.ledger
+    mortar_res = measure_plaster_mortar(ctx, ledger, extra_ledger)
+    extra_solids += mortar_res.solids
+    extra_ledger += mortar_res.ledger
+    soil_res = measure_soil_stabilisation(ctx, ledger, extra_ledger)
+    extra_solids += soil_res.solids
+    extra_ledger += soil_res.ledger
     floor_solids, floor_rows, floor_stats = measure_floor_works(ctx, accepted, ledger, extra_ledger)
     extra_solids += floor_solids
     extra_ledger += floor_rows
@@ -627,7 +637,8 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     extra_solids += allow_res.solids
     extra_ledger += allow_res.ledger
     derived_info = {**derived_info, "dpc": dpc_res.stats, "floor_works": floor_stats, "formwork": formwork_res.stats, "steel": steel_res.stats,
-      "wall_foundation": wall_works_res.stats, "wall_finishes": wall_fin_res.stats, "opening_area": open_res.stats, "roof_treatment": roof_res.stats, "roof_deck": deck_res.stats, "steel_allowances": allow_res.stats}
+      "wall_foundation": wall_works_res.stats, "wall_finishes": wall_fin_res.stats, "opening_area": open_res.stats, "roof_treatment": roof_res.stats, "roof_deck": deck_res.stats, "plaster_mortar": mortar_res.stats, "soil_stabilisation": soil_res.stats,
+      "steel_allowances": allow_res.stats}
   if rebar_res is not None:
     rebar_failures = self_check_rebar(rebar_res.marks, rebar_res.ledger)
     if rebar_failures:

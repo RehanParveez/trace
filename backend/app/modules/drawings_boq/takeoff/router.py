@@ -129,6 +129,8 @@ from app.modules.drawings_boq.takeoff.reading_score.router import router as _rea
 router.include_router(_reading_score_router)
 from app.modules.drawings_boq.takeoff.detail_only.router import router as _detail_only_router
 router.include_router(_detail_only_router)
+from app.modules.drawings_boq.takeoff.grades.router import router as _grades_router
+router.include_router(_grades_router)
 
 router.include_router(_extract_router)
 router.include_router(_summary_router)

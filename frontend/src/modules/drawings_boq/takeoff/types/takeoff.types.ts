@@ -480,7 +480,7 @@ export interface RegisterSheetStatus {
   action?: SheetAction;
   composite: boolean;
 }
-export type FactKind = "SLAB_THICKNESS" | "RCC_WALL_THICKNESS" | "BRICK_COLUMN" | "CONCRETE_CLASS" | "STEEL_GRADE" | "CLEAR_COVER" | "BEARING_CAPACITY" | "PLASTER_THICKNESS" | "FILL_LAYER" | "STAIR_WIDTH";
+export type FactKind = "SLAB_THICKNESS" | "RCC_WALL_THICKNESS" | "BRICK_COLUMN" | "CONCRETE_CLASS" | "STEEL_GRADE" | "CLEAR_COVER" | "BEARING_CAPACITY" | "PLASTER_THICKNESS" | "FILL_LAYER" | "STAIR_WIDTH" | "SOIL_STABILISATION";
 export interface DrawingFact {
   kind: FactKind;
   scope: string | null;
@@ -495,6 +495,8 @@ export interface DrawingFact {
   concrete_class?: string | null;
   mix?: string | null;
   where?: string | null;
+  cement_pct?: number | null;
+  loose?: boolean | null;
 }
 export interface DrawingFactConflictValue {
   value_mm: number | null;

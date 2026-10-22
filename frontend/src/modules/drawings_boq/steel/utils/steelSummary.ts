@@ -1,4 +1,4 @@
-import type { IntensityStatus, SteelBasis, SteelFamilyRow, SteelMarkRow, SteelSummary } from "../types/steelSummary.types";
+import type { IntensityStatus, SteelBasis, SteelFamilyRow, SteelGradeRow, SteelMarkRow, SteelSummary } from "../types/steelSummary.types";
 
 export type Tone = "ok" | "warn" | "bad" | "muted";
 
@@ -49,6 +49,20 @@ export function tonnesText(kg: number): string {
 export function diaText(dia: number | string): string {
   const n = Number(dia);
   return `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "")} mm`;
+}
+
+export const NO_GRADE = "NONE";
+
+export function gradeRows(summary: Pick<SteelSummary, "by_grade">): SteelGradeRow[] {
+  const rows = summary.by_grade ?? [];
+  return rows.length > 1 || rows.some((g) => g.grade !== NO_GRADE) ? rows : [];
+}
+
+export function gradeNote(rows: SteelGradeRow[]): string {
+  const none = rows.find((g) => g.grade === NO_GRADE);
+  const named = rows.filter((g) => g.grade !== NO_GRADE);
+  if (!none || !named.length) return "";
+  return `${kgText(none.kg)} kg in ${none.members} member${none.members === 1 ? "" : "s"} has no grade: no note on the drawing names a grade for that kind of member.`;
 }
 
 export function intensityText(f: Pick<SteelFamilyRow, "kg_per_m3" | "range">): string {

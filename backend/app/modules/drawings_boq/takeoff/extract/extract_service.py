@@ -34,6 +34,8 @@ from app.modules.drawings_boq.takeoff.extract.column_shapes_service import recon
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
 from app.modules.drawings_boq.takeoff.extract.slab_openings_service import reconcile_slab_openings
 from app.modules.drawings_boq.takeoff.detail_only.apply import apply_decisions as apply_detail_decisions
+from app.modules.drawings_boq.takeoff.grades import stamp as GS
+from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
 from app.modules.drawings_boq.takeoff.extract import typed_memory as TM
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import CandidateResponse
@@ -483,6 +485,8 @@ class ExtractService:
     accepted: list = []
     failed: list = []
     sheet_levels: dict = {}
+    sheet_drawings: dict = {}
+    concrete_rules: dict = {}
     for cid in payload.ids:
       cand = rows.get(cid)
       
@@ -527,6 +531,14 @@ class ExtractService:
       if cand.sheet_id not in sheet_levels:
         sheet_levels[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).level_id
       own_level = view_level_id(cand) or sheet_levels[cand.sheet_id]
+      stamp = None
+      if GS.member_of(cand) is not None and GS.is_concrete_code(code):
+        if cand.sheet_id not in sheet_drawings:
+          sheet_drawings[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).drawing_id
+        did = sheet_drawings[cand.sheet_id]
+        if did not in concrete_rules:
+          concrete_rules[did] = ((await printed_for_drawings(self.session, org, [did])).get("grades") or {}).get("concrete") or []
+        stamp = GS.stamp_for(cand, concrete_rules[did])
       held_by = guard.clash(cand, own_level)
       if held_by is not None:
         failed.append(_fail(cid, AG.CODE, held_by))
@@ -534,7 +546,7 @@ class ExtractService:
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
           params=MeasurementParams(**{**params, **_openings_params(cand, params, typed)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
-          source=cand.source)
+          source=cand.source, material_grade=stamp["grade"][:50] if stamp else None)
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))
         continue
@@ -545,6 +557,8 @@ class ExtractService:
           used = TM.fields_used(cand.category, missing, cand.facts, typed, cand.notes, height_field)
           if used:
             cand.facts = {**(cand.facts or {}), TM.KEY: used}
+          if stamp:
+            cand.facts = {**(cand.facts or {}), GS.KEY: stamp}
           if params != (cand.params or {}):
             if cand.category == "SLAB":
               cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}

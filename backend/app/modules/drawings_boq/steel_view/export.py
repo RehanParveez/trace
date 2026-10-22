@@ -34,6 +34,12 @@ def steel_xlsx(result: dict) -> bytes:
   w = result.get("wastage") or {}
   ws.append(["Wastage", w.get("applied_pct") if w.get("applied_pct") is not None else "as run", None, None, None, f"The run added {w.get('as_run_pct')} % to bars read from the drawing."])
 
+  if len(result.get("by_grade") or []) > 1 or any(g.get("grade") != "NONE" for g in result.get("by_grade") or []):
+    gs = wb.create_sheet("By steel grade")
+    _sheet(gs, ["Steel grade", "Marks", "Weight (kg)", "Low (kg)", "High (kg)", "Share %", "Kinds of member"], (34, 8, 14, 12, 12, 10, 60))
+    for g in result["by_grade"]:
+      gs.append([g["label"], g["members"], g["kg"], g["kg_low"], g["kg_high"], g["share_pct"], ", ".join(f"{label_of(f)} {k}" for f, k in g["by_family"].items())])
+
   f = wb.create_sheet("By kind of member")
   _sheet(f, ["Kind of member", "Marks", "Weight (kg)", "Low (kg)", "High (kg)", "Concrete (m3)", "kg per m3", "Usual range", "Result", "From members"], (22, 8, 14, 12, 12, 14, 12, 14, 24, 14))
   for r in result.get("by_family", []):

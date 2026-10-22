@@ -9,6 +9,7 @@ from app.engine.measure.units import q6, q4
 from uuid import uuid5
 from app.engine.measure.derived import DERIVED, FACTOR_ASSUMED
 from app.engine.measure.models import LedgerEntry, Solid
+from app.engine.measure import grades as GR
 
 FORMULA = "PDF_MEMBER_STEEL_WEIGHT"
 RECIPE = "PDF_MEMBER_STEEL_ESTIMATE"
@@ -99,6 +100,7 @@ def estimate_steel(ctx, params: dict, members, counted: set) -> EstimateResult:
     family, basis, unit, volume, area = fg["family"], fg["basis"], fg["unit"], fg["volume"], fg["area"]
     kg, kg_low, kg_high = fg["kg"], fg["kg_low"], fg["kg_high"]
     rg = _range(ctx, m, fg["low_pct"], fg["high_pct"], fg["driver"])
+    grade = GR.steel_grade_of(ctx, m.category)
     confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * FACTOR_ASSUMED)))
     used = (SWITCH, WASTAGE) + ((SLAB_RULE,) if basis == "QS_RULE" else ())
     spec = {"kind": DERIVED, "recipe": RECIPE, "item": "STEEL", "category": m.category, "params": {n: params[n]["value"] for n in used}, "basis": {n: params[n]["source"] for n in used}}
@@ -113,9 +115,11 @@ def estimate_steel(ctx, params: dict, members, counted: set) -> EstimateResult:
         "family": family, "rule_source": rule_source if basis == "QS_RULE" else "band"}
       source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no, "category": m.category,
         "tag": m.tag, "instance": i + 1, "instances": m.count, "size_mm": [float(m.length_mm), float(m.width_mm), float(m.depth_mm)], "estimate": est,
-        "wastage_pct": str(wastage), "concrete_m3": str(q6(volume)), "bare_kg": str(q6(fg["bare_kg"]))}
+        "wastage_pct": str(wastage), "concrete_m3": str(q6(volume)), "bare_kg": str(q6(fg["bare_kg"])),
+        **({"steel_grade": grade["label"], "steel_grade_note": {"scope": grade["scope"], "pages": grade["pages"]}} if grade["label"] else {}),
+        **({"steel_grade_clash": grade["clash"]} if grade["clash"] else {})}
       
-      rows.append(LedgerEntry(solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=None,
+      rows.append(LedgerEntry(solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=grade["label"],
         confidence=confidence, formula_code=FORMULA,
         trace={"formula_code": FORMULA, "engine_version": ctx.engine_version, "convention": ctx.convention_code, "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
           "inputs": {"recipe": RECIPE, "spec": spec, "steel_source": source},

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from decimal import Decimal
+from app.engine.measure import grades as GR
 from uuid import NAMESPACE_URL, UUID, uuid5
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.levels import view_level_id
@@ -326,7 +327,13 @@ def _name(cand, i: int, n: int) -> str:
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
 
-def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=(), frame_positions=None, floors=None, floor_key=None, footing=None) -> list:
+def printed_concrete(cand, spec: dict, concrete_rules) -> dict | None:
+  if not concrete_rules:
+    return None
+  return GR.resolve(concrete_rules, GR.category_of_candidate(cand.category, cand.facts))["rule"]
+
+def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measurement=None, also_on=(), frame_positions=None, floors=None, floor_key=None, footing=None,
+  concrete_rules=None) -> list:
 
   spec = _spec(cand)
   if spec is None or cand.decision == "REJECTED" or (cand.facts or {}).get("foundation_item"):
@@ -351,6 +358,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
     text += " · also marked on sheet " + ", ".join(str(x) for x in also_on)
   pos = _positions(cand, n)
   evidence = evidence_for(cand)
+  printed = printed_concrete(cand, spec, concrete_rules)
   zr = PL.z_of(cand, floors or {}, floor_key, footing)
   out = []
   
@@ -369,6 +377,8 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       props["_pdf"]["frame"] = {"view": placed["view"], "position_mm": placed["position_mm"], "grade": placed["grade"], "method": placed["method"]}
     where = PL.fields(cand, sizes, placed, zr, floor_key)
     props["_pdf"].update(where["meta"])
+    if printed is not None:
+      props["_pdf"]["concrete"] = {"class": printed.get("class"), "mix": printed.get("mix"), "scope": printed.get("scope"), "pages": printed.get("pages")}
     if cand.category == "ROOM":
       props["_pdf"]["perimeter_m"] = (cand.facts or {}).get("perimeter_m")
     opening_kind = (cand.facts or {}).get("opening_kind") if cand.category in ("DOOR", "WINDOW") else None
@@ -376,7 +386,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       props["_pdf"]["opening_kind"] = opening_kind
     row = {
       "id": row_id(sheet.id, cand.ckey, i), "ifc_global_id": global_id(cand.ckey, i), "ifc_type": spec["ifc_type"],
-      "name": _name(cand, i, n)[:500], "raw_material_text": "Reinforced concrete wall (retaining)" if (cand.facts or {}).get("construction") == "RCC" else spec["material"], "unit": unit, "quantity": qty, "properties": props,
+      "name": _name(cand, i, n)[:500], "raw_material_text": GR.concrete_label(printed.get("class"), printed.get("mix")) if printed is not None else "Reinforced concrete wall (retaining)" if (cand.facts or {}).get("construction") == "RCC" else spec["material"], "unit": unit, "quantity": qty, "properties": props,
       "discipline": spec["discipline"], "structural_role": spec["role"], "classification_source": "PDF_EXTRACT",
       "classification_confidence": _d(cand.confidence or 0), "quantity_source": qsrc, "level_id": level_id,
       "geometry_kind": None, "normalization_status": status, "normalization_issues": issues,
@@ -410,7 +420,7 @@ def _primary(candidates, sheets: dict) -> tuple:
   return also, hidden
 
 def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame_positions: dict | None = None, floors: dict | None = None,
-  floor_of: dict | None = None, footing=None) -> list:
+  floor_of: dict | None = None, footing=None, concrete_rules=None) -> list:
   
   also, hidden = _primary(candidates, sheets)
   stair_also, stair_hidden = stair_twins.twins(candidates, sheets)
@@ -425,7 +435,8 @@ def build_rows(candidates, sheets: dict, measurements: dict, levels: dict, frame
     m = measurements.get(cand.measurement_id) if cand.measurement_id else None
     lvl = level_of(cand, sheet)
     out.extend(rows_for_candidate(cand, sheet=sheet, level_id=lvl, level_name=levels.get(lvl) if lvl else None, measurement=m,
-      also_on=also.get(cand.id, ()), frame_positions=frame_positions, floors=floors, floor_key=(floor_of or {}).get(lvl) if lvl else None, footing=footing))
+      also_on=also.get(cand.id, ()), frame_positions=frame_positions, floors=floors, floor_key=(floor_of or {}).get(lvl) if lvl else None, footing=footing,
+      concrete_rules=concrete_rules))
   return out
 
 def is_pdf_row(row) -> bool:

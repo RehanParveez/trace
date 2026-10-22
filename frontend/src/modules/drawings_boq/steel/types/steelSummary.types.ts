@@ -10,6 +10,17 @@ export interface SteelDiameterRow {
   by_family: Record<string, number>;
 }
 
+export interface SteelGradeRow {
+  grade: string;
+  label: string;
+  members: number;
+  kg: number;
+  kg_low: number;
+  kg_high: number;
+  share_pct: number;
+  by_family: Record<string, number>;
+}
+
 export interface SteelFamilyRow {
   family: string;
   label: string;
@@ -56,6 +67,7 @@ export interface SteelSummary {
     estimated_share_pct: number;
     by_basis: Partial<Record<SteelBasis, { members: number; kg: number }>>;
   };
+  by_grade?: SteelGradeRow[];
   by_diameter: SteelDiameterRow[];
   without_diameter: { kg: number; members: number };
   by_family: SteelFamilyRow[];

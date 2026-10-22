@@ -1379,6 +1379,10 @@ export interface DerivedParams {
   formwork_shared_beams?: number;
   rcc_wall_reveals?: number;
   beam_lintel_qs_rate?: number;
+  plaster_thickness_mm?: number;
+  soil_stabilisation?: number;
+  soil_stab_depth_mm?: number;
+  soil_stab_cement_pct?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1846,6 +1850,30 @@ export interface DerivedStats {
   roof_deck?: RoofDeckStats;
   steel_allowances?: SteelAllowanceStats;
   shoring_from_depth_mm?: number | null;
+  plaster_mortar?: PlasterMortarStats;
+  soil_stabilisation?: SoilStabilisationStats;
+}
+
+export interface PlasterMortarStats {
+  enabled: boolean;
+  ran: boolean;
+  reason?: string;
+  thickness_mm?: string | null;
+  thickness_source?: string;
+  rows?: number;
+  mortar_m3?: string;
+}
+
+export interface SoilStabilisationStats {
+  enabled: boolean;
+  ran: boolean;
+  reason?: string;
+  depth_mm?: string | null;
+  depth_source?: string;
+  cement_pct?: number | null;
+  rows?: number;
+  area_m2?: string;
+  volume_m3?: string;
 }
 
 export interface LayerStats {

@@ -75,6 +75,10 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "tie_band_replaces_lintel", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "dpc_thickness_mm", defaultMm: 38.1, min: 0, max: 300 },
   { key: "dpc_door_deduction", defaultMm: 1, min: 0, max: 1, flag: true },
+  { key: "plaster_thickness_mm", defaultMm: 0, min: 0, max: 40, label: "Plaster thickness (mm)", hint: "Empty: the thickness printed on the drawing, and with none printed no mortar is added. Above 0 it adds the mortar behind the plaster (area x thickness, m³)" },
+  { key: "soil_stabilisation", defaultMm: 0, min: 0, max: 1, flag: true, label: "Add cement-stabilised soil under the filled floor", hint: "Off until you switch it on: whether the soil is loose is found on site. Needs the depth of the layer below. The area is taken as the whole filled floor and the row is marked assumed" },
+  { key: "soil_stab_depth_mm", defaultMm: 0, min: 0, max: 1500, label: "Stabilised soil: depth of the layer (mm)", hint: "Empty: the depth printed in the soil note, and with none printed nothing is measured" },
+  { key: "soil_stab_cement_pct", defaultMm: 0, min: 0, max: 20, unit: "pct", label: "Stabilised soil: cement (% of the weight of the soil)", hint: "Empty: the percentage printed in the soil note. It is carried on the row; no cement weight is worked out because no soil density is printed" },
   { key: "stair_formwork_soffit_only", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "beam_lintel_qs_rate", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
@@ -183,7 +187,7 @@ export interface DerivedBasisRow {
 
 const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", 
   "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "steel_cover_slab_mm", "steel_cover_beam_mm", "steel_cover_column_mm", "steel_cover_footing_mm", "steel_cover_wall_mm",
-   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "wall_foundation_works", "wall_membrane", "wall_finishes_from_walls", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "steel_wastage_pct", "steel_estimate_from_volume", "slab_steel_kg_per_m2", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
+   "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "wall_foundation_works", "wall_membrane", "wall_finishes_from_walls", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "plaster_thickness_mm", "soil_stab_depth_mm", "soil_stab_cement_pct", "steel_wastage_pct", "steel_estimate_from_volume", "slab_steel_kg_per_m2", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
     return [];

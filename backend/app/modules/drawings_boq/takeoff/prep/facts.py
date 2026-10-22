@@ -20,6 +20,9 @@ _COVER = re.compile(r"\(\s*[a-f]\s*\)\s*(?P<member>SLABS?|BEAMS?|COLUMNS?|FOOTIN
 _BEARING = re.compile(r"BEARING\s+CAPACITY[^0-9]{0,40}(?P<v>\d+(?:\.\d+)?)\s*(?P<u>TSF|KSF|PSF|PSI|KN\s*/\s*M2|KPA)", re.I)
 _PLASTER = re.compile(_IN + r"\s*TH\.?\s*C\.?\s?M\.?\s*PLASTER", re.I)
 _FILL_LAYER = re.compile(_IN + r"\s*THICK\s+COMPACTED\s+LAYERS", re.I)
+_SOIL_STAB = re.compile(r"STABILI[SZ](?:E|ED|ES|ING|ATION)")
+_SOIL_PCT = re.compile(r"(?P<pct>\d{1,2}(?:\.\d{1,2})?)\s*(?:%|PERCENT|PER\s*CENT)", re.I)
+_SOIL_DEPTH = re.compile(_IN + r"\s*(?:DEEP|DEPTH|THICK|LAYER)|(?:DEPTH|THICKNESS|LAYER)\s*(?:OF|=|:)?\s*" + _IN.replace("(?P<in>", "(?P<in2>"), re.I)
 _STAIR_WIDTH = re.compile(r"STAIR\s+WIDTH\s*=\s*(?P<ft>\d+)\s*'\s*-?\s*(?P<in>\d+)?", re.I)
 _LAP = re.compile(r"\(\s*[a-f]\s*\)\s*(?P<d>\d{1,2}(?:\s*/\s*\d{1,2})?)\s*(?:\"|″|”|'')\s*\S{0,2}\s*=\s*" + _IN, re.I)
 _PCC_THICK = re.compile(_IN + r"\s*(?:THICK\s+)?P\.?\s?C\.?\s?C\b", re.I)
@@ -56,6 +59,20 @@ def _clean_scope(s: str) -> str:
 
 def _item(kind: str, text: str, **extra) -> dict:
   return {"kind": kind, "text": text[:140], **extra}
+
+def _soil_note(t: str) -> dict | None:
+  up = t.upper()
+  if not _SOIL_STAB.search(up) or "CEMENT" not in up:
+    return None
+  m = _SOIL_PCT.search(up)
+  if not m:
+    return None
+  extra: dict = {"cement_pct": float(m.group("pct")), "loose": bool(re.search(r"\bLOOSE\b", up))}
+  d = _SOIL_DEPTH.search(up)
+  mm = inches_mm(d.group("in") or d.group("in2")) if d and (d.group("in") or d.group("in2")) else None
+  if mm:
+    extra["value_mm"] = mm
+  return _item("SOIL_STABILISATION", t, scope="soil", **extra)
 
 def read_line(text: str) -> list[dict]:
   """The facts one line of drawing text states. Most lines state none."""
@@ -99,6 +116,9 @@ def read_line(text: str) -> list[dict]:
   m = _FILL_LAYER.search(t)
   if m and inches_mm(m.group("in")):
     out.append(_item("FILL_LAYER", t, value_mm=inches_mm(m.group("in")), scope="compacted fill layer"))
+  soil = _soil_note(t)
+  if soil is not None:
+    out.append(soil)
   m = _LAP.search(t)
   if m and inches_mm(m.group("in")) and inches_mm(m.group("d")):
     dia = inches_mm(m.group("d"))
@@ -125,15 +145,17 @@ def level_mark_mm(text: str) -> float | None:
   return round(-mm if m.group("sign") == "-" else mm, 1)
 
 PLAUSIBLE_MM = {"SLAB_THICKNESS": (75.0, 400.0), "PLASTER_THICKNESS": (6.0, 40.0), "CLEAR_COVER": (10.0, 100.0), "FILL_LAYER": (50.0, 600.0), "LAP_LENGTH": (150.0, 3000.0), "PCC_THICKNESS": (25.0, 300.0),
-  "RCC_WALL_THICKNESS": (100.0, 600.0), "STAIR_WIDTH": (600.0, 3000.0)}
+  "RCC_WALL_THICKNESS": (100.0, 600.0), "STAIR_WIDTH": (600.0, 3000.0), "SOIL_STABILISATION": (50.0, 1500.0)}
+PLAUSIBLE_CEMENT_PCT = (1.0, 20.0)
 PLAUSIBLE_BEARING_TSF = (0.1, 20.0)
 
 def plausible(item: dict) -> bool:
-  """A value read from a scan by character recognition is dropped when it is outside what a drawing can print (a half inch of plaster read as twelve inches)."""
   kind = item.get("kind")
   bounds = PLAUSIBLE_MM.get(kind)
   if bounds is not None and item.get("value_mm") is not None:
     return bounds[0] <= float(item["value_mm"]) <= bounds[1]
+  if kind == "SOIL_STABILISATION" and not PLAUSIBLE_CEMENT_PCT[0] <= float(item.get("cement_pct") or 0.0) <= PLAUSIBLE_CEMENT_PCT[1]:
+    return False
   if kind == "BRICK_COLUMN":
     return all(150.0 <= float(item.get(k) or 0.0) <= 500.0 for k in ("value_mm", "value2_mm"))
   if kind == "BEARING_CAPACITY" and str(item.get("unit")) == "TSF":
@@ -157,7 +179,7 @@ def read_facts(lines: list, words: list | None = None, scanned: bool = False) ->
         if not plausible(it):
           continue
         it = {**it, "ocr": True}
-      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"))
+      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("cement_pct"))
       if key in seen:
         seen[key]["count"] += 1
       elif len(seen) < MAX_ITEMS_PER_SHEET:
@@ -263,7 +285,7 @@ def gather(sheets: list[dict]) -> dict:
     if got and (storeys is None or (got.get("consistent"), len(got.get("clusters") or [])) > (storeys.get("consistent"), len(storeys.get("clusters") or []))):
       storeys = {**got, "page_no": sh["page_no"]}
     for it in facts.get("items") or []:
-      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"))
+      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("cement_pct"))
       row = rows.get(key)
       
       if row is None:

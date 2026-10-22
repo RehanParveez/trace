@@ -10,6 +10,7 @@ from app.engine.measure.units import q4, q6
 from app.engine.measure import steel_review as SRV
 from app.engine.measure import steel_estimate as SE
 from app.engine.measure import steel_rings as RINGS
+from app.engine.measure import grades as GR
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, range_trace
 
 """Reinforcement weight (kg) for the concrete members read from a PDF whose bars are printed with them: lintels from the lintel table, and columns,
@@ -99,6 +100,8 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
   by_dia: dict = {}
   family_volume: dict = {}
   family_kg: dict = {}
+  by_grade: dict = {}
+  grade_clash: dict = {}
   reviewable: list = []
   solids: list = []
   rows: list = []
@@ -130,6 +133,9 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
       continue
   
     kg = q6(bare * (1 + wastage / 100))
+    grade = GR.steel_grade_of(ctx, cat)
+    if grade["clash"]:
+      grade_clash[cat] = grade["clash"]
     used = tuple(cover_n if n == COVER_PARAM else n for n in PARAMS_USED[cat])
     assumed = [n for n in used if params[n]["source"] == "default"]
     factor = FACTOR_ASSUMED if (assumed or ring_info) else FACTOR_CONFIRMED
@@ -150,9 +156,11 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
         gross_length_m=q6(m.length_mm / MM), status="REVIEW_REQUIRED" if warnings else "OK"))
       source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no,
         "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count, "size_mm": [float(m.length_mm), float(m.width_mm), float(m.depth_mm)],
-        "steel": steel, "lines": lines, "bare_kg": str(bare), "wastage_pct": str(wastage), "concrete_m3": str(volume)}
+        "steel": steel, "lines": lines, "bare_kg": str(bare), "wastage_pct": str(wastage), "concrete_m3": str(volume),
+        **({"steel_grade": grade["label"], "steel_grade_note": {"scope": grade["scope"], "pages": grade["pages"]}} if grade["label"] else {}),
+        **({"steel_grade_clash": grade["clash"]} if grade["clash"] else {})}
       rows.append(LedgerEntry(
-        solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=None,
+        solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=grade["label"],
         confidence=confidence, formula_code=FORMULA,
         trace={"formula_code": FORMULA, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
           "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
@@ -160,6 +168,9 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
           "steps": [*step_lines, {"op": "total_kg", "bare_kg": str(bare), "wastage_pct": str(wastage), "kg": str(kg)}], "net": {"kg": str(kg)},
           "rounding": "half_up,6dp", **({"range": rg} if (rg := range_trace(ctx.takeoff, m.measurement_id)) else {})},
         warnings=tuple(warnings), source_kind=DERIVED, spec=spec, spec_key="derived"))
+      gslot = by_grade.setdefault(grade["label"] or "", {"marks": 0, "kg": Decimal("0")})
+      gslot["marks"] += 1
+      gslot["kg"] += kg
       slot = by_category.setdefault(cat, {"marks": 0, "kg": Decimal("0"), "bare_kg": Decimal("0")})
       
       slot["marks"] += 1
@@ -196,6 +207,8 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     "by_category": {k: {"marks": v["marks"], "kg": str(q6(v["kg"])), "bare_kg": str(q6(v["bare_kg"]))} for k, v in sorted(by_category.items())},
     "by_diameter": {k: {"kg": str(q6(v["kg"])), "length_m": str(q6(v["length_m"]))} for k, v in sorted(by_dia.items(), key=lambda kv: Decimal(kv[0]))},
     "intensity": intensity,
+    "by_grade": {k or "NONE": {"marks": v["marks"], "kg": str(q6(v["kg"]))} for k, v in sorted(by_grade.items())},
+    "grade_clash": {k: v for k, v in sorted(grade_clash.items())},
     "ring_zone": {**ring_zone, "dense_spacing_mm": str(ring_spacing) if ring_on else None, "skipped": dict(sorted(ring_zone["skipped"].items()))},
     "skipped": dict(sorted(skipped.items())),
     "params": {n: dict(params[n]) for n in STEEL_PARAMS},

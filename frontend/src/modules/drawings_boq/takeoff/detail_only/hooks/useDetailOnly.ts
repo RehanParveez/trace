@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { detailOnlyApi } from "../api/detailOnly.api";
 import type { ChooseDepthBody, ChooseMarkBody } from "../types/detailOnly.types";
-import { takeoffKeys } from "../../takeoff/hooks/useTakeoff";
+import { takeoffKeys } from "../../hooks/useTakeoff";
 
 export const detailOnlyKey = (drawingId: string) => [...takeoffKeys.all, "detail-only", drawingId] as const;
 

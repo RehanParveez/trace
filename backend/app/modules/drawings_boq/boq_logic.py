@@ -179,7 +179,8 @@ def aggregate(lines: Iterable[LedgerLine], *, scope: str, preferred_units: dict 
       w in REVIEW_WARNING_CODES for l in group for w in l.warnings)
     description = wi.description if wi else code
     spec = next((l.spec for l in group if l.spec), None)
-    label = ", ".join(x for x in (describe_spec(spec), stage_label(stage)) if x)
+    described = describe_spec(spec)
+    label = ", ".join(x for x in (described, f"grade {grade}" if grade and grade not in (described or "") else None, stage_label(stage)) if x)
     
     if label:
       description = f"{description} ({label})"

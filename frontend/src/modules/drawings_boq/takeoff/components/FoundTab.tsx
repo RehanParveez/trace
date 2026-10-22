@@ -12,7 +12,8 @@ import type { SteelSet } from "../utils/steel";
 import { CrossChecksPanel } from "./CrossChecksPanel";
 import { KnownFactsPanel } from "./KnownFactsPanel";
 import { ReaderTracePanel } from "./ReaderTracePanel";
-import { DetailOnlyPanel } from "../../detail_only/components/DetailOnlyPanel";
+import { DetailOnlyPanel } from "../detail_only/components/DetailOnlyPanel";
+import { PrintedGradesPanel } from "../grades/components/PrintedGradesPanel";
 import { ReadingAccuracyPanel } from "../reading_score/components/ReadingAccuracyPanel";
 import { ReadyToAcceptPanel } from "./ReadyToAcceptPanel";
 import { RepeatMarksNotice } from "./RepeatMarksNotice";
@@ -124,6 +125,7 @@ export function FoundTab(p: Props) {
     <KnownFactsPanel result={knownFacts.data} busy={knownFacts.isPending} failed={knownFacts.isError} onCheck={(facts) => knownFacts.mutate(facts)} />
     <ReaderTracePanel data={readerTrace.data} loading={readerTrace.isLoading} error={readerTrace.isError} onRetry={() => void readerTrace.refetch()} />
     {p.drawingId ? <DetailOnlyPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}
+    {p.drawingId ? <PrintedGradesPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}
     {p.drawingId ? <ReadingAccuracyPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}
     <RepeatMarksNotice
       failures={repeat}

@@ -125,6 +125,17 @@ def describe_spec(spec: dict | None) -> str | None:
     return None
   if MW_TEXT.describe(spec):
     return MW_TEXT.describe(spec)
+  if spec.get("kind") == "DERIVED" and spec.get("recipe") == "SOIL_STABILISATION_UNDER_FLOOR":
+    p = spec.get("params") or {}
+    bits = []
+    if p.get("soil_stab_cement_pct") is not None:
+      bits.append(f"{p['soil_stab_cement_pct']:g} % cement")
+    if p.get("soil_stab_depth_mm") is not None:
+      bits.append(f"{p['soil_stab_depth_mm']:g} mm layer")
+    return ", ".join(bits) or "cement-stabilised soil under the floor"
+  if spec.get("kind") == "DERIVED" and spec.get("recipe") == "PLASTER_MORTAR_FROM_AREA":
+    p = spec.get("params") or {}
+    return f"{p['plaster_thickness_mm']:g} mm thick" if p.get("plaster_thickness_mm") is not None else "mortar behind the plaster"
   if spec.get("kind") == "DERIVED" and spec.get("recipe") == "PDF_LINTEL_STEEL":
     return "bars and rings printed for the lintel"
   if spec.get("kind") == "DERIVED" and spec.get("recipe") == "STRUCT_FORMWORK":

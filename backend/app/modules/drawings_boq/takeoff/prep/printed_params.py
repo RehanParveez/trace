@@ -1,8 +1,11 @@
 from __future__ import annotations
+from app.engine.measure import grades as GR
 
 COVER_PARAM_OF = {"slab": "steel_cover_slab_mm", "beam": "steel_cover_beam_mm", "column": "steel_cover_column_mm", "footing": "steel_cover_footing_mm", "wall": "steel_cover_wall_mm"}
 PCC_PARAM = "pcc_thickness_mm"
 FILL_PARAM = "fill_layer_mm"
+PLASTER_PARAM = "plaster_thickness_mm"
+SOIL_DEPTH_PARAM, SOIL_CEMENT_PARAM = "soil_stab_depth_mm", "soil_stab_cement_pct"
 LAP_PARAM = "bar_lap_dia"
 EIGHTH_MM = 3.175
 
@@ -47,13 +50,14 @@ def from_items(items: list) -> dict:
     if row is not None:
       params[name] = round(float(row["value_mm"]), 2)
       notes[name] = _note(row)
-  for kind, name in (("PCC_THICKNESS", PCC_PARAM), ("FILL_LAYER", FILL_PARAM)):
+  for kind, name in (("PCC_THICKNESS", PCC_PARAM), ("FILL_LAYER", FILL_PARAM), ("PLASTER_THICKNESS", PLASTER_PARAM)):
     rows = [r for r in items or [] if r.get("kind") == kind and r.get("value_mm") is not None]
     row = _single(rows, name, conflicts) if rows else None
     if row is not None:
       params[name] = round(float(row["value_mm"]), 2)
       notes[name] = _note(row)
       
+  soil = _soil(items or [], params, notes, conflicts)
   table: dict = {}
   clash: set = set()
   for r in items or []:
@@ -77,7 +81,28 @@ def from_items(items: list) -> dict:
     params[LAP_PARAM] = round(sum(ratios) / len(ratios), 1)
     notes[LAP_PARAM] = {"text": "; ".join(f"bar {k} = {mm:g} mm" for k, mm in lap_table.items()), "pages": sorted({p for v in table.values() for p in v["pages"]}),
       "count": sum(v["count"] for v in table.values())}
-  return {"params": params, "lap_table_mm": lap_table, "notes": notes, "conflicts": conflicts}
+  return {"params": params, "lap_table_mm": lap_table, "notes": notes, "conflicts": conflicts, "grades": GR.rules_from_items(items or []), "soil": soil}
+
+def _soil(items: list, params: dict, notes: dict, conflicts: list) -> dict | None:
+  rows = [r for r in items if r.get("kind") == "SOIL_STABILISATION" and r.get("cement_pct") is not None]
+  
+  if not rows:
+    return None
+  out: dict = {"notes": [{**_note(r), "cement_pct": r["cement_pct"], "depth_mm": r.get("value_mm"), "loose_only": bool(r.get("loose"))} for r in rows], "cement_pct": None, "depth_mm": None}
+  pcts = sorted({round(float(r["cement_pct"]), 2) for r in rows})
+  if len(pcts) == 1:
+    out["cement_pct"] = pcts[0]
+    params[SOIL_CEMENT_PARAM] = pcts[0]
+    notes[SOIL_CEMENT_PARAM] = _note(rows[0])
+  else:
+    conflicts.append({"param": SOIL_CEMENT_PARAM, "values": [{"value": v} for v in pcts]})
+  depths = [r for r in rows if r.get("value_mm") is not None]
+  row = _single(depths, SOIL_DEPTH_PARAM, conflicts) if depths else None
+  if row is not None:
+    out["depth_mm"] = round(float(row["value_mm"]), 2)
+    params[SOIL_DEPTH_PARAM] = out["depth_mm"]
+    notes[SOIL_DEPTH_PARAM] = _note(row)
+  return out
 
 def for_run(printed: dict) -> dict:
-  return {"params": dict(printed.get("params") or {}), "lap_table_mm": dict(printed.get("lap_table_mm") or {})}
+  return {"params": dict(printed.get("params") or {}), "lap_table_mm": dict(printed.get("lap_table_mm") or {}), "grades": dict(printed.get("grades") or {})}

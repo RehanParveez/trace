@@ -15,6 +15,7 @@ from app.modules.drawings_boq.measurement_params import MeasurementParametersSer
 from sqlalchemy import delete, select
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
 
 MAX_ROWS = 20000
 ROW_FIELDS = ("ifc_global_id", "ifc_type", "name", "raw_material_text", "unit", "quantity", "properties", "discipline", "structural_role",
@@ -66,7 +67,9 @@ class RegisterService:
       levels = {lv.id: lv.name for lv in level_rows}
       floor_of = {lv.id: (lv.ifc_storey_id or "").removeprefix("PDF:") for lv in level_rows}
     floors, footing = await self._datums(org, drawing)
-    rows = R.build_rows(cands, by_sheet, measurements, levels, await self._frame_positions(org, drawing_id), floors, floor_of, footing)
+    printed = await printed_for_drawings(self.session, org, [drawing_id])
+    rows = R.build_rows(cands, by_sheet, measurements, levels, await self._frame_positions(org, drawing_id), floors, floor_of, footing,
+      concrete_rules=(printed.get("grades") or {}).get("concrete"))
     
     if len(rows) > MAX_ROWS:
       raise TraceException("This drawing has too many items to list.", status_code=422, code="REGISTER_TOO_LARGE")
