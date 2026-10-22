@@ -6,8 +6,14 @@ PCC_PARAM = "pcc_thickness_mm"
 FILL_PARAM = "fill_layer_mm"
 PLASTER_PARAM = "plaster_thickness_mm"
 SOIL_DEPTH_PARAM, SOIL_CEMENT_PARAM = "soil_stab_depth_mm", "soil_stab_cement_pct"
+PCC_PROJECTION_PARAM = "pcc_projection_mm"
 LAP_PARAM = "bar_lap_dia"
 EIGHTH_MM = 3.175
+PLASTER_PARAM = "plaster_inside_mm"   
+DPC_PARAM = "dpc_thickness_mm"
+STAB_CEMENT_PARAM = "soil_stab_cement_pct"
+STAB_PRINTED_PARAM = "soil_stab_printed"
+STAB_ON_PARAM = "soil_stabilisation"
 
 def _bar_key(dia_mm: float) -> str | None:
   """A printed bar size as the bar number the steel reader uses (eighths of an inch): 9.53 mm is bar 3."""
@@ -50,8 +56,9 @@ def from_items(items: list) -> dict:
     if row is not None:
       params[name] = round(float(row["value_mm"]), 2)
       notes[name] = _note(row)
-  for kind, name in (("PCC_THICKNESS", PCC_PARAM), ("FILL_LAYER", FILL_PARAM), ("PLASTER_THICKNESS", PLASTER_PARAM)):
-    rows = [r for r in items or [] if r.get("kind") == kind and r.get("value_mm") is not None]
+  for kind, name, scope in (("PCC_THICKNESS", PCC_PARAM, "pcc bed"), ("FILL_LAYER", FILL_PARAM, None),
+      ("PLASTER_THICKNESS", PLASTER_PARAM, "cement mortar plaster"), ("DPC_THICKNESS", DPC_PARAM, None)):
+    rows = [r for r in items or [] if r.get("kind") == kind and r.get("value_mm") is not None and (scope is None or r.get("scope") == scope)]
     row = _single(rows, name, conflicts) if rows else None
     if row is not None:
       params[name] = round(float(row["value_mm"]), 2)
@@ -75,6 +82,12 @@ def from_items(items: list) -> dict:
     conflicts.append({"param": "lap_table", "bar": key, "values": [{"value_mm": table[key]["mm"], **_note(table[key])}]})
     
     del table[key]
+  _stabilisation(items or [], params, notes, conflicts)
+  proj = [r for r in items or [] if r.get("kind") == "PCC_PROJECTION" and r.get("value_mm") is not None and r.get("scope") == "pcc bed"]
+  if proj:
+    by = {round(float(r["value_mm"]), 2): r for r in proj}
+    notes[PCC_PROJECTION_PARAM] = {**_note(next(iter(by.values()))), "text": "printed on a section, not applied to all foundations: " + "; ".join(
+      f"{v:g} mm ({r.get('text')})" for v, r in sorted(by.items()))}
   lap_table = {k: v["mm"] for k, v in sorted(table.items(), key=lambda kv: int(kv[0]))}
   if lap_table:
     ratios = [mm / (int(k) * EIGHTH_MM) for k, mm in lap_table.items()]
@@ -82,6 +95,26 @@ def from_items(items: list) -> dict:
     notes[LAP_PARAM] = {"text": "; ".join(f"bar {k} = {mm:g} mm" for k, mm in lap_table.items()), "pages": sorted({p for v in table.values() for p in v["pages"]}),
       "count": sum(v["count"] for v in table.values())}
   return {"params": params, "lap_table_mm": lap_table, "notes": notes, "conflicts": conflicts, "grades": GR.rules_from_items(items or []), "soil": soil}
+
+def _stabilisation(items: list, params: dict, notes: dict, conflicts: list) -> None:
+  head = [r for r in items if r.get("kind") == "SOIL_STAB_NOTE"]
+  if not head:
+    return
+  params[STAB_PRINTED_PARAM] = 1.0
+  notes[STAB_PRINTED_PARAM] = _note(head[0])
+  cond = [r for r in items if r.get("kind") == "SOIL_STAB_CONDITION"]
+  if not cond:
+    params[STAB_ON_PARAM] = 1.0
+    notes[STAB_ON_PARAM] = _note(head[0])
+  else:
+    notes[STAB_ON_PARAM] = {**_note(cond[0]), "text": "not switched on: " + str(cond[0].get("text"))}
+  cem = {round(float(r["value"]), 2): r for r in items if r.get("kind") == "STAB_CEMENT_PCT" and r.get("value") is not None}
+  if len(cem) == 1:
+    row = next(iter(cem.values()))
+    params[STAB_CEMENT_PARAM] = round(float(row["value"]), 2)
+    notes[STAB_CEMENT_PARAM] = _note(row)
+  elif len(cem) > 1:
+    conflicts.append({"param": STAB_CEMENT_PARAM, "values": [{"value": v, **_note(r)} for v, r in sorted(cem.items())]})
 
 def _soil(items: list, params: dict, notes: dict, conflicts: list) -> dict | None:
   rows = [r for r in items if r.get("kind") == "SOIL_STABILISATION" and r.get("cement_pct") is not None]
@@ -105,4 +138,4 @@ def _soil(items: list, params: dict, notes: dict, conflicts: list) -> dict | Non
   return out
 
 def for_run(printed: dict) -> dict:
-  return {"params": dict(printed.get("params") or {}), "lap_table_mm": dict(printed.get("lap_table_mm") or {}), "grades": dict(printed.get("grades") or {})}
+  return {"params": dict(printed.get("params") or {}), "lap_table_mm": dict(printed.get("lap_table_mm") or {})}

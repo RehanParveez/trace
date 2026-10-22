@@ -23,8 +23,9 @@ EXEMPT_FORMULAS = (FORMWORK_FORMULA, STEEL_FORMULA, BINDING_WIRE_FORMULA, CHAIRS
 RECIPE_CODE = "FOOTING_PREP"
 EXCAVATION, PCC, BACKFILL = "EXCAVATION_VOLUME", "FOOTING_PCC_VOLUME", "BACKFILL_VOLUME"
 BALLAST, SHORING = "BRICK_BALLAST_VOLUME", "SHORING_AREA"
-DEFAULT_CODES = {EXCAVATION: "EXC-FOUND", PCC: "CON-PCC", BACKFILL: "EXC-BACKFILL", BALLAST: "MAS-BALLAST", SHORING: "EXC-SHORING"}
-ITEM_NAMES = {EXCAVATION: "EXCAVATION", PCC: "PCC", BACKFILL: "BACKFILL", BALLAST: "BALLAST", SHORING: "SHORING"}
+SOILSTAB = "SOIL_STABILISATION_VOLUME"
+DEFAULT_CODES = {EXCAVATION: "EXC-FOUND", PCC: "CON-PCC", BACKFILL: "EXC-BACKFILL", BALLAST: "MAS-BALLAST", SHORING: "EXC-SHORING", SOILSTAB: "EXC-SOIL-STAB"}
+ITEM_NAMES = {EXCAVATION: "EXCAVATION", PCC: "PCC", BACKFILL: "BACKFILL", BALLAST: "BALLAST", SHORING: "SHORING", SOILSTAB: "SOIL_STABILISATION"}
 FOUNDATION_ROLES = frozenset({"FOOTING", "FOOTING_ISOLATED", "FOOTING_STRIP", "FOOTING_COMBINED", "RAFT", "RAFT_FOUNDATION", "SLAB_FOUNDATION"})
 WALL_BED_ROLES = frozenset({"WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "WALL_PARTITION", "WALL_LOAD_BEARING", "WALL_FOUNDATION"})
 WALL_MIN_BURIED_MM = 300.0
@@ -32,6 +33,13 @@ NOT_BURIED_ROLES = frozenset({"DOOR", "WINDOW"})
 
 PARAMS = {
   "working_space_mm": (150.0, 0.0, 3000.0),
+  "plaster_inside_mm": (12.7, 3.0, 40.0),
+  "plaster_outside_mm": (19.05, 3.0, 40.0),
+  "plaster_ceiling_mm": (9.525, 3.0, 40.0),
+  "soil_stabilisation": (0.0, 0.0, 1.0),
+  "soil_stab_printed": (0.0, 0.0, 1.0),
+  "soil_stab_thickness_mm": (152.4, 50.0, 600.0),
+  "soil_stab_cement_pct": (10.0, 0.0, 30.0),
   "pcc_projection_mm": (100.0, 0.0, 1000.0),
   "pcc_thickness_mm": (76.2, 0.0, 600.0),
   "ballast_thickness_mm": (304.8, 0.0, 1500.0),
@@ -70,7 +78,7 @@ PARAMS = {
   "wall_membrane": (0.0, 0.0, 1.0),
   "wall_finishes_from_walls": (0.0, 0.0, 1.0),
   "steel_estimate_from_volume": (1.0, 0.0, 1.0),
-  "slab_steel_kg_per_m2": (17.2223, 0.0, 200.0),
+  "slab_steel_kg_per_m2": (16.1459, 0.0, 200.0),
   "one_total": (0.0, 0.0, 1.0),
   "one_total_prefer": (0.0, 0.0, 2.0),
   "one_total_position_tol_mm": (100.0, 10.0, 1000.0),
@@ -110,6 +118,7 @@ PARAM_USED_BY = {
   BACKFILL: ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"),
   BALLAST: _BALLAST_PARAMS,
   SHORING: ("working_space_mm", "shoring", "shoring_from_depth_mm", *_BALLAST_PARAMS),
+  SOILSTAB: ("pcc_projection_mm", "soil_stab_thickness_mm", "soil_stab_cement_pct"),
 }
 
 def _used(kind: str, bed: str) -> tuple:
@@ -286,7 +295,7 @@ def _owned(items: list, poly_of, prefix=None):
 def _row(ctx, f: _Foundation, kind: str, code: str, quantity: Decimal, params: dict, ngl: dict, detail: dict, steps: list,
   extra_warnings: list, unit: str = "m3"):
   used = _used(kind, f.bed)
-  needs_ngl = kind not in (PCC, BALLAST)
+  needs_ngl = kind not in (PCC, BALLAST, SOILSTAB)
   assumed = [n for n in used if params[n]["source"] == "default"]
   warnings = list(extra_warnings)
   
@@ -569,6 +578,9 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     if (params["shoring"]["value"] >= 0.5 or params["shoring_from_depth_mm"]["value"] > 0) and DEFAULT_CODES[SHORING] not in model_codes:
       codes[SHORING] = DEFAULT_CODES[SHORING]
   shoring_on = SHORING in codes
+  stab_on = params["soil_stabilisation"]["value"] >= 0.5 and EXCAVATION in codes and DEFAULT_CODES[SOILSTAB] not in model_codes
+  if stab_on:
+    codes[SOILSTAB] = DEFAULT_CODES[SOILSTAB]
 
   exc: dict = {}
   pcc: dict = {}
@@ -614,9 +626,19 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     for f, owned in _owned(covering_pcc, lambda x: x.pcc_poly):
       pcc[f.element.id] = pcc.get(f.element.id, Decimal("0")) + _vol_m3(owned.area, h)
 
+  stab_t = float(params["soil_stab_thickness_mm"]["value"])
+  stab: dict = {}
+  for f, owned in _owned([x for x in foundations if x.bed == "PCC"], lambda x: x.pcc_poly):
+    stab[f.element.id] = stab.get(f.element.id, Decimal("0")) + _vol_m3(owned.area, stab_t)
+  stab_total_if_on = sum(stab.values(), Decimal("0"))
+  if stab_on:
+    for key, v in stab.items():
+      exc[key] = exc.get(key, Decimal("0")) + v
+      bur[key] = bur.get(key, Decimal("0")) + v
+
   out_solids: list = []
   out_ledger: list = []
-  totals = {EXCAVATION: Decimal("0"), PCC: Decimal("0"), BACKFILL: Decimal("0"), BALLAST: Decimal("0"), SHORING: Decimal("0"),
+  totals = {EXCAVATION: Decimal("0"), PCC: Decimal("0"), BACKFILL: Decimal("0"), BALLAST: Decimal("0"), SHORING: Decimal("0"), SOILSTAB: Decimal("0"),
     "buried": Decimal("0")}
   for f in sorted(foundations, key=lambda x: str(x.element.id)):
     key = f.element.id
@@ -631,6 +653,8 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
         {"op": "depth", "from_mm": round(ngl_z, 1), "to_mm": round(f.exc_bottom, 1),
           ("ballast_thickness_mm" if f.bed == "BALLAST" else "pcc_thickness_mm"): f.bed_t},
         {"op": "share_of_overlapping_trench", "note": "trench area shared with a neighbouring foundation is counted once"},
+        *([{"op": "plus_soil_stabilisation_layer", "m3": str(q6(stab.get(key, Decimal("0")))), "thickness_mm": stab_t,
+          "note": "the stabilised layer below the concrete bed is dug as well"}] if stab_on and stab.get(key) else []),
         {"op": "net_volume", "m3": str(q)},
       ]
       
@@ -653,6 +677,19 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
       out_solids.append(s)
       out_ledger.append(e)
       totals[bed_kind] += q
+    if SOILSTAB in codes and stab.get(key, Decimal("0")) > 0:
+      q = q6(stab[key])
+      
+      steps = [
+        {"op": "concrete_bed_footprint", "m2": str(q6(_d(f.pcc_poly.area) / Decimal("1000000"))), "note": "the soil under the concrete bed, shared area counted once"},
+        {"op": "thickness", "mm": stab_t},
+        {"op": "net_volume", "m3": str(q)},
+      ]
+      s, e = _row(ctx, f, SOILSTAB, codes[SOILSTAB], q, f.params, ngl, {**common, "cement_pct": params["soil_stab_cement_pct"]["value"],
+        "compaction": "95% of modified AASHTO, in compacted layers"}, steps, [])
+      out_solids.append(s)
+      out_ledger.append(e)
+      totals[SOILSTAB] += q
     if BACKFILL in codes and back.get(key, Decimal("0")) > 0:
       q = q6(back[key])
       excavation_q = q6(exc.get(key, Decimal("0")))
@@ -689,6 +726,9 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     "ran": True, "rows": len(out_ledger),
     "excavation_m3": str(q6(totals[EXCAVATION])), "pcc_m3": str(q6(totals[PCC])),
     "ballast_m3": str(q6(totals[BALLAST])), "shoring_m2": str(q6(totals[SHORING])),
+    "soil_stabilisation": {"on": stab_on, "printed": params["soil_stab_printed"]["value"] >= 0.5, "thickness_mm": stab_t,
+      "cement_pct": params["soil_stab_cement_pct"]["value"], "volume_m3": str(q6(totals[SOILSTAB])), "volume_m3_if_on": str(q6(stab_total_if_on)),
+      "note": ("measured as an item" if stab_on else "not measured: the layer is for loose soil only, so it is switched on only when the soil is found loose; the volume it would add is shown")},
     "shoring_from_depth_mm": shore_from if shore_from > 0 else None,
     "backfill_m3": str(q6(totals[BACKFILL])), "buried_m3": str(q6(totals["buried"])),
     "assumed": sorted({n for e in out_ledger for n, b in ((e.spec or {}).get("basis") or {}).items() if b == "default" and n != "ngl"}),

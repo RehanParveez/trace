@@ -14,6 +14,9 @@ ESTIMATE_NOTE = "This is an estimate from the bars as they stand, before a calcu
 CONVENTION_NOTE = ("Cover, hook, lap and anchorage are site conventions. Where the drawing prints a cover or a lap table this roll-up uses it; "
   "otherwise it uses the same defaults as the calculation run, and they are flagged as defaults.")
 MM3_PER_M3 = Decimal("1000000000")
+MM2_PER_M2 = Decimal("1000000")
+RULE_CHECK_NOTE = ("Slabs with printed bars are weighed from their bars. The same slabs are also weighed by the quantity surveyor's rule of thumb (kg per m2 of slab, wastage included) "
+  "so the two can be compared; a large difference means the printed bars or the rule deserve a second look. Nothing here changes the weight above.")
 
 def _d(v) -> Decimal | None:
   try:
@@ -92,6 +95,7 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
   est_on = float(conv["steel_estimate_from_volume"]) >= 0.5
   est_rule = Decimal(str(conv["slab_steel_kg_per_m2"]))
   est: dict = {"members": 0, "kg": Decimal("0"), "kg_low": Decimal("0"), "kg_high": Decimal("0"), "by_family": {}, "not_estimated": {}}
+  rule_check = {"slabs": 0, "bar_kg": Decimal("0"), "rule_kg": Decimal("0")}
   by_family: dict = {}
   by_dia: dict = {}
   total = Decimal("0")
@@ -134,6 +138,11 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
     
     if all(_d(p.get(k)) is not None for k in ("length_mm", "width_mm", "depth_mm")):
       conc = Decimal(str(p["length_mm"])) * Decimal(str(p["width_mm"])) * Decimal(str(p["depth_mm"])) * n / MM3_PER_M3
+    if cat in SE.SLAB_CATEGORIES and est_rule > 0 and all(_d(p.get(k)) is not None for k in ("length_mm", "width_mm")):
+      area_m2 = Decimal(str(p["length_mm"])) * Decimal(str(p["width_mm"])) * n / MM2_PER_M2
+      rule_check["slabs"] += n
+      rule_check["bar_kg"] += kg
+      rule_check["rule_kg"] += area_m2 * est_rule * (1 + wastage / 100)
     marks.append({"item_ids": [str(r.id)], "tag": r.tag, "category": r.category, "family": fam, "floor": _floor(f), "count": n, "decision": r.decision,
       "steel_text": f.get("steel_text"), "source": src, "kg_each": float(got["kg_each"]), "kg": float(kg), "concrete_m3": float(conc) if conc is not None else None})
     slot = by_family.setdefault(fam, {"marks": 0, "members": 0, "kg": Decimal("0"), "bare_kg": Decimal("0"), "kg_sized": Decimal("0"), "concrete_m3": Decimal("0")})
@@ -170,4 +179,6 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
       "slab_rule_kg_per_m2": float(est_rule) if est_rule > 0 else None,
       "by_family": {k: {"members": v["members"], "kg": float(v["kg"]), "kg_low": float(v["kg_low"]), "kg_high": float(v["kg_high"])} for k, v in sorted(est["by_family"].items())},
       "not_estimated": dict(sorted(est["not_estimated"].items()))},
+    "slab_rule_check": {"rule_kg_per_m2": float(est_rule) if est_rule > 0 else None, "slabs": rule_check["slabs"], "bar_kg": float(rule_check["bar_kg"]), "rule_kg": float(rule_check["rule_kg"]),
+      "difference_pct": round(float((rule_check["bar_kg"] / rule_check["rule_kg"] - 1) * 100), 1) if rule_check["rule_kg"] > 0 else None, "note": RULE_CHECK_NOTE},
     "without_size": no_size}

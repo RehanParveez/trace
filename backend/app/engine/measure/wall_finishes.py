@@ -192,8 +192,12 @@ def measure_wall_finishes(ctx: CalculationContext, profile, elements: list, soli
       steps += [{"op": "less_opening", **c, "faces": faces} for c in shown]
       steps.append({"op": "net_area", "m2": str(area)})
       lvl = level if level is not None else Datum("DPC", prism.z0, "default", "no floor level in the model; taken at the foot of the wall")
-      s_, r_ = _row(ctx, el, solid_of[el.id], item, code, area, steps, {"faces": faces, "wall_length_mm": round(length, 1), "wall_thickness_mm": round(thickness, 1),
-        "height_mm": round(height, 1)}, lvl, assumed, not openings)
+      detail = {"faces": faces, "wall_length_mm": round(length, 1), "wall_thickness_mm": round(thickness, 1), "height_mm": round(height, 1)}
+      if item.startswith("PLASTER"):
+        pname = "plaster_inside_mm" if side == "in" else "plaster_outside_mm"
+        detail["plaster_thickness_mm"] = params[pname]["value"]
+        detail["plaster_thickness_source"] = params[pname]["source"]
+      s_, r_ = _row(ctx, el, solid_of[el.id], item, code, area, steps, detail, lvl, assumed, not openings)
       out_solids.append(s_)
       out_rows.append(r_)
       if item.startswith("PLASTER"):
@@ -202,6 +206,8 @@ def measure_wall_finishes(ctx: CalculationContext, profile, elements: list, soli
         
   out_rows.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
   stats.update({"ran": bool(out_rows), "rows": len(out_rows), "walls": len(walls) - no_height, "openings": len(openings), "openings_given_to_a_wall": len(owner),
+    "plaster_thickness_mm": {"inside": params["plaster_inside_mm"]["value"], "outside": params["plaster_outside_mm"]["value"],
+      "inside_source": params["plaster_inside_mm"]["source"], "outside_source": params["plaster_outside_mm"]["source"]},
     "plaster_inside_m2": str(q6(Decimal(repr(totals["in"])))), "plaster_outside_m2": str(q6(Decimal(repr(totals["out"])))),
     "openings_deducted_m2": str(q6(Decimal(repr(cut_total)))), "sides_from_geometry": sides_assumed_walls, "no_height": no_height,
     "dpc_level": {"z_mm": round(level.z_mm, 1), "source": level.source} if level is not None else None})

@@ -14,6 +14,7 @@ from decimal import Decimal
 from sqlalchemy import delete, func, or_, select
 from app.modules.drawings_boq.pricing import mrs_parse as mp
 from app.modules.drawings_boq.pricing import mrs_extract as ex
+from app.modules.drawings_boq.pricing import mrs_import
 from app.modules.drawings_boq.models import RateBook, RateItem, WorkItem
 from app.modules.drawings_boq.pricing.models import RateImport, RateImportRow
 from app.modules.drawings_boq.pricing.import_schemas import ImportUpdateRequest, BulkRowsRequest, PublishRequest, ReparseRequest, RowUpdateRequest
@@ -205,6 +206,10 @@ class RateImportService:
   def _read_file(kind: str, data: bytes, profile_name: str, first_page: int, last_page: int | None, digest: str) -> dict:
     """CPU-heavy: runs in a thread. Returns plain data only."""
     profile = mp.get_profile(profile_name)
+    if profile.reader == "table":
+      if kind != "PDF":
+        raise ValueError("This layout reads PDF files only.")
+      return mrs_import.read_table(data, first_page, last_page, digest)
     if kind == "CSV":
       rows = mp.parse_csv(data, profile)
       unparsed: list[dict] = []
@@ -275,7 +280,7 @@ class RateImportService:
         id=uuid4(), import_id=imp.id, organization_id=org, seq=seq, page=raw.page, line_no=raw.line_no, chapter=(raw.chapter or None) and raw.chapter[:200],
         item_no=(raw.item_no or None) and raw.item_no[:60], description=raw.description, raw_line=raw.raw_line, unit_raw=(raw.unit_raw or None) and raw.unit_raw[:60],
         basis_qty=raw.basis_qty, unit=raw.unit, unit_known=raw.unit_known, rate_raw=(raw.rate_raw or None) and raw.rate_raw[:60], rate=raw.rate, rate_alt=raw.rate_alt,
-        unit_rate=il.unit_rate_of(raw.rate, raw.basis_qty), flags=list(raw.flags), needs_review=il.needs_review(raw.flags, reviewed=False, skipped=False),
+        unit_rate=il.unit_rate_of(raw.rate, raw.basis_qty), spec_key=raw.spec_key, labour=raw.labour, rate_kind=raw.rate_kind, flags=list(raw.flags), needs_review=il.needs_review(raw.flags, reviewed=False, skipped=False),
         suggestions=suggestions, is_sample=idx in sample))
       if len(batch) >= INSERT_BATCH:
         self.session.add_all(batch)
@@ -358,9 +363,9 @@ class RateImportService:
     return list((await self.session.execute(select(r).where(r.import_id == import_id, r.organization_id == org, r.is_sample.is_(True)).order_by(r.seq))).scalars().all())
 
   def _apply_edit(self, row: RateImportRow, data: dict) -> None:
-    content = {"description", "item_no", "chapter", "unit", "basis_qty", "rate"} & set(data)
+    content = {"description", "item_no", "chapter", "unit", "basis_qty", "rate", "spec_key"} & set(data)
     if content and row.original is None:
-      row.original = {"description": row.description, "item_no": row.item_no, "chapter": row.chapter, "unit_raw": row.unit_raw, "unit": row.unit,
+      row.original = {"description": row.description, "item_no": row.item_no, "chapter": row.chapter, "unit_raw": row.unit_raw, "unit": row.unit, "spec_key": row.spec_key,
         "basis_qty": str(row.basis_qty), "rate": None if row.rate is None else str(row.rate), "flags": list(row.flags or [])}
     edited_unit = edited_rate = False
     if "description" in data and data["description"] is not None:
@@ -369,6 +374,8 @@ class RateImportService:
       row.item_no = (data["item_no"] or "").strip() or None
     if "chapter" in data:
       row.chapter = (data["chapter"] or "").strip() or None
+    if "spec_key" in data:
+      row.spec_key = (data["spec_key"] or "").strip().lower() or None
     if data.get("unit") is not None:
       ub = mp.parse_unit_basis(data["unit"])
       
@@ -481,7 +488,8 @@ class RateImportService:
     rows = (await self.session.execute(select(r).where(r.import_id == import_id, r.organization_id == org).order_by(r.seq))).scalars().all()
     return [{"id": x.id, "seq": x.seq, "skipped": x.skipped, "needs_review": x.needs_review, "is_sample": x.is_sample, "sample_verified": x.sample_verified,
       "work_item_code": x.work_item_code, "unit": x.unit, "unit_rate": x.unit_rate, "item_no": x.item_no, "description": x.description,
-      "chapter": x.chapter, "page": x.page, "unit_raw": x.unit_raw, "basis_qty": x.basis_qty, "rate": x.rate} for x in rows]
+      "chapter": x.chapter, "page": x.page, "unit_raw": x.unit_raw, "basis_qty": x.basis_qty, "rate": x.rate,
+      "spec_key": x.spec_key, "rate_kind": x.rate_kind} for x in rows]
 
   async def readiness(self, org: UUID, import_id: UUID, include_unmapped: bool = False) -> il.Readiness:
     imp = await self._import(org, import_id)
@@ -524,12 +532,17 @@ class RateImportService:
     book.extra = {**(book.extra or {}), "source": {"import_id": str(imp.id), "filename": imp.filename, "content_hash": imp.content_hash, "layout_profile": imp.layout_profile,
       "checks": (imp.report or {}).get("status")}}
     items, notes = il.publishable_items(rows, include_unmapped=payload.include_unmapped, prefix=book.code[:20])
+    spec_notes = il.spec_notes(items)
     
     created = updated = 0
     for it in items:
       key = (it["work_item_code"], logic.normalise_unit(it["unit"]))
       extra = {"import_id": str(imp.id), "row_id": str(it["id"]), "page": it.get("page"), "unit_raw": it.get("unit_raw"),
         "basis_qty": str(it.get("basis_qty")), "printed_rate": None if it.get("rate") is None else str(it["rate"])}
+      if it.get("code_spec"):
+        extra.update({"base_code": it["base_code"], "spec_key": it["code_spec"]})
+      if it.get("rate_kind"):
+        extra["rate_kind"] = it["rate_kind"]
       current = existing.get(key)
       
       if current is None:
@@ -555,4 +568,4 @@ class RateImportService:
       f"Loaded {created} new and {updated} updated rates into {book.code} v{book.immutable_version} from {imp.filename}")
     live = [r for r in rows if not r["skipped"]]
     left_out = len(live) - len(items)
-    return {"rate_book_id": book.id, "created": created, "updated": updated, "left_out": left_out, "unit_changes": notes}
+    return {"rate_book_id": book.id, "created": created, "updated": updated, "left_out": left_out, "unit_changes": notes, "spec_notes": spec_notes}

@@ -174,7 +174,7 @@ class ReadingScoreService(ExtractService):
       lowest_level = bool(level_hint) and bool(floors) and floors[0] == level_hint
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=float(ev.factor),
         scale_unverified=unverified, content_kind=sheet.content_kind, budget_s=float(budget_s), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
-        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
+        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
         imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections)
     except TraceException:

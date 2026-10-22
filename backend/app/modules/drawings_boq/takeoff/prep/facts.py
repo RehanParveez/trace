@@ -18,7 +18,7 @@ _STEEL = re.compile(r"\bG\s*-?\s*(?P<grade>40|60|75)\b\s+DEFORMED\s+STEEL\s+FOR\
 _CONCRETE = re.compile(r"CLASS\s+[\"“”']?(?P<cls>[A-D])[\"“”']?\s*\((?P<mix>[\d.]+\s*:\s*[\d.]+(?:\s*1/2)?\s*:\s*[\d.]+)\)\s*CONCRETE\s*(?:IN\s+)?(?P<scope>.*)$", re.I)
 _COVER = re.compile(r"\(\s*[a-f]\s*\)\s*(?P<member>SLABS?|BEAMS?|COLUMNS?|FOOTINGS?|WALLS?)\s+" + _IN + r"\s*(?P<where>[A-Z ]*)", re.I)
 _BEARING = re.compile(r"BEARING\s+CAPACITY[^0-9]{0,40}(?P<v>\d+(?:\.\d+)?)\s*(?P<u>TSF|KSF|PSF|PSI|KN\s*/\s*M2|KPA)", re.I)
-_PLASTER = re.compile(_IN + r"\s*TH\.?\s*C\.?\s?M\.?\s*PLASTER", re.I)
+_PLASTER = re.compile(_IN + r"\s*TH\.?\s*(?:C\.?\s?M\.?\s*)?PLASTER\b(?P<rest>.{0,60})", re.I)
 _FILL_LAYER = re.compile(_IN + r"\s*THICK\s+COMPACTED\s+LAYERS", re.I)
 _SOIL_STAB = re.compile(r"STABILI[SZ](?:E|ED|ES|ING|ATION)")
 _SOIL_PCT = re.compile(r"(?P<pct>\d{1,2}(?:\.\d{1,2})?)\s*(?:%|PERCENT|PER\s*CENT)", re.I)
@@ -26,9 +26,24 @@ _SOIL_DEPTH = re.compile(_IN + r"\s*(?:DEEP|DEPTH|THICK|LAYER)|(?:DEPTH|THICKNES
 _STAIR_WIDTH = re.compile(r"STAIR\s+WIDTH\s*=\s*(?P<ft>\d+)\s*'\s*-?\s*(?P<in>\d+)?", re.I)
 _LAP = re.compile(r"\(\s*[a-f]\s*\)\s*(?P<d>\d{1,2}(?:\s*/\s*\d{1,2})?)\s*(?:\"|″|”|'')\s*\S{0,2}\s*=\s*" + _IN, re.I)
 _PCC_THICK = re.compile(_IN + r"\s*(?:THICK\s+)?P\.?\s?C\.?\s?C\b", re.I)
+_COMPACTION = re.compile(r"(?P<v>\d{2,3})\s*%\s*OF\s+(?P<method>MODIFIED|STANDARD)\s+(?P<kind>AASHTO|PROCTOR)", re.I)
 _LEVEL = re.compile(r"^\s*(?P<sign>[+\-±]|\+/-)\s*(?P<ft>\d{1,3})\s*'\s*-?\s*(?P<in>\d{1,2}(?:\s+\d/\d)?)?\s*(?:\"|″|”|'')?\s*$")
-
+_DPC = re.compile(_IN + r"\s*(?:TH\.?|THICK)\s+D\.?\s?P\.?\s?C\b", re.I)
 SINGLE_VALUE = {"SLAB_THICKNESS": "slab thickness", "BEARING_CAPACITY": "soil bearing capacity", "RCC_WALL_THICKNESS": "RCC wall thickness"}
+_WATERPROOF_WORDS = re.compile(r"SIK[A-Z]*|DAVCO|WATER\s*-?\s*PROOF|SOVACRYL", re.I)
+_MIX = r"\(\s*(?P<mix>\d(?:\.\d)?\s*:\s*\d(?:\.\d)?(?:\s*:\s*\d(?:\.\d)?)?)\s*\)"
+_LAYER_MATERIAL = (r"(?P<mat>P\.?\s?C\.?\s?C\.?|BRICK\s+BALLAST|SAND\s+FILLING|C\s*/\s*S\s+PLASTER|MUD\s+PLASTER|BRICK\s+TILES|"
+  r"COMPACTED\s+MUD\s+LAYER)")
+_LAYER = re.compile(_IN + r"\s*(?P<th>(?:TH\.?|THICK)\s+)?" + _LAYER_MATERIAL + r"(?:\s*\.?\s*" + _MIX + r")?", re.I)
+_PCC_AFTER = re.compile(r"\bP\.?\s?C\.?\s?C\.?\s*" + _MIX + r"\s*" + _IN + r"(?!\s*(?:TH\b|THICK\b))", re.I)
+_IN_A = _IN.replace("(?P<in>", "(?P<a>")
+_IN_B = _IN.replace("(?P<in>", "(?P<b>")
+_PCC_FLANK = re.compile(_IN_A + r"\s*P\.?\s?C\.?\s?C\.?\s*(?:" + _MIX + r")?\s*" + _IN_B, re.I)
+_DPC = re.compile(_IN + r"\s*(?:TH\.?|THICK)\s+D\.?\s?P\.?\s?C\b", re.I)
+_COMPACTION = re.compile(r"(?P<v>\d{2,3})\s*%\s*OF\s+(?P<method>MODIFIED|STANDARD)\s+(?P<kind>AASHTO|PROCTOR)", re.I)
+_STAB_CEMENT = re.compile(r"USING\s+(?P<v>\d{1,2}(?:\.\d)?)\s*%\s*CEMENT", re.I)
+_STAB_HEAD = re.compile(r"SOIL\s+STABI[LI]{1,2}[SZ]ATION", re.I)
+_LOOSE_ONLY = re.compile(r"IN\s+CASE\s+OF\s+LOOSE\s+SOIL(?:\s+ONLY)?", re.I)
 
 def _fix(text: str) -> str:
   s = text
@@ -74,6 +89,43 @@ def _soil_note(t: str) -> dict | None:
     extra["value_mm"] = mm
   return _item("SOIL_STABILISATION", t, scope="soil", **extra)
 
+_MIX_RE = re.compile(_MIX, re.I)
+
+def _mix_text(raw: str) -> str:
+  return re.sub(r"\s+", "", raw or "")
+
+def _pcc_scope(mix: str | None) -> str:
+  if not mix:
+    return "pcc bed"
+  parts = [float(x) for x in re.split(r":", _mix_text(mix)) if x]
+  if len(parts) == 3 and parts[1] + parts[2] < 8.0:
+    return "floor pcc"
+  return "pcc bed"
+
+LAYER_KEY = {"PCC": "pcc", "BRICKBALLAST": "brick ballast", "SANDFILLING": "sand filling", "C/SPLASTER": "cement sand bed", "MUDPLASTER": "mud plaster",
+  "BRICKTILES": "brick tiles", "COMPACTEDMUDLAYER": "compacted mud"}
+
+def _layer_key(mat: str) -> str:
+  k = re.sub(r"[\s.]+", "", mat.upper())
+  return LAYER_KEY.get("PCC" if k == "PCC" else k, k.lower())
+
+def _layers(t: str) -> list[dict]:
+  out: list[dict] = []
+  for m in _LAYER.finditer(t):
+    before = t[:m.start()]
+    if re.search(r"\d\s*(?:\"|″|”|'')\s*-\s*$", before):
+      continue
+    
+    mm = inches_mm(m.group("in"))
+    if not mm:
+      continue
+    key = _layer_key(m.group("mat"))
+    if not m.group("th") and key not in ("sand filling", "brick ballast"):
+      continue  
+    extra = {"mix": _mix_text(m.group("mix"))} if m.group("mix") else {}
+    out.append(_item("BUILD_UP_LAYER", t, value_mm=mm, layer=key, scope="floor build-up", **extra))
+  return out
+
 def read_line(text: str) -> list[dict]:
   """The facts one line of drawing text states. Most lines state none."""
   t = _fix(text)
@@ -112,10 +164,29 @@ def read_line(text: str) -> list[dict]:
     out.append(_item("BEARING_CAPACITY", t, value=float(m.group("v")), unit=re.sub(r"\s+", "", m.group("u")).upper(), scope="soil"))
   m = _PLASTER.search(t)
   if m and inches_mm(m.group("in")):
-    out.append(_item("PLASTER_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope="cement mortar plaster"))
+    rest = m.group("rest") or ""
+    scope = "waterproof plaster" if _WATERPROOF_WORDS.search(rest) else "cement mortar plaster"
+    mix = _MIX_RE.search(rest)
+    out.append(_item("PLASTER_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope=scope, **({"mix": _mix_text(mix.group("mix"))} if mix else {})))
+  out.extend(_layers(t))
+  
+  m = _DPC.search(t)
+  if m and inches_mm(m.group("in")):
+    out.append(_item("DPC_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope="dpc"))
+  m = _COMPACTION.search(t)
+  if m:
+    out.append(_item("COMPACTION_PCT", t, value=float(m.group("v")), method=f"{m.group('method').lower()} {m.group('kind').lower()}", scope="compacted fill"))
+  m = _STAB_CEMENT.search(t)
+  if m:
+    out.append(_item("STAB_CEMENT_PCT", t, value=float(m.group("v")), scope="soil stabilisation"))
+  if _STAB_HEAD.search(t):
+    out.append(_item("SOIL_STAB_NOTE", t, scope="soil stabilisation"))
+  if _LOOSE_ONLY.search(t):
+    out.append(_item("SOIL_STAB_CONDITION", t, condition="loose soil only", scope="soil stabilisation"))
   m = _FILL_LAYER.search(t)
   if m and inches_mm(m.group("in")):
     out.append(_item("FILL_LAYER", t, value_mm=inches_mm(m.group("in")), scope="compacted fill layer"))
+    
   soil = _soil_note(t)
   if soil is not None:
     out.append(soil)
@@ -123,16 +194,27 @@ def read_line(text: str) -> list[dict]:
   if m and inches_mm(m.group("in")) and inches_mm(m.group("d")):
     dia = inches_mm(m.group("d"))
     out.append(_item("LAP_LENGTH", t, value_mm=inches_mm(m.group("in")), bar_dia_mm=dia, scope=f"lap bar {round(dia / 3.175)}"))
+  flank = _PCC_FLANK.search(t)
   m = _PCC_THICK.search(t)
-  if m and inches_mm(m.group("in")):
-    out.append(_item("PCC_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope="pcc bed"))
+  
+  if flank and inches_mm(flank.group("a")) and inches_mm(flank.group("a")) == inches_mm(flank.group("b")):
+    out.append(_item("PCC_PROJECTION", t, value_mm=inches_mm(flank.group("a")), scope=_pcc_scope(flank.group("mix")),
+      **({"mix": _mix_text(flank.group("mix"))} if flank.group("mix") else {})))
+  elif flank and m and m.start() == flank.start():
+    pass 
+  elif m and inches_mm(m.group("in")):
+    mix = _MIX_RE.search(t[m.end():m.end() + 24])
+    out.append(_item("PCC_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope=_pcc_scope(mix.group("mix") if mix else None), **({"mix": _mix_text(mix.group("mix"))} if mix else {})))
+  else:
+    m = _PCC_AFTER.search(t)
+    if m and inches_mm(m.group("in")):
+      out.append(_item("PCC_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope=_pcc_scope(m.group("mix")), mix=_mix_text(m.group("mix"))))
   m = _STAIR_WIDTH.search(t)
   if m:
     out.append(_item("STAIR_WIDTH", t, value_mm=round(int(m.group("ft")) * MM_FOOT + int(m.group("in") or 0) * MM_INCH, 2), scope="stair"))
   return out
 
 def level_mark_mm(text: str) -> float | None:
-  """A bare level mark such as +3'-6", +14'-0" or ±0'-0", in millimetres above the datum. Anything else on the line makes it not a bare mark."""
   m = _LEVEL.match(_fix(text))
   if not m:
     return None
@@ -179,7 +261,7 @@ def read_facts(lines: list, words: list | None = None, scanned: bool = False) ->
         if not plausible(it):
           continue
         it = {**it, "ocr": True}
-      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("cement_pct"))
+      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("layer"), it.get("condition"), it.get("method"))
       if key in seen:
         seen[key]["count"] += 1
       elif len(seen) < MAX_ITEMS_PER_SHEET:

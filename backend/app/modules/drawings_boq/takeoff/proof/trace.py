@@ -27,7 +27,7 @@ RULES = (
   ("SLAB_OPENINGS", "Stair wells, ducts and shafts taken out of the slab they are in", TUNED, ("SLAB_OPENINGS_DEDUCTED", "SLAB_OPENING_SIZE_NOT_PRINTED", "STAIR_LANDINGS_ADDED"), ("VOID_LABEL_REACH_MM", "VOID_MIN_SIDE_MM", "LANDING_MIN_SIDE_MM", "STAIR_LANDING_REACH_MM")),
   ("WALL_THICKNESS", "A drawn wall thickness snapped to a standard size", STANDARD, ("THICKNESS_OFF_STANDARD",), ("STANDARD_TOL", "IMPERIAL_TOL")),
   ("SIZE_FROM_PRINT", "A size taken from a schedule or a detail printed on the drawing", STANDARD, ("SIZE_FROM_SCHEDULE", "SIZE_DIFFERS_FROM_SCHEDULE", "COLUMN_PLAN_VS_DETAIL", "SIZE_FROM_COLUMN_DETAIL", "COLUMN_DETAILS_DISAGREE"), ()),
-  ("PICTURE_READING", "Text read from the picture of a sheet (a scan, a beam section or a tank drawing)", TUNED, ("SCAN_TEXT_READ", "BEAM_SECTION_FROM_DETAIL", "BEAM_SECTION_FROM_MARK"), ()),
+  ("PICTURE_READING", "Text read from the picture of a sheet (a scan, a beam section or a tank drawing)", TUNED, ("SCAN_TEXT_READ", "SCAN_FIGURES_ASKED", "SCAN_FIGURES_REPAIRED", "BEAM_SECTION_FROM_DETAIL", "BEAM_SECTION_FROM_MARK"), ()),
   ("ASSUMED_VALUES", "A value used because the drawing prints none (stair waist, lintel bearing, trench working space, brick steps)", DEFAULT, ("STAIR_WAIST_ASSUMED", "LINTEL_BEARING_ASSUMED", "TRENCH_WORKING_SPACE_ASSUMED", "BRICK_STEPS_ASSUMED", "TERMITE_BOTTOM_ONLY"), ("STAIR_WAIST_DEFAULT_MM", "LINTEL_BEARING_MM", "TRENCH_SIDE_ALLOWANCE_MM")),
 )
 

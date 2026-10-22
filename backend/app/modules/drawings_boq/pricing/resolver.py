@@ -10,6 +10,7 @@ from decimal import Decimal
 from app.modules.drawings_boq import boq_logic as logic
 from app.modules.drawings_boq.pricing import pricing_logic as pl
 from app.modules.drawings_boq.models import BOQItemRateSource
+from app.modules.drawings_boq.pricing.mrs_spec import compose_code
 
 @dataclass
 class PriceResolver:
@@ -58,7 +59,7 @@ class PriceResolver:
     return [{"id": str(b.id), "code": b.code, "edition": b.edition, "immutable_version": b.immutable_version,
       "scope": "ORGANIZATION" if b.organization_id else "SYSTEM", "content_hash": b.content_hash} for b in self.books]
 
-  def resolve(self, work_item_code: str | None, texts: list[str | None], unit: str, *, trade_hint: str | None = None) -> pl.Resolution:
+  def resolve(self, work_item_code: str | None, texts: list[str | None], unit: str, *, trade_hint: str | None = None, spec: str | None = None) -> pl.Resolution:
     res = pl.Resolution()
     code = (work_item_code or "").strip()
     attempts = res.attempts
@@ -82,7 +83,14 @@ class PriceResolver:
           attempts.append({"source": "PROJECT_OVERRIDE", "result": "unit_mismatch", "units": sorted({o.unit for o in active})})
 
       for book in self.books:
-        entries = self.items.get((book.id, code), [])
+        used = code
+        entries = []
+        if spec:
+          used = compose_code(code, spec)        
+          entries = self.items.get((book.id, used), [])
+        if not entries:
+          used = code
+          entries = self.items.get((book.id, code), [])
         if not entries:
           attempts.append({"source": "RATE_BOOK", "book": book.code, "book_id": str(book.id), "result": "no_rate"})
           continue
@@ -105,6 +113,8 @@ class PriceResolver:
           "rate_item_id": str(ri.id), "csr_ref": ri.csr_ref, "rate_unit": ri.unit, "rate": logic.fmt(ri.rate, 2),
           "unit_converted": m.converted, "escalation_factor": logic.fmt(factor, 4),
           "escalation_id": str(esc.id) if esc is not None else None, "as_of": self.as_of.isoformat()}
+        if used != code:
+          res.trace["spec_code"] = used
         return res
 
     lib = self._library(code, texts)

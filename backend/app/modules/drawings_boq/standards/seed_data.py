@@ -45,7 +45,7 @@ WORK_ITEMS = [
   ("EXC-BACKFILL", "Backfilling around foundations", "m3", "Earthwork", "EARTHWORK"),
   ("EXC-FILL", "Earth filling under floors (compacted)", "m3", "Earthwork", "EARTHWORK"),
   ("EXC-SHORING", "Shoring to excavation", "m2", "Earthwork", "EARTHWORK"),
-  ("EXC-SOIL-STAB", "Cement-stabilised soil under the floor", "m3", "Earthwork", "EARTHWORK"),
+  ("EXC-SOIL-STAB", "Cement-stabilised compacted soil layer under foundations", "m3", "Earthwork", "EARTHWORK"),
   ("STL-REBAR", "Reinforcement steel", "kg", "Steel", "STEEL"),
   ("STL-BINDING-WIRE", "Binding wire for reinforcement", "kg", "Steel", "STEEL"),
   ("STL-CHAIRS", "Chairs and spacers for slab steel", "kg", "Steel", "STEEL"),

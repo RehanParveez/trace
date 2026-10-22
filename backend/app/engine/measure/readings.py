@@ -2,12 +2,15 @@ from __future__ import annotations
 from app.engine.measure import proposed
 
 QS_NAME = "M. Junaid"
-ANSWERED_ON = "2026-10-19"
+ANSWERED_BEFORE = "2026-10-19"
+ANSWERED_ON = "2026-10-22"          
+NEW = ANSWERED_ON
 SOURCE = "qs"
 
 APPLIED, CONFIRM, OPEN, PLOT = "APPLIED", "CONFIRM", "OPEN", "PLOT"
 STATUSES = (APPLIED, CONFIRM, OPEN, PLOT)
-SECTIONS = {"A": "Walls, finishes and openings", "B": "Columns, footings, beams, slabs, lintels and stairs", "C": "Parapet and roof", "D": "Tanks and site works"}
+SECTIONS = {"A": "Walls, finishes and openings", "B": "Columns, footings, beams, slabs, lintels and stairs", "C": "Parapet and roof", "D": "Tanks and site works",
+  "E": "Excavation, foundations and termite", "F": "Formwork and steel", "G": "Order, roofs and rates"}
 
 CONVENTIONS = {
   "basement_wall_height_mm": 3352.8,
@@ -32,11 +35,18 @@ PARAM_VALUES = {
   "stair_formwork_soffit_only": 1.0,
   "beam_depth_includes_slab": 1.0,
   "tie_band_replaces_lintel": 0.0,
+  "footing_formwork": 1.0,             
+  "steel_wastage_pct": 5.0,            
+  "pcc_thickness_mm": 76.2,            
+  "slab_steel_kg_per_m2": 16.1459,     
+  "tank_base_formwork": 1.0,           
+  "earth_swell_pct": 0.0,              
+  "fill_compaction_pct": 0.0,
 }
 
-def _a(ident, section, topic, question, answer, status, applied, confirm=None, params=None, conventions=None, workbook=None):
+def _a(ident, section, topic, question, answer, status, applied, confirm=None, params=None, conventions=None, workbook=None, on=None):
   return {"id": ident, "section": section, "topic": topic, "question": question, "answer": answer, "status": status, "applied": applied, "confirm": confirm,
-    "params": list(params or ()), "conventions": list(conventions or ()), "workbook": workbook}
+    "params": list(params or ()), "conventions": list(conventions or ()), "workbook": workbook, "answered_on": on or ANSWERED_BEFORE}
 
 READINGS = [
   _a("S1", "A", "Basement membrane", "Is 11 ft the height the membrane goes up, and is it on the outside of every outer basement wall?",
@@ -58,7 +68,9 @@ READINGS = [
     "Walls and columns take the floor-to-floor height printed on the building sections; the basement takes 10.75 ft; a basement concrete wall and the membrane take 11 ft.",
     conventions=["basement_wall_height_mm", "basement_floor_to_floor_mm"]),
   _a("S6", "A", "Height of brick foundation step 2", "What is the height of step 2 for the thin wall?",
-    "Not answered.", OPEN, "Typed when the step is accepted. The step heights of his workbook are shown as a suggestion on each step; nothing is filled in.", "Ask again."),
+    "0.75 ft (9 in).", APPLIED,
+    "Step 2 of the thin wall is 0.75 ft (228.6 mm). That is the height the workbook's step table already offers on that step, so the suggestion stands and is now the QS's value. The other steps stay the workbook's, offered as suggestions.",
+    on=NEW),
   _a("S7", "A", "Ground floor 4.5 in boundary walls", "The sheet has 66 ft. Is that measured along the boundary or his estimate?",
     "It is an estimate. The boundary is about 6 ft high and the wall is 4.5 in thick.", APPLIED,
     "The 66 ft is shown beside the drawing length as the QS estimate; the drawing length is what is measured. The 4.5 in thickness is offered when the wall is accepted.",
@@ -124,11 +136,74 @@ READINGS = [
     "The drawing is CAD, so the thickness can be read from the elevation. The 100 ft frontage is taken from the drawing. The thickness has to be typed.", CONFIRM,
     "The length and height are read; the thickness is typed at accept, with 4.5 in offered for the 4.5 in wall.",
     "Reading the thickness from the elevation is not built."),
-  _a("S14", "B", "Footing formwork", "Are all footings shuttered?", "Not answered.", OPEN, "Proposed from his Form Work sheet: every footing, four sides. Still marked assumed.", "Ask again."),
-  _a("S15", "B", "Steel conventions", "Cover, lap, hook, anchorage, ring rule and the 5 percent.", "Not answered. Bars on both sides of a beam are counted separately.", OPEN,
-    "The flagged defaults stay, and the 5 percent of his Steel Summary is proposed as the wastage. Still marked assumed.", "Ask again."),
-  _a("S16", "B", "Slab steel", "Is any slab steel counted that the drawing does not print?", "Not answered.", OPEN, "Asked at accept; none assumed.", "Ask again."),
-  _a("S17", "D", "Rates", "Which rate system, edition and district; wastage and overhead inside the rate?", "Not answered.", OPEN, "Components are shown as stored.", "Ask again."),
+  _a("S14", "B", "Footing formwork", "Are all footings shuttered?",
+    "Yes. Every footing is shuttered and its sides are counted.", APPLIED,
+    "Footing formwork is on for every footing: four sides at the footing depth. It was proposed from the Form Work sheet and is now the QS's answer.", params=["footing_formwork"], on=NEW),
+  _a("S15", "B", "Steel conventions", "Cover, lap, hook, anchorage, ring rule and the 5 percent.",
+    "The usual conventions for cover, lap length and hook allowance, and 5 percent extra for wastage.", APPLIED,
+    "Wastage is 5 percent, now the QS's value. Cover, lap and hook stay the drawing's own notes where it prints them, and the flagged standard values where it does not.",
+    "Whether the 5 percent is wastage only, with no lap or hook allowance inside it, was not said. Bars on both sides of a beam are still counted separately.",
+    params=["steel_wastage_pct"], on=NEW),
+  _a("S16", "B", "Slab steel", "Is any slab steel counted that the drawing does not print?",
+    "Yes, by the rule of thumb of 1.5 kg per sq ft where the slab bars are not fully printed. Where the software works the steel out itself, that is accepted.", APPLIED,
+    "A slab with no printed bars takes 1.5 kg per sq ft (16.1459 kg per m2); it was 1.6. A slab with printed bars is weighed from its bars, and the steel roll-up now sets that weight beside the rule of thumb so the two can be compared.",
+    params=["slab_steel_kg_per_m2"], workbook="Steel Summary: slab area x 1.6 kg/sft (the QS now gives 1.5)", on=NEW),
+  _a("S17", "G", "Rates", "Which rate system, edition and district; wastage and overhead inside the rate?",
+    "Use the Market Rates System rates. Leave the other rate topics for now.", APPLIED,
+    "Rate books come from the Market Rates System lists. The Bahawalpur lists for January to June and July to December 2026 are read with the table layout (MRS_TABLE) and loaded as rate books; the edition is chosen when the book is published.",
+    "Wastage and overhead inside the rates (Q33) were not answered.", on=NEW),
+  _a("Q21", "B", "Load-bearing, framed or both", "Is the building load-bearing, framed, or both?",
+    "A load-bearing frame: both. The structural answer can confirm it.", APPLIED,
+    "No change: the reader already counts columns and beams on every floor and the brick walls between them.", on=NEW),
+  _a("Q22", "E", "Working space per side of the trench", "Working space per side of the trench.",
+    "1 ft extra on each side of the trench, as the file already says.", CONFIRM,
+    "Not changed: the software adds 3 in on each side of the concrete bed, which is what the workbook shows (a 3.5 ft bed in a 4 ft trench).",
+    "The answer (1 ft each side) and the workbook (3 in each side) differ. Which is right? Until then working_space_mm stays 150 and the PCC projection stays 100.", on=NEW),
+  _a("Q23", "E", "Ballast or PCC under foundations", "Thickness, projection beyond the foundation, under every footing?",
+    "PCC bed 3 in thick.", APPLIED, "The PCC bed is 3 in (76.2 mm); the QS has now confirmed it.",
+    "The projection of the bed beyond the footing (100 mm a side in the software) was not answered.", params=["pcc_thickness_mm"], on=NEW),
+  _a("Q24", "E", "Backfill extras", "Compaction, swell, carted-away surplus, plinth filling.",
+    "Backfill comes from the same excavation item, with no compaction, swell or surplus extras.", APPLIED,
+    "Swell and compaction are 0 percent, now the QS's value; backfill is the excavated volume less the concrete and brickwork below ground. No surplus item is added.",
+    params=["earth_swell_pct", "fill_compaction_pct"], on=NEW),
+  _a("Q25", "E", "Anti-termite", "On the faces of the excavation, or on the wall footprint?",
+    "Under the foundation and under all the floors, on the wall footprint.", APPLIED,
+    "Termite treatment is measured on the bottom of the trench along each wall and on the area under the floors. The wording now says so.",
+    "The sides (faces) of the excavation are not treated; the QS's answer names the footprint and the floors only. Confirm that the sides are left out.", on=NEW),
+  _a("Q29", "F", "Formwork faces by member", "Formwork faces for each member type, and footings.",
+    "Footings: the sides. A slab: from the bottom. A column: all four sides. A beam: the soffit and both sides below the slab.", APPLIED,
+    "This is how the formwork is already measured; nothing changes. The beam sides below the slab stay with S13.", on=NEW),
+  _a("Q30", "G", "Bill order", "Should the BOQ run by trade or by stage, and in what chapter order?",
+    "By stage, with the trades inside each stage, as the QS did before.", CONFIRM,
+    "Not built. Every BOQ row carries its stage and the rows are ordered by trade (work item); the export is not yet sorted stage first, then trade.",
+    "Whether a stage-first report should replace the trade order, or be offered beside it.", on=NEW),
+  _a("Q31", "G", "Roof types", "Roof types and units (RCC only today).",
+    "RCC roofs only.", APPLIED, "No change: only RCC slab roofs are read.", on=NEW),
+  _a("Q32", "G", "Datum defaults", "Datum defaults: floor, DPC, lintel and slab levels.",
+    "Leave the DPC and the levels between slabs aside for now.", APPLIED, "Nothing changes for the DPC or the inter-slab levels; only the rates come from the Market Rates System.", on=NEW),
+  _a("N17", "E", "Footing and basement levels", "How far below natural ground is the underside of the footing?",
+    "4 ft overall for the footing: 3 ft 3 in with more below it.", CONFIRM,
+    "Not changed: the footing underside stays 3.5 ft (1066.8 mm) below natural ground, as X4 gave.",
+    "X4 said 3.5 ft and this answer says 4 ft overall. Which is the depth of the footing underside below natural ground?", on=NEW),
+  _a("v4-N1", "B", "Beam depth, inverted beams", "Beam depth on the section: overall? Inverted beams?",
+    "The depth is overall. Only the part below the slab is concrete of the beam. An inverted beam (above the slab) is included. Concrete is never counted twice.", CONFIRM,
+    "Beam depth includes the slab, so the part inside the slab is the slab's. Counting the part of an inverted beam above the slab is not checked in this pass.",
+    "Whether an inverted beam is read as a beam above the slab.", params=["beam_depth_includes_slab"], on=NEW),
+  _a("v4-N2", "D", "Tank base slab", "Is the base slab of a tank shuttered?",
+    "Yes, shuttered.", APPLIED, "The soffit of a tank's base slab is shuttered (tank_base_formwork is 1 by the QS's answer).", params=["tank_base_formwork"], on=NEW),
+  _a("v4-N3", "B", "Chajja", "Is a chajja inside the projection or balcony slab, and shuttered?",
+    "A chajja is counted in the projection or balcony slab, and it is shuttered.", APPLIED,
+    "A chajja is read as a slab member and its formwork is measured (soffit and edges).", on=NEW),
+  _a("N13", "B", "Arches", "Are arches counted?",
+    "Yes, arches are counted and shuttered.", CONFIRM, "Not built: there is no arch member. An arch is drawn by hand as a slab or lintel.",
+    "How an arch is to be measured (rise, thickness).", on=NEW),
+  _a("v4-N4", "C", "Coping", "Coping: which faces are shuttered?",
+    "Both sides.", APPLIED, "Coping formwork is both sides already.", on=NEW),
+  _a("N12", "C", "Coping size", "Coping width on a 9 in boundary wall.",
+    "1 ft wide on a 9 in wall; it projects a little outward and is cast in plain cement concrete with plaster.", PLOT,
+    "Type the coping as 1 ft (304.8 mm) wide when the item is accepted.", on=NEW),
+  _a("v4-N5", "C", "35 percent of slab soffit", "The 35 percent figure.",
+    "The answer was cut off in the recording.", OPEN, "Nothing is changed.", "Ask again.", on=NEW),
 ]
 
 def source_label() -> str:

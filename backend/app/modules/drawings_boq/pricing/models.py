@@ -92,6 +92,9 @@ class RateImportRow(Base, TimestampMixin):
   rate: Mapped[Decimal | None] = mapped_column(Numeric(16, 4), nullable=True)
   rate_alt: Mapped[Decimal | None] = mapped_column(Numeric(16, 4), nullable=True)
   unit_rate: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+  spec_key: Mapped[str | None] = mapped_column(String(80), nullable=True)       
+  labour: Mapped[Decimal | None] = mapped_column(Numeric(16, 4), nullable=True)  
+  rate_kind: Mapped[str | None] = mapped_column(String(12), nullable=True)       
 
   flags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
   needs_review: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))

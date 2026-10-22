@@ -39,6 +39,7 @@ _SPECS = (
   FormulaSpec("EXCAVATION_VOLUME", "m3", "Footing plan plus working space x depth (convention parameters)."),
   FormulaSpec("BACKFILL_VOLUME", "m3", "Excavation less the foundation, PCC bed and other structure standing in the trench."),
   FormulaSpec("BRICK_BALLAST_VOLUME", "m3", "Masonry foundation plan plus ballast clearance x ballast thickness."),
+  FormulaSpec("SOIL_STABILISATION_VOLUME", "m3", "Plan area of the concrete bed (shared area counted once) x the stabilised layer thickness; only where soil stabilisation is switched on."),
   FormulaSpec("SHORING_AREA", "m2", "Trench side length exposed to ground x trench depth."),
   FormulaSpec("DPC_AREA", "m2", "Plan area of every wall that stands across the damp-proof course level, less the doors that reach it."),
   FormulaSpec("FLOOR_WORKS_AREA", "m2", "Net floor area of the internal rooms of the lowest storey: the bed and the termite treatment under the floor."),

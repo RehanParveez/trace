@@ -1,6 +1,7 @@
 from __future__ import annotations
 from decimal import Decimal
 from app.modules.drawings_boq.pricing import mrs_parse as mp
+from app.modules.drawings_boq.pricing.mrs_spec import compose_code
 from typing import Iterable
 import re
 from dataclasses import dataclass, field
@@ -192,12 +193,10 @@ def _keyed(rows: list[dict], include_unmapped: bool, prefix: str = "SRC") -> lis
   for r in rows:
     code = r["work_item_code"] or (derived_code(prefix, r.get("item_no"), r["seq"]) if include_unmapped else None)
     if code:
-      out.append({**r, "work_item_code": code})
+      out.append({**r, "work_item_code": code, "code_derived": not r["work_item_code"]})
   return out
 
 def publishable_items(rows: list[dict], *, include_unmapped: bool, prefix: str) -> tuple[list[dict], list[dict]]:
-  """The rows to write into the book, each with the code and unit it will carry, and the notes about rows whose unit was changed to keep precision.
-  A rate per cft such as 4.504 would lose accuracy at two decimals, so it is carried per m3 (the same price, bigger unit)."""
   
   items, notes = [], []
   for r in _keyed([x for x in rows if not x["skipped"]], include_unmapped, prefix):
@@ -213,8 +212,16 @@ def publishable_items(rows: list[dict], *, include_unmapped: bool, prefix: str) 
         if converted is not None and abs(converted - exact) / exact <= _MAX_PRECISION_LOSS:
           notes.append({"row_id": r["id"], "item_no": r.get("item_no"), "from_unit": unit, "to_unit": big})
           unit, rate = big, exact
-    items.append({**r, "unit": unit, "unit_rate": rate})
+    base = r["work_item_code"]
+    spec = None if r.get("code_derived") else (r.get("spec_key") or None)         # a code made from the item number is already one row's own
+    items.append({**r, "unit": unit, "unit_rate": rate, "base_code": base, "code_spec": spec, "work_item_code": compose_code(base, spec)})
   return items, notes
+
+def spec_notes(items: list[dict]) -> list[dict]:
+  with_spec = {it["base_code"] for it in items if it.get("code_spec")}
+  plain = {it["base_code"] for it in items if not it.get("code_spec")}
+  return [{"work_item_code": code, "message": f"{code} is published only with a specification (mix, member or strength). A quantity that does not state its specification will find no rate for it."}
+    for code in sorted(with_spec - plain)]
 
 def _key(item: dict, match_on: str) -> tuple | None:
   if match_on == "csr_ref":

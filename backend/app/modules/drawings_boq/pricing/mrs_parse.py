@@ -98,10 +98,12 @@ class LayoutProfile:
   min_chapter_letters: int = 6
   drop_running_lines: bool = True           
   running_line_share: float = 0.4
+  reader: str = "text"                      
 
 GENERIC = LayoutProfile("GENERIC")
 GENERIC_TWO_RATES_METRIC = LayoutProfile("GENERIC_TWO_RATES_METRIC", rate_columns=2, alt_unit="m3")
-PROFILES: dict[str, LayoutProfile] = {p.name: p for p in (GENERIC, GENERIC_TWO_RATES_METRIC)}
+MRS_TABLE = LayoutProfile("MRS_TABLE", rate_columns=2, alt_unit=None, reader="table", drop_running_lines=False)
+PROFILES: dict[str, LayoutProfile] = {p.name: p for p in (GENERIC, GENERIC_TWO_RATES_METRIC, MRS_TABLE)}
 
 def get_profile(name: str | None) -> LayoutProfile:
   if not name:
@@ -126,6 +128,9 @@ class RawRow:
   rate_alt: Decimal | None = None
   raw_line: str | None = None
   flags: list = field(default_factory=list)
+  spec_key: str | None = None               
+  labour: Decimal | None = None             
+  rate_kind: str | None = None              
 
   @property
   def unit_rate(self) -> Decimal | None:
@@ -135,9 +140,11 @@ class RawRow:
     if code not in self.flags:
       self.flags.append(code)
 
+self.flags.append(code)
+
 REVIEW_FLAGS = frozenset({"NO_ITEM_NO", "UNIT_UNKNOWN", "RATE_MISSING", "RATE_ZERO", "RATE_OUTLIER", "DUPLICATE_ITEM_NO",
-  "SECOND_PASS_MISSING", "ALT_RATE_MISMATCH", "UNIT_AMBIGUOUS"})
-INFO_FLAGS = frozenset({"WRAPPED_DESCRIPTION", "BASIS_APPLIED"})
+  "SECOND_PASS_MISSING", "ALT_RATE_MISMATCH", "UNIT_AMBIGUOUS", "RATE_LABOUR_ONLY", "RATE_TEXT"})
+INFO_FLAGS = frozenset({"WRAPPED_DESCRIPTION", "BASIS_APPLIED", "DUPLICATE_CODE", "UNITS_NOT_COMPARED"})
 
 FLAG_TEXT = {
   "NO_ITEM_NO": "The row has no item number in the document.",
@@ -151,6 +158,10 @@ FLAG_TEXT = {
   "ALT_RATE_MISMATCH": "The two rate columns disagree once converted to the same unit. One of them was misread.",
   "WRAPPED_DESCRIPTION": "The description ran over several lines and was joined.",
   "BASIS_APPLIED": "The rate is for a block of units (for example per 100 cft) and was divided down to one unit.",
+  "RATE_LABOUR_ONLY": "Only a labour rate is printed for this row (no composite). It is the price of the labour, not of the finished work; confirm it is what you want to price with.",
+  "RATE_TEXT": "A rate column holds words, not a figure. Check the row against the page.",
+  "DUPLICATE_CODE": "The same item and sub-item number is printed more than once on these pages; the row keeps its own place in the order.",
+  "UNITS_NOT_COMPARED": "The British and metric units of this row are not ones that can be converted into each other, so the two rates were not compared.",
 }
 
 _ITEM_DOTTED = re.compile(r"^(?P<no>\d{1,3}(?:[.\-/]\d{1,3}){1,4}[a-zA-Z]?)(?:\)|\.)?(?:\s+|$)(?P<rest>.*)$")
@@ -568,8 +579,8 @@ def plan_publish(mapped_rows: list[dict]) -> PublishPlan:
     if logic.q2(Decimal(rate)) <= 0:
       problems.append({"row_id": r["id"], "reason": "rate rounds to zero at 2 decimals; use a larger unit"})
       continue
-    by_key[(r["work_item_code"], r["unit"])].append(r)
-  conflicts = [{"work_item_code": k[0], "unit": k[1], "rows": [x["id"] for x in v], "item_nos": [x.get("item_no") for x in v]}
+    by_key[(r["work_item_code"], r["unit"], r.get("spec_key") or "")].append(r)
+  conflicts = [{"work_item_code": k[0], "unit": k[1], **({"spec_key": k[2]} if k[2] else {}), "rows": [x["id"] for x in v], "item_nos": [x.get("item_no") for x in v]}
     for k, v in by_key.items() if len(v) > 1]
   items = [v[0] for k, v in by_key.items() if len(v) == 1]
   return PublishPlan(items, conflicts, problems)

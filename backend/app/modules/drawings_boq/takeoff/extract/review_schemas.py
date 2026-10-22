@@ -102,3 +102,4 @@ class SteelRollupResponse(BaseModel):
   marks: list[dict]
   without_steel: dict
   without_size: int = 0
+  slab_rule_check: dict = {}

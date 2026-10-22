@@ -57,6 +57,9 @@ class ImportRowResponse(BaseModel):
   rate: Decimal | None
   rate_alt: Decimal | None
   unit_rate: Decimal | None
+  spec_key: str | None = None
+  labour: Decimal | None = None
+  rate_kind: str | None = None
   flags: list[str]
   needs_review: bool
   reviewed: bool
@@ -79,6 +82,7 @@ class RowUpdateRequest(BaseModel):
   rate: Decimal | None = Field(default=None, ge=0, le=Decimal("999999999999"))
   work_item_code: str | None = Field(default=None, max_length=50)
   clear_mapping: bool = False
+  spec_key: str | None = Field(default=None, max_length=80)
   reviewed: bool | None = None
   skipped: bool | None = None
   sample_verified: bool | None = None
@@ -150,6 +154,7 @@ class PublishResponse(BaseModel):
   updated: int
   left_out: int
   unit_changes: list[dict]
+  spec_notes: list[dict] = Field(default_factory=list)
 
 class SuggestResponse(BaseModel):
   rows_with_suggestions: int
