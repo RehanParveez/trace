@@ -14,12 +14,21 @@ MEMBRANE = "MEMBRANE"
 RCC_STRIP = "RCC_STRIP"
 EARTH_FILL = "EARTH_FILL"
 ROOF_TREATMENT = "ROOF_TREATMENT"
-ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE, RCC_STRIP, EARTH_FILL, ROOF_TREATMENT)
+FLOOR_PCC = "FLOOR_PCC"
+FLOOR_BALLAST = "FLOOR_BALLAST"
+FLOOR_SAND_FILL = "FLOOR_SAND_FILL"
+MEMBRANE_COAT = "MEMBRANE_COAT"
+MEMBRANE_POLYTHENE = "MEMBRANE_POLYTHENE"
+FLOOR_LAYER_ITEMS = (FLOOR_PCC, FLOOR_BALLAST, FLOOR_SAND_FILL)
+ITEMS = (EXCAVATION_AREA, TRENCH, PCC_STRIP, TERMITE_STRIP, TERMITE_FLOOR, PCC_PAD, BRICK_STEP, MEMBRANE, RCC_STRIP, EARTH_FILL, ROOF_TREATMENT,
+  *FLOOR_LAYER_ITEMS, MEMBRANE_COAT, MEMBRANE_POLYTHENE)
 
 WORK_ITEM = {EXCAVATION_AREA: "EXC-FOUND", TRENCH: "EXC-FOUND", EARTH_FILL: "EXC-FILL", ROOF_TREATMENT: "FIN-ROOF-TREAT", PCC_STRIP: "CON-PCC", PCC_PAD: "CON-PCC", TERMITE_STRIP: "PRO-TERMITE", TERMITE_FLOOR: "PRO-TERMITE",
-  BRICK_STEP: "MAS-BRICK", MEMBRANE: "FIN-WATERPROOF-DPC", RCC_STRIP: "CON-RCC"}
+  BRICK_STEP: "MAS-BRICK", MEMBRANE: "FIN-WATERPROOF-DPC", RCC_STRIP: "CON-RCC", FLOOR_PCC: "CON-PCC", FLOOR_BALLAST: "FLR-BALLAST", FLOOR_SAND_FILL: "FLR-SAND-FILL",
+  MEMBRANE_COAT: "FIN-WATERPROOF-DPC", MEMBRANE_POLYTHENE: "FIN-POLYTHENE"}
 MODE = {EXCAVATION_AREA: "COUNT_X_VOLUME", EARTH_FILL: "COUNT_X_VOLUME", ROOF_TREATMENT: "COUNT_X_AREA", TRENCH: "COUNT_X_VOLUME", PCC_STRIP: "COUNT_X_VOLUME", PCC_PAD: "COUNT_X_VOLUME",
-  TERMITE_STRIP: "COUNT_X_AREA", TERMITE_FLOOR: "COUNT_X_AREA", BRICK_STEP: "COUNT_X_VOLUME", MEMBRANE: "COUNT_X_AREA", RCC_STRIP: "COUNT_X_VOLUME"}
+  TERMITE_STRIP: "COUNT_X_AREA", TERMITE_FLOOR: "COUNT_X_AREA", BRICK_STEP: "COUNT_X_VOLUME", MEMBRANE: "COUNT_X_AREA", RCC_STRIP: "COUNT_X_VOLUME",
+  FLOOR_PCC: "COUNT_X_VOLUME", FLOOR_BALLAST: "COUNT_X_VOLUME", FLOOR_SAND_FILL: "COUNT_X_VOLUME", MEMBRANE_COAT: "COUNT_X_AREA", MEMBRANE_POLYTHENE: "COUNT_X_AREA"}
 
 def strip_class(thickness_mm: float) -> str:
   return "THIN" if thickness_mm < C.FOUNDATION_THIN_WALL_MAX_MM else "THICK"
@@ -213,20 +222,51 @@ def membrane_candidate(walls: list, ctx: dict, level_hint: str | None, spec, cls
       return cand
   return _plinth_membrane(walls, ctx, level_hint, spec, cls, finish)
 
-def _outside_membrane(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float):
+def _outside_extent(walls: list, mm_per_pt: float):
+  """(length in m, outer wall count, points, height in mm) of the outside face of the outer walls of a basement, or None."""
   from app.modules.drawings_boq.takeoff.extract import finishes as FN
   from app.engine.measure import readings as QS
   faces = FN.plaster_faces(walls, mm_per_pt)
   outer = [r for r in faces if r["out"]]
   length_m = sum(float(r["l"]) for r in outer)
   if length_m <= 0.0:
-    return None
+     return None
   height = float(QS.convention("basement_wall_height_mm"))
   pts = [p for w in FN.plaster_walls(walls) for p in w.geometry["points"]]
-  facts = {"derived_from": "WALLS", "membrane_kind": "OUTSIDE_FACE", "outer_wall_count": len(outer), "length_m": round(length_m, 3), "height_mm": height, "qs": ["S1", "S5", "S8"]}
+  return length_m, len(outer), pts, height
+
+def _outside_membrane(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float):
+  extent = _outside_extent(walls, mm_per_pt)
+  if extent is None:
+    return None
+  length_m, outer_n, pts, height = extent
+  facts = {"derived_from": "WALLS", "membrane_kind": "OUTSIDE_FACE", "outer_wall_count": outer_n, "length_m": round(length_m, 3), "height_mm": height, "qs": ["S1", "S5", "S8"]}
   label = f"Membrane on the outside of the basement walls · {length_m:.2f} m × {height / 304.8:g} ft" + (f" · {spec[0]}" if spec else "")
   return _make(cls, ctx, finish, (MEMBRANE, level_hint or ""), MEMBRANE, label, "MEMBRANE", [_centre(pts)], {"length_mm": round(length_m * 1000.0, 1), "width_mm": height}, [],
     [C.note("MEMBRANE_OUTSIDE_QS")], facts, 0.8)
+
+def membrane_layer_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, mm_per_pt: float | None, layers: list | None) -> list:
+  if str(level_hint or "").upper() != "BASEMENT" or not mm_per_pt or not layers:
+    return []
+  extent = _outside_extent(walls, mm_per_pt)
+  if extent is None:
+    return []
+  length_m, outer_n, pts, height = extent
+  out: list = []
+  
+  for lay in layers:
+    n = lay.get("layers")
+    item = {"waterproofing coat": MEMBRANE_COAT, "polythene sheet": MEMBRANE_POLYTHENE}.get(lay.get("material"))
+    if item is None or not n:
+      continue
+    unit = "coat" if lay.get("unit") == "coat" else "layer"
+    facts = {"derived_from": "WALLS", "membrane_kind": "OUTSIDE_FACE", "outer_wall_count": outer_n, "length_m": round(length_m, 3), "height_mm": height, "material": lay["material"],
+      "layers": int(n), "layer_unit": unit, "spec_pages": lay.get("pages") or [], "qs": ["S1", "S5", "S8"]}
+    label = f"{lay['material'].capitalize()} · {n} {unit}{'s' if n != 1 else ''} · outside of the basement walls · {length_m:.2f} m × {height / 304.8:g} ft" + (f" · {spec[0]}" if spec else "")
+    out.append(_make(cls, ctx, finish, (item, level_hint or ""), item, label, item.replace("_", "-"), [_centre(pts)], {"length_mm": round(length_m * 1000.0, 1), "width_mm": height}, [],
+      [C.note("MEMBRANE_OUTSIDE_QS"), (C.note("MEMBRANE_LAYER_UNDER_HEADING", material=lay["material"], layers=int(n), unit=unit, heading=lay["heading"], pages=lay.get("pages") or [])
+        if lay.get("heading") else C.note("MEMBRANE_LAYER_FROM_SPEC", material=lay["material"], layers=int(n), unit=unit, pages=lay.get("pages") or []))], facts, 0.7))
+  return out
 
 def _plinth_membrane(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish):
   """The damp-proof membrane along the top of the plinth: the walls of the lowest floor laid end to end, times a width that is typed."""

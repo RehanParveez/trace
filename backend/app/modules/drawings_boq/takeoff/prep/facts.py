@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from collections import Counter
+from app.modules.drawings_boq.takeoff.prep import spec_blocks
 
 MM_INCH = 25.4
 MM_FOOT = 304.8
@@ -40,6 +41,10 @@ _IN_A = _IN.replace("(?P<in>", "(?P<a>")
 _IN_B = _IN.replace("(?P<in>", "(?P<b>")
 _PCC_FLANK = re.compile(_IN_A + r"\s*P\.?\s?C\.?\s?C\.?\s*(?:" + _MIX + r")?\s*" + _IN_B, re.I)
 _DPC = re.compile(_IN + r"\s*(?:TH\.?|THICK)\s+D\.?\s?P\.?\s?C\b", re.I)
+_WP_LAYER = re.compile(r"\b(?P<n>ONE|TWO|THREE|[1-3])\s+(?P<unit>LAYERS?|COATS?)\s+(?:OF\s+)?(?P<what>[A-Z0-9][^*]{2,90})", re.I)
+_WP_POLYTHENE = re.compile(r"\bPOLY(?:THENE|ETHYLENE)\b", re.I)
+_WP_COAT = re.compile(r"\b(?:DAVCO|SOVACRYL|BITUMEN|BITUMINOUS|WATER\s*-?\s*PROOFING|ACRYLIC|SIKA[A-Z]*)\b", re.I)
+_WP_COUNT = {"ONE": 1, "TWO": 2, "THREE": 3, "1": 1, "2": 2, "3": 3}
 _COMPACTION = re.compile(r"(?P<v>\d{2,3})\s*%\s*OF\s+(?P<method>MODIFIED|STANDARD)\s+(?P<kind>AASHTO|PROCTOR)", re.I)
 _STAB_CEMENT = re.compile(r"USING\s+(?P<v>\d{1,2}(?:\.\d)?)\s*%\s*CEMENT", re.I)
 _STAB_HEAD = re.compile(r"SOIL\s+STABI[LI]{1,2}[SZ]ATION", re.I)
@@ -126,9 +131,23 @@ def _layers(t: str) -> list[dict]:
     out.append(_item("BUILD_UP_LAYER", t, value_mm=mm, layer=key, scope="floor build-up", **extra))
   return out
 
+def _waterproof_layers(t: str) -> list[dict]:
+  out: list[dict] = []
+  for m in _WP_LAYER.finditer(t):
+    what = m.group("what")
+    if _WP_POLYTHENE.search(what):
+      material = "polythene sheet"
+    elif _WP_COAT.search(what):
+      material = "waterproofing coat"
+    else:
+      continue
+    out.append(_item("WATERPROOF_LAYER", t, value=float(_WP_COUNT[m.group("n").upper()]), unit=m.group("unit").lower().rstrip("s"), scope=material, material=material))
+  return out
+
 def read_line(text: str) -> list[dict]:
   """The facts one line of drawing text states. Most lines state none."""
   t = _fix(text)
+
   if len(t) < 6:
     return []
   out: list[dict] = []
@@ -169,7 +188,7 @@ def read_line(text: str) -> list[dict]:
     mix = _MIX_RE.search(rest)
     out.append(_item("PLASTER_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope=scope, **({"mix": _mix_text(mix.group("mix"))} if mix else {})))
   out.extend(_layers(t))
-  
+  out.extend(_waterproof_layers(t))
   m = _DPC.search(t)
   if m and inches_mm(m.group("in")):
     out.append(_item("DPC_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope="dpc"))
@@ -244,29 +263,48 @@ def plausible(item: dict) -> bool:
     return PLAUSIBLE_BEARING_TSF[0] <= float(item.get("value") or 0.0) <= PLAUSIBLE_BEARING_TSF[1]
   return True
 
-def read_facts(lines: list, words: list | None = None, scanned: bool = False) -> dict:
-  """Facts and level marks from one sheet's text lines. Counts repeats, so a note printed on every view is one fact seen many times.
-  With the sheet's words, the storey heights printed on a building section are read as well."""
-  seen: dict = {}
-  marks: Counter = Counter()
+def _texts(lines: list, found: dict) -> list:
+  """(text, block) for everything to read: the lines of the sheet without the words that belong to a specification block, then each entry of each block."""
+  used = found["used"]
+  out: list = []
   for ln in lines:
     text = getattr(ln, "text", ln)
-    lvl = level_mark_mm(text)
+    spans = getattr(ln, "spans", None)
+    if used and spans:
+      kept = [w.text for _, _, w in spans if id(w) not in used]
+      if not kept:
+        continue
+      if len(kept) < len(spans):
+        text = " ".join(kept)
+    out.append((text, None))
+  out.extend((entry, block) for block in found["blocks"] for entry in block["entries"])
+  return out
+
+def read_facts(lines: list, words: list | None = None, scanned: bool = False) -> dict:
+  seen: dict = {}
+  marks: Counter = Counter()
+  found = spec_blocks.read(words)
+  for text, block in _texts(lines, found):
+    lvl = level_mark_mm(text) if block is None else None
     if lvl is not None:
       marks[lvl] += 1
       continue
   
     for it in read_line(text):
+      if block is not None:
+        it = {**it, "under": block["key"], "heading": block["heading"]}
       if scanned:
         if not plausible(it):
           continue
         it = {**it, "ocr": True}
-      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("layer"), it.get("condition"), it.get("method"))
+      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("layer"), it.get("condition"), it.get("method"), it.get("under"))
       if key in seen:
         seen[key]["count"] += 1
       elif len(seen) < MAX_ITEMS_PER_SHEET:
         seen[key] = {**it, "count": 1}
   out = {"items": list(seen.values()), "level_marks": [{"mm": k, "count": v} for k, v in sorted(marks.items())]}
+  if found["blocks"]:
+    out["spec_blocks"] = [{"key": b["key"], "heading": b["heading"], "entries": len(b["entries"])} for b in found["blocks"]]
   if words:
     from app.modules.drawings_boq.takeoff.prep.storeys import read_storeys
     found = read_storeys(words, lines)
@@ -367,7 +405,7 @@ def gather(sheets: list[dict]) -> dict:
     if got and (storeys is None or (got.get("consistent"), len(got.get("clusters") or [])) > (storeys.get("consistent"), len(storeys.get("clusters") or []))):
       storeys = {**got, "page_no": sh["page_no"]}
     for it in facts.get("items") or []:
-      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("cement_pct"))
+      key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("layer"), it.get("under"))
       row = rows.get(key)
       
       if row is None:

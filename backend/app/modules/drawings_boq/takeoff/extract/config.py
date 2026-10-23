@@ -1,10 +1,10 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 32
+EXTRACT_VERSION = 34
 
 LINTEL_BEARING_MM = 152.4
-STAIR_WAIST_DEFAULT_MM = 127.0     
+STAIR_WAIST_DEFAULT_MM = 127.0            
 PLINTH_BEAM_MIN_WALL_MM = 150.0
 COLUMN_PIECE_MIN_MM = 150.0        
 COLUMN_PIECE_MAX_MM = 1100.0      
@@ -314,6 +314,16 @@ NOTES = {
   "HEIGHT_FROM_QS": ("info", "The height was given by the QS (S1, S5) and is used for the estimate. Type another height when you accept the item to override it."),
   "FOOTING_DEPTH_QS": ("info", "The drawing prints the footing thickness only as a symbol. The QS gave 0.75 ft (228.6 mm), so that is used. Type another depth when you accept the footing to override it."),
   "MEMBRANE_OUTSIDE_QS": ("info", "This item is not drawn on the plan. On a basement the QS puts the membrane on the outside of every outer wall, up the full wall height of 11 ft, and counts it once (S1). The length is the outside face of the outer walls, the same length the outside plaster uses, with the closing stretch of the concrete wall (S8). Inside and outside plaster are separate items."),
+  "FLOOR_LAYER_FROM_SPEC": ("warning", "This item is not drawn on the plan. The specification block prints this layer of the ground floor build-up, but the page lists the layers of the ground floor, the terrace and the roof side by side and the layer is not tied to a floor heading. Check that it belongs to this floor before you accept it. The area is the total of the room areas found on this floor; the thickness is the one printed."),
+  "FLOOR_LAYERS_LEFT_OUT": ("info", "These layers are printed in the specification block but are not made into items: they belong to a terrace or a roof, or cannot be told from one. Measure them from the roof plan or by hand."),
+  "FLOOR_LAYERS_AMBIGUOUS": ("warning", "A layer of the floor build-up is printed at two different thicknesses equally often, so no item was made for it. Read the specification block and measure it by hand."),
+  "SPEC_VALUE_PRINTED_TWO_WAYS": ("warning", "This layer is printed at more than one thickness. The thickness printed most often was used; the others are listed so you can check the choice."),
+  "SPEC_GRADE_PRINTED": ("info", "The drawing prints the grade of this material and it is carried on the item as its grade: the mix of the concrete, or of the plaster mortar. Nothing was assumed."),
+  "SPEC_GRADE_CONFLICT": ("warning", "The drawing prints more than one mix of concrete for this kind of member and does not say which is used here, so no grade was put on the item. Set it by hand when you accept."),
+  "MEMBRANE_LAYER_FROM_SPEC": ("warning", "This item is not drawn on the plan. The specification block prints this kind of membrane layer, but it is not tied to the basement. It covers the same outside face of the outer walls as the single membrane item: accept the layers or the single item, not both."),
+  "FLOOR_LAYER_UNDER_HEADING": ("info", "This item is not drawn on the plan. The specification block prints this layer under the heading of this floor, and the thickness is the one printed under that heading. The area is the total of the room areas found on this floor."),
+  "MEMBRANE_LAYER_UNDER_HEADING": ("info", "This item is not drawn on the plan. The specification block prints this kind of membrane layer under the heading of the basement. It covers the same outside face of the outer walls as the single membrane item: accept the layers or the single item, not both."),
+  "ROOF_LAYERS_FROM_SPEC": ("info", "The specification block prints the layers of a roof under the heading or headings listed here. They are carried on this item and do not change its quantity. Where more than one roof heading is printed, the drawing does not say which one belongs to this roof: check before you use them."),
   "TANK_SLABS_QS": ("info", "The QS gave the slabs of a tank: a top slab of 6 inches and a bottom slab of 8 inches (S11). His sheet shows 6 inches for both slabs of the water tanks, so confirm the 8 inches with him."),
   "SITE_WALL_QS_ESTIMATE": ("info", "The QS gave 4.5 inches for this wall and called his 66 ft length an estimate, not a length measured along the boundary (S7). The length here is read from the elevation. Type the thickness when you accept it (4.5 inches is 114.3 mm)."),
   "WALL_PEN_SELECTED": ("info", "Walls were read from the heaviest line weight on this sheet. Lines in lighter weights (dimensions, furniture, fittings, boundary lines) were not read as walls."),

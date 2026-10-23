@@ -10,6 +10,8 @@ from app.modules.drawings_boq.takeoff.extract import rooms as R
 from app.modules.drawings_boq.takeoff.extract import pageroles as PRL
 from app.modules.drawings_boq.takeoff.extract import geo_safe as GS
 from app.modules.drawings_boq.takeoff.extract import scaleplausible as SP
+from app.modules.drawings_boq.takeoff.extract import spec_facts as SPF
+from app.modules.drawings_boq.takeoff.extract import floor_layers as FLL
 from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
@@ -1234,7 +1236,8 @@ def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: boo
     out.extend(_wall_beams(walls, "BAND", ctx, level_hint, 0.0, tie_band))
   return out
 
-def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None, sections: list | None = None, mm_per_pt: float | None = None) -> list:
+def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None, sections: list | None = None, mm_per_pt: float | None = None,
+  spec_facts: dict | None = None, sink: dict | None = None) -> list:
   """The work under the lowest floor that is worked out from what is already read: a trench, a concrete bed and termite treatment under the walls, the
   termite treatment under the floor, and, on a basement, the dig over the whole outline of the basement."""
   spec = level_spec(level_hint)
@@ -1243,6 +1246,13 @@ def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx:
   membrane = FD.membrane_candidate(walls, ctx, level_hint, spec, Candidate, _finish, mm_per_pt)
   if membrane is not None:
     out.append(membrane)
+  out.extend(FD.membrane_layer_candidates(walls, ctx, level_hint, spec, Candidate, _finish, mm_per_pt, SPF.waterproof_for(spec_facts, level_hint)))
+  layer_items, layer_notes, layer_stats = FLL.candidates(rooms, spec_facts, ctx, level_hint, spec, Candidate, _finish)
+  out.extend(layer_items)
+  
+  if sink is not None:
+    sink["notes"] = layer_notes
+    sink["stats"] = layer_stats
   fill = EF.fill_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
   if fill is not None:
     out.append(fill)
@@ -1277,7 +1287,6 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
   out.extend(FN.paint_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, float(((dado.facts if dado is not None else {}) or {}).get("area_m2") or 0.0)))
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
-  out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   return out
 
@@ -1330,7 +1339,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
   sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
-  footing_sections: list | None = None) -> Extraction:
+  footing_sections: list | None = None, spec_facts: dict | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -1384,7 +1393,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.candidates.append(cand)
     res.notes.extend(notes)
   res.stats["slabs"] = sum(1 for c in res.candidates if c.category == "SLAB")
-  res.candidates.extend(RF.roof_candidates([c for c in res.candidates if c.category == "SLAB"], ctx, Candidate, _finish))
+  res.candidates.extend(RF.roof_candidates([c for c in res.candidates if c.category == "SLAB"], ctx, Candidate, _finish, spec_facts))
   pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish)
   res.candidates.extend(pads)
   res.stats["concrete_beds"] = len(pads)
@@ -1485,13 +1494,18 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
       if lowest_level:
+        sink: dict = {}
+        
         below = _stage(res, "FOUNDATION", lambda: _foundation_candidates([*walls, *QR.counted_completion(completion)], rooms, schedule, ctx, level_hint,
-          footing_sections, mm_per_pt), [])
+          footing_sections, mm_per_pt, spec_facts, sink), [])
         res.candidates.extend(below)
         res.stats["foundation_items"] = len(below)
+        res.notes.extend(sink.get("notes") or [])
+        if sink.get("stats"):
+          res.stats["floor_layers"] = sink["stats"]
+          
     except W.TimeLimit:
       res.notes.append(C.note("TIME_LIMIT"))
-      
   if role["role"] == "UNKNOWN" and sum(1 for c in res.candidates if c.category == "ROOM" and c.facts.get("name")) >= 3:
     role.update(role="PLAN", basis="CONTENT", advice="READ")   
   if role["advice"] == "SKIP":
@@ -1511,6 +1525,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   found_steel = SN.read(notes_lines)
   res.stats["steel"] = SN.attach(res.candidates, found_steel, C.note)
   res.stats["steel_notes"] = found_steel["notes"]
+  res.stats["spec_grades"] = SPF.annotate(res.candidates, spec_facts, C.note)
   
   if composite_structural:
     neck = NK.candidates(res.candidates, ctx, Candidate, _finish)

@@ -167,7 +167,12 @@ export type FoundationItem =
   | "SKIRTING"
   | "DADO"
   | "PAINT_INSIDE"
-  | "PAINT_OUTSIDE";
+  | "PAINT_OUTSIDE"
+  | "FLOOR_PCC"
+  | "FLOOR_BALLAST"
+  | "FLOOR_SAND_FILL"
+  | "MEMBRANE_COAT"
+  | "MEMBRANE_POLYTHENE";
 
 const FOUNDATION_ITEMS: FoundationItem[] = [
   "EXCAVATION_AREA",
@@ -193,6 +198,11 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "DADO",
   "PAINT_INSIDE",
   "PAINT_OUTSIDE",
+  "FLOOR_PCC",
+  "FLOOR_BALLAST",
+  "FLOOR_SAND_FILL",
+  "MEMBRANE_COAT",
+  "MEMBRANE_POLYTHENE",
 ];
 
 export type SiteKind = "OHWT" | "UGWT" | "SEPTIC" | "BOUNDARY_WALL" | "GATE" | "PORCH_RAMP";
@@ -337,6 +347,11 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   DADO: "Tile dado",
   PAINT_INSIDE: "Paint inside the walls",
   PAINT_OUTSIDE: "Paint outside the walls",
+  FLOOR_PCC: "Concrete bed under the floor (specification)",
+  FLOOR_BALLAST: "Brick ballast under the floor",
+  FLOOR_SAND_FILL: "Sand filling under the floor",
+  MEMBRANE_COAT: "Waterproofing coats on the basement walls",
+  MEMBRANE_POLYTHENE: "Polythene sheet on the basement walls",
 };
 
 export const SITE_TEXT: Record<SiteKind, string> = {
@@ -421,6 +436,13 @@ export function staleText(reasons: string[]): string {
 }
 
 function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
+  const line = foundationLineBase(c, item);
+  const g = (c.facts as Record<string, unknown>).spec_grade as { grade?: unknown; what?: unknown } | undefined;
+  const grade = g && typeof g.grade === "string" && g.grade ? `grade ${g.grade} as printed${typeof g.what === "string" && g.what ? ` (${g.what})` : ""}` : null;
+  return [line, grade].filter(Boolean).join(" · ");
+}
+
+function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
   const f = c.facts as Record<string, unknown>;
   const p = c.params as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v)) ? Number(v) : null);
@@ -480,7 +502,7 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
   if (item === "ROOF_TREATMENT") {
     const area = num(f.area_m2);
     const basis = f.area_basis === "OUTLINE" ? "slab outline" : f.area_basis === "TABLE" ? "covered area of the table" : null;
-    return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? null : "layers and slope not read"].filter(Boolean).join(" · ");
+    return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? `layers from ${typeof f.layers_heading === "string" ? f.layers_heading.toLowerCase() : "the specification"}` : Array.isArray(f.layer_sets) ? "roof layers printed under several headings, none chosen" : "layers not read", "slope not read"].filter(Boolean).join(" · ");
   }
 
   if (item === "FLOOR_FINISH" || item === "CEILING_PAINT") {
@@ -526,6 +548,22 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
     const each = num(f.area_each_m2);
     const total = num(f.area_m2);
     return [count !== null ? `${count} ${item === "DOOR_AREA" ? "door" : "window"}${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, each !== null ? `${each.toFixed(2)} m² each` : null, total !== null ? `${total.toFixed(2)} m² in all` : null, f.size_source === "SCHEDULE" ? "size from the schedule" : f.height_assumed === true ? "width as drawn, height assumed" : "size as drawn", "material not read"].filter(Boolean).join(" · ");
+  }
+
+  if (item === "FLOOR_PCC" || item === "FLOOR_BALLAST" || item === "FLOOR_SAND_FILL") {
+    const area = num(f.area_m2);
+    const rooms = num(f.room_count);
+    const t = num(f.thickness_mm);
+    const mix = typeof f.mix === "string" && f.mix ? ` (${f.mix})` : "";
+    return [area !== null ? `${area.toFixed(2)} m² of floor` : null, rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null, t !== null ? `${inch(t)} in thick${mix}` : null, "layer not tied to a floor heading"].filter(Boolean).join(" · ");
+  }
+
+  if (item === "MEMBRANE_COAT" || item === "MEMBRANE_POLYTHENE") {
+    const len = num(f.length_m);
+    const h = num(f.height_mm);
+    const n = num(f.layers);
+    const unit = f.layer_unit === "coat" ? "coat" : "layer";
+    return [n !== null ? `${n} ${unit}${n === 1 ? "" : "s"}` : null, len !== null ? `${len.toFixed(2)} m of outside wall face` : null, h !== null ? `${Math.round(h)} mm high` : null, "same face as the single membrane item: accept one"].filter(Boolean).join(" · ");
   }
 
   if (item === "PCC_PAD") {

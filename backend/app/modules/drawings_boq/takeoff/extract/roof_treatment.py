@@ -2,6 +2,7 @@ from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import spec_facts as SF
 from app.modules.drawings_boq.takeoff.levels import level_spec
 
 ITEM = FD.ROOF_TREATMENT
@@ -22,7 +23,18 @@ def roof_slab(slabs: list) -> tuple:
       return top, "TOP_OF_SHEET"
   return None, None
 
-def roof_candidates(slabs: list, ctx: dict, cls, finish) -> list:
+def _printed_layers(facts: dict, spec_facts: dict | None) -> list:
+  """Put the roof layers the specification block prints on the roof item: the layers of the one roof heading when there is one, every roof heading's layers when there are several."""
+  sets = SF.roof_sets(spec_facts)
+  if not sets:
+    return []
+  if len(sets) == 1:
+    facts.update(layers=sets[0]["layers"], layers_defined=True, layers_heading=sets[0]["heading"], layers_waterproof=sets[0]["waterproof"])
+  else:
+    facts["layer_sets"] = sets
+  return [C.note("ROOF_LAYERS_FROM_SPEC", headings=[s["heading"] for s in sets], chosen=sets[0]["heading"] if len(sets) == 1 else None)]
+
+def roof_candidates(slabs: list, ctx: dict, cls, finish, spec_facts: dict | None = None) -> list:
   slab, how = roof_slab(slabs)
   if slab is None:
     return []
@@ -43,6 +55,7 @@ def roof_candidates(slabs: list, ctx: dict, cls, finish) -> list:
   if f.get("view"):
     facts["view"] = f["view"]
   notes = [C.note("ROOF_TREATMENT_AREA_ONLY")] + ([C.note("ROOF_TOP_FLOOR_ASSUMED", floor=spec[0] if spec else hint)] if how == "TOP_OF_SHEET" else [])
+  notes.extend(_printed_layers(facts, spec_facts))
   label = f"Roof treatment · {area:.2f} m²" + (f" · {spec[0]}" if spec else "")
   pts = list((slab.geometry or {}).get("points") or [[0.0, 0.0]])
   return [FD._make(cls, ctx, finish, (ITEM, hint), ITEM, label, "ROOF-TREATMENT", pts[:1], {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], notes, facts,

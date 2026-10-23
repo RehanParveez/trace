@@ -332,6 +332,12 @@ class PrepService:
     read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
     return drawing_facts.slab_values(drawing_facts.gather(read)["items"])
 
+  async def drawing_spec_facts(self, org: UUID, drawing_id: UUID) -> dict:
+    from app.modules.drawings_boq.takeoff.extract import spec_facts
+    sheets = await self.repo.sheets(org, drawing_id)
+    read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
+    return spec_facts.build(drawing_facts.gather(read)["items"])
+
   async def _detail_checks(self, org: UUID, sheets: list) -> tuple:
     """The column details read on the drawing's sheets, and the checks between them and the plans."""
     

@@ -126,6 +126,10 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
     out["dims_basis"] = "SPECIFIED"
   return out, None
 
+def _spec_grade(cand) -> str | None:
+  grade = ((cand.facts or {}).get("spec_grade") or {}).get("grade")
+  return str(grade)[:50] if grade else None
+
 def _openings_params(cand, params: dict, typed: dict) -> dict:
   if cand.category == "SLAB":
     adj = SO.slab_adjustments(cand.facts, params.get("depth_mm"))
@@ -274,6 +278,7 @@ class ExtractService:
     beam_sections = await self.prep.drawing_beam_sections(org, sheet.drawing_id)
     tank_details = await self.prep.drawing_tank_details(org, sheet.drawing_id)
     footing_sections = await self.prep.drawing_footing_sections(org, sheet.drawing_id)
+    spec_facts = await self.prep.drawing_spec_facts(org, sheet.drawing_id)
     units = await self.prep.drawing_units(org, sheet.drawing_id)
     wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
     title = (sheet.prep_meta or {}).get("title") or {}
@@ -283,9 +288,9 @@ class ExtractService:
     try:
       result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
-        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"),
-        scan_reading=(sheet.prep_meta or {}).get("scan_reading"), lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
-        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections)
+        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"),
+        lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
+        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -546,7 +551,7 @@ class ExtractService:
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
           params=MeasurementParams(**{**params, **_openings_params(cand, params, typed)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
-          source=cand.source, material_grade=stamp["grade"][:50] if stamp else None)
+          source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand))
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))
         continue
