@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 35
+EXTRACT_VERSION = 36
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0            
@@ -126,6 +126,9 @@ ROOM_NAMES = (
   "FAMILY", "KITCHEN", "KIT", "PANTRY", "STORE", "STORAGE", "TOILET", "BATH ROOM", "BATHROOM", "BATH", "W.C", "WC", "W/C", "LAVATORY", "LAUNDRY",
   "UTILITY", "SERVANT", "MAID", "DRIVER", "GARAGE", "PORCH", "CAR PORCH", "LOBBY", "PASSAGE", "CORRIDOR", "HALL", "ENTRANCE", "FOYER",
   "STAIR", "STAIRCASE", "STUDY", "SITTING", "OFFICE", "PRAYER", "VERANDAH", "VERANDA", "BALCONY", "TERRACE", "LIFT", "DRESSING", "WARDROBE", "LIBRARY",
+  "DWG/DINING", "DRAWING/DINING", "DRG/DINING", "DINING ROOM", "LIVING ROOM", "SITTING ROOM", "STUDY ROOM", "PRAYER ROOM", "STORE ROOM", "MAID ROOM",
+  "DRIVER ROOM", "SERVANT ROOM", "LAUNDRY ROOM", "UTILITY ROOM", "TV ROOM", "DRESSING ROOM", "FAMILY ROOM", "FAMILY LOUNGE", "STAIR HALL", "STAIR LOBBY",
+  "W.I.C", "WIC", "WALK IN CLOSET", "WALK-IN CLOSET",
   "SHOP", "RECEPTION", "ROOM", "MEETING", "CABIN", "CLASS ROOM", "CLASSROOM", "LAB", "WARD", "OPD", "MOSQUE", "COURTYARD", "LAWN", "SERVICE",
 )
 
@@ -245,9 +248,10 @@ NOTES = {
   "OPENING_HEIGHT_FROM_NOTE": ("info", "The plan prints no height beside these openings, but a note on the sheet gives one height to all doors or all windows. That height is used instead of the default."),
   "OPENING_LABEL_DIFFERS_FROM_SCHEDULE": ("warning", "The height written beside these openings on the plan is more than 5% different from the height in the schedule. The schedule is used. Check which one is right."),
   "OPENING_LABELS_UNPAIRED": ("info", "Some size labels on the plan (D=... or W=...) were read, but no door or window symbol stands close enough to them (or the width of the symbol does not agree with the label), so they were not used. The openings they belong to keep the default height. The labels are listed with this note."),
+  "SCALE_SETTLED_BY_SCHEDULE": ("info", "No printed dimension confirmed the scale of this sheet, but the widths of the doors and windows in the schedule agree with the widths of the same openings drawn on the plan (at least three marks, within 12%). The scale is taken as confirmed, so the unverified-scale warning is lifted from this sheet and widths are no longer rounded to 50 mm."),
   "OPENING_SYMBOLS_VS_MARKS": ("warning", "The number of marks of this kind written on the plan is not the number of symbols drawn beside them. A mark counts the openings it stands for; a symbol with no mark within 2 m is not counted as an extra opening. Check that every door or window of the plan has its mark."),
   "OPENING_DRAWN_WIDTH_DIFFERS": ("warning", "The width of the door or window as drawn is more than 15% different from the width in the schedule. Check which one is right: the mark may stand beside another opening, or the schedule may be for another type."),
-  "OPENING_SCALE_FROM_SCHEDULE_DISAGREES": ("warning", "The widths in the schedule and the widths of the same openings drawn on the plan point to another scale than the one used for this sheet. Confirm the scale before relying on any measured length or area of this sheet."),
+  "OPENING_SCALE_FROM_SCHEDULE_DISAGREES": ("warning", "The widths in the schedule and the widths of the same openings drawn on the plan (at least three marks that agree with each other) point to another scale than the one used for this sheet; the note gives the scale they point to. Nothing was changed. Confirm the scale before relying on any measured length or area of this sheet."),
   "OPENING_SYMBOLS_TIME_LIMIT": ("info", "Reading the door and window symbols took too long, so some may be missing from the symbol counts."),
   "OPENING_SYMBOLS_FAILED": ("warning", "The door and window symbols of this sheet could not be read. The marks and the schedule were read as before."),
   "DADO_FROM_ROOMS": ("info", "The tile dado is the length round every bath and toilet found on this floor, less the doors on its outline, times the dado height."),

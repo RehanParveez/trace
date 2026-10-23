@@ -67,10 +67,10 @@ def ceiling_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls,
   return _area_item(CEILING_PLASTER, rooms, ctx, level_hint, spec, cls, finish, "Ceiling plaster", "CEILING-PLASTER", "CEILING_FROM_ROOMS")
 
 NOT_FINISHED = ("LIFT", "LAWN", "COURTYARD")
-WET_ROOM = re.compile(r"^(?:BATH ?ROOM|BATH|TOILET|LAVATORY|W\.C|W/C|WC)(?![A-Z])")
+WET_ROOM = re.compile(r"^(?:(?:MASTER|ATTACHED|COMMON|MAIN|SERVANT|FRONT|REAR|UPPER|LOWER|GUEST|KIDS|GIRLS|BOYS)\s+)?(?:BATH ?ROOM|BATH|TOILET|LAVATORY|W\.C|W/C|WC)(?![A-Z])")
 DADO_HEIGHT_MM = 2134.0         
 DOOR_ON_BOUNDARY_MM = 300.0
-DOOR_WIDTH_ASSUMED_MM = 900.0     
+DOOR_WIDTH_ASSUMED_MM = 900.0      
 DOOR_REACH = 1.5                
 PAINT_ITEMS = ((PAINT_INSIDE, "in", "Paint on the inside faces of the walls", "PAINT-INSIDE"), (PAINT_OUTSIDE, "out", "Paint on the outside faces of the outer walls", "PAINT-OUTSIDE"))
 

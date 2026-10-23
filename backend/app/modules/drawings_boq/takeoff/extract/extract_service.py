@@ -130,6 +130,12 @@ def _spec_grade(cand) -> str | None:
   grade = ((cand.facts or {}).get("spec_grade") or {}).get("grade")
   return str(grade)[:50] if grade else None
 
+CONCRETE_MEMBER = {"FOOTING": "foundation", "COLUMN": "frame", "BEAM": "frame", "SLAB": "frame", "LINTEL": "frame"}
+
+def _concrete_member(cand, code) -> dict:
+  member = CONCRETE_MEMBER.get(cand.category)
+  return {"member": member} if member and str(code or "").upper().startswith("CON-RCC") else {}
+
 def _openings_params(cand, params: dict, typed: dict) -> dict:
   if cand.category == "SLAB":
     adj = SO.slab_adjustments(cand.facts, params.get("depth_mm"))
@@ -550,7 +556,7 @@ class ExtractService:
         continue
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
-          params=MeasurementParams(**{**params, **_openings_params(cand, params, typed)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
+          params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_concrete_member(cand, code)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
           source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand))
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))

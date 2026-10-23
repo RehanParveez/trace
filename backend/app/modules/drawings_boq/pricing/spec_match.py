@@ -35,6 +35,8 @@ def stated_spec(item) -> dict:
   out: dict = {}
   if code in MEMBER_OF_CODE:
     out["member"] = MEMBER_OF_CODE[code]
+  elif isinstance(spec.get("member"), str) and spec["member"].strip():
+    out["member"] = spec["member"].strip().lower()
   for text in (spec.get("mortar"), spec.get("grade"), grade):
     mix = mix_of(str(text)) if text else None
     if mix:

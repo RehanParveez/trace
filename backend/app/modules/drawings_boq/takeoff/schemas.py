@@ -159,6 +159,7 @@ class MeasurementParams(BaseModel):
   repeat: int = Field(default=1, ge=1, le=1000)
   dims_basis: Literal["DRAWN", "SPECIFIED", "ASSUMED"] = "DRAWN"
   steel: SteelParam | None = None
+  member: Literal["foundation", "frame", "wall", "pile"] | None = None
 
 class MeasurementCreateRequest(BaseModel):
   kind: Kind

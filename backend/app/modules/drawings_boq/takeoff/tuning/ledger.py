@@ -4,7 +4,7 @@ import pathlib
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.tuning import registry as R
 
-BASE_EXTRACT_VERSION = 35
+BASE_EXTRACT_VERSION = 36
 PATH = pathlib.Path(__file__).with_name("ledger.json")
 ENTRY_FIELDS = ("key", "from", "to", "extract_version", "evidence")
 

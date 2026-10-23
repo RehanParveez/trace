@@ -543,14 +543,20 @@ SUGGESTION_RULES: list[tuple[re.Pattern, str, str]] = [
   (re.compile(r"\b(window|windows)\b", re.I), "WIN-NOS", "nos"),
 ]
 
+NOT_THE_WORK = re.compile(r"\b(dismantl\w*|demolish\w*|demolition|remov(e|ing|al)|stripping|scrap(e|ing)|hacking|chipping|damp[- ]?proof\w*|d\.?p\.?c|roofing|add(itional)? extra|extra (labou?r|for|rate)|carriage|lift(ing)? (of|upto|up to)|kerb|high[- ]tensile|screening and washing)\b", re.I)
+FITTING = re.compile(r"\b(hinges?|cleats?|bolts?|stoppers?|handles?|locks?|latch\w*|fire alarm|alarm|detector|sensor|cctv|closers?|controllers?|annunciat\w*|commissioning|glass(es)? only|gauze)\b", re.I)
+
 def suggest_work_item(description: str | None, unit: str | None) -> tuple[str, str] | None:
-    
   if not description or not unit or unit not in logic.UNIT_TABLE:
+    return None
+  if NOT_THE_WORK.search(description):
     return None
   family = logic.UNIT_TABLE[unit][0]
   for pattern, code, wanted in SUGGESTION_RULES:
     m = pattern.search(description)
     if m and family == wanted:
+      if code in ("DOR-NOS", "WIN-NOS") and FITTING.search(description):
+        continue
       return code, f"description mentions '{m.group(0)}'"
   return None
 

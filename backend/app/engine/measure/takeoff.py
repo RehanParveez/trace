@@ -9,6 +9,15 @@ from dataclasses import dataclass, field
 from collections import defaultdict
 from app.engine.measure.units import q4, q6
 from app.engine.measure.models import Solid, LedgerEntry
+from app.engine.measure.spec import spec_key as _spec_key
+
+MEMBERS = ("foundation", "frame", "wall", "pile")
+
+def member_spec(m) -> dict | None:
+  member = str((m.params or {}).get("member") or "").lower()
+  if member not in MEMBERS or not str(m.work_item_code or "").upper().startswith("CON-RCC"):
+    return None
+  return {"kind": "CONCRETE", "member": member, "basis": {"member": "drawing_category"}}
 
 ZERO, ONE, HUNDRED = Decimal("0"), Decimal("1"), Decimal("100")
 Q4 = Decimal("0.0001")
@@ -875,6 +884,7 @@ def measure_takeoff(ctx, profile, inputs: TakeoffInputs | None, model_ledger=(),
         **({"range": rg} if (rg := range_trace(inputs, m.id)) else {}),
       },
       warnings=tuple(dict.fromkeys(warnings)), source_kind=SOURCE_KIND,
+      spec=(mspec := member_spec(m)), spec_key=_spec_key(mspec),
     ))
   one_total_stats: dict = {"enabled": False}
   one_total_drop: frozenset = frozenset()

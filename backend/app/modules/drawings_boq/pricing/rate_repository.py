@@ -143,7 +143,8 @@ class RateRepository:
     ordered = sorted(bases)
     for i in range(0, len(ordered), _CHUNK):
       likes = [RateItem.work_item_code.like(b.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "@%", escape="\\") for b in ordered[i:i + _CHUNK]]
-      r = await self.session.execute(select(RateItem).where(RateItem.rate_book_id.in_(book_ids), RateItem.is_active.is_(True), or_(*likes)))
+      kept = RateItem.extra["base_code"].as_string().in_(ordered[i:i + _CHUNK])
+      r = await self.session.execute(select(RateItem).where(RateItem.rate_book_id.in_(book_ids), RateItem.is_active.is_(True), or_(*likes, kept)))
       for it in r.scalars().all():
         out.setdefault((it.rate_book_id, it.work_item_code), []).append(it)
     return out

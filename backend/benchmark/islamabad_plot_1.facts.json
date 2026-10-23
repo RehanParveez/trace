@@ -1,0 +1,292 @@
+{
+ "set": "Islamabad_Plot_1",
+ "pdf": "Islamabad_Plot_1.pdf",
+ "status": "DRAFT: drafted from the printed text and the plan images; to be checked by a person",
+ "facts": [
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "count": 10,
+   "note": "marks D1-D4 counted on the plan (page 1)"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "count": 8,
+   "note": "marks W1-W4 and V4 counted on the plan (page 1)"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "FIRST",
+   "count": 10,
+   "note": "page 2"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "count": 9,
+   "note": "page 2"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "BASEMENT",
+   "count": 8,
+   "note": "page 4"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "count": 8,
+   "note": "page 4"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "ROOF",
+   "count": 2,
+   "note": "page 3"
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "ROOF",
+   "count": 6,
+   "note": "page 3"
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D1",
+   "count": 1,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D2",
+   "count": 4,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D3",
+   "count": 2,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D4",
+   "count": 3,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W1",
+   "count": 1,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W2",
+   "count": 2,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W3",
+   "count": 1,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W4",
+   "count": 2,
+   "note": "page 1"
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "V4",
+   "count": 2,
+   "note": "page 1"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D1",
+   "width_mm": 1219.2,
+   "height_mm": 2133.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D3",
+   "width_mm": 914.4,
+   "height_mm": 2133.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D4",
+   "width_mm": 762.0,
+   "height_mm": 2133.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W1",
+   "width_mm": 2133.6,
+   "height_mm": 1524.0,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W2",
+   "width_mm": 1828.8,
+   "height_mm": 1524.0,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W3",
+   "width_mm": 1524.0,
+   "height_mm": 1524.0,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W4",
+   "width_mm": 1524.0,
+   "height_mm": 914.4,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V1",
+   "width_mm": 2133.6,
+   "height_mm": 609.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V2",
+   "width_mm": 1828.8,
+   "height_mm": 609.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V3",
+   "width_mm": 1524.0,
+   "height_mm": 609.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V4",
+   "width_mm": 914.4,
+   "height_mm": 609.6,
+   "note": "from the printed schedule of openings on page 5"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BED",
+   "floor": "GROUND",
+   "area_m2": 16.17,
+   "tolerance_pct": 5,
+   "note": "printed size 14.500 ft x 12.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BED",
+   "floor": "GROUND",
+   "area_m2": 20.93,
+   "tolerance_pct": 5,
+   "note": "printed size 13.250 ft x 17.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "GROUND",
+   "area_m2": 10.31,
+   "tolerance_pct": 5,
+   "note": "printed size 9.000 ft x 12.333 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "LOUNGE",
+   "floor": "GROUND",
+   "area_m2": 21.32,
+   "tolerance_pct": 5,
+   "note": "printed size 19.125 ft x 12.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "DWG/DINING",
+   "floor": "GROUND",
+   "area_m2": 20.07,
+   "tolerance_pct": 5,
+   "note": "printed size 13.500 ft x 16.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "PORCH",
+   "floor": "GROUND",
+   "area_m2": 15.33,
+   "tolerance_pct": 5,
+   "note": "printed size 15.000 ft x 11.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STAIR",
+   "floor": "GROUND",
+   "area_m2": 10.59,
+   "tolerance_pct": 5,
+   "note": "printed size 14.250 ft x 8.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "GROUND",
+   "area_m2": 3.01,
+   "tolerance_pct": 5,
+   "note": "printed size 7.000 ft x 4.625 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "GROUND",
+   "area_m2": 3.06,
+   "tolerance_pct": 5,
+   "note": "printed size 7.125 ft x 4.625 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "W/C",
+   "floor": "GROUND",
+   "area_m2": 1.95,
+   "tolerance_pct": 5,
+   "note": "printed size 5.417 ft x 3.875 ft"
+  }
+ ]
+}

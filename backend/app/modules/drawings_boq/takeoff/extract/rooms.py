@@ -12,7 +12,24 @@ from app.modules.drawings_boq.takeoff.extract import geo_safe as GS
 
 _QUAL = r"(?:MASTER|ATTACHED|COMMON|MAIN|SERVANT|FRONT|REAR|UPPER|LOWER|GUEST|KIDS|GIRLS|BOYS)\s+"
 _NAME = re.compile(r"(?<![A-Z0-9])(?:" + _QUAL + r")?(?:" + "|".join(re.escape(n) for n in sorted(C.ROOM_NAMES, key=len, reverse=True))
-  + r")(?:[\s\-]*\d{1,2}[A-Z]?(?![\d'\"′″\-.xX×½¼¾]))?(?![A-Z])")
+  + r")(?:[\s\-]*\d{1,2}[A-Z]?(?![\d'\"′″\-.xX×½¼¾])(?!\s+\d\s+\d))?(?P<post>\s+(?:MASTER|GUEST|KIDS|GIRLS|BOYS|SERVANT|COMMON)(?![A-Z]))?(?![A-Z])")
+_QUAL_ALONE = ("MASTER", "GUEST", "KIDS", "GIRLS", "BOYS", "COMMON", "ATTACHED")
+_HEIGHT_NOTE = re.compile(r"\s*(?:LOBBY\s+)?(?:HEIGHT|HT\b)")           
+_JOIN = re.compile(r"\s*(?:/|&|\bAND\b)\s*")                      
+
+def _name_of(m) -> str:
+  text = m.group(0)
+  post = m.group("post")
+  if post:
+    text = post.strip() + " " + text[:m.start("post") - m.start()]
+  return _norm(text)
+
+_NOTE_DIM = re.compile(r"\b(?:CH|HT)\s*=\s*\d+\s*['′]\s*-?\s*\d*\s*[½¼¾]?\s*[\"″”]?", re.I)
+_OPENING_LABEL = re.compile(r"[WD]\s*=\s*$")                       
+_AROUND_TAIL = re.compile(r"(\d+\s*['′]\s*-?\s*\d*\s*[½¼¾]?\s*[\"″”]?)\s*$")
+_CROSS_TAIL = re.compile(r"(\d+\s*['′]\s*-?\s*\d*\s*[½¼¾]?\s*[\"″”]?)\s*[xX×]\s*$")
+_CROSS_HEAD = re.compile(r"^\s*(\d+\s*['′]?\s*-?\s*\d*\s*[½¼¾]?\s*[\"″”]?)")
+_AROUND_HEAD = re.compile(r"^\s*[xX×]\s*(\d+\s*['′]?\s*-?\s*\d*\s*[½¼¾]?\s*[\"″”]?)")
 _CLOSE = 0.2
 
 def _clean(p: Polygon) -> Polygon:
@@ -98,18 +115,65 @@ def merge_split_sizes(lines: list) -> list:
     out.append(TextLine(ft + st, spans, 0))
   return out
 
+
 def labels(lines: list, hint: str | None) -> tuple:
   names, sizes = [], []
+  quals, name_size = [], []
   for ln in merge_split_sizes([_without_marks(l) for l in lines]):
     t = ln.text.upper()
-    for m in _NAME.finditer(t):
-      x, y = ln.locate(m.start(), m.end())
-      names.append((_norm(m.group(0)), x, y))
-    for m in _SIZE.finditer(ln.text):
+    found = [m for m in _NAME.finditer(t) if not _HEIGHT_NOTE.match(t, m.end())]
+    joined = []
+    
+    for m in found:
+      if joined and _JOIN.fullmatch(t[joined[-1][1]:m.start()]):
+        joined[-1] = (joined[-1][0] + " / " + _name_of(m), m.end(), joined[-1][2])
+      else:
+        joined.append((_name_of(m), m.end(), m.start()))
+    for nm, end, start in joined:
+      x, y = ln.locate(start, end)
+      names.append((nm, x, y))
+      name_size.append(max((w.size for _, _, w in ln.spans), default=1.0) or 1.0)
+    if t.strip() in _QUAL_ALONE:
+      x, y = ln.locate(0, len(ln.text))
+      quals.append((t.strip(), x, y, max((w.size for _, _, w in ln.spans), default=1.0) or 1.0))
+    stext = _NOTE_DIM.sub(lambda m: " " * len(m.group(0)), ln.text)
+    for m in _SIZE.finditer(stext):
+      if _OPENING_LABEL.search(ln.text[:m.start()].upper()):
+        continue
+      
       size = parse_size(m.group(0), hint)
       if size and size[0] >= 600 and size[1] >= 600:
         x, y = ln.locate(m.start(), m.end())
         sizes.append((_norm(m.group(0)), size, x, y))
+        
+    for m in _NAME.finditer(t):                                  
+      tail, head = _AROUND_TAIL.search(ln.text[:m.start()]), _AROUND_HEAD.match(ln.text[m.end():])
+      if tail is None or head is None:
+        tail, head = _CROSS_TAIL.search(ln.text[:m.start()]), _CROSS_HEAD.match(ln.text[m.end():])
+        if tail is None or head is None:
+          continue
+      text = f"{tail.group(1).strip()} x {head.group(1).strip()}"
+      size = parse_size(text, hint)
+      if size and size[0] >= 600 and size[1] >= 600:
+        x, y = ln.locate(m.start(), m.end())
+        sizes.append((_norm(text), size, x, y))
+        
+  cand = []
+  for i, (nm, nx, ny) in enumerate(names):
+    if nm.split(" ")[0] in _QUAL_ALONE:
+      continue
+    for j, (q, qx, qy, qs) in enumerate(quals):
+      dy = abs(qy - ny)
+      if 0.3 * qs <= dy <= 2.6 * qs and abs(qx - nx) <= max(len(nm), len(q)) * qs * 0.6 + qs:
+        cand.append((dy, i, j))
+  cand.sort()
+  used_n, used_q = set(), set()
+  for _, i, j in cand:
+    if i in used_n or j in used_q:
+      continue
+    used_n.add(i)
+    used_q.add(j)
+    names[i] = (quals[j][0] + " " + names[i][0], names[i][1], names[i][2])
   return names, sizes
 
 def _inside(pp, poly: Polygon, items: list, ix: int, iy: int) -> list:
@@ -167,7 +231,6 @@ LABEL_ROOM_MIN_M2 = 2.4
 _SMALL_ROOMS = ("W.C", "WC", "W/C", "BATH", "TOILET", "LAVATORY", "STORE", "PANTRY", "LOBBY", "WARDROBE", "DRESSING", "LIFT", "STAIR")
 
 def pair_labels(names: list, sizes: list, mm_per_pt: float) -> list:
-  
   reach = LABEL_REACH_MM / mm_per_pt
   cand = []
   for ni, (_, nx, ny) in enumerate(names):
@@ -175,52 +238,7 @@ def pair_labels(names: list, sizes: list, mm_per_pt: float) -> list:
       d = math.hypot(nx - sx, ny - sy)
       if d <= reach:
         cand.append((d, ni, si))
-  cand.sort()
-  used_n, used_s, out = set(), set(), []
-  for _, ni, si in cand:
-    if ni in used_n or si in used_s:
-      continue
-    used_n.add(ni)
-    used_s.add(si)
-    nm, nx, ny = names[ni]
-    st, (a, b), sx, sy = sizes[si]
-    out.append({"name": nm, "size_text": st, "a_mm": float(a), "b_mm": float(b), "x": (nx + sx) / 2.0, "y": (ny + sy) / 2.0,
-      "sx": sx, "sy": sy})
-  return out
-
-def plausible_room(pair: dict) -> bool:
-  
-  a, b = pair["a_mm"], pair["b_mm"]
-  area = a * b / 1e6
-  small = any(t in pair["name"] for t in _SMALL_ROOMS)
-  if area > C.ROOM_MAX_M2 or area < (C.ROOM_MIN_M2 if small else LABEL_ROOM_MIN_M2):
-    return False
-  return min(a, b) >= 900.0
-
-def pairs_inside(poly: Polygon, pairs: list) -> list:
-  pp = prep(poly)
-  minx, miny, maxx, maxy = poly.bounds
-  return [i for i, p in enumerate(pairs) if minx <= p["sx"] <= maxx and miny <= p["sy"] <= maxy and pp.contains(Point(p["sx"], p["sy"]))]
-
-def label_polygon(pair: dict, mm_per_pt: float) -> Polygon:
- 
-  w, h = pair["a_mm"] / mm_per_pt, pair["b_mm"] / mm_per_pt
-  cx, cy = pair["x"], pair["y"]
-  return Polygon([(cx - w / 2, cy - h / 2), (cx + w / 2, cy - h / 2), (cx + w / 2, cy + h / 2), (cx - w / 2, cy + h / 2)])
-
-LABEL_REACH_MM = 2600.0
-LABEL_ROOM_MIN_M2 = 2.4
-_SMALL_ROOMS = ("W.C", "WC", "W/C", "BATH", "TOILET", "LAVATORY", "STORE", "PANTRY", "LOBBY", "WARDROBE", "DRESSING", "LIFT", "STAIR")
-
-def pair_labels(names: list, sizes: list, mm_per_pt: float) -> list:
-  """Each size goes to the nearest room name that has no size yet. Names without a size (a lawn, a gate) get no room."""
-  reach = LABEL_REACH_MM / mm_per_pt
-  cand = []
-  for ni, (_, nx, ny) in enumerate(names):
-    for si, (_, _, sx, sy) in enumerate(sizes):
-      d = math.hypot(nx - sx, ny - sy)
-      if d <= reach:
-        cand.append((d, ni, si))
+        
   cand.sort()
   used_n, used_s, out = set(), set(), []
   for _, ni, si in cand:

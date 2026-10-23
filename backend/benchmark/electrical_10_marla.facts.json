@@ -1,0 +1,70 @@
+{
+ "set": "Electrical_Drawings_10_Marla_House",
+ "pdf": "Electrical_Drawings_10_Marla_House.pdf",
+ "status": "DRAFT: counted on the ground floor electrical plan (page 6) by eye; to be checked by a person",
+ "electrical": {
+  "legend_page": 2,
+  "plan_pages": [
+   6,
+   7
+  ]
+ },
+ "facts": [
+  {
+   "kind": "ELECTRICAL",
+   "symbol": "CEILING FAN",
+   "page": 6,
+   "floor": "GROUND",
+   "count": 6,
+   "note": "master bedroom, bedroom, lounge, kitchen, drawing room and porch"
+  },
+  {
+   "kind": "ELECTRICAL",
+   "symbol": "SMOKE DETECTOR CEILING MOUNTED",
+   "page": 6,
+   "floor": "GROUND",
+   "count": 3,
+   "note": "master bedroom, bedroom, lounge (the SD symbol)"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "MASTER BEDROOM",
+   "floor": "GROUND",
+   "area_m2": 19.32,
+   "tolerance_pct": 5,
+   "note": "printed size 16.000 ft x 13.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BEDROOM",
+   "floor": "GROUND",
+   "area_m2": 16.38,
+   "tolerance_pct": 5,
+   "note": "printed size 12.375 ft x 14.250 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "LOUNGE",
+   "floor": "GROUND",
+   "area_m2": 17.84,
+   "tolerance_pct": 5,
+   "note": "printed size 16.000 ft x 12.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "GROUND",
+   "area_m2": 10.59,
+   "tolerance_pct": 5,
+   "note": "printed size 10.250 ft x 11.125 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "PORCH",
+   "floor": "GROUND",
+   "area_m2": 19.7,
+   "tolerance_pct": 5,
+   "note": "printed size 16.000 ft x 13.250 ft"
+  }
+ ]
+}

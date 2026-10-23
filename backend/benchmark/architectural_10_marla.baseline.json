@@ -1,0 +1,20 @@
+{
+ "11 window on the First floor": "FAIL",
+ "6 door on the First floor": "FAIL",
+ "6 window on the Ground floor": "FAIL",
+ "8 door on the Ground floor": "FAIL",
+ "Bath on the First floor is 4.18 m\u00b2": "PASS",
+ "Bath on the Ground floor is 4.18 m\u00b2": "PASS",
+ "Bedroom on the First floor is 21.13 m\u00b2": "PASS",
+ "Bedroom on the Ground floor is 16.38 m\u00b2": "PASS",
+ "Dining Room on the Ground floor is 14.08 m\u00b2": "PASS",
+ "Kitchen on the Ground floor is 10.59 m\u00b2": "PASS",
+ "Lounge on the First floor is 22.48 m\u00b2": "PASS",
+ "Lounge on the Ground floor is 17.84 m\u00b2": "PASS",
+ "Master Bedroom on the First floor is 20.81 m\u00b2": "PASS",
+ "Master Bedroom on the Ground floor is 19.32 m\u00b2": "PASS",
+ "Porch on the Ground floor is 19.7 m\u00b2": "PASS",
+ "Stair Hall on the First floor is 8.45 m\u00b2": "PASS",
+ "Stair Hall on the Ground floor is 8.45 m\u00b2": "PASS",
+ "W.I.C on the First floor is 3.9 m\u00b2": "PASS"
+}

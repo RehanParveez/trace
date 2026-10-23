@@ -5,9 +5,10 @@ import time
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import opening_labels as OL
+from app.modules.drawings_boq.takeoff.extract import schedule_scale as SS
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
-DASH_MAX_PT = 18.0            
+DASH_MAX_PT = 18.0                 
 DASH_MIN_PT = 0.8
 R_MIN_PT, R_MAX_PT = 14.0, 120.0
 SPAN_MIN, SPAN_MAX = 55.0, 130.0  
@@ -29,7 +30,6 @@ SNAP_TOL = 0.06
 DOOR_HEIGHT_ASSUMED_MM = 2134.0    
 WINDOW_HEIGHT_ASSUMED_MM = 1219.0   
 REACH_MM = 2000.0              
-IMPLIED_SCALE_TOL = 0.12
 WIDTHS_IMPERIAL = (610.0, 686.0, 762.0, 813.0, 838.0, 914.0, 1067.0, 1219.0, 1524.0, 1829.0, 2134.0)
 WIDTHS_METRIC = (600.0, 700.0, 750.0, 800.0, 900.0, 1000.0, 1200.0, 1500.0, 1800.0, 2100.0)
 
@@ -485,13 +485,36 @@ def _sizes_from_labels(found: list) -> dict | None:
     out[key] = _median(vals) if vals else None
   return out
 
+def _schedule_pairs(cands: list, symbols: dict, reach: float) -> list:
+  out = []
+  for kind, key in (("DOOR", "doors"), ("WINDOW", "windows")):
+    syms = symbols.get(key) or []
+    rows = _marks(cands, kind)
+    if not syms or not rows:
+      continue
+  
+    per: dict = {}
+    for (cid, k), si in _match(rows, syms, reach).items():
+      per.setdefault(cid, []).append(syms[si])
+    for c in {id(r[0]): r[0] for r in rows}.values():
+      found, sched = per.get(id(c), []), (c.facts or {}).get("size_schedule_mm")
+      if not found or not sched or not sched[0]:
+        continue
+      width = _median([s["width_mm"] for s in found])
+      if width > 0:
+        out.append({"kind": kind, "tag": getattr(c, "tag", None), "factor": float(sched[0]) / width})
+  return out
+
 def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: bool, imperial: bool, ctx: dict, cls, finish) -> dict:
   new, notes = [], []
   hnotes = symbols.get("height_notes") or {}
   
   stats = {"marks": {}, "symbols": {}, "matched": {}, "unmatched_symbols": {}, "marks_without_symbol": {}, "drawn_items": 0}
   reach = REACH_MM / mm_per_pt
-  pairs_for_scale = []
+  verdict = SS.verdict(_schedule_pairs(cands, symbols, reach))
+  stats["schedule_scale"] = verdict
+  settled = verdict["status"] == "SETTLED" and not scale_verified
+  scale_verified = scale_verified or settled
   
   for kind, key in (("DOOR", "doors"), ("WINDOW", "windows")):
     syms = symbols.get(key) or []
@@ -534,7 +557,6 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
       sched = f.get("size_schedule_mm")
       printed = _sizes_from_labels(found)
       if sched and sched[0]:
-        pairs_for_scale.append((kind, float(sched[0]) / width))
         if scale_verified and abs(width - float(sched[0])) > WIDTH_DIFFERS_TOL * float(sched[0]):
           c.notes.append(C.note("OPENING_DRAWN_WIDTH_DIFFERS", drawn_mm=f["width_drawn_mm"], schedule_mm=round(float(sched[0]))))
         if printed and printed.get("h_mm") and len(sched) > 1 and sched[1] and abs(printed["h_mm"] - float(sched[1])) > LABEL_HEIGHT_DIFFERS_TOL * float(sched[1]):
@@ -573,13 +595,13 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
   unpaired = [l for l in (symbols.get("labels") or []) if not l.get("paired")]
   if unpaired:
     notes.append(C.note("OPENING_LABELS_UNPAIRED", count=len(unpaired), labels=sorted({l["text"] for l in unpaired})[:8]))
-  if len(pairs_for_scale) >= 3:
-    implied = _median([r for _, r in pairs_for_scale]) * mm_per_pt
-    stats["implied_mm_per_pt"] = round(implied, 3)
-    stats["scale_pairs"] = len(pairs_for_scale)
-    if abs(implied / mm_per_pt - 1.0) > IMPLIED_SCALE_TOL:
-      notes.append(C.note("OPENING_SCALE_FROM_SCHEDULE_DISAGREES", used_mm_per_pt=round(mm_per_pt, 3), implied_mm_per_pt=round(implied, 3), pairs=len(pairs_for_scale)))
-  return {"new": new, "notes": notes, "stats": stats}
+  if verdict["status"] == "DISAGREES":
+    implied = mm_per_pt * verdict["factor"]
+    stats["implied_mm_per_pt"], stats["scale_pairs"] = round(implied, 3), verdict["agree"]
+    notes.append(C.note("OPENING_SCALE_FROM_SCHEDULE_DISAGREES", used_mm_per_pt=round(mm_per_pt, 3), implied_mm_per_pt=round(implied, 3), pairs=verdict["agree"], of=verdict["pairs"]))
+  elif settled:
+    notes.append(C.note("SCALE_SETTLED_BY_SCHEDULE", pairs=verdict["agree"], of=verdict["pairs"], factor=verdict["factor"]))
+  return {"new": new, "notes": notes, "stats": stats, "settled": settled}
 
 def _worst(c) -> str:
   sev = {n.get("severity") for n in c.notes}

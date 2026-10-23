@@ -6,7 +6,8 @@ from app.engine.measure import model_works_text as MW_TEXT
 CONCRETE = "CONCRETE"
 MASONRY = "MASONRY"
 THICKNESS_STEP_MM = 5
-KEY_FIELDS = (("thickness_mm", "t"),)
+KEY_FIELDS = (("thickness_mm", "t"), ("member", "m"))
+MEMBER_LABEL = {"foundation": "foundations", "frame": "frame (columns, beams, slabs, lintels)", "wall": "concrete walls", "pile": "piles"}
 
 _M_GRADE = re.compile(r"\bM\s?-?(10|15|20|25|30|35|40|45|50|55|60)\b", re.I)
 _C_PAIR = re.compile(r"\bC\s?(\d{2})\s?/\s?(\d{2})\b", re.I)
@@ -163,6 +164,8 @@ def describe_spec(spec: dict | None) -> str | None:
       bits.append(f"PCC {p['pcc_thickness_mm']:g} mm thick")
     return ", ".join(bits) or "worked out from the foundation"
   parts: list[str] = []
+  if spec.get("member") in MEMBER_LABEL:
+    parts.append(MEMBER_LABEL[spec["member"]])
   if spec.get("thickness_mm") is not None:
     parts.append(f"{spec['thickness_mm']} mm thick")
   if spec.get("mortar"):

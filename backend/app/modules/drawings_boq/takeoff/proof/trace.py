@@ -5,7 +5,7 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 TUNED, STANDARD, DEFAULT = "TUNED", "STANDARD", "DEFAULT"
 
 RULES = (
-  ("SCALE_GATE", "Whether the printed scale, or the printed dimensions, set the scale of the sheet", TUNED, ("SCALE_UNVERIFIED", "VIEW_SCALE_DIFFERS", "SCALE_CONFLICT"), ("SG.MIN_DECLARED_TRUST", "SG.STRONG_CONFLICT_SUPPORT")),
+  ("SCALE_GATE", "Whether the printed scale, or the printed dimensions, set the scale of the sheet", TUNED, ("SCALE_UNVERIFIED", "VIEW_SCALE_DIFFERS", "SCALE_CONFLICT", "SCALE_SETTLED_BY_SCHEDULE", "OPENING_SCALE_FROM_SCHEDULE_DISAGREES"), ("SG.MIN_DECLARED_TRUST", "SG.STRONG_CONFLICT_SUPPORT")),
   ("WALL_PEN", "Which line weights are walls and which are dimensions, furniture or boundary lines", TUNED, ("WALL_PEN_SELECTED", "LIGHT_PEN_WALLS_KEPT", "LIGHT_PEN_WALL"), ("WALL_T_MIN_MM", "WALL_T_MAX_MM", "WALL_MIN_FACE_MM", "WALL_MIN_OVERLAP_MM", "WALL_MIN_RUN_MM")),
   ("WALL_GAP_BRIDGE", "Walls carried across a gap where nothing is drawn (a door or window gap)", TUNED, ("WALL_BRIDGED", "WALL_WIDE_OPENING"), ("WALL_BRIDGE_MAX_MM", "WALL_GAP_MAX_MM", "WALL_GAP_CLEAR_MAX_MM", "WALL_STUB_MAX_MM")),
   ("OUTER_WALL_FILTER", "Lines outside the outer walls (dimension lines, projection outlines, plot lines) left out of the walls", TUNED, ("RUNS_OUTSIDE_PLAN_WALLS", "RUNS_OUTSIDE_CONCRETE_WALLS"), ("OUTER_CORE_MIN_MM", "OUTER_TOL_MM", "OUTER_WALL_TOL_FACTOR")),

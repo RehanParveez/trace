@@ -51,10 +51,13 @@ class PriceResolver:
     for (book_id, composed), rows in (await repo.spec_items_for_bases(ids, codes)).items():
       r.items.setdefault((book_id, composed), rows)
       base, published = sm.split_code(composed)
-      
+      kept = (rows[0].extra or {}) if rows else {}
+      if kept.get("base_code") and kept.get("spec_key"):                     
+        base, published = str(kept["base_code"]).upper(), sm.parse_spec(kept["spec_key"])
       r.spec_index.setdefault((book_id, base), []).append((published, composed))
     r.escalations = await repo.escalations_for_books(ids)
     if project_id is not None:
+
       r.overrides = await repo.active_overrides_for_project(org, project_id, codes)
     for row in await repo.library_rows(org):
       if row.work_item_code:

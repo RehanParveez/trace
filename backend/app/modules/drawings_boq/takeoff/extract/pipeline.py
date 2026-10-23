@@ -1290,6 +1290,12 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   return out
 
+def _settle_scale(res: Extraction) -> None:
+  for c in res.candidates:
+    if any(n.get("code") == "SCALE_UNVERIFIED" for n in c.notes):
+      c.notes = [n for n in c.notes if n.get("code") != "SCALE_UNVERIFIED"]
+      c.status = _status(c.notes)
+
 def _opening_symbols(index, walls: list, mm_per_pt: float, ctx: dict, imperial: bool, deadline: float, res: Extraction, wall_pen: float | None = None) -> None:
   verified = not ctx.get("scale_unverified")
   try:
@@ -1302,6 +1308,8 @@ def _opening_symbols(index, walls: list, mm_per_pt: float, ctx: dict, imperial: 
   
   res.candidates.extend(sym["new"])
   res.notes.extend(sym["notes"])
+  if sym.get("settled"):
+    res.stats["scale_settled_by_schedule"] = True
   if symbols["stats"]["doors"] or symbols["stats"]["windows"]:
     res.notes.append(C.note("OPENING_SYMBOLS_READ", doors=symbols["stats"]["doors"], windows=symbols["stats"]["windows"]))
   if symbols["stats"]["timed_out"]:
@@ -1512,7 +1520,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     walls_read = sum(1 for c in res.candidates if c.category in ("WALL", "ROOM"))
     if walls_read:
       res.notes.append(C.note("SHEET_NOT_A_PLAN", role=role["role"], title=role.get("title"), items=walls_read))
-  if scale_unverified and kind["kind"] != "STRUCTURAL" and not composite_structural:
+  if scale_unverified and kind["kind"] != "STRUCTURAL" and not composite_structural and not res.stats.get("scale_settled_by_schedule"):
     widths = [float(w) for c in res.candidates if c.category == "DOOR" for w in (c.facts.get("widths_measured_mm") or [])]
     named = [(c.facts.get("name"), c.facts.get("area_m2")) for c in res.candidates if c.category == "ROOM" and c.facts.get("name")
       and c.facts.get("outline_from") != "LABEL" and not any(n.get("code") == "ROOM_INSIDE_ROOM" for n in c.notes)]
@@ -1531,6 +1539,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     neck = NK.candidates(res.candidates, ctx, Candidate, _finish)
     res.candidates.extend(neck)
     res.stats["neck_columns"] = len(neck)
+  if res.stats.get("scale_settled_by_schedule"):
+    _settle_scale(res)
   for c in res.candidates:
     c.status = _status(c.notes)
   res.stats["qs"] = QR.apply(res.candidates, level_hint)

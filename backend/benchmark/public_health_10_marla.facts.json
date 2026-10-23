@@ -1,0 +1,104 @@
+{
+ "set": "Public_Health_Plumbing_Drawings_10_Marla_House",
+ "pdf": "Public_Health_Plumbing_Drawings_10_Marla_House.pdf",
+ "status": "DRAFT: counted from the printed labels of the ground floor sheets; to be checked by a person",
+ "facts": [
+  {
+   "kind": "NOT_BUILT",
+   "family": "MANHOLE (sewer)",
+   "floor": "GROUND",
+   "count": 5,
+   "note": "'M.H' labels on the sewerage plan, page 4"
+  },
+  {
+   "kind": "NOT_BUILT",
+   "family": "GULLY TRAP",
+   "floor": "GROUND",
+   "count": 4,
+   "note": "'G.T' labels on the sewerage plan, page 4"
+  },
+  {
+   "kind": "NOT_BUILT",
+   "family": "BALL VALVE (water supply)",
+   "floor": "GROUND",
+   "count": 8,
+   "note": "'BV.' labels on the water supply plan, page 8"
+  },
+  {
+   "kind": "NOT_BUILT",
+   "family": "GEYSER",
+   "floor": "GROUND",
+   "count": 2,
+   "note": "GEYSER-1 and GEYSER-2, page 8"
+  },
+  {
+   "kind": "NOT_BUILT",
+   "family": "WATER METER",
+   "floor": "GROUND",
+   "count": 1,
+   "note": "page 8"
+  },
+  {
+   "kind": "NOT_BUILT",
+   "family": "BALL VALVE (gas)",
+   "floor": "GROUND",
+   "count": 4,
+   "note": "'BV.' labels on the gas plan, page 12"
+  },
+  {
+   "kind": "NOT_BUILT",
+   "family": "GAS METER",
+   "floor": "GROUND",
+   "count": 2,
+   "note": "page 12"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "MASTER BEDROOM",
+   "floor": "GROUND",
+   "area_m2": 20.81,
+   "tolerance_pct": 5,
+   "note": "page 4: this sheet prints 16 x 14 ft, the architectural sheet 16 x 13 ft; printed size 16.000 ft x 14.000 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BEDROOM",
+   "floor": "GROUND",
+   "area_m2": 16.38,
+   "tolerance_pct": 5,
+   "note": "page 4; printed size 12.375 ft x 14.250 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "LOUNGE",
+   "floor": "GROUND",
+   "area_m2": 15.05,
+   "tolerance_pct": 5,
+   "note": "page 4: this sheet prints 16 x 10-1/2 ft, the architectural sheet 16 x 12 ft; printed size 16.000 ft x 10.125 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "GROUND",
+   "area_m2": 10.59,
+   "tolerance_pct": 5,
+   "note": "page 4; printed size 10.250 ft x 11.125 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "PORCH",
+   "floor": "GROUND",
+   "area_m2": 19.7,
+   "tolerance_pct": 5,
+   "note": "page 4; printed size 16.000 ft x 13.250 ft"
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "DINING ROOM",
+   "floor": "GROUND",
+   "area_m2": 15.19,
+   "tolerance_pct": 5,
+   "note": "page 4: this sheet prints 13-7 1/2 x 12 ft, the architectural sheet 13-7 1/2 x 11-1 1/2 ft; printed size 13.625 ft x 12.000 ft"
+  }
+ ]
+}
