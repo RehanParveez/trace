@@ -41,6 +41,10 @@ class _Inputs:
   def height(self, name: str, value, section_how: str = "clear storey height printed on the building section") -> None:
     if value is None:
       self.add(name, MISSING, "not on the drawing")
+    elif "NECK_HEIGHT_ASSUMED" in self.codes:
+      self.add(name, ASSUMED, "the height is not printed on the drawing; the QS's workbook height for the neck columns is used (type another to override it)")
+    elif "FOOTING_DEPTH_QS" in self.codes:
+      self.add(name, ASSUMED, "the footing thickness is not printed as a figure; the QS's footing depth is used")
     elif "HEIGHT_FROM_QS" in self.codes:
       self.add(name, CONFIRMED, "given by the QS")
     elif "HEIGHT_FROM_SECTION" in self.codes:
@@ -76,6 +80,10 @@ def _size(inp: _Inputs, cand) -> None:
     inp.add("size", ASSUMED, "two details of this mark show different sizes, so the plan square is used")
   elif "SIZE_FROM_COLUMN_DETAIL" in codes:
     inp.add("size", PICTURE, "written beside the column detail as strokes, read from the picture")
+  elif "FOOTING_SIZE_PAIRED" in codes:
+    inp.add("size", ASSUMED, "the footing details print the sizes but not which mark each belongs to; the larger column's footing takes the larger pad")
+  elif "FOOTING_SIZE_BY_ELIMINATION" in codes:
+    inp.add("size", ASSUMED, "the size the footing marks do not use is taken for the stair footing")
   elif "FOOTING_SIZE_ORDER_ASSUMED" in codes:
     inp.add("size", ASSUMED, "the footing details print the sizes but not which mark each belongs to; paired in order")
   elif "SIZE_FROM_DETAIL" in codes:
@@ -102,7 +110,10 @@ def _slab(inp: _Inputs, cand) -> None:
   if proj.get("applied"):
     sides = proj.get("sides") or {}
     shown = ", ".join(f"{k.lower()} {v / 304.8:g} ft" for k, v in sorted(sides.items()))
-    inp.measured("projections", f"roof projection widths printed on the floor plan ({shown}); which side each belongs to is read from where its label sits")
+    inp.measured("projections", f"roof projection widths printed on the floor plan ({shown}); each is bound to the overall length printed beside it and checked against its side of the plan outline")
+  elif proj and proj.get("strips"):
+    left = ", ".join(f"{s['side'].lower()} {s['width_mm'] / 304.8:g} ft ({s['status'].lower().replace('_', ' ')})" for s in proj["strips"])
+    inp.add("projections", ASSUMED, f"the plan prints roof projections but none could be added to the slab ({left}), so the slab is the covered area only")
   elif proj:
     inp.add("projections", ASSUMED, "the plan prints roof projections but they could not be placed on a side, so the slab is the covered area only")
   else:
@@ -165,9 +176,10 @@ def _beam_from_walls(inp: _Inputs, cand) -> None:
   inp.add("position", ASSUMED, "a beam is assumed on top of every brick wall; the plan does not draw it")
 
 def _beam_from_strips(inp: _Inputs, cand) -> None:
-  """A beam the framing plan draws as hatched strips: the length and width are measured from the strips, the depth is printed only on a section with the same mark."""
   f, params = cand.facts or {}, cand.params or {}
-  inp.measured("length", f"{f.get('strip_count', 0)} hatched strips measured along their centre line ({f.get('length_m', 0):g} m, corners counted once)")
+  gross = f.get("length_gross_m", f.get("length_m", 0))
+  cut = f", less the width of {f['columns_taken']} columns: {f.get('length_m', 0):g} m between column faces" if f.get("columns_taken") else ""
+  inp.measured("length", f"{f.get('strip_count', 0)} hatched strips measured along their centre line ({gross:g} m, corners counted once){cut}")
   inp.measured("width", "the width of the hatched strip" + (", taken to a whole number of inches" if f.get("beam_width_mm") else ""))
   if "BEAM_STRIP_MARK_FROM_NEIGHBOUR" in inp.codes:
     inp.add("mark", ASSUMED, "some strips have no mark beside them and take the mark of the beam they carry on")
@@ -346,6 +358,16 @@ def evidence_for(cand) -> dict:
   grade = GRADES[max(graded)] if graded else "PRINTED"
   ask = [f"{i['name']}: {i['how']}" for i in inp.items if i["basis"] in (ASSUMED, MISSING)]
   return {"grade": grade, "inputs": inp.items, "ask": ask, "range": range_for(cand, inp.items)}
+
+def valid_on_assumption(rows: list) -> int:
+  """Rows whose status is VALID although a value is assumed, disputed or missing (the grade of a row is its worst value)."""
+  n = 0
+  for r in rows:
+    props = ((r.get("properties") if isinstance(r, dict) else getattr(r, "properties", None)) or {}).get("_pdf") or {}
+    status = r.get("normalization_status") if isinstance(r, dict) else getattr(r, "normalization_status", None)
+    if status == "VALID" and (props.get("evidence") or {}).get("grade") in (ASSUMED, MISSING):
+      n += 1
+  return n
 
 def tally(rows: list) -> dict:
   """{"PRINTED": n, "MEASURED": n, "ASSUMED": n, "MISSING": n} over register rows (each a dict with properties._pdf.evidence)."""

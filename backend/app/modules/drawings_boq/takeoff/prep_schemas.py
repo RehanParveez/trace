@@ -89,6 +89,9 @@ class ProjectionSide(BaseModel):
   width_mm: float
   text: str | None = None
   pages: list[int] = Field(default_factory=list)
+  length_mm: float | None = None
+  lengths_mm: list[float] = Field(default_factory=list)
+  length_via: str | None = None
 
 class FloorProjections(BaseModel):
   sides: dict[str, ProjectionSide] = Field(default_factory=dict)

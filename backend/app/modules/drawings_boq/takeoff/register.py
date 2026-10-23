@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff import stair_twins
 from app.modules.drawings_boq.takeoff import placement as PL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
+from app.modules.drawings_boq.takeoff.extract import wall_net as WN
 
 SOURCE = "pdf_takeoff"
 MAX_ROWS_PER_CANDIDATE = 2000
@@ -93,11 +94,19 @@ def _slab_text(cand, page_no: int, measurement) -> str:
   pages = ", ".join(str(x) for x in (facts.get("area_pages") or []))
   parts = [f"Covered area of the floor from the area table{' on sheet ' + pages if pages else ''}"]
   parts.append("length x width printed with it" if facts.get("dims_mm") else "length and width not printed")
+  strips = (facts.get("projections") or {}).get("strips") or []
+  
   if (facts.get("projections") or {}).get("applied"):
-    parts.append(f"plus roof projections printed on the floor plan ({facts.get('projection_area_m2', 0):.2f} m2)")
+    got = [s for s in strips if s.get("status") == "ADDED"]
+    parts.append(f"plus roof projections printed on the floor plan ({facts.get('projection_area_m2', 0):.2f} m2)"
+      + (": " + ", ".join(f"{s['side'].lower()} {s['width_mm'] / 304.8:g} ft x {s['length_mm'] / 304.8:g} ft" for s in got) if got else ""))
+  left_out = [s for s in strips if s.get("status") and s["status"] != "ADDED"]
+  
+  if left_out:
+    parts.append("projections left out: " + ", ".join(f"{s['side'].lower()} {s['width_mm'] / 304.8:g} ft ({s['status'].lower().replace('_', ' ')})" for s in left_out))
   if facts.get("openings"):
     n_big = sum(1 for o in facts["openings"] if o.get("deduct"))
-    parts.append(f"less {facts.get('openings_area_m2', 0):.2f} m2 of openings ({n_big} bigger than 0.1 m2: stair well, shaft or duct found on the plans)" if n_big else
+    parts.append(f"less {facts.get('openings_area_m2', 0):.2f} m2 of openings ({n_big} bigger than 0.1 m2: " + "; ".join(f"{o['name']} {o['area_m2']:.2f} m2" for o in facts["openings"] if o.get("deduct")) + ")" if n_big else
       "openings found on the plans are 0.1 m2 or smaller, not deducted")
   if p.get("depth_mm") is None:
     parts.append("thickness needed")
@@ -140,6 +149,9 @@ def _beam_text(cand, page_no: int, measurement) -> str:
     role = {"PLINTH": "plinth beam", "BAND": "tie band at lintel level"}.get(facts.get("beam_role"), "roof beam")
     parts = [f"Brick walls measured on sheet {page_no}", f"{role} laid over {facts.get('wall_count', 0)} walls of {(facts.get('wall_thickness_mm') or 0) / 25.4:g} in, as wide as the wall",
       "depth typed" if p.get("depth_mm") is not None else "depth needed"]
+    bc = facts.get("band_count")
+    if bc:
+      parts.append(f"tie band and roof band counted {'once' if bc['mode'] == 'SINGLE' else 'separately'}: {bc['without_band_cft']:,.0f} cft of roof beam and lintel concrete without the tie band, {bc['with_band_cft']:,.0f} cft with it")
   if cand.decision == "ACCEPTED" and measurement is not None:
     parts.append("measured, " + ("confirmed" if measurement.get("status") == "CONFIRMED" else "draft"))
   else:
@@ -222,6 +234,10 @@ def _measured_text(cand, page_no: int, measurement) -> str:
     else:
       parts.append("height needed" if cat != "FOOTING" else "depth needed")
       
+  if cat == "WALL" and measurement is None:
+    gn = WN.gross_net(cand)
+    if gn and gn["net_m3"] != gn["gross_m3"]:
+      parts.append(f"brick {gn['gross_m3']:.2f} m³ gross, {gn['net_m3']:.2f} m³ net of openings and lintels")
   if cat == "WALL" and measurement is None and ("WALL_OPENINGS_INCLUDED" in codes or (facts.get("openings") or {}).get("count")):
     opened = (facts.get("openings") or {})
     parts.append(f"{opened['count']} marked opening{'s' if opened['count'] != 1 else ''} ({opened['area_m2']:.2f} m²) deducted when measured" if opened.get("count") else "openings not yet deducted")
@@ -381,6 +397,18 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       props["_pdf"]["concrete"] = {"class": printed.get("class"), "mix": printed.get("mix"), "scope": printed.get("scope"), "pages": printed.get("pages")}
     if cand.category == "ROOM":
       props["_pdf"]["perimeter_m"] = (cand.facts or {}).get("perimeter_m")
+    if cand.category == "BEAM" and (cand.facts or {}).get("band_count"):
+      props["_pdf"]["band_count"] = dict(cand.facts["band_count"])
+    if cand.category == "BEAM" and (cand.facts or {}).get("from_strips"):
+      bf = cand.facts
+      props["_pdf"]["beam_strips"] = {"net_m": bf.get("length_m"), "gross_m": bf.get("length_gross_m", bf.get("length_m")), "columns": bf.get("columns_taken") or 0}
+    if (cand.facts or {}).get("mark_check"):
+      props["_pdf"]["mark_check"] = [dict(x) for x in cand.facts["mark_check"]]
+    if (cand.facts or {}).get("foundation_piece"):
+      pieces = max(1, int(cand.count or 1))
+      props["_pdf"]["foundation"] = {**cand.facts["foundation_piece"], "cft": round(cand.facts["foundation_piece"]["cft"] * pieces / n, 4), "pieces": round(pieces / n, 4)}
+    if cand.category == "SLAB" and len((cand.facts or {}).get("thickness_volumes") or []) > 1:
+      props["_pdf"]["slab_thickness"] = {"floor": (cand.facts or {}).get("floor"), "options": [dict(o) for o in cand.facts["thickness_volumes"]]}
     opening_kind = (cand.facts or {}).get("opening_kind") if cand.category in ("DOOR", "WINDOW") else None
     if opening_kind:
       props["_pdf"]["opening_kind"] = opening_kind

@@ -151,6 +151,37 @@ def read_tie_band(words: list) -> str | None:
     return " / ".join(dict.fromkeys(h.upper() for h in hits))[:120]
   return None
 
+_ROOF_BAND = re.compile(r"^\W*ROOF\s*BAND\W*$", re.I)
+_BINDING = re.compile(r"BINDING\s*BARS?", re.I)
+_BAR_AT = re.compile(r"#\s*(?P<bar>\d{1,2})\s*@\s*(?P<s>\d{1,2}(?:\.\d)?)")
+BINDING_REACH = 60.0
+
+def read_roof_band(words: list) -> dict | None:
+  lines = build_lines(words)
+  cap = next((ln for ln in lines if _ROOF_BAND.match(ln.text.strip()) and ln.spans), None)
+  if cap is None:
+    return None
+  out: dict = {"text": "ROOF BAND", "binding": None}
+  tag = next((ln for ln in lines if _BINDING.search(ln.text) and ln.spans), None)
+  if tag is not None:
+    ws = [w for _, _, w in tag.spans]
+    
+    cx, cy = sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws)
+    best = None
+    for w in words:
+      m = _BAR_AT.search(w.text or "")
+      if m is None:
+        continue
+      
+      d = math.hypot(w.cx - cx, w.cy - cy)
+      if d <= BINDING_REACH and (best is None or d < best[0]):
+        best = (d, m)
+    if best is not None:
+      bar, spacing = int(best[1].group("bar")), float(best[1].group("s"))
+      if BAR_NUMBERS[0] <= bar <= BAR_NUMBERS[1] and RING_SPACING_IN[0] <= spacing <= RING_SPACING_IN[1]:
+        out["binding"] = {"bar": bar, "spacing_mm": round(spacing * MM_INCH, 1)}
+  return out
+
 def section_for(rows: list, span_mm: float) -> dict | None:
   """The first table row whose span limit holds the opening; None when the opening is wider than every row."""
   for r in sorted(rows or [], key=lambda r: r["span_max_mm"]):

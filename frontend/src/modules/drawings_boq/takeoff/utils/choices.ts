@@ -14,7 +14,7 @@ export function isTankWall(c: Pick<TakeoffCandidate, "category"> & Partial<Pick<
 }
 
 export function sectionOptions(c: Pick<TakeoffCandidate, "category" | "facts">): SectionOption[] {
-  if (c.category !== "BEAM" || facts(c).derived_from !== "WALLS") return [];
+  if (c.category !== "BEAM" || (facts(c).derived_from !== "WALLS" && facts(c).from_strips !== true)) return [];
   const raw = facts(c).section_options;
   if (!Array.isArray(raw)) return [];
   return raw

@@ -360,10 +360,14 @@ def read_schedules(words: list) -> dict:
   except Exception:
     lintels, tie_band = [], None
   try:
+    roof_band = lintel_reader.read_roof_band(words)
+  except Exception:
+    roof_band = None
+  try:
     stair = stair_reader.read_stair_spec(build_lines(words))
   except Exception:
     stair = None
-  out = {"openings": openings, "areas": areas, "lintels": lintels, "tie_band": tie_band}
+  out = {"openings": openings, "areas": areas, "lintels": lintels, "tie_band": tie_band, "roof_band": roof_band}
   if stair:
     out["stair"] = stair
   return out
@@ -376,6 +380,8 @@ def gather(sheets: list[dict]) -> dict:
   spans: dict = {}
   tie_band = None
   tie_pages: list = []
+  roof_band = None
+  roof_pages: list = []
   stairs: list = []
   
   for sh in sheets:
@@ -387,6 +393,9 @@ def gather(sheets: list[dict]) -> dict:
     if sc.get("tie_band"):
       tie_band = tie_band or sc["tie_band"]
       tie_pages.append(sh["page_no"])
+    if sc.get("roof_band"):
+      roof_band = roof_band or dict(sc["roof_band"])
+      roof_pages.append(sh["page_no"])
     for o in sc.get("openings") or []:
       ops.setdefault(o["mark"], []).append((sh["page_no"], o))
     for a in sc.get("areas") or []:
@@ -435,6 +444,10 @@ def gather(sheets: list[dict]) -> dict:
     stair["text"] = stair_reader.stair_text(stair)
     stair["pages"] = sorted({p for p, _ in stairs})
   out = {"openings": openings, "areas": area_rows, "lintels": lintel_rows, "tie_band": ({"text": tie_band, "pages": sorted(set(tie_pages))} if tie_band else None), "conflicts": conflicts}
+  if roof_band:
+    out["roof_band"] = {**roof_band, "pages": sorted(set(roof_pages))}
+  elif any("roof_band" in (sh.get("schedule") or {}) for sh in sheets):
+    out["roof_band"] = None                      
   if stair:
     out["stair"] = stair
   projections = projection_reader.gather(sheets)

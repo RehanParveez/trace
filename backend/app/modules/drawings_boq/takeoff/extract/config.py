@@ -1,10 +1,10 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 36
-
+EXTRACT_VERSION = 42
+ 
 LINTEL_BEARING_MM = 152.4
-STAIR_WAIST_DEFAULT_MM = 127.0            
+STAIR_WAIST_DEFAULT_MM = 127.0             
 PLINTH_BEAM_MIN_WALL_MM = 150.0
 COLUMN_PIECE_MIN_MM = 150.0        
 COLUMN_PIECE_MAX_MM = 1100.0      
@@ -16,6 +16,8 @@ COLUMN_CLASS_MIN_MM = 20.0
 COLUMN_GRID_BIN_MM = 50.0         
 COLUMN_GRID_MIN_VOTES = 3
 COLUMN_GRID_MIN_SHARE = 0.3       
+FOOTING_PAIR_REACH_EM = 4.0
+FOOTING_PAIR_RATIO = 0.7
 COLUMN_CENSUS_POINTS = 80         
 SLAB_SECTION_MIN_MM = 75.0
 SLAB_SECTION_MAX_MM = 400.0
@@ -144,13 +146,16 @@ NOTES = {
   "WALL_WIDE_OPENING": ("info", "The wall runs through an opening wider than 2.5 m with nothing drawn in it, so it is counted as one wall. Deduct the opening when you measure."),
   "WALL_BRIDGED": ("info", "The wall lines stop at an opening (a door or window) and the wall runs on to the cross wall. The length includes that opening."),
   "TANK_WALL": ("info", "These walls close in a tank (a tank label is inside them). They are listed so nothing is lost, but they are tank work, not part of the building walls."),
+  "BRICK_NET_OF_LINTELS": ("info", "The lintels over this wall's openings are taken off its brick, so the concrete is counted once, as lintels (IS 1200 and usual practice; assumed). Set the QS parameter brick_net_of_lintels to 0 to leave them in the brick."),
   "OPENINGS_ASSIGNED": ("info", "The doors, windows and ventilators marked beside this wall are listed with it and are deducted when the wall is measured. Check that each belongs to this wall."),
   "RCC_WALL_COMPLETES_ENCLOSURE": ("info", "The concrete walls of this basement are drawn solid on three sides, and a note on the sheet calls the walls concrete. This stretch of the fourth side (or the end of a side) is drawn thin or not at all. The QS confirmed that all four sides are concrete (S8), so it is counted in the trench, membrane and plaster items. Accept it as a wall if the plan or the sections show a concrete wall here."),
-  "NECK_COLUMN_FROM_FOOTINGS": ("warning", "Each footing carries a column up to the lowest floor. This is that stretch (the neck column). Its section is the section of the column mark that has as many columns as this footing mark; check the pairing. The height is the depth from the top of the footing to the floor and is not printed: type it when you accept the item."),
+  "NECK_COLUMN_FROM_FOOTINGS": ("warning", "Each footing carries a column up to the lowest floor. This is that stretch (the neck column). Its section is the section of the column mark that has as many columns as this footing mark; check the pairing. The height has its own note."),
   "LINTEL_OVER_UNMARKED_OPENING": ("warning", "The wall is open for this width but no door, window or ventilator mark is written in the opening. A lintel is still needed over it, so one is listed, sized from the lintel table for this span. Check that the opening is real (not a drawing gap) and that it is not an arch or a beam that is measured elsewhere."),
   "BEAM_SECTION_FROM_DETAIL": ("info", "The depth (and the bars, if they were read) are those of the one beam section of this kind printed on the structural sheet. They were read from the drawing picture, so check them against the detail."),
   "BEAM_SECTION_FROM_MARK": ("info", "The plan writes the mark of this beam beside the walls it lies under, so the depth (and the bars, if they were read) are those of the section with that mark on the structural sheet. They were read from the drawing picture, so check them against the detail."),
   "BEAM_MARK_SECTION_UNUSABLE": ("warning", "The plan writes a beam mark beside these walls, but the section with that mark has no depth or bars that could be used (it was not read, or the readings disagreed). It is not applied; the sections printed on the sheet are listed instead."),
+  "BEAM_NET_OF_COLUMNS": ("info", "The beam is measured between the faces of its columns: the width of each column a strip runs into is taken off the centre line length, because the column concrete is counted in the column."),
+  "BEAM_MARK_NO_SECTION": ("warning", "No beam section on the structural sheet is captioned with this mark, so no depth was chosen. The sections printed for beams of this kind are listed; choose one when you accept the beam, or type a depth."),
   "BEAM_SECTIONS_LISTED": ("warning", "The structural sheet prints more than one beam section of this kind and does not say which lies under which wall, so no depth was chosen. The sections are listed below; type the depth of the one that applies when you accept the beam."),
   "TANK_SECTIONS_LISTED": ("info", "The structural sheet draws this tank in a plan and a section. The sizes are listed below: those written as text in the PDF are exact; those read from the picture show the number of readings that agreed (a size read only twice can be a misreading, so check it on the drawing). The drawing does not say which size is the inside depth, which is the water level and which is the wall, so none is applied: type the height and thickness from them when you accept the wall."),
   "OPENING_GAP_IS_ANOTHER_MARK": ("warning", "At least one of these marks stands beside a gap in a wall that is exactly the width of a different mark of the same kind, and is not the width of this mark. Either the mark was read wrongly or the wrong mark is drawn. Check the mark on the plan before accepting the count."),
@@ -159,6 +164,12 @@ NOTES = {
   "SIZE_DIFFERS_FROM_SCHEDULE": ("warning", "The drawn size is different from the schedule. The schedule size is used."),
   "COLUMN_SIZE_FROM_PLAN": ("info", "The size is measured from the black square drawn on the plan. A column detail or schedule may give a larger section; check it before measuring."),
   "SIZE_FROM_DETAIL": ("info", "The size is printed under a footing section detail of this drawing."),
+  "FOOTING_SIZE_PAIRED": ("warning", "The footing details print sizes but not which footing mark each belongs to. The pad sizes were given by the size of the column each footing is written beside on the foundation plan. Check the pairing."),
+  "FOOTING_SIZE_BY_ELIMINATION": ("warning", "The footing details print one more size than the footing marks use. That size is taken for the stair footing. Check it."),
+  "NECK_HEIGHT_ASSUMED": ("warning", "The drawing does not print the height of the neck column. The height from the QS's workbook is used. Type another height to override it."),
+  "COLUMN_MARK_NO_DETAIL": ("warning", "No column detail is captioned with this mark. A detail of the same size is proposed. Check it."),
+  "COLUMN_MARK_BY_SIZE": ("warning", "Squares are drawn on this plan with no mark. A column detail of the same size that no plan mark uses is proposed for them. Check it."),
+  "COLUMN_DETAIL_NO_PLAN_MARK": ("info", "A column detail has no mark on any framing plan. Check whether it belongs to a column of this job."),
   "FOOTING_SIZE_ORDER_ASSUMED": ("warning", "The footing details print sizes but not which footing mark each belongs to. Marks and sizes were paired in order (the lowest mark takes the smallest size). Check the pairing."),
   "FOOTING_SIZES_LISTED": ("warning", "The footing details print more or fewer sizes than there are footing marks, so no size was chosen. Pick the size for this mark."),
   "STAIR_TREADS_NOT_WALLS": ("info", "Rows of short parallel lines laid a tread apart (the steps of a stair) were not read as walls on this plan. Check the stair on the plan if a short wall is missing."),
@@ -207,6 +218,11 @@ NOTES = {
   "SLAB_PROJECTIONS_ADDED": ("info", "The plans of this floor print roof projections (the slab reaches past the walls). They are added to the covered area of the floor on the sides where they are printed, corners included, so this slab is the plan outline plus its projections, as a quantity surveyor takes it. The widths are printed; which side each belongs to is read from where its label sits on the plan."),
   "SLAB_PROJECTION_UNPLACED": ("warning", "A roof projection label of this floor sits too near the middle of the page for its side to be read, so it was not added to the slab. Check which side it belongs to."),
   "SLAB_PROJECTION_CONFLICT": ("warning", "The plans of this floor print different roof projection widths for the same side, so that side was not added to the slab. Check the drawing."),
+  "SLAB_STEEL_FROM_PANELS": ("info", "The bars of the slab panels are read from the arrowed bar lines of the framing plan and the bar string written beside each line."),
+  "SLAB_PANEL_STEEL_PARTIAL": ("warning", "Some bar lines or bar strings of this framing plan could not be tied to a slab panel, so the steel of those is not in the slab."),
+  "SLAB_PROJECTION_NOT_BOUND": ("warning", "A roof projection label of this floor has no overall length printed beside it, so the length of the strip is not known and it was not added to the slab."),
+  "SLAB_PROJECTION_NOT_VERIFIED": ("warning", "A roof projection label of this floor is bound to a printed length that is not the length of the side of the plan it stands beside, so the strip was not added to the slab."),
+  "SLAB_PROJECTION_IS_CHAJJA": ("warning", "A roof projection of this floor is as narrow as a chajja or sunshade (18 in or less), so it is not in the slab concrete."),
   "SLAB_PROJECTION_AXIS_UNKNOWN": ("warning", "The plans of this floor print roof projections, but the overall lengths printed on them do not match the area table's length and width, so it is not known which sides they widen. They were not added to the slab."),
   "SLAB_AREA_NOT_FOUND": ("warning", "This framing plan shows a slab but the drawing's area table has no covered area for this floor, so the slab was not listed. Measure it with the area tool."),
   "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
@@ -278,6 +294,9 @@ NOTES = {
   "LINTEL_HEAD_AT_DOOR": ("info", "The lintel sits on the head of its door, the door height from the schedule above the floor. That gives it its height in the building."),
   "LINTEL_HEAD_AT_COMMON_DOOR_HEAD": ("info", "The drawing prints no sill level for this opening, so its lintel is taken at the level most of the doors of this plan are headed (one lintel level for every opening of a storey). Say so if windows are headed differently."),
   "LINTEL_COVERED_BY_TIE_BAND": ("warning", "The drawing prints a tie band at lintel level, and it is listed as a beam on this plan. A band that runs over an opening takes the place of a separate lintel there, so switch on 'tie band replaces lintel' in the site assumptions to leave this lintel out once the band is measured; until then both are counted."),
+  "TIE_BAND_COUNTED_ONCE": ("warning", "The tie band at lintel level and the roof band run over the same walls, so they are listed as one band member and not twice. The figures of the decision (concrete with and without the tie band) are in the text of this note. Set the QS parameter tie_band_single_count to 0 to list the tie band as well."),
+  "TIE_BAND_COUNTED_SEPARATELY": ("warning", "The tie band at lintel level is listed beside the roof beam (QS parameter tie_band_single_count is 0). It runs over the solid wall only: the lintels stand where the openings are, and a 4.5 in partition carries no band."),
+  "ROOF_BAND_DETAIL": ("info", "The drawing prints a roof band detail (a band at slab level with binding bars into the slab). This beam is that band."),
   "TIE_BAND_FROM_NOTE": ("warning", "The drawing prints a continuous tie band at lintel level (see the note on the drawing). It is laid over the brick walls of this plan, as wide as the wall, at the level of the openings' heads. Its depth is the one printed on a section, or the depth you type; IS 4326 asks for at least 75 mm."),
   "SCAN_TEXT_READ": ("warning", "This sheet is a scan and its text was read by character recognition. A tag, size or figure may be misread, so check it against the drawing before accepting."),
     "SCAN_FIGURES_ASKED": ("warning", "Some figures on this scan were read two different ways when the character reader looked at them again (a 6 or an 8, a 5 or an S ...), so none of them was taken. Where the sheet needs one of them the item asks for it; type it from the drawing."),
@@ -323,7 +342,7 @@ NOTES = {
   "FOOTING_DEPTH_QS": ("info", "The drawing prints the footing thickness only as a symbol. The QS gave 0.75 ft (228.6 mm), so that is used. Type another depth when you accept the footing to override it."),
   "MEMBRANE_OUTSIDE_QS": ("info", "This item is not drawn on the plan. On a basement the QS puts the membrane on the outside of every outer wall, up the full wall height of 11 ft, and counts it once (S1). The length is the outside face of the outer walls, the same length the outside plaster uses, with the closing stretch of the concrete wall (S8). Inside and outside plaster are separate items."),
   "FLOOR_LAYER_FROM_SPEC": ("warning", "This item is not drawn on the plan. The specification block prints this layer of the ground floor build-up, but the page lists the layers of the ground floor, the terrace and the roof side by side and the layer is not tied to a floor heading. Check that it belongs to this floor before you accept it. The area is the total of the room areas found on this floor; the thickness is the one printed."),
-  "FLOOR_LAYERS_LEFT_OUT": ("info", "These layers are printed in the specification block but are not made into items: they belong to a terrace or a roof, or cannot be told from one. Measure them from the roof plan or by hand."),
+  "FLOOR_LAYERS_LEFT_OUT": ("info", "These layers are printed in the specification block but are not made into items: they belong to a terrace or a roof, cannot be told from one, or have no work item yet (the cement-sand bed, for example). Measure them from the plan or by hand."),
   "FLOOR_LAYERS_AMBIGUOUS": ("warning", "A layer of the floor build-up is printed at two different thicknesses equally often, so no item was made for it. Read the specification block and measure it by hand."),
   "SPEC_VALUE_PRINTED_TWO_WAYS": ("warning", "This layer is printed at more than one thickness. The thickness printed most often was used; the others are listed so you can check the choice."),
   "SPEC_GRADE_PRINTED": ("info", "The drawing prints the grade of this material and it is carried on the item as its grade: the mix of the concrete, or of the plaster mortar. Nothing was assumed."),
@@ -340,6 +359,8 @@ NOTES = {
   "STAIR_SAME_AS_UP_FLIGHT": ("warning", "This DN flight is the same staircase as the UP flight drawn on the floor below. It is one concrete stair: accept only one of them, or it is counted twice."),
   "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
   "SHEET_READ_UPRIGHT": ("info", "The drawing on this sheet is turned or crooked on the page (its text does not run left to right). It was straightened before it was read, so its text, marks and schedule are read as on an upright sheet; positions shown on the drawing are the page's own."),
+  "SHEET_SITE_ITEMS_ONLY": ("info", "This sheet shows several drawings, and its floor plans are read from their own sheets, so they are not read again here. What is not a floor plan was read: the tanks, the boundary wall, the gate and the ramp of the site. The schedules, the sections and the notes of this sheet are read for the whole drawing."),
+  "SHEET_VIEWS_LISTED": ("info", "The drawings this sheet shows, by the title printed under each (the count of each kind is in the note). Each kind is read for the whole sheet, not view by view, and a view that is not a floor plan has no scale of its own unless its dimensions give one."),
   "PLAN_REGIONS_READ": ("info", "This sheet shows several drawings (plans, elevations, sections, schedules). Each floor plan was read on its own, with its own floor. Elevations, sections, the boundary wall, the key plan, the site plan and the block plans were not read as walls."),
   "FLOOR_READ_ON_OTHER_SHEET": ("warning", "This floor was also read from another sheet of the same drawing. Accept the walls and openings of one of the two, or they are counted twice."),
   "SAME_MARK_ON_OTHER_SHEET": ("info", "This mark is also on another sheet of the same drawing. It is listed once in the element register."),

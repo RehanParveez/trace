@@ -250,6 +250,9 @@ def steel_text(steel: dict | None) -> str:
   if r:
     extra = f", {r['dense_spacing_mm'] / MM_INCH:g} in at the ends" if r.get("dense_spacing_mm") else ""
     parts.append(f"rings {_dia_label(r)} at {r['spacing_mm'] / MM_INCH:g} in{extra}")
+  pn = steel.get("panels")
+  if pn:
+    parts.append(f"bars of {len(pn)} slab panels")
   m = steel.get("mesh")
   if m:
     parts.append(f"mesh {_dia_label(m)} at {m['spacing_mm'] / MM_INCH:g} in {'both ways' if m.get('ways', 2) == 2 else 'one way'}"

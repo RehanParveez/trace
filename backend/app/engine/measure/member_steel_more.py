@@ -21,6 +21,9 @@ def _mesh_of(m) -> dict | None:
 def clean_more(raw: dict, out: dict) -> None:
   """Keep the second way of a mesh and the slab mesh of a tank when they read."""
   from app.engine.measure.member_steel import _bar_of, _num
+  panels = clean_panels(raw.get("panels"))
+  if panels:
+    out["panels"] = panels
   slab = _mesh_of(raw.get("slab_mesh"))
   
   if slab:
@@ -31,9 +34,38 @@ def clean_more(raw: dict, out: dict) -> None:
     if size and spacing is not None and spacing <= 1000:
       out["mesh"]["across"] = {**size, "spacing_mm": float(spacing)}
 
+def panel_lines(panels: list) -> list:
+  from app.engine.measure.member_steel import _line
+  out: list = []
+  for p in panels:
+    for s in p["sets"]:
+      count = int(Decimal(str(s["across_mm"])) // Decimal(str(s["spacing_mm"]))) + 1
+      out.append(_line("mesh", f"{p.get('mark') or 'panel'}_{s['axis']}", s, count, Decimal(str(s["cut_mm"]))))
+  return out
+
+def clean_panels(raw) -> list | None:
+  from app.engine.measure.member_steel import _bar_of, _num
+  if not isinstance(raw, list):
+    return None
+  keep = []
+  for p in raw[:60]:
+    if not isinstance(p, dict):
+      continue
+    sets = []
+    for s in p.get("sets") or []:
+      if not isinstance(s, dict):
+        continue
+      
+      size, spacing, cut, across = _bar_of(s), _num(s.get("spacing_mm")), _num(s.get("cut_mm")), _num(s.get("across_mm"))
+      if size and spacing is not None and spacing <= 1000 and cut is not None and across is not None and s.get("axis") in ("X", "Y"):
+        sets.append({**size, "spacing_mm": float(spacing), "cut_mm": float(cut), "across_mm": float(across), "axis": s["axis"], "text": str(s.get("text") or "")[:40]})
+    if sets:
+      keep.append({"mark": str(p["mark"])[:20] if p.get("mark") else None, "sets": sets})
+  return keep or None
+
 def two_way(length: Decimal, width: Decimal, mesh: dict, cover: Decimal) -> list:
   from app.engine.measure.member_steel import _line
-  a, b = length - 2 * cover, width - 2 * cover
+  a, b = length - 2 * cover, width - 2 * cove
   if a <= 0 or b <= 0:
     return []
   layers = int(mesh.get("layers", 1))

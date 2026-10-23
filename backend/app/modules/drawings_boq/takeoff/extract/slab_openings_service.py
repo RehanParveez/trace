@@ -28,10 +28,18 @@ def annotate(rows: list, placed: dict) -> set:
       if info.get("twin_area_m2"):
         f["openings_twin_area_m2"] = round(float(info["twin_area_m2"]), 3)
       big = [i for i in items if i["deduct"]]
+      
       if big:
-        notes.append(C.note("SLAB_OPENINGS_DEDUCTED", count=len(big), area_m2=f["openings_area_m2"], names=[i["name"] for i in big]))
+        n = C.note("SLAB_OPENINGS_DEDUCTED", count=len(big), area_m2=f["openings_area_m2"], names=[i["name"] for i in big])
+        n["message"] = ("Taken off this slab: " + "; ".join(f"{i['name']} {i['area_m2']:.2f} m² ({i['text']}; plan of sheet {i['page_no']})" for i in big)
+          + f"; {f['openings_area_m2']:.2f} m² in all. A stair well is the area of the flight as drawn on the plan of the floor above or below; a shaft or duct is taken off only where the plan prints a size.")
+        notes.append(n)
       if len(big) < len(items):
-        notes.append(C.note("SLAB_OPENINGS_SMALL", count=len(items) - len(big)))
+        small = [i for i in items if not i["deduct"]]
+        n = C.note("SLAB_OPENINGS_SMALL", count=len(small))
+        n["message"] = ("Not deducted, 0.1 m² or smaller (IS 1200 Part 2 cl. 4.1.6): " + "; ".join(f"{i['name']} {i['area_m2']:.2f} m² ({i['text']})" for i in small) + ".")
+        
+        notes.append(n)
     if f != (r.facts or {}) or notes != (r.notes or []):
       r.facts, r.notes = f, notes
       r.status = _status(notes)

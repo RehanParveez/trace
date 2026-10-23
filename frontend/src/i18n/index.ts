@@ -2081,7 +2081,7 @@ const resources = {
       "drawings.schedule.otherAreas": "Other areas on the table",  
 
       "drawings.structure.title": "Structure by floor",
-      "drawings.structure.intro": "Columns, footings and beam marks are counted on each structural plan separately, so the same mark on two floors is two lots. Column sizes are measured from the plan; a footing size is taken from the section details and the pairing with its mark is a guess to confirm. Heights and depths are asked for when you accept an item.",
+      "drawings.structure.intro": "Columns, footings and beam marks are counted on each structural plan separately, so the same mark on two floors is two lots. Column sizes are measured from the plan; a footing size is taken from the section details, and its pairing with a mark follows the column the footing is written beside on the foundation plan (to confirm). A height or depth the drawing does not print is asked for when you accept an item; the neck column height and the footing depth are assumed and flagged.",
       "drawings.structure.counts": "{{c}} columns · {{f}} footings · {{b}} beam marks",
       "drawings.structure.columns": "Columns",
       "drawings.structure.footings": "Footings",
@@ -6446,7 +6446,7 @@ const resources = {
       "drawings.schedule.otherAreas": "جدول کے دیگر رقبے",
 
       "drawings.structure.title": "منزل وار ڈھانچہ",
-      "drawings.structure.intro": "کالم، فوٹنگ اور بیم کے نشانات ہر ساختی نقشے پر الگ گنے جاتے ہیں، اس لیے دو منزلوں پر ایک ہی نشان دو الگ ڈھیر ہیں۔ کالم کا سائز نقشے سے ناپا گیا ہے؛ فوٹنگ کا سائز تراشے کی تفصیل سے لیا گیا ہے اور نشان کے ساتھ اس کا جوڑ اندازہ ہے، اسے جانچ لیں۔ اونچائی اور گہرائی آئٹم قبول کرتے وقت پوچھی جاتی ہے۔",
+      "drawings.structure.intro": "کالم، فوٹنگ اور بیم کے نشانات ہر ساختی نقشے پر الگ گنے جاتے ہیں، اس لیے دو منزلوں پر ایک ہی نشان دو الگ ڈھیر ہیں۔ کالم کا سائز نقشے سے ناپا گیا ہے؛ فوٹنگ کا سائز تراشے کی تفصیل سے لیا گیا ہے اور نشان کے ساتھ اس کا جوڑ اس کالم سے بنتا ہے جس کے ساتھ فاؤنڈیشن نقشے پر فوٹنگ لکھی ہے، اسے جانچ لیں۔ جو اونچائی یا گہرائی نقشے پر نہیں چھپی وہ آئٹم قبول کرتے وقت پوچھی جاتی ہے؛ نیک کالم کی اونچائی اور فوٹنگ کی گہرائی فرض کی جاتی ہیں اور نشان زد رہتی ہیں۔",
       "drawings.structure.counts": "{{c}} کالم · {{f}} فوٹنگ · {{b}} بیم نشان",
       "drawings.structure.columns": "کالم",
       "drawings.structure.footings": "فوٹنگ",

@@ -76,7 +76,7 @@ def select(rules: list | None = None, keys: list | None = None, include_unswept:
   if keys:
     chosen = [R.get(k) for k in keys]
   elif rules:
-    known = {p.rule_id for p in alp} | {r["id"] for r in R.rules()}
+    known = {p.rule_id for p in allp} | {r["id"] for r in R.rules()}
     bad = sorted(set(rules) - known)
     if bad:
       raise ValueError(f"Not a rule of the register: {', '.join(bad)}.")

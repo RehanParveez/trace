@@ -1,5 +1,6 @@
 from __future__ import annotations
 import hashlib
+from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.modules.drawings_boq.takeoff.extract import config as C
 
 def _key(*parts) -> str:
@@ -30,10 +31,24 @@ def pair(footings: list, columns: list) -> list:
     for f, c in zip(fs, cs):
       out.append((f, c))
       free.remove(c)
+  free.remove(c)
+  return out
+
+def paired(footings: list, columns: list) -> list:
+  out, taken_f, taken_c = [], set(), set()
+  for f in footings:
+    pc = (f.facts or {}).get("paired_column")
+    if not pc:
+      continue
+    c = next((c for c in columns if c.tag and norm_mark(c.tag) == pc[0] and id(c) not in taken_c and _area(c) > 0.0), None)
+    if c is not None:
+      out.append((f, c, "LABELS"))
+      taken_f.add(id(f))
+      taken_c.add(id(c))
+  out.extend((f, c, "COUNT") for f, c in pair([f for f in footings if id(f) not in taken_f], [c for c in columns if id(c) not in taken_c]))
   return out
 
 def candidates(cands: list, ctx: dict, Candidate, finish) -> list:
-  """Neck column candidates for the footings of the foundation plan. cands is everything found on the sheet so far."""
   footings = [c for c in cands if c.category == "FOOTING" and c.count > 0 and ((c.facts or {}).get("view") or {}).get("level_hint")]
   if not footings:
     return []
@@ -41,11 +56,16 @@ def candidates(cands: list, ctx: dict, Candidate, finish) -> list:
   columns = [c for c in cands if c.category == "COLUMN" and _level(c) == low and "UNMARKED_COLUMNS" not in {n.get("code") for n in c.notes}
     and not (c.facts or {}).get("neck_of") and not (c.facts or {}).get("from_shapes")]
   out = []
-  for f, c in pair(footings, columns):
+  
+  for f, c, basis in paired(footings, columns):
     p = {"length_mm": c.params["length_mm"], "width_mm": c.params["width_mm"], "dims_basis": "SPECIFIED"}
     facts = {"tag": c.tag, "count": f.count, "neck_of": f.tag, "column_key": c.key, "footing_key": f.key, "size_used_mm": [p["length_mm"], p["width_mm"]],
-      "view": (f.facts or {}).get("view")}
-    notes = [C.note("NECK_COLUMN_FROM_FOOTINGS", footing=f.tag, column=c.tag, count=f.count)]
+      "view": (f.facts or {}).get("view"), "pair_basis": basis}
+    nn = C.note("NECK_COLUMN_FROM_FOOTINGS", footing=f.tag, column=c.tag, count=f.count)
+    if basis == "LABELS":
+      nn["message"] = (f"Each footing carries a column up to the lowest floor. This is that stretch (the neck column). On the foundation plan {f.tag} is written beside {c.tag}, "
+        f"so the section of {c.tag} is used. Check the pairing. The height has its own note.")
+    notes = [nn]
     
     if c.params.get("steel"):
       p["steel"] = dict(c.params["steel"])

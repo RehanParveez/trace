@@ -143,7 +143,12 @@ def member_lines(category: str, length: Decimal, width: Decimal, depth: Decimal,
     if ring and inner_l > 0 and inner_w > 0:
       cut = 2 * (inner_l + inner_w) + hook_dia * dia_mm(ring)
       lines.append(_line("rings", "ring", ring, _ring_count(height - 2 * cover if height > 2 * cover else height, ring), cut))
+      
   elif category in MESH_FAMILIES:
+    if category == "SLAB" and steel.get("panels"):
+      lines = MORE.panel_lines(steel["panels"])
+      return lines, q6(sum((Decimal(ln["kg"]) for ln in lines), Decimal("0")))
+    
     mesh = steel.get("mesh")
     if mesh and mesh.get("across") and int(mesh.get("ways", 2)) == 2:
       lines = MORE.two_way(length, width, mesh, cover)

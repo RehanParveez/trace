@@ -599,6 +599,19 @@ function siteLine(c: TakeoffCandidate): string {
   return [repeats !== null && repeats > 1 ? `labelled ${repeats} times on this sheet` : null, need].filter(Boolean).join(" · ");
 }
 
+function neckText(f: Record<string, unknown>): string {
+  const a = f.neck_assumed as { text?: unknown } | null | undefined;
+  return a && typeof a.text === "string" ? `height ${a.text} assumed` : "height needed";
+}
+
+export function neckHeightAssumed(list: TakeoffCandidate[]): string | null {
+  for (const c of list) {
+    const a = isNeckColumn(c) ? ((c.facts as Record<string, unknown> | null)?.neck_assumed as { text?: unknown } | undefined) : undefined;
+    if (a && typeof a.text === "string") return a.text;
+  }
+  return null;
+}
+
 export function factLine(c: TakeoffCandidate): string {
   const f = c.facts as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : null);
@@ -612,7 +625,7 @@ export function factLine(c: TakeoffCandidate): string {
   }
   if (isNeckColumn(c)) {
     const size = Array.isArray(f.size_used_mm) ? (f.size_used_mm as number[]) : null;
-    return [`neck of footing ${String(f.neck_of)}`, size ? `${(size[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(size[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : null, `${c.count} nos`, "height needed"].filter(Boolean).join(" · ");
+    return [`neck of footing ${String(f.neck_of)}`, size ? `${(size[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(size[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : null, `${c.count} nos`, neckText(f)].filter(Boolean).join(" · ");
   }
   if (c.category === "WALL") {
     const gaps = Array.isArray(f.gaps_mm) ? (f.gaps_mm as number[]) : [];
@@ -635,7 +648,8 @@ export function factLine(c: TakeoffCandidate): string {
     if (f.from_strips === true) {
       const strips = num(f.strip_count);
       const w = num(f.beam_width_mm);
-      return [len !== null ? `${len.toFixed(2)} m along ${strips ?? 0} hatched strip${strips === 1 ? "" : "s"}` : null, w !== null ? `${(w / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
+      const cols = num(f.columns_taken);
+      return [len !== null ? `${len.toFixed(2)} m along ${strips ?? 0} hatched strip${strips === 1 ? "" : "s"}${cols ? `, between column faces (${cols} column${cols === 1 ? "" : "s"} taken off)` : ""}` : null, w !== null ? `${(w / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
     }
     if (f.derived_from !== "WALLS") return "";
     return [f.beam_role === "PLINTH" ? "plinth beam" : "roof beam", len !== null ? `${len.toFixed(2)} m over ${walls ?? 0} wall${walls === 1 ? "" : "s"}` : null, t !== null ? `${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, gaps ? `${gaps.toFixed(2)} m of it over openings` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
@@ -698,6 +712,7 @@ export function factLine(c: TakeoffCandidate): string {
   const drawn = Array.isArray(f.size_drawn_mm) ? (f.size_drawn_mm as number[]) : null;
 
   const parts: string[] = [];
+  if (c.category === "FOOTING" && Array.isArray(f.paired_column)) parts.push(`written beside ${String(f.paired_column[0])} on the foundation plan`);
   if (f.found_by === "SYMBOL_SCAN") {
     const n = num(f.symbols);
     parts.push(`${n ?? c.count} drawn, no mark on the plan`);

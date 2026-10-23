@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, inputClass } from "../../../organizations/components/OrganizationUi";
 import type { CandidateList, TakeoffCandidate, TakeoffSheet, TypedValue } from "../types/takeoff.types";
-import {blockedByHeight, confidenceLevel, factLine, fieldsStillNeeded, groupByKind, HEIGHT_LABEL, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
+import {blockedByHeight, confidenceLevel, factLine, fieldsStillNeeded, groupByKind, isMeasuredBeam, HEIGHT_LABEL, neckHeightAssumed, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
 } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { groupByFloor, metres, setAsideBy } from "../utils/floorSources";
@@ -106,6 +106,7 @@ function FoundList(p: Props & { data: CandidateList }) {
   const rejected = useMemo(() => data.candidates.filter((c) => c.decision === "REJECTED"), [data.candidates]);
   const floorGroups = useMemo(() => groupByFloor(fresh), [fresh]);
   const needed = useMemo(() => neededHeights(fresh, p.picks), [fresh, p.picks]);
+  const neckText = useMemo(() => neckHeightAssumed(fresh), [fresh]);
   const tankSizes = useMemo(() => tankSizeChoices(fresh), [fresh]);
   const tankFields = useMemo(() => new Set(fresh.filter(isTankItem).flatMap((c) => fieldsStillNeeded(c, p.picks))), [fresh, p.picks]);
   const chosen = useMemo(() => fresh.filter((c) => p.selected.has(c.id)), [fresh, p.selected]);
@@ -201,6 +202,19 @@ function FoundList(p: Props & { data: CandidateList }) {
           <div className="mt-2 text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.heightsHint", "The drawing gave no value for these. They are saved on each accepted item as given by you.")}</div>
         </div>
 ) : null}
+
+      {neckText !== null && !needed.includes("neck_height_mm") ? (
+        <div className="mx-4 mb-3 rounded-[8px] border border-[var(--color-border)] p-3" data-testid="found-neck-override">
+          <label className="block text-[12.5px]">
+            <span className="mb-1 block font-medium">{t("boq.takeoff.found.neckOverride", { defaultValue: "Neck column height: {{text}} is used, as in the QS's workbook, and is marked assumed. Type another height to use instead (mm).", text: neckText })}</span>
+            <input className={inputClass} inputMode="decimal" value={p.heights.neck_height_mm} placeholder={t("boq.takeoff.found.neckPlaceholder", "optional")} data-testid="found-height-neck_height_mm"
+              onChange={(e) => p.onHeights({ ...p.heights, neck_height_mm: e.target.value })} />
+            {p.heights.neck_height_mm.trim() !== "" && validHeight(p.heights.neck_height_mm) === null ? (
+              <span className="mt-0.5 block text-[11.5px] text-[var(--color-danger)]">{t("boq.takeoff.found.heightBad", "Type a number between 100 and 20000.")}</span>
+            ) : null}
+          </label>
+        </div>
+      ) : null}
 
       {fresh.length === 0 ? (
         <div className="px-4 pb-4 text-[13px] text-[var(--color-text-muted)]" data-testid="found-none-left">
@@ -329,7 +343,7 @@ function Row({ c, steel, onSteel, pick, onPick, selected, focused, canEdit, onTo
             <Badge tone={LEVEL_TONE[level]}>{Math.round(Number(c.confidence) * 100)}%</Badge>
             {warnings.length > 0 ? <Badge tone="gold">{t("boq.takeoff.found.check", "check")}</Badge> : null}
             {c.missing.includes("size") ? <Badge tone="red">{t("boq.takeoff.found.noSize", "no size")}</Badge> : null}
-            {c.category === "BEAM" ? <Badge tone="slate">{t("boq.takeoff.found.countOnly", "count only")}</Badge> : null}
+            {c.category === "BEAM" && !isMeasuredBeam(c) ? <Badge tone="slate">{t("boq.takeoff.found.countOnly", "count only")}</Badge> : null}
           </div>
           {facts ? <div className="mt-0.5 text-[11.5px] text-[var(--color-text-muted)]">{facts}</div> : null}
           {warnings.map((n) => <div key={n.code} className="mt-1 text-[11.5px] text-[var(--color-warning)]">{n.message}</div>)}
@@ -341,7 +355,9 @@ function Row({ c, steel, onSteel, pick, onPick, selected, focused, canEdit, onTo
           ) : null}
           {onPick && canEdit && offersSectionChoice(c) ? (
             <label className="mt-1.5 block text-[11.5px]" data-testid="found-section-pick">
-              <span className="mb-0.5 block text-[var(--color-text-muted)]">{t("boq.takeoff.found.sectionPick", "The sheet prints several sections for this kind of beam and does not say which lies under which wall. Choose one, or type a depth above.")}</span>
+              <span className="mb-0.5 block text-[var(--color-text-muted)]">{(c.facts as Record<string, unknown> | null)?.from_strips === true
+                ? t("boq.takeoff.found.sectionPickStrip", "No section is captioned with this beam's mark. These are the sections printed for this kind of beam. Choose one, or type a depth above.")
+                : t("boq.takeoff.found.sectionPick", "The sheet prints several sections for this kind of beam and does not say which lies under which wall. Choose one, or type a depth above.")}</span>
               <select className={`${inputClass} !h-8 !px-2 !text-[12px]`} value={pick ?? ""} data-testid="found-section-select" onChange={(e) => onPick(c.id, e.target.value || null)}>
                 <option value="">{t("boq.takeoff.found.sectionNone", "Choose a section…")}</option>
                 {sectionOptions(c).map((o) => <option key={o.mark} value={o.mark}>{sectionLabel(o)}</option>)}

@@ -56,7 +56,7 @@ export function StructureSection({ facts }: Props) {
     <div className="space-y-1.5" data-testid="structure-section">
       <div className="font-semibold text-[var(--color-text-primary)]">{t("drawings.structure.title", "Structure by floor")}</div>
       <p className="text-[11px] leading-snug text-[var(--color-text-muted)]">
-        {t("drawings.structure.intro", "Columns, footings and beam marks are counted on each structural plan separately, so the same mark on two floors is two lots. Column sizes are measured from the plan; a footing size is taken from the section details and the pairing with its mark is a guess to confirm. Heights and depths are asked for when you accept an item.")}
+        {t("drawings.structure.intro", "Columns, footings and beam marks are counted on each structural plan separately, so the same mark on two floors is two lots. Column sizes are measured from the plan; a footing size is taken from the section details, and its pairing with a mark follows the column the footing is written beside on the foundation plan (to confirm). A height or depth the drawing does not print is asked for when you accept an item; the neck column height and the footing depth are assumed and flagged.")}
       </p>
       {levels.map((l) => <LevelRow key={l.key} l={l} />)}
       {views.length > 0 ? (

@@ -102,6 +102,9 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
   if category == "SLAB" and typed.get("slab_thickness_mm") is not None and any(n.get("code") == "SLAB_THICKNESS_DISAGREES" for n in notes or []):
     out["depth_mm"] = float(typed["slab_thickness_mm"])
     out["dims_basis"] = "SPECIFIED"
+  if category == "COLUMN" and (facts or {}).get("neck_assumed") and typed.get("neck_height_mm") is not None:
+    out["depth_mm"] = float(typed["neck_height_mm"])
+    out["dims_basis"] = "SPECIFIED"
   if category == "STAIR" and "waist_mm" in (missing or []):
     value = typed.get("stair_waist_mm")
     
@@ -268,7 +271,7 @@ class ExtractService:
       raise TraceException("The recommended scale could not be used. Set the scale by hand.", status_code=409, code="SHEET_NOT_CALIBRATED")
     return cal, ev, True
 
-  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, regions_only: bool = False) -> dict:
+  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, regions_only: bool = False, site_only: bool = False) -> dict:
     sheet = await self.core._sheet(org, sheet_id, lock=True)
     if sheet.prep_status != "READY":
       raise TraceException("Prepare this sheet first; its drawing has not been read yet.", status_code=409, code="SHEET_NOT_PREPARED")
@@ -292,7 +295,7 @@ class ExtractService:
     floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
     lowest_level = bool(level_hint) and bool(floors) and floors[0] == level_hint
     try:
-      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, cal_factor=float(ev.factor), scale_unverified=unverified,
+      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, site_only=site_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
@@ -303,6 +306,8 @@ class ExtractService:
   
     if regions_only and not (result.stats.get("plan_regions") or {}).get("count"):
       raise NoPlanRegions()
+    if site_only and not result.candidates:
+      raise NoPlanRegions()                                   
     found = result.candidates
     result.stats["floors_read_elsewhere"] = await self._repeated_floors(org, sheet, title, result)
     codes = {c.work_item for c in found if c.work_item}
@@ -454,6 +459,13 @@ class ExtractService:
             done.append(await self.extract_sheet(org, sheet_id, user_id, payload, regions_only=True))
             continue
         
+          except NoPlanRegions:
+            pass
+          except TraceException:
+            await self.session.rollback()
+          try:
+            done.append(await self.extract_sheet(org, sheet_id, user_id, payload, site_only=True))
+            continue
           except NoPlanRegions:
             pass
           except TraceException:

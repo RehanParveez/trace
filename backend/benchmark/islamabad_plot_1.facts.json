@@ -287,6 +287,150 @@
    "area_m2": 1.95,
    "tolerance_pct": 5,
    "note": "printed size 5.417 ft x 3.875 ft"
+  },
+  {
+   "kind": "LEVEL",
+   "name": "ROAD",
+   "mm": 0,
+   "note": "sections: ROAD LEVEL +/-0'-0\" (page 5)"
+  },
+  {
+   "kind": "LEVEL",
+   "name": "DPC",
+   "mm": 1066.8,
+   "note": "sections: D.P.C +3'-6\" (page 5)"
+  },
+  {
+   "kind": "LEVEL",
+   "name": "FLOOR",
+   "mm": 1066.8,
+   "note": "sections: F.F.LEV. +3'-6\" (page 5)"
+  },
+  {
+   "kind": "STOREY",
+   "clear_mm": 3048,
+   "count": 3,
+   "slab_mm": 152.4,
+   "note": "10'-0\" clear: basement, ground, first (page 5 sections)"
+  },
+  {
+   "kind": "STOREY",
+   "clear_mm": 2743.2,
+   "count": 1,
+   "slab_mm": 152.4,
+   "note": "9'-0\" clear: mumty (page 5 sections)"
+  },
+  {
+   "kind": "AREA_TABLE",
+   "key": "BASEMENT",
+   "value": 1440,
+   "unit": "SFT",
+   "note": "area statement, page 5"
+  },
+  {
+   "kind": "AREA_TABLE",
+   "key": "GROUND",
+   "value": 1440,
+   "unit": "SFT",
+   "note": "area statement, page 5"
+  },
+  {
+   "kind": "AREA_TABLE",
+   "key": "FIRST",
+   "value": 1440,
+   "unit": "SFT",
+   "note": "area statement, page 5"
+  },
+  {
+   "kind": "AREA_TABLE",
+   "key": "ROOF",
+   "value": 480,
+   "unit": "SFT",
+   "note": "mumty, area statement, page 5"
+  },
+  {
+   "kind": "AREA_TABLE",
+   "key": "PLOT",
+   "value": 1800,
+   "unit": "SFT",
+   "note": "area statement, page 5"
+  },
+  {
+   "kind": "AREA_TABLE",
+   "key": "GRAND",
+   "value": 4800,
+   "unit": "SFT",
+   "note": "grand total covered area, page 5"
+  },
+  {
+   "kind": "STAIR",
+   "field": "steps",
+   "value": 18,
+   "note": "'NO-Of RISER Steps:18 : 7\"' (page 5)"
+  },
+  {
+   "kind": "STAIR",
+   "field": "riser_mm",
+   "value": 177.8,
+   "note": "7\" riser"
+  },
+  {
+   "kind": "STAIR",
+   "field": "tread_mm",
+   "value": 254,
+   "note": "10\" tread"
+  },
+  {
+   "kind": "STAIR",
+   "field": "width_mm",
+   "value": 1066.8,
+   "note": "3'-6\" wide"
+  },
+  {
+   "kind": "SITE_ITEM",
+   "site_kind": "OHWT",
+   "count": 1,
+   "page": 5,
+   "note": "over head water tank on the site plan"
+  },
+  {
+   "kind": "SITE_ITEM",
+   "site_kind": "UGWT",
+   "count": 1,
+   "page": 5,
+   "note": "underground water tank on the site plan"
+  },
+  {
+   "kind": "SITE_ITEM",
+   "site_kind": "SEPTIC",
+   "count": 1,
+   "page": 5,
+   "note": "septic tank on the site plan"
+  },
+  {
+   "kind": "SITE_ITEM",
+   "site_kind": "PORCH_RAMP",
+   "count": 1,
+   "page": 5,
+   "note": "porch ramp section"
+  },
+  {
+   "kind": "SITE_ITEM",
+   "site_kind": "BOUNDARY_WALL",
+   "count": 1,
+   "page": 5,
+   "length_mm": 4648.2,
+   "height_mm": 1828.8,
+   "note": "15'-3\" long, 6'-0\" high"
+  },
+  {
+   "kind": "SITE_ITEM",
+   "site_kind": "GATE",
+   "count": 1,
+   "page": 5,
+   "width_mm": 4495.8,
+   "height_mm": 2133.6,
+   "note": "14'-9\" wide, 7'-0\" high"
   }
  ]
 }

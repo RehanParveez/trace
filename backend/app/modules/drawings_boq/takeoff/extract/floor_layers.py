@@ -9,8 +9,10 @@ TEXT = {FD.FLOOR_PCC: ("Plain concrete bed under the floor", "FLOOR-PCC"), FD.FL
   FD.FLOOR_SAND_FILL: ("Sand filling under the floor", "FLOOR-SAND-FILL")}
 
 def candidates(rooms: list, spec: dict | None, ctx: dict, level_hint: str | None, lv_spec, cls, finish) -> tuple:
-  layers = (spec or {}).get("layers") or {}
-  ambiguous = [a for a in ((spec or {}).get("layers_ambiguous") or []) if a["layer"] in ITEM_OF]
+  head = SF.floor_set(spec, level_hint)
+  under = head["heading"] if head else None
+  layers = head["layers"] if head else (spec or {}).get("layers") or {}
+  ambiguous = [a for a in ((head["layers_ambiguous"] if head else (spec or {}).get("layers_ambiguous")) or []) if a["layer"] in ITEM_OF]
   stats = {"made": [], "left_out": [], "ambiguous": [a["layer"] for a in ambiguous]}
   
   notes: list = []
@@ -26,11 +28,14 @@ def candidates(rooms: list, spec: dict | None, ctx: dict, level_hint: str | None
     text, tag = TEXT[item]
     mix = lay.get("mix")
     facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), "layer": name, "thickness_mm": lay["value_mm"], "mix": mix,
-      "spec_pages": lay.get("pages") or [], "spec_count": lay.get("count"), "spec_others": lay.get("others") or [], "spec_text": lay.get("text")}
+      "spec_pages": lay.get("pages") or [], "spec_count": lay.get("count"), "spec_others": lay.get("others") or [], "spec_text": lay.get("text"), "spec_heading": under}
+    
     if item == FD.FLOOR_PCC and mix:
       facts["spec_grade"] = {"grade": mix, "what": "plain concrete bed", "pages": lay.get("pages") or []}
     label = f"{text} · {total:.2f} m² × {lay['value_mm'] / 25.4:g} in" + (f" ({mix})" if mix else "") + (f" · {lv_spec[0]}" if lv_spec else "")
-    item_notes = [C.note("FLOOR_LAYER_FROM_SPEC", layer=name, thickness_mm=lay["value_mm"], pages=lay.get("pages") or [])]
+    item_notes = [C.note("FLOOR_LAYER_UNDER_HEADING", layer=name, thickness_mm=lay["value_mm"], heading=under, pages=lay.get("pages") or []) if under
+                  
+      else C.note("FLOOR_LAYER_FROM_SPEC", layer=name, thickness_mm=lay["value_mm"], pages=lay.get("pages") or [])]
     if lay.get("others"):
       item_notes.append(C.note("SPEC_VALUE_PRINTED_TWO_WAYS", layer=name, chosen_mm=lay["value_mm"], others=lay["others"]))
     out.append(FD._make(cls, ctx, finish, (item, level_hint or ""), item, label, tag, [FD._centre(pts)],

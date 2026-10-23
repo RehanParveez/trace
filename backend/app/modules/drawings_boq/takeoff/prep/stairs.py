@@ -20,6 +20,7 @@ _TREAD = re.compile(r"\bTREADS?\s*(?:WIDTH)?\s*[:=]\s*" + _VAL, re.I)
 _WIDTH = re.compile(r"\bSTAIR(?:CASE)?\s+WIDTH\s*[:=]\s*(?:(?P<ft>\d{1,2})\s*['’′]\s*-?\s*(?P<in>\d{1,2}(?:\s+\d/\d)?)?\s*(?:\"|″|”|'')?|" + _MM + r")", re.I)
 _STEPS = re.compile(r"\bNO\.?\s*-?\s*OF\s*(?P<what>STEPS|RISERS?|TREADS?)\s*[:=]?\s*(?P<n>\d{1,2})\b", re.I)
 _STEPS_B = re.compile(r"\b(?P<n>\d{1,2})\s*(?P<what>STEPS|RISERS)\b", re.I)
+_STEPS_C = re.compile(r"\b(?P<what>STEPS)\s*[:=]\s*(?P<n>\d{1,2})\b", re.I)
 _WAIST_A = re.compile(r"\bWAIST(?:\s+SLAB)?\s*(?:THK\.?|THICK(?:NESS)?)?\s*[:=]?\s*" + _VAL, re.I)
 _WAIST_B = re.compile(_VAL + r"\s*(?:THK\.?|THICK)\s+WAIST", re.I)
 _LABEL = re.compile(r"^\W*STAIR(?:S|CASE|\s+CASE)?(?:\s+(?:UP|DN|DOWN))?\W*$", re.I)
@@ -75,7 +76,7 @@ def read_line(text: str) -> dict:
       width = int(m.group("ft")) * MM_FOOT + (inch or 0.0)
     if _within(width, WIDTH_MM):
       out["width_mm"] = _within(width, WIDTH_MM)
-  m = _STEPS.search(t) or _STEPS_B.search(t)
+  m = _STEPS.search(t) or _STEPS_B.search(t) or _STEPS_C.search(t)
   if m:
     n = int(m.group("n"))
     if m.group("what").upper().startswith("TREAD"):

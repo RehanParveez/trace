@@ -6,6 +6,7 @@ import sys
 import time
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.proof import benchmark_sheet as BS
 from app.modules.drawings_boq.takeoff.proof import known_facts as K
 from app.modules.drawings_boq.takeoff.proof import readsummary as RS
 
@@ -49,10 +50,10 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     for c in res.candidates:
       c.decision = "PENDING"                                                       
     read.append({"page_no": no, "title": title, "schedule": schedule, "candidates": res.candidates, "notes": [n.get("code") for n in res.notes], "mm_per_pt": round(mm_per_pt, 4),
-      "seconds": round(time.monotonic() - started, 1)})
+      "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts")})
   return read, problems
 
-EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT")
+EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT") + BS.SHEET_KINDS
 
 def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
   chosen = {str(k).upper(): int(v) for k, v in (chosen or {}).items()}
@@ -89,7 +90,7 @@ def load_facts(path: str) -> tuple:
   for i, r in enumerate(raw, 1):
     kind = str(r.get("kind") or "").strip().upper()
     if kind in EXTRA_KINDS:
-      need = ("symbol", "page", "count") if kind == "ELECTRICAL" else ("family", "count")
+      need = BS.NEEDS.get(kind) or (("symbol", "page", "count") if kind == "ELECTRICAL" else ("family", "count"))
       missing = [k for k in need if r.get(k) in (None, "")]
       if missing:
         raise SystemExit(f"{path}: fact {i}: a {kind} fact needs {', '.join(missing)}.")
@@ -112,8 +113,11 @@ def _extra_result(f: dict, status: str, expected, found, message: str) -> dict:
     text = f"{f['count']} x {f['family']}" + (f" on the {f['floor'].lower()} floor" if f.get("floor") else "")
   return {"fact": {"kind": f["kind"], "category": f.get("symbol") or f.get("family")}, "text": text, "status": status, "expected": expected, "found": found, "message": message, "note": str(f.get("note") or "")}
 
-def check_extras(extras: list, pdf: bytes, electrical: dict | None) -> list:
+def check_extras(extras: list, pdf: bytes, electrical: dict | None, read: list | None = None) -> list:
   out, counts = [], None
+  sheet = [f for f in extras if f["kind"] in BS.SHEET_KINDS]
+  extras = [f for f in extras if f["kind"] not in BS.SHEET_KINDS]
+  out.extend(BS.check(f, read or []) for f in sheet)
   if any(f["kind"] == "ELECTRICAL" for f in extras):
     if not electrical or "legend_page" not in electrical or not electrical.get("plan_pages"):
       raise SystemExit("The facts file has ELECTRICAL facts but no \"electrical\": {\"legend_page\": n, \"plan_pages\": [...]}.")
@@ -241,10 +245,9 @@ def main(argv: list | None = None) -> int:
   used = choose_floor_sources(read, sources)
   baseline = json.load(open(args.baseline, encoding="utf-8")) if args.baseline and os.path.exists(args.baseline) else None
   pdf_bytes = open(args.pdf, "rb").read()
-  rep = report(os.path.basename(args.pdf), read, problems, facts, notes, baseline, check_extras(extras, pdf_bytes, electrical))
+  rep = report(os.path.basename(args.pdf), read, problems, facts, notes, baseline, check_extras(extras, pdf_bytes, electrical, read))
   rep["floor_sources"] = used
   print(render(rep))
-  
   if args.observed:
     obs = observed(read)
     rep["observed"] = obs

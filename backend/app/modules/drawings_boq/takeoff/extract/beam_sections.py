@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 
@@ -13,6 +14,44 @@ def options_for(role: str, sections: list) -> list:
   kind = KIND_OF_ROLE.get(role)
   kinds = (kind, *ALSO_OFFERED.get(role, ()))
   return [s for s in sections or [] if s.get("kind") in kinds and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
+
+KINDS_OF_MARK = {"GB": ("GRADE",), "PB": ("PLINTH",), "RB": ("ROOF", "BEAM"), "B": ("BEAM", "ROOF"), "TB": ("TIE",)}
+
+def options_for_mark(mark, sections: list) -> list:
+  kinds = KINDS_OF_MARK.get(re.sub(r"[^A-Z]", "", norm_mark(str(mark or ""))))
+  return [s for s in sections or [] if kinds and s.get("kind") in kinds and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
+
+def option(s: dict) -> dict:
+  return {"mark": s["mark"], "depth_mm": s.get("depth_mm"), "steel_text": s.get("steel_text"), "steel": s.get("steel")}
+
+def list_for_strips(c, sections: list) -> bool:
+  """A beam drawn as strips and marked GB-1 where no section is captioned GB-1: the sections printed for beams of that kind are listed to choose from, none is applied."""
+  f = c.facts if c.facts is not None else {}
+  opts = options_for_mark(c.tag, sections)
+  if f.get("section_mark") or not opts:
+    return False
+  c.facts = f
+  f["section_options"] = [option(s) for s in opts]
+  note = C.note("BEAM_MARK_NO_SECTION")
+  note["message"] += " Sections printed: " + "; ".join(_text(s) for s in opts) + "."
+  c.notes.append(note)
+  return True
+
+def chosen(facts: dict | None, pick: str) -> tuple:
+  """(section, None) for the section the user picked among the options listed on the beam, else (None, (code, message))."""
+  s = next((o for o in (facts or {}).get("section_options") or [] if o.get("mark") == pick), None)
+  if s is None:
+    return None, ("BEAM_SECTION_NOT_LISTED", "The section chosen is not one of those listed for this beam. Choose again.")
+  return s, None
+
+def with_section(params: dict, section: dict) -> dict:
+  """The beam's values with the chosen section's depth and bars; a section whose depth was not read leaves the depth to be typed."""
+  out = dict(params or {})
+  if section.get("depth_mm"):
+    out["depth_mm"] = section["depth_mm"]
+  if section.get("steel"):
+    out["steel"] = dict(section["steel"])
+  return out
 
 def apply_marked(c, sections: list) -> bool:
   """A beam the plan marks (B2, GB4) takes the depth and bars of the section printed for that mark. A section that two details print differently (disagree), or that
@@ -71,7 +110,7 @@ def apply(beams: list, sections: list) -> dict:
         c.notes.append(C.note("STEEL_FROM_DETAIL", text=s.get("steel_text")))
       stats["applied"] += 1
     else:
-      f["section_options"] = [{"mark": s["mark"], "depth_mm": s.get("depth_mm"), "steel_text": s.get("steel_text")} for s in opts]
+      f["section_options"] = [option(s) for s in opts]
       note = C.note("BEAM_SECTIONS_LISTED", options=f["section_options"])
       note["message"] += " Sections printed: " + "; ".join(_text(s) for s in opts) + "."
       c.notes.append(note)

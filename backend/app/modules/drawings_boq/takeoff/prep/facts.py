@@ -280,6 +280,29 @@ def _texts(lines: list, found: dict) -> list:
   out.extend((entry, block) for block in found["blocks"] for entry in block["entries"])
   return out
 
+_NAMED_LEVEL = re.compile(r"\b(?P<n>ROAD\s*LEVEL|R\.?\s?LEV\.?|D\.?\s?P\.?\s?C\.?|F\.?\s?F\.?\s?LEV(?:EL)?\.?|PLINTH\s*LEVEL|GROUND\s*LEVEL)\s*(?P<m>(?:\+/-|[+\-\u00b1])\s*\d{1,3}\s*'.*)$", re.I)
+
+def _level_name(raw: str) -> str:
+  t = re.sub(r"[\s.]", "", raw.upper())
+  if t.startswith(("ROAD", "RLEV")):
+    return "ROAD"
+  if t == "DPC":
+    return "DPC"
+  if t.startswith("FF"):
+    return "FLOOR"
+  return "PLINTH" if t.startswith("PLINTH") else "GROUND"
+
+def named_levels(lines: list) -> list:
+  seen: Counter = Counter()
+  for ln in lines:
+    m = _NAMED_LEVEL.search(_fix(getattr(ln, "text", ln) or ""))
+    if not m:
+      continue
+    mm = level_mark_mm(m.group("m"))
+    if mm is not None:
+      seen[(_level_name(m.group("n")), mm)] += 1
+  return [{"name": n, "mm": mm, "count": c} for (n, mm), c in sorted(seen.items())]
+
 def read_facts(lines: list, words: list | None = None, scanned: bool = False) -> dict:
   seen: dict = {}
   marks: Counter = Counter()
@@ -303,6 +326,9 @@ def read_facts(lines: list, words: list | None = None, scanned: bool = False) ->
       elif len(seen) < MAX_ITEMS_PER_SHEET:
         seen[key] = {**it, "count": 1}
   out = {"items": list(seen.values()), "level_marks": [{"mm": k, "count": v} for k, v in sorted(marks.items())]}
+  named = named_levels(lines)
+  if named:
+    out["named_levels"] = named
   if found["blocks"]:
     out["spec_blocks"] = [{"key": b["key"], "heading": b["heading"], "entries": len(b["entries"])} for b in found["blocks"]]
   if words:
@@ -397,9 +423,12 @@ def gather(sheets: list[dict]) -> dict:
   marks: list = []
   
   storeys = None
+  named: Counter = Counter()
   for sh in sheets:
     facts = sh.get("facts") or {}
     marks.extend(facts.get("level_marks") or [])
+    for nl in facts.get("named_levels") or []:
+      named[(nl["name"], nl["mm"])] += int(nl.get("count", 1))
     got = facts.get("storeys")
     
     if got and (storeys is None or (got.get("consistent"), len(got.get("clusters") or [])) > (storeys.get("consistent"), len(storeys.get("clusters") or []))):
@@ -427,4 +456,5 @@ def gather(sheets: list[dict]) -> dict:
     if len(by_value) > 1:
       conflicts.append({"kind": kind, "name": name, "values": list(by_value.values())})
   ladder = level_ladder(marks)
-  return {"items": items, "conflicts": conflicts, "ladder": ladder, "storeys": storeys, "suggest": {"wall_height": suggest_wall_height(items, ladder)}}
+  return {"items": items, "conflicts": conflicts, "ladder": ladder, "storeys": storeys, "suggest": {"wall_height": suggest_wall_height(items, ladder)},
+    "named_levels": [{"name": n, "mm": mm, "count": c} for (n, mm), c in sorted(named.items())]}

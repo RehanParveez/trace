@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.engine.measure import readings as QS
+from app.engine.measure import proposed as PR
 from app.modules.drawings_boq.takeoff.extract import config as C
 
 BASEMENT = "BASEMENT"
@@ -8,6 +9,31 @@ HEIGHT_CODES = ("HEIGHT_FROM_SECTION", "HEIGHT_FROM_NOTE", "HEIGHT_FROM_QS")
 def _ft_in(mm: float) -> str:
   inches = round(mm / 25.4)
   return f"{inches // 12}'-{inches % 12}\""
+
+BEAM_BASES = ("ABOVE_PLINTH_BEAM", "BETWEEN_BEAMS")
+
+def less_beams(heights: dict, lowest_level: bool, ft_in) -> dict:
+  basis = QS.choice("wall_height_basis")
+  entry = (heights or {}).get("WALL")
+  if basis not in BEAM_BASES or not entry or entry.get("basis") not in ("SECTION", "QS"):
+    return heights
+  sizes = PR.sizes()
+  cuts: list = []
+  
+  if lowest_level:
+    cuts.append(("plinth beam", float(sizes["plinth_beam_depth_mm"]["mm"])))
+  if basis == "BETWEEN_BEAMS":
+    web = float(sizes["beam_depth_mm"]["mm"])
+    if QS.param("beam_depth_includes_slab"):
+      web = max(web - float(QS.convention("slab_thickness_mm") or 0.0), 0.0)
+    cuts.append(("roof beam web", web))
+  total = sum(mm for _, mm in cuts)
+  
+  if total <= 0.0 or float(entry["mm"]) <= total:
+    return heights
+  mm = float(entry["mm"]) - total
+  text = f"{entry['text']}, less the " + " and the ".join(f"{name} {ft_in(v)}" for name, v in cuts) + f" ({basis.lower().replace('_', ' ')}), {ft_in(mm)}"
+  return {**heights, "WALL": {**entry, "mm": mm, "text": text, "less_beams": [{"name": n, "mm": v} for n, v in cuts]}}
 
 def floor_heights(heights: dict, floors: dict | None, level_hint: str | None, ft_in, clear_only) -> dict:
   if not QS.flag("wall_height_floor_to_floor"):
@@ -74,8 +100,15 @@ def counted_completion(completion: list) -> list:
     stamp(c, "S8")
   return list(completion or [])
 
+CFT_MM3 = 304.8 ** 3
+
+def _piece(c, role: str, assumed: list) -> None:
+  p = c.params or {}
+  if p.get("length_mm") and p.get("width_mm") and p.get("depth_mm"):
+    c.facts = {**(c.facts or {}), "foundation_piece": {"role": role, "cft": round(p["length_mm"] * p["width_mm"] * p["depth_mm"] / CFT_MM3, 4), "assumed": assumed}}
+
 def apply(cands: list, level_hint: str | None) -> dict:
-  stats = {"footing_depths": 0, "stairs": 0, "tanks": 0, "boundary": 0}
+  stats = {"footing_depths": 0, "stairs": 0, "tanks": 0, "boundary": 0, "neck_heights": 0}
   depth = float(QS.convention("footing_depth_mm"))
   
   for c in cands:
@@ -88,6 +121,17 @@ def apply(cands: list, level_hint: str | None) -> dict:
       
       stamp(c, "X4")
       stats["footing_depths"] += 1
+    elif c.category == "COLUMN" and f.get("neck_of") and "height_mm" in (c.missing or []):
+      size = PR.sizes()["neck_height_mm"]
+      c.params = {**(c.params or {}), "depth_mm": size["mm"], "dims_basis": "SPECIFIED"}
+      c.missing = [m for m in c.missing if m != "height_mm"]
+      c.facts = {**f, "neck_assumed": {"mm": size["mm"], "text": size["text"], "evidence": size["evidence"]}}
+      nh = C.note("NECK_HEIGHT_ASSUMED", height_mm=size["mm"])
+      nh["message"] = (f"The neck column runs from the top of the footing to the lowest floor. That height is not printed on the sheet. {size['text']} is used, as the QS's workbook has it "
+        f"({size['evidence'].rstrip('.')}). Type another height to override it.")
+      c.notes.append(nh)
+      stats["neck_heights"] += 1
+      
     elif c.category == "STAIR" and any(x.get("code") == "STAIR_WAIST_ASSUMED" for x in c.notes or []):
       stamp(c, "X8", "S12")
       stats["stairs"] += 1
@@ -99,4 +143,11 @@ def apply(cands: list, level_hint: str | None) -> dict:
       c.notes.append(C.note("SITE_WALL_QS_ESTIMATE", thickness_mm=QS.convention("boundary_wall_thickness_mm")))
       stamp(c, "S7", "X11")
       stats["boundary"] += 1
+  for c in cands:
+    codes = {n.get("code") for n in c.notes or []}
+    if c.category == "FOOTING":
+      _piece(c, "FOOTING", [x for x, k in (("depth", "FOOTING_DEPTH_QS"), ("size pairing", "FOOTING_SIZE_ORDER_ASSUMED"), ("size pairing", "FOOTING_SIZE_PAIRED"),
+        ("size by elimination", "FOOTING_SIZE_BY_ELIMINATION")) if k in codes])
+    elif c.category == "COLUMN" and (c.facts or {}).get("neck_of"):
+      _piece(c, "NECK", ["height"] if "NECK_HEIGHT_ASSUMED" in codes else [])
   return stats

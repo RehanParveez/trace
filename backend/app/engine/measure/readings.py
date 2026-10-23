@@ -31,13 +31,28 @@ FLAGS = {
   "rcc_ring_closed": True,
   "brick_length_centre_line": True,
 }
+
+CHOICES = {
+  "wall_height_basis": "FLOOR_TO_FLOOR",
+}
+CHOICE_OPTIONS = {
+  "wall_height_basis": {
+    "FLOOR_TO_FLOOR": "Floor to floor, as printed on the building sections (the QS's answer S5). A beam or band inside the wall is not taken off the height.",
+    "CLEAR": "Clear storey height printed on the building sections (floor to the soffit of the slab above).",
+    "ABOVE_PLINTH_BEAM": "Floor to floor less the depth of the plinth beam, on the lowest storey only: the wall stands from the top of the plinth beam (the QS's own worksheet, 9.25 ft in the basement). Needs the QS to confirm.",
+    "BETWEEN_BEAMS": "As ABOVE_PLINTH_BEAM, and also less the web of the roof beam below the slab on every storey (the beam depth less the slab, as the beam depth includes the slab, N1): the wall stands between the two beams. Needs the QS to confirm.",
+  },
+}
 PARAM_VALUES = {
+  "brick_net_of_lintels": 1.0,
   "stair_formwork_soffit_only": 1.0,
   "beam_depth_includes_slab": 1.0,
   "tie_band_replaces_lintel": 0.0,
+  "tie_band_single_count": 1.0,
+  "slab_projection_chajja_max_mm": 457.2,
   "footing_formwork": 1.0,             
   "steel_wastage_pct": 5.0,            
-  "pcc_thickness_mm": 76.2,            
+  "pcc_thickness_mm": 76.2,                        
   "slab_steel_kg_per_m2": 16.1459,     
   "tank_base_formwork": 1.0,           
   "earth_swell_pct": 0.0,              
@@ -216,7 +231,12 @@ def param(name: str):
 def convention(name: str):
   return CONVENTIONS.get(name)
 
+def choice(name: str):
+  return CHOICES.get(name)
+
 def flag(name: str) -> bool:
+  if name == "wall_height_floor_to_floor":
+    return CHOICES.get("wall_height_basis") != "CLEAR"          
   return bool(FLAGS.get(name))
 
 def by_status() -> dict:
@@ -228,7 +248,7 @@ def by_status() -> dict:
 def public() -> dict:
   """What the API shows: the answers, the site assumptions the QS set and the conventions used while reading."""
   return {"qs": QS_NAME, "answered_on": ANSWERED_ON, "sections": [{"key": k, "title": v} for k, v in SECTIONS.items()], "answers": [dict(a) for a in READINGS],
-    "params": dict(PARAM_VALUES), "conventions": dict(CONVENTIONS), "counts": by_status(), "proposed": proposed.public()}
+    "params": dict(PARAM_VALUES), "conventions": dict(CONVENTIONS), "choices": dict(CHOICES), "choice_options": {k: dict(v) for k, v in CHOICE_OPTIONS.items()}, "counts": by_status(), "proposed": proposed.public()}
 
 def note_text(*ids: str) -> str:
   return "The QS readings are (" + ", ".join(ids) + ")."

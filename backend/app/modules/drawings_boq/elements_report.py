@@ -1,6 +1,6 @@
 from __future__ import annotations
 from reportlab.lib import colors
-from app.modules.drawings_boq.takeoff.evidence import GRADES, GRADE_TEXT, tally as evidence_tally
+from app.modules.drawings_boq.takeoff.evidence import GRADES, GRADE_TEXT, tally as evidence_tally, valid_on_assumption
 from app.modules.drawings_boq.takeoff.sheet_reason import ACTION_HINT, sheet_reason
 import re
 from decimal import Decimal, InvalidOperation
@@ -279,10 +279,84 @@ def _columns(is_pdf: bool) -> list[tuple[str, float, bool]]:
     ("Material", material, False), ("Quantity", 19.0, True), ("Size", 27.0, False), ("Status", 14.0, False), ("Measured as", measured, False),
     ("Flags", 25.0 if is_pdf else 22.0, False), last]
 
+def band_totals(rows: list) -> dict | None:
+  seen: dict = {}
+  for row in rows:
+    meta = pdf_meta(row)
+    rec = meta.get("band_count")
+    if rec:
+      seen.setdefault((meta.get("sheet_id"), rec.get("floor")), rec)
+  if not seen:
+    return None
+  recs = list(seen.values())
+  return {"floors": len(recs), "without_cft": sum(r["without_band_cft"] for r in recs), "with_cft": sum(r["with_band_cft"] for r in recs), "delta_cft": sum(r["delta_cft"] for r in recs),
+    "counted_cft": sum(r["counted_cft"] for r in recs), "single": all(r.get("mode") == "SINGLE" for r in recs), "assumed": any(r.get("depth_assumed") for r in recs)}
+
+def foundation_totals(rows: list) -> dict | None:
+  n, cft, assumed = {"FOOTING": 0.0, "NECK": 0.0}, {"FOOTING": 0.0, "NECK": 0.0}, {"FOOTING": set(), "NECK": set()}
+  for row in rows:
+    rec = pdf_meta(row).get("foundation")
+    if rec and rec.get("role") in n:
+      n[rec["role"]] += float(rec.get("pieces", 1))
+      cft[rec["role"]] += float(rec["cft"])
+      assumed[rec["role"]].update(rec.get("assumed") or [])
+      
+  if not n["FOOTING"] and not n["NECK"]:
+    return None
+  return {"footing_n": round(n["FOOTING"]), "footing_cft": cft["FOOTING"], "neck_n": round(n["NECK"]), "neck_cft": cft["NECK"], "footing_assumed": sorted(assumed["FOOTING"]), "neck_assumed": sorted(assumed["NECK"])}
+
+def strip_totals(rows: list) -> dict | None:
+  n = missing = 0
+  net = gross = 0.0
+  for row in rows:
+    meta = pdf_meta(row)
+    rec = meta.get("beam_strips")
+    if rec:
+      n += 1
+      net += float(rec.get("net_m") or 0.0)
+      gross += float(rec.get("gross_m") or 0.0)
+      missing += 1 if "depth_mm" in (meta.get("missing") or []) else 0
+  return {"n": n, "net_m": net, "gross_m": gross, "no_depth": missing} if n else None
+
+def mark_checks(rows: list) -> list:
+  """The distinct column mark findings the rows carry, in the order first met."""
+  seen, out = set(), []
+  for row in rows:
+    for chk in pdf_meta(row).get("mark_check") or []:
+      key = (chk.get("kind"), chk.get("mark"), chk.get("detail"), chk.get("text"))
+      if key not in seen:
+        seen.add(key)
+        out.append(chk)
+  return out
+
+def thickness_totals(rows: list) -> dict | None:
+  seen: dict = {}
+  
+  for row in rows:
+    meta = pdf_meta(row)
+    rec = meta.get("slab_thickness")
+    if rec:
+      seen.setdefault((meta.get("sheet_id"), rec.get("floor")), rec)
+  if not seen:
+    return None
+  used_m3, used_mm, alts = 0.0, set(), {}
+  
+  for rec in seen.values():
+    for o in rec["options"]:
+      if o.get("used"):
+        used_m3 += o["m3"]
+        used_mm.add(o["mm"])
+      else:
+        slot = alts.setdefault(o["mm"], {"delta_m3": 0.0, "delta_cft": 0.0, "who": o.get("witnesses") or [], "floors": 0})
+        slot["delta_m3"] += o["delta_m3"]
+        slot["delta_cft"] += o["delta_cft"]
+        slot["floors"] += 1
+  return {"floors": len(seen), "used_mm": sorted(used_mm), "used_m3": used_m3, "alts": alts}
+
 def _summary_block(st, reco: dict, is_pdf: bool, facts: dict | None, rows: list, filters: dict) -> list:
   listed, expected, everything = reco["listed"], reco["expected"], reco["everything"]
   filt = filter_text(filters)
-  measured = sum(1 for r in rows if measure_mode(r) == "PDF_MEASURED") if is_pdf else None
+  measured = evidence_tally(rows)["MEASURED"] if is_pdf else None
   review = sum(1 for r in rows if (getattr(r, "normalization_status", None) or "PENDING") != "VALID")
   lines = [
     ("Rows in this report", f"{listed:,}"),
@@ -298,9 +372,36 @@ def _summary_block(st, reco: dict, is_pdf: bool, facts: dict | None, rows: list,
     
     if sum(grades.values()):
       lines.append(("What the rows stand on", " | ".join(f"{grades[g]:,} {GRADE_LABEL[g].lower()}" for g in GRADES)))
+    on_assumption = valid_on_assumption(rows)
+    if on_assumption:
+      lines.append(("Marked VALID but resting on an assumption or a gap", f"{on_assumption:,} rows (their status says VALID; a value of the row is assumed, disputed or missing)"))
     decisions = len(decision_groups(rows, {id(r): i for i, r in enumerate(rows, start=1)}))
     if review:
       lines.append(("Decisions", f"{decisions:,} decision{'s' if decisions != 1 else ''} cover the {review:,} rows that need a look (rows of one item share one decision)"))
+    band = band_totals(rows)
+    if band:
+      lines.append(("Concrete with and without the tie band", f"{band['without_cft']:,.0f} cft of roof beam and lintel concrete without the tie band, {band['with_cft']:,.0f} cft with it laid separately "
+        f"(difference {band['delta_cft']:,.0f} cft) over {band['floors']} floor{'s' if band['floors'] != 1 else ''}; counted in the register: {band['counted_cft']:,.0f} cft"
+        + (" (tie band counted once)" if band["single"] else " (tie band listed separately)") + ("; a beam depth is assumed in these figures" if band["assumed"] else "")))
+    found = foundation_totals(rows)
+    
+    if found:
+      said = lambda xs: (" Assumed: " + ", ".join(xs) + ".") if xs else ""
+      lines.append(("Footings and neck columns", f"{found['footing_n']:,} footing piece{'s' if found['footing_n'] != 1 else ''}, {found['footing_cft']:,.1f} cft.{said(found['footing_assumed'])} "
+        f"{found['neck_n']:,} neck column piece{'s' if found['neck_n'] != 1 else ''}, {found['neck_cft']:,.1f} cft.{said(found['neck_assumed'])}"))
+    strips = strip_totals(rows)
+    
+    if strips:
+      lines.append(("Beams drawn on the framing plans", f"{strips['n']:,} beam row{'s' if strips['n'] != 1 else ''}, {strips['net_m']:,.1f} m between column faces ({strips['gross_m']:,.1f} m centre to centre); "
+        f"{strips['no_depth']:,} still need a depth"))
+    for chk in mark_checks(rows)[:8]:
+      lines.append(("Column marks", chk["text"]))
+    thick = thickness_totals(rows)
+    
+    if thick:
+      used = ", ".join(f"{mm / 25.4:g} in" for mm in thick["used_mm"])
+      alts = "; ".join(f"at {mm / 25.4:g} in the slab concrete changes by {a['delta_m3']:+,.2f} m3 ({a['delta_cft']:+,.0f} cft) over {a['floors']} floor{'s' if a['floors'] != 1 else ''}" for mm, a in sorted(thick["alts"].items()))
+      lines.append(("Slab thickness (one decision)", f"{thick['floors']} slab{'s' if thick['floors'] != 1 else ''} carry more than one printed thickness. Used: {used}, {thick['used_m3']:,.2f} m3 of slab concrete; {alts}"))
   else:
     lines.append(("Need a look", f"{review:,} of {listed:,} rows are not VALID"))
   data = [[_p(clean(k), st["bold"]), _p(clean(v), st["cell"])] for k, v in lines]
