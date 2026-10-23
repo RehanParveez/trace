@@ -9,6 +9,7 @@ from app.modules.audit.service import AuditLogService
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.pricing.schemas import PriceVersionRequest
 from app.modules.drawings_boq.pricing.resolver import PriceResolver, apply_resolution, clear_rate
+from app.modules.drawings_boq.pricing.spec_match import stated_spec
 from decimal import Decimal
 from uuid import UUID
 from app.modules.audit.models import AuditAction, AuditEntityType
@@ -79,7 +80,7 @@ class PricingService:
         counts["skipped_other"] += 1
         continue
     
-      res = resolver.resolve(item.work_item_code, texts_for(item), item.unit)
+      res = resolver.resolve(item.work_item_code, texts_for(item), item.unit, spec=stated_spec(item))
       if res.found:
         if apply_resolution(item, res):
           item.version += 1
@@ -161,7 +162,7 @@ class PricingService:
     resolver = await PriceResolver.load(self.session, org, version.project_id if version else None, as_of=on,
       codes={item.work_item_code} if item.work_item_code else set(), rate_book_ids=ids)
     
-    res = resolver.resolve(item.work_item_code, texts_for(item), item.unit)
+    res = resolver.resolve(item.work_item_code, texts_for(item), item.unit, spec=stated_spec(item))
     return {"item_id": item.id, "work_item_code": item.work_item_code, "unit": item.unit,
       "current": item.rate_resolution, "current_source": item.rate_source.value if item.rate_source else None,
       "current_unit_rate": item.unit_rate,

@@ -49,7 +49,7 @@ def member_of(row: dict, wastage_pct=None) -> dict | None:
   net = trace.get("net") or {}
   kg_row = dec(row.get("quantity"))
   out = {"row_id": row.get("id"), "level": row.get("level") or "", "element": row.get("element") or "", "warnings": row.get("warnings") or [], "count": 1,
-    "wastage_pct": None, "bare_kg": None, "concrete_m3": None, "kg_low": None, "kg_high": None, "tag": "", "page": None, "dia": [], "grade": ""}
+    "wastage_pct": None, "bare_kg": None, "concrete_m3": None, "kg_low": None, "kg_high": None, "tag": "", "page": None, "dia": [], "grade": "", "secondary": False, "unit": None}
   
   if formula == FORMULA_PRINTED:
     src = inputs.get("steel_source") or {}
@@ -80,7 +80,8 @@ def member_of(row: dict, wastage_pct=None) -> dict | None:
     out.update({"family": family_of(src.get("category")), "basis": ESTIMATE_PDF if estimate else PRINTED, "tag": str(src.get("tag") or ""), "page": src.get("page_no"),
       "kg": kg, "bare_kg": bare, "wastage_pct": applied, "concrete_m3": dec(src.get("concrete_m3")) if src.get("concrete_m3") is not None else None,
       "kg_low": low, "kg_high": high, "dia": dia, "as_run_wastage_pct": as_run, "keeps_bare": bare is not None and bare > 0,
-      "grade": str(src.get("steel_grade") or "")})
+      "grade": str(src.get("steel_grade") or ""), "secondary": (src.get("split") or {}).get("primary") is False,
+      "unit": (str(src.get("measurement_id")), src.get("instance")) if src.get("measurement_id") else None})
     return out
 
   if formula in (FORMULA_BBS, FORMULA_RULE):
@@ -121,17 +122,20 @@ def summarise(rows, wastage_pct=None, allowances=()) -> dict:
     kg = m["kg"]
     low, high = (m["kg_low"] if m["kg_low"] is not None else kg), (m["kg_high"] if m["kg_high"] is not None else kg)
     b = by_basis[m["basis"]]
-    b["members"] += 1; b["kg"] += kg; b["kg_low"] += low; b["kg_high"] += high
+    w = 0 if m.get("secondary") else 1
+    b["members"] += w; b["kg"] += kg; b["kg_low"] += low; b["kg_high"] += high
+    
     g = by_grade.setdefault(m.get("grade") or NO_GRADE, {**_blank(), "families": {}})
-    g["members"] += 1; g["kg"] += kg; g["kg_low"] += low; g["kg_high"] += high
+    g["members"] += w; g["kg"] += kg; g["kg_low"] += low; g["kg_high"] += high
     g["families"][m["family"]] = g["families"].get(m["family"], Decimal("0")) + kg
     fam = by_family.setdefault(m["family"], {**_blank(), "volume_m3": Decimal("0"), "volume_kg": Decimal("0"), "volume_members": 0, "basis": {}, "bare_kg": Decimal("0")})
-    fam["members"] += 1; fam["kg"] += kg; fam["kg_low"] += low; fam["kg_high"] += high
+    fam["members"] += w; fam["kg"] += kg; fam["kg_low"] += low; fam["kg_high"] += high
     fam["basis"][m["basis"]] = fam["basis"].get(m["basis"], Decimal("0")) + kg
+    
     if m["bare_kg"] is not None:
       fam["bare_kg"] += m["bare_kg"]
     if m["concrete_m3"] is not None and m["concrete_m3"] > 0:
-      fam["volume_m3"] += m["concrete_m3"]; fam["volume_kg"] += kg; fam["volume_members"] += 1
+      fam["volume_m3"] += m["concrete_m3"] * w; fam["volume_kg"] += kg; fam["volume_members"] += w
     if m.get("keeps_bare"):
       affected += 1
       as_run.add(m["as_run_wastage_pct"])
@@ -141,18 +145,19 @@ def summarise(rows, wastage_pct=None, allowances=()) -> dict:
     if m["dia"]:
       for d, k, length in m["dia"]:
         slot = by_dia.setdefault(d, {"kg": Decimal("0"), "length_m": Decimal("0"), "members": 0, "by_family": {}})
-        slot["kg"] += k; slot["length_m"] += length; slot["members"] += 1
+        slot["kg"] += k; slot["length_m"] += length; slot.setdefault("units", set()).add(m.get("unit") or m.get("row_id"))
         slot["by_family"][m["family"]] = slot["by_family"].get(m["family"], Decimal("0")) + k
     else:
-      spread_none["kg"] += kg; spread_none["members"] += 1
+      spread_none["kg"] += kg; spread_none["members"] += w
     key = (m["family"], m["tag"] or m["element"] or "(no mark)", m["level"], m["basis"])
     mk = marks.setdefault(key, {"family": m["family"], "tag": key[1], "level": m["level"], "basis": m["basis"], "count": 0, "kg": Decimal("0"), "kg_low": Decimal("0"),
       "kg_high": Decimal("0"), "bare_kg": Decimal("0"), "has_bare": False, "concrete_m3": Decimal("0"), "page": m["page"], "dia": {}, "warnings": set()})
-    mk["count"] += 1; mk["kg"] += kg; mk["kg_low"] += low; mk["kg_high"] += high
+    mk["count"] += w; mk["kg"] += kg; mk["kg_low"] += low; mk["kg_high"] += high
+    
     if m["bare_kg"] is not None:
       mk["bare_kg"] += m["bare_kg"]; mk["has_bare"] = True
     if m["concrete_m3"] is not None:
-      mk["concrete_m3"] += m["concrete_m3"]
+      mk["concrete_m3"] += m["concrete_m3"] * w
     for d, k, _ in m["dia"]:
       mk["dia"][d] = mk["dia"].get(d, Decimal("0")) + k
     for w in m["warnings"]:
@@ -166,7 +171,7 @@ def summarise(rows, wastage_pct=None, allowances=()) -> dict:
   dia_rows = []
   for d in sorted(by_dia, key=lambda x: Decimal(x)):
     v = by_dia[d]
-    dia_rows.append({"dia_mm": float(Decimal(d)), "kg": r3(v["kg"]), "length_m": r3(v["length_m"]), "members": v["members"],
+    dia_rows.append({"dia_mm": float(Decimal(d)), "kg": r3(v["kg"]), "length_m": r3(v["length_m"]), "members": len(v.get("units") or ()) or v["members"],
       "share_pct": r3(v["kg"] / spread_total * 100) if spread_total > 0 else 0.0,
       "by_family": {f: r3(k) for f, k in sorted(v["by_family"].items(), key=lambda kv: -kv[1])}})
     
@@ -200,7 +205,7 @@ def summarise(rows, wastage_pct=None, allowances=()) -> dict:
   truncated = len(mark_rows) > MARK_CAP
   runs_at = sorted(float(p) for p in as_run)
   return {"wastage": {"as_run_pct": runs_at, "applied_pct": None if wastage_pct is None else float(dec(wastage_pct)), "rows_with_bare_weight": affected, "rows_fixed": fixed},
-    "totals": {"members": len(members), "kg": r3(total), "kg_low": r3(low_total), "kg_high": r3(high_total), "estimated_kg": r3(estimated),
+    "totals": {"members": sum(1 for m in members if not m.get("secondary")), "kg": r3(total), "kg_low": r3(low_total), "kg_high": r3(high_total), "estimated_kg": r3(estimated),
       "estimated_share_pct": r3(estimated / total * 100) if total > 0 else 0.0,
       "by_basis": {b: {"members": by_basis[b]["members"], "kg": r3(by_basis[b]["kg"])} for b in BASIS_ORDER if by_basis[b]["members"]}},
     "by_grade": grade_rows, "by_diameter": dia_rows, "without_diameter": {"kg": r3(spread_none["kg"]), "members": spread_none["members"]},

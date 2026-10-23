@@ -56,12 +56,16 @@ class GradesService(ExtractService):
     for member in G.MEMBER_KINDS:
       crule = G.resolve(rules.get("concrete"), member)
       srule = G.resolve(rules.get("steel"), member)
+      rrule = G.resolve(rules.get("steel"), member, "RING")
+      ring_own = rrule["rule"] is not None and rrule["rule"].get("part") == "RING"
       slot = seen.get(member)
-      if slot is None and crule["rule"] is None and srule["rule"] is None and not crule["clash"] and not srule["clash"]:
+      
+      if slot is None and crule["rule"] is None and srule["rule"] is None and not crule["clash"] and not srule["clash"] and not ring_own and not (rrule["clash"] and not srule["clash"]):
         continue
       out.append({"member": member, "label": GS.LABELS.get(member, member), **(slot or {"measured": 0, "stamped": 0, "typed": 0, "open": 0, "confirmed_open": 0, "found": 0}),
         "concrete": {k: crule["rule"].get(k) for k in ("class", "mix", "scope", "pages")} if crule["rule"] else None, "concrete_clash": crule["clash"],
-        "steel": {k: srule["rule"].get(k) for k in ("label", "scope", "pages")} if srule["rule"] else None, "steel_clash": srule["clash"]})
+        "steel": {k: srule["rule"].get(k) for k in ("label", "scope", "pages")} if srule["rule"] else None, "steel_clash": srule["clash"],
+        "steel_ring": {k: rrule["rule"].get(k) for k in ("label", "scope", "pages")} if ring_own else None, "steel_ring_clash": rrule["clash"] if (ring_own or rrule["clash"] != srule["clash"]) else []})
     return out
 
   def _report(self, drawing, rows: list, measurements: dict, printed: dict, changed: int = 0) -> dict:
@@ -72,7 +76,7 @@ class GradesService(ExtractService):
     summary = {"concrete_notes": len((printed.get("grades") or {}).get("concrete") or []), "steel_notes": len((printed.get("grades") or {}).get("steel") or []),
       "measured": sum(m["measured"] for m in members), "stamped": sum(m["stamped"] for m in members), "typed": sum(m["typed"] for m in members),
       "open": sum(m["open"] for m in members), "confirmed_open": sum(m["confirmed_open"] for m in members),
-      "clashes": sum(1 for m in members if m["concrete_clash"] or m["steel_clash"])}
+      "clashes": sum(1 for m in members if m["concrete_clash"] or m["steel_clash"] or m["steel_ring_clash"])}
     return {"drawing_id": drawing.id, "concrete": (printed.get("grades") or {}).get("concrete") or [], "steel": (printed.get("grades") or {}).get("steel") or [], "members": members,
       "plaster": plaster, "soil": printed.get("soil"), "conflicts": printed.get("conflicts") or [], "summary": summary, "changed": changed}
 

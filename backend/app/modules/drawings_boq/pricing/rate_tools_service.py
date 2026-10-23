@@ -12,6 +12,7 @@ from uuid import UUID
 from decimal import Decimal
 from app.modules.drawings_boq.pricing.rate_service import RateBookService
 from app.modules.drawings_boq.pricing.resolver import PriceResolver
+from app.modules.drawings_boq.pricing.spec_match import stated_spec
 from app.modules.drawings_boq.pricing.tools_schemas import RefreshRequest
 from app.modules.drawings_boq.pricing import import_logic as il
 from sqlalchemy import select
@@ -192,7 +193,7 @@ class RateToolsService:
         priced += 1
         continue
       unpriced += 1
-      res = resolver.resolve(item.work_item_code, texts_for(item), item.unit)
+      res = resolver.resolve(item.work_item_code, texts_for(item), item.unit, spec=stated_spec(item))
       if res.found:
         resolvable += 1
         continue
@@ -201,7 +202,7 @@ class RateToolsService:
       reason = "NO_CODE" if code is None else "UNIT_MISMATCH" if res.unit_mismatch else "NO_RATE"
       key = (code, logic.normalise_unit(item.unit), reason)
       g = groups.setdefault(key, {"work_item_code": code, "unit": key[1], "reason": reason, "lines": 0, "quantity": Decimal("0"),
-        "sample_description": item.description or item.material_name, "available_units": set(), "item_ids": []})
+        "sample_description": item.description or item.material_name, "available_units": set(), "available_specs": set(), "stated": stated_spec(item), "item_ids": []})
       g["lines"] += 1
       g["quantity"] += Decimal(item.quantity or 0)
       if len(g["item_ids"]) < GAP_ITEM_CAP:
@@ -210,6 +211,8 @@ class RateToolsService:
         for b in resolver.books:
           for e in resolver.items.get((b.id, code), []):
             g["available_units"].add(e.unit)
+          for _, composed in resolver.spec_index.get((b.id, code), []):
+            g["available_specs"].add(composed)
         for o in resolver.overrides.get(code, []):
           g["available_units"].add(o.unit)
           
@@ -217,5 +220,6 @@ class RateToolsService:
     for g in gaps:
       g["quantity"] = logic.fmt(g["quantity"], 3) if hasattr(logic, "fmt") else str(g["quantity"])
       g["available_units"] = sorted(g["available_units"])
+      g["available_specs"] = sorted(g["available_specs"])[:12]
     return {"boq_version_id": version.id, "as_of": on.isoformat(), "rate_books": resolver.stack_summary(), "priced": priced, "unpriced": unpriced,
       "resolvable": resolvable, "gaps": gaps}

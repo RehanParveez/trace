@@ -11,6 +11,7 @@ from app.modules.drawings_boq import boq_logic as logic
 from app.modules.drawings_boq.pricing import pricing_logic as pl
 from app.modules.drawings_boq.models import BOQItemRateSource
 from app.modules.drawings_boq.pricing.mrs_spec import compose_code
+from app.modules.drawings_boq.pricing import spec_match as sm
 
 @dataclass
 class PriceResolver:
@@ -19,6 +20,7 @@ class PriceResolver:
   as_of: date
   books: list[RateBook]
   items: dict = field(default_factory=dict)
+  spec_index: dict = field(default_factory=dict)
   escalations: dict = field(default_factory=dict)
   overrides: dict = field(default_factory=dict)
   library_by_code: dict = field(default_factory=dict)
@@ -46,6 +48,11 @@ class PriceResolver:
     ids = [b.id for b in books]
     r = cls(org=org, project_id=project_id, as_of=on, books=books)
     r.items = await repo.items_for_codes(ids, codes)
+    for (book_id, composed), rows in (await repo.spec_items_for_bases(ids, codes)).items():
+      r.items.setdefault((book_id, composed), rows)
+      base, published = sm.split_code(composed)
+      
+      r.spec_index.setdefault((book_id, base), []).append((published, composed))
     r.escalations = await repo.escalations_for_books(ids)
     if project_id is not None:
       r.overrides = await repo.active_overrides_for_project(org, project_id, codes)
@@ -56,10 +63,12 @@ class PriceResolver:
     return r
 
   def stack_summary(self) -> list[dict]:
-    return [{"id": str(b.id), "code": b.code, "edition": b.edition, "immutable_version": b.immutable_version,
+     return [{"id": str(b.id), "code": b.code, "edition": b.edition, "immutable_version": b.immutable_version,
       "scope": "ORGANIZATION" if b.organization_id else "SYSTEM", "content_hash": b.content_hash} for b in self.books]
 
-  def resolve(self, work_item_code: str | None, texts: list[str | None], unit: str, *, trade_hint: str | None = None, spec: str | None = None) -> pl.Resolution:
+  def resolve(self, work_item_code: str | None, texts: list[str | None], unit: str, *, trade_hint: str | None = None, spec: str | dict | None = None) -> pl.Resolution:
+    """`spec` is the specification as a key ("mix=1:4:8", tried as one composed code) or what the line states, as `spec_match.stated_spec` gives it (a rate is chosen among the
+    codes published for it by what agrees)."""
     res = pl.Resolution()
     code = (work_item_code or "").strip()
     attempts = res.attempts
@@ -85,7 +94,18 @@ class PriceResolver:
       for book in self.books:
         used = code
         entries = []
-        if spec:
+        picked: dict = {}
+        
+        if isinstance(spec, dict):
+          published = [(s, c) for s, c in self.spec_index.get((book.id, code), []) if s is not None]
+          picked = sm.choose(published, spec)
+          if picked.get("code"):
+            used = picked["code"]
+            entries = self.items.get((book.id, used), [])
+          elif published:
+            attempts.append({"source": "RATE_BOOK", "book": book.code, "book_id": str(book.id), "result": "spec_ambiguous" if picked.get("ambiguous") else "spec_not_stated",
+              "stated": {k: v for k, v in sorted(spec.items())}, "published": sorted(c for _, c in published)[:12], **({"codes": picked["ambiguous"]} if picked.get("ambiguous") else {})})
+        elif spec:
           used = compose_code(code, spec)        
           entries = self.items.get((book.id, used), [])
         if not entries:
@@ -115,6 +135,9 @@ class PriceResolver:
           "escalation_id": str(esc.id) if esc is not None else None, "as_of": self.as_of.isoformat()}
         if used != code:
           res.trace["spec_code"] = used
+          if picked.get("code"):
+            res.trace["spec_stated"] = {k: v for k, v in sorted(spec.items())}
+            res.trace["spec_matched"] = picked["spec"]
         return res
 
     lib = self._library(code, texts)

@@ -24,7 +24,8 @@ from app.modules.audit.models import AuditAction, AuditEntityType
 from app.engine.measure.engine import COUNT_ROLES, VOLUME_ROLES
 from app.modules.drawings_boq.boq_repository import BOQEngineRepository
 from app.modules.drawings_boq.pricing import pricing_logic as pricing
-from app.modules.drawings_boq.pricing_resolver import PriceResolver, apply_resolution, clear_rate
+from app.modules.drawings_boq.pricing.resolver import PriceResolver, apply_resolution, clear_rate
+from app.modules.drawings_boq.pricing.spec_match import stated_spec
 from app.modules.drawings_boq.rebar import rebar_repository as rebar_repo
 import app.modules.drawings_boq.export as exp
 from app.modules.drawings_boq.recalculation.export_task import render_export_task
@@ -224,7 +225,7 @@ class BOQEngineService:
 
       source = item.rate_source.value if item.rate_source is not None else None
       if item.unit_rate is None or source in pricing.AUTO_SOURCES or source == "AI_SUGGESTED":
-        res = resolver.resolve(d.work_item_code, [d.description, d.material_name], d.unit)
+        res = resolver.resolve(d.work_item_code, [d.description, d.material_name], d.unit, spec=stated_spec(d))
         if res.found:
           apply_resolution(item, res)
         else:

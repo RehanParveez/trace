@@ -1,13 +1,16 @@
 from __future__ import annotations
 import re
+from app.engine.measure import grades as GRD
 
-FLOOR_LAYERS = ("pcc", "brick ballast", "sand filling")     
+FLOOR_LAYERS = ("pcc", "brick ballast", "sand filling")   
 STRUCTURAL = ("COLUMN", "BEAM", "SLAB", "FOOTING", "LINTEL", "STAIR")
 MEMBER_WORDS = {"COLUMN": ("column",), "BEAM": ("beam", "girder"), "SLAB": ("slab", "roof"), "FOOTING": ("footing", "foundation", "raft"), "LINTEL": ("lintel",),
   "STAIR": ("stair", "staircase")}
 GENERIC_WORDS = ("all", "structural", "rcc", "r c c", "reinforced")
+RING_MEMBERS = ("BEAM", "COLUMN", "LINTEL")
 PLASTER_ITEMS = ("PLASTER_INSIDE", "PLASTER_OUTSIDE", "CEILING_PLASTER")
 PCC_BED_ITEMS = ("PCC_STRIP", "PCC_PAD")
+ROOF_HEADINGS = ("TERRACE", "ROOF", "PORCH_ROOF", "MUMTY")
 
 def _pick(rows: list[dict], key) -> tuple:
   by: dict = {}
@@ -32,6 +35,15 @@ def members_of(scope: str | None) -> tuple:
   generic = any(re.search(rf"\b{g}\b", words) for g in GENERIC_WORDS)
   return named, generic
 
+def ring_members_of(scope: str | None) -> tuple:
+  named: list = []
+  generic = False
+  for text in GRD.steel_clauses(scope)["RING"]:
+    cats, gen = members_of(text)
+    named.extend(c for c in cats if c not in named)
+    generic = generic or gen or not text.strip()
+  return tuple(named), generic
+
 def build(items: list) -> dict:
   items = items or []
   layers, ambiguous = {}, []
@@ -51,6 +63,7 @@ def build(items: list) -> dict:
   concrete = [{"class": i.get("concrete_class"), "mix": i.get("mix"), "scope": i.get("scope"), "members": members_of(i.get("scope"))[0], "generic": members_of(i.get("scope"))[1],
     "pages": i.get("pages") or [], "text": i.get("text")} for i in items if i.get("kind") == "CONCRETE_CLASS"]
   steel = [{"grade": i.get("grade"), "scope": i.get("scope"), "members": members_of(i.get("scope"))[0], "generic": members_of(i.get("scope"))[1],
+    "ring_members": ring_members_of(i.get("scope"))[0], "ring_generic": ring_members_of(i.get("scope"))[1],
     "pages": i.get("pages") or [], "text": i.get("text")} for i in items if i.get("kind") == "STEEL_GRADE"]
   
   wp: dict = {}
@@ -80,14 +93,20 @@ def concrete_for(spec: dict, category: str) -> tuple:
     return mixes[0], rows, False
   return None, rows, len(mixes) > 1
 
-def steel_for(spec: dict, category: str) -> list:
-  return sorted({int(r["grade"]) for r in _rows_for((spec or {}).get("steel") or [], category) if r.get("grade")})
+def steel_for(spec: dict, category: str, part: str | None = None) -> list:
+  rows = (spec or {}).get("steel") or []
+  if part == "RING":
+    named = [r for r in rows if category in (r.get("ring_members") or ())]
+    chosen = named if named else [r for r in rows if r.get("ring_generic") and not r.get("ring_members")]
+    return sorted({int(r["grade"]) for r in chosen if r.get("grade")})
+  return sorted({int(r["grade"]) for r in _rows_for(rows, category) if r.get("grade")})
 
 def annotate(cands: list, spec: dict | None, note) -> dict:
-  stats = {"graded": 0, "conflicts": 0, "steel_noted": 0}
+  stats = {"graded": 0, "conflicts": 0, "steel_noted": 0, "ring_noted": 0}
   if not spec:
     return stats
   for c in cands:
+      
     facts = c.facts if isinstance(getattr(c, "facts", None), dict) else None
     if facts is None or facts.get("spec_grade"):
       continue
@@ -109,6 +128,11 @@ def annotate(cands: list, spec: dict | None, note) -> dict:
       if steel:
         facts["spec_steel_grade"] = steel
         stats["steel_noted"] += 1
+      ring = steel_for(spec, c.category, "RING") if c.category in RING_MEMBERS else []
+      if ring:
+        facts["spec_steel_ring_grade"] = ring
+        stats["ring_noted"] += 1
+        
     if grade:
       facts["spec_grade"] = {"grade": grade, "what": what, "pages": pages}
       c.notes.append(note("SPEC_GRADE_PRINTED", grade=grade, what=what, pages=pages))

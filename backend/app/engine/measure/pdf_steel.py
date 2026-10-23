@@ -62,6 +62,22 @@ def _plate(category: str, length: Decimal, width: Decimal, depth: Decimal) -> tu
     return length, depth, width
   return length, width, depth
 
+def grade_groups(lines: list, bare: Decimal, grade: dict, ring_grade: dict, wastage: Decimal) -> list:
+  rings = [ln for ln in lines if ln.get("kind") == "rings"]
+  rest = [ln for ln in lines if ln.get("kind") != "rings"]
+  if rings and rest and ring_grade["label"] != grade["label"]:
+    parts = [("MAIN", grade, rest), ("RING", ring_grade, rings)]
+    
+  elif rings and not rest:
+    parts = [("ALL", ring_grade, lines)]
+  else:
+    parts = [("ALL", grade, lines)]
+  out = []
+  for part, g, ls in parts:
+    gbare = bare if len(parts) == 1 else q6(sum((Decimal(ln["kg"]) for ln in ls), Decimal("0")))
+    out.append({"part": part, "grade": g, "lines": ls, "bare": gbare, "kg": q6(gbare * (1 + wastage / 100))})
+  return out
+
 def intensity_range(category: str) -> tuple | None:
   family = INTENSITY_FAMILY.get(category)
   band = ESTIMATE_BANDS.get(family or "")
@@ -102,6 +118,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
   family_kg: dict = {}
   by_grade: dict = {}
   grade_clash: dict = {}
+  split_marks = 0
   reviewable: list = []
   solids: list = []
   rows: list = []
@@ -132,10 +149,13 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
       skipped["NO_SIZE"] = skipped.get("NO_SIZE", 0) + m.count
       continue
   
-    kg = q6(bare * (1 + wastage / 100))
     grade = GR.steel_grade_of(ctx, cat)
+    ring_grade = GR.steel_grade_of(ctx, cat, "RING")
     if grade["clash"]:
       grade_clash[cat] = grade["clash"]
+    if ring_grade["clash"]:
+      grade_clash[f"{cat}:RING"] = ring_grade["clash"]
+    groups = grade_groups(lines, bare, grade, ring_grade, wastage)
     used = tuple(cover_n if n == COVER_PARAM else n for n in PARAMS_USED[cat])
     assumed = [n for n in used if params[n]["source"] == "default"]
     factor = FACTOR_ASSUMED if (assumed or ring_info) else FACTOR_CONFIRMED
@@ -144,46 +164,54 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     spec = {"kind": DERIVED, "recipe": RECIPE_CODE, "item": "STEEL", "category": cat,
       "params": {n: params[n]["value"] for n in (*used, WASTAGE_PARAM, *(("ring_dense_default", "ring_dense_spacing_mm") if ring_info else ()))},
       "basis": {n: params[n]["source"] for n in (*used, *(("ring_dense_spacing_mm",) if ring_info else ()))}}
-    step_lines = [{"op": ln["kind"], **ln} for ln in lines] + ([{"op": "ring_zone_default", **ring_info}] if ring_info else [])
+    
     volume = q6(m.length_mm * m.width_mm * m.depth_mm / MM3_PER_M3)
     for i in range(m.count):
       eid = m.element_ids[i] if i < len(m.element_ids) else None
-      solid_id = uuid5(ctx.run_id, f"solid|steel|{m.measurement_id}|{i}")
-      
-      solids.append(Solid(
-        id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=ROLE_OF.get(cat, cat), level_id=m.level_id, geometry_kind="QTO_ONLY",
-        classification_confidence=m.confidence, confidence_factor=factor, component_type="DERIVED_STEEL",
-        gross_length_m=q6(m.length_mm / MM), status="REVIEW_REQUIRED" if warnings else "OK"))
-      source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no,
-        "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count, "size_mm": [float(m.length_mm), float(m.width_mm), float(m.depth_mm)],
-        "steel": steel, "lines": lines, "bare_kg": str(bare), "wastage_pct": str(wastage), "concrete_m3": str(volume),
-        **({"steel_grade": grade["label"], "steel_grade_note": {"scope": grade["scope"], "pages": grade["pages"]}} if grade["label"] else {}),
-        **({"steel_grade_clash": grade["clash"]} if grade["clash"] else {})}
-      rows.append(LedgerEntry(
-        solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=grade["label"],
-        confidence=confidence, formula_code=FORMULA,
-        trace={"formula_code": FORMULA, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
-          "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
-          "inputs": {"recipe": RECIPE_CODE, "spec": spec, "steel_source": source},
-          "steps": [*step_lines, {"op": "total_kg", "bare_kg": str(bare), "wastage_pct": str(wastage), "kg": str(kg)}], "net": {"kg": str(kg)},
-          "rounding": "half_up,6dp", **({"range": rg} if (rg := range_trace(ctx.takeoff, m.measurement_id)) else {})},
-        warnings=tuple(warnings), source_kind=DERIVED, spec=spec, spec_key="derived"))
-      gslot = by_grade.setdefault(grade["label"] or "", {"marks": 0, "kg": Decimal("0")})
-      gslot["marks"] += 1
-      gslot["kg"] += kg
-      slot = by_category.setdefault(cat, {"marks": 0, "kg": Decimal("0"), "bare_kg": Decimal("0")})
-      
-      slot["marks"] += 1
-      slot["kg"] += kg
-      slot["bare_kg"] += bare
-      for ln in lines:
-        d = by_dia.setdefault(ln["dia_mm"], {"kg": Decimal("0"), "length_m": Decimal("0")})
-        d["kg"] += Decimal(ln["kg"])
-        d["length_m"] += Decimal(ln["length_m"])
-      fam = INTENSITY_FAMILY.get(cat)
-      if fam:
-        family_volume[fam] = family_volume.get(fam, Decimal("0")) + volume
-        family_kg[fam] = family_kg.get(fam, Decimal("0")) + bare
+      for gi, grp in enumerate(groups):
+        part, g, glines, gbare, kg = grp["part"], grp["grade"], grp["lines"], grp["bare"], grp["kg"]
+        solid_id = uuid5(ctx.run_id, f"solid|steel|{m.measurement_id}|{i}" + ("" if gi == 0 else f"|{part.lower()}"))
+        
+        solids.append(Solid(
+          id=solid_id, element_id=eid, ifc_type=IFC_OF[cat], role=ROLE_OF.get(cat, cat), level_id=m.level_id, geometry_kind="QTO_ONLY",
+          classification_confidence=m.confidence, confidence_factor=factor, component_type="DERIVED_STEEL" if gi == 0 else f"DERIVED_STEEL_{part}",
+          gross_length_m=q6(m.length_mm / MM), status="REVIEW_REQUIRED" if warnings else "OK"))
+        step_lines = [{"op": ln["kind"], **ln} for ln in glines] + ([{"op": "ring_zone_default", **ring_info}] if ring_info and any(ln["kind"] == "rings" for ln in glines) else [])
+        source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no,
+          "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count, "size_mm": [float(m.length_mm), float(m.width_mm), float(m.depth_mm)],
+          "steel": steel, "lines": glines, "bare_kg": str(gbare), "wastage_pct": str(wastage), "concrete_m3": str(volume),
+          **({"steel_grade": g["label"], "steel_grade_note": {"scope": g["scope"], "pages": g["pages"]}} if g["label"] else {}),
+          **({"steel_grade_clash": g["clash"]} if g["clash"] else {}),
+          **({"split": {"part": part, "parts": [x["part"] for x in groups], "primary": gi == 0}} if len(groups) > 1 else {})}
+        
+        rows.append(LedgerEntry(
+          solid_id=solid_id, element_id=eid, level_id=m.level_id, work_item_code=REBAR_WORK_ITEM, quantity=kg, unit="kg", material_grade=g["label"],
+          confidence=confidence, formula_code=FORMULA,
+          trace={"formula_code": FORMULA, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
+            "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},
+            "inputs": {"recipe": RECIPE_CODE, "spec": spec, "steel_source": source},
+            "steps": [*step_lines, {"op": "total_kg", "bare_kg": str(gbare), "wastage_pct": str(wastage), "kg": str(kg)}], "net": {"kg": str(kg)},
+            "rounding": "half_up,6dp", **({"range": rg} if (rg := range_trace(ctx.takeoff, m.measurement_id)) else {})},
+          warnings=tuple(warnings), source_kind=DERIVED, spec=spec, spec_key="derived"))
+        gslot = by_grade.setdefault(g["label"] or "", {"marks": 0, "kg": Decimal("0")})
+        
+        gslot["marks"] += 1 if gi == 0 else 0
+        gslot["kg"] += kg
+        slot = by_category.setdefault(cat, {"marks": 0, "kg": Decimal("0"), "bare_kg": Decimal("0")})
+        slot["marks"] += 1 if gi == 0 else 0
+        slot["kg"] += kg
+        slot["bare_kg"] += gbare
+        
+        for ln in glines:
+          d = by_dia.setdefault(ln["dia_mm"], {"kg": Decimal("0"), "length_m": Decimal("0")})
+          d["kg"] += Decimal(ln["kg"])
+          d["length_m"] += Decimal(ln["length_m"])
+        fam = INTENSITY_FAMILY.get(cat)
+        if fam:
+          family_volume[fam] = family_volume.get(fam, Decimal("0")) + (volume if gi == 0 else Decimal("0"))
+          family_kg[fam] = family_kg.get(fam, Decimal("0")) + gbare
+        if gi == 0 and len(groups) > 1:
+          split_marks += 1
 
   measured_rows = list(rows)
   est = SE.estimate_steel(ctx, params, members, counted)
@@ -209,6 +237,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     "intensity": intensity,
     "by_grade": {k or "NONE": {"marks": v["marks"], "kg": str(q6(v["kg"]))} for k, v in sorted(by_grade.items())},
     "grade_clash": {k: v for k, v in sorted(grade_clash.items())},
+    "split_marks": split_marks,
     "ring_zone": {**ring_zone, "dense_spacing_mm": str(ring_spacing) if ring_on else None, "skipped": dict(sorted(ring_zone["skipped"].items()))},
     "skipped": dict(sorted(skipped.items())),
     "params": {n: dict(params[n]) for n in STEEL_PARAMS},

@@ -18,7 +18,8 @@ def door_heads(openings: list) -> list:
   """The heights of the marked doors of a plan, one per door mark counted, rounded to 10 mm."""
   out = []
   for o in openings:
-    size = (o.facts or {}).get("size_schedule_mm")
+    f = o.facts or {}
+    size = f.get("size_schedule_mm") or (f.get("size_drawn_mm") if f.get("height_source") in ("LABEL", "NOTE") else None)
     if o.category != "DOOR" or not size or len(size) < 2:
       continue
     h = _sane(size[1])

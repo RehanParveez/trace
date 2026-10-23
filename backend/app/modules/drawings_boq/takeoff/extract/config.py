@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 34
+EXTRACT_VERSION = 35
 
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0            
@@ -241,6 +241,10 @@ NOTES = {
   "OPENING_SYMBOLS_READ": ("info", "The doors and windows of this plan were also read from their drawn symbols: a door as a leaf with its quarter-circle swing, a window as a gap in a wall with three or more thin lines along it. The counts are in the sheet statistics."),
   "OPENING_FROM_SYMBOLS": ("info", "This item was found from the drawn symbols of the doors or windows, because no mark for them is written on the plan. The width is the length of the door leaf (or the width of the wall gap) as drawn, taken to the nearest standard width when the scale is checked. Check the count against the plan."),
   "OPENING_HEIGHT_ASSUMED": ("warning", "The plan prints no height for these openings. A door is taken as 7 ft (2134 mm) high and a window as 4 ft (1219 mm) high, the usual sizes of a house. The area, the plaster and paint taken off, and the frame use that height. Type the real size when you accept the item, or give the door and window schedule."),
+  "OPENING_SIZE_FROM_PLAN_LABEL": ("info", "The width and height of these openings are the sizes written beside them on the plan (a window as W=width X height with its sill, a door as D=width X height). They are not the default height of 7 ft for a door and 4 ft for a window. Check them on the plan."),
+  "OPENING_HEIGHT_FROM_NOTE": ("info", "The plan prints no height beside these openings, but a note on the sheet gives one height to all doors or all windows. That height is used instead of the default."),
+  "OPENING_LABEL_DIFFERS_FROM_SCHEDULE": ("warning", "The height written beside these openings on the plan is more than 5% different from the height in the schedule. The schedule is used. Check which one is right."),
+  "OPENING_LABELS_UNPAIRED": ("info", "Some size labels on the plan (D=... or W=...) were read, but no door or window symbol stands close enough to them (or the width of the symbol does not agree with the label), so they were not used. The openings they belong to keep the default height. The labels are listed with this note."),
   "OPENING_SYMBOLS_VS_MARKS": ("warning", "The number of marks of this kind written on the plan is not the number of symbols drawn beside them. A mark counts the openings it stands for; a symbol with no mark within 2 m is not counted as an extra opening. Check that every door or window of the plan has its mark."),
   "OPENING_DRAWN_WIDTH_DIFFERS": ("warning", "The width of the door or window as drawn is more than 15% different from the width in the schedule. Check which one is right: the mark may stand beside another opening, or the schedule may be for another type."),
   "OPENING_SCALE_FROM_SCHEDULE_DISAGREES": ("warning", "The widths in the schedule and the widths of the same openings drawn on the plan point to another scale than the one used for this sheet. Confirm the scale before relying on any measured length or area of this sheet."),

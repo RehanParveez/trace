@@ -140,8 +140,6 @@ class RawRow:
     if code not in self.flags:
       self.flags.append(code)
 
-self.flags.append(code)
-
 REVIEW_FLAGS = frozenset({"NO_ITEM_NO", "UNIT_UNKNOWN", "RATE_MISSING", "RATE_ZERO", "RATE_OUTLIER", "DUPLICATE_ITEM_NO",
   "SECOND_PASS_MISSING", "ALT_RATE_MISMATCH", "UNIT_AMBIGUOUS", "RATE_LABOUR_ONLY", "RATE_TEXT"})
 INFO_FLAGS = frozenset({"WRAPPED_DESCRIPTION", "BASIS_APPLIED", "DUPLICATE_CODE", "UNITS_NOT_COMPARED"})

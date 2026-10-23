@@ -4,6 +4,8 @@ import numpy as np
 import time
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
+from app.modules.drawings_boq.takeoff.extract import opening_labels as OL
+from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
 DASH_MAX_PT = 18.0            
 DASH_MIN_PT = 0.8
@@ -376,18 +378,26 @@ def snap_width(mm: float, imperial: bool) -> float:
   best = min(WIDTHS_IMPERIAL if imperial else WIDTHS_METRIC, key=lambda s: abs(s - mm))
   return best if abs(best - mm) <= SNAP_TOL * best else float(round(mm / 5.0) * 5)
 
-def read(index, walls: list, mm_per_pt: float, *, scale_verified: bool = True, deadline: float | None = None, wall_pen: float | None = None) -> dict:
+def read(index, walls: list, mm_per_pt: float, *, scale_verified: bool = True, deadline: float | None = None, wall_pen: float | None = None, imperial: bool = True) -> dict:
   started = time.monotonic()
   swings, sstats = find_swings(index, mm_per_pt, scale_verified=scale_verified, deadline=deadline, wall_pen=wall_pen, walls=walls)
   doors = pair_doors(swings, mm_per_pt)
   windows, wstats = find_windows(index, walls, mm_per_pt, deadline)
+  words = list(getattr(index, "words", None) or [])
+  printed = OL.read(words, imperial)
+  
+  paired = {"DOOR": OL.pair(doors, printed["labels"], "DOOR", mm_per_pt, scale_verified), "WINDOW": OL.pair(windows, printed["labels"], "WINDOW", mm_per_pt, scale_verified)}
+  height_notes = OL.height_notes(build_lines(words)) if words else {}
   stats = {"swings": len(swings), "doors": len(doors), "double_doors": sum(1 for d in doors if d["leaves"] == 2), "windows": len(windows), "swing_search": sstats,
-    "window_search": wstats, "timed_out": bool(deadline is not None and time.monotonic() > deadline), "seconds": round(time.monotonic() - started, 3)}
-  return {"doors": doors, "windows": windows, "stats": stats}
+    "window_search": wstats, "timed_out": bool(deadline is not None and time.monotonic() > deadline), "seconds": round(time.monotonic() - started, 3),
+    "labels": {"read": len(printed["labels"]), "unread": printed["unread"], "paired": paired, "unpaired": sum(1 for l in printed["labels"] if not l.get("paired"))},
+    "height_notes": height_notes}
+  return {"doors": doors, "windows": windows, "stats": stats, "labels": printed["labels"], "height_notes": height_notes}
 
 KINDS = ("DOOR", "WINDOW")
 HEIGHT_ASSUMED_MM = {"DOOR": DOOR_HEIGHT_ASSUMED_MM, "WINDOW": WINDOW_HEIGHT_ASSUMED_MM}
 WIDTH_DIFFERS_TOL = 0.15
+LABEL_HEIGHT_DIFFERS_TOL = 0.05
 
 def _median(values: list) -> float:
   v = sorted(values)
@@ -426,23 +436,58 @@ def _match(rows: list, symbols: list, reach_pt: float) -> dict:
 def _class_width(width_mm: float, scale_verified: bool, imperial: bool) -> float:
   return snap_width(width_mm, imperial) if scale_verified else float(round(width_mm / 50.0) * 50)
 
-def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finish, scale_verified: bool):
+def _height_of(kind: str, height_notes: dict | None) -> tuple:
+  """(height, basis): the height a sheet note gives to all doors or all windows, else the default."""
+  noted = (height_notes or {}).get(kind)
+  return (float(noted), "NOTE") if noted else (HEIGHT_ASSUMED_MM[kind], "ASSUMED")
+
+def _height_note(basis: str, height: float, label_n: int = 0) -> dict | None:
+  if basis == "LABEL":
+    return C.note("OPENING_SIZE_FROM_PLAN_LABEL")
+  if basis == "NOTE":
+    return C.note("OPENING_HEIGHT_FROM_NOTE", height_mm=height)
+  return C.note("OPENING_HEIGHT_ASSUMED", height_mm=height)
+
+def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finish, scale_verified: bool, height: float | None = None, basis: str = "ASSUMED", sill: float | None = None):
   work_item, mode, ckind = C.SUGGESTIONS[kind]
-  height = HEIGHT_ASSUMED_MM[kind]
+  height = HEIGHT_ASSUMED_MM[kind] if height is None else height
   n = len(items)
-  facts = {"opening_kind": kind, "found_by": "SYMBOL_SCAN", "symbols": n, "double_leaf": sum(1 for i in items if i.get("leaves") == 2), "width_drawn_mm": width,
-    "widths_measured_mm": sorted(round(i["width_mm"]) for i in items), "size_drawn_mm": [width, height], "height_assumed": True, "area_each_m2": round(width * height / 1e6, 3),
-    "width_snapped": bool(scale_verified)}
   
-  notes = [C.note("OPENING_FROM_SYMBOLS"), C.note("OPENING_HEIGHT_ASSUMED", height_mm=height)]
+  facts = {"opening_kind": kind, "found_by": "SYMBOL_SCAN", "symbols": n, "double_leaf": sum(1 for i in items if i.get("leaves") == 2), "width_drawn_mm": width,
+    "widths_measured_mm": sorted(round(i["width_mm"]) for i in items), "size_drawn_mm": [width, height], "height_assumed": basis == "ASSUMED", "area_each_m2": round(width * height / 1e6, 3),
+    "width_snapped": bool(scale_verified)}
+  if basis != "ASSUMED":
+    facts["height_source"] = basis
+  if basis == "LABEL":
+    facts["size_from_label"] = True
+    facts["label_texts"] = sorted({i["label"]["text"] for i in items if i.get("label")})[:6]
+  if sill is not None:
+    facts["sill_mm"] = sill
+    
+  notes = [C.note("OPENING_FROM_SYMBOLS"), _height_note(basis, height)]
   noun = "Door" if kind == "DOOR" else "Window"
-  cand = cls(key=FD._key_of(("OPNSYM", kind, width)), category=kind, kind=ckind, quantity_mode=mode, label=f"{noun} {width:g} mm ×{n} · drawn, no mark", tag=f"DRAWN-{kind}-{width:g}",
+  size_text = f"{width:g} mm" if basis == "ASSUMED" else f"{width:g}×{height:g} mm"
+  how = "drawn, no mark" if basis == "ASSUMED" else ("size from the plan labels, no mark" if basis == "LABEL" else "drawn, height from a note, no mark")
+  tag = f"DRAWN-{kind}-{width:g}" if basis == "ASSUMED" else f"DRAWN-{kind}-{width:g}x{height:g}" + (f"s{sill:g}" if sill is not None else "")
+  key = ("OPNSYM", kind, width) if basis == "ASSUMED" else ("OPNSYM", kind, width, height, sill)
+  cand = cls(key=FD._key_of(key), category=kind, kind=ckind, quantity_mode=mode, label=f"{noun} {size_text} ×{n} · {how}", tag=tag,
     geometry={"points": [[round(i["x"], 3), round(i["y"], 3)] for i in items]}, params={}, missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes,
     source="VECTOR_SNAP", count=n)
   return finish(cand, ctx, 0.6)
 
+def _sizes_from_labels(found: list) -> dict | None:
+  labs = [s["label"] for s in found if s.get("label")]
+  if not labs:
+    return None
+  out = {"w_mm": _median([l["w_mm"] for l in labs]), "n": len(labs), "texts": sorted({l["text"] for l in labs})[:4]}
+  for key in ("h_mm", "sill_mm"):
+    vals = [l[key] for l in labs if l.get(key) is not None]
+    out[key] = _median(vals) if vals else None
+  return out
+
 def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: bool, imperial: bool, ctx: dict, cls, finish) -> dict:
   new, notes = [], []
+  hnotes = symbols.get("height_notes") or {}
   
   stats = {"marks": {}, "symbols": {}, "matched": {}, "unmatched_symbols": {}, "marks_without_symbol": {}, "drawn_items": 0}
   reach = REACH_MM / mm_per_pt
@@ -457,9 +502,15 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
     if not rows:
       groups: dict = {}
       for s in syms:
-        groups.setdefault(_class_width(s["width_mm"], scale_verified, imperial), []).append(s)
-      for width in sorted(groups):
-        new.append(_group_candidate(kind, width, groups[width], ctx, cls, finish, scale_verified))
+        lab = s.get("label")
+        if lab and lab.get("h_mm"):
+          key = (float(lab["w_mm"]), float(lab["h_mm"]), "LABEL", lab.get("sill_mm"))
+        else:
+          height, basis = _height_of(kind, hnotes)
+          key = (float(lab["w_mm"]) if lab else _class_width(s["width_mm"], scale_verified, imperial), height, basis, lab.get("sill_mm") if lab else None)
+        groups.setdefault(key, []).append(s)
+      for key in sorted(groups, key=lambda k: (k[0], k[1], k[3] or 0.0, k[2])):
+        new.append(_group_candidate(kind, key[0], groups[key], ctx, cls, finish, scale_verified, height=key[1], basis=key[2], sill=key[3]))
       stats["drawn_items"] += len(groups)
       stats["matched"][kind] = 0
       continue
@@ -481,16 +532,35 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
       width = _median([s["width_mm"] for s in found])
       f["width_drawn_mm"] = float(round(width / 5.0) * 5)
       sched = f.get("size_schedule_mm")
+      printed = _sizes_from_labels(found)
       if sched and sched[0]:
         pairs_for_scale.append((kind, float(sched[0]) / width))
         if scale_verified and abs(width - float(sched[0])) > WIDTH_DIFFERS_TOL * float(sched[0]):
           c.notes.append(C.note("OPENING_DRAWN_WIDTH_DIFFERS", drawn_mm=f["width_drawn_mm"], schedule_mm=round(float(sched[0]))))
+        if printed and printed.get("h_mm") and len(sched) > 1 and sched[1] and abs(printed["h_mm"] - float(sched[1])) > LABEL_HEIGHT_DIFFERS_TOL * float(sched[1]):
+          c.notes.append(C.note("OPENING_LABEL_DIFFERS_FROM_SCHEDULE", label_mm=[round(printed["w_mm"]), round(printed["h_mm"])], schedule_mm=[round(float(sched[0])), round(float(sched[1]))]))
       elif not f.get("size_drawn_mm"):
-        w = _class_width(width, scale_verified, imperial)
-        f["size_drawn_mm"] = [w, HEIGHT_ASSUMED_MM[kind]]
-        f["height_assumed"] = True
-        f["area_each_m2"] = round(w * HEIGHT_ASSUMED_MM[kind] / 1e6, 3)
-        c.notes.append(C.note("OPENING_HEIGHT_ASSUMED", height_mm=HEIGHT_ASSUMED_MM[kind]))
+        if printed and printed.get("h_mm"):
+          w, h = float(printed["w_mm"]), float(printed["h_mm"])
+          f["size_drawn_mm"] = [w, h]
+          f["height_assumed"] = False
+          f["height_source"] = "LABEL"
+          f["size_from_label"] = True
+          f["label_texts"] = printed["texts"]
+          
+          if printed.get("sill_mm") is not None:
+            f["sill_mm"] = printed["sill_mm"]
+          f["area_each_m2"] = round(w * h / 1e6, 3)
+          c.notes.append(C.note("OPENING_SIZE_FROM_PLAN_LABEL"))
+        else:
+          w = float(printed["w_mm"]) if printed else _class_width(width, scale_verified, imperial)
+          h, basis = _height_of(kind, hnotes)
+          f["size_drawn_mm"] = [w, h]
+          f["height_assumed"] = basis == "ASSUMED"
+          if basis != "ASSUMED":
+            f["height_source"] = basis
+          f["area_each_m2"] = round(w * h / 1e6, 3)
+          c.notes.append(_height_note(basis, h))
       c.status = _worst(c)
     unmatched = len(syms) - len(match)
     lacking = len(rows) - len(match)
@@ -500,6 +570,9 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
       stats.setdefault("unmatched_at", {})[kind] = [[round(sy["x"], 1), round(sy["y"], 1), round(sy["width_mm"])] for si, sy in enumerate(syms) if si not in set(match.values())]
     if unmatched or lacking:
       notes.append(C.note("OPENING_SYMBOLS_VS_MARKS", kind=kind, marks=len(rows), symbols=len(syms), matched=len(match)))
+  unpaired = [l for l in (symbols.get("labels") or []) if not l.get("paired")]
+  if unpaired:
+    notes.append(C.note("OPENING_LABELS_UNPAIRED", count=len(unpaired), labels=sorted({l["text"] for l in unpaired})[:8]))
   if len(pairs_for_scale) >= 3:
     implied = _median([r for _, r in pairs_for_scale]) * mm_per_pt
     stats["implied_mm_per_pt"] = round(implied, 3)

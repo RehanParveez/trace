@@ -37,7 +37,7 @@ def opening_area_candidates(doors: list, windows: list, ctx: dict, level_hint: s
       
       kind = f.get("opening_kind") or ("DOOR" if item == FN.DOOR_AREA else "WINDOW")
       facts = {"derived_from": "OPENINGS", "opening_key": c.key, "opening_tag": c.tag, "opening_kind": kind, "opening_count": n, "size_mm": [w, h],
-        "area_each_m2": round(area_each, 3), "area_m2": round(area_each * n, 3), "size_source": "SCHEDULE" if f.get("size_schedule_mm") else "DRAWN",
+        "area_each_m2": round(area_each, 3), "area_m2": round(area_each * n, 3), "size_source": "SCHEDULE" if f.get("size_schedule_mm") else "LABEL" if f.get("size_from_label") else "DRAWN",
         "material": None}
       notes = [C.note("OPENING_AREA_FROM_OPENINGS"), C.note("OPENING_MATERIAL_NOT_READ")]
       if f.get("height_assumed") and not f.get("size_schedule_mm"):
@@ -48,5 +48,5 @@ def opening_area_candidates(doors: list, windows: list, ctx: dict, level_hint: s
       where = f" · {spec[0]}" if spec else ""
       out.append(FN._make(cls, ctx, finish, (item, c.key), item, f"{label} {c.tag} ×{n} · {w:g}×{h:g} mm · {area_each * n:.2f} m²{where}", f"{tag}-{c.tag}", pts,
         {"length_mm": round(w, 1), "width_mm": round(h, 1)}, [], notes, facts,
-        0.8 if facts["size_source"] == "SCHEDULE" else 0.6, count=n))
+        0.8 if facts["size_source"] in ("SCHEDULE", "LABEL") else 0.6, count=n))
   return out

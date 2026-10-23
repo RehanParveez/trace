@@ -136,6 +136,18 @@ class RateRepository:
         out.setdefault((it.rate_book_id, it.work_item_code), []).append(it)
     return out
 
+  async def spec_items_for_bases(self, book_ids: list[UUID], bases: set[str]) -> dict[tuple, list[RateItem]]:
+    out: dict[tuple, list[RateItem]] = {}
+    if not book_ids or not bases:
+      return out
+    ordered = sorted(bases)
+    for i in range(0, len(ordered), _CHUNK):
+      likes = [RateItem.work_item_code.like(b.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "@%", escape="\\") for b in ordered[i:i + _CHUNK]]
+      r = await self.session.execute(select(RateItem).where(RateItem.rate_book_id.in_(book_ids), RateItem.is_active.is_(True), or_(*likes)))
+      for it in r.scalars().all():
+        out.setdefault((it.rate_book_id, it.work_item_code), []).append(it)
+    return out
+
   async def list_escalations(self, book_id: UUID) -> list[RateBookEscalation]:
     r = await self.session.execute(select(RateBookEscalation).where(RateBookEscalation.rate_book_id == book_id)
       .order_by(RateBookEscalation.effective_from.asc(), RateBookEscalation.trade_scope.asc()))

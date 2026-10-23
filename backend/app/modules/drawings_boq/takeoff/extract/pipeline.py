@@ -1293,7 +1293,7 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
 def _opening_symbols(index, walls: list, mm_per_pt: float, ctx: dict, imperial: bool, deadline: float, res: Extraction, wall_pen: float | None = None) -> None:
   verified = not ctx.get("scale_unverified")
   try:
-    symbols = OS.read(index, walls, mm_per_pt, scale_verified=verified, deadline=deadline, wall_pen=wall_pen)
+    symbols = OS.read(index, walls, mm_per_pt, scale_verified=verified, deadline=deadline, wall_pen=wall_pen, imperial=imperial)
     sym = OS.reconcile(res.candidates, symbols, mm_per_pt, scale_verified=verified, imperial=imperial, ctx=ctx, cls=Candidate, finish=_finish)
   except Exception as exc:
     res.notes.append(C.note("OPENING_SYMBOLS_FAILED", error=type(exc).__name__))
