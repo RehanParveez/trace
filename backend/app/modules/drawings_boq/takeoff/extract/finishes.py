@@ -140,6 +140,9 @@ def door_assignment(rooms: list, doors: list, mm_per_pt: float) -> dict:
       if d.category != "DOOR" or d.status == "INVALID":
         continue
       known = bool(size) and len(size) == 2 and float(size[0]) > 0.0
+      drawn = f.get("width_drawn_mm")
+      if not known and drawn and float(drawn) > 0.0:
+        known, size = True, [float(drawn)]
       width = float(size[0]) if known else DOOR_WIDTH_ASSUMED_MM
       tol = max(DOOR_ON_BOUNDARY_MM, DOOR_REACH * width) / mm_per_pt
       for p in (d.geometry or {}).get("points") or []:
@@ -382,14 +385,17 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
       "frame_class": "THIN" if thin else "THICK", "hosts": h}
     if f.get("view"):
       facts["view"] = f["view"]
+      
     where = f" · {spec[0]}" if spec else ""
+    notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL")]
+    if f.get("height_assumed") and not f.get("size_schedule_mm"):
+      facts["height_assumed"] = True
+      notes.append(C.note("OPENING_HEIGHT_ASSUMED", height_mm=height))
     out.append(_make(cls, ctx, finish, (DOOR_FRAME, d.key), DOOR_FRAME, f"Door frames {d.tag} ×{len(pts)} · {width:g}×{height:g} mm{where}", f"FRAME-{d.tag}", pts,
-      {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"], [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL")],
-      facts, 0.7, count=len(pts)))
+      {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"], notes, facts, 0.7, count=len(pts)))
   return out
 
 def fill_finish(item: str, missing: list, params: dict, typed: dict, facts: dict) -> tuple:
-  """(params, problem) for a finish item: the frame width or the wall height typed at accept."""
   out = dict(params or {})
   facts = facts or {}
   

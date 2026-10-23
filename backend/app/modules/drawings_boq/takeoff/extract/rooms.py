@@ -8,6 +8,7 @@ from shapely.ops import unary_union
 from app.modules.drawings_boq.takeoff.extract.members import _SIZE, category_of, parse_size
 from shapely.prepared import prep
 from app.modules.drawings_boq.takeoff.extract.walls import run_polygon
+from app.modules.drawings_boq.takeoff.extract import geo_safe as GS
 
 _QUAL = r"(?:MASTER|ATTACHED|COMMON|MAIN|SERVANT|FRONT|REAR|UPPER|LOWER|GUEST|KIDS|GIRLS|BOYS)\s+"
 _NAME = re.compile(r"(?<![A-Z0-9])(?:" + _QUAL + r")?(?:" + "|".join(re.escape(n) for n in sorted(C.ROOM_NAMES, key=len, reverse=True))
@@ -17,10 +18,13 @@ _CLOSE = 0.2
 def _clean(p: Polygon) -> Polygon:
   return p.simplify(0.02, preserve_topology=True)
 
-def wall_faces(runs: list, frames: list) -> list:
-  
+def wall_faces(runs: list, frames: list, stats: dict | None = None) -> list:
+  st = stats if stats is not None else {}
+  st.setdefault("repaired", 0)
+  st.setdefault("dropped", 0)
   if not runs:
     return []
+  
   polys = [run_polygon(r, frames[r.peak], extended=True) for r in runs]
   union = unary_union(polys).buffer(_CLOSE, join_style=2).buffer(-_CLOSE, join_style=2)
   parts = list(union.geoms) if hasattr(union, "geoms") else [union]
@@ -28,7 +32,13 @@ def wall_faces(runs: list, frames: list) -> list:
   for part in parts:
     for ring in part.interiors:
       face = Polygon(ring)
-      free = face.difference(union)
+      free, how = GS.safe_difference(face, union)
+      if free is None:
+        st["dropped"] += 1
+        continue
+      
+      if how != GS.PLAIN:
+        st["repaired"] += 1
       for g in (list(free.geoms) if hasattr(free, "geoms") else [free]):
         if isinstance(g, Polygon) and not g.is_empty:
           out.append(g)

@@ -7,6 +7,9 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.orientation import carry as OC, frame as OF, turn as OT
 from app.modules.drawings_boq.takeoff.extract import members as M
 from app.modules.drawings_boq.takeoff.extract import rooms as R
+from app.modules.drawings_boq.takeoff.extract import pageroles as PRL
+from app.modules.drawings_boq.takeoff.extract import geo_safe as GS
+from app.modules.drawings_boq.takeoff.extract import scaleplausible as SP
 from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
@@ -21,6 +24,7 @@ from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.extract import tank_steel as TSTEEL
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
+from app.modules.drawings_boq.takeoff.extract import opening_symbols as OS
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
 from app.modules.drawings_boq.takeoff.extract import dashed_openings as DO
 from app.modules.drawings_boq.takeoff.extract import hosts as H
@@ -701,8 +705,24 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
   out.sort(key=lambda c: (c.facts.get("construction") == "RCC", -c.facts["thickness_used_mm"], -c.facts["length_cc_m"]))
   return frames, runs, out, stats
 
-def _room_candidates(index, frames, runs, lines, f, hint, ctx) -> list:
-  faces = R.wall_faces(runs, frames)
+def _stage(res, stage: str, fn, default):
+  try:
+    return fn()
+  except W.TimeLimit:
+    raise
+  except Exception as exc:
+    res.notes.append(C.note("STAGE_FAILED", stage=stage, error=type(exc).__name__, detail=str(exc)[:160]))
+    return default
+
+def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None) -> list:
+  gstats: dict = {}
+  faces = R.wall_faces(runs, frames, gstats)
+  if res is not None:
+    if gstats.get("repaired"):
+      res.notes.append(C.note("ROOM_GEOMETRY_REPAIRED", count=gstats["repaired"]))
+    if gstats.get("dropped"):
+      res.notes.append(C.note("ROOM_FACE_SKIPPED", count=gstats["dropped"]))
+      
   k = f * f / 1e6
   faces = [p for p in faces if C.ROOM_MIN_M2 <= p.area * k <= C.ROOM_MAX_M2]
   names, sizes = R.labels(lines, hint)
@@ -792,10 +812,23 @@ def _flag_nested_rooms(rooms: list) -> None:
     if pa is None or pa.is_empty:
       continue
     inside = [j for j, b in enumerate(rooms) if j != i and polys[j] is not None and b.facts["area_m2"] > a.facts["area_m2"] * 1.2
-              and polys[j].contains(pa.representative_point())]
+      and polys[j].contains(pa.representative_point())]
+    overlap = None
+    if not inside and a.facts.get("outline_from") == "LABEL":
+
+      for j, b in enumerate(rooms):
+        if j == i or polys[j] is None or b.facts.get("outline_from") == "LABEL":
+          continue
+        
+        common, _how = GS.safe_intersection(pa, polys[j])
+        if common is not None and common.area >= C.ROOM_DUPLICATE_SHARE * pa.area and (overlap is None or common.area > overlap[1]):
+          overlap = (j, common.area)
+      if overlap is not None:
+        inside = [overlap[0]]
     if inside:
       big = max(inside, key=lambda j: rooms[j].facts["area_m2"])
-      a.notes.append(C.note("ROOM_INSIDE_ROOM", enclosing=rooms[big].facts.get("name"), enclosing_m2=rooms[big].facts["area_m2"]))
+      extra = {"overlap_pct": round(100.0 * overlap[1] / pa.area, 1)} if overlap is not None else {}
+      a.notes.append(C.note("ROOM_INSIDE_ROOM", enclosing=rooms[big].facts.get("name"), enclosing_m2=rooms[big].facts["area_m2"], **extra))
       a.facts["inside_room"] = rooms[big].facts.get("name")
       a.status = _status(a.notes)
 
@@ -1245,10 +1278,28 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   out.extend(FN.paint_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, float(((dado.facts if dado is not None else {}) or {}).get("area_m2") or 0.0)))
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
   out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
+  out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   return out
 
+def _opening_symbols(index, walls: list, mm_per_pt: float, ctx: dict, imperial: bool, deadline: float, res: Extraction, wall_pen: float | None = None) -> None:
+  verified = not ctx.get("scale_unverified")
+  try:
+    symbols = OS.read(index, walls, mm_per_pt, scale_verified=verified, deadline=deadline, wall_pen=wall_pen)
+    sym = OS.reconcile(res.candidates, symbols, mm_per_pt, scale_verified=verified, imperial=imperial, ctx=ctx, cls=Candidate, finish=_finish)
+  except Exception as exc:
+    res.notes.append(C.note("OPENING_SYMBOLS_FAILED", error=type(exc).__name__))
+    res.stats["opening_symbols"] = {"error": f"{type(exc).__name__}: {exc}"}
+    return
+  
+  res.candidates.extend(sym["new"])
+  res.notes.extend(sym["notes"])
+  if symbols["stats"]["doors"] or symbols["stats"]["windows"]:
+    res.notes.append(C.note("OPENING_SYMBOLS_READ", doors=symbols["stats"]["doors"], windows=symbols["stats"]["windows"]))
+  if symbols["stats"]["timed_out"]:
+    res.notes.append(C.note("OPENING_SYMBOLS_TIME_LIMIT"))
+  res.stats["opening_symbols"] = {**symbols["stats"], **sym["stats"]}
+
 def _view_plans(views: list) -> list:
-  """The framing plans of a composite structural sheet (not the foundation plan) as slab plans."""
   out = []
   for v in views:
     if not v.get("structural") or v.get("foundation") or not v.get("level_hint"):
@@ -1339,6 +1390,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   res.stats["concrete_beds"] = len(pads)
   
   res.stats["sheet_kind"] = kind
+  role = PRL.page_role(sheet_words if sheet_words is not None else words, kind)
+  role["advice"] = PRL.reading_advice(role)
+  res.stats["sheet_role"] = role
   if kind["kind"] != "STRUCTURAL" and not composite_structural and level_hint and sheet_words is None:
     res.stats["column_shapes"] = CS.census(index.rings, mm_per_pt, imp_here, _snap_inch, level_hint)
   frames, runs = [], []
@@ -1356,6 +1410,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.stats["beam_sections"] = BS.apply(beams, beam_sections or [])
       res.candidates.extend(beams)
       res.stats["wall_beams"] = len(beams)
+      _stage(res, "OPENING_SYMBOLS", lambda: _opening_symbols(index, walls, mm_per_pt, ctx, imp_sheet, deadline, res, wstats.get("wall_pen_pt")), None)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
       wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
       marked = [c for c in res.candidates if c.category in ("DOOR", "WINDOW")]
@@ -1420,21 +1475,39 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           wall_m_all_pens=wstats.get("wall_m_all_pens")))
       if wstats.get("light_walls_kept"):
         res.notes.append(C.note("LIGHT_PEN_WALLS_KEPT", count=wstats["light_walls_kept"], metres=wstats.get("light_walls_m")))
-      rooms = _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx)
+      rooms = _stage(res, "ROOMS", lambda: _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx, res), [])
       res.candidates.extend(rooms)
       res.candidates.extend(completion)
       
       if with_finishes:
-        finishes = _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"], mm_per_pt, ctx, level_hint,
-          [c for c in res.candidates if c.category == "WINDOW"])
+        finishes = _stage(res, "FINISHES", lambda: _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"],
+          mm_per_pt, ctx, level_hint, [c for c in res.candidates if c.category == "WINDOW"]), [])
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
       if lowest_level:
-        below = _foundation_candidates([*walls, *QR.counted_completion(completion)], rooms, schedule, ctx, level_hint, footing_sections, mm_per_pt)
+        below = _stage(res, "FOUNDATION", lambda: _foundation_candidates([*walls, *QR.counted_completion(completion)], rooms, schedule, ctx, level_hint,
+          footing_sections, mm_per_pt), [])
         res.candidates.extend(below)
         res.stats["foundation_items"] = len(below)
     except W.TimeLimit:
       res.notes.append(C.note("TIME_LIMIT"))
+      
+  if role["role"] == "UNKNOWN" and sum(1 for c in res.candidates if c.category == "ROOM" and c.facts.get("name")) >= 3:
+    role.update(role="PLAN", basis="CONTENT", advice="READ")   
+  if role["advice"] == "SKIP":
+    walls_read = sum(1 for c in res.candidates if c.category in ("WALL", "ROOM"))
+    if walls_read:
+      res.notes.append(C.note("SHEET_NOT_A_PLAN", role=role["role"], title=role.get("title"), items=walls_read))
+  if scale_unverified and kind["kind"] != "STRUCTURAL" and not composite_structural:
+    widths = [float(w) for c in res.candidates if c.category == "DOOR" for w in (c.facts.get("widths_measured_mm") or [])]
+    named = [(c.facts.get("name"), c.facts.get("area_m2")) for c in res.candidates if c.category == "ROOM" and c.facts.get("name")
+      and c.facts.get("outline_from") != "LABEL" and not any(n.get("code") == "ROOM_INSIDE_ROOM" for n in c.notes)]
+    plaus = SP.check(mm_per_pt, widths, named)
+    
+    res.stats["scale_plausibility"] = plaus
+    if plaus and plaus["status"] == "IMPLAUSIBLE":
+      res.notes.append(C.note("SCALE_LOOKS_WRONG", used_mm_per_pt=plaus["used_mm_per_pt"], suggested_mm_per_pt=plaus["suggested_mm_per_pt"],
+        suggested_scale=plaus["suggested_scale"], evidence=plaus["evidence"], agree=plaus["agree"]))
   found_steel = SN.read(notes_lines)
   res.stats["steel"] = SN.attach(res.candidates, found_steel, C.note)
   res.stats["steel_notes"] = found_steel["notes"]

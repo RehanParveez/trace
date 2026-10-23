@@ -39,7 +39,7 @@ def assign(walls: list, openings: list, mm_per_pt: float) -> dict:
   n_ok = n_lost = 0
   
   for o in openings:
-    size = (o.facts or {}).get("size_schedule_mm")
+    size = (o.facts or {}).get("size_schedule_mm") or (o.facts or {}).get("size_drawn_mm")
     kind = (o.facts or {}).get("opening_kind") or o.category
     role = ROLE_OF.get(kind)
     if not size or role is None:

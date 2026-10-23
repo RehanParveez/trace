@@ -1,0 +1,513 @@
+from __future__ import annotations
+import math
+import numpy as np
+import time
+from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import foundation as FD
+
+DASH_MAX_PT = 18.0            
+DASH_MIN_PT = 0.8
+R_MIN_PT, R_MAX_PT = 14.0, 120.0
+SPAN_MIN, SPAN_MAX = 55.0, 130.0  
+ARC_TOL_PT = 1.5
+LEAF_COVER_MIN = 0.25          
+WALL_BAND_PT = 2.0              
+JAMB_REL, JAMB_ABS = 0.14, 1.5   
+HEAVY_SHARE = 0.6              
+BIN_MIN, SPAN_BINS_MIN = 10, 85.0   
+SWING_MM = (450.0, 1300.0)     
+SWING_MM_UNVERIFIED = (350.0, 1700.0)
+DOUBLE_TOL = 0.12
+END_TOL = 30.0                 
+WINDOW_LINES_MIN = 3
+WINDOW_COVER_MIN = 0.7
+WINDOW_MIN_MM, WINDOW_MAX_MM = 450.0, 4500.0
+LEAF_TO_WIDTH = 1.05           
+SNAP_TOL = 0.06
+DOOR_HEIGHT_ASSUMED_MM = 2134.0    
+WINDOW_HEIGHT_ASSUMED_MM = 1219.0   
+REACH_MM = 2000.0              
+IMPLIED_SCALE_TOL = 0.12
+WIDTHS_IMPERIAL = (610.0, 686.0, 762.0, 813.0, 838.0, 914.0, 1067.0, 1219.0, 1524.0, 1829.0, 2134.0)
+WIDTHS_METRIC = (600.0, 700.0, 750.0, 800.0, 900.0, 1000.0, 1200.0, 1500.0, 1800.0, 2100.0)
+
+def _arrays(index) -> tuple:
+  segs = np.asarray(index.segs, dtype=np.float32).reshape(-1, 5)
+  kinds = np.asarray(index.kinds, dtype=np.uint8)
+  n = min(len(segs), len(kinds))
+  return segs[:n], kinds[:n]
+
+def _hough(segs, kinds, ln, deadline: float | None) -> list:
+  ok = np.where((kinds < 2) & (ln >= DASH_MIN_PT) & (ln <= DASH_MAX_PT))[0]
+  if len(ok) == 0:
+    return []
+
+  if len(ok) > 60000:
+    ok = ok[:: int(math.ceil(len(ok) / 60000.0))]
+  s = segs[ok]
+  l = ln[ok]
+  
+  mx, my = (s[:, 0] + s[:, 2]) / 2.0, (s[:, 1] + s[:, 3]) / 2.0
+  nx, ny = -(s[:, 3] - s[:, 1]) / l, (s[:, 2] - s[:, 0]) / l
+  rs = np.arange(R_MIN_PT, R_MAX_PT + 1.0, 1.0)
+  keys, who = [], []
+  step = 6000
+  for lo in range(0, len(ok), step):
+    if deadline is not None and time.monotonic() > deadline:
+      return []
+    sl = slice(lo, lo + step)
+    for sign in (1.0, -1.0):
+      kx = np.round(mx[sl, None] + sign * nx[sl, None] * rs[None, :]).astype(np.int64)
+      ky = np.round(my[sl, None] + sign * ny[sl, None] * rs[None, :]).astype(np.int64)
+      kr = np.broadcast_to(np.round(rs).astype(np.int64)[None, :], kx.shape)
+      keys.append(((kx + 2000) * 4_000_000 + (ky + 2000) * 1000 + kr).ravel())
+      who.append(np.repeat(np.arange(lo, min(lo + step, len(ok))), len(rs)))
+      
+  keys, who = np.concatenate(keys), np.concatenate(who)
+  order = np.argsort(keys, kind="stable")
+  keys, who = keys[order], who[order]
+  uk, start, cnt = np.unique(keys, return_index=True, return_counts=True)
+  
+  peaks = []
+  for ci in np.where(cnt >= 4)[0]:
+    sel = np.unique(who[start[ci]:start[ci] + cnt[ci]])
+    k = int(uk[ci])
+    peaks.append((k // 4_000_000 - 2000, (k // 1000) % 4000 - 2000, k % 1000, sel))
+  peaks.sort(key=lambda t: -len(t[3]))
+
+  out, used = [], []
+  for x, y, r, sel in peaks:
+    d = np.hypot(mx[sel] - x, my[sel] - y)
+    good = np.abs(d - r) <= ARC_TOL_PT
+    if int(good.sum()) < 6:
+      continue
+    chosen = frozenset(sel[good].tolist())
+    if any(len(chosen & u) > 0.6 * len(chosen) for u in used):
+      continue
+    used.append(chosen)
+    
+    th = np.sort(np.mod(np.degrees(np.arctan2(my[sel[good]] - y, mx[sel[good]] - x)), 360.0))
+    gaps = np.diff(np.r_[th, th[0] + 360.0])
+    span = 360.0 - float(gaps.max())
+    if SPAN_MIN <= span <= SPAN_MAX:
+      out.append({"x": float(x), "y": float(y), "r": float(r), "n": int(good.sum()), "span": span, "a0": float(th[(int(np.argmax(gaps)) + 1) % len(th)]), "by": "ARC"})
+  return out
+
+def _coverage(cx: float, cy: float, r: float, ang: float, segs, ln, idx) -> float:
+  tol = max(2.5, 0.2 * r)
+  ux, uy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
+  spans = []
+  
+  for i in idx:
+    x1, y1, x2, y2 = (float(v) for v in segs[i, :4])
+    dx, dy = (x2 - x1) / ln[i], (y2 - y1) / ln[i]
+    if abs(dx * uy - dy * ux) > 0.07 or abs((x1 - cx) * uy - (y1 - cy) * ux) > tol:
+      continue
+  
+    t1, t2 = (x1 - cx) * ux + (y1 - cy) * uy, (x2 - cx) * ux + (y2 - cy) * uy
+    lo, hi = max(min(t1, t2), -1.0), min(max(t1, t2), 0.97 * r)      
+    if hi - lo > 0.5:
+      spans.append((lo, hi))
+  spans.sort()
+  
+  total, cur = 0.0, None
+  for lo, hi in spans:
+    if cur is None or lo > cur[1] + 1.5:
+      total += 0.0 if cur is None else cur[1] - cur[0]
+      cur = [lo, hi]
+    else:
+      cur[1] = max(cur[1], hi)
+  total += 0.0 if cur is None else cur[1] - cur[0]
+  return total / r
+
+def _leaf(a: dict, segs, kinds, ln) -> tuple:
+  cx, cy, r = a["x"], a["y"], a["r"]
+  near = np.minimum(np.hypot(segs[:, 0] - cx, segs[:, 1] - cy), np.hypot(segs[:, 2] - cx, segs[:, 3] - cy))
+  idx = np.where((kinds == 0) & (ln >= 1.0) & (near <= r + 4.0))[0]
+  best = (0.0, None)
+  
+  for end in (a["a0"], a["a0"] + a["span"]):
+    for da in range(-9, 10):
+      c = _coverage(cx, cy, r, end + da, segs, ln, idx)
+      if c > best[0]:
+        best = (c, (end + da) % 360.0)
+  return best
+
+def _heavy_ends(segs, kinds, heavy: float):
+  hv = np.where((kinds == 0) & (segs[:, 4] >= HEAVY_SHARE * heavy))[0]
+  if len(hv) == 0:
+    return np.zeros((0, 2)), np.zeros((0, 2))
+  ends = np.unique(np.round(np.r_[segs[hv, 0:2], segs[hv, 2:4]], 1), axis=0)
+  return ends, hv
+
+def _leaf_first(segs, kinds, ln, ends, bands: list, deadline: float | None) -> list:
+  thin = np.where((kinds < 2) & (ln <= DASH_MAX_PT) & (ln >= DASH_MIN_PT))[0]
+  if len(thin) == 0 or (len(ends) == 0 and not bands):
+    return []
+
+  mids = np.c_[(segs[thin, 0] + segs[thin, 2]) / 2.0, (segs[thin, 1] + segs[thin, 3]) / 2.0]
+  order = np.argsort(mids[:, 0])
+  mids = mids[order]
+  xs = mids[:, 0]
+  leaves = np.where((kinds == 0) & (ln >= 12.0) & (ln <= 110.0))[0]
+  out = []
+  
+  for n_i, i in enumerate(leaves):
+    if deadline is not None and (n_i & 255) == 0 and time.monotonic() > deadline:
+      break
+    for (px, py, qx, qy) in ((segs[i, 0], segs[i, 1], segs[i, 2], segs[i, 3]), (segs[i, 2], segs[i, 3], segs[i, 0], segs[i, 1])):
+      px, py, qx, qy, L = float(px), float(py), float(qx), float(qy), float(ln[i])
+      if not _at_jamb(px, py, L, ends) and not _in_wall(px, py, bands):
+        continue
+      lo, hi = np.searchsorted(xs, px - L - 2.5), np.searchsorted(xs, px + L + 2.5)
+      sub = mids[lo:hi]
+      d = np.hypot(sub[:, 0] - px, sub[:, 1] - py)
+      sel = sub[np.abs(d - L) <= 2.0]
+      if len(sel) < 4:
+        continue
+    
+      th0 = math.degrees(math.atan2(qy - py, qx - px))
+      a = (np.degrees(np.arctan2(sel[:, 1] - py, sel[:, 0] - px)) - th0 + 540.0) % 360.0 - 180.0
+      for sgn in (1.0, -1.0):
+        part = a[(sgn * a >= -6.0) & (sgn * a <= 100.0)]
+        if len(part) < 4 or int(((sgn * a > 125.0) & (sgn * a <= 180.0)).sum()) >= 3:      
+          continue
+        bins = len(np.unique(np.round(part / 10.0)))
+        span = float(part.max() - part.min())
+        if bins >= BIN_MIN and span >= SPAN_BINS_MIN:
+          out.append({"x": px, "y": py, "r": L, "n": int(len(part)), "span": span, "a0": (th0 + float(part.min())) % 360.0, "by": "LEAF", "leaf": 1.0, "ends": (th0 % 360.0, (th0 + sgn * 90.0) % 360.0), "bins": bins})
+  return out
+
+def _snap_point(x: float, y: float, segs, reach: float) -> tuple:
+  d1 = np.hypot(segs[:, 0] - x, segs[:, 1] - y)
+  d2 = np.hypot(segs[:, 2] - x, segs[:, 3] - y)
+  i1, i2 = int(np.argmin(d1)), int(np.argmin(d2))
+  if min(d1[i1], d2[i2]) > reach:
+    return x, y
+  return (float(segs[i1, 0]), float(segs[i1, 1])) if d1[i1] <= d2[i2] else (float(segs[i2, 2]), float(segs[i2, 3]))
+
+def _merge(found: list) -> list:
+  found = sorted(found, key=lambda a: (-(a.get("leaf") or 0.0), -a["n"]))
+  keep = []
+  
+  for a in found:
+    if any(math.hypot(a["x"] - b["x"], a["y"] - b["y"]) <= max(6.0, 0.2 * a["r"]) and abs(a["r"] - b["r"]) <= max(4.0, 0.2 * a["r"]) for b in keep):
+      continue
+    keep.append(a)
+  return keep
+
+def _at_jamb(x: float, y: float, r: float, ends) -> bool:
+  return len(ends) > 0 and float(np.hypot(ends[:, 0] - x, ends[:, 1] - y).min()) <= JAMB_REL * r + JAMB_ABS
+
+def _wall_bands(walls: list, mm_per_pt: float) -> list:
+  out = []
+  for w in walls or []:
+    f = w.facts or {}
+    pts = (w.geometry or {}).get("points") or []
+    if w.category != "WALL" or f.get("enclosure") == "TANK" or w.status == "INVALID" or len(pts) < 2:
+      continue
+    out.append((pts[0], pts[1], float(f.get("thickness_mm") or 230.0) / mm_per_pt / 2.0))
+  return out
+
+def _in_wall(x: float, y: float, bands: list) -> bool:
+  for p0, p1, half in bands:
+    vx, vy = p1[0] - p0[0], p1[1] - p0[1]
+    l2 = vx * vx + vy * vy
+    t = 0.0 if l2 <= 0.0 else max(0.0, min(1.0, ((x - p0[0]) * vx + (y - p0[1]) * vy) / l2))
+    if math.hypot(x - (p0[0] + t * vx), y - (p0[1] + t * vy)) <= half + WALL_BAND_PT:
+      return True
+  return False
+
+def find_swings(index, mm_per_pt: float, *, scale_verified: bool = True, deadline: float | None = None, wall_pen: float | None = None, walls: list | None = None) -> tuple:
+  segs, kinds = _arrays(index)
+  stats = {"arcs": 0, "rejected_no_hinge": 0, "rejected_no_leaf": 0, "rejected_size": 0, "by_leaf_pass": 0}
+  if len(segs) == 0 or mm_per_pt <= 0.0:
+    return [], stats
+
+  ln = np.hypot(segs[:, 2] - segs[:, 0], segs[:, 3] - segs[:, 1])
+  pens = segs[kinds == 0, 4]
+  heavy = float(wall_pen) if wall_pen else float(np.percentile(pens, 99)) if len(pens) else 0.0
+  ends, _ = _heavy_ends(segs, kinds, heavy)
+  bands = _wall_bands(walls, mm_per_pt)
+  lo_mm, hi_mm = SWING_MM if scale_verified else SWING_MM_UNVERIFIED
+  arcs = _hough(segs, kinds, ln, deadline)
+  stats["arcs"] = len(arcs)
+  
+  accepted = []
+  for a in arcs:
+    if not (lo_mm <= a["r"] * mm_per_pt <= hi_mm):
+      stats["rejected_size"] += 1
+      continue
+  
+    if not _at_jamb(a["x"], a["y"], a["r"], ends) and not _in_wall(a["x"], a["y"], bands):
+      stats["rejected_no_hinge"] += 1
+      continue
+    cov, ang = _leaf(a, segs, kinds, ln)
+    if cov < LEAF_COVER_MIN:
+      stats["rejected_no_leaf"] += 1
+      continue
+  
+    a["leaf"] = cov
+    a["ends"] = (a["a0"] % 360.0, (a["a0"] + a["span"]) % 360.0)
+    accepted.append(a)
+  second = [a for a in _leaf_first(segs, kinds, ln, ends, bands, deadline) if lo_mm <= a["r"] * mm_per_pt <= hi_mm]
+  swings = _merge(accepted + second)
+  stats["by_leaf_pass"] = sum(1 for a in swings if a["by"] == "LEAF")
+  
+  out = []
+  for a in swings:
+    x, y = _snap_point(a["x"], a["y"], segs, JAMB_REL * a["r"] + JAMB_ABS + 2.0)
+    out.append({"x": x, "y": y, "hx": a["x"], "hy": a["y"], "r_pt": a["r"], "leaf_mm": a["r"] * mm_per_pt, "span": a["span"], "by": a["by"],
+      "ends": a["ends"]})
+  return out, stats
+
+def pair_doors(swings: list, mm_per_pt: float) -> list:
+  used: set = set()
+  doors = []
+  
+  order = sorted(range(len(swings)), key=lambda i: (swings[i]["y"], swings[i]["x"]))
+  for ai, i in enumerate(order):
+    if i in used:
+      continue
+    a = swings[i]
+    mate = None
+    for j in order[ai + 1:]:
+      if j in used:
+        continue
+      b = swings[j]
+      
+      s = a["r_pt"] + b["r_pt"]
+      d = math.hypot(a["hx"] - b["hx"], a["hy"] - b["hy"])
+      if abs(a["r_pt"] - b["r_pt"]) > 0.15 * max(a["r_pt"], b["r_pt"]) or abs(d - s) > DOUBLE_TOL * s + 3.0:
+        continue
+      to_b = math.degrees(math.atan2(b["hy"] - a["hy"], b["hx"] - a["hx"])) % 360.0
+      if _facing(a, b, to_b):
+        mate = j
+        break
+    
+    if mate is None:
+      doors.append({"x": a["x"], "y": a["y"], "width_mm": a["leaf_mm"] * LEAF_TO_WIDTH, "leaves": 1, "by": a["by"]})
+      used.add(i)
+    else:
+      b = swings[mate]
+      used.update((i, mate))
+      doors.append({"x": (a["x"] + b["x"]) / 2.0, "y": (a["y"] + b["y"]) / 2.0, "width_mm": (a["leaf_mm"] + b["leaf_mm"]) * LEAF_TO_WIDTH, "leaves": 2, "by": a["by"]})
+  return doors
+
+def _turn(x: float, y: float) -> float:
+  return abs((x - y + 180.0) % 360.0 - 180.0)
+
+def _facing(a: dict, b: dict, to_b: float) -> bool:
+  for ca, oa in (a["ends"], a["ends"][::-1]):
+    for cb, ob in (b["ends"], b["ends"][::-1]):
+      if _turn(ca, to_b) <= END_TOL and _turn(cb, to_b + 180.0) <= END_TOL and _turn(oa, ob) <= 25.0:
+        return True
+  return False
+
+def _glazing(segs, kinds, ln, a, b, t_pt: float) -> tuple:
+  ax, ay, bx, by = float(a[0]), float(a[1]), float(b[0]), float(b[1])
+  L = math.hypot(bx - ax, by - ay)
+  
+  if L < 4.0:
+    return 0, 0.0
+  dx, dy = (bx - ax) / L, (by - ay) / L
+  nx, ny = -dy, dx
+  idx = np.where((kinds == 0) & (ln >= WINDOW_COVER_MIN * L))[0]
+  if len(idx) == 0:
+    return 0, 0.0
+  s = segs[idx]
+  l = ln[idx]
+  
+  parallel = np.abs((s[:, 2] - s[:, 0]) / l * dy - (s[:, 3] - s[:, 1]) / l * dx) <= 0.045
+  s = s[parallel]
+  if len(s) == 0:
+    return 0, 0.0
+  off = (((s[:, 0] - ax) * nx + (s[:, 1] - ay) * ny) + ((s[:, 2] - ax) * nx + (s[:, 3] - ay) * ny)) / 2.0
+  t1, t2 = (s[:, 0] - ax) * dx + (s[:, 1] - ay) * dy, (s[:, 2] - ax) * dx + (s[:, 3] - ay) * dy
+  cover = (np.clip(np.maximum(t1, t2), 0.0, L) - np.clip(np.minimum(t1, t2), 0.0, L)) / L
+  keep = (np.abs(off) <= t_pt / 2.0 + 1.5) & (cover >= WINDOW_COVER_MIN)
+  groups: list = []
+  
+  for o in np.sort(off[keep]):
+    if not groups or o - groups[-1][-1] > 0.35:
+      groups.append([float(o)])
+    else:
+      groups[-1].append(float(o))
+  if not groups:
+    return 0, 0.0
+  mids = [sum(g) / len(g) for g in groups]
+  return len(groups), mids[len(mids) // 2]
+
+def find_windows(index, walls: list, mm_per_pt: float, deadline: float | None = None) -> tuple:
+  segs, kinds = _arrays(index)
+  stats = {"gaps": 0, "glazed": 0, "open": 0}
+  if len(segs) == 0 or mm_per_pt <= 0.0:
+    return [], stats
+
+  ln = np.hypot(segs[:, 2] - segs[:, 0], segs[:, 3] - segs[:, 1])
+  out = []
+  for w in walls:
+    f = w.facts or {}
+    if w.category != "WALL" or f.get("enclosure") == "TANK" or w.status == "INVALID":
+      continue
+  
+    t_pt = float(f.get("thickness_mm") or 230.0) / mm_per_pt
+    for (a, b), g in zip(f.get("gap_pts") or [], f.get("gaps_mm") or []):
+      if deadline is not None and time.monotonic() > deadline:
+        return out, stats
+      g = float(g)
+      if not (WINDOW_MIN_MM <= g <= WINDOW_MAX_MM):
+        continue
+      stats["gaps"] += 1
+      n, off = _glazing(segs, kinds, ln, a, b, t_pt)
+      if n < WINDOW_LINES_MIN:
+        stats["open"] += 1
+        continue
+    
+      stats["glazed"] += 1
+      L = math.hypot(b[0] - a[0], b[1] - a[1])
+      dx, dy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+      mx, my = (a[0] + b[0]) / 2.0 - dy * off, (a[1] + b[1]) / 2.0 + dx * off
+      px, py = _snap_point(mx, my, segs, 1.0)
+      out.append({"x": px, "y": py, "width_mm": g, "lines": n, "wall_key": w.key})
+  return out, stats
+
+def snap_width(mm: float, imperial: bool) -> float:
+  best = min(WIDTHS_IMPERIAL if imperial else WIDTHS_METRIC, key=lambda s: abs(s - mm))
+  return best if abs(best - mm) <= SNAP_TOL * best else float(round(mm / 5.0) * 5)
+
+def read(index, walls: list, mm_per_pt: float, *, scale_verified: bool = True, deadline: float | None = None, wall_pen: float | None = None) -> dict:
+  started = time.monotonic()
+  swings, sstats = find_swings(index, mm_per_pt, scale_verified=scale_verified, deadline=deadline, wall_pen=wall_pen, walls=walls)
+  doors = pair_doors(swings, mm_per_pt)
+  windows, wstats = find_windows(index, walls, mm_per_pt, deadline)
+  stats = {"swings": len(swings), "doors": len(doors), "double_doors": sum(1 for d in doors if d["leaves"] == 2), "windows": len(windows), "swing_search": sstats,
+    "window_search": wstats, "timed_out": bool(deadline is not None and time.monotonic() > deadline), "seconds": round(time.monotonic() - started, 3)}
+  return {"doors": doors, "windows": windows, "stats": stats}
+
+KINDS = ("DOOR", "WINDOW")
+HEIGHT_ASSUMED_MM = {"DOOR": DOOR_HEIGHT_ASSUMED_MM, "WINDOW": WINDOW_HEIGHT_ASSUMED_MM}
+WIDTH_DIFFERS_TOL = 0.15
+
+def _median(values: list) -> float:
+  v = sorted(values)
+  n = len(v)
+  return float(v[n // 2]) if n % 2 else (float(v[n // 2 - 1]) + float(v[n // 2])) / 2.0
+
+def _marks(cands: list, category: str) -> list:
+  rows = []
+  for c in cands:
+    f = c.facts or {}
+    if c.category != category or c.status == "INVALID" or f.get("found_by") == "SYMBOL_SCAN" or f.get("opening_kind") == "VENTILATOR":
+      continue
+    rows.extend((c, k) for k in range(len((c.geometry or {}).get("points") or [])))
+  return rows
+
+def _match(rows: list, symbols: list, reach_pt: float) -> dict:
+  pairs = []
+  
+  for ri, (c, k) in enumerate(rows):
+    p = c.geometry["points"][k]
+    for si, s in enumerate(symbols):
+      d = math.hypot(float(p[0]) - s["x"], float(p[1]) - s["y"])
+      if d <= reach_pt:
+        pairs.append((d, ri, si))
+        
+  pairs.sort()
+  taken_r, taken_s, out = set(), set(), {}
+  for d, ri, si in pairs:
+    if ri in taken_r or si in taken_s:
+      continue
+    taken_r.add(ri)
+    taken_s.add(si)
+    out[(id(rows[ri][0]), rows[ri][1])] = si
+  return out
+
+def _class_width(width_mm: float, scale_verified: bool, imperial: bool) -> float:
+  return snap_width(width_mm, imperial) if scale_verified else float(round(width_mm / 50.0) * 50)
+
+def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finish, scale_verified: bool):
+  work_item, mode, ckind = C.SUGGESTIONS[kind]
+  height = HEIGHT_ASSUMED_MM[kind]
+  n = len(items)
+  facts = {"opening_kind": kind, "found_by": "SYMBOL_SCAN", "symbols": n, "double_leaf": sum(1 for i in items if i.get("leaves") == 2), "width_drawn_mm": width,
+    "widths_measured_mm": sorted(round(i["width_mm"]) for i in items), "size_drawn_mm": [width, height], "height_assumed": True, "area_each_m2": round(width * height / 1e6, 3),
+    "width_snapped": bool(scale_verified)}
+  
+  notes = [C.note("OPENING_FROM_SYMBOLS"), C.note("OPENING_HEIGHT_ASSUMED", height_mm=height)]
+  noun = "Door" if kind == "DOOR" else "Window"
+  cand = cls(key=FD._key_of(("OPNSYM", kind, width)), category=kind, kind=ckind, quantity_mode=mode, label=f"{noun} {width:g} mm ×{n} · drawn, no mark", tag=f"DRAWN-{kind}-{width:g}",
+    geometry={"points": [[round(i["x"], 3), round(i["y"], 3)] for i in items]}, params={}, missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes,
+    source="VECTOR_SNAP", count=n)
+  return finish(cand, ctx, 0.6)
+
+def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: bool, imperial: bool, ctx: dict, cls, finish) -> dict:
+  new, notes = [], []
+  
+  stats = {"marks": {}, "symbols": {}, "matched": {}, "unmatched_symbols": {}, "marks_without_symbol": {}, "drawn_items": 0}
+  reach = REACH_MM / mm_per_pt
+  pairs_for_scale = []
+  
+  for kind, key in (("DOOR", "doors"), ("WINDOW", "windows")):
+    syms = symbols.get(key) or []
+    rows = _marks(cands, kind)
+    stats["symbols"][kind], stats["marks"][kind] = len(syms), len(rows)
+    if not syms and not rows:
+      continue
+    if not rows:
+      groups: dict = {}
+      for s in syms:
+        groups.setdefault(_class_width(s["width_mm"], scale_verified, imperial), []).append(s)
+      for width in sorted(groups):
+        new.append(_group_candidate(kind, width, groups[width], ctx, cls, finish, scale_verified))
+      stats["drawn_items"] += len(groups)
+      stats["matched"][kind] = 0
+      continue
+  
+    match = _match(rows, syms, reach)
+    stats["matched"][kind] = len(match)
+    
+    per: dict = {}
+    for (cid, k), si in match.items():
+      per.setdefault(cid, []).append(syms[si])
+    for c in {id(r[0]): r[0] for r in rows}.values():
+      f = c.facts
+      found = per.get(id(c), [])
+      marks = len((c.geometry or {}).get("points") or [])
+      f["symbols"] = {"marks": marks, "found": len(found)}
+      if not found:
+        continue
+    
+      width = _median([s["width_mm"] for s in found])
+      f["width_drawn_mm"] = float(round(width / 5.0) * 5)
+      sched = f.get("size_schedule_mm")
+      if sched and sched[0]:
+        pairs_for_scale.append((kind, float(sched[0]) / width))
+        if scale_verified and abs(width - float(sched[0])) > WIDTH_DIFFERS_TOL * float(sched[0]):
+          c.notes.append(C.note("OPENING_DRAWN_WIDTH_DIFFERS", drawn_mm=f["width_drawn_mm"], schedule_mm=round(float(sched[0]))))
+      elif not f.get("size_drawn_mm"):
+        w = _class_width(width, scale_verified, imperial)
+        f["size_drawn_mm"] = [w, HEIGHT_ASSUMED_MM[kind]]
+        f["height_assumed"] = True
+        f["area_each_m2"] = round(w * HEIGHT_ASSUMED_MM[kind] / 1e6, 3)
+        c.notes.append(C.note("OPENING_HEIGHT_ASSUMED", height_mm=HEIGHT_ASSUMED_MM[kind]))
+      c.status = _worst(c)
+    unmatched = len(syms) - len(match)
+    lacking = len(rows) - len(match)
+    stats["unmatched_symbols"][kind], stats["marks_without_symbol"][kind] = unmatched, lacking
+    
+    if unmatched:
+      stats.setdefault("unmatched_at", {})[kind] = [[round(sy["x"], 1), round(sy["y"], 1), round(sy["width_mm"])] for si, sy in enumerate(syms) if si not in set(match.values())]
+    if unmatched or lacking:
+      notes.append(C.note("OPENING_SYMBOLS_VS_MARKS", kind=kind, marks=len(rows), symbols=len(syms), matched=len(match)))
+  if len(pairs_for_scale) >= 3:
+    implied = _median([r for _, r in pairs_for_scale]) * mm_per_pt
+    stats["implied_mm_per_pt"] = round(implied, 3)
+    stats["scale_pairs"] = len(pairs_for_scale)
+    if abs(implied / mm_per_pt - 1.0) > IMPLIED_SCALE_TOL:
+      notes.append(C.note("OPENING_SCALE_FROM_SCHEDULE_DISAGREES", used_mm_per_pt=round(mm_per_pt, 3), implied_mm_per_pt=round(implied, 3), pairs=len(pairs_for_scale)))
+  return {"new": new, "notes": notes, "stats": stats}
+
+def _worst(c) -> str:
+  sev = {n.get("severity") for n in c.notes}
+  return "INVALID" if "error" in sev else "WARNING" if "warning" in sev else "VALID"

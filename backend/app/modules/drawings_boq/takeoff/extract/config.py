@@ -1,10 +1,10 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 31
+EXTRACT_VERSION = 32
 
 LINTEL_BEARING_MM = 152.4
-STAIR_WAIST_DEFAULT_MM = 127.0   
+STAIR_WAIST_DEFAULT_MM = 127.0     
 PLINTH_BEAM_MIN_WALL_MM = 150.0
 COLUMN_PIECE_MIN_MM = 150.0        
 COLUMN_PIECE_MAX_MM = 1100.0      
@@ -111,6 +111,16 @@ SIZE_TOL = 0.08
 ROOM_MIN_M2 = 1.2
 ROOM_MAX_M2 = 800.0
 ROOM_SIZE_TOL = 0.08          
+ROOM_DUPLICATE_SHARE = 0.6    
+PLAUS_DOOR_TYPICAL_MM = 900.0   
+PLAUS_DOOR_OFF_BY = 1.3          
+PLAUS_ROOM_OFF_BY = 1.5          
+PLAUS_MIN_DOORS = 3
+PLAUS_MIN_ROOMS = 3
+PLAUS_SNAP_TOL = 0.15           
+PAGE_SPARSE_WORDS = 30           
+PAGE_COMPOSITE_SHARE = 0.7   
+    
 ROOM_NAMES = (
   "BED ROOM", "BEDROOM", "BED", "MASTER BED", "GUEST ROOM", "KIDS ROOM", "DRAWING ROOM", "DRAWING", "DINING", "LOUNGE", "LIVING", "TV LOUNGE",
   "FAMILY", "KITCHEN", "KIT", "PANTRY", "STORE", "STORAGE", "TOILET", "BATH ROOM", "BATHROOM", "BATH", "W.C", "WC", "W/C", "LAVATORY", "LAUNDRY",
@@ -228,6 +238,14 @@ NOTES = {
   "SKIRTING_FROM_ROOMS": ("info", "The skirting is the length round every dry room found on this floor, less the width of the doors on its outline. Baths and toilets have a dado and no skirting. Lift shafts, lawns and courtyards are left out."),
   "SKIRTING_DOORS_BY_POSITION": ("warning", "A door comes off the skirting of the two rooms whose outlines are nearest its centre, each within one and a half times the width of the door, so a door between two rooms comes off both and a door in an outer wall comes off one. The centre of a door symbol is not on the wall line, so this is a position match, not a read of the wall the door stands in. An opening that is not drawn as a door (an arch, a wide opening) is not taken off. Check the doors listed for each room."),
   "DOOR_WIDTH_ASSUMED": ("warning", "Some of the doors have no width, neither on the plan nor in a schedule that was read, so each is taken as 900 mm (3 ft) wide when it is taken off. The number of such doors is in the item. Give the door sizes (a door schedule) to replace the assumed width."),
+  "OPENING_SYMBOLS_READ": ("info", "The doors and windows of this plan were also read from their drawn symbols: a door as a leaf with its quarter-circle swing, a window as a gap in a wall with three or more thin lines along it. The counts are in the sheet statistics."),
+  "OPENING_FROM_SYMBOLS": ("info", "This item was found from the drawn symbols of the doors or windows, because no mark for them is written on the plan. The width is the length of the door leaf (or the width of the wall gap) as drawn, taken to the nearest standard width when the scale is checked. Check the count against the plan."),
+  "OPENING_HEIGHT_ASSUMED": ("warning", "The plan prints no height for these openings. A door is taken as 7 ft (2134 mm) high and a window as 4 ft (1219 mm) high, the usual sizes of a house. The area, the plaster and paint taken off, and the frame use that height. Type the real size when you accept the item, or give the door and window schedule."),
+  "OPENING_SYMBOLS_VS_MARKS": ("warning", "The number of marks of this kind written on the plan is not the number of symbols drawn beside them. A mark counts the openings it stands for; a symbol with no mark within 2 m is not counted as an extra opening. Check that every door or window of the plan has its mark."),
+  "OPENING_DRAWN_WIDTH_DIFFERS": ("warning", "The width of the door or window as drawn is more than 15% different from the width in the schedule. Check which one is right: the mark may stand beside another opening, or the schedule may be for another type."),
+  "OPENING_SCALE_FROM_SCHEDULE_DISAGREES": ("warning", "The widths in the schedule and the widths of the same openings drawn on the plan point to another scale than the one used for this sheet. Confirm the scale before relying on any measured length or area of this sheet."),
+  "OPENING_SYMBOLS_TIME_LIMIT": ("info", "Reading the door and window symbols took too long, so some may be missing from the symbol counts."),
+  "OPENING_SYMBOLS_FAILED": ("warning", "The door and window symbols of this sheet could not be read. The marks and the schedule were read as before."),
   "DADO_FROM_ROOMS": ("info", "The tile dado is the length round every bath and toilet found on this floor, less the doors on its outline, times the dado height."),
   "DADO_HEIGHT_DEFAULT": ("warning", "The dado height of 7 ft (2134 mm) is the default of the finish rules, not a height printed on the drawing. If the drawing or the QS gives another height, the area is the length given on this item times that height; the height cannot be typed here yet."),
   "DADO_WINDOWS_NOT_DEDUCTED": ("warning", "Windows in the dado zone are not taken off. The sill of a bath window is usually above the dado, so the error is small, but check."),
@@ -307,6 +325,11 @@ NOTES = {
   "PLAN_REGIONS_READ": ("info", "This sheet shows several drawings (plans, elevations, sections, schedules). Each floor plan was read on its own, with its own floor. Elevations, sections, the boundary wall, the key plan, the site plan and the block plans were not read as walls."),
   "FLOOR_READ_ON_OTHER_SHEET": ("warning", "This floor was also read from another sheet of the same drawing. Accept the walls and openings of one of the two, or they are counted twice."),
   "SAME_MARK_ON_OTHER_SHEET": ("info", "This mark is also on another sheet of the same drawing. It is listed once in the element register."),
+  "STAGE_FAILED": ("warning", "One step of reading this sheet failed and was skipped, so the items of that step (named in the note) are missing. Everything read before it is kept."),
+  "ROOM_GEOMETRY_REPAIRED": ("info", "A few wall outlines on this sheet touched in a way the geometry engine could not cut directly. They were repaired automatically; check the room areas of this sheet."),
+  "ROOM_FACE_SKIPPED": ("warning", "A closed space between walls on this sheet could not be cut cleanly and was left out. Rooms may be missing here."),
+  "SHEET_NOT_A_PLAN": ("warning", "This sheet is a section, elevation, detail, schedule or similar sheet, not a floor plan, yet walls or rooms were read from it. They are probably hatching or drawn detail, not plan walls. Leave this sheet out of the quantities unless it really holds a plan."),
+  "SCALE_LOOKS_WRONG": ("warning", "The doors or the named rooms drawn on this sheet are not the size doors and rooms are built, so the scale used for this sheet is probably wrong. A scale that would fit is suggested in this note. It has NOT been applied: confirm the scale on the Measure page."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),
   "SCALE_CONFLICT": ("warning", "Conflicting scale information was found on the sheet. Confirm the correct scale before relying on measured sizes."),
   "DIMENSION_CONFLICT": ("warning", "Conflicting dimension values were found for this item. Verify which dimension should be used."),

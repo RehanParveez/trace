@@ -161,7 +161,13 @@ export type FoundationItem =
   | "DOOR_AREA"
   | "WINDOW_AREA"
   | "EARTH_FILL"
-  | "ROOF_TREATMENT";
+  | "ROOF_TREATMENT"
+  | "FLOOR_FINISH"
+  | "CEILING_PAINT"
+  | "SKIRTING"
+  | "DADO"
+  | "PAINT_INSIDE"
+  | "PAINT_OUTSIDE";
 
 const FOUNDATION_ITEMS: FoundationItem[] = [
   "EXCAVATION_AREA",
@@ -181,6 +187,12 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "WINDOW_AREA",
   "EARTH_FILL",
   "ROOF_TREATMENT",
+  "FLOOR_FINISH",
+  "CEILING_PAINT",
+  "SKIRTING",
+  "DADO",
+  "PAINT_INSIDE",
+  "PAINT_OUTSIDE",
 ];
 
 export type SiteKind = "OHWT" | "UGWT" | "SEPTIC" | "BOUNDARY_WALL" | "GATE" | "PORCH_RAMP";
@@ -319,6 +331,12 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   WINDOW_AREA: "Window area",
   EARTH_FILL: "Earth filling under the floor",
   ROOF_TREATMENT: "Roof treatment",
+  FLOOR_FINISH: "Floor finish",
+  CEILING_PAINT: "Ceiling paint",
+  SKIRTING: "Skirting",
+  DADO: "Tile dado",
+  PAINT_INSIDE: "Paint inside the walls",
+  PAINT_OUTSIDE: "Paint outside the walls",
 };
 
 export const SITE_TEXT: Record<SiteKind, string> = {
@@ -450,7 +468,7 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
   if (item === "DOOR_FRAME") {
     const count = num(f.door_count);
     const size = Array.isArray(f.size_mm) ? (f.size_mm as number[]) : null;
-    return [count !== null ? `${count} door${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, f.frame_class === "THIN" ? "in thin walls" : "in thick walls", width !== null ? `${Math.round(width)} mm frame` : "frame width needed"].filter(Boolean).join(" · ");
+    return [count !== null ? `${count} door${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, f.height_assumed === true ? "height assumed" : null, f.frame_class === "THIN" ? "in thin walls" : "in thick walls", width !== null ? `${Math.round(width)} mm frame` : "frame width needed"].filter(Boolean).join(" · ");
   }
 
   if (item === "EARTH_FILL") {
@@ -465,12 +483,49 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
     return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? null : "layers and slope not read"].filter(Boolean).join(" · ");
   }
 
+  if (item === "FLOOR_FINISH" || item === "CEILING_PAINT") {
+    const area = num(f.area_m2);
+    const rooms = num(f.room_count);
+    const wet = num(f.wet_room_count);
+    return [
+      area !== null ? `${area.toFixed(2)} m² of ${item === "FLOOR_FINISH" ? "floor" : "ceiling"}` : null,
+      rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null,
+      item === "FLOOR_FINISH" && wet ? `${wet} wet room${wet === 1 ? "" : "s"} included` : null,
+      item === "FLOOR_FINISH" ? "floor material not read" : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "SKIRTING" || item === "DADO") {
+    const len = num(f.length_m);
+    const per = num(f.perimeter_m);
+    const area = num(f.area_m2);
+    const high = num(f.dado_height_mm);
+    const doors = num(f.door_count);
+    const off = num(f.doors_deducted_m);
+    const assumed = num(f.doors_assumed_width);
+    return [
+      item === "DADO" ? (area !== null ? `${area.toFixed(2)} m²` : null) : len !== null ? `${len.toFixed(2)} m` : null,
+      item === "DADO" && len !== null ? `${len.toFixed(2)} m round the baths` : per !== null ? `${per.toFixed(2)} m round the rooms` : null,
+      item === "DADO" && high !== null ? `${Math.round(high)} mm high` : null,
+      doors !== null && off !== null ? `${doors} door${doors === 1 ? "" : "s"} taken off (${off.toFixed(2)} m)` : null,
+      assumed ? `${assumed} door width${assumed === 1 ? "" : "s"} assumed at 900 mm` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "PAINT_INSIDE" || item === "PAINT_OUTSIDE") {
+    const area = num(f.area_m2);
+    const face = num(f.face_length_m);
+    const open = num(f.opening_m2);
+    const dado = num(f.less_dado_m2);
+    return [area !== null ? `${area.toFixed(2)} m²` : "wall height needed", face !== null ? `${face.toFixed(2)} m of face` : null, open ? `${open.toFixed(2)} m² of openings taken out` : null, dado ? `${dado.toFixed(2)} m² of dado taken out` : null].filter(Boolean).join(" · ");
+  }
+
   if (item === "DOOR_AREA" || item === "WINDOW_AREA") {
     const count = num(f.opening_count);
     const size = Array.isArray(f.size_mm) ? (f.size_mm as number[]) : null;
     const each = num(f.area_each_m2);
     const total = num(f.area_m2);
-    return [count !== null ? `${count} ${item === "DOOR_AREA" ? "door" : "window"}${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, each !== null ? `${each.toFixed(2)} m² each` : null, total !== null ? `${total.toFixed(2)} m² in all` : null, f.size_source === "SCHEDULE" ? "size from the schedule" : "size as drawn", "material not read"].filter(Boolean).join(" · ");
+    return [count !== null ? `${count} ${item === "DOOR_AREA" ? "door" : "window"}${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, each !== null ? `${each.toFixed(2)} m² each` : null, total !== null ? `${total.toFixed(2)} m² in all` : null, f.size_source === "SCHEDULE" ? "size from the schedule" : f.height_assumed === true ? "width as drawn, height assumed" : "size as drawn", "material not read"].filter(Boolean).join(" · ");
   }
 
   if (item === "PCC_PAD") {
@@ -605,8 +660,19 @@ export function factLine(c: TakeoffCandidate): string {
   const drawn = Array.isArray(f.size_drawn_mm) ? (f.size_drawn_mm as number[]) : null;
 
   const parts: string[] = [];
+  if (f.found_by === "SYMBOL_SCAN") {
+    const n = num(f.symbols);
+    parts.push(`${n ?? c.count} drawn, no mark on the plan`);
+    if (drawn) parts.push(`${Math.round(drawn[0])} mm wide`);
+    if (drawn && f.height_assumed === true) parts.push(`height assumed ${Math.round(drawn[1])} mm`);
+    return parts.join(" · ");
+  }
   if (sched) parts.push(`schedule ${Math.round(sched[0])}×${Math.round(sched[1])}`);
-  if (drawn) parts.push(`drawn ${Math.round(drawn[0])}×${Math.round(drawn[1])}`);
+  if (drawn) parts.push(`drawn ${Math.round(drawn[0])}${f.height_assumed === true ? ` mm wide, height assumed ${Math.round(drawn[1])} mm` : `×${Math.round(drawn[1])}`}`);
+  const seen = f.symbols as { marks?: unknown; found?: unknown } | undefined;
+  if (seen && typeof seen.marks === "number" && typeof seen.found === "number") parts.push(`${seen.found} of ${seen.marks} seen drawn`);
+  const width = num(f.width_drawn_mm);
+  if (width !== null && !drawn) parts.push(`drawn width ${Math.round(width)} mm`);
   return parts.join(" · ");
 }
 
