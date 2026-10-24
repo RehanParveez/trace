@@ -36,6 +36,7 @@ FLAGS = {
 
 CHOICES = {
   "wall_height_basis": "FLOOR_TO_FLOOR",
+  "opening_rules_basis": "SHEET",
 }
 CHOICE_OPTIONS = {
   "wall_height_basis": {
@@ -43,6 +44,10 @@ CHOICE_OPTIONS = {
     "CLEAR": "Clear storey height printed on the building sections (floor to the soffit of the slab above).",
     "ABOVE_PLINTH_BEAM": "Floor to floor less the depth of the plinth beam, on the lowest storey only: the wall stands from the top of the plinth beam (the QS's own worksheet, 9.25 ft in the basement). Needs the QS to confirm.",
     "BETWEEN_BEAMS": "As ABOVE_PLINTH_BEAM, and also less the web of the roof beam below the slab on every storey (the beam depth less the slab, as the beam depth includes the slab, N1): the wall stands between the two beams. Needs the QS to confirm.",
+  },
+  "opening_rules_basis": {
+    "SHEET": "One rule for every work item, as the QS's sheet has it: an opening of 0.5 m2 or more comes off, whatever the item; a smaller one does not. Plaster and paint: off every face, no reveals.",
+    "IS1200": "A rule for each work item (IS 1200, assumed): brickwork from 0.1 m2; an RCC wall from 0.4 m2 (the formwork rule, so concrete and formwork agree); plaster and paint from 0.5 m2, one face only up to 3 m2, every face above 3 m2 with the reveals added. Damp proof course unchanged: door widths come off.",
   },
 }
 PARAM_VALUES = {

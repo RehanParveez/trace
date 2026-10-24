@@ -150,6 +150,14 @@ def _openings_params(cand, params: dict, typed: dict) -> dict:
     adj = []
   return {"adjustments": adj} if adj else {}
 
+def _roof_params(cand) -> dict:
+  f = cand.facts or {}
+  if f.get("foundation_item") != "ROOF_TREATMENT" or f.get("roof_part") == "PROJECTION":
+    return {}
+  slope = f.get("slope") if isinstance(f.get("slope"), dict) else {}
+  roof = {k: v for k, v in {"fall_mm": slope.get("avg_mm"), "fall_min_mm": slope.get("min_mm"), "fall_max_mm": slope.get("max_mm"), "edge_m": f.get("edge_m")}.items() if v}
+  return {"roof": roof} if roof else {}
+
 class ExtractService:
   def __init__(self, session):
     self.session = session
@@ -578,7 +586,7 @@ class ExtractService:
         continue
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
-          params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_concrete_member(cand, code)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
+          params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_roof_params(cand), **_concrete_member(cand, code)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
           source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand))
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))

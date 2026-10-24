@@ -1367,6 +1367,7 @@ export interface DerivedParams {
   roof_coba_thickness_mm?: number;
   roof_membrane?: number;
   roof_screed?: number;
+  roof_turnup_mm?: number;
   steel_binding_wire?: number;
   steel_binding_wire_pct?: number;
   steel_chairs?: number;
@@ -1377,6 +1378,8 @@ export interface DerivedParams {
   stair_formwork_soffit_only?: number;
   formwork_shared_walls?: number;
   formwork_shared_beams?: number;
+  formwork_joints?: number;
+  formwork_lintel_bearing_mm?: number;
   rcc_wall_reveals?: number;
   beam_lintel_qs_rate?: number;
   plaster_thickness_mm?: number;
@@ -1528,6 +1531,7 @@ export interface DerivedFormworkStats {
   assumed?: string[];
   contact_not_deducted?: boolean;
   comparison?: { gross_m2: string; slab_soffit_only_m2: string; beam_per_rft_m2: string; beam_net_m2: string };
+  joints?: { enabled?: boolean; reason?: string | null; lintels?: number; chajjas_matched?: number; chajjas_unmatched?: number; balconies_matched?: number; balconies_unmatched?: number; uncertain_members?: number; removed_m2?: string; removed_by?: Record<string, string> };
   beam_slab?: { enabled?: boolean; beams_matched?: number; beams_adjusted?: number; beams_unmatched?: number; slabs_with_removal?: number; capped_slabs?: number; uncertain_members?: number; removed_m2?: string };
   shared_faces?: { enabled?: boolean; placed_columns?: number; unplaced_columns?: number; removed_m2?: string; members_with_removal?: number; uncertain_members?: number;
     placed_walls?: number; unplaced_walls?: number; walls_not_square?: number; matched_beams?: number; unmatched_beams?: number; unplaced_beams?: number; removed_by?: Record<string, string> };
@@ -1657,6 +1661,12 @@ export interface RoofDeckStats {
   screed_m2?: string;
   coba_thickness_mm?: string | null;
   coba_thickness_source?: string | null;
+  coba_from_drawing_roofs?: number;
+  turnup_mm?: string | null;
+  turnup_source?: string | null;
+  turnup_m2?: string | null;
+  turnup_roofs?: number;
+  turnup_roofs_without_edge?: number;
 }
 
 export interface SteelAllowanceStats {

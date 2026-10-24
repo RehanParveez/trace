@@ -9,6 +9,7 @@ from app.engine.measure.units import q4, q6
 from app.engine.measure import frame as FR
 from app.engine.measure import formwork_shared as FS
 from app.engine.measure import formwork_model as FM
+from app.engine.measure import formwork_joints as FJ
 
 FORMULA = "SOLID_FORMWORK_AREA"
 RECIPE_CODE = "STRUCT_FORMWORK"
@@ -17,7 +18,8 @@ FOOTING_PARAM, SLAB_EDGE_PARAM, SHARED_PARAM = "footing_formwork", "slab_edge_fo
 TANK_PARAM, BEAM_PARAM = "tank_base_formwork", "beam_depth_includes_slab"
 STAIR_PARAM, RATE_PARAM = "stair_formwork_soffit_only", "beam_lintel_qs_rate"
 WALLS_PARAM, BEAMS_PARAM, REVEAL_PARAM = "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals"
-FORMWORK_PARAMS = (FOOTING_PARAM, SLAB_EDGE_PARAM, SHARED_PARAM, TANK_PARAM, BEAM_PARAM, STAIR_PARAM, RATE_PARAM, WALLS_PARAM, BEAMS_PARAM, REVEAL_PARAM)
+JOINTS_PARAM, BEARING_PARAM = FJ.JOINTS_PARAM, FJ.BEARING_PARAM
+FORMWORK_PARAMS = (FOOTING_PARAM, SLAB_EDGE_PARAM, SHARED_PARAM, TANK_PARAM, BEAM_PARAM, STAIR_PARAM, RATE_PARAM, WALLS_PARAM, BEAMS_PARAM, REVEAL_PARAM, JOINTS_PARAM, BEARING_PARAM)
 PARAMS_USED = {"FOOTING": (FOOTING_PARAM,), "SLAB": (SLAB_EDGE_PARAM,), "COLUMN": (), "LINTEL": (RATE_PARAM,), "BEAM": (BEAM_PARAM, RATE_PARAM), "STAIR": (STAIR_PARAM,), "RCC_WALL": (REVEAL_PARAM,),
   "TANK": (TANK_PARAM,), "COPING": (), "CHAJJA": (SLAB_EDGE_PARAM,), "BALCONY_SLAB": (SLAB_EDGE_PARAM,)}
 CATEGORIES = tuple(PARAMS_USED)
@@ -37,7 +39,8 @@ CODE_ASSUMED = "FORMWORK_ASSUMED"
 CODE_FRAME_ASSUMED = "FORMWORK_FRAME_ASSUMED"
 CODE_ITEM_ASSUMED = "FORMWORK_ITEM_ASSUMED"
 CODE_BEAM_SLAB_ASSUMED = "FORMWORK_BEAM_SLAB_ASSUMED"
-FORMWORK_CODES = (CODE_ASSUMED, CODE_FRAME_ASSUMED, CODE_ITEM_ASSUMED, CODE_BEAM_SLAB_ASSUMED)
+CODE_JOINT_ASSUMED = FJ.CODE
+FORMWORK_CODES = (CODE_ASSUMED, CODE_FRAME_ASSUMED, CODE_ITEM_ASSUMED, CODE_BEAM_SLAB_ASSUMED, CODE_JOINT_ASSUMED)
 SHARING = ("COLUMN",)
 SHARED_BY = ("SLAB",)
 
@@ -279,6 +282,11 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
   model_cuts, model_cut_stats = FM.removals(model_items, shared_on, params[WALLS_PARAM]["value"] >= 0.5, params[BEAMS_PARAM]["value"] >= 0.5,
     params[BEAM_PARAM]["value"] >= 0.5 and not rate_on)
   removals = {**removals, **beam_cuts, **model_cuts}
+  joints_on = params[JOINTS_PARAM]["value"] >= 0.5
+  joint_cuts, joint_stats = FJ.joint_cuts(tuple(m for m in inputs if str(m.measurement_id) in counted), counted, joints_on, Decimal(repr(float(params[BEARING_PARAM]["value"]))),
+    params[SLAB_EDGE_PARAM]["value"] >= 0.5, rate_on)
+  if joints_on:
+    removals = FJ.merge(removals, joint_cuts)
   measured: dict = {}
   
   for r in (extra_ledger or ()):
@@ -347,10 +355,15 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
       
       if cut:
         inst_faces += [(f"shared {f['face']} face with {f['by']}", -Decimal(str(f["area_mm2"]))) for f in cut["faces"]]
-        inst_spec = {**spec, "params": {**spec["params"], SHARED_PARAM: params[SHARED_PARAM]["value"]},
-           "basis": {**spec["basis"], SHARED_PARAM: params[SHARED_PARAM]["source"]}}
+        used_here = ([SHARED_PARAM] if any(not f.get("joint") for f in cut["faces"]) else []) + ([JOINTS_PARAM] if any(f.get("joint") for f in cut["faces"]) else []) \
+          + ([BEARING_PARAM] if any(f.get("kind") == FJ.BY_BEARING for f in cut["faces"]) else [])
+        inst_spec = {**spec, "params": {**spec["params"], **{n: params[n]["value"] for n in used_here}},
+           "basis": {**spec["basis"], **{n: params[n]["source"] for n in used_here}}}
         if cut["uncertain"]:
-          inst_warnings.append(cut.get("code", CODE_FRAME_ASSUMED))
+          inst_warnings.extend(cut.get("codes") or [cut.get("code", CODE_FRAME_ASSUMED)])
+          inst_factor = min(factor, FACTOR_ASSUMED)
+        if any(f.get("joint") for f in cut["faces"]):
+          inst_warnings.append(CODE_JOINT_ASSUMED)
           inst_factor = min(factor, FACTOR_ASSUMED)
       inst_confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * inst_factor)))
       face_steps = [{"op": "face", "name": name, "m2": str(_m2(area))} for name, area in inst_faces]
@@ -379,7 +392,7 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
           "inputs": {"recipe": RECIPE_CODE, "spec": inst_spec, "formwork_source": source},
           "steps": [*face_steps, {"op": "net_area", "m2": str(quantity)}], "net": {"m2": str(quantity)}, "rounding": "half_up,6dp",
           **({"range": rg} if (rg := range_trace(ctx.takeoff, m.measurement_id)) else {})},
-        warnings=tuple(inst_warnings), source_kind=DERIVED, spec=inst_spec, spec_key="derived"))
+        warnings=tuple(dict.fromkeys(inst_warnings)), source_kind=DERIVED, spec=inst_spec, spec_key="derived"))
       slot = by_category.setdefault(cat, {"marks": 0, "m2": Decimal("0"), "gross_m2": Decimal("0")})
       slot["marks"] += 1
       slot["m2"] += quantity
@@ -400,6 +413,7 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
     "assumed": sorted({n for r in rows for n, b in ((r.spec or {}).get("basis") or {}).items() if b == "default"}),
     "contact_not_deducted": bool(rows) and not frame_stats.get("members_with_removal") and not beam_cuts and not model_cuts,
     "shared_faces": frame_stats,
+    "joints": joint_stats,
     "beam_slab": beam_stats,
     "model": {**model_stats, "shared": model_cut_stats},
   })

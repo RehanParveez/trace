@@ -20,10 +20,13 @@ def describe(spec: dict | None) -> str | None:
     rate = p.get("steel_chairs_kg_per_m2")
     return f"chairs under the slab steel at {rate:g} kg per m2 of slab, not drawn" if isinstance(rate, (int, float)) else "chairs under the slab steel, not drawn"
   if recipe == "ROOF_DECK_FROM_TREATMENT":
-    thick = (spec.get("params") or {}).get("roof_coba_thickness_mm")
-    return {"MEMBRANE": "waterproofing over the whole roof area, layers not drawn",
-      "COBA": f"coba over the roof area at an average of {thick:g} mm, layers not drawn" if isinstance(thick, (int, float)) else "coba over the roof area, layers not drawn",
-      "SCREED": "cement screed over the coba, layers not drawn"}.get(str(item), "worked out from the roof treatment")
+    prm = spec.get("params") or {}
+    thick, turn = prm.get("roof_coba_thickness_mm"), prm.get("roof_turnup_mm")
+    printed = (spec.get("basis") or {}).get("roof_coba_thickness_mm") == "drawing"
+    up = f", turned up {turn:g} mm along the roof edge" if isinstance(turn, (int, float)) else ""
+    return {"MEMBRANE": f"waterproofing over the whole roof area{up}, layers not drawn",
+      "COBA": (f"coba over the roof area at an average of {thick:g} mm, the fall printed on the drawing" if printed else f"coba over the roof area at an average of {thick:g} mm, layers not drawn") if isinstance(thick, (int, float)) else "coba over the roof area, layers not drawn",
+      "SCREED": f"cement screed over the coba{up}, layers not drawn"}.get(str(item), "worked out from the roof treatment")
     
   if recipe == WALL_FOUNDATION:
     cls = str(spec.get("strip_class") or "").lower()

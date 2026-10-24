@@ -97,6 +97,7 @@ class OpeningParam(BaseModel):
   height_mm: Decimal = Field(gt=0, max_digits=12, decimal_places=3)
   nos: int = Field(default=1, ge=1, le=10000)
   label: str | None = Field(default=None, max_length=120)
+  deduct: bool | None = Field(default=None, description="Whether this opening comes off the wall, decided when the sheet was read (IS 1200 rules per work item). None: the measuring rule set decides.")
 
 class AdjustmentParam(BaseModel):
   op: Literal["LESS", "ADD"]
@@ -148,6 +149,12 @@ class SteelParam(BaseModel):
   mesh: MeshParam | None = None
   slab_mesh: MeshParam | None = Field(default=None, description="A tank: the mesh of the top and bottom slabs. The mesh above is that of the walls.")
 
+class RoofParam(BaseModel):
+  fall_mm: Decimal | None = Field(default=None, gt=0, le=1000, description="Average thickness of the coba that gives the roof its fall, from the thin and the thick end printed on the drawing.")
+  fall_min_mm: Decimal | None = Field(default=None, gt=0, le=1000)
+  fall_max_mm: Decimal | None = Field(default=None, gt=0, le=1000)
+  edge_m: Decimal | None = Field(default=None, gt=0, le=2000, description="Length of the roof edge, where the parapet stands and the membrane turns up.")
+
 class MeasurementParams(BaseModel):
   height_mm: Decimal | None = Field(default=None, gt=0)
   thickness_mm: Decimal | None = Field(default=None, gt=0)
@@ -160,6 +167,7 @@ class MeasurementParams(BaseModel):
   dims_basis: Literal["DRAWN", "SPECIFIED", "ASSUMED"] = "DRAWN"
   steel: SteelParam | None = None
   member: Literal["foundation", "frame", "wall", "pile"] | None = None
+  roof: RoofParam | None = None
 
 class MeasurementCreateRequest(BaseModel):
   kind: Kind

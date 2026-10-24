@@ -70,6 +70,13 @@ def _waterproof_rows(items: list) -> list:
     out.append({"material": row["material"], "unit": row["unit"], "layers": opts[0] if len(opts) == 1 else None, "options": opts, "pages": sorted(row["pages"])})
   return out
 
+def _fall(items: list) -> dict | None:
+  rows = [i for i in items if i.get("kind") == "ROOF_FALL"]
+  best, others, tie = _pick(rows, lambda r: (r.get("min_mm"), r.get("max_mm")))
+  if tie or not best:
+    return None
+  return {"min_mm": best["min_mm"], "max_mm": best["max_mm"], "avg_mm": best["value_mm"], "count": best["count"], "pages": best["pages"], "text": best.get("text")}
+
 def _by_heading(items: list) -> dict:
   heads: dict = {}
   
@@ -79,7 +86,7 @@ def _by_heading(items: list) -> dict:
   out: dict = {}
   for key, h in heads.items():
     layers, ambiguous = _layer_table(h["items"])
-    out[key] = {"key": key, "heading": h["heading"], "layers": layers, "layers_ambiguous": ambiguous, "waterproof": _waterproof_rows(h["items"]),
+    out[key] = {"key": key, "heading": h["heading"], "layers": layers, "layers_ambiguous": ambiguous, "waterproof": _waterproof_rows(h["items"]), "fall": _fall(h["items"]),
       "pages": sorted({p for i in h["items"] for p in i.get("pages") or []})}
   return out
 
@@ -114,10 +121,10 @@ def roof_sets(spec: dict | None) -> list:
   out: list = []
   for key in ROOF_HEADINGS:
     head = heads.get(key)
-    if not head or not (head["layers"] or head["waterproof"]):
+    if not head or not (head["layers"] or head["waterproof"] or head.get("fall")):
       continue
     layers = [{"layer": n, "value_mm": v["value_mm"], "mix": v.get("mix"), "count": v["count"], "pages": v["pages"]} for n, v in sorted(head["layers"].items())]
-    out.append({"key": key, "heading": head["heading"], "layers": layers, "ambiguous": head["layers_ambiguous"], "waterproof": head["waterproof"], "pages": head["pages"]})
+    out.append({"key": key, "heading": head["heading"], "layers": layers, "ambiguous": head["layers_ambiguous"], "waterproof": head["waterproof"], "fall": head.get("fall"), "pages": head["pages"]})
   return out
 
 def waterproof_for(spec: dict | None, level_hint: str | None) -> list:

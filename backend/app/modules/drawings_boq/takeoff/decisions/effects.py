@@ -101,3 +101,55 @@ def lintel_net(sheets: list, current: str) -> dict:
   else:
     net["diff"] = round(-total, 2)
   return {"applies": True, "options": {"NET": net, "GROSS": gross}}
+
+PLASTER_ITEMS = ("PLASTER_INSIDE", "PLASTER_OUTSIDE")
+PAINT_ITEMS = ("PAINT_INSIDE", "PAINT_OUTSIDE")
+
+def _opening_changes(rows: list) -> dict:
+  """What the per-item rules do against the one rule, from the walls already read: the brick and RCC wall volume taken off over the small openings, the wall formwork with it, and the plaster."""
+  from app.engine.measure import opening_rules as OPR
+  brick = rcc = form = plaster = 0.0
+  plastered = {c.sheet_id for c in rows if c.category == "WALL" and (c.facts or {}).get("foundation_item") in PLASTER_ITEMS}
+  for c in rows:
+    f, p = c.facts or {}, c.params or {}
+    ops = p.get("openings") or []
+    if c.category != "WALL" or not ops or f.get("enclosure") == "TANK":
+      continue
+    t = float(f.get("thickness_used_mm") or p.get("thickness_mm") or 0.0)
+    kind = OPR.wall_kind(c)
+    for o in ops:
+      a, n = OPR.each_m2(o), int(o.get("nos") or 1)
+      sheet_off = a >= OPR.SHEET_MIN_M2
+      if kind and OPR.deducts(kind, a) and not sheet_off:
+        if kind == "RCC":
+          rcc += n * a * t / 1000.0
+          form += 2.0 * n * a
+        else:
+          brick += n * a * t / 1000.0
+      if c.status != "INVALID" and c.sheet_id in plastered:
+        in_off, out_off, rev = OPR.plaster_sides([o], t, 1, 1)
+        plaster += (2.0 * n * a if sheet_off else 0.0) - (in_off + out_off) + rev
+  return {"brick_m3": brick, "rcc_m3": rcc, "formwork_m2": form, "plaster_m2": plaster}
+
+def openings(rows: list, current: str) -> dict:
+  walls = [c for c in rows if c.category == "WALL" and (c.params or {}).get("openings")]
+  if not walls:
+    return {"applies": False, "options": {}}
+  ch = _opening_changes(rows)
+  plaster_now = sum(float((c.facts or {}).get("area_m2") or 0.0) for c in rows if c.category == "WALL" and (c.facts or {}).get("foundation_item") in PLASTER_ITEMS)
+
+  paint_now = sum(float((c.facts or {}).get("area_m2") or 0.0) for c in rows if c.category == "WALL" and (c.facts or {}).get("foundation_item") in PAINT_ITEMS)
+  per_is = [("brick", -ch["brick_m3"], "m3"), ("rcc_wall", -ch["rcc_m3"], "m3"), ("wall_formwork", -ch["formwork_m2"], "m2"), ("plaster", ch["plaster_m2"], "m2")]
+  if paint_now > 0:
+    per_is.append(("paint", ch["plaster_m2"], "m2"))
+  out: dict = {}
+  
+  for v in ("SHEET", "IS1200"):
+    sign = 0.0 if v == current else (1.0 if v == "IS1200" else -1.0)
+    diffs = [_fig(k, sign * x, u) for k, x, u in per_is if abs(sign * x) >= 0.005]
+    first = next((d for d in diffs), None)
+    figures = []
+    if plaster_now > 0:
+      figures.append(_fig("plaster", plaster_now + sign * ch["plaster_m2"], "m2"))
+    out[v] = {"figures": figures, "diff": first["value"] if first else 0.0, "diff_unit": first["unit"] if first else "m3", "diffs": diffs}
+  return {"applies": True, "walls": len(walls), "options": out}

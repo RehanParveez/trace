@@ -35,6 +35,7 @@ class DecisionsService(ExtractService):
       catalog.HEIGHT: effects.height(wall_rows, eff[catalog.HEIGHT], floors[0] if floors else None, float(sizes["plinth_beam_depth_mm"]["mm"]), web),
       catalog.BAND: effects.band([(e.stats or {}).get("tie_band_count") for e in exts.values()], eff[catalog.BAND]),
       catalog.NET: effects.lintel_net([([c for c in cs if c.category == "WALL"], [c for c in cs if c.category == "LINTEL"]) for cs in by_sheet.values()], eff[catalog.NET]),
+      catalog.OPENINGS: effects.openings(rows, eff[catalog.OPENINGS]),
     }
     items: list = []
     every_stale: set = set()

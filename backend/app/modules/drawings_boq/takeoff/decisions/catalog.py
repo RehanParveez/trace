@@ -6,6 +6,7 @@ BEAM_BASES = ("ABOVE_PLINTH_BEAM", "BETWEEN_BEAMS")
 HEIGHT = "wall_height_basis"
 BAND = "tie_band_single_count"
 NET = "brick_net_of_lintels"
+OPENINGS = "opening_rules_basis"
 
 def _opts(*rows) -> list:
   return [{"value": v, "label": label, "text": text, "param": p} for v, label, text, p in rows]
@@ -31,6 +32,12 @@ DECISIONS = [
    "options": _opts(
      ("NET", "Net of the lintels", "The lintels over the openings are taken off the brick, so the concrete is counted once, as lintels (IS 1200 and usual practice).", 1.0),
      ("GROSS", "Gross, lintels not taken off", "The brick is measured over the openings' lintels as if they were brick; the lintels are counted as concrete as well.", 0.0))},
+  {"key": OPENINGS, "rule": "P57-1", "kind": "CHOICE", "title": "Which openings come off each work item",
+   "question": "Does one rule decide which doors and windows come off, whatever the work item, or does each work item have its own (IS 1200)?",
+   "reads": "choice", "affects": "brick and RCC wall volume, wall formwork, and the plaster and paint areas of every wall that has openings",
+   "options": _opts(
+     ("SHEET", "One rule, as the QS's sheet", QS.CHOICE_OPTIONS[OPENINGS]["SHEET"], None),
+     ("IS1200", "A rule for each item (IS 1200)", QS.CHOICE_OPTIONS[OPENINGS]["IS1200"], None))},
 ]
 
 def by_key(key: str) -> dict | None:

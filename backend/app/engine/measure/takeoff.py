@@ -516,7 +516,8 @@ def _params(kind: str, mode: str, params: dict) -> dict:
     role = str(o.get("role") or "OPENING").upper()
     openings.append({"role": role, "width_mm": _positive(o.get("width_mm"), f"opening {i + 1} width"),
       "height_mm": _positive(o.get("height_mm"), f"opening {i + 1} height"),
-      "nos": int(_positive(o.get("nos", 1), f"opening {i + 1} nos")), "label": o.get("label")})
+      "nos": int(_positive(o.get("nos", 1), f"opening {i + 1} nos")), "label": o.get("label"),
+      "deduct": o["deduct"] if isinstance(o.get("deduct"), bool) else None})
   if openings and mode not in ("LENGTH_X_HEIGHT", "LENGTH_X_HEIGHT_X_THICKNESS"):
     raise TakeoffError("INVALID_PARAMS", "Openings can only be deducted from wall length x height measurements.")
   out["openings"] = openings
@@ -527,6 +528,13 @@ def _params(kind: str, mode: str, params: dict) -> dict:
       raise TakeoffError("INVALID_PARAMS", f"adjustment {i + 1} must be LESS or ADD.")
     adjustments.append({"op": op, "value": _positive(a.get("value"), f"adjustment {i + 1}"), "label": a.get("label")})
   out["adjustments"] = adjustments
+  roof = {}
+  for name in ("fall_mm", "fall_min_mm", "fall_max_mm", "edge_m"):
+    raw = (p.get("roof") or {}).get(name)
+    if raw not in (None, ""):
+      roof[name] = _positive(raw, f"roof {name}")
+  if roof:
+    out["roof"] = roof
   return out
 
 def compute_measurement(m: MeasurementInput, sheet: SheetInput, cal: CalibrationEval | None, profile=None) -> Computed:
@@ -661,6 +669,8 @@ def compute_measurement(m: MeasurementInput, sheet: SheetInput, cal: Calibration
     if name in prm:
       inputs[name] = str(prm[name])
   inputs["dims_basis"] = prm["dims_basis"]
+  if prm.get("roof"):
+    inputs["roof"] = {k: str(v) for k, v in prm["roof"].items()}
   return Computed(quantity=final, unit=unit, formula=formula, steps=steps,
     warnings=tuple(dict.fromkeys(warnings)), confidence=q4(_clamp01(confidence)), uncertainty_pct=unc_pct,
     inputs=inputs, geometry_hash=ghash)
@@ -672,10 +682,14 @@ def _openings(area: Decimal, prm: dict, profile, steps: list, warnings: list, vo
     each = o["width_mm"] * o["height_mm"] / MM2_PER_M2
     scope = o["role"] if o["role"] in ("DOOR", "WINDOW") else "ALL"
     behavior, fraction = profile.opening_behavior(scope, each) if profile is not None else ("DEDUCT", ONE)
+    if o.get("deduct") is True:
+      behavior, fraction = "DEDUCT", ONE
+    elif o.get("deduct") is False:
+      behavior, fraction = "IGNORE", ZERO
     label = f"{o['role'].title()} {int(o['width_mm'])}x{int(o['height_mm'])} mm x {o['nos']}"
     
     if behavior == "IGNORE":
-      steps.append({"op": "deduction", "type": "OPENING_IGNORED", "m2": "0", "note": f"{label}: below the deduction threshold, not deducted."})
+      steps.append({"op": "deduction", "type": "OPENING_IGNORED", "m2": "0", "note": f"{label}: below the deduction threshold, not deducted." if o.get("deduct") is None else f"{label}: not deducted under the opening rule chosen for this drawing (IS 1200)."})
       continue
     cut = each * o["nos"] * fraction
     net -= cut

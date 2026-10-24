@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import re
+from app.engine.measure import opening_rules as OPR
 from shapely.geometry import LineString, Point
 from app.modules.drawings_boq.takeoff.orientation import axes as AX
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
@@ -213,7 +214,7 @@ def paint_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str |
       continue
     
     face_len = sum(r[side] * r["l"] for r in faces)
-    open_m2 = sum(r[side] * r["o"] for r in faces)
+    open_m2 = side_open_m2(faces, side)
     less = dado_m2 if side == "in" else 0.0
     area = plaster_area(faces, side)
     
@@ -292,8 +293,13 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
   for w in ws:
     outer = _is_outer(w, box, mm_per_pt, turn)
     h = (w.facts or {}).get("clear_height_mm") or (w.params or {}).get("height_mm")
-    out.append({"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": 1 if outer else 2,
-      "out": 1 if outer else 0})
+    face = {"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": 1 if outer else 2,
+      "out": 1 if outer else 0}
+
+    if OPR.is1200():
+      d_in, d_out, rev = OPR.plaster_sides((w.params or {}).get("openings"), float((w.facts or {}).get("thickness_used_mm") or (w.params or {}).get("thickness_mm") or 0.0), face["in"], face["out"])
+      face.update({"o_in": round(d_in, 3), "o_out": round(d_out, 3), "rev": round(rev, 3)})
+    out.append(face)
   return out
 
 def plaster_area(faces: list, side: str, typed_height_mm: float | None = None) -> float | None:
@@ -306,8 +312,15 @@ def plaster_area(faces: list, side: str, typed_height_mm: float | None = None) -
     h = r.get("h") or typed_height_mm
     if not h:
       return None
-    total += n * max(0.0, float(r["l"]) * float(h) / 1000.0 - float(r.get("o") or 0.0))
+    if "o_in" in r:
+      total += max(0.0, n * float(r["l"]) * float(h) / 1000.0 - float(r["o_" + side]) + (float(r.get("rev") or 0.0) if side == "in" else 0.0))
+    else:
+      total += n * max(0.0, float(r["l"]) * float(h) / 1000.0 - float(r.get("o") or 0.0))
   return total
+
+def side_open_m2(faces: list, side: str) -> float:
+  """The opening area taken off one side, as the faces say it."""
+  return sum(float(r["o_" + side]) if "o_in" in r else r[side] * r["o"] for r in faces)
 
 def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
   """The wall plaster of a floor as two items: the inside faces (an outer wall once, an inside wall twice) and the outside faces of the outer walls."""
@@ -327,7 +340,7 @@ def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str
       continue
   
     face_len = sum(r[side] * r["l"] for r in faces)
-    open_m2 = sum(r[side] * r["o"] for r in faces)
+    open_m2 = side_open_m2(faces, side)
     area = plaster_area(faces, side)
     facts = {"derived_from": "WALLS", "plaster_side": side, "wall_count": len(faces), "outer_wall_count": outer, "face_length_m": round(face_len, 3),
       "opening_m2": round(open_m2, 3), "faces": faces}

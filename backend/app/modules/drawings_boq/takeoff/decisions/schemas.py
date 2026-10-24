@@ -11,6 +11,7 @@ class DecisionEffect(BaseModel):
   figures: list[DecisionFigure] = Field(default_factory=list)
   diff: float | None = Field(default=None, description="The change against the option in force, in diff_unit; None when it cannot be worked out from what is stored.")
   diff_unit: str = "m3"
+  diffs: list[DecisionFigure] = Field(default_factory=list, description="Every change against the option in force, one per quantity, when a choice changes more than one.")
 
 class DecisionOption(BaseModel):
   value: str

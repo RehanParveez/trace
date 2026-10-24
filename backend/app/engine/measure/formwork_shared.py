@@ -191,7 +191,7 @@ def reveal_faces(m) -> list:
       if str(o.get("role") or "OPENING").upper() != kind:
         continue
       w, h, n = Decimal(str(o.get("width_mm") or 0)), Decimal(str(o.get("height_mm") or 0)), Decimal(str(o.get("nos") or 1))
-      if w <= 0 or h <= 0:
+      if w <= 0 or h <= 0 or o.get("deduct") is False:
         continue
       area += n * ((2 * h + w) if kind == "DOOR" else (2 * h + 2 * w)) * thick
     if area > 0:

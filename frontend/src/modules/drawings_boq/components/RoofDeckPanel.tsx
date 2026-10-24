@@ -41,15 +41,41 @@ export function RoofDeckPanel({ derived }: { derived: DerivedStats | null | unde
         {view.cobaThicknessMm !== null
           ? t("boq.roofDeck.basisCoba", {
               defaultValue:
-                "Laid over {{count}} roof area row(s). The coba is the roof area times an average thickness of {{mm}} mm. None of the layers is printed on the drawings, so every row is marked assumed.",
+                "Laid over {{count}} roof area row(s). The coba is the roof area times an average thickness of {{mm}} mm. The layers are not measured layer by layer on the drawings, so every row is marked assumed.",
               count: view.roofs,
               mm: view.cobaThicknessMm,
             })
           : t("boq.roofDeck.basis", {
-              defaultValue: "Laid over {{count}} roof area row(s). None of the layers is printed on the drawings, so every row is marked assumed.",
+              defaultValue: "Laid over {{count}} roof area row(s). The layers are not measured layer by layer on the drawings, so every row is marked assumed.",
               count: view.roofs,
             })}
       </div>
+      {view.turnupM2 !== null && view.turnupMm !== null ? (
+        <div className={view.turnupAssumed ? WARN : NOTE} data-testid="roof-deck-turnup">
+          {t("boq.roofDeck.turnup", {
+            defaultValue: "Turn-up up the parapet: {{m2}} m² added to the membrane and to the screed, {{mm}} mm high along the roof edge.",
+            m2: formatPrecise(view.turnupM2, 3),
+            mm: view.turnupMm,
+          })}{" "}
+          {view.turnupAssumed ? t("boq.roofDeck.turnupAssumed", "The height is the standard value, not a drawn one. Set it in the run settings once the parapet detail is known.") : null}
+        </div>
+      ) : null}
+      {view.turnupRoofsWithoutEdge > 0 ? (
+        <div className={WARN} data-testid="roof-deck-turnup-missing">
+          {t("boq.roofDeck.turnupMissing", {
+            defaultValue: "The roof edge is not known for {{count}} roof row(s), so no turn-up is added to them. The edge is read from the printed size of a roof that is one rectangle.",
+            count: view.turnupRoofsWithoutEdge,
+          })}
+        </div>
+      ) : null}
+      {view.cobaFromDrawing > 0 ? (
+        <div className={NOTE} data-testid="roof-deck-fall-drawn">
+          {t("boq.roofDeck.fallDrawn", {
+            defaultValue: "The coba of {{count}} roof row(s) is the average of the thin and the thick end printed on the drawing.",
+            count: view.cobaFromDrawing,
+          })}
+        </div>
+      ) : null}
       {view.thicknessAssumed ? (
         <div className={WARN} data-testid="roof-deck-thickness-assumed">
           {t("boq.roofDeck.thicknessAssumed", "The thickness of the coba is the standard value. Set it in the run settings once the roof section is known.")}

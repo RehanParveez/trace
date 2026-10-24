@@ -44,6 +44,7 @@ _DPC = re.compile(_IN + r"\s*(?:TH\.?|THICK)\s+D\.?\s?P\.?\s?C\b", re.I)
 _WP_LAYER = re.compile(r"\b(?P<n>ONE|TWO|THREE|[1-3])\s+(?P<unit>LAYERS?|COATS?)\s+(?:OF\s+)?(?P<what>[A-Z0-9][^*]{2,90})", re.I)
 _WP_POLYTHENE = re.compile(r"\bPOLY(?:THENE|ETHYLENE)\b", re.I)
 _WP_COAT = re.compile(r"\b(?:DAVCO|SOVACRYL|BITUMEN|BITUMINOUS|WATER\s*-?\s*PROOFING|ACRYLIC|SIKA[A-Z]*)\b", re.I)
+_FALL = re.compile(_IN.replace("(?P<in>", "(?P<lo>") + r"\s*(?:-|–|TO)\s*" + _IN.replace("(?P<in>", "(?P<hi>") + r"\s*(?:TH\.?|THICK)\s+(?:COMPACTED\s+)?(?:MUD|BRICK\s*BAT|COBA)\s+(?:LAYER|FILL(?:ING)?)?\s*(?:IN\s+SLOPE|TO\s+(?:SLOPE|FALL))", re.I)
 _WP_COUNT = {"ONE": 1, "TWO": 2, "THREE": 3, "1": 1, "2": 2, "3": 3}
 _COMPACTION = re.compile(r"(?P<v>\d{2,3})\s*%\s*OF\s+(?P<method>MODIFIED|STANDARD)\s+(?P<kind>AASHTO|PROCTOR)", re.I)
 _STAB_CEMENT = re.compile(r"USING\s+(?P<v>\d{1,2}(?:\.\d)?)\s*%\s*CEMENT", re.I)
@@ -131,6 +132,14 @@ def _layers(t: str) -> list[dict]:
     out.append(_item("BUILD_UP_LAYER", t, value_mm=mm, layer=key, scope="floor build-up", **extra))
   return out
 
+def _roof_fall(t: str) -> list[dict]:
+  out: list[dict] = []
+  for m in _FALL.finditer(t):
+    lo, hi = inches_mm(m.group("lo")), inches_mm(m.group("hi"))
+    if lo and hi and hi > lo:
+      out.append(_item("ROOF_FALL", t, min_mm=lo, max_mm=hi, value_mm=round((lo + hi) / 2.0, 2), scope="roof fall"))
+  return out
+
 def _waterproof_layers(t: str) -> list[dict]:
   out: list[dict] = []
   for m in _WP_LAYER.finditer(t):
@@ -188,6 +197,7 @@ def read_line(text: str) -> list[dict]:
     mix = _MIX_RE.search(rest)
     out.append(_item("PLASTER_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope=scope, **({"mix": _mix_text(mix.group("mix"))} if mix else {})))
   out.extend(_layers(t))
+  out.extend(_roof_fall(t))
   out.extend(_waterproof_layers(t))
   m = _DPC.search(t)
   if m and inches_mm(m.group("in")):

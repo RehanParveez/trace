@@ -16,7 +16,7 @@ STAMPED = "ENGINE"
 SWITCH_BASES = frozenset({
   "wall_bed", "shoring", "footing_formwork", "slab_edge_formwork", "formwork_shared_faces", "tank_base_formwork", "fill_from_excavation",
   "floor_works_from_spaces", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_door_deduction", "stair_formwork_soffit_only",
-  "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "wall_foundation_works", "wall_membrane",
+  "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "formwork_joints", "rcc_wall_reveals", "wall_foundation_works", "wall_membrane",
   "wall_finishes_from_walls",
 })
 
@@ -26,6 +26,7 @@ WARNING_DRIVERS = {
   "FORMWORK_FRAME_ASSUMED": "frame faces",
   "FORMWORK_ITEM_ASSUMED": "roof item",
   "FORMWORK_BEAM_SLAB_ASSUMED": "beam against slab",
+  "FORMWORK_JOINT_ASSUMED": "joints of lintel, chajja and balcony",
   "DERIVED_BOX_FOOTPRINT": "footprint taken from a box",
   "WALL_WORKS_STEPS_PROPOSED": "steps of the brick foundation",
   "WALL_FINISH_SIDES_ASSUMED": "which face of the wall is outside",

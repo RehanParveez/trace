@@ -28,11 +28,31 @@ def _printed_layers(facts: dict, spec_facts: dict | None) -> list:
   sets = SF.roof_sets(spec_facts)
   if not sets:
     return []
+  notes = [C.note("ROOF_LAYERS_FROM_SPEC", headings=[s["heading"] for s in sets], chosen=sets[0]["heading"] if len(sets) == 1 else None)]
   if len(sets) == 1:
     facts.update(layers=sets[0]["layers"], layers_defined=True, layers_heading=sets[0]["heading"], layers_waterproof=sets[0]["waterproof"])
+    fall = sets[0].get("fall")
+    if fall:
+      facts["slope"] = {"min_mm": fall["min_mm"], "max_mm": fall["max_mm"], "avg_mm": fall["avg_mm"], "text": fall.get("text"), "pages": fall.get("pages"), "heading": sets[0]["heading"]}
+      notes.append(C.note("ROOF_FALL_FROM_SPEC", heading=sets[0]["heading"], min_mm=fall["min_mm"], max_mm=fall["max_mm"], avg_mm=fall["avg_mm"]))
   else:
     facts["layer_sets"] = sets
-  return [C.note("ROOF_LAYERS_FROM_SPEC", headings=[s["heading"] for s in sets], chosen=sets[0]["heading"] if len(sets) == 1 else None)]
+  return notes
+
+EDGE_AREA_TOL = 0.08
+
+def _edge(slab_facts: dict, facts: dict) -> list:
+  """The length of the roof edge, from the one rectangle the area table prints for the roof (its length and width), when that rectangle has the area of the slab."""
+  dims = slab_facts.get("dims_mm")
+  area = float(slab_facts.get("area_m2") or 0.0)
+  if isinstance(dims, (list, tuple)) and len(dims) == 2 and all(isinstance(d, (int, float)) and d > 0 for d in dims) and area > 0:
+    drawn = float(dims[0]) * float(dims[1]) / 1.0e6
+    if abs(drawn - area) / area <= EDGE_AREA_TOL:
+      edge = round(2.0 * (float(dims[0]) + float(dims[1])) / 1000.0, 3)
+      facts.update(edge_m=edge, edge_basis="PRINTED_SIZE", edge_dims_mm=[float(dims[0]), float(dims[1])])
+      return [C.note("ROOF_EDGE_FROM_SIZE", edge_m=edge, dims_mm=[float(dims[0]), float(dims[1])])]
+  facts.update(edge_m=None, edge_basis=None)
+  return [C.note("ROOF_EDGE_NOT_KNOWN")]
 
 def roof_candidates(slabs: list, ctx: dict, cls, finish, spec_facts: dict | None = None) -> list:
   slab, how = roof_slab(slabs)
@@ -56,6 +76,7 @@ def roof_candidates(slabs: list, ctx: dict, cls, finish, spec_facts: dict | None
     facts["view"] = f["view"]
   notes = [C.note("ROOF_TREATMENT_AREA_ONLY")] + ([C.note("ROOF_TOP_FLOOR_ASSUMED", floor=spec[0] if spec else hint)] if how == "TOP_OF_SHEET" else [])
   notes.extend(_printed_layers(facts, spec_facts))
+  notes.extend(_edge(f, facts))
   label = f"Roof treatment · {area:.2f} m²" + (f" · {spec[0]}" if spec else "")
   pts = list((slab.geometry or {}).get("points") or [[0.0, 0.0]])
   return [FD._make(cls, ctx, finish, (ITEM, hint), ITEM, label, "ROOF-TREATMENT", pts[:1], {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], notes, facts,

@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 import hashlib
 import math
 import re
+from app.engine.measure import opening_rules as OPR
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.orientation import carry as OC, frame as OF, turn as OT
 from app.modules.drawings_boq.takeoff.extract import members as M
@@ -1642,6 +1643,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       _stage(res, "OPENING_SYMBOLS", lambda: _opening_symbols(index, walls, mm_per_pt, ctx, imp_sheet, deadline, res, wstats.get("wall_pen_pt")), None)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
       wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
+      wstats["opening_rules"] = OPR.apply(walls)
       marked = [c for c in res.candidates if c.category in ("DOOR", "WINDOW")]
       wstats["opening_marks"] = OK.check(marked, walls, (schedule or {}).get("openings") or [], mm_per_pt)
       for c in marked:

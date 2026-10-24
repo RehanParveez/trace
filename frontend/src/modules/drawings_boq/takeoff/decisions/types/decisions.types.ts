@@ -8,6 +8,7 @@ export interface DecisionEffect {
   figures: DecisionFigure[];
   diff: number | null;
   diff_unit: string;
+  diffs?: DecisionFigure[];
 }
 
 export interface DecisionOption {

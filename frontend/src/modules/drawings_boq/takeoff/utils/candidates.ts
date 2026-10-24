@@ -442,6 +442,21 @@ function foundationLine(c: TakeoffCandidate, item: FoundationItem): string {
   return [line, grade].filter(Boolean).join(" · ");
 }
 
+function roofFallText(f: Record<string, unknown>): string {
+  const slope = f.slope as { min_mm?: unknown; max_mm?: unknown; avg_mm?: unknown } | null | undefined;
+  const lo = Number(slope?.min_mm);
+  const hi = Number(slope?.max_mm);
+  const avg = Number(slope?.avg_mm);
+  if (!slope || !Number.isFinite(lo) || !Number.isFinite(hi) || !Number.isFinite(avg)) return "fall not read";
+  const inch = (v: number) => (v / 25.4).toFixed(1).replace(/\.0$/, "");
+  return `fall ${inch(lo)}–${inch(hi)} in printed (average ${avg.toFixed(1)} mm)`;
+}
+
+function roofEdgeText(f: Record<string, unknown>): string {
+  const edge = Number(f.edge_m);
+  return f.edge_m != null && Number.isFinite(edge) && edge > 0 ? `roof edge ${edge.toFixed(2)} m from the printed size` : "roof edge not known";
+}
+
 function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
   const f = c.facts as Record<string, unknown>;
   const p = c.params as Record<string, unknown>;
@@ -502,7 +517,7 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
   if (item === "ROOF_TREATMENT") {
     const area = num(f.area_m2);
     const basis = f.area_basis === "OUTLINE" ? "slab outline" : f.area_basis === "TABLE" ? "covered area of the table" : null;
-    return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? `layers from ${typeof f.layers_heading === "string" ? f.layers_heading.toLowerCase() : "the specification"}` : Array.isArray(f.layer_sets) ? "roof layers printed under several headings, none chosen" : "layers not read", "slope not read"].filter(Boolean).join(" · ");
+    return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? `layers from ${typeof f.layers_heading === "string" ? f.layers_heading.toLowerCase() : "the specification"}` : Array.isArray(f.layer_sets) ? "roof layers printed under several headings, none chosen" : "layers not read", roofFallText(f), roofEdgeText(f)].filter(Boolean).join(" · ");
   }
 
   if (item === "FLOOR_FINISH" || item === "CEILING_PAINT") {

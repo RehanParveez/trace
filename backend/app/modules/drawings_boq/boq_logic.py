@@ -42,9 +42,10 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "FORMWORK_ITEM_ASSUMED", "FORMWORK_BEAM_SLAB_ASSUMED", "STEEL_ASSUMED",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "FORMWORK_ITEM_ASSUMED", "FORMWORK_BEAM_SLAB_ASSUMED", "FORMWORK_JOINT_ASSUMED", "STEEL_ASSUMED",
     "SPACE_OVER_DEDUCTED", "SPACE_VIEW_NOT_PLACED", "SPACE_NO_HEIGHT", "SPACE_SAME_ROLE_OVERLAP",
 })
+
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
 
@@ -451,6 +452,11 @@ LEDGER_WARNING_CATALOG = {
     "Part of this beam's or slab's formwork was taken off where the beam meets the slab, but the floor has slabs of different thickness (so which one covers the "
     "beam is a guess), or the beams were more than a third of the slab soffit and the take-off was limited.",
     "Check the slab thickness of this floor, then calculate again."),
+  "FORMWORK_JOINT_ASSUMED": ("warning", "NONE",
+    "Part of this member's formwork was taken off where it meets another member: the soffit of a lintel over its bearing on the wall, the outer side of a lintel "
+    "where a chajja is cast with it, or the edge of a floor slab where a balcony slab is cast with it. The plan does not say which lintel a chajja springs from "
+    "or which slab a balcony joins, so they were matched by floor, and the bearing of the lintel was taken as the standard value.",
+    "Check the faces in the trace against how the members are cast on site, then calculate again."),
   "FORMWORK_FRAME_ASSUMED": ("warning", "NONE",
     "Part of this column's formwork was taken off because a slab covers it, but where the two drawing views sit on the building was found by the program, "
     "or the floor of one of them was not given, and no one has confirmed it.",

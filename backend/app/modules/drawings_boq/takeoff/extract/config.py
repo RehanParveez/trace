@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 47
+EXTRACT_VERSION = 48
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0             
@@ -281,7 +281,10 @@ NOTES = {
   "DADO_HEIGHT_DEFAULT": ("warning", "The dado height of 7 ft (2134 mm) is the default of the finish rules, not a height printed on the drawing. If the drawing or the QS gives another height, the area is the length given on this item times that height; the height cannot be typed here yet."),
   "DADO_WINDOWS_NOT_DEDUCTED": ("warning", "Windows in the dado zone are not taken off. The sill of a bath window is usually above the dado, so the error is small, but check."),
   "PAINT_FROM_PLASTER": ("info", "This item is not drawn on the plan. The paint is on the same faces as the plaster of this floor: the length of each wall times its height, less the doors and windows of 0.5 m2 and over. On the inside faces the tile dado of the baths and toilets is taken off, because it is not painted."),
-  "ROOF_TREATMENT_AREA_ONLY": ("warning", "Only the area of the roof is measured. What the treatment is made of (the layers, the slope, the coba) is not printed on the drawings, so this item carries no layers; the area is the covered area of the slab, and the part that reaches past the walls is a line of its own. Both are in the facts."),
+  "ROOF_TREATMENT_AREA_ONLY": ("warning", "Only the area of the roof is measured. What the treatment is made of (the layers, the fall of the coba) is carried in the facts when the specification block or a detail prints it, and is not otherwise known; the area is the covered area of the slab, and the part that reaches past the walls is a line of its own. Both are in the facts."),
+  "ROOF_FALL_FROM_SPEC": ("info", "The specification block prints a layer that is laid thicker at one end to give the roof its fall, as a thin and a thick end. The average of the two is carried on this item as the thickness of the coba. It does not change the quantity of this item; the roof deck layers use it when they are switched on."),
+  "ROOF_EDGE_FROM_SIZE": ("info", "The length of the roof edge, where the parapet stands and the membrane turns up, is taken as the perimeter of the printed overall size of the roof (length and width), because the area table prints the roof as one rectangle. It does not change the quantity of this item; the roof deck layers use it for the turn-up."),
+  "ROOF_EDGE_NOT_KNOWN": ("info", "The length of the roof edge is not known: the roof is not one printed rectangle. The turn-up of the membrane and the screed up the parapet is left out for this roof."),
   "ROOF_MAIN_UNDER_UPPER_ROOF": ("info", "This is the slab over the highest full floor, the roof the head room stands on. A roof plan is drawn above it, so that roof has its own line, and the footprint of the head room (in this note and in the facts) is taken off this one because it is not exposed. If your surveyor counts both whole, add the footprint back when you accept."),
   
   "DOOR_WIDTH_ASSUMED": ("warning", "Some of the doors have no width, neither on the plan nor in a schedule that was read, so each is taken as 900 mm (3 ft) wide when it is taken off. The number of such doors is in the item. Give the door sizes (a door schedule) to replace the assumed width."),

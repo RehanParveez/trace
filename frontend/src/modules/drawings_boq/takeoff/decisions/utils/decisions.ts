@@ -6,6 +6,10 @@ export const FIGURE_LABEL: Record<string, string> = {
   band_concrete: "roof beam, band and lintel concrete",
   lintel_off: "lintel concrete taken off the brick",
   lintels: "lintels",
+  plaster: "plaster",
+  paint: "paint",
+  rcc_wall: "RCC wall concrete",
+  wall_formwork: "wall formwork",
 };
 
 const UNIT_TEXT: Record<string, string> = { m2: "m²", m3: "m³", cft: "cft", nos: "" };
@@ -26,6 +30,9 @@ export function figureText(f: DecisionFigure): string {
 export function diffText(e: DecisionEffect | null | undefined): string {
   if (!e) return "";
   if (e.diff == null) return "needs the sheets read with floor to floor first";
+  if (e.diffs && e.diffs.length) {
+    return e.diffs.map((d) => `${FIGURE_LABEL[d.key] ?? d.key} ${d.value > 0 ? "+" : "−"}${number(Math.abs(d.value))} ${unitText(d.unit)}`.trim()).join(" · ");
+  }
   if (Math.abs(e.diff) < 0.005) return "no change";
   return `${e.diff > 0 ? "+" : "−"}${number(Math.abs(e.diff))} ${unitText(e.diff_unit)}`;
 }

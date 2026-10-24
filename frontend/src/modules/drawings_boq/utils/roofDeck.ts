@@ -10,6 +10,11 @@ export interface RoofDeckView {
   screedM2: string | null;
   cobaThicknessMm: number | null;
   thicknessAssumed: boolean;
+  cobaFromDrawing: number;
+  turnupM2: string | null;
+  turnupMm: number | null;
+  turnupAssumed: boolean;
+  turnupRoofsWithoutEdge: number;
   layers: string[];
   skipped: string[];
 }
@@ -28,7 +33,12 @@ export function roofDeckView(stats: DerivedStats | null | undefined): RoofDeckVi
     cobaM3: layers.includes("COBA") ? String(s.coba_m3 ?? "0") : null,
     screedM2: layers.includes("SCREED") ? String(s.screed_m2 ?? "0") : null,
     cobaThicknessMm: thickness !== null && Number.isFinite(thickness) ? thickness : null,
-    thicknessAssumed: s.coba_thickness_source === "default",
+    thicknessAssumed: s.coba_thickness_source === "default" || s.coba_thickness_source === "mixed",
+    cobaFromDrawing: Number(s.coba_from_drawing_roofs ?? 0),
+    turnupM2: s.turnup_m2 == null ? null : String(s.turnup_m2),
+    turnupMm: s.turnup_mm == null || !Number.isFinite(Number(s.turnup_mm)) ? null : Number(s.turnup_mm),
+    turnupAssumed: s.turnup_source === "default",
+    turnupRoofsWithoutEdge: Number(s.turnup_roofs_without_edge ?? 0),
     layers,
     skipped: Object.keys(s.skipped ?? {}),
   };

@@ -29,6 +29,8 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "formwork_shared_faces", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tank_base_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
+  { key: "formwork_joints", defaultMm: 0, min: 0, max: 1, flag: true, label: "Formwork: take off the joints of lintel, chajja and balcony", hint: "Off: every face stays whole. On: the lintel soffit over its bearing, the lintel side a chajja is cast with, the floor slab edge a balcony is cast with. Matched by floor, assumed" },
+  { key: "formwork_lintel_bearing_mm", defaultMm: 152.4, min: 0, max: 400, label: "Formwork: bearing of a lintel on the wall, each end (mm)", hint: "Empty: 152.4 mm (6 in), assumed. The soffit over it takes no form when the joints are on" },
   { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: general (mm)" },
   { key: "steel_cover_slab_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: slab (mm)", hint: "Empty: the general cover, or the cover the drawing prints for slabs" },
   { key: "steel_cover_beam_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: beam and lintel (mm)", hint: "Empty: the general cover, or the cover the drawing prints for beams" },
@@ -50,9 +52,10 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "opening_area_from_model", defaultMm: 0, min: 0, max: 1, flag: true, label: "Area of doors and windows from the model" },
   { key: "roof_treatment_from_slabs", defaultMm: 0, min: 0, max: 1, flag: true, label: "Roof treatment from the model's roof slabs" },
   { key: "roof_deck_assembly", defaultMm: 0, min: 0, max: 1, flag: true, label: "Roof deck layers over the roof treatment (membrane, coba, screed)" },
-  { key: "roof_coba_thickness_mm", defaultMm: 100, min: 0, max: 600, label: "Roof coba: average thickness (mm)", hint: "Empty: 100 mm. 0 leaves the coba out. The drawings do not print it" },
+  { key: "roof_coba_thickness_mm", defaultMm: 100, min: 0, max: 600, label: "Roof coba: average thickness (mm)", hint: "Empty: 100 mm, or the average of the thin and thick end when the drawing prints both. 0 leaves the coba out" },
   { key: "roof_membrane", defaultMm: 1, min: 0, max: 1, flag: true, label: "Roof deck: waterproofing membrane" },
   { key: "roof_screed", defaultMm: 1, min: 0, max: 1, flag: true, label: "Roof deck: cement screed" },
+  { key: "roof_turnup_mm", defaultMm: 300, min: 0, max: 1500, label: "Roof deck: turn-up of the membrane and screed up the parapet (mm)", hint: "Empty: 300 mm, assumed. 0 leaves the turn-up out. Needs the roof edge read from the drawing" },
   { key: "steel_binding_wire", defaultMm: 0, min: 0, max: 1, flag: true, label: "Steel: add binding wire" },
   { key: "steel_binding_wire_pct", defaultMm: 1, min: 0, max: 5, unit: "pct", label: "Binding wire: % of the weight of the bars", hint: "Empty: 1 %. It is not drawn, so the row stays marked assumed" },
   { key: "steel_chairs", defaultMm: 0, min: 0, max: 1, flag: true, label: "Steel: add chairs for the slab steel" },
@@ -186,7 +189,7 @@ export interface DerivedBasisRow {
 }
 
 const BASIS_ORDER = ["working_space_mm", "pcc_projection_mm", "pcc_thickness_mm", "ballast_clearance_mm", "ballast_thickness_mm", "shoring", "footing_formwork", "slab_edge_formwork", 
-  "formwork_shared_faces", "tank_base_formwork", "steel_cover_mm", "steel_cover_slab_mm", "steel_cover_beam_mm", "steel_cover_column_mm", "steel_cover_footing_mm", "steel_cover_wall_mm",
+  "formwork_shared_faces", "formwork_joints", "formwork_lintel_bearing_mm", "tank_base_formwork", "steel_cover_mm", "steel_cover_slab_mm", "steel_cover_beam_mm", "steel_cover_column_mm", "steel_cover_footing_mm", "steel_cover_wall_mm",
    "fill_layer_mm", "earth_swell_pct", "fill_compaction_pct", "fill_from_excavation", "floor_works_from_spaces", "wall_foundation_works", "wall_membrane", "wall_finishes_from_walls", "stair_formwork_soffit_only", "beam_lintel_qs_rate", "formwork_shared_walls", "formwork_shared_beams", "rcc_wall_reveals", "ring_hook_dia", "bar_lap_dia", "bar_anchor_dia", "plaster_thickness_mm", "soil_stab_depth_mm", "soil_stab_cement_pct", "steel_wastage_pct", "steel_estimate_from_volume", "slab_steel_kg_per_m2", "beam_depth_includes_slab", "tie_band_replaces_lintel", "dpc_thickness_mm", "dpc_door_deduction", "ngl"];
 export function derivedBasisRows(spec: BOQItemSpec | null | undefined): DerivedBasisRow[] {
   if (!isDerivedSpec(spec)) {
@@ -445,6 +448,7 @@ export function removedByKind(fw: DerivedStats["formwork"] | undefined): { kind:
   const sum = new Map<string, number>();
   addMap(sum, fw?.shared_faces?.removed_by);
   addMap(sum, fw?.model?.shared?.removed_by);
+  addMap(sum, fw?.joints?.removed_by);
   return [...sum.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([kind, m2]) => ({ kind, m2: m2.toFixed(6) }));
 }
 
@@ -490,6 +494,8 @@ export function formworkStatsView(stats: DerivedStats | null | undefined): Formw
       ["WALL_NOT_PLACED", Number(fw.shared_faces?.unplaced_walls ?? 0)],
       ["WALL_NOT_SQUARE", Number(fw.shared_faces?.walls_not_square ?? 0)],
       ["BEAM_NOT_MATCHED", Number(fw.shared_faces?.unmatched_beams ?? 0)],
+      ["chajja found no lintel on its floor", Number(fw.joints?.chajjas_unmatched ?? 0)],
+      ["balcony found no slab edge on its floor", Number(fw.joints?.balconies_unmatched ?? 0)],
     ].filter(([, n]) => Number(n) > 0).map(([reason, count]) => ({ reason: String(reason), count: Number(count) })),
   };
 }
