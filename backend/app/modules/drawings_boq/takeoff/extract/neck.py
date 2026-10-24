@@ -31,7 +31,6 @@ def pair(footings: list, columns: list) -> list:
     for f, c in zip(fs, cs):
       out.append((f, c))
       free.remove(c)
-  free.remove(c)
   return out
 
 def paired(footings: list, columns: list) -> list:

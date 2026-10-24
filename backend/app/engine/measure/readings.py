@@ -1,4 +1,6 @@
 from __future__ import annotations
+import contextvars
+from contextlib import contextmanager
 from app.engine.measure import proposed
 
 QS_NAME = "M. Junaid"
@@ -224,19 +226,34 @@ READINGS = [
 def source_label() -> str:
   return QS_NAME
 
+_DECIDED = contextvars.ContextVar("qs_decided", default=None)
+
+@contextmanager
+def deciding(values: dict | None):
+  token = _DECIDED.set(dict(values or {}))
+  try:
+    yield
+  finally:
+    _DECIDED.reset(token)
+
 def param(name: str):
-  """The value the QS gave for a site assumption, or None."""
+  decided = _DECIDED.get()
+  if decided and name in decided:
+    return decided[name]
   return PARAM_VALUES.get(name)
 
 def convention(name: str):
   return CONVENTIONS.get(name)
 
 def choice(name: str):
+  decided = _DECIDED.get()
+  if decided and name in decided:
+    return decided[name]
   return CHOICES.get(name)
 
 def flag(name: str) -> bool:
   if name == "wall_height_floor_to_floor":
-    return CHOICES.get("wall_height_basis") != "CLEAR"          
+    return choice("wall_height_basis") != "CLEAR"          
   return bool(FLAGS.get(name))
 
 def by_status() -> dict:

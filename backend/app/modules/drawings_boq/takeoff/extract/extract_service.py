@@ -14,6 +14,8 @@ from app.modules.drawings_boq.models import TakeoffExtraction, TakeoffCandidate
 from app.modules.audit.models import AuditAction
 from pydantic import ValidationError
 from app.core.exceptions import TraceException
+from app.engine.measure import readings as QS
+from app.modules.drawings_boq.takeoff.decisions import store as decided
 from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.extract import config as C
@@ -284,6 +286,8 @@ class ExtractService:
     mm_per_pt = float(ev.mm_per_pt)
     unverified = "PDF_RATIO_UNVERIFIED" in (ev.warnings or ())
     
+    drawing = await self.core._pdf_drawing(org, sheet.drawing_id)
+    in_force = decided.effective(drawing.ingestion_meta)
     schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
     floor_heights = await self.prep.drawing_storey_heights(org, sheet.drawing_id)
     slab_values = await self.prep.drawing_slab_values(org, sheet.drawing_id)
@@ -298,7 +302,8 @@ class ExtractService:
     floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
     lowest_level = bool(level_hint) and bool(floors) and floors[0] == level_hint
     try:
-      result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, site_only=site_only, cal_factor=float(ev.factor), scale_unverified=unverified,
+      with QS.deciding(decided.overrides(drawing.ingestion_meta)):
+        result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, site_only=site_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
@@ -313,6 +318,7 @@ class ExtractService:
       raise NoPlanRegions()                                   
     found = result.candidates
     result.stats["floors_read_elsewhere"] = await self._repeated_floors(org, sheet, title, result)
+    result.stats["decisions"] = in_force
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
     KD.drop_unknown_codes(found, catalog)
@@ -414,9 +420,10 @@ class ExtractService:
   async def _current_sheet_ids(self, org: UUID, sheets: list) -> set:
     out: set = set()
     exts = {e.sheet_id: e for e in await self.repo.extractions(org, [s.id for s in sheets])}
+    in_force = decided.effective((await self.core._pdf_drawing(org, sheets[0].drawing_id)).ingestion_meta) if sheets else {}
     for sheet in sheets:
       ext = exts.get(sheet.id)
-      if ext is None or sheet.prep_status != "READY" or ext.extract_version != C.EXTRACT_VERSION:
+      if ext is None or sheet.prep_status != "READY" or ext.extract_version != C.EXTRACT_VERSION or decided.stale(ext.stats, in_force):
         continue
       meta = await self.prep.prep.meta(org, sheet.id)
       if meta is not None and ext.index_stamp == index_stamp(meta):

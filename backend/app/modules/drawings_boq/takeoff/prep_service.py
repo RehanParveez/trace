@@ -17,6 +17,7 @@ import os
 import time
 from app.engine.measure import takeoff as tk
 from app.engine.measure import readings as QS
+from app.modules.drawings_boq.takeoff.decisions import store as decided
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules
@@ -421,10 +422,13 @@ class PrepService:
     return {"views": shown, "levels": sorted(levels.values(), key=lambda lv: lv["sequence"])}
 
   async def _floor_checks(self, org: UUID, sheets: list, areas: list, heights: dict | None = None, structure: list | None = None) -> list:
-    """Each floor's covered area from the area table, beside what was found on that floor's plan: the rooms added up, and the openings counted."""
     floors = [a for a in areas if a.get("kind") == "FLOOR"]
     if not floors:
       return []
+
+    drawing = await self.repo.drawing(org, sheets[0].drawing_id) if sheets else None
+    with QS.deciding(decided.overrides(drawing.ingestion_meta if drawing else None)):
+      floor_to_floor = QS.flag("wall_height_floor_to_floor")
     level_ids = {s.level_id for s in sheets if s.level_id}
     hint_of: dict = {}
     if level_ids:
@@ -454,7 +458,7 @@ class PrepService:
       
       h = (heights or {}).get(a["key"])
       if h:
-        row["wall_height_mm"], row["wall_height_basis"] = ((h.get("floor_to_floor_mm") or h["clear_mm"]) if QS.flag("wall_height_floor_to_floor") else h["clear_mm"]), h["basis"]
+        row["wall_height_mm"], row["wall_height_basis"] = ((h.get("floor_to_floor_mm") or h["clear_mm"]) if floor_to_floor else h["clear_mm"]), h["basis"]
       if not mine:
         row.update(status="NOT_READ", message="No sheet of this floor has been read yet." if not group else "The sheet of this floor has not been read for items yet.")
         out.append(row)

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, inputClass } from "../../../organizations/components/OrganizationUi";
 import type { CandidateList, TakeoffCandidate, TakeoffSheet, TypedValue } from "../types/takeoff.types";
@@ -9,6 +9,8 @@ import { groupByFloor, metres, setAsideBy } from "../utils/floorSources";
 import { offerText, offersFor } from "../utils/typedMemory";
 import { isTankItem, offersSectionChoice, sectionLabel, sectionOptions, tankSizeChoices } from "../utils/choices";
 import { SteelEditor } from "./SteelEditor";
+import { CandidateCrop } from "../crops/components/CandidateCrop";
+import { hasPosition } from "../crops/utils/crops";
 import type { SteelSet } from "../utils/steel";
 
 interface Props {
@@ -99,6 +101,7 @@ export function FoundPanel(p: Props) {
 }
 
 function FoundList(p: Props & { data: CandidateList }) {
+  const [pictures, setPictures] = useState(false);
   const { t } = useTranslation();
   const { data } = p;
   const fresh = useMemo(() => data.candidates.filter((c) => c.decision === "NEW"), [data.candidates]);
@@ -221,6 +224,12 @@ function FoundList(p: Props & { data: CandidateList }) {
           {data.candidates.length === 0 ? t("boq.takeoff.found.nothing", "Nothing could be read from this sheet. Measure it by hand with the tools above.") : t("boq.takeoff.found.allDone", "Everything found has been accepted or rejected.")}        </div>
       ) : null}
 
+      {fresh.length > 0 ? (
+        <label className="mx-4 mb-2 flex items-center gap-2 text-[12px]" data-testid="found-pictures-all">
+          <input type="checkbox" checked={pictures} onChange={(e) => setPictures(e.target.checked)} />
+          <span>{t("boq.takeoff.crops.all", "Show a picture of the sheet beside each item")}</span>
+        </label>
+      ) : null}
       <div className="space-y-5 px-4 pb-4">
         {floorGroups.map((fg) => (
         <div key={fg.key || "all"} className="space-y-4" data-testid={fg.key ? `found-floor-${fg.key}` : undefined}>
@@ -257,7 +266,7 @@ function FoundList(p: Props & { data: CandidateList }) {
               {!suggested && !code && g.key !== "BEAM" && p.canEdit ? <div className="mb-1.5 text-[11.5px] text-[var(--color-text-muted)]" data-testid={`found-workitem-none-${g.key}`}>{t("boq.takeoff.found.workItemNone", "No work item is proposed for these. Choose one above, or choose it later when you build the bill.")}</div> : null}
               <ul className="space-y-1.5">
                 {g.items.map((c) => (
-                  <Row key={c.id} c={c} steel={p.steel?.[c.id]} onSteel={p.onSteel} pick={p.picks?.[c.id]} onPick={p.onPick} selected={p.selected.has(c.id)} focused={p.focusId === c.id} canEdit={p.canEdit} onToggle={() => toggle(c.id)} onShow={() => p.onShow(c)} onReject={() => p.onReject([c.id])} />
+                  <Row key={c.id} c={c} pageNo={p.sheet.page_no} pictures={pictures} steel={p.steel?.[c.id]} onSteel={p.onSteel} pick={p.picks?.[c.id]} onPick={p.onPick} selected={p.selected.has(c.id)} focused={p.focusId === c.id} canEdit={p.canEdit} onToggle={() => toggle(c.id)} onShow={() => p.onShow(c)} onReject={() => p.onReject([c.id])} />
                 ))}
               </ul>
             </section>
@@ -320,19 +329,20 @@ function FoundList(p: Props & { data: CandidateList }) {
         </div>
       ) : null}
     </div>
-  );
+   );
 }
 
-function Row({ c, steel, onSteel, pick, onPick, selected, focused, canEdit, onToggle, onShow, onReject }: {
-  c: TakeoffCandidate; steel?: SteelSet; onSteel?: (id: string, steel: SteelSet | null) => void; pick?: string; onPick?: (id: string, mark: string | null) => void; selected: boolean; focused: boolean; canEdit: boolean; onToggle: () => void; onShow: () => void; onReject: () => void;
+function Row({ c, pageNo, pictures, steel, onSteel, pick, onPick, selected, focused, canEdit, onToggle, onShow, onReject }: {
+  c: TakeoffCandidate; pageNo: number; pictures: boolean; steel?: SteelSet; onSteel?: (id: string, steel: SteelSet | null) => void; pick?: string; onPick?: (id: string, mark: string | null) => void; selected: boolean; focused: boolean; canEdit: boolean; onToggle: () => void; onShow: () => void; onReject: () => void;
 }) {
   const { t } = useTranslation();
   const level = confidenceLevel(c.confidence);
-  // The unchecked-scale warning applies to the whole sheet and is shown once at the top, not on every row.
   const warnings = c.notes.filter((n) => n.severity !== "info" && n.code !== "SCALE_UNVERIFIED");
   const infos = c.notes.filter((n) => n.severity === "info");
   const facts = factLine(c);
   const unmeasurable = notMeasurable(c);
+  const [own, setOwn] = useState(false);
+  const picture = hasPosition(c) && (pictures || own);
   return (
     <li className={`rounded-[8px] border p-2.5 ${focused ? "border-[var(--color-trace-gold)]" : "border-[var(--color-border)]"}`} data-testid="found-row" data-category={c.category} data-selected={selected}>
       <div className="flex items-start gap-2">
@@ -365,8 +375,10 @@ function Row({ c, steel, onSteel, pick, onPick, selected, focused, canEdit, onTo
             </label>
           ) : null}
           {onSteel && !unmeasurable ? <SteelEditor c={c} typed={steel} canEdit={canEdit} onChange={onSteel} /> : null}
+          {picture ? <CandidateCrop c={c} pageNo={pageNo} /> : null}
           <div className="mt-1.5 flex gap-2">
             <Button size="sm" variant="ghost" onClick={onShow} data-testid="found-show">{t("boq.takeoff.counts.show", "Show")}</Button>
+            {hasPosition(c) && !pictures ? <Button size="sm" variant="ghost" aria-pressed={own} onClick={() => setOwn((v) => !v)} data-testid="found-picture">{own ? t("boq.takeoff.crops.hide", "Hide picture") : t("boq.takeoff.crops.show", "Picture")}</Button> : null}
             {canEdit ? <Button size="sm" variant="ghost" onClick={onReject}>{t("boq.takeoff.found.reject", "Reject")}</Button> : null}
           </div>
         </div>

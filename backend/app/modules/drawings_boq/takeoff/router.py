@@ -131,6 +131,14 @@ from app.modules.drawings_boq.takeoff.detail_only.router import router as _detai
 router.include_router(_detail_only_router)
 from app.modules.drawings_boq.takeoff.grades.router import router as _grades_router
 router.include_router(_grades_router)
+from app.modules.drawings_boq.takeoff.notes.router import router as _notes_router
+router.include_router(_notes_router)
+from app.modules.drawings_boq.takeoff.integrity.router import router as _integrity_router
+router.include_router(_integrity_router)
+from app.modules.drawings_boq.takeoff.decisions.router import router as _decisions_router
+router.include_router(_decisions_router)
+from app.modules.drawings_boq.takeoff.crops.router import router as _crops_router
+router.include_router(_crops_router)
 
 router.include_router(_extract_router)
 router.include_router(_summary_router)

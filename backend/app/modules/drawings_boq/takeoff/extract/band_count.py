@@ -147,7 +147,7 @@ def resolve(beams: list, roof_band: dict | None, lintels: list, level_hint: str 
       note = C.note("TIE_BAND_COUNTED_ONCE")
       lead = ("The drawing prints a roof band detail and also a tie band at lintel level over the same walls. They are one band here, the roof band at slab level, so the same wall is not listed twice; "
         if roof_band_read else "The drawing prints a tie band at lintel level over the same walls as the roof beam. The roof band was not read on this sheet (it was prepared before pack 44; prepare the drawing again), so the roof beam is taken as the one band and the tie band is not listed again; ")
-      note["message"] = lead + "the lintels over the openings are listed as before. " + head[0].upper() + head[1:] + ". Set the QS parameter tie_band_single_count to 0 to list the tie band as well."
+      note["message"] = lead + "the lintels over the openings are listed as before. " + head[0].upper() + head[1:] + ". Choose 'Band and beam' under Decisions to list the tie band as well."
       c.notes.append(note)
       
       if roof_band:
@@ -156,7 +156,7 @@ def resolve(beams: list, roof_band: dict | None, lintels: list, level_hint: str 
     elif role == "BAND" and member == "TIE_BAND":
       note = C.note("TIE_BAND_COUNTED_ONCE")
       note["message"] = ("The drawing prints a tie band at lintel level and no roof band detail. The tie band is the one band member over the walls it covers, so the roof beam derived over the same walls is not "
-        "listed as well; the lintels over the openings are listed as before and the band runs over the solid wall only. " + head[0].upper() + head[1:] + ". Set tie_band_single_count to 0 to list both.")
+        "listed as well; the lintels over the openings are listed as before and the band runs over the solid wall only. " + head[0].upper() + head[1:] + ". Choose 'Band and beam' under Decisions to list both.")
       
       c.notes.append(note)
     elif role == "BAND" and member == "BOTH":
