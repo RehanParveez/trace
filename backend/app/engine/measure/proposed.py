@@ -41,6 +41,21 @@ def _p(ident, section, topic, question, proposed, basis, effect, evidence, param
     "evidence": evidence, "params": list(params), "confirm": confirm}
 
 PROPOSALS = [
+  _p("P60-1", "L", "How high the waterproofing of a bath or toilet goes up the wall", "Is the waterproofing of a wet room the floor plus a turn-up, and how high is the turn-up?",
+    "The floor of every bath and toilet plus 300 mm (1 ft) up the walls round it, less the doors. It is a line of its own (wet-area waterproofing). The walls above the turn-up, a shower area for one, are not in it.",
+    PRACTICE, SUGGESTION,
+    "Islamabad_Plot_1, ground floor: two baths, floor 5.85 m2, 12.4 m of wall less one door, 300 mm up: 9.57 m2. Architectural_Drawings_10_Marla_House, ground floor: floor 8.36 m2, waterproofing 12.57 m2. Neither drawing prints a turn-up height or a waterproofing line for the wet rooms.",
+    confirm="Does the QS's sheet waterproof the floor of the baths only, or the floor and the walls up to a height? How high, and is the shower area carried higher?"),
+  _p("P60-2", "L", "Which rooms have wall tile besides the baths, and how high", "A bath or toilet has a tile dado of 7 ft. Does a kitchen have wall tile, and how high?",
+    "The kitchens (a kitchen on its own, not one shared with a dining or living space) get a wall tile line: the length round the kitchen less the doors, times a tile height that is typed when the item is accepted, less the part of each window inside that height. Nothing is assumed for the height, because the plan does not print it. The tile is not taken off the paint of the kitchen walls.",
+    PRACTICE, SUGGESTION,
+    "Islamabad_Plot_1, ground floor plan (page 1): kitchen 12.12 m of wall; on the sheet that shows all four plans, the ground-floor kitchen is 10.67 m with its 1524 x 914 mm window (sill assumed at 3 ft 6 in) to come off once the height is typed. Architectural_Drawings_10_Marla_House, ground floor (page 6): 11.73 m of wall. Neither drawing prints a kitchen tile height.",
+    confirm="Is a kitchen tiled to a fixed height in your bills (2 ft above the counter, 4 ft, full height)? Is the tile taken off the kitchen paint?"),
+  _p("P60-3", "L", "Windows inside the dado zone of a bath", "Does a window in a bath come off the tile dado, and where does its sill stand when the plan does not print it?",
+    "The part of each window that is below the top of the dado (7 ft) comes off the dado. A window with no printed sill is taken with its sill at 5 ft in a bath or toilet (a ventilator) and at 3 ft 6 in in a kitchen. A window with no size on the plan or in a schedule is not taken off and the item says how many.",
+    PRACTICE, SUGGESTION,
+    "Islamabad_Plot_1, ground floor on the sheet that shows all four plans: one 914 x 610 mm ventilator with its sill assumed at 5 ft: 0.557 m2 off a dado of 25.66 m2, which is 25.11 m2. Architectural_Drawings_10_Marla_House, ground floor: 0.83 m2 off 33.49 m2. The inside paint of the same wall is no longer short by the window twice.",
+    confirm="Does the QS take the window off the dado of a bath? What sill does he assume for a bath ventilator?"),
   _p("N17", "E", "Footing and basement levels", "How far below natural ground is the underside of the footing, and how deep is the basement floor?",
     "Footing underside 3.5 ft below natural ground, as the QS said (X4). The basement is dug 8 ft.", WORKBOOK, SUGGESTION,
     "X4: 3.5 ft is right. Excavation sheet: the whole basement area is 30 x 54 x 8 ft. The printed 3'-3\" is a section detail; the QS value is used.",

@@ -34,7 +34,7 @@ REASON_TEXT = {
   "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
   "ADDED_FROM_SECOND_SHEET": "Only the sheet that shows every plan has this item, not the floor's own sheet. That sheet is drawn small, so check it on the sheet before accepting.",
   "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
-  "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet. Accepting it here as well counts it twice.",
+  "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet, or the floor finish already accepted for this floor carries the baths and toilets. Accepting it here as well counts it twice.",
 }
 
 def _warned(checks: list) -> list:

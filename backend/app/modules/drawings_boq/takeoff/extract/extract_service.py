@@ -57,6 +57,7 @@ HEIGHT_FIELDS = {
   ("FOOTING", "depth_mm"): ("footing_depth_mm", "depth_mm", "the footing depth"),
   ("SLAB", "thickness_mm"): ("slab_thickness_mm", "depth_mm", "the slab thickness"),
   ("BEAM", "depth_mm"): ("beam_depth_mm", "depth_mm", "the beam depth"),
+  ("WALL", "tile_height_mm"): ("tile_height_mm", "height_mm", "the height of the kitchen wall tile"),
 }
 
 def height_field(category: str, need: str, facts: dict | None) -> tuple | None:
@@ -520,7 +521,7 @@ class ExtractService:
       "brick_step_1_height_mm": payload.brick_step_1_height_mm, "brick_step_2_height_mm": payload.brick_step_2_height_mm,
       "brick_step_3_height_mm": payload.brick_step_3_height_mm, "brick_step_4_height_mm": payload.brick_step_4_height_mm,
       "brick_step_offset_mm": payload.brick_step_offset_mm, "membrane_width_mm": payload.membrane_width_mm,
-      "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm,
+      "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm, "tile_height_mm": payload.tile_height_mm,
       "stair_waist_mm": payload.stair_waist_mm, "neck_height_mm": payload.neck_height_mm, "tank_wall_height_mm": payload.tank_wall_height_mm,
       "site_length_mm": payload.site_length_mm, "site_width_mm": payload.site_width_mm, "site_height_mm": payload.site_height_mm, "site_thickness_mm": payload.site_thickness_mm}
     accepted: list = []

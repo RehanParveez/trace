@@ -44,6 +44,7 @@ export type HeightField =
   | "membrane_width_mm"
   | "door_frame_width_mm"
   | "door_frame_width_thin_mm"
+  | "tile_height_mm"
   | "stair_waist_mm"
   | "site_length_mm"
   | "site_width_mm"
@@ -74,6 +75,7 @@ const HEIGHT_ORDER: HeightField[] = [
   "membrane_width_mm",
   "door_frame_width_mm",
   "door_frame_width_thin_mm",
+  "tile_height_mm",
   "stair_waist_mm",
   "site_length_mm",
   "site_width_mm",
@@ -106,6 +108,7 @@ export const NO_HEIGHTS: Heights = {
   membrane_width_mm: "",
   door_frame_width_mm: "",
   door_frame_width_thin_mm: "",
+  tile_height_mm: "",
   stair_waist_mm: "",
   site_length_mm: "",
   site_width_mm: "",
@@ -137,6 +140,7 @@ export const HEIGHT_LABEL: Record<HeightField, string> = {
   membrane_width_mm: "Damp-proof membrane width (mm)",
   door_frame_width_mm: "Door frame width in walls of 6 in and thicker (mm)",
   door_frame_width_thin_mm: "Door frame width in thin walls (mm)",
+  tile_height_mm: "Kitchen wall tile height (mm)",
   stair_waist_mm: "Stair waist slab thickness under the steps (mm)",
   site_length_mm: "Site item: outside length of the tank, length of the ramp, or width of the gate (mm)",
   site_width_mm: "Site item: outside width of the tank or width of the ramp (mm)",
@@ -172,7 +176,10 @@ export type FoundationItem =
   | "FLOOR_BALLAST"
   | "FLOOR_SAND_FILL"
   | "MEMBRANE_COAT"
-  | "MEMBRANE_POLYTHENE";
+  | "MEMBRANE_POLYTHENE"
+  | "FLOOR_WET"
+  | "WALL_TILE"
+  | "WET_WATERPROOF";
 
 const FOUNDATION_ITEMS: FoundationItem[] = [
   "EXCAVATION_AREA",
@@ -203,6 +210,9 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "FLOOR_SAND_FILL",
   "MEMBRANE_COAT",
   "MEMBRANE_POLYTHENE",
+  "FLOOR_WET",
+  "WALL_TILE",
+  "WET_WATERPROOF",
 ];
 
 export type SiteKind = "OHWT" | "UGWT" | "SEPTIC" | "BOUNDARY_WALL" | "GATE" | "PORCH_RAMP";
@@ -279,6 +289,7 @@ function foundationFields(c: Pick<TakeoffCandidate, "category" | "missing" | "fa
   if (c.missing.includes("frame_width_mm")) {
     out.push((c.facts as Record<string, unknown> | null)?.frame_class === "THIN" ? "door_frame_width_thin_mm" : "door_frame_width_mm");
   }
+  if (c.missing.includes("tile_height_mm")) out.push("tile_height_mm");
   return out;
 }
 
@@ -352,6 +363,9 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   FLOOR_SAND_FILL: "Sand filling under the floor",
   MEMBRANE_COAT: "Waterproofing coats on the basement walls",
   MEMBRANE_POLYTHENE: "Polythene sheet on the basement walls",
+  FLOOR_WET: "Floor tile in baths and toilets",
+  WALL_TILE: "Wall tile in kitchens",
+  WET_WATERPROOF: "Waterproofing in baths and toilets",
 };
 
 export const SITE_TEXT: Record<SiteKind, string> = {
@@ -520,14 +534,17 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? `layers from ${typeof f.layers_heading === "string" ? f.layers_heading.toLowerCase() : "the specification"}` : Array.isArray(f.layer_sets) ? "roof layers printed under several headings, none chosen" : "layers not read", roofFallText(f), roofEdgeText(f)].filter(Boolean).join(" · ");
   }
 
-  if (item === "FLOOR_FINISH" || item === "CEILING_PAINT") {
+  if (item === "FLOOR_FINISH" || item === "CEILING_PAINT" || item === "FLOOR_WET") {
     const area = num(f.area_m2);
     const rooms = num(f.room_count);
     const wet = num(f.wet_room_count);
+    const dry = f.floor_scope === "DRY";
     return [
-      area !== null ? `${area.toFixed(2)} m² of ${item === "FLOOR_FINISH" ? "floor" : "ceiling"}` : null,
+      area !== null ? `${area.toFixed(2)} m² of ${item === "CEILING_PAINT" ? "ceiling" : "floor"}` : null,
       rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null,
-      item === "FLOOR_FINISH" && wet ? `${wet} wet room${wet === 1 ? "" : "s"} included` : null,
+      item === "FLOOR_FINISH" && dry && wet ? `dry rooms only, ${wet} wet room${wet === 1 ? "" : "s"} on their own line` : null,
+      item === "FLOOR_FINISH" && !dry && wet ? `${wet} wet room${wet === 1 ? "" : "s"} included` : null,
+      item === "FLOOR_WET" ? "baths and toilets, tiled" : null,
       item === "FLOOR_FINISH" ? "floor material not read" : null,
     ].filter(Boolean).join(" · ");
   }
@@ -540,12 +557,49 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     const doors = num(f.door_count);
     const off = num(f.doors_deducted_m);
     const assumed = num(f.doors_assumed_width);
+    const winArea = num(f.windows_m2);
+    const winCount = Array.isArray(f.windows) ? f.windows.length : 0;
+    const unsized = num(f.windows_unsized);
+    const sills = num(f.windows_sill_assumed);
     return [
       item === "DADO" ? (area !== null ? `${area.toFixed(2)} m²` : null) : len !== null ? `${len.toFixed(2)} m` : null,
       item === "DADO" && len !== null ? `${len.toFixed(2)} m round the baths` : per !== null ? `${per.toFixed(2)} m round the rooms` : null,
       item === "DADO" && high !== null ? `${Math.round(high)} mm high` : null,
       doors !== null && off !== null ? `${doors} door${doors === 1 ? "" : "s"} taken off (${off.toFixed(2)} m)` : null,
+      item === "DADO" && winCount > 0 && winArea !== null ? `${winCount} window${winCount === 1 ? "" : "s"} taken off (${winArea.toFixed(2)} m²)` : null,
+      item === "DADO" && sills ? `${sills} window sill${sills === 1 ? "" : "s"} assumed` : null,
+      item === "DADO" && unsized ? `${unsized} window${unsized === 1 ? "" : "s"} without a size not taken off` : null,
       assumed ? `${assumed} door width${assumed === 1 ? "" : "s"} assumed at 900 mm` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "WET_WATERPROOF") {
+    const area = num(f.area_m2);
+    const floor = num(f.floor_m2);
+    const turn = num(f.turnup_mm);
+    const len = num(f.length_m);
+    const doors = num(f.door_count);
+    return [
+      area !== null ? `${area.toFixed(2)} m²` : null,
+      floor !== null ? `${floor.toFixed(2)} m² of floor` : null,
+      turn !== null && len !== null ? `${Math.round(turn)} mm up ${len.toFixed(2)} m of wall (assumed)` : null,
+      doors ? `${doors} door${doors === 1 ? "" : "s"} taken off` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "WALL_TILE") {
+    const len = num(f.length_m);
+    const rooms = Array.isArray(f.rooms) ? f.rooms.length : null;
+    const doors = num(f.door_count);
+    const winCount = Array.isArray(f.windows) ? f.windows.length : 0;
+    const unsized = num(f.windows_unsized);
+    return [
+      len !== null ? `${len.toFixed(2)} m of wall` : null,
+      rooms !== null ? `${rooms} kitchen${rooms === 1 ? "" : "s"}` : null,
+      doors ? `${doors} door${doors === 1 ? "" : "s"} taken off` : null,
+      winCount > 0 ? `${winCount} window${winCount === 1 ? "" : "s"} taken off inside the tile height` : null,
+      unsized ? `${unsized} window${unsized === 1 ? "" : "s"} without a size not taken off` : null,
+      c.missing.includes("tile_height_mm") ? "tile height needed" : null,
     ].filter(Boolean).join(" · ");
   }
 

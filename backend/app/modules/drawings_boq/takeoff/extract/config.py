@@ -1,10 +1,10 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 48
+EXTRACT_VERSION = 49
  
 LINTEL_BEARING_MM = 152.4
-STAIR_WAIST_DEFAULT_MM = 127.0             
+STAIR_WAIST_DEFAULT_MM = 127.0                
 PLINTH_BEAM_MIN_WALL_MM = 150.0
 COLUMN_PIECE_MIN_MM = 150.0        
 COLUMN_PIECE_MAX_MM = 1100.0      
@@ -279,6 +279,18 @@ NOTES = {
   "OPENING_SYMBOLS_FAILED": ("warning", "The door and window symbols of this sheet could not be read. The marks and the schedule were read as before."),
   "DADO_FROM_ROOMS": ("info", "The tile dado is the length round every bath and toilet found on this floor, less the doors on its outline, times the dado height."),
   "DADO_HEIGHT_DEFAULT": ("warning", "The dado height of 7 ft (2134 mm) is the default of the finish rules, not a height printed on the drawing. If the drawing or the QS gives another height, the area is the length given on this item times that height; the height cannot be typed here yet."),
+  "DADO_WINDOWS_NOT_DEDUCTED": ("warning", "Some windows beside these baths and toilets have no size, neither on the plan nor in a schedule that was read, so they are not taken off the dado. The number of them is in the item. A bath window is usually small and high, so the error is small, but check."),
+  "DADO_WINDOWS_DEDUCTED": ("info", "The part of each window that falls inside the dado height (from its sill up to the top of the dado) is taken off the dado. The windows, their sizes, their sills and the area taken off are listed in the item. A window belongs to a room by its position: it is within 300 mm of the room's outline."),
+  "WINDOW_SILL_ASSUMED": ("warning", "Some of these windows print no sill level, so one is assumed: 5 ft (1524 mm) for a bath or toilet window and 3 ft 6 in (1067 mm) for a kitchen window. The windows that use an assumed sill are marked in the item. Write the sill beside the window on the plan (W=width X height S=sill) to replace it."),
+  "FLOOR_WET_SEPARATE": ("info", "The baths and toilets are left out of this floor finish. Their floor is tile and is a line of its own on this floor, so the two lines do not count the same floor twice."),
+  "FLOOR_WET_FROM_ROOMS": ("info", "The tile on the floors of the baths and toilets of this storey: the total of their room areas. They are not in the floor finish of this storey, which is the dry rooms. The tile is the floor tile of the finish rules; choose another work item when you accept it if the bill has the tile by kind."),
+  "WET_WATERPROOF_FROM_ROOMS": ("info", "The waterproofing of the baths and toilets of this storey: the floor of each, and the walls up to the turn-up height round it, less the doors on its outline. The walls above the turn-up (a shower area, for one) are not included."),
+  "WET_TURNUP_DEFAULT": ("warning", "The waterproofing is taken up the walls 300 mm (1 ft). That is usual site practice, not a height printed on the drawing. If the specification or the QS gives another height, the area is the floor plus the length round the rooms (in the item) times that height."),
+  "WALL_TILE_WINDOWS_NOT_DEDUCTED": ("warning", "Some windows in these kitchens have no size, neither on the plan nor in a schedule that was read, so they are not taken off the wall tile. The number of them is in the item."),
+  "WALL_TILE_FROM_ROOMS": ("info", "The wall tile is the length round every kitchen found on this storey, less the doors on its outline, times the height of the tile, less the part of each window that falls inside that height. The height of the tile is not printed on the plan: type it when you accept the item. Baths and toilets have a dado of their own. The tile is not taken off the paint of the kitchen walls."),
+  "PAINT_FROM_PLASTER": ("info", "This item is not drawn on the plan. The paint is on the same faces as the plaster of this floor: the length of each wall times its height, less the doors and windows of 0.5 m2 and over. On the inside faces the tile dado of the baths and toilets is taken off, because it is not painted."),
+  "ROOF_TREATMENT_AREA_ONLY": ("warning", "Only the area of the roof is measured. What the treatment is made of (the layers, the slope, the coba) is not printed on the drawings, so this item carries no layers; the area is the covered area of the slab, and the part that reaches past the walls is a line of its own. Both are in the facts."),
+  "ROOF_MAIN_UNDER_UPPER_ROOF": ("info", "This is the slab over the highest full floor, the roof the head room stands on. A roof plan is drawn above it, so that roof has its own line, and the footprint of the head room (in this note and in the facts) is taken off this one because it is not exposed. If your surveyor counts both whole, add the footprint back when you accept."),
   "DADO_WINDOWS_NOT_DEDUCTED": ("warning", "Windows in the dado zone are not taken off. The sill of a bath window is usually above the dado, so the error is small, but check."),
   "PAINT_FROM_PLASTER": ("info", "This item is not drawn on the plan. The paint is on the same faces as the plaster of this floor: the length of each wall times its height, less the doors and windows of 0.5 m2 and over. On the inside faces the tile dado of the baths and toilets is taken off, because it is not painted."),
   "ROOF_TREATMENT_AREA_ONLY": ("warning", "Only the area of the roof is measured. What the treatment is made of (the layers, the fall of the coba) is carried in the facts when the specification block or a detail prints it, and is not otherwise known; the area is the covered area of the slab, and the part that reaches past the walls is a line of its own. Both are in the facts."),

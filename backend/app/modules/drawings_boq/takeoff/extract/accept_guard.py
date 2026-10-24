@@ -5,6 +5,22 @@ from app.modules.drawings_boq.models import TakeoffCandidate, TakeoffMeasurement
 
 CODE = "MARK_ACCEPTED_ELSEWHERE"
 MARKED = ("COLUMN", "FOOTING", "DOOR", "WINDOW", "SITE")
+FLOOR_TAG = "FLOOR-FINISH"
+FLOOR_WET = "FLOOR_WET"
+
+def wet_floor(cand) -> bool:
+  """The floor tile of the baths and toilets, a line of its own since the floor finish stopped carrying them."""
+  return cand.category == "WALL" and ((getattr(cand, "facts", None) or {}).get("foundation_item")) == FLOOR_WET
+
+def includes_wet(category, tag, facts) -> bool:
+  """A floor finish accepted before the baths and toilets were split off: its area carries them."""
+  f = facts or {}
+  return category == "WALL" and tag == FLOOR_TAG and not f.get("floor_scope") and float(f.get("wet_room_area_m2") or 0.0) > 0.0
+
+def floor_message(pages: list) -> str:
+  where = ", ".join(f"page {p}" for p in sorted(set(p for p in pages if p))) if any(pages) else "another read"
+  return (f"The floor finish of this floor accepted from {where} already includes the baths and toilets (it was accepted before their floor became a line of its own). Accepting "
+    f"their floor tile too counts them twice. Reject this one, or delete that floor finish measurement and read the sheet again to have the two lines.")
 
 def norm(tag) -> str:
   """C-2, C 2 and c2 are the same mark."""
@@ -30,6 +46,9 @@ class Guard:
     self.held: dict = {k: dict(v) for k, v in (held or {}).items()}
 
   def clash(self, cand, floor) -> str | None:
+    if wet_floor(cand):
+      held = self.held.get(("FLOOR", str(floor)), {})
+      return floor_message(list(held.values())) if held else None
     k = key_of(cand.category, cand.tag, floor)
     if k is None:
       return None
@@ -44,8 +63,19 @@ class Guard:
 async def load(session, org, project_id, wanted: list) -> Guard:
   marks = {key_of(c.category, c.tag, 0) for c in wanted if c.category in MARKED}
   marks.discard(None)
+  g = Guard()
+  if any(wet_floor(c) for c in wanted):
+    old = (await session.execute(
+      select(TakeoffCandidate.sheet_id, TakeoffCandidate.category, TakeoffCandidate.tag, TakeoffCandidate.facts, TakeoffMeasurement.level_id, TakeoffSheet.page_no)
+      .join(TakeoffMeasurement, TakeoffMeasurement.id == TakeoffCandidate.measurement_id)
+      .join(TakeoffSheet, TakeoffSheet.id == TakeoffCandidate.sheet_id)
+      .where(TakeoffCandidate.organization_id == org, TakeoffCandidate.project_id == project_id, TakeoffCandidate.decision == "ACCEPTED",
+        TakeoffCandidate.category == "WALL", TakeoffCandidate.tag == FLOOR_TAG))).all()
+    for sheet_id, category, tag, facts, level_id, page in old:
+      if includes_wet(category, tag, facts):
+        g.held.setdefault(("FLOOR", str(level_id)), {})[sheet_id] = page
   if not marks:
-    return Guard()
+    return g
 
   tags = {m[1] for m in marks}
   rows = (await session.execute(
@@ -54,7 +84,6 @@ async def load(session, org, project_id, wanted: list) -> Guard:
     .join(TakeoffSheet, TakeoffSheet.id == TakeoffCandidate.sheet_id)
     .where(TakeoffCandidate.organization_id == org, TakeoffCandidate.project_id == project_id, TakeoffCandidate.decision == "ACCEPTED",
       TakeoffCandidate.category.in_(MARKED), TakeoffCandidate.tag.is_not(None)))).all()
-  g = Guard()
   for sheet_id, category, tag, level_id, page in rows:
     if norm(tag) in tags:
       k = key_of(category, tag, level_id)
@@ -71,4 +100,6 @@ def held_marks(read: list, floor_of) -> dict:
       k = key_of(c.category, c.tag, floor_of(c, sh))
       if k is not None:
         out.setdefault(k, {})[sh["sheet_id"]] = sh["page_no"]
+      if includes_wet(c.category, c.tag, c.facts):
+        out.setdefault(("FLOOR", str(floor_of(c, sh))), {})[sh["sheet_id"]] = sh["page_no"]
   return out

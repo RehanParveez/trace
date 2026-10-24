@@ -1487,13 +1487,16 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
    the faces of the walls, and the frames of the doors."""
   spec = level_spec(level_hint)
   out = []
-  for build in (FN.kacha_candidate, FN.ceiling_candidate, FN.floor_candidate, FN.ceiling_paint_candidate):
+  for build in (FN.kacha_candidate, FN.ceiling_candidate, FN.floor_candidate, FN.floor_wet_candidate, FN.ceiling_paint_candidate):
     cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
     if cand is not None:
       out.append(cand)
+      
   skirting = FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
-  dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
-  out.extend(c for c in (skirting, dado) if c is not None)
+  dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows)
+  tile = FN.wall_tile_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows)
+  proof = FN.wet_waterproof_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
+  out.extend(c for c in (skirting, dado, tile, proof) if c is not None)
   out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
   out.extend(FN.paint_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, float(((dado.facts if dado is not None else {}) or {}).get("area_m2") or 0.0)))
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))

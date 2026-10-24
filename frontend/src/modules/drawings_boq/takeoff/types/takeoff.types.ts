@@ -448,6 +448,7 @@ export interface AcceptBody {
   membrane_width_mm?: number | null;
   door_frame_width_mm?: number | null;
   door_frame_width_thin_mm?: number | null;
+  tile_height_mm?: number | null;
   stair_waist_mm?: number | null;
   site_length_mm?: number | null;
   site_width_mm?: number | null;

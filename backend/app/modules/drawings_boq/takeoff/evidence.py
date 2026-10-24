@@ -288,6 +288,34 @@ def _site(inp: _Inputs, cand) -> None:
     levels = f.get("levels_printed") or []
     inp.add("levels", NOT_READ if not levels else PRINTED, "levels printed on the section: " + ", ".join(levels) if levels else "no level printed on the section")
 
+DERIVED_ASSUMED = (
+  ("DOOR_WIDTH_ASSUMED", "door width", "some doors have no width on the plan or in a schedule; 900 mm is used for them"),
+  ("OPENING_HEIGHT_ASSUMED", "opening height", "the plan prints no height for some openings; the usual height of a door or window is used"),
+  ("DADO_HEIGHT_DEFAULT", "dado height", "the 7 ft dado height is the default of the finish rules, not printed on the drawing"),
+  ("WINDOW_SILL_ASSUMED", "window sill", "some windows print no sill level; a usual sill is assumed"),
+  ("WET_TURNUP_DEFAULT", "turn-up height", "the 300 mm turn-up of the waterproofing is usual practice, not printed on the drawing"),
+  ("TRENCH_WORKING_SPACE_ASSUMED", "working space", "the drawing prints no working space beside the concrete bed; 3 inches a side is used"),
+  ("BRICK_STEPS_ASSUMED", "brick steps", "the steps of the brick foundation are drawn as dimension lines that cannot be read; usual steps are used"),
+  ("FOOTING_DEPTH_QS", "footing depth", "the footing thickness is not printed as a figure; the QS's depth is used"),
+)
+
+def _derived(inp: _Inputs, cand) -> None:
+  facts = cand.facts or {}
+  source = facts.get("derived_from")
+  if source in ("OPENINGS", "DOORS"):
+    inp.add("count", PRINTED, "marks counted on the sheet")
+    if facts.get("size_source") in ("SCHEDULE", "LABEL"):
+      inp.add("size", PRINTED, "from the schedule or the label written on the drawing")
+    else:
+      inp.measured("size", "the width and height of the doors and windows read on this plan")
+  else:
+    inp.measured("quantity", "worked out from the rooms, walls or footings measured on this plan")
+  for code, name, how in DERIVED_ASSUMED:
+    if code in inp.codes:
+      inp.add(name, ASSUMED, how)
+  for need in getattr(cand, "missing", None) or []:
+    inp.add(need.replace("_mm", "").replace("_", " "), MISSING, "not on the drawing; type it when you accept the item")
+
 def evidence_for(cand) -> dict:
   """{"grade", "inputs": [{"name", "basis", "how"}], "ask": [what to check or type]} for one candidate."""
   codes = _codes(cand)
@@ -322,6 +350,8 @@ def evidence_for(cand) -> dict:
       inp.add("size", MISSING, "the mark is not in the schedule")
     else:
       inp.add("size", NOT_READ, "no schedule on the drawing")
+  elif cat == "WALL" and facts.get("foundation_item") and facts.get("derived_from"):
+    _derived(inp, cand)
   elif cat == "WALL":
     inp.measured("length", "centre line measured from the drawn wall")
     if "THICKNESS_OFF_STANDARD" in codes:

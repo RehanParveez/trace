@@ -93,6 +93,7 @@ class AcceptRequest(BaseModel):
   membrane_width_mm: Decimal | None = Field(default=None, gt=0, le=3000)
   door_frame_width_mm: Decimal | None = Field(default=None, gt=0, le=1000)
   door_frame_width_thin_mm: Decimal | None = Field(default=None, gt=0, le=1000)
+  tile_height_mm: Decimal | None = Field(default=None, gt=0, le=6000, description="Kitchen wall tile: the height of the tile above the floor.")
   stair_waist_mm: Decimal | None = Field(default=None, gt=0, le=500)
   neck_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Neck columns: top of the footing to the lowest floor.")
   tank_wall_height_mm: Decimal | None = Field(default=None, gt=0, le=10000, description="Walls of water tanks.")

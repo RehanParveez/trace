@@ -20,11 +20,15 @@ SKIRTING = "SKIRTING"
 DADO = "DADO"
 PAINT_INSIDE = "PAINT_INSIDE"
 PAINT_OUTSIDE = "PAINT_OUTSIDE"
-ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME, DOOR_AREA, WINDOW_AREA, FLOOR_FINISH, CEILING_PAINT, SKIRTING, DADO, PAINT_INSIDE, PAINT_OUTSIDE)
+FLOOR_WET = "FLOOR_WET"
+WALL_TILE = "WALL_TILE"
+WET_WATERPROOF = "WET_WATERPROOF"
+ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME, DOOR_AREA, WINDOW_AREA, FLOOR_FINISH, CEILING_PAINT, SKIRTING, DADO, PAINT_INSIDE, PAINT_OUTSIDE,
+  FLOOR_WET, WALL_TILE, WET_WATERPROOF)
 OPENING_MIN_M2 = 0.5            
 
 WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: "JOI-DOOR-FRAME", DOOR_AREA: "JOI-DOOR-AREA", WINDOW_AREA: "JOI-WIN-AREA", FLOOR_FINISH: "FIN-FLOOR", CEILING_PAINT: "FIN-CEIL-PAINT", SKIRTING: "FIN-SKIRT", DADO: "FIN-DADO",
-  PAINT_INSIDE: "FIN-PAINT", PAINT_OUTSIDE: "FIN-PAINT-EXT"}
+  PAINT_INSIDE: "FIN-PAINT", PAINT_OUTSIDE: "FIN-PAINT-EXT", FLOOR_WET: "FIN-FLOOR-TILE", WALL_TILE: "FIN-WALL-TILE", WET_WATERPROOF: "FIN-WATERPROOF-WET"}
 SIDE = {PLASTER_INSIDE: "in", PLASTER_OUTSIDE: "out", PAINT_INSIDE: "in", PAINT_OUTSIDE: "out"}
 
 def _make(cls, ctx: dict, finish, key_parts: tuple, item: str, label: str, tag: str, points: list, params: dict, missing: list, notes: list, facts: dict,
@@ -73,6 +77,12 @@ DADO_HEIGHT_MM = 2134.0
 DOOR_ON_BOUNDARY_MM = 300.0
 DOOR_WIDTH_ASSUMED_MM = 900.0      
 DOOR_REACH = 1.5                
+KITCHEN = re.compile(r"^(?:(?:MAIN|OPEN|DRY|WET|SERVANT|UPPER|LOWER|FRONT|REAR)\s+)?KITCHEN(?:ETTE)?(?![A-Z])")
+KITCHEN_SHARED = re.compile(r"DIN|LOUNGE|LIVING|DRAWING|LOBBY|HALL|TV|LAUNDRY|UTILITY")
+WINDOW_ON_BOUNDARY_MM = 300.0
+WINDOW_SILL_WET_MM = 1524.0
+WINDOW_SILL_KITCHEN_MM = 1067.0
+WETROOM_TURNUP_MM = 300.0
 PAINT_ITEMS = ((PAINT_INSIDE, "in", "Paint on the inside faces of the walls", "PAINT-INSIDE"), (PAINT_OUTSIDE, "out", "Paint on the outside faces of the outer walls", "PAINT-OUTSIDE"))
 
 def usable_rooms(rooms: list) -> list:
@@ -98,6 +108,10 @@ def is_wet(room) -> bool:
   """A bath, toilet or W.C: it has a tile dado and no skirting."""
   return any(WET_ROOM.match(n) for n in _names(room))
 
+def is_kitchen(room) -> bool:
+  """A kitchen on its own: a kitchen that shares its room with a dining or living space is not tiled round its whole outline, so it is left out."""
+  return any(KITCHEN.match(n) and not KITCHEN_SHARED.search(n) for n in _names(room))
+
 def is_finished(room) -> bool:
   """A room whose floor is finished: not a lift shaft, a lawn or a courtyard."""
   return not any(w in NOT_FINISHED for n in _names(room) for w in re.split(r"[^A-Z]+", n))
@@ -109,17 +123,32 @@ def _room_points(rooms: list) -> list:
   return pts
 
 def floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
-  """The floor finish of this storey: the total of its room areas, leaving out lift shafts, lawns and courtyards."""
+  """The floor finish of this storey: the total of its room areas, leaving out lift shafts, lawns and courtyards. The baths and toilets are a line of their own
+  (their floor is always tile), so where there are any, this one is the dry rooms."""
   used = [r for r in usable_rooms(rooms) if is_finished(r)]
-  if not used:
-    return None
-  total = sum(float(r.facts["area_m2"]) for r in used)
   wet = [r for r in used if is_wet(r)]
+  body = [r for r in used if not is_wet(r)] if wet else used
+  if not body:
+    return None
+
+  total = sum(float(r.facts["area_m2"]) for r in body)
   wet_m2 = sum(float(r.facts["area_m2"]) for r in wet)
-  facts = {"derived_from": "ROOMS", "room_count": len(used), "area_m2": round(total, 3), "wet_room_count": len(wet), "wet_room_area_m2": round(wet_m2, 3)}
-  label = f"Floor finish · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
-  return _make(cls, ctx, finish, (FLOOR_FINISH, level_hint or ""), FLOOR_FINISH, label, "FLOOR-FINISH", [FD._centre(_room_points(used))],
-    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("FLOOR_FROM_ROOMS")], facts, 0.7)
+  facts = {"derived_from": "ROOMS", "room_count": len(body), "area_m2": round(total, 3), "floor_scope": "DRY" if wet else "ALL", "wet_room_count": len(wet),
+    "wet_room_area_m2": round(wet_m2, 3)}
+  label = f"Floor finish{' of the dry rooms' if wet else ''} · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
+  return _make(cls, ctx, finish, (FLOOR_FINISH, level_hint or ""), FLOOR_FINISH, label, "FLOOR-FINISH", [FD._centre(_room_points(body))],
+    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("FLOOR_FROM_ROOMS")] + ([C.note("FLOOR_WET_SEPARATE")] if wet else []), facts, 0.7)
+
+def floor_wet_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
+  """The floor tile of the baths and toilets of this storey: the total of their room areas."""
+  wet = [r for r in usable_rooms(rooms) if is_finished(r) and is_wet(r)]
+  if not wet:
+    return None
+  total = sum(float(r.facts["area_m2"]) for r in wet)
+  facts = {"derived_from": "ROOMS", "room_count": len(wet), "area_m2": round(total, 3), "floor_scope": "WET"}
+  label = f"Floor tile in baths and toilets · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
+  return _make(cls, ctx, finish, (FLOOR_WET, level_hint or ""), FLOOR_WET, label, "FLOOR-WET", [FD._centre(_room_points(wet))],
+    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("FLOOR_WET_FROM_ROOMS")], facts, 0.7)
 
 def ceiling_paint_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
   """The paint on the ceiling of this storey: the same area as the ceiling plaster."""
@@ -156,6 +185,53 @@ def door_assignment(rooms: list, doors: list, mm_per_pt: float) -> dict:
             out[id(lines[i][0])][2] += 0 if known else 1
   return {k: (v[0], v[1], v[2]) for k, v in out.items()}
 
+def window_assignment(rooms: list, windows: list, mm_per_pt: float) -> dict:
+  """{id(room): [one row per window instance beside it]}. A window stands in a wall, so it belongs to the (at most two) rooms whose outlines are nearest its centre, each within
+  300 mm. A row has the width and height of the window when the plan or a schedule gives them, and its printed sill when there is one."""
+  lines = []
+  for r in rooms:
+    ring = (r.geometry or {}).get("outer") or []
+    if len(ring) >= 3:
+      lines.append((r, LineString([tuple(p) for p in ring] + [tuple(ring[0])])))
+  out: dict = {id(r): [] for r in rooms}
+  if not lines or not windows or mm_per_pt <= 0.0:
+    return out
+  tol = WINDOW_ON_BOUNDARY_MM / mm_per_pt
+  for w in windows:
+    f = w.facts or {}
+    if w.category != "WINDOW" or w.status == "INVALID":
+      continue
+    size = f.get("size_schedule_mm") or f.get("size_drawn_mm")
+    sized = bool(size) and len(size) == 2 and float(size[0]) > 0.0 and float(size[1]) > 0.0
+    sill = f.get("sill_mm")
+    for p in (w.geometry or {}).get("points") or []:
+      pt = Point(float(p[0]), float(p[1]))
+      near = sorted(((ln.distance(pt), i) for i, (_, ln) in enumerate(lines)), key=lambda t: t[0])
+      for dist, i in near[:2]:
+        if dist <= tol:
+          out[id(lines[i][0])].append({"tag": w.tag, "width_mm": float(size[0]) if sized else None, "height_mm": float(size[1]) if sized else None, "sized": sized,
+            "sill_mm": float(sill) if sill is not None else None})
+  return out
+
+def window_zone_m2(width_mm: float, height_mm: float, sill_mm: float, zone_mm: float) -> float:
+  return width_mm * max(0.0, min(sill_mm + height_mm, zone_mm) - sill_mm) / 1e6
+
+def _window_rows(rooms: list, assigned: dict, zone_mm: float, sill_default_mm: float) -> dict:
+  rows, total, unsized, assumed = [], 0.0, 0, 0
+  for r in rooms:
+    for w in assigned.get(id(r), []):
+      if not w["sized"]:
+        unsized += 1
+        continue
+
+      sill = w["sill_mm"] if w["sill_mm"] is not None else sill_default_mm
+      each = window_zone_m2(w["width_mm"], w["height_mm"], sill, zone_mm)
+      total += each
+      assumed += 1 if w["sill_mm"] is None else 0
+      rows.append({"room": (_names(r) or ["ROOM"])[0], "tag": w["tag"], "width_mm": w["width_mm"], "height_mm": w["height_mm"], "sill_mm": sill,
+        "sill_assumed": w["sill_mm"] is None, "m2": round(each, 3)})
+  return {"rows": rows, "m2": total, "unsized": unsized, "sill_assumed": assumed}
+
 def _lengths(rooms: list, assigned: dict) -> list:
   out = []
   for r in rooms:
@@ -187,19 +263,69 @@ def skirting_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, le
   return _make(cls, ctx, finish, (SKIRTING, level_hint or ""), SKIRTING, label, "SKIRTING", [FD._centre(_room_points(used))], {"length_mm": round(total * 1000.0, 1)}, [],
     [C.note("SKIRTING_FROM_ROOMS"), C.note("SKIRTING_DOORS_BY_POSITION")] + _assumed_note(facts), facts, 0.6, mode="COUNT_X_LENGTH")
 
-def dado_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish):
-  """The tile dado of this storey: round every bath and toilet, less the doors on its outline, times the dado height. Windows are not taken out."""
+def _window_notes(win: dict, unsized_code: str = "DADO_WINDOWS_NOT_DEDUCTED") -> list:
+  out = []
+  if win["rows"]:
+    out.append(C.note("DADO_WINDOWS_DEDUCTED", count=len(win["rows"]), area_m2=round(win["m2"], 3)))
+  if win["unsized"]:
+    out.append(C.note(unsized_code, count=win["unsized"]))
+  if win["sill_assumed"]:
+    out.append(C.note("WINDOW_SILL_ASSUMED", count=win["sill_assumed"]))
+  return out
+
+def dado_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish, windows: list | None = None):
+  """The tile dado of this storey: round every bath and toilet, less the doors on its outline, times the dado height, less the part of each window that is inside that height."""
   every = usable_rooms(rooms)
   used = [r for r in every if is_wet(r)]
   rows = _lengths(used, door_assignment(every, doors, mm_per_pt))
   length = sum(x["length_m"] for x in rows)
   if length <= 0.0:
     return None
-  area = length * DADO_HEIGHT_MM / 1000.0
-  facts = {**_length_facts(rows), "dado_height_mm": DADO_HEIGHT_MM, "area_m2": round(area, 3)}
+  win = _window_rows(used, window_assignment(every, windows or [], mm_per_pt), DADO_HEIGHT_MM, WINDOW_SILL_WET_MM)
+  gross = length * DADO_HEIGHT_MM / 1000.0
+  area = max(0.0, gross - win["m2"])
+  facts = {**_length_facts(rows), "dado_height_mm": DADO_HEIGHT_MM, "gross_m2": round(gross, 3), "windows": win["rows"], "windows_m2": round(win["m2"], 3),
+    "windows_unsized": win["unsized"], "windows_sill_assumed": win["sill_assumed"], "area_m2": round(area, 3)}
   label = f"Dado in baths and toilets · {area:.2f} m² · {DADO_HEIGHT_MM / 1000.0:.3f} m high" + (f" · {spec[0]}" if spec else "")
   return _make(cls, ctx, finish, (DADO, level_hint or ""), DADO, label, "DADO", [FD._centre(_room_points(used))], {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [],
-    [C.note("DADO_FROM_ROOMS"), C.note("DADO_HEIGHT_DEFAULT"), C.note("DADO_WINDOWS_NOT_DEDUCTED")] + _assumed_note(facts), facts, 0.55)
+    [C.note("DADO_FROM_ROOMS"), C.note("DADO_HEIGHT_DEFAULT")] + _window_notes(win) + _assumed_note(facts), facts, 0.55)
+
+def wet_waterproof_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish):
+  """The waterproofing of the baths and toilets of this storey: the floor, and the walls up to the turn-up height round it, less the doors on its outline."""
+  every = usable_rooms(rooms)
+  used = [r for r in every if is_finished(r) and is_wet(r)]
+  if not used:
+    return None
+  rows = _lengths(used, door_assignment(every, doors, mm_per_pt))
+  floor_m2 = sum(float(r.facts["area_m2"]) for r in used)
+  turn_m2 = sum(x["length_m"] for x in rows) * WETROOM_TURNUP_MM / 1000.0
+  area = floor_m2 + turn_m2
+  facts = {**_length_facts(rows), "floor_m2": round(floor_m2, 3), "turnup_mm": WETROOM_TURNUP_MM, "turnup_m2": round(turn_m2, 3), "area_m2": round(area, 3)}
+  label = f"Waterproofing in baths and toilets · {area:.2f} m² · floor and {WETROOM_TURNUP_MM:g} mm up the walls" + (f" · {spec[0]}" if spec else "")
+  return _make(cls, ctx, finish, (WET_WATERPROOF, level_hint or ""), WET_WATERPROOF, label, "WET-WATERPROOF", [FD._centre(_room_points(used))],
+    {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("WET_WATERPROOF_FROM_ROOMS"), C.note("WET_TURNUP_DEFAULT")] + _assumed_note(facts), facts, 0.55)
+
+def wall_tile_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish, windows: list | None = None):
+  """The wall tile of the kitchens of this storey: round every kitchen, less the doors on its outline, times the height of the tile (typed when the item is accepted), less the part
+  of each window that is inside that height."""
+  every = usable_rooms(rooms)
+  used = [r for r in every if is_finished(r) and is_kitchen(r)]
+  rows = _lengths(used, door_assignment(every, doors, mm_per_pt))
+  length = sum(x["length_m"] for x in rows)
+  if length <= 0.0:
+    return None
+  win = _window_rows(used, window_assignment(every, windows or [], mm_per_pt), 1e9, WINDOW_SILL_KITCHEN_MM)
+  facts = {**_length_facts(rows), "windows": [{k: v for k, v in r.items() if k != "m2"} for r in win["rows"]], "windows_unsized": win["unsized"],
+    "windows_sill_assumed": win["sill_assumed"]}
+  label = f"Wall tile in kitchens · {length:.2f} m of wall" + (f" · {spec[0]}" if spec else "")
+  notes = [C.note("WALL_TILE_FROM_ROOMS")] + _window_notes({"rows": [], "unsized": win["unsized"], "sill_assumed": win["sill_assumed"], "m2": 0.0}, "WALL_TILE_WINDOWS_NOT_DEDUCTED") + _assumed_note(facts)
+  return _make(cls, ctx, finish, (WALL_TILE, level_hint or ""), WALL_TILE, label, "WALL-TILE", [FD._centre(_room_points(used))], {}, ["tile_height_mm"], notes, facts, 0.5)
+
+def wall_tile_area(facts: dict, height_mm: float) -> float:
+  """Net tiled area in m2 of a kitchen wall tile item at a given tile height."""
+  gross = float(facts.get("length_m") or 0.0) * height_mm / 1000.0
+  less = sum(window_zone_m2(float(w["width_mm"]), float(w["height_mm"]), float(w["sill_mm"]), height_mm) for w in facts.get("windows") or [])
+  return max(0.0, gross - less)
 
 def paint_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish, dado_m2: float = 0.0) -> list:
   faces = plaster_faces(walls, mm_per_pt)
@@ -419,6 +545,14 @@ def fill_finish(item: str, missing: list, params: dict, typed: dict, facts: dict
       if value is None:
         return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give the width of the door frame in {'thin walls (under 6 inches)' if thin else 'walls of 6 inches and thicker'} to measure this item.")
       out["width_mm"] = float(value)
+    elif need == "tile_height_mm" and item == WALL_TILE:
+      value = typed.get("tile_height_mm")
+      if value is None:
+        return out, ("CANDIDATE_NEEDS_DIMENSIONS", "Give the height of the kitchen wall tile to measure this item.")
+      area = wall_tile_area(facts, float(value))
+      if area <= 0.0:
+        return out, ("CANDIDATE_NEEDS_DIMENSIONS", "No tiled area was found for this item. Draw it by hand.")
+      out["length_mm"], out["width_mm"] = round(area * 1000.0, 1), 1000.0
     elif need == "height_mm" and item in SIDE:
       value = typed.get("wall_height_mm")
       if value is None:

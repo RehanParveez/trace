@@ -10,6 +10,7 @@ export const SIZE_FIELDS: Array<{ key: string; label: string }> = [
   { key: "tie_band_depth_mm", label: "Tie band depth" },
   { key: "neck_height_mm", label: "Neck column height" },
   { key: "tank_wall_height_mm", label: "Tank wall height" },
+  { key: "tile_height_mm", label: "Kitchen wall tile height" },
 ];
 
 export const REASON_LABEL: Record<string, string> = {
