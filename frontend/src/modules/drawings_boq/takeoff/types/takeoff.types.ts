@@ -449,6 +449,8 @@ export interface AcceptBody {
   door_frame_width_mm?: number | null;
   door_frame_width_thin_mm?: number | null;
   tile_height_mm?: number | null;
+  boundary_side_mm?: number | null;
+  boundary_rear_mm?: number | null;
   stair_waist_mm?: number | null;
   site_length_mm?: number | null;
   site_width_mm?: number | null;

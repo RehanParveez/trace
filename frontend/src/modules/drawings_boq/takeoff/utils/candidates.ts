@@ -45,6 +45,8 @@ export type HeightField =
   | "door_frame_width_mm"
   | "door_frame_width_thin_mm"
   | "tile_height_mm"
+  | "boundary_side_mm"
+  | "boundary_rear_mm"
   | "stair_waist_mm"
   | "site_length_mm"
   | "site_width_mm"
@@ -76,6 +78,8 @@ const HEIGHT_ORDER: HeightField[] = [
   "door_frame_width_mm",
   "door_frame_width_thin_mm",
   "tile_height_mm",
+  "boundary_side_mm",
+  "boundary_rear_mm",
   "stair_waist_mm",
   "site_length_mm",
   "site_width_mm",
@@ -109,6 +113,8 @@ export const NO_HEIGHTS: Heights = {
   door_frame_width_mm: "",
   door_frame_width_thin_mm: "",
   tile_height_mm: "",
+  boundary_side_mm: "",
+  boundary_rear_mm: "",
   stair_waist_mm: "",
   site_length_mm: "",
   site_width_mm: "",
@@ -141,6 +147,8 @@ export const HEIGHT_LABEL: Record<HeightField, string> = {
   door_frame_width_mm: "Door frame width in walls of 6 in and thicker (mm)",
   door_frame_width_thin_mm: "Door frame width in thin walls (mm)",
   tile_height_mm: "Kitchen wall tile height (mm)",
+  boundary_side_mm: "Boundary wall: length of one side wall, 0 where there is none (mm)",
+  boundary_rear_mm: "Boundary wall: length of the rear wall, 0 where there is none (mm)",
   stair_waist_mm: "Stair waist slab thickness under the steps (mm)",
   site_length_mm: "Site item: outside length of the tank, length of the ramp, or width of the gate (mm)",
   site_width_mm: "Site item: outside width of the tank or width of the ramp (mm)",
@@ -179,7 +187,19 @@ export type FoundationItem =
   | "MEMBRANE_POLYTHENE"
   | "FLOOR_WET"
   | "WALL_TILE"
-  | "WET_WATERPROOF";
+  | "WET_WATERPROOF"
+  | "FLOOR_CS_BED"
+  | "FLOOR_BRICK_TILES"
+  | "FLOOR_MUD_PLASTER"
+  | "FLOOR_COMPACTED_MUD"
+  | "ROOF_PCC"
+  | "ROOF_BALLAST"
+  | "ROOF_SCREED"
+  | "ROOF_MEMBRANE"
+  | "ROOF_POLYTHENE"
+  | "BOUNDARY_RETURNS"
+  | "BOUNDARY_PLASTER"
+  | "BOUNDARY_PAINT";
 
 const FOUNDATION_ITEMS: FoundationItem[] = [
   "EXCAVATION_AREA",
@@ -213,6 +233,36 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "FLOOR_WET",
   "WALL_TILE",
   "WET_WATERPROOF",
+  "FLOOR_CS_BED",
+  "FLOOR_BRICK_TILES",
+  "FLOOR_MUD_PLASTER",
+  "FLOOR_COMPACTED_MUD",
+  "ROOF_PCC",
+  "ROOF_BALLAST",
+"ROOF_SCREED",
+  "ROOF_MEMBRANE",
+  "ROOF_POLYTHENE",
+  "BOUNDARY_RETURNS",
+  "BOUNDARY_PLASTER",
+  "BOUNDARY_PAINT",
+];
+
+const BOUNDARY_ITEMS: FoundationItem[] = ["BOUNDARY_RETURNS", "BOUNDARY_PLASTER", "BOUNDARY_PAINT"];
+
+export const ZERO_OK_FIELDS: HeightField[] = ["boundary_side_mm", "boundary_rear_mm"];
+
+const LAYER_ITEMS: FoundationItem[] = [
+  "FLOOR_PCC",  "FLOOR_BALLAST",
+  "FLOOR_SAND_FILL",
+  "FLOOR_CS_BED",
+  "FLOOR_BRICK_TILES",
+  "FLOOR_MUD_PLASTER",
+  "FLOOR_COMPACTED_MUD",
+  "ROOF_PCC",
+  "ROOF_BALLAST",
+  "ROOF_SCREED",
+  "ROOF_MEMBRANE",
+  "ROOF_POLYTHENE",
 ];
 
 export type SiteKind = "OHWT" | "UGWT" | "SEPTIC" | "BOUNDARY_WALL" | "GATE" | "PORCH_RAMP";
@@ -274,9 +324,17 @@ function foundationFields(c: Pick<TakeoffCandidate, "category" | "missing" | "fa
   const item = foundationItem(c);
   if (item === null) return [];
   const out: HeightField[] = [];
+  if (BOUNDARY_ITEMS.includes(item)) {
+    if (c.missing.includes("side_length_mm")) out.push("boundary_side_mm");
+    if (c.missing.includes("rear_length_mm")) out.push("boundary_rear_mm");
+    if (c.missing.includes("height_mm")) out.push("site_height_mm");
+    if (c.missing.includes("thickness_mm")) out.push("site_thickness_mm");
+    return out;
+  }
   if (c.missing.includes("strip_width_mm")) {
     out.push((c.facts as Record<string, unknown> | null)?.strip_class === "THIN" ? "pcc_strip_width_thin_mm" : "pcc_strip_width_mm");
   }
+
   if (c.missing.includes("depth_mm")) {
     out.push(item === "EXCAVATION_AREA" ? "excavation_depth_mm" : item === "TRENCH" ? "trench_depth_mm" : item === "EARTH_FILL" ? "fill_depth_mm" : "pcc_thickness_mm");
   }
@@ -366,6 +424,18 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   FLOOR_WET: "Floor tile in baths and toilets",
   WALL_TILE: "Wall tile in kitchens",
   WET_WATERPROOF: "Waterproofing in baths and toilets",
+  FLOOR_CS_BED: "Cement-sand bed under the floor finish",
+  FLOOR_BRICK_TILES: "Brick tiles (specification)",
+  FLOOR_MUD_PLASTER: "Mud plaster (specification)",
+  FLOOR_COMPACTED_MUD: "Compacted mud layer under the floor",
+  ROOF_PCC: "Concrete bed on the roof (specification)",
+  ROOF_BALLAST: "Brick ballast on the roof",
+   ROOF_SCREED: "Cement-sand bed on the roof",
+  ROOF_MEMBRANE: "Waterproofing on the roof",
+  ROOF_POLYTHENE: "Polythene sheet on the roof",
+  BOUNDARY_RETURNS: "Boundary wall: side and rear walls",
+  BOUNDARY_PLASTER: "Plaster on the boundary wall",
+  BOUNDARY_PAINT: "Paint on the boundary wall",
 };
 
 export const SITE_TEXT: Record<SiteKind, string> = {
@@ -419,18 +489,19 @@ export function neededHeights(list: TakeoffCandidate[], picks?: Record<string, s
   for (const c of list) {
     for (const f of fieldsStillNeeded(c, picks)) set.add(f);
   }
-  return HEIGHT_ORDER.filter((f) => set.has(f));
+    return HEIGHT_ORDER.filter((f) => set.has(f));
 }
 
-export function validHeight(text: string): number | null {
+export function validHeight(text: string, field?: HeightField): number | null {
   const n = Number(text.trim().replace(/,/g, ""));
+  if (field !== undefined && ZERO_OK_FIELDS.includes(field)) return text.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 60000 ? n : null;
   return Number.isFinite(n) && n >= 75 && n <= 20000 ? n : null;
 }
 
 export function blockedByHeight(list: TakeoffCandidate[], ids: Set<string>, typed: Heights, picks?: Record<string, string>): TakeoffCandidate[] {
   return list.filter((c) => {
     if (!ids.has(c.id)) return false;
-    return fieldsStillNeeded(c, picks).some((f) => validHeight(typed[f]) === null);
+    return fieldsStillNeeded(c, picks).some((f) => validHeight(typed[f], f) === null);
   });
 }
 
@@ -619,12 +690,34 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     return [count !== null ? `${count} ${item === "DOOR_AREA" ? "door" : "window"}${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, each !== null ? `${each.toFixed(2)} m² each` : null, total !== null ? `${total.toFixed(2)} m² in all` : null, f.size_source === "SCHEDULE" ? "size from the schedule" : f.height_assumed === true ? "width as drawn, height assumed" : "size as drawn", "material not read"].filter(Boolean).join(" · ");
   }
 
-  if (item === "FLOOR_PCC" || item === "FLOOR_BALLAST" || item === "FLOOR_SAND_FILL") {
+  if (BOUNDARY_ITEMS.includes(item)) {
+    const ft = (mm: number | null) => (mm === null ? null : `${(mm / 304.8).toFixed(2).replace(/\.?0+$/, "")} ft`);
+    const front = num(f.front_length_mm);
+    const high = num(f.height_mm);
+    const gate = f.gate_deducted === true ? num(f.gate_mm) : null;
+    return [
+      ft(front) ? `front wall ${ft(front)} long` : null,
+      ft(high) ? `${ft(high)} high` : "height needed",
+      item === "BOUNDARY_RETURNS" ? "side and rear walls: type their lengths" : "both faces, with the side and rear walls from the lengths you type",
+      gate !== null ? `gate ${ft(gate)} taken out` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (LAYER_ITEMS.includes(item)) {
+    const roof = f.layer_of === "ROOF";
     const area = num(f.area_m2);
     const rooms = num(f.room_count);
     const t = num(f.thickness_mm);
+    const n = num(f.layers);
     const mix = typeof f.mix === "string" && f.mix ? ` (${f.mix})` : "";
-    return [area !== null ? `${area.toFixed(2)} m² of floor` : null, rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null, t !== null ? `${inch(t)} in thick${mix}` : null, "layer not tied to a floor heading"].filter(Boolean).join(" · ");
+    const head = typeof f.spec_heading === "string" && f.spec_heading ? f.spec_heading : null;
+    return [
+      area !== null ? `${area.toFixed(2)} m² of ${roof ? "roof" : "floor"}` : null,
+      rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null,
+      t !== null ? `${inch(t)} in thick${mix}` : null,
+      n !== null ? `${n} ${f.layer_unit === "coat" ? "coat" : "layer"}${n === 1 ? "" : "s"}` : null,
+      head ? `under the "${head}" heading` : "layer not tied to a floor heading",
+    ].filter(Boolean).join(" · ");
   }
 
   if (item === "MEMBRANE_COAT" || item === "MEMBRANE_POLYTHENE") {
@@ -812,7 +905,7 @@ export function buildAcceptBody(ids: string[], heights: Heights, workItems: Reco
   kinds: Record<string, string> = {}): AcceptBody {
   const body: AcceptBody = { ids };
   for (const f of HEIGHT_ORDER) {
-    const n = validHeight(heights[f]);
+    const n = validHeight(heights[f], f);
     if (n !== null) (body as unknown as Record<string, number>)[f] = n;
   }
   const items: Record<string, string> = {};

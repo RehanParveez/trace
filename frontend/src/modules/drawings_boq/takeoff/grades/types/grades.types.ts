@@ -53,6 +53,18 @@ export interface GradeMember {
   steel_clash: string[];
 }
 
+export interface GradeMix {
+  what: string;
+  grade: string;
+  pages: number[];
+  found: number;
+  measured: number;
+  stamped: number;
+  typed: number;
+  open: number;
+  confirmed_open: number;
+}
+
 export interface PrintedNote {
   text: string | null;
   pages: number[];
@@ -77,6 +89,7 @@ export interface SoilInfo {
 }
 
 export interface GradesSummary {
+  mix_notes?: number;
   concrete_notes?: number;
   steel_notes?: number;
   measured?: number;
@@ -97,6 +110,7 @@ export interface GradesReport {
   concrete: ConcreteRule[];
   steel: SteelRule[];
   members: GradeMember[];
+  mixes: GradeMix[];
   plaster: PlasterInfo;
   soil: SoilInfo | null;
   conflicts: GradesConflict[];

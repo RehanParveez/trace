@@ -269,11 +269,11 @@ def _site(inp: _Inputs, cand) -> None:
       inp.add("height", ASSUMED, "the elevation prints more than one height; the one nearest to the wall pieces is used")
     else:
       inp.add("height", PRINTED, "the height printed on the elevation")
-    typed("thickness_mm", "thickness", sizes.get("thickness_mm"))
+      typed("thickness_mm", "thickness", sizes.get("thickness_mm"))
     inp.add("piers", ASSUMED, "piers taller than the wall are measured at the wall height")
     if f.get("faces_area_mm2"):
-      inp.add("faces", ASSUMED, f"a free-standing wall has two faces: {f['faces_area_mm2'] / 1e6:.2f} m2 of plaster and paint if both are finished (length x height x 2, gate taken out); "
-        "listed with the item and not added to the bill, because the drawing does not say which faces are finished")
+      inp.add("faces", ASSUMED, f"a free-standing wall has two faces: {f['faces_area_mm2'] / 1e6:.2f} m2 of plaster and paint on the front wall if both are finished (length x height x 2, gate taken out); "
+        "they are the boundary wall plaster and paint items, which also take the side and rear walls, because the drawing does not say which faces are finished")
   elif kind == "GATE":
     inp.add("width", PRINTED, "the piece of the elevation the word GATE is written on, " + (f"{f.get('width_mm', 0) / 304.8:g} ft" if f.get("width_mm") else "not found"))
     if f.get("height_mm") is None:
@@ -297,12 +297,18 @@ DERIVED_ASSUMED = (
   ("TRENCH_WORKING_SPACE_ASSUMED", "working space", "the drawing prints no working space beside the concrete bed; 3 inches a side is used"),
   ("BRICK_STEPS_ASSUMED", "brick steps", "the steps of the brick foundation are drawn as dimension lines that cannot be read; usual steps are used"),
   ("FOOTING_DEPTH_QS", "footing depth", "the footing thickness is not printed as a figure; the QS's depth is used"),
+  ("BOUNDARY_FACES_ASSUMED", "faces", "the drawing does not say which faces of the boundary wall are plastered and painted; both are taken, the side and rear walls at the height of the front wall"),
+  ("BOUNDARY_RETURNS_ASSUMED", "side and rear walls", "the side and rear walls are not drawn; their lengths are typed, the two sides are taken as equal, and the height and thickness are those of the front wall"),
 )
 
 def _derived(inp: _Inputs, cand) -> None:
+  """A finishing or foundation item worked out from other readings (rooms, walls, openings): its quantity is as good as those readings, and each value the rules assume is listed."""
   facts = cand.facts or {}
   source = facts.get("derived_from")
-  if source in ("OPENINGS", "DOORS"):
+  if source == "SITE":
+    inp.add("front wall", PRINTED if facts.get("front_printed") else ASSUMED,
+      "the length and height of the front of the boundary wall as printed on the elevation" if facts.get("front_printed") else "the front of the boundary wall as read from the elevation (see that item for what was assumed)")
+  elif source in ("OPENINGS", "DOORS"):
     inp.add("count", PRINTED, "marks counted on the sheet")
     if facts.get("size_source") in ("SCHEDULE", "LABEL"):
       inp.add("size", PRINTED, "from the schedule or the label written on the drawing")
@@ -310,6 +316,8 @@ def _derived(inp: _Inputs, cand) -> None:
       inp.measured("size", "the width and height of the doors and windows read on this plan")
   else:
     inp.measured("quantity", "worked out from the rooms, walls or footings measured on this plan")
+    if facts.get("layer") and facts.get("spec_pages"):
+      inp.add("printed layer", PRINTED, "the layer and its thickness or number of coats are printed in the specification block")
   for code, name, how in DERIVED_ASSUMED:
     if code in inp.codes:
       inp.add(name, ASSUMED, how)

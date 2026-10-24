@@ -25,6 +25,7 @@ from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
+from app.modules.drawings_boq.takeoff.extract import boundary as BDY
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.extract import kinds as KD
@@ -63,6 +64,8 @@ HEIGHT_FIELDS = {
 def height_field(category: str, need: str, facts: dict | None) -> tuple | None:
   """(request field, measurement target, words) for a size a candidate is missing, or None when no field types it. Some members take another field: a plinth beam, a
   tie band, a neck column, a tank wall."""
+  if category == "WALL" and (facts or {}).get("foundation_item") in BDY.ITEMS:
+    return BDY.field_of(need)
   spec = HEIGHT_FIELDS.get((category, need))
   if spec is None:
     return None
@@ -101,6 +104,8 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
     return FD.fill_foundation(item, missing, params, typed, facts or {})
   if item in FN.ITEMS:
     return FN.fill_finish(item, missing, params, typed, facts or {})
+  if item in BDY.ITEMS:
+    return BDY.fill_boundary(item, missing, params, typed, facts or {})
   out = dict(params or {})
   if category == "SLAB" and typed.get("slab_thickness_mm") is not None and any(n.get("code") == "SLAB_THICKNESS_DISAGREES" for n in notes or []):
     out["depth_mm"] = float(typed["slab_thickness_mm"])
@@ -523,6 +528,7 @@ class ExtractService:
       "brick_step_offset_mm": payload.brick_step_offset_mm, "membrane_width_mm": payload.membrane_width_mm,
       "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm, "tile_height_mm": payload.tile_height_mm,
       "stair_waist_mm": payload.stair_waist_mm, "neck_height_mm": payload.neck_height_mm, "tank_wall_height_mm": payload.tank_wall_height_mm,
+      "boundary_side_mm": payload.boundary_side_mm, "boundary_rear_mm": payload.boundary_rear_mm,
       "site_length_mm": payload.site_length_mm, "site_width_mm": payload.site_width_mm, "site_height_mm": payload.site_height_mm, "site_thickness_mm": payload.site_thickness_mm}
     accepted: list = []
     failed: list = []
@@ -581,6 +587,8 @@ class ExtractService:
         if did not in concrete_rules:
           concrete_rules[did] = ((await printed_for_drawings(self.session, org, [did])).get("grades") or {}).get("concrete") or []
         stamp = GS.stamp_for(cand, concrete_rules[did])
+      if stamp is None:
+        stamp = GS.mix_stamp(cand)
       held_by = guard.clash(cand, own_level)
       if held_by is not None:
         failed.append(_fail(cid, AG.CODE, held_by))

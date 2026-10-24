@@ -61,7 +61,7 @@ def measure_plaster_mortar(ctx: CalculationContext, ledger: list, extra_ledger=(
       gross_volume_m3=quantity, status="OK")
     steps = [{"op": "plaster_area", "m2": str(area), "note": f"the {src.work_item_code} row this mortar sits behind"},
       {"op": "plaster_thickness", "mm": str(thickness), "source": p["source"]}, {"op": "net_volume", "m3": str(quantity)}]
-    rows.append(LedgerEntry(solid_id=solid.id, element_id=src.element_id, level_id=src.level_id, work_item_code=CODE, quantity=quantity, unit="m3", material_grade=None,
+    rows.append(LedgerEntry(solid_id=solid.id, element_id=src.element_id, level_id=src.level_id, work_item_code=CODE, quantity=quantity, unit="m3", material_grade=getattr(src, "material_grade", None) or None,
       confidence=q4(min(Decimal(src.confidence), Decimal("1")) * FACTOR_CONFIRMED), formula_code=FORMULA,
       trace={"formula_code": FORMULA, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
         "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version},

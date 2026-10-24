@@ -1,4 +1,4 @@
-import type { GradeMember, GradesConflict, GradesReport, PlasterInfo, SoilInfo } from "../types/grades.types";
+import type { GradeMember, GradeMix, GradesConflict, GradesReport, PlasterInfo, SoilInfo } from "../types/grades.types";
 
 const MM_IN = 25.4;
 const PARAM_WORDS: Record<string, string> = {
@@ -46,6 +46,20 @@ export function memberStatus(m: GradeMember): string {
   return bits.join(", ");
 }
 
+export function mixStatus(m: GradeMix): string {
+  if (!m.measured) return m.found ? `${m.found} found, none measured yet` : "";
+  const bits = [`${m.measured} measured`];
+  if (m.stamped) bits.push(`${m.stamped} with the printed mix`);
+  if (m.typed) bits.push(`${m.typed} with a grade you typed`);
+  if (m.open) bits.push(`${m.open} can take it`);
+  return bits.join(", ");
+}
+
+export function mixSource(m: GradeMix): string {
+  const where = pagesText(m.pages);
+  return where ? `printed on ${where}` : "";
+}
+
 export function plasterText(p: PlasterInfo | null | undefined): string {
   if (!p || p.thickness_mm === null || p.thickness_mm === undefined) return "";
   const where = pagesText(p.note?.pages);
@@ -82,16 +96,18 @@ export function summaryLine(r: GradesReport | undefined): string {
   const st = s.steel_notes ?? 0;
   if (c) parts.push(`${c} concrete note${c === 1 ? "" : "s"}`);
   if (st) parts.push(`${st} steel note${st === 1 ? "" : "s"}`);
+  const mixes = s.mix_notes ?? 0;
+  if (mixes) parts.push(`${mixes} mix${mixes === 1 ? "" : "es"} for mortar and beds`);
   if (r.plaster?.thickness_mm != null) parts.push("plaster thickness");
   if (r.soil) parts.push("soil note");
-  if (s.open) parts.push(`${s.open} measured member${s.open === 1 ? "" : "s"} can take the printed mix`);
+  if (s.open) parts.push(`${s.open} measured line${s.open === 1 ? "" : "s"} can take the printed mix`);
   if (s.clashes) parts.push(`${s.clashes} clash${s.clashes === 1 ? "" : "es"}`);
   return parts.join(" · ");
 }
 
 export function isEmpty(r: GradesReport | undefined): boolean {
   if (!r) return true;
-  return !r.concrete.length && !r.steel.length && r.plaster?.thickness_mm == null && !r.soil && !ourConflicts(r).length;
+  return !r.concrete.length && !r.steel.length && !(r.mixes ?? []).length && r.plaster?.thickness_mm == null && !r.soil && !ourConflicts(r).length;
 }
 
 export function canStamp(r: GradesReport | undefined): boolean {
@@ -109,6 +125,6 @@ export function confirmedNote(r: GradesReport | undefined): string {
 
 export function changedText(n: number, kind: "stamp" | "unstamp"): string {
   if (!n) return kind === "stamp" ? "No measurement needed the printed mix." : "Nothing to take back.";
-  const what = `${n} measured member${n === 1 ? "" : "s"}`;
+  const what = `${n} measured line${n === 1 ? "" : "s"}`;
   return kind === "stamp" ? `The printed mix was given to ${what}.` : `The printed mix was taken back from ${what}.`;
 }

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Badge, useToast } from "../../../../organizations/components/OrganizationUi";
 import { useGrades, useStampGrades, useUnstampGrades } from "../hooks/useGrades";
 import { takeoffErrorMessage } from "../../utils/errors";
-import { canStamp, canUnstamp, changedText, concreteText, confirmedNote, conflictText, isEmpty, memberStatus, noteSource, ourConflicts, plasterText, soilText, steelText, summaryLine } from "../utils/grades";
+import { canStamp, canUnstamp, changedText, concreteText, confirmedNote, conflictText, isEmpty, memberStatus, mixSource, mixStatus, noteSource, ourConflicts, plasterText, soilText, steelText, summaryLine } from "../utils/grades";
 
 interface Props {
   drawingId: string;
@@ -31,6 +31,7 @@ export function PrintedGradesPanel({ drawingId, canEdit }: Props) {
   const conflicts = ourConflicts(data);
   const members = data.members.filter((m) => m.concrete || m.steel || m.concrete_clash.length || m.steel_clash.length);
   const confirmed = confirmedNote(data);
+  const mixes = data.mixes ?? [];
   return (
     <details className="border-b border-[var(--color-border)] p-3 text-[12px]" data-testid="printed-grades">
       <summary className="cursor-pointer">
@@ -63,6 +64,27 @@ export function PrintedGradesPanel({ drawingId, canEdit }: Props) {
           </table>
         ) : null}
 
+        {mixes.length ? (
+          <table className="w-full text-[12px]" data-testid="printed-grades-mixes">
+            <thead>
+              <tr className="text-left text-[var(--color-text-muted)]">
+                <th className="font-medium">{t("boq.takeoff.grades.mixWork", "Mortar and beds")}</th>
+                <th className="font-medium">{t("boq.takeoff.grades.mix", "Mix")}</th>
+                <th className="font-medium">{t("boq.takeoff.grades.measured", "Measured")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mixes.map((m) => (
+                <tr key={`${m.what}-${m.grade}`} className="align-top" data-testid={`printed-grades-mix-${m.what}`}>
+                  <td className="font-semibold">{m.what.charAt(0).toUpperCase() + m.what.slice(1)}</td>
+                  <td title={mixSource(m) || undefined}>{m.grade}</td>
+                  <td className={MUTED}>{mixStatus(m)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : null}
+
         {canEdit && (canStamp(data) || canUnstamp(data)) ? (
           <div className="space-y-1" data-testid="printed-grades-actions">
             <div className="flex flex-wrap items-center gap-2">
@@ -72,7 +94,7 @@ export function PrintedGradesPanel({ drawingId, canEdit }: Props) {
                     onSuccess: (r) => showToast({ tone: "success", title: changedText(r.changed, "stamp") }),
                     onError: fail(t("boq.takeoff.grades.stampError", "Could not give the printed mix")),
                   })}>
-                  {t("boq.takeoff.grades.stamp", "Give the printed mix to the {{n}} measured members", { n: data.summary.open ?? 0 })}
+                  {t("boq.takeoff.grades.stamp", "Give the printed mix to the {{n}} measured lines", { n: data.summary.open ?? 0 })}
                 </button>
               ) : null}
               {canUnstamp(data) ? (

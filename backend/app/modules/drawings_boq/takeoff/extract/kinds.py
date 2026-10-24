@@ -2,14 +2,17 @@ from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
+from app.modules.drawings_boq.takeoff.extract import floor_layers as FLL
+from app.modules.drawings_boq.takeoff.extract import boundary as BDY
 from app.modules.drawings_boq.takeoff.extract import config as C
 
-ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *SI.SITE_KINDS)))
+ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *FLL.ITEMS, *BDY.ITEMS, *SI.SITE_KINDS)))
 KINDS = (*C.CATEGORIES, *ITEM_KINDS)
-DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **SI.WORK_ITEM}
+DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **FLL.WORK_ITEM, **BDY.WORK_ITEM, **SI.WORK_ITEM}
 
 def kind_of(cand) -> str:
   """The category of the item, or the name of the piece of work for the items that are not drawn on the plan."""
+
   facts = getattr(cand, "facts", None) or {}
   item = facts.get("site_kind") if cand.category == "SITE" else facts.get("foundation_item")
   return item if item in ITEM_KINDS else cand.category

@@ -28,6 +28,7 @@ from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.extract import tank_steel as TSTEEL
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
+from app.modules.drawings_boq.takeoff.extract import boundary as BDY
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.extract import opening_symbols as OS
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
@@ -1491,7 +1492,7 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
     cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
     if cand is not None:
       out.append(cand)
-      
+
   skirting = FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
   dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows)
   tile = FN.wall_tile_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows)
@@ -1617,6 +1618,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     res.notes.extend(notes)
   res.stats["slabs"] = sum(1 for c in res.candidates if c.category == "SLAB")
   res.candidates.extend(RF.roof_candidates([c for c in res.candidates if c.category == "SLAB"], ctx, Candidate, _finish, spec_facts))
+  roof_layers, roof_notes, res.stats["roof_layers"] = FLL.roof_candidates([c for c in res.candidates if (c.facts or {}).get("foundation_item") == FD.ROOF_TREATMENT], spec_facts, ctx, Candidate, _finish)
+  res.candidates.extend(roof_layers)
+  res.notes.extend(roof_notes)
   pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish)
   res.candidates.extend(pads)
   res.stats["concrete_beds"] = len(pads)
@@ -1905,10 +1909,19 @@ def _tank_twin_walls(res: Extraction, sites: list) -> int:
       n += 1
   return n
 
+def _finish_site(c: Candidate, ctx: dict, base: float) -> Candidate:
+  c.status = _status(c.notes)
+  c.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
+  return c
+
 def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction:
   ctx = {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") == "OCR" else 1.0)}
   sites = _site_candidates(SI.find(index.words, mm_per_pt, kw.get("tank_details")), ctx)
+  
   res.candidates.extend(sites)
+  boundary = BDY.candidates(sites, ctx, Candidate, _finish_site)
+  res.candidates.extend(boundary)
+  res.stats["boundary_items"] = len(boundary)
   res.stats["qs_site"] = QR.apply(sites, None)
   res.stats["site_items"] = {c.facts["site_kind"]: 1 for c in sites}
   res.stats["site_tank_walls"] = _tank_twin_walls(res, sites)

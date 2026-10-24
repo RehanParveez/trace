@@ -2,7 +2,7 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
-from app.modules.drawings_boq.takeoff.approve_pick import DEFAULT_BATCH, MAX_BATCH, TYPED_KEYS
+from app.modules.drawings_boq.takeoff.approve_pick import DEFAULT_BATCH, MAX_BATCH, TYPED_KEYS, ZERO_OK
 
 class ApproveReadyRequest(BaseModel):
   accept_assumed: bool = Field(default=False, description="Also accept items whose size the reader paired, defaulted or found disputed on the drawing. They stay marked as assumed.")
@@ -20,7 +20,7 @@ class ApproveReadyRequest(BaseModel):
     bad = sorted(k for k in value if k not in TYPED_KEYS)
     if bad:
       raise ValueError(f"These are not sizes that can be typed here: {', '.join(bad[:5])}.")
-    if any(v <= 0 for v in value.values()):
+    if any(v < 0 or (v == 0 and k not in ZERO_OK) for k, v in value.items()):
       raise ValueError("Sizes must be more than zero.")
     return value
 

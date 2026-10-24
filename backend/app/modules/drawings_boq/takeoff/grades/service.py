@@ -68,16 +68,47 @@ class GradesService(ExtractService):
         "steel_ring": {k: rrule["rule"].get(k) for k in ("label", "scope", "pages")} if ring_own else None, "steel_ring_clash": rrule["clash"] if (ring_own or rrule["clash"] != srule["clash"]) else []})
     return out
 
+  @staticmethod
+  def _mixes(rows: list, measurements: dict) -> list:
+    """The mixes printed for the lines that are not structural members (plaster mortar, plain concrete beds, cement-sand beds), one row for each kind of work and mix."""
+    seen: dict = {}
+    for c in rows:
+      if c.decision == "REJECTED":
+        continue
+
+      mix = GS.mix_of(c)
+      if mix is None:
+        continue
+      slot = seen.setdefault((mix["what"], mix["grade"]), {"what": mix["what"], "grade": mix["grade"], "pages": set(), "found": 0, "measured": 0, "stamped": 0, "typed": 0, "open": 0,
+        "confirmed_open": 0})
+      slot["found"] += 1
+      slot["pages"].update(mix["pages"])
+      m = measurements.get(c.measurement_id) if c.measurement_id and c.decision == "ACCEPTED" else None
+
+      if m is None:
+        continue
+      slot["measured"] += 1
+      if not m.material_grade:
+        slot["open"] += 1
+        if m.status == "CONFIRMED":
+          slot["confirmed_open"] += 1
+      elif m.material_grade == mix["grade"]:
+        slot["stamped"] += 1
+      else:
+        slot["typed"] += 1
+    return [{**s, "pages": sorted(s["pages"])} for _, s in sorted(seen.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1])))]
+
   def _report(self, drawing, rows: list, measurements: dict, printed: dict, changed: int = 0) -> dict:
     members = self._members(rows, measurements, printed)
+    mixes = self._mixes(rows, measurements)
     params = printed.get("params") or {}
     notes = printed.get("notes") or {}
     plaster = {"thickness_mm": params.get(PP.PLASTER_PARAM), "note": notes.get(PP.PLASTER_PARAM)}
     summary = {"concrete_notes": len((printed.get("grades") or {}).get("concrete") or []), "steel_notes": len((printed.get("grades") or {}).get("steel") or []),
-      "measured": sum(m["measured"] for m in members), "stamped": sum(m["stamped"] for m in members), "typed": sum(m["typed"] for m in members),
-      "open": sum(m["open"] for m in members), "confirmed_open": sum(m["confirmed_open"] for m in members),
+      "mix_notes": len(mixes), "measured": sum(m["measured"] for m in members + mixes), "stamped": sum(m["stamped"] for m in members + mixes),
+      "typed": sum(m["typed"] for m in members + mixes), "open": sum(m["open"] for m in members + mixes), "confirmed_open": sum(m["confirmed_open"] for m in members + mixes),
       "clashes": sum(1 for m in members if m["concrete_clash"] or m["steel_clash"] or m["steel_ring_clash"])}
-    return {"drawing_id": drawing.id, "concrete": (printed.get("grades") or {}).get("concrete") or [], "steel": (printed.get("grades") or {}).get("steel") or [], "members": members,
+    return {"drawing_id": drawing.id, "concrete": (printed.get("grades") or {}).get("concrete") or [], "steel": (printed.get("grades") or {}).get("steel") or [], "members": members, "mixes": mixes,
       "plaster": plaster, "soil": printed.get("soil"), "conflicts": printed.get("conflicts") or [], "summary": summary, "changed": changed}
 
   async def report(self, org: UUID, drawing_id: UUID) -> dict:
@@ -91,9 +122,11 @@ class GradesService(ExtractService):
     
     for c in rows:
       m = measurements.get(c.measurement_id) if c.measurement_id and c.decision == "ACCEPTED" else None
-      if m is None or m.material_grade or not GS.is_concrete_code(m.work_item_code):
+      if m is None or m.material_grade:
         continue
-      s = GS.stamp_for(c, rules)
+      s = GS.stamp_for(c, rules) if GS.is_concrete_code(m.work_item_code) else None
+      if s is None:
+        s = GS.mix_stamp(c)
       if s is None:
         continue
       if m.status == "CONFIRMED":
@@ -106,7 +139,7 @@ class GradesService(ExtractService):
       changed += 1
     await self.session.flush()
     if changed:
-      await self.core._log(org, user_id, drawing.id, AuditAction.UPDATE, f"Gave the printed concrete mix to {changed} measured member(s)")
+      await self.core._log(org, user_id, drawing.id, AuditAction.UPDATE, f"Gave the printed mix to {changed} measured line(s)")
     await self.session.commit()
     return self._report(drawing, rows, measurements, printed, changed)
 
@@ -117,6 +150,8 @@ class GradesService(ExtractService):
     for c in rows:
       m = measurements.get(c.measurement_id) if c.measurement_id else None
       s = GS.stamped(c)
+      if s is None and m is not None:
+        s = GS.mix_of(c)
       if m is None or s is None:
         continue
       if m.material_grade == s.get("grade"):
@@ -130,6 +165,6 @@ class GradesService(ExtractService):
       c.facts = facts
     await self.session.flush()
     if changed:
-      await self.core._log(org, user_id, drawing.id, AuditAction.UPDATE, f"Took back the printed concrete mix from {changed} measured member(s)")
+      await self.core._log(org, user_id, drawing.id, AuditAction.UPDATE, f"Took back the printed mix from {changed} measured line(s)")
     await self.session.commit()
     return self._report(drawing, rows, measurements, printed, changed)

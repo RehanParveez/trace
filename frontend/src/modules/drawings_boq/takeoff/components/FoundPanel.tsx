@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, EmptyState, inputClass } from "../../../organizations/components/OrganizationUi";
 import type { CandidateList, TakeoffCandidate, TakeoffSheet, TypedValue } from "../types/takeoff.types";
-import {blockedByHeight, confidenceLevel, factLine, fieldsStillNeeded, groupByKind, isMeasuredBeam, HEIGHT_LABEL, neckHeightAssumed, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight,
+import {blockedByHeight, confidenceLevel, factLine, fieldsStillNeeded, groupByKind, isMeasuredBeam, HEIGHT_LABEL, neckHeightAssumed, neededHeights, notMeasurable, staleText, unknownWorkItem, validHeight, ZERO_OK_FIELDS,
 } from "../utils/candidates";
 import type { Heights } from "../utils/candidates";
 import { groupByFloor, metres, setAsideBy } from "../utils/floorSources";
@@ -167,7 +167,7 @@ function FoundList(p: Props & { data: CandidateList }) {
           <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]">{t("boq.takeoff.found.heightsTitle", "Needed to measure")}</div>
           <div className="space-y-2">
             {needed.map((f) => {
-              const bad = p.heights[f].trim() !== "" && validHeight(p.heights[f]) === null;
+              const bad = p.heights[f].trim() !== "" && validHeight(p.heights[f], f) === null;
               return (
                 <label key={f} className="block text-[12.5px]">
                   <span className="mb-1 block font-medium">{t(`boq.takeoff.found.height.${f}`, HEIGHT_LABEL[f])}</span>
@@ -179,7 +179,7 @@ function FoundList(p: Props & { data: CandidateList }) {
                     data-testid={`found-height-${f}`}
                     onChange={(e) => p.onHeights({ ...p.heights, [f]: e.target.value })}
                   />
-                  {bad ? <span className="mt-0.5 block text-[11.5px] text-[var(--color-danger)]">{t("boq.takeoff.found.heightBad", "Type a number between 100 and 20000.")}</span> : null}
+                  {bad ? <span className="mt-0.5 block text-[11.5px] text-[var(--color-danger)]">{ZERO_OK_FIELDS.includes(f) ? t("boq.takeoff.found.lengthBad", "Type 0 where there is no such wall, or a length up to 60000.") : t("boq.takeoff.found.heightBad", "Type a number between 100 and 20000.")}</span> : null}
                   {offersFor(f, fresh, p.memory, p.picks).filter((o) => String(o.mm) !== p.heights[f].trim()).length > 0 ? (
                     <span className="mt-1 flex flex-wrap items-center gap-1" data-testid={`found-last-${f}`}>
                       <span className="text-[11.5px] text-[var(--color-text-muted)]">{t("boq.takeoff.found.lastTyped", "Typed before in this project (tap to use):")}</span>

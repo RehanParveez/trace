@@ -11,7 +11,12 @@ export const SIZE_FIELDS: Array<{ key: string; label: string }> = [
   { key: "neck_height_mm", label: "Neck column height" },
   { key: "tank_wall_height_mm", label: "Tank wall height" },
   { key: "tile_height_mm", label: "Kitchen wall tile height" },
+  { key: "boundary_side_mm", label: "Boundary wall: one side, 0 if none" },
+  { key: "boundary_rear_mm", label: "Boundary wall: rear, 0 if none" },
+  { key: "site_thickness_mm", label: "Boundary wall thickness" },
 ];
+
+const ZERO_OK = ["boundary_side_mm", "boundary_rear_mm"];
 
 export const REASON_LABEL: Record<string, string> = {
   ASSUMED: "a size was paired, defaulted or is disputed on the drawing",
@@ -49,9 +54,13 @@ function finite(mm: number): SizeState {
 }
 
 export function typedFromInputs(inputs: Record<string, string>): { typed: Record<string, number>; bad: string[] } {
-  const typed: Record<string, number> = {};
+   const typed: Record<string, number> = {};
   const bad: string[] = [];
   for (const { key } of SIZE_FIELDS) {
+    if (ZERO_OK.includes(key) && /^0+(\.0*)?$/.test((inputs[key] ?? "").trim())) {
+      typed[key] = 0;
+      continue;
+    }
     const state = sizeState(inputs[key] ?? "");
     if (state.kind === "ok") typed[key] = state.mm;
     else if (state.kind === "bad") bad.push(key);

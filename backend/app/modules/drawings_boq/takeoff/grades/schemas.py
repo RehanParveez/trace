@@ -10,6 +10,7 @@ class GradesResponse(BaseModel):
   concrete: list[dict] = Field(default_factory=list)
   steel: list[dict] = Field(default_factory=list)
   members: list[dict] = Field(default_factory=list)
+  mixes: list[dict] = Field(default_factory=list)
   plaster: dict = Field(default_factory=dict)
   soil: dict | None = None
   conflicts: list[dict] = Field(default_factory=list)
