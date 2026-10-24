@@ -56,7 +56,7 @@ PARAMS = {
   "steel_cover_mm": (38.1, 10.0, 100.0),
   "ring_hook_dia": (20.0, 0.0, 40.0),
   "bar_lap_dia": (40.0, 0.0, 80.0),
-  "bar_anchor_dia": (0.0, 0.0, 80.0),
+  "bar_anchor_dia": (40.0, 0.0, 80.0),
   "steel_wastage_pct": (5.0, 0.0, 15.0),
   "steel_cover_slab_mm": (38.1, 10.0, 100.0),
   "steel_cover_beam_mm": (38.1, 10.0, 100.0),

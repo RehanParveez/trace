@@ -9,7 +9,8 @@ ALIGN_TOL_PT = 0.3
 _DIRECTION = re.compile(r"\b(UP|DN|DOWN)\b", re.I)
 _NOT_A_DIRECTION = re.compile(r"\bUP\s+TO\b", re.I)
 
-def _chains(lines, axis: int, tread_pt: float, width_pt: float) -> list:
+def _chains(lines, axis: int, tread_pt: float, width_pt: float, min_treads: int | None = None) -> list:
+  need = min_treads or C.STAIR_MIN_TREADS
   if len(lines) == 0:
     return []
 
@@ -24,7 +25,7 @@ def _chains(lines, axis: int, tread_pt: float, width_pt: float) -> list:
   size = hi - lo
   keep = flat & (size >= C.STAIR_LINE_MIN * width_pt) & (size <= C.STAIR_LINE_MAX * width_pt)
   pos, lo, hi = pos[keep], lo[keep], hi[keep]
-  if len(pos) < C.STAIR_MIN_TREADS:
+  if len(pos) < need:
     return []
 
   order = np.argsort(lo)
@@ -45,10 +46,11 @@ def _chains(lines, axis: int, tread_pt: float, width_pt: float) -> list:
       if p is not None and step in (1, 2) and abs(ratio - step) <= C.STAIR_TREAD_TOL * step:
         run.append(p)
         continue
-      if len(run) >= C.STAIR_MIN_TREADS:
+      if len(run) >= need:
         a0, a1 = float(np.mean(lo[same])), float(np.mean(hi[same]))
         box = (a0, run[0], a1, run[-1]) if axis == 0 else (run[0], a0, run[-1], a1)
-        out.append({"axis": axis, "treads": len(run), "box": box, "span_pt": float(a1 - a0)})
+        gaps = sum(max(1, round((b - a) / tread_pt)) for a, b in zip(run[:-1], run[1:]))
+        out.append({"axis": axis, "treads": len(run), "box": box, "span_pt": float(a1 - a0), "pitch_pt": float(run[-1] - run[0]) / gaps if gaps else tread_pt})
       if p is not None:
         run = [p]
   return out
@@ -66,7 +68,7 @@ def _merge(items: list, reach: float) -> list:
         a, b = groups[i]["box"], groups[j]["box"]
         if _same_way(groups[i].get("direction"), groups[j].get("direction")) and a[0] - reach <= b[2] and b[0] - reach <= a[2] and a[1] - reach <= b[3] and b[1] - reach <= a[3]:
           groups[i] = {"axis": groups[i]["axis"], "treads": max(groups[i]["treads"], groups[j]["treads"]), "span_pt": max(groups[i]["span_pt"], groups[j]["span_pt"]),
-            "direction": groups[i].get("direction") or groups[j].get("direction"),
+            "direction": groups[i].get("direction") or groups[j].get("direction"), "pitch_pt": groups[i].get("pitch_pt") or groups[j].get("pitch_pt"),
             "box": (min(a[0], b[0]), min(a[1], b[1]), max(a[2], b[2]), max(a[3], b[3]))}
           del groups[j]
           changed = True
@@ -154,6 +156,26 @@ def printed_width(box, drawn_mm: float, dims: list, mm_per_pt: float) -> dict | 
       best = (key, d)
   return None if best is None else {"mm": round(best[1]["mm"], 1), "text": best[1]["text"]}
 
+def _inside(box, other, slack: float) -> bool:
+  return box[0] <= other[2] + slack and other[0] <= box[2] + slack and box[1] <= other[3] + slack and other[1] <= box[3] + slack
+
+def _short_flights(lines, tread_pt: float, width_pt: float, mm_per_pt: float, labels: list, used: set, found: list) -> list:
+  free = [i for i in range(len(labels or [])) if i not in used]
+  if not free or C.STAIR_SHORT_MIN_TREADS >= C.STAIR_MIN_TREADS:
+    return []
+
+  chains = _chains(lines, 0, tread_pt, width_pt, C.STAIR_SHORT_MIN_TREADS) + _chains(lines, 1, tread_pt, width_pt, C.STAIR_SHORT_MIN_TREADS)
+  chains = [c for c in chains if c["treads"] < C.STAIR_MIN_TREADS and not any(_inside(c["box"], f["box"], tread_pt) for f in found)]
+  for c in chains:
+    c["direction"] = None
+  got = _assign_ways(chains, [labels[i] for i in free], C.STAIR_SHORT_LABEL_REACH_MM / mm_per_pt)
+  for k in got:
+    used.add(free[k])
+  out = [c for c in chains if c.get("direction")]
+  for c in out:
+    c["short"] = True
+  return out
+
 def _find_along_page(lines, spec: dict, mm_per_pt: float, labels: list | None = None, dims: list | None = None) -> list:
   tread_mm, width_mm = spec.get("tread_mm"), spec.get("width_mm")
   if not tread_mm or not width_mm or mm_per_pt <= 0:
@@ -165,6 +187,7 @@ def _find_along_page(lines, spec: dict, mm_per_pt: float, labels: list | None = 
   for ch in found:
     ch["direction"] = None
   used = _assign_ways(found, labels, reach)
+  found.extend(_short_flights(lines, tread_pt, width_pt, mm_per_pt, labels or [], used, found))
   groups = _merge(found, tread_pt)
 
   out = []
@@ -176,8 +199,28 @@ def _find_along_page(lines, spec: dict, mm_per_pt: float, labels: list | None = 
     own = printed_width(g["box"], drawn, dims, mm_per_pt)
     area_m2 = (x1 - x0) * (y1 - y0) * mm_per_pt * mm_per_pt / 1e6
     out.append({"x": cx, "y": cy, "box": [round(v, 3) for v in g["box"]], "treads_drawn": g["treads"], "axis": g["axis"], "flight_area_m2": round(area_m2, 3),
-      "width_drawn_mm": round(drawn, 1), "direction": way, "width_printed_mm": own["mm"] if own else None, "width_printed_text": own["text"] if own else None})
+      "width_drawn_mm": round(drawn, 1), "direction": way, "width_printed_mm": own["mm"] if own else None, "width_printed_text": own["text"] if own else None,
+      "tread_drawn_mm": round(float(g.get("pitch_pt") or tread_pt) * mm_per_pt, 1), "short": g["treads"] < C.STAIR_MIN_TREADS})
   return out
+
+def find_drawn_flights(lines, mm_per_pt: float, labels: list | None = None, dims: list | None = None) -> list:
+  out: list = []
+  
+  if len(lines) == 0 or mm_per_pt <= 0 or not labels:
+    return out
+  slack = 0.0
+  for tread, width in C.STAIR_PROBES:
+    for p in find_stairs(lines, {"tread_mm": tread, "width_mm": width}, mm_per_pt, labels, dims):
+      if p.get("direction") is None:
+        continue
+      slack = float(tread) / mm_per_pt
+      same = [i for i, q in enumerate(out) if q["direction"] == p["direction"] and _inside(p["box"], q["box"], slack)]
+      if not same:
+        out.append(p)
+        continue
+      best = max([out[i] for i in same] + [p], key=lambda q: (q["treads_drawn"], -abs(q["width_drawn_mm"] - 1067.0)))
+      out = [q for i, q in enumerate(out) if i not in same] + [best]
+  return sorted(out, key=lambda q: (-q["box"][3], q["box"][0]))
 
 def _turn_rows(lines, deg: float):
   a = math.radians(deg)

@@ -28,8 +28,6 @@ def score(wall_pts: list, gap_pts: list, q, mm_per_pt: float) -> float | None:
   return best
 
 def assign(walls: list, openings: list, mm_per_pt: float) -> dict:
-  """walls: wall candidates. openings: door / window / ventilator candidates.
-  Returns {"assigned": n, "unassigned": n, "by_wall": {wall key: [opening dicts]}} and fills each wall's params["openings"] and facts["openings"]."""
   hosts = {}
   for w in walls:
     pts = (w.geometry or {}).get("points") or []
@@ -37,6 +35,7 @@ def assign(walls: list, openings: list, mm_per_pt: float) -> dict:
       hosts[w.key] = (w, pts[0], pts[1], (w.facts or {}).get("gap_pts") or [])
   found: dict = {k: {} for k in hosts}
   n_ok = n_lost = 0
+  where: dict = {}
   
   for o in openings:
     size = (o.facts or {}).get("size_schedule_mm") or (o.facts or {}).get("size_drawn_mm")
@@ -54,6 +53,7 @@ def assign(walls: list, openings: list, mm_per_pt: float) -> dict:
         n_lost += 1
         continue
       n_ok += 1
+      where.setdefault(o.tag or "", []).append((tuple(q), best_key))
       slot = found[best_key].setdefault((role, round(size[0], 1), round(size[1], 1), o.tag or ""), 0)
       found[best_key][(role, round(size[0], 1), round(size[1], 1), o.tag or "")] = slot + 1
   by_wall: dict = {}
@@ -67,4 +67,4 @@ def assign(walls: list, openings: list, mm_per_pt: float) -> dict:
     area = sum(o["width_mm"] * o["height_mm"] * o["nos"] for o in ops) / 1e6
     w.facts["openings"] = {"count": sum(o["nos"] for o in ops), "area_m2": round(area, 3), "marks": sorted({o["label"] for o in ops if o["label"]})}
     by_wall[key] = ops
-  return {"assigned": n_ok, "unassigned": n_lost, "by_wall": by_wall}
+  return {"assigned": n_ok, "unassigned": n_lost, "by_wall": by_wall, "by_point": where}

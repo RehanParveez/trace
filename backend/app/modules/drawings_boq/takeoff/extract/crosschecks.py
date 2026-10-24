@@ -11,6 +11,8 @@ def _live(c) -> bool:
   return c.decision != "REJECTED" and not FS.is_set_aside(c)
 
 def _sheet_floor(sheet: dict) -> str | None:
+  if ((sheet.get("stats") or {}).get("sheet_role") or {}).get("advice") == "SKIP":
+    return None
   t = sheet.get("title") or {}
   return None if t.get("composite") else t.get("level_hint")
 

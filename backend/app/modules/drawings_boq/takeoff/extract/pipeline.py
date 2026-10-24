@@ -756,7 +756,7 @@ def _stage(res, stage: str, fn, default):
     res.notes.append(C.note("STAGE_FAILED", stage=stage, error=type(exc).__name__, detail=str(exc)[:160]))
     return default
 
-def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None) -> list:
+def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=None) -> list:
   gstats: dict = {}
   faces = R.wall_faces(runs, frames, gstats)
   if res is not None:
@@ -769,15 +769,27 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None) -> list
   faces = [p for p in faces if C.ROOM_MIN_M2 <= p.area * k <= C.ROOM_MAX_M2]
   names, sizes = R.labels(lines, hint)
   pairs = [p for p in R.pair_labels(names, sizes, f) if R.plausible_room(p)]
-  items = [(p, "WALLS") for p in faces] + [(p, "OUTLINE") for p in R.outline_rooms(index, names, faces, f)]
+  closed = []
+  try:
+    closed = [(p, n, w) for p, n, w in R.closed_faces(runs, frames, R.gap_bridges(walls or [], f, C.WALL_GAP_MAX_MM), faces) if C.ROOM_MIN_M2 <= p.area * k <= C.ROOM_MAX_M2]
+  except W.TimeLimit:
+    raise
+  except Exception as exc:
+    if res is not None:
+      res.notes.append(C.note("ROOM_CLOSURE_SKIPPED", error=type(exc).__name__))
+      
+  items = [(p, "WALLS", None) for p in faces] + [(p, "CLOSED", (n, w)) for p, n, w in closed] + [(p, "OUTLINE", None) for p in R.outline_rooms(index, names, [*faces, *[c[0] for c in closed]], f)]
   out = []
   used: set = set()
   replaced: dict = {}
   
-  for poly, how in items:
+  for poly, how, via in items:
     poly = R._clean(poly)
     d = R.describe(poly, names, sizes, f)
     inside = R.pairs_inside(poly, pairs)
+    if how == "CLOSED":
+      if len(inside) != 1 or abs(d["area_m2"] / (pairs[inside[0]]["a_mm"] * pairs[inside[0]]["b_mm"] / 1e6) - 1.0) > C.ROOM_SIZE_TOL:
+        continue
     if len(inside) >= 2:
      
       continue
@@ -789,9 +801,11 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None) -> list
         continue
       used.add(inside[0])
     notes: list = []
-    base = 0.85 if how == "WALLS" else 0.65
+    base = 0.85 if how == "WALLS" else 0.8 if how == "CLOSED" else 0.65
     if how == "OUTLINE":
       notes.append(C.note("ROOM_FROM_OUTLINE"))
+    if how == "CLOSED":
+      notes.append(C.note("ROOM_CLOSED_ACROSS_OPENINGS", openings=via[0], width_mm=via[1]))
     room_names = d["names"]
     if not room_names:
       notes.append(C.note("ROOM_NO_LABEL"))
@@ -808,7 +822,8 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None) -> list
     minx, miny, maxx, maxy = poly.bounds
     facts = {"name": name, "area_m2": round(d["area_m2"], 3), "perimeter_m": round(d["perimeter_m"], 3), "holes": d["holes"],
       "bbox_mm": [round((maxx - minx) * f), round((maxy - miny) * f)], "size_text": d["size_text"], "outline_from": how}
-    
+    if how == "CLOSED":
+      facts["closed_across"] = {"openings": via[0], "width_mm": via[1]}
     if d["label_area_m2"] is not None:
       facts["label_area_m2"] = round(d["label_area_m2"], 3)
       facts["deviation_pct"] = round(d["deviation_pct"], 2)
@@ -835,11 +850,12 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None) -> list
     out.append(_finish(cand, ctx, 0.7))
   _flag_nested_rooms(out)
   out.sort(key=lambda c: (c.facts["name"] or "~", -c.facts["area_m2"]))
+  if res is not None:
+    res.stats["room_closure"] = {"closed_rooms": sum(1 for c in out if c.facts.get("outline_from") == "CLOSED"), "faces_closed_by_openings": len(closed),
+      "rooms_from_labels": sum(1 for c in out if c.facts.get("outline_from") == "LABEL")}
   return out
 
 def _flag_nested_rooms(rooms: list) -> None:
-  """A room whose centre is inside a larger room's outline (a W/C drawn inside a stair hall) is counted twice in the room total. It is kept and
-  flagged, not removed: only the engineer can say which outline is the room."""
   from shapely.geometry import Polygon
   polys = []
   for c in rooms:
@@ -1128,32 +1144,46 @@ def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict, impli
   cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
   return cand, []
 
-def _hosted_by_tag(by_wall: dict, walls: list) -> dict:
-  """tag -> {"thin": n, "rcc": n, "hosted": n}: how many of each opening mark sit in 4.5 inch walls and in RCC walls, from the openings already assigned to walls."""
+THIN_WALL_MM = 160.0
+
+def _hosted_by_tag(by_wall: dict, walls: list, by_point: dict | None = None) -> dict:
   wall_of = {w.key: w for w in walls}
   out: dict = {}
+  kind_of: dict = {}
   for key, ops in (by_wall or {}).items():
     w = wall_of.get(key)
     if w is None:
       continue
-    thin = float((w.params or {}).get("thickness_mm") or 0) < 160.0
+    
+    t = float((w.params or {}).get("thickness_mm") or 0.0)
     rcc = (w.facts or {}).get("construction") == "RCC"
+    thin = 0.0 < t < THIN_WALL_MM and not rcc
+    kind_of[key] = "RCC" if rcc else "THIN" if thin else None
     for o in ops:
       if not o.get("label"):
         continue
-      rec = out.setdefault(o["label"], {"thin": 0, "rcc": 0, "hosted": 0})
+      
+      rec = out.setdefault(o["label"], {"thin": 0, "rcc": 0, "hosted": 0, "thin_mm": 0.0, "thin_pts": [], "rcc_pts": []})
       rec["hosted"] += int(o["nos"])
-      rec["thin"] += int(o["nos"]) if (thin and not rcc) else 0
+      rec["thin"] += int(o["nos"]) if thin else 0
       rec["rcc"] += int(o["nos"]) if rcc else 0
+      if thin:
+        rec["thin_mm"] = max(rec["thin_mm"], t)
+  for tag, placed in (by_point or {}).items():
+    rec = out.get(tag)
+    if rec is None:
+      continue
+    
+    rec["thin_pts"] = [q for q, key in placed if kind_of.get(key) == "THIN"]
+    rec["rcc_pts"] = [q for q, key in placed if kind_of.get(key) == "RCC"]
   return out
 
-def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict) -> list:
-  """One lintel candidate per door / window / ventilator mark of a plan: the opening width from the schedule picks the row of the lintel table printed on
-  the drawing, the length is the width plus the bearing at each end, and the count is the number of marks counted. Nothing is read from drawn lines."""
+def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict, marks: list | None = None) -> list:
   out = []
   if not table:
     return out
   bearing = C.LINTEL_BEARING_MM
+  
   for o in openings:
     size = (o.facts or {}).get("size_schedule_mm")
     pts = (o.geometry or {}).get("points") or []
@@ -1161,48 +1191,70 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict) -> 
       continue
     span = float(size[0])
     sec = LT.section_for(table, span)
-    notes = [C.note("LINTEL_BEARING_ASSUMED", bearing_mm=bearing)]
-    params: dict = {"dims_basis": "SPECIFIED"}
+    h = hosted.get(o.tag) or {}
+    total = int(o.count or len(pts))
+    rcc = min(int(h.get("rcc") or 0), total)
+    thin = min(int(h.get("thin") or 0), total - rcc) if sec else 0
+    plain = total - rcc - thin
+    if marks is not None:
+      marks.append({"tag": o.tag, "marks": total, "in_rcc_left_out": rcc, "in_thin_wall": thin, "other": plain})
+    if plain <= 0 and thin <= 0:
+      if rcc:
+        o.notes.append(C.note("LINTEL_RCC_LEFT_OUT", count=rcc, marks=total))
+      continue
     
-    missing: list = []
-    base = 0.85
-    facts = {"opening_tag": o.tag, "opening_kind": (o.facts or {}).get("opening_kind") or o.category, "span_mm": round(span, 1), "bearing_mm": bearing,
-      "opening_size_mm": [round(float(size[0]), 1), round(float(size[1]), 1)]}
-    if sec:
-      params["length_mm"], params["width_mm"], params["depth_mm"] = round(span + 2.0 * bearing, 1), sec["width_mm"], sec["depth_mm"]
-      facts["section_mm"] = [sec["width_mm"], sec["depth_mm"]]
-      facts["table_span_max_mm"] = sec["span_max_mm"]
-      facts["table_pages"] = list(sec.get("pages") or [])
-      notes.append(C.note("LINTEL_SECTION_FROM_TABLE"))
-      if sec.get("steel"):
-        params["steel"] = dict(sec["steel"])
-        facts["steel_text"] = LT.steel_text(sec["steel"])
-        notes.append(C.note("LINTEL_STEEL_FROM_TABLE"))
-      label = f"Lintel {o.tag} ×{o.count} · {_inch_text(sec['width_mm'])}×{_inch_text(sec['depth_mm'])} · {_fmt_mm(params['length_mm'])} mm long"
-    else:
-      missing.append("size")
-      notes.append(C.note("LINTEL_SPAN_ABOVE_TABLE"))
-      base *= 0.7
-      label = f"Lintel {o.tag} ×{o.count} · span {_fmt_mm(span)} mm"
-    h = hosted.get(o.tag)
-    if h:
-      facts["hosted"] = dict(h)
-      if h["thin"]:
-        notes.append(C.note("LINTEL_IN_THIN_WALL", count=h["thin"]))
-        base *= 0.9
-      if h["rcc"]:
-        notes.append(C.note("LINTEL_IN_RCC_WALL", count=h["rcc"]))
-    work_item, mode, kind = C.SUGGESTIONS["LINTEL"]
-    
-    cand = Candidate(key=_key("LINTEL", o.key), category="LINTEL", kind=kind, quantity_mode=mode, label=label, tag=f"L-{o.tag}",
-      geometry={"points": [list(p) for p in pts]}, params=params, missing=missing, work_item=work_item, status="VALID", confidence=0.0,
-      facts=facts, notes=notes, source="TAG_SCAN", count=int(o.count or len(pts)))
-    cand.status = _status(cand.notes)
-    cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
-    out.append(cand)
+    cut = {tuple(p) for p in [*(h.get("thin_pts") or []), *(h.get("rcc_pts") or [])]}
+    thin_pts = [list(p) for p in pts if tuple(p) in {tuple(q) for q in h.get("thin_pts") or []}] or [list(p) for p in pts]
+    plain_pts = [list(p) for p in pts if tuple(p) not in cut] or [list(p) for p in pts]
+    for part, n in (("WALL", plain), ("THIN", thin)):
+      if n <= 0:
+        continue
+      thin_part = part == "THIN"
+      notes = [C.note("LINTEL_BEARING_ASSUMED", bearing_mm=bearing)]
+      params: dict = {"dims_basis": "SPECIFIED"}
+      missing: list = []
+      base = 0.85
+      facts = {"opening_tag": o.tag, "opening_kind": (o.facts or {}).get("opening_kind") or o.category, "span_mm": round(span, 1), "bearing_mm": bearing,
+        "opening_size_mm": [round(float(size[0]), 1), round(float(size[1]), 1)],
+        "split": {"part": part, "marks": total, "in_rcc_left_out": rcc, "in_thin_wall": thin, "other": plain}}
+      if sec:
+        width = min(float(sec["width_mm"]), float(h["thin_mm"])) if thin_part and h.get("thin_mm") else float(sec["width_mm"])
+        params["length_mm"], params["width_mm"], params["depth_mm"] = round(span + 2.0 * bearing, 1), width, sec["depth_mm"]
+        facts["section_mm"] = [width, sec["depth_mm"]]
+        facts["table_section_mm"] = [sec["width_mm"], sec["depth_mm"]]
+        facts["table_span_max_mm"] = sec["span_max_mm"]
+        facts["table_pages"] = list(sec.get("pages") or [])
+        notes.append(C.note("LINTEL_SECTION_FROM_TABLE"))
+        if thin_part:
+          notes.append(C.note("LINTEL_WIDTH_FROM_WALL", wall_mm=width, table_mm=sec["width_mm"], count=n))
+        if sec.get("steel"):
+          params["steel"] = dict(sec["steel"])
+          facts["steel_text"] = LT.steel_text(sec["steel"])
+          notes.append(C.note("LINTEL_STEEL_FROM_TABLE"))
+        label = f"Lintel {o.tag} ×{n} · {_inch_text(width)}×{_inch_text(sec['depth_mm'])} · {_fmt_mm(params['length_mm'])} mm long" + (f" · in {_inch_text(width)} wall" if thin_part else "")
+      else:
+        missing.append("size")
+        notes.append(C.note("LINTEL_SPAN_ABOVE_TABLE"))
+        base *= 0.7
+        label = f"Lintel {o.tag} ×{n} · span {_fmt_mm(span)} mm"
+      if h:
+        facts["hosted"] = {k: h[k] for k in ("thin", "rcc", "hosted", "thin_mm") if k in h}
+        if h.get("thin") and not sec:
+          notes.append(C.note("LINTEL_IN_THIN_WALL", count=h["thin"]))
+          base *= 0.9
+      if rcc:
+        notes.append(C.note("LINTEL_RCC_LEFT_OUT", count=rcc, marks=total))
+      work_item, mode, kind = C.SUGGESTIONS["LINTEL"]
+      tag = f"L-{o.tag} ({_inch_text(params['width_mm'])} wall)" if thin_part and sec else f"L-{o.tag}"
+      cand = Candidate(key=_key("LINTEL", "THIN", o.key) if thin_part else _key("LINTEL", o.key), category="LINTEL", kind=kind, quantity_mode=mode, label=label, tag=tag,
+        geometry={"points": thin_pts if thin_part else plain_pts}, params=params, missing=missing, work_item=work_item, status="VALID", confidence=0.0,
+        facts=facts, notes=notes, source="TAG_SCAN", count=n)
+      cand.status = _status(cand.notes)
+      cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
+      out.append(cand)
   return out
 
-def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None = None) -> list:
+def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None = None, floor_heights: dict | None = None) -> list:
   waist = spec.get("waist_mm")
   printed = bool(waist)
   waist_used = float(waist or C.STAIR_WAIST_DEFAULT_MM)
@@ -1216,6 +1268,8 @@ def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None 
       notes.append(C.note("STAIR_DOWN_FLIGHT"))
     elif way is None:
       notes.append(C.note("STAIR_DIRECTION_UNKNOWN"))
+    if p.get("short"):
+      notes.append(C.note("STAIR_SHORT_FLIGHT"))
     own = p.get("width_printed_mm")
     
     width = float(own) if own else float(spec["width_mm"])
@@ -1225,9 +1279,17 @@ def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None 
     facts = {"stair_text": spec.get("text"), "riser_mm": spec.get("riser_mm"), "tread_mm": spec.get("tread_mm"), "stair_width_mm": round(width, 1),
       "detail_width_mm": spec.get("width_mm"), "width_source": "PRINTED_BESIDE" if own else "STAIR_DETAIL", "steps": spec.get("steps"),
       "stair_pages": list(spec.get("pages") or []), "direction": way, "treads_drawn": p["treads_drawn"], "width_drawn_mm": p["width_drawn_mm"],
-      "flight_area_m2": p.get("flight_area_m2"), "flight_box": p.get("box"), "floor_hint": level_hint}
+      "flight_area_m2": p.get("flight_area_m2"), "flight_box": p.get("box"), "floor_hint": level_hint, "tread_drawn_mm": p.get("tread_drawn_mm"),
+      "short_flight": bool(p.get("short"))}
     if p.get("corners"):
       facts.update({"flight_corners": p["corners"], "plan_angle_deg": p["angle_deg"]})
+    rise = STR.rise_check(spec, way, level_hint, floor_heights)
+    if rise:
+      facts["rise"] = rise
+      if rise["differs"]:
+        note = C.note("STAIR_RISE_DIFFERS_FROM_STOREY")
+        note["message"] += f" The steps rise {rise['rise_mm']:g} mm ({spec['steps']} x {spec['riser_mm']:g} mm); the storey is {rise['storey_mm']:g} mm floor to floor ({rise['gap_pct']:+.1f}%)."
+        notes.append(note)
     params: dict = {"dims_basis": "SPECIFIED"}
     missing: list = []
     
@@ -1252,15 +1314,43 @@ def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None 
     out.append(cand)
   return out
 
-def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_per_pt: float | None = None, level_hint: str | None = None) -> tuple[list, list]:
-  """One stair candidate per plan that names a staircase, sized from the riser, tread, width and number of steps printed elsewhere on the drawing. The
-  concrete is the plan run of the steps x the width x an equivalent thickness (waist slab along the slope plus half a riser). The waist slab is rarely
-  printed, so 6 inches is assumed and said so. Landings are not included."""
+def _drawn_stairs(places: list, ctx: dict, level_hint: str | None = None) -> list:
+  """A stair for each flight drawn with UP or DN beside it when no sheet prints the size of the stair. Only what is drawn is carried (width, tread, treads drawn);
+  the size is left to be measured, so nothing is guessed."""
+  work_item, mode, kind = C.SUGGESTIONS["STAIR"]
+  out = []
+  for p in places:
+    way = p["direction"]
+    notes = [C.note("STAIR_FOUND_NO_DETAILS"), C.note("STAIR_LANDINGS_NOT_INCLUDED"), C.note("STAIR_LOCATED_BY_TREADS")]
+    if way == "DOWN":
+      notes.append(C.note("STAIR_DOWN_FLIGHT"))
+    if p.get("short"):
+      notes.append(C.note("STAIR_SHORT_FLIGHT"))
+    width = float(p["width_drawn_mm"])
+    facts = {"details_printed": False, "stair_width_mm": round(width, 1), "width_source": "DRAWN", "direction": way, "treads_drawn": p["treads_drawn"],
+      "tread_drawn_mm": p.get("tread_drawn_mm"), "width_drawn_mm": p["width_drawn_mm"], "flight_area_m2": p.get("flight_area_m2"), "flight_box": p.get("box"),
+      "floor_hint": level_hint, "short_flight": bool(p.get("short"))}
+    if p.get("corners"):
+      facts.update({"flight_corners": p["corners"], "plan_angle_deg": p["angle_deg"]})
+    label = f"Stair {'up' if way == 'UP' else 'down'} · {p['treads_drawn']} treads drawn · {_fmt_mm(width)} mm wide · size not printed"
+    cand = Candidate(key=_key("STAIR", round(p["x"], 1), round(p["y"], 1), 1), category="STAIR", kind=kind, quantity_mode=mode, label=label, tag="STAIR",
+      geometry={"points": [[round(p["x"], 3), round(p["y"], 3)]]}, params={"dims_basis": "DRAWN"}, missing=["size"], work_item=work_item, status="VALID", confidence=0.0,
+      facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
+    cand.status = _status(cand.notes)
+    cand.confidence = round(max(0.0, min(1.0, 0.5 * ctx["content_factor"])), 4)
+    out.append(cand)
+  return out
+
+def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_per_pt: float | None = None, level_hint: str | None = None, floor_heights: dict | None = None) -> tuple[list, list]:
   
   if spec and index is not None and mm_per_pt:
     places = FL.find_stairs(W.straight_lines(index), spec, mm_per_pt, FL.direction_labels(lines), FL.length_labels(lines, S.feet_inches_mm))
     if places:
-      return _located_stairs(places, spec, ctx, level_hint), []
+      return _located_stairs(places, spec, ctx, level_hint, floor_heights), []
+  if not (spec and spec.get("tread_mm") and spec.get("width_mm")) and index is not None and mm_per_pt:
+    drawn = FL.find_drawn_flights(W.straight_lines(index), mm_per_pt, FL.direction_labels(lines), FL.length_labels(lines, S.feet_inches_mm))
+    if drawn:
+      return _drawn_stairs(drawn, ctx, level_hint), []
   labels = STR.find_labels(lines)
   if not labels:
     return [], []
@@ -1530,6 +1620,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   res.stats["sheet_kind"] = kind
   role = PRL.page_role(sheet_words if sheet_words is not None else words, kind)
   role["advice"] = PRL.reading_advice(role)
+  role.setdefault("purpose", PRL.purpose(PRL._title_lines(sheet_words if sheet_words is not None else words)))
   res.stats["sheet_role"] = role
   if kind["kind"] != "STRUCTURAL" and not composite_structural and level_hint and sheet_words is None:
     res.stats["column_shapes"] = CS.census(index.rings, mm_per_pt, imp_here, _snap_inch, level_hint)
@@ -1567,8 +1658,11 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       wstats["qs_rcc_heights"] = QR.rcc_heights([*walls, *completion], level_hint)
       wstats["rcc_completion"] = {"pieces": len(completion), "sides_drawn": ring["sides"]} if ring else None
       res.stats["walls"] = wstats
+      lintel_marks: list = []
+      
       lintels = _lintel_candidates([c for c in res.candidates if c.category in ("DOOR", "WINDOW")], (schedule or {}).get("lintels") or [],
-        _hosted_by_tag(hosted.get("by_wall"), walls), ctx)
+        _hosted_by_tag(hosted.get("by_wall"), walls, hosted.get("by_point")), ctx, lintel_marks)
+      res.stats["lintel_marks"] = lintel_marks
       res.candidates.extend(lintels)
       wstats["brick_net_of_lintels"] = WN.attach(walls, lintels)
       dashed = DO.find(index, mm_per_pt, wstats.get("wall_pen_pt"))
@@ -1588,7 +1682,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         bands = [c for c in kept_beams if (c.facts or {}).get("beam_role") == "BAND"]
       if bands and not BC.lintels_counted():
         for c in [*lintels, *wide]:
-          if not (c.facts.get("hosted") or {}).get("rcc"):
+          if c.facts.get("split") or not (c.facts.get("hosted") or {}).get("rcc"):
             c.facts["tie_band"] = {"text": (bands[0].facts or {}).get("tie_band_text"), "candidate_key": bands[0].key}
             c.notes.append(C.note("LINTEL_COVERED_BY_TIE_BAND"))
             
@@ -1596,10 +1690,11 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         c.status = _status(c.notes)
       res.stats["lintels"] = len(lintels) + len(wide)
       res.stats["lintels_unmarked_openings"] = len(wide)
-      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt, level_hint)
+      stairs, stair_notes = _stair_candidates(lines, (schedule or {}).get("stair"), ctx, index, mm_per_pt, level_hint, floor_heights)
       res.candidates.extend(stairs)
       res.notes.extend(stair_notes)
       res.stats["stairs"] = len(stairs)
+      res.stats["stairs_size_not_printed"] = sum(1 for c in stairs if (c.facts or {}).get("details_printed") is False)
       labels = SO.read_labels(lines, hint, mm_per_pt)
       attached, unplaced = SO.attach_landings(stairs, labels["landings"], mm_per_pt, FL._gap)
       for c in stairs:
@@ -1622,7 +1717,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           wall_m_all_pens=wstats.get("wall_m_all_pens")))
       if wstats.get("light_walls_kept"):
         res.notes.append(C.note("LIGHT_PEN_WALLS_KEPT", count=wstats["light_walls_kept"], metres=wstats.get("light_walls_m")))
-      rooms = _stage(res, "ROOMS", lambda: _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx, res), [])
+      rooms = _stage(res, "ROOMS", lambda: _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx, res, walls), [])
       res.candidates.extend(rooms)
       res.candidates.extend(completion)
       
@@ -1662,6 +1757,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         suggested_scale=plaus["suggested_scale"], evidence=plaus["evidence"], agree=plaus["agree"]))
   found_steel = SN.read(notes_lines)
   res.stats["steel"] = SN.attach(res.candidates, found_steel, C.note)
+  res.stats["column_steel"] = ST.apply_column_steel(res.candidates, col_details, C.note)
   res.stats["steel_notes"] = found_steel["notes"]
   res.stats["spec_grades"] = SPF.annotate(res.candidates, spec_facts, C.note)
   

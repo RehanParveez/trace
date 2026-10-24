@@ -299,7 +299,7 @@ class DerivedParamsRequest(BaseModel):
   steel_cover_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover at the ends of the bars of a member whose steel is read from a drawing.")
   ring_hook_dia: float | None = Field(default=None, ge=0, le=40, description="Length added to a ring for its hooks, in bar diameters.")
   bar_lap_dia: float | None = Field(default=None, ge=0, le=80, description="Lap of a column's vertical bars with the lift above, in bar diameters.")
-  bar_anchor_dia: float | None = Field(default=None, ge=0, le=80, description="Anchorage added at each end of a beam bar, and as a dowel at the foot of a column bar, in bar diameters.")
+  bar_anchor_dia: float | None = Field(default=None, ge=0, le=80, description="Anchorage added at each end of a beam bar, and as a dowel (starter bar) at the foot of a column bar, in bar diameters. 40 unless set; the drawing prints none.")
   steel_wastage_pct: float | None = Field(default=None, ge=0, le=15, description="Percent added to the steel weight of members read from a drawing. 0 leaves the bare weight.")
   steel_cover_slab_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of a slab. Left out, the general cover applies.")
   steel_cover_beam_mm: float | None = Field(default=None, ge=10, le=100, description="Concrete cover of the bars of a beam or lintel. Left out, the general cover applies.")

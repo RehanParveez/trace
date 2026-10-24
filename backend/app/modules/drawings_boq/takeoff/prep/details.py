@@ -274,6 +274,7 @@ def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, r
     return u * Wv, v * Hv
   deadline = time.monotonic() + budget_s
   out = []
+  drawn: list = []
   for c in caps:
     segs, _, _ = index.window(c["x"] - SEARCH_REACH_PT, c["y"] - SEARCH_REACH_PT, c["x"] + SEARCH_REACH_PT, c["y"] + SEARCH_REACH_PT)
     box = find_box(segs, c["x"], c["y"], vis)
@@ -294,4 +295,16 @@ def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, r
       if rec["read"] in ("NONE", "PARTIAL") and time.monotonic() > deadline:
         rec["read"] = "TIMEOUT"      
     out.append(rec)
+    drawn.append(box["visual"] if box else None)
+  if any(drawn):
+    from app.modules.drawings_boq.takeoff.prep import beam_details as BD
+    steel_deadline = time.monotonic() + budget_s
+    for rec, box_v in zip(out, drawn):
+      if box_v is None:
+        continue
+      try:
+        got = BD.column_bars(words, page, box_v, page_wh, crop, rotation, ocr, steel_deadline)
+        rec.update(steel=got["steel"], bar_notes=got["bar_notes"], steel_conflict=got["conflict"], steel_read=got["read"])
+      except Exception:
+        rec["steel_read"] = "FAILED"
   return {"ocr": "OK" if ocr else "UNAVAILABLE", "details": out}

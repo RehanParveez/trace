@@ -224,22 +224,25 @@ class ExtractService:
     return {"sheet_id": sheet.id, "extraction": await self._meta(org, sheet, ext), "candidates": await self._with_stair_twins(org, sheet, rows), "summary": self._summary(rows)}
 
   async def _with_stair_twins(self, org: UUID, sheet, rows: list) -> list:
-    """A DN flight that is the same stair as an UP flight on the floor below gets a warning in the list (the register already lists the stair once); accepting
-    both would count it twice. The rows are copied for the answer; the stored items are not changed."""
-    if not any(r.category == "STAIR" and (r.facts or {}).get("direction") == "DOWN" and r.decision != "REJECTED" for r in rows):
+    if not any(r.category == "STAIR" and r.decision != "REJECTED" for r in rows):
       return rows
     sheets = {s.id: s for s in await self.core.repo.sheets(org, sheet.drawing_id)}
-    _, _, owners = ST.pairs(await self.repo.candidates(org, list(sheets)), sheets)
+    every = await self.repo.candidates(org, list(sheets))
+    _, _, owners = ST.pairs(every, sheets)
+    lone = set(ST.alone(every, sheets))
     
     out = []
     for r in rows:
       pages = owners.get(r.id)
-      if not pages:
+      if not pages and r.id not in lone:
         out.append(r)
         continue
       copy = CandidateResponse.model_validate(r)
-      note = C.note("STAIR_SAME_AS_UP_FLIGHT", pages=pages)
-      note["message"] += f" The UP flight is on sheet {', '.join(str(p) for p in pages)}."
+      if pages:
+        note = C.note("STAIR_SAME_AS_UP_FLIGHT", pages=pages)
+        note["message"] += f" The UP flight is on sheet {', '.join(str(p) for p in pages)}."
+      else:
+        note = C.note("STAIR_FLIGHT_NO_PARTNER")
       copy.notes = [*copy.notes, note]
       out.append(copy)
     return out

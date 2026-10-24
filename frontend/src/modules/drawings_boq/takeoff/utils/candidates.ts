@@ -687,10 +687,14 @@ export function factLine(c: TakeoffCandidate): string {
     const width = num(f.stair_width_mm);
     const waist = num(f.waist_mm);
     const way = f.direction === "UP" ? "going up" : f.direction === "DOWN" ? "going down" : null;
+    const treads = num(f.treads_drawn);
+    const pitch = num(f.tread_drawn_mm);
+    const drawnOnly = f.details_printed === false;
+    const rise = (f.rise ?? null) as { differs?: boolean; storey_mm?: number } | null;
     const landings = Array.isArray(f.landings) ? f.landings.length : 0;
     const landingArea = num(f.landings_area_m2);
     const landingText = landings > 0 ? `plus ${landings} landing${landings === 1 ? "" : "s"}${landingArea !== null ? ` (${landingArea.toFixed(2)} m²)` : ""}` : null;
-    return [way, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null, landingText].filter(Boolean).join(" · ");
+    return [way, drawnOnly ? "riser and steps not printed on any sheet" : null, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, drawnOnly && treads !== null ? `${treads} treads drawn${pitch !== null ? `, ${Math.round(pitch)} mm apart` : ""}` : f.short_flight === true && treads !== null ? `only ${treads} treads drawn` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : f.width_source === "DRAWN" ? " (as drawn)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null, rise ? (rise.differs ? `rise differs from the ${Math.round(rise.storey_mm ?? 0)} mm storey` : "rise matches the storey") : null, landingText].filter(Boolean).join(" · ");
   }
 
   if (c.category === "SITE") return siteLine(c);
@@ -719,6 +723,12 @@ export function factLine(c: TakeoffCandidate): string {
     if (drawn) parts.push(`${Math.round(drawn[0])} mm wide`);
     if (drawn && f.height_assumed === true) parts.push(`height assumed ${Math.round(drawn[1])} mm`);
     return parts.join(" · ");
+  }
+  if (c.category === "COLUMN") {
+    const src = (f.steel_source ?? null) as { how?: string; text?: string } | null;
+    const alts = Array.isArray(f.steel_alternatives) ? (f.steel_alternatives as { steel_text?: string }[]).map((a) => a.steel_text).filter((t): t is string => typeof t === "string") : [];
+    if (typeof f.steel_text === "string" && f.steel_text) parts.push(`steel ${f.steel_text}${src?.how === "DETAIL" ? " (from the column detail)" : ""}`);
+    else if (alts.length > 0) parts.push(`column detail prints different bars: ${alts.join(" / ")} (none applied)`);
   }
   if (sched) parts.push(`schedule ${Math.round(sched[0])}×${Math.round(sched[1])}`);
   if (drawn) parts.push(`drawn ${Math.round(drawn[0])}${f.height_assumed === true ? ` mm wide, height assumed ${Math.round(drawn[1])} mm` : `×${Math.round(drawn[1])}`}`);

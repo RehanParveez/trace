@@ -132,7 +132,7 @@ def sheet_entries(stairs: list, voids: list, level: str | None) -> list:
   for st in stairs:
     f = st.facts or {}
     way = f.get("direction")
-    if way not in ("UP", "DOWN") or not f.get("flight_area_m2"):
+    if way not in ("UP", "DOWN") or not f.get("flight_area_m2") or f.get("short_flight") or f.get("details_printed") is False:
       continue
     out.append({"kind": "STAIR_WELL", "way": way, "level_hint": level, "area_m2": float(f["flight_area_m2"]), "name": "Stair well", "key": st.key,
       "text": f"{f.get('steps') or '?'} steps, {f.get('treads_drawn') or '?'} treads drawn"})

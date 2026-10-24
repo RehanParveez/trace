@@ -82,6 +82,8 @@ function FloorRow({ f, p }: { f: FloorEntry; p: Props }) {
             <li key={s.sheet_id} className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid={`floor-source-${f.floor}-${s.page_no}`} data-in-use={inUse}>
               <span className={s.set_aside ? "text-[var(--color-text-muted)] line-through" : ""}>{sourceName(s)}</span>
               <span className="text-[11.5px] text-[var(--color-text-secondary)]">{sourceLine(s)}</span>
+              {s.purpose === "FURNITURE" ? <Badge tone="slate">{t("boq.takeoff.floorSources.furniture", "furniture layout")}</Badge> : null}
+              {s.advice === "ASK" ? <Badge tone="gold">{t("boq.takeoff.floorSources.notClearlyPlan", "not clearly a plan")}</Badge> : null}
               {f.state === "COMBINED" && ((s.combined ?? 0) > 0 || (s.added ?? 0) > 0) ? (
                 <span className="text-[11.5px] text-[var(--color-text-secondary)]" data-testid={`floor-merge-${f.floor}-${s.page_no}`}>
                   {t("boq.takeoff.floorSources.merge", "{{m}} repeated set aside · {{a}} only on this sheet kept", { m: s.combined ?? 0, a: s.added ?? 0 })}

@@ -24,7 +24,7 @@ def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   open_n = sum(1 for c in rows if c.decision == "NEW")
   accepted = sum(1 for c in rows if c.decision == "ACCEPTED")
   
-  return {"sheet_id": sheet["sheet_id"], "page_no": sheet["page_no"], "from_plans": from_plans,
+  return {"sheet_id": sheet["sheet_id"], "page_no": sheet["page_no"], "from_plans": from_plans, "advice": ((sheet["stats"] or {}).get("sheet_role") or {}).get("advice"), "purpose": ((sheet["stats"] or {}).get("sheet_role") or {}).get("purpose"),
     "caption": plan["caption"] if plan else title.get("title"),
     "wall_m": round(sum(float((c.facts or {}).get("length_cc_m") or 0.0) for c in walls), 1), "walls": len(walls), "items": len(rows),
     "open": open_n, "accepted": accepted, "rejected": sum(1 for c in rows if c.decision == "REJECTED"),
@@ -42,7 +42,7 @@ def _suggest(sources: list) -> str | None:
   if held:
     return held[0]["sheet_id"]
   own = [s for s in sources if not s["from_plans"]]
-  return min(own or sources, key=lambda s: s["page_no"])["sheet_id"]
+  return min(own or sources, key=lambda s: (s.get("purpose") == "FURNITURE", s.get("advice") not in (None, "READ"), s["page_no"]))["sheet_id"]
 
 def build(sheets: list) -> dict:
   """sheets: [{"sheet_id", "page_no", "title", "stats", "candidates"}], only sheets that have been read. -> {"floors": [...], "to_decide": n}"""
@@ -55,7 +55,8 @@ def build(sheets: list) -> dict:
   
   for fl in sorted(by_floor, key=lambda k: (ORDER.index(k) if k in ORDER else len(ORDER), k)):
     sources = sorted(by_floor[fl], key=lambda s: (s["from_plans"], s["page_no"]))
-    choosable = len(sources) >= 2 and any(s["from_plans"] for s in sources)
+    furniture = [s for s in sources if s.get("purpose") == "FURNITURE"]
+    choosable = len(sources) >= 2 and (any(s["from_plans"] for s in sources) or 0 < len(furniture) < len(sources))
     live = [s for s in sources if s["open"] + s["accepted"] > 0]
     if len(sources) == 1:
       state = "SINGLE"

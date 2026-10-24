@@ -13,6 +13,8 @@ _ROLES = (
 )
 _STRONG_TITLE = re.compile(r"\b(?:PLAN|LAYOUT|MUMTY|FRAMING|REINFORCEMENT|FOUNDATIONS?)\b", re.I)
 _DRAWING_ROLES = ("PLAN", "STRUCTURAL")
+_FURNITURE = re.compile(r"^(?:[A-Z0-9.]+\s+){0,3}FURNITURE\s+(?:LAYOUTS?|PLANS?)(?:\s+PLANS?)?$", re.I)
+_WORKING = re.compile(r"^(?:[A-Z0-9.]+\s+){0,3}WORKING\s+(?:LAYOUTS?|PLANS?|DRAWINGS?)(?:\s+PLANS?)?$", re.I)
 NOT_A_PLAN = ("SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "LEGEND", "SPEC", "COVER", "DIVIDER", "SITE")
 
 def _title_lines(words: list) -> list:
@@ -26,6 +28,13 @@ def _title_lines(words: list) -> list:
     ws.sort(key=lambda o: o.x0)
     out.append((" ".join(o.text for o in ws), max(o.size for o in ws)))
   return out
+
+def purpose(lines: list) -> str | None:
+  """What the title block says the plan is for: FURNITURE (a furniture layout, the same walls with furniture drawn in) or WORKING (the working drawing)."""
+  texts = [t.strip() for t, _s in lines]
+  if any(_WORKING.match(t) for t in texts):
+    return "WORKING"
+  return "FURNITURE" if any(_FURNITURE.match(t) for t in texts) else None
 
 def page_role(words: list, kind: dict | None = None) -> dict:
   kind = kind or {"kind": "UNKNOWN", "title": None}
@@ -48,7 +57,7 @@ def page_role(words: list, kind: dict | None = None) -> dict:
     
     if others:
       return {"role": "COMPOSITE", "title": kind.get("title"), "also": [base, *others], "basis": "TITLE"}
-    return {"role": base, "title": kind.get("title"), "also": sorted(found), "basis": "TITLE"}
+    return {"role": base, "title": kind.get("title"), "also": sorted(found), "basis": "TITLE", "purpose": purpose(lines)}
   if found:
     role = max(found, key=lambda r: found[r][0])
     return {"role": role, "title": found[role][1], "also": sorted(r for r in found if r != role), "basis": "TITLE"}

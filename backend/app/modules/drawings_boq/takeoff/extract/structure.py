@@ -1,6 +1,8 @@
 from __future__ import annotations
 import math
 import re
+from app.engine.measure.steel_grammar import steel_text
+from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 from app.modules.drawings_boq.takeoff.extract import members as M
 from app.modules.drawings_boq.takeoff.extract import config as C
@@ -131,4 +133,75 @@ def column_details(meta: dict | None) -> dict:
       a, b = ordered[0]
       rec["size_mm"] = (round(a * INCH_MM, 1), round(b * INCH_MM, 1))
     out[mark] = rec
+  _column_steel_of(meta, out)
   return out
+
+def _bar_text(n: dict) -> str:
+  return f"{n['n']} #{n['bar']}"
+
+def _column_steel_of(meta: dict | None, out: dict) -> None:
+  """Add to each mark the bars and rings read round its column details: "steel" and "steel_text" when every detail of the mark agrees, else "steel_disagree" with
+  "steel_alternatives" (the bar notes of a detail that prints two bar counts, or the bars of details that differ). A mark with no bars read is left alone."""
+  by: dict = {}
+  for d in (meta or {}).get("details") or []:
+    if d.get("steel") or d.get("bar_notes"):
+      by.setdefault(d["mark"], []).append(d)
+  for mark, reads in by.items():
+    rec = out.setdefault(mark, {"sizes_in": [], "disagree": False})
+    bars: list = []
+    rings: list = []
+    for d in reads:
+      for n in d.get("bar_notes") or []:
+        if n not in bars:
+          bars.append(n)
+      ring = (d.get("steel") or {}).get("ring")
+      if ring and ring not in rings:
+        rings.append(ring)
+    if len(bars) > 1 or len(rings) > 1 or any(d.get("steel_conflict") for d in reads):
+      rec["steel_disagree"] = True
+      rec["steel_alternatives"] = [{"steel_text": _bar_text(n)} for n in bars] + ([{"steel_text": steel_text({"ring": r})} for r in rings] if len(rings) > 1 else [])
+      continue
+    steel = {**({"vertical": dict(bars[0])} if bars else {}), **({"ring": dict(rings[0])} if rings else {})}
+    if steel:
+      rec["steel"] = steel
+      rec["steel_text"] = steel_text(steel)
+
+def apply_column_steel(cands: list, details: dict | None, note) -> dict:
+  """Put the bars and rings read from a column detail on the columns that carry its mark. What a note on the sheet already gave for a role (the bars, the rings) is kept;
+  the detail fills a role the note did not give. Bars the detail prints twice with different counts, or that differ from the note, are listed on the column and none
+  is applied. Returns {"applied", "completed", "listed"}."""
+  stats = {"applied": 0, "completed": 0, "listed": 0}
+  for c in cands:
+    if c.category != "COLUMN" or not c.tag or (c.facts or {}).get("neck_of") or (c.facts or {}).get("from_shapes"):
+      continue
+
+    rec = (details or {}).get(norm_mark(str(c.tag)))
+    if not rec or not (rec.get("steel") or rec.get("steel_disagree")):
+      continue
+    have = dict(c.params.get("steel") or {})
+    if c.facts is None:
+      c.facts = {}
+    if rec.get("steel_disagree"):
+      if not have.get("vertical"):
+        c.facts["steel_alternatives"] = [dict(a) for a in rec.get("steel_alternatives") or []]
+        c.notes.append(note("COLUMN_DETAIL_BARS_LISTED", alternatives=c.facts["steel_alternatives"]))
+        stats["listed"] += 1
+      continue
+    
+    add = {k: v for k, v in rec["steel"].items() if k not in have}
+    clash = [k for k, v in rec["steel"].items() if k in have and have[k] != v]
+    if clash:
+      c.facts["steel_alternatives"] = [{"steel_text": steel_text({k: have[k] for k in clash})}, {"steel_text": steel_text({k: rec["steel"][k] for k in clash})}]
+      c.notes.append(note("COLUMN_DETAIL_BARS_LISTED", alternatives=c.facts["steel_alternatives"]))
+      stats["listed"] += 1
+      
+    if not add:
+      continue
+    c.notes = [n for n in c.notes if n.get("code") != "STEEL_NOT_PRINTED"]
+    c.params["steel"] = {**have, **add}
+    c.facts["steel_text"] = steel_text(c.params["steel"])
+    c.facts["steel_source"] = {"grade": "PRINTED", "text": f"column detail {norm_mark(str(c.tag))}", "how": "DETAIL"}
+    c.notes.append(note("STEEL_FROM_DETAIL", text=c.facts["steel_text"]))
+    stats["completed" if have else "applied"] += 1
+  return stats
+

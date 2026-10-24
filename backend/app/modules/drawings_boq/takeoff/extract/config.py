@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 42
+EXTRACT_VERSION = 47
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0             
@@ -71,6 +71,9 @@ STAIR_LINE_MIN = 0.6
 STAIR_LINE_MAX = 1.3
 STAIR_ALIGN_PT = 2.5
 STAIR_LABEL_REACH_MM = 6000.0
+STAIR_SHORT_MIN_TREADS = 3           
+STAIR_SHORT_LABEL_REACH_MM = 2000.0  
+STAIR_PROBES = tuple((t, w) for t in (230.0, 280.0, 330.0) for w in (900.0, 1100.0, 1400.0))
 STAIR_DIM_REACH_MM = 2500.0    
 STAIR_DIM_MATCH = 0.12          
 SLAB_OPENING_FREE_M2 = 0.1       
@@ -205,6 +208,10 @@ NOTES = {
   "ROOM_INSIDE_ROOM": ("warning", "This room lies inside the outline of another room, so its area is counted in both. Check which one is right before the room areas are added up."),
   "ROOM_FROM_OUTLINE": ("warning", "This room was taken from a drawn outline, not from the wall layout."),
   "ROOM_FROM_LABEL": ("info", "The area is the size printed in the room label. The walls around this room did not close on their own, so the box is placed at the label."),
+  "ROOM_CLOSED_ACROSS_OPENINGS": ("info", "The wall lines round this room stop at its doors and windows, so they did not close on their own. They were joined across those openings (the number and width are on the row). Exactly one room label is inside, and its printed size agrees with the closed outline, so the room is taken from the walls and not placed at the label."),
+  "ROOM_CLOSURE_SKIPPED": ("warning", "The walls of this sheet could not be joined across the door and window openings (the geometry engine refused them), so the rooms are placed at their labels and outlines as before. Read the sheet again; if it comes back, send it to support."),
+  "LINTEL_RCC_LEFT_OUT": ("info", "Some of the openings of this mark stand in RCC walls, which need no separate lintel. They are not counted here; the number left out is on the row."),
+  "LINTEL_WIDTH_FROM_WALL": ("info", "These openings stand in 4.5 inch walls. The lintel is made as wide as the wall, not the 9 inch of the lintel table; its depth and bars are the table's. Check the section if the drawing details these lintels."),
   "ROOM_OUTLINE_REPLACED": ("info", "The walls drawn around this label gave another area than the printed size, so the printed size is used."),
   "SLAB_AREA_FROM_TABLE": ("info", "The slab area is the covered area of this floor printed in the area table of the drawing, taken as one rectangle (its printed length x width). Openings in the slab (a stair well, a shaft) are not deducted and cantilevers beyond the covered area (sunshades, porch roofs) are not added. Check both against the framing plan."),
   "SLAB_SIZE_NOT_PRINTED": ("warning", "The area table gives the covered area of this floor but not its length and width, so the slab cannot be measured from it. Measure the slab with the area tool."),
@@ -304,8 +311,10 @@ NOTES = {
   "LINTEL_STEEL_FROM_TABLE": ("info", "The bars and rings of this lintel are the reinforcement printed on the same row of the lintel table. Steel weight is worked out from them when the run is calculated."),
   "STEEL_FROM_DETAIL": ("info", "The bars, rings or mesh of this member are the reinforcement printed in the detail or note for its mark. Steel weight is worked out from them when the run is calculated, using the cover, hook, lap and anchorage in the site assumptions."),
   "STEEL_NOT_PRINTED": ("info", "No reinforcement note could be tied to this member on the sheet. Type the bars when you accept it, or no steel is taken for it."),
+  "COLUMN_DETAIL_BARS_LISTED": ("warning", "The column detail for this mark prints bar notes that do not agree with each other or with the note for the mark (the numbers are listed on the item), so none was applied. Type the bars you want when you accept it."),
   "STEEL_DETAILS_DISAGREE": ("warning", "Two details on the drawing print different reinforcement for this mark, so none was chosen. Type the bars you want when you accept it."),
-  "STAIR_FROM_DETAILS": ("info", "The staircase is sized from the riser, tread, width and number of steps printed on the drawing. The concrete is measured as the plan run of the steps x the width x an equivalent thickness (the waist slab along the slope plus half a riser)."),
+  "STAIR_FROM_DETAILS": ("info", "The staircase is sized from the riser, tread, width and number of steps printed on the drawing. The concrete is measured as the plan run of the treads (one fewer than the risers) x the width x an equivalent thickness (the waist slab along the slope plus half a riser)."),
+  "STAIR_RISE_DIFFERS_FROM_STOREY": ("warning", "The number of steps times the riser does not match the floor-to-floor height of the storey this stair serves. Check the riser and the number of steps printed for the stair, or the storey height."),
   "STAIR_WAIST_ASSUMED": ("info", "The drawing does not print the thickness of the waist slab under the steps. The QS gave 5 inches (127 mm) for it (X8). Change the depth if the stair section says otherwise."),
   "STAIR_LANDINGS_ADDED": ("info", "Landings printed on the plan next to this stair are added to it as flat slabs of the waist thickness. Landings are measured as slabs (IS 1200 Part 2 cl. 4.2.1(h): a staircase is measured without its landings), here kept with the stair so they are not forgotten."),
   "STAIR_LANDING_NOT_PLACED": ("info", "The plan prints a landing that is not next to any flight found on it, so it was not added to a stair. Measure it as a slab."),
@@ -315,6 +324,8 @@ NOTES = {
   "STAIR_LANDINGS_NOT_INCLUDED": ("info", "Landings and the slab where the stair starts are not part of this quantity. Measure them as slabs."),
   "STAIR_LOCATED_BY_TREADS": ("info", "This staircase was found from its treads drawn on the plan. The plan may stop drawing the treads at the cut line, so the steps of the whole stair come from the printed detail."),
   "STAIR_DOWN_FLIGHT": ("warning", "This flight is marked DN. It is the same staircase as the UP flight on the floor below. Accept it only once, on one of the two plans."),
+  "STAIR_FOUND_NO_DETAILS": ("warning", "A flight of steps with UP or DN beside it is drawn on this plan, but no sheet of the drawing prints the riser, tread and number of steps of the stair. Only what is drawn is known (the width and the tread of the flight, the treads drawn). The stair is listed so it is not forgotten; measure it by hand."),
+  "STAIR_SHORT_FLIGHT": ("info", "Only a few treads of this flight are drawn (the rest is a turn or a dotted flight below). It was taken as a stair because UP or DN is written beside it. Check it on the plan."),
   "STAIR_DIRECTION_UNKNOWN": ("info", "No UP or DN is written beside this staircase. Check on the plan whether it is the same staircase as one on another floor."),
   "SITE_TANK_SIZES_TYPED": ("warning", "A tank is labelled on this sheet but its sizes are not printed as text the reader can take. Type the outside length, width and height and the thickness of its walls when you accept it. The concrete is worked out as the walls of that thickness plus a top slab of 6 inches and a bottom slab of 8 inches, as the QS gave (S11)."),
   "SITE_TANK_SIZES_LISTED": ("info", "The structural sheet draws this tank in a plan and a section. The sizes are listed below: those written as text in the PDF are exact; those read from the picture show the number of readings that agreed (a size read only twice can be a misreading, so check it on the drawing). The drawing does not say which size is the outside length, the water depth or the wall, so none is applied: type the outside sizes and the thickness from them."),
@@ -357,6 +368,7 @@ NOTES = {
   "LIGHT_PEN_WALLS_KEPT": ("info", "Some walls on this ground-level sheet are drawn in a lighter line weight than the main walls (boundary, lawn and thin partition walls). The long ones of 4.5 to 6 inch thickness were read as walls. Stair treads and furniture lines were not."),
   "LIGHT_PEN_WALL": ("info", "This wall is drawn in a lighter line weight than the main walls on the sheet. Check it is a wall and not a boundary line."),
   "STAIR_SAME_AS_UP_FLIGHT": ("warning", "This DN flight is the same staircase as the UP flight drawn on the floor below. It is one concrete stair: accept only one of them, or it is counted twice."),
+  "STAIR_FLIGHT_NO_PARTNER": ("info", "This flight has no flight written the other way on the floor above (for UP) or below (for DN). Its other half may be a turn the treads of which are not drawn, or the stair may serve one floor only. Check it is not listed twice or missing."),
   "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
   "SHEET_READ_UPRIGHT": ("info", "The drawing on this sheet is turned or crooked on the page (its text does not run left to right). It was straightened before it was read, so its text, marks and schedule are read as on an upright sheet; positions shown on the drawing are the page's own."),
   "SHEET_SITE_ITEMS_ONLY": ("info", "This sheet shows several drawings, and its floor plans are read from their own sheets, so they are not read again here. What is not a floor plan was read: the tanks, the boundary wall, the gate and the ramp of the site. The schedules, the sections and the notes of this sheet are read for the whole drawing."),
@@ -367,7 +379,7 @@ NOTES = {
   "STAGE_FAILED": ("warning", "One step of reading this sheet failed and was skipped, so the items of that step (named in the note) are missing. Everything read before it is kept."),
   "ROOM_GEOMETRY_REPAIRED": ("info", "A few wall outlines on this sheet touched in a way the geometry engine could not cut directly. They were repaired automatically; check the room areas of this sheet."),
   "ROOM_FACE_SKIPPED": ("warning", "A closed space between walls on this sheet could not be cut cleanly and was left out. Rooms may be missing here."),
-  "SHEET_NOT_A_PLAN": ("warning", "This sheet is a section, elevation, detail, schedule or similar sheet, not a floor plan, yet walls or rooms were read from it. They are probably hatching or drawn detail, not plan walls. Leave this sheet out of the quantities unless it really holds a plan."),
+  "SHEET_NOT_A_PLAN": ("warning", "This sheet is a section, elevation, detail, schedule or similar sheet, not a floor plan, yet walls or rooms were read from it. They are probably hatching or drawn detail, not plan walls. They are held back from the bulk accept (a reason is given on each item), and this sheet takes no part in choosing the sheet of a floor. Accept an item by hand only if the sheet really holds a plan."),
   "SCALE_LOOKS_WRONG": ("warning", "The doors or the named rooms drawn on this sheet are not the size doors and rooms are built, so the scale used for this sheet is probably wrong. A scale that would fit is suggested in this note. It has NOT been applied: confirm the scale on the Measure page."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),
   "SCALE_CONFLICT": ("warning", "Conflicting scale information was found on the sheet. Confirm the correct scale before relying on measured sizes."),

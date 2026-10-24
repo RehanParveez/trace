@@ -6,6 +6,8 @@ def floors_read(stats: dict | None, title: dict | None) -> tuple:
   stats = stats or {}
   if "walls" not in stats:
     return set(), False
+  if (stats.get("sheet_role") or {}).get("advice") == "SKIP":
+    return set(), False
   regions = stats.get("plan_regions") or {}
   if regions.get("count"):
     return {p["level_hint"] for p in regions.get("plans") or [] if p.get("level_hint")}, True

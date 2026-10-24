@@ -217,7 +217,7 @@ def _measured_text(cand, page_no: int, measurement) -> str:
       parts.append("tank wall")
       
   elif cat == "ROOM":
-    parts.append("area inside the wall faces" if facts.get("outline_from") == "WALLS" else "size printed in the label" if from_label else "area of the drawn outline")
+    parts.append("area inside the wall faces" if facts.get("outline_from") == "WALLS" else "area inside the wall faces, joined across the openings" if facts.get("outline_from") == "CLOSED" else "size printed in the label" if from_label else "area of the drawn outline")
   elif cat in ("DOOR", "WINDOW") and facts.get("size_schedule_mm"):
     parts.append("ventilator, size from schedule" if facts.get("opening_kind") == "VENTILATOR" else "size from schedule")
     

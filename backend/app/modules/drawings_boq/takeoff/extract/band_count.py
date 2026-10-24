@@ -46,8 +46,12 @@ def lintel_run_m(lintels: list, thickness_mm: float) -> float:
     p, h = c.params or {}, ((c.facts or {}).get("hosted") or {})
     if not p.get("length_mm") or not h:
       continue
+    part = ((c.facts or {}).get("split") or {}).get("part")
     thin, rcc, hosted = int(h.get("thin") or 0), int(h.get("rcc") or 0), int(h.get("hosted") or 0)
-    n = max(hosted - thin - rcc, 0) if thickness_mm >= TIE_BAND_MIN_WALL_MM else thin
+    if part:
+      n = int(c.count or 0) if (part == "WALL") == (thickness_mm >= TIE_BAND_MIN_WALL_MM) else 0
+    else:
+      n = max(hosted - thin - rcc, 0) if thickness_mm >= TIE_BAND_MIN_WALL_MM else thin
     total += float(p["length_mm"]) / 1000.0 * n
   return total
 

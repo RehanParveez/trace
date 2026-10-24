@@ -20,6 +20,7 @@ export const REASON_LABEL: Record<string, string> = {
   ERROR: "the reader found an error",
   NOT_MEASURABLE: "beam marks are only counted; draw the lengths by hand",
   FLOOR_SOURCE_UNDECIDED: "the floor is open on two sheets",
+  NOT_A_PLAN_SHEET: "the sheet is a section, elevation, detail or specification, not a floor plan",
   ADDED_FROM_SECOND_SHEET: "only the sheet that shows every plan has it",
 };
 

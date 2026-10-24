@@ -15,7 +15,16 @@ HELD_BY = {
   "WALLS_OPEN_ROUND_ROOMS": ("WALL", "ROOM"), "WALL_LONGER_THAN_ROOMS": ("WALL", "ROOM"), "WALL_SHORT_FOR_ROOMS": ("WALL", "ROOM"),
 }
 
+NOT_A_PLAN_KINDS = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR")
+
+def from_non_plan(sh: dict, c) -> bool:
+  """True for a wall, room, opening, lintel, stair or wall-derived beam read from a sheet whose role says it is not a plan (section, elevation, detail, schedule, specification)."""
+  if ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice") != "SKIP":
+    return False
+  return c.category in NOT_A_PLAN_KINDS or (c.category == "BEAM" and (c.facts or {}).get("derived_from") == "WALLS")
+
 REASON_TEXT = {
+  "NOT_A_PLAN_SHEET": "This sheet is a section, elevation, detail, schedule or specification, not a floor plan; what was read from it is drawn detail or repeats the plans. Accept it by hand only if the sheet really holds a plan.",
   "ALREADY_DECIDED": "Already accepted or rejected.",
   "ERROR": "The reader found an error on it.",
   "WARNING": "The reader raised a warning on it.",
@@ -58,9 +67,11 @@ def ready(read: list, checks: list | None = None) -> dict:
       item = {"id": str(c.id), "category": c.category, "tag": c.tag, "floor": fl, "page_no": sh["page_no"], "grade": None, "reasons": []}
       why = item["reasons"]
       if c.decision != "NEW":
-        why.append("ALREADY_DECIDED")
+         why.append("ALREADY_DECIDED")
       elif c.category != "SLAB" and (sh["sheet_id"], FO.level_of(c) or sf) in undecided:
         why.append("FLOOR_SOURCE_UNDECIDED")
+      if c.decision == "NEW" and from_non_plan(sh, c):
+        why.append("NOT_A_PLAN_SHEET")
       if c.decision == "NEW" and guard.clash(c, fl) is not None:
         why.append("MARK_ACCEPTED_ELSEWHERE")
       if c.decision == "NEW" and ((c.facts or {}).get("floor_union") or {}).get("role") == "ADDED":

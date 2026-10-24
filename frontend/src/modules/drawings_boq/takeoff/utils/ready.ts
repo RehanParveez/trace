@@ -9,6 +9,7 @@ export const HELD_TEXT: Record<string, string> = {
   ASSUMED: "an assumed value",
   CHECK_WARNS: "a check warns about it",
   FLOOR_SOURCE_UNDECIDED: "the floor is open on two sheets",
+  NOT_A_PLAN_SHEET: "the sheet is a section, elevation, detail or specification, not a floor plan",
   MARK_ACCEPTED_ELSEWHERE: "the same mark is already accepted from another sheet; open that sheet, or accept it there on purpose",
 };
 

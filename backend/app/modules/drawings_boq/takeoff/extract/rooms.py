@@ -3,7 +3,7 @@ import re
 import math
 from app.modules.drawings_boq.takeoff.prep.texts import TextLine, parse_dimension
 from app.modules.drawings_boq.takeoff.extract import config as C
-from shapely.geometry import Polygon, Point
+from shapely.geometry import Polygon, Point, LineString
 from shapely.ops import unary_union
 from app.modules.drawings_boq.takeoff.extract.members import _SIZE, category_of, parse_size
 from shapely.prepared import prep
@@ -35,14 +35,14 @@ _CLOSE = 0.2
 def _clean(p: Polygon) -> Polygon:
   return p.simplify(0.02, preserve_topology=True)
 
-def wall_faces(runs: list, frames: list, stats: dict | None = None) -> list:
+def wall_faces(runs: list, frames: list, stats: dict | None = None, extra: list | None = None) -> list:
   st = stats if stats is not None else {}
   st.setdefault("repaired", 0)
   st.setdefault("dropped", 0)
   if not runs:
     return []
   
-  polys = [run_polygon(r, frames[r.peak], extended=True) for r in runs]
+  polys = [run_polygon(r, frames[r.peak], extended=True) for r in runs] + list(extra or [])
   union = unary_union(polys).buffer(_CLOSE, join_style=2).buffer(-_CLOSE, join_style=2)
   parts = list(union.geoms) if hasattr(union, "geoms") else [union]
   out = []
@@ -59,6 +59,42 @@ def wall_faces(runs: list, frames: list, stats: dict | None = None) -> list:
       for g in (list(free.geoms) if hasattr(free, "geoms") else [free]):
         if isinstance(g, Polygon) and not g.is_empty:
           out.append(g)
+  return out
+
+BRIDGE_MIN_PT = 1.0
+
+def gap_bridges(walls: list, mm_per_pt: float, max_mm: float) -> list:
+  """[(piece, width_mm)]: for every gap in a wall of the plan that a door or window stands in (no wider than max_mm), a piece of the wall's thickness laid
+  across it. The wall lines stop at an opening, so without these pieces a room whose door is drawn does not close."""
+  out = []
+  for w in walls:
+    f = w.facts or {}
+    if w.category != "WALL" or f.get("enclosure") == "TANK" or w.status == "INVALID":
+      continue
+    half = max(float(f.get("thickness_used_mm") or 0.0) / mm_per_pt / 2.0, BRIDGE_MIN_PT)
+    for a, b in f.get("gap_pts") or []:
+      ln = LineString([a, b])
+      width = ln.length * mm_per_pt
+      if 0.0 < width <= max_mm:
+        out.append((ln.buffer(half, cap_style=2), width))
+  return out
+
+def closed_faces(runs: list, frames: list, bridges: list, base: list) -> list:
+  if not runs or not bridges:
+    return []
+  out = []
+  for face in wall_faces(runs, frames, {}, extra=[b for b, _ in bridges]):
+    twin = False
+    for b in base:
+      common, _how = GS.safe_intersection(face, b)
+      if common is not None and common.area >= 0.2 * face.area:
+        twin = True
+        break
+    if twin:
+      continue
+    rim = face.buffer(0.05)
+    on = [w for b, w in bridges if rim.intersects(b)]
+    out.append((face, len(on), round(sum(on), 1)))
   return out
 
 def _norm(name: str) -> str:

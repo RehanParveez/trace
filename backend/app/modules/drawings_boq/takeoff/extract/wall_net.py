@@ -9,7 +9,8 @@ def lintel_sizes(lintels: list) -> dict:
     p, f = c.params or {}, c.facts or {}
     tag = f.get("opening_tag")
     if tag and p.get("length_mm") and p.get("width_mm") and p.get("depth_mm"):
-      out[str(tag)] = (float(p["length_mm"]), float(p["width_mm"]), float(p["depth_mm"]))
+      width = float((f.get("table_section_mm") or [p["width_mm"]])[0])
+      out[str(tag)] = (float(p["length_mm"]), width, float(p["depth_mm"]))
   return out
 
 def _thickness(wall) -> float:

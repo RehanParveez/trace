@@ -295,6 +295,78 @@ def interpret(picture: dict, box_ratio: float | None = None) -> dict:
   out["depth_in"] = _depth(tallies["V"])
   return out
 
+COLUMN_PAD_PT = (25.0, 28.0, 50.0, 8.0)
+COLUMN_MIN_BARS = 4
+
+def column_region(box_v: tuple, Wv: float, Hv: float) -> tuple:
+  """The rectangle (visual page units) round the drawn outline of a column detail where its bar notes are written: a little to the left and above, more to the right
+  where the arrows end, and just below."""
+  left, above, right, below = COLUMN_PAD_PT
+  return (max(0.0, box_v[0] - left), max(0.0, box_v[1] - above), min(Wv, box_v[2] + right), min(Hv, box_v[3] + below))
+
+def interpret_column(picture: dict) -> dict:
+  """The bars and rings read round one column detail: {"steel", "bar_notes", "conflict"}. A bar note counts when it is read twice in the same place (as for beams)
+  and is four bars or more. Two bar notes in different places that name different bars, one of them read only once, are a conflict: the detail then prints
+  two bar counts (the 18x9 detail of Islamabad prints 8-#6 and 6-#6), and no bars are taken from it. The ring is the ring note read most often."""
+  confirmed: list = []
+  weak: list = []
+  for g in _cluster(sorted(picture["bars"], key=lambda b: (b["y"], b["x"]))):
+    tally: dict = {}
+    for it in g:
+      tally[(it["n"], it["bar"])] = tally.get((it["n"], it["bar"]), 0) + 1
+    w = _winner(g, ("n", "bar"), MIN_VOTES_BARS)
+    if w:
+      if w[0][0] >= COLUMN_MIN_BARS and {"n": w[0][0], "bar": w[0][1]} not in confirmed:
+        confirmed.append({"n": w[0][0], "bar": w[0][1]})
+    else:
+      top = max(tally.items(), key=lambda kv: kv[1])
+      if top[0][0] >= COLUMN_MIN_BARS and len([v for v in tally.values() if v == top[1]]) == 1:
+        weak.append({"n": top[0][0], "bar": top[0][1]})
+  others = [w for w in weak if w not in confirmed]
+  notes = confirmed + [w for w in others if w not in confirmed]
+  conflict = len(confirmed) > 1 or (bool(confirmed) and bool(others)) or len(others) > 1
+  ring = None
+  best = None
+  for g in _cluster(sorted(picture["stirrups"], key=lambda s: (s["y"], s["x"]))):
+    w = _winner(g, ("bar", "spacing_mm"), MIN_VOTES_BARS)
+    if w and (best is None or w[1] > best[1]):
+      best = w
+  if best:
+    ring = {"bar": best[0][0], "spacing_mm": best[0][1]}
+  steel: dict = {}
+  if len(confirmed) == 1 and not conflict:
+    steel["vertical"] = dict(confirmed[0])
+  if ring:
+    steel["ring"] = ring
+  return {"steel": steel or None, "bar_notes": notes, "conflict": conflict}
+
+def column_bars(words: list, page, box_v: tuple, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool, deadline: float) -> dict:
+  Wv, Hv = page_wh
+  region = column_region(box_v, Wv, Hv)
+  text_pic = PT.beam_picture(PT.region_words(words, region, crop, rotation, page_wh))
+  got = interpret_column(text_pic)
+  steel = got["steel"] or {}
+  out = {**got, "read": "TEXT" if (steel.get("vertical") and steel.get("ring")) else "NONE", "region": [round(v, 1) for v in region]}
+  if out["read"] == "TEXT" or got["conflict"] or not use_ocr:
+    return out
+    
+  if time.monotonic() >= deadline:
+    out["read"] = "TIMEOUT"
+    return out
+  try:
+    picture = _read_picture(page, region, Hv, Wv, deadline)
+  except Exception:
+    out["read"] = "FAILED"
+    return out
+  merged = {k: text_pic[k] + picture[k] for k in ("bars", "stirrups", "dims")}
+  got = interpret_column(merged)
+  steel = got["steel"] or {}
+  out.update(got)
+  out["read"] = ("TEXT+OCR" if text_pic["from_text"] else "OCR") if (steel or got["bar_notes"]) else "NONE"
+  if not picture.get("complete") and not steel.get("vertical"):
+    out["read"] = "TIMEOUT"
+  return out
+
 def _whole(got: dict) -> bool:
   """A reading that needs nothing more: the depth and the bars at the top and the bottom."""
   steel = got.get("steel") or {}

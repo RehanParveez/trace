@@ -578,8 +578,13 @@ export interface ColumnDetail {
   read: "OCR" | "OCR_SQUARE" | "PARTIAL" | "NONE";
   w_in: number | null;
   h_in: number | null;
+  steel_read?: "TEXT" | "TEXT+OCR" | "OCR" | "NONE" | "TIMEOUT" | "FAILED" | null;
+  steel_conflict?: boolean;
+  bar_notes?: Array<{ n: number; bar: number }>;
 }
+
 export type PictureReadState = "TEXT" | "TEXT+OCR" | "OCR" | "PARTIAL" | "NONE" | "TIMEOUT" | "FAILED";
+
 export interface BeamSectionRead {
   mark: string | null;
   kind: string | null;
@@ -808,6 +813,8 @@ export interface FloorSource {
   sheet_id: string;
   page_no: number;
   from_plans: boolean;
+  advice?: "READ" | "ASK" | "SKIP" | null;
+  purpose?: "FURNITURE" | "WORKING" | null;
   caption: string | null;
   wall_m: number;
   walls: number;

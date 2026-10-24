@@ -17,7 +17,7 @@ interface ApprovePdfDialogProps {
   onClose: () => void;
 }
 
-const HELD_ORDER = ["ASSUMED", "VALUE_MISSING", "WARNING", "CHECK_WARNS", "ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED", "ADDED_FROM_SECOND_SHEET"];
+const HELD_ORDER = ["ASSUMED", "VALUE_MISSING", "WARNING", "CHECK_WARNS", "ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED", "ADDED_FROM_SECOND_SHEET", "NOT_A_PLAN_SHEET"];
 
 export function PreviewBlock({ data }: { data: ApproveReadyResult }) {
   const { t } = useTranslation();

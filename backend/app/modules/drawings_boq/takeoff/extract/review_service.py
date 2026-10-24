@@ -85,7 +85,8 @@ class ReviewService(FloorUnionService):
       return out
     for r in rows:
       if r.category == "LINTEL" and r.decision == "NEW" and r.sheet_id == door_or_window.sheet_id and str(r.tag or "") == f"L-{tag}" and ((r.facts or {}).get("floor_union") or {}).get("floor") == floor:
-        r.count = count
+        s = (r.facts or {}).get("split") or {}
+        r.count = max(count - int(s.get("in_thin_wall") or 0) - int(s.get("in_rcc_left_out") or 0), 0) if s else count
         out.add(r.sheet_id)
     return out
 

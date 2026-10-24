@@ -197,7 +197,8 @@ def _beam_from_strips(inp: _Inputs, cand) -> None:
 def _lintel(inp: _Inputs, cand) -> None:
   """A lintel is the opening's schedule width, the section of the lintel table printed on the drawing, and a bearing at each end that the drawing does not print."""
   f, params, codes = cand.facts or {}, cand.params or {}, inp.codes
-  inp.add("count", PRINTED, "opening marks counted on the sheet")
+  split = f.get("split") or {}
+  inp.add("count", PRINTED, "opening marks counted on the sheet" + (f", {split['in_rcc_left_out']} in RCC walls left out" if split.get("in_rcc_left_out") else ""))
   
   if _value(params, "depth_mm") is None:
     inp.add("section", MISSING, "the opening is wider than every row of the lintel table")
@@ -208,6 +209,8 @@ def _lintel(inp: _Inputs, cand) -> None:
   inp.add("length", ASSUMED, f"opening width from the schedule plus {bearing / 25.4:g}\" bearing at each end; the drawing prints no bearing" if bearing else "the drawing prints no bearing")
   if "LINTEL_IN_THIN_WALL" in codes:
     inp.add("host wall", ASSUMED, "some of these openings sit in 4.5 inch walls and the table section is 9 inches wide")
+  if "LINTEL_WIDTH_FROM_WALL" in codes:
+    inp.add("width", ASSUMED, f"as wide as the {(f.get('section_mm') or [0])[0] / 25.4:g} inch wall these openings stand in, not the {(f.get('table_section_mm') or [0])[0] / 25.4:g} inch of the table; the drawing prints no lintel width for thin walls")
 
 def _stair(inp: _Inputs, cand) -> None:
   """A stair is the riser, tread, width and number of steps printed on the drawing. The waist slab under the steps is rarely printed, and landings are not included."""
@@ -335,6 +338,8 @@ def evidence_for(cand) -> dict:
       inp.add("area", ASSUMED, "the outline and the printed size disagree" if "ROOM_SIZE_MISMATCH" in codes else "taken from a drawn outline, not from the wall layout")
     elif from_label:
       inp.add("area", PRINTED, "the size printed in the room label")
+    elif facts.get("outline_from") == "CLOSED" and facts.get("deviation_pct") is not None:
+      inp.add("area", VERIFIED, f"measured inside the walls, joined across {(facts.get('closed_across') or {}).get('openings', 0)} door or window openings; the printed area agrees within {abs(facts['deviation_pct']):.1f}%")
     elif facts.get("label_area_m2") is not None and facts.get("deviation_pct") is not None:
       inp.add("area", VERIFIED, f"measured inside the walls; the printed area agrees within {abs(facts['deviation_pct']):.1f}%")
     else:

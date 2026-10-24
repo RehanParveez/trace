@@ -116,6 +116,25 @@ def stair_text(spec: dict) -> str:
     parts.append(f"waist {spec['waist_mm']:g} mm")
   return ", ".join(parts)
 
+RISE_TOL = 0.03
+
+def rise_check(spec: dict, way: str | None, level_hint: str | None, floor_heights: dict | None) -> dict | None:
+  from app.modules.drawings_boq.takeoff.prep.facts import FLOOR_ORDER
+  if not (spec.get("steps") and spec.get("riser_mm")) or way not in ("UP", "DOWN") or level_hint not in FLOOR_ORDER or not floor_heights:
+    return None
+  key = level_hint
+  if way == "DOWN":
+    lower = [k for k in FLOOR_ORDER[:FLOOR_ORDER.index(level_hint)] if k in floor_heights]
+    if not lower:
+      return None
+    key = lower[-1]
+  storey = ((floor_heights.get(key) or {}).get("floor_to_floor_mm"))
+  if not storey:
+    return None
+  rise = float(spec["steps"]) * float(spec["riser_mm"])
+  gap = (rise - float(storey)) / float(storey)
+  return {"rise_mm": round(rise, 1), "storey_mm": round(float(storey), 1), "storey_of": key, "gap_pct": round(gap * 100.0, 1), "differs": abs(gap) > RISE_TOL}
+
 def find_labels(lines: list) -> list[dict]:
   """The places a plan names a staircase ("STAIR", "STAIR UP"): one point each, in page units."""
   out = []
@@ -139,17 +158,20 @@ def waist_from_depth_mm(riser_mm: float, tread_mm: float, depth_mm: float) -> fl
   slope = math.hypot(riser_mm, tread_mm) / tread_mm
   return (depth_mm - riser_mm / 2.0) / slope
 
+def treads_of(steps) -> int:
+  """The treads of a stair of this many steps (risers): the top riser meets the floor or the landing, so there is one tread fewer than risers."""
+  return max(int(round(float(steps))) - 1, 1)
+
 def flight_box(spec: dict, waist_mm: float) -> dict | None:
-  """The box a flight is measured as: plan run (steps x tread) x width x equivalent thickness."""
+  """The box a flight is measured as: plan run (one tread fewer than the risers) x width x equivalent thickness."""
   for k in ("riser_mm", "tread_mm", "width_mm", "steps"):
     if not spec.get(k):
       return None
   depth = equivalent_depth_mm(float(spec["riser_mm"]), float(spec["tread_mm"]), float(waist_mm))
-  return {"length_mm": round(float(spec["steps"]) * float(spec["tread_mm"]), 1), "width_mm": round(float(spec["width_mm"]), 1), "depth_mm": round(depth, 1)}
+  return {"length_mm": round(treads_of(spec["steps"]) * float(spec["tread_mm"]), 1), "width_mm": round(float(spec["width_mm"]), 1), "depth_mm": round(depth, 1)}
 
 def run_box(spec: dict) -> dict | None:
-  """The plan run of a flight and its width, with no thickness: the size of a stair whose waist slab is not printed and has to be typed."""
   for k in ("tread_mm", "width_mm", "steps"):
     if not spec.get(k):
       return None
-  return {"length_mm": round(float(spec["steps"]) * float(spec["tread_mm"]), 1), "width_mm": round(float(spec["width_mm"]), 1)}
+  return {"length_mm": round(treads_of(spec["steps"]) * float(spec["tread_mm"]), 1), "width_mm": round(float(spec["width_mm"]), 1)}
