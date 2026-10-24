@@ -136,6 +136,9 @@ class PriceResolver:
           "rate_item_id": str(ri.id), "csr_ref": ri.csr_ref, "rate_unit": ri.unit, "rate": logic.fmt(ri.rate, 2),
           "unit_converted": m.converted, "escalation_factor": logic.fmt(factor, 4),
           "escalation_id": str(esc.id) if esc is not None else None, "as_of": self.as_of.isoformat()}
+        unsettled = next((a["result"] for a in attempts if a.get("book_id") == str(book.id) and a.get("result") in ("spec_ambiguous", "spec_not_stated")), None)
+        if unsettled is not None:
+          res.trace["spec_unresolved"] = unsettled
         if used != code:
           res.trace["spec_code"] = used
           if picked.get("code"):

@@ -266,6 +266,32 @@ export interface RefreshPayload {
   apply: boolean;
 }
 
+export type EscalationStatus = "NEW" | "ADDED" | "EXISTS" | "UNCHANGED" | "OUT_OF_RANGE" | "NO_TRADE" | "TOO_FEW";
+
+export interface EscalationFromComparePayload {
+  other_book_id: string;
+  match_on: CompareMatch;
+  trades?: string[] | null;
+  include_overall: boolean;
+  effective_from?: string | null;
+  apply: boolean;
+}
+
+export interface EscalationProposal {
+  trade_scope: string;
+  factor: string;
+  matched: number;
+  status: EscalationStatus;
+}
+
+export interface EscalationFromCompareResult {
+  applied: boolean;
+  other: BookInfo;
+  effective_from: string;
+  proposals: EscalationProposal[];
+  created: number;
+}
+
 export interface RefreshResult {
   applied: boolean;
   source: BookInfo;

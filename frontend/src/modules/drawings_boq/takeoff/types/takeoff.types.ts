@@ -451,6 +451,8 @@ export interface AcceptBody {
   tile_height_mm?: number | null;
   boundary_side_mm?: number | null;
   boundary_rear_mm?: number | null;
+  rain_pipe_length_mm?: number | null;
+  sewer_length_mm?: number | null;
   stair_waist_mm?: number | null;
   site_length_mm?: number | null;
   site_width_mm?: number | null;

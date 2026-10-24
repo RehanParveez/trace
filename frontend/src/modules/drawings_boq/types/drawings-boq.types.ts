@@ -2325,3 +2325,59 @@ export interface RangeDrivers {
   units: RangeDriversUnit[];
   stale?: RangeStale;
 }
+
+export interface ValueAtRiskTotals {
+  likely: number;
+  low: number;
+  high: number;
+  worst_low: number;
+  worst_high: number;
+  swing_down: number;
+  swing_up: number;
+  priced_items: number;
+  unpriced_items: number;
+  behind_assumption: number;
+  behind_assumption_pct: number | null;
+  open_amount: number;
+  open_amount_pct: number | null;
+  minimum_amount: number;
+  ungraded_amount: number;
+  typed_amount: number;
+  labour_left_out: number;
+}
+
+export interface ValueAtRiskGrade {
+  grade: string;
+  amount: number;
+  items: number;
+  share_pct: number | null;
+}
+
+export interface ValueAtRiskLine {
+  item_id: string;
+  name: string | null;
+  unit?: string | null;
+  amount?: number;
+  down?: number;
+  up?: number;
+  weakest?: string;
+  quantity?: number;
+}
+
+export interface ValueAtRiskFlag {
+  code: string;
+  text: string;
+  items: number;
+  amount: number | null;
+  top_items: ValueAtRiskLine[];
+}
+
+export interface ValueAtRisk {
+  totals: ValueAtRiskTotals;
+  by_grade: ValueAtRiskGrade[];
+  top_swing: ValueAtRiskLine[];
+  top_open: ValueAtRiskLine[];
+  unpriced: ValueAtRiskLine[];
+  flags: ValueAtRiskFlag[];
+}
+

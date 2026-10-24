@@ -300,6 +300,39 @@ def compare_books(items_a: list[dict], items_b: list[dict], *, match_on: str = "
     "overall_ratio": str(Decimal(str(median(all_ratios))).quantize(Decimal("0.0001"))) if all_ratios else None,
     "suggested_factors": factors, "lines": lines}
 
+ESCALATION_MIN_RATIO = Decimal("0.5")
+ESCALATION_MAX_RATIO = Decimal("3")
+ESCALATION_MIN_MATCHED = 5
+NEW, EXISTS, UNCHANGED, OUT_OF_RANGE, NO_TRADE, TOO_FEW = "NEW", "EXISTS", "UNCHANGED", "OUT_OF_RANGE", "NO_TRADE", "TOO_FEW"
+
+def plan_escalations(compared: dict, *, trades: set[str] | None, include_overall: bool, existing: set[str]) -> list[dict]:
+  out: list[dict] = []
+  for f in compared.get("suggested_factors") or []:
+    trade = str(f["trade"])
+    if trades is not None and trade not in trades:
+      continue
+    out.append(_proposal(trade, Decimal(f["median_ratio"]), int(f["matched"]), existing, named=trade != "—"))
+  if include_overall and compared.get("overall_ratio") is not None:
+    matched = int(compared.get("matched") or 0)
+    out.append(_proposal("ALL", Decimal(compared["overall_ratio"]), matched, existing, named=True))
+  return out
+
+def _proposal(scope: str, ratio: Decimal, matched: int, existing: set[str], *, named: bool) -> dict:
+  ratio = ratio.quantize(Decimal("0.0001"))
+  if not named:
+    status = NO_TRADE
+  elif matched < ESCALATION_MIN_MATCHED:
+    status = TOO_FEW
+  elif ratio == 1:
+    status = UNCHANGED
+  elif not (ESCALATION_MIN_RATIO <= ratio <= ESCALATION_MAX_RATIO):
+    status = OUT_OF_RANGE
+  elif scope.lower() in existing:
+    status = EXISTS
+  else:
+    status = NEW
+  return {"trade_scope": scope, "factor": str(ratio), "matched": matched, "status": status}
+
 def history_series(entries: list[dict]) -> list[dict]:
   ordered = sorted(entries, key=lambda e: (e["effective_from"] or "", e["version"]))
   out, prev = [], None

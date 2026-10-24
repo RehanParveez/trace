@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
+from app.modules.drawings_boq.takeoff.extract import drainage as DR
 
 KEY = "typed"
 
@@ -15,6 +16,10 @@ def fields_used(category: str, missing: list, facts: dict | None, typed: dict, n
     tokens = ("length_mm", "width_mm", "height_mm", "thickness_mm") if f.get("site_kind") in SI.TANK_KINDS else (missing or [])
     for token in tokens:
       put(SI.TYPED_FIELD.get(token))
+    return out
+
+  if category == "WALL" and f.get("foundation_item") in DR.TYPED_FIELD:
+    put(DR.TYPED_FIELD[f["foundation_item"]])
     return out
 
   if category == "STAIR" and "waist_mm" in (missing or []):

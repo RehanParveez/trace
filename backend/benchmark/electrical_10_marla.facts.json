@@ -27,6 +27,38 @@
    "note": "master bedroom, bedroom, lounge (the SD symbol)"
   },
   {
+   "kind": "ELECTRICAL",
+   "symbol": "EXTERNAL WALL BRACKET LIGHT (W.P)",
+   "page": 6,
+   "floor": "GROUND",
+   "count": 8,
+   "note": "DRAFT, from the reader and checked by eye on an overlay: 3 on the top wall, 2 on the left, 3 on the front"
+  },
+  {
+   "kind": "ELECTRICAL",
+   "symbol": "LAWN LIGHT",
+   "page": 6,
+   "floor": "GROUND",
+   "count": 4,
+   "note": "DRAFT, from the reader and checked by eye on an overlay"
+  },
+  {
+   "kind": "ELECTRICAL",
+   "symbol": "SURFACE MOUNTED CEILING LIGHT",
+   "page": 6,
+   "floor": "GROUND",
+   "count": 37,
+   "note": "DRAFT, from the reader and checked by eye on an overlay (the circle with a cross)"
+  },
+  {
+   "kind": "ELECTRICAL",
+   "symbol": "3P-5 AMP LIGHT PLUG",
+   "page": 6,
+   "floor": "GROUND",
+   "count": 18,
+   "note": "DRAFT, from the reader and checked by eye on an overlay"
+  },
+  {
    "kind": "ROOM_AREA",
    "name": "MASTER BEDROOM",
    "floor": "GROUND",

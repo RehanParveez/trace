@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { pricingKeys } from "../../hooks";
 import { schedulesApi, type RowQuery } from "../api/schedules.api";
-import type {BulkPayload, CompareMatch, ImportRow, ImportStatus, PublishPayload, RateImport, RefreshPayload, ReparsePayload, RowUpdatePayload, UploadPayload,
+import type {BulkPayload, CompareMatch, EscalationFromComparePayload, ImportRow, ImportStatus, PublishPayload, RateImport, RefreshPayload, ReparsePayload, RowUpdatePayload, UploadPayload,
 } from "../types/schedules.types";
 
 const PAGE = 80;
@@ -137,6 +137,20 @@ export function useRefreshBook(bookId: string) {
         void qc.invalidateQueries({ queryKey: pricingKeys.itemsAll(bookId) });
         void qc.invalidateQueries({ queryKey: pricingKeys.analyses(bookId) });
         void qc.invalidateQueries({ queryKey: pricingKeys.book(bookId) });
+      }
+    },
+  });
+}
+
+export function useEscalationsFromCompare(bookId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: EscalationFromComparePayload) => schedulesApi.escalationsFromCompare(bookId, payload),
+    onSuccess: (result) => {
+      if (result.applied && result.created > 0) {
+        void qc.invalidateQueries({ queryKey: pricingKeys.escalations(bookId) });
+        void qc.invalidateQueries({ queryKey: pricingKeys.book(bookId) });
+        void qc.invalidateQueries({ queryKey: pricingKeys.booksAll() });
       }
     },
   });

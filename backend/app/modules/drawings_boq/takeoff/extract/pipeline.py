@@ -29,6 +29,9 @@ from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.extract import tank_steel as TSTEEL
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import boundary as BDY
+from app.modules.drawings_boq.takeoff.extract import staging as STG
+from app.modules.drawings_boq.takeoff.extract import drainage as DR
+from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.extract import opening_symbols as OS
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
@@ -1621,6 +1624,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   roof_layers, roof_notes, res.stats["roof_layers"] = FLL.roof_candidates([c for c in res.candidates if (c.facts or {}).get("foundation_item") == FD.ROOF_TREATMENT], spec_facts, ctx, Candidate, _finish)
   res.candidates.extend(roof_layers)
   res.notes.extend(roof_notes)
+  props = STG.props_candidates([c for c in res.candidates if c.category == "SLAB"], floor_heights, ctx, Candidate, _finish)
+  res.candidates.extend(props)
+  res.stats["props_items"] = len(props)
   pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish)
   res.candidates.extend(pads)
   res.stats["concrete_beds"] = len(pads)
@@ -1735,6 +1741,10 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           mm_per_pt, ctx, level_hint, [c for c in res.candidates if c.category == "WINDOW"]), [])
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
+        scaffold, scaffold_notes = STG.scaffold_candidates(finishes, floor_heights, level_hint, ctx, Candidate, _finish)
+        res.candidates.extend(scaffold)
+        res.notes.extend(scaffold_notes[:1])
+        res.stats["scaffold_items"] = len(scaffold)
       if lowest_level:
         sink: dict = {}
         
@@ -1914,14 +1924,19 @@ def _finish_site(c: Candidate, ctx: dict, base: float) -> Candidate:
   c.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
   return c
 
+def _site_ctx(kw: dict) -> dict:
+  return {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") == "OCR" else 1.0)}
+
 def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction:
-  ctx = {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") == "OCR" else 1.0)}
+  ctx = _site_ctx(kw)
   sites = _site_candidates(SI.find(index.words, mm_per_pt, kw.get("tank_details")), ctx)
-  
   res.candidates.extend(sites)
   boundary = BDY.candidates(sites, ctx, Candidate, _finish_site)
   res.candidates.extend(boundary)
   res.stats["boundary_items"] = len(boundary)
+  drainage = DR.candidates(index.words, kw.get("floor_heights"), ctx, Candidate, _finish_site)
+  res.candidates.extend(drainage)
+  res.stats["drainage_items"] = len(drainage)
   res.stats["qs_site"] = QR.apply(sites, None)
   res.stats["site_items"] = {c.facts["site_kind"]: 1 for c in sites}
   res.stats["site_tank_walls"] = _tank_twin_walls(res, sites)
@@ -1971,9 +1986,17 @@ def _scan_reading_notes(res: Extraction, scan: dict | None) -> None:
   if scan.get("ocr_repaired"):
     res.notes.append(C.note("SCAN_FIGURES_REPAIRED", count=int(scan["ocr_repaired"]), repairs=list(scan.get("ocr_repairs") or [])))
 
+def _with_electrical(res: Extraction, electrical: dict | None, kw: dict) -> None:
+  found = EL.candidates(electrical, _site_ctx(kw), Candidate, _finish_site)
+  res.candidates.extend(found)
+  res.notes.extend(EL.sheet_notes(electrical))
+  res.stats["electrical_items"] = len(found)
+
 def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
   scan = kw.pop("scan_reading", None)
+  electrical = kw.pop("electrical", None)
   res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)
+  _with_electrical(res, electrical, kw)
   _scan_reading_notes(res, scan)
   return res
 

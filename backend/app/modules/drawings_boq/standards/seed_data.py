@@ -69,6 +69,20 @@ WORK_ITEMS = [
   ("JOI-DOOR-FRAME", "Door frames (area of the frame)", "m2", "Joinery", "DEFAULT"),
   ("JOI-DOOR-AREA", "Doors (area of the openings)", "m2", "Joinery", "DEFAULT"),
   ("JOI-WIN-AREA", "Windows and ventilators (area of the openings)", "m2", "Joinery", "DEFAULT"),
+  ("SCF-EXTERNAL", "External scaffolding to the outside walls above the threshold height", "m2", "Scaffolding", "DEFAULT"),
+  ("FRM-PROPS", "Props under slabs above the threshold clear height", "m2", "Formwork", "FORMWORK"),
+  ("DRN-RWP", "Rain water pipe (down pipe) from the roof to the ground", "m", "Plumbing", "DEFAULT"),
+  ("DRN-SEWER", "Sewer pipe line", "m", "Plumbing", "DEFAULT"),
+  ("DRN-MANHOLE", "Manhole on the drainage line", "nos", "Plumbing", "DEFAULT"),
+  ("DRN-CHAMBER", "Inspection chamber on the drainage line", "nos", "Plumbing", "DEFAULT"),
+  ("DRN-GULLY", "Gully trap on the drainage line", "nos", "Plumbing", "DEFAULT"),
+  ("ELE-LIGHT", "Electrical light fitting, supply and fix, counted from the plan legend", "nos", "Electrical", "DEFAULT"),
+  ("ELE-FAN", "Electrical fan point, ceiling or wall fan or exhaust fan, supply and fix", "nos", "Electrical", "DEFAULT"),
+  ("ELE-SOCKET", "Electrical socket or plug point, supply and fix", "nos", "Electrical", "DEFAULT"),
+  ("ELE-SWITCH", "Electrical switch or switch plate, supply and fix", "nos", "Electrical", "DEFAULT"),
+  ("ELE-LOWV", "Telephone, TV, data, alarm, camera and bell points, supply and fix", "nos", "Electrical", "DEFAULT"),
+  ("ELE-BOARD", "Distribution board, earth set, UPS or generator, supply and fix", "nos", "Electrical", "DEFAULT"),
+  ("ELE-OTHER", "Other electrical point counted from the plan legend", "nos", "Electrical", "DEFAULT"),
 ]
 
 MAPPINGS = [

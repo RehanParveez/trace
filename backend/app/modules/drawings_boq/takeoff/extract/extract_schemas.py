@@ -103,6 +103,8 @@ class AcceptRequest(BaseModel):
   site_thickness_mm: Decimal | None = Field(default=None, gt=0, le=3000, description="Items outside the building: the thickness of the walls and slabs of a tank, of a boundary wall or of a ramp slab.")
   boundary_side_mm: Decimal | None = Field(default=None, ge=0, le=60000, description="Boundary wall: the length of one side wall (the two sides are taken as equal); 0 where there is none.")
   boundary_rear_mm: Decimal | None = Field(default=None, ge=0, le=60000, description="Boundary wall: the length of the rear wall; 0 where there is none.")
+  rain_pipe_length_mm: Decimal | None = Field(default=None, gt=0, le=60000, description="Rain water pipes: the length of one pipe, from the roof to the ground. Replaces the fall worked out from the levels of the building sections.")
+  sewer_length_mm: Decimal | None = Field(default=None, gt=0, le=60000, description="Sewer pipe line: the total length of the line, which the sheet draws as a diagram that is not to scale.")
   work_items: dict[str, str] | None = Field(default=None, description="Work item code to use per kind of item: a category, or the name of a piece of work worked out from other readings (TERMITE_STRIP, MEMBRANE, DOOR_FRAME and the rest), e.g. {\"WALL\": \"MAS-BLOCK\", \"TERMITE_STRIP\": \"PRO-TERMITE\"}.")
   level_id: UUID | None = None
   section_picks: dict[UUID, str] | None = Field(default=None, max_length=500, description="The beam section (mark) chosen for a beam that lists several, by candidate id. Its depth and bars are put on the beam.")

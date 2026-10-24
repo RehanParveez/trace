@@ -19,6 +19,7 @@ RADIAL_TOL = 0.10
 HEIGHT_RE = re.compile(r"(?P<what>[A-Z][A-Za-z /\[\]()&.\-]{2,60}?)\s*=\s*(?P<ft>\d{1,2})\s*'\s*-\s*(?P<in>\d{1,2})\s*\"")
 IN_NAME_HEIGHT_RE = re.compile(r"\(?\s*(?:AT\s+)?(?P<ft>\d{1,2})\s*'\s*-\s*(?P<in>\d{1,2})\s*\"\s*(?:\(?\s*A\.?\s*F\.?\s*FL\.?\s*\)?)?\s*\)?", re.I)
 SIZE_CLUSTER = 1.15            
+MIN_TOKEN_CHARS = 2
 
 @dataclass
 class Obj:
@@ -35,10 +36,15 @@ class LegendSymbol:
   row: int
   objects: list
   mounting_height_mm: float | None = None
+  token: str = ""
+
+  @property
+  def by_text(self) -> bool:
+    return len(self.objects) < MIN_SYMBOL_OBJECTS and bool(self.token)
 
   @property
   def countable(self) -> bool:
-    return len(self.objects) >= MIN_SYMBOL_OBJECTS
+    return len(self.objects) >= MIN_SYMBOL_OBJECTS or bool(self.token)
 
 @dataclass
 class Hit:
@@ -110,6 +116,32 @@ def load_objects(page) -> tuple[list, dict]:
     out.append(Obj(i, int(o.type), n, tuple(float(v) for v in b)))
   stats["objects"] = len(out)
   return out, stats
+
+def _token_key(text: str) -> str:
+  return re.sub(r"\s+", "", text or "").upper()
+
+def _usable_token(text: str) -> str:
+  key = _token_key(text)
+  return key if len(re.sub(r"[^A-Z0-9]", "", key)) >= MIN_TOKEN_CHARS else ""
+
+def read_tokens(page) -> list:
+  import pypdfium2.raw as raw
+  rot, ox, oy, wu, hu = _geometry(page)
+  to_d = _to_display(rot, ox, oy, wu, hu)
+  tp = page.get_textpage()
+  out: list = []
+
+  for i, o in enumerate(page.get_objects(filter=[raw.FPDF_PAGEOBJ_TEXT], max_depth=0)):
+    try:
+      l, b, r, t = o.get_bounds()
+      text = tp.get_text_bounded(left=l, bottom=b, right=r, top=t) or ""
+      box = to_d((l, b, r, t))
+    except Exception:
+      continue
+    key = _token_key(text)
+    if key:
+      out.append((i, key, tuple(float(v) for v in box)))
+  return out
 
 def _w(b) -> float:
   return b[2] - b[0]
@@ -195,11 +227,12 @@ def read_legend(page) -> list:
       if not desc or not cell:
         continue
     
+      token = _usable_token(_text(tp, rot, ox, oy, wu, hu, (x0 + 1, y0 + 1, x1 - 1, y1 - 1))) if any(o.kind == 1 for o in cell) else ""
       m = IN_NAME_HEIGHT_RE.search(desc)
       name = re.sub(r"\s+", " ", IN_NAME_HEIGHT_RE.sub("", desc)).strip().rstrip(" -(")
       key = name.upper()
       height = round(int(m.group("ft")) * 304.8 + int(m.group("in")) * 25.4, 1) if m else next((v for k, v in heights.items() if k and (k in key or key in k)), None)
-      symbols.append(LegendSymbol(description=desc, name=name, table=ti, row=ri, objects=sorted(cell, key=lambda o: o.index), mounting_height_mm=height))
+      symbols.append(LegendSymbol(description=desc, name=name, table=ti, row=ri, objects=sorted(cell, key=lambda o: o.index), mounting_height_mm=height, token=token))
   return symbols
 
 def _radial(objs: list) -> list:
@@ -249,7 +282,13 @@ def _find(plan: list, symbol: LegendSymbol, narr, prefix) -> list:
     hits.append(Hit(symbol.name, run[0].index, run[-1].index, round(scale, 2), pb, _centre(pb)))
   return hits
 
-def count_symbols(plan_objects: list, legend: list) -> PageReport:
+def _count_text(rep: PageReport, sym: LegendSymbol, tokens: list) -> None:
+  found = [t for t in tokens if t[1] == sym.token]
+  for i, _, box in found:
+    rep.hits.append(Hit(sym.name, i, i, 1.0, box, _centre(box)))
+  rep.counts[sym.name] = rep.counts.get(sym.name, 0) + len(found)
+
+def count_symbols(plan_objects: list, legend: list, tokens: list | None = None) -> PageReport:
   rep = PageReport()
   if not plan_objects:
     return rep
@@ -262,6 +301,9 @@ def count_symbols(plan_objects: list, legend: list) -> PageReport:
     if not sym.countable:
       if key not in rep.not_countable:
         rep.not_countable.append(key)
+      continue
+    if sym.by_text:
+      _count_text(rep, sym, tokens or [])
       continue
   
     kept, aside = _one_size([h for h in _find(plan_objects, sym, narr, prefix)
@@ -294,11 +336,11 @@ def _one_size(hits: list) -> tuple:
 def read_electrical(doc, legend_page_index: int, plan_page_indexes: list) -> dict:
   legend = read_legend(doc[legend_page_index])
   out = {"legend_page": legend_page_index + 1, "symbols": [{"name": s.name, "description": s.description, "objects": len(s.objects),
-    "countable": s.countable, "mounting_height_mm": s.mounting_height_mm} for s in legend], "pages": {}}
+    "countable": s.countable, "by_text": s.by_text, "text": s.token, "mounting_height_mm": s.mounting_height_mm} for s in legend], "pages": {}}
   
   for pi in plan_page_indexes:
     objs, st = load_objects(doc[pi])
-    rep = count_symbols(objs, legend)
+    rep = count_symbols(objs, legend, read_tokens(doc[pi]))
     rep.stats = st
     out["pages"][pi + 1] = {"counts": rep.counts, "not_found": rep.not_found, "not_countable": rep.not_countable, "stats": st,
       "set_aside_other_size": collections.Counter(h.name for h in rep.set_aside),

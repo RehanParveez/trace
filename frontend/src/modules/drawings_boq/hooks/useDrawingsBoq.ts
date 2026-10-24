@@ -307,6 +307,19 @@ export function useBOQRangeDrivers(
   });
 }
 
+export function useBOQValueAtRisk(
+  boqVersionId: string | undefined,
+) {
+  return useQuery({
+    queryKey: [...drawingsBoqKeys.boqItems(boqVersionId ?? ""), "value-at-risk"] as const,
+    queryFn: () =>
+      drawingsBoqApi.getValueAtRisk(
+        boqVersionId as string,
+      ),
+    enabled: Boolean(boqVersionId),
+  });
+}
+
 export function useUpdateBOQItem(
   boqVersionId: string,
 ) {

@@ -1,27 +1,39 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge, EmptyState, ErrorState, Field, inputClass, LoadingState, Panel, PanelHeader, StatCard, TableShell } from "../../../../organizations/components/OrganizationUi";
+import { Badge, Button, EmptyState, ErrorState, Field, inputClass, LoadingState, Panel, PanelHeader, StatCard, TableShell, useToast } from "../../../../organizations/components/OrganizationUi";
+import { getApiErrorMessage } from "../../../../identity";
 import { useRateBooks } from "../../hooks";
 import type { RateBook } from "../../types/pricing.types";
-import { deltaClass, formatDate, formatPercent, rateBookTitle } from "../../utils/pricing.utils";
-import { useCompareBooks, useRateHistory } from "../hooks/useSchedules";
-import type { CompareLine, CompareMatch } from "../types/schedules.types";
+import { canEscalate, deltaClass, formatDate, formatPercent, rateBookTitle } from "../../utils/pricing.utils";
+import { useCompareBooks, useEscalationsFromCompare, useRateHistory } from "../hooks/useSchedules";
+import type { CompareLine, CompareMatch, EscalationFromCompareResult, EscalationStatus } from "../types/schedules.types";
 import { formatRate } from "../utils/schedules.utils";
 
 const LINE_CAP = 200;
 const STATUS_TONE: Record<CompareLine["status"], "green" | "red" | "gold" | "slate"> = { ADDED: "green", REMOVED: "red", CHANGED: "gold", UNIT_MISMATCH: "slate" };
 const STATUS_LABEL: Record<CompareLine["status"], string> = { ADDED: "Only in the other book", REMOVED: "Not in the other book", CHANGED: "Changed", UNIT_MISMATCH: "Units don't convert" };
 
-export function BookToolsPanel({ book }: { book: RateBook }) {
+const ESC_TONE: Record<EscalationStatus, "green" | "red" | "gold" | "slate" | "blue"> = { NEW: "blue", ADDED: "green", EXISTS: "slate", UNCHANGED: "slate", OUT_OF_RANGE: "red", NO_TRADE: "gold", TOO_FEW: "gold" };
+const ESC_LABEL: Record<EscalationStatus, string> = {
+  NEW: "Will be added",
+  ADDED: "Added",
+  EXISTS: "Already there on this date",
+  UNCHANGED: "No change (×1)",
+  OUT_OF_RANGE: "Outside ×0.5 to ×3: type it by hand if it is right",
+  NO_TRADE: "These rates have no trade name",
+  TOO_FEW: "Fewer than 5 matched rates",
+};
+
+export function BookToolsPanel({ book, canManage = false }: { book: RateBook; canManage?: boolean }) {
   return (
     <div className="space-y-7">
-      <ComparePanel book={book} />
+      <ComparePanel book={book} canManage={canManage} />
       <HistoryPanel book={book} />
     </div>
   );
 }
 
-function ComparePanel({ book }: { book: RateBook }) {
+function ComparePanel({ book, canManage }: { book: RateBook; canManage: boolean }) {
   const { t } = useTranslation();
   const books = useRateBooks({});
   const [otherId, setOtherId] = useState("");
@@ -76,6 +88,8 @@ function ComparePanel({ book }: { book: RateBook }) {
             </div>
           ) : null}
 
+          {canManage && canEscalate(book) ? <EscalationApproval book={book} otherId={otherId} matchOn={matchOn} otherFrom={result.book_b.effective_from} /> : null}
+
           <TableShell>
             <table className="w-full min-w-[760px] text-left text-[12.5px]">
               <thead className="bg-[var(--color-surface-muted)] text-[11px] uppercase tracking-[0.08em] text-[var(--color-text-muted)]">
@@ -108,6 +122,80 @@ function ComparePanel({ book }: { book: RateBook }) {
         </div>
       )}
     </Panel>
+  );
+}
+
+function EscalationApproval({ book, otherId, matchOn, otherFrom }: { book: RateBook; otherId: string; matchOn: CompareMatch; otherFrom: string | null }) {
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const run = useEscalationsFromCompare(book.id);
+  const [date, setDate] = useState(otherFrom ?? "");
+  const [overall, setOverall] = useState(false);
+  const [plan, setPlan] = useState<EscalationFromCompareResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const toAdd = plan ? plan.proposals.filter((p) => p.status === "NEW").length : 0;
+
+  function send(apply: boolean) {
+    setError(null);
+    run.mutate(
+      { other_book_id: otherId, match_on: matchOn, include_overall: overall, effective_from: date || null, apply },
+      {
+        onSuccess: (result) => {
+          setPlan(result);
+          if (result.applied) showToast({ tone: "success", title: t("schedules.esc.addedToast", "{{n}} escalation(s) added", { n: result.created }) });
+        },
+        onError: (e) => setError(getApiErrorMessage(e, t("schedules.esc.error", "Couldn't work out the escalations."))),
+      },
+    );
+  }
+
+  return (
+    <div className="rounded-[8px] border border-[var(--color-border)] p-4" data-testid="escalation-approval">
+      <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--color-text-muted)]">{t("schedules.esc.title", "Add these as escalations on this book")}</div>
+      <p className="mt-1 text-[12px] text-[var(--color-text-secondary)]">
+        {t("schedules.esc.desc", "Each trade's factor is the median of new rate over old rate, worked out from the two books. Look at the list first; nothing is added until you approve it. A bill priced on or after the date then carries the factor.")}
+      </p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-[200px_1fr_auto] sm:items-end">
+        <Field label={t("schedules.esc.date", "Applies from")}>
+          <input type="date" className={inputClass} value={date} onChange={(e) => { setDate(e.target.value); setPlan(null); }} />
+        </Field>
+        <label className="flex items-center gap-2 text-[12.5px]">
+          <input type="checkbox" checked={overall} onChange={(e) => { setOverall(e.target.checked); setPlan(null); }} />
+          {t("schedules.esc.overall", "Also add one factor for the whole book (median of every matched rate)")}
+        </label>
+        <Button variant="secondary" size="sm" onClick={() => send(false)} disabled={run.isPending || (!date && !otherFrom)}>
+          {t("schedules.esc.preview", "Show the escalations")}
+        </Button>
+      </div>
+      {!otherFrom && !date ? <p className="mt-2 text-[12px] text-[var(--color-warning)]">{t("schedules.esc.noDate", "The other edition has no effective date. Give the date the new rates apply from.")}</p> : null}
+      {error ? <p className="mt-2 text-[12px] text-[var(--color-danger)]">{error}</p> : null}
+      {plan ? (
+        <div className="mt-3">
+          {plan.proposals.length === 0 ? (
+            <p className="text-[12.5px] text-[var(--color-text-secondary)]">{t("schedules.esc.none", "No trade has 5 or more matched rates, so there is nothing to add.")}</p>
+          ) : (
+            <ul className="m-0 list-none space-y-1.5 pl-0 text-[12.5px]">
+              {plan.proposals.map((p) => (
+                <li key={p.trade_scope} className="flex flex-wrap items-center gap-2" data-testid={`esc-${p.trade_scope}`}>
+                  <span className="min-w-[120px] font-semibold">{p.trade_scope === "ALL" ? t("schedules.esc.all", "Whole book") : p.trade_scope}</span>
+                  <span className="font-mono">×{p.factor}</span>
+                  <span className="text-[var(--color-text-muted)]">{t("schedules.esc.matched", "{{n}} matched rates", { n: p.matched })}</span>
+                  <Badge tone={ESC_TONE[p.status]}>{t(`schedules.esc.status.${p.status}`, ESC_LABEL[p.status])}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!plan.applied && toAdd > 0 ? (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <Button variant="primary" size="sm" onClick={() => send(true)} disabled={run.isPending}>
+                {t("schedules.esc.approve", "Approve and add {{n}} escalation(s) from {{date}}", { n: toAdd, date: formatDate(plan.effective_from) })}
+              </Button>
+              <span className="text-[12px] text-[var(--color-text-muted)]">{t("schedules.esc.undo", "You can remove any of them later on the Escalations tab.")}</span>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

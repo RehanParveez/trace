@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import date
 from pydantic import BaseModel, Field
 from typing import Literal
 from uuid import UUID
@@ -19,6 +20,21 @@ class HistoryResponse(BaseModel):
   work_item_code: str
   unit: str | None
   points: list[dict]
+
+class EscalationFromCompareRequest(BaseModel):
+  other_book_id: UUID
+  match_on: Literal["csr_ref", "code"] = "code"
+  trades: list[str] | None = Field(default=None, max_length=100)
+  include_overall: bool = False
+  effective_from: date | None = None
+  apply: bool = False
+
+class EscalationFromCompareResponse(BaseModel):
+  applied: bool
+  other: dict
+  effective_from: str
+  proposals: list[dict]
+  created: int
 
 class RefreshRequest(BaseModel):
   source_book_id: UUID

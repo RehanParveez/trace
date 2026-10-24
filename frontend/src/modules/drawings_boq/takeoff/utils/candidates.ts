@@ -47,6 +47,8 @@ export type HeightField =
   | "tile_height_mm"
   | "boundary_side_mm"
   | "boundary_rear_mm"
+  | "rain_pipe_length_mm"
+  | "sewer_length_mm"
   | "stair_waist_mm"
   | "site_length_mm"
   | "site_width_mm"
@@ -80,6 +82,8 @@ const HEIGHT_ORDER: HeightField[] = [
   "tile_height_mm",
   "boundary_side_mm",
   "boundary_rear_mm",
+  "rain_pipe_length_mm",
+  "sewer_length_mm",
   "stair_waist_mm",
   "site_length_mm",
   "site_width_mm",
@@ -115,6 +119,8 @@ export const NO_HEIGHTS: Heights = {
   tile_height_mm: "",
   boundary_side_mm: "",
   boundary_rear_mm: "",
+  rain_pipe_length_mm: "",
+  sewer_length_mm: "",
   stair_waist_mm: "",
   site_length_mm: "",
   site_width_mm: "",
@@ -149,6 +155,8 @@ export const HEIGHT_LABEL: Record<HeightField, string> = {
   tile_height_mm: "Kitchen wall tile height (mm)",
   boundary_side_mm: "Boundary wall: length of one side wall, 0 where there is none (mm)",
   boundary_rear_mm: "Boundary wall: length of the rear wall, 0 where there is none (mm)",
+  rain_pipe_length_mm: "Rain water pipe: length of one pipe, roof to ground (mm)",
+  sewer_length_mm: "Sewer pipe line: total length of the line (mm)",
   stair_waist_mm: "Stair waist slab thickness under the steps (mm)",
   site_length_mm: "Site item: outside length of the tank, length of the ramp, or width of the gate (mm)",
   site_width_mm: "Site item: outside width of the tank or width of the ramp (mm)",
@@ -199,10 +207,25 @@ export type FoundationItem =
   | "ROOF_POLYTHENE"
   | "BOUNDARY_RETURNS"
   | "BOUNDARY_PLASTER"
-  | "BOUNDARY_PAINT";
+  | "BOUNDARY_PAINT"
+  | "SCAFFOLD_OUTSIDE"
+  | "PROPS_SLAB"
+  | "RAIN_PIPE"
+  | "SEWER_PIPE"
+  | "DRAIN_MANHOLE"
+  | "INSPECTION_CHAMBER"
+  | "GULLY_TRAP"
+  | "ELEC_LIGHT"
+  | "ELEC_FAN"
+  | "ELEC_SOCKET"
+  | "ELEC_SWITCH"
+  | "ELEC_LOWV"
+  | "ELEC_BOARD"
+  | "ELEC_OTHER";
 
 const FOUNDATION_ITEMS: FoundationItem[] = [
   "EXCAVATION_AREA",
+
   "TRENCH",
   "PCC_STRIP",
   "TERMITE_STRIP",
@@ -245,11 +268,27 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "BOUNDARY_RETURNS",
   "BOUNDARY_PLASTER",
   "BOUNDARY_PAINT",
+  "SCAFFOLD_OUTSIDE",
+  "PROPS_SLAB",
+  "RAIN_PIPE",
+  "SEWER_PIPE",
+  "DRAIN_MANHOLE",
+  "INSPECTION_CHAMBER",
+  "GULLY_TRAP",
+  "ELEC_LIGHT",
+  "ELEC_FAN",
+  "ELEC_SOCKET",
+  "ELEC_SWITCH",
+  "ELEC_LOWV",
+  "ELEC_BOARD",
+  "ELEC_OTHER",
 ];
 
 const BOUNDARY_ITEMS: FoundationItem[] = ["BOUNDARY_RETURNS", "BOUNDARY_PLASTER", "BOUNDARY_PAINT"];
 
 export const ZERO_OK_FIELDS: HeightField[] = ["boundary_side_mm", "boundary_rear_mm"];
+
+const LONG_FIELDS: HeightField[] = ["rain_pipe_length_mm", "sewer_length_mm"];
 
 const LAYER_ITEMS: FoundationItem[] = [
   "FLOOR_PCC",  "FLOOR_BALLAST",
@@ -329,6 +368,10 @@ function foundationFields(c: Pick<TakeoffCandidate, "category" | "missing" | "fa
     if (c.missing.includes("rear_length_mm")) out.push("boundary_rear_mm");
     if (c.missing.includes("height_mm")) out.push("site_height_mm");
     if (c.missing.includes("thickness_mm")) out.push("site_thickness_mm");
+    return out;
+  }
+  if (item === "RAIN_PIPE" || item === "SEWER_PIPE") {
+    if (c.missing.includes("length_mm")) out.push(item === "RAIN_PIPE" ? "rain_pipe_length_mm" : "sewer_length_mm");
     return out;
   }
   if (c.missing.includes("strip_width_mm")) {
@@ -436,6 +479,20 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   BOUNDARY_RETURNS: "Boundary wall: side and rear walls",
   BOUNDARY_PLASTER: "Plaster on the boundary wall",
   BOUNDARY_PAINT: "Paint on the boundary wall",
+  SCAFFOLD_OUTSIDE: "Scaffolding on the outside walls above 3.6 m",
+  PROPS_SLAB: "Props under slabs clearer than 3.6 m",
+  RAIN_PIPE: "Rain water pipes",
+  SEWER_PIPE: "Sewer pipe line",
+  DRAIN_MANHOLE: "Manholes",
+  INSPECTION_CHAMBER: "Inspection chambers",
+  GULLY_TRAP: "Gully traps",
+  ELEC_LIGHT: "Electrical lights",
+  ELEC_FAN: "Electrical fans",
+  ELEC_SOCKET: "Electrical sockets and plugs",
+  ELEC_SWITCH: "Electrical switches",
+  ELEC_LOWV: "Telephone, TV, data, alarm and bell points",
+  ELEC_BOARD: "Electrical boards, earthing and supply",
+  ELEC_OTHER: "Other electrical points",
 };
 
 export const SITE_TEXT: Record<SiteKind, string> = {
@@ -495,6 +552,7 @@ export function neededHeights(list: TakeoffCandidate[], picks?: Record<string, s
 export function validHeight(text: string, field?: HeightField): number | null {
   const n = Number(text.trim().replace(/,/g, ""));
   if (field !== undefined && ZERO_OK_FIELDS.includes(field)) return text.trim() !== "" && Number.isFinite(n) && n >= 0 && n <= 60000 ? n : null;
+  if (field !== undefined && LONG_FIELDS.includes(field)) return Number.isFinite(n) && n >= 75 && n <= 60000 ? n : null;
   return Number.isFinite(n) && n >= 75 && n <= 20000 ? n : null;
 }
 
@@ -688,6 +746,64 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     const each = num(f.area_each_m2);
     const total = num(f.area_m2);
     return [count !== null ? `${count} ${item === "DOOR_AREA" ? "door" : "window"}${count === 1 ? "" : "s"}` : null, size ? `${Math.round(size[0])}×${Math.round(size[1])} mm` : null, each !== null ? `${each.toFixed(2)} m² each` : null, total !== null ? `${total.toFixed(2)} m² in all` : null, f.size_source === "SCHEDULE" ? "size from the schedule" : f.height_assumed === true ? "width as drawn, height assumed" : "size as drawn", "material not read"].filter(Boolean).join(" · ");
+  }
+
+  if (item === "RAIN_PIPE" || item === "SEWER_PIPE" || item === "DRAIN_MANHOLE" || item === "INSPECTION_CHAMBER" || item === "GULLY_TRAP") {
+    const dia = num(f.diameter_in);
+    const labels = num(f.labels_on_sheet);
+    if (item === "DRAIN_MANHOLE" || item === "INSPECTION_CHAMBER" || item === "GULLY_TRAP") {
+      const marks = Array.isArray(f.marks) ? (f.marks as unknown[]).map(String) : [];
+      const total = labels ?? marks.length;
+      return [`${total} label${total === 1 ? "" : "s"} counted`, marks.length ? marks.slice(0, 8).join(", ") + (marks.length > 8 ? " …" : "") : null, "number only: depth and size are not taken"].filter(Boolean).join(" · ");
+    }
+    if (item === "SEWER_PIPE") {
+      return [dia !== null ? `${dia} in pipe` : "pipe size not written", "diagram, not to scale", c.missing.includes("length_mm") ? "type the total length" : null].filter(Boolean).join(" · ");
+    }
+    const drop = num(f.drop_mm);
+    const top = num(f.top_mm);
+    const bottom = num(f.bottom_mm);
+    return [
+      dia !== null ? `${dia} in pipe` : "pipe size not written",
+      labels !== null ? `${labels} label${labels === 1 ? "" : "s"} on the sheet, one pipe each (assumed)` : null,
+      drop !== null ? `${(drop / 304.8).toFixed(2).replace(/\.?0+$/, "")} ft each, roof to ground floor` : "level of the roof or ground floor not printed: type the length",
+      top !== null && bottom !== null ? `levels ${(bottom / 304.8).toFixed(2).replace(/\.?0+$/, "")} to ${(top / 304.8).toFixed(2).replace(/\.?0+$/, "")} ft on the sections` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "ELEC_LIGHT" || item === "ELEC_FAN" || item === "ELEC_SOCKET" || item === "ELEC_SWITCH" || item === "ELEC_LOWV" || item === "ELEC_BOARD" || item === "ELEC_OTHER") {
+    const height = num(f.mounting_height_mm);
+    const aside = num(f.set_aside_other_size);
+    return [
+      typeof f.electrical === "string" ? f.electrical : null,
+      f.counted_by === "TEXT" ? "counted by its text tag" : "counted by its legend picture: check against the plan",
+      height !== null ? `${(height / 304.8).toFixed(2).replace(/\.?0+$/, "")} ft above the floor` : null,
+      aside !== null && aside > 0 ? `${aside} of another size not counted` : null,
+      "number only: wiring and conduit are not taken",
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "SCAFFOLD_OUTSIDE" || item === "PROPS_SLAB") {
+    const ft = (mm: number | null) => (mm === null ? null : `${(mm / 304.8).toFixed(2).replace(/\.?0+$/, "")} ft`);
+    const area = num(f.area_m2);
+    const threshold = num(f.threshold_mm);
+    if (item === "SCAFFOLD_OUTSIDE") {
+      const face = num(f.face_length_m);
+      const above = num(f.above_mm);
+      const level = num(f.floor_level_mm);
+      const top = num(f.top_mm);
+      return [
+        area !== null ? `${area.toFixed(2)} m²` : null,
+        face !== null ? `${face.toFixed(2)} m of outside face` : null,
+        above !== null ? `${ft(above)} of wall above ${threshold !== null ? `${(threshold / 1000).toFixed(1)} m` : "the threshold"}` : null,
+        level !== null && top !== null ? `floor from ${ft(level)} to ${ft(top)} on the sections` : null,
+      ].filter(Boolean).join(" · ");
+    }
+    const clear = num(f.clear_mm);
+    return [
+      area !== null ? `${area.toFixed(2)} m² of slab` : null,
+      clear !== null ? `${ft(clear)} clear height on the sections` : null,
+      threshold !== null ? `over ${(threshold / 1000).toFixed(1)} m` : null,
+    ].filter(Boolean).join(" · ");
   }
 
   if (BOUNDARY_ITEMS.includes(item)) {

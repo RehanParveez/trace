@@ -17,6 +17,7 @@ from app.modules.drawings_boq import quantity_range as QR
 from app.modules.drawings_boq import measurement_sheet as MS
 from app.modules.drawings_boq import stage_report as SR
 from app.modules.drawings_boq import range_drivers as RD
+from app.modules.drawings_boq import value_at_risk as VAR
 from app.modules.drawings_boq import driver_marks as DM
 from decimal import Decimal
 from uuid import UUID, uuid4
@@ -984,6 +985,14 @@ class BOQEngineService:
     states = await self.repo.measurement_states(org, need["measurements"])
     run_at = min((l.created_at for l in ledger.values() if l.created_at is not None), default=None)
     return DM.annotate(result, sheets, states, run_at)
+
+  async def value_at_risk(self, org: UUID, version_id: UUID) -> dict:
+    """The bill in rupees with the range its quantities carry, the share of it that rests on assumed or missing quantities, and the lines whose rate is in doubt."""
+    await self._engine_version(org, version_id)
+    rows = [{"item_id": str(i.id), "name": i.material_name, "unit": i.unit, "item_type": i.item_type, "quantity": i.quantity, "unit_rate": i.unit_rate,
+      "rate_source": i.rate_source, "rate_resolution": i.rate_resolution, "quantity_range": i.quantity_range, "is_manual": i.is_manual}
+      for i in await self.items.list_by_version(version_id, org)]
+    return VAR.build(rows)
 
   async def _sheets(self, org: UUID, version_id: UUID) -> dict[str, list[dict]]:
     """For each item, the measurement sheet of every ledger row behind it, in the layout a quantity surveyor writes (measurement_sheet.py)."""

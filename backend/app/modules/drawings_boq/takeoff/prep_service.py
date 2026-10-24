@@ -26,6 +26,7 @@ from app.modules.drawings_boq.takeoff.levels import ensure_level, level_spec
 from app.modules.drawings_boq.takeoff.prep import details
 from app.modules.drawings_boq.takeoff.prep import beam_details
 from app.modules.drawings_boq.takeoff.prep import tank_details
+from app.modules.drawings_boq.takeoff.extract import electrical as electrical_reader
 from app.modules.drawings_boq.takeoff.prep import footing_sections, units as unit_reader
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
@@ -107,6 +108,12 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["tank_details_reader"] = tanks["ocr"]
   except Exception:
     result.meta["tank_details_reader"] = "FAILED"
+  try:
+    legend = electrical_reader.read_legend_rows(page, result.index.words)
+    if legend:
+      result.meta["electrical_legend"] = legend
+  except Exception:
+    result.meta["electrical_reader"] = "FAILED"
   try:
     sections = footing_sections.read(result.index, result.index.words)
     if sections:
@@ -521,6 +528,27 @@ class PrepService:
     """The plan and section of every water tank drawn on any sheet of the drawing: [{kind, view, caption, page_no, lengths, bar_notes}]."""
     sheets = await self.repo.sheets(org, drawing_id)
     return tank_details.gather([{"page_no": s.page_no, "details": (s.prep_meta or {}).get("tank_details")} for s in sheets if (s.prep_meta or {}).get("tank_details")])
+
+  async def drawing_electrical_legend(self, org: UUID, drawing_id: UUID) -> dict:
+    """The electrical legend printed on any sheet of the drawing: {pages: [page numbers of the legend sheets], rows: [one for each symbol: name, description, text tag, picture]}."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return electrical_reader.gather_legend([{"page_no": s.page_no, "legend": (s.prep_meta or {}).get("electrical_legend")} for s in sheets if (s.prep_meta or {}).get("electrical_legend")])
+
+  async def sheet_electrical(self, org: UUID, sheet, words: list) -> dict | None:
+    """The symbols of the drawing's electrical legend counted on this sheet, when it is an electrical plan; None when the drawing has no legend or this is not a plan. A failure is
+    returned as {"failed": True} so the sheet says so."""
+    if not electrical_reader.is_plan_sheet(words):
+      return None
+    legend = await self.drawing_electrical_legend(org, sheet.drawing_id)
+    if not legend["rows"] or sheet.page_no in legend["pages"]:
+      return None
+    try:
+      drawing = await self.core._pdf_drawing(org, sheet.drawing_id)
+      contents = await asyncio.to_thread(_download_bytes, drawing.storage_key)
+      return await asyncio.to_thread(electrical_reader.count_page_bytes, contents, sheet.page_no, legend["rows"])
+    except Exception:
+      logging.getLogger(__name__).exception("Electrical symbols could not be counted on sheet %s", sheet.id)
+      return {"failed": True}
 
   async def drawing_footing_sections(self, org: UUID, drawing_id: UUID) -> list:
     """The footing sections read from the pictures on any sheet of the drawing: [{caption, wall_width_mm, steps, footing, pcc, total_depth_mm, read, issues, page_no}]."""

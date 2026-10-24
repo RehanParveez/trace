@@ -14,6 +14,8 @@ export const SIZE_FIELDS: Array<{ key: string; label: string }> = [
   { key: "boundary_side_mm", label: "Boundary wall: one side, 0 if none" },
   { key: "boundary_rear_mm", label: "Boundary wall: rear, 0 if none" },
   { key: "site_thickness_mm", label: "Boundary wall thickness" },
+  { key: "rain_pipe_length_mm", label: "Rain water pipe, length of one (replaces the levels)" },
+  { key: "sewer_length_mm", label: "Sewer pipe line, total length" },
 ];
 
 const ZERO_OK = ["boundary_side_mm", "boundary_rear_mm"];

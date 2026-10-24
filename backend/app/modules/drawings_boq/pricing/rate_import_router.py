@@ -12,7 +12,7 @@ from uuid import UUID
 from datetime import date
 from typing import Literal
 from app.modules.drawings_boq.pricing.rate_tools_service import RateToolsService
-from app.modules.drawings_boq.pricing.tools_schemas import CompareResponse, HistoryResponse, RateGapsResponse, RefreshRequest, RefreshResponse
+from app.modules.drawings_boq.pricing.tools_schemas import CompareResponse, EscalationFromCompareRequest, EscalationFromCompareResponse, HistoryResponse, RateGapsResponse, RefreshRequest, RefreshResponse
 
 router = APIRouter(tags=["Rate schedules"])
 
@@ -152,6 +152,11 @@ async def export_rate_book(book_id: UUID, format: Literal["csv", "xlsx"] = Query
 async def compare_rate_books(book_id: UUID, other_id: UUID, match_on: Literal["code", "csr_ref"] = Query(default="code"),
   current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)), session: AsyncSession = Depends(get_db)):
   return await RateToolsService(session).compare(_org(current_user), book_id, other_id, match_on)
+
+@router.post("/rate-books/{book_id}/escalations/from-compare", response_model=EscalationFromCompareResponse)
+async def escalations_from_compare(book_id: UUID, payload: EscalationFromCompareRequest, current_user: User = Depends(require_permission(PermissionKey.RATEBOOK_MANAGE)),
+  session: AsyncSession = Depends(get_db)):
+  return await RateToolsService(session).escalations_from_compare(_org(current_user), current_user.id, book_id, payload)
 
 @router.get("/rate-books/{book_id}/history", response_model=HistoryResponse)
 async def rate_history(book_id: UUID, work_item_code: str = Query(min_length=1, max_length=50), unit: str | None = Query(default=None, max_length=20),

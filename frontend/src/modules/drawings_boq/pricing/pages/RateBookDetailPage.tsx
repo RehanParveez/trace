@@ -204,7 +204,7 @@ export function RateBookDetailPage() {
       {tab === "rates" ? <RateItemsPanel book={book} canManage={canManage} /> : null}
       {tab === "escalations" ? <EscalationsPanel book={book} canManage={canManage} /> : null}
       {tab === "analyses" ? <AnalysesPanel book={book} canManage={canManage} /> : null}
-      {tab === "tools" ? <BookToolsPanel book={book} /> : null}
+      {tab === "tools" ? <BookToolsPanel book={book} canManage={canManage} /> : null}
 
       {editing ? <RateBookFormDialog mode="edit" book={book} onClose={() => setEditing(false)} /> : null}
       {refreshing ? <RefreshBookDialog book={book} onClose={() => setRefreshing(false)} /> : null}

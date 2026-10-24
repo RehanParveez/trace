@@ -13,7 +13,9 @@ from decimal import Decimal
 from app.modules.drawings_boq.pricing.rate_service import RateBookService
 from app.modules.drawings_boq.pricing.resolver import PriceResolver
 from app.modules.drawings_boq.pricing.spec_match import stated_spec
-from app.modules.drawings_boq.pricing.tools_schemas import RefreshRequest
+from app.modules.drawings_boq.pricing.tools_schemas import EscalationFromCompareRequest, RefreshRequest
+from app.modules.drawings_boq.models import RateBookEscalation
+from uuid import uuid4
 from app.modules.drawings_boq.pricing import import_logic as il
 from sqlalchemy import select
 from app.modules.audit.models import AuditAction, AuditEntityType
@@ -95,6 +97,43 @@ class RateToolsService:
     return {"book_a": _book_info(a), "book_b": _book_info(b), "match_on": match_on, "counts": out["counts"], "matched": out["matched"],
       "median_change_pct": out["median_change_pct"], "overall_ratio": out["overall_ratio"], "suggested_factors": out["suggested_factors"],
       "lines": lines[:COMPARE_LINE_CAP], "truncated": len(lines) > COMPARE_LINE_CAP}
+
+  async def escalations_from_compare(self, org: UUID, user_id: UUID, book_id: UUID, payload: EscalationFromCompareRequest) -> dict:
+    """Turns the per-trade change between two editions into dated escalations on the older one. The factors are worked out here from the two books, never taken from the
+    caller; with `apply` false nothing is written and the plan is returned for approval."""
+    target = await self._book(org, book_id, for_update=True)
+    if target.organization_id != org:
+      raise TraceException("System rate books are read-only. Copy the book into your organisation to change rates.", status_code=403, code="RATE_BOOK_READ_ONLY")
+    if target.status not in ("DRAFT", "ACTIVE"):
+      raise TraceException("Escalations can only be added to a DRAFT or ACTIVE rate book.", status_code=409, code="RATE_BOOK_IMMUTABLE")
+    other = await self._book(org, payload.other_book_id)
+    if other.id == target.id:
+      raise TraceException("Choose a different edition to take the change from.", status_code=422, code="ESCALATION_SAME_BOOK")
+    if other.status == "DRAFT":
+      raise TraceException("Take the change from a published edition, not from a draft.", status_code=422, code="ESCALATION_SOURCE_DRAFT")
+    on = payload.effective_from or other.effective_from
+    if on is None:
+      raise TraceException("The other edition has no effective date. Give the date the new rates apply from.", status_code=422, code="ESCALATION_DATE_REQUIRED")
+    compared = il.compare_books(await self._items(target.id), await self._items(other.id), match_on=payload.match_on)
+    existing = {e.trade_scope.strip().lower() for e in await self.repo.list_escalations(target.id) if e.effective_from == on}
+    plan = il.plan_escalations(compared, trades=set(payload.trades) if payload.trades is not None else None, include_overall=payload.include_overall, existing=existing)
+    created = 0
+    if payload.apply:
+      for p in plan:
+        if p["status"] != il.NEW:
+          continue
+        note = f"From the change between {target.code} v{target.immutable_version} and {other.code} v{other.immutable_version}: median of {p['matched']} matched rates"
+        self.repo.add(RateBookEscalation(id=uuid4(), rate_book_id=target.id, organization_id=org, trade_scope=p["trade_scope"], effective_from=on,
+          factor=Decimal(p["factor"]), note=note[:500]))
+        created += 1
+      if created:
+        await self.session.commit()
+        await self.audit.log(org, user_id, AuditEntityType.RATE_BOOK, target.id, AuditAction.UPDATE,
+          f"Added {created} escalation(s) to {target.code} v{target.immutable_version} from {other.code} v{other.immutable_version}, effective {on.isoformat()}")
+      for p in plan:
+        if p["status"] == il.NEW:
+          p["status"] = "ADDED"
+    return {"applied": payload.apply, "other": _book_info(other), "effective_from": on.isoformat(), "proposals": plan, "created": created}
 
   async def history(self, org: UUID, book_id: UUID, work_item_code: str, unit: str | None) -> dict:
     book = await self._book(org, book_id)

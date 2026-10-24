@@ -26,6 +26,7 @@ from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import boundary as BDY
+from app.modules.drawings_boq.takeoff.extract import drainage as DR
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.extract import kinds as KD
@@ -66,6 +67,9 @@ def height_field(category: str, need: str, facts: dict | None) -> tuple | None:
   tie band, a neck column, a tank wall."""
   if category == "WALL" and (facts or {}).get("foundation_item") in BDY.ITEMS:
     return BDY.field_of(need)
+  if category == "WALL" and (facts or {}).get("foundation_item") in DR.TYPED_FIELD:
+    item = facts["foundation_item"]
+    return (DR.TYPED_FIELD[item], "length_mm", DR.WORDS[item]) if need == "length_mm" else None
   spec = HEIGHT_FIELDS.get((category, need))
   if spec is None:
     return None
@@ -106,6 +110,8 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
     return FN.fill_finish(item, missing, params, typed, facts or {})
   if item in BDY.ITEMS:
     return BDY.fill_boundary(item, missing, params, typed, facts or {})
+  if item in DR.ITEMS:
+    return DR.fill_drainage(item, missing, params, typed, facts or {})
   out = dict(params or {})
   if category == "SLAB" and typed.get("slab_thickness_mm") is not None and any(n.get("code") == "SLAB_THICKNESS_DISAGREES" for n in notes or []):
     out["depth_mm"] = float(typed["slab_thickness_mm"])
@@ -309,6 +315,7 @@ class ExtractService:
     tank_details = await self.prep.drawing_tank_details(org, sheet.drawing_id)
     footing_sections = await self.prep.drawing_footing_sections(org, sheet.drawing_id)
     spec_facts = await self.prep.drawing_spec_facts(org, sheet.drawing_id)
+    electrical = await self.prep.sheet_electrical(org, sheet, index.words)
     units = await self.prep.drawing_units(org, sheet.drawing_id)
     wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
     title = (sheet.prep_meta or {}).get("title") or {}
@@ -321,7 +328,7 @@ class ExtractService:
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
-        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts)
+        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts, electrical=electrical)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")
@@ -529,6 +536,7 @@ class ExtractService:
       "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm, "tile_height_mm": payload.tile_height_mm,
       "stair_waist_mm": payload.stair_waist_mm, "neck_height_mm": payload.neck_height_mm, "tank_wall_height_mm": payload.tank_wall_height_mm,
       "boundary_side_mm": payload.boundary_side_mm, "boundary_rear_mm": payload.boundary_rear_mm,
+      "rain_pipe_length_mm": payload.rain_pipe_length_mm, "sewer_length_mm": payload.sewer_length_mm,
       "site_length_mm": payload.site_length_mm, "site_width_mm": payload.site_width_mm, "site_height_mm": payload.site_height_mm, "site_thickness_mm": payload.site_thickness_mm}
     accepted: list = []
     failed: list = []

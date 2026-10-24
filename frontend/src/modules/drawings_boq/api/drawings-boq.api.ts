@@ -5,7 +5,7 @@ import type {Adjustment, AdjustmentCreateRequest, BOQBuildResponse, BOQCustomIte
   DrawingOrganizationSummary, CalculationRunResponse, BOQVersionResponse, TransitionAction, DeductionKind, DeductionResponse, LedgerRowResponse, Page, QuantitySolidResponse,
   BoundaryCandidate, BulkReviewResponse, ConfirmImportResponse, FinishPreviewResponse, LevelOption, RematchResponse, RowDecision, ScheduleFromPdfRequest, ScheduleImportDetailResponse, ScheduleImportResponse, ScheduleKind, 
   ScheduleManualCreateRequest, ScheduleRowCreateRequest, ScheduleRowResponse, ScheduleRowUpdateRequest, SpaceCreateRequest, SpaceDetailResponse, SpaceFinishCreateRequest, SpaceFinishResponse,
-   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse, StageReport, RangeDrivers
+   SpaceListFilters, SpaceResponse, SpaceUpdateRequest, BarMarkResponse, StageReport, RangeDrivers, ValueAtRisk
 } from "../types/drawings-boq.types";
 
 function getNextCursor(response: { headers: Record<string, unknown> }): string | null {
@@ -324,6 +324,16 @@ export const drawingsBoqApi = {
 
     const response = await apiClient.get<RangeDrivers>(
       `/drawings-boq/boq-versions/${boqVersionId}/range-drivers`,
+    );
+
+    return response.data;
+  },
+
+  async getValueAtRisk(boqVersionId: string): Promise<ValueAtRisk> {
+    if (!boqVersionId) throw new Error("BOQ Version ID is required");
+
+    const response = await apiClient.get<ValueAtRisk>(
+      `/drawings-boq/boq-versions/${boqVersionId}/value-at-risk`,
     );
 
     return response.data;

@@ -4,14 +4,18 @@
  "status": "DRAFT: counted from the printed labels of the ground floor sheets; to be checked by a person",
  "facts": [
   {
-   "kind": "NOT_BUILT",
+   "kind": "DRAINAGE",
+   "item": "DRAIN_MANHOLE",
+   "page": 4,
    "family": "MANHOLE (sewer)",
    "floor": "GROUND",
    "count": 5,
    "note": "'M.H' labels on the sewerage plan, page 4"
   },
   {
-   "kind": "NOT_BUILT",
+   "kind": "DRAINAGE",
+   "item": "GULLY_TRAP",
+   "page": 4,
    "family": "GULLY TRAP",
    "floor": "GROUND",
    "count": 4,

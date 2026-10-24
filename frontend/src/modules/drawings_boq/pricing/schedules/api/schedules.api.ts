@@ -1,7 +1,7 @@
 import { apiClient } from "../../../../../shared/api/client";
 import type { Page } from "../../../types/drawings-boq.types";
 import type {BulkPayload, ChapterSummary, CompareMatch, CompareResult, HistoryResult, ImportRow, ImportStatus, PublishPayload, PublishResult, RateGapsResult, RateImport, Readiness,
-  RefreshPayload, RefreshResult, ReparsePayload, RowFilter, RowUpdatePayload, SuggestResult, UploadPayload,
+  EscalationFromComparePayload, EscalationFromCompareResult, RefreshPayload, RefreshResult, ReparsePayload, RowFilter, RowUpdatePayload, SuggestResult, UploadPayload,
 } from "../types/schedules.types";
 
 const BASE = "/drawings-boq";
@@ -85,6 +85,9 @@ export const schedulesApi = {
   },
   async refresh(bookId: string, payload: RefreshPayload): Promise<RefreshResult> {
     return (await apiClient.post<RefreshResult>(`${BASE}/rate-books/${bookId}/refresh`, payload)).data;
+  },
+  async escalationsFromCompare(bookId: string, payload: EscalationFromComparePayload): Promise<EscalationFromCompareResult> {
+    return (await apiClient.post<EscalationFromCompareResult>(`${BASE}/rate-books/${bookId}/escalations/from-compare`, payload)).data;
   },
   async rateGaps(versionId: string): Promise<RateGapsResult> {
     return (await apiClient.get<RateGapsResult>(`${BASE}/boq-versions/${versionId}/rate-gaps`)).data;

@@ -29,6 +29,8 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     except Exception as exc:                                                       
       problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
   schedule = DS.gather([{"page_no": no, "schedule": a.meta.get("schedule")} for no, a in analysed.items()])
+  from app.modules.drawings_boq.takeoff.extract import electrical as EL
+  legend = EL.gather_legend([{"page_no": no, "legend": EL.read_legend_rows(doc[no - 1], a.index.words)} for no, a in analysed.items() if EL.is_legend_sheet(a.index.words)])
   
   read = []
   for no, a in sorted(analysed.items()):
@@ -42,7 +44,8 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     try:
       res = P.run_extraction(a.index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=1.0, scale_unverified=scale_unverified, content_kind=a.content_kind,
         budget_s=budget_s, schedule=schedule, views_meta=meta.get("views"), frame=meta.get("frame"), col_details={}, floor_heights={}, level_hint=title.get("level_hint"), slab_values=[],
-        text_source=meta.get("text_source", "TEXT"), lowest_level=True, with_finishes=True, beam_sections=[], tank_details=[], imperial=units["imperial"], wall_vocab=[], footing_sections=[])
+        text_source=meta.get("text_source", "TEXT"), lowest_level=True, with_finishes=True, beam_sections=[], tank_details=[], imperial=units["imperial"], wall_vocab=[], footing_sections=[],
+        electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and no not in legend["pages"] and EL.is_plan_sheet(a.index.words) else None)
     except Exception as exc:
       problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
       continue
@@ -53,7 +56,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
       "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts")})
   return read, problems
 
-EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT") + BS.SHEET_KINDS
+EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT", "DRAINAGE") + BS.SHEET_KINDS
 
 def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
   chosen = {str(k).upper(): int(v) for k, v in (chosen or {}).items()}
@@ -90,7 +93,7 @@ def load_facts(path: str) -> tuple:
   for i, r in enumerate(raw, 1):
     kind = str(r.get("kind") or "").strip().upper()
     if kind in EXTRA_KINDS:
-      need = BS.NEEDS.get(kind) or (("symbol", "page", "count") if kind == "ELECTRICAL" else ("family", "count"))
+      need = BS.NEEDS.get(kind) or (("symbol", "page", "count") if kind == "ELECTRICAL" else (("item", "family", "count") if kind == "DRAINAGE" else ("family", "count")))
       missing = [k for k in need if r.get(k) in (None, "")]
       if missing:
         raise SystemExit(f"{path}: fact {i}: a {kind} fact needs {', '.join(missing)}.")
@@ -128,6 +131,17 @@ def check_extras(extras: list, pdf: bytes, electrical: dict | None, read: list |
     counts = ES.read_electrical(open_document(pdf), int(electrical["legend_page"]) - 1, [int(p) - 1 for p in electrical["plan_pages"]])["pages"]
   for f in extras:
     n = int(f["count"])
+    if f["kind"] == "DRAINAGE":
+      page = int(f["page"]) if f.get("page") not in (None, "") else None
+      got = sum(int(c.count or 1) for sh in (read or []) if page is None or sh["page_no"] == page for c in sh["candidates"] if (c.facts or {}).get("drainage") == f["item"])
+      where = f" on page {page}" if page else ""
+      if got == n:
+        out.append(_extra_result(f, K.PASS, n, got, f"{got} of '{f['family']}' read{where}: as you say."))
+      elif got == 0:
+        out.append(_extra_result(f, K.MISSING, n, 0, f"None of '{f['family']}' was read{where}."))
+      else:
+        out.append(_extra_result(f, K.FAIL, n, got, f"You say {n}; {got} were read{where}."))
+      continue
     if f["kind"] == "NOT_BUILT":
       out.append(_extra_result(f, K.MISSING, n, 0, f"The program has no kind of item for '{f['family']}' yet, so none were read."))
       continue

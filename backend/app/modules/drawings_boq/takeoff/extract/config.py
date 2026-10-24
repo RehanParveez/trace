@@ -1,10 +1,10 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 51
+EXTRACT_VERSION = 54
  
 LINTEL_BEARING_MM = 152.4
-STAIR_WAIST_DEFAULT_MM = 127.0                            
+STAIR_WAIST_DEFAULT_MM = 127.0                              
 PLINTH_BEAM_MIN_WALL_MM = 150.0
 COLUMN_PIECE_MIN_MM = 150.0        
 COLUMN_PIECE_MAX_MM = 1100.0      
@@ -383,6 +383,19 @@ NOTES = {
   "BOUNDARY_RETURNS_TYPED": ("info", "The elevation shows the front of the boundary wall only. The side and rear walls are not drawn on any sheet the reader takes, so their lengths are typed when you accept this item: the length of one side (the two sides are taken as equal) and of the rear, 0 where there is no wall of your own there (a wall built by a neighbour, for example)."),
   "BOUNDARY_RETURNS_ASSUMED": ("info", "The side and rear walls are taken at the height of the front wall and at its thickness, which is typed here as it is on the front wall. The two side walls are taken as equal."),
   "BOUNDARY_FACES_ASSUMED": ("info", "The drawing does not say which faces of the boundary wall are plastered and painted. Both faces are taken, for the front wall (the gate taken out) and for the side and rear walls at the height of the front wall. Nothing is taken off for piers and nothing is added for the coping, the top or the ends. Reject this item if only one face is finished."),
+  "SCAFFOLD_ABOVE_THRESHOLD": ("info", "This item is not drawn on the plan. Scaffolding is billed for the part of the outside walls of this floor that stands higher than 3.6 m (about 12 ft) above the datum of the building sections: the length of the outside faces times the height of the wall above that level, with nothing taken off for openings. The 3.6 m is usual practice, not printed on the drawing and not set by IS 1200, which includes scaffolding in the rate of the work. The level and height of the floor are those printed on the sections."),
+  "PROPS_ABOVE_THRESHOLD": ("info", "This item is not drawn on the plan. Props are billed under a slab whose storey is clearer than 3.6 m (about 12 ft) as printed on the building sections: the covered area of the slab. The 3.6 m is usual practice, not printed on the drawing and not set by IS 1200."),
+  "SCAFFOLD_NEEDS_LEVELS": ("info", "The building sections do not print the level and the floor-to-floor height of this floor (or they do not match the floors of the drawing), so the height of its outside walls above the ground is not known and no scaffolding item was made for it. Measure it by hand if the building is high."),
+  "RAIN_PIPE_COUNT_ASSUMED": ("info", "This item is not drawn to scale. One rain water pipe is taken for each label of it on this sheet; the label does not say how many outlets it stands for. If the roof has more pipes than labels, reject this item and measure them by hand."),
+  "RAIN_PIPE_DROP_ASSUMED": ("info", "The length of each pipe is the fall from the roof level to the ground floor level, both printed on the building sections. The run from the foot of the pipe to the drain is not drawn and is not included. Type another length when you accept the item to replace it. Taking the pipe down to the ground floor level is usual practice, not printed on the drawing."),
+  "RAIN_PIPE_LENGTH_TYPED": ("warning", "The building sections do not print both the roof level and the ground floor level, so the length of a rain water pipe is not known. Type the length of one pipe when you accept this item."),
+  "SEWER_LENGTH_TYPED": ("warning", "The sewer pipe line is drawn on this sheet as a diagram that is not to scale, so its length cannot be measured. Type the total length of the line when you accept this item."),
+  "ELECTRICAL_COUNT_ONLY": ("info", "Only the number of this symbol on the sheet is counted. The wiring, conduit, boxes, cable and the circuits are not taken, and the price is for the fitting alone; add them from the electrical schedules."),
+  "ELECTRICAL_PICTURE_MATCH": ("info", "This symbol is counted by matching its picture in the legend against the plan. A drawing that looks like the symbol would be counted too, and a symbol drawn differently from the legend would be missed: check the number against the plan."),
+  "ELECTRICAL_OTHER_SIZE_SET_ASIDE": ("warning", "Some marks that match this symbol are drawn at another size from most of them and are not counted. Check the plan for them."),
+  "ELECTRICAL_SYMBOLS_NOT_READ": ("warning", "The legend has symbols the reader cannot count (their picture is too simple to tell from other drawing, or the plan draws them differently). Count the ones on this sheet by hand."),
+  "ELECTRICAL_READ_FAILED": ("warning", "The electrical symbols of this sheet could not be counted. Count them by hand."),
+  "DRAIN_CHAMBERS_COUNT_ONLY": ("info", "Only the number of chambers marked on this sheet is counted, once for each mark. Their depth, size, cover, the excavation and the pipes between them are not taken."),
   "TANK_SLABS_QS": ("info", "The QS gave the slabs of a tank: a top slab of 6 inches and a bottom slab of 8 inches (S11). His sheet shows 6 inches for both slabs of the water tanks, so confirm the 8 inches with him."),
   "SITE_WALL_QS_ESTIMATE": ("info", "The QS gave 4.5 inches for this wall and called his 66 ft length an estimate, not a length measured along the boundary (S7). The length here is read from the elevation. Type the thickness when you accept it (4.5 inches is 114.3 mm)."),
   "WALL_PEN_SELECTED": ("info", "Walls were read from the heaviest line weight on this sheet. Lines in lighter weights (dimensions, furniture, fittings, boundary lines) were not read as walls."),

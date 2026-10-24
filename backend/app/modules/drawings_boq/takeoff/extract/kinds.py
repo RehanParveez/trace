@@ -4,11 +4,14 @@ from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import floor_layers as FLL
 from app.modules.drawings_boq.takeoff.extract import boundary as BDY
+from app.modules.drawings_boq.takeoff.extract import staging as STG
+from app.modules.drawings_boq.takeoff.extract import drainage as DR
+from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.modules.drawings_boq.takeoff.extract import config as C
 
-ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *FLL.ITEMS, *BDY.ITEMS, *SI.SITE_KINDS)))
+ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *FLL.ITEMS, *BDY.ITEMS, *STG.ITEMS, *DR.ITEMS, *EL.ITEMS, *SI.SITE_KINDS)))
 KINDS = (*C.CATEGORIES, *ITEM_KINDS)
-DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **FLL.WORK_ITEM, **BDY.WORK_ITEM, **SI.WORK_ITEM}
+DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **FLL.WORK_ITEM, **BDY.WORK_ITEM, **STG.WORK_ITEM, **DR.WORK_ITEM, **EL.WORK_ITEM, **SI.WORK_ITEM}
 
 def kind_of(cand) -> str:
   """The category of the item, or the name of the piece of work for the items that are not drawn on the plan."""

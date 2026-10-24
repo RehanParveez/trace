@@ -678,6 +678,14 @@ class RangeDriversResponse(BaseModel):
   stale: dict = Field(default_factory=dict)
   units: list[dict]
 
+class ValueAtRiskResponse(BaseModel):
+  totals: dict
+  by_grade: list[dict]
+  top_swing: list[dict]
+  top_open: list[dict]
+  unpriced: list[dict]
+  flags: list[dict]
+
 class ItemTraceResponse(BaseModel):
   item: BOQItemResponse
   ledger: list[LedgerRowResponse]

@@ -2,7 +2,7 @@ from __future__ import annotations
 from uuid import UUID
 from typing import Literal
 from fastapi import APIRouter, Depends, File, Header, Query, UploadFile, Form
-from app.modules.drawings_boq.schemas import RangeDriversResponse
+from app.modules.drawings_boq.schemas import RangeDriversResponse, ValueAtRiskResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.dependencies.permissions import require_permission
@@ -886,6 +886,14 @@ async def get_boq_range_drivers(
   session: AsyncSession = Depends(get_db),
 ):
   return await _engine(session).range_drivers(current_user.active_membership.organization_id, boq_version_id)
+
+@router.get("/boq-versions/{boq_version_id}/value-at-risk", response_model=ValueAtRiskResponse)
+async def get_boq_value_at_risk(
+  boq_version_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await _engine(session).value_at_risk(current_user.active_membership.organization_id, boq_version_id)
 
 @router.get("/boq-versions/{boq_version_id}/ledger", response_model=list[LedgerRowResponse])
 async def list_boq_version_ledger(

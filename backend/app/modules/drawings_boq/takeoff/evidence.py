@@ -297,6 +297,10 @@ DERIVED_ASSUMED = (
   ("TRENCH_WORKING_SPACE_ASSUMED", "working space", "the drawing prints no working space beside the concrete bed; 3 inches a side is used"),
   ("BRICK_STEPS_ASSUMED", "brick steps", "the steps of the brick foundation are drawn as dimension lines that cannot be read; usual steps are used"),
   ("FOOTING_DEPTH_QS", "footing depth", "the footing thickness is not printed as a figure; the QS's depth is used"),
+  ("RAIN_PIPE_COUNT_ASSUMED", "pipe count", "one pipe is taken for each label on the sheet; the label does not say how many outlets it stands for"),
+  ("RAIN_PIPE_DROP_ASSUMED", "pipe length", "the pipe is taken from the roof level down to the ground floor level of the building sections; the run to the drain is not drawn"),
+  ("SCAFFOLD_ABOVE_THRESHOLD", "scaffolding height", "the height above which scaffolding is billed (3.6 m, 12 ft) is usual practice, not printed on the drawing; IS 1200 includes scaffolding in the rate of the work"),
+  ("PROPS_ABOVE_THRESHOLD", "props height", "the clear height above which props are billed (3.6 m, 12 ft) is usual practice, not printed on the drawing; IS 1200 sets no height"),
   ("BOUNDARY_FACES_ASSUMED", "faces", "the drawing does not say which faces of the boundary wall are plastered and painted; both are taken, the side and rear walls at the height of the front wall"),
   ("BOUNDARY_RETURNS_ASSUMED", "side and rear walls", "the side and rear walls are not drawn; their lengths are typed, the two sides are taken as equal, and the height and thickness are those of the front wall"),
 )
@@ -314,6 +318,26 @@ def _derived(inp: _Inputs, cand) -> None:
       inp.add("size", PRINTED, "from the schedule or the label written on the drawing")
     else:
       inp.measured("size", "the width and height of the doors and windows read on this plan")
+  elif facts.get("drainage") == "RAIN_PIPE":
+    inp.add("count", PRINTED, "pipe labels counted on the sheet")
+    if facts.get("length_basis") == "LEVELS":
+      inp.add("levels", PRINTED, "the roof level and the ground floor level printed on the building sections")
+  elif facts.get("drainage") == "SEWER_PIPE":
+    inp.add("pipe size", PRINTED if facts.get("diameter_in") else MISSING, "written on the label" if facts.get("diameter_in") else "the label does not write a size")
+    inp.add("line", PRINTED, "the pipe line labelled on the sheet")
+  elif facts.get("drainage") in ("DRAIN_MANHOLE", "INSPECTION_CHAMBER", "GULLY_TRAP"):
+    inp.add("count", PRINTED, "chamber marks counted on the sheet")
+  elif facts.get("electrical"):
+    if facts.get("counted_by") == "TEXT":
+      inp.add("count", PRINTED, "the text tag of the symbol counted on the sheet")
+    else:
+      inp.measured("count", "the symbols that match the legend picture, counted on this plan")
+  elif facts.get("staging") == "SCAFFOLD":
+    inp.measured("outside face length", "the outer wall faces measured on this plan")
+    inp.add("floor levels", PRINTED, "the level and the floor-to-floor height of this floor printed on the building section")
+  elif facts.get("staging") == "PROPS":
+    inp.add("slab area", PRINTED, "the covered area printed in the area table")
+    inp.add("clear height", PRINTED, "the clear storey height printed on the building section")
   else:
     inp.measured("quantity", "worked out from the rooms, walls or footings measured on this plan")
     if facts.get("layer") and facts.get("spec_pages"):
