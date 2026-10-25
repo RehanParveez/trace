@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff import stair_twins
 from app.modules.drawings_boq.takeoff import placement as PL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
+from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.extract import wall_net as WN
 
 SOURCE = "pdf_takeoff"
@@ -376,6 +377,7 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
   evidence = evidence_for(cand)
   printed = printed_concrete(cand, spec, concrete_rules)
   zr = PL.z_of(cand, floors or {}, floor_key, footing)
+  steel = SR.summary_of(cand)
   out = []
   
   for i in range(n):
@@ -409,6 +411,8 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
       props["_pdf"]["foundation"] = {**cand.facts["foundation_piece"], "cft": round(cand.facts["foundation_piece"]["cft"] * pieces / n, 4), "pieces": round(pieces / n, 4)}
     if cand.category == "SLAB" and len((cand.facts or {}).get("thickness_volumes") or []) > 1:
       props["_pdf"]["slab_thickness"] = {"floor": (cand.facts or {}).get("floor"), "options": [dict(o) for o in cand.facts["thickness_volumes"]]}
+    if steel:
+      props["_pdf"]["steel"] = steel
     opening_kind = (cand.facts or {}).get("opening_kind") if cand.category in ("DOOR", "WINDOW") else None
     if opening_kind:
       props["_pdf"]["opening_kind"] = opening_kind

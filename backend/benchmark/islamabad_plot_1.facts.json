@@ -431,6 +431,13 @@
    "width_mm": 4495.8,
    "height_mm": 2133.6,
    "note": "14'-9\" wide, 7'-0\" high"
+  },
+  {
+   "kind": "QS_VOLUME",
+   "category": "FOOTING",
+   "min_cft": 142,
+   "max_cft": 159,
+   "note": "The QS figure for the footing concrete at a 9 in depth (142 to 159 cft), as written in the hand-over notes; the QS worksheet itself was not available to me, so check the range against it"
   }
  ]
 }

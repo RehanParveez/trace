@@ -1,0 +1,770 @@
+{
+ "set": "Islamabad_Plot_1",
+ "pdf": "Islamabad_Plot_1.pdf",
+ "status": "DRAFT: made from what the program read, not by a person. A fact counts as checked only when its checked_by has a name.",
+ "facts": [
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "BASEMENT",
+   "count": 8,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "BASEMENT",
+   "tag": "D2",
+   "count": 4,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "BASEMENT",
+   "tag": "D3",
+   "count": 2,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "BASEMENT",
+   "tag": "D4",
+   "count": 2,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "FIRST",
+   "count": 10,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "FIRST",
+   "tag": "D2",
+   "count": 7,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "FIRST",
+   "tag": "D4",
+   "count": 3,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "count": 10,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D1",
+   "count": 1,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D2",
+   "count": 4,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D3",
+   "count": 2,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "D4",
+   "count": 3,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "ROOF",
+   "count": 2,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "ROOF",
+   "tag": "D2",
+   "count": 1,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "ROOF",
+   "tag": "D4",
+   "count": 1,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "count": 8,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "tag": "V1",
+   "count": 1,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "tag": "V2",
+   "count": 2,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "tag": "V3",
+   "count": 2,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "tag": "V4",
+   "count": 2,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "BASEMENT",
+   "tag": "W2",
+   "count": 1,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "count": 9,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "tag": "V4",
+   "count": 3,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "tag": "W1",
+   "count": 1,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "tag": "W2",
+   "count": 2,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "tag": "W3",
+   "count": 1,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "FIRST",
+   "tag": "W4",
+   "count": 2,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "count": 8,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "V4",
+   "count": 2,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W1",
+   "count": 1,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W2",
+   "count": 2,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W3",
+   "count": 1,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "W4",
+   "count": 2,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "ROOF",
+   "count": 6,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "ROOF",
+   "tag": "V1",
+   "count": 1,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "ROOF",
+   "tag": "V4",
+   "count": 1,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "ROOF",
+   "tag": "W2",
+   "count": 3,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "ROOF",
+   "tag": "W3",
+   "count": 1,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "COLUMN",
+   "floor": "BASEMENT",
+   "count": 14,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "COLUMN",
+   "floor": "BASEMENT",
+   "tag": "C1",
+   "count": 10,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "COLUMN",
+   "floor": "BASEMENT",
+   "tag": "C2",
+   "count": 4,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "COLUMN",
+   "floor": "FIRST",
+   "count": 14,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "COLUMN",
+   "floor": "FIRST",
+   "tag": "C1",
+   "count": 10,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "COLUMN",
+   "floor": "FIRST",
+   "tag": "C2",
+   "count": 4,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "COLUMN",
+   "floor": "GROUND",
+   "count": 14,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "COLUMN",
+   "floor": "GROUND",
+   "tag": "C1",
+   "count": 10,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "COLUMN",
+   "floor": "GROUND",
+   "tag": "C2",
+   "count": 4,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "COLUMN",
+   "floor": "ROOF",
+   "count": 3,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "FOOTING",
+   "floor": "BASEMENT",
+   "count": 15,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "FOOTING",
+   "floor": "BASEMENT",
+   "tag": "F1",
+   "count": 10,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "FOOTING",
+   "floor": "BASEMENT",
+   "tag": "F2",
+   "count": 4,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "FOOTING",
+   "floor": "BASEMENT",
+   "tag": "STAIR-F",
+   "count": 1,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "BASEMENT",
+   "area_m2": 3.0,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "BASEMENT",
+   "area_m2": 10.32,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "ROOM",
+   "floor": "BASEMENT",
+   "area_m2": 21.68,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "SITTING",
+   "floor": "BASEMENT",
+   "area_m2": 21.34,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STORE",
+   "floor": "BASEMENT",
+   "area_m2": 9.6,
+   "note": "read by the program from page 4; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "FIRST",
+   "area_m2": 3.06,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BED",
+   "floor": "FIRST",
+   "area_m2": 20.9,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "FIRST",
+   "area_m2": 10.34,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "SITTING",
+   "floor": "FIRST",
+   "area_m2": 21.34,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STAIR",
+   "floor": "FIRST",
+   "area_m2": 10.57,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STUDY",
+   "floor": "FIRST",
+   "area_m2": 6.65,
+   "note": "read by the program from page 2; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "GROUND",
+   "area_m2": 3.0,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BED",
+   "floor": "GROUND",
+   "area_m2": 21.71,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "DWG/DINING",
+   "floor": "GROUND",
+   "area_m2": 20.06,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "GROUND",
+   "area_m2": 10.34,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "LOUNGE",
+   "floor": "GROUND",
+   "area_m2": 21.34,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "PORCH",
+   "floor": "GROUND",
+   "area_m2": 15.33,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STAIR",
+   "floor": "GROUND",
+   "area_m2": 10.6,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "W/C",
+   "floor": "GROUND",
+   "area_m2": 1.95,
+   "note": "read by the program from page 1; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "(NO NAME)",
+   "floor": "ROOF",
+   "area_m2": 2.61,
+   "note": "read by the program from page ?; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "ROOF",
+   "area_m2": 4.13,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "ROOM",
+   "floor": "ROOF",
+   "area_m2": 13.81,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STORE",
+   "floor": "ROOF",
+   "area_m2": 1.62,
+   "note": "read by the program from page 3; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SLAB_AREA",
+   "floor": "BASEMENT",
+   "area_m2": 133.78,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SLAB_AREA",
+   "floor": "FIRST",
+   "area_m2": 133.78,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SLAB_AREA",
+   "floor": "GROUND",
+   "area_m2": 133.78,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SLAB_AREA",
+   "floor": "ROOF",
+   "area_m2": 44.59,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D1",
+   "width_mm": 1219.2,
+   "height_mm": 2133.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D2",
+   "width_mm": 1066.8,
+   "height_mm": 2133.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D3",
+   "width_mm": 914.4,
+   "height_mm": 2133.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "D4",
+   "width_mm": 762.0,
+   "height_mm": 2133.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V1",
+   "width_mm": 2133.6,
+   "height_mm": 609.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V2",
+   "width_mm": 1828.8,
+   "height_mm": 609.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V3",
+   "width_mm": 1524.0,
+   "height_mm": 609.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "V4",
+   "width_mm": 914.4,
+   "height_mm": 609.6,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W1",
+   "width_mm": 2133.6,
+   "height_mm": 1524.0,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W2",
+   "width_mm": 1828.8,
+   "height_mm": 1524.0,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W3",
+   "width_mm": 1524.0,
+   "height_mm": 1524.0,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "SCHEDULE",
+   "mark": "W4",
+   "width_mm": 1524.0,
+   "height_mm": 914.4,
+   "note": "read by the program from the schedule on page 1; check it against the schedule, then put your name in checked_by",
+   "checked_by": ""
+  }
+ ]
+}

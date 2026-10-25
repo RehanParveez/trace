@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass, field
 from app.modules.drawings_boq import boq_logic as logic
 from collections import defaultdict
-from statistics import median
+from statistics import median, quantiles
 
 ZERO = Decimal("0")
 ONE = Decimal("1")
@@ -256,6 +256,7 @@ def compare_books(items_a: list[dict], items_b: list[dict], *, match_on: str = "
       
   lines, changed_pcts = [], []
   by_trade: dict[str, list[Decimal]] = defaultdict(list)
+  unchanged_by_trade: dict[str, int] = defaultdict(int)
   counts = {"added": 0, "removed": 0, "changed": 0, "unchanged": 0, "unit_mismatch": 0}
   for k in sorted(set(a_by) | set(b_by), key=lambda t: tuple(str(x) for x in t)):
     a, b = a_by.get(k), b_by.get(k)
@@ -281,6 +282,7 @@ def compare_books(items_a: list[dict], items_b: list[dict], *, match_on: str = "
     new = Decimal(b["rate"])
     if old == new:
       counts["unchanged"] += 1
+      unchanged_by_trade[(ref.get("trade") or "").strip() or "—"] += 1
       continue
   
     counts["changed"] += 1
@@ -292,13 +294,18 @@ def compare_books(items_a: list[dict], items_b: list[dict], *, match_on: str = "
         
     lines.append({**base, "status": "CHANGED", "unit": b["unit"], "rate_a": str(old), "rate_b": str(new), "delta": str(new - old), "pct": str(pct) if pct is not None else None})
   all_ratios = [r for rs in by_trade.values() for r in rs]
-  factors = [{"trade": t, "matched": len(rs), "median_ratio": str(Decimal(str(median(rs))).quantize(Decimal("0.0001")))}
+  factors = [{"trade": t, "matched": len(rs), "median_ratio": str(Decimal(str(median(rs))).quantize(Decimal("0.0001"))), **_spread(rs), "unchanged": unchanged_by_trade.get(t, 0)}
     for t, rs in sorted(by_trade.items()) if len(rs) >= 5]
   matched = counts["changed"] + counts["unchanged"]
   return {"counts": counts, "matched": matched,
     "median_change_pct": str(Decimal(str(median(changed_pcts))).quantize(Decimal("0.01"))) if changed_pcts else None,
     "overall_ratio": str(Decimal(str(median(all_ratios))).quantize(Decimal("0.0001"))) if all_ratios else None,
     "suggested_factors": factors, "lines": lines}
+
+def _spread(ratios: list) -> dict:
+  """The middle half of a trade's revised rates (first and third quartile of new over old), shown beside the median so a factor that rests on scattered changes shows."""
+  q = quantiles([float(r) for r in ratios], n=4, method="inclusive")
+  return {"low_ratio": str(Decimal(str(round(q[0], 4))).quantize(Decimal("0.0001"))), "high_ratio": str(Decimal(str(round(q[2], 4))).quantize(Decimal("0.0001")))}
 
 ESCALATION_MIN_RATIO = Decimal("0.5")
 ESCALATION_MAX_RATIO = Decimal("3")
@@ -311,7 +318,8 @@ def plan_escalations(compared: dict, *, trades: set[str] | None, include_overall
     trade = str(f["trade"])
     if trades is not None and trade not in trades:
       continue
-    out.append(_proposal(trade, Decimal(f["median_ratio"]), int(f["matched"]), existing, named=trade != "—"))
+    out.append({**_proposal(trade, Decimal(f["median_ratio"]), int(f["matched"]), existing, named=trade != "—"),
+      **{k: f[k] for k in ("low_ratio", "high_ratio", "unchanged") if k in f}})
   if include_overall and compared.get("overall_ratio") is not None:
     matched = int(compared.get("matched") or 0)
     out.append(_proposal("ALL", Decimal(compared["overall_ratio"]), matched, existing, named=True))

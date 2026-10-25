@@ -122,7 +122,7 @@ class RateToolsService:
       for p in plan:
         if p["status"] != il.NEW:
           continue
-        note = f"From the change between {target.code} v{target.immutable_version} and {other.code} v{other.immutable_version}: median of {p['matched']} matched rates"
+        note = f"From the change between {target.code} v{target.immutable_version} and {other.code} v{other.immutable_version}: median of {p['matched']} revised rates" + (f" (middle half {p['low_ratio']} to {p['high_ratio']}; {p.get('unchanged', 0)} not revised)" if p.get("low_ratio") else "")
         self.repo.add(RateBookEscalation(id=uuid4(), rate_book_id=target.id, organization_id=org, trade_scope=p["trade_scope"], effective_from=on,
           factor=Decimal(p["factor"]), note=note[:500]))
         created += 1

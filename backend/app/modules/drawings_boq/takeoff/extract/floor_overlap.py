@@ -1,5 +1,8 @@
 from __future__ import annotations
+from collections import Counter
 from app.modules.drawings_boq.takeoff.extract import config as C
+
+MM_PER_IN = 25.4
 
 def floors_read(stats: dict | None, title: dict | None) -> tuple:
   """(floors, from_plans): the floors a sheet's walls were read for, and whether they came from the plans of a sheet that holds several."""

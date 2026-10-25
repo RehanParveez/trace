@@ -29,7 +29,7 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "slab_edge_formwork", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "formwork_shared_faces", defaultMm: 1, min: 0, max: 1, flag: true },
   { key: "tank_base_formwork", defaultMm: 0, min: 0, max: 1, flag: true },
-  { key: "formwork_joints", defaultMm: 0, min: 0, max: 1, flag: true, label: "Formwork: take off the joints of lintel, chajja and balcony", hint: "Off: every face stays whole. On: the lintel soffit over its bearing, the lintel side a chajja is cast with, the floor slab edge a balcony is cast with. Matched by floor, assumed" },
+  { key: "formwork_joints", defaultMm: 1, min: 0, max: 1, flag: true, label: "Formwork: take off the joints of lintel, chajja and balcony", hint: "On (the default): the lintel soffit over its bearing, the lintel side a chajja is cast with, the floor slab edge a balcony is cast with are taken off, matched by floor, assumed. Off: every face stays whole" },
   { key: "formwork_lintel_bearing_mm", defaultMm: 152.4, min: 0, max: 400, label: "Formwork: bearing of a lintel on the wall, each end (mm)", hint: "Empty: 152.4 mm (6 in), assumed. The soffit over it takes no form when the joints are on" },
   { key: "steel_cover_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: general (mm)" },
   { key: "steel_cover_slab_mm", defaultMm: 38.1, min: 10, max: 100, label: "Cover to bars: slab (mm)", hint: "Empty: the general cover, or the cover the drawing prints for slabs" },

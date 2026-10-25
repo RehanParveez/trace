@@ -6,6 +6,7 @@ from decimal import Decimal
 import time
 from uuid import UUID
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
+from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION
 from app.modules.drawings_boq.takeoff.levels import ensure_level
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
@@ -31,6 +32,7 @@ from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.extract import kinds as KD
 from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
+from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
@@ -232,18 +234,34 @@ class ExtractService:
     meta = await self.prep.prep.meta(org, sheet.id)
     if meta is None or index_stamp(meta) != ext.index_stamp:
       reasons.append("SHEET_READ_AGAIN")
+    if meta is not None and meta.analysis_version != ANALYSIS_VERSION:
+      reasons.append("SHEET_READER_OLDER")
     if ext.extract_version != C.EXTRACT_VERSION:
       reasons.append("NEWER_LOGIC")
     return {"sheet_id": sheet.id, "ran": True, "ran_at": ext.updated_at, "stale": bool(reasons), "stale_reasons": reasons,
       "mm_per_pt": ext.mm_per_pt, "scale_unverified": ext.scale_unverified, "stats": ext.stats or {}, "unmapped_tags": ext.unmapped_tags or [],
       "notes": ext.notes or []}
 
+  @staticmethod
+  def _with_steel(rows: list) -> list:
+    """Each member that has bars read carries the cut lengths and the weight of one member in its facts, worked out from its present size and bars."""
+    out = []
+    for r in rows:
+      s = SR.summary_of(r) if r.decision != "REJECTED" else None
+      if s is None or s.get("state") == "NO_BARS":
+        out.append(r)
+        continue
+      copy = r if isinstance(r, CandidateResponse) else CandidateResponse.model_validate(r)
+      copy.facts = {**copy.facts, "steel_summary": s}
+      out.append(copy)
+    return out
+
   async def _list(self, org: UUID, sheet) -> dict:
     rows = await self.repo.candidates(org, [sheet.id])
     if await self._heal(org, rows):
             await self.session.commit()
     ext = await self.repo.extraction(org, sheet.id)
-    return {"sheet_id": sheet.id, "extraction": await self._meta(org, sheet, ext), "candidates": await self._with_stair_twins(org, sheet, rows), "summary": self._summary(rows)}
+    return {"sheet_id": sheet.id, "extraction": await self._meta(org, sheet, ext), "candidates": self._with_steel(await self._with_stair_twins(org, sheet, rows)), "summary": self._summary(rows)}
 
   async def _with_stair_twins(self, org: UUID, sheet, rows: list) -> list:
     if not any(r.category == "STAIR" and r.decision != "REJECTED" for r in rows):
@@ -339,6 +357,8 @@ class ExtractService:
       raise NoPlanRegions()                                   
     found = result.candidates
     result.stats["floors_read_elsewhere"] = await self._repeated_floors(org, sheet, title, result)
+    result.stats["drainage_seen"] = DR.seen(found)
+    result.stats["drainage_elsewhere"] = await self._repeated_drainage(org, sheet, result)
     result.stats["decisions"] = in_force
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
@@ -384,8 +404,13 @@ class ExtractService:
     others = [(s.page_no, exts[s.id].stats, (s.prep_meta or {}).get("title")) for s in sheets if s.id in exts]
     return FO.apply(result.candidates, result.notes, result.stats, title, FO.elsewhere(others), _status)
 
+  async def _repeated_drainage(self, org: UUID, sheet, result) -> list:
+    """The drainage items of this sheet that another sheet of the drawing was also read for."""
+    sheets = [s for s in await self.core.repo.sheets(org, sheet.drawing_id) if s.id != sheet.id]
+    exts = {e.sheet_id: e for e in await self.repo.extractions(org, [s.id for s in sheets])}
+    return DR.apply(result.candidates, result.notes, DR.elsewhere([(s.page_no, exts[s.id].stats) for s in sheets if s.id in exts]), _status, sheet.page_no)
+
   async def _view_levels(self, org: UUID, sheet, found: list) -> None:
-    """A sheet that shows several floors (the structural sheet) has no level of its own: each item gets the level of the drawing it was read from."""
     ids: dict = {}
     for c in found:
       view = (c.facts or {}).get("view")
@@ -420,6 +445,8 @@ class ExtractService:
         self.session.add(row)
         added += 1
         mark = aside.get(FO.level_of(c) or sheet_floor) if c.category != "SLAB" else None
+        if mark is None and (c.facts or {}).get("drain_repeat"):
+          mark = {"by": DR.REPEAT_BY, "page_no": c.facts["drain_repeat"]["page_no"]}
         if mark:
           row.decision, row.decided_at = "REJECTED", _now()
       else:

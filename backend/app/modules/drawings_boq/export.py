@@ -9,6 +9,8 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from app.modules.drawings_boq.words import rupees_in_words
 from app.modules.drawings_boq import export_columns as XC
+from app.modules.drawings_boq import stage_report as SR
+from app.engine.measure.stages import stage_label
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from reportlab.lib.pagesizes import landscape
@@ -500,10 +502,31 @@ def _groups(rows: list[dict]) -> dict[str, list[dict]]:
     groups.setdefault(r["item_type"], []).append(r)
   return groups
 
+
+_TYPE_TAGS = {"LABOUR": " (labour)", "CUSTOM": " (additional work)"}
+
+def _stage_sections(rows: list[dict]) -> list[dict]:
+  """The bill stage first, as the QS answered (Q30): the stages in the order of the stage report, the trades of a stage inside it. The last section of a stage
+  carries the rows of the whole stage, for its total."""
+  by: dict = {}
+  for r in rows:
+    by.setdefault(r.get("work_stage") or SR.NO_STAGE, {}).setdefault(r.get("category") or SR.NO_TRADE, []).append(r)
+  out: list = []
+  for stage in sorted(by, key=lambda s: (SR.stage_rank(s), s)):
+    label = SR.NO_STAGE_LABEL if stage == SR.NO_STAGE else (stage_label(stage) or stage)
+    trades = sorted(by[stage], key=lambda t: (t == SR.NO_TRADE, t))
+    whole = [r for t in trades for r in by[stage][t]]
+    for i, trade in enumerate(trades):
+      out.append({"stage": label[:1].upper() + label[1:], "title": f"{label[:1].upper() + label[1:]} · {trade}", "rows": by[stage][trade], "stage_rows": whole if i == len(trades) - 1 else None})
+  return out
+
+def _amount(rows_k: list[dict]) -> Decimal:
+  return sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
+
 def _flag(r: dict) -> str:
   if r["unit_rate"] is None:
     return " [RATE MISSING]"
-  return " [AI est. - verify]" if r.get("rate_source") == "AI_SUGGESTED" else ""
+  return " [AI est. - verify]" if r.get("rate_source") == "AI_SUGGESTED" else _TYPE_TAGS.get(r.get("item_type"), "")
 
 _GRID = [("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e293b")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
   ("FONTSIZE", (0, 0), (-1, -1), 8), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#cbd5e1")),
@@ -533,18 +556,24 @@ def build_contract_boq_pdf(snapshot: dict, rows: list[dict], meta: dict, company
     ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold")]))
   
   story += [Spacer(1, 6), info, Spacer(1, 10)]
-  for key, rows_k in _groups(rows).items():
-    if not rows_k:
-      continue
-    story.append(Paragraph(_SECTION_TITLES[key], styles["Heading3"]))
+  for sec in _stage_sections(rows):
+    rows_k = sec["rows"]
+    story.append(Paragraph(sec["title"], styles["Heading3"]))
     data = [["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)"]]
     for n, r in enumerate(rows_k, 1):
       data.append([str(n), Paragraph(r["material_name"] + _flag(r) + '<br/><font size="6" color="#475569">' + XC.note_line(r) + "</font>", cell), r["unit"], _q(r["quantity"]),
         _m(r["unit_rate"]), _m(r["amount"])])
-    sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
-    data.append(["", "", "", "", "Sub-total", _m(sub)])
+    data.append(["", "", "", "", "Sub-total", _m(_amount(rows_k))])
+    if sec["stage_rows"] is not None:
+      data.append(["", "", "", "", f"Total {sec['stage'].lower()}", _m(_amount(sec["stage_rows"]))])
     t = Table(data, colWidths=[8 * mm, 65 * mm, 15 * mm, 22 * mm, 25 * mm, 30 * mm], repeatRows=1)
     t.setStyle(TableStyle(_GRID + [("ALIGN", (3, 0), (-1, -1), "RIGHT"), ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold")]))
+    story += [t, Spacer(1, 8)]
+  by_type = [(_SECTION_TITLES[key][3:], _amount(rows_k)) for key, rows_k in _groups(rows).items() if rows_k]
+  if len(by_type) > 1:
+    story.append(Paragraph("The same bill by kind of item", styles["Heading3"]))
+    t = Table([["Kind", "Amount (Rs)"], *[[name, _m(amount)] for name, amount in by_type]], colWidths=[60 * mm, 40 * mm], repeatRows=1)
+    t.setStyle(TableStyle(_GRID + [("ALIGN", (1, 0), (-1, -1), "RIGHT")]))
     story += [t, Spacer(1, 8)]
     
   steel = XC.steel_table(by_dia)
@@ -585,10 +614,9 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
   if snapshot["totals"].get("unpriced_item_count"):
     ws.append([f"{snapshot['totals']['unpriced_item_count']} item(s) have no rate - total understated"])
   ws.append([])
-  for key, rows_k in _groups(rows).items():
-    if not rows_k:
-      continue
-    ws.append([_SECTION_TITLES[key]])
+  for sec in _stage_sections(rows):
+    rows_k = sec["rows"]
+    ws.append([sec["title"]])
     ws.cell(row=ws.max_row, column=1).font = bold
     ws.append(["#", "Description", "Unit", "Qty", "Rate (Rs)", "Amount (Rs)", "Base rate (Rs)", "Escalation (x)", *XC.head_cells()])
     for c in ws[ws.max_row]:
@@ -599,9 +627,18 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
         float(r["amount"]) if r["amount"] is not None else None,
         float(r["base_rate"]) if r.get("base_rate") is not None else None,
         float(r["escalation_factor"]) if r.get("escalation_factor") is not None else None, *XC.cells(r)])
-    sub = sum((r["amount"] for r in rows_k if r["amount"] is not None), Decimal("0"))
-    ws.append(["", "", "", "", "Sub-total", float(sub)])
+    ws.append(["", "", "", "", "Sub-total", float(_amount(rows_k))])
     ws.cell(row=ws.max_row, column=5).font = ws.cell(row=ws.max_row, column=6).font = bold
+    if sec["stage_rows"] is not None:
+      ws.append(["", "", "", "", f"Total {sec['stage'].lower()}", float(_amount(sec["stage_rows"]))])
+      ws.cell(row=ws.max_row, column=5).font = ws.cell(row=ws.max_row, column=6).font = bold
+    ws.append([])
+  by_type = [(_SECTION_TITLES[key][3:], _amount(rows_k)) for key, rows_k in _groups(rows).items() if rows_k]
+  if len(by_type) > 1:
+    ws.append(["The same bill by kind of item"])
+    ws.cell(row=ws.max_row, column=1).font = bold
+    for name, amount in by_type:
+      ws.append(["", name, "", "", "", float(amount)])
     ws.append([])
     
   steel = XC.steel_table(by_dia)
@@ -626,7 +663,47 @@ def build_contract_boq_xlsx(snapshot: dict, rows: list[dict], meta: dict, compan
   wb.save(buffer)
   return buffer.getvalue()
 
-def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str, by_dia: dict | None = None) -> bytes:
+
+def _break_up_sheet(wb, snapshot: dict, company: str, bu: dict) -> None:
+  """A second sheet: the materials behind the concrete, brickwork and plaster mortar lines, the totals to buy, and what could not be worked out (P86)."""
+  ws = wb.create_sheet("Material break-up")
+  ws.append([company, "MATERIAL BREAK-UP"])
+  ws["A1"].font = Font(bold=True, size=14)
+  ws.append([_stamp(snapshot)])
+  ws.append(["Worked out from the mix on each line by the dry-volume method. Quantities are net; the last column adds the line's own waste factor."])
+  for text in bu.get("assumptions") or []:
+    ws.append([text])
+  ws.append([])
+
+  head = ["Material", "Unit", "Quantity (net)", "With waste", "Lines"]
+  ws.append(["Totals to buy"])
+  ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+  ws.append(head)
+  for c in ws[ws.max_row]:
+    c.fill, c.font = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True)
+  for t in bu.get("totals") or []:
+    ws.append([t["material"], t["unit"], t["quantity"], t["with_waste"], t["lines"]])
+  ws.append([])
+
+  ws.append(["By line"])
+  ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+  ws.append(["Work item", "Description", "Unit", "Quantity", "Mix", "Mix from", "Material", "Per unit", "Quantity (net)", "With waste"])
+  for c in ws[ws.max_row]:
+    c.fill, c.font = PatternFill(start_color="1E293B", end_color="1E293B", fill_type="solid"), Font(color="FFFFFF", bold=True)
+  for ln in bu.get("lines") or []:
+    for m in ln["materials"]:
+      ws.append([ln["work_item_code"], ln["name"], ln["unit"], ln["quantity"], ln["mix"], ln["mix_basis"], f"{m['material']}, {m['unit']}", m["per_unit"], m["quantity"], m["with_waste"]])
+
+  if bu.get("not_broken"):
+    ws.append([])
+    ws.append(["Not worked out"])
+    ws.cell(row=ws.max_row, column=1).font = Font(bold=True)
+    for s in bu["not_broken"]:
+      ws.append([s["work_item_code"], s["name"], s["reason"]])
+  for col, width in zip("ABCDEFGHIJ", (22, 44, 14, 16, 18, 12, 30, 12, 16, 14)):
+    ws.column_dimensions[col].width = width
+
+def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company: str, by_dia: dict | None = None, break_up: dict | None = None) -> bytes:
   wb = Workbook()
   ws = wb.active
   ws.title = "Procurement"
@@ -653,6 +730,8 @@ def build_procurement_xlsx(snapshot: dict, rows: list[dict], meta: dict, company
     ws.cell(row=ws.max_row, column=2).font = Font(bold=True)
     for row in steel:
       ws.append(["", *row])
+  if break_up and (break_up.get("lines") or break_up.get("not_broken")):
+    _break_up_sheet(wb, snapshot, company, break_up)
   for col, width in zip("ABCDEFGHIJKLMNO", (5, 16, 44, 8, 16, 14, 14, 12, 16, 12, 18, 22, 14, 14, 12)):
     ws.column_dimensions[col].width = width
   buffer = BytesIO()

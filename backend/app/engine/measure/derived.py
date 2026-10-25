@@ -76,7 +76,7 @@ PARAMS = {
   "beam_lintel_qs_rate": (0.0, 0.0, 1.0),
   "formwork_shared_walls": (1.0, 0.0, 1.0),
   "formwork_shared_beams": (1.0, 0.0, 1.0),
-  "formwork_joints": (0.0, 0.0, 1.0),
+  "formwork_joints": (1.0, 0.0, 1.0),
   "formwork_lintel_bearing_mm": (152.4, 0.0, 400.0),
   "rcc_wall_reveals": (0.0, 0.0, 1.0),
   "wall_foundation_works": (0.0, 0.0, 1.0),

@@ -15,6 +15,7 @@ LABEL_AGREE = 0.04
 MAX_PICTURE_Z = 175.0
 MAX_HALF_X = 60.0
 MM = 25.4
+BRICK_WALLS_IN = (4.5, 9.0, 13.5)
 
 def _frame(words: list):
   votes: dict = {}
@@ -74,6 +75,9 @@ def _label_inches(tokens: list) -> float | None:
   joined = " ".join(nums)
   m = re.match(r"^(\d+)\s+(\d)\s+(\d)\s*[\"”]?$", joined)
   if m and int(m.group(3)):
+    return int(m.group(1)) + int(m.group(2)) / int(m.group(3))
+  m = re.match(r"^(\d{1,2})(\d)\s+(\d)\s*[\"”]?$", joined)
+  if m and int(m.group(3)) and int(m.group(2)) < int(m.group(3)):
     return int(m.group(1)) + int(m.group(2)) / int(m.group(3))
   m = re.match(r"^(\d+)\s*[\"”]$", joined)
   if m:
@@ -177,6 +181,11 @@ def _calibrate(wall_in: float, wall_w: float | None, steps: list, words: list, u
   if from_wall and lab:
     if abs(from_wall - lab) / lab <= LABEL_AGREE:
       return {"mm_per_pt": (from_wall + lab) / 2.0, "basis": "WALL_AND_LABELS", "labels": labels, "agree": True}
+    implied = lab * wall_w / MM
+    usual = min(BRICK_WALLS_IN, key=lambda s: abs(s - implied))
+    spread = (from_labels[-1] - from_labels[0]) / lab
+    if len(from_labels) >= 2 and spread <= LABEL_AGREE and abs(implied - usual) <= 0.1 * usual:
+      return {"mm_per_pt": lab, "basis": "LABELS_WALL_FROM_PICTURE", "labels": labels, "agree": True, "wall_in": usual, "caption_wall_in": wall_in}
     return {"mm_per_pt": None, "basis": "DISAGREE", "labels": labels, "agree": False, "from_wall": from_wall, "from_labels": lab}
   if lab:
     return {"mm_per_pt": lab, "basis": "LABELS", "labels": labels, "agree": True}
@@ -231,8 +240,12 @@ def read(index, words: list) -> list:
     st = _stack(rects)
     rec["issues"] += st["issues"]
     wall_w = _wall_width(V, cap["X"], max(r["z1"] for r in rects))
-    cal = _calibrate(cap["wall_in"], wall_w, st["steps"], words, u, w)
+    cal = _calibrate(cap["wall_in"], wall_w, st["steps"] + ([st["footing"]] if st["footing"] else []), words, u, w)
     rec["calibration"] = cal["basis"]
+    wall_in = cal.get("wall_in") or cap["wall_in"]
+    if cal.get("wall_in"):
+      rec["wall_in"], rec["caption_wall_in"] = wall_in, cal["caption_wall_in"]
+      rec["issues"].append("CAPTION_WALL_DIFFERS")
     if cal["mm_per_pt"] is None:
       rec["issues"].append("SCALE_DISAGREES" if cal["basis"] == "DISAGREE" else "SCALE_UNKNOWN")
       out.append(rec)
@@ -247,13 +260,23 @@ def read(index, words: list) -> list:
       snapped = _snap(inches)
       snap_err = max(snap_err, abs(inches - snapped))
       return snapped
+    masonry_only = False
+    if st["footing"] is not None and st["steps"]:
+      top_first = sorted(st["steps"], key=lambda r: -r["z1"])
+      chain_in = [wall_in] + [dim(r["w"]) for r in top_first]
+      offsets_in = [b - a for a, b in zip(chain_in, chain_in[1:])]
+      if offsets_in and dim(st["footing"]["w"]) - chain_in[-1] <= 1.5 * max(offsets_in):
+        st["steps"] = [*st["steps"], st["footing"]]
+        st["footing"] = None
+        masonry_only = True
+    rec["masonry_only"] = masonry_only
     steps_bottom_first = sorted(st["steps"], key=lambda r: r["z1"])
     rec["steps"] = [{"width_in": dim(r["w"]), "height_in": dim(r["h"]), "width_mm": round(dim(r["w"]) * MM, 1), "height_mm": round(dim(r["h"]) * MM, 1)} for r in steps_bottom_first]
     for key in ("footing", "pcc"):
       r = st[key]
       
       rec[key] = {"width_in": dim(r["w"]), "depth_in": dim(r["h"]), "width_mm": round(dim(r["w"]) * MM, 1), "depth_mm": round(dim(r["h"]) * MM, 1)} if r else None
-    rec["wall_width_mm"] = round(cap["wall_in"] * MM, 1)
+    rec["wall_width_mm"] = round(wall_in * MM, 1)
     widths = [s_["width_mm"] for s_ in rec["steps"]]
     chain = [rec["wall_width_mm"]] + sorted(widths)
     diffs = [round(b - a, 1) for a, b in zip(chain, chain[1:])]
@@ -272,7 +295,7 @@ def read(index, words: list) -> list:
       rec["issues"].append("ECCENTRIC_FOOTING")
     if snap_err > 0.35:
       rec["issues"].append("DIMENSIONS_NOT_ON_HALF_INCH")
-    if st["footing"] is None:
+    if st["footing"] is None and not masonry_only:
       rec["issues"].append("NO_FOOTING_FOUND")
     if not rec["steps"]:
       rec["issues"].append("NO_STEPS_FOUND")

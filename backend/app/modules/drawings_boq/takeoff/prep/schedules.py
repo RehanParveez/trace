@@ -191,6 +191,7 @@ def _scan(words: list) -> tuple:
       cells = sorted(rows[i], key=lambda t: t[1])
       if not cells:
         continue
+      arched = any(re.search(r"\bARCH(?:ED)?\b", cw.text, re.I) for _, _, cw in cells)
       kind = mark_type(mk)
       if kind is None:
         continue
@@ -214,6 +215,8 @@ def _scan(words: list) -> tuple:
       rec = {"mark": mk, "type": kind, "width_mm": round(w_mm, 1), "height_mm": round(h_mm, 1), "text": _tidy(text)[:40]}
       if swapped:
         rec["swapped"] = True
+      if arched:
+        rec["arched"] = True
       out.setdefault(mk, []).append(rec)
       
   flat = []
@@ -406,7 +409,7 @@ def gather(sheets: list[dict]) -> dict:
     sizes = Counter((o["width_mm"], o["height_mm"]) for _, o in recs)
     (w, h), _ = sizes.most_common(1)[0]
     base = next(o for _, o in recs if (o["width_mm"], o["height_mm"]) == (w, h))
-    openings.append({**base, "area_m2": round(w * h / 1e6, 3), "pages": sorted({p for p, _ in recs})})
+    openings.append({**base, "area_m2": round(w * h / 1e6, 3), "pages": sorted({p for p, _ in recs}), **({"arched": True} if any(o.get("arched") for _, o in recs) else {})})
     if len(sizes) > 1:
       conflicts.append({"kind": "OPENING_SIZE", "name": mark, "values": [{"width_mm": a, "height_mm": b, "pages": sorted({p for p, o in recs if (o["width_mm"], o["height_mm"]) == (a, b)})} for (a, b) in sizes]})
   openings.sort(key=lambda r: (r["type"], int(re.sub(r"\D", "", r["mark"]) or 0), r["mark"]))
@@ -454,6 +457,10 @@ def gather(sheets: list[dict]) -> dict:
   if projections:
     out["projections"] = projections
   return out
+
+def arched_marks(schedule: dict | None) -> set:
+  """The marks of the openings whose schedule row says they are arched."""
+  return {str(o["mark"]).upper() for o in (schedule or {}).get("openings") or [] if o.get("arched")}
 
 def opening_lookup(schedule: dict | None) -> dict:
   """mark -> (width_mm, height_mm, type) for the extraction step."""

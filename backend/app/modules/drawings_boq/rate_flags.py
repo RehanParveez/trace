@@ -20,6 +20,10 @@ FLAGS = (
   (NO_ESCALATION, "A published rate with no escalation in force, so it is the rate of the book's own date"),
 )
 CODES = tuple(code for code, _ in FLAGS)
+BLOCKS = {NO_RATE: "ISSUE", RATE_ZERO: "ISSUE", AI_SUGGESTED_RATE: "APPROVAL"}
+
+def blocks_of(code: str) -> str | None:
+  return BLOCKS.get(code)
 
 def _f(v) -> float:
   try:

@@ -18,6 +18,8 @@ TYPED_FIELD = {RAIN_PIPE: "rain_pipe_length_mm", SEWER_PIPE: "sewer_length_mm"}
 WORDS = {RAIN_PIPE: "the length of one rain water pipe (roof to ground)", SEWER_PIPE: "the total length of the sewer pipe line"}
 TOP_FLOOR, BOTTOM_FLOOR = "ROOF", "GROUND"
 SAME_PLACE_PT = 3.0
+REPEAT_ITEMS = (RAIN_PIPE, SEWER_PIPE)
+REPEAT_BY = "DRAIN_REPEAT"
 
 RAIN_LABEL = re.compile(r"(?<![A-Za-z])(?:RAIN\s*WATER\s*(?:DOWN\s*)?PIPES?|R\.?W\.?P)(?![A-Za-z])", re.I)
 SEWER_LABEL = re.compile(r"(?<![A-Za-z])(?:S\s?/\s?PIPE|SEWER(?:AGE)?\s+PIPE)(?![A-Za-z])", re.I)
@@ -137,6 +139,40 @@ def chambers(lines: list, ctx: dict, cls, finish) -> list:
     facts = {"drainage": item, "marks": marks, "bare_labels": len(bare), "labels_on_sheet": n}
     out.append(_make(cls, ctx, finish, item, (round(points[0][0], 1), round(points[0][1], 1)), f"{plural} · {n} no{'s' if n != 1 else ''}" + (f" ({shown})" if marks else ""), points, {}, [],
       facts, [C.note("DRAIN_CHAMBERS_COUNT_ONLY")], 0.6, n))
+  return out
+
+def seen(found: list) -> dict:
+  out: dict = {}
+  for c in found:
+    item = (c.facts or {}).get("drainage")
+    if item:
+      out[item] = out.get(item, 0) + int(c.count or 1)
+  return out
+
+def elsewhere(sheets: list) -> dict:
+  out: dict = {}
+  for page_no, stats in sheets:
+    for item in ((stats or {}).get("drainage_seen") or {}):
+      out.setdefault(item, []).append(page_no)
+  return {k: sorted(v) for k, v in out.items()}
+
+def apply(found: list, notes: list, other: dict, status, page_no: int | None = None) -> list:
+  out = []
+
+  for item in sorted(seen(found)):
+    pages = other.get(item)
+    if not pages:
+      continue
+    earlier = [p for p in pages if page_no is not None and p < page_no] if item in REPEAT_ITEMS else []
+    out.append({"item": item, "pages": pages, "set_aside_for": earlier[0] if earlier else None})
+    note = C.note("DRAIN_REPEAT_SET_ASIDE", item=item, page_no=earlier[0]) if earlier else C.note("DRAIN_ITEM_ON_OTHER_SHEET", item=item, pages=pages)
+    notes.append(note)
+    for c in found:
+      if (c.facts or {}).get("drainage") == item:
+        c.notes.append(note)
+        if earlier:
+          c.facts["drain_repeat"] = {"page_no": earlier[0]}
+        c.status = status(c.notes)
   return out
 
 def candidates(words: list, floor_heights: dict | None, ctx: dict, cls, finish) -> list:

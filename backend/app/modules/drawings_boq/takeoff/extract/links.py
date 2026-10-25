@@ -34,7 +34,7 @@ def link_of(row) -> dict:
   
   if g in ("BEAM", "PLINTH_BEAM"):
     if f.get("section_mark") and p.get("depth_mm"):
-      how = "MARK" if "BEAM_SECTION_FROM_MARK" in codes else "CHOSEN" if f.get("section_chosen") or (f.get("conflict") or {}).get("kind") == "BEAM_SECTION" else "ONLY_SECTION"
+      how = "MARK" if "BEAM_SECTION_FROM_MARK" in codes else "CHOSEN" if f.get("section_chosen") or (f.get("conflict") or {}).get("kind") == "BEAM_SECTION" else "ASSUMED" if f.get("section_assumed") else "ONLY_SECTION"
       return {"status": LINKED, "detail": f["section_mark"], "how": how, "needs": [], "reason": None}
     if f.get("section_options"):
       return {"status": CHOICE, "detail": ", ".join(o.get("mark") for o in f["section_options"] if o.get("mark")), "how": None, "needs": ["depth_mm"],

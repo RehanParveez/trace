@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import re
+from app.engine.measure import proposed as QP
 from app.engine.measure import opening_rules as OPR
 from shapely.geometry import LineString, Point
 from app.modules.drawings_boq.takeoff.orientation import axes as AX
@@ -12,6 +13,7 @@ CEILING_PLASTER = "CEILING_PLASTER"
 PLASTER_INSIDE = "PLASTER_INSIDE"
 PLASTER_OUTSIDE = "PLASTER_OUTSIDE"
 DOOR_FRAME = "DOOR_FRAME"
+ARCH_CENTRING = "ARCH_CENTRING"
 DOOR_AREA = "DOOR_AREA"
 WINDOW_AREA = "WINDOW_AREA"
 FLOOR_FINISH = "FLOOR_FINISH"
@@ -23,12 +25,12 @@ PAINT_OUTSIDE = "PAINT_OUTSIDE"
 FLOOR_WET = "FLOOR_WET"
 WALL_TILE = "WALL_TILE"
 WET_WATERPROOF = "WET_WATERPROOF"
-ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME, DOOR_AREA, WINDOW_AREA, FLOOR_FINISH, CEILING_PAINT, SKIRTING, DADO, PAINT_INSIDE, PAINT_OUTSIDE,
+ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME, ARCH_CENTRING, DOOR_AREA, WINDOW_AREA, FLOOR_FINISH, CEILING_PAINT, SKIRTING, DADO, PAINT_INSIDE, PAINT_OUTSIDE,
   FLOOR_WET, WALL_TILE, WET_WATERPROOF)
 OPENING_MIN_M2 = 0.5            
 
 WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: "JOI-DOOR-FRAME", DOOR_AREA: "JOI-DOOR-AREA", WINDOW_AREA: "JOI-WIN-AREA", FLOOR_FINISH: "FIN-FLOOR", CEILING_PAINT: "FIN-CEIL-PAINT", SKIRTING: "FIN-SKIRT", DADO: "FIN-DADO",
-  PAINT_INSIDE: "FIN-PAINT", PAINT_OUTSIDE: "FIN-PAINT-EXT", FLOOR_WET: "FIN-FLOOR-TILE", WALL_TILE: "FIN-WALL-TILE", WET_WATERPROOF: "FIN-WATERPROOF-WET"}
+  PAINT_INSIDE: "FIN-PAINT", PAINT_OUTSIDE: "FIN-PAINT-EXT", FLOOR_WET: "FIN-FLOOR-TILE", WALL_TILE: "FIN-WALL-TILE", WET_WATERPROOF: "FIN-WATERPROOF-WET", ARCH_CENTRING: "FRM-ARCH"}
 SIDE = {PLASTER_INSIDE: "in", PLASTER_OUTSIDE: "out", PAINT_INSIDE: "in", PAINT_OUTSIDE: "out"}
 
 def _make(cls, ctx: dict, finish, key_parts: tuple, item: str, label: str, tag: str, points: list, params: dict, missing: list, notes: list, facts: dict,
@@ -485,8 +487,8 @@ def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str
     out.append(_make(cls, ctx, finish, (item, level_hint or ""), item, label, tag, centre, params, missing, notes, facts, 0.6))
   return out
 
-def door_hosts(walls: list) -> dict:
-  """For each door mark, how many of its doors were found in thin walls and how many in thicker walls."""
+def door_hosts(walls: list, role: str = "DOOR") -> dict:
+  """For each door (or window) mark, how many of its openings were found in thin walls and how many in thicker walls."""
   hosts: dict = {}
   for w in plaster_walls(walls):
     t = float((w.facts or {}).get("thickness_used_mm") or 0.0)
@@ -494,9 +496,10 @@ def door_hosts(walls: list) -> dict:
       continue
     key = "thin" if t < C.FOUNDATION_THIN_WALL_MAX_MM else "thick"
     for o in (w.params or {}).get("openings") or []:
-      if isinstance(o, dict) and o.get("role") == "DOOR" and o.get("label"):
+      if isinstance(o, dict) and o.get("role") == role and o.get("label"):
         h = hosts.setdefault(str(o["label"]).upper(), {"thin": 0, "thick": 0})
         h[key] += int(o.get("nos") or 1)
+        h.setdefault("t_" + key, []).append(t)
   return hosts
 
 def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
@@ -527,16 +530,28 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
       
     where = f" · {spec[0]}" if spec else ""
     notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL")]
+    params, missing = {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"]
+    thicknesses = sorted(h.get("t_thin" if thin else "t_thick") or [])
+    host_t = thicknesses[len(thicknesses) // 2] if thicknesses else None
+    if host_t is not None and (h["thick"] if thin else h["thin"]) == 0 and min(abs(host_t - usual) for usual in (114.3, 228.6)) <= 0.05 * host_t:
+      params["width_mm"], missing = round(host_t, 1), []
+      facts["frame_width_from"] = "WALL"
+      facts["host_thickness_mm"] = round(host_t, 1)
+      notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_FROM_WALL")]
     if f.get("height_assumed") and not f.get("size_schedule_mm"):
       facts["height_assumed"] = True
       notes.append(C.note("OPENING_HEIGHT_ASSUMED", height_mm=height))
     out.append(_make(cls, ctx, finish, (DOOR_FRAME, d.key), DOOR_FRAME, f"Door frames {d.tag} ×{len(pts)} · {width:g}×{height:g} mm{where}", f"FRAME-{d.tag}", pts,
-      {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"], notes, facts, 0.7, count=len(pts)))
+      params, missing, notes, facts, 0.7, count=len(pts)))
   return out
 
 def fill_finish(item: str, missing: list, params: dict, typed: dict, facts: dict) -> tuple:
   out = dict(params or {})
   facts = facts or {}
+  if item == DOOR_FRAME and "frame_width_mm" not in (missing or []):
+    typed_width = typed.get("door_frame_width_thin_mm" if facts.get("frame_class") == "THIN" else "door_frame_width_mm")
+    if typed_width is not None:
+      out["width_mm"] = float(typed_width)
   
   for need in missing or []:
     if need == "frame_width_mm":

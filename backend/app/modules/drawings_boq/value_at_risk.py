@@ -6,6 +6,11 @@ from app.modules.drawings_boq import rate_flags as RF
 TOP_ITEMS = 8
 TOP_FLAGGED = 3
 UNPRICED_SHOWN = 8
+LEFT_OUT = (
+  ("ELE-", "ELECTRICAL", "Wiring, conduit, boxes, cable and circuits are not in the bill: the electrical lines are the fittings alone, counted from the plan legend."),
+  ("PIL-", "PILING", "Pile caps, the steel in the piles, the cut-off of the pile heads and test piles are not in the bill: the piling lines are the boring of the shafts and the concrete in them, read from the note or schedule."),
+  ("DRN-", "DRAINAGE", "Excavation, bed and surround, and the pipes between the chambers are not in the bill: the drainage lines are the pipes and chambers read from the labels."),
+)
 NOT_GRADED = "NOT_GRADED"
 BEHIND_ASSUMPTION = ("ASSUMED", "MISSING", "NOT_READ")
 
@@ -39,6 +44,8 @@ def build(rows: list) -> dict:
   opens: list = []
   unpriced: list = []
   flagged: dict = {code: {"code": code, "items": 0, "amount": 0.0, "top": []} for code in RF.CODES}
+  blocking = 0
+  left_out: dict = {group: {"group": group, "text": text, "items": 0, "amount": 0.0} for _, group, text in LEFT_OUT}
 
   for row in rows:
     quantity = _f(row.get("quantity"))
@@ -50,7 +57,15 @@ def build(rows: list) -> dict:
         labour_amount += quantity * _f(rate)
       continue
 
-    for code in RF.flags_of(row):
+    work_code = str(row.get("work_item_code") or "")
+    for prefix, group, _ in LEFT_OUT:
+      if work_code.startswith(prefix) and quantity != 0:
+        left_out[group]["items"] += 1
+        left_out[group]["amount"] += quantity * _f(rate) if rate is not None else 0.0
+    codes = RF.flags_of(row)
+    if any(RF.blocks_of(code) for code in codes):
+      blocking += 1
+    for code in codes:
       slot = flagged[code]
       slot["items"] += 1
       amount_for_flag = quantity * _f(rate) if rate is not None else 0.0
@@ -100,7 +115,7 @@ def build(rows: list) -> dict:
     if not slot["items"]:
       continue
     top = sorted(slot["top"], key=lambda x: (-abs(x.get("amount") or 0.0), x["name"] or ""))[:TOP_FLAGGED]
-    flags.append({"code": code, "text": text, "items": slot["items"], "amount": None if code == RF.NO_RATE else _r2(slot["amount"]), "top_items": top})
+    flags.append({"code": code, "text": text, "blocks": RF.blocks_of(code), "items": slot["items"], "amount": None if code == RF.NO_RATE else _r2(slot["amount"]), "top_items": top})
 
   return {
     "totals": {

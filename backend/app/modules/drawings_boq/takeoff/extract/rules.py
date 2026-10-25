@@ -136,8 +136,9 @@ def apply(cands: list, level_hint: str | None) -> dict:
       stamp(c, "X8", "S12")
       stats["stairs"] += 1
     elif c.category == "SITE" and f.get("site_kind") in ("OHWT", "UGWT", "SEPTIC"):
-      c.notes.append(C.note("TANK_SLABS_QS", top_mm=QS.convention("tank_top_slab_mm"), bottom_mm=QS.convention("tank_bottom_slab_mm")))
-      stamp(c, "S11")
+      if not f.get("tank_slabs_mm"):
+        c.notes.append(C.note("TANK_SLABS_QS", top_mm=QS.convention("tank_top_slab_mm"), bottom_mm=QS.convention("tank_bottom_slab_mm")))
+        stamp(c, "S11")
       stats["tanks"] += 1
     elif c.category == "SITE" and f.get("site_kind") == "BOUNDARY_WALL":
       c.notes.append(C.note("SITE_WALL_QS_ESTIMATE", thickness_mm=QS.convention("boundary_wall_thickness_mm")))

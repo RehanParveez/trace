@@ -92,9 +92,22 @@ def _tank_item(kind: str, labels: list, details: list) -> dict:
     if facts["steel_options"]:
       codes.append(("TANK_STEEL_NOTES_LISTED", {"kind": kind, "count": len(facts["steel_options"])}))
     codes.append(("SITE_TANK_SIZES_LISTED", {"kind": kind, "printed": listed["message"]}))
+  missing = ["length_mm", "width_mm", "height_mm", "thickness_mm"]
+  derived = TS.derive(kind, details) if kind != "SEPTIC" else None
+
+  if derived is not None:
+    facts["sizes_mm"] = dict(derived["sizes_mm"])
+    facts["sizes_source"] = "DRAWING_ASSUMED"
+    facts["sizes_assumed"] = dict(derived["basis"])
+    if derived["slabs_mm"]:
+      facts["tank_slabs_mm"] = dict(derived["slabs_mm"])
+    missing = [m for m in missing if m not in derived["sizes_mm"]]
+    codes = [(c, e) for c, e in codes if c not in ("SITE_TANK_SIZES_TYPED", "SITE_TANK_SIZES_LISTED")]
+    said = "; ".join(f"{TANK_WORDS_FOR[t].replace('the ', '', 1)}: {b}" for t, b in derived["basis"].items())
+    codes.append(("TANK_SIZES_DERIVED", {"kind": kind, "derived": said, "left": ", ".join(derived["left"]) or None, "printed": listed["message"] if listed else None}))
   if len(labels) > 1:
     codes.append(("SITE_LABEL_REPEATED", {"count": len(labels)}))
-  return {"site_kind": kind, "tag": TANK_TAG[kind], "label": LABEL[kind], "x": first.cx, "y": first.cy, "facts": facts, "params": {}, "missing": ["length_mm", "width_mm", "height_mm", "thickness_mm"],
+  return {"site_kind": kind, "tag": TANK_TAG[kind], "label": LABEL[kind], "x": first.cx, "y": first.cy, "facts": facts, "params": {}, "missing": missing,
     "codes": codes, "base": 0.7}
 
 def _within(cap: dict, size_factor: float) -> tuple:
@@ -290,7 +303,8 @@ def equivalent_depth_mm(length: float, width: float, height: float, wall: float,
 def typed_sizes(kind: str, missing: list, typed: dict, facts: dict) -> dict:
   """The sizes of an item as known now: the ones the sheet printed (in facts) with the ones typed for the missing tokens on top."""
   out = dict((facts or {}).get("sizes_mm") or {})
-  for token in missing or []:
+  tank = (facts or {}).get("site_kind") in TANK_KINDS
+  for token in (TYPED_FIELD if tank else (missing or [])):
     v = (typed or {}).get(TYPED_FIELD.get(token, ""))
     if v is not None:
       out[token] = float(v)
@@ -305,8 +319,10 @@ def fill_site(kind: str, missing: list, params: dict, typed: dict, facts: dict) 
   if kind in TANK_KINDS:
     for token in ("length_mm", "width_mm", "height_mm", "thickness_mm"):
       if sizes.get(token) is None:
-        return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {TANK_WORDS_FOR[token]} to measure this item.")
-    top, bottom = float(QS.convention("tank_top_slab_mm")), float(QS.convention("tank_bottom_slab_mm"))
+         return out, ("CANDIDATE_NEEDS_DIMENSIONS", f"Give {TANK_WORDS_FOR[token]} to measure this item.")
+    slabs = (facts or {}).get("tank_slabs_mm") or {}
+    top = float(slabs.get("top_mm") or QS.convention("tank_top_slab_mm"))
+    bottom = float(slabs.get("bottom_mm") or QS.convention("tank_bottom_slab_mm"))
     depth = equivalent_depth_mm(sizes["length_mm"], sizes["width_mm"], sizes["height_mm"], sizes["thickness_mm"], top, bottom)
     if depth is None:
       return out, ("CANDIDATE_BAD_VALUES", "The walls are thicker than half the tank. Check the sizes you typed.")

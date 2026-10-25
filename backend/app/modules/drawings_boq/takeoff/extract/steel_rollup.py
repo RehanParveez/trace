@@ -68,6 +68,29 @@ def member(row, conv: dict, cat: str | None = None) -> dict:
     return {"reason": "NO_SIZE", "kg_each": Decimal("0"), "lines": [], "steel": steel}
   return {"reason": None, "kg_each": bare, "lines": lines, "steel": steel}
 
+def summary_of(row) -> dict | None:
+  cat = kind_of(row)
+
+  if cat not in STEEL_FAMILIES and cat not in MORE_FAMILIES:
+    return None
+  try:
+    got = member(row, resolve(None, None)[0], cat)
+  except Exception:
+    return None
+  if got["reason"]:
+    return {"state": got["reason"]}
+    
+  lines = []
+  for ln in got["lines"]:
+    try:
+      cut = float(ln["cut_length_m"]) if ln.get("cut_length_m") is not None else None
+      kg = float(ln["kg"]) if ln.get("kg") is not None else None
+    except (TypeError, ValueError):
+      cut = kg = None
+    lines.append({"role": ln.get("role") or ln.get("kind"), "bar": ln.get("bar"), "count": ln.get("count"), "cut_m": cut, "kg": kg})
+  source = (((row.facts or {}).get("steel_source")) or {}).get("grade") or "PRINTED"
+  return {"state": "WEIGHED", "kg": round(float(got["kg_each"]), 3), "lines": lines, "source": source}
+
 def resolve(conventions: dict | None, printed: dict | None) -> tuple:
   """The values a roll-up uses and where each came from: what was typed, else what the drawing prints, else the engine default."""
   given = {k: v for k, v in (conventions or {}).items() if k in CONVENTIONS and v is not None}

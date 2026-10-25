@@ -35,7 +35,11 @@ def classify(sides: dict, axes: tuple) -> list:
       "outline_widened_mm": round(wide, 1), "length_via": rec.get("length_via"), "status": None, "reason": None}
     
     if not lengths:
-      row["status"], row["reason"] = "NOT_BOUND", "no overall length printed beside the label"
+      row["length_mm"], row["length_via"], row["assumed"] = round(base, 1), "SIDE_OF_PLAN", True
+      if width <= chajja:
+        row["status"], row["reason"] = "CHAJJA", f"{feet_text(width)} wide, not more than the chajja limit {feet_text(chajja)}; no length printed, the side of the plan is taken"
+      else:
+        row["status"], row["reason"] = "ADDED", "no overall length printed beside the label; the length of the side of the plan it stands beside is taken (assumed)"
     elif not any(_near(x, base) or _near(x, wide) for x in lengths):
       row["status"], row["reason"] = "NOT_VERIFIED", "the length it is bound to is not the length of this side of the plan outline"
     elif width <= chajja:

@@ -27,7 +27,9 @@ def fill_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, fi
       pts.extend((r.geometry or {}).get("outer") or (r.geometry or {}).get("points") or [])
   if used == 0:
     return None
-  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3)}
+  dug = FD._assumed(FILL_ITEM)
+  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), "depth_assumed": dug, "layers": layers_of(dug["mm"], None)}
   label = f"Earth filling under the floor · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
   return FD._make(cls, ctx, finish, (FILL_ITEM, level_hint or ""), FILL_ITEM, label, "EARTH-FILL", [FD._centre(pts)],
-    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, ["depth_mm"], [C.note("FILL_FROM_ROOMS"), C.note("FILL_DEPTH_NOT_READ")], facts, 0.7)
+    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0, "depth_mm": dug["mm"]}, [], [C.note("FILL_FROM_ROOMS"), C.note("FILL_DEPTH_ASSUMED", reason=dug["text"])], facts, 0.7)
+

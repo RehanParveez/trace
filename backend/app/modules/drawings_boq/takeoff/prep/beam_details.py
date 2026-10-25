@@ -18,6 +18,8 @@ BEAM_CAPTION = re.compile(r"\b(?P<mark>(?:PB|RB|GB|LB|TB|CB|B)\s*-?\s*\d{1,2})\b
 CAPTION_WORD = re.compile(r"\b(?:BEAM|SECTION|DETAIL)\b", re.I)
 TIE_CAPTION = re.compile(r"\bTIE\s+BEAM\b|\bLEVEL\s+TIE\s+BAND\b|\bTIE\s+BAND\b", re.I)
 MAX_CAPTION_CHARS = 40
+UPSTAND_WORD = re.compile(r"\b(?:UP[\s-]?STAND(?:ING)?|INVERTED|UP[\s-]?TURNED?)\b", re.I)
+UPSTAND_REACH_PT = 45.0
 REGION_HALF_WIDTH_PT = 55.0
 REGION_HEIGHT_PT = 100.0
 REGION_BELOW_PT = 3.0
@@ -349,7 +351,7 @@ def column_bars(words: list, page, box_v: tuple, page_wh: tuple, crop: tuple, ro
   out = {**got, "read": "TEXT" if (steel.get("vertical") and steel.get("ring")) else "NONE", "region": [round(v, 1) for v in region]}
   if out["read"] == "TEXT" or got["conflict"] or not use_ocr:
     return out
-    
+
   if time.monotonic() >= deadline:
     out["read"] = "TIMEOUT"
     return out
@@ -379,6 +381,18 @@ def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rot
   """Every beam section on the sheet: its mark, kind and, when the character reader is available, the size and bars written on it."""
   lines = build_lines(words)
   caps = caption_marks(lines)
+  for ln in lines:
+    t = (ln.text or "").strip()
+    if not t or len(t) > MAX_CAPTION_CHARS or not ln.spans or not UPSTAND_WORD.search(t):
+      continue
+    ws = [w for _, _, w in ln.spans]
+    lx, ly = sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws)
+    near = sorted((math.hypot(c["x"] - lx, c["y"] - ly), i) for i, c in enumerate(caps))
+    if near and near[0][0] <= UPSTAND_REACH_PT:
+      caps[near[0][1]]["upstand"] = True
+  for c in caps:
+    if UPSTAND_WORD.search(c["text"]):
+      c["upstand"] = True
   ocr = bool(use_ocr and ocr_available())
   Wv, Hv = page_wh
   def vis(px, py):
@@ -396,7 +410,7 @@ def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rot
   out = []
   for c in caps:
     region = _region(cap_v[id(c)], others, Wv, Hv)
-    rec = {"mark": c["mark"], "caption": c["text"], "kind": c["kind"], "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
+    rec = {"mark": c["mark"], "caption": c["text"], "kind": c["kind"], "upstand": bool(c.get("upstand")), "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
       "width_in": None, "depth_in": None, "steel": None, "read": "NONE", "checks": {}}
     inside = PT.region_words(words, region, crop, rotation, page_wh)
     text_pic = PT.beam_picture(inside)
@@ -446,6 +460,7 @@ def gather(sheets: list) -> list:
         steels.append(r["steel"])
     rec = {"mark": mark, "kind": reads[0].get("kind"), "pages": sorted({r["page_no"] for r in reads if r.get("page_no")}),
       "depth_mm": round(depths[0] * MM_INCH, 1) if len(depths) == 1 else None, "disagree": len(depths) > 1 or len(steels) > 1,
-      "steel": steels[0] if len(steels) == 1 else None, "steel_text": steel_text(steels[0]) if len(steels) == 1 else None}
+      "steel": steels[0] if len(steels) == 1 else None, "steel_text": steel_text(steels[0]) if len(steels) == 1 else None,
+      "upstand": any(r.get("upstand") for r in reads)}
     out.append(rec)
   return out

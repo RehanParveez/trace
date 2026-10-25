@@ -1,6 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.engine.measure import proposed as QP
+from app.engine.measure import readings as QS
 from app.modules.drawings_boq.takeoff.prep import footing_sections as FSEC
 
 EXCAVATION_AREA = "EXCAVATION_AREA"
@@ -74,8 +75,18 @@ def wall_groups(walls: list) -> dict:
   return groups
 
 def _section_facts(sec: dict) -> dict:
-  return {"footing_section": {"caption": sec.get("caption"), "calibration": sec.get("calibration"), "scale_mm_per_pt": sec.get("scale_mm_per_pt"),
+  return {"footing_section": {"caption": sec.get("caption"), "masonry_only": sec.get("masonry_only"), "caption_wall_in": sec.get("caption_wall_in"), "calibration": sec.get("calibration"), "scale_mm_per_pt": sec.get("scale_mm_per_pt"),
     "pcc": sec.get("pcc"), "footing": sec.get("footing"), "steps": sec.get("steps"), "total_depth_mm": sec.get("total_depth_mm"), "steel": sec.get("steel") or []}}
+
+def _assumed(item: str) -> dict:
+  """The depth used for an item when the drawing prints none (the workbook's, or usual practice), with its reason."""
+  return dict(QP.depth_assumed(item) or {})
+
+def _working_space(bed_w: float, depth: float, length_mm: float) -> dict:
+  """The 3 in of working space a side that the workbook shows, with what the QS's 1 ft a side would make of the same trench."""
+  used, qs = float(C.TRENCH_SIDE_ALLOWANCE_MM), float(QP.WORKING_SPACE_QS_MM)
+  return {"used_mm": used, "qs_answer_mm": qs, "trench_width_mm": round(bed_w + 2.0 * used, 1), "trench_width_qs_mm": round(bed_w + 2.0 * qs, 1),
+    "extra_m3": round(2.0 * (qs - used) * float(depth) * float(length_mm) / 1e9, 3)}
 
 def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None) -> list:
   out: list = []
@@ -97,21 +108,25 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
       base_facts.update(_section_facts(sec))
       
       sec_note = C.note("FOUNDATION_FROM_SECTION", caption=sec.get("caption"), total_depth_mm=sec["total_depth_mm"])
+      sec_extra = [C.note("FOOTING_SECTION_CAPTION_WALL")] if sec.get("caption_wall_in") else []
       bed_w, bed_t = float(sec["pcc"]["width_mm"]), float(sec["pcc"]["depth_mm"])
+      space = _working_space(bed_w, float(sec["total_depth_mm"]), params["length_mm"])
       out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre,
-        {**params, "width_mm": round(bed_w + 2.0 * C.TRENCH_SIDE_ALLOWANCE_MM, 1), "depth_mm": float(sec["total_depth_mm"])}, [],
-        [walls_note, sec_note, C.note("TRENCH_WORKING_SPACE_ASSUMED")], dict(base_facts), 0.72))
+        {**params, "width_mm": space["trench_width_mm"], "depth_mm": float(sec["total_depth_mm"])}, [],
+        [walls_note, sec_note, *sec_extra, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_WORKING_SPACE_QS_ALTERNATIVE")], {**base_facts, "working_space": space}, 0.72))
       out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
-        {**params, "width_mm": bed_w, "depth_mm": bed_t}, [], [walls_note, sec_note], dict(base_facts), 0.78))
+        {**params, "width_mm": bed_w, "depth_mm": bed_t}, [], [walls_note, sec_note, *sec_extra], dict(base_facts), 0.78))
       out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
-        centre, {**params, "width_mm": bed_w}, [], [walls_note, sec_note, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.72))
+        centre, {**params, "width_mm": bed_w}, [], [walls_note, sec_note, *sec_extra, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.72))
       continue
   
     width_note = C.note("FOUNDATION_WIDTH_TYPED")
-    out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre, dict(params),
-      ["strip_width_mm", "depth_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_DEPTH_QS_SHEET", **QP.trench_extra())], dict(base_facts), 0.65))
+    dug = _assumed(TRENCH)
+    bed_mm = float(QS.param("pcc_thickness_mm"))
+    out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre, {**params, "depth_mm": dug["mm"]},
+      ["strip_width_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_DEPTH_ASSUMED", reason=dug["text"])], {**base_facts, "depth_assumed": dug}, 0.65))
     out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
-       dict(params), ["strip_width_mm", "depth_mm"], [walls_note, width_note], dict(base_facts), 0.7))
+       {**params, "depth_mm": bed_mm}, ["strip_width_mm"], [walls_note, width_note], {**base_facts, "depth_from": "QS_ANSWER"}, 0.7))
     out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
       centre, dict(params), ["strip_width_mm"], [walls_note, width_note, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.65))
   return out
@@ -146,13 +161,21 @@ def excavation_candidate(dims, outline_facts: dict, ctx: dict, level_hint: str |
   
   facts = {"derived_from": "AREA_TABLE", "outline_dims_mm": [round(length, 1), round(width, 1)], "area_m2": round(area, 3), **outline_facts}
   label = f"Excavation over the basement · {area:.2f} m²" + (f" · {spec[0]}" if spec else "")
+  dug = _assumed(EXCAVATION_AREA)
+  facts["depth_assumed"] = dug
   return _make(cls, ctx, finish, (EXCAVATION_AREA, level_hint or ""), EXCAVATION_AREA, label, "EXCAVATION-BASEMENT", [centre],
-    {"length_mm": round(length, 1), "width_mm": round(width, 1)}, ["depth_mm"],
-    [C.note("EXCAVATION_AREA_FROM_OUTLINE"), C.note("EXCAVATION_OVERLAPS_FOOTING_PITS"), C.note("EXCAVATION_DEPTH_QS_SHEET", **QP.excavation_extra())], facts, 0.8)
+    {"length_mm": round(length, 1), "width_mm": round(width, 1), "depth_mm": dug["mm"]}, [],
+    [C.note("EXCAVATION_AREA_FROM_OUTLINE"), C.note("EXCAVATION_OVERLAPS_FOOTING_PITS"), C.note("EXCAVATION_DEPTH_ASSUMED", reason=dug["text"])], facts, 0.8)
 
-def pad_candidates(footings: list, ctx: dict, cls, finish) -> list:
+def _bed_depth(sections: list | None) -> float | None:
+  """The thickness of the concrete bed that the usable footing sections under the walls print, when they all agree."""
+  beds = {float(s["pcc"]["depth_mm"]) for s in sections or [] if s.get("read") == "OK" and s.get("pcc")}
+  return next(iter(beds)) if len(beds) == 1 else None
+
+def pad_candidates(footings: list, ctx: dict, cls, finish, sections: list | None = None) -> list:
   """The concrete bed under each footing mark: as many beds as marks, each as large as the footing."""
   out: list = []
+  bed = _bed_depth(sections)
   
   for fc in footings:
     p = fc.params or {}
@@ -165,8 +188,13 @@ def pad_candidates(footings: list, ctx: dict, cls, finish) -> list:
     facts = {"derived_from": "FOOTINGS", "footing_key": fc.key, "footing_tag": fc.tag, "marks": len(pts), "size_mm": [float(length), float(width)]}
     if (fc.facts or {}).get("view"):
       facts["view"] = fc.facts["view"]
+    params, missing, notes = {"length_mm": float(length), "width_mm": float(width)}, ["depth_mm"], [C.note("PCC_PAD_FROM_FOOTINGS")]
+    if bed is not None:
+      params["depth_mm"], missing = bed, []
+      notes.append(C.note("PCC_PAD_DEPTH_FROM_STRIP_SECTION"))
+      facts["bed_depth_from"] = "STRIP_SECTION"
     out.append(_make(cls, ctx, finish, (PCC_PAD, fc.key), PCC_PAD, f"Concrete bed under footing {fc.tag} · {len(pts)} nos", f"PCC-PAD-{fc.tag}", [list(pt) for pt in pts],
-      {"length_mm": float(length), "width_mm": float(width)}, ["depth_mm"], [C.note("PCC_PAD_FROM_FOOTINGS")], facts, 0.75, count=len(pts)))
+      params, missing, notes, facts, 0.75, count=len(pts)))
   return out
 
 def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None) -> list:
@@ -191,7 +219,7 @@ def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, 
         label = f"Brick foundation step {i} of {n} under {_inch_label(t)} in walls · {length_m:.2f} m{where}"
         out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or ""), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}", centre,
           {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(st["width_mm"]), "depth_mm": float(st["height_mm"])}, [],
-          [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_FROM_SECTION", steps=n, caption=sec.get("caption")), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.74))
+          [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_FROM_SECTION", steps=n, caption=sec.get("caption")), *([C.note("FOOTING_SECTION_CAPTION_WALL")] if sec.get("caption_wall_in") else []), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.74))
       foot = sec.get("footing")
       
       if foot:
@@ -292,7 +320,10 @@ DEPTH_FIELDS = {EXCAVATION_AREA: ("excavation_depth_mm", "the depth of the excav
 def fill_foundation(item: str, missing: list, params: dict, typed: dict, facts: dict) -> tuple:
   """(params, problem) for a foundation item: the strip width, depth or thickness typed at accept."""
   out = dict(params or {})
-  
+  if (facts or {}).get("depth_assumed") and "depth_mm" not in (missing or []) and item in DEPTH_FIELDS:
+    typed_depth = typed.get(DEPTH_FIELDS[item][0])
+    if typed_depth is not None:
+      out["depth_mm"] = float(typed_depth)
   for need in missing or []:
     if need == "strip_width_mm":
       field = STRIP_FIELDS["THIN" if (facts or {}).get("strip_class") == "THIN" else "THICK"]

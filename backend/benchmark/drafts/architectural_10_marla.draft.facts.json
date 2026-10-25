@@ -1,0 +1,230 @@
+{
+ "set": "Architectural_Drawings_10_Marla_House",
+ "pdf": "Architectural_Drawings_10_Marla_House.pdf",
+ "status": "DRAFT: made from what the program read, not by a person. A fact counts as checked only when its checked_by has a name.",
+ "facts": [
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "FIRST",
+   "count": 2,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "FIRST",
+   "tag": "DRAWN-DOOR-1219",
+   "count": 2,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "count": 5,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "DRAWN-DOOR-1219",
+   "count": 3,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "DRAWN-DOOR-1295",
+   "count": 1,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "DOOR",
+   "floor": "GROUND",
+   "tag": "DRAWN-DOOR-1829",
+   "count": 1,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "TOTAL",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "count": 3,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "DRAWN-WINDOW-1640",
+   "count": 1,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "DRAWN-WINDOW-470",
+   "count": 1,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "COUNT",
+   "category": "WINDOW",
+   "floor": "GROUND",
+   "tag": "DRAWN-WINDOW-505",
+   "count": 1,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "(NO NAME)",
+   "floor": "FIRST",
+   "area_m2": 1.78,
+   "note": "read by the program from page ?; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "FIRST",
+   "area_m2": 4.18,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BEDROOM",
+   "floor": "FIRST",
+   "area_m2": 21.11,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "LOUNGE",
+   "floor": "FIRST",
+   "area_m2": 22.47,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "MASTER BEDROOM",
+   "floor": "FIRST",
+   "area_m2": 20.79,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STAIR HALL",
+   "floor": "FIRST",
+   "area_m2": 8.46,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "W.I.C",
+   "floor": "FIRST",
+   "area_m2": 3.91,
+   "note": "read by the program from page 7; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "(NO NAME)",
+   "floor": "GROUND",
+   "area_m2": 2.46,
+   "note": "read by the program from page ?; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BATH",
+   "floor": "GROUND",
+   "area_m2": 4.18,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "BEDROOM",
+   "floor": "GROUND",
+   "area_m2": 16.38,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "DRAWING ROOM",
+   "floor": "GROUND",
+   "area_m2": 13.05,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "KITCHEN",
+   "floor": "GROUND",
+   "area_m2": 10.59,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "LOUNGE",
+   "floor": "GROUND",
+   "area_m2": 17.84,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "MASTER BEDROOM",
+   "floor": "GROUND",
+   "area_m2": 19.3,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "PORCH",
+   "floor": "GROUND",
+   "area_m2": 19.7,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "STAIR HALL",
+   "floor": "GROUND",
+   "area_m2": 8.46,
+   "note": "read by the program from page 6; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  },
+  {
+   "kind": "ROOM_AREA",
+   "name": "(NO NAME)",
+   "floor": "ROOF",
+   "area_m2": 8.7,
+   "note": "read by the program from page ?; check it against the plan, correct it, then put your name in checked_by",
+   "checked_by": ""
+  }
+ ]
+}

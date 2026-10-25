@@ -13,6 +13,8 @@ from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.audit.service import AuditLogService
 from app.modules.drawings_boq.standards.material_class import classify_material_class
 from app.modules.drawings_boq import boq_logic as logic
+from app.modules.drawings_boq import rate_flags as RF
+from app.engine.measure import break_up as BU
 from app.modules.drawings_boq import quantity_range as QR
 from app.modules.drawings_boq import measurement_sheet as MS
 from app.modules.drawings_boq import stage_report as SR
@@ -417,7 +419,21 @@ class BOQEngineService:
     pricing = self._pricing_spec(items)
     if pricing is not None:
       specs.append(pricing)
+    specs.extend(self._rate_check_specs(items))
     return specs
+
+  @staticmethod
+  def _rate_check_specs(items) -> list:
+    """The rate check that stops a bill from being issued and was not yet a guard (P85-1): lines at a zero rate. A person can waive it with a reason. A line with no rate
+    (UNPRICED) and a rate the assistant suggested (the approval guard) are held already; the other checks only warn, in the value at risk."""
+    rows = [i for i in items if str(getattr(i.item_type, "value", i.item_type) or "") != "LABOUR"
+      and RF.RATE_ZERO in RF.flags_of({"quantity": i.quantity, "unit_rate": i.unit_rate, "rate_source": i.rate_source, "rate_resolution": i.rate_resolution})]
+    if not rows:
+      return []
+    return [logic.IssueSpec(code="RATE_ZERO_ITEM", severity="warning", blocks="ISSUE", dedupe_key=f"RATECHK:{RF.RATE_ZERO}",
+      message=f"{len(rows)} item(s) have a rate of zero, so they add nothing to the BOQ total.",
+      suggested_fix="Set the rate, or waive this issue with a reason (a free-issue item, say).",
+      details={"count": len(rows), "item_ids": [str(r.id) for r in rows][:50]})]
 
   @staticmethod
   def _pricing_spec(items):
@@ -436,7 +452,7 @@ class BOQEngineService:
       return
     items = await self.items.list_by_version(version_id, org)
     spec = self._pricing_spec(items)
-    await self.sync_issues(org, version, version.calculation_run_id, [spec] if spec else [], prefixes=("UNPRICED",))
+    await self.sync_issues(org, version, version.calculation_run_id, ([spec] if spec else []) + self._rate_check_specs(items), prefixes=("UNPRICED", "RATECHK"))
 
   async def sync_issues(self, org, version, run_id, specs, prefixes=None) -> None:
     existing = {i.dedupe_key: i for i in await self.repo.issues_for_version(version.id, org)}
@@ -451,7 +467,7 @@ class BOQEngineService:
           code=s.code, severity=s.severity, blocks=s.blocks, message=s.message, suggested_fix=s.suggested_fix,
           details=s.details, dedupe_key=s.dedupe_key))
       elif cur.status == "OPEN" or (cur.status == "RESOLVED" and cur.resolved_by_user_id is None) or (
-          cur.status == "WAIVED" and s.dedupe_key == "UNPRICED"
+          cur.status == "WAIVED" and (s.dedupe_key == "UNPRICED" or s.dedupe_key.startswith("RATECHK:"))
           and set((s.details or {}).get("item_ids", [])) - set((cur.details or {}).get("item_ids", []))):
         cur.status, cur.resolved_at, cur.resolution_note = "OPEN", None, None
         cur.resolved_by_user_id = None
@@ -790,7 +806,7 @@ class BOQEngineService:
       data = (exp.build_contract_boq_pdf if fmt == "pdf" else exp.build_contract_boq_xlsx)(snapshot, rows, version_meta, company, steel)
     elif kind == "PROCUREMENT":
       steel = MS.steel_by_diameter([b for blocks in (await self._sheets(org, version.id)).values() for b in blocks])
-      data = exp.build_procurement_xlsx(snapshot, rows, version_meta, company, steel)
+      data = exp.build_procurement_xlsx(snapshot, rows, version_meta, company, steel, BU.build(rows))
     elif kind == "BBS":
       data = await self._bbs_workbook(org, snap, snapshot, version_meta, company)
       
@@ -990,9 +1006,17 @@ class BOQEngineService:
     """The bill in rupees with the range its quantities carry, the share of it that rests on assumed or missing quantities, and the lines whose rate is in doubt."""
     await self._engine_version(org, version_id)
     rows = [{"item_id": str(i.id), "name": i.material_name, "unit": i.unit, "item_type": i.item_type, "quantity": i.quantity, "unit_rate": i.unit_rate,
-      "rate_source": i.rate_source, "rate_resolution": i.rate_resolution, "quantity_range": i.quantity_range, "is_manual": i.is_manual}
+      "rate_source": i.rate_source, "rate_resolution": i.rate_resolution, "quantity_range": i.quantity_range, "is_manual": i.is_manual, "work_item_code": i.work_item_code}
       for i in await self.items.list_by_version(version_id, org)]
     return VAR.build(rows)
+
+  async def material_break_up(self, org: UUID, version_id: UUID) -> dict:
+    """The cement, sand, aggregate and bricks behind the concrete, brickwork and plaster mortar lines of the bill, from the mix on each line (P86-1 to P86-3)."""
+    await self._engine_version(org, version_id)
+    rows = [{"item_id": str(i.id), "name": i.material_name, "work_item_code": i.work_item_code, "unit": i.unit, "quantity": i.quantity, "item_type": i.item_type,
+      "is_manual": i.is_manual, "spec": i.spec, "material_grade": i.material_grade, "waste_factor_applied": i.waste_factor_applied}
+      for i in await self.items.list_by_version(version_id, org)]
+    return BU.build(rows)
 
   async def _sheets(self, org: UUID, version_id: UUID) -> dict[str, list[dict]]:
     """For each item, the measurement sheet of every ledger row behind it, in the layout a quantity surveyor writes (measurement_sheet.py)."""

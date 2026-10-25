@@ -102,6 +102,15 @@ def read_stair_spec(lines: list) -> dict | None:
   spec["text"] = stair_text(spec)
   return spec
 
+GAP_NAMES = (("steps", "number of steps"), ("riser_mm", "riser"), ("tread_mm", "tread"), ("width_mm", "width"))
+
+def read_gap_text(spec: dict | None) -> str:
+  """What was read of a stair's four printed values and what was not, to say beside the warning that the stair cannot be sized."""
+  spec = spec or {}
+  lacks = [name for key, name in GAP_NAMES if not spec.get(key)]
+  read = stair_text(spec) if spec else ""
+  return f" Read from the drawing: {read or 'nothing'}. Not read: {', '.join(lacks) or 'none'}."
+
 def stair_text(spec: dict) -> str:
   parts = []
   if spec.get("steps"):

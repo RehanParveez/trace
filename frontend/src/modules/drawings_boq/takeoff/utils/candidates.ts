@@ -178,6 +178,7 @@ export type FoundationItem =
   | "PLASTER_INSIDE"
   | "PLASTER_OUTSIDE"
   | "DOOR_FRAME"
+  | "ARCH_CENTRING"
   | "DOOR_AREA"
   | "WINDOW_AREA"
   | "EARTH_FILL"
@@ -215,7 +216,13 @@ export type FoundationItem =
   | "DRAIN_MANHOLE"
   | "INSPECTION_CHAMBER"
   | "GULLY_TRAP"
+  | "PILE_BORE"
+  | "PILE_CONCRETE"
+  | "RAFT_SLAB"
+  | "RAFT_PCC"
+  | "RAFT_EDGE_FORM"
   | "ELEC_LIGHT"
+
   | "ELEC_FAN"
   | "ELEC_SOCKET"
   | "ELEC_SWITCH"
@@ -238,6 +245,7 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "PLASTER_INSIDE",
   "PLASTER_OUTSIDE",
   "DOOR_FRAME",
+  "ARCH_CENTRING",
   "DOOR_AREA",
   "WINDOW_AREA",
   "EARTH_FILL",
@@ -275,6 +283,11 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "DRAIN_MANHOLE",
   "INSPECTION_CHAMBER",
   "GULLY_TRAP",
+  "PILE_BORE",
+  "PILE_CONCRETE",
+  "RAFT_SLAB",
+  "RAFT_PCC",
+  "RAFT_EDGE_FORM",
   "ELEC_LIGHT",
   "ELEC_FAN",
   "ELEC_SOCKET",
@@ -449,6 +462,7 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   PLASTER_INSIDE: "Plaster inside the walls",
   PLASTER_OUTSIDE: "Plaster outside the walls",
   DOOR_FRAME: "Door frames",
+  ARCH_CENTRING: "Centring to arched openings",
   DOOR_AREA: "Door area",
   WINDOW_AREA: "Window area",
   EARTH_FILL: "Earth filling under the floor",
@@ -486,6 +500,11 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   DRAIN_MANHOLE: "Manholes",
   INSPECTION_CHAMBER: "Inspection chambers",
   GULLY_TRAP: "Gully traps",
+  PILE_BORE: "Boring of piles",
+  PILE_CONCRETE: "Concrete in piles",
+  RAFT_SLAB: "Raft slab",
+  RAFT_PCC: "Concrete bed under the raft",
+  RAFT_EDGE_FORM: "Shuttering to the raft edge",
   ELEC_LIGHT: "Electrical lights",
   ELEC_FAN: "Electrical fans",
   ELEC_SOCKET: "Electrical sockets and plugs",
@@ -568,10 +587,16 @@ export function candidatePoints(c: Pick<TakeoffCandidate, "kind" | "geometry">):
   return ((c.geometry as LengthGeometry | CountGeometry).points ?? []) as Pt[];
 }
 
+function beamSectionText(f: Record<string, unknown>): string | null {
+  const mark = typeof f.section_mark === "string" && f.section_mark ? f.section_mark : null;
+  return mark ? `section ${mark}${f.section_assumed === true ? " (assumed)" : ""}` : null;
+}
+
 const STALE_TEXT: Record<string, string> = {
   SCALE_CHANGED: "The scale of this sheet changed after this was read.",
   SHEET_READ_AGAIN: "The sheet was read again after this was found.",
   NEWER_LOGIC: "The reading rules have been improved since this was found.",
+  SHEET_READER_OLDER: "This sheet was stored by an older reader. Prepare the drawing again so it is read with the present rules, then run the extraction again.",
 };
 
 export function staleText(reasons: string[]): string {
@@ -643,6 +668,20 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     const outer = num(f.outer_wall_count);
     const walls = num(f.wall_count);
     return [area !== null ? `${area.toFixed(2)} m²` : "wall height needed", face !== null ? `${face.toFixed(2)} m of face` : null, open ? `${open.toFixed(2)} m² of openings taken out` : null, walls !== null && outer !== null ? `${outer} of ${walls} walls on the outline` : null].filter(Boolean).join(" · ");
+  }
+
+  if (item === "ARCH_CENTRING") {
+    const count = num(f.opening_count);
+    const w = num(f.width_mm);
+    const girth = num(f.girth_mm);
+    const thick = num(f.wall_thickness_mm);
+    return [
+      count !== null ? `${count} arched ${f.derived_from === "WINDOWS" ? "window" : "door"}${count === 1 ? "" : "s"}` : null,
+      w !== null ? `${Math.round(w)} mm wide` : null,
+      girth !== null ? `soffit ${Math.round(girth)} mm (semicircle, assumed)` : null,
+      thick !== null ? `${Math.round(thick)} mm wall${f.wall_from === "ASSUMED" ? ", assumed" : ""}` : null,
+      "opening still taken off as the full rectangle",
+    ].filter(Boolean).join(" · ");
   }
 
   if (item === "DOOR_FRAME") {
@@ -770,6 +809,36 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     ].filter(Boolean).join(" · ");
   }
 
+  if (item === "PILE_BORE" || item === "PILE_CONCRETE") {
+    const n = num(f.piles);
+    const dia = num(f.pile_dia_mm);
+    const len = num(f.pile_length_mm);
+    const total = num(f.total_length_m);
+    const units = f.pile_units as { dia?: string; length?: string } | undefined;
+    return [
+      f.pile_mark ? `pile ${String(f.pile_mark)}` : null,
+      n !== null ? `${n} pile${n === 1 ? "" : "s"}` : null,
+      dia !== null ? `${Math.round(dia)} mm dia` : null,
+      len !== null ? `${(len / 1000).toFixed(2).replace(/\.?0+$/, "")} m each` : null,
+      total !== null && item === "PILE_BORE" ? `${total.toFixed(2)} m in all` : null,
+      units && (units.dia === "ASSUMED" || units.length === "ASSUMED") ? "a unit was not written: check it" : null,
+      "caps, steel and cut-off are not taken",
+    ].filter(Boolean).join(" · ");
+  }
+
+  if (item === "RAFT_SLAB" || item === "RAFT_PCC" || item === "RAFT_EDGE_FORM") {
+    const t = num(f.raft_thickness_mm);
+    const fp = Array.isArray(f.footprint_mm) ? (f.footprint_mm as number[]) : null;
+    return [
+      t !== null ? `${Math.round(t)} mm thick` : null,
+      typeof f.raft_grade === "string" ? f.raft_grade : null,
+      fp ? `outline ${(fp[0] / 1000).toFixed(2)} × ${(fp[1] / 1000).toFixed(2)} m, taken from the ${String(f.footprint_floor ?? "lowest floor").toLowerCase()} covered area (assumed)` : null,
+      item === "RAFT_PCC" ? "bed 3 in, assumed" : null,
+      item === "RAFT_EDGE_FORM" ? "round the outline, as high as the raft is thick (assumed)" : null,
+      "excavation and steel are not taken",
+    ].filter(Boolean).join(" · ");
+  }
+
   if (item === "ELEC_LIGHT" || item === "ELEC_FAN" || item === "ELEC_SOCKET" || item === "ELEC_SWITCH" || item === "ELEC_LOWV" || item === "ELEC_BOARD" || item === "ELEC_OTHER") {
     const height = num(f.mounting_height_mm);
     const aside = num(f.set_aside_other_size);
@@ -796,11 +865,14 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
         face !== null ? `${face.toFixed(2)} m of outside face` : null,
         above !== null ? `${ft(above)} of wall above ${threshold !== null ? `${(threshold / 1000).toFixed(1)} m` : "the threshold"}` : null,
         level !== null && top !== null ? `floor from ${ft(level)} to ${ft(top)} on the sections` : null,
+        num(f.whole_storey_m2) !== null ? `${(num(f.whole_storey_m2) as number).toFixed(2)} m² if the whole storey is billed` : null,
       ].filter(Boolean).join(" · ");
     }
     const clear = num(f.clear_mm);
+    const steps = num(f.steps);
+    const slab = num(f.slab_area_m2);
     return [
-      area !== null ? `${area.toFixed(2)} m² of slab` : null,
+      area !== null ? `${area.toFixed(2)} m²${steps !== null && slab !== null ? ` (${slab.toFixed(2)} m² of slab x ${steps} extra metre${steps === 1 ? "" : "s"}, assumed)` : " of slab"}` : null,
       clear !== null ? `${ft(clear)} clear height on the sections` : null,
       threshold !== null ? `over ${(threshold / 1000).toFixed(1)} m` : null,
     ].filter(Boolean).join(" · ");
@@ -874,7 +946,19 @@ function siteLine(c: TakeoffCandidate): string {
     return [levels.length ? `levels ${levels.join(", ")}` : null, need].filter(Boolean).join(" · ");
   }
   const repeats = num(f.labels_on_sheet);
-  return [repeats !== null && repeats > 1 ? `labelled ${repeats} times on this sheet` : null, need].filter(Boolean).join(" · ");
+  const said = f.sizes_assumed && typeof f.sizes_assumed === "object" ? (f.sizes_assumed as Record<string, unknown>) : null;
+  const sizes = (f.sizes_mm ?? {}) as Record<string, unknown>;
+  const worked = said
+    ? ([["length_mm", "long"], ["width_mm", "wide"], ["height_mm", "high"]] as const)
+        .filter(([token]) => token in said && num(sizes[token]) !== null)
+        .map(([token, word]) => `${ft(num(sizes[token]))} ${word}`)
+    : [];
+  const wall = said && "thickness_mm" in said ? num(sizes.thickness_mm) : null;
+  const slabs = f.tank_slabs_mm as { top_mm?: unknown; bottom_mm?: unknown } | null | undefined;
+  const inches = (mm: number) => `${(mm / 25.4).toFixed(1).replace(/\.0$/, "")} in`;
+  const slabText = slabs && num(slabs.top_mm) !== null && num(slabs.bottom_mm) !== null ? `slabs ${inches(num(slabs.top_mm) as number)} top, ${inches(num(slabs.bottom_mm) as number)} bottom, as the section prints them` : null;
+  const assumed = worked.length || wall !== null ? `assumed from the tank drawings: ${[...worked, wall !== null ? `${inches(wall)} walls` : null].filter(Boolean).join(", ")}` : null;
+  return [repeats !== null && repeats > 1 ? `labelled ${repeats} times on this sheet` : null, assumed, slabText, need].filter(Boolean).join(" · ");
 }
 
 function neckText(f: Record<string, unknown>): string {
@@ -890,7 +974,74 @@ export function neckHeightAssumed(list: TakeoffCandidate[]): string | null {
   return null;
 }
 
+function setAsideText(f: Record<string, unknown>): string | null {
+  const a = f.set_aside as { by?: unknown; page_no?: unknown } | null | undefined;
+  if (!a || typeof a !== "object") return null;
+  if (a.by === "FLOOR_CHOICE" && typeof a.page_no === "number") return `set aside: this floor is read from page ${a.page_no}`;
+  if (a.by === "DRAIN_REPEAT" && typeof a.page_no === "number") return `set aside: the same pipe is read on page ${a.page_no}; restore it if it is another pipe`;
+  return "set aside: the same item is on another sheet";
+}
+
+function steelText(f: Record<string, unknown>): string | null {
+  const s = f.steel_summary as { state?: string; kg?: unknown; source?: unknown; lines?: { role?: unknown; count?: unknown; bar?: unknown; cut_m?: unknown }[] } | null | undefined;
+  if (!s || typeof s !== "object") return null;
+  if (s.state === "NO_SIZE") return "bars read, size needed to weigh them";
+  const kg = Number(s.kg);
+  if (s.state !== "WEIGHED" || !Number.isFinite(kg)) return null;
+  const parts = (s.lines ?? []).map((l) => {
+    const cut = Number(l.cut_m);
+    return `${String(l.role ?? "bars")} ${l.count ?? ""}${l.bar ? ` #${l.bar}` : ""}${Number.isFinite(cut) ? ` × ${cut.toFixed(2)} m` : ""}`.replace(/\s+/g, " ").trim();
+  });
+  return `steel ${kg.toFixed(1)} kg per member${s.source === "ASSUMED" ? " (assumed)" : ""}${parts.length ? `: ${parts.join("; ")}` : ""}`;
+}
+
+const QS_INPUTS: [string, string][] = [
+  ["FOOTING_DEPTH_QS", "footing depth"],
+  ["NECK_HEIGHT_ASSUMED", "neck column height"],
+  ["HEIGHT_FROM_QS", "height"],
+  ["TANK_SLABS_QS", "tank slab thicknesses"],
+  ["SITE_WALL_QS_ESTIMATE", "boundary wall thickness"],
+];
+
+function qsText(c: TakeoffCandidate): string | null {
+  if ((c as { decision?: string }).decision === "ACCEPTED") return null;
+  const codes = new Set((c.notes ?? []).map((n) => n.code));
+  const printed = codes.has("HEIGHT_FROM_SECTION") || codes.has("HEIGHT_FROM_NOTE");
+  const names = QS_INPUTS.filter(([code]) => codes.has(code) && !(code === "HEIGHT_FROM_QS" && printed)).map(([, name]) => name);
+  return names.length ? `from the QS's workbook, not printed: ${names.join(", ")}` : null;
+}
+
+function sectionText(f: Record<string, unknown>): string | null {
+  const parts: string[] = [];
+  const t = typeof f.host_thickness_mm === "number" ? f.host_thickness_mm : null;
+  if (f.frame_width_from === "WALL") parts.push(`frame as wide as the wall${t !== null ? ` (${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in)` : ""}, assumed`);
+  if (f.bed_depth_from === "STRIP_SECTION") parts.push("bed thickness taken from the wall footing section, assumed");
+  const sec = f.footing_section as { caption_wall_in?: unknown; masonry_only?: unknown } | null | undefined;
+  if (sec && typeof sec === "object") {
+    if (typeof sec.caption_wall_in === "number") parts.push(`section read for the wall its picture shows (its caption says ${sec.caption_wall_in} in)`);
+    if (sec.masonry_only === true) parts.push("masonry steps on the bed, no reinforced footing");
+  }
+  if (f.upstand === true) parts.push("upstand beam: concrete above the slab, shuttered on both sides, no soffit");
+  const dug = f.depth_assumed as { mm?: unknown; text?: unknown } | null | undefined;
+  if (dug && typeof dug === "object" && typeof dug.mm === "number") {
+    const layers = typeof f.layers === "number" ? `, ${f.layers} layers` : "";
+    parts.push(`depth ${Math.round(dug.mm)} mm assumed${layers}: ${typeof dug.text === "string" ? dug.text : "not printed on the plans"}`);
+  }
+  if (f.depth_from === "QS_ANSWER") parts.push("bed thickness is the QS's answer");
+  const ws = f.working_space as { used_mm?: unknown; qs_answer_mm?: unknown; trench_width_qs_mm?: unknown; extra_m3?: unknown } | null | undefined;
+  if (ws && typeof ws === "object" && typeof ws.used_mm === "number" && typeof ws.qs_answer_mm === "number" && typeof ws.trench_width_qs_mm === "number" && typeof ws.extra_m3 === "number") {
+    const inches = (mm: number) => `${(mm / 25.4).toFixed(1).replace(/\.0$/, "")} in`;
+    parts.push(`working space ${inches(ws.used_mm)} a side as the workbook shows; with the QS's ${inches(ws.qs_answer_mm)} a side the trench is ${Math.round(ws.trench_width_qs_mm)} mm wide and ${ws.extra_m3.toFixed(1)} m³ more to dig`);
+  }
+  return parts.length ? parts.join(" · ") : null;
+}
+
 export function factLine(c: TakeoffCandidate): string {
+  const f = (c.facts ?? {}) as Record<string, unknown>;
+  return [setAsideText(f), factLineBase(c), steelText(f), qsText(c), sectionText(f)].filter(Boolean).join(" · ");
+}
+
+function factLineBase(c: TakeoffCandidate): string {
   const f = c.facts as Record<string, unknown>;
   const num = (v: unknown) => (typeof v === "number" ? v : null);
   const item = foundationItem(c);
@@ -927,10 +1078,10 @@ export function factLine(c: TakeoffCandidate): string {
       const strips = num(f.strip_count);
       const w = num(f.beam_width_mm);
       const cols = num(f.columns_taken);
-      return [len !== null ? `${len.toFixed(2)} m along ${strips ?? 0} hatched strip${strips === 1 ? "" : "s"}${cols ? `, between column faces (${cols} column${cols === 1 ? "" : "s"} taken off)` : ""}` : null, w !== null ? `${(w / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
+      return [len !== null ? `${len.toFixed(2)} m along ${strips ?? 0} hatched strip${strips === 1 ? "" : "s"}${cols ? `, between column faces (${cols} column${cols === 1 ? "" : "s"} taken off)` : ""}` : null, w !== null ? `${(w / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed", beamSectionText(f)].filter(Boolean).join(" · ");
     }
     if (f.derived_from !== "WALLS") return "";
-    return [f.beam_role === "PLINTH" ? "plinth beam" : "roof beam", len !== null ? `${len.toFixed(2)} m over ${walls ?? 0} wall${walls === 1 ? "" : "s"}` : null, t !== null ? `${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, gaps ? `${gaps.toFixed(2)} m of it over openings` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed"].filter(Boolean).join(" · ");
+    return [f.beam_role === "PLINTH" ? "plinth beam" : "roof beam", len !== null ? `${len.toFixed(2)} m over ${walls ?? 0} wall${walls === 1 ? "" : "s"}` : null, t !== null ? `${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, gaps ? `${gaps.toFixed(2)} m of it over openings` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed", beamSectionText(f)].filter(Boolean).join(" · ");
   }
 
   if (c.category === "SLAB") {
@@ -939,18 +1090,18 @@ export function factLine(c: TakeoffCandidate): string {
     const area = num(f.area_m2);
     const choices = slabThicknessChoices(c);
     const options = choices.length > 1 ? `thickness printed as ${choices.map((o) => `${(o.mm / 25.4).toFixed(1).replace(/\.0$/, "")} in (${o.sources.map((x) => SLAB_SOURCE_TEXT[x] ?? x).join(", ")})`).join(" / ")}` : null;
-    const proj = (f.projections ?? null) as { applied?: boolean; sides?: Record<string, number> } | null;
+    const proj = (f.projections ?? null) as { applied?: boolean; sides?: Record<string, number>; strips?: { status?: string; assumed?: boolean }[] } | null;
+    const lengthAssumed = (proj?.strips ?? []).some((s) => s.status === "ADDED" && s.assumed === true);
     const gross = num(f.gross_area_m2);
     const strip = num(f.projection_area_m2);
     const sideText = proj?.sides ? Object.entries(proj.sides).map(([s, w]) => `${s.toLowerCase()} ${(w / 304.8).toFixed(1).replace(/\.0$/, "")} ft`).join(", ") : "";
-    const covered = proj?.applied && gross !== null && strip !== null ? `${gross.toFixed(2)} m² with ${strip.toFixed(2)} m² of roof projection (${sideText})` : area !== null ? `${area.toFixed(2)} m² covered` : null;
+    const covered = proj?.applied && gross !== null && strip !== null ? `${gross.toFixed(2)} m² with ${strip.toFixed(2)} m² of roof projection (${sideText}${lengthAssumed ? ", length of the side assumed" : ""})` : area !== null ? `${area.toFixed(2)} m² covered` : null;
     const openings = Array.isArray(f.openings) ? (f.openings as { deduct?: boolean; name?: string }[]) : [];
     const taken = openings.filter((o) => o.deduct === true);
     const less = num(f.openings_area_m2);
     const openingText = taken.length > 0 && less !== null ? `less ${less.toFixed(2)} m² of openings (${[...new Set(taken.map((o) => String(o.name ?? "opening").toLowerCase()))].join(", ")})` : null;
     return [covered, dims ? `${Math.round(dims[0])}×${Math.round(dims[1])} mm printed` : "size not printed", t !== null ? `${Math.round(t)} mm thick` : "thickness needed", openingText, options].filter(Boolean).join(" · ");
   }
-
 
   if (c.category === "LINTEL") {
     const sec = Array.isArray(f.section_mm) ? (f.section_mm as number[]) : null;

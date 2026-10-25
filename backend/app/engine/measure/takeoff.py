@@ -155,6 +155,7 @@ class FormworkInput:
   role: str | None = None
   site: dict | None = None
   openings: tuple = ()
+  upstand: bool = False
 
 @dataclass(frozen=True)
 class RangeInput:

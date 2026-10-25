@@ -194,7 +194,8 @@ async def load_formwork(session: AsyncSession, org: UUID, measurements: list, sh
       confidence=_dec(cand.confidence) or Decimal(1), steel=clean_steel(p.get("steel")) if cand.category in (*STEEL_FAMILIES, "STAIR") else None,
       stair=stair_detail(cand, depth) if cand.category == "STAIR" else None,
       frame=view_key(cand, sheet) if positions else None, points_mm=positions,
-      role=(cand.facts or {}).get("beam_role") if cand.category == "BEAM" else None))
+      role=(cand.facts or {}).get("beam_role") if cand.category == "BEAM" else None,
+      upstand=bool((cand.facts or {}).get("upstand")) if cand.category == "BEAM" else False))
   return tuple(sorted(out, key=lambda b: str(b.measurement_id)))
 
 async def load_stored_alignments(session: AsyncSession, org: UUID, drawing_ids: list) -> dict:

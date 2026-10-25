@@ -31,6 +31,7 @@ from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import boundary as BDY
 from app.modules.drawings_boq.takeoff.extract import staging as STG
 from app.modules.drawings_boq.takeoff.extract import drainage as DR
+from app.modules.drawings_boq.takeoff.extract import piles_rafts as PRF
 from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.extract import opening_symbols as OS
@@ -993,6 +994,13 @@ def _strip_notes(recs: list, t_mm) -> list:
       "If it is slab, add it with its length (width x length x thickness): " + "; ".join(f"{_strip_name(r)} on a side of {SPJ.feet_text(r['outline_mm'])} would add {_vol_text(SPJ.strip_m2(r), t_mm)}" for r in out_of) + ".")
     notes.append(n)
     
+  out_of = [r for r in recs if r["status"] == "ADDED" and r.get("assumed")]
+  if out_of:
+    n = C.note("SLAB_PROJECTION_LENGTH_ASSUMED", strips=[{"side": r["side"], "width_mm": r["width_mm"], "length_mm": r["length_mm"]} for r in out_of])
+    n["message"] = ("No overall length is printed beside " + "; ".join(_strip_name(r) for r in out_of) + ", so the strip is taken along the whole side of the plan it stands beside: "
+      + "; ".join(f"{_strip_name(r)} x {SPJ.feet_text(r['length_mm'])} adds {_vol_text(SPJ.strip_m2(r), t_mm)}" for r in out_of)
+      + ". This is assumed. If the projection is shorter than the side, type its length, or take it off.")
+    notes.append(n)
   out_of = [r for r in recs if r["status"] == "NOT_VERIFIED"]
   if out_of:
     n = C.note("SLAB_PROJECTION_NOT_VERIFIED", strips=[{"side": r["side"], "width_mm": r["width_mm"], "bound_mm": r["lengths_mm"], "outline_mm": r["outline_mm"]} for r in out_of])
@@ -1308,7 +1316,9 @@ def _located_stairs(places: list, spec: dict, ctx: dict, level_hint: str | None 
       label = f"Stair {'up' if way == 'UP' else 'down' if way == 'DOWN' else ''}".strip() + f" · {spec['steps']} steps · {_fmt_mm(spec['riser_mm'])}/{_fmt_mm(spec['tread_mm'])} mm · {_fmt_mm(width)} mm wide"
     else:
       missing = ["size"]
-      notes.append(C.note("STAIR_DETAILS_INCOMPLETE"))
+      gap = C.note("STAIR_DETAILS_INCOMPLETE")
+      gap["message"] += STR.read_gap_text(spec)
+      notes.append(gap)
       base *= 0.6
       label = "Stair"
     cand = Candidate(key=_key("STAIR", round(p["x"], 1), round(p["y"], 1), 1), category="STAIR", kind=kind, quantity_mode=mode, label=label, tag="STAIR",
@@ -1381,9 +1391,11 @@ def _stair_candidates(lines: list, spec: dict | None, ctx: dict, index=None, mm_
     label = f"Stair ×{len(labels)} · {spec['steps']} steps · {_fmt_mm(spec['riser_mm'])}/{_fmt_mm(spec['tread_mm'])} mm · {_fmt_mm(spec['width_mm'])} mm wide"
   else:
     missing = ["size"]
-    notes.append(C.note("STAIR_DETAILS_INCOMPLETE"))
+    gap = C.note("STAIR_DETAILS_INCOMPLETE")
+    gap["message"] += STR.read_gap_text(spec)
+    notes.append(gap)
     base *= 0.6
-    label = f"Stair ×{len(labels)}"
+    label = f"Stair ×{len(labels)}" + (f" · read: {spec['text']}" if spec.get("text") else "")
   work_item, mode, kind = C.SUGGESTIONS["STAIR"]
   cand = Candidate(key=_key("STAIR", round(labels[0]["x"], 1), round(labels[0]["y"], 1), len(labels)), category="STAIR", kind=kind, quantity_mode=mode, label=label,
     tag="STAIR", geometry={"points": [[round(l["x"], 3), round(l["y"], 3)] for l in labels]}, params=params, missing=missing, work_item=work_item, status="VALID",
@@ -1486,7 +1498,7 @@ def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx:
         out.append(cand)
   return out
 
-def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, windows: list | None = None) -> list:
+def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, windows: list | None = None, arched: set | None = None) -> list:
   """The finishes of every floor that are worked out from what is already read: the kacha bed and the ceiling plaster from the room areas, the plaster on
    the faces of the walls, and the frames of the doors."""
   spec = level_spec(level_hint)
@@ -1504,6 +1516,7 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
   out.extend(FN.paint_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, float(((dado.facts if dado is not None else {}) or {}).get("area_m2") or 0.0)))
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
+  out.extend(FN.arch_candidates(doors, windows or [], walls, arched or set(), ctx, level_hint, spec, Candidate, _finish))
   out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
   return out
 
@@ -1627,7 +1640,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   props = STG.props_candidates([c for c in res.candidates if c.category == "SLAB"], floor_heights, ctx, Candidate, _finish)
   res.candidates.extend(props)
   res.stats["props_items"] = len(props)
-  pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish)
+  pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish, footing_sections)
   res.candidates.extend(pads)
   res.stats["concrete_beds"] = len(pads)
   
@@ -1738,7 +1751,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       
       if with_finishes:
         finishes = _stage(res, "FINISHES", lambda: _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"],
-          mm_per_pt, ctx, level_hint, [c for c in res.candidates if c.category == "WINDOW"]), [])
+          mm_per_pt, ctx, level_hint, [c for c in res.candidates if c.category == "WINDOW"], S.arched_marks(schedule)), [])
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
         scaffold, scaffold_notes = STG.scaffold_candidates(finishes, floor_heights, level_hint, ctx, Candidate, _finish)
@@ -1886,9 +1899,11 @@ def _site_candidates(found: list, ctx: dict) -> list:
     notes = []
     for code, extra in it["codes"]:
       n = C.note(code, **extra)
+      if extra.get("derived"):
+        n["message"] += " " + extra["derived"] + "." + (f" Still to type: {extra['left']}." if extra.get("left") else "")
       if extra.get("printed"):
         n["message"] += " Printed: " + extra["printed"] + "."
-      notes.append(n)
+    notes.append(n)
     params = {"dims_basis": "SPECIFIED", **it["params"]}
     mode_of = "COUNT_X_AREA" if it["site_kind"] == "GATE" else mode
     cand = Candidate(key=_key("SITE", it["site_kind"], round(it["x"], 1), round(it["y"], 1)), category="SITE", kind=kind, quantity_mode=mode_of, label=it["label"], tag=it["tag"],
@@ -1937,6 +1952,10 @@ def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction
   drainage = DR.candidates(index.words, kw.get("floor_heights"), ctx, Candidate, _finish_site)
   res.candidates.extend(drainage)
   res.stats["drainage_items"] = len(drainage)
+  piles_rafts, pr_notes = PRF.candidates(index.words, kw.get("schedule"), ctx, Candidate, _finish_site)
+  res.candidates.extend(piles_rafts)
+  res.notes.extend(pr_notes)
+  res.stats["pile_raft_items"] = len(piles_rafts)
   res.stats["qs_site"] = QR.apply(sites, None)
   res.stats["site_items"] = {c.facts["site_kind"]: 1 for c in sites}
   res.stats["site_tank_walls"] = _tank_twin_walls(res, sites)

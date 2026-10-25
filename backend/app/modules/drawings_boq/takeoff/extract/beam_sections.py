@@ -13,13 +13,26 @@ def _text(s: dict) -> str:
 def options_for(role: str, sections: list) -> list:
   kind = KIND_OF_ROLE.get(role)
   kinds = (kind, *ALSO_OFFERED.get(role, ()))
-  return [s for s in sections or [] if s.get("kind") in kinds and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
+  return [s for s in sections or [] if s.get("kind") in kinds and not s.get("disagree") and not s.get("upstand") and (s.get("depth_mm") or s.get("steel"))]
 
 KINDS_OF_MARK = {"GB": ("GRADE",), "PB": ("PLINTH",), "RB": ("ROOF", "BEAM"), "B": ("BEAM", "ROOF"), "TB": ("TIE",)}
 
 def options_for_mark(mark, sections: list) -> list:
   kinds = KINDS_OF_MARK.get(re.sub(r"[^A-Z]", "", norm_mark(str(mark or ""))))
-  return [s for s in sections or [] if kinds and s.get("kind") in kinds and not s.get("disagree") and (s.get("depth_mm") or s.get("steel"))]
+  return [s for s in sections or [] if kinds and s.get("kind") in kinds and not s.get("disagree") and not s.get("upstand") and (s.get("depth_mm") or s.get("steel"))]
+
+def _number(mark) -> int:
+  digits = re.sub(r"\D", "", str(mark or ""))
+  return int(digits) if digits else 10 ** 6
+
+def principal(role: str | None, opts: list) -> tuple:
+  with_depth = [s for s in opts if s.get("depth_mm")]
+  if role == "ROOF":
+    general = [s for s in with_depth if s.get("kind") == "BEAM"]
+    if len(general) == 1:
+      return general[0], "GENERAL"
+  own = sorted((s for s in with_depth if s.get("kind") == KIND_OF_ROLE.get(role or "")), key=lambda s: _number(s.get("mark")))
+  return (own[0], "FIRST") if own else (None, None)
 
 def option(s: dict) -> dict:
   return {"mark": s["mark"], "depth_mm": s.get("depth_mm"), "steel_text": s.get("steel_text"), "steel": s.get("steel")}
@@ -31,6 +44,20 @@ def list_for_strips(c, sections: list) -> bool:
   if f.get("section_mark") or not opts:
     return False
   c.facts = f
+  if len(opts) == 1 and opts[0].get("depth_mm"):
+    s = opts[0]
+    c.params["depth_mm"] = s["depth_mm"]
+    c.missing = [m for m in (c.missing or []) if m != "depth_mm"]
+    f["section_mark"], f["section_pages"], f["section_assumed"] = s["mark"], list(s.get("pages") or []), True
+    f["section_options"] = [option(s)]
+    c.notes.append(C.note("BEAM_SECTION_FROM_DETAIL", mark=s["mark"], depth_mm=s["depth_mm"]))
+    if s.get("steel"):
+      c.params["steel"] = dict(s["steel"])
+      f["steel_text"] = s.get("steel_text")
+      f["steel_source"] = {"grade": "ASSUMED", "text": f"beam section {s['mark']}"}
+      c.notes.append(C.note("STEEL_FROM_DETAIL", text=s.get("steel_text")))
+    return True
+
   f["section_options"] = [option(s) for s in opts]
   note = C.note("BEAM_MARK_NO_SECTION")
   note["message"] += " Sections printed: " + "; ".join(_text(s) for s in opts) + "."
@@ -73,6 +100,9 @@ def apply_marked(c, sections: list) -> bool:
     c.notes.append(C.note("BEAM_SECTION_FROM_MARK", mark=s["mark"], depth_mm=s["depth_mm"]))
   f["section_mark"] = s["mark"]
   f["section_pages"] = list(s.get("pages") or [])
+  if s.get("upstand"):
+    f["upstand"] = True
+    c.notes.append(C.note("BEAM_UPSTAND", mark=s["mark"]))
   if s.get("steel"):
     c.params["steel"] = dict(s["steel"])
     f["steel_text"] = s.get("steel_text")
@@ -95,6 +125,9 @@ def apply(beams: list, sections: list) -> dict:
     if f.get("beam_mark") and marked is None:
       c.notes.append(C.note("BEAM_MARK_SECTION_UNUSABLE", mark=f["beam_mark"]))
     chosen_one = marked if marked is not None and marked.get("depth_mm") else opts[0] if len(opts) == 1 and opts[0].get("depth_mm") else None
+    how = None
+    if chosen_one is None and not f.get("beam_mark") and len(opts) > 1:
+      chosen_one, how = principal(f.get("beam_role"), opts)
     if chosen_one is not None:
       s = chosen_one
       
@@ -102,11 +135,19 @@ def apply(beams: list, sections: list) -> dict:
       c.missing = [m for m in c.missing if m != "depth_mm"]
       f["section_mark"] = s["mark"]
       f["section_pages"] = list(s.get("pages") or [])
-      c.notes.append(C.note("BEAM_SECTION_FROM_MARK" if marked is not None and marked is s else "BEAM_SECTION_FROM_DETAIL", mark=s["mark"], depth_mm=s["depth_mm"]))
+      if how:
+        f["section_assumed"] = True
+        f["section_options"] = [option(o) for o in opts]
+        note = C.note("BEAM_SECTION_PRINCIPAL", mark=s["mark"], depth_mm=s["depth_mm"])
+        note["message"] += " Printed: " + "; ".join(_text(o) for o in opts) + "."
+        c.notes.append(note)
+        stats["assumed"] = stats.get("assumed", 0) + 1
+      else:
+        c.notes.append(C.note("BEAM_SECTION_FROM_MARK" if marked is not None and marked is s else "BEAM_SECTION_FROM_DETAIL", mark=s["mark"], depth_mm=s["depth_mm"]))
       if s.get("steel"):
         c.params["steel"] = dict(s["steel"])
         f["steel_text"] = s.get("steel_text")
-        f["steel_source"] = {"grade": "PRINTED", "text": f"beam section {s['mark']}"}
+        f["steel_source"] = {"grade": "ASSUMED" if how else "PRINTED", "text": f"beam section {s['mark']}"}
         c.notes.append(C.note("STEEL_FROM_DETAIL", text=s.get("steel_text")))
       stats["applied"] += 1
     else:

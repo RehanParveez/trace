@@ -110,6 +110,49 @@ def size_lines(row) -> tuple[str, str]:
     extra.append(f"V {num(volume / Decimal(1000000000), 4)} m³")
   return first, ", ".join(extra)
 
+def steel_text(row) -> str:
+  """The bars of one member for the Steel column: its weight and its cut lengths, or why there is none."""
+  s = pdf_meta(row).get("steel")
+  if not s:
+    return ""
+  if s.get("state") == "NO_BARS":
+    return "no bars read"
+  if s.get("state") != "WEIGHED":
+    return "bars read, size needed"
+
+  parts = []
+  for ln in s.get("lines") or []:
+    bar = f" #{ln['bar']}" if ln.get("bar") else ""
+    cut = f" x {num(ln['cut_m'], 2)} m" if ln.get("cut_m") is not None else ""
+    parts.append(f"{ln.get('role') or 'bars'} {ln.get('count') or ''}{bar}{cut}".replace("  ", " ").strip())
+  head = f"{num(s.get('kg'), 1)} kg" + (" (assumed)" if s.get("source") == "ASSUMED" else "")
+  return f"<b>{clean(head)}</b>" + (f"<br/>{clean('; '.join(parts), 200)}" if parts else "")
+
+def steel_totals(rows: list) -> dict | None:
+  kg, members, no_bars, no_size = 0.0, 0, 0, 0
+  for row in rows:
+    s = pdf_meta(row).get("steel")
+    if not s:
+      continue
+    
+    if s.get("state") == "WEIGHED":
+      kg += float(s.get("kg") or 0.0)
+      members += 1
+    elif s.get("state") == "NO_BARS":
+      no_bars += 1
+    else:
+      no_size += 1
+  return {"kg": kg, "members": members, "no_bars": no_bars, "no_size": no_size} if (members or no_bars or no_size) else None
+
+def qs_totals(rows: list) -> dict | None:
+  by_input, n = Counter(), 0
+  for row in rows:
+    names = evidence_of(row).get("from_qs") or []
+    if names:
+      n += 1
+      by_input.update(names)
+  return {"rows": n, "by_input": dict(by_input)} if n else None
+
 def pdf_meta(row) -> dict:
   props = getattr(row, "properties", None) or {}
   return (props.get("_pdf") or {}) if props.get("source") == "pdf_takeoff" else {}
@@ -274,9 +317,9 @@ def _columns(is_pdf: bool) -> list[tuple[str, float, bool]]:
  
   last = ("Sheet", 9.0, False) if is_pdf else ("IFC id", 26.0, False)
   material = 25.0 if is_pdf else 22.0
-  measured = 45.0 if is_pdf else 36.0
-  return [("#", 8.0, True), ("Type", 17.0, False), ("Name", 30.0, False), ("Role", 16.0, False), ("Discipline", 24.0, False), ("Level", 17.0, False),
-    ("Material", material, False), ("Quantity", 19.0, True), ("Size", 27.0, False), ("Status", 14.0, False), ("Measured as", measured, False),
+  measured = 34.0 if is_pdf else 36.0
+  return [("#", 8.0, True), ("Type", 17.0, False), ("Name", 30.0, False), ("Role", 13.0 if is_pdf else 16.0, False), ("Discipline", 20.0 if is_pdf else 24.0, False), ("Level", 17.0, False),
+    ("Material", material, False), ("Quantity", 19.0, True), ("Size", 27.0, False), *([("Steel", 18.0, False)] if is_pdf else []), ("Status", 14.0, False), ("Measured as", measured, False),
     ("Flags", 25.0 if is_pdf else 22.0, False), last]
 
 def band_totals(rows: list) -> dict | None:
@@ -372,6 +415,11 @@ def _summary_block(st, reco: dict, is_pdf: bool, facts: dict | None, rows: list,
     
     if sum(grades.values()):
       lines.append(("What the rows stand on", " | ".join(f"{grades[g]:,} {GRADE_LABEL[g].lower()}" for g in GRADES)))
+    qs = qs_totals(rows)
+    if qs:
+      said = ", ".join(f"{name} {count:,}" for name, count in sorted(qs["by_input"].items(), key=lambda kv: (-kv[1], kv[0])))
+      lines.append(("Taken from the QS's workbook", f"{qs['rows']:,} rows use a value from the QS's workbook and not one printed on the drawing ({said}). Keep them out of any claim of accuracy against the drawing; "
+        f"a value printed on the building section or in a note is used first and is not listed here."))
     on_assumption = valid_on_assumption(rows)
     if on_assumption:
       lines.append(("Marked VALID but resting on an assumption or a gap", f"{on_assumption:,} rows (their status says VALID; a value of the row is assumed, disputed or missing)"))
@@ -394,6 +442,10 @@ def _summary_block(st, reco: dict, is_pdf: bool, facts: dict | None, rows: list,
     if strips:
       lines.append(("Beams drawn on the framing plans", f"{strips['n']:,} beam row{'s' if strips['n'] != 1 else ''}, {strips['net_m']:,.1f} m between column faces ({strips['gross_m']:,.1f} m centre to centre); "
         f"{strips['no_depth']:,} still need a depth"))
+    steel = steel_totals(rows)
+    if steel:
+      lines.append(("Steel from the printed bars", f"{steel['kg']:,.0f} kg ({steel['kg'] / 1000.0:,.2f} t) in {steel['members']:,} members. Cut lengths come from the printed bars with the default cover, hooks, "
+        f"laps and anchorage; wastage is not added. {steel['no_bars']:,} members have no bars read and {steel['no_size']:,} have bars but no size to weigh them by."))
     for chk in mark_checks(rows)[:8]:
       lines.append(("Column marks", chk["text"]))
     thick = thickness_totals(rows)
@@ -567,8 +619,11 @@ def is_evidence(rows: list) -> bool:
   return any(evidence_of(r).get("grade") for r in rows)
 
 def _grade_tag(row) -> str:
-  grade = evidence_of(row).get("grade")
-  return f'<br/><font color="{GRADE_COLOR[grade]}" size="6">{GRADE_LABEL[grade]}</font>' if grade in GRADE_LABEL else ""
+  ev = evidence_of(row)
+  grade = ev.get("grade")
+  tag = f'<br/><font color="{GRADE_COLOR[grade]}" size="6">{GRADE_LABEL[grade]}</font>' if grade in GRADE_LABEL else ""
+  qs = ev.get("from_qs") or []
+  return tag + (f'<br/><font color="{GRADE_COLOR["ASSUMED"]}" size="6">from QS: {clean(", ".join(qs), 80)}</font>' if qs else "")
 
 def _register_story(st, rows: list, is_pdf: bool, level_names: dict | None) -> tuple[list, dict]:
   cols = _columns(is_pdf)
@@ -602,11 +657,14 @@ def _register_story(st, rows: list, is_pdf: bool, level_names: dict | None) -> t
     codes = issue_codes(row)
     flags = ", ".join(clean(c.replace("_", " "), 40) for c in codes)
     quantity = (num(getattr(row, "quantity", None)) + (" " + clean(getattr(row, "unit", None) or "") if getattr(row, "unit", None) else "")).strip()
+    steel_cell = [_p(steel_text(row), st["cell"])] if is_pdf else []
+    last = clean(str(pdf_meta(row).get("page_no") or "")) if is_pdf else clean(getattr(row, "ifc_global_id", None) or "", 40)
+    quantity = (num(getattr(row, "quantity", None)) + (" " + clean(getattr(row, "unit", None) or "") if getattr(row, "unit", None) else "")).strip()
     last = clean(str(pdf_meta(row).get("page_no") or "")) if is_pdf else clean(getattr(row, "ifc_global_id", None) or "", 40)
     data.append([
       _p(str(index), st["cellr"]), _p(clean(getattr(row, "ifc_type", ""), 40), st["cell"]), _p(clean(getattr(row, "name", None) or "", 160), st["cell"]),
       _p(role, st["cell"]), _p(clean(getattr(row, "discipline", None) or ""), st["cell"]), _p(clean(level_of(row, level_names)), st["cell"]),
-      _p(clean(getattr(row, "raw_material_text", None) or "", 160), st["cell"]), _p(quantity, st["cellr"]), _p(size, st["cell"]),
+      _p(clean(getattr(row, "raw_material_text", None) or "", 160), st["cell"]), _p(quantity, st["cellr"]), _p(size, st["cell"]), *steel_cell,
       _p(f'<font color="{STATUS_COLOR.get(status, "#475569")}"><b>{clean(status)}</b></font>' + _grade_tag(row), st["cell"]), _p(measured, st["cell"]), _p(flags, st["cell"]),
       _p(last, st["cell"]),
     ])

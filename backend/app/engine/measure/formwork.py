@@ -201,6 +201,18 @@ def beam_slab_cuts(inputs: tuple, counted: set, sides_inside_slab: bool) -> tupl
     ref = max(here, key=lambda b: (b.count * b.length_mm * b.width_mm * b.depth_mm, str(b.measurement_id)))
     mixed = len({b.depth_mm for b in here}) > 1
     stats["beams_matched"] += beam.count
+    if getattr(beam, "upstand", False):
+      inside = min(ref.depth_mm, beam.depth_mm) if sides_inside_slab else Decimal("0")
+      each_soffit, each_sides = beam.length_mm * beam.width_mm, 2 * beam.length_mm * inside
+      for i in range(beam.count):
+        faces = [{"face": "soffit", "by": f"slab {ref.tag or ''}".strip(), "area_mm2": float(each_soffit)}]
+        if each_sides > 0:
+          faces.append({"face": "sides", "by": f"slab {ref.tag or ''}".strip(), "area_mm2": float(each_sides)})
+        out[(str(beam.measurement_id), i)] = {"faces": faces, "uncertain": mixed, "code": CODE_BEAM_SLAB_ASSUMED}
+      stats["beams_adjusted"] += beam.count
+      stats["uncertain_members"] += beam.count if mixed else 0
+      removed += (each_soffit + each_sides) * beam.count / MM2_PER_M2
+      continue
     if sides_inside_slab and beam.depth_mm > ref.depth_mm:
       each = 2 * beam.length_mm * ref.depth_mm
       for i in range(beam.count):

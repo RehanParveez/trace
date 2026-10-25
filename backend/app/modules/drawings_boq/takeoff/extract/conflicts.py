@@ -130,7 +130,8 @@ def beam_conflicts(rows: list, sections: list, policy: str) -> list:
   for r in rows:
     f, p = r.facts or {}, r.params or {}
     opts = [o for o in f.get("section_options") or [] if o.get("depth_mm")]
-    if r.category != "BEAM" or len(opts) < 2 or p.get("depth_mm"):
+    assumed = bool(f.get("section_assumed")) and bool(p.get("depth_mm"))
+    if r.category != "BEAM" or len(opts) < 2 or (p.get("depth_mm") and not assumed):
       continue
   
     L, W = p.get("length_mm"), p.get("width_mm")
@@ -142,8 +143,8 @@ def beam_conflicts(rows: list, sections: list, policy: str) -> list:
         "steel_text": o.get("steel_text"), "quantity": q})
     chosen = ((f.get(CHOICE_KEY) or {}).get("value") if (f.get(CHOICE_KEY) or {}).get("kind") == BEAM else None)
     c = {"id": _id(BEAM, r.id), "kind": BEAM, "subject": f"{r.tag or 'Beam'}" + (f" · {f.get('level_hint')}" if f.get("level_hint") else ""), "floor": f.get("level_hint"), "attribute": "depth",
-      "unit": "m³", "item_ids": [str(r.id)], "decision": r.decision, "used_mm": None, "page_no": None, "values": values}
-    out.append(_finish(c, policy if policy in ("LARGER", "SMALLER") else "AS_READ", None, chosen))
+      "unit": "m³", "item_ids": [str(r.id)], "decision": r.decision, "used_mm": float(p["depth_mm"]) if assumed else None, "page_no": None, "values": values}
+    out.append(_finish(c, policy if policy in ("LARGER", "SMALLER") else "AS_READ", float(p["depth_mm"]) if assumed else None, chosen))
   return out
 
 def count_conflicts(rows: list, sheets: dict, policy: str = "AS_READ") -> list:
@@ -235,6 +236,7 @@ def apply_to_row(row, res: dict, section: dict | None = None) -> bool:
     mm = float(res["value_mm"])
     p["depth_mm"] = mm
     f["section_mark"] = res.get("mark")
+    f.pop("section_assumed", None)
     if section and section.get("steel"):
       p["steel"] = dict(section["steel"])
       f["steel_text"] = section.get("steel_text")

@@ -685,6 +685,13 @@ class ValueAtRiskResponse(BaseModel):
   top_open: list[dict]
   unpriced: list[dict]
   flags: list[dict]
+  left_out: list[dict] = []
+
+class MaterialBreakUpResponse(BaseModel):
+  lines: list[dict]
+  totals: list[dict]
+  not_broken: list[dict]
+  assumptions: list[str]
 
 class ItemTraceResponse(BaseModel):
   item: BOQItemResponse

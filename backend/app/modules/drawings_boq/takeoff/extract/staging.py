@@ -1,7 +1,9 @@
 from __future__ import annotations
+import math
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.engine.measure import proposed as QP
 
 SCAFFOLD_OUTSIDE = "SCAFFOLD_OUTSIDE"
 PROPS_SLAB = "PROPS_SLAB"
@@ -47,7 +49,8 @@ def scaffold_candidates(finishes: list, floor_heights: dict | None, level_hint: 
     tail = c.label.rsplit(" · ", 1)[-1] if " · " in c.label and not c.label.endswith("of face") else None
     label = f"Scaffolding on the outside walls above {STAGING_ABOVE_MM / 1000.0:g} m · {area:.2f} m²" + (f" · {tail}" if tail else "")
     facts = {"derived_from": "WALLS", "staging": "SCAFFOLD", "plaster_key": c.key, "face_length_m": round(face, 3), "floor_level_mm": float(level), "floor_to_floor_mm": float(ftf),
-      "top_mm": round(top, 1), "threshold_mm": STAGING_ABOVE_MM, "above_mm": round(above, 1), "area_m2": round(area, 3)}
+      "top_mm": round(top, 1), "threshold_mm": STAGING_ABOVE_MM, "above_mm": round(above, 1), "area_m2": round(area, 3),
+      "whole_storey_m2": round(face * float(ftf) / 1000.0, 3)}
     out.append(_make(cls, ctx, finish, (SCAFFOLD_OUTSIDE, "STAGING", level_hint or ""), SCAFFOLD_OUTSIDE, label, "SCAFFOLD-OUTSIDE", list((c.geometry or {}).get("points") or [[0.0, 0.0]])[:1],
       area, facts, [C.note("SCAFFOLD_ABOVE_THRESHOLD", threshold_mm=STAGING_ABOVE_MM)], 0.6))
   return out, notes
@@ -62,8 +65,11 @@ def props_candidates(slabs: list, floor_heights: dict | None, ctx: dict, cls, fi
     if s.status == "INVALID" or area <= 0.0 or not clear or float(clear) <= STAGING_ABOVE_MM:
       continue
 
-    label = f"Props under the slab · {area:.2f} m² · {_ft(float(clear))} ft clear"
-    facts = {"derived_from": "SLAB", "staging": "PROPS", "slab_key": s.key, "floor": f.get("floor"), "clear_mm": float(clear), "threshold_mm": STAGING_ABOVE_MM, "area_m2": round(area, 3)}
-    out.append(_make(cls, ctx, finish, (PROPS_SLAB, "STAGING", s.key), PROPS_SLAB, label, "PROPS-SLAB", list((s.geometry or {}).get("points") or [[0.0, 0.0]])[:1], area, facts,
-      [C.note("PROPS_ABOVE_THRESHOLD", threshold_mm=STAGING_ABOVE_MM)], 0.6))
+    steps = max(1, int(math.ceil(round((float(clear) - STAGING_ABOVE_MM) / QP.PROPS_STEP_MM, 6))))
+    quantity = area * steps
+    label = f"Props under the slab · {area:.2f} m² · {_ft(float(clear))} ft clear · {steps} extra metre{'' if steps == 1 else 's'} · {quantity:.2f} m²"
+    facts = {"derived_from": "SLAB", "staging": "PROPS", "slab_key": s.key, "floor": f.get("floor"), "clear_mm": float(clear), "threshold_mm": STAGING_ABOVE_MM, "slab_area_m2": round(area, 3),
+      "step_mm": QP.PROPS_STEP_MM, "steps": steps, "area_m2": round(quantity, 3)}
+    out.append(_make(cls, ctx, finish, (PROPS_SLAB, "STAGING", s.key), PROPS_SLAB, label, "PROPS-SLAB", list((s.geometry or {}).get("points") or [[0.0, 0.0]])[:1], quantity, facts,
+      [C.note("PROPS_ABOVE_THRESHOLD", threshold_mm=STAGING_ABOVE_MM, step_mm=QP.PROPS_STEP_MM, steps=steps)], 0.6))
   return out
