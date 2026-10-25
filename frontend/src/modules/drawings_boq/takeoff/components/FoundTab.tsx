@@ -22,6 +22,10 @@ import { ReadyToAcceptPanel } from "./ReadyToAcceptPanel";
 import { RepeatMarksNotice } from "./RepeatMarksNotice";
 import { otherFailures, repeatMarks } from "../utils/repeatMarks";
 import { FloorSourcesPanel } from "./FloorSourcesPanel";
+import { LayoutGroupsPanel } from "./LayoutGroupsPanel";
+import { useChooseLayouts, useLayoutGroups } from "../hooks/useLayoutGroups";
+import { layoutToast } from "../utils/layoutGroups";
+import type { LayoutChoiceBody } from "../types/layoutGroups.types";
 import { FoundPanel } from "./FoundPanel";
 
 interface Props {
@@ -55,6 +59,8 @@ export function FoundTab(p: Props) {
   const readerTrace = useReaderTrace(p.drawingId);
   const ready = useReadyToAccept(p.drawingId);
   const choose = useChooseFloorSources(p.drawingId);
+  const layouts = useLayoutGroups(p.drawingId);
+  const chooseLayout = useChooseLayouts(p.drawingId);
   const stats = list.data?.extraction.stats;
   const planFloors = useMemo(() => ["FOUNDATION", "BASEMENT", "GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH", "TYPICAL", "ROOF"].filter((f) => planBoxOf(stats, f) !== null), [stats]);
 
@@ -95,6 +101,18 @@ export function FoundTab(p: Props) {
     });
   }
 
+  function onChooseLayout(body: LayoutChoiceBody) {
+    chooseLayout.mutate(body, {
+      onSuccess: (r) => {
+        setSelected(new Set());
+        const msg = layoutToast(r);
+        if (msg.ok) showToast({ tone: "success", title: t("boq.takeoff.layouts.chosen", "Plans updated"), description: msg.ok });
+        if (msg.problem) showToast({ tone: "error", title: t("boq.takeoff.layouts.blocked", "Some plans could not be changed"), description: msg.problem });
+      },
+      onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.layouts.failed", "Could not choose the sheet"), description: takeoffErrorMessage(e) }),
+    });
+  }
+
   function onChoose(body: FloorChoiceBody) {
     choose.mutate(body, {
       onSuccess: (r) => {
@@ -127,6 +145,7 @@ export function FoundTab(p: Props) {
       onOpenSheet={p.onOpenSheet}
       onShowPlan={(floor) => { const b = planBoxOf(stats, floor); if (b) p.onShowBox(b); }}
     />
+    <LayoutGroupsPanel data={layouts.data} canEdit={p.canEdit} busy={chooseLayout.isPending} currentSheetId={sheet.id} onChoose={onChooseLayout} onOpenSheet={p.onOpenSheet} />
     <KnownFactsPanel result={knownFacts.data} busy={knownFacts.isPending} failed={knownFacts.isError} onCheck={(facts) => knownFacts.mutate(facts)} />
     <ReaderTracePanel data={readerTrace.data} loading={readerTrace.isLoading} error={readerTrace.isError} onRetry={() => void readerTrace.refetch()} />
     {p.drawingId ? <DetailOnlyPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}

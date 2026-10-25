@@ -4234,6 +4234,29 @@ class TakeoffExtraction(Base, TimestampMixin):
   notes: Mapped[list] = mapped_column(JSONB, nullable=False, default=list, server_default=text("'[]'::jsonb"))
   ran_by_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
+class TakeoffCorrection(Base):
+  """One thing a person changed or decided about what the reader found. The log is read later to see which readings people had to fix."""
+  __tablename__ = "takeoff_corrections"
+
+  __table_args__ = (
+    Index("ix_takeoff_corrections_project", "organization_id", "project_id", "created_at"),
+    Index("ix_takeoff_corrections_kind", "organization_id", "kind"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+  project_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
+  drawing_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  sheet_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), nullable=True)
+  user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+  kind: Mapped[str] = mapped_column(String(24), nullable=False)
+  subject: Mapped[str | None] = mapped_column(String(120), nullable=True)
+  before: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  after: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  context: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  extract_version: Mapped[int | None] = mapped_column(Integer, nullable=True)
+  created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=text("now()"), nullable=False)
+
 class TakeoffCandidate(Base, TimestampMixin):
   __tablename__ = "takeoff_candidates"
 

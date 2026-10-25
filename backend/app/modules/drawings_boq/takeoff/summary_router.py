@@ -10,6 +10,7 @@ from app.dependencies.permissions import require_permission
 from app.core.database import get_db
 from app.modules.drawings_boq.takeoff.summary import project_takeoff_summary
 from app.modules.drawings_boq.takeoff.source_totals import project_source_totals
+from app.modules.drawings_boq.takeoff.corrections import project_corrections
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ class ProjectTakeoffDrawing(BaseModel):
   calibrated_sheets: int
   draft: int
   confirmed: int
+  readability: dict | None = None
 
 class ProjectTakeoffResponse(BaseModel):
   drawings: list[ProjectTakeoffDrawing]
@@ -35,6 +37,28 @@ async def project_takeoff_drawings(
   project_id: UUID, current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)), session: AsyncSession = Depends(get_db),
 ):
   return await project_takeoff_summary(session, _org(current_user), project_id)
+
+class CorrectionRow(BaseModel):
+  id: UUID
+  kind: str
+  subject: str | None = None
+  drawing_id: UUID | None = None
+  sheet_id: UUID | None = None
+  user_id: UUID | None = None
+  before: dict = {}
+  after: dict = {}
+  context: dict = {}
+  created_at: datetime
+
+class CorrectionsResponse(BaseModel):
+  counts: dict[str, int] = {}
+  rows: list[CorrectionRow] = []
+
+@router.get("/projects/{project_id}/takeoff/corrections", response_model=CorrectionsResponse)
+async def project_takeoff_corrections(
+  project_id: UUID, limit: int = 200, current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await project_corrections(session, _org(current_user), project_id, limit)
 
 class SourceQuantity(BaseModel):
   source: str

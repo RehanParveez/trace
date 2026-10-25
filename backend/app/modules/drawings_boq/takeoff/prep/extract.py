@@ -5,6 +5,7 @@ import ctypes
 import time
 from array import array
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
+from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
 
 IDENT = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 MAX_PATH_OBJECTS = 1_500_000
@@ -362,11 +363,16 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
         stats["truncated"] = True
         break
     out.words = _text_words(page, stats)
-    if ocr_layer.needs_ocr(out.words, out.images, crop, stats):
+    scanned = ocr_layer.needs_ocr(out.words, out.images, crop, stats)
+    if scanned:
       found, info = ocr_layer.read_page(page, out.rotation, crop, out.images, budget_s=min(ocr_layer.SCAN_OCR_BUDGET_S, max(15.0, budget_s)))
       stats.update(info)
       if found:
         out.words = found
+    try:
+      PT.route(page, out, crop, stats, budget_s, scanned)
+    except Exception as exc:
+      stats["pdf_type"] = {"type": "UNKNOWN", "error": type(exc).__name__}
     clipped = clip_to_crop(out)
     if clipped:
       stats["clipped_to_crop"] = clipped

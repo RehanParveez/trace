@@ -10,7 +10,7 @@ from sqlalchemy import select
 from app.core.exceptions import TraceException
 from app.engine.measure import engine as kernel
 from app.engine.measure import derived as derived_module
-from app.engine.measure.fingerprint import compute_fingerprint
+from app.engine.measure.fingerprint import compute_fingerprint, fingerprint_parts, differing_parts
 from app.engine.measure.models import CalculationContext, MappingInput, ModelElement
 from app.modules.drawings_boq.calc_repository import CalculationRunRepository
 from app.modules.drawings_boq.measurement_params import MeasurementParametersService
@@ -52,7 +52,7 @@ from app.modules.drawings_boq.ledger_keys import ids_for_keys, ledger_id, restag
 from app.modules.drawings_boq.scope_check import OVERLAP_KEY, find_scope_overlaps, overlap_message
 
 STALE_RUN_SECONDS = 2100           
-_SNAPSHOT_KEYS = ("rule_set", "rule_profile_snapshot", SCOPE_KEY, OVERLAP_KEY)
+_SNAPSHOT_KEYS = ("rule_set", "rule_profile_snapshot", SCOPE_KEY, OVERLAP_KEY, "fp_parts")
 
 def _rule_snapshot(rule_set, profile) -> dict:
   return {
@@ -205,6 +205,18 @@ class CalculationService:
         "takeoff": tk.takeoff_payload(reinforcements.takeoff)} if reinforcements else None,
     )
 
+  @staticmethod
+  def _parts(elements, mappings, profile, rule_set, settings: dict,
+    convention_code: str | None, convention_params: dict, reinforcements=None) -> dict:
+    return fingerprint_parts(
+      elements=elements, mappings=mappings, profile_fingerprint=profile.fingerprint(),
+      rule_set_ref=f"{rule_set.id}:{rule_set.immutable_version}:{rule_set.content_hash}",
+      convention_code=convention_code, engine_version=kernel.ENGINE_VERSION,
+      settings=settings, convention_params=convention_params,
+      spatial={**fin.finish_sched_payload(reinforcements.spaces, reinforcements.openings, reinforcements.schedule_lines), "rebar": rb.rebar_payload(reinforcements.rebar),
+        "takeoff": tk.takeoff_payload(reinforcements.takeoff)} if reinforcements else None,
+    )
+
   async def request_run(self, organization_id: UUID, project_id: UUID, user_id: UUID,
     drawing_ids: list[UUID] | None, rule_set_code: str | None, convention_code: str | None = None,
     force_full: bool = False, verify: bool = False, enqueue: bool = True, confirm_overlap: bool = False,
@@ -283,6 +295,8 @@ class CalculationService:
     convention_params = await self._convention_params(effective_convention)
     fingerprint = self._fingerprint(elements, mappings, profile, rule_set, settings, effective_convention,
       convention_params, reinforcements)
+    fp_parts = self._parts(elements, mappings, profile, rule_set, settings, effective_convention,
+      convention_params, reinforcements)
 
     if not (force_full or verify):
       existing = await self.runs.get_completed_by_fingerprint(organization_id, fingerprint)
@@ -297,7 +311,7 @@ class CalculationService:
       rule_set_id=rule_set.id, convention_code=effective_convention, drawing_revision_ids=ids,
       engine_version=kernel.ENGINE_VERSION, fingerprint=fingerprint, status="QUEUED",
       progress_pct=0,
-      settings={**settings, **_rule_snapshot(rule_set, profile), SCOPE_KEY: build_scope_snapshot(chosen), OVERLAP_KEY: scope_overlaps},
+      settings={**settings, **_rule_snapshot(rule_set, profile), SCOPE_KEY: build_scope_snapshot(chosen), OVERLAP_KEY: scope_overlaps, "fp_parts": fp_parts},
       force_full=bool(force_full), verify=bool(verify), attempts=0,
     )
     try:
@@ -422,7 +436,19 @@ class CalculationService:
           convention_code, convention_params, p6) == expected_fingerprint
       self._timings["load_inputs"] = t_load.ms
       if not matches:
-        raise RunError("INPUT_CHANGED", "Drawings or rules changed after the run was requested. Request a new run.")
+        now_parts = self._parts(elements, mappings, profile, rule_set, run_settings, convention_code, convention_params, p6)
+        changed = differing_parts((run.settings or {}).get("fp_parts"), now_parts)
+        reloaded = None
+        try:
+          profile2, mappings2, elements2, p6b = await self._load_inputs(org, drawing_ids, rule_set.id, project_id)
+          reloaded = differing_parts(now_parts, self._parts(elements2, mappings2, profile2, rule_set, run_settings, convention_code, convention_params, p6b))
+        except Exception:
+          calc_obs.logger.warning("second load check failed for run %s", run_id, exc_info=True)
+        calc_obs.log_event("input_changed_detail", run_id=run_id, organization_id=org, engine_version=engine_version,
+          changed_since_request=changed, changed_on_second_load=reloaded)
+        raise RunError("INPUT_CHANGED", "Drawings or rules changed after the run was requested. Request a new run. "
+          f"(changed since the request: {', '.join(changed) or 'not recorded'}; "
+          f"changed between two loads in the worker: {'could not check' if reloaded is None else (', '.join(reloaded) or 'none')})")
 
       ctx = CalculationContext(
         run_id=run_id, engine_version=engine_version, fingerprint=expected_fingerprint,

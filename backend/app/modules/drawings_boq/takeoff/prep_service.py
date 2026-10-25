@@ -109,7 +109,7 @@ def _read_details(doc, page_no: int, raw, result) -> None:
   except Exception:
     result.meta["tank_details_reader"] = "FAILED"
   try:
-    legend = electrical_reader.read_legend_rows(page, result.index.words)
+    legend = electrical_reader.read_legend_rows(page, result.index.words, identity=result.meta.get("identity"))
     if legend:
       result.meta["electrical_legend"] = legend
   except Exception:
@@ -238,6 +238,10 @@ class PrepService:
     for keep in ("user_unit", "kind_source"):
       if keep in old_meta:
         meta[keep] = old_meta[keep]
+    if (old_meta.get("identity") or {}).get("basis") == "PERSON":
+      if meta.get("identity") is not None:
+        meta["identity_read"] = meta["identity"]
+      meta["identity"] = old_meta["identity"]
     kind_changed = False
     if old_meta.get("kind_source") != "USER" and locked.content_kind != result.content_kind:
       locked.content_kind, kind_changed = result.content_kind, True
@@ -537,7 +541,7 @@ class PrepService:
   async def sheet_electrical(self, org: UUID, sheet, words: list) -> dict | None:
     """The symbols of the drawing's electrical legend counted on this sheet, when it is an electrical plan; None when the drawing has no legend or this is not a plan. A failure is
     returned as {"failed": True} so the sheet says so."""
-    if not electrical_reader.is_plan_sheet(words):
+    if not electrical_reader.is_plan_sheet(words, (sheet.prep_meta or {}).get("identity")):
       return None
     legend = await self.drawing_electrical_legend(org, sheet.drawing_id)
     if not legend["rows"] or sheet.page_no in legend["pages"]:

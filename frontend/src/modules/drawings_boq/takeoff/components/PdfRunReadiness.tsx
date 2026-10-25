@@ -5,6 +5,7 @@ import { Badge, Button, Icon } from "../../../organizations/components/Organizat
 import { IDENTITY_PERMISSIONS, usePermissionKeys } from "../../../identity";
 import type { WaitingPdf } from "../utils/runDrawings";
 import { ApprovePdfDialog } from "./ApprovePdfDialog";
+import { ReadabilityChip } from "./ReadabilityChip";
 
 interface PdfRunReadinessProps {
   projectId: string;
@@ -44,6 +45,9 @@ export function PdfRunReadiness({ projectId, waiting }: PdfRunReadinessProps) {
             <Button variant="ghost" size="sm" onClick={() => navigate(`/app/takeoff/${projectId}/${drawing.id}`)}>
               {t("takeoff.runReady.measure", "Open Measure")}
             </Button>
+          <div className="w-full">
+              <ReadabilityChip value={row.readability} />
+            </div>
           </li>
         ))}
       </ul>

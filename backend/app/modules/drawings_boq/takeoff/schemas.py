@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import AliasChoices, AliasPath, BaseModel, ConfigDict, Field, model_validator
 from decimal import Decimal
 from uuid import UUID
 from datetime import datetime
@@ -36,14 +36,23 @@ class SheetResponse(BaseModel):
   prep_error: str | None
   text_chars: int | None
   vector_ops: int | None
+  identity: dict | None = Field(default=None, validation_alias=AliasChoices("identity", AliasPath("prep_meta", "identity")))
   created_at: datetime
   updated_at: datetime
+
+IdentityDiscipline = Literal["ARCHITECTURAL", "STRUCTURAL", "ELECTRICAL", "PLUMBING", "HVAC", "FIRE", "SITE"]
+IdentitySheetType = Literal["PLAN", "POINTS_PLAN", "SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "LEGEND", "SPEC"]
+
+class SheetIdentityOverride(BaseModel):
+  discipline: IdentityDiscipline | None = None
+  sheet_type: IdentitySheetType | None = None
 
 class SheetUpdateRequest(BaseModel):
   label: str | None = Field(default=None, max_length=200)
   level_id: UUID | None = None
   scale_text: str | None = Field(default=None, max_length=60)
   content_kind: ContentKind | None = None
+  identity: SheetIdentityOverride | None = None
 
 class CalibrationCreateRequest(BaseModel):
   method: Literal["TWO_POINT", "SCALE_RATIO"]

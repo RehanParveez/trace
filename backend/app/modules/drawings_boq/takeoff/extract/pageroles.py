@@ -36,7 +36,7 @@ def purpose(lines: list) -> str | None:
     return "WORKING"
   return "FURNITURE" if any(_FURNITURE.match(t) for t in texts) else None
 
-def page_role(words: list, kind: dict | None = None) -> dict:
+def page_role(words: list, kind: dict | None = None, drawn: int = 0) -> dict:
   kind = kind or {"kind": "UNKNOWN", "title": None}
   lines = _title_lines(words)
   found: dict = {}
@@ -63,7 +63,9 @@ def page_role(words: list, kind: dict | None = None) -> dict:
     return {"role": role, "title": found[role][1], "also": sorted(r for r in found if r != role), "basis": "TITLE"}
 
   if len(words) < C.PAGE_SPARSE_WORDS:
-    title = max(lines, key=lambda t: t[1])[0][:80] if lines else None
+    if drawn >= C.PAGE_DRAWN_SEGMENTS:
+      return {"role": "UNKNOWN", "title": None, "also": [], "basis": "SPARSE_TEXT_DRAWN"}
+    title =max(lines, key=lambda t: t[1])[0][:80] if lines else None
     return {"role": "DIVIDER" if title else "COVER", "title": title, "also": [], "basis": "SPARSE_TEXT"}
   return {"role": "UNKNOWN", "title": None, "also": [], "basis": "NONE"}
 

@@ -4,6 +4,7 @@ import collections
 import hashlib
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import electrical_symbols as ES
+from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
 
 LIGHT, FAN, SOCKET, SWITCH, LOWV, BOARD, OTHER = "ELEC_LIGHT", "ELEC_FAN", "ELEC_SOCKET", "ELEC_SWITCH", "ELEC_LOWV", "ELEC_BOARD", "ELEC_OTHER"
 ITEMS = (LIGHT, FAN, SOCKET, SWITCH, LOWV, BOARD, OTHER)
@@ -34,13 +35,13 @@ def group_of(name: str) -> str:
 def _upper(words: list) -> str:
   return " ".join((w.text or "") for w in words)
 
-def is_legend_sheet(words: list) -> bool:
+def is_legend_sheet(words: list, identity: dict | None = None) -> bool:
   text = _upper(words)
-  return bool(ELECTRIC_WORD.search(text) and LEGEND_WORDS.search(text))
+  return bool(ELECTRIC_WORD.search(text) and LEGEND_WORDS.search(text)) or SID.is_electrical_legend(identity)
 
-def is_plan_sheet(words: list) -> bool:
+def is_plan_sheet(words: list, identity: dict | None = None) -> bool:
   text = _upper(words)
-  return bool(ELECTRIC_WORD.search(text) and PLAN_WORD.search(text))
+  return bool(ELECTRIC_WORD.search(text) and PLAN_WORD.search(text)) or SID.is_electrical_plan(identity)
 
 def pack_legend(legend: list) -> list:
   return [{"name": s.name, "description": s.description, "token": s.token, "mounting_height_mm": s.mounting_height_mm,
@@ -54,8 +55,8 @@ def unpack_legend(rows: list) -> list:
       mounting_height_mm=r.get("mounting_height_mm"), token=r.get("token") or ""))
   return out
 
-def read_legend_rows(page, words: list) -> list:
-  if not is_legend_sheet(words):
+def read_legend_rows(page, words: list, identity: dict | None = None) -> list:
+  if not is_legend_sheet(words, identity):
     return []
   return pack_legend(ES.read_legend(page))
 

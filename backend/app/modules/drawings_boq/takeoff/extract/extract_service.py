@@ -45,6 +45,7 @@ from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawing
 from app.modules.drawings_boq.takeoff.extract import typed_memory as TM
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import CandidateResponse
+from app.modules.drawings_boq.takeoff import corrections as CR
 from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _status, run_extraction
 from app.modules.drawings_boq.takeoff.extract.structure import column_details
 from app.modules.drawings_boq.takeoff.levels import view_level_id
@@ -344,7 +345,7 @@ class ExtractService:
       with QS.deciding(decided.overrides(drawing.ingestion_meta)):
         result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, site_only=site_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
-        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"),
+        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"), pdf_type=(sheet.prep_meta or {}).get("pdf_type"), identity=(sheet.prep_meta or {}).get("identity"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
         imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts, electrical=electrical)
     except Exception:
@@ -601,6 +602,7 @@ class ExtractService:
         failed.append(_fail(cid, *problem))
         continue
     
+      before_params, before_snap = dict(cand.params or {}), CR.snapshot(cand)
       typed_steel = (payload.steel or {}).get(cid)
       if typed_steel is not None:
         params = {**params, "steel": typed_steel.model_dump(mode="json", exclude_none=True)}
@@ -661,6 +663,9 @@ class ExtractService:
         failed.append(_fail(cid, exc.code, exc.message))
         continue
     
+      if params != before_params:
+        await CR.record(self.session, org=org, user_id=user_id, project_id=cand.project_id, sheet_id=cand.sheet_id, kind=CR.ITEM_VALUE_TYPED, subject=cand.tag or cand.label,
+          before={**before_snap, "params": before_params}, after={"params": params, "missing": missing, "section": section["mark"] if section else None}, extract_version=cand.extract_version)
       guard.add(cand, own_level)
       accepted.append({"id": str(cid), "measurement_id": str(m.id), "work_item_code": code})
     if accepted:
@@ -678,6 +683,7 @@ class ExtractService:
     await self._heal(org, list(rows.values()))
     changed: list = []
     failed: list = []
+    was: dict = {}
     
     for cid in ids:
       r = rows.get(cid)
@@ -686,9 +692,14 @@ class ExtractService:
       elif r.decision == "ACCEPTED":
         failed.append(_fail(cid, "CANDIDATE_ALREADY_ACCEPTED", "This item is already a measurement. Delete the measurement first."))
       elif r.decision == frm:
+        was[cid] = (r.project_id, r.sheet_id, r.extract_version, r.tag or r.label, CR.snapshot(r))
         r.decision, r.decided_by_user_id, r.decided_at = to, (user_id if to == "REJECTED" else None), (_now() if to == "REJECTED" else None)
         changed.append(cid)
     await self.session.flush()
+    for cid in changed:
+      project_id, sheet_id, version, subject, snap = was[cid]
+      await CR.record(self.session, org=org, user_id=user_id, project_id=project_id, sheet_id=sheet_id, kind=CR.ITEM_REJECTED if to == "REJECTED" else CR.ITEM_RESTORED,
+        subject=subject, before=snap, extract_version=version)
     if changed:
       await self._sync_register(org, {r.sheet_id for r in rows.values()})
     await self.session.commit()

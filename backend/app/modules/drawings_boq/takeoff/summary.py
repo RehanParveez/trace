@@ -4,10 +4,11 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.modules.projects.repository import ProjectRepository
 from sqlalchemy import select
-from app.modules.drawings_boq.models import TakeoffCalibration, Drawing, TakeoffSheet, TakeoffMeasurement
+from app.modules.drawings_boq.models import TakeoffCalibration, Drawing, TakeoffSheet, TakeoffMeasurement, TakeoffExtraction
+from app.modules.drawings_boq.takeoff import readability
 from app.core.exceptions import TraceException
 
-def build_summary(drawings, sheets, calibrations, measurements) -> list[dict]:
+def build_summary(drawings, sheets, calibrations, measurements, extractions=None) -> list[dict]:
     
   by_drawing: dict = defaultdict(list)
   for s in sheets:
@@ -24,6 +25,12 @@ def build_summary(drawings, sheets, calibrations, measurements) -> list[dict]:
       confirmed[d] += 1
     else:
       draft[d] += 1
+  read_by: dict = defaultdict(list)
+  page_of = {s.id: s.page_no for s in sheets}
+  for e in extractions or []:
+    d = sheet_drawing.get(e.sheet_id)
+    if d is not None:
+      read_by[d].append({"page_no": page_of.get(e.sheet_id), "stats": e.stats, "notes": e.notes, "scale_unverified": e.scale_unverified})
   rows = []
   for d in drawings:
     own = by_drawing.get(d.id)
@@ -35,6 +42,7 @@ def build_summary(drawings, sheets, calibrations, measurements) -> list[dict]:
       "prepared_sheets": sum(1 for s in own if s.prep_status == "READY"),
       "calibrated_sheets": sum(1 for s in own if s.id in calibrated),
       "draft": draft.get(d.id, 0), "confirmed": confirmed.get(d.id, 0),
+      **({"readability": readability.drawing_status(read_by.get(d.id, []))} if extractions is not None else {}),
     })
   rows.sort(key=lambda r: (r["original_filename"].lower(), str(r["drawing_id"])))
   return rows
@@ -55,4 +63,6 @@ async def project_takeoff_summary(session: AsyncSession, org: UUID, project_id: 
     select(TakeoffCalibration).where(TakeoffCalibration.organization_id == org, TakeoffCalibration.sheet_id.in_(sheet_ids)))).scalars().all())
   measurements = list((await session.execute(
     select(TakeoffMeasurement).where(TakeoffMeasurement.organization_id == org, TakeoffMeasurement.sheet_id.in_(sheet_ids)))).scalars().all())
-  return {"drawings": build_summary(drawings, sheets, calibrations, measurements)}
+  extractions = list((await session.execute(
+    select(TakeoffExtraction).where(TakeoffExtraction.organization_id == org, TakeoffExtraction.sheet_id.in_(sheet_ids)))).scalars().all())
+  return {"drawings": build_summary(drawings, sheets, calibrations, measurements, extractions)}

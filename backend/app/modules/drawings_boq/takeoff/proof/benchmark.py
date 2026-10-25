@@ -49,7 +49,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     "tank_details": TD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("tank_details")} for s in sheets if s.prep_meta.get("tank_details")]),
     "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])]}
   units = UR.drawing_imperial([{"page_no": s.page_no, "units": s.prep_meta.get("units"), "hint": s.prep_meta.get("units_hint")} for s in sheets])
-  legend = EL.gather_legend([{"page_no": no, "legend": EL.read_legend_rows(doc[no - 1], a.index.words)} for no, a in analysed.items() if EL.is_legend_sheet(a.index.words)])
+  legend = EL.gather_legend([{"page_no": no, "legend": EL.read_legend_rows(doc[no - 1], a.index.words, identity=a.meta.get("identity"))} for no, a in analysed.items() if EL.is_legend_sheet(a.index.words, a.meta.get("identity"))])
   
   read, wall_rows = [], []
   order = sorted(analysed.items(), key=lambda kv: (bool(((kv[1].meta.get("title")) or {}).get("composite")), kv[0]))
@@ -64,10 +64,10 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     try:
       res = P.run_extraction(a.index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=1.0, scale_unverified=scale_unverified, content_kind=a.content_kind,
         budget_s=budget_s, schedule=schedule, views_meta=meta.get("views"), frame=meta.get("frame"), col_details=column_details(meta), floor_heights=drawing["floor_heights"],
-        level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
+        level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), pdf_type=meta.get("pdf_type"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
         with_finishes=True, beam_sections=drawing["beam_sections"], tank_details=drawing["tank_details"], imperial=units["imperial"], wall_vocab=UR.wall_vocabulary(wall_rows, units["imperial"]),
         footing_sections=drawing["footing_sections"], spec_facts=drawing["spec_facts"],
-        electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and no not in legend["pages"] and EL.is_plan_sheet(a.index.words) else None)
+        electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and no not in legend["pages"] and EL.is_plan_sheet(a.index.words, meta.get("identity")) else None)
     except Exception as exc:
       problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
       continue

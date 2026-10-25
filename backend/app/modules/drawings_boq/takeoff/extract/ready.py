@@ -3,6 +3,7 @@ from app.modules.drawings_boq.takeoff.extract import crosschecks as CK
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
+from app.modules.drawings_boq.takeoff.extract import layout_groups as LG
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 
@@ -34,6 +35,7 @@ REASON_TEXT = {
   "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
   "ADDED_FROM_SECOND_SHEET": "Only the sheet that shows every plan has this item, not the floor's own sheet. That sheet is drawn small, so check it on the sheet before accepting.",
   "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
+  "LAYOUT_SOURCE_UNDECIDED": "This plan is printed on several sheets (the same named rooms with the same areas) and was read from each. Choose the sheet that governs it before accepting, or the plan is counted once for every sheet it is printed on.",
   "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet, or the floor finish already accepted for this floor carries the baths and toilets. Accepting it here as well counts it twice.",
 }
 
@@ -52,7 +54,7 @@ def ready(read: list, checks: list | None = None) -> dict:
   checks = checks if checks is not None else CK.run(read)["checks"]
   warned = _warned(checks)
   undecided = undecided_sources(read)
-  undecided = undecided_sources(read)
+  layout_open = LG.undecided_sheets(read)
   ok: list = []
   guard = AG.Guard(AG.held_marks(read, lambda c, sh: _floor(c, _sheet_floor(sh))))
   held: list = []
@@ -70,6 +72,8 @@ def ready(read: list, checks: list | None = None) -> dict:
          why.append("ALREADY_DECIDED")
       elif c.category != "SLAB" and (sh["sheet_id"], FO.level_of(c) or sf) in undecided:
         why.append("FLOOR_SOURCE_UNDECIDED")
+      elif sh["sheet_id"] in layout_open and LG.in_layout(c):
+        why.append("LAYOUT_SOURCE_UNDECIDED")
       if c.decision == "NEW" and from_non_plan(sh, c):
         why.append("NOT_A_PLAN_SHEET")
       if c.decision == "NEW" and guard.clash(c, fl) is not None:

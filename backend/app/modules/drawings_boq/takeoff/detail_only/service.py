@@ -4,7 +4,7 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 from app.modules.drawings_boq.takeoff.detail_only.repository import DetailOnlyRepository
 from uuid import UUID
 from decimal import Decimal
-from app.modules.drawings_boq.takeoff import detail_only as DO
+from app.modules.drawings_boq.takeoff.detail_only import detail_only as DO
 from app.modules.audit.models import AuditAction
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark

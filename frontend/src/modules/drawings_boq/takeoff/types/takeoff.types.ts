@@ -34,8 +34,23 @@ export interface TakeoffSheet {
   text_chars: number | null;
   vector_ops: number | null;
   stale?: boolean;
+  identity?: SheetIdentity | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface SheetIdentityEvidence { discipline?: string; sheet_type?: string; text?: string; matched?: string }
+
+export interface SheetIdentity {
+  discipline: string | null;
+  sheet_type: string | null;
+  floor: string | null;
+  title?: string | null;
+  sheet_no?: string | null;
+  scale_text?: string | null;
+  basis?: "TITLE_BLOCK" | "TITLE" | "TEXT" | "PERSON" | "NONE";
+  confidence?: number;
+  evidence?: SheetIdentityEvidence[];
 }
 
 export interface CalibrationWarning { code?: string; message?: string; [key: string]: unknown }
@@ -328,6 +343,24 @@ export interface ProjectTakeoffDrawing {
   calibrated_sheets: number;
   draft: number;
   confirmed: number;
+  readability?: PdfReadability | null;
+}
+
+export type ReadabilityState = "READABLE" | "READ_WITH_QUESTIONS" | "READ_BADLY" | "NOT_READ";
+
+export interface ReadabilityReason {
+  code: string;
+  level: "READABLE" | "READ_WITH_QUESTIONS" | "READ_BADLY";
+  text: string;
+  sheets: number;
+  pages: number[];
+}
+
+export interface PdfReadability {
+  state: ReadabilityState;
+  sheets_read: number;
+  sheets_not_plans: number;
+  reasons: ReadabilityReason[];
 }
 
 export interface ReconciliationRow {

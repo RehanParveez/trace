@@ -31,7 +31,11 @@ COUNT_BEFORE = re.compile(r"(?<![\d.])(\d{1,4})\s*(?:NOS?\b\.?|NUMBERS?\b|X\b)",
 COUNT_PILES = re.compile(r"(?<![\d.:])(\d{1,4})\s+(?:(?:NO\.?\s+)?(?:BORED|CAST|RCC|R\.C\.C|CONCRETE|DRIVEN|PRECAST)\b[A-Z\s\-\.]*?)?PILES?\b", re.I)
 THICK_AFTER = re.compile(_NUM + r"\s*(mm|\"|”|″|in\b|inch(?:es)?)?\s*(?:THK\.?|THICK\b|THICKNESS|DEEP)", re.I)
 THICK_BEFORE = re.compile(r"(?:THK\.?|THICKNESS|THICK\b)\s*[:=]?\s*" + _NUM + r"\s*(mm|\"|”|″|in\b|inch(?:es)?)?", re.I)
-FT_IN = re.compile(r"(\d+)\s*'\s*-?\s*(\d+(?:\.\d+)?)?\s*(?:\"|”|″)?")
+THK_WORD = re.compile(r"\b(?:THK|THICK|THICKNESS|DEEP|DEPTH)\b", re.I)
+FT_IN_THK_AFTER = re.compile(r"(\d+)\s*'\s*-?\s*(\d+(?:\.\d+)?)?\s*\"?\s*(?:THK\.?|THICKNESS|THICK\b|DEEP|DEPTH)", re.I)
+FT_IN_THK_BEFORE = re.compile(r"(?:THK\.?|THICKNESS|THICK\b|DEPTH)\s*[:=]?\s*(\d+)\s*'\s*-?\s*(\d+(?:\.\d+)?)?", re.I)
+SPACING_AFTER = re.compile(r"^\s*(?:\"|'')?\s*(?:DIA\b|C\s*/\s*C\b|CENT(?:ER|RE)S?\b|@|CHAIRS?\b|SPACERS?\b|COVER\b)", re.I)
+NOT_A_BUILDING_RAFT = re.compile(r"\bTANK\b|\bO\.?/?H\.?(?:W?T)?\b|\bUGWT\b|\bSUMP\b|\bSEPTIC\b", re.I)
 ROW_MARK = re.compile(r"^[A-Z]{1,3}\s?-?\s?\d{1,3}[A-Z]?$")
 PILE_HEAD = re.compile(r"\bPILE\b|\bMARK\b|\bTYPE\b", re.I)
 
@@ -117,18 +121,30 @@ def parse_schedule(lines: list) -> list:
       out.append({"mark": toks[0].upper(), "dia_mm": round(dia, 1), "length_mm": round(length, 1), "count": count, "how": {"dia": d_how, "length": l_how}, "point": (x, y)})
   return out
 
+def _clean_quotes(text: str) -> str:
+  return text.replace("’’", '"').replace("″", '"').replace("’", "'")
+
 def raft_thickness(text: str) -> tuple | None:
-  """(thickness_mm, how, grade): the thickness written with the word raft (not a tank's raft), and the grade printed beside it."""
-  if not RAFT_WORD.search(text) or re.search(r"\bTANK\b|\bO\.?/?H\.?(?:W?T)?\b|\bUGWT\b|\bSUMP\b|\bSEPTIC\b", text, re.I):
+  """(thickness_mm, how, grade): the thickness written beside a thickness word on a line that names the raft (not a tank's raft), and the grade printed beside it.
+  A figure with no thickness word beside it (a bar spacing such as 5'-0" centre, a bar diameter, a cover) is never taken as the thickness."""
+
+  if not RAFT_WORD.search(text) or NOT_A_BUILDING_RAFT.search(text):
     return None
-  m = None if re.search(r"\d\s*'", text) else _find((THICK_AFTER, THICK_BEFORE), text)
-  if m:
-    mm, how = _mm(float(m.group(1)), m.group(2), "THICK")
-  else:
-    f = FT_IN.search(text)
-    if not f:
+  t = _clean_quotes(text)
+  if not THK_WORD.search(t):
+    return None
+  mm = how = None
+
+  for pattern in (FT_IN_THK_AFTER, FT_IN_THK_BEFORE):
+    f = pattern.search(t)
+    if f and not SPACING_AFTER.match(t[f.end():]):
+      mm, how = int(f.group(1)) * MM_PER_FOOT + float(f.group(2) or 0.0) * MM_PER_INCH, "PRINTED"
+      break
+  if mm is None:
+    m = _find((THICK_AFTER, THICK_BEFORE), t)
+    if not m or SPACING_AFTER.match(t[m.end():]):
       return None
-    mm, how = int(f.group(1)) * MM_PER_FOOT + float(f.group(2) or 0.0) * MM_PER_INCH, "PRINTED"
+    mm, how = _mm(float(m.group(1)), m.group(2), "THICK")
   if not (150.0 <= mm <= 3000.0):
     return None
   return round(mm, 1), how, SPEC.concrete_grade(text)
@@ -215,14 +231,20 @@ def candidates(words: list, schedule: dict | None, ctx: dict, cls, finish) -> tu
       out.extend(pile_candidates(pile, (x, y), None, ctx, cls, finish))
   if unread and not out:
     notes.append(C.note("PILES_NOT_READ", lines=unread))
+  raft_unread = 0
   for k, ln in enumerate(lines):
     t = raft_thickness(ln.text)
     if t is None and RAFT_WORD.search(ln.text) and k + 1 < len(lines):
       t = raft_thickness(ln.text + " " + lines[k + 1].text)
+    if t is None and RAFT_WORD.search(ln.text) and not NOT_A_BUILDING_RAFT.search(ln.text) and re.search(r"\d", ln.text):
+      raft_unread += 1
     if t is not None:
       x, y = ln.locate(0, len(ln.text))
       items, rn = raft_candidates(t, (x, y), schedule, ctx, cls, finish)
       out.extend(items)
       notes.extend(rn)
+      raft_unread = 0
       break
+  if raft_unread:
+    notes.append(C.note("RAFT_NOT_READ", lines=raft_unread))
   return out, notes

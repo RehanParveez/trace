@@ -10,7 +10,7 @@ def _c(code: str, status: str, title: str, message: str, pages=(), count: int | 
 def _plural(n: int, one: str, many: str) -> str:
   return one if n == 1 else many
 
-def run(sheets: list, extractions: list, cands: list, reader: dict | None, code_version: int, notes: dict | None = None) -> dict:
+def run(sheets: list, extractions: list, cands: list, reader: dict | None, code_version: int, notes: dict | None = None, code_scan: dict | None = None) -> dict:
   out: list = []
   
   n = len(sheets)
@@ -39,6 +39,11 @@ def run(sheets: list, extractions: list, cands: list, reader: dict | None, code_
     out.append(_c("READS_CURRENT", WARN, "Readings are current", f"{len(stale)} {_plural(len(stale), 'sheet was', 'sheets were')} read with an older version of the reader (now version {code_version}). Read again to get today's readings.", stale))
   elif extractions:
     out.append(_c("READS_CURRENT", OK, "Readings are current", f"Every sheet was read with the current version of the reader (version {code_version}).", count=len(extractions)))
+  broken = [e["page_no"] for e in extractions if int(e.get("stage_failures") or 0) > 0]
+  if broken:
+    out.append(_c("NO_STAGE_FAILED", WARN, "Every reading step ran", f"On {len(broken)} {_plural(len(broken), 'sheet', 'sheets')} one or more reading steps failed and were skipped (the sheet carries a STAGE_FAILED note), so the items of those steps are missing. Read again after the fault is fixed.", broken))
+  elif extractions:
+    out.append(_c("NO_STAGE_FAILED", OK, "Every reading step ran", "No reading step failed on any sheet read.", count=len(extractions)))
   late = [e["page_no"] for e in extractions if e.get("decisions_stale")]
   if late:
     out.append(_c("DECISIONS_APPLIED", WARN, "Your choices are applied", f"{len(late)} {_plural(len(late), 'sheet was', 'sheets were')} read before a choice made for this drawing (see Decisions). Read again to apply it.", late))
@@ -73,6 +78,25 @@ def run(sheets: list, extractions: list, cands: list, reader: dict | None, code_
       out.append(_c("NOTES_AGREE", WARN, "Printed notes agree with the drawing", f"{look} {_plural(look, 'place is', 'places are')} where a printed note and the drawing disagree, or where no item is made from a note. See 'What the printed notes did'.", count=look))
     else:
       out.append(_c("NOTES_AGREE", OK, "Printed notes agree with the drawing", f"All {notes['notes']} printed notes are used, compared or listed without a disagreement.", count=int(notes["notes"])))
+
+  typed = [s for s in sheets if s.get("pdf_type")]
+  if typed:
+    outlined = [s for s in typed if (s["pdf_type"] or {}).get("type") == "VECTOR_OUTLINED"]
+    lost = [s["page_no"] for s in outlined if not (s["pdf_type"] or {}).get("text_recovered")]
+    seen = [s["page_no"] for s in outlined if (s["pdf_type"] or {}).get("text_recovered")]
+    if lost:
+      out.append(_c("PDF_TYPE_ROUTED", WARN, "Lettering of every sheet is readable", f"The lettering of {len(lost)} {_plural(len(lost), 'sheet is', 'sheets are')} drawn as outlines and could not be read from the picture, so the scale, marks and sizes printed on {_plural(len(lost), 'it', 'them')} are missing.", lost))
+    elif seen:
+      out.append(_c("PDF_TYPE_ROUTED", INFO, "Lettering of every sheet is readable", f"The lettering of {len(seen)} {_plural(len(seen), 'sheet is', 'sheets are')} drawn as outlines. It was read from the picture, so a mark or a figure may be misread.", seen))
+    else:
+      out.append(_c("PDF_TYPE_ROUTED", OK, "Lettering of every sheet is readable", "Every prepared sheet carries its lettering as text or was read from its picture.", count=len(typed)))
+  if code_scan is not None:
+    bad = int(code_scan.get("unresolved") or 0)
+    if bad:
+      shown = "; ".join(f"{x['file'].rsplit('/', 1)[-1]} line {x['line']}: {x['alias']}.{x['name']}" for x in (code_scan.get("listed") or [])[:5])
+      out.append(_c("CALLS_RESOLVE", WARN, "Every call in the reader resolves", f"{bad} {_plural(bad, 'call names', 'calls name')} a function or constant that its module does not define, so {_plural(bad, 'it fails', 'they fail')} when the step runs and the step is skipped ({shown}).", count=bad))
+    else:
+      out.append(_c("CALLS_RESOLVE", OK, "Every call in the reader resolves", f"Every call to another module in the {code_scan.get('files', 0)} files of the reader names something that module defines.", count=int(code_scan.get("files") or 0)))
 
   warns = sum(1 for c in out if c["status"] == WARN)
   infos = sum(1 for c in out if c["status"] == INFO)

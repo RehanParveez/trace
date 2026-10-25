@@ -545,6 +545,9 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
       params, missing, notes, facts, 0.7, count=len(pts)))
   return out
 
+def arch_candidates(doors: list, windows: list, walls: list, arched: set, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
+  return []
+
 def fill_finish(item: str, missing: list, params: dict, typed: dict, facts: dict) -> tuple:
   out = dict(params or {})
   facts = facts or {}

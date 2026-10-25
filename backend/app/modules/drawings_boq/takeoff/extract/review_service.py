@@ -4,6 +4,7 @@ from uuid import UUID
 from app.modules.drawings_boq.takeoff.extract import conflicts as CF
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.modules.audit.models import AuditAction
+from app.modules.drawings_boq.takeoff import corrections as CR
 from app.modules.drawings_boq.takeoff.extract import links as LK
 from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
@@ -68,6 +69,11 @@ class ReviewService(FloorUnionService):
     if changed:
       await self.core._log(org, user_id, drawing_id, AuditAction.UPDATE,
         f"Settled {len(changed)} values the drawing prints differently ({'policy' if payload.apply_policy and not picks else 'chosen'})")
+    for ch in changed:
+      row = by_id.get(ch["id"])
+      if row is not None:
+        await CR.record(self.session, org=org, user_id=user_id, project_id=row.project_id, drawing_id=drawing_id, sheet_id=row.sheet_id, kind=CR.CONFLICT_RESOLVED,
+          subject=row.tag or row.label, after={"conflict": ch["kind"], "by": ch["by"], "value": ch["value"]}, context={"policy": bool(payload.apply_policy and not picks)}, extract_version=row.extract_version)
     await self.session.flush()
     if touched:
       await self._sync_register(org, touched)

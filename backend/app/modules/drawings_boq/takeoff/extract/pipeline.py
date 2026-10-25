@@ -33,6 +33,7 @@ from app.modules.drawings_boq.takeoff.extract import staging as STG
 from app.modules.drawings_boq.takeoff.extract import drainage as DR
 from app.modules.drawings_boq.takeoff.extract import piles_rafts as PRF
 from app.modules.drawings_boq.takeoff.extract import electrical as EL
+from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.extract import opening_symbols as OS
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
@@ -760,6 +761,7 @@ def _stage(res, stage: str, fn, default):
     raise
   except Exception as exc:
     res.notes.append(C.note("STAGE_FAILED", stage=stage, error=type(exc).__name__, detail=str(exc)[:160]))
+    res.stats.setdefault("stage_failures", []).append({"stage": stage, "error": type(exc).__name__})
     return default
 
 def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=None) -> list:
@@ -1581,11 +1583,13 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
-    "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source == "OCR" else 1.0)}
+    "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source in ("OCR", "OUTLINED") else 1.0)}
   
   res = Extraction()
   if text_source == "OCR":
     res.notes.append(C.note("SCAN_TEXT_READ"))
+  elif text_source == "OUTLINED":
+    res.notes.append(C.note("OUTLINED_TEXT_READ"))
   words = index.words
   imp_here = imperial if imperial is not None else _is_imperial(words)
   imp_sheet = imperial if imperial is not None else _is_imperial(sheet_words if sheet_words is not None else words)
@@ -1645,7 +1649,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   res.stats["concrete_beds"] = len(pads)
   
   res.stats["sheet_kind"] = kind
-  role = PRL.page_role(sheet_words if sheet_words is not None else words, kind)
+  role = PRL.page_role(sheet_words if sheet_words is not None else words, kind, drawn=len(index.kinds))
   role["advice"] = PRL.reading_advice(role)
   role.setdefault("purpose", PRL.purpose(PRL._title_lines(sheet_words if sheet_words is not None else words)))
   res.stats["sheet_role"] = role
@@ -1940,7 +1944,7 @@ def _finish_site(c: Candidate, ctx: dict, base: float) -> Candidate:
   return c
 
 def _site_ctx(kw: dict) -> dict:
-  return {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") == "OCR" else 1.0)}
+  return {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") in ("OCR", "OUTLINED") else 1.0)}
 
 def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction:
   ctx = _site_ctx(kw)
@@ -2011,10 +2015,36 @@ def _with_electrical(res: Extraction, electrical: dict | None, kw: dict) -> None
   res.notes.extend(EL.sheet_notes(electrical))
   res.stats["electrical_items"] = len(found)
 
+def _identity_gate(res: Extraction, identity: dict | None) -> None:
+  if not identity:
+    return
+  res.stats["sheet_identity"] = {k: identity.get(k) for k in ("discipline", "sheet_type", "floor", "basis", "confidence")}
+  if not SID.gates_services(identity):
+    return
+  left: dict = {}
+  for c in res.candidates:
+    if c.category != "SITE":
+      left[c.category] = left.get(c.category, 0) + 1
+  res.candidates[:] = [c for c in res.candidates if c.category == "SITE"]
+  if left:
+    res.notes.append(C.note("SERVICES_SHEET_BACKDROP_LEFT_OUT", discipline=identity.get("discipline"), sheet_type=identity.get("sheet_type"), basis=identity.get("basis"),
+      confidence=identity.get("confidence"), left_out=left))
+
+def _pdf_type_notes(res: Extraction, pdf: dict | None) -> None:
+  if not pdf:
+    return
+  res.stats["pdf_type"] = pdf
+  if pdf.get("type") == "VECTOR_OUTLINED" and not pdf.get("text_recovered"):
+    res.notes.append(C.note("OUTLINED_TEXT_NOT_READ", ocr_error=pdf.get("ocr_error")))
+
 def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
   scan = kw.pop("scan_reading", None)
+  pdf = kw.pop("pdf_type", None)
+  identity = kw.pop("identity", None)
   electrical = kw.pop("electrical", None)
   res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)
+  _identity_gate(res, identity)
+  _pdf_type_notes(res, pdf)
   _with_electrical(res, electrical, kw)
   _scan_reading_notes(res, scan)
   return res

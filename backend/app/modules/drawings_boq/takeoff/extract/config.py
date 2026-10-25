@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 65
+EXTRACT_VERSION = 68
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -123,7 +123,8 @@ PLAUS_ROOM_OFF_BY = 1.5
 PLAUS_MIN_DOORS = 3
 PLAUS_MIN_ROOMS = 3
 PLAUS_SNAP_TOL = 0.15           
-PAGE_SPARSE_WORDS = 30           
+PAGE_SPARSE_WORDS = 30
+PAGE_DRAWN_SEGMENTS = 2000           
 PAGE_COMPOSITE_SHARE = 0.7   
     
 ROOM_NAMES = (
@@ -427,6 +428,9 @@ NOTES = {
   "RAFT_STEEL_NOT_TAKEN": ("info", "The excavation for the raft, its reinforcement and the starter bars are not taken in this item. They are measured in their own lines."),
   "RAFT_PCC_ASSUMED": ("info", "The concrete bed under the raft is 3 in (76.2 mm), the thickness of the plain concrete lines in the QS workbook. The drawing prints none."),
   "RAFT_EDGE_FORM_ASSUMED": ("info", "Shuttering is taken round the outline of the raft, as high as the raft is thick. The underside rests on the bed and the top needs none. Usual practice, not printed on the drawing."),
+  "OUTLINED_TEXT_READ": ("warning", "The lettering of this sheet is drawn as outlines, not as text. It was read from the picture of the sheet, so a mark, a scale or a figure may be misread. Check the numbers that matter against the drawing before accepting."),
+  "OUTLINED_TEXT_NOT_READ": ("warning", "The lettering of this sheet is drawn as outlines, not as text, and could not be read from the picture. The scale, the marks and the sizes printed on it are missing, so what was read from it is only the drawn lines. Measure it by hand, or send the drawing with live text."),
+  "RAFT_NOT_READ": ("warning", "A note on this sheet names the raft and carries figures, but no thickness is printed beside a word such as THK or DEEP, so no raft item is made. A figure beside bars, spacing or cover is not a thickness. Measure the raft by hand or type its thickness in a note."),
   "RAFT_UNIT_ASSUMED": ("warning", "The raft thickness has no unit written beside it. A figure below 100 is taken as inches and a larger one as millimetres. Check it against the drawing."),
   "DRAIN_REPEAT_SET_ASIDE": ("info", "This pipe is also read on an earlier sheet of the same drawing, so it is set aside here as the same pipe drawn again. Restore it if it is a different pipe."),
   "DRAIN_ITEM_ON_OTHER_SHEET": ("warning", "The same kind of drainage item is also read on another sheet of the same drawing. If both show the same pipe or the same chambers, accept one of the two, or they are counted twice."),
@@ -435,7 +439,8 @@ NOTES = {
   "ROOM_GEOMETRY_REPAIRED": ("info", "A few wall outlines on this sheet touched in a way the geometry engine could not cut directly. They were repaired automatically; check the room areas of this sheet."),
   "ROOM_FACE_SKIPPED": ("warning", "A closed space between walls on this sheet could not be cut cleanly and was left out. Rooms may be missing here."),
   "SHEET_NOT_A_PLAN": ("warning", "This sheet is a section, elevation, detail, schedule or similar sheet, not a floor plan, yet walls or rooms were read from it. They are probably hatching or drawn detail, not plan walls. They are held back from the bulk accept (a reason is given on each item), and this sheet takes no part in choosing the sheet of a floor. Accept an item by hand only if the sheet really holds a plan."),
-  "SCALE_LOOKS_WRONG": ("warning", "The doors or the named rooms drawn on this sheet are not the size doors and rooms are built, so the scale used for this sheet is probably wrong. A scale that would fit is suggested in this note. It has NOT been applied: confirm the scale on the Measure page."),
+  "SERVICES_SHEET_BACKDROP_LEFT_OUT": ("info", "This sheet is a plan of the electrical, plumbing, air-conditioning or fire work. The walls, rooms, doors and windows drawn on it are the architect's plan behind its symbols, so they were not taken from it: they come from the architectural sheets of the same floor. What was left out is listed in this note. If this sheet is not a plan of the services, change what it is on the sheet bar and read it again."),
+  "SCALE_LOOKS_WRONG": ("warning","The doors or the named rooms drawn on this sheet are not the size doors and rooms are built, so the scale used for this sheet is probably wrong. A scale that would fit is suggested in this note. It has NOT been applied: confirm the scale on the Measure page."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),
   "SCALE_CONFLICT": ("warning", "Conflicting scale information was found on the sheet. Confirm the correct scale before relying on measured sizes."),
   "DIMENSION_CONFLICT": ("warning", "Conflicting dimension values were found for this item. Verify which dimension should be used."),

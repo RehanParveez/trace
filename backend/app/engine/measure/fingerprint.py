@@ -36,3 +36,32 @@ def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_se
   }
   blob = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
   return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+def _short(value) -> str:
+  return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")).hexdigest()[:10]
+
+def fingerprint_parts(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,
+  convention_params: dict | None = None, spatial: dict | None = None) -> dict:
+  """A short hash for each part of the run input, so a changed input can be named. It does not change the fingerprint itself."""
+  parts = {
+    "elements": _short([_element_key(e) for e in sorted(elements, key=lambda e: str(e.id))]),
+    "mappings": _short([[m.ifc_type, m.work_item_code, str(m.confidence_base)] for m in sorted(mappings, key=lambda m: m.ifc_type)]),
+    "profile": _short(profile_fingerprint),
+    "rule_set": _short(rule_set_ref),
+    "convention": _short([convention_code, convention_params or {}]),
+    "engine": _short(engine_version),
+    "settings": _short(settings),
+  }
+  for key, value in sorted((spatial or {}).items()):
+    if key == "takeoff" and isinstance(value, dict):
+      for sub, sub_value in sorted(value.items()):
+        parts[f"takeoff.{sub}"] = _short(sub_value)
+    else:
+      parts[f"spatial.{key}"] = _short(value)
+  return parts
+
+def differing_parts(before: dict | None, now: dict | None) -> list:
+  """The names of the parts whose hash differs; empty when nothing was recorded to compare with."""
+  if not before or not now:
+    return []
+  return sorted(k for k in set(before) | set(now) if before.get(k) != now.get(k))

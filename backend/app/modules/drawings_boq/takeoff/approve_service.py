@@ -9,16 +9,21 @@ from pydantic import ValidationError
 from app.modules.drawings_boq.models import TakeoffMeasurement
 from sqlalchemy import select
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
+from app.modules.drawings_boq.takeoff import corrections as CR
 
 CHUNK = 200
 
 class ApproveService(FloorUnionService):
 
   async def approve(self, org: UUID, user_id: UUID, drawing_id: UUID, payload) -> dict:
-    await self.core._pdf_drawing(org, drawing_id)
+    drawing = await self.core._pdf_drawing(org, drawing_id)
     steps = _Steps(self, org, user_id, drawing_id)
     out = await AP.run(steps, accept_assumed=payload.accept_assumed, accept_warned=payload.accept_warned, accept_added=payload.accept_added, typed=dict(payload.typed),
       exclude={str(i) for i in payload.exclude_ids}, batch=payload.batch, confirm=payload.confirm, dry_run=payload.dry_run)
+    if not payload.dry_run and (out.get("accepted") or out.get("confirmed")):
+      await CR.record_committed(self.session, org=org, user_id=user_id, project_id=drawing.project_id, drawing_id=drawing_id, kind=CR.BULK_APPROVE,
+        after={"accepted": out.get("accepted"), "confirmed": out.get("confirmed"), "skipped_by_reason": out.get("skipped_by_reason"), "failed_by_code": out.get("failed_by_code")},
+        context={"accept_assumed": bool(payload.accept_assumed), "accept_warned": bool(payload.accept_warned), "accept_added": bool(payload.accept_added), "typed": sorted(dict(payload.typed))})
     return {"drawing_id": drawing_id, **out}
 
 class _Steps:

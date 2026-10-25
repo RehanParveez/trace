@@ -20,6 +20,7 @@ from app.modules.drawings_boq.boq_logic import UNIT_TABLE
 from app.modules.drawings_boq.finish_schedule.common import audit_entity, require_work_item
 from app.modules.drawings_boq.models import DrawingFormat, TakeoffCalibration, TakeoffMeasurement, TakeoffSheet
 from app.modules.drawings_boq.takeoff import repository as repo_mod
+from app.modules.drawings_boq.takeoff import corrections as CR
 from app.modules.drawings_boq.takeoff.scale import parse_scale_text, to_mm
 from app.shared.storage import download_to_path
 
@@ -253,6 +254,8 @@ class TakeoffService:
     if "content_kind" in fs and payload.content_kind is not None and payload.content_kind != sheet.content_kind:
       sheet.content_kind, kind_changed = payload.content_kind, True
       sheet.prep_meta = {**(sheet.prep_meta or {}), "kind_source": "USER"}
+    if "identity" in fs:
+      await self._set_identity(org, sheet, user_id, payload.identity)
     await self.session.flush()
     
     if kind_changed:
@@ -260,6 +263,32 @@ class TakeoffService:
     await self._log(org, user_id, sheet.id, AuditAction.UPDATE, f"Updated takeoff sheet {sheet.page_no}")
     await self.session.commit()
     return sheet
+
+  async def _set_identity(self, org: UUID, sheet: TakeoffSheet, user_id: UUID, wanted) -> None:
+    """A person's word on the discipline and the kind of sheet. It is kept when the sheet is prepared again, and the reading is kept beside it so it can be brought back."""
+    meta = dict(sheet.prep_meta or {})
+    before = meta.get("identity")
+    
+    if wanted is None:
+      if (before or {}).get("basis") != "PERSON":
+        return
+      read = meta.pop("identity_read", None)
+      if read is not None:
+        meta["identity"] = read
+      else:
+        meta.pop("identity", None)
+    else:
+      if before is not None and before.get("basis") != "PERSON":
+        meta["identity_read"] = before
+      meta["identity"] = {**(before or {}), "discipline": wanted.discipline, "sheet_type": wanted.sheet_type, "basis": "PERSON", "confidence": 1.0,
+        "evidence": [{"text": "set by a person"}]}
+    sheet.prep_meta = meta
+    try:
+      drawing = await self._pdf_drawing(org, sheet.drawing_id)
+      await CR.record(self.session, org=org, user_id=user_id, project_id=drawing.project_id, drawing_id=sheet.drawing_id, sheet_id=sheet.id, kind=CR.IDENTITY_SET,
+        subject=f"page {sheet.page_no}", before=before, after=meta.get("identity"))
+    except Exception:
+      pass
 
   async def _refresh_sheet_measurements(self, org: UUID, sheet: TakeoffSheet) -> int:
     profile = await self._profile(org)

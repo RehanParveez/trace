@@ -23,7 +23,7 @@ export const takeoffApi = {
   async prepareSheet(sheetId: string): Promise<TakeoffSheet> {
     return (await apiClient.post<TakeoffSheet>(`${BASE}/takeoff/sheets/${sheetId}/prepare`)).data;
   },
-  async updateSheet(sheetId: string, body: { label?: string | null; scale_text?: string | null; content_kind?: string | null; level_id?: string | null }): Promise<TakeoffSheet> {
+  async updateSheet(sheetId: string, body: { label?: string | null; scale_text?: string | null; content_kind?: string | null; level_id?: string | null; identity?: { discipline: string | null; sheet_type: string | null } | null }): Promise<TakeoffSheet> {
     return (await apiClient.patch<TakeoffSheet>(`${BASE}/takeoff/sheets/${sheetId}`, body)).data;
   },
   async analysis(sheetId: string): Promise<SheetAnalysis> {
