@@ -564,6 +564,12 @@ class PrepService:
     sheets = await self.repo.sheets(org, drawing_id)
     return unit_reader.drawing_imperial([{"page_no": s.page_no, "units": (s.prep_meta or {}).get("units"), "hint": (s.prep_meta or {}).get("units_hint")} for s in sheets])
 
+  async def sheet_units(self, org: UUID, sheet) -> dict:
+    """Whether this sheet is dimensioned in feet and inches, from its own labels, with the answer of the whole drawing when the sheet does not decide."""
+    drawing = await self.drawing_units(org, sheet.drawing_id)
+    meta = sheet.prep_meta or {}
+    return unit_reader.sheet_imperial(meta.get("units"), meta.get("units_hint"), drawing)
+
   async def drawing_wall_vocab(self, org: UUID, drawing_id: UUID, imperial: bool | None) -> list:
     """The wall thicknesses (mm) the drawing's own floor sheets snapped to at least twice. The sheet that shows every plan at small size does not vote."""
     sheets = await self.repo.sheets(org, drawing_id)
@@ -632,6 +638,12 @@ class PrepService:
         return None
       return {"method": "SCALE_RATIO", "ratio": d["ratio"], "scale_text": d.get("text") or f"1:{_trim(d['ratio'])}", "basis": "DECLARED",
         "trust": d.get("trust", 0.6), "check": best_check(pairs), "support": len(pairs)}
+    if use == "ROOMS":
+      w = next((x for x in (full.get("witnesses") or []) if x.get("source") == "ROOM_LABELS" and x.get("ratio") and x.get("strong")), None)
+      if w is None:
+        return None
+      return {"method": "SCALE_RATIO", "ratio": w["ratio"], "scale_text": f"1:{_trim(w['ratio'])}", "basis": "MEASURED_FROM_ROOMS", "trust": 0.85,
+        "check": w.get("check"), "support": w["support"]}
     if use == "DIMENSIONS":
       if not clusters or clusters[0].get("support", 0) < 2:
         return None
@@ -676,6 +688,8 @@ class PrepService:
     n = rec.get("support") or 0
     if rec.get("region"):
       return f"{base} (view)"[:120]
+    if n and rec.get("basis") == "MEASURED_FROM_ROOMS":
+      return f"{base} · {n} room size{'s' if n != 1 else ''} agree"[:120]
     if n:
       return f"{base} · {n} printed dimension{'s' if n != 1 else ''} agree"[:120]
     return f"{base} · printed scale, unverified"[:120]

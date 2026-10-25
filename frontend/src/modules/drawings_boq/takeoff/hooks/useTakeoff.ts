@@ -211,7 +211,7 @@ export function useSheetShapes(sheet: TakeoffSheet | undefined) {
 export function useAutoCalibrate(drawingId: string | undefined) {
   const invalidate = useInvalidateOverview(drawingId);
   return useMutation({
-    mutationFn: (a: { sheetId: string; use?: "RECOMMENDED" | "DECLARED" | "DIMENSIONS"; include_regions?: boolean }) =>
+    mutationFn: (a: { sheetId: string; use?: "RECOMMENDED" | "DECLARED" | "DIMENSIONS" | "ROOMS"; include_regions?: boolean }) =>
       takeoffApi.autoCalibrate(a.sheetId, { use: a.use ?? "RECOMMENDED", make_default: true, include_regions: a.include_regions }),
     onSettled: invalidate,
   });

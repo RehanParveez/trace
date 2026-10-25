@@ -42,6 +42,7 @@ class DrawingFact(BaseModel):
   concrete_class: str | None = None
   mix: str | None = None
   where: str | None = None
+  bar_dia_mm: float | None = None
 
 class ScheduleOpening(BaseModel):
   mark: str
@@ -70,6 +71,9 @@ class ScheduleLintel(BaseModel):
   depth_mm: float
   text: str | None = None
   steel: dict | None = None
+  thin: dict | None = None
+  span_min_ft: float | None = None
+  basis: str | None = None
   pages: list[int] = Field(default_factory=list)
 
 class ScheduleTieBand(BaseModel):
@@ -205,7 +209,7 @@ class FactsResponse(BaseModel):
   checks: list[DrawingCheck] = Field(default_factory=list)
 
 class AutoCalibrateRequest(BaseModel):
-  use: Literal["RECOMMENDED", "DECLARED", "DIMENSIONS"] = "RECOMMENDED"
+  use: Literal["RECOMMENDED", "DECLARED", "DIMENSIONS", "ROOMS"] = "RECOMMENDED"
   make_default: bool = True
   include_regions: bool = Field(default=False, description="Also create one calibration per extra scale found on a multi-scale sheet.")
 

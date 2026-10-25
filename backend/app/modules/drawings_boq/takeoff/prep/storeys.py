@@ -30,6 +30,9 @@ def _snap(angle: float) -> int | None:
 AXES = ((1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0))
 BELOW_GROUND_MM = 4600.0   
 _SECTION_TITLE = re.compile(r"\bSECTIONS?\s+(?:AT\s+)?['\"“”‘’]?[A-Z]\s*-\s*[A-Z]\b", re.I)
+FIT_TOL_MM = 25.4
+FIT_SLAB_MAX_MM = 460.0
+FIT_SAME_SHARE = 0.05
 
 def _along(w, axis: tuple) -> float:
   return w.cx * axis[0] + w.cy * axis[1]
@@ -93,15 +96,23 @@ def read_storeys(words: list, lines: list) -> dict | None:
   for s in slots:
     if len(s["mms"]) < MIN_SLOT_COUNT:
       continue
-    group, n = Counter(round(m / 5.0) * 5.0 for m in s["mms"]).most_common(1)[0]
-    top = median(m for m in s["mms"] if round(m / 5.0) * 5.0 == group)
     up = sum(s["ups"]) / len(s["ups"])
     lo = max((lv for lv in levels if lv[0] <= up), default=None, key=lambda lv: lv[0])
     hi = min((lv for lv in levels if lv[0] > up), default=None, key=lambda lv: lv[0])
     between = [lo[1], hi[1]] if lo and hi else None
+    mms = s["mms"]
+    if between:
+      gap = between[1] - between[0]
+      fit = [m for m in mms if -FIT_TOL_MM <= gap - m <= FIT_SLAB_MAX_MM]
+      if not fit:
+        continue
+      tallest = max(fit)
+      mms = [m for m in fit if tallest - m <= FIT_SAME_SHARE * tallest]
+    group, n = Counter(round(m / 5.0) * 5.0 for m in mms).most_common(1)[0]
+    top = median(m for m in mms if round(m / 5.0) * 5.0 == group)
     
     slab = round(between[1] - between[0] - top, 1) if between else None
-    clusters.append({"clear_mm": round(float(top), 1), "count": len(s["mms"]), "agree": round(n / len(s["mms"]), 2), "below_ground": lo is None,
+    clusters.append({"clear_mm": round(float(top), 1), "count": len(mms), "agree": round(n / len(mms), 2), "below_ground": lo is None,
       "between_mm": between, "implied_slab_mm": slab})
     used.append(between[0] if between else None)
   if not clusters:
@@ -126,8 +137,12 @@ def storey_heights(floor_keys: list, storeys: dict | None) -> dict:
       return {}
   
   out = {}
-  for key, c in zip(keys, clusters):
+  for i, (key, c) in enumerate(zip(keys, clusters)):
     between = c.get("between_mm")
-    out[key] = {"clear_mm": c["clear_mm"], "floor_to_floor_mm": round(between[1] - between[0], 1) if between else None, "basis": "SECTION",
+    f2f = round(between[1] - between[0], 1) if between else None
+    if f2f is not None and abs(c.get("implied_slab_mm") or 0.0) <= FIT_TOL_MM:
+      above = next((x.get("implied_slab_mm") for x in clusters[i + 1:] if x.get("implied_slab_mm")), None)
+      f2f = round(f2f + above, 1) if above and above <= FIT_SLAB_MAX_MM else None
+    out[key] = {"clear_mm": c["clear_mm"], "floor_to_floor_mm": f2f, "basis": storeys.get("basis") or "SECTION",
       "count": c["count"], "level_mm": between[0] if between else None}
   return out

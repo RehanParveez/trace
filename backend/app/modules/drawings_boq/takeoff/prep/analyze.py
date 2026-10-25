@@ -8,9 +8,10 @@ import time
 from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, projections as projection_reader, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 from app.modules.drawings_boq.takeoff.prep import units as UN
+from app.modules.drawings_boq.takeoff.prep import room_witness as RW
 from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 23
+ANALYSIS_VERSION = 27
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -237,6 +238,11 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
     clusters = dimensions.consensus(pairs, user_unit)
 
   verdict, notes = _recommend(declared, clusters, pairs, paper, user_unit, content_kind)
+  rooms = None
+  if content_kind != "RASTER" or raw.words:
+    from app.modules.drawings_boq.takeoff.extract import config as C
+    rooms = RW.read(index, lines, hint, user_unit, dimensions.RATIO_TOL, STRONG_SUPPORT, STRONG_SPREAD_PCT, deadline, (verdict["recommended"] or {}).get("ratio"))
+    verdict, notes = RW.apply(verdict, notes, rooms, declared, AGREE_TOL, C.ROOM_SIZE_TOL)
   main = clusters[0] if clusters else None
   members = dict(main.members) if main else {}
   by_id = {id(pairs[i]): j for i, j in members.items()}
@@ -284,7 +290,8 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
     pass
 
   detected = {"version": ANALYSIS_VERSION, "declared": declared, "measured": measured, "agreement": verdict["agreement"],
-    "recommended": verdict["recommended"], "notes": notes, "units_hint": hint, "paper": paper}
+    "recommended": verdict["recommended"], "notes": notes, "units_hint": hint, "paper": paper,
+    "witnesses": [rooms] if rooms and rooms.get("ratio") else []}
   shapes = census.shape_groups(raw.rings, max(raw.width_pt * raw.height_pt, 1.0))
   tags = census.tag_census(raw.words)
   

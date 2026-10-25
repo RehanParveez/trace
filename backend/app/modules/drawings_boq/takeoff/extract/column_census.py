@@ -108,7 +108,7 @@ def _tags_for(size, details: dict, own_tags: set) -> list:
       out.append(tag)
   return out
 
-def reconcile(marks: list, shapes: dict | None, details: dict | None = None) -> dict:
+def reconcile(marks: list, shapes: dict | None, details: dict | None = None, bare: bool = False) -> dict:
   out = {"extra": [], "short": [], "shapes": 0, "marked": sum(int(m.get("count") or 0) for m in marks), "ignored": []}
   if not shapes or not shapes.get("classes"):
     return out
@@ -138,7 +138,7 @@ def reconcile(marks: list, shapes: dict | None, details: dict | None = None) -> 
     size = (row["a_mm"], row["b_mm"])
     matches_marks = any(same_size(size, s) for s in known)
     tags = _tags_for(size, details or {}, own_tags)
-    if not matches_marks and not tags:
+    if not matches_marks and not tags and (not bare or n < 2):
       out["ignored"].append({"a_mm": size[0], "b_mm": size[1], "count": n})
       continue
     out["extra"].append({"a_mm": size[0], "b_mm": size[1], "count": n, "tag": None if matches_marks or len(tags) != 1 else tags[0], "tags": tags,
@@ -195,7 +195,7 @@ def project(floors: list) -> None:
   unmarked shapes (columns fused into a wall on its plan) gets the difference from the floor above, flagged as inferred, and placed on its plan by the
   grid of the floor above."""
   for upper, lower in zip(floors, floors[1:]):
-    if not lower["shapes"] or not upper["result"]["extra"] or signature(lower["marks"]) != signature(upper["marks"]):
+    if not lower["shapes"] or not upper["result"]["extra"] or not lower["marks"] or not upper["marks"] or signature(lower["marks"]) != signature(upper["marks"]):
       continue
     for e in upper["result"]["extra"]:
       mine = next((x for x in lower["result"]["extra"] if same_size((x["a_mm"], x["b_mm"]), (e["a_mm"], e["b_mm"]))), None)
@@ -216,10 +216,10 @@ def project(floors: list) -> None:
 
 FLOOR_TOP_DOWN = ("ROOF", "FOURTH", "THIRD", "SECOND", "FIRST", "GROUND", "BASEMENT")
 
-def plan(floors: list, details: dict | None) -> list:
-  rows = sorted((r for r in floors if r["level"] in FLOOR_TOP_DOWN and r.get("marks")), key=lambda r: FLOOR_TOP_DOWN.index(r["level"]))
+def plan(floors: list, details: dict | None, bare: bool = False) -> list:
+  rows = sorted((r for r in floors if r["level"] in FLOOR_TOP_DOWN and (r.get("marks") or (bare and r.get("shapes")))), key=lambda r: FLOOR_TOP_DOWN.index(r["level"]))
   for r in rows:
-    r["result"] = reconcile(r["marks"], r.get("shapes"), details)
+    r["result"] = reconcile(r["marks"], r.get("shapes"), details, bare)
   with_shapes = [r for r in rows if r.get("shapes")]
   project(with_shapes)
   return with_shapes

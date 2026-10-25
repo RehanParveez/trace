@@ -26,11 +26,12 @@ def storey_checks(storeys: dict | None, heights: dict, names: dict) -> list[dict
     listed = ", ".join(f"{names.get(k, k)} {_ft_in(h['clear_mm'])}" for k, h in heights.items())
     slabs = {round(c["implied_slab_mm"]) for c in clusters if c.get("implied_slab_mm")}
     slab = f" The level marks less these heights leave a slab of {_ft_in(slabs.pop())}." if len(slabs) == 1 else ""
-    return [_check("STOREY_HEIGHTS_FROM_SECTION", "info", "Storey heights read from the building sections",
-      f"The sections print the clear height of each storey: {listed}. They are used as the column and wall height of those floors.{slab}", [], page)]
+    notes = storeys.get("basis") == "PLAN_NOTES"
+    return [_check("STOREY_HEIGHTS_FROM_SECTION", "info", "Storey heights read from the room notes of the plans" if notes else "Storey heights read from the building sections",
+      f"{'The room notes of the plans (ceiling height and the level of the floor above the road level) give' if notes else 'The sections print'} the clear height of each storey: {listed}. They are used as the column and wall height of those floors.{slab}", [], page)]
   listed = ", ".join(_ft_in(c["clear_mm"]) for c in clusters)
   return [_check("STOREY_HEIGHTS_NOT_MATCHED", "info", "Storey heights on the sections not matched to floors",
-    f"The sections print {len(clusters)} storey heights ({listed}, lowest first) but they could not be matched with certainty to the floors of this drawing, "
+    f"{'The room notes of the plans give' if storeys.get('basis') == 'PLAN_NOTES' else 'The sections print'} {len(clusters)} storey heights ({listed}, lowest first)but they could not be matched with certainty to the floors of this drawing, "
     "so none was used. Type the heights on the walls and columns.", [], page)]
   
 def column_checks(details: list, reader: str | None, plan_marks: set, mismatches: list) -> list[dict]:

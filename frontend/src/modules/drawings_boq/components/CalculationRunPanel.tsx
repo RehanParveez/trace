@@ -25,6 +25,7 @@ import { RunDrawingPicker } from "./RunDrawingPicker";
 import { PdfRunReadiness } from "../takeoff/components/PdfRunReadiness";
 import type { WaitingPdf } from "../takeoff/utils/runDrawings";
 import { RunScope } from "./RunScope";
+import { BillCompletenessCard } from "../completeness/components/BillCompletenessCard";
 import { DerivedParamsForm } from "./DerivedParamsForm";
 import { OneTotalSourcesNotice } from "./OneTotalSourcesNotice";
 import { QsAnswersPanel } from "./QsReadingsPanel";
@@ -683,6 +684,7 @@ function RunOverview({
         drawings={allDrawings}
         label={t("boq.sourceDrawings.calculatedFrom", "Calculated from")}
       />
+      <BillCompletenessCard runId={run.id} />
       {stages.length === 0 ? (
         <div className="text-[12px] text-[var(--color-text-muted)]">
           {t(
@@ -708,6 +710,12 @@ function RunOverview({
                   },
                 )}
               </div>
+
+              {stage.status === "SKIPPED" && typeof stage.counts?.reason === "string" ? (
+                <div className="mt-1 text-[11px] text-[var(--color-warning)]" data-testid={`stage-skip-reason-${stage.stage}`}>
+                  {stage.counts.reason}
+                </div>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-3">
@@ -722,7 +730,7 @@ function RunOverview({
                 </span>
               ) : null}
 
-              <LocalBadge tone="slate">
+              <LocalBadge tone={stage.status === "SKIPPED" ? "gold" : stage.status === "FAILED" ? "red" : stage.status === "SUCCEEDED" ? "green" : "slate"}>
                 {stage.status}
               </LocalBadge>
             </div>

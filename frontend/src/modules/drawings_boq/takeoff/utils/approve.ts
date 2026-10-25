@@ -30,6 +30,8 @@ export const REASON_LABEL: Record<string, string> = {
   FLOOR_SOURCE_UNDECIDED: "the floor is open on two sheets",
   NOT_A_PLAN_SHEET: "the sheet is a section, elevation, detail or specification, not a floor plan",
   ADDED_FROM_SECOND_SHEET: "only the sheet that shows every plan has it",
+  MARK_ON_SEVERAL_SHEETS: "the same mark is shown on another sheet with the same count and size",
+  MARK_SHEETS_DISAGREE: "the same mark is shown on several sheets with a different count or size",
 };
 
 export type SizeState = { kind: "empty" } | { kind: "ok"; mm: number } | { kind: "bad" };

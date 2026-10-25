@@ -91,9 +91,9 @@ def candidates(walls: list, table: list, ctx: dict, Candidate, finish, inch_text
       base = 0.6
       
       if sec:
-        width = min(float(sec["width_mm"]), max(_thickness(g) for g in members)) if thin_part else float(sec["width_mm"])
-        params["length_mm"], params["width_mm"], params["depth_mm"] = round(span + 2.0 * bearing, 1), width, sec["depth_mm"]
-        facts["section_mm"] = [width, sec["depth_mm"]]
+        width, depth = LT.section_in(sec, max(_thickness(g) for g in members) if thin_part else None)
+        params["length_mm"], params["width_mm"], params["depth_mm"] = round(span + 2.0 * bearing, 1), width, depth
+        facts["section_mm"] = [width, depth]
         facts["table_section_mm"] = [sec["width_mm"], sec["depth_mm"]]
         facts["table_span_max_mm"] = sec["span_max_mm"]
         notes.append(C.note("LINTEL_SECTION_FROM_TABLE"))
@@ -103,7 +103,7 @@ def candidates(walls: list, table: list, ctx: dict, Candidate, finish, inch_text
           params["steel"] = dict(sec["steel"])
           facts["steel_text"] = LT.steel_text(sec["steel"])
           notes.append(C.note("LINTEL_STEEL_FROM_TABLE"))
-        label = f"Lintel over unmarked opening ×{len(members)} · {inch_text(width)}×{inch_text(sec['depth_mm'])} · {fmt_mm(params['length_mm'])} mm long" + (f" · in {inch_text(width)} wall" if thin_part else "")
+        label = f"Lintel over unmarked opening ×{len(members)} · {inch_text(width)}×{inch_text(depth)} · {fmt_mm(params['length_mm'])} mm long" + (f" · in {inch_text(width)} wall" if thin_part else "")
       else:
         missing.append("size")
         notes.append(C.note("LINTEL_SPAN_ABOVE_TABLE"))

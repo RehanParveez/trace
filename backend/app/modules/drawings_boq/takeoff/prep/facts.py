@@ -24,6 +24,8 @@ _FILL_LAYER = re.compile(_IN + r"\s*THICK\s+COMPACTED\s+LAYERS", re.I)
 _SOIL_STAB = re.compile(r"STABILI[SZ](?:E|ED|ES|ING|ATION)")
 _SOIL_PCT = re.compile(r"(?P<pct>\d{1,2}(?:\.\d{1,2})?)\s*(?:%|PERCENT|PER\s*CENT)", re.I)
 _SOIL_DEPTH = re.compile(_IN + r"\s*(?:DEEP|DEPTH|THICK|LAYER)|(?:DEPTH|THICKNESS|LAYER)\s*(?:OF|=|:)?\s*" + _IN.replace("(?P<in>", "(?P<in2>"), re.I)
+_DEPRESSED = re.compile(_IN + r"\s*DEPR+ES+ED\s+SLAB", re.I)
+_FLOOR_DROP = re.compile(r"(?P<where>(?:ALL\s+)?(?:BATH\s*ROOMS?|TOILETS?|WASH\s*ROOMS?))\s*" + _IN + r"\s*DOWN\s+FROM\s+F\.?\s?F\.?\s*LEV", re.I)
 _STAIR_WIDTH = re.compile(r"STAIR\s+WIDTH\s*=\s*(?P<ft>\d+)\s*'\s*-?\s*(?P<in>\d+)?", re.I)
 _LAP = re.compile(r"\(\s*[a-f]\s*\)\s*(?P<d>\d{1,2}(?:\s*/\s*\d{1,2})?)\s*(?:\"|″|”|'')\s*\S{0,2}\s*=\s*" + _IN, re.I)
 _PCC_THICK = re.compile(_IN + r"\s*(?:THICK\s+)?P\.?\s?C\.?\s?C\b", re.I)
@@ -241,6 +243,12 @@ def read_line(text: str) -> list[dict]:
   m = _STAIR_WIDTH.search(t)
   if m:
     out.append(_item("STAIR_WIDTH", t, value_mm=round(int(m.group("ft")) * MM_FOOT + int(m.group("in") or 0) * MM_INCH, 2), scope="stair"))
+  m = _DEPRESSED.search(t)
+  if m and inches_mm(m.group("in")):
+    out.append(_item("DEPRESSED_SLAB", t, value_mm=inches_mm(m.group("in")), scope="slab"))
+  m = _FLOOR_DROP.search(t)
+  if m and inches_mm(m.group("in")):
+    out.append(_item("FLOOR_DROP", t, value_mm=inches_mm(m.group("in")), scope=re.sub(r"^all\s+", "", m.group("where").lower()).strip()))
   return out
 
 def level_mark_mm(text: str) -> float | None:
@@ -256,7 +264,7 @@ def level_mark_mm(text: str) -> float | None:
   return round(-mm if m.group("sign") == "-" else mm, 1)
 
 PLAUSIBLE_MM = {"SLAB_THICKNESS": (75.0, 400.0), "PLASTER_THICKNESS": (6.0, 40.0), "CLEAR_COVER": (10.0, 100.0), "FILL_LAYER": (50.0, 600.0), "LAP_LENGTH": (150.0, 3000.0), "PCC_THICKNESS": (25.0, 300.0),
-  "RCC_WALL_THICKNESS": (100.0, 600.0), "STAIR_WIDTH": (600.0, 3000.0), "SOIL_STABILISATION": (50.0, 1500.0)}
+  "RCC_WALL_THICKNESS": (100.0, 600.0), "STAIR_WIDTH": (600.0, 3000.0), "SOIL_STABILISATION": (50.0, 1500.0), "DEPRESSED_SLAB": (25.0, 600.0), "FLOOR_DROP": (12.0, 300.0)}
 PLAUSIBLE_CEMENT_PCT = (1.0, 20.0)
 PLAUSIBLE_BEARING_TSF = (0.1, 20.0)
 
@@ -335,6 +343,18 @@ def read_facts(lines: list, words: list | None = None, scanned: bool = False) ->
         seen[key]["count"] += 1
       elif len(seen) < MAX_ITEMS_PER_SHEET:
         seen[key] = {**it, "count": 1}
+  from app.modules.drawings_boq.takeoff.prep import general_notes as GN
+  for it in GN.read(words):
+    if scanned:
+      if not plausible(it):
+        continue
+      it = {**it, "ocr": True}
+
+    key = (it["kind"], it.get("scope"), it.get("value_mm"), it.get("value"), it.get("grade"), it.get("concrete_class"), it.get("mix"), it.get("where"), it.get("layer"), it.get("condition"), it.get("method"), it.get("under"))
+    if key in seen:
+      seen[key]["count"] += 1
+    elif len(seen) < MAX_ITEMS_PER_SHEET:
+      seen[key] = {**it, "count": 1}
   out = {"items": list(seen.values()), "level_marks": [{"mm": k, "count": v} for k, v in sorted(marks.items())]}
   named = named_levels(lines)
   if named:
@@ -346,6 +366,10 @@ def read_facts(lines: list, words: list | None = None, scanned: bool = False) ->
     found = read_storeys(words, lines)
     if found:
       out["storeys"] = found
+    from app.modules.drawings_boq.takeoff.prep import plan_levels as PL
+    levels = PL.read(words)
+    if levels:
+      out["plan_levels"] = levels
   return out
 
 def level_ladder(marks: list[dict]) -> dict:
@@ -433,10 +457,13 @@ def gather(sheets: list[dict]) -> dict:
   marks: list = []
   
   storeys = None
+  plan_sheets: list = []
   named: Counter = Counter()
   for sh in sheets:
     facts = sh.get("facts") or {}
     marks.extend(facts.get("level_marks") or [])
+    if facts.get("plan_levels"):
+      plan_sheets.append({"page_no": sh["page_no"], "plan_levels": facts["plan_levels"]})
     for nl in facts.get("named_levels") or []:
       named[(nl["name"], nl["mm"])] += int(nl.get("count", 1))
     got = facts.get("storeys")
@@ -465,6 +492,11 @@ def gather(sheets: list[dict]) -> dict:
       v["pages"] = sorted(set(v["pages"]) | set(r["pages"]))
     if len(by_value) > 1:
       conflicts.append({"kind": kind, "name": name, "values": list(by_value.values())})
+  if plan_sheets and not (storeys and storeys.get("consistent")):
+    from app.modules.drawings_boq.takeoff.prep import plan_levels as PL
+    built = PL.storeys(plan_sheets)
+    if built and built.get("consistent"):
+      storeys = built
   ladder = level_ladder(marks)
   return {"items": items, "conflicts": conflicts, "ladder": ladder, "storeys": storeys, "suggest": {"wall_height": suggest_wall_height(items, ladder)},
     "named_levels": [{"name": n, "mm": mm, "count": c} for (n, mm), c in sorted(named.items())]}

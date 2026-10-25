@@ -253,6 +253,19 @@ export interface ScaleRecommendation {
 
 export interface ScaleNote { code: string; severity?: string; message?: string; [key: string]: unknown }
 
+export interface ScaleWitness {
+  source: string;
+  labels: number;
+  read: number;
+  ratio: number | null;
+  support: number;
+  spread_pct: number | null;
+  strong: boolean;
+  trial_ratio?: number;
+  items?: Array<{ text: string; ratio: number; inlier: boolean; x: number; y: number }>;
+  check?: { p1: Pt; p2: Pt; value: string; unit: string; text?: string; length_pt?: number } | null;
+}
+
 export interface DetectedScale {
   version?: number;
   declared?: {
@@ -264,6 +277,7 @@ export interface DetectedScale {
   measured?: { pairs_found?: number; clusters?: ScaleCluster[]; pairs?: ScalePair[] };
   agreement?: string;
   recommended?: ScaleRecommendation | null;
+  witnesses?: ScaleWitness[];
   notes?: ScaleNote[];
   units_hint?: string;
   paper?: { name?: string; width_mm?: number; height_mm?: number; orientation?: string; standard?: boolean; nearest?: string; error_pct?: number };
@@ -518,7 +532,8 @@ export interface RegisterSheetStatus {
   action?: SheetAction;
   composite: boolean;
 }
-export type FactKind = "SLAB_THICKNESS" | "RCC_WALL_THICKNESS" | "BRICK_COLUMN" | "CONCRETE_CLASS" | "STEEL_GRADE" | "CLEAR_COVER" | "BEARING_CAPACITY" | "PLASTER_THICKNESS" | "FILL_LAYER" | "STAIR_WIDTH" | "SOIL_STABILISATION";
+export type FactKind = "SLAB_THICKNESS" | "RCC_WALL_THICKNESS" | "BRICK_COLUMN" | "CONCRETE_CLASS" | "STEEL_GRADE" | "CLEAR_COVER" | "BEARING_CAPACITY" | "PLASTER_THICKNESS" | "FILL_LAYER" | "STAIR_WIDTH" | "SOIL_STABILISATION" | "LAP_LENGTH" | "DEPRESSED_SLAB" | "FLOOR_DROP";
+
 export interface DrawingFact {
   kind: FactKind;
   scope: string | null;
@@ -533,6 +548,7 @@ export interface DrawingFact {
   concrete_class?: string | null;
   mix?: string | null;
   where?: string | null;
+  bar_dia_mm?: number | null;
   cement_pct?: number | null;
   loose?: boolean | null;
 }
@@ -561,7 +577,7 @@ export interface ScheduleArea { key: string; kind: string; name: string; value: 
 export interface ScheduleConflict { kind: "OPENING_SIZE" | "FLOOR_AREA" | "LINTEL_SIZE" | string; name: string; values: Array<{ width_mm?: number; height_mm?: number; depth_mm?: number; m2?: number; value?: number; pages: number[] }> }
 export interface LintelBars { n: number; bar: number }
 export interface LintelSteel { bottom?: LintelBars; top?: LintelBars; bars?: LintelBars; ring?: { bar: number; spacing_mm: number } }
-export interface ScheduleLintel { span_max_ft: number; span_max_mm: number; width_mm: number; depth_mm: number; text?: string | null; steel?: LintelSteel | null; pages: number[] }
+export interface ScheduleLintel { span_max_ft: number; span_max_mm: number; width_mm: number; depth_mm: number; text?: string | null; steel?: LintelSteel | null; thin?: { wall_mm: number; width_mm: number; depth_mm: number } | null; span_min_ft?: number | null; basis?: string | null; pages: number[] }
 export interface ScheduleStair { riser_mm?: number | null; tread_mm?: number | null; width_mm?: number | null; steps?: number | null; waist_mm?: number | null; text?: string | null; pages: number[] }
 export interface ScheduleTieBand { text: string; pages: number[] }
 export interface ProjectionSide { width_mm: number; text?: string | null; pages: number[] }
@@ -687,8 +703,8 @@ export interface SuggestedWallHeight {
   alternatives: Array<{ slab_mm: number; value_mm: number; pages: number[] }>;
 }
 
-export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number | null; basis: "SECTION" | "LEVEL_MARKS" | "TYPICAL" | string; level_mm?: number | null }
-export interface DrawingStoreys { consistent: boolean; page_no?: number; clusters: Array<{ clear_mm: number; count: number; agree: number; below_ground: boolean }> }
+export interface FloorWallHeight { clear_mm: number; floor_to_floor_mm: number | null; basis: "SECTION" | "PLAN_NOTES" | "LEVEL_MARKS" | "TYPICAL" | string; level_mm?: number | null }
+export interface DrawingStoreys { consistent: boolean; page_no?: number; basis?: string; clusters: Array<{ clear_mm: number; count: number; agree: number; below_ground: boolean }> }
 export interface DrawingSuggest { wall_height?: SuggestedWallHeight | null; wall_height_by_floor?: Record<string, FloorWallHeight> }
 
 export interface DrawingFacts {

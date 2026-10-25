@@ -47,6 +47,25 @@ def drawing_imperial(sheets: list) -> dict:
     return {"imperial": False, "basis": "DIMENSIONS", "pages": [s["page_no"] for s in counted if (s["units"].get("metric") or 0) > 0]}
   return {"imperial": None, "basis": "TOO_FEW", "pages": []}
 
+def sheet_imperial(counts: dict | None, hint: str | None, drawing: dict) -> dict:
+  """Whether this one sheet is dimensioned in feet and inches, from its own text: {"imperial", "basis", "differs"}. A note on the sheet decides first, then the
+  count of its labels, as for the drawing. When the sheet's text does not decide, the answer of the drawing stands. A sheet that differs from its drawing is
+  allowed and flagged ("differs")."""
+  c = counts or {}
+  fi, inch, metric = int(c.get("feet_inch") or 0), int(c.get("inch") or 0), int(c.get("metric") or 0)
+  own, basis = None, None
+  if hint in IMPERIAL_HINTS:
+    own, basis = True, "NOTE"
+  elif hint in METRIC_HINTS:
+    own, basis = False, "NOTE"
+  elif fi >= MIN_FEET_INCH and (fi + inch) > metric:
+    own, basis = True, "DIMENSIONS"
+  elif metric >= MIN_FEET_INCH and metric > fi + inch:
+    own, basis = False, "DIMENSIONS"
+  if own is None:
+    return {"imperial": drawing.get("imperial"), "basis": drawing.get("basis"), "differs": False}
+  return {"imperial": own, "basis": basis, "differs": drawing.get("imperial") is not None and own != drawing.get("imperial")}
+
 def wall_vocabulary(rows: list, imperial: bool | None) -> list:
   count: dict = {}
   for used, std, composite in rows:

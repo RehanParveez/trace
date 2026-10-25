@@ -3,8 +3,10 @@ import type { DetectedScale, ScaleNote } from "../types/takeoff.types";
 export type Tone = "green" | "gold" | "red" | "slate";
 
 export const AGREEMENT: Record<string, { tone: Tone; text: string }> = {
-  VERIFIED: { tone: "green", text: "The printed scale matches the printed dimensions." },
-  VERIFIED_WEAK: { tone: "gold", text: "The printed scale matches, but only a few dimensions were found to check it." },
+  VERIFIED: { tone: "green", text: "Two independent readings of this sheet (the printed scale, the printed dimensions or the room sizes) give the same scale." },
+  VERIFIED_WEAK: { tone: "gold", text: "Two readings give the same scale, but only a few dimensions or rooms were found to check it." },
+  ROOMS_ONLY: { tone: "gold", text: "No scale or dimension is printed, but the room sizes written on the plan give one." },
+  WITNESS_CONFLICT: { tone: "red", text: "The scale found on this sheet and the room sizes written on its plan disagree. Check one known length." },
   CONFLICT: { tone: "red", text: "The printed scale and the printed dimensions disagree. The dimensions are usually right." },
   CONFLICT_UNRESOLVED: { tone: "red", text: "The printed scale and the dimensions disagree and neither can be trusted. Calibrate by hand." },
   MULTI_SCALE: { tone: "gold", text: "This sheet shows more than one scale." },
@@ -18,6 +20,8 @@ export const NOTE_TEXT: Record<string, { tone: Tone; text: string }> = {
   SHEET_REDUCED: { tone: "red", text: "This sheet looks printed smaller than its label says (a reduced print). Trust the measured scale, not the label." },
   SCALE_CONFLICT: { tone: "red", text: "Two different scales were found on this sheet." },
   SCALE_CONFLICT_UNRESOLVED: { tone: "red", text: "Two different scales were found and neither could be confirmed." },
+  SCALE_FROM_ROOMS: { tone: "gold", text: "No scale or dimension is printed on this sheet. The scale comes from the room sizes written on the plan." },
+  SCALE_WITNESS_CONFLICT: { tone: "red", text: "The room sizes written on the plan and the other readings of this sheet give different scales." },
   NOT_TO_SCALE: { tone: "red", text: "The sheet says NOT TO SCALE. Only measure along printed dimensions." },
   MULTI_SCALE: { tone: "gold", text: "Different parts of the sheet are drawn at different scales." },
   FEW_DIMENSIONS: { tone: "gold", text: "Few printed dimensions were found, so the scale is less certain." },
@@ -34,8 +38,8 @@ export function noteInfo(note: ScaleNote): { tone: Tone; text: string } {
 
 export function needsAcknowledgement(scale: DetectedScale | undefined): boolean {
   if (!scale) return false;
-  if (scale.agreement === "CONFLICT" || scale.agreement === "CONFLICT_UNRESOLVED") return true;
-  return (scale.notes ?? []).some((n) => n.code === "SHEET_REDUCED" || n.code === "SCALE_CONFLICT" || n.code === "SCALE_CONFLICT_UNRESOLVED" || n.code === "NOT_TO_SCALE");
+  if (scale.agreement === "CONFLICT" || scale.agreement === "CONFLICT_UNRESOLVED" || scale.agreement === "WITNESS_CONFLICT") return true;
+  return (scale.notes ?? []).some((n) => n.code === "SHEET_REDUCED" || n.code === "SCALE_CONFLICT" || n.code === "SCALE_CONFLICT_UNRESOLVED" || n.code === "SCALE_WITNESS_CONFLICT" || n.code === "NOT_TO_SCALE");
 }
 
 export function checkBand(errorPct: string | number | null | undefined): { tone: Tone; text: string } {

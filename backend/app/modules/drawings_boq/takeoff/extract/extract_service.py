@@ -335,7 +335,7 @@ class ExtractService:
     footing_sections = await self.prep.drawing_footing_sections(org, sheet.drawing_id)
     spec_facts = await self.prep.drawing_spec_facts(org, sheet.drawing_id)
     electrical = await self.prep.sheet_electrical(org, sheet, index.words)
-    units = await self.prep.drawing_units(org, sheet.drawing_id)
+    units = await self.prep.sheet_units(org, sheet)
     wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
     title = (sheet.prep_meta or {}).get("title") or {}
     level_hint = None if title.get("composite") else title.get("level_hint")
@@ -357,6 +357,9 @@ class ExtractService:
     if site_only and not result.candidates:
       raise NoPlanRegions()                                   
     found = result.candidates
+    result.stats["sheet_units"] = {"imperial": units["imperial"], "basis": units.get("basis"), "differs": bool(units.get("differs"))}
+    if units.get("differs"):
+      result.notes.append(C.note("SHEET_UNITS_DIFFER", imperial=bool(units["imperial"])))
     result.stats["floors_read_elsewhere"] = await self._repeated_floors(org, sheet, title, result)
     result.stats["drainage_seen"] = DR.seen(found)
     result.stats["drainage_elsewhere"] = await self._repeated_drainage(org, sheet, result)

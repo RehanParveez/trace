@@ -42,7 +42,8 @@ def floor_heights(heights: dict, floors: dict | None, level_hint: str | None, ft
   f2f = fh.get("floor_to_floor_mm")
   
   if f2f:
-    entry = {"mm": float(f2f), "text": f"floor-to-floor height {ft_in(float(f2f))} printed on the building section", "basis": "SECTION"}
+    how = "worked out from the room notes of the plans (ceiling height and level above the road)" if fh.get("basis") == "PLAN_NOTES" else "printed on the building section"
+    entry = {"mm": float(f2f), "text": f"floor-to-floor height {ft_in(float(f2f))} {how}", "basis": "SECTION", **({"source": "PLAN_NOTES"} if fh.get("basis") == "PLAN_NOTES" else {})}
   elif str(level_hint or "").upper() == BASEMENT:
     mm = float(QS.convention("basement_floor_to_floor_mm"))
     entry = {"mm": mm, "text": f"basement floor-to-floor height {ft_in(mm)}, as the QS gave it (S5)", "basis": "QS"}

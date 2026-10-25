@@ -20,7 +20,9 @@ KIND_PARAM = {"FILL_LAYER": (PP.FILL_PARAM, None), "PLASTER_THICKNESS": (PP.PLAS
   "PCC_THICKNESS": (PP.PCC_PARAM, "pcc bed")}
 NO_QUANTITY = {"BEARING_CAPACITY": "It is a design figure for the footings. The footings measured are the ones drawn, so no quantity depends on it.",
   "COMPACTION_PCT": "It is a quality requirement for the filling. The filling is measured by volume, so no quantity depends on it.",
-  "BRICK_COLUMN": "No item takes its size from this note. The columns measured are the ones on the plans."}
+  "BRICK_COLUMN": "No item takes its size from this note. The columns measured are the ones on the plans.",
+  "DEPRESSED_SLAB": "The slab is lowered in an area that the drawing does not give a size to, so no slab area or depth is changed by it. Check the bath and toilet slabs against it.",
+  "FLOOR_DROP": "It lowers the finished floor (the tiling level) of the rooms it names. The floor finishes are measured by area, so no quantity depends on it."}
 
 def inch_text(mm: float) -> str:
   eighths = round(float(mm) / MM_INCH * 8)

@@ -1084,6 +1084,26 @@ function factLineBase(c: TakeoffCandidate): string {
     return [f.beam_role === "PLINTH" ? "plinth beam" : "roof beam", len !== null ? `${len.toFixed(2)} m over ${walls ?? 0} wall${walls === 1 ? "" : "s"}` : null, t !== null ? `${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in wide` : null, gaps ? `${gaps.toFixed(2)} m of it over openings` : null, depth !== null ? `${Math.round(depth)} mm deep` : "depth needed", beamSectionText(f)].filter(Boolean).join(" · ");
   }
 
+  if (c.category === "SLAB" && f.panel_basis === "PRINTED_PANEL_SIZE") {
+    const printed = num(f.panels_printed);
+    const each = num(f.panel_area_m2);
+    const t = num(f.thickness_mm);
+    const all = num(f.sheet_panel_area_m2);
+    const labels = num(f.sheet_panel_labels);
+    return [`panel ${String(f.panel_text ?? "")} printed ${printed ?? c.count} time${(printed ?? c.count) === 1 ? "" : "s"}`, each !== null ? `${each.toFixed(2)} m² each` : null, t !== null ? `${Math.round(t)} mm thick` : "thickness needed",
+      labels !== null && all !== null ? `${labels} panel sizes on the plan, ${all.toFixed(1)} m² in all` : null, f.floor ? null : "floor not named on the sheet", "check the number of panels of this size against the plan"].filter(Boolean).join(" · ");
+  }
+
+  if (c.category === "SLAB" && f.panel_basis === "PRINTED_PANEL_SIZE") {
+    const printed = num(f.panels_printed);
+    const each = num(f.panel_area_m2);
+    const t = num(f.thickness_mm);
+    const all = num(f.sheet_panel_area_m2);
+    const labels = num(f.sheet_panel_labels);
+    return [`panel ${String(f.panel_text ?? "")} printed ${printed ?? c.count} time${(printed ?? c.count) === 1 ? "" : "s"}`, each !== null ? `${each.toFixed(2)} m² each` : null, t !== null ? `${Math.round(t)} mm thick` : "thickness needed",
+      labels !== null && all !== null ? `${labels} panel sizes on the plan, ${all.toFixed(1)} m² in all` : null, f.floor ? null : "floor not named on the sheet", "check the number of panels of this size against the plan"].filter(Boolean).join(" · ");
+  }
+
   if (c.category === "SLAB") {
     const dims = Array.isArray(f.dims_mm) ? (f.dims_mm as number[]) : null;
     const t = num(f.thickness_mm);
@@ -1107,7 +1127,7 @@ function factLineBase(c: TakeoffCandidate): string {
     const sec = Array.isArray(f.section_mm) ? (f.section_mm as number[]) : null;
     const span = Array.isArray(f.opening_size_mm) ? (f.opening_size_mm as number[]) : null;
     const hosted = (f.hosted ?? null) as { thin?: number; rcc?: number } | null;
-    return [span ? `opening ${Math.round(span[0])} mm wide` : null, sec ? `section ${(sec[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(sec[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : "section needed", num(f.bearing_mm) !== null ? `bearing ${((f.bearing_mm as number) / 25.4).toFixed(1).replace(/\.0$/, "")} in assumed` : null, hosted?.thin ? `${hosted.thin} in 4.5 in walls` : null, hosted?.rcc ? `${hosted.rcc} in RCC walls` : null].filter(Boolean).join(" · ");
+    return [span ? `opening ${Math.round(span[0])} mm wide` : null, f.size_basis === "DRAWN_SYMBOL" ? "opening width as drawn (no scheduled size)" : null, sec && !f.steel_text ? "bars not read" : null, sec ? `section ${(sec[0] / 25.4).toFixed(1).replace(/\.0$/, "")}×${(sec[1] / 25.4).toFixed(1).replace(/\.0$/, "")} in` : "section needed", num(f.bearing_mm) !== null ? `bearing ${((f.bearing_mm as number) / 25.4).toFixed(1).replace(/\.0$/, "")} in assumed` : null, hosted?.thin ? `${hosted.thin} in 4.5 in walls` : null, hosted?.rcc ? `${hosted.rcc} in RCC walls` : null].filter(Boolean).join(" · ");
    }
 
   if (c.category === "STAIR") {
@@ -1127,6 +1147,17 @@ function factLineBase(c: TakeoffCandidate): string {
   }
 
   if (c.category === "SITE") return siteLine(c);
+
+  if (c.category === "COLUMN" && f.section === "CIRCULAR") {
+    const inch = (v: number) => (v / 25.4).toFixed(1).replace(/\.0$/, "");
+    const dia = num(f.diameter_mm);
+    const side = num(f.equivalent_square_mm);
+    return [
+      dia !== null ? `round, ${inch(dia)} in across, no mark on the plan` : "round, no mark on the plan",
+      side !== null ? `counted as a ${inch(side)} in square of the same area` : null,
+      c.missing.includes("height_mm") ? "height needed" : null,
+    ].filter(Boolean).join(" · ");
+  }
 
   if (c.category === "COLUMN" && f.from_shapes === true) {
     const size = Array.isArray(f.size_drawn_mm) ? (f.size_drawn_mm as number[]) : null;

@@ -83,12 +83,13 @@ async def reconcile_columns(svc, org: UUID, drawing_id: UUID) -> set:
   sheets = await svc.core.repo.sheets(org, drawing_id)
   exts = {e.sheet_id: e for e in await svc.repo.extractions(org, [s.id for s in sheets])}
   floors, details = _read(sheets, exts)
-  planned = CS.plan(floors, details)
+  rows_all = await svc.repo.candidates(org, [s.id for s in sheets if s.id in exts])
+  bare = not any(row.category == "COLUMN" and not (row.facts or {}).get("from_shapes") for row in rows_all)
+  planned = CS.plan(floors, details, bare)
   by_sheet = {s.id: s for s in sheets}
   holders = {r["sheet_id"] for r in planned}
   
   old: dict = {}
-  rows_all = await svc.repo.candidates(org, [s.id for s in sheets if s.id in exts])
   for row in rows_all:
     if (row.facts or {}).get("from_shapes"):
       old[(row.sheet_id, row.ckey)] = row

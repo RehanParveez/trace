@@ -21,6 +21,8 @@ from sqlalchemy import select
 from app.modules.drawings_boq.models import CalculationRun
 from app.modules.drawings_boq.recalculation.calc_insight import CalcInsightService
 from app.modules.drawings_boq.boq_service import BOQEngineService
+from app.modules.drawings_boq.bill_completeness_schemas import BillCompletenessResponse
+from app.modules.drawings_boq.bill_completeness_service import BillCompletenessService
 from fastapi.responses import JSONResponse
 
 router = APIRouter(
@@ -709,6 +711,14 @@ async def list_calculation_run_stages(
   session: AsyncSession = Depends(get_db),
 ):
    return await CalculationService(session).list_stages(current_user.active_membership.organization_id, run_id)
+
+@router.get("/calculation-runs/{run_id}/completeness", response_model=BillCompletenessResponse)
+async def get_calculation_run_completeness(
+  run_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  return await BillCompletenessService(session).for_run(current_user.active_membership.organization_id, run_id)
 
 @router.get("/calculation-runs/{run_id}/metrics", response_model=RunMetricsResponse)
 async def get_calculation_run_metrics(

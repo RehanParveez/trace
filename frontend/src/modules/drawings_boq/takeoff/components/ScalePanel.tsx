@@ -18,7 +18,7 @@ interface Props {
   capture: CaptureState;
   onCapture: (target: "ref" | "check" | null) => void;
   onClearCapture: () => void;
-  onAuto: (use: "RECOMMENDED" | "DECLARED" | "DIMENSIONS", includeRegions: boolean) => void;
+  onAuto: (use: "RECOMMENDED" | "DECLARED" | "DIMENSIONS" | "ROOMS", includeRegions: boolean) => void;
   onManual: (body: { method: "TWO_POINT" | "SCALE_RATIO"; scale_text?: string; ref?: { p1: Pt; p2: Pt; value: string; unit: LengthUnit }; check?: { p1: Pt; p2: Pt; value: string; unit: LengthUnit } }) => void;
   onMakeDefault: (id: string) => void;
   onDelete: (id: string) => void;
@@ -67,6 +67,7 @@ export function ScalePanel(p: Props) {
   const [chkUnit, setChkUnit] = useState<LengthUnit>("mm");
   const [scaleText, setScaleText] = useState("");
   const [mode, setMode] = useState<"TWO_POINT" | "SCALE_RATIO">("TWO_POINT");
+  const rooms = (scale?.witnesses ?? []).find((w) => w.source === "ROOM_LABELS" && w.ratio) ?? null;
   const pairs = scale?.measured?.pairs ?? [];
   const regions = (scale?.measured?.clusters ?? []).length > 1 && scale?.agreement === "MULTI_SCALE";
   const diag = Math.hypot(Number(p.sheet.width_pt), Number(p.sheet.height_pt));
@@ -113,6 +114,8 @@ export function ScalePanel(p: Props) {
             <dd className="font-mono">{scale?.declared?.primary ? fmtRatio(scale.declared.primary.ratio) : "—"}</dd>
             <dt className="text-[var(--color-text-muted)]">{t("boq.takeoff.scale.measured", "From dimensions")}</dt>
             <dd className="font-mono">{scale?.measured?.clusters?.[0] ? `${fmtRatio(scale.measured.clusters[0].ratio)} (${scale.measured.clusters[0].support} dims)` : "—"}</dd>
+            <dt className="text-[var(--color-text-muted)]">{t("boq.takeoff.scale.fromRooms", "From room sizes")}</dt>
+            <dd className="font-mono" data-testid="scale-from-rooms">{rooms ? `${fmtRatio(rooms.ratio as number)} (${rooms.support} rooms${rooms.strong ? "" : ", not firm"})` : "—"}</dd>
             <dt className="text-[var(--color-text-muted)]">{t("boq.takeoff.scale.paper", "Paper")}</dt>
             <dd className="font-mono">{scale?.paper?.name ?? "—"}</dd>
           </dl>
@@ -150,6 +153,9 @@ export function ScalePanel(p: Props) {
                   ) : null}
                   {(scale?.measured?.clusters?.[0]?.support ?? 0) >= 2 ? (
                     <Button size="sm" disabled={p.busy || (ack && !acknowledged)} onClick={() => p.onAuto("DIMENSIONS", false)}>{t("boq.takeoff.scale.useMeasured", "Use measured scale")}</Button>
+                  ) : null}
+                  {rooms?.strong ? (
+                    <Button size="sm" disabled={p.busy || (ack && !acknowledged)} onClick={() => p.onAuto("ROOMS", false)} data-testid="use-rooms">{t("boq.takeoff.scale.useRooms", "Use room-size scale")}</Button>
                   ) : null}
                   {regions ? (
                     <Button size="sm" disabled={p.busy} onClick={() => p.onAuto("RECOMMENDED", true)}>{t("boq.takeoff.scale.regions", "One calibration per scale region")}</Button>

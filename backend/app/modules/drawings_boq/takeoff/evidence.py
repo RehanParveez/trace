@@ -54,7 +54,7 @@ class _Inputs:
     else:
       self.add(name, MEASURED, how)
 
-  def height(self, name: str, value, section_how: str = "clear storey height printed on the building section") -> None:
+  def height(self, name: str, value, section_how: str = "storey height printed on the drawing (building section or room notes)") -> None:
     if value is None:
       self.add(name, MISSING, "not on the drawing")
     elif "NECK_HEIGHT_ASSUMED" in self.codes:
@@ -74,7 +74,7 @@ def _count(inp: _Inputs, cand) -> None:
   codes = inp.codes
   f = cand.facts or {}
   if "UNMARKED_COLUMNS" in codes:
-    inp.add("count", ASSUMED, "black squares with no mark beside them, counted by their size")
+    inp.add("count", ASSUMED, "black squares or circles with no mark beside them, counted by their size")
   elif "UNTAGGED_SAME_SIZE" in codes:
     inp.add("count", ASSUMED, f"{f.get('same_size_marks')} marks but {f.get('same_size_drawn')} shapes of this size are drawn; the marks are used")
   elif "COUNT_DIFFERS_FROM_DRAWN" in codes:

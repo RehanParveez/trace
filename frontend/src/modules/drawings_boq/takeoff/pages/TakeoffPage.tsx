@@ -690,7 +690,7 @@ export function TakeoffPage() {
       ].filter(Boolean).join(" "),
     });
   }
-  function runAuto(use: "RECOMMENDED" | "DECLARED" | "DIMENSIONS", includeRegions: boolean) {
+  function runAuto(use: "RECOMMENDED" | "DECLARED" | "DIMENSIONS" | "ROOMS", includeRegions: boolean) {
     if (!sheet) return;
     autoCal.mutate(
       { sheetId: sheet.id, use, include_regions: includeRegions },

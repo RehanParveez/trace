@@ -227,7 +227,7 @@ def _measured_text(cand, page_no: int, measurement) -> str:
     if has and "HEIGHT_FROM_QS" in codes:
       parts.append("height given by the QS")
     elif has and "HEIGHT_FROM_SECTION" in codes:
-      parts.append("height from the building section")
+      parts.append("height from the building section or room notes")
     elif has and "HEIGHT_FROM_NOTE" in codes:
       parts.append("height from drawing note")
     elif has:

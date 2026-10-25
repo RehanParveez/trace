@@ -4,7 +4,8 @@ from sqlalchemy import select
 from app.modules.drawings_boq.models import TakeoffCandidate, TakeoffMeasurement, TakeoffSheet
 
 CODE = "MARK_ACCEPTED_ELSEWHERE"
-MARKED = ("COLUMN", "FOOTING", "DOOR", "WINDOW", "SITE")
+MARKED = ("COLUMN", "FOOTING", "DOOR", "WINDOW", "LINTEL", "STAIR", "BEAM", "SITE")
+DRAWN_GROUP = ("DRAWN", "LDRAWN")
 FLOOR_TAG = "FLOOR-FINISH"
 FLOOR_WET = "FLOOR_WET"
 
@@ -26,12 +27,22 @@ def norm(tag) -> str:
   """C-2, C 2 and c2 are the same mark."""
   return re.sub(r"[^A-Z0-9]", "", str(tag or "").upper())
 
-def key_of(category: str, tag, floor) -> tuple | None:
+def mark_key(category: str, tag, facts=None) -> tuple | None:
+  n = norm(tag)
+  if category not in MARKED or not n or n.startswith(DRAWN_GROUP):
+    return None
+  f = facts or {}
+  if category == "BEAM" and (f.get("derived_from") or f.get("from_strips")):
+    return None
+  return (category, n)
+
+def key_of(category: str, tag, floor, facts=None) -> tuple | None:
+  mk = mark_key(category, tag, facts)
   if category == "SITE":
     floor = "SITE"
-  if category not in MARKED or not norm(tag) or floor is None:
+  if mk is None or floor is None:
     return None
-  return (category, norm(tag), str(floor))
+  return (category, mk[1], str(floor))
 
 def message(tag, pages: list, site: bool = False) -> str:
   where = ", ".join(f"page {p}" for p in sorted(set(pages))) if pages else "another sheet"
@@ -49,19 +60,19 @@ class Guard:
     if wet_floor(cand):
       held = self.held.get(("FLOOR", str(floor)), {})
       return floor_message(list(held.values())) if held else None
-    k = key_of(cand.category, cand.tag, floor)
+    k = key_of(cand.category, cand.tag, floor, cand.facts)
     if k is None:
       return None
     other = {s: p for s, p in self.held.get(k, {}).items() if s != cand.sheet_id}
     return message(cand.tag, list(other.values()), cand.category == "SITE") if other else None
 
   def add(self, cand, floor, page=None) -> None:
-    k = key_of(cand.category, cand.tag, floor)
+    k = key_of(cand.category, cand.tag, floor, cand.facts)
     if k is not None:
       self.held.setdefault(k, {})[cand.sheet_id] = page
 
 async def load(session, org, project_id, wanted: list) -> Guard:
-  marks = {key_of(c.category, c.tag, 0) for c in wanted if c.category in MARKED}
+  marks = {key_of(c.category, c.tag, 0, c.facts) for c in wanted if c.category in MARKED}
   marks.discard(None)
   g = Guard()
   if any(wet_floor(c) for c in wanted):
@@ -79,14 +90,14 @@ async def load(session, org, project_id, wanted: list) -> Guard:
 
   tags = {m[1] for m in marks}
   rows = (await session.execute(
-    select(TakeoffCandidate.sheet_id, TakeoffCandidate.category, TakeoffCandidate.tag, TakeoffMeasurement.level_id, TakeoffSheet.page_no)
+    select(TakeoffCandidate.sheet_id, TakeoffCandidate.category, TakeoffCandidate.tag, TakeoffMeasurement.level_id, TakeoffSheet.page_no, TakeoffCandidate.facts)
     .join(TakeoffMeasurement, TakeoffMeasurement.id == TakeoffCandidate.measurement_id)
     .join(TakeoffSheet, TakeoffSheet.id == TakeoffCandidate.sheet_id)
     .where(TakeoffCandidate.organization_id == org, TakeoffCandidate.project_id == project_id, TakeoffCandidate.decision == "ACCEPTED",
       TakeoffCandidate.category.in_(MARKED), TakeoffCandidate.tag.is_not(None)))).all()
-  for sheet_id, category, tag, level_id, page in rows:
+  for sheet_id, category, tag, level_id, page, facts in rows:
     if norm(tag) in tags:
-      k = key_of(category, tag, level_id)
+      k = key_of(category, tag, level_id, facts)
       if k is not None:
         g.held.setdefault(k, {})[sheet_id] = page
   return g
@@ -97,7 +108,7 @@ def held_marks(read: list, floor_of) -> dict:
     for c in sh["candidates"]:
       if c.decision != "ACCEPTED":
         continue
-      k = key_of(c.category, c.tag, floor_of(c, sh))
+      k = key_of(c.category, c.tag, floor_of(c, sh), c.facts)
       if k is not None:
         out.setdefault(k, {})[sh["sheet_id"]] = sh["page_no"]
       if includes_wet(c.category, c.tag, c.facts):

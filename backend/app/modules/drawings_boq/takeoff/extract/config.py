@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 
-EXTRACT_VERSION = 68
+EXTRACT_VERSION = 73
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -145,6 +145,7 @@ HEIGHT_NOTES = (
 
 NOTES = {
   "SCALE_UNVERIFIED": ("warning", "The scale of this sheet is not checked against a printed dimension, so every size here is only as good as that scale."),
+  "SHEET_UNITS_DIFFER": ("info", "This sheet is dimensioned in other units than the rest of the drawing (feet and inches against millimetres). Its own units are used for it."),
   "THICKNESS_OFF_STANDARD": ("warning", "The drawn thickness is not a standard wall size. Check it before measuring."),
   "WALL_OPENINGS_INCLUDED": ("info", "The length runs through the door and window openings. Deduct the openings in the measurement."),
   "WALL_WIDE_OPENING": ("info", "The wall runs through an opening wider than 2.5 m with nothing drawn in it, so it is counted as one wall. Deduct the opening when you measure."),
@@ -186,7 +187,7 @@ NOTES = {
   "SIZE_FROM_COLUMN_DETAIL": ("info", "The size is the one written beside this mark's column detail drawing. It was read from the drawing picture, so check it against the detail."),
   "COLUMN_PLAN_VS_DETAIL": ("info", "The black square on the plan is another size than the column detail of this mark. The detail size is used (the plan square is a symbol)."),
   "COLUMN_DETAILS_DISAGREE": ("warning", "Two column details carry this mark with different sizes, so none was used. Check which detail is this column."),
-  "UNMARKED_COLUMNS": ("warning", "These black squares have no column mark beside them. They are counted as columns because of their size. Check them."),
+  "UNMARKED_COLUMNS": ("warning", "These black squares or circles have no column mark beside them. They are counted as columns because of their size (a circle as the square of the same area). Check them."),
   "VIEW_SCALE_DIFFERS": ("warning", "The dimensions printed inside this drawing show another scale than the sheet. Sizes measured from it may be wrong. Calibrate this view on the Measure page."),
   "SIZE_VARIES": ("warning", "The shapes drawn for this mark are not all the same size."),
   "SIZE_NOT_FOUND": ("info", "No drawn shape or schedule row gave a size for this mark."),
@@ -236,6 +237,8 @@ NOTES = {
   "SLAB_PROJECTION_NOT_VERIFIED": ("warning", "A roof projection label of this floor is bound to a printed length that is not the length of the side of the plan it stands beside, so the strip was not added to the slab."),
   "SLAB_PROJECTION_IS_CHAJJA": ("warning", "A roof projection of this floor is as narrow as a chajja or sunshade (18 in or less), so it is not in the slab concrete."),
   "SLAB_PROJECTION_AXIS_UNKNOWN": ("warning", "The plans of this floor print roof projections, but the overall lengths printed on them do not match the area table's length and width, so it is not known which sides they widen. They were not added to the slab."),
+  "SLAB_PANELS_FROM_LABELS": ("warning", "This slab is read from the panel sizes written on the slab plan. Check the number of panels of each size against the plan."),
+  "SLAB_FLOOR_NOT_NAMED": ("warning", "The sheet does not say which floor this slab plan is (its caption is not text the reader can use). Choose the floor before this slab is accepted."),
   "SLAB_AREA_NOT_FOUND": ("warning", "This framing plan shows a slab but the drawing's area table has no covered area for this floor, so the slab was not listed. Measure it with the area tool."),
   "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
 
@@ -373,7 +376,7 @@ NOTES = {
   "LINTEL_IN_RCC_WALL": ("info", "Some of these openings sit in RCC walls, which need no separate lintel. The count includes them; reduce it if you measure."),
   "HEIGHT_FROM_NOTE": ("info", "The height comes from a note on the drawing."),
   "COUNT_MATCHES_OTHER_FLOOR": ("info", "Fewer columns of this size are drawn than there are marks (some are hidden inside the walls), but the same marks and the same number appear on another floor where every column is drawn. The marks are counted."),
-  "HEIGHT_FROM_SECTION": ("info", "The height is the floor-to-floor height printed on the building section, which is how the QS measures a wall and a column (S5). Where the section prints no floor-to-floor height, the clear storey height is used. Check that it is the height you want to measure with."),
+  "HEIGHT_FROM_SECTION": ("info", "The height is the floor-to-floor height of the floor, printed on the building section or, where no section prints it, worked out from the room notes of the plans (ceiling height and level of the floor), which is how the QS measures a wall and a column (S5)."),
   "HEIGHT_FROM_QS": ("info", "The height was given by the QS (S1, S5) and is used for the estimate. Type another height when you accept the item to override it."),
   "FOOTING_DEPTH_QS": ("info", "The drawing prints the footing thickness only as a symbol. The QS gave 0.75 ft (228.6 mm), so that is used. Type another depth when you accept the footing to override it."),
   "MEMBRANE_OUTSIDE_QS": ("info", "This item is not drawn on the plan. On a basement the QS puts the membrane on the outside of every outer wall, up the full wall height of 11 ft, and counts it once (S1). The length is the outside face of the outer walls, the same length the outside plaster uses, with the closing stretch of the concrete wall (S8). Inside and outside plaster are separate items."),

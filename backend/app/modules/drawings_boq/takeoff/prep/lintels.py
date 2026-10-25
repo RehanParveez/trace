@@ -188,3 +188,12 @@ def section_for(rows: list, span_mm: float) -> dict | None:
     if span_mm <= r["span_max_mm"] + 1.0:
       return r
   return None
+
+def section_in(sec: dict, wall_mm: float | None = None) -> tuple:
+  width, depth = float(sec["width_mm"]), float(sec["depth_mm"])
+  if wall_mm:
+    thin = sec.get("thin")
+    if thin:
+      width, depth = float(thin["width_mm"]), float(thin["depth_mm"])
+    width = min(width, float(wall_mm))
+  return width, depth

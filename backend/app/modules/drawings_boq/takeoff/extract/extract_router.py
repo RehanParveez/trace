@@ -15,6 +15,8 @@ from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import Choos
 from app.modules.drawings_boq.takeoff.extract.floor_union_service import FloorUnionService
 from app.modules.drawings_boq.takeoff.extract.layout_groups_schemas import ChooseLayoutsRequest, ChooseLayoutsResponse, LayoutGroupsResponse
 from app.modules.drawings_boq.takeoff.extract.layout_groups_service import LayoutGroupService
+from app.modules.drawings_boq.takeoff.extract.mark_entities_schemas import ChooseMarksRequest, ChooseMarksResponse, MarkEntitiesResponse
+from app.modules.drawings_boq.takeoff.extract.mark_entities_service import MarkEntityService
 from app.modules.drawings_boq.takeoff.extract.review_schemas import ConflictsResponse, LinksResponse, ResolveConflictsRequest, ResolveConflictsResponse, SteelRollupResponse
 from app.modules.drawings_boq.takeoff.extract.review_service import ReviewService
 from app.modules.drawings_boq.takeoff.approve_schemas import ApproveReadyRequest, ApproveReadyResponse
@@ -107,6 +109,18 @@ async def choose_layout_groups(
   drawing_id: UUID, payload: ChooseLayoutsRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
   return await LayoutGroupService(session).choose_layouts(_org(current_user), current_user.id, drawing_id, payload)
+
+@router.get("/drawings/{drawing_id}/takeoff/mark-entities", response_model=MarkEntitiesResponse)
+async def mark_entities(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await MarkEntityService(session).mark_entities(_org(current_user), drawing_id)
+
+@router.post("/drawings/{drawing_id}/takeoff/mark-entities/choose", response_model=ChooseMarksResponse)
+async def choose_mark_entities(
+  drawing_id: UUID, payload: ChooseMarksRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await MarkEntityService(session).choose_marks(_org(current_user), current_user.id, drawing_id, payload)
 
 @router.post("/drawings/{drawing_id}/takeoff/floor-sources/combine", response_model=ChooseFloorSourcesResponse)
 async def combine_floor_sources(

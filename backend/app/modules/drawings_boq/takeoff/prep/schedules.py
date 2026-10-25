@@ -3,6 +3,7 @@ import re
 import math
 from collections import Counter
 from app.modules.drawings_boq.takeoff.prep import lintels as lintel_reader
+from app.modules.drawings_boq.takeoff.prep import lintel_matrix
 from app.modules.drawings_boq.takeoff.prep import stairs as stair_reader
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
@@ -358,7 +359,7 @@ def read_schedules(words: list) -> dict:
   except Exception:
     areas = []
   try:
-    lintels = lintel_reader.read_lintel_table(words)
+    lintels = lintel_reader.read_lintel_table(words) or lintel_matrix.read(words)
     tie_band = lintel_reader.read_tie_band(words)
   except Exception:
     lintels, tie_band = [], None

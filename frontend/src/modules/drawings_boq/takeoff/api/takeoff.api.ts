@@ -29,7 +29,7 @@ export const takeoffApi = {
   async analysis(sheetId: string): Promise<SheetAnalysis> {
     return (await apiClient.get<SheetAnalysis>(`${BASE}/takeoff/sheets/${sheetId}/analysis`)).data;
   },
-  async autoCalibrate(sheetId: string, body: { use?: "RECOMMENDED" | "DECLARED" | "DIMENSIONS"; make_default?: boolean; include_regions?: boolean }): Promise<AutoCalibrateResult> {
+  async autoCalibrate(sheetId: string, body: { use?: "RECOMMENDED" | "DECLARED" | "DIMENSIONS" | "ROOMS"; make_default?: boolean; include_regions?: boolean }): Promise<AutoCalibrateResult> {
     return (await apiClient.post<AutoCalibrateResult>(`${BASE}/takeoff/sheets/${sheetId}/auto-calibrate`, body)).data;
   },
   async createCalibration(sheetId: string, body: CalibrationCreate): Promise<TakeoffCalibration> {

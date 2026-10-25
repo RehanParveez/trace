@@ -1,5 +1,5 @@
 from __future__ import annotations
-AUTO_OK = ("VERIFIED", "VERIFIED_WEAK", "DIMENSIONS_ONLY")
+AUTO_OK = ("VERIFIED", "VERIFIED_WEAK", "DIMENSIONS_ONLY", "ROOMS_ONLY")
 MIN_DECLARED_TRUST = 0.6
 STRONG_CONFLICT_SUPPORT = 8
 
@@ -9,6 +9,7 @@ _NEEDS_PERSON = {
   "CONFLICT_UNRESOLVED": "The printed scale and the few readable dimensions of this sheet disagree. Confirm the scale on the Measure page.",
   "MULTI_SCALE": "More than one drawing scale is on this sheet. Calibrate each view on the Measure page.",
   "DIMENSIONS_WEAK": "Only two printed dimensions could be read on this sheet. Confirm the scale on the Measure page.",
+  "WITNESS_CONFLICT": "The scale found on this sheet and the room sizes written on its plan give different scales. Confirm the scale on the Measure page.",
 }
 
 def auto_scale_gate(analysis: dict | None) -> tuple:

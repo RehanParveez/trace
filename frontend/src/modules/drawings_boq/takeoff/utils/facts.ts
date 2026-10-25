@@ -28,7 +28,7 @@ export function mmText(mm: number): string {
   return `${Math.round(mm).toLocaleString("en-US")} mm`;
 }
 
-export const FACT_ORDER: FactKind[] = ["SLAB_THICKNESS", "RCC_WALL_THICKNESS", "BRICK_COLUMN", "CONCRETE_CLASS", "STEEL_GRADE", "CLEAR_COVER", "BEARING_CAPACITY", "PLASTER_THICKNESS", "FILL_LAYER", "SOIL_STABILISATION", "STAIR_WIDTH"];
+export const FACT_ORDER: FactKind[] = ["SLAB_THICKNESS", "RCC_WALL_THICKNESS", "BRICK_COLUMN", "CONCRETE_CLASS", "STEEL_GRADE", "CLEAR_COVER", "LAP_LENGTH", "BEARING_CAPACITY", "PLASTER_THICKNESS", "FILL_LAYER", "SOIL_STABILISATION", "STAIR_WIDTH", "DEPRESSED_SLAB", "FLOOR_DROP"];
 
 export const FACT_TITLE: Record<FactKind, string> = {
   SLAB_THICKNESS: "Slab thickness",
@@ -37,11 +37,14 @@ export const FACT_TITLE: Record<FactKind, string> = {
   CONCRETE_CLASS: "Concrete",
   STEEL_GRADE: "Steel",
   CLEAR_COVER: "Clear cover",
+  LAP_LENGTH: "Lap length",
   BEARING_CAPACITY: "Soil bearing capacity",
   PLASTER_THICKNESS: "Plaster",
   FILL_LAYER: "Filling",
   SOIL_STABILISATION: "Soil stabilisation",
   STAIR_WIDTH: "Stair width",
+  DEPRESSED_SLAB: "Depressed slab",
+  FLOOR_DROP: "Floor level drop",
 };
 
 function cap(s: string): string {
@@ -61,7 +64,9 @@ export function factDetail(f: DrawingFact): string {
     case "BRICK_COLUMN":
       return f.value_mm != null && f.value2_mm != null ? `${mmToInchText(f.value_mm)} × ${mmToInchText(f.value2_mm)}` : "";
     case "CONCRETE_CLASS":
-      return `Class ${f.concrete_class ?? "?"}${f.mix ? ` (${f.mix})` : ""}${f.scope ? ` · ${f.scope}` : ""}`;
+      return `${f.concrete_class ? `Class ${f.concrete_class}${f.mix ? ` (${f.mix})` : ""}` : f.mix ?? "Concrete"}${f.scope ? ` · ${f.scope}` : ""}`;
+    case "LAP_LENGTH":
+      return `${f.bar_dia_mm != null ? `Bar #${Math.round(f.bar_dia_mm / 3.175)}` : "Bar"}: ${inchAndMm(f.value_mm)}`;
     case "STEEL_GRADE":
       return `Grade ${f.grade ?? "?"}${f.scope ? ` · ${f.scope}` : ""}`;
     case "CLEAR_COVER":
@@ -76,6 +81,10 @@ export function factDetail(f: DrawingFact): string {
       return soilNoteText(f);
     case "STAIR_WIDTH":
       return f.value_mm != null ? `${mmToFeetInches(f.value_mm)} (${mmText(f.value_mm)})` : "";
+    case "DEPRESSED_SLAB":
+      return `${inchAndMm(f.value_mm)} lower slab, area not given`;
+    case "FLOOR_DROP":
+      return `${cap(f.scope ?? "rooms")}: finished floor ${inchAndMm(f.value_mm)} below the floor level`;
     default:
       return f.text;
   }

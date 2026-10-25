@@ -147,6 +147,9 @@ def engine_derived_enabled(org_id) -> bool:
   ids = {s.strip() for s in (settings.engine_derived_org_ids or "").split(",") if s.strip()}
   return "*" in ids or str(org_id) in ids
 
+def pdf_runs_use_derived(has_pdf: bool) -> bool:
+  return bool(has_pdf) and bool(getattr(settings, "engine_pdf_derived_auto", True))
+
 def clean_derived_params(raw: dict | None) -> dict:
   out: dict = {}
   for name in (*derived_module.PARAMS, derived_module.NGL_PARAM, *derived_module.ASKED_PARAMS):
@@ -268,13 +271,14 @@ class CalculationService:
     effective_convention = rule_set.convention_code or convention_code
     ids = sorted((d.id for d in chosen), key=str)
     settings = {"scope": "building", "preferred_rule_code": rule_set_code, "project_id": str(project_id)}
-    if engine_spec_enabled(organization_id):
+    pdf_in_run = pdf_runs_use_derived(any(d.format == DrawingFormat.PDF for d in chosen))
+    if engine_spec_enabled(organization_id) or pdf_in_run:
       settings["spec"] = True
       if engine_stage_enabled(organization_id):
         settings["stages"] = True
       if engine_layer_enabled(organization_id):
         settings["layers"] = True
-    if engine_derived_enabled(organization_id):
+    if engine_derived_enabled(organization_id) or pdf_in_run:
       settings["derived"] = True
       stored_params = await MeasurementParametersService(self.session).stored_for_run(organization_id, project_id)
       cleaned = clean_derived_params({**stored_params, **(derived_params or {})})
@@ -361,6 +365,7 @@ class CalculationService:
     await self.runs.set_progress(run.id, progress)
     await self.session.commit()
     self._timings[name] = duration_ms
+    self._current_stage = None
     calc_obs.log_event("stage_finished", run_id=run.id, organization_id=run.organization_id,
       engine_version=run.engine_version, stage=name, duration_ms=duration_ms, peak_rss_mb=rss,
       **{k: v for k, v in counts.items() if isinstance(v, (int, float, str)) and not isinstance(v, bool)})
@@ -411,6 +416,7 @@ class CalculationService:
     requested_by = run.requested_by_user_id
     self._attempt = run.attempts
     self._timings: dict = {}
+    self._current_stage: str | None = None
     self._superseded = False
     self._rss_start = calc_obs.current_rss_mb()
     force_full = bool(run.force_full)
@@ -681,11 +687,16 @@ class CalculationService:
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in rd.ledger])
         state["extra_solids"] += rd.solids
         state["extra_ledger"] += rd.ledger
-        fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
-        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
-        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
-        state["extra_solids"] += fl_solids
-        state["extra_ledger"] += fl_rows
+        pm = await asyncio.to_thread(kernel.measure_plaster_mortar, ctx, state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in pm.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in pm.ledger])
+        state["extra_solids"] += pm.solids
+        state["extra_ledger"] += pm.ledger
+        ss = await asyncio.to_thread(kernel.measure_soil_stabilisation, ctx, state["ledger"], state["extra_ledger"])
+        await self.runs.stage_solids([_solid_row(run, s, "derived") for s in ss.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in ss.ledger])
+        state["extra_solids"] += ss.solids
+        state["extra_ledger"] += ss.ledger
         fl_solids, fl_rows, fl_stats = await asyncio.to_thread(kernel.measure_floor_works, ctx, state["accepted"], state["ledger"], state["extra_ledger"])
         await self.runs.stage_solids([_solid_row(run, s, "derived") for s in fl_solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "derived") for e in fl_rows])
@@ -708,7 +719,7 @@ class CalculationService:
         state["extra_solids"] += sa.solids
         state["extra_ledger"] += sa.ledger
         state["derived_stats"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats,
-          "wall_foundation": ww.stats, "wall_finishes": wf.stats, "opening_area": oa.stats, "roof_treatment": rt.stats, "roof_deck": rd.stats, "steel_allowances": sa.stats}
+          "wall_foundation": ww.stats, "wall_finishes": wf.stats, "opening_area": oa.stats, "roof_treatment": rt.stats, "roof_deck": rd.stats, "plaster_mortar": pm.stats, "soil_stabilisation": ss.stats, "steel_allowances": sa.stats}
         return {"dpc_rows": len(dp.ledger), "dpc_m2": dp.stats.get("area_m2", "0"), "steel_rows": len(st.ledger), "steel_kg": st.stats.get("kg", "0"), "rows": len(res.ledger), "foundations": res.stats.get("foundations", 0),
           "formwork_rows": len(fw.ledger), "formwork_m2": fw.stats.get("area_m2", "0"),
           "excavation_m3": res.stats.get("excavation_m3", "0"), "pcc_m3": res.stats.get("pcc_m3", "0"),
@@ -873,8 +884,7 @@ class CalculationService:
         code = "RUN_TIME_LIMIT"
       else:
         code = "RUN_FAILED"
-      failed_stage = next((n for n in ("validate_input", "build_solids", "spatial_index", "find_relations", "allocate",
-        "openings", "measure", "finishes", "schedules", "reinforcement", "layer_split", "stage_split", "derived_works", "self_check") if n not in self._timings), None)
+      failed_stage = self._current_stage
       await self.runs.fail_running_stages(run_id, str(exc))
       await self.runs.mark_failed(run_id, code, str(exc))
       await self.runs.clear_staged(run_id)
@@ -902,6 +912,7 @@ class CalculationService:
     except Exception as exc:
       await self.session.rollback()
       await self.runs.merge_stats(run_id, {"boq_error": str(exc)[:500]})
+      calc_obs.log_event("boq_build_failed", run_id=run_id, organization_id=org, level=40, message=str(exc)[:300])
     await self.session.commit()
 
   async def get_run(self, organization_id: UUID, run_id: UUID) -> CalculationRun:
