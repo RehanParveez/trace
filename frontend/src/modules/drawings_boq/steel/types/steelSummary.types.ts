@@ -1,4 +1,4 @@
-export type SteelBasis = "PRINTED" | "SCHEDULE" | "ESTIMATE_PDF" | "ESTIMATE_MODEL";
+export type SteelBasis = "PRINTED" | "SCHEDULE" | "MODEL_BARS" | "ESTIMATE_PDF" | "ESTIMATE_MODEL";
 export type IntensityStatus = "IN_RANGE" | "BELOW_RANGE" | "ABOVE_RANGE";
 
 export interface SteelDiameterRow {

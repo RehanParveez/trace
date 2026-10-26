@@ -29,6 +29,10 @@ class ModelElement:
   height_mm: Decimal | None = None
   type_mark: str | None = None
   name: str | None = None
+  rebar: dict | None = None
+  invalid_code: str | None = None
+  invalid_message: str | None = None
+  mesh_volume_mm3: float | None = None
 
 @dataclass(frozen=True)
 class MappingInput:

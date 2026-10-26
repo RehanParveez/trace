@@ -1,7 +1,8 @@
 from __future__ import annotations
 import re
+from app.engine.measure import readings as QSR
 
-EXTRACT_VERSION = 73
+EXTRACT_VERSION = 74
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -356,7 +357,7 @@ NOTES = {
   "STAIR_DIRECTION_UNKNOWN": ("info", "No UP or DN is written beside this staircase. Check on the plan whether it is the same staircase as one on another floor."),
   "SITE_TANK_SIZES_TYPED": ("warning", "A tank is labelled on this sheet but its sizes are not printed as text the reader can take. Type the outside length, width and height and the thickness of its walls when you accept it. The concrete is worked out as the walls of that thickness plus a top slab of 6 inches and a bottom slab of 8 inches, as the QS gave (S11)."),
   "SITE_TANK_SIZES_LISTED": ("info", "The structural sheet draws this tank in a plan and a section. The sizes are listed below: those written as text in the PDF are exact; those read from the picture show the number of readings that agreed (a size read only twice can be a misreading, so check it on the drawing). The drawing does not say which size is the outside length, the water depth or the wall, so none is applied: type the outside sizes and the thickness from them."),
-  "TANK_SIZES_DERIVED": ("warning", "The sizes of this tank were worked out from the lengths its drawings print. The drawing does not say which length is which, so every size here is an assumption with the reason given below; check them against the drawing and type another to replace any of them. The top and bottom slab are taken from the section when it prints the thickness (that replaces the QS's 8 in bottom slab)."),
+  "TANK_SIZES_DERIVED": ("warning", "The sizes of this tank were worked out from what its drawings print: the size in the caption, the wall and slab thicknesses in the notes, and the lengths in the pictures. A caption does not say whether its size is the inside or the outside, so the sizes here are assumptions with the reason given below (a thickness printed in a note is exact); check them against the drawing and type another to replace any of them. The top slab is taken from a note that prints it, and the top and bottom slab from the section when it prints the thickness (that replaces the QS's 8 in bottom slab)."),
   "SITE_LABEL_REPEATED": ("info", "The label of this tank is written more than once on this sheet (the plans, the elevations and the sections each show it). It is one tank and is listed once."),
   "SITE_WALL_THICKNESS_TYPED": ("warning", "The elevation prints the length and the height of the boundary wall but not its thickness. Type the thickness when you accept it. The wall is measured as its length x height x thickness; the piers are measured at the wall height."),
   "SITE_HEIGHT_NEAREST_DIMENSION": ("warning", "The elevation prints more than one height. The one printed nearest to this piece of the wall is used. Check it on the drawing."),
@@ -409,7 +410,7 @@ NOTES = {
   "ELECTRICAL_SYMBOLS_NOT_READ": ("warning", "The legend has symbols the reader cannot count (their picture is too simple to tell from other drawing, or the plan draws them differently). Count the ones on this sheet by hand."),
   "ELECTRICAL_READ_FAILED": ("warning", "The electrical symbols of this sheet could not be counted. Count them by hand."),
   "DRAIN_CHAMBERS_COUNT_ONLY": ("info", "Only the number of chambers marked on this sheet is counted, once for each mark. Their depth, size, cover, the excavation and the pipes between them are not taken."),
-  "TANK_SLABS_QS": ("info", "The QS gave the slabs of a tank: a top slab of 6 inches and a bottom slab of 8 inches (S11). His sheet shows 6 inches for both slabs of the water tanks, so confirm the 8 inches with him."),
+  "TANK_SLABS_QS": ("info", "The QS gave the slabs of a tank: a top slab of 6 inches and a bottom slab of 8 inches (S11). His sheet shows 6 inches for both slabs of the water tanks, so confirm the 8 inches with him. A slab the tank detail prints replaces his value for that slab."),
   "SITE_WALL_QS_ESTIMATE": ("info", "The QS gave 4.5 inches for this wall and called his 66 ft length an estimate, not a length measured along the boundary (S7). The length here is read from the elevation. Type the thickness when you accept it (4.5 inches is 114.3 mm)."),
   "WALL_PEN_SELECTED": ("info", "Walls were read from the heaviest line weight on this sheet. Lines in lighter weights (dimensions, furniture, fittings, boundary lines) were not read as walls."),
   "LIGHT_PEN_WALLS_KEPT": ("info", "Some walls on this ground-level sheet are drawn in a lighter line weight than the main walls (boundary, lawn and thin partition walls). The long ones of 4.5 to 6 inch thickness were read as walls. Stair treads and furniture lines were not."),
@@ -453,8 +454,26 @@ NOTES = {
   "MEMBER_MATCH_AMBIGUOUS": ("warning", "More than one drawn shape is a plausible match for this member mark. Confirm the correct shape."),
 }
 
+NOTE_CONVENTIONS = {
+  "FOOTING_DEPTH_QS": ("footing_depth_mm",),
+  "NECK_HEIGHT_ASSUMED": ("neck_height_mm",),
+  "TANK_SLABS_QS": ("tank_top_slab_mm", "tank_bottom_slab_mm"),
+  "SITE_WALL_QS_ESTIMATE": ("boundary_wall_thickness_mm",),
+  "EXCAVATION_DEPTH_ASSUMED": ("basement_dig_mm",),
+  "TRENCH_DEPTH_ASSUMED": ("trench_depth_mm",),
+  "FILL_DEPTH_ASSUMED": ("fill_depth_mm",),
+  "RAFT_PCC_ASSUMED": ("pcc_thickness_mm",),
+}
+
 def note(code: str, **extra) -> dict:
   sev, msg = NOTES[code]
   out = {"code": code, "severity": sev, "message": msg}
+  keys = NOTE_CONVENTIONS.get(code)
+  if keys:
+    out["origin"] = QSR.CO.origin_of(*keys)
+    if QSR.company_differs(*keys):
+      out["message"] = f"This figure comes from your company's conventions, not from the drawing: {QSR.conventions_words(*keys)}. Type another value when you accept the item to override it."
   out.update(extra)
+  if code == "HEIGHT_FROM_QS" and out.get("origin") == "COMPANY":
+    out["message"] = "The height comes from your company's conventions and is used for the estimate. Type another height when you accept the item to override it."
   return out

@@ -46,7 +46,8 @@ def floor_heights(heights: dict, floors: dict | None, level_hint: str | None, ft
     entry = {"mm": float(f2f), "text": f"floor-to-floor height {ft_in(float(f2f))} {how}", "basis": "SECTION", **({"source": "PLAN_NOTES"} if fh.get("basis") == "PLAN_NOTES" else {})}
   elif str(level_hint or "").upper() == BASEMENT:
     mm = float(QS.convention("basement_floor_to_floor_mm"))
-    entry = {"mm": mm, "text": f"basement floor-to-floor height {ft_in(mm)}, as the QS gave it (S5)", "basis": "QS"}
+    entry = {"mm": mm, "text": f"basement floor-to-floor height {ft_in(mm)}, " + QS.whose(["basement_floor_to_floor_mm"], "as the QS gave it (S5)", "as your company's convention has it"), "basis": "QS",
+      "origin": QS.CO.origin_of("basement_floor_to_floor_mm")}
   else:
     return clear_only(heights, floors, level_hint)
   out = dict(heights)
@@ -89,7 +90,8 @@ def rcc_heights(cands: list, level_hint: str | None) -> int:
     c.params = {**(c.params or {}), "height_mm": mm, "dims_basis": "SPECIFIED"}
     c.missing = [m for m in (c.missing or []) if m != "height_mm"]
     c.notes = [x for x in (c.notes or []) if x.get("code") not in HEIGHT_CODES]
-    c.notes.append(C.note("HEIGHT_FROM_QS", text=f"basement concrete wall {_ft_in(mm)} high for the estimate, as the QS gave it (S1, S5)"))
+    c.notes.append(C.note("HEIGHT_FROM_QS", origin=QS.CO.origin_of("basement_wall_height_mm"),
+      text=f"basement concrete wall {_ft_in(mm)} high for the estimate, " + QS.whose(["basement_wall_height_mm"], "as the QS gave it (S1, S5)", "as your company's convention has it")))
     stamp(c, "S1", "S5")
     n += 1
   return n
@@ -128,8 +130,9 @@ def apply(cands: list, level_hint: str | None) -> dict:
       c.missing = [m for m in c.missing if m != "height_mm"]
       c.facts = {**f, "neck_assumed": {"mm": size["mm"], "text": size["text"], "evidence": size["evidence"]}}
       nh = C.note("NECK_HEIGHT_ASSUMED", height_mm=size["mm"])
-      nh["message"] = (f"The neck column runs from the top of the footing to the lowest floor. That height is not printed on the sheet. {size['text']} is used, as the QS's workbook has it "
-        f"({size['evidence'].rstrip('.')}). Type another height to override it.")
+      whose = (f"as your company's convention has it ({size['evidence'].rstrip('.').lower()})" if size.get("origin") == QS.CO.COMPANY and QS.company_differs("neck_height_mm")
+        else f"as the QS's workbook has it ({size['evidence'].rstrip('.')})")
+      nh["message"] = (f"The neck column runs from the top of the footing to the lowest floor. That height is not printed on the sheet. {size['text']} is used, {whose}. Type another height to override it.")
       c.notes.append(nh)
       stats["neck_heights"] += 1
       
@@ -137,8 +140,8 @@ def apply(cands: list, level_hint: str | None) -> dict:
       stamp(c, "X8", "S12")
       stats["stairs"] += 1
     elif c.category == "SITE" and f.get("site_kind") in ("OHWT", "UGWT", "SEPTIC"):
-      if not f.get("tank_slabs_mm"):
-        c.notes.append(C.note("TANK_SLABS_QS", top_mm=QS.convention("tank_top_slab_mm"), bottom_mm=QS.convention("tank_bottom_slab_mm")))
+      if not (f.get("tank_slabs_mm") or {}).get("bottom_mm"):
+        c.notes.append(C.note("TANK_SLABS_QS",top_mm=QS.convention("tank_top_slab_mm"), bottom_mm=QS.convention("tank_bottom_slab_mm")))
         stamp(c, "S11")
       stats["tanks"] += 1
     elif c.category == "SITE" and f.get("site_kind") == "BOUNDARY_WALL":

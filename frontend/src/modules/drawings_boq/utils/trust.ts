@@ -6,11 +6,35 @@ export const TRUST_BANDS: readonly TrustBand[] = ["HIGH", "MEDIUM", "LOW"];
 export type CoverageGapKey = "rejected" | "skipped_by_role" | "unmapped" | "other_unmeasured";
 const GAP_KEYS: readonly CoverageGapKey[] = ["rejected", "skipped_by_role", "unmapped", "other_unmeasured"];
 
+export interface CoverageDetailItem {
+  name: string;
+  count: number;
+}
+
 export interface CoverageView {
   total: number;
   measured: number;
   percent: number;
   gaps: { key: CoverageGapKey; count: number }[];
+  detail: { rejected: CoverageDetailItem[]; skipped_by_role: CoverageDetailItem[]; unmapped: CoverageDetailItem[] };
+}
+
+export const REJECTED_REASON: Record<string, string> = {
+  INVALID_ELEMENT: "Failed validation when the model was read",
+  NON_CONCRETE_MATERIAL: "The material is not concrete, but the role is measured as concrete",
+  NO_QUANTITY: "No usable quantity in the model's own quantities or its geometry",
+  MISSING_DIMENSION: "A dimension the role needs is missing",
+  READ_ERROR: "The element could not be read",
+  STEEL_NO_QUANTITY: "Steel element with no volume or length",
+  IFC_BAR_NO_DIAMETER: "The bar gives no diameter",
+  IFC_BAR_NO_LENGTH: "The bar gives no length",
+};
+
+function detailItems(record: Record<string, number> | undefined): CoverageDetailItem[] {
+  return Object.entries(record ?? {})
+    .map(([name, n]) => ({ name, count: count(n) }))
+    .filter((item) => item.count > 0)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
 function count(value: unknown): number {
@@ -29,7 +53,14 @@ export function coverageView(stats: CoverageStats | null | undefined): CoverageV
   const measured = Math.min(count(stats.measured), total);
   const percent = measured === total ? 100 : Math.min(99, Math.floor((measured / total) * 100));
   const gaps = GAP_KEYS.map((key) => ({ key, count: count(stats[key]) })).filter((gap) => gap.count > 0);
-  return { total, measured, percent, gaps };
+  return {
+    total, measured, percent, gaps,
+    detail: {
+      rejected: detailItems(stats.rejected_codes),
+      skipped_by_role: detailItems(stats.skipped_roles),
+      unmapped: detailItems(stats.unmapped_types),
+    },
+  };
 }
 
 export interface ConfidenceBandView {
@@ -112,6 +143,14 @@ type Translate = (key: string, fallback: string) => string;
 const SOURCE_LABELS: Record<string, string> = {
   EXTRUDED_PROFILE: "Exact profile and length from the model",
   AXIS_SWEPT: "Profile swept along its axis",
+  "EXTRUDED_PROFILE:PRISM_MESH": "Profile and 3D mesh agree, model volume differs",
+  "EXTRUDED_PROFILE:MESH_QTO": "Cut profile, 3D mesh and model volume agree",
+  "EXTRUDED_PROFILE:PRISM_QTO": "Profile and model volume agree, 3D mesh differs",
+  "EXTRUDED_PROFILE:MESH_ALONE": "Profile, 3D mesh and model volume differ, 3D mesh billed",
+  "AXIS_SWEPT:PRISM_MESH": "Profile and 3D mesh agree, model volume differs",
+  "AXIS_SWEPT:MESH_QTO": "Cut profile, 3D mesh and model volume agree",
+  "AXIS_SWEPT:PRISM_QTO": "Profile and model volume agree, 3D mesh differs",
+  "AXIS_SWEPT:MESH_ALONE": "Profile, 3D mesh and model volume differ, 3D mesh billed",
   "BOX_ONLY:VERIFIED": "Bounding box, volume agrees with the 3D mesh",
   "BOX_ONLY:MESH": "Bounding box, volume from the 3D mesh",
   "BOX_ONLY:MISMATCH": "Bounding box, model and 3D mesh volumes disagree",

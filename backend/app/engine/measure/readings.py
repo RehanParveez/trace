@@ -2,6 +2,7 @@ from __future__ import annotations
 import contextvars
 from contextlib import contextmanager
 from app.engine.measure import proposed
+from app.engine.measure import company as CO
 
 QS_NAME = "M. Junaid"
 ANSWERED_BEFORE = "2026-10-19"
@@ -245,21 +246,147 @@ def param(name: str):
   decided = _DECIDED.get()
   if decided and name in decided:
     return decided[name]
-  return PARAM_VALUES.get(name)
+  return CO.pick(name, PARAM_VALUES.get(name))
 
 def convention(name: str):
-  return CONVENTIONS.get(name)
+  return CO.pick(name, CONVENTIONS.get(name))
 
 def choice(name: str):
   decided = _DECIDED.get()
   if decided and name in decided:
     return decided[name]
-  return CHOICES.get(name)
+  return CO.pick(name, CHOICES.get(name))
 
 def flag(name: str) -> bool:
   if name == "wall_height_floor_to_floor":
     return choice("wall_height_basis") != "CLEAR"          
-  return bool(FLAGS.get(name))
+  return bool(CO.pick(name, FLAGS.get(name)))
+
+PER_DRAWING = ("wall_height_basis", "opening_rules_basis", "tie_band_single_count", "brick_net_of_lintels")
+NOT_READ = ("footing_below_ground_mm", "stair_waist_mm", "lintel_bearing_mm", "beam_formwork_mm_per_rft", "lintel_formwork_mm_per_rft", "brick_length_centre_line")
+DEPTHS = {"basement_dig_mm": "BASEMENT_DIG_MM", "trench_depth_mm": "TRENCH_DEPTH_MM", "fill_depth_mm": "FILL_DEPTH_MM"}
+BOUNDS = {"mm": (1.0, 30000.0), "mm per rft": (1.0, 2000.0), "%": (0.0, 100.0), "kg/m2": (0.0, 200.0)}
+WHY_FIXED = {
+  "PER_DRAWING": "Decided for each drawing on its decisions screen. The figure here is only where every drawing starts.",
+  "NOT_READ": "Held for reference. The software does not read this figure yet; the value it uses is a constant in the code.",
+}
+LABELS = {
+  "basement_wall_height_mm": ("Heights and depths", "Basement concrete wall height"),
+  "basement_floor_to_floor_mm": ("Heights and depths", "Basement floor to floor"),
+  "footing_depth_mm": ("Heights and depths", "Footing depth when only a symbol is printed"),
+  "footing_below_ground_mm": ("Heights and depths", "Footing below ground"),
+  "slab_thickness_mm": ("Heights and depths", "Slab thickness when none is printed"),
+  "stair_waist_mm": ("Heights and depths", "Stair waist"),
+  "lintel_bearing_mm": ("Heights and depths", "Lintel bearing at each end"),
+  "neck_height_mm": ("Heights and depths", "Neck column height"),
+  "beam_depth_mm": ("Heights and depths", "Roof beam depth when none is printed"),
+  "plinth_beam_depth_mm": ("Heights and depths", "Plinth beam depth"),
+  "basement_dig_mm": ("Heights and depths", "Basement dig depth"),
+  "trench_depth_mm": ("Heights and depths", "Wall trench depth"),
+  "fill_depth_mm": ("Heights and depths", "Filling depth up to the plinth"),
+  "pcc_thickness_mm": ("Heights and depths", "Plain concrete bed thickness"),
+  "slab_projection_chajja_max_mm": ("Heights and depths", "Largest slab projection counted as a chajja"),
+  "tank_top_slab_mm": ("Tanks and site", "Tank top slab"),
+  "tank_bottom_slab_mm": ("Tanks and site", "Tank bottom slab"),
+  "tank_wall_height_mm": ("Tanks and site", "Tank wall height"),
+  "boundary_wall_thickness_mm": ("Tanks and site", "Boundary wall thickness"),
+  "tank_base_formwork": ("Tanks and site", "Tank base formwork taken"),
+  "beam_formwork_mm_per_rft": ("Formwork and steel", "Beam formwork, per running foot"),
+  "lintel_formwork_mm_per_rft": ("Formwork and steel", "Lintel formwork, per running foot"),
+  "footing_formwork": ("Formwork and steel", "Footing formwork taken"),
+  "stair_formwork_soffit_only": ("Formwork and steel", "Stair formwork: soffit only"),
+  "steel_wastage_pct": ("Formwork and steel", "Steel wastage"),
+  "slab_steel_kg_per_m2": ("Formwork and steel", "Slab steel by rule of thumb"),
+  "earth_swell_pct": ("Earthwork", "Earth swell"),
+  "fill_compaction_pct": ("Earthwork", "Fill compaction"),
+  "beam_depth_includes_slab": ("How the QS counts", "Beam depth includes the slab"),
+  "tie_band_replaces_lintel": ("How the QS counts", "A tie band replaces the lintel"),
+  "rcc_ring_closed": ("How the QS counts", "Concrete wall ring counted as closed"),
+  "brick_length_centre_line": ("How the QS counts", "Brick wall length on the centre line"),
+  "wall_height_basis": ("Decided for each drawing", "Height of a brick wall"),
+  "tie_band_single_count": ("Decided for each drawing", "Tie band at lintel level"),
+  "brick_net_of_lintels": ("Decided for each drawing", "Brick and the lintels over its openings"),
+  "opening_rules_basis": ("Decided for each drawing", "Which openings come off each work item"),
+}
+
+def code_default(key: str):
+  """The figure the software starts from, whatever the company holds."""
+  if key in CONVENTIONS:
+    return CONVENTIONS[key]
+  if key in PARAM_VALUES:
+    return PARAM_VALUES[key]
+  if key in CHOICES:
+    return CHOICES[key]
+  if key in FLAGS:
+    return 1.0 if FLAGS[key] else 0.0
+  if key in proposed.SIZE_VALUES:
+    return proposed.SIZE_VALUES[key]["mm"]
+  if key in DEPTHS:
+    return getattr(proposed, DEPTHS[key])
+  return None
+
+def _unit(key: str):
+  if key in CHOICES or key in FLAGS or (key in PARAM_VALUES and not key.endswith(("_mm", "_pct", "_kg_per_m2"))):
+    return None
+  if key.endswith("_mm_per_rft"):
+    return "mm per rft"
+  if key.endswith("_mm"):
+    return "mm"
+  if key.endswith("_pct"):
+    return "%"
+  if key.endswith("_kg_per_m2"):
+    return "kg/m2"
+  return None
+
+def registry() -> list:
+  """Every convention a company can hold: key, group, label, unit, the software's own figure, the range a value must lie in and whether the software reads the company's figure."""
+  rows = []
+  for key, (group, label) in LABELS.items():
+    unit = _unit(key)
+    kind = "CHOICE" if key in CHOICES else "NUMBER" if unit else "SWITCH"
+    low, high = BOUNDS.get(unit, (0.0, 1.0))
+    row = {"key": key, "group": group, "label": label, "kind": kind, "unit": unit, "default": code_default(key), "low": low, "high": high, "editable": True, "why_fixed": None}
+    if kind == "CHOICE":
+      row["options"] = [{"value": v, "text": t} for v, t in CHOICE_OPTIONS[key].items()]
+    if key in PER_DRAWING:
+      row["editable"], row["why_fixed"] = False, WHY_FIXED["PER_DRAWING"]
+    elif key in NOT_READ:
+      row["editable"], row["why_fixed"] = False, WHY_FIXED["NOT_READ"]
+    rows.append(row)
+  return rows
+
+def figure(key: str, value) -> str:
+  unit = _unit(key)
+  if unit is None:
+    return str(value) if isinstance(value, str) else ("yes" if float(value) >= 0.5 else "no")
+  v = float(value)
+  if unit == "mm":
+    return f"{v:g} mm ({v / 25.4:.4g} in)"
+  return f"{v:g} {unit}"
+
+def in_force(key: str):
+  return CO.pick(key, code_default(key))
+
+def company_differs(*keys: str) -> bool:
+  """True when the company holds a figure for any of these that is not the software's own."""
+  for key in keys:
+    held = CO.value(key)
+    if held is None:
+      continue
+    base = code_default(key)
+    if isinstance(base, str) or isinstance(held, str):
+      if str(held) != str(base):
+        return True
+    elif abs(float(held) - float(base)) > 1e-9:
+      return True
+  return False
+
+def conventions_words(*keys: str) -> str:
+  return "; ".join(f"{LABELS[k][1][0].lower() + LABELS[k][1][1:]} {figure(k, in_force(k))}" for k in keys)
+
+def whose(keys, as_qs: str, as_company: str) -> str:
+  """The wording of a note: the QS's own when the figure is still the QS's, the company's when the company set it."""
+  return as_company if CO.origin_of(*keys) == CO.COMPANY else as_qs
 
 def by_status() -> dict:
   out = {s: 0 for s in STATUSES}

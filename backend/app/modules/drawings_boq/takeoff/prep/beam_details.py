@@ -9,6 +9,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
+from app.modules.drawings_boq.takeoff.prep import schedules as S
 import subprocess
 import time
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, to_visual

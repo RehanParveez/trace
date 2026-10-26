@@ -46,6 +46,36 @@ def extrusion_volume_mm3(profile: dict | None, placement: dict | None) -> float 
     return None
   return area * snap_mm(depth)
 
+VOTE_TEXT = {
+  "NO_MESH": "Geometry volume differs from the model's Qto volume by more than 2%.",
+  "PRISM_MESH": "The profile and the 3D mesh agree; the model's Qto volume differs by more than 2%. The profile volume is billed.",
+  "MESH_QTO": "The profile differs (it is cut); the 3D mesh and the model's Qto agree, so that volume is billed.",
+  "PRISM_QTO": "The profile and the model's Qto agree; the 3D mesh differs by more than 2%. The profile volume is billed.",
+  "MESH_ALONE": "The profile, the 3D mesh and the model's Qto volume all differ by more than 2%; the 3D mesh volume is billed.",
+}
+VOTE_RESOLVED = frozenset({"PRISM_MESH", "MESH_QTO", "PRISM_QTO"})
+
+def _m3(value: float | None) -> float | None:
+  return round(value / 1e9, 4) if value is not None else None
+
+def volume_by_agreement(prism: float, mesh: float | None, qto: float, tolerance: float) -> tuple:
+  """(billed mm3, basis, sources). Two of profile, 3D mesh and Qto that agree within tolerance win. With no mesh the profile is kept, as before.
+  With a mesh and no agreement the mesh is billed: it is the actual body."""
+  def agree(a, b) -> bool:
+    return a is not None and b is not None and abs(a - b) <= tolerance * max(a, b)
+
+  if mesh is None:
+    basis, volume = "NO_MESH", prism
+  elif agree(prism, mesh):
+    basis, volume = "PRISM_MESH", prism
+  elif agree(mesh, qto):
+    basis, volume = "MESH_QTO", mesh
+  elif agree(prism, qto):
+    basis, volume = "PRISM_QTO", prism
+  else:
+    basis, volume = "MESH_ALONE", mesh
+  return volume, basis, {"profile_m3": _m3(prism), "mesh_m3": _m3(mesh), "qto_m3": _m3(qto), "billed_m3": _m3(volume)}
+
 def bbox_volume_mm3(lo, hi) -> float | None:
   if not lo or not hi or any(v is None for v in (*lo, *hi)):
     return None

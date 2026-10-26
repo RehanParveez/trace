@@ -2,6 +2,7 @@ from __future__ import annotations
 from decimal import Decimal
 from dataclasses import dataclass, field
 from app.engine.measure.rebar import REBAR_WORK_ITEM, ESTIMATE_BANDS
+from app.engine.measure.ifc_rebar import FORMULA_IFC_BAR
 from app.engine.measure.models import CalculationContext, LedgerEntry, Solid
 from uuid import uuid5
 from app.engine.measure.derived import DERIVED, FACTOR_ASSUMED, FACTOR_CONFIRMED, counted_measurement_ids, resolve_params
@@ -97,6 +98,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
 
   taken = {r.work_item_code for r in ledger if r.source_kind == "MODEL" and r.quantity > 0}
   taken |= {r.work_item_code for r in (extra_ledger or ()) if getattr(r, "source_kind", None) == PDF_SOURCE and r.quantity > 0}
+  taken |= {r.work_item_code for r in (extra_ledger or ()) if r.formula_code == FORMULA_IFC_BAR and r.quantity > 0}
   if REBAR_WORK_ITEM in taken:
     stats["reason"] = "ALL_ITEMS_IN_MODEL"
     return SteelResult(stats=stats)

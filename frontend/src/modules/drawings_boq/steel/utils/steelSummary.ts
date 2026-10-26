@@ -5,11 +5,12 @@ export type Tone = "ok" | "warn" | "bad" | "muted";
 export const BASIS_WORDS: Record<SteelBasis, string> = {
   PRINTED: "Bars printed on the drawing",
   SCHEDULE: "Bar bending schedule",
-  ESTIMATE_PDF: "Estimated from the size (no bars printed)",
+  MODEL_BARS: "Bars in the IFC model",
+  ESTIMATE_PDF:"Estimated from the size (no bars printed)",
   ESTIMATE_MODEL: "Estimated from the model's concrete volume",
 };
 
-export const BASIS_TONE: Record<SteelBasis, Tone> = { PRINTED: "ok", SCHEDULE: "ok", ESTIMATE_PDF: "warn", ESTIMATE_MODEL: "warn" };
+export const BASIS_TONE: Record<SteelBasis, Tone> = { PRINTED: "ok", SCHEDULE: "ok", MODEL_BARS: "ok", ESTIMATE_PDF: "warn", ESTIMATE_MODEL: "warn" };
 
 export const STATUS_WORDS: Record<IntensityStatus, string> = {
   IN_RANGE: "Within the usual range",

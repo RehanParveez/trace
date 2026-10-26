@@ -293,7 +293,7 @@ def _with_clear_height(heights: dict, floor_heights: dict | None, level_hint: st
   return out
 
 def _height_note(h: dict) -> dict:
-   return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"])
+   return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}))
 
 def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: bool, heights: dict | None = None) -> Candidate | None:
   """A framing view with no column marks at all (a mumty or a stair head) still shows its columns as black squares."""

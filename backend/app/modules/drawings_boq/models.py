@@ -4429,6 +4429,27 @@ class ProjectMeasurementParameter(Base, TimestampMixin):
     nullable=True,
   )
 
+class CompanyConvention(Base, TimestampMixin):
+  """A figure a company holds for a measurement rule the drawings do not print (a footing depth, a tank slab, the steel wastage). The readers take it before the software's own figure."""
+  __tablename__ = "company_conventions"
+
+  __table_args__ = (
+    UniqueConstraint("organization_id", "key", name="uq_company_conventions_key"),
+    CheckConstraint("origin IN ('COMPANY','QS_WORKBOOK','PROJECT','CODE_DEFAULT_ASSUMED')", name="ck_company_conventions_origin"),
+    Index("ix_company_conventions_org", "organization_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+  key: Mapped[str] = mapped_column(String(64), nullable=False)
+  value: Mapped[object] = mapped_column(JSONB, nullable=False)
+  unit: Mapped[str | None] = mapped_column(String(24), nullable=True)
+  origin: Mapped[str] = mapped_column(String(24), nullable=False)
+  set_by_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL", name="fk_company_conventions_set_by"), nullable=True)
+  set_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
+  evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
+
 class ProjectDatum(Base, TimestampMixin):
   __tablename__ = "project_datums"
 

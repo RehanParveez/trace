@@ -3,6 +3,8 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 from uuid import UUID
 from app.modules.drawings_boq.takeoff.decisions import store, catalog, effects
 from app.engine.measure import proposed as PR, readings as QS
+from app.engine.measure import company as CO
+from app.modules.drawings_boq import company_conventions as CCV
 from app.core.exceptions import TraceException
 from app.modules.audit.models import AuditAction
 
@@ -16,6 +18,7 @@ class DecisionsService(ExtractService):
     return drawing, sheets, exts, rows
 
   async def view(self, org: UUID, drawing_id: UUID) -> dict:
+    CO.hold(await CCV.in_force(self.session, org))
     drawing, sheets, exts, rows = await self._state(org, drawing_id)
     meta = drawing.ingestion_meta or {}
 

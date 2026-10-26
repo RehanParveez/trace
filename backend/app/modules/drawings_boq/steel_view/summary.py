@@ -4,10 +4,11 @@ from app.modules.drawings_boq.steel_view.allowances import allowances_of
 
 STEEL_ITEM = "STL-REBAR"
 FORMULA_PRINTED, FORMULA_BBS, FORMULA_RULE = "PDF_MEMBER_STEEL_WEIGHT", "REBAR_BBS_WEIGHT", "REBAR_RULE_ESTIMATE"
+FORMULA_MODEL_BAR = "IFC_BAR_WEIGHT"
 ESTIMATE_RECIPE = "PDF_MEMBER_STEEL_ESTIMATE"
-STEEL_FORMULAS = (FORMULA_PRINTED, FORMULA_BBS, FORMULA_RULE)
-PRINTED, SCHEDULE, ESTIMATE_PDF, ESTIMATE_MODEL = "PRINTED", "SCHEDULE", "ESTIMATE_PDF", "ESTIMATE_MODEL"
-BASIS_ORDER = (PRINTED, SCHEDULE, ESTIMATE_PDF, ESTIMATE_MODEL)
+STEEL_FORMULAS = (FORMULA_PRINTED, FORMULA_BBS, FORMULA_RULE, FORMULA_MODEL_BAR)
+PRINTED, SCHEDULE, ESTIMATE_PDF, ESTIMATE_MODEL, MODEL_BARS = "PRINTED", "SCHEDULE", "ESTIMATE_PDF", "ESTIMATE_MODEL", "MODEL_BARS"
+BASIS_ORDER = (PRINTED, SCHEDULE, MODEL_BARS, ESTIMATE_PDF, ESTIMATE_MODEL)
 INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB"}
 USUAL_RANGE = {"SLAB": (55.0, 78.5), "BEAM": (78.5, 157.0), "COLUMN": (78.5, 392.0), "FOOTING": (50.0, 100.0)}
 FAMILY_LABEL = {"LINTEL": "Lintels", "BEAM": "Beams", "COLUMN": "Columns", "FOOTING": "Footings", "SLAB": "Slabs", "RCC_WALL": "RCC walls", "STAIR": "Stairs",
@@ -16,7 +17,7 @@ FAMILY_ALIAS = {"WALL": "RCC_WALL", "RCC WALL": "RCC_WALL", "STAIRCASE": "STAIR"
 MARK_CAP = 4000
 NO_GRADE = "NONE"
 GRADE_WORDS = {NO_GRADE: "Grade not stated on the drawing"}
-BASIS_WORDS = {PRINTED: "Bars printed on the drawing", SCHEDULE: "Bar bending schedule", ESTIMATE_PDF: "Estimated from the size (no bars printed)", ESTIMATE_MODEL: "Estimated from the model's concrete volume"}
+BASIS_WORDS = {PRINTED: "Bars printed on the drawing", SCHEDULE: "Bar bending schedule", MODEL_BARS: "Bars in the IFC model", ESTIMATE_PDF: "Estimated from the size (no bars printed)", ESTIMATE_MODEL: "Estimated from the model's concrete volume"}
 
 def dec(value, default: Decimal = Decimal("0")) -> Decimal:
   try:
@@ -82,6 +83,13 @@ def member_of(row: dict, wastage_pct=None) -> dict | None:
       "kg_low": low, "kg_high": high, "dia": dia, "as_run_wastage_pct": as_run, "keeps_bare": bare is not None and bare > 0,
       "grade": str(src.get("steel_grade") or ""), "secondary": (src.get("split") or {}).get("primary") is False,
       "unit": (str(src.get("measurement_id")), src.get("instance")) if src.get("measurement_id") else None})
+    return out
+
+  if formula == FORMULA_MODEL_BAR:
+    host = inputs.get("host") or {}
+    d = str(dec(inputs.get("dia_mm")).normalize()) if inputs.get("dia_mm") is not None else None
+    out.update({"family": family_of(host.get("family")), "basis": MODEL_BARS, "tag": str(host.get("name") or out["element"] or ""), "kg": kg_row,
+      "dia": [(d, kg_row, dec(inputs.get("length_mm")) / 1000)] if d else [], "keeps_bare": False, "as_run_wastage_pct": None, "grade": str(inputs.get("grade") or "")})
     return out
 
   if formula in (FORMULA_BBS, FORMULA_RULE):

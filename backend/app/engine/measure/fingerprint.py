@@ -3,7 +3,7 @@ import json
 import hashlib
 
 def _element_key(e) -> dict:
-  return {
+  key = {
     "id": str(e.id), "t": e.ifc_type, "r": e.role,
     "l": str(e.level_id) if e.level_id else None,
     "k": e.geometry_kind, "p": e.profile, "pl": e.placement,
@@ -18,6 +18,11 @@ def _element_key(e) -> dict:
     "ly": getattr(e, "layers", None),
     "gm": getattr(e, "generic_material", False),
   }
+  if getattr(e, "rebar", None):
+    key["rb"] = e.rebar
+  if getattr(e, "mesh_volume_mm3", None):
+    key["mv"] = e.mesh_volume_mm3
+  return key
 
 def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,
   convention_params: dict | None = None, spatial: dict | None = None) -> str:

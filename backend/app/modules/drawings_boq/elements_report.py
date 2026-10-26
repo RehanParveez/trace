@@ -623,7 +623,11 @@ def _grade_tag(row) -> str:
   grade = ev.get("grade")
   tag = f'<br/><font color="{GRADE_COLOR[grade]}" size="6">{GRADE_LABEL[grade]}</font>' if grade in GRADE_LABEL else ""
   qs = ev.get("from_qs") or []
-  return tag + (f'<br/><font color="{GRADE_COLOR["ASSUMED"]}" size="6">from QS: {clean(", ".join(qs), 80)}</font>' if qs else "")
+  company = ev.get("from_company") or []
+  assumed = ev.get("assumed_conventions") or []
+  for names, label in ((qs, "from QS"), (company, "company convention"), (assumed, "assumed, no company convention")):
+    tag += f'<br/><font color="{GRADE_COLOR["ASSUMED"]}" size="6">{label}: {clean(", ".join(names), 80)}</font>' if names else ""
+  return tag
 
 def _register_story(st, rows: list, is_pdf: bool, level_names: dict | None) -> tuple[list, dict]:
   cols = _columns(is_pdf)

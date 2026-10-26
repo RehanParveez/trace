@@ -261,7 +261,7 @@ def _ledger_for_solid(ctx, solid: Solid, marks: list[BarMark], formula: str, sou
       "rounding": "half_up,6dp"},
     warnings=tuple(dict.fromkeys(warnings)), source_kind=source_kind)
 
-def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs | None) -> RebarResult:
+def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs | None, covered=()) -> RebarResult:
   inputs = inputs or RebarInputs()
   rules = tuple(getattr(profile, "reinforcement_rules", ()) or ())
   shapes = {s.code.upper(): s for s in inputs.shapes}
@@ -272,7 +272,7 @@ def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs 
   skipped: dict = {}
   used: dict = {}
   per_solid: dict = {}
-  covered_elements: set = set()
+  covered_elements: set = set(covered)
   covered_families: set = set()
   stats = {"schedule_rows": len(inputs.rows), "schedule_marks": 0, "matched": 0, "unmatched": 0, "estimated_marks": 0,
     "estimated_elements": 0, "estimate_suppressed": 0}

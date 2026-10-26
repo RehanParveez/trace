@@ -371,6 +371,7 @@ async def _parse_drawing(drawing_id: UUID) -> None:
         "ifc_schema": read_result.schema,
         "length_unit_scale": read_result.length_unit_scale,
         "model_issues": read_result.model_issues,
+        "header": read_result.header,
         "stats": read_result.stats,
       }
       current_drawing.status = DrawingStatus.PARSED

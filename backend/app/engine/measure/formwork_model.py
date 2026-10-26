@@ -32,9 +32,11 @@ def category_of(el) -> str | None:
   return None
 
 def _plan(el):
-  pts = ((el.placement or {}).get("plan_mm")) or []
+  pl = el.placement or {}
+  pts = pl.get("plan_mm") or pl.get("outline_mm") or []
+  holes = [] if pl.get("plan_mm") else (pl.get("outline_holes_mm") or [])
   try:
-    poly = Polygon([(float(x), float(y)) for x, y in pts]) if len(pts) >= 3 else None
+    poly = Polygon([(float(x), float(y)) for x, y in pts], [[(float(x), float(y)) for x, y in h] for h in holes if len(h) >= 3]) if len(pts) >= 3 else None
   except (TypeError, ValueError):
     poly = None
   return poly if poly is not None and poly.is_valid and poly.area > 0 else None

@@ -7,7 +7,10 @@ from app.modules.drawings_boq.takeoff.prep.details import ocr_available
 from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
 
-CAPTION = re.compile(r"\b(?:SECTION|DETAIL|PLAN)\b.*\b(?:TANKS?|W\.?\s?T)\b", re.I)
+CAPTION = re.compile(r"\b(?:SECTION|DETAIL|PLAN)\b.*\b(?:TANKS?|W\.?\s?T)\b|\b(?:TANKS?|W\.?\s?T)\b.*\b(?:SECTION|DETAIL|PLAN)\b", re.I)
+WALL_NOTE = re.compile(r"^\s*(\d{1,2})?\s*([½¼¾]|\d/\d)?\s*[\"”″]\s*(?:TH[K]?\.?\s*:?\s*)?R\.?\s?C\.?\s?C\.?\s+(WALL|SLAB)\b", re.I)
+SIZE_SPLIT = re.compile(r"\s*[xX×]\s*")
+VULGAR = {"½": 0.5, "¼": 0.25, "¾": 0.75}
 BARE_CAPTION = re.compile(r"^(?:O\s*[/.]?\s*H|OVER\s*HEAD|U\s*[/.]?\s*G|UNDER\s*GROUND)\.?\s*WATER\s*TANK$", re.I) 
 VIEW_SECTION = re.compile(r"\b(?:SECTION|DETAIL)\b", re.I)
 KIND_OHWT = re.compile(r"\bO\s*[/.]?\s*H\b|OVER\s*HEAD|OHWT", re.I)
@@ -51,6 +54,55 @@ def parse_length(text: str) -> dict | None:
     return {"inches": int(m.group(1)), "text": f"{int(m.group(1))}\""}
   return None
 
+def plan_size(text: str) -> list | None:
+  """The two lengths a tank caption ends with ("O.H.W.TANK DETAIL 11'-0"x9'-3""): [inches, inches], the longer first; None when it ends with no pair of lengths (2 to 30 ft)."""
+  tail = re.split(r"\b(?:DETAIL|SECTION|PLAN)\b", text or "", flags=re.I)[-1].strip()
+  parts = SIZE_SPLIT.split(tail)
+  if len(parts) != 2:
+    return None
+  mm = [S.feet_inches_mm(p.replace(" ", "")) for p in parts]
+  if any(v is None for v in mm):
+    return None
+  inches = sorted((round(v / 25.4, 2) for v in mm), reverse=True)
+  return inches if all(24 <= v <= 360 for v in inches) else None
+
+def note_inches(whole: str | None, frac: str | None) -> float | None:
+  """4½ -> 4.5, 6 -> 6.0; None when there is no number."""
+  if not whole and not frac:
+    return None
+  extra = 0.0
+  if frac:
+    extra = VULGAR[frac] if frac in VULGAR else int(frac.split("/")[0]) / max(1, int(frac.split("/")[1]))
+  return float(whole or 0) + extra
+
+def wall_notes(lines: list, vis, caps_v: list) -> dict:
+  """id(caption) -> [{"part": "WALL" | "SLAB", "inches", "text"}]: the thickness notes of the tank details ('4½"TH: R.C.C WALL', '5" TH: R.C.C SLAB', '6" R.C.C WALL'), each given to the
+  tank caption below it whose written line stands nearest across (the figure is wider than its caption), within the reach the region of a caption has. A brick wall or an insulation sheet is not a note of the tank's concrete."""
+  out: dict = {}
+
+  for ln in lines:
+    text = (ln.text or "").strip()
+    m = WALL_NOTE.match(text)
+    if not m or not ln.spans:
+      continue
+    inches = note_inches(m.group(1), m.group(2))
+    if inches is None or not 2.0 <= inches <= 18.0:
+      continue
+    
+    ws = [w for _, _, w in ln.spans]
+    nx, ny = vis(sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws))
+    below = []
+    for c, (cx, cy) in caps_v:
+      xs = sorted(vis(*pt)[0] for pt in c["span"])
+      across = 0.0 if xs[0] <= nx <= xs[-1] else min(abs(nx - xs[0]), abs(nx - xs[-1]))
+      if 0 < cy - ny <= 2.0 * REGION_HEIGHT_PT and across <= 2.0 * REGION_HALF_WIDTH_PT:
+        below.append((across, cy - ny, c))
+    if not below:
+      continue
+    owner = min(below, key=lambda b: (b[0], b[1]))[2]
+    out.setdefault(id(owner), []).append({"part": m.group(3).upper(), "inches": inches, "text": text})
+  return out
+
 def captions(lines: list) -> list:
   """[{"text", "kind", "view", "x", "y"}]: the lines that name a tank drawing ("SECTION OF O/H WATER TANK", "Detail of U/G.W.Tank", "PLAN OF OVER HEAD WATER TANK")."""
   out = []
@@ -59,7 +111,7 @@ def captions(lines: list) -> list:
     if not text or len(text) > MAX_CAPTION_CHARS or not ln.spans or not (CAPTION.search(text) or BARE_CAPTION.match(text)):
       continue
     ws = [w for _, _, w in ln.spans]
-    out.append({"text": text, "kind": kind_of(text), "view": "SECTION" if VIEW_SECTION.search(text) else "PLAN", "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
+    out.append({"text": text, "kind": kind_of(text), "view": "SECTION" if VIEW_SECTION.search(text) else "PLAN", "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws), "plan_in": plan_size(text), "span": [[ws[0].cx, ws[0].cy], [ws[-1].cx, ws[-1].cy]]})
   return out
 
 def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float) -> tuple:
@@ -169,11 +221,12 @@ def read_tank_details(words: list, page, page_wh: tuple, crop: tuple, rotation: 
   except Exception:
     pass
 
+  notes_of = wall_notes(lines, vis, [(c, cap_v[id(c)]) for c in caps])
   out = []
   for c in caps:
     region = _region(cap_v[id(c)], others, Wv, Hv)
     rec = {"kind": c["kind"], "view": c["view"], "caption": c["text"], "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
-      "lengths": [], "bar_notes": bar_notes(lines, vis, region), "read": "NONE"}
+      "lengths": [], "bar_notes": bar_notes(lines, vis, region), "read": "NONE", "plan_in": c.get("plan_in"), "wall_notes": notes_of.get(id(c), [])}
     text_lengths = PT.tank_lengths(PT.region_words(words, region, crop, rotation, page_wh))
     rec["lengths"] = text_lengths
     rec["read"] = "TEXT" if text_lengths else "NONE"
@@ -189,7 +242,7 @@ def read_tank_details(words: list, page, page_wh: tuple, crop: tuple, rotation: 
           rec["read"] = "TIMEOUT"
       except Exception:
         rec["read"] = "FAILED"
-    rec["from_text"] = bool(text_lengths or rec["bar_notes"])
+    rec["from_text"] = bool(text_lengths or rec["bar_notes"] or rec["plan_in"] or rec["wall_notes"])
     out.append(rec)
   return {"ocr": "OK" if ocr else "UNAVAILABLE", "details": out}
 
@@ -199,7 +252,7 @@ def gather(sheets: list) -> list:
   out = []
   for sh in sheets:
     for d in sh.get("details") or []:
-      if d.get("lengths") or d.get("bar_notes"):
+      if d.get("lengths") or d.get("bar_notes") or d.get("plan_in") or d.get("wall_notes"):
         out.append({"kind": d["kind"], "view": d["view"], "caption": d["caption"], "page_no": sh.get("page_no"), "lengths": list(d.get("lengths") or []),
-          "bar_notes": list(d.get("bar_notes") or [])})
+          "bar_notes": list(d.get("bar_notes") or []), "plan_in": d.get("plan_in"), "wall_notes": list(d.get("wall_notes") or [])})
   return out

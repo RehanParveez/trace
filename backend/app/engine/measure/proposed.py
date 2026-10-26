@@ -20,7 +20,9 @@ EFFECT_TEXT = {
   HOLD: "Not proposed. Waits for the rate list.",
 }
 
-PARAM_VALUES = {}         
+from app.engine.measure import company as CO
+
+PARAM_VALUES = {}              
 PARAM_EVIDENCE = {
   "footing_formwork": "Form Work, FOOTING: F-1 x10, F-2 x4, F-3 x3, perimeter x 0.75 ft = 179.25 sft. Every footing, all four sides, 0.75 ft deep.",
   "steel_wastage_pct": "Steel Summary: 22.62 t plus 'Steel Waistage 5%' of 1.13 t = 23.75 t.",
@@ -499,8 +501,19 @@ SIZE_VALUES = {
   "tank_wall_height_mm": {"mm": 1524.0, "text": "5 ft", "evidence": "Concrete Work, UGWT and OHWT: the long and short walls are 5 ft high."},
 }
 
+def _ft(mm: float) -> str:
+  return f"{mm / 304.8:g} ft"
+
 def sizes() -> dict:
-  return {k: dict(v) for k, v in SIZE_VALUES.items()}
+  out = {}
+  for k, v in SIZE_VALUES.items():
+    row = dict(v)
+    held = CO.value(k)
+    if held is not None and not (CO.origin_of(k) == CO.QS_WORKBOOK and abs(float(held) - v["mm"]) < 1e-9):
+      row = {"mm": float(held), "text": _ft(float(held)), "evidence": "Set by your company as its own convention."}
+    row["origin"] = CO.origin_of(k)
+    out[k] = row
+  return out
 
 def param(name: str):
   return PARAM_VALUES.get(name)
@@ -524,11 +537,20 @@ def _inch(mm: float) -> str:
 def depth_assumed(item: str):
   """The depth used for a foundation item when the drawing prints none: {"mm", "basis", "text"}, or None for an item with no such depth."""
   if item == "EXCAVATION_AREA":
-    return {"mm": BASEMENT_DIG_MM, "basis": WORKBOOK, "text": f"the QS's workbook digs the basement {BASEMENT_DIG_MM / 304.8:g} ft deep (the 'Complete Area' line, 30 x 54 x 8 ft)"}
+    mm = float(CO.pick("basement_dig_mm", BASEMENT_DIG_MM))
+    own = CO.origin_of("basement_dig_mm") == CO.COMPANY and abs(mm - BASEMENT_DIG_MM) > 1e-9
+    return {"mm": mm, "basis": WORKBOOK, "origin": CO.origin_of("basement_dig_mm"),
+      "text": f"your company's convention digs the basement {_ft(mm)} deep" if own else f"the QS's workbook digs the basement {mm / 304.8:g} ft deep (the 'Complete Area' line, 30 x 54 x 8 ft)"}
   if item == "TRENCH":
-    return {"mm": TRENCH_DEPTH_MM, "basis": WORKBOOK, "text": f"the QS's workbook digs the wall trenches {TRENCH_DEPTH_MM / 304.8:g} ft deep"}
+    mm = float(CO.pick("trench_depth_mm", TRENCH_DEPTH_MM))
+    own = CO.origin_of("trench_depth_mm") == CO.COMPANY and abs(mm - TRENCH_DEPTH_MM) > 1e-9
+    return {"mm": mm, "basis": WORKBOOK, "origin": CO.origin_of("trench_depth_mm"),
+      "text": f"your company's convention digs the wall trenches {_ft(mm)} deep" if own else f"the QS's workbook digs the wall trenches {mm / 304.8:g} ft deep"}
   if item == "EARTH_FILL":
-    return {"mm": FILL_DEPTH_MM, "basis": PRACTICE, "text": f"{FILL_DEPTH_MM / 304.8:g} ft, the usual filling up to the plinth, in {round(FILL_DEPTH_MM / 152.4)} layers of 6 in; the workbook has no filling line"}
+    mm = float(CO.pick("fill_depth_mm", FILL_DEPTH_MM))
+    own = CO.origin_of("fill_depth_mm") == CO.COMPANY and abs(mm - FILL_DEPTH_MM) > 1e-9
+    return {"mm": mm, "basis": PRACTICE, "origin": CO.origin_of("fill_depth_mm"),
+      "text": f"your company's convention fills {_ft(mm)}, in {round(mm / 152.4)} layers of 6 in" if own else f"{mm / 304.8:g} ft, the usual filling up to the plinth, in {round(mm / 152.4)} layers of 6 in; the workbook has no filling line"}
   return None
 
 def brick_step(strip_class: str, step_no: int):

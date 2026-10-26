@@ -32,6 +32,7 @@ export interface Drawing {
   is_current_revision: boolean;
   superseded_at: string | null;
   latest_audit_id?: string | null;
+  ingestion_meta?: DrawingIngestionMeta;
 }
 
 export interface DrawingElement {
@@ -772,10 +773,24 @@ export interface ReasonRequest {
   reason: string;
 }
 
+export interface IfcHeader {
+  authoring_tool?: string;
+  application?: string;
+  application_version?: string;
+  application_identifier?: string;
+  developer?: string;
+  originating_system?: string;
+  preprocessor_version?: string;
+  organization?: string;
+  author?: string;
+  file_time_stamp?: string;
+}
+
 export interface DrawingIngestionMeta {
   reader_version?: string;
   ifc_schema?: string;
   length_unit_scale?: number;
+  header?: IfcHeader;
   model_issues?: {
     code: string;
     severity: string;
@@ -1248,6 +1263,7 @@ export interface RunStats {
   material?: MaterialStats;
   coverage?: CoverageStats;
   confidence?: ConfidenceStats;
+  ifc_rebar?: IfcRebarStats;
 }
 
 export interface CoverageStats {
@@ -1257,6 +1273,29 @@ export interface CoverageStats {
   skipped_by_role: number;
   unmapped: number;
   other_unmeasured: number;
+  skipped_roles?: Record<string, number>;
+  unmapped_types?: Record<string, number>;
+  rejected_codes?: Record<string, number>;
+}
+
+export interface IfcRebarStats {
+  bars?: number;
+  bars_without_data?: number;
+  measured?: number;
+  no_diameter?: number;
+  no_length?: number;
+  kg?: string;
+  tonnes?: string;
+  length_m?: string;
+  hosts?: number;
+  no_host?: number;
+  length_from_geometry?: number;
+  diameter_derived?: number;
+  area_mismatch?: number;
+  file_weight_mismatch?: number;
+  by_dia?: Record<string, { bars: number; kg: string; length_m: string }>;
+  by_family_kg?: Record<string, string>;
+  file_weight?: { bars: number; file_kg: string; computed_kg: string; difference_pct: string | null };
 }
 
 export interface ConfidenceStats {

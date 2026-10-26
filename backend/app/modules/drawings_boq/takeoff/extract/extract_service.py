@@ -16,6 +16,8 @@ from app.modules.audit.models import AuditAction
 from pydantic import ValidationError
 from app.core.exceptions import TraceException
 from app.engine.measure import readings as QS
+from app.engine.measure import company as CO
+from app.modules.drawings_boq import company_conventions as CCV
 from app.modules.drawings_boq.takeoff.decisions import store as decided
 from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff import repository as repo_mod
@@ -326,6 +328,7 @@ class ExtractService:
     unverified = "PDF_RATIO_UNVERIFIED" in (ev.warnings or ())
     
     drawing = await self.core._pdf_drawing(org, sheet.drawing_id)
+    CO.hold(await CCV.in_force(self.session, org))
     in_force = decided.effective(drawing.ingestion_meta)
     schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
     floor_heights = await self.prep.drawing_storey_heights(org, sheet.drawing_id)
@@ -364,6 +367,7 @@ class ExtractService:
     result.stats["drainage_seen"] = DR.seen(found)
     result.stats["drainage_elsewhere"] = await self._repeated_drainage(org, sheet, result)
     result.stats["decisions"] = in_force
+    result.stats["company"] = CO.stamp()
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
     KD.drop_unknown_codes(found, catalog)
@@ -551,6 +555,7 @@ class ExtractService:
     return {"drawing_id": drawing_id, "done": done, "skipped": skipped}
 
   async def accept(self, org: UUID, user_id: UUID, payload) -> dict:
+    CO.hold(await CCV.in_force(self.session, org))
     rows = {r.id: r for r in await self.repo.candidates_by_ids(org, list(payload.ids), lock=True)}
     await self._heal(org, list(rows.values()))
     given = payload.work_items or {}

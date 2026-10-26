@@ -14,6 +14,7 @@ import { RoofDeckPanel } from "./RoofDeckPanel";
 import { SteelAllowancesPanel } from "./SteelAllowancesPanel";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
+import { IfcRebarSummary } from "./IfcRebarSummary";
 import { useStageLabel } from "./StageBadge";
 
 function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: "red" | "gold" }) {
@@ -363,6 +364,8 @@ export function RunStatsSummary({ stats, projectId }: { stats?: RunStats; projec
           <Stat label={t("boq.calculationRun.statFamilies", "Covered families")} value={(r.covered_families ?? []).join(", ") || "—"} />
         </Section>
       ) : null}
+
+      <IfcRebarSummary stats={stats.ifc_rebar} />
 
       <SteelRebarRange steel={stats.steel} rebar={r} />
 

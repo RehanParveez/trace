@@ -3,8 +3,8 @@ import { Badge } from "../../organizations/components/OrganizationUi";
 import type { RunStats } from "../types/drawings-boq.types";
 import { formatPrecise } from "../utils/drawings-boq.utils";
 import {
-  bandTone, confidenceView, coverageView, geometrySourceLabel,
-  type CoverageGapKey, type TrustBand,
+  REJECTED_REASON, bandTone, confidenceView, coverageView, geometrySourceLabel,
+  type CoverageDetailItem, type CoverageGapKey, type TrustBand,
 } from "../utils/trust";
 
 const heading = "mb-2 text-[11px] font-bold uppercase tracking-[0.06em] text-[var(--color-text-muted)]";
@@ -17,6 +17,28 @@ const BAND_BAR: Record<TrustBand, string> = {
 
 function pct(share: number | null): string {
   return share === null ? "—" : `${Math.round(share * 100)}%`;
+}
+
+function DetailList({ title, items, reasons }: { title: string; items: CoverageDetailItem[]; reasons?: Record<string, string> }) {
+  if (items.length === 0) {
+    return null;
+  }
+  return (
+    <details className="rounded-[6px] bg-[var(--color-surface)] px-2.5 py-1.5">
+      <summary className="cursor-pointer text-[11.5px] text-[var(--color-text-secondary)]">
+        {title} ({items.reduce((sum, item) => sum + item.count, 0)})
+      </summary>
+      <ul className="mt-1.5 space-y-0.5 text-[11.5px] text-[var(--color-text-secondary)]">
+        {items.map((item) => (
+          <li key={item.name} className="flex flex-wrap gap-x-2">
+            <span className="font-mono">{item.name}</span>
+            <span className="font-mono text-[var(--color-text-muted)]">{item.count}</span>
+            {reasons?.[item.name] ? <span className="text-[var(--color-text-muted)]">{reasons[item.name]}</span> : null}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
 }
 
 export function RunTrust({ stats }: { stats?: RunStats }) {
@@ -75,7 +97,22 @@ export function RunTrust({ stats }: { stats?: RunStats }) {
                   >
                     {gapLabel[gap.key]}: {gap.count}
                   </span>
-                ))}
+                 ))}
+              </div>
+              <div className="space-y-1.5 pt-1">
+                <DetailList
+                  title={t("boq.trust.detailRejected", "Failed validation, by reason")}
+                  items={coverage.detail.rejected}
+                  reasons={REJECTED_REASON}
+                />
+                <DetailList
+                  title={t("boq.trust.detailSkipped", "Roles with no quantity rule")}
+                  items={coverage.detail.skipped_by_role}
+                />
+                <DetailList
+                  title={t("boq.trust.detailUnmapped", "Types with no work item")}
+                  items={coverage.detail.unmapped}
+                />
               </div>
             </div>
           ) : null}

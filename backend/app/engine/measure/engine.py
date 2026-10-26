@@ -3,7 +3,7 @@ from dataclasses import replace
 from app.engine.measure.units import Unit, mm3_to_m3, q4, q6, to_decimal
 from decimal import Decimal
 from uuid import uuid5
-from app.engine.measure.geometry import bbox_volume_mm3, extrusion_volume_mm3
+from app.engine.measure.geometry import VOTE_RESOLVED, VOTE_TEXT, bbox_volume_mm3, extrusion_volume_mm3, volume_by_agreement
 from app.engine.measure.models import CalculationContext, CalculationResult, LedgerEntry, MappingInput, ModelElement, Rejected, Solid, AllocationResult
 from app.engine.measure.formulas import get_formula
 from app.engine.measure.allocate import allocate as _allocate
@@ -25,6 +25,7 @@ from app.engine.measure.model_floor_works import floor_works_check, measure_floo
 from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
 from app.engine.measure import model_range as MR
 from app.engine.measure.one_total import one_total_check
+from app.engine.measure import ifc_rebar as IB
 from app.engine.measure.wall_finishes import measure_wall_finishes, wall_finishes_check
 from app.engine.measure.wall_foundation import measure_wall_foundation, wall_works_check
 from app.engine.measure.opening_roof import measure_opening_area, measure_roof_treatment, opening_roof_check
@@ -37,7 +38,7 @@ from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, 
 from app.engine.measure.spec import derive_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.26"
+ENGINE_VERSION = "2026.10.28"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -56,7 +57,7 @@ VOLUME_ROLES = frozenset({
   "RAMP", "RAMP_SLAB",
 })
 COUNT_ROLES = frozenset({"DOOR", "WINDOW"})
-FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS, **STEEL_FORMULA_UNITS, **TAKEOFF_FORMULA_UNITS}
+FORMULA_UNITS = {"SOLID_NET_VOLUME": Unit.M3.value, "OPENING_COUNT": Unit.NOS.value, **REINFORCEMENT_FORMULA_UNITS, **REBAR_FORMULA_UNITS, **IB.IFC_BAR_FORMULA_UNITS, **STEEL_FORMULA_UNITS, **TAKEOFF_FORMULA_UNITS}
 LOW_CONFIDENCE_FACTOR = Decimal("0.6")
 QTO_ONLY_FACTOR = Decimal("0.9")
 AABB_CONFIDENCE_FACTOR = Decimal("0.8")
@@ -82,8 +83,8 @@ def validate_input(ctx: CalculationContext, elements: list[ModelElement]):
         rejected.append(Rejected(el.id, el.ifc_type, STEEL_REJECTED_CODE,
           "Steel element has no model volume or length; not weighed."))
       else:
-        rejected.append(Rejected(el.id, el.ifc_type, "INVALID_ELEMENT",
-          "Element failed ingestion validation; not measured."))
+        rejected.append(Rejected(el.id, el.ifc_type, el.invalid_code or "INVALID_ELEMENT",
+          el.invalid_message or "Element failed ingestion validation; not measured."))
     else:
       accepted.append(el)
   return accepted, rejected
@@ -111,9 +112,12 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     elif qto_mm3 is not None:
       if abs(volume_mm3 - qto_mm3) / qto_mm3 > QTO_MISMATCH_TOLERANCE:
         is_wall = el.role.startswith("WALL")
-        issues.append(_issue("QTO_GEOMETRY_MISMATCH", "info" if is_wall else "warning",
-          "Geometry volume differs from the model's Qto volume by more than 2%."))
-        if not is_wall:
+        mesh_mm3 = float(el.mesh_volume_mm3) if el.mesh_volume_mm3 and not is_wall else None
+        volume_mm3, basis, sources = volume_by_agreement(volume_mm3, mesh_mm3, qto_mm3, QTO_MISMATCH_TOLERANCE)
+        resolved = basis in VOTE_RESOLVED
+        issues.append({**_issue("QTO_GEOMETRY_MISMATCH", "info" if (is_wall or resolved) else "warning", VOTE_TEXT[basis]),
+          "data": {"basis": basis, **sources}})
+        if not (is_wall or resolved):
           status = "REVIEW_REQUIRED"
   elif kind in ("BOX_ONLY", "QTO_ONLY"):
     volume_mm3 = qto_mm3
@@ -242,6 +246,8 @@ def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
       ))
     elif el.role in VOLUME_ROLES:
       solids.append(_volume_solid(ctx, el))
+    elif el.role == "REBAR" and el.rebar:
+      continue
     else:
       skipped[el.role] = skipped.get(el.role, 0) + 1
   solids.sort(key=lambda s: (s.role, str(s.level_id), str(s.element_id)))
@@ -313,6 +319,9 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
       inputs = {"geometry_kind": s.geometry_kind, "gross_m3": str(gross), "confidence_factor": str(s.confidence_factor)}
       if s.volume_check:
         inputs["volume_check"] = s.volume_check
+      vote = next((i["data"] for i in s.issues if i.get("code") == "QTO_GEOMETRY_MISMATCH" and i.get("data")), None)
+      if vote:
+        inputs["volume_vote"] = vote
       if s.material_class:
         inputs["material_class"] = s.material_class
       if redirect:
@@ -434,6 +443,7 @@ def self_check(solids: list[Solid], ledger: list[LedgerEntry], alloc: Allocation
   failures.extend(takeoff_check(solids, ledger, pdf_deductions))
   failures.extend(space_check(solids, ledger, pdf_deductions))
   failures.extend(steel_check(solids, ledger))
+  failures.extend(IB.ifc_bar_check(solids, ledger))
   failures.extend(layer_check(ledger))
   failures.extend(derived_check(solids, ledger))
   failures.extend(stage_split_check(ledger)[1])
@@ -507,10 +517,18 @@ def coverage_stats(elements: list, rejected: list, skipped: dict, unmapped: dict
   not_mapped = sum(unmapped.values())
   other = max(0, len(ids) - measured - len(rejected) - not_roled - not_mapped)
   
+  rejected_codes: dict = {}
+  for r in rejected:
+    rejected_codes[r.code] = rejected_codes.get(r.code, 0) + 1
   return {
     "elements": len(ids), "measured": measured, "rejected": len(rejected),
     "skipped_by_role": not_roled, "unmapped": not_mapped, "other_unmeasured": other,
+    "skipped_roles": dict(sorted(skipped.items())), "unmapped_types": dict(sorted(unmapped.items())),
+    "rejected_codes": dict(sorted(rejected_codes.items(), key=lambda kv: (-kv[1], kv[0]))),
   }
+
+def measure_ifc_bars(ctx: CalculationContext, elements: list[ModelElement]):
+  return IB.measure_ifc_bars(ctx, elements, QTO_MISMATCH_TOLERANCE)
 
 def confidence_stats(ledger: list) -> dict:
   zero = Decimal("0")
@@ -527,6 +545,8 @@ def confidence_stats(ledger: list) -> dict:
       label = inputs.get("geometry_kind") or "UNKNOWN"
       if inputs.get("volume_check"):
         label = f"{label}:{inputs['volume_check']}"
+      elif inputs.get("volume_vote"):
+        label = f"{label}:{inputs['volume_vote']['basis']}"
       row = by_geometry.setdefault(label, {"rows": 0, "m3": zero})
       row["rows"] += 1
       row["m3"] += r.quantity
@@ -551,7 +571,9 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     alloc = merge_openings(alloc, apply_openings(ctx, profile, solids, ctx.openings))
     
   ledger, unmapped = measure(ctx, solids, alloc)
-  extra_solids, extra_ledger = [], []
+  bar_res = measure_ifc_bars(ctx, accepted)
+  rejected = rejected + bar_res.rejected
+  extra_solids, extra_ledger = list(bar_res.solids), list(bar_res.ledger)
   finish_skipped: dict = {}
   rebar_res = None
   if profile is not None:
@@ -561,7 +583,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
       for k, v in res.skipped.items():
         finish_skipped[k] = finish_skipped.get(k, 0) + v
         
-    rebar_res = measure_rebar(ctx, profile, solids, ledger, ctx.rebar)
+    rebar_res = measure_rebar(ctx, profile, solids, ledger, ctx.rebar, bar_res.hosts)
     extra_solids += rebar_res.solids
     extra_ledger += rebar_res.ledger
     
@@ -650,6 +672,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     **alloc.stats,
     **(rebar_res.stats if rebar_res else {}),
     "rebar_skipped": rebar_res.skipped if rebar_res else {},
+    "ifc_rebar": bar_res.stats,
     "pdf_takeoff": takeoff_res.stats if takeoff_res else {},
     "pdf_space": space_info,
     "skipped_by_role": skipped,
@@ -660,7 +683,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "derived": derived_info,
     "ranges": MR.summary(ledger + extra_ledger),
     "material": material_stats(solids, ledger),
-    "coverage": coverage_stats(elements, rejected, skipped, unmapped, ledger),
+    "coverage": coverage_stats(elements, rejected, skipped, unmapped, ledger + bar_res.ledger),
     "confidence": confidence_stats(ledger + extra_ledger),
     "steel": steel_stats(solids, ledger, rejected),
     "unmapped_by_type": unmapped,

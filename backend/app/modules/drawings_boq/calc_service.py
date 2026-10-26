@@ -23,6 +23,8 @@ from app.modules.drawings_boq.repository import DrawingElementRepository, Drawin
 from app.modules.drawings_boq.standards.service import StandardsService
 from app.modules.projects.repository import ProjectRepository
 from app.modules.drawings_boq.service import DrawingBOQService
+from app.engine.measure import company as CO
+from app.modules.drawings_boq import company_conventions as CCV
 from app.core.config import settings
 from app.engine.measure import finishes as fin
 from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
@@ -294,6 +296,9 @@ class CalculationService:
       typed_levels = await DatumsService(self.session).stored_for_run(organization_id, project_id)
       if typed_levels:
         settings["datum_overrides"] = typed_levels
+    held = await CCV.in_force(self.session, organization_id)
+    if held:
+      settings["company_conventions"] = held
     settings.update(await OneTotalService(self.session).run_settings(organization_id, project_id, chosen, derived_params))
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
@@ -410,6 +415,7 @@ class CalculationService:
     rule_set_id = run.rule_set_id
     drawing_ids = list(run.drawing_revision_ids)
     run_settings = {k: v for k, v in (run.settings or {}).items() if k not in _SNAPSHOT_KEYS}
+    CO.hold(run_settings.get("company_conventions"))
     expected_fingerprint = run.fingerprint
     engine_version = run.engine_version
     convention_code = run.convention_code
@@ -599,14 +605,22 @@ class CalculationService:
         return {"schedule_lines": len(res.ledger)}
 
       async def reinforcement():
-        res = await asyncio.to_thread(rb.measure_rebar, ctx, profile, state["solids"], state["ledger"], p6.rebar)
+        bars = await asyncio.to_thread(kernel.measure_ifc_bars, ctx, state["accepted"])
+        await self.runs.stage_solids([_solid_row(run, s, "reinforcement") for s in bars.solids])
+        await self.runs.stage_ledger([_ledger_row(run, e, "reinforcement") for e in bars.ledger])
+        state["extra_solids"] += bars.solids
+        state["extra_ledger"] += bars.ledger
+        state["rejected"] = list(state["rejected"]) + bars.rejected
+        state["ifc_rebar"] = bars.stats
+        state["ifc_bar_ledger"] = bars.ledger
+        res = await asyncio.to_thread(rb.measure_rebar, ctx, profile, state["solids"], state["ledger"], p6.rebar, bars.hosts)
         await self.runs.stage_solids([_solid_row(run, s, "reinforcement") for s in res.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "reinforcement") for e in res.ledger])
         await self.runs.stage_bar_marks([_bar_mark_row(run, m) for m in res.marks])
         state["extra_solids"] += res.solids
         state["extra_ledger"] += res.ledger
         state["marks"], state["rebar_stats"], state["rebar_skipped"] = res.marks, res.stats, res.skipped
-        return {**res.stats, "skipped": res.skipped}
+        return {**res.stats, "skipped": res.skipped, "ifc_bars": bars.stats}
       
       async def pdf_takeoff():
         res = await asyncio.to_thread(tk.measure_takeoff, ctx, profile, p6.takeoff, state["ledger"] + state["extra_ledger"], state["accepted"])
@@ -839,6 +853,7 @@ class CalculationService:
         "finishes_skipped": state["finish_skipped"],
         "spaces": len(p6.spaces),
         "rebar": state["rebar_stats"],
+        "ifc_rebar": state.get("ifc_rebar", {}),
         "pdf_takeoff": state.get("takeoff_stats", {}),
         "pdf_space": state.get("space_stats", {}),
         "spec": kernel.spec_stats(ctx, state["ledger"] + state["extra_ledger"]),
@@ -846,7 +861,7 @@ class CalculationService:
         "layers": state.get("layer_stats") or kernel.layer_stats(ctx),
         "derived": state.get("derived_stats") or kernel.derived_stats(ctx),
         "material": kernel.material_stats(state["solids"], state["ledger"]),
-        "coverage": kernel.coverage_stats(elements, state["rejected"], state["skipped"], state["unmapped"], state["ledger"]),
+        "coverage": kernel.coverage_stats(elements, state["rejected"], state["skipped"], state["unmapped"], state["ledger"] + state.get("ifc_bar_ledger", [])),
         "confidence": kernel.confidence_stats(state["ledger"] + state["extra_ledger"]),
       })
       await DatumsService(self.session).record_run(org, project_id, run_id,

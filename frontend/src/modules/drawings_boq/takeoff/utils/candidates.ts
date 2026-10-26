@@ -956,9 +956,11 @@ function siteLine(c: TakeoffCandidate): string {
   const wall = said && "thickness_mm" in said ? num(sizes.thickness_mm) : null;
   const slabs = f.tank_slabs_mm as { top_mm?: unknown; bottom_mm?: unknown } | null | undefined;
   const inches = (mm: number) => `${(mm / 25.4).toFixed(1).replace(/\.0$/, "")} in`;
-  const slabText = slabs && num(slabs.top_mm) !== null && num(slabs.bottom_mm) !== null ? `slabs ${inches(num(slabs.top_mm) as number)} top, ${inches(num(slabs.bottom_mm) as number)} bottom, as the section prints them` : null;
-  const assumed = worked.length || wall !== null ? `assumed from the tank drawings: ${[...worked, wall !== null ? `${inches(wall)} walls` : null].filter(Boolean).join(", ")}` : null;
-  return [repeats !== null && repeats > 1 ? `labelled ${repeats} times on this sheet` : null, assumed, slabText, need].filter(Boolean).join(" · ");
+  const from = (f.sizes_from ?? {}) as Record<string, unknown>;
+  const slabText = slabs && num(slabs.top_mm) !== null && num(slabs.bottom_mm) !== null ? `slabs ${inches(num(slabs.top_mm) as number)} top, ${inches(num(slabs.bottom_mm) as number)} bottom, as the section prints them` : slabs && num(slabs.top_mm) !== null ? `top slab ${inches(num(slabs.top_mm) as number)} as printed` : null;
+  const assumed = worked.length ? `${from.length_mm === "CAPTION" ? "size from the caption, taken as the outside size" : "assumed from the tank drawings"}: ${worked.join(", ")}` : null;
+  const wallText = wall !== null ? `${inches(wall)} walls${from.thickness_mm === "NOTE" ? " as printed" : " assumed"}` : null;
+  return [repeats !== null && repeats > 1 ? `labelled ${repeats} times on this sheet` : null, assumed, wallText, slabText, need].filter(Boolean).join(" · ");
 }
 
 function neckText(f: Record<string, unknown>): string {
@@ -1005,10 +1007,18 @@ const QS_INPUTS: [string, string][] = [
 
 function qsText(c: TakeoffCandidate): string | null {
   if ((c as { decision?: string }).decision === "ACCEPTED") return null;
-  const codes = new Set((c.notes ?? []).map((n) => n.code));
-  const printed = codes.has("HEIGHT_FROM_SECTION") || codes.has("HEIGHT_FROM_NOTE");
-  const names = QS_INPUTS.filter(([code]) => codes.has(code) && !(code === "HEIGHT_FROM_QS" && printed)).map(([, name]) => name);
-  return names.length ? `from the QS's workbook, not printed: ${names.join(", ")}` : null;
+  const origin = new Map((c.notes ?? []).map((n) => [n.code, typeof n.origin === "string" ? n.origin : "QS_WORKBOOK"] as [string, string]));
+  const printed = origin.has("HEIGHT_FROM_SECTION") || origin.has("HEIGHT_FROM_NOTE");
+  const by: Record<string, string[]> = { QS_WORKBOOK: [], COMPANY: [], CODE_DEFAULT_ASSUMED: [] };
+  for (const [code, name] of QS_INPUTS) {
+    if (!origin.has(code) || (code === "HEIGHT_FROM_QS" && printed)) continue;
+    (by[origin.get(code) as string] ?? by.QS_WORKBOOK).push(name);
+  }
+  return [
+    by.QS_WORKBOOK.length ? `from the QS's workbook, not printed: ${by.QS_WORKBOOK.join(", ")}` : null,
+    by.COMPANY.length ? `from your company's conventions, not printed: ${by.COMPANY.join(", ")}` : null,
+    by.CODE_DEFAULT_ASSUMED.length ? `assumed, your company has set no convention: ${by.CODE_DEFAULT_ASSUMED.join(", ")}` : null,
+  ].filter(Boolean).join(" · ") || null;
 }
 
 function sectionText(f: Record<string, unknown>): string | null {

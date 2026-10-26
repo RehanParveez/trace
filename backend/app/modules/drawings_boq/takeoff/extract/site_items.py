@@ -6,6 +6,7 @@ from app.modules.drawings_boq.takeoff.prep import schedules as S
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
 from app.modules.drawings_boq.takeoff.extract import tank_steel as TSTEEL
 from app.modules.drawings_boq.takeoff.prep import views as VW
+from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
 TANK_WORDS = (
   ("OHWT", re.compile(r"^(?:O[./]?\s?H[./]?\s?W[./]?\s?T|OVER[- ]?HEAD)", re.I)),
@@ -81,7 +82,7 @@ def _tank_labels(words: list) -> dict:
         break
   return out
 
-def _tank_item(kind: str, labels: list, details: list) -> dict:
+def _tank_item(kind: str, labels: list, details: list, own: set | None = None) -> dict:
   first = labels[0]
   facts: dict = {"site_kind": kind, "tank_kind": kind, "labels_on_sheet": len(labels), "sizes_mm": {}}
   codes = [("SITE_TANK_SIZES_TYPED", {"kind": kind})]
@@ -93,12 +94,13 @@ def _tank_item(kind: str, labels: list, details: list) -> dict:
       codes.append(("TANK_STEEL_NOTES_LISTED", {"kind": kind, "count": len(facts["steel_options"])}))
     codes.append(("SITE_TANK_SIZES_LISTED", {"kind": kind, "printed": listed["message"]}))
   missing = ["length_mm", "width_mm", "height_mm", "thickness_mm"]
-  derived = TS.derive(kind, details) if kind != "SEPTIC" else None
+  derived = TS.derive(kind, [d for d in details if d.get("kind") == kind and (d.get("caption") or "").strip() in (own or ())] or details)
 
   if derived is not None:
     facts["sizes_mm"] = dict(derived["sizes_mm"])
     facts["sizes_source"] = "DRAWING_ASSUMED"
     facts["sizes_assumed"] = dict(derived["basis"])
+    facts["sizes_from"] = dict(derived.get("source") or {})
     if derived["slabs_mm"]:
       facts["tank_slabs_mm"] = dict(derived["slabs_mm"])
     missing = [m for m in missing if m not in derived["sizes_mm"]]
@@ -274,8 +276,9 @@ def find(words: list, mm_per_pt: float, tank_details: list | None = None) -> lis
     return []
   out: list = []
   
+  own = {(ln.text or "").strip() for ln in build_lines(words)} if tank_details else set()
   for kind, labels in sorted(_tank_labels(words).items()):
-    out.append(_tank_item(kind, labels, tank_details or []))
+    out.append(_tank_item(kind, labels, tank_details or [], own))
   caps = VW.captions(words)
   for cap in caps:
     if cap["kind"] == "ELEVATION" and BOUNDARY_CAPTION.search(cap["text"]):

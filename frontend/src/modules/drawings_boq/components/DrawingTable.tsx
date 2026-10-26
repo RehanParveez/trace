@@ -19,6 +19,15 @@ interface DrawingTableProps {
   onItemsSuggested?: (boqVersionId: string) => void;
 }
 
+function authoredBy(drawing: Drawing): { schema: string; tool: string } | null {
+  const meta = drawing.ingestion_meta;
+  const tool = meta?.header?.authoring_tool;
+  if (drawing.format === "PDF" || !tool) {
+    return null;
+  }
+  return { schema: meta?.ifc_schema ?? "IFC", tool };
+}
+
 export function DrawingTable({
   projectId,
   drawings,
@@ -127,6 +136,7 @@ export function DrawingTable({
             <tbody>
               {currentDrawings.map((drawing) => {
                 const isReference = drawing.format === "PDF";
+                const authored = authoredBy(drawing);
 
                 return (
                   <tr key={drawing.id} className="border-t border-[var(--color-border)] transition hover:bg-[var(--color-surface-muted)]">
@@ -143,6 +153,11 @@ export function DrawingTable({
                         className="text-left"
                       >
                         <span className="block truncate text-[14px] font-semibold text-[var(--color-text-primary)]">{drawing.original_filename}</span>
+                        {authored ? (
+                          <span className="mt-0.5 block max-w-[320px] truncate text-[12px] text-[var(--color-text-muted)]">
+                            {t("drawings.table.authoredIn", "{{schema}} written by {{tool}}", authored)}
+                          </span>
+                        ) : null}
                         {drawing.error_message ? (
                           <span className="mt-0.5 block max-w-[320px] truncate text-[12px] text-[var(--color-danger)]">{drawing.error_message}</span>
                         ) : null}

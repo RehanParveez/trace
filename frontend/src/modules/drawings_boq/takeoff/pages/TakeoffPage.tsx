@@ -24,6 +24,7 @@ import { FoundTab } from "../components/FoundTab";
 import { candidatePoints } from "../utils/candidates";
 import type { TakeoffCandidate } from "../types/takeoff.types";
 import { ScalePanel } from "../components/ScalePanel";
+import { CompanyConventionsPanel } from "../components/CompanyConventionsPanel";
 import type { CaptureState } from "../components/ScalePanel";
 import { SheetStrip } from "../components/SheetStrip";
 import { SheetIdentityBar } from "../components/SheetIdentityBar";
@@ -80,6 +81,7 @@ export function TakeoffPage() {
   const permissions = usePermissionKeys();
   const canRead = permissions.includes(IDENTITY_PERMISSIONS.DRAWING_READ);
   const canEditPermission = permissions.includes(IDENTITY_PERMISSIONS.BOQ_UPDATE);
+  const canManageCompany = permissions.includes("organization.manage");
 
   const view = useTakeoffView();
   const { tool, tab, snapOn, snapKinds, showMeasurements, showDimensions, orthoLock, draft, selectedIds, focusId } = view;
@@ -1053,6 +1055,7 @@ export function TakeoffPage() {
                 onShowBox={(b) => { const padX = (b.x1 - b.x0) * 0.04, padY = (b.y1 - b.y0) * 0.04; viewerRef.current?.focusBox({ x0: b.x0 - padX, y0: b.y0 - padY, x1: b.x1 + padX, y1: b.y1 + padY }); }}
               />
             ) : null}
+            {tab === "found" && sheet ? <CompanyConventionsPanel canManage={canManageCompany} /> : null}
             {tab === "frame" ? (
               <FramePanel
                 frame={frame.data}

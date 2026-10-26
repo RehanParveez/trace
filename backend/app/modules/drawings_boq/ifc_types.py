@@ -193,7 +193,7 @@ QUANTITY_LOOKUP_ORDER: list[tuple[list[str], str]] = [
   (["Length"], "m"),
 ]
 
-READER_VERSION = "2026.10.7"
+READER_VERSION = "2026.10.10"
  
 EXCLUDED_IFC_TYPES = frozenset({
   "IfcOpeningElement",

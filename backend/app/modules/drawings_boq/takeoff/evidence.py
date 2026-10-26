@@ -22,13 +22,22 @@ QS_INPUTS = (
   ("SITE_WALL_QS_ESTIMATE", "boundary wall thickness"),
 )
 
-def from_qs(cand) -> list:
-  """The inputs of a row that come from the QS's workbook and not from the drawing, as short names. A height printed on the building section or in a note wins, so it is not listed."""
+def conventions_of(cand) -> dict:
+  """The inputs of a row that come from the conventions and not from the drawing, as short names, by whose figure it is: "qs" (the QS's own, saved as the company's or read before conventions were recorded),
+  "company" (a figure the company set) and "assumed" (the company holds none, so the software's own figure is used). A height printed on the building section or in a note wins, so it is not listed."""
+  out: dict = {"qs": [], "company": [], "assumed": []}
   if getattr(cand, "decision", None) == "ACCEPTED":
-    return []
-  codes = _codes(cand)
-  printed_height = bool({"HEIGHT_FROM_SECTION", "HEIGHT_FROM_NOTE"} & codes)
-  return [name for code, name in QS_INPUTS if code in codes and not (code == "HEIGHT_FROM_QS" and printed_height)]
+    return out
+  origin = {n.get("code"): n.get("origin") for n in (cand.notes or [])}
+  printed_height = bool({"HEIGHT_FROM_SECTION", "HEIGHT_FROM_NOTE"} & set(origin))
+  for code, name in QS_INPUTS:
+    if code not in origin or (code == "HEIGHT_FROM_QS" and printed_height):
+      continue
+    out["company" if origin[code] == "COMPANY" else "assumed" if origin[code] == "CODE_DEFAULT_ASSUMED" else "qs"].append(name)
+  return out
+
+def from_qs(cand) -> list:
+  return conventions_of(cand)["qs"]
 
 def _value(params: dict, key: str):
   v = (params or {}).get(key)
@@ -58,15 +67,15 @@ class _Inputs:
     if value is None:
       self.add(name, MISSING, "not on the drawing")
     elif "NECK_HEIGHT_ASSUMED" in self.codes:
-      self.add(name, ASSUMED, "the height is not printed on the drawing; the QS's workbook height for the neck columns is used (type another to override it)")
+      self.add(name, ASSUMED, "the height is not printed on the drawing; the neck column height of the conventions (the QS workbook's, or your company's) is used (type another to override it)")
     elif "FOOTING_DEPTH_QS" in self.codes:
-      self.add(name, ASSUMED, "the footing thickness is not printed as a figure; the QS's footing depth is used")
+      self.add(name, ASSUMED, "the footing thickness is not printed as a figure; the footing depth of the conventions (the QS's, or your company's) is used")
     elif "HEIGHT_FROM_SECTION" in self.codes:
       self.add(name, PRINTED, section_how)
     elif "HEIGHT_FROM_NOTE" in self.codes:
       self.add(name, PRINTED, "from a note on the drawing")
     elif "HEIGHT_FROM_QS" in self.codes:
-      self.add(name, ASSUMED, "the height is not printed on the drawing; the QS's workbook height (S1, S5) is used (type another to override it)")
+      self.add(name, ASSUMED, "the height is not printed on the drawing; the height of the conventions (the QS workbook's S1 and S5, or your company's) is used (type another to override it)")
     else:
       self.add(name, CONFIRMED, "typed by you")
 
@@ -270,10 +279,12 @@ def _site(inp: _Inputs, cand) -> None:
     said = f.get("sizes_assumed") or {}
     for token, name in (("length_mm", "outside length"), ("width_mm", "outside width"), ("height_mm", "outside height"), ("thickness_mm", "wall and slab thickness")):
       if token in said and sizes.get(token):
-        inp.add(name, ASSUMED, f"{sizes[token] / 25.4:g}\" worked out from the tank drawings: {said[token]}")
+        inp.add(name, PRINTED if (f.get("sizes_from") or {}).get(token) == "NOTE" else ASSUMED, f"{sizes[token] / 25.4:g}\" worked out from the tank drawings: {said[token]}")
       else:
         typed(token, name, sizes.get(token))
-    if f.get("tank_slabs_mm"):
+    if f.get("tank_slabs_mm") and not f["tank_slabs_mm"].get("bottom_mm"):
+      inp.add("slabs", ASSUMED, f"the top slab is {f['tank_slabs_mm']['top_mm'] / 25.4:g}\" as the tank detail prints it; the bottom slab is the QS's value because the drawing prints none")
+    elif f.get("tank_slabs_mm"):
       inp.add("slabs", ASSUMED, "the top and bottom slab are as thick as the section prints them (the thickness read most often); not the QS's 8 in")
     elif all(sizes.get(t) for t in ("length_mm", "width_mm", "height_mm", "thickness_mm")):
       inp.add("slabs", ASSUMED, "the top and bottom slab are taken as thick as the walls")
@@ -318,18 +329,18 @@ DERIVED_ASSUMED = (
   ("WET_TURNUP_DEFAULT", "turn-up height", "the 300 mm turn-up of the waterproofing is usual practice, not printed on the drawing"),
   ("TRENCH_WORKING_SPACE_ASSUMED", "working space", "the drawing prints no working space beside the concrete bed; 3 inches a side is used"),
   ("ARCH_CENTRING_FROM_SCHEDULE", "arch shape", "the schedule says the opening is arched but not how high the arch rises; a semicircle is used, and the wall thickness is read from the walls the opening stands in, else 9 in"),
-  ("TRENCH_DEPTH_ASSUMED", "trench depth", "no footing section was found for these walls; the QS workbook's 3 ft trench is used"),
-  ("EXCAVATION_DEPTH_ASSUMED", "excavation depth", "the plans print no depth for the dig over the basement; the QS workbook's 8 ft is used"),
-  ("FILL_DEPTH_ASSUMED", "filling depth", "the plans print no depth of filling; 1.5 ft, the usual filling up to the plinth, is used"),
+  ("TRENCH_DEPTH_ASSUMED", "trench depth", "no footing section was found for these walls; the trench depth of the conventions (the QS workbook's, or your company's) is used"),
+  ("EXCAVATION_DEPTH_ASSUMED", "excavation depth", "the plans print no depth for the dig over the basement; the dig depth of the conventions (the QS workbook's, or your company's) is used"),
+  ("FILL_DEPTH_ASSUMED", "filling depth", "the plans print no depth of filling; the filling depth of the conventions (the usual filling up to the plinth, or your company's) is used"),
   ("BRICK_STEPS_ASSUMED", "brick steps", "the steps of the brick foundation are drawn as dimension lines that cannot be read; usual steps are used"),
-  ("FOOTING_DEPTH_QS", "footing depth", "the footing thickness is not printed as a figure; the QS's depth is used"),
+  ("FOOTING_DEPTH_QS", "footing depth", "the footing thickness is not printed as a figure; the depth of the conventions (the QS's, or your company's) is used"),
   ("PCC_PAD_DEPTH_FROM_STRIP_SECTION", "bed thickness", "the column footing sections print the bed thickness as a dimension line that cannot be read; the bed under the wall footing section is used"),
   ("DOOR_FRAME_WIDTH_FROM_WALL", "frame width", "the drawing prints no frame section; the frame is taken as wide as the wall the doors stand in"),
   ("TANK_SIZES_DERIVED", "tank sizes", "the tank drawings print lengths without saying which is which; the sizes are worked out from them and listed with the item"),
   ("RAIN_PIPE_COUNT_ASSUMED", "pipe count", "one pipe is taken for each label on the sheet; the label does not say how many outlets it stands for"),
   ("PILE_UNIT_ASSUMED", "pile units", "a figure of the pile has no unit written; a diameter below 100 is taken as inches, a length with no unit as metres"),
   ("RAFT_FOOTPRINT_FROM_AREA_TABLE", "raft outline", "the raft is not dimensioned; the covered area of the lowest floor in the area table is used"),
-  ("RAFT_PCC_ASSUMED", "bed thickness", "the drawing prints no bed under the raft; the QS workbook's 3 in is used"),
+  ("RAFT_PCC_ASSUMED", "bed thickness", "the drawing prints no bed under the raft; the bed thickness of the conventions (the QS workbook's, or your company's) is used"),
   ("RAFT_EDGE_FORM_ASSUMED", "edge shuttering", "the shuttering is taken round the outline, as high as the raft is thick; usual practice, not printed"),
   ("RAFT_UNIT_ASSUMED", "raft thickness unit", "the thickness has no unit written; a figure below 100 is taken as inches"),
   ("RAIN_PIPE_DROP_ASSUMED", "pipe length", "the pipe is taken from the roof level down to the ground floor level of the building sections; the run to the drain is not drawn"),
@@ -462,8 +473,8 @@ def evidence_for(cand) -> dict:
   graded = [TIER[i["basis"]] for i in inp.items if i["basis"] in TIER]
   grade = GRADES[max(graded)] if graded else "PRINTED"
   ask = [f"{i['name']}: {i['how']}" for i in inp.items if i["basis"] in (ASSUMED, MISSING)]
-  return {"grade": grade, "inputs": inp.items, "ask": ask, "range": range_for(cand, inp.items), "from_qs": from_qs(cand)}
-
+  return {"grade": grade, "inputs": inp.items, "ask": ask, "range": range_for(cand, inp.items), "from_qs": from_qs(cand),
+    "from_company": conventions_of(cand)["company"], "assumed_conventions": conventions_of(cand)["assumed"]}
 def valid_on_assumption(rows: list) -> int:
   """Rows whose status is VALID although a value is assumed, disputed or missing (the grade of a row is its worst value)."""
   n = 0

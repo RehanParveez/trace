@@ -184,7 +184,8 @@ def resolve_params(ctx: CalculationContext) -> dict:
     given_qs = QS.param(name)
     value = _number(given_qs, low, high) if given_qs is not None else None
     if value is not None:
-      out[name] = {"value": value, "source": QS.SOURCE}
+      origin = QS.CO.origin_of(name)
+      out[name] = {"value": value, "source": "convention" if origin == QS.CO.COMPANY else QS.SOURCE, "origin": origin}
       continue
     value = _number(((getattr(ctx, "detected_params", None)) or {}).get(name), low, high)
     if value is not None:

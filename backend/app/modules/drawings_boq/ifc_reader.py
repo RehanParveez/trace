@@ -10,6 +10,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 from functools import lru_cache
 from app.engine.measure.steel import is_steel_role
+from app.engine.measure.spatial import PRISM_VOLUME_TOLERANCE
 from app.modules.drawings_boq.ifc_types import (COUNT_ROLES, DEFAULT_DISCIPLINE, DEFAULT_MESH_FALLBACK_LIMIT, DEFAULT_QUANTITY_KIND_ORDER, DISCIPLINE_BY_ROLE, EXCLUDED_IFC_TYPES, LINEAR_ROLES,
   LOW_CLASSIFICATION_CONFIDENCE, MESH_FALLBACK_ROLES, NAME_KEYWORD_ROLES, NO_LEGACY_BOQ_ROLES, PREDEFINED_TYPE_ROLE_OVERRIDES, QUANTITY_KIND_ORDER_BY_ROLE, QUANTITY_PROPS_BY_KIND,
   REQUIRED_DIMENSIONS_BY_ROLE, ROLE_BY_IFC_TYPE, SLAB_ROLES, SUPERTYPE_FALLBACK_TYPES, WALL_ROLES,
@@ -90,6 +91,7 @@ class IfcReadResult:
   spaces: list = field(default_factory=list)
   boundaries: list = field(default_factory=list)
   relations: list = field(default_factory=list)
+  header: dict = field(default_factory=dict)
  
 @dataclass
 class _Scales:
@@ -627,6 +629,80 @@ def _closed_mesh_volume_mm3(verts_mm: np.ndarray, faces: np.ndarray) -> float | 
   a, b, c = verts_mm[faces[:, 0]], verts_mm[faces[:, 1]], verts_mm[faces[:, 2]]
   return abs(float(np.einsum("ij,ij->i", a, np.cross(b, c)).sum()) / 6.0)
 
+_UP_COSINE = 0.99
+_OUTLINE_MAX_POINTS = 1000
+
+def _shape_mm(element):
+  try:
+    import ifcopenshell.geom
+    shape = ifcopenshell.geom.create_shape(_mesh_settings(), element)
+    verts = np.asarray(shape.geometry.verts, dtype=float).reshape(-1, 3) * 1000.0
+    faces = np.asarray(shape.geometry.faces, dtype=int).reshape(-1, 3)
+  except Exception:
+    return None
+  return (verts, faces) if verts.size else None
+
+def _mesh_volume_mm3(element) -> float | None:
+  shape = _shape_mm(element)
+  return _closed_mesh_volume_mm3(*shape) if shape else None
+
+def _prism_qto_disagree(geometry: _Geometry, flat_qto: dict, scales: _Scales) -> bool:
+  """True when the profile x depth volume and the model's Qto volume differ by more than the reader's tolerance."""
+  qto = _qto_quantity("volume", flat_qto, scales)
+  if not qto or not geometry.profile_area_mm2 or not geometry.depth_mm:
+    return False
+  qto_mm3 = float(qto[0]) * _MM3_PER_M3
+  prism_mm3 = geometry.profile_area_mm2 * geometry.depth_mm
+  return abs(prism_mm3 - qto_mm3) > QTO_MESH_TOLERANCE * qto_mm3
+
+def _plan_union(vertices: np.ndarray, faces: np.ndarray, normals: np.ndarray, length: np.ndarray, sign: float):
+  """The union, in plan, of the triangles that face up (sign +1) or down (sign -1)."""
+  from shapely.geometry import Polygon
+  from shapely.ops import unary_union
+  keep = (length > 0) & (sign * normals[:, 2] > _UP_COSINE * np.where(length > 0, length, 1.0))
+  a, b, c = vertices[faces[keep, 0]], vertices[faces[keep, 1]], vertices[faces[keep, 2]]
+  triangles = [Polygon(t[:, :2]) for t in np.stack([a, b, c], axis=1)]
+  triangles = [t for t in triangles if t.area > 0]
+  return unary_union(triangles) if triangles else None
+
+def _top_face_outline(verts_mm: np.ndarray, faces: np.ndarray, mesh_volume_mm3: float, dz_mm: float) -> dict | None:
+  if faces.size == 0 or not mesh_volume_mm3 or dz_mm <= 0:
+    return None
+  try:
+    from shapely.geometry import Polygon
+    a, b, c = verts_mm[faces[:, 0]], verts_mm[faces[:, 1]], verts_mm[faces[:, 2]]
+    normal = np.cross(b - a, c - a)
+    if float(np.einsum("ij,ij->i", a, np.cross(b, c)).sum()) < 0:
+      normal = -normal
+    length = np.linalg.norm(normal, axis=1)
+    top = _plan_union(verts_mm, faces, normal, length, 1.0)
+    bottom = _plan_union(verts_mm, faces, normal, length, -1.0)
+    if top is None or bottom is None or top.geom_type != "Polygon":
+      return None
+    if abs(top.area - bottom.area) > PRISM_VOLUME_TOLERANCE * top.area:
+      return None
+
+    def rounded(coords):
+      out: list = []
+      for x, y in coords[:-1]:
+        point = [round(float(x), 1), round(float(y), 1)]
+        if not out or out[-1] != point:
+          out.append(point)
+      if len(out) > 1 and out[0] == out[-1]:
+        out.pop()
+      return out if len(out) >= 3 and Polygon(out).area > 0 else None
+
+    ring = rounded(top.exterior.coords)
+    holes = [h for h in (rounded(r.coords) for r in top.interiors) if h]
+    if ring is None or len(ring) + sum(len(h) for h in holes) > _OUTLINE_MAX_POINTS:
+      return None
+    checked = Polygon(ring, holes)
+    if not checked.is_valid or mesh_volume_mm3 > (1 + PRISM_VOLUME_TOLERANCE) * checked.area * dz_mm:
+      return None
+    return {"outline_mm": ring, "outline_holes_mm": holes}
+  except Exception:
+    return None
+
 def _mesh_bbox_geometry(element, role: str) -> _Geometry | None:
   try:
     import ifcopenshell.geom
@@ -644,6 +720,8 @@ def _mesh_bbox_geometry(element, role: str) -> _Geometry | None:
   dx, dy, dz = (geometry.bbox_max - geometry.bbox_min).tolist()
   long_, short = max(dx, dy), min(dx, dy)
   geometry.mesh_volume_mm3 = _closed_mesh_volume_mm3(verts_mm, faces)
+  if role in SLAB_ROLES and geometry.mesh_volume_mm3:
+    geometry.placement = _top_face_outline(verts_mm, faces, geometry.mesh_volume_mm3, dz)
   if role in LINEAR_ROLES and role not in WALL_ROLES and len(verts_mm) >= 4:
     centred = verts_mm - verts_mm.mean(axis=0)
     try:
@@ -718,6 +796,250 @@ def _dims_from_qto(role: str, element, flat: dict, scales: _Scales) -> dict:
     dims = {"width": width * mm if width else None, "height": height * mm if height else None}
   return {k: v for k, v in dims.items() if v is not None}
 
+def _short(value, limit: int = 200) -> str | None:
+  text = _clean(value)
+  return text[:limit] if text else None
+
+def _read_header(model) -> dict:
+  """Who wrote the file: the header's originating system and the IfcApplication record. Read, never guessed from the file's style."""
+  out: dict = {}
+  try:
+    header = model.header
+    name = header.file_name
+    out["originating_system"] = _short(name.originating_system)
+    out["preprocessor_version"] = _short(name.preprocessor_version)
+    out["organization"] = _short(", ".join(str(o) for o in (name.organization or ()) if str(o).strip()))
+    out["author"] = _short(", ".join(str(o) for o in (name.author or ()) if str(o).strip()))
+    out["file_time_stamp"] = _short(name.time_stamp)
+  except Exception:
+    pass
+  try:
+    app = next(iter(model.by_type("IfcApplication")), None)
+  except Exception:
+    app = None
+  if app is not None:
+    developer = getattr(app, "ApplicationDeveloper", None)
+    out["application"] = _short(getattr(app, "ApplicationFullName", None))
+    out["application_version"] = _short(getattr(app, "Version", None))
+    out["application_identifier"] = _short(getattr(app, "ApplicationIdentifier", None))
+    out["developer"] = _short(getattr(developer, "Name", None) if developer is not None else None)
+  tool = out.get("application") or out.get("originating_system")
+  version = out.get("application_version")
+  if tool and version and version not in tool:
+    tool = f"{tool} {version}"
+  out["authoring_tool"] = tool
+  return {k: v for k, v in out.items() if v}
+
+_REBAR_DIAMETER_KEYS = ("NominalDiameter", "BarDiameter", "Bar Diameter", "Diameter")
+_REBAR_LENGTH_KEYS = ("BarLength", "Bar Length", "TotalBarLength", "CutLength", "Cut Length")
+_REBAR_WEIGHT_KEYS = ("Weight", "NetWeight", "GrossWeight", "TotalWeight")
+
+def _pset_number(psets: dict, keys: tuple, positive: bool = True) -> tuple[float, str] | None:
+  for set_name, props in psets.items():
+    if not isinstance(props, dict):
+      continue
+    for key in keys:
+      value = _num(props.get(key))
+      if value is not None and (value > 0 or not positive):
+        return value, f"{set_name}.{key}"
+  return None
+
+def _line_points(points, mm: float) -> float:
+  total = 0.0
+  for a, b in zip(points, points[1:]):
+    total += math.dist(a, b)
+  return total * mm
+
+def _arc_length(a, b, c) -> float:
+  """Length of the arc that runs from a through b to c, in the units of the points."""
+  ab, cb, ac = math.dist(a, b), math.dist(c, b), math.dist(a, c)
+  if ab == 0 or cb == 0 or ac == 0:
+    return ab + cb
+  dot = sum((a[i] - b[i]) * (c[i] - b[i]) for i in range(3))
+  cos_b = max(-1.0, min(1.0, dot / (ab * cb)))
+  angle_b = math.acos(cos_b)
+  sin_b = math.sin(angle_b)
+  if sin_b < 1e-9:
+    return ab + cb
+  radius = ac / (2.0 * sin_b)
+  return radius * (2.0 * math.pi - 2.0 * angle_b)
+
+def _pad3(p):
+  p = tuple(float(v) for v in p)
+  return p + (0.0,) * (3 - len(p))
+
+def _trim_value(trim) -> tuple[str, object] | None:
+  for item in (trim or ()):
+    if hasattr(item, "is_a") and item.is_a("IfcCartesianPoint"):
+      return "point", _pad3(item.Coordinates)
+    value = getattr(item, "wrappedValue", item)
+    number = _num(value)
+    if number is not None:
+      return "param", number
+  return None
+
+def _curve_length_mm(curve, mm: float, angle_scale: float, depth: int = 0) -> float | None:
+  """Length of a bar's centre line when it is a polyline, an indexed poly curve of lines and three-point arcs, or a composite of those and trimmed lines and circles. Anything else gives None, never a guess."""
+  if curve is None or depth > 4:
+    return None
+  if curve.is_a("IfcPolyline"):
+    return _line_points([_pad3(p.Coordinates) for p in curve.Points], mm)
+  if curve.is_a("IfcIndexedPolyCurve"):
+    coords = [_pad3(p) for p in curve.Points.CoordList]
+    if not curve.Segments:
+      return _line_points(coords, mm)
+    total = 0.0
+    for seg in curve.Segments:
+      idx = [int(i) - 1 for i in getattr(seg, "wrappedValue", seg)]
+      if seg.is_a("IfcLineIndex"):
+        total += _line_points([coords[i] for i in idx], mm)
+      elif seg.is_a("IfcArcIndex") and len(idx) == 3:
+        total += _arc_length(coords[idx[0]], coords[idx[1]], coords[idx[2]]) * mm
+      else:
+        return None
+    return total
+  if curve.is_a("IfcCompositeCurve"):
+    total = 0.0
+    for seg in curve.Segments:
+      part = _curve_length_mm(seg.ParentCurve, mm, angle_scale, depth + 1)
+      if part is None:
+        return None
+      total += part
+    return total
+  if curve.is_a("IfcTrimmedCurve"):
+    basis = curve.BasisCurve
+    t1, t2 = _trim_value(curve.Trim1), _trim_value(curve.Trim2)
+    if t1 is None or t2 is None or t1[0] != t2[0]:
+      return None
+    if basis.is_a("IfcLine"):
+      if t1[0] == "point":
+        return math.dist(t1[1], t2[1]) * mm
+      magnitude = _num(getattr(basis.Dir, "Magnitude", None))
+      return abs(t2[1] - t1[1]) * magnitude * mm if magnitude else None
+    if basis.is_a("IfcCircle") and t1[0] == "param":
+      span = (t2[1] - t1[1]) * angle_scale if curve.SenseAgreement else (t1[1] - t2[1]) * angle_scale
+      span = span % (2.0 * math.pi)
+      return float(basis.Radius) * span * mm
+  return None
+
+def _bar_geometry(element, mm: float, angle_scale: float) -> dict:
+  items = _body_items(element)
+  if not items:
+    return {}
+  disks = []
+
+  for item in items:
+    inner, _, _ = _unwrap_mapped(item)
+    if inner is not None and inner.is_a("IfcSweptDiskSolid"):
+      disks.append(inner)
+  if not disks:
+    return {}
+  radii = {round(float(d.Radius), 9) for d in disks}
+  out: dict = {}
+  if len(radii) == 1:
+    out["dia_mm"] = 2.0 * float(disks[0].Radius) * mm
+  total = 0.0
+  for disk in disks:
+    if getattr(disk, "StartParam", None) is not None or getattr(disk, "EndParam", None) is not None:
+      return out
+    part = _curve_length_mm(disk.Directrix, mm, angle_scale)
+    if part is None:
+      return out
+    total += part
+
+  out["length_mm"] = total
+  out["parts"] = len(disks)
+  return out
+
+def _host_of(element):
+  node = element
+  for _ in range(4):
+    parent = None
+    for rel in (getattr(node, "Decomposes", None) or ()):
+      parent = getattr(rel, "RelatingObject", None)
+      if parent is not None:
+        break
+    if parent is None:
+      for rel in (getattr(node, "HasAssignments", None) or ()):
+        if rel.is_a("IfcRelAssignsToProduct"):
+          parent = getattr(rel, "RelatingProduct", None)
+          if parent is not None:
+            break
+    if parent is None:
+      return None if node is element else node
+    if parent.is_a("IfcReinforcingElement") or parent.is_a("IfcElementAssembly"):
+      node = parent
+      continue
+    return parent
+  return None
+
+def _rebar_fields(element, psets: dict, qtos: dict, scales: _Scales) -> dict | None:
+  if not element.is_a("IfcReinforcingBar"):
+    return None
+  mm = scales.mm_per_unit
+  try:
+    angle_scale = float(ifcopenshell.util.unit.calculate_unit_scale(element.file, "PLANEANGLEUNIT"))
+  except Exception:
+    angle_scale = 1.0
+  geometry: dict = {}
+  try:
+    geometry = _bar_geometry(element, mm, angle_scale)
+  except Exception:
+    geometry = {}
+
+  out: dict = {}
+  diameter = _num(getattr(element, "NominalDiameter", None))
+  found = _pset_number(psets, _REBAR_DIAMETER_KEYS)
+  area = _num(getattr(element, "CrossSectionArea", None))
+  if diameter is not None and diameter > 0:
+    out["dia_mm"], out["dia_source"] = diameter * mm, "NominalDiameter"
+  elif found is not None:
+    out["dia_mm"], out["dia_source"] = found[0] * mm, found[1]
+  elif area is not None and area > 0:
+    out["dia_mm"], out["dia_source"] = math.sqrt(4.0 * area * scales.area_m2 * 1e6 / math.pi), "CrossSectionArea"
+  elif geometry.get("dia_mm"):
+    out["dia_mm"], out["dia_source"] = geometry["dia_mm"], "SweptDisk"
+  if area is not None and area > 0:
+    out["area_mm2"] = area * scales.area_m2 * 1e6
+
+  length = _num(getattr(element, "BarLength", None))
+  found = _pset_number(psets, _REBAR_LENGTH_KEYS)
+  qto_length = _pset_number(qtos, _REBAR_LENGTH_KEYS + ("Length",))
+  if length is not None and length > 0:
+    out["length_mm"], out["length_source"] = length * mm, "BarLength"
+  elif found is not None:
+    out["length_mm"], out["length_source"] = found[0] * mm, found[1]
+  elif qto_length is not None:
+    out["length_mm"], out["length_source"] = qto_length[0] * mm, qto_length[1]
+  elif geometry.get("length_mm"):
+    out["length_mm"], out["length_source"] = geometry["length_mm"], "Directrix"
+    if geometry.get("parts", 1) > 1:
+      out["parts"] = geometry["parts"]
+
+  weight = _pset_number(qtos, _REBAR_WEIGHT_KEYS)
+  if weight is not None:
+    try:
+      mass_scale = float(ifcopenshell.util.unit.calculate_unit_scale(element.file, "MASSUNIT"))
+    except Exception:
+      mass_scale = 1.0
+    out["file_kg"], out["file_kg_source"] = weight[0] * mass_scale, weight[1]
+
+  grade = _clean(getattr(element, "SteelGrade", None))
+  if grade:
+    out["grade"] = grade[:60]
+  surface = _clean(getattr(element, "BarSurface", None))
+  if surface:
+    out["surface"] = surface[:20]
+  try:
+    host = _host_of(element)
+  except Exception:
+    host = None
+  if host is not None:
+    out["host_global_id"] = _clean(getattr(host, "GlobalId", None))
+    out["host_type"] = host.is_a()
+    out["host_name"] = _short(getattr(host, "Name", None), 120)
+  return out
+
 def _type_fields(element, psets: dict, role: str) -> dict:
   if role not in ("DOOR", "WINDOW"):
     return {}
@@ -766,6 +1088,10 @@ def _normalise_element(
       geometry = _mesh_bbox_geometry(element, role)
   if geometry is None:
     geometry = _Geometry(kind="UNSUPPORTED")
+  if (geometry.kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") and role not in WALL_ROLES and geometry.mesh_volume_mm3 is None and mesh_budget[0] > 0
+      and _prism_qto_disagree(geometry, flat_qto, scales)):
+    mesh_budget[0] -= 1
+    geometry.mesh_volume_mm3 = _mesh_volume_mm3(element)
  
   dims = {k: v for k, v in geometry.dims.items() if v is not None and v > 0}
   qto_dims = _dims_from_qto(role, element, flat_qto, scales)
@@ -901,6 +1227,15 @@ def _normalise_element(
   
   if len(layers) > 1:
     properties["_ifc"]["layers"] = layers
+  if geometry.kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") and geometry.mesh_volume_mm3:
+    properties["_ifc"]["mesh_volume_mm3"] = round(float(geometry.mesh_volume_mm3), 1)
+  if role == "REBAR":
+    try:
+      rebar = _rebar_fields(element, psets, qtos, scales)
+    except Exception:
+      rebar = None
+    if rebar is not None:
+      properties["_ifc"]["rebar"] = rebar
  
   bbox_min = bbox_max = None
   if geometry.bbox_min is not None and geometry.bbox_max is not None:
@@ -1021,6 +1356,7 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
  
   return IfcReadResult(
     schema=str(model.schema),
+    header=_read_header(model),
     length_unit_scale=scales.length_m,
     levels=levels,
     elements=elements,
