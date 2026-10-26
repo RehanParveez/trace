@@ -28,7 +28,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.modules.ai_requests.models import AIEntityType, AIRequestPurpose
 from app.modules.ai_requests.service import AIOrchestratorService
-from app.modules.drawings_boq.pdf_extraction import extract_pdf_text, extract_pdf_layout_text
+from app.modules.drawings_boq.pdf_extraction import chunk_pages, extract_pdf_pages, extract_pdf_layout_text
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.boq_logic import UNIT_TABLE
 
@@ -267,17 +267,31 @@ class ScheduleService:
     if not parsed and method in ("AI", "AUTO"):
       await self.subscriptions.check_quota(org, "ai_requests")
       await self.rate_limiter.check(key=f"ai_per_org:{org}", limit=settings.rate_limit_ai_per_org_per_minute, window_seconds=60)
-      text = await asyncio.to_thread(extract_pdf_text, contents)
-      result = await AIOrchestratorService(self.session).run(
-        organization_id=org, purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION, entity_type=AIEntityType.DRAWING,
-        entity_id=drawing.id, prompt=build_schedule_rows_prompt(kind, text))
-      await self.subscriptions.increment_usage(org, "ai_requests")
-      parsed = parse_ai_rows(result.parsed_output, kind) if result.success else []
-      source, meta = "PDF_AI", {"extraction": "ai", "text_chars": len(text)}
+      chunks, unread = chunk_pages(await asyncio.to_thread(extract_pdf_pages, contents))
+      
+      for index, chunk in enumerate(chunks):
+        if index:
+          try:
+            await self.subscriptions.check_quota(org, "ai_requests")
+            await self.rate_limiter.check(key=f"ai_per_org:{org}", limit=settings.rate_limit_ai_per_org_per_minute, window_seconds=60)
+          except TraceException:
+            unread.extend(p for rest in chunks[index:] for p in rest["pages"])
+            break
+
+        result = await AIOrchestratorService(self.session).run(
+          organization_id=org, purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION, entity_type=AIEntityType.DRAWING,
+          entity_id=drawing.id, prompt=build_schedule_rows_prompt(kind, chunk["text"]))
+        if result.success:
+          parsed.extend(parse_ai_rows(result.parsed_output, kind))
+        else:
+          unread.extend(chunk["pages"])
+      source, meta = "PDF_AI", {"extraction": "ai", "text_chars": sum(len(c["text"]) for c in chunks), "unread_pages": sorted(set(unread))}
       
     if not parsed:
       await self.session.commit()
-      raise TraceException("No schedule rows could be extracted from this PDF.", status_code=422, code="NO_SCHEDULE_ROWS_FOUND")
+      left = meta.get("unread_pages") if isinstance(meta, dict) else None
+      raise TraceException("No schedule rows could be extracted from this PDF." + (f" Pages not read: {', '.join(str(p) for p in left[:12])}." if left else ""),
+        status_code=422, code="NO_SCHEDULE_ROWS_FOUND")
     return await self._create_import(org, project_id, user_id, source=source, kind=kind, parsed=parsed,
       file_name=drawing.original_filename, content_hash=content_hash, drawing_id=drawing.id, notes=notes, meta=meta)
 

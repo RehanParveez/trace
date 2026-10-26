@@ -22,6 +22,8 @@ def _element_key(e) -> dict:
     key["rb"] = e.rebar
   if getattr(e, "mesh_volume_mm3", None):
     key["mv"] = e.mesh_volume_mm3
+  if getattr(e, "width_mm", None) is not None:
+    key["wd"] = str(e.width_mm)
   return key
 
 def compute_fingerprint(*, elements, mappings, profile_fingerprint: str, rule_set_ref: str, convention_code: str | None, engine_version: str, settings: dict,

@@ -42,10 +42,10 @@ REVIEW_WARNING_CODES = frozenset({
   "ZERO_NET_QUANTITY", "SAME_ROLE_OVERLAP", "OPENING_SIZE_MISSING", "OPENING_ASSIGNMENT_APPROXIMATE",
   "FINISH_NEEDS_REVIEW","STEEL_ESTIMATED", "STEEL_SOLID_SECTION_SUSPECTED", "STEEL_DUPLICATE_SUSPECTED", "STEEL_MATERIAL_UNCERTAIN", "DECLARED_WEIGHT_MISMATCH", "MIXED_GRADES", "LAP_LENGTH_UNKNOWN",
     "PDF_LOW_PRECISION", "PDF_SCALE_MISMATCH", "PDF_SCANNED_LOW_PRECISION", "PDF_DIMENSION_ASSUMED", "PDF_CAL_SHORT_BASELINE", "PDF_RATIO_UNVERIFIED", "PDF_GEOMETRY_WARNING", "PDF_OVER_DEDUCTED",
-    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "FORMWORK_ITEM_ASSUMED", "FORMWORK_BEAM_SLAB_ASSUMED", "FORMWORK_JOINT_ASSUMED", "STEEL_ASSUMED",
+    "LAYER_UNPRICED", "LAYER_THICKNESS_MISMATCH", "LAYER_NOT_SPLIT", "LAYERS_NO_THICKNESS", "MAPPED_BY_ROLE", "MATERIAL_GENERIC", "DERIVED_ASSUMED", "DERIVED_NGL_ASSUMED", "DERIVED_BOX_FOOTPRINT", "DERIVED_MARK_POSITION", "DPC_LEVEL_ASSUMED", "DPC_DOOR_NOT_DEDUCTED", "FORMWORK_ASSUMED", "FORMWORK_FRAME_ASSUMED", "FORMWORK_ITEM_ASSUMED", "FORMWORK_BEAM_SLAB_ASSUMED", "FORMWORK_JOINT_ASSUMED", "STEEL_ASSUMED",
+    "IFC_BAR_COUNT_ASSUMED", "IFC_BAR_DIAMETER_DERIVED", "IFC_BAR_LENGTH_MISMATCH", "IFC_BAR_AREA_MISMATCH", "IFC_BAR_FILE_WEIGHT_MISMATCH",
     "SPACE_OVER_DEDUCTED", "SPACE_VIEW_NOT_PLACED", "SPACE_NO_HEIGHT", "SPACE_SAME_ROLE_OVERLAP",
 })
-
 
 NON_WAIVABLE_CODES = frozenset({"NON_CONSERVING_ALLOCATION", "UNALLOCATED_OVERLAP"})
 
@@ -322,7 +322,7 @@ LEDGER_WARNING_CATALOG = {
     "otherwise enter an adjustment."),
   "SPEC_MIX_MISSING": ("info", "NONE",
     "The model does not state a concrete mix or grade for these elements, so they are grouped without one.",
-    "Give the concrete a material name that carries the mix (for example Reinforced Concrete 1:2:4 or M20), or confirm the mix with the engineer."),
+    "State the concrete grade once for the project in the site assumptions (concrete grade, for example 25), or give the concrete a material name that carries the mix (for example Reinforced Concrete 1:2:4 or M20)."),
   "SPEC_MORTAR_MISSING": ("info", "NONE",
     "The model does not state a mortar ratio for these masonry walls, so they are grouped without one.",
     "Read the mortar ratio from the drawing notes or specification and set it on the rule set or the wall material."),
@@ -406,6 +406,14 @@ LEDGER_WARNING_CATALOG = {
   "LAYER_NOT_SPLIT": ("warning", "NONE",
     "None of this element's layers could be matched to a billable work item, so the element was left whole as one material.",
     "Check the material layers of this element in the model, or map the layer families to work items on the rule set."),
+  "LAYERS_NO_THICKNESS": ("warning", "NONE",
+    "The model names the materials of this wall, slab or roof (for example masonry, insulation and plasterboard) but not the thickness of each, "
+    "so it was billed whole under one material. The quantity is the whole build-up, so it can be more than the masonry or concrete alone.",
+    "Give the layers a thickness in the model (a layer set), or tell us the thickness of the structural layer of this wall type."),
+  "MAPPED_BY_ROLE": ("warning", "NONE",
+    "The IFC type of this element (a stair flight, or a generic object named as a slab or beam) has no work-item mapping. "
+    "It was billed under the concrete item because the model's role for it is structural, and its material is concrete or not stated.",
+    "Map this IFC type to a work item on the rule set, or confirm the material in the model."),
   "MATERIAL_GENERIC": ("warning", "NONE",
     "The model gives this element no real material (it says generic, default or nothing), so the grade or mortar could not be read "
     "and the masonry or concrete class is a guess.",
@@ -499,6 +507,19 @@ def stage_issue_specs(stats: dict) -> list[IssueSpec]:
     suggested_fix="Check the doors and the floor slabs in the model, or set the reference levels on the measurement convention.",
     details={"reason": reason})]
   
+def model_notes_issue_specs(notes: dict) -> list[IssueSpec]:
+  part = (notes or {}).get("partitions") or {}
+  if not part.get("count"):
+    return []
+  names = ", ".join(g["material"] for g in part["groups"][:3])
+  area = f"about {float(part['area_m2']):,.1f} m2 of wall" if float(part["area_m2"]) > 0 else f"{float(part['volume_m3']):,.1f} m3"
+  extra = f" The thickness is not stated for {part['no_area']} of them, so their area is not counted." if part.get("no_area") else ""
+  return [IssueSpec(
+    code="PARTITION_NOT_BILLED", severity="warning", blocks="NONE", dedupe_key="PARTITION_NOT_BILLED",
+    message=f"{part['count']} partition walls ({names}) are not billed: {area}. They are not concrete or masonry, so they are left out of the wall totals.{extra}",
+    suggested_fix="Decide with your QS whether dry partitions are billed and under which work item. Until then they are left out, and the bill is short by this area.",
+    details=part)]
+
 DERIVED_REASON_TEXT = {
   "NO_RECIPE": "the rule set has no footing preparation recipe (excavation and PCC under footings)",
   "ALL_ITEMS_IN_MODEL": "the model already draws these items",

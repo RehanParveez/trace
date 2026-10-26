@@ -365,6 +365,7 @@ export interface PDFExtractionResult {
   boq_version_id: string;
   created_item_count: number;
   items: BOQItem[];
+  unread_pages?: number[];
 }
 
 export interface ProjectBOQCount {
@@ -1232,6 +1233,13 @@ export interface RunStats {
   rejected_total?: number;
   rejected_sample?: { element_id: string; ifc_type: string; code: string }[];
   finishes_skipped?: Record<string, number>;
+  finishes_gap?: {
+    rooms: number;
+    without_outline: number;
+    floor_m2: string;
+    surfaces: Record<string, number>;
+    listed: Array<{ space_id: string; number: string | null; name: string | null; level_id: string | null; floor_m2: string }>;
+  };
   boq?: Record<string, string>;
   boq_error?: string;
   elements_in?: number;
@@ -1262,8 +1270,22 @@ export interface RunStats {
   pdf_takeoff?: PdfTakeoffStats;
   material?: MaterialStats;
   coverage?: CoverageStats;
+  model_notes?: ModelNotesStats;
   confidence?: ConfidenceStats;
   ifc_rebar?: IfcRebarStats;
+}
+
+export interface ModelNotesStats {
+  partitions?: {
+    count: number;
+    volume_m3: string;
+    area_m2: string;
+    no_area: number;
+    groups: Array<{ material: string; count: number; volume_m3: string; area_m2: string; no_area: number; thickness_mm: string | null }>;
+  };
+  layered?: { rows: number; m3: string; groups: Array<{ materials: string; rows: number; m3: string }> };
+  billed_by_role?: { rows: number; m3: string; groups: Array<{ type: string; rows: number; m3: string; work_item: string }> };
+  skipped?: Array<{ role: string; count: number; with_volume: number; volume_m3: string; steel_named: number; steel_kg: string; reason: string }>;
 }
 
 export interface CoverageStats {
@@ -1280,6 +1302,7 @@ export interface CoverageStats {
 
 export interface IfcRebarStats {
   bars?: number;
+  bar_count?: number;
   bars_without_data?: number;
   measured?: number;
   no_diameter?: number;
@@ -1292,7 +1315,20 @@ export interface IfcRebarStats {
   length_from_geometry?: number;
   diameter_derived?: number;
   area_mismatch?: number;
+  count_assumed?: number;
+  length_mismatch?: number;
   file_weight_mismatch?: number;
+  absorbed?: number;
+  hosts_with_bars?: number;
+  host_states?: Record<string, number>;
+  host_found_by?: Record<string, number>;
+  partial?: {
+    hosts: number;
+    bars: number;
+    modelled_kg: string;
+    items: Array<{ name: string | null; role: string; bars: number; modelled_kg: string; m3: string; kg_per_m3: string; band_low: string }>;
+  };
+  declared_length?: { bars: number; drawn_m: string; declared_m: string; difference_pct: string | null };
   by_dia?: Record<string, { bars: number; kg: string; length_m: string }>;
   by_family_kg?: Record<string, string>;
   file_weight?: { bars: number; file_kg: string; computed_kg: string; difference_pct: string | null };
@@ -1425,6 +1461,7 @@ export interface DerivedParams {
   soil_stabilisation?: number;
   soil_stab_depth_mm?: number;
   soil_stab_cement_pct?: number;
+  concrete_grade_mpa?: number;
 }
 
 export type DerivedParamName = keyof DerivedParams;
@@ -1749,6 +1786,7 @@ export interface AreaWorksStats {
   door_area_m2?: string;
   window_area_m2?: string;
   no_size?: number;
+  declared_size?: number;
   roof_slabs?: number;
   no_plan?: number;
   area_m2?: string;

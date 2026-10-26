@@ -23,7 +23,7 @@ class FrameMonolithicA(Convention):
 
   def classify(self, loser_role: str, owner_role: str) -> tuple[str, str]:
     if loser_role == owner_role:
-      return "OVERLAP_ALLOCATION", "same_role.lowest_id_owns"
+      return "OVERLAP_ALLOCATION", "same_role.larger_owns"
     if loser_role in _BEAMS and owner_role == "COLUMN":
       return "EXTENT_TRIMMING", "beam.column_face_to_face"
     if loser_role in _BEAMS and owner_role in _SLABS:

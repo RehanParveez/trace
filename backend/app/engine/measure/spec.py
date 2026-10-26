@@ -72,7 +72,7 @@ def is_wall(role: str | None) -> bool:
 def is_structural_concrete(role: str | None) -> bool:
   return (role or "").upper().startswith(STRUCTURAL_CONCRETE_PREFIXES)
 
-def derive_spec(el) -> dict | None:
+def derive_spec(el, project_grade: str | None = None) -> dict | None:
   role = (el.role or "").upper()
   text = getattr(el, "material_text", None)
   klass = el.material_class
@@ -105,6 +105,9 @@ def derive_spec(el) -> dict | None:
     if grade:
       spec["grade"] = grade
       spec["basis"] = {"grade": "material_text"}
+    elif project_grade:
+      spec["grade"] = project_grade
+      spec["basis"] = {"grade": "project"}
     else:
       spec["basis"] = {}
     return spec

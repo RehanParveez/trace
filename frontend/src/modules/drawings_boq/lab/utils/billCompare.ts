@@ -1,5 +1,26 @@
 import type { BillClass, BillClasses, BillCompareLine, BillCompareResult, BillFilter, BillStatus } from "../types/billCompare.types";
 
+export interface StageEntry {
+  line: BillCompareLine;
+  stageQs: number | null;
+  shared: boolean;
+}
+
+export interface StageGroup {
+  stage: string;
+  entries: StageEntry[];
+}
+
+export interface StageSummary {
+  lines: number;
+  match: number;
+  differs: number;
+  missing: number;
+  extra: number;
+  open: number;
+  closeness: number | null;
+}
+
 export const BILL_CLASSES: BillClass[] = ["READING", "CONVENTION", "QS_ERROR", "MISSING_FEATURE", "NEEDS_DECISION"];
 
 export const BILL_CLASS_TEXT: Record<BillClass, string> = {
@@ -83,6 +104,30 @@ export function scoreLines(lines: BillCompareLine[]): BillScore {
 
 export function scoreText(value: number | null): string {
   return value === null ? "—" : `${value.toFixed(1)}%`;
+}
+
+export function stageGroups(result: BillCompareResult): StageGroup[] {
+  const byKey = new Map(result.lines.map((l) => [l.key, l] as const));
+  return (result.stages ?? []).map((s) => ({
+    stage: s.stage,
+    entries: s.items.flatMap((i) => {
+      const line = byKey.get(i.key);
+      return line ? [{ line, stageQs: i.qs, shared: i.shared }] : [];
+    }),
+  }));
+}
+
+export function stageSummary(lines: BillCompareLine[]): StageSummary {
+  const scoped = lines.filter((l) => l.status !== "OUT_OF_SCOPE");
+  return {
+    lines: scoped.length,
+    match: scoped.filter((l) => l.status === "MATCH").length,
+    differs: scoped.filter((l) => l.status === "DIFF").length,
+    missing: scoped.filter((l) => l.status === "MISSING").length,
+    extra: scoped.filter((l) => l.status === "EXTRA").length,
+    open: scoped.filter(isOpenDifference).length,
+    closeness: scoreLines(scoped).overall,
+  };
 }
 
 export function withClass(classes: BillClasses, key: string, cls: BillClass | null, note: string): BillClasses {

@@ -199,6 +199,7 @@ class PDFExtractionResultResponse(BaseModel):
   boq_version_id: UUID
   created_item_count: int
   items: list[BOQItemResponse]
+  unread_pages: list[int] = Field(default_factory=list, description="Pages of the PDF that were not read: pages with no text, pages past the text limit, and pages the reader did not reach.")
   
 class MaterialLibraryUpdateRequest(BaseModel):
   normalized_name: str | None = Field(default=None, min_length=1, max_length=300)
@@ -343,7 +344,8 @@ class DerivedParamsRequest(BaseModel):
   ring_dense_default: float | None = Field(default=None, ge=0, le=1, description="1 gives a column or beam whose drawing prints one ring spacing a closer zone at each end; 0 counts every ring at the printed spacing.")
   ring_dense_spacing_mm: float | None = Field(default=None, ge=50, le=300, description="Ring spacing (mm) in the closer zone when the drawing prints none; 101.6 is 4 in.")
   shoring_from_depth_mm: float | None = Field(default=None, ge=0, le=10000, description="Shore only the part of a trench deeper than this (mm) and switch shoring on by itself; 0 keeps shoring to the switch and the whole depth.")
-  plaster_thickness_mm: float | None = Field(default=None, ge=0, le=40, description="Thickness of the plaster (mm). When set, the mortar behind the plaster (area x thickness, m3) is added as FIN-PLASTER-MORTAR; 0 leaves it out. Taken from the drawing note when one is printed.")
+  concrete_grade_mpa: float | None = Field(default=None, ge=0, le=80, description="The concrete grade of the project in MPa (25 for M25), stated once. It fills every concrete member whose own material text carries no grade; a grade the model prints is never replaced. 0 or left out states none.")
+  plaster_thickness_mm: float | None = Field(default=None, ge=0, le=40, description="Thickness of the plaster (mm).When set, the mortar behind the plaster (area x thickness, m3) is added as FIN-PLASTER-MORTAR; 0 leaves it out. Taken from the drawing note when one is printed.")
   soil_stabilisation: float | None = Field(default=None, ge=0, le=1, description="1 adds cement-stabilised soil under the filled floor (EXC-SOIL-STAB) once the layer depth is known; 0 leaves it out. Whether the soil is loose is a finding made on site, so it is never switched on by itself.")
   soil_stab_depth_mm: float | None = Field(default=None, ge=0, le=1500, description="Depth (mm) of the stabilised soil layer. Taken from the drawing note when one prints it; never guessed.")
   soil_stab_cement_pct: float | None = Field(default=None, ge=0, le=20, description="Cement as a percentage of the weight of the soil, carried on the row. Taken from the drawing note when one prints it.")

@@ -7,6 +7,7 @@ export interface CompletenessFinding {
   title: string;
   detail: string;
   fix: string | null;
+  operator_note?: string | null;
 }
 
 export interface CompletenessFamily {
@@ -22,6 +23,7 @@ export interface CompletenessSkipped {
   reason: string;
   lost: string | null;
   fix: string | null;
+  operator_note?: string | null;
 }
 
 export interface CompletenessStep {

@@ -53,9 +53,14 @@ export function DrawingTable({
           showToast({
             tone: "info",
             title: t("drawings.suggest.noDataTitle"),
-            description: t("drawings.suggest.noDataDesc", {
-              filename: drawing.original_filename,
-            }),
+            description: [
+              t("drawings.suggest.noDataDesc", {
+                filename: drawing.original_filename,
+              }),
+              result.unread_pages?.length
+                ? t("drawings.suggest.unreadPages", "Pages not read: {{pages}}.", { pages: result.unread_pages.join(", ") })
+                : "",
+            ].filter(Boolean).join(" "),
           });
           return;
         }
@@ -65,7 +70,12 @@ export function DrawingTable({
           title: t("drawings.suggest.successTitle", {
             count: result.created_item_count,
           }),
-          description: t("drawings.suggest.successDesc"),
+          description: [
+            t("drawings.suggest.successDesc"),
+            result.unread_pages?.length
+              ? t("drawings.suggest.unreadPages", "Pages not read: {{pages}}.", { pages: result.unread_pages.join(", ") })
+              : "",
+          ].filter(Boolean).join(" "),
         });
 
         onItemsSuggested?.(result.boq_version_id);

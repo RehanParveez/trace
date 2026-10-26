@@ -79,8 +79,8 @@ def _skipped(stages: list) -> list:
     if s.get("status") != "SKIPPED":
       continue
     reason = str((s.get("counts") or {}).get("reason") or "skipped in this run")
-    lost, fix = STAGE_NOTES.get(s["stage"], (None, None))
-    out.append({"stage": s["stage"], "reason": reason, "lost": lost, "fix": fix})
+    lost, fix, operator_note = STAGE_NOTES.get(s["stage"], (None, None, None))
+    out.append({"stage": s["stage"], "reason": reason, "lost": lost, "fix": fix, "operator_note": operator_note})
   return out
 
 def build(*, stages: list, run_settings: dict, ledger: list, funnel: dict | None, held_by_reason: dict | None, derived: dict | None = None, boq_error: str | None = None) -> dict:
@@ -93,8 +93,8 @@ def build(*, stages: list, run_settings: dict, ledger: list, funnel: dict | None
   step_rows = BS.steps(derived)
   findings: list = []
 
-  def add(code: str, severity: str, title: str, detail: str, fix: str | None) -> None:
-    findings.append({"code": code, "severity": severity, "title": title, "detail": detail, "fix": fix})
+  def add(code: str, severity: str, title: str, detail: str, fix: str | None, operator_note: str | None = None) -> None:
+    findings.append({"code": code, "severity": severity, "title": title, "detail": detail, "fix": fix, "operator_note": operator_note})
 
   funnel = funnel or {}
   confirmed, draft, undecided = int(funnel.get("confirmed") or 0), int(funnel.get("draft") or 0), int(funnel.get("undecided") or 0)
@@ -122,16 +122,17 @@ def build(*, stages: list, run_settings: dict, ledger: list, funnel: dict | None
 
   for s in skipped:
     if s["stage"] == "derived_works" and has_pdf:
-      add("DERIVED_WORKS_SKIPPED", "BLOCKER", "Derived works did not run", f"Reason recorded: {s['reason']}. Missing because of it: {s['lost']}.", s["fix"])
+      add("DERIVED_WORKS_SKIPPED", "BLOCKER", "Derived works did not run", f"Reason recorded: {s['reason']}. Missing because of it: {s['lost']}.", s["fix"], s["operator_note"])
     elif s["stage"] == "pdf_takeoff" and has_pdf and confirmed:
-      add("PDF_TAKEOFF_SKIPPED", "BLOCKER", "The PDF measurements were not used", f"Reason recorded: {s['reason']}.", s["fix"])
+      add("PDF_TAKEOFF_SKIPPED", "BLOCKER", "The PDF measurements were not used", f"Reason recorded: {s['reason']}.", s["fix"], s["operator_note"])
     elif s["stage"] in ("pdf_space", "layer_split", "stage_split"):
-      add(f"{s['stage'].upper()}_SKIPPED", "INFO", f"{s['stage']} did not run", f"Reason recorded: {s['reason']}. Not done: {s['lost']}.", s["fix"])
+      add(f"{s['stage'].upper()}_SKIPPED", "INFO", f"{s['stage']} did not run", f"Reason recorded: {s['reason']}. Not done: {s['lost']}.", s["fix"], s["operator_note"])
 
   if has_pdf and "derived_works" not in skipped_names and not run_settings.get("derived") and not any(f["code"] == "DERIVED_WORKS_SKIPPED" for f in findings):
-    add("DERIVED_OFF", "WARNING", "Derived works were not switched on for this run", "The settings of the run do not include derived works.", STAGE_NOTES["derived_works"][1])
+    add("DERIVED_OFF", "WARNING", "Derived works were not switched on for this run", "The settings of the run do not include derived works.", STAGE_NOTES["derived_works"][1], STAGE_NOTES["derived_works"][2])
   if has_pdf and not run_settings.get("spec"):
-    add("SPEC_OFF", "INFO", "Specifications were not switched on for this run", "Layer and stage splits need it.", "Set ENGINE_SPEC_ORG_IDS to this company's id or *.")
+    add("SPEC_OFF", "INFO", "Specifications were not switched on for this run", "Layer and stage splits need it.",
+      "Specifications are switched off for your account. Ask your Trace administrator to switch them on.", "Set ENGINE_SPEC_ORG_IDS to this company's id or *.")
 
   if boq_error:
     add("BOQ_BUILD_FAILED", "BLOCKER", "The bill could not be built from the ledger of this run",
@@ -149,6 +150,18 @@ def build(*, stages: list, run_settings: dict, ledger: list, funnel: dict | None
         else ("The derived works ran and added none of this. Check the held items on the approve screen." if step_rows else fix))
   for code, severity, title, detail, fix in BS.findings(step_rows, set(present), covered):
     add(code, severity, title, detail, fix)
+
+  spec = spec or {}
+  codes = {str(r.get("code") or "") for r in ledger}
+  coat_pages = spec.get("waterproof_pages") or []
+  if coat_pages and not any(c.startswith(WATERPROOF_PREFIXES) for c in codes):
+    add("WATERPROOFING_PRINTED_NOT_BILLED", "WARNING", "The drawing prints waterproofing, but the bill has no waterproofing line",
+      f"A waterproofing coat is printed in the notes (page {', '.join(str(p) for p in coat_pages[:6])}) and no waterproofing or roof membrane line is in this run.",
+      "Check that the wet rooms and the roof were accepted and measured, and that the roof deck assembly is on, then run again.")
+  if spec.get("chajja_accepted") and "FORMWORK" in present and not spec.get("chajja_formwork_rows"):
+    add("CHAJJA_NO_FORMWORK", "WARNING", f"{int(spec['chajja_accepted'])} chajja accepted, but no chajja formwork in the bill",
+      "A chajja is cast in concrete and shuttered, and this run has formwork for other members but none for the chajja.",
+      "Confirm the chajja measurements and check that the formwork switches are on, then run again.")
 
   if total_rows <= 2:
     verdict = "EMPTY"

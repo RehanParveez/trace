@@ -9,7 +9,7 @@ ASK = {
   "OPENING_SIZE_MISSING": ("Door and window sizes", "Give the width and height of the doors and windows {places}, so that they can be taken out of the walls and finishes."),
   "SPEC_THICKNESS_MISSING": ("Masonry wall thickness", "State the thickness of the masonry walls {places} (115, 230 and so on)."),
   "SPEC_MORTAR_MISSING": ("Mortar ratio", "State the mortar ratio of the masonry walls {places} (for example 1:6)."),
-  "SPEC_MIX_MISSING": ("Concrete mix", "State the concrete mix or grade of the members {places} (for example 1:2:4 or M20)."),
+  "SPEC_MIX_MISSING": ("Concrete mix", "State the concrete grade once for the project in the site assumptions (for example 25), or name the mix on the members {places} (for example 1:2:4 or M20)."),
   "MATERIAL_GENERIC": ("Material not stated", "Name the material of the elements {places} (for example brick, or concrete C25)."),
   "STEEL_BARS_NOT_PRINTED": ("Bars not printed", "Print the reinforcement (bars, spacing, rings) of the {count} members whose bars are not on the drawing, or send the bar schedule."),
   "STEEL_ESTIMATED": ("Bars not printed, steel estimated", "Print the reinforcement of the {count} members whose bars are not on the drawing, or send the bar schedule; their steel is an estimate until then."),

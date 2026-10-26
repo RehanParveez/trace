@@ -478,7 +478,7 @@ class CalculationService:
         datum_overrides=dict(run_settings.get("datum_overrides") or {}),
         element_overrides={k: dict(v) for k, v in (run_settings.get("element_overrides") or {}).items()},
       )
-      state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
+      state: dict = {"extra_solids": [], "extra_ledger": [], "finish_skipped": {}, "finish_gap": {}, "marks": [], "rebar_stats": {}, "rebar_skipped": {}}
       convention = kernel.get_convention(convention_code)
       state["alloc"] = kernel.AllocationResult.empty()
       signature = alloc_signature(engine_version, convention_code, convention_params)
@@ -593,7 +593,8 @@ class CalculationService:
         state["extra_solids"] += res.solids
         state["extra_ledger"] += res.ledger
         state["finish_skipped"] = res.skipped
-        return {"spaces": len(p6.spaces), "finish_lines": len(res.ledger), "skipped": res.skipped}
+        state["finish_gap"] = res.gap
+        return {"spaces": len(p6.spaces), "finish_lines": len(res.ledger), "skipped": res.skipped, "without_outline": (res.gap or {}).get("without_outline", 0)}
 
       async def schedules():
         model_codes = frozenset(e.work_item_code for e in state["ledger"] + state["extra_ledger"])
@@ -605,7 +606,7 @@ class CalculationService:
         return {"schedule_lines": len(res.ledger)}
 
       async def reinforcement():
-        bars = await asyncio.to_thread(kernel.measure_ifc_bars, ctx, state["accepted"])
+        bars = await asyncio.to_thread(kernel.measure_ifc_bars, ctx, state["accepted"], state["solids"], state["ledger"], profile, p6.rebar)
         await self.runs.stage_solids([_solid_row(run, s, "reinforcement") for s in bars.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "reinforcement") for e in bars.ledger])
         state["extra_solids"] += bars.solids
@@ -613,7 +614,7 @@ class CalculationService:
         state["rejected"] = list(state["rejected"]) + bars.rejected
         state["ifc_rebar"] = bars.stats
         state["ifc_bar_ledger"] = bars.ledger
-        res = await asyncio.to_thread(rb.measure_rebar, ctx, profile, state["solids"], state["ledger"], p6.rebar, bars.hosts)
+        res = await asyncio.to_thread(rb.measure_rebar, ctx, profile, state["solids"], state["ledger"], p6.rebar, bars.hosts, bars.floors)
         await self.runs.stage_solids([_solid_row(run, s, "reinforcement") for s in res.solids])
         await self.runs.stage_ledger([_ledger_row(run, e, "reinforcement") for e in res.ledger])
         await self.runs.stage_bar_marks([_bar_mark_row(run, m) for m in res.marks])
@@ -851,6 +852,7 @@ class CalculationService:
         "steel": state.get("steel", {}),
         "allocation": state["alloc"].stats,
         "finishes_skipped": state["finish_skipped"],
+        "finishes_gap": state.get("finish_gap", {}),
         "spaces": len(p6.spaces),
         "rebar": state["rebar_stats"],
         "ifc_rebar": state.get("ifc_rebar", {}),
@@ -862,6 +864,7 @@ class CalculationService:
         "derived": state.get("derived_stats") or kernel.derived_stats(ctx),
         "material": kernel.material_stats(state["solids"], state["ledger"]),
         "coverage": kernel.coverage_stats(elements, state["rejected"], state["skipped"], state["unmapped"], state["ledger"] + state.get("ifc_bar_ledger", [])),
+        "model_notes": kernel.model_notes(elements, state["rejected"], state["skipped"], state["ledger"]),
         "confidence": kernel.confidence_stats(state["ledger"] + state["extra_ledger"]),
       })
       await DatumsService(self.session).record_run(org, project_id, run_id,

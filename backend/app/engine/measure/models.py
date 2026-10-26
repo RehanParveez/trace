@@ -33,6 +33,7 @@ class ModelElement:
   invalid_code: str | None = None
   invalid_message: str | None = None
   mesh_volume_mm3: float | None = None
+  width_mm: Decimal | None = None
 
 @dataclass(frozen=True)
 class MappingInput:
@@ -89,6 +90,7 @@ class Solid:
   spec: dict | None = None
   volume_check: str | None = None
   generic_material: bool = False
+  ifc_global_id: str | None = None
 
 @dataclass(frozen=True)
 class LedgerEntry:

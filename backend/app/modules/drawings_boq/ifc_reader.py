@@ -23,7 +23,9 @@ _KEYWORD_PATTERNS = [
 ]
 _MM3_PER_M3 = 1_000_000_000.0
 QTO_MESH_TOLERANCE = 0.02
-CONCRETE_ONLY_ROLES = frozenset({"COLUMN", "BEAM", "SLAB", "SLAB_FOUNDATION", "SLAB_ROOF", "WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "FOOTING", "PILE", "PILE_CAP"})
+CONCRETE_ONLY_ROLES = frozenset({"COLUMN", "BEAM", "SLAB", "SLAB_FOUNDATION", "SLAB_ROOF", "WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "FOOTING", "PILE", "PILE_CAP", "STAIR"})
+LEVEL_TOLERANCE_MM = 500.0
+NOT_FLOOR_SLAB_ROLES = frozenset({"SLAB_FOUNDATION", "SLAB_LANDING"})
 _CONCRETE_TEXT = re.compile(r"concrete|cement|\brcc\b|grout", re.I)
 _PILE_CAP_NAME = re.compile(r"(?<![a-z])pile[\s_\-]*caps?(?![a-z])", re.I)
 _PILE_NAME = re.compile(r"(?<![a-z])piles?(?![a-z])", re.I)
@@ -285,6 +287,18 @@ def _material_text(element) -> str | None:
 
 MAX_LAYERS = 30
 
+def _constituent_layers(material) -> list[dict]:
+  out: list[dict] = []
+  for item in list(material.MaterialConstituents or [])[:MAX_LAYERS]:
+    out.append({
+      "name": _clean(getattr(item, "Name", None)),
+      "material": _clean(getattr(item.Material, "Name", None)) if getattr(item, "Material", None) is not None else None,
+      "thickness_mm": None,
+      "category": _clean(getattr(item, "Category", None)),
+      "kind": "constituent",
+    })
+  return out
+
 def _material_layers(element, scales) -> list[dict]:
   """The layers of a layered element (wall, slab, roof), outside first, as the model gives them."""
   try:
@@ -295,6 +309,8 @@ def _material_layers(element, scales) -> list[dict]:
       layer_set = material.ForLayerSet
     elif material.is_a("IfcMaterialLayerSet"):
       layer_set = material
+    elif material.is_a("IfcMaterialConstituentSet"):
+      return _constituent_layers(material)
     else:
       return []
     
@@ -878,6 +894,13 @@ def _trim_value(trim) -> tuple[str, object] | None:
       return "param", number
   return None
 
+def _circle_param_span(first: float, second: float, agrees: bool, angle_scale: float) -> float:
+  """How far a trimmed circle runs, in the file's angle units, counted in the direction the curve is traced."""
+  full = (2.0 * math.pi / angle_scale) if angle_scale else 360.0
+  raw = (second - first) if agrees else (first - second)
+  raw = raw % full
+  return full if raw == 0 and first != second else raw
+
 def _curve_length_mm(curve, mm: float, angle_scale: float, depth: int = 0) -> float | None:
   """Length of a bar's centre line when it is a polyline, an indexed poly curve of lines and three-point arcs, or a composite of those and trimmed lines and circles. Anything else gives None, never a guess."""
   if curve is None or depth > 4:
@@ -889,6 +912,7 @@ def _curve_length_mm(curve, mm: float, angle_scale: float, depth: int = 0) -> fl
     if not curve.Segments:
       return _line_points(coords, mm)
     total = 0.0
+
     for seg in curve.Segments:
       idx = [int(i) - 1 for i in getattr(seg, "wrappedValue", seg)]
       if seg.is_a("IfcLineIndex"):
@@ -898,6 +922,7 @@ def _curve_length_mm(curve, mm: float, angle_scale: float, depth: int = 0) -> fl
       else:
         return None
     return total
+
   if curve.is_a("IfcCompositeCurve"):
     total = 0.0
     for seg in curve.Segments:
@@ -906,6 +931,7 @@ def _curve_length_mm(curve, mm: float, angle_scale: float, depth: int = 0) -> fl
         return None
       total += part
     return total
+
   if curve.is_a("IfcTrimmedCurve"):
     basis = curve.BasisCurve
     t1, t2 = _trim_value(curve.Trim1), _trim_value(curve.Trim2)
@@ -917,41 +943,152 @@ def _curve_length_mm(curve, mm: float, angle_scale: float, depth: int = 0) -> fl
       magnitude = _num(getattr(basis.Dir, "Magnitude", None))
       return abs(t2[1] - t1[1]) * magnitude * mm if magnitude else None
     if basis.is_a("IfcCircle") and t1[0] == "param":
-      span = (t2[1] - t1[1]) * angle_scale if curve.SenseAgreement else (t1[1] - t2[1]) * angle_scale
-      span = span % (2.0 * math.pi)
+      span = _circle_param_span(t1[1], t2[1], bool(curve.SenseAgreement), angle_scale) * angle_scale
       return float(basis.Radius) * span * mm
   return None
 
+def _curve_param_span(curve, angle_scale: float, depth: int = 0) -> float | None:
+  if curve is None or depth > 4:
+    return None 
+  if curve.is_a("IfcPolyline"):
+    return float(len(curve.Points) - 1)
+  if curve.is_a("IfcIndexedPolyCurve"):
+    return float(len(curve.Segments)) if curve.Segments else float(len(curve.Points.CoordList) - 1)
+  if curve.is_a("IfcCompositeCurve"):
+    total = 0.0
+    for seg in curve.Segments:
+      part = _curve_param_span(seg.ParentCurve, angle_scale, depth + 1)
+      if part is None:
+        return None
+      total += part
+    return total
+
+  if curve.is_a("IfcTrimmedCurve"):
+    t1, t2 = _trim_value(curve.Trim1), _trim_value(curve.Trim2)
+    if t1 is None or t2 is None or t1[0] != "param" or t2[0] != "param":
+      return None
+
+    if curve.BasisCurve.is_a("IfcCircle"):
+      return _circle_param_span(t1[1], t2[1], bool(curve.SenseAgreement), angle_scale)
+    if curve.BasisCurve.is_a("IfcLine"):
+      return abs(t2[1] - t1[1])
+  return None
+
+def _disk_length_mm(disk, mm: float, angle_scale: float) -> float | None:
+  """Centre-line length of one swept disk. A disk trimmed to part of its curve is not measured: the trim is not read as a length."""
+  length = _curve_length_mm(disk.Directrix, mm, angle_scale)
+  if length is None:
+    return None
+  start, end = getattr(disk, "StartParam", None), getattr(disk, "EndParam", None)
+  if start is None and end is None:
+    return length
+
+  span = _curve_param_span(disk.Directrix, angle_scale)
+  if span is None or start is None or end is None:
+    return None
+  tol = 1e-6 * max(1.0, span)
+  if abs(float(start)) <= tol and abs(float(end) - span) <= tol:
+    return length
+  return None
+
+def _bar_curve_points(curve, angle_scale: float, depth: int = 0) -> list | None:
+  if curve is None or depth > 4:
+    return None
+  if curve.is_a("IfcPolyline"):
+    return [_pad3(p.Coordinates) for p in curve.Points]
+  if curve.is_a("IfcIndexedPolyCurve"):
+    return [_pad3(p) for p in curve.Points.CoordList]
+  if curve.is_a("IfcCompositeCurve"):
+    out: list = []
+    for seg in curve.Segments:
+      part = _bar_curve_points(seg.ParentCurve, angle_scale, depth + 1)
+      if part is None:
+        return None
+      out += part
+    return out
+
+  if curve.is_a("IfcTrimmedCurve"):
+    basis = curve.BasisCurve
+    t1, t2 = _trim_value(curve.Trim1), _trim_value(curve.Trim2)
+    if t1 is None or t2 is None or t1[0] != t2[0]:
+      return None
+    if t1[0] == "point":
+      return [t1[1], t2[1]]
+    if basis.is_a("IfcLine"):
+      origin = np.array(_pad3(basis.Pnt.Coordinates))
+      direction = np.array(_pad3(basis.Dir.Orientation.DirectionRatios))
+      norm = float(np.linalg.norm(direction))
+      magnitude = _num(getattr(basis.Dir, "Magnitude", None))
+      if norm == 0 or not magnitude:
+        return None
+
+      return [tuple(origin + direction / norm * magnitude * t) for t in (t1[1], t2[1])]
+    if basis.is_a("IfcCircle"):
+      matrix = ifcopenshell.util.placement.get_axis2placement(basis.Position)
+      radius = float(basis.Radius)
+      agrees = bool(curve.SenseAgreement)
+      span = _circle_param_span(t1[1], t2[1], agrees, angle_scale)
+      sign = 1.0 if agrees else -1.0
+      out = []
+
+      for k in range(9):
+        angle = (t1[1] + sign * span * k / 8.0) * angle_scale
+        out.append(tuple(float(v) for v in (matrix @ np.array([radius * math.cos(angle), radius * math.sin(angle), 0.0, 1.0]))[:3]))
+      return out
+  return None
+
+def _bar_bbox(element, items, mm: float, angle_scale: float) -> dict | None:
+  """The box, in world millimetres, that holds the centre lines of every bar the element draws. It is only used to say which member the bars sit in."""
+  try:
+    base = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement) if getattr(element, "ObjectPlacement", None) is not None else np.eye(4)
+  except Exception:
+    return None
+  points: list = []
+
+  for item in items:
+    inner, matrix, _ = _unwrap_mapped(item)
+    if inner is None or not inner.is_a("IfcSweptDiskSolid"):
+      continue
+    local = _bar_curve_points(inner.Directrix, angle_scale)
+    if not local:
+      return None
+    for p in local:
+      points.append((base @ matrix @ np.array([p[0], p[1], p[2], 1.0]))[:3] * mm)
+  if not points:
+    return None
+  stack = np.array(points)
+  return {"min": [round(float(v), 1) for v in stack.min(axis=0)], "max": [round(float(v), 1) for v in stack.max(axis=0)]}
+
 def _bar_geometry(element, mm: float, angle_scale: float) -> dict:
+  """The bars a bar element draws. Revit puts a whole set of identical bars in one element, one swept disk each, so the bars are counted by disk and grouped by diameter: {"groups": [{dia_mm, bars, length_mm}], "disks": n}. Groups are given only when every disk could be measured."""
   items = _body_items(element)
   if not items:
     return {}
   disks = []
-
   for item in items:
     inner, _, _ = _unwrap_mapped(item)
     if inner is not None and inner.is_a("IfcSweptDiskSolid"):
       disks.append(inner)
   if not disks:
     return {}
-  radii = {round(float(d.Radius), 9) for d in disks}
-  out: dict = {}
-  if len(radii) == 1:
-    out["dia_mm"] = 2.0 * float(disks[0].Radius) * mm
-  total = 0.0
+  out: dict = {"disks": len(disks)}
+  box = _bar_bbox(element, items, mm, angle_scale)
+  if box is not None:
+    out["bbox_mm"] = box
+  by: dict = {}
+
   for disk in disks:
-    if getattr(disk, "StartParam", None) is not None or getattr(disk, "EndParam", None) is not None:
-      return out
-    part = _curve_length_mm(disk.Directrix, mm, angle_scale)
+    part = _disk_length_mm(disk, mm, angle_scale)
     if part is None:
       return out
-    total += part
-
-  out["length_mm"] = total
-  out["parts"] = len(disks)
+    slot = by.setdefault(round(2.0 * float(disk.Radius) * mm, 6), [0, 0.0])
+    slot[0] += 1
+    slot[1] += part
+  out["groups"] = [{"dia_mm": dia, "bars": v[0], "length_mm": v[1]} for dia, v in sorted(by.items())]
   return out
 
 def _host_of(element):
+  """The member a bar belongs to: its parent through an aggregation, else the product it is assigned to. A parent that is itself reinforcement is passed over."""
   node = element
   for _ in range(4):
     parent = None
@@ -973,7 +1110,19 @@ def _host_of(element):
     return parent
   return None
 
+def _group_name(element) -> str | None:
+  """The group the bar is placed in, when the file puts bars in a named group (Revit does this for area reinforcement)."""
+  for rel in (getattr(element, "HasAssignments", None) or ()):
+    if rel.is_a("IfcRelAssignsToGroup"):
+      name = _clean(getattr(getattr(rel, "RelatingGroup", None), "Name", None))
+      if name:
+        return name[:120]
+  return None
+
+_REBAR_COUNT_KEYS = ("Count", "NumberOfBars", "BarCount", "Quantity")
+
 def _rebar_fields(element, psets: dict, qtos: dict, scales: _Scales) -> dict | None:
+  """What the file says about one bar element: the drawn bars grouped by diameter, what it declares (diameter, length per bar, count), its own weight, steel grade, and the member or group it belongs to. Weight is worked out in the engine; the file's own weight is kept only to check it against."""
   if not element.is_a("IfcReinforcingBar"):
     return None
   mm = scales.mm_per_unit
@@ -988,17 +1137,23 @@ def _rebar_fields(element, psets: dict, qtos: dict, scales: _Scales) -> dict | N
     geometry = {}
 
   out: dict = {}
+  if geometry.get("groups"):
+    out["groups"] = [{"dia_mm": g["dia_mm"], "bars": g["bars"], "length_mm": g["length_mm"]} for g in geometry["groups"]]
+  if geometry.get("disks"):
+    out["disks"] = geometry["disks"]
+  if geometry.get("bbox_mm"):
+    out["bbox_mm"] = geometry["bbox_mm"]
+
   diameter = _num(getattr(element, "NominalDiameter", None))
   found = _pset_number(psets, _REBAR_DIAMETER_KEYS)
   area = _num(getattr(element, "CrossSectionArea", None))
+
   if diameter is not None and diameter > 0:
     out["dia_mm"], out["dia_source"] = diameter * mm, "NominalDiameter"
   elif found is not None:
     out["dia_mm"], out["dia_source"] = found[0] * mm, found[1]
   elif area is not None and area > 0:
     out["dia_mm"], out["dia_source"] = math.sqrt(4.0 * area * scales.area_m2 * 1e6 / math.pi), "CrossSectionArea"
-  elif geometry.get("dia_mm"):
-    out["dia_mm"], out["dia_source"] = geometry["dia_mm"], "SweptDisk"
   if area is not None and area > 0:
     out["area_mm2"] = area * scales.area_m2 * 1e6
 
@@ -1011,10 +1166,10 @@ def _rebar_fields(element, psets: dict, qtos: dict, scales: _Scales) -> dict | N
     out["length_mm"], out["length_source"] = found[0] * mm, found[1]
   elif qto_length is not None:
     out["length_mm"], out["length_source"] = qto_length[0] * mm, qto_length[1]
-  elif geometry.get("length_mm"):
-    out["length_mm"], out["length_source"] = geometry["length_mm"], "Directrix"
-    if geometry.get("parts", 1) > 1:
-      out["parts"] = geometry["parts"]
+
+  count = _pset_number(qtos, _REBAR_COUNT_KEYS)
+  if count is not None and abs(count[0] - round(count[0])) < 1e-9 and count[0] >= 1:
+    out["count"], out["count_source"] = int(round(count[0])), count[1]
 
   weight = _pset_number(qtos, _REBAR_WEIGHT_KEYS)
   if weight is not None:
@@ -1038,6 +1193,12 @@ def _rebar_fields(element, psets: dict, qtos: dict, scales: _Scales) -> dict | N
     out["host_global_id"] = _clean(getattr(host, "GlobalId", None))
     out["host_type"] = host.is_a()
     out["host_name"] = _short(getattr(host, "Name", None), 120)
+  try:
+    group = _group_name(element)
+  except Exception:
+    group = None
+  if group:
+    out["group_name"] = group
   return out
 
 def _type_fields(element, psets: dict, role: str) -> dict:
@@ -1282,6 +1443,48 @@ def _normalise_element(
     **_type_fields(element, psets, role),
   )
  
+def _inferred_level_of(levels: list[ReadLevel], e: ReadElement) -> str | None:
+  """A beam hangs below the floor it carries, so it belongs to the level at or above its top; everything else belongs to the level at its base."""
+  if (e.structural_role or "").startswith(("BEAM", "EDGE_BEAM", "GIRDER")) and e.elevation_top_mm is not None:
+    top = float(e.elevation_top_mm)
+    for level in levels:
+      if level.elevation_mm is not None and float(level.elevation_mm) >= top - LEVEL_TOLERANCE_MM:
+        return level.global_id
+    return levels[-1].global_id
+  return _level_by_elevation(levels, float(e.elevation_base_mm) if e.elevation_base_mm is not None else None)
+
+def _infer_levels(elements: list[ReadElement]) -> tuple[list[ReadLevel], dict]:
+  """One level for each floor slab top, found the way the engine finds its stage datums (same cluster width, storey height and slab size rule)."""
+  from app.engine.measure.stages import DEFAULTS as STAGE
+  tol, storey, share = STAGE["slab_cluster_mm"], STAGE["min_storey_mm"], STAGE["floor_slab_min_area_frac"]
+  slabs = []
+  for e in elements:
+    role = e.structural_role or ""
+    if not role.startswith("SLAB") or role in NOT_FLOOR_SLAB_ROLES or e.elevation_top_mm is None:
+      continue
+    slabs.append((float(e.elevation_top_mm), float(e.area_mm2 or 0.0)))
+  slabs.sort()
+  clusters: list[dict] = []
+  for top, area in slabs:
+    if clusters and top - clusters[-1]["first"] <= tol:
+      clusters[-1]["top"] = max(clusters[-1]["top"], top)
+      clusters[-1]["area"] += area
+    else:
+      clusters.append({"first": top, "top": top, "area": area})
+  largest = max((a for _, a in slabs), default=0.0)
+  tops: list[float] = []
+  for c in clusters:
+    if largest > 0 and c["area"] < share * largest:
+      continue
+    if tops and c["top"] - tops[-1] < storey:
+      continue
+    tops.append(c["top"])
+  info = {"slab_levels": len(tops), "tops_mm": [round(t, 1) for t in tops]}
+  if len(tops) < 2:
+    return [], info
+  return [ReadLevel(global_id=f"INFERRED-LEVEL-{i + 1}", name=f"Level {i + 1} (inferred)", elevation_mm=_dec(t), sequence=i)
+    for i, t in enumerate(tops)], info
+
 def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMIT) -> IfcReadResult:
   model = ifcopenshell.open(path)
   scales = _resolve_scales(model)
@@ -1333,6 +1536,23 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
   if mesh_budget[0] <= 0:
     model_issues.append(_issue("MESH_FALLBACK_LIMIT_REACHED", "info", f"Mesh bounding-box fallback limit ({mesh_fallback_limit}) reached; later elements may lack geometry."))
  
+  if not levels and elements:
+    levels, level_info = _infer_levels(elements)
+    if levels:
+      placed = 0
+      for e in elements:
+        if e.level_global_id is None:
+          gid = _inferred_level_of(levels, e)
+          if gid:
+            e.level_global_id = gid
+            e.issues.append(_issue("LEVEL_INFERRED", "info", "No storey in the model; level inferred from the floor slabs."))
+            placed += 1
+      model_issues.append(_issue("LEVELS_INFERRED", "info",
+        f"The model has no storeys. {len(levels)} levels were inferred from the floor slabs (tops at {', '.join(str(int(t)) for t in level_info['tops_mm'])} mm) and {placed} elements were placed on them. Elements below the lowest level have none."))
+    else:
+      model_issues.append(_issue("LEVELS_NOT_INFERRED", "info",
+        f"The model has no storeys and only {level_info['slab_levels']} floor slab level was found, so no levels were inferred; at least two are needed."))
+
   spatial = None
   try:
     from app.modules.drawings_boq.ifc_spatial import read_spatial

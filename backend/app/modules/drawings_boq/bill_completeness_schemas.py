@@ -8,6 +8,7 @@ class CompletenessFinding(BaseModel):
   title: str
   detail: str
   fix: str | None = None
+  operator_note: str | None = None
 
 class CompletenessFamily(BaseModel):
   family: str
@@ -21,6 +22,7 @@ class CompletenessSkipped(BaseModel):
   reason: str
   lost: str | None = None
   fix: str | None = None
+  operator_note: str | None = None
 
 class CompletenessFunnel(BaseModel):
   confirmed: int

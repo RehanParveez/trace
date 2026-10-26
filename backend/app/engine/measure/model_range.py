@@ -31,6 +31,7 @@ WARNING_DRIVERS = {
   "WALL_WORKS_STEPS_PROPOSED": "steps of the brick foundation",
   "WALL_FINISH_SIDES_ASSUMED": "which face of the wall is outside",
   "OPENING_SIZE_FROM_BOX": "size of the opening taken from its box",
+  "OPENING_SIZE_DECLARED": "size of the opening as the model states it, frame not clear opening",
   "ROOF_AREA_FROM_PLAN": "flat roof assumed",
   "ROOF_DECK_LAYERS_ASSUMED": "roof layers not drawn",
   "SOIL_STAB_AREA_ASSUMED": "loose soil taken under the whole filled floor",
@@ -62,6 +63,10 @@ def _model_drivers(entry) -> list:
     out.append(_driver("model quantity differs from the geometry", MEASURED, -MEASURED_PCT, MEASURED_PCT))
   if "OPENINGS_NOT_DEDUCTED" in warnings:
     out.append(_driver("openings not deducted", ASSUMED, -ASSUMED_PCT, 0.0))
+  if "MAPPED_BY_ROLE" in warnings:
+    out.append(_driver("billed under the concrete item because of its role", ASSUMED, -ASSUMED_PCT, ASSUMED_PCT))
+  if "LAYERS_NO_THICKNESS" in warnings:
+    out.append(_driver("layers not separated, billed whole", ASSUMED, -ASSUMED_PCT, 0.0))
   return out
 
 def _derived_drivers(entry) -> list:

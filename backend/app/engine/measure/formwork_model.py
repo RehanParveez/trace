@@ -101,12 +101,22 @@ def model_inputs(elements, measured_ids: set) -> tuple:
       skip("NO_SIZE")
       continue
   
+    round_mm = None
+    if cat == "COLUMN" and isinstance(el.profile, dict) and el.profile.get("kind") == "CIRCLE":
+      try:
+        radius = float(el.profile.get("radius"))
+      except (TypeError, ValueError):
+        radius = 0.0
+      if radius > 0:
+        round_mm = Decimal(str(round(2 * radius, 3)))
+        length = width = float(round_mm)
+        stats["round"] = stats.get("round", 0) + 1
     box = sbox_of(ext) if _is_box(el, poly, ext) else None
     stats["not_box"] += 0 if box is not None else 1
     role = "PLINTH" if (el.role or "").upper() == "GROUND_BEAM" else None
     inputs.append(FormworkInput(measurement_id=el.id, candidate_id=el.id, sheet_id=None, page_no=None, category=cat, tag=el.ifc_global_id, level_id=el.level_id,
       element_ids=(el.id,), count=1, length_mm=Decimal(str(round(length, 3))), width_mm=Decimal(str(round(width, 3))), depth_mm=Decimal(str(round(depth, 3))),
-      confidence=Decimal(str(el.classification_confidence)) * (Decimal("0.9") if assumed else Decimal("1")), role=role))
+      confidence=Decimal(str(el.classification_confidence)) * (Decimal("0.9") if assumed else Decimal("1")), role=role, round_mm=round_mm))
     items[str(el.id)] = (el, box, cat)
     stats["members"] += 1
   return tuple(inputs), items, stats

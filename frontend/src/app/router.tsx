@@ -230,6 +230,17 @@ export const router = createBrowserRouter([
   },
 
   {
+  path: "takeoff/:projectId/:drawingId",
+  element: <OrganizationShell />,
+  children: [
+    {
+      index: true,
+      element: <TakeoffPage />,
+    },
+  ],
+},
+
+  {
   path: "site-photos",
   element: <OrganizationShell />,
   children: [

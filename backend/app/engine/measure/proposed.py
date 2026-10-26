@@ -46,7 +46,7 @@ BRICK_MM = (228.6, 114.3, 76.2)
 JOINT_MM = 10.0               
 DEFAULT_RCC_MIX = (1.0, 2.0, 4.0)     
 DEFAULT_PCC_MIX = (1.0, 4.0, 8.0)     
-DEFAULT_BRICK_MORTAR = (1.0, 6.0)     
+DEFAULT_BRICK_MORTAR = (1.0, 5.0)
 DEFAULT_PLASTER_MORTAR = (1.0, 4.0)   
 NOMINAL_MIX_BY_GRADE = {"M10": (1.0, 3.0, 6.0), "M15": (1.0, 2.0, 4.0), "M20": (1.0, 1.5, 3.0), "M25": (1.0, 1.0, 2.0)}   
 NOMINAL_MIX_BY_PSI = {"3000psi": (1.0, 2.0, 4.0), "4000psi": (1.0, 1.5, 3.0)}                                              
@@ -63,6 +63,11 @@ def _p(ident, section, topic, question, proposed, basis, effect, evidence, param
     "evidence": evidence, "params": list(params), "confirm": confirm}
 
 PROPOSALS = [
+  _p("P97-1", "L", "One concrete grade for the project fills every member that prints none", "A model that names its concrete only as 'Concrete' leaves a 'mix missing' note on every row. Can the grade be stated once?",
+    "The estimator states the concrete grade once for the project (25 for M25). It fills only the concrete members whose own material text carries no grade; a grade the model prints is never replaced. The rows say the grade came from the project, not from the model, and the 'mix missing' note goes. Nothing is filled in until a grade is stated, and no grade is proposed: 0 means none stated.",
+    SOFTWARE, SUGGESTION,
+    "The 'mix missing' note is on every concrete row of a model whose material is only 'Concrete'. The drawings of the supplied jobs print the grade in a note (the grade reader of the PDF stage), which this setting does not replace.",
+    params=[], confirm="Which grade is the standard for your structural concrete, and does the footing take a different one?"),
   _p("P87-3", "L", "Pile caps, steel, excavation and head allowances are left out of the lines", "J: what does a pile line and a raft line carry?",
     "The pile lines are the boring (metres of pile) and the concrete in the shaft. The raft lines are the slab, the 3 in concrete bed and the edge shuttering. Pile caps, the steel in piles and rafts, the cut-off and the extra length above the cut-off level, test piles, the excavation for the raft and the starter bars are not taken; each item says so, and the value at risk lists the piling lines as carrying that convention. The boring and the concrete are separate lines because a piling contractor's rate may be for boring and concrete together or apart; the rate book decides, and only one of the two should carry a price where the rate is for both.",
     PRACTICE, SUGGESTION,
@@ -84,7 +89,7 @@ PROPOSALS = [
     "Made-up bill: a 100 m2 plaster line and an M30 concrete line are listed as not worked out, each with its reason. Plot_1's bill was not run here. Also fixes pack 85: the value-at-risk response now carries the left-out list (the response model dropped it).",
     params=[], confirm="What thickness do you take for plaster (12 mm, 15 mm, 20 mm external), for the cement-sand bed under tile and for the roof screed? With those, the area lines can be broken up too."),
   _p("P86-2", "L", "Brickwork: the bricks from the size of the brick, the mortar from what is left", "J: how many bricks and how much mortar go into a cubic metre of brickwork?",
-    "The bricks are worked out, not taken from a table: a brick of 9 x 4.5 x 3 in (228.6 x 114.3 x 76.2 mm) with a 10 mm joint on each face gives 391 bricks in a cubic metre of brickwork, and the rest of the volume (0.221 m3) is mortar, at 1:6 where the drawing prints none (the printed mortar of the wall is used when it is read). The mortar is turned into cement and sand by the dry-volume method with a factor of 1.27. Brick wastage is not added here; the line's waste factor is shown beside it.",
+    "The bricks are worked out, not taken from a table: a brick of 9 x 4.5 x 3 in (228.6 x 114.3 x 76.2 mm) with a 10 mm joint on each face gives 391 bricks in a cubic metre of brickwork, and the rest of the volume (0.221 m3) is mortar, at 1:5 where the drawing prints none (the QS, 26 Oct; the printed mortar of the wall is used when it is read). The mortar is turned into cement and sand by the dry-volume method with a factor of 1.27. Brick wastage is not added here; the line's waste factor is shown beside it.",
     PRACTICE, SUGGESTION,
     "Made-up 10 m3 of brickwork at 1:4: 3,912 bricks, 16.2 bags of cement, 2.25 m3 of sand. Plot_1's brick size is not printed, so the usual size is assumed.",
     params=[], confirm="What brick size and joint do your walls use, and how many bricks per cubic foot do you take (some QS tables give about 13 to 13.5)? Is 1:6 the usual mortar for 9 in walls?"),
@@ -494,8 +499,11 @@ PROPOSALS = [
     confirm="Does the QS's formwork for a lintel include the soffit over its bearing on the wall? Is the side of a lintel under a chajja measured whole or less the chajja's thickness? Is the edge of the floor slab at a balcony measured whole?"),
 ]
 
+ANSWERED = {"P43-1": "R1", "P44-1": "R2", "P45-1": "R7", "P45-2": "R3", "P45-3": "R4", "P69-1": "R5", "P24-5": "R6", "P28-1": "R13", "P60-1": "R9", "P60-3": "R11",
+  "P63-1": "R15", "P83-1": "R15", "P70-1": "R19", "P24-10": "R17"}
+
 SIZE_VALUES = {
-  "beam_depth_mm": {"mm": 228.6, "text": "0.75 ft", "evidence": "Concrete Work, ROOF BEAMS on every floor: 0.75 ft wide (0.375 ft on a 4.5 in wall) and 0.75 ft deep."},
+  "beam_depth_mm":{"mm": 228.6, "text": "0.75 ft", "evidence": "Concrete Work, ROOF BEAMS on every floor: 0.75 ft wide (0.375 ft on a 4.5 in wall) and 0.75 ft deep."},
   "plinth_beam_depth_mm": {"mm": 457.2, "text": "1.5 ft", "evidence": "Plinth Beam sheet: 0.75 ft wide and 1.5 ft deep under a 9 in wall; none under a 4.5 in wall."},
   "neck_height_mm": {"mm": 1066.8, "text": "3.5 ft", "evidence": "Concrete Work, NECK COLUMNS: C-1, C-2 and C-3 are 3.5 ft high."},
   "tank_wall_height_mm": {"mm": 1524.0, "text": "5 ft", "evidence": "Concrete Work, UGWT and OHWT: the long and short walls are 5 ft high."},
@@ -529,7 +537,7 @@ def by_effect() -> dict:
 
 def public() -> dict:
   return {"note": PROPOSED_BY, "bases": dict(BASIS_TEXT), "effects": dict(EFFECT_TEXT), "params": dict(PARAM_VALUES), "evidence": dict(PARAM_EVIDENCE), "sizes": sizes(),
-    "items": [dict(p) for p in PROPOSALS], "counts": by_effect()}
+    "items": [{**p, "confirm": None if p["id"] in ANSWERED else p["confirm"], "answered_by": ANSWERED.get(p["id"])} for p in PROPOSALS], "counts": by_effect()}
 
 def _inch(mm: float) -> str:
   return f"{mm / 25.4:g}"

@@ -345,7 +345,7 @@ class CalculationRunRepository:
       e.properties["_ifc"]["material_family"].as_string().label("material_family"), e.normalization_issues,
       e.height_mm, e.properties["_ifc"]["layers"].label("layers"), e.type_mark, e.name,
       e.properties["_ifc"]["rebar"].label("rebar"),
-      e.properties["_ifc"]["mesh_volume_mm3"].label("mesh_volume_mm3"),
+      e.properties["_ifc"]["mesh_volume_mm3"].label("mesh_volume_mm3"), e.width_mm,
     ).where(
       e.drawing_id == drawing_id, e.organization_id == organization_id,
       or_(e.properties["source"].as_string().is_(None), e.properties["source"].as_string() != "pdf_takeoff"),
@@ -371,6 +371,7 @@ class CalculationRunRepository:
         generic_material=any(isinstance(i, dict) and i.get("code") == "MISSING_MATERIAL" for i in (r.normalization_issues or ())),
         rebar=r.rebar if isinstance(r.rebar, dict) and r.rebar else None,
         mesh_volume_mm3=float(r.mesh_volume_mm3) if isinstance(r.mesh_volume_mm3, (int, float)) and r.mesh_volume_mm3 > 0 else None,
+        width_mm=r.width_mm,
         invalid_code=next((i.get("code") for i in (r.normalization_issues or ()) if isinstance(i, dict) and i.get("severity") == "error"), None),
         invalid_message=next((i.get("message") for i in (r.normalization_issues or ()) if isinstance(i, dict) and i.get("severity") == "error"), None),
       )

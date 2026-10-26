@@ -338,13 +338,29 @@ class BOQEngineService:
         code="UNMAPPED_ELEMENT_TYPE", severity="warning", blocks="NONE", dedupe_key=f"UNMAPPED:{t}",
         message=f"{n} element(s) of type {t} have no work-item mapping, so no quantity was produced.",
         suggested_fix="Map this IFC type to a work item in the rule set.", details={"ifc_type": t, "count": n}))
+    notes = stats.get("model_notes") or {}
+    skipped_detail = {d["role"]: d for d in notes.get("skipped") or []}
     for role, n in sorted((stats.get("skipped_by_role") or {}).items()):
+      d = skipped_detail.get(role) or {}
+      size = f" They hold {float(d['volume_m3']):,.2f} m3 of model volume." if d.get("with_volume") else ""
+      steel = f" {d['steel_named']} of them name steel, about {float(d['steel_kg']):,.0f} kg at 7,850 kg/m3 (not billed)." if d.get("steel_named") else ""
       specs.append(logic.IssueSpec(
         code="ROLE_NOT_MEASURED", severity="info", blocks="NONE", dedupe_key=f"ROLE_SKIPPED:{role}",
-        message=f"{n} element(s) with role {role} are not measured by this engine version.",
-        details={"role": role, "count": n}))
+        message=f"{n} element(s) with role {role} are not measured. {d.get('reason') or ''}{size}{steel}".replace("  ", " ").strip(),
+        details={"role": role, "count": n, **{k: v for k, v in d.items() if k not in ("role", "count")}}))
+    specs.extend(logic.model_notes_issue_specs(notes))
       
+    gap = stats.get("finishes_gap") or {}
     for reason, n in sorted((stats.get("finishes_skipped") or {}).items()):
+      if reason == "space has no perimeter" and gap.get("without_outline"):
+        surfaces = ", ".join(f"{s.lower()} {c}" for s, c in sorted((gap.get("surfaces") or {}).items()))
+        specs.append(logic.IssueSpec(
+          code="FINISH_SKIPPED", severity="warning", blocks="NONE", dedupe_key=f"FINISH_SKIPPED:{reason}",
+          message=f"{gap['without_outline']} of {gap['rooms']} rooms have no outline in the model, so their skirting and wall finish ({n} lines: {surfaces}) were not measured. Their floor and ceiling use the model's floor area ({gap['floor_m2']} m2) and are measured.",
+          suggested_fix="Give these rooms a boundary in the model and re-upload, or add the skirting and wall finish for them by hand. The engine does not invent a perimeter from the area.",
+          details={"reason": reason, "count": n, **gap}))
+        continue
+
       specs.append(logic.IssueSpec(
         code="FINISH_SKIPPED", severity="warning", blocks="NONE", dedupe_key=f"FINISH_SKIPPED:{reason}",
         message=f"{n} finish line(s) were not measured: {reason}.",

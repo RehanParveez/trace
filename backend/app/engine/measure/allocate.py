@@ -105,6 +105,13 @@ def _allocate_solid(sid, prism, poly, owners, index, by_id, convention, min_z):
     ))
   return deductions, approximate, warnings, max(0.0, total_mm3 - sum(taken.values()))
 
+def owner_tail(solid: Solid) -> tuple:
+  volume = float(solid.gross_volume_m3) if solid.gross_volume_m3 is not None else 0.0
+  return (-volume, solid.ifc_global_id or "")
+
+def owner_key(convention, solid: Solid) -> tuple:
+  return (convention.rank(solid.role), *owner_tail(solid), str(solid.element_id))
+
 def allocate(ctx: CalculationContext, convention, solids: list[Solid], index: SpatialIndex,
   overlaps: list[Overlap], reuse: Reuse | None = None) -> AllocationResult:
   params = ctx.convention_params or {}
@@ -113,7 +120,7 @@ def allocate(ctx: CalculationContext, convention, solids: list[Solid], index: Sp
   tol_abs = float(params.get("conservation_tolerance_abs_mm3", 5000.0))
 
   by_id = {s.id: s for s in solids}
-  key = {sid: (convention.rank(by_id[sid].role), str(by_id[sid].element_id)) for sid in index.prisms}
+  key = {sid: owner_key(convention, by_id[sid]) for sid in index.prisms}
   neighbours: dict = {}
   for o in overlaps:
     neighbours.setdefault(o.a, set()).add(o.b)

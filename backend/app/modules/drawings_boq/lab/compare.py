@@ -52,6 +52,32 @@ def software_totals(rows) -> tuple:
       d["tags"][str(tag)] = d["tags"].get(str(tag), 0.0) + q
   return totals, sorted(unclassified.values(), key=lambda x: -x["quantity"])
 
+NO_STAGE = "(no stage)"
+NOT_IN_BILL = "Not in the bill"
+
+def stage_rollup(lines) -> list:
+  """The same lines grouped by the stage the bill puts them in, in the bill's own order. A kind of work is still compared once over all its stages, so a kind of work found in more than one stage is marked shared and carries the QS figure of each stage."""
+  stages = {}
+  first = {}
+  for x in lines:
+    rows = x["bill_rows"]
+
+    names = []
+    for b in rows:
+      n = b["section"] or NO_STAGE
+      if n not in names:
+        names.append(n)
+    if not names:
+      names = [NOT_IN_BILL]
+    for n in names:
+      s = stages.setdefault(n, {"stage": n, "items": []})
+      mine = [b for b in rows if (b["section"] or NO_STAGE) == n]
+      s["items"].append({"key": x["key"], "qs": round(sum(b["quantity"] for b in mine), 3) if mine else None, "shared": len(names) > 1})
+      if mine:
+        first[n] = min(first.get(n, mine[0]["row"]), min(b["row"] for b in mine))
+  ordered = sorted(stages, key=lambda n: (n == NOT_IN_BILL, first.get(n, 0)))
+  return [stages[n] for n in ordered]
+
 def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_PCT, overrides: dict | None = None, classes: dict | None = None, tolerances: dict | None = None) -> dict:
   totals, unclassified = software_totals(software_rows)
   aggs = {}
@@ -133,4 +159,4 @@ def compare(bill_lines, software_rows, tolerance_pct: float = DEFAULT_TOLERANCE_
     "extra_lines": sum(1 for x in lines if x["status"] == "EXTRA"),
     "unclassified_differences": len(open_diffs),
   }
-  return {"tolerance_pct": tolerance_pct, "lines": lines, "unmapped": unmapped, "unclassified_software": unclassified[:30], "measures": measures}
+  return {"tolerance_pct": tolerance_pct, "lines": lines, "stages": stage_rollup(lines), "unmapped": unmapped, "unclassified_software": unclassified[:30], "measures": measures}

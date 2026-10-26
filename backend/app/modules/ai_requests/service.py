@@ -19,6 +19,7 @@ class AIRunResult:
   parsed_output: dict | None = None
   raw_response: str | None = None
   error_message: str | None = None
+  ai_request_id: UUID | None = None
 
 class AIOrchestratorService:
   SUPPORTED_PROVIDERS = {AIProvider.OLLAMA, AIProvider.ANTHROPIC}
@@ -104,7 +105,7 @@ class AIOrchestratorService:
     await self.subscriptions.increment_usage(organization_id, "ai_requests")
     await self.session.commit()
     return AIRunResult(
-      success=True, parsed_output=parsed_output, raw_response=raw_response
+      success=True, parsed_output=parsed_output, raw_response=raw_response, ai_request_id=ai_request.id
     )
 
    except Exception as exc:
@@ -121,7 +122,7 @@ class AIOrchestratorService:
     )
     await self.subscriptions.increment_usage(organization_id, "ai_requests")
     await self.session.commit()
-    return AIRunResult(success=False, error_message=str(exc))
+    return AIRunResult(success=False, error_message=str(exc), ai_request_id=ai_request.id)
 
   async def _is_ai_enabled(self, organization_id: UUID) -> bool:
     result = await self.session.execute(

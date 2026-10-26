@@ -75,6 +75,7 @@ class Settings(BaseSettings):
   ai_model: str = "claude-haiku-4-5-20251001"
   
   engine_v2_org_ids: str = ""
+  engine_ai_shadow_org_ids: str = ""
   engine_spec_org_ids: str = ""
   engine_stage_org_ids: str = ""
   engine_layer_org_ids: str = ""

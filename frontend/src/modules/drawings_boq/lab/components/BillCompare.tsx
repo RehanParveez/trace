@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { BillClass, BillClasses, BillCompareLine, BillCompareResult, BillFilter } from "../types/billCompare.types";
-import { BILL_CLASSES, BILL_CLASS_TEXT, BILL_STATUS_TEXT, BILL_STATUS_TONE, applyClasses, errorText, filterLines, parseTolerance, qtyText, scoreLines, scoreText } from "../utils/billCompare";
-
+import type { BillClass, BillClasses, BillCompareLine, BillCompareResult, BillFilter, BillView } from "../types/billCompare.types";
+import { BILL_CLASSES, BILL_CLASS_TEXT, BILL_STATUS_TEXT, BILL_STATUS_TONE, applyClasses, errorText, filterLines, parseTolerance, qtyText, scoreLines, scoreText, stageGroups, stageSummary } from "../utils/billCompare";
 const TONE: Record<string, string> = {
   ok: "bg-[var(--color-success-bg)] text-[var(--color-success)]",
   warn: "bg-[var(--color-warning-bg)] text-[var(--color-warning)]",
@@ -31,7 +30,7 @@ function Measure({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LineRow({ line, onClassChange }: { line: BillCompareLine; onClassChange: Props["onClassChange"] }) {
+function LineRow({ line, stage, onClassChange }: { line: BillCompareLine; stage?: { qs: number | null; shared: boolean }; onClassChange: Props["onClassChange"] }) {
   const { t } = useTranslation();
   const tone = TONE[BILL_STATUS_TONE[line.status]];
   const needsClass = line.status === "DIFF" || line.status === "MISSING" || line.status === "EXTRA";
@@ -47,6 +46,14 @@ function LineRow({ line, onClassChange }: { line: BillCompareLine; onClassChange
           {t("drawings.bill.software", "Software")} {qtyText(line.software, line.unit)}
         </span>
         <span className="font-semibold text-[var(--color-text-primary)]">{errorText(line.error_pct)}</span>
+        {stage ? (
+          <span className="text-[var(--color-text-muted)]">{t("drawings.bill.inStage", "In this stage {{qty}}", { qty: qtyText(stage.qs, line.unit) })}</span>
+        ) : null}
+        {stage?.shared ? (
+          <span className="rounded-full bg-[var(--color-surface-muted)] px-2 py-0.5 text-[10.5px] text-[var(--color-text-muted)]">
+            {t("drawings.bill.shared", "Shared: compared over all stages")}
+          </span>
+        ) : null}
       </div>
       {needsClass ? (
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -122,10 +129,13 @@ function LineRow({ line, onClassChange }: { line: BillCompareLine; onClassChange
 export function BillCompare({ result, classes, busy, error, tolerancePct, onToleranceChange, onUpload, onClassChange, onExport }: Props) {
   const { t } = useTranslation();
   const [filter, setFilter] = useState<BillFilter>("OPEN");
+  const [mode, setMode] = useState<BillView>("ITEM");
   const view = result ? applyClasses(result, classes) : undefined;
   const lines = view ? filterLines(view.lines, filter) : [];
   const m = view?.measures;
   const score = view ? scoreLines(view.lines) : undefined;
+  const groups = view ? stageGroups(view) : [];
+  const byStage = mode === "STAGE" && groups.length > 0;
   return (
     <section className="space-y-3 text-[12.5px]" data-testid="bill-compare">
       <div className="flex flex-wrap items-end gap-3">
@@ -192,6 +202,22 @@ export function BillCompare({ result, classes, busy, error, tolerancePct, onTole
             <Measure label={t("drawings.bill.m.extra", "Extra lines")} value={String(m.extra_lines)} />
             <Measure label={t("drawings.bill.m.open", "Differences without a reason")} value={String(m.unclassified_differences)} />
           </div>
+          {groups.length > 0 ? (
+            <div className="flex gap-2" role="tablist" aria-label={t("drawings.bill.viewAs", "Read the comparison")}>
+              {(["ITEM", "STAGE"] as BillView[]).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="tab"
+                  aria-selected={mode === v}
+                  className={`rounded-full px-3 py-1 ${mode === v ? "bg-[var(--color-primary)] text-white" : "border border-[var(--color-border)]"}`}
+                  onClick={() => setMode(v)}
+                >
+                  {t(`drawings.bill.view.${v}`, v === "ITEM" ? "By item" : "By stage")}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div className="flex gap-2" role="tablist">
             {(["OPEN", "MATCH", "ALL"] as BillFilter[]).map((f) => (
               <button
@@ -206,11 +232,46 @@ export function BillCompare({ result, classes, busy, error, tolerancePct, onTole
               </button>
             ))}
           </div>
-          <ul className="list-none space-y-2 pl-0">
-            {lines.map((l) => (
-              <LineRow key={l.key} line={l} onClassChange={onClassChange} />
-            ))}
-          </ul>
+          {byStage ? (
+            <div className="space-y-3" data-testid="bill-stages">
+              <p className="text-[11.5px] text-[var(--color-text-muted)]">
+                {t(
+                  "drawings.bill.stageNote",
+                  "Each kind of work is compared once over all stages. A stage shows the result of the kinds of work in it; a kind of work found in several stages is marked shared and shows the QS figure of this stage.",
+                )}
+              </p>
+              {groups.map((g) => {
+                const s = stageSummary(g.entries.map((e) => e.line));
+                const shown = g.entries.filter((e) => filterLines([e.line], filter).length > 0);
+                return (
+                  <details key={g.stage} open className="rounded-[6px] border border-[var(--color-border)]" data-testid={`bill-stage-${g.stage}`}>
+                    <summary className="cursor-pointer p-2">
+                      <span className="font-semibold text-[var(--color-text-primary)]">{g.stage}</span>
+                      <span className="ml-2 text-[var(--color-text-muted)]">
+                        {t("drawings.bill.stageSummary", "{{n}} lines · {{ok}} match · {{bad}} differ or not found · closeness {{c}}", {
+                          n: s.lines,
+                          ok: s.match,
+                          bad: s.differs + s.missing,
+                          c: scoreText(s.closeness),
+                        })}
+                      </span>
+                    </summary>
+                    <ul className="list-none space-y-2 p-2 pt-0">
+                      {shown.map((e) => (
+                        <LineRow key={`${g.stage}:${e.line.key}`} line={e.line} stage={{ qs: e.stageQs, shared: e.shared }} onClassChange={onClassChange} />
+                      ))}
+                    </ul>
+                  </details>
+                );
+              })}
+            </div>
+          ) : (
+            <ul className="list-none space-y-2 pl-0">
+              {lines.map((l) => (
+                <LineRow key={l.key} line={l} onClassChange={onClassChange} />
+              ))}
+            </ul>
+          )}
           {view.unmapped.length > 0 ? (
             <div>
               <h4 className="font-semibold text-[var(--color-text-primary)]">{t("drawings.bill.unmapped", "Bill items not recognised")}</h4>

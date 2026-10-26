@@ -82,8 +82,6 @@ export const DERIVED_FIELDS: readonly DerivedFieldDef[] = [
   { key: "soil_stabilisation", defaultMm: 0, min: 0, max: 1, flag: true, label: "Add cement-stabilised soil under the filled floor", hint: "Off until you switch it on: whether the soil is loose is found on site. Needs the depth of the layer below. The area is taken as the whole filled floor and the row is marked assumed" },
   { key: "soil_stab_depth_mm", defaultMm: 0, min: 0, max: 1500, label: "Stabilised soil: depth of the layer (mm)", hint: "Empty: the depth printed in the soil note, and with none printed nothing is measured" },
   { key: "soil_stab_cement_pct", defaultMm: 0, min: 0, max: 20, unit: "pct", label: "Stabilised soil: cement (% of the weight of the soil)", hint: "Empty: the percentage printed in the soil note. It is carried on the row; no cement weight is worked out because no soil density is printed" },
-  { key: "stair_formwork_soffit_only", defaultMm: 0, min: 0, max: 1, flag: true },
-  { key: "beam_lintel_qs_rate", defaultMm: 0, min: 0, max: 1, flag: true },
   { key: "ngl_below_ffl_mm", defaultMm: null, min: -2000, max: 3000 },
   { key: "footing_bottom_below_ngl_mm", defaultMm: null, min: 1, max: 10000, asked: true },
 ];

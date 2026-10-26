@@ -32,15 +32,24 @@ def _number(v):
 
 def _summary_sheet(wb):
   for ws in wb.worksheets:
+    if any(h in ws.title.lower() for h in SUMMARY_HINTS):
+      return ws
+  for ws in wb.worksheets:
     top = " ".join(_text(c.value).lower() for row in ws.iter_rows(min_row=1, max_row=6, max_col=4) for c in row if c.value is not None)
     if any(h in top for h in SUMMARY_HINTS) or any(h in ws.title.lower() for h in SUMMARY_HINTS):
       return ws
   return wb.worksheets[0]
 
+def _is_desc(x: str) -> bool:
+  return x.startswith("desc") or x == "item"
+
+def _is_qty(x: str) -> bool:
+  return x.startswith("quant") or x.startswith("total") or x.startswith("boq quant")
+
 def _header_row(ws):
   for r in range(1, 15):
     cells = [_text(ws.cell(r, c).value).lower() for c in range(1, 7)]
-    if any(x.startswith("desc") for x in cells) and any(x.startswith("unit") for x in cells) and any(x.startswith("quant") or x.startswith("total") for x in cells):
+    if any(_is_desc(x) for x in cells) and any(x.startswith("unit") for x in cells) and any(_is_qty(x) for x in cells):
       return r, cells
   return None, []
 
@@ -50,9 +59,10 @@ def parse_bill(data: bytes) -> Bill:
   hr, head = _header_row(ws)
   if hr is None:
     raise ValueError("BILL_NO_HEADER")
-  col_desc = next(i for i, x in enumerate(head) if x.startswith("desc")) + 1
+  col_desc = next(i for i, x in enumerate(head) if _is_desc(x)) + 1
   col_unit = next(i for i, x in enumerate(head) if x.startswith("unit")) + 1
-  col_qty = next(i for i, x in enumerate(head) if x.startswith("quant") or x.startswith("total")) + 1
+  col_qty = next(i for i, x in enumerate(head) if _is_qty(x)) + 1
+  col_block = next((i for i, x in enumerate(head) if x == "block"), None)
   section = ""
   lines = []
   
@@ -68,6 +78,8 @@ def parse_bill(data: bytes) -> Bill:
   
     if qty is None:
       continue
+    if col_block is not None:
+      section = _text(ws.cell(r, col_block + 1).value) or section
     lines.append(BillLine(row=r, section=section, item=item, unit=unit, quantity=qty))
   if not lines:
     raise ValueError("BILL_EMPTY")

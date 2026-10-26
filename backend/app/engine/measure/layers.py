@@ -76,7 +76,7 @@ def usable_layers(el: ModelElement | None) -> list[dict]:
 def _layer_label(layer: dict) -> str:
   return str(layer.get("material") or layer.get("name") or "layer")
 
-def _group_spec(family: str, thickness: Decimal, layers: list, el: ModelElement) -> dict | None:
+def _group_spec(family: str, thickness: Decimal, layers: list, el: ModelElement, project_grade: str | None = None) -> dict | None:
   names = " ".join(_layer_label(l) for l in layers)
   text = getattr(el, "material_text", None)
   rounded = round_thickness(thickness)
@@ -104,6 +104,9 @@ def _group_spec(family: str, thickness: Decimal, layers: list, el: ModelElement)
     if grade:
       spec["grade"] = grade
       spec["basis"]["grade"] = source
+    elif project_grade:
+      spec["grade"] = project_grade
+      spec["basis"]["grade"] = "project"
     return spec
   spec = {"kind": "LAYER", "family": family, "basis": {}}
   if rounded is not None:
@@ -154,6 +157,8 @@ def split_layers(ctx: CalculationContext, elements: list, solids: list, ledger: 
   wall = by_ifc.get("IfcWall") or by_ifc.get("IfcWallStandardCase")
   wall_code = wall.work_item_code if wall is not None else None
   codes = layer_mapping_codes(ctx)
+  from app.engine.measure.derived import project_concrete_grade
+  project_grade = project_concrete_grade(ctx)
 
   out: list = []
   replaced: list = []
@@ -220,7 +225,7 @@ def split_layers(ctx: CalculationContext, elements: list, solids: list, ledger: 
 
     summary = [{"material": _layer_label(l), "family": l["family"], "thickness_mm": str(l["thickness_mm"])} for l in layers]
     for g, amount in billed:
-      spec = _group_spec(g["family"], g["thickness"], g["layers"], el)
+      spec = _group_spec(g["family"], g["thickness"], g["layers"], el, project_grade)
       trace = dict(row.trace)
       inputs = dict(trace.get("inputs") or {})
       inputs["layer_split"] = {

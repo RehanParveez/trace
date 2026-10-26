@@ -35,11 +35,15 @@ class OpeningsResult:
   checked: frozenset = frozenset()
   stats: dict = field(default_factory=dict)
 
+PERIMETER_SURFACES = ("SKIRTING", "WALL", "DADO")
+GAP_ROOMS_LISTED = 200
+
 @dataclass(frozen=True)
 class FinishResult:
   solids: list
   ledger: list
   skipped: dict
+  gap: dict = field(default_factory=dict)
 
 @dataclass(frozen=True)
 class _Finish:
@@ -301,11 +305,27 @@ def measure_finishes(ctx: CalculationContext, profile, spaces, openings) -> Fini
   solids: list = []
   ledger: list = []
   skipped: dict = {}
+  rooms = 0
+  gap_rooms: list = []
+  gap_area = ZERO
+  gap_surfaces: dict = {}
   
   for space in sorted(spaces, key=lambda s: str(s.id)):
     finishes = resolve_finishes(space, profile.finish_rules)
     if not finishes:
       continue
+    rooms += 1
+
+    needs = [f.surface for f in finishes if f.surface in PERIMETER_SURFACES]
+    if needs and _perimeter_mm(space) is None:
+      area_mm2 = space.net_floor_area_mm2 or space.gross_floor_area_mm2
+      area_m2 = area_mm2 / MM2_PER_M2 if area_mm2 and area_mm2 > 0 else ZERO
+      gap_area += area_m2
+      for surface in needs:
+        gap_surfaces[surface] = gap_surfaces.get(surface, 0) + 1
+      gap_rooms.append({"space_id": str(space.id), "number": space.number, "name": space.name or space.category,
+        "level_id": str(space.level_id) if space.level_id else None, "floor_m2": str(q6(area_m2))})
+
     assigned, approximate = _assign_openings(space, by_id, by_host)
     for f in finishes:
       calc = _calculate(space, f, assigned, profile)
@@ -350,7 +370,13 @@ def measure_finishes(ctx: CalculationContext, profile, spaces, openings) -> Fini
         source_kind=f.source if f.source in ("SCHEDULE_IMPORT", "MANUAL") else "MODEL",
       ))
   ledger.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.solid_id)))
-  return FinishResult(solids=solids, ledger=ledger, skipped=dict(sorted(skipped.items())))
+  gap = {}
+  
+  if gap_rooms:
+    gap_rooms.sort(key=lambda g: (str(g["level_id"]), str(g["number"]), g["space_id"]))
+    gap = {"rooms": rooms, "without_outline": len(gap_rooms), "floor_m2": str(q6(gap_area)), "surfaces": dict(sorted(gap_surfaces.items())),
+      "listed": gap_rooms[:GAP_ROOMS_LISTED]}
+  return FinishResult(solids=solids, ledger=ledger, skipped=dict(sorted(skipped.items())), gap=gap)
 
 LOW_SCHEDULE_CONFIDENCE = Decimal("0.6")
 

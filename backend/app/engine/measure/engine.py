@@ -18,8 +18,8 @@ from app.engine.measure.steel import (STEEL, STEEL_BBOX_FACTOR, STEEL_FORMULA_UN
 from app.engine.measure.stages import split_stages
 from app.engine.measure.invariants import allocation_check, stage_split_check
 from app.engine.measure.dpc import measure_dpc
-from app.engine.measure.layers import layer_check, layer_excluded_by_solid, split_layers
-from app.engine.measure.derived import derived_check, measure_derived
+from app.engine.measure.layers import layer_check, layer_excluded_by_solid, split_layers, usable_layers, layer_family, FINISH
+from app.engine.measure.derived import derived_check, measure_derived, project_concrete_grade
 from app.engine.measure.formwork import formwork_check, measure_formwork
 from app.engine.measure.model_floor_works import floor_works_check, measure_floor_works
 from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
@@ -38,7 +38,7 @@ from app.engine.measure.confidence import MISMATCH, VERIFIED, band, box_factor, 
 from app.engine.measure.spec import derive_spec, missing_spec_warnings, spec_grade, spec_key
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE, TAKEOFF_FORMULA_UNITS, apply_replacements, measure_takeoff, takeoff_check
 
-ENGINE_VERSION = "2026.10.28"
+ENGINE_VERSION = "2026.10.35"
 
 VOLUME_ROLES = frozenset({
   "COLUMN", "COLUMN_STRUCTURAL", "COLUMN_PRECAST",
@@ -89,7 +89,7 @@ def validate_input(ctx: CalculationContext, elements: list[ModelElement]):
       accepted.append(el)
   return accepted, rejected
 
-def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
+def _volume_solid(ctx: CalculationContext, el: ModelElement, project_grade: str | None = None) -> Solid:
   issues: list[dict] = []
   status = "OK"
   factor = Decimal("1")
@@ -158,14 +158,21 @@ def _volume_solid(ctx: CalculationContext, el: ModelElement) -> Solid:
     issues.append(_issue("ZERO_GROSS_VOLUME", "warning", "Gross volume rounds to zero."))
     status = "REVIEW_REQUIRED"
 
-  spec = derive_spec(el) if ctx.spec_mode else None
+  layer_list = [l for l in (getattr(el, "layers", None) or ()) if isinstance(l, dict)]
+  if sum(1 for l in layer_list if layer_family(l) != FINISH) >= 2 and not usable_layers(el):
+    names = [str(l.get("material") or l.get("name")) for l in layer_list if l.get("material") or l.get("name")]
+    issues.append({**_issue("LAYERS_NO_THICKNESS", "warning",
+      "The model names the materials of this element but not their thickness, so it is measured whole as one material."),
+      "data": {"materials": names[:8]}})
+
+  spec = derive_spec(el, project_grade) if ctx.spec_mode else None
   return Solid(
     id=_solid_id(ctx, el.id), element_id=el.id, ifc_type=el.ifc_type, role=el.role,
     level_id=el.level_id, geometry_kind=kind,
     classification_confidence=el.classification_confidence, confidence_factor=factor,
     gross_volume_m3=gross, status=status, issues=tuple(issues), material_class=el.material_class,
     material_grade=spec_grade(spec), spec=spec, volume_check=el.volume_check if kind == "BOX_ONLY" else None,
-    generic_material=bool(getattr(el, "generic_material", False)),
+    generic_material=bool(getattr(el, "generic_material", False)), ifc_global_id=el.ifc_global_id,
   )
 
 def _steel_flags(el: ModelElement, duplicate: bool):
@@ -233,6 +240,7 @@ def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
   solids: list[Solid] = []
   skipped: dict[str, int] = {}
   duplicates = steel_duplicate_ids(elements)
+  project_grade = project_concrete_grade(ctx) if ctx.spec_mode else None
   
   for el in elements:
     if el.material_class == STEEL and is_steel_role(el.role):
@@ -245,7 +253,7 @@ def build_solids(ctx: CalculationContext, elements: list[ModelElement]):
         count=1,
       ))
     elif el.role in VOLUME_ROLES:
-      solids.append(_volume_solid(ctx, el))
+      solids.append(_volume_solid(ctx, el, project_grade))
     elif el.role == "REBAR" and el.rebar:
       continue
     else:
@@ -265,6 +273,7 @@ def _structural_concrete_code(by_ifc: dict) -> str | None:
 def measure(ctx: CalculationContext, solids: list[Solid], alloc):
   by_ifc = {m.ifc_type: m for m in ctx.mappings}
   concrete_code = _structural_concrete_code(by_ifc)
+  concrete_mapping = by_ifc.get(next((t for t in STRUCTURAL_CONCRETE_TYPES if by_ifc.get(t) is not None and by_ifc[t].work_item_code), ""))
   deds_by_solid: dict = {}
   for d in getattr(alloc, "deductions", ()) or ():
     deds_by_solid.setdefault(d.from_solid_id, []).append(d)
@@ -282,11 +291,19 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         and s.role.startswith("WALL") and mapping.work_item_code != concrete_code):
       redirect = {"from": mapping.work_item_code, "to": concrete_code, "reason": "WALL_MATERIAL_CONCRETE"}
       mapping = MappingInput(mapping.ifc_type, concrete_code, mapping.confidence_base)
+    by_role = False
+    if ((mapping is None or not mapping.work_item_code) and concrete_mapping is not None
+        and s.count is None and s.role in VOLUME_ROLES and not s.role.startswith("WALL")):
+      redirect = {"from": None, "to": concrete_mapping.work_item_code, "reason": "BILLED_BY_ROLE", "role": s.role, "ifc_type": s.ifc_type}
+      mapping = MappingInput(s.ifc_type, concrete_mapping.work_item_code, concrete_mapping.confidence_base)
+      by_role = True
     if mapping is None or not mapping.work_item_code:
       unmapped[s.ifc_type] = unmapped.get(s.ifc_type, 0) + 1
       continue
     
     warnings = [i["code"] for i in s.issues if i.get("severity") == "warning"]
+    if by_role:
+      warnings.append("MAPPED_BY_ROLE")
     warnings.extend(missing_spec_warnings(s.spec, bool(concrete_code) and mapping.work_item_code == concrete_code))
     if s.generic_material:
       warnings.append("MATERIAL_GENERIC")
@@ -326,6 +343,9 @@ def measure(ctx: CalculationContext, solids: list[Solid], alloc):
         inputs["material_class"] = s.material_class
       if redirect:
         inputs["work_item_redirect"] = redirect
+      layered = next((i["data"] for i in s.issues if i.get("code") == "LAYERS_NO_THICKNESS" and i.get("data")), None)
+      if layered:
+        inputs["layers_without_thickness"] = layered
       if s.spec:
         inputs["spec"] = s.spec
       steps = [
@@ -493,6 +513,7 @@ def spec_stats(ctx: CalculationContext, ledger: list[LedgerEntry]) -> dict:
     "masonry_rows": sum(1 for r in rows if r.spec.get("kind") == "MASONRY"),
     "concrete_rows": sum(1 for r in rows if r.spec.get("kind") == "CONCRETE"),
     "mix_missing": count("SPEC_MIX_MISSING"), "mortar_missing": count("SPEC_MORTAR_MISSING"),
+    "mix_from_project": sum(1 for r in rows if (r.spec.get("basis") or {}).get("grade") == "project"),
     "thickness_missing": count("SPEC_THICKNESS_MISSING"),
     "distinct_spec_keys": len({(r.work_item_code, r.material_grade, r.spec_key) for r in rows}),
   }
@@ -527,8 +548,8 @@ def coverage_stats(elements: list, rejected: list, skipped: dict, unmapped: dict
     "rejected_codes": dict(sorted(rejected_codes.items(), key=lambda kv: (-kv[1], kv[0]))),
   }
 
-def measure_ifc_bars(ctx: CalculationContext, elements: list[ModelElement]):
-  return IB.measure_ifc_bars(ctx, elements, QTO_MISMATCH_TOLERANCE)
+def measure_ifc_bars(ctx: CalculationContext, elements: list[ModelElement], solids=(), ledger=(), profile=None, rebar_inputs=None):
+  return IB.measure_ifc_bars(ctx, elements, QTO_MISMATCH_TOLERANCE, solids, ledger, profile, rebar_inputs)
 
 def confidence_stats(ledger: list) -> dict:
   zero = Decimal("0")
@@ -557,6 +578,86 @@ def confidence_stats(ledger: list) -> dict:
     "by_geometry": {k: {"rows": v["rows"], "m3": str(q6(v["m3"]))} for k, v in sorted(by_geometry.items())},
   }
 
+SKIPPED_REASONS = {"CEILING": "Ceilings are measured as room finishes, not from the ceiling elements."}
+SKIPPED_REASON_DEFAULT = "This engine version has no measuring rule for this role."
+NOTES_LISTED = 8
+
+def model_notes(elements: list, rejected: list, skipped: dict, ledger: list) -> dict:
+  """What the run left out or billed on a simplification, with the size of it. Nothing here is billed or changes a quantity."""
+  from app.engine.measure.steel import STEEL_DENSITY_KG_M3, _STEEL_TEXT
+  zero = Decimal("0")
+  by_id = {e.id: e for e in elements}
+  rejected_ids = {r.element_id for r in rejected}
+
+  groups: dict = {}
+  for r in rejected:
+    el = by_id.get(r.element_id)
+    if r.code != "NON_CONCRETE_MATERIAL" or el is None or not (el.role or "").startswith("WALL"):
+      continue
+    key = el.material_text or el.name or "unnamed"
+    g = groups.setdefault(key, {"material": key, "count": 0, "volume_m3": zero, "area_m2": zero, "no_area": 0, "thickness_mm": None})
+    g["count"] += 1
+    vol = mm3_to_m3(el.volume_mm3) if el.volume_mm3 is not None and el.volume_mm3 > 0 else None
+    thick = to_decimal(el.thickness_mm) if el.thickness_mm is not None and el.thickness_mm > 0 else None
+    if vol is not None:
+      g["volume_m3"] += vol
+    if vol is not None and thick is not None:
+      g["area_m2"] += vol / (thick / 1000)
+      g["thickness_mm"] = str(thick.normalize())
+    else:
+      g["no_area"] += 1
+  listed = sorted(groups.values(), key=lambda g: (-g["count"], g["material"]))
+  partitions = {}
+  if listed:
+    partitions = {
+      "count": sum(g["count"] for g in listed), "volume_m3": str(q6(sum((g["volume_m3"] for g in listed), zero))),
+      "area_m2": str(q6(sum((g["area_m2"] for g in listed), zero))), "no_area": sum(g["no_area"] for g in listed),
+      "groups": [{**g, "volume_m3": str(q6(g["volume_m3"])), "area_m2": str(q6(g["area_m2"]))} for g in listed[:NOTES_LISTED]],
+    }
+
+  layered: dict = {}
+  role_billed: dict = {}
+  for r in ledger:
+    inputs = (r.trace or {}).get("inputs") or {}
+    if "LAYERS_NO_THICKNESS" in r.warnings:
+      names = (inputs.get("layers_without_thickness") or {}).get("materials") or []
+      key = " + ".join(names) or "unnamed"
+      g = layered.setdefault(key, {"materials": key, "rows": 0, "m3": zero})
+      g["rows"] += 1
+      g["m3"] += r.quantity
+    if "MAPPED_BY_ROLE" in r.warnings:
+      red = inputs.get("work_item_redirect") or {}
+      key = f"{red.get('ifc_type')} ({red.get('role')})"
+      g = role_billed.setdefault(key, {"type": key, "rows": 0, "m3": zero, "work_item": r.work_item_code})
+      g["rows"] += 1
+      g["m3"] += r.quantity
+
+  detail: dict = {}
+  for el in elements:
+    if el.id in rejected_ids or el.role not in skipped:
+      continue
+    if (el.material_class == STEEL and is_steel_role(el.role)) or el.role in COUNT_ROLES or el.role in VOLUME_ROLES or (el.role == "REBAR" and el.rebar):
+      continue
+    d = detail.setdefault(el.role, {"role": el.role, "count": 0, "with_volume": 0, "volume_m3": zero, "steel_named": 0, "steel_kg": zero,
+      "reason": SKIPPED_REASONS.get(el.role, SKIPPED_REASON_DEFAULT)})
+    d["count"] += 1
+    if el.volume_mm3 is not None and el.volume_mm3 > 0:
+      vol = mm3_to_m3(el.volume_mm3)
+      d["with_volume"] += 1
+      d["volume_m3"] += vol
+      if _STEEL_TEXT.search(el.material_text or ""):
+        d["steel_named"] += 1
+        d["steel_kg"] += vol * STEEL_DENSITY_KG_M3
+
+  return {
+    "partitions": partitions,
+    "layered": {"rows": sum(g["rows"] for g in layered.values()), "m3": str(q6(sum((g["m3"] for g in layered.values()), zero))),
+      "groups": [{**g, "m3": str(q6(g["m3"]))} for g in sorted(layered.values(), key=lambda g: (-g["m3"], g["materials"]))[:NOTES_LISTED]]} if layered else {},
+    "billed_by_role": {"rows": sum(g["rows"] for g in role_billed.values()), "m3": str(q6(sum((g["m3"] for g in role_billed.values()), zero))),
+      "groups": [{**g, "m3": str(q6(g["m3"]))} for g in sorted(role_billed.values(), key=lambda g: g["type"])]} if role_billed else {},
+    "skipped": [{**d, "volume_m3": str(q6(d["volume_m3"])), "steel_kg": str(q6(d["steel_kg"]))} for d in sorted(detail.values(), key=lambda d: (-d["count"], d["role"]))],
+  }
+
 def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> CalculationResult:
   accepted, rejected = validate_input(ctx, elements)
   solids, skipped = build_solids(ctx, accepted)
@@ -571,19 +672,21 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     alloc = merge_openings(alloc, apply_openings(ctx, profile, solids, ctx.openings))
     
   ledger, unmapped = measure(ctx, solids, alloc)
-  bar_res = measure_ifc_bars(ctx, accepted)
+  bar_res = measure_ifc_bars(ctx, accepted, solids, ledger, profile, ctx.rebar)
   rejected = rejected + bar_res.rejected
   extra_solids, extra_ledger = list(bar_res.solids), list(bar_res.ledger)
   finish_skipped: dict = {}
+  finish_gap: dict = {}
   rebar_res = None
   if profile is not None:
     for res in (measure_finishes(ctx, profile, ctx.spaces, ctx.openings), schedule_lines_ledger(ctx, ctx.schedule_lines)):
       extra_solids += res.solids
       extra_ledger += res.ledger
+      finish_gap = finish_gap or res.gap
       for k, v in res.skipped.items():
         finish_skipped[k] = finish_skipped.get(k, 0) + v
         
-    rebar_res = measure_rebar(ctx, profile, solids, ledger, ctx.rebar, bar_res.hosts)
+    rebar_res = measure_rebar(ctx, profile, solids, ledger, ctx.rebar, bar_res.hosts, bar_res.floors)
     extra_solids += rebar_res.solids
     extra_ledger += rebar_res.ledger
     
@@ -672,6 +775,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     **alloc.stats,
     **(rebar_res.stats if rebar_res else {}),
     "rebar_skipped": rebar_res.skipped if rebar_res else {},
+    "finishes_gap": finish_gap,
     "ifc_rebar": bar_res.stats,
     "pdf_takeoff": takeoff_res.stats if takeoff_res else {},
     "pdf_space": space_info,
@@ -684,6 +788,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     "ranges": MR.summary(ledger + extra_ledger),
     "material": material_stats(solids, ledger),
     "coverage": coverage_stats(elements, rejected, skipped, unmapped, ledger + bar_res.ledger),
+    "model_notes": model_notes(elements, rejected, skipped, ledger),
     "confidence": confidence_stats(ledger + extra_ledger),
     "steel": steel_stats(solids, ledger, rejected),
     "unmapped_by_type": unmapped,

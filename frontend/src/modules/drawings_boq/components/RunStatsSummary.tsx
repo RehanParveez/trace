@@ -15,6 +15,7 @@ import { SteelAllowancesPanel } from "./SteelAllowancesPanel";
 import { SteelRebarRange } from "./SteelRebarRange";
 import { RunTrust } from "./RunTrust";
 import { IfcRebarSummary } from "./IfcRebarSummary";
+import { ModelNotesCard } from "./ModelNotesCard";
 import { useStageLabel } from "./StageBadge";
 
 function Stat({ label, value, tone }: { label: string; value: ReactNode; tone?: "red" | "gold" }) {
@@ -369,8 +370,32 @@ export function RunStatsSummary({ stats, projectId }: { stats?: RunStats; projec
 
       <SteelRebarRange steel={stats.steel} rebar={r} />
 
+      <ModelNotesCard notes={stats.model_notes} />
+
       <Counts title={t("boq.calculationRun.statsSkippedRoles", "Skipped (no quantity role)")} data={stats.skipped_by_role} />
       <Counts title={t("boq.calculationRun.statsUnmapped", "Unmapped IFC types (no work item)")} data={stats.unmapped_by_type} />
+      {stats.finishes_gap && stats.finishes_gap.without_outline > 0 ? (
+        <div className="space-y-2 rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-text-primary)]">
+          <div>
+            {t("boq.calculationRun.roomsNoOutline", "{{count}} of {{total}} rooms have no outline in the model, so their skirting and wall finish are not measured. Their floor and ceiling use the model's floor area ({{area}} m2). No perimeter is made up from the area.", {
+              count: stats.finishes_gap.without_outline, total: stats.finishes_gap.rooms, area: formatPrecise(stats.finishes_gap.floor_m2, 1),
+            })}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {stats.finishes_gap.listed.slice(0, 12).map((room) => (
+              <span key={room.space_id} className="rounded-full bg-[var(--color-surface)] px-2.5 py-1 font-mono text-[11px] text-[var(--color-text-secondary)]">
+                {`${room.number ?? "-"} ${room.name ?? ""}`.trim()}: {formatPrecise(room.floor_m2, 1)} m2
+              </span>
+            ))}
+            {stats.finishes_gap.listed.length > 12 ? (
+              <span className="px-1 py-1 text-[11px] text-[var(--color-text-muted)]">
+                {t("boq.calculationRun.roomsMore", "and {{count}} more", { count: stats.finishes_gap.without_outline - 12 })}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       <Counts title={t("boq.calculationRun.statsFinishSkipped", "Finishes skipped")} data={stats.finishes_skipped} />
       <Counts title={t("boq.calculationRun.statsRebarSkipped", "Bar rows skipped")} data={stats.rebar_skipped} />
 

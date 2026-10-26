@@ -39,10 +39,11 @@ PARAMS = {
   "plaster_inside_mm": (12.7, 3.0, 40.0),
   "plaster_outside_mm": (19.05, 3.0, 40.0),
   "plaster_ceiling_mm": (9.525, 3.0, 40.0),
+  "concrete_grade_mpa": (0.0, 0.0, 80.0),
   "soil_stabilisation": (0.0, 0.0, 1.0),
   "soil_stab_printed": (0.0, 0.0, 1.0),
   "soil_stab_thickness_mm": (152.4, 50.0, 600.0),
-  "soil_stab_cement_pct": (10.0, 0.0, 30.0),
+  "soil_stab_cement_pct": (0.0, 0.0, 20.0),
   "pcc_projection_mm": (100.0, 0.0, 1000.0),
   "pcc_thickness_mm": (76.2, 0.0, 600.0),
   "ballast_thickness_mm": (304.8, 0.0, 1500.0),
@@ -103,15 +104,9 @@ PARAMS = {
   "ring_dense_spacing_mm": (101.6, 50.0, 300.0),
   "shoring_from_depth_mm": (0.0, 0.0, 10000.0),
   "plaster_thickness_mm": (0.0, 0.0, 40.0),
-  "soil_stabilisation": (0.0, 0.0, 1.0),
   "soil_stab_depth_mm": (0.0, 0.0, 1500.0),
-  "soil_stab_cement_pct": (0.0, 0.0, 20.0),
-  "one_total": (0.0, 0.0, 1.0),
-  "one_total_prefer": (0.0, 0.0, 2.0),
-  "one_total_position_tol_mm": (100.0, 10.0, 1000.0),
-  "one_total_trust_pct": (50.0, 0.0, 100.0),
-  "opening_area_from_model": (0.0, 0.0, 1.0),
 }
+
 NGL_PARAM = "ngl_below_ffl_mm"
 NGL_RANGE = (-2000.0, 3000.0)
 FOOTING_LEVEL_PARAM = "footing_bottom_below_ngl_mm"
@@ -193,6 +188,15 @@ def resolve_params(ctx: CalculationContext) -> dict:
       continue
     out[name] = {"value": default, "source": "default", "proposed": True} if QP.is_proposed(name) else {"value": default, "source": "default"}
   return out
+
+GRADE_PARAM = "concrete_grade_mpa"
+
+def project_concrete_grade(ctx: CalculationContext) -> str | None:
+  got = resolve_params(ctx).get(GRADE_PARAM) or {}
+  value = got.get("value")
+  if got.get("source") == "default" or not value or value <= 0:
+    return None
+  return f"M{int(round(value))}"
 
 def element_overrides(ctx: CalculationContext) -> dict:
   out: dict = {}
@@ -489,6 +493,10 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
     return DerivedResult(stats=stats)
 
   params = resolve_params(ctx)
+  depth = params["soil_stab_depth_mm"]
+  if depth["value"] > 0 and params["soil_stab_thickness_mm"]["source"] == "default":
+    low, high = PARAMS["soil_stab_thickness_mm"][1:]
+    params["soil_stab_thickness_mm"] = {**depth, "value": min(max(depth["value"], low), high)}
   ngl = resolve_ngl(ctx, elements)
   ws, pp, pt = (params[n]["value"] for n in ("working_space_mm", "pcc_projection_mm", "pcc_thickness_mm"))
   bc, bt = params["ballast_clearance_mm"]["value"], params["ballast_thickness_mm"]["value"]
@@ -500,7 +508,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   skipped: dict = {}
   foundations: list = []
   buried: list = []
-  for el in sorted(elements, key=lambda e: str(e.id)):
+  for el in sorted(elements, key=lambda e: (e.ifc_global_id or "", str(e.id))):
     role = (el.role or "").upper()
     solid = solid_of.get(el.id)
     if role in NOT_BURIED_ROLES or solid is None or el.material_class == "STEEL" or el.id not in measured:
@@ -647,7 +655,7 @@ def measure_derived(ctx: CalculationContext, profile, elements: list, solids: li
   out_ledger: list = []
   totals = {EXCAVATION: Decimal("0"), PCC: Decimal("0"), BACKFILL: Decimal("0"), BALLAST: Decimal("0"), SHORING: Decimal("0"), SOILSTAB: Decimal("0"),
     "buried": Decimal("0")}
-  for f in sorted(foundations, key=lambda x: str(x.element.id)):
+  for f in sorted(foundations, key=lambda x: (x.element.ifc_global_id or "", str(x.element.id))):
     key = f.element.id
     footprint = q6(_d(f.poly.area) / Decimal("1000000"))
     common = {"footprint_m2": str(footprint), "foundation_bottom_mm": round(f.bottom, 1), "foundation_top_mm": round(f.top, 1)}

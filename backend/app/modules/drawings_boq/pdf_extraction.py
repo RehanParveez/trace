@@ -25,6 +25,53 @@ def extract_pdf_text(contents: bytes) -> str:
   full_text = "\n".join(pages_text).strip()
   return full_text[:MAX_EXTRACTED_TEXT_CHARS]
 
+def extract_pdf_pages(contents: bytes) -> list[str]:
+  """The embedded text of each page, in page order. A page with no text gives an empty string, so page numbers stay true."""
+  reader = PdfReader(BytesIO(contents))
+  out: list[str] = []
+  for page in reader.pages:
+    try:
+      out.append((page.extract_text() or "").strip())
+    except Exception:
+      out.append("")
+  return out
+
+def chunk_pages(pages: list[str], limit: int = MAX_EXTRACTED_TEXT_CHARS, total_limit: int = MAX_LAYOUT_TEXT_CHARS) -> tuple[list[dict], list[int]]:
+  chunks: list[dict] = []
+  unread: list[int] = []
+  cur_text, cur_pages, used = "", [], 0
+  def flush() -> None:
+    nonlocal cur_text, cur_pages
+    if cur_text:
+      chunks.append({"text": cur_text, "pages": cur_pages})
+    cur_text, cur_pages = "", []
+  for number, text in enumerate(pages, start=1):
+    if not text:
+      unread.append(number)
+      continue
+    if used + len(text) > total_limit:
+      unread.append(number)
+      continue
+    
+    used += len(text)
+    if len(text) > limit:
+      flush()
+      piece = ""
+      for line in text.splitlines():
+        if piece and len(piece) + len(line) + 1 > limit:
+          chunks.append({"text": piece, "pages": [number]})
+          piece = ""
+        piece = f"{piece}\n{line}" if piece else line
+      if piece:
+        chunks.append({"text": piece, "pages": [number]})
+      continue
+    if cur_text and len(cur_text) + len(text) + 1 > limit:
+      flush()
+    cur_text = f"{cur_text}\n{text}" if cur_text else text
+    cur_pages.append(number)
+  flush()
+  return chunks, unread
+
 def build_schedule_extraction_prompt(drawing_text: str) -> str:
   return (
     "You are reading raw text extracted from a construction drawing PDF "

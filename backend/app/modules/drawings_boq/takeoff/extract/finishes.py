@@ -84,7 +84,7 @@ KITCHEN_SHARED = re.compile(r"DIN|LOUNGE|LIVING|DRAWING|LOBBY|HALL|TV|LAUNDRY|UT
 WINDOW_ON_BOUNDARY_MM = 300.0
 WINDOW_SILL_WET_MM = 1524.0
 WINDOW_SILL_KITCHEN_MM = 1067.0
-WETROOM_TURNUP_MM = 300.0
+WETROOM_TURNUP_MM = 0.0
 PAINT_ITEMS = ((PAINT_INSIDE, "in", "Paint on the inside faces of the walls", "PAINT-INSIDE"), (PAINT_OUTSIDE, "out", "Paint on the outside faces of the outer walls", "PAINT-OUTSIDE"))
 
 def usable_rooms(rooms: list) -> list:
@@ -303,9 +303,11 @@ def wet_waterproof_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: di
   turn_m2 = sum(x["length_m"] for x in rows) * WETROOM_TURNUP_MM / 1000.0
   area = floor_m2 + turn_m2
   facts = {**_length_facts(rows), "floor_m2": round(floor_m2, 3), "turnup_mm": WETROOM_TURNUP_MM, "turnup_m2": round(turn_m2, 3), "area_m2": round(area, 3)}
-  label = f"Waterproofing in baths and toilets · {area:.2f} m² · floor and {WETROOM_TURNUP_MM:g} mm up the walls" + (f" · {spec[0]}" if spec else "")
+  up = f"floor and {WETROOM_TURNUP_MM:g} mm up the walls" if WETROOM_TURNUP_MM > 0 else "floor only"
+  label = f"Waterproofing in baths and toilets · {area:.2f} m² · {up}" + (f" · {spec[0]}" if spec else "")
+  notes = [C.note("WET_WATERPROOF_FROM_ROOMS")] + ([C.note("WET_TURNUP_DEFAULT")] if WETROOM_TURNUP_MM > 0 else [])
   return _make(cls, ctx, finish, (WET_WATERPROOF, level_hint or ""), WET_WATERPROOF, label, "WET-WATERPROOF", [FD._centre(_room_points(used))],
-    {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("WET_WATERPROOF_FROM_ROOMS"), C.note("WET_TURNUP_DEFAULT")] + _assumed_note(facts), facts, 0.55)
+    {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], notes + _assumed_note(facts), facts, 0.55)
 
 def wall_tile_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, level_hint: str | None, spec, cls, finish, windows: list | None = None):
   """The wall tile of the kitchens of this storey: round every kitchen, less the doors on its outline, times the height of the tile (typed when the item is accepted), less the part
@@ -321,6 +323,12 @@ def wall_tile_candidate(rooms: list, doors: list, mm_per_pt: float, ctx: dict, l
     "windows_sill_assumed": win["sill_assumed"]}
   label = f"Wall tile in kitchens · {length:.2f} m of wall" + (f" · {spec[0]}" if spec else "")
   notes = [C.note("WALL_TILE_FROM_ROOMS")] + _window_notes({"rows": [], "unsized": win["unsized"], "sill_assumed": win["sill_assumed"], "m2": 0.0}, "WALL_TILE_WINDOWS_NOT_DEDUCTED") + _assumed_note(facts)
+  tiled = wall_tile_area(facts, DADO_HEIGHT_MM)
+  if tiled > 0.0:
+    facts = {**facts, "tile_height_mm": DADO_HEIGHT_MM, "area_m2": round(tiled, 3)}
+    label = f"Wall tile in kitchens · {tiled:.2f} m² · {DADO_HEIGHT_MM / 1000.0:.3f} m high" + (f" · {spec[0]}" if spec else "")
+    return _make(cls, ctx, finish, (WALL_TILE, level_hint or ""), WALL_TILE, label, "WALL-TILE", [FD._centre(_room_points(used))], {"length_mm": round(tiled * 1000.0, 1), "width_mm": 1000.0}, [],
+      notes + [C.note("DADO_HEIGHT_DEFAULT")], facts, 0.55)
   return _make(cls, ctx, finish, (WALL_TILE, level_hint or ""), WALL_TILE, label, "WALL-TILE", [FD._centre(_room_points(used))], {}, ["tile_height_mm"], notes, facts, 0.5)
 
 def wall_tile_area(facts: dict, height_mm: float) -> float:
@@ -545,8 +553,46 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
       params, missing, notes, facts, 0.7, count=len(pts)))
   return out
 
+def arch_girth_mm(width_mm: float, rise_ratio: float) -> float:
+  """The length of the soffit of an arch: a circular arc over the width of the opening whose rise is rise_ratio times the width (0.5 is a semicircle)."""
+  half = width_mm / 2.0
+  rise = rise_ratio * width_mm
+  if rise <= 0.0:
+    return width_mm
+  radius = (half * half + rise * rise) / (2.0 * rise)
+  return 2.0 * radius * math.atan2(half, radius - rise)
+
 def arch_candidates(doors: list, windows: list, walls: list, arched: set, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
-  return []
+  if not arched:
+    return []
+  where = f" · {spec[0]}" if spec else ""
+  out = []
+  
+  for role, derived, items in (("DOOR", "DOORS", doors), ("WINDOW", "WINDOWS", windows)):
+    hosts = door_hosts(walls, role)
+    for d in items:
+      f = d.facts or {}
+      size = f.get("size_schedule_mm") or f.get("size_drawn_mm")
+      tag = str(d.tag or "").upper()
+      if tag not in arched or d.status == "INVALID" or not size or len(size) != 2:
+        continue
+
+      width = float(size[0])
+      pts = [list(p) for p in ((d.geometry or {}).get("points") or [])]
+      if width <= 0.0 or not pts:
+        continue
+
+      h = hosts.get(tag) or {}
+      thicknesses = sorted((h.get("t_thin") or []) + (h.get("t_thick") or []))
+      thickness, wall_from = (thicknesses[len(thicknesses) // 2], "WALL") if thicknesses else (QP.ARCH_WALL_MM, "ASSUMED")
+      girth = arch_girth_mm(width, QP.ARCH_RISE_RATIO)
+      facts = {"derived_from": derived, "opening_key": d.key, "mark": tag, "opening_count": len(pts), "width_mm": round(width, 1), "girth_mm": round(girth, 1),
+        "wall_thickness_mm": round(thickness, 1), "wall_from": wall_from, "rise_ratio": QP.ARCH_RISE_RATIO}
+      if f.get("view"):
+        facts["view"] = f["view"]
+      out.append(_make(cls, ctx, finish, (ARCH_CENTRING, d.key), ARCH_CENTRING, f"Arch centring {tag} ×{len(pts)} · {width:g} mm wide{where}", f"ARCH-{tag}", pts,
+        {"length_mm": round(girth, 1), "width_mm": round(thickness, 1)}, [], [C.note("ARCH_CENTRING_FROM_SCHEDULE")], facts, 0.6, count=len(pts)))
+  return out
 
 def fill_finish(item: str, missing: list, params: dict, typed: dict, facts: dict) -> tuple:
   out = dict(params or {})

@@ -139,6 +139,8 @@ from app.modules.drawings_boq.takeoff.decisions.router import router as _decisio
 router.include_router(_decisions_router)
 from app.modules.drawings_boq.takeoff.crops.router import router as _crops_router
 router.include_router(_crops_router)
+from app.modules.drawings_boq.takeoff.ai_reader.router import router as _ai_shadow_router
+router.include_router(_ai_shadow_router)
 
 router.include_router(_extract_router)
 router.include_router(_summary_router)

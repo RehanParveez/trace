@@ -156,6 +156,7 @@ class FormworkInput:
   site: dict | None = None
   openings: tuple = ()
   upstand: bool = False
+  round_mm: Decimal | None = None
 
 @dataclass(frozen=True)
 class RangeInput:

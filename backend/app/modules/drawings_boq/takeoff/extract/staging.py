@@ -1,9 +1,7 @@
 from __future__ import annotations
-import math
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import config as C
-from app.engine.measure import proposed as QP
 
 SCAFFOLD_OUTSIDE = "SCAFFOLD_OUTSIDE"
 PROPS_SLAB = "PROPS_SLAB"
@@ -31,6 +29,10 @@ def scaffold_candidates(finishes: list, floor_heights: dict | None, level_hint: 
     return out, notes
   fh = (floor_heights or {}).get(level_hint or "") or {}
   level, ftf = fh.get("level_mm"), fh.get("floor_to_floor_mm")
+  above_ground = [v for k, v in (floor_heights or {}).items() if str(k).upper() not in BELOW_GROUND and (v or {}).get("level_mm") is not None]
+  tops = [float(v["level_mm"]) + float(v["floor_to_floor_mm"]) for v in above_ground if v.get("floor_to_floor_mm")]
+  building_top = max(tops) if tops else None
+  lowest = min((float(v["level_mm"]) for v in above_ground), default=None)
   for c in finishes:
     f = c.facts or {}
     face = float(f.get("face_length_m") or 0.0)
@@ -41,16 +43,19 @@ def scaffold_candidates(finishes: list, floor_heights: dict | None, level_hint: 
       notes.append(C.note("SCAFFOLD_NEEDS_LEVELS", floor=hint))
       continue
     top = float(level) + float(ftf)
-    above = top - max(float(level), STAGING_ABOVE_MM)
+    if building_top is None or building_top <= STAGING_ABOVE_MM:
+      continue
+    start = 0.0 if (lowest is not None and float(level) <= lowest and float(level) > 0.0) else float(level)
+    above = top - start
     if above <= 0.0:
       continue
 
     area = face * above / 1000.0
     tail = c.label.rsplit(" · ", 1)[-1] if " · " in c.label and not c.label.endswith("of face") else None
-    label = f"Scaffolding on the outside walls above {STAGING_ABOVE_MM / 1000.0:g} m · {area:.2f} m²" + (f" · {tail}" if tail else "")
+    label = f"Scaffolding on the outside walls · {area:.2f} m²" + (f" · {tail}" if tail else "")
     facts = {"derived_from": "WALLS", "staging": "SCAFFOLD", "plaster_key": c.key, "face_length_m": round(face, 3), "floor_level_mm": float(level), "floor_to_floor_mm": float(ftf),
-      "top_mm": round(top, 1), "threshold_mm": STAGING_ABOVE_MM, "above_mm": round(above, 1), "area_m2": round(area, 3),
-      "whole_storey_m2": round(face * float(ftf) / 1000.0, 3)}
+      "top_mm": round(top, 1), "threshold_mm": STAGING_ABOVE_MM, "from_mm": round(start, 1), "above_mm": round(above, 1), "area_m2": round(area, 3),
+      "building_top_mm": round(building_top, 1), "basis": "WHOLE_FACADE"}
     out.append(_make(cls, ctx, finish, (SCAFFOLD_OUTSIDE, "STAGING", level_hint or ""), SCAFFOLD_OUTSIDE, label, "SCAFFOLD-OUTSIDE", list((c.geometry or {}).get("points") or [[0.0, 0.0]])[:1],
       area, facts, [C.note("SCAFFOLD_ABOVE_THRESHOLD", threshold_mm=STAGING_ABOVE_MM)], 0.6))
   return out, notes
@@ -65,11 +70,10 @@ def props_candidates(slabs: list, floor_heights: dict | None, ctx: dict, cls, fi
     if s.status == "INVALID" or area <= 0.0 or not clear or float(clear) <= STAGING_ABOVE_MM:
       continue
 
-    steps = max(1, int(math.ceil(round((float(clear) - STAGING_ABOVE_MM) / QP.PROPS_STEP_MM, 6))))
-    quantity = area * steps
-    label = f"Props under the slab · {area:.2f} m² · {_ft(float(clear))} ft clear · {steps} extra metre{'' if steps == 1 else 's'} · {quantity:.2f} m²"
+    quantity = area
+    label = f"Props under the slab · {area:.2f} m² · {_ft(float(clear))} ft clear"
     facts = {"derived_from": "SLAB", "staging": "PROPS", "slab_key": s.key, "floor": f.get("floor"), "clear_mm": float(clear), "threshold_mm": STAGING_ABOVE_MM, "slab_area_m2": round(area, 3),
-      "step_mm": QP.PROPS_STEP_MM, "steps": steps, "area_m2": round(quantity, 3)}
+      "area_m2": round(quantity, 3)}
     out.append(_make(cls, ctx, finish, (PROPS_SLAB, "STAGING", s.key), PROPS_SLAB, label, "PROPS-SLAB", list((s.geometry or {}).get("points") or [[0.0, 0.0]])[:1], quantity, facts,
-      [C.note("PROPS_ABOVE_THRESHOLD", threshold_mm=STAGING_ABOVE_MM, step_mm=QP.PROPS_STEP_MM, steps=steps)], 0.6))
+      [C.note("PROPS_ABOVE_THRESHOLD", threshold_mm=STAGING_ABOVE_MM)], 0.6))
   return out

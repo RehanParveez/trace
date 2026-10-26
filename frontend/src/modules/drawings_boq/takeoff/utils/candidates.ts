@@ -493,7 +493,7 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   BOUNDARY_RETURNS: "Boundary wall: side and rear walls",
   BOUNDARY_PLASTER: "Plaster on the boundary wall",
   BOUNDARY_PAINT: "Paint on the boundary wall",
-  SCAFFOLD_OUTSIDE: "Scaffolding on the outside walls above 3.6 m",
+  SCAFFOLD_OUTSIDE: "Scaffolding on the outside walls",
   PROPS_SLAB: "Props under slabs clearer than 3.6 m",
   RAIN_PIPE: "Rain water pipes",
   SEWER_PIPE: "Sewer pipe line",
@@ -750,7 +750,7 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     return [
       area !== null ? `${area.toFixed(2)} m²` : null,
       floor !== null ? `${floor.toFixed(2)} m² of floor` : null,
-      turn !== null && len !== null ? `${Math.round(turn)} mm up ${len.toFixed(2)} m of wall (assumed)` : null,
+      turn !== null && turn > 0 && len !== null ? `${Math.round(turn)} mm up ${len.toFixed(2)} m of wall (assumed)` : (turn === 0 ? "floor only" : null),
       doors ? `${doors} door${doors === 1 ? "" : "s"} taken off` : null,
     ].filter(Boolean).join(" · ");
   }
@@ -763,6 +763,7 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     const unsized = num(f.windows_unsized);
     return [
       len !== null ? `${len.toFixed(2)} m of wall` : null,
+      num(f.tile_height_mm) !== null ? `${Math.round(num(f.tile_height_mm) as number)} mm high (QS)` : null,
       rooms !== null ? `${rooms} kitchen${rooms === 1 ? "" : "s"}` : null,
       doors ? `${doors} door${doors === 1 ? "" : "s"} taken off` : null,
       winCount > 0 ? `${winCount} window${winCount === 1 ? "" : "s"} taken off inside the tile height` : null,
@@ -863,9 +864,8 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
       return [
         area !== null ? `${area.toFixed(2)} m²` : null,
         face !== null ? `${face.toFixed(2)} m of outside face` : null,
-        above !== null ? `${ft(above)} of wall above ${threshold !== null ? `${(threshold / 1000).toFixed(1)} m` : "the threshold"}` : null,
+        above !== null ? `${ft(above)} high, whole facade from ${ft(num(f.from_mm)) ?? "the ground"}${threshold !== null ? ` (building over ${(threshold / 1000).toFixed(1)} m)` : ""}` : null,
         level !== null && top !== null ? `floor from ${ft(level)} to ${ft(top)} on the sections` : null,
-        num(f.whole_storey_m2) !== null ? `${(num(f.whole_storey_m2) as number).toFixed(2)} m² if the whole storey is billed` : null,
       ].filter(Boolean).join(" · ");
     }
     const clear = num(f.clear_mm);

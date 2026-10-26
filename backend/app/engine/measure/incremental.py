@@ -6,10 +6,10 @@ import json
 from dataclasses import dataclass, field
 from decimal import Decimal
 from app.engine.measure.intersect import find_overlaps
-from app.engine.measure.allocate import CachedAllocation, Reuse
+from app.engine.measure.allocate import CachedAllocation, Reuse, owner_tail
 from app.engine.measure.spatial import build_spatial_index, build_spatial_index_incremental
 
-ALLOCATION_VERSION = 1
+ALLOCATION_VERSION = 2
 
 def element_hash(el: ModelElement) -> str:
   key = _element_key(el)
@@ -112,7 +112,7 @@ def _remap_deduction(d: StoredDeduction, sid_from, solid_of_key: dict, element_o
     unit=d.unit, rule_code=d.rule_code, geometry=geometry, explanation=d.explanation)
 
 def build_reuse(index: SpatialIndex, overlaps: list[Overlap], change: ChangeSet, baseline: Baseline,
-  key_of_solid: dict, solid_of_key: dict, element_of_solid: dict, rank_of_solid: dict) -> tuple[Reuse, dict]:
+  key_of_solid: dict, solid_of_key: dict, element_of_solid: dict, rank_of_solid: dict, tail_of_solid: dict) -> tuple[Reuse, dict]:
   new_nb: dict = {}
   for o in overlaps:
     ka, kb = key_of_solid[o.a], key_of_solid[o.b]
@@ -150,8 +150,8 @@ def build_reuse(index: SpatialIndex, overlaps: list[Overlap], change: ChangeSet,
       if same_id and baseline.elements[n].element_id == element_of_solid[sn]:
         continue 
       
-      old_before = (rank_of_solid[sn], str(baseline.elements[n].element_id)) < (rank_of_solid[sid], str(stored.element_id))
-      new_before = (rank_of_solid[sn], str(element_of_solid[sn])) < (rank_of_solid[sid], str(element_of_solid[sid]))
+      old_before = (rank_of_solid[sn], *tail_of_solid[sn], str(baseline.elements[n].element_id)) < (rank_of_solid[sid], *tail_of_solid[sid], str(stored.element_id))
+      new_before = (rank_of_solid[sn], *tail_of_solid[sn], str(element_of_solid[sn])) < (rank_of_solid[sid], *tail_of_solid[sid], str(element_of_solid[sid]))
       if old_before != new_before:
         flipped = True
         break
@@ -246,6 +246,7 @@ class AllocationPlanner:
     self.solid_of_key = {k: sid for sid, k in self.key_of_solid.items()}
     self.hashes_by_key = {self.keys[eid]: self.hashes[eid] for eid in self.element_of_solid.values()}
     self.rank_of_solid = {sid: self.convention.rank(by_solid[sid].role) for sid in self.index.prisms}
+    self.tail_of_solid = {sid: owner_tail(by_solid[sid]) for sid in self.index.prisms}
     return self.index
 
   def relations(self) -> list[Overlap]:
@@ -259,7 +260,7 @@ class AllocationPlanner:
     from app.engine.measure.allocate import allocate as _allocate
     if self.mode == "INCREMENTAL":
       self.reuse, self.reuse_stats = build_reuse(self.index, self.overlaps, self.change, self.baseline,
-        self.key_of_solid, self.solid_of_key, self.element_of_solid, self.rank_of_solid)
+        self.key_of_solid, self.solid_of_key, self.element_of_solid, self.rank_of_solid, self.tail_of_solid)
     self.alloc = _allocate(self.ctx, self.convention, self.solids, self.index, self.overlaps, self.reuse)
     return self.alloc
 

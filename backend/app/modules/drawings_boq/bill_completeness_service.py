@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from app.modules.drawings_boq.models import CalculationRun, RunStageLog, QuantityLedger, TakeoffCandidate, TakeoffMeasurement, TakeoffSheet
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq import bill_completeness as BC
+from app.modules.drawings_boq.takeoff.printed_service import spec_facts_for_project
 
 MAX_DRAWINGS = 6
 
@@ -31,6 +32,21 @@ class BillCompletenessService:
     out = BC.build(stages=stages, run_settings=dict(run.settings or {}), ledger=ledger, funnel=funnel, held_by_reason=held,
       derived=stats.get("derived") if isinstance(stats.get("derived"), dict) else None, boq_error=stats.get("boq_error") or None)
     return {"run_id": run_id, **out}
+
+  async def _spec(self, org: UUID, project_id: UUID, run_id: UUID) -> dict:
+    out = {"waterproof_pages": [], "chajja_accepted": 0, "chajja_formwork_rows": 0}
+    try:
+      out["waterproof_pages"] = (await spec_facts_for_project(self.session, org, project_id))["waterproof_pages"]
+      cands = (await self.session.execute(select(TakeoffCandidate).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.project_id == project_id,
+        TakeoffCandidate.category == "SITE", TakeoffCandidate.decision == "ACCEPTED"))).scalars().all()
+      out["chajja_accepted"] = sum(1 for c in cands if (c.facts or {}).get("site_kind") == "CHAJJA")
+      if out["chajja_accepted"]:
+        rows = (await self.session.execute(select(QuantityLedger.spec).where(QuantityLedger.run_id == run_id, QuantityLedger.organization_id == org,
+          QuantityLedger.work_item_code.like("FRM-%")))).scalars().all()
+        out["chajja_formwork_rows"] = sum(1 for s in rows if (s or {}).get("category") == "CHAJJA")
+    except Exception:
+      return {"waterproof_pages": [], "chajja_accepted": 0, "chajja_formwork_rows": 0}
+    return out
 
   async def _funnel(self, org: UUID, project_id: UUID) -> dict:
     meas = dict((await self.session.execute(select(TakeoffMeasurement.status, func.count()).where(TakeoffMeasurement.organization_id == org, TakeoffMeasurement.project_id == project_id)

@@ -18,14 +18,17 @@ function Cell({ label, value, tone }: { label: string; value: ReactNode; tone?: 
   );
 }
 
-export function IfcRebarSummary({ stats }: { stats?: IfcRebarStats }) {
+export function IfcRebarSummary({ stats, estimated = 0 }: { stats?: IfcRebarStats; estimated?: number }) {
   const { t } = useTranslation();
   if (!stats || Number(stats.bars ?? 0) === 0) {
     return null;
   }
-  const bars = Number(stats.bars ?? 0);
+  const elements = Number(stats.bars ?? 0);
+  const bars = Number(stats.bar_count ?? 0) || elements;
   const measured = Number(stats.measured ?? 0);
   const notRead = Number(stats.bars_without_data ?? 0);
+  const absorbed = Number(stats.absorbed ?? 0);
+  const partial = stats.partial;
   const noDia = Number(stats.no_diameter ?? 0);
   const noLen = Number(stats.no_length ?? 0);
   const file = stats.file_weight;
@@ -38,7 +41,7 @@ export function IfcRebarSummary({ stats }: { stats?: IfcRebarStats }) {
         <div className={heading}>{t("boq.ifcBars.title", "Bars in the model")}</div>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Cell label={t("boq.ifcBars.bars", "Bars in the model")} value={bars} />
-          <Cell label={t("boq.ifcBars.weighed", "Weighed")} value={measured} tone={measured < bars ? "gold" : undefined} />
+          <Cell label={t("boq.ifcBars.weighed", "Bar elements weighed")} value={`${measured + absorbed} / ${elements}`} tone={measured + absorbed < elements ? "gold" : undefined} />
           <Cell label={t("boq.ifcBars.tonnes", "Steel (tonnes)")} value={formatPrecise(stats.tonnes, 3)} />
           <Cell label={t("boq.ifcBars.length", "Bar length (m)")} value={formatPrecise(stats.length_m, 1)} />
         </div>
@@ -49,6 +52,35 @@ export function IfcRebarSummary({ stats }: { stats?: IfcRebarStats }) {
           {t("boq.ifcBars.notRead", {
             defaultValue: "{{count}} bars were stored before bar diameters and lengths were read. Upload the model again as a new revision to weigh them.",
             count: notRead,
+          })}
+        </div>
+      ) : null}
+
+      {partial && Number(partial.hosts) > 0 ? (
+        <div className="space-y-2 rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-text-primary)]">
+          <div>
+            {t("boq.ifcBars.partial", {
+              defaultValue:
+                "{{hosts}} members hold fewer modelled bars than the steel band expects ({{kg}} kg in the model). They are billed on the rule estimate, with the modelled steel as its lowest value, so the same bars are not billed twice.",
+              hosts: partial.hosts, kg: formatPrecise(partial.modelled_kg, 1),
+            })}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {partial.items.slice(0, 8).map((item, index) => (
+              <span key={`${item.name}-${index}`} className="rounded-full bg-[var(--color-surface)] px-2.5 py-1 font-mono text-[11px] text-[var(--color-text-secondary)]">
+                {t("boq.ifcBars.partialChip", "{{name}}: {{kg}} kg, {{perM3}} kg/m3 (band from {{low}})", {
+                  name: item.name ?? item.role, kg: formatPrecise(item.modelled_kg, 1), perM3: formatPrecise(item.kg_per_m3, 1), low: formatPrecise(item.band_low, 1),
+                })}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {Number(stats.host_states?.NO_BAND ?? 0) > 0 ? (
+        <div className="text-[12px] text-[var(--color-text-muted)]">
+          {t("boq.ifcBars.noBand", "{{count}} members hold modelled bars but have no steel band to compare with (for example pile caps and walls), so their bars are billed as modelled and may be incomplete.", {
+            count: stats.host_states?.NO_BAND,
           })}
         </div>
       ) : null}
@@ -85,13 +117,40 @@ export function IfcRebarSummary({ stats }: { stats?: IfcRebarStats }) {
         </div>
       ) : null}
 
+      {Number(stats.no_host ?? 0) > 0 && estimated > 0 ? (
+        <div className="rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-text-primary)]">
+          {t("boq.ifcBars.estimateOverlap", {
+            defaultValue: "{{bars}} bar elements are tied to no member, and {{members}} members still carry the rule estimate. The two may cover the same steel; compare them on the Steel tab before using the total.",
+            bars: stats.no_host, members: estimated,
+          })}
+        </div>
+      ) : null}
+
+      {Number(stats.count_assumed ?? 0) > 0 ? (
+        <div className="rounded-[8px] border border-[var(--color-warning)]/30 bg-[var(--color-warning-bg)] px-3 py-2 text-[12px] text-[var(--color-text-primary)]">
+          {t("boq.ifcBars.countAssumed", {
+            defaultValue: "{{count}} bar elements draw no bars and state no count, so one bar was assumed for each. Check these against the bar schedule.",
+            count: stats.count_assumed,
+          })}
+        </div>
+      ) : null}
+
+      {Number(stats.length_mismatch ?? 0) > 0 ? (
+        <div className="text-[12px] text-[var(--color-text-secondary)]">
+          {t("boq.ifcBars.lengthMismatch", {
+            defaultValue: "{{count}} bar elements state a bar length that differs from the drawn bars by more than the model tolerance. The drawn bars were used.",
+            count: stats.length_mismatch,
+          })}
+        </div>
+      ) : null}
+
       {Number(stats.no_host ?? 0) > 0 || Number(stats.length_from_geometry ?? 0) > 0 ? (
         <div className="text-[12px] text-[var(--color-text-muted)]">
           {Number(stats.no_host ?? 0) > 0
-            ? t("boq.ifcBars.noHost", "{{count}} bars are not tied to a member in the model, so they appear under no member.", { count: stats.no_host })
+            ? t("boq.ifcBars.noHost", "{{count}} bar elements are not tied to a member in the model, so they appear under their group name or no member.", { count: stats.no_host })
             : ""}{" "}
           {Number(stats.length_from_geometry ?? 0) > 0
-            ? t("boq.ifcBars.fromGeometry", "{{count}} bar lengths were measured from the bar's centre line, not stated by the model.", { count: stats.length_from_geometry })
+            ? t("boq.ifcBars.fromGeometry", "{{count}} bar elements were weighed from the drawn bars (centre line and diameter), not from stated lengths.", { count: stats.length_from_geometry })
             : ""}
         </div>
       ) : null}

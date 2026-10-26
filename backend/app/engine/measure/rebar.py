@@ -255,13 +255,14 @@ def _ledger_for_solid(ctx, solid: Solid, marks: list[BarMark], formula: str, sou
     trace={"formula_code": formula, "engine_version": ctx.engine_version, "convention": ctx.convention_code,
       "rule_set": {"code": ctx.rule_set_code, "version": ctx.rule_set_version}, "label": label,
       "inputs": {"marks": len(marks), "provenance": sorted({m.provenance for m in marks}),
-        **({"band": {"kg_per_m3": {k: str(band[k]) for k in ("low", "likely", "high")}, "source": band["source"]}} if band else {})},
+        **({"band": {"kg_per_m3": {k: str(band[k]) for k in ("low", "likely", "high")}, "source": band["source"],
+          **({"modelled_floor_kg": str(band["modelled_kg"])} if band.get("modelled_kg") is not None else {})}} if band else {})},
       "steps": [{"op": "bar_mark", "mark": m.mark, "dia_mm": str(m.dia_mm), "count": m.count, "kg": str(m.total_kg)} for m in marks],
       "net": {"kg": str(kg), **({"kg_low": str(band["kg_low"]), "kg_high": str(band["kg_high"])} if band else {})},
       "rounding": "half_up,6dp"},
     warnings=tuple(dict.fromkeys(warnings)), source_kind=source_kind)
 
-def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs | None, covered=()) -> RebarResult:
+def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs | None, covered=(), floors=None) -> RebarResult:
   inputs = inputs or RebarInputs()
   rules = tuple(getattr(profile, "reinforcement_rules", ()) or ())
   shapes = {s.code.upper(): s for s in inputs.shapes}
@@ -278,6 +279,12 @@ def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs 
     "estimated_elements": 0, "estimate_suppressed": 0}
   band_low = band_high = ZERO
   by_family: dict = {}
+  floors = floors or {}
+  net_m3: dict = {}
+  for row in ledger:
+    owner = by_id.get(row.solid_id)
+    if row.formula_code == "SOLID_NET_VOLUME" and owner is not None:
+      net_m3[owner.element_id] = net_m3.get(owner.element_id, ZERO) + row.quantity
 
   for row in sorted(inputs.rows, key=lambda r: (str(r.import_id), r.row_no)):
     family = role_family(row.role)
@@ -345,10 +352,17 @@ def measure_rebar(ctx, profile, solids: list, ledger: list, inputs: RebarInputs 
     if band is None:
       skipped["estimate rule has no kg_per_m3"] = skipped.get("estimate rule has no kg_per_m3", 0) + 1
       continue
+
     conf = _dec(extra.get("confidence")) or DEFAULT_ESTIMATE_CONFIDENCE
     mix = estimate_dia_mix(family, extra)
     likely_kg = q6(e.quantity * band["likely"])
     band["kg_low"], band["kg_high"] = q6(e.quantity * band["low"]), q6(e.quantity * band["high"])
+    floor = floors.get(solid.element_id)
+
+    if floor is not None and net_m3.get(solid.element_id):
+      band["modelled_kg"] = q6(floor * e.quantity / net_m3[solid.element_id])
+      band["kg_low"] = max(band["kg_low"], band["modelled_kg"])
+      stats["estimate_with_model_floor"] = stats.get("estimate_with_model_floor", 0) + 1
     remaining = likely_kg
     element_marks: list = []
     

@@ -13,6 +13,8 @@ OPENING_PARAM, ROOF_PARAM = "opening_area_from_model", "roof_treatment_from_slab
 OPENING_FORMULA, ROOF_FORMULA = "OPENING_AREA", "ROOF_TREATMENT_AREA"
 OPENING_RECIPE, ROOF_RECIPE = "OPENING_AREA_FROM_MODEL", "ROOF_TREATMENT_FROM_SLABS"
 SIZE_FROM_BOX, ROOF_FROM_PLAN = "OPENING_SIZE_FROM_BOX", "ROOF_AREA_FROM_PLAN"
+SIZE_DECLARED = "OPENING_SIZE_DECLARED"
+CODES = (SIZE_FROM_BOX, SIZE_DECLARED, ROOF_FROM_PLAN)
 CODES = (SIZE_FROM_BOX, ROOF_FROM_PLAN)
 OPENING_ITEMS = {"DOOR": ("DOOR_AREA", "JOI-DOOR-AREA"), "WINDOW": ("WINDOW_AREA", "JOI-WIN-AREA")}
 ROOF_ITEM, ROOF_CODE = "ROOF_TREATMENT", "FIN-ROOF-TREAT"
@@ -47,7 +49,13 @@ def opening_size(poly, z) -> tuple | None:
   width, height = max(a, b), float(z[1]) - float(z[0])
   return (width, height) if width > 0 and height > 0 else None
 
-def _row(ctx, el, solid_of_el, recipe: str, formula: str, item: str, code: str, area: Decimal, steps: list, detail: dict, basis: dict, warning: str) -> tuple:
+def declared_size(el) -> tuple | None:
+  w, h = getattr(el, "width_mm", None), getattr(el, "height_mm", None)
+  if w is None or h is None or w <= 0 or h <= 0:
+    return None
+  return float(w), float(h)
+
+def _row(ctx, el, solid_of_el, recipe: str,formula: str, item: str, code: str, area: Decimal, steps: list, detail: dict, basis: dict, warning: str) -> tuple:
   spec = {"kind": DERIVED, "recipe": recipe, "item": item, "params": {}, "basis": basis}
   base = solid_of_el.classification_confidence * solid_of_el.confidence_factor if solid_of_el is not None else Decimal("0.9")
   confidence = max(Decimal("0"), min(Decimal("1"), q4(base * FACTOR_ASSUMED)))
@@ -83,7 +91,7 @@ def measure_opening_area(ctx: CalculationContext, elements: list, solids: list, 
   out_solids, out_rows = [], []
   totals = {role: Decimal("0") for role in wanted}
   counts = {role: 0 for role in wanted}
-  
+  declared_n = 0
   no_size = 0
   for el in sorted(elements, key=lambda e: str(e.id)):
     role = (el.role or "").upper()
@@ -91,6 +99,10 @@ def measure_opening_area(ctx: CalculationContext, elements: list, solids: list, 
       continue
     found = prism_and_polygon(el)
     size = opening_size(found[1] if found is not None else None, S.element_z(el))
+    declared = False
+    if size is None:
+      size = declared_size(el)
+      declared = size is not None
     if size is None:
       no_size += 1
       continue
@@ -101,17 +113,20 @@ def measure_opening_area(ctx: CalculationContext, elements: list, solids: list, 
       continue
   
     item, code = wanted[role]
-    steps = [{"op": "opening_size", "width_mm": round(width, 1), "height_mm": round(height, 1), "note": "long side of the footprint box times the height"},
+    note = "the width and height the model states; it has no footprint for this opening" if declared else "long side of the footprint box times the height"
+    steps = [{"op": "opening_size", "width_mm": round(width, 1), "height_mm": round(height, 1), "note": note},
       {"op": "net_area", "m2": str(area)}]
-    s_, r_ = _row(ctx, el, solid_of.get(el.id), OPENING_RECIPE, OPENING_FORMULA, item, code, area, steps, {"width_mm": round(width, 1), "height_mm": round(height, 1)},
-      {"size": "geometry"}, SIZE_FROM_BOX)
+    s_, r_ = _row(ctx, el, solid_of.get(el.id), OPENING_RECIPE, OPENING_FORMULA, item, code, area, steps,
+      {"width_mm": round(width, 1), "height_mm": round(height, 1), "size_basis": "declared" if declared else "footprint"},
+      {"size": "declared" if declared else "geometry"}, SIZE_DECLARED if declared else SIZE_FROM_BOX)
     out_solids.append(s_)
     out_rows.append(r_)
     totals[role] += area
     counts[role] += 1
+    declared_n += int(declared)
     
   out_rows.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.element_id)))
-  stats.update({"ran": bool(out_rows), "rows": len(out_rows), "no_size": no_size,
+  stats.update({"ran": bool(out_rows), "rows": len(out_rows), "no_size": no_size, "declared_size": declared_n,
     "doors": counts.get("DOOR", 0), "windows": counts.get("WINDOW", 0),
     "door_area_m2": str(q6(totals.get("DOOR", Decimal("0")))), "window_area_m2": str(q6(totals.get("WINDOW", Decimal("0"))))})
   if not out_rows:

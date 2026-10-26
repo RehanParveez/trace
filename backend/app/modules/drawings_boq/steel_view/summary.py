@@ -87,9 +87,14 @@ def member_of(row: dict, wastage_pct=None) -> dict | None:
 
   if formula == FORMULA_MODEL_BAR:
     host = inputs.get("host") or {}
-    d = str(dec(inputs.get("dia_mm")).normalize()) if inputs.get("dia_mm") is not None else None
-    out.update({"family": family_of(host.get("family")), "basis": MODEL_BARS, "tag": str(host.get("name") or out["element"] or ""), "kg": kg_row,
-      "dia": [(d, kg_row, dec(inputs.get("length_mm")) / 1000)] if d else [], "keeps_bare": False, "as_run_wastage_pct": None, "grade": str(inputs.get("grade") or "")})
+    by = {}
+    for g in inputs.get("groups") or []:
+      d = str(dec(g.get("dia_mm")).normalize())
+      slot = by.setdefault(d, [Decimal("0"), Decimal("0")])
+      slot[0] += dec(g.get("kg"))
+      slot[1] += dec(g.get("length_mm")) / 1000
+    out.update({"family": family_of(host.get("family")), "basis": MODEL_BARS, "tag": str(host.get("name") or inputs.get("group_name") or out["element"] or ""), "kg": kg_row,
+      "dia": [(d, v[0], v[1]) for d, v in by.items()], "keeps_bare": False, "as_run_wastage_pct": None, "grade": str(inputs.get("grade") or "")})
     return out
 
   if formula in (FORMULA_BBS, FORMULA_RULE):

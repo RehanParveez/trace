@@ -1,6 +1,7 @@
 export type BillStatus = "MATCH" | "DIFF" | "MISSING" | "EXTRA" | "OUT_OF_SCOPE";
 export type BillClass = "READING" | "CONVENTION" | "QS_ERROR" | "MISSING_FEATURE" | "NEEDS_DECISION";
 export type BillFilter = "OPEN" | "ALL" | "MATCH";
+export type BillView = "ITEM" | "STAGE";
 
 export interface BillRowRef {
   row: number;
@@ -37,6 +38,17 @@ export interface BillCompareLine {
   assumed_rows?: number;
 }
 
+export interface BillStageItem {
+  key: string;
+  qs: number | null;
+  shared: boolean;
+}
+
+export interface BillStage {
+  stage: string;
+  items: BillStageItem[];
+}
+
 export interface BillMeasures {
   bill_lines: number;
   compared: number;
@@ -52,6 +64,7 @@ export interface BillMeasures {
 export interface BillCompareResult {
   tolerance_pct: number;
   lines: BillCompareLine[];
+  stages?: BillStage[];
   unmapped: BillRowRef[];
   unclassified_software: { name: string; rows: number; quantity: number; unit: string }[];
   measures: BillMeasures;

@@ -1,4 +1,5 @@
 from __future__ import annotations
+import math
 from decimal import Decimal
 from dataclasses import dataclass, field
 from app.engine.measure.models import CalculationContext, LedgerEntry, Solid
@@ -71,9 +72,11 @@ def tank_faces(length: Decimal, width: Decimal, height: Decimal, wall: Decimal, 
   return out
 
 def faces_for(category: str, length: Decimal, width: Decimal, depth: Decimal, edges: bool, stair: dict | None = None, site: dict | None = None, base: bool = False,
-  stair_soffit_only: bool = False, qs_rate: bool = False) -> list:
+  stair_soffit_only: bool = False, qs_rate: bool = False, round_mm: Decimal | None = None) -> list:
   perimeter = 2 * (length + width)
   
+  if category == "COLUMN" and round_mm:
+    return [("round_face", Decimal(repr(math.pi)) * round_mm * depth)]
   if category == "COLUMN":
     return [("vertical_faces", perimeter * depth)]
   if category == "FOOTING":
@@ -346,7 +349,7 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
       faces = [("both_faces", 2 * volume / (width / MM_PER_M) * MM2_PER_M2)] + (FS.reveal_faces(m) if params[REVEAL_PARAM]["value"] >= 0.5 else [])
     else:
       faces = faces_for(cat, length, width, depth, edges, m.stair, m.site, params[TANK_PARAM]["value"] >= 0.5,
-        params[STAIR_PARAM]["value"] >= 0.5, rate_on)
+        params[STAIR_PARAM]["value"] >= 0.5, rate_on, getattr(m, "round_mm", None))
       if not faces:
         skipped["NO_FACES"] = skipped.get("NO_FACES", 0) + m.count
         continue
@@ -390,6 +393,7 @@ def measure_formwork(ctx: CalculationContext, profile, ledger: list, extra_ledge
       source = {"measurement_id": str(m.measurement_id), "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id) if m.sheet_id else None, "model_element": m.sheet_id is None,
         "page_no": m.page_no, "category": cat, "tag": m.tag, "instance": i + 1, "instances": m.count,
         "size_mm": [float(length), float(width), float(depth)], **({"stair": m.stair} if m.stair else {}),
+        **({"round_diameter_mm": float(m.round_mm)} if getattr(m, "round_mm", None) else {}),
         "faces": [{"name": n, "m2": str(_m2(a))} for n, a in inst_faces],
         **({"shared_faces": [{"face": f["face"], "by": f["by"], "m2": str(_m2(Decimal(str(f["area_mm2"]))))} for f in cut["faces"]],
           "frame": m.frame} if cut else {})}

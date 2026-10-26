@@ -106,6 +106,15 @@ def export_comparison(result: dict) -> bytes:
     for x in result["lines"]:
       for fl in x.get("floors") or []:
         f.append([x["label"], fl.get("label") or fl.get("floor"), fl.get("qs"), fl.get("software")])
+  if result.get("stages"):
+    s = wb.create_sheet("By stage")
+    s.append(["Stage", "Item", "Status", "Shared with other stages", "QS in this stage", "QS in all stages", "Software", "Error %", "Unit"])
+    by_key = {x["key"]: x for x in result.get("lines", [])}
+    for st in result["stages"]:
+      for it in st.get("items", []):
+        x = by_key.get(it["key"])
+        if x:
+          s.append([st["stage"], x["label"], x["status"], "yes" if it.get("shared") else "", it.get("qs"), x["qs"], x["software"], x["error_pct"], x["unit"]])
   u = wb.create_sheet("Not matched")
   u.append(["Bill item", "Unit", "Quantity", "Section"])
   

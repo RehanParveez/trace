@@ -17,7 +17,7 @@ from app.modules.ai_requests.service import AIOrchestratorService
 from app.modules.drawings_boq.models import ( BOQItem, BOQItemRateSource, BOQItemSourceElement, BOQItemStatus, BOQVersionStatus, BOQItemType, BOQVersion, Drawing, DrawingElement, DrawingFormat, 
   DrawingStatus, LabourRate, MaterialLibrary, MaterialNormalizationCache, MeasurementRuleSet, ModelAuditResult, TakeoffExtraction, TakeoffSheet
 )
-from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, extract_pdf_text, parse_schedule_extraction_response
+from app.modules.drawings_boq.pdf_extraction import build_schedule_extraction_prompt, chunk_pages, extract_pdf_pages, parse_schedule_extraction_response
 from app.modules.drawings_boq.repository import ( AssemblyRecipeRepository, BOQItemRepository, BOQVersionRepository, DrawingElementRepository, DrawingRepository, ElementTypeMappingRepository, LabourRateRepository,
   MaterialLibraryRepository, MaterialNormalizationCacheRepository, MeasurementRuleSetRepository, ModelAuditResultRepository, BuildingLevelRepository
 )
@@ -591,7 +591,8 @@ class DrawingBOQService:
       with open(local_path, "rb") as handle:
         contents = handle.read()
 
-    drawing_text = await asyncio.to_thread(extract_pdf_text, contents)
+    pages = await asyncio.to_thread(extract_pdf_pages, contents)
+    chunks, unread = chunk_pages(pages)
     existing_versions = await self.boq_versions.list_by_project(
       organization_id, drawing.project_id
     )
@@ -614,24 +615,31 @@ class DrawingBOQService:
       )
       await self.session.flush()
 
-    if not drawing_text:
+    if not chunks:
       await self.session.commit()
-      return {"boq_version_id": version.id, "created_item_count": 0, "items": []}
+      return {"boq_version_id": version.id, "created_item_count": 0, "items": [], "unread_pages": unread}
 
     orchestrator = AIOrchestratorService(self.session)
-    result = await orchestrator.run(
-      organization_id=organization_id,
-      purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION,
-      entity_type=AIEntityType.DRAWING,
-      entity_id=drawing.id,
-      prompt=build_schedule_extraction_prompt(drawing_text),
-    )
-
-    if not result.success or not result.parsed_output:
-      await self.subscriptions.increment_usage(organization_id, "ai_requests")  
-      return {"boq_version_id": version.id, "created_item_count": 0, "items": []}
-
-    rows = parse_schedule_extraction_response(result.parsed_output)
+    rows: list[dict] = []
+    for index, chunk in enumerate(chunks):
+      result = await orchestrator.run(
+        organization_id=organization_id,
+        purpose=AIRequestPurpose.PDF_SCHEDULE_EXTRACTION,
+        entity_type=AIEntityType.DRAWING,
+        entity_id=drawing.id,
+        prompt=build_schedule_extraction_prompt(chunk["text"]),
+      )
+      if not result.success or not result.parsed_output:
+        if index == 0:
+          unread.extend(p for rest in chunks for p in rest["pages"])
+          break
+        unread.extend(chunk["pages"])
+        continue
+      rows.extend(parse_schedule_extraction_response(result.parsed_output))
+    unread = sorted(set(unread))
+    if not rows:
+      await self.session.commit()
+      return {"boq_version_id": version.id, "created_item_count": 0, "items": [], "unread_pages": unread}
 
     created_items: list[BOQItem] = []
 
@@ -683,7 +691,6 @@ class DrawingBOQService:
 
     if created_items:
       await self.boq_items.bulk_create(created_items)
-    await self.subscriptions.increment_usage(organization_id, "ai_requests")  
     await self.audit.log(
       organization_id,
       user_id,
@@ -697,6 +704,7 @@ class DrawingBOQService:
       "boq_version_id": version.id,
       "created_item_count": len(created_items),
       "items": created_items,
+      "unread_pages": unread,
     }
 
   async def list_boq_items(
