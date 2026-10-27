@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 import math
+from app.modules.drawings_boq.takeoff.prep import marks as M
 
 INCH_MM = 25.4
 LABEL_REACH_MM = 1800.0          
@@ -19,7 +20,7 @@ _INCH = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*\"\s*$")
 _METRIC = re.compile(r"^\s*(\d{3,4})\s*$")
 
 def _clean(text: str) -> str:
-  return text.replace("\u2019", "'").replace("\u2032", "'").replace("\u201d", '"').replace("\u2033", '"').replace("\u201c", '"')
+   return M.clean(text)
 
 def parse_length(text: str | None, imperial: bool = True) -> float | None:
   if not text:

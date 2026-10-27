@@ -1,0 +1,610 @@
+{
+ "clean": {
+  "pages": 19,
+  "problems": [],
+  "totals": {
+   "BEAM": 36,
+   "DOOR": 22,
+   "WALL": 359,
+   "ROOM": 37,
+   "LINTEL": 5,
+   "STAIR": 3,
+   "SITE": 3
+  }
+ },
+ "variants": {
+  "rotate view 90": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 105,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 40,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 8,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 79,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 50,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 900,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 19,
+     "extra": 0,
+     "recall": 1.0
+    }
+   },
+   "pages": 19,
+   "pages_changed": [],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 61.1
+  },
+  "turn drawing 90": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 105,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 40,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 8,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 79,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 50,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 900,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 19,
+     "extra": 0,
+     "recall": 1.0
+    }
+   },
+   "pages": 19,
+   "pages_changed": [],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 102.0
+  },
+  "shrink to half size": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 80,
+     "extra": 62,
+     "recall": 0.762
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 26,
+     "extra": 28,
+     "recall": 0.65
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 3,
+     "extra": 0,
+     "recall": 0.375
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 53,
+     "extra": 15,
+     "recall": 0.671
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 40,
+     "extra": 14,
+     "recall": 0.8
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 778,
+     "extra": 223,
+     "recall": 0.864
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 4,
+     "extra": 0,
+     "recall": 0.211
+    },
+    "WINDOW": {
+     "base": 0,
+     "kept": 0,
+     "extra": 9,
+     "recall": null
+    }
+   },
+   "pages": 19,
+   "pages_changed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "pages_silent": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    14,
+    16,
+    18,
+    19
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 90.0
+  },
+  "enlarge to double size": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 53,
+     "extra": 50,
+     "recall": 0.505
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 31,
+     "extra": 3,
+     "recall": 0.775
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 50,
+     "extra": 6,
+     "recall": 0.633
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 42,
+     "extra": 3,
+     "recall": 0.84
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 743,
+     "extra": 134,
+     "recall": 0.826
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 1,
+     "extra": 0,
+     "recall": 0.053
+    },
+    "WINDOW": {
+     "base": 0,
+     "kept": 0,
+     "extra": 1,
+     "recall": null
+    }
+   },
+   "pages": 19,
+   "pages_changed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "pages_silent": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 84.4
+  },
+  "drop the title block": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 105,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 40,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 8,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 79,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 50,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 900,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 19,
+     "extra": 0,
+     "recall": 1.0
+    }
+   },
+   "pages": 19,
+   "pages_changed": [],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 59.1
+  },
+  "strip all text": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 0,
+     "extra": 208,
+     "recall": 0.0
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 0,
+     "extra": 22,
+     "recall": 0.0
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 6,
+     "extra": 1,
+     "recall": 0.75
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 1,
+     "extra": 64,
+     "recall": 0.013
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 0,
+     "extra": 26,
+     "recall": 0.0
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 227,
+     "extra": 549,
+     "recall": 0.252
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 5,
+     "extra": 7,
+     "recall": 0.263
+    },
+    "WINDOW": {
+     "base": 0,
+     "kept": 0,
+     "extra": 2,
+     "recall": null
+    }
+   },
+   "pages": 19,
+   "pages_changed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "pages_silent": [
+    3,
+    7,
+    11
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 67.6
+  },
+  "scan 150 dpi, skew 0.6": {
+   "families": {
+    "BEAM": {
+     "base": 105,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "COLUMN": {
+     "base": 0,
+     "kept": 0,
+     "extra": 1,
+     "recall": null
+    },
+    "DOOR": {
+     "base": 40,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "LINTEL": {
+     "base": 8,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "ROOM": {
+     "base": 79,
+     "kept": 1,
+     "extra": 4,
+     "recall": 0.013
+    },
+    "ROOM_AREA": {
+     "base": 50,
+     "kept": 0,
+     "extra": 4,
+     "recall": 0.0
+    },
+    "SITE": {
+     "base": 5,
+     "kept": 0,
+     "extra": 1,
+     "recall": 0.0
+    },
+    "STAIR": {
+     "base": 6,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "WALL": {
+     "base": 900,
+     "kept": 10,
+     "extra": 27,
+     "recall": 0.011
+    },
+    "WALL_LENGTH": {
+     "base": 19,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    }
+   },
+   "pages": 19,
+   "pages_changed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 450.8
+  }
+ }
+}

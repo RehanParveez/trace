@@ -68,6 +68,7 @@ export function ScalePanel(p: Props) {
   const [scaleText, setScaleText] = useState("");
   const [mode, setMode] = useState<"TWO_POINT" | "SCALE_RATIO">("TWO_POINT");
   const rooms = (scale?.witnesses ?? []).find((w) => w.source === "ROOM_LABELS" && w.ratio) ?? null;
+  const bar = (scale?.witnesses ?? []).find((w) => w.source === "SCALE_BAR" && w.ratio) ?? null;
   const pairs = scale?.measured?.pairs ?? [];
   const regions = (scale?.measured?.clusters ?? []).length > 1 && scale?.agreement === "MULTI_SCALE";
   const diag = Math.hypot(Number(p.sheet.width_pt), Number(p.sheet.height_pt));
@@ -116,6 +117,8 @@ export function ScalePanel(p: Props) {
             <dd className="font-mono">{scale?.measured?.clusters?.[0] ? `${fmtRatio(scale.measured.clusters[0].ratio)} (${scale.measured.clusters[0].support} dims)` : "—"}</dd>
             <dt className="text-[var(--color-text-muted)]">{t("boq.takeoff.scale.fromRooms", "From room sizes")}</dt>
             <dd className="font-mono" data-testid="scale-from-rooms">{rooms ? `${fmtRatio(rooms.ratio as number)} (${rooms.support} rooms${rooms.strong ? "" : ", not firm"})` : "—"}</dd>
+            <dt className="text-[var(--color-text-muted)]">{t("boq.takeoff.scale.fromBar", "From scale bar")}</dt>
+            <dd className="font-mono" data-testid="scale-from-bar">{bar ? `${fmtRatio((bar.snapped ? bar.scale_ratio : bar.ratio) as number)} (${bar.values?.length ?? bar.support} marks${bar.strong ? "" : ", not firm"})` : "—"}</dd>
             <dt className="text-[var(--color-text-muted)]">{t("boq.takeoff.scale.paper", "Paper")}</dt>
             <dd className="font-mono">{scale?.paper?.name ?? "—"}</dd>
           </dl>

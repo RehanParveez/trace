@@ -6,6 +6,7 @@ import time
 from array import array
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
 from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
+from app.modules.drawings_boq.takeoff.prep import raster_lines as RL
 
 IDENT = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 MAX_PATH_OBJECTS = 1_500_000
@@ -369,10 +370,17 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
       stats.update(info)
       if found:
         out.words = found
+      try:
+        stats["raster_lines"] = RL.add_to_page(out, page, min(RL.BUDGET_S, max(5.0, budget_s - (time.monotonic() - started))))
+      except Exception as exc:
+        stats["raster_lines"] = {"error": type(exc).__name__}
     try:
       PT.route(page, out, crop, stats, budget_s, scanned)
     except Exception as exc:
       stats["pdf_type"] = {"type": "UNKNOWN", "error": type(exc).__name__}
+    traced = (stats.get("raster_lines") or {}).get("segments")
+    if traced and isinstance(stats.get("pdf_type"), dict):
+      stats["pdf_type"]["lines_from_picture"] = int(traced)
     clipped = clip_to_crop(out)
     if clipped:
       stats["clipped_to_crop"] = clipped

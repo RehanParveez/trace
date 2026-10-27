@@ -3,10 +3,10 @@ import type { DetectedScale, ScaleNote } from "../types/takeoff.types";
 export type Tone = "green" | "gold" | "red" | "slate";
 
 export const AGREEMENT: Record<string, { tone: Tone; text: string }> = {
-  VERIFIED: { tone: "green", text: "Two independent readings of this sheet (the printed scale, the printed dimensions or the room sizes) give the same scale." },
+  VERIFIED: { tone: "green", text: "Two independent readings of this sheet (the printed scale, the printed dimensions, the room sizes or the scale bar) give the same scale." },
   VERIFIED_WEAK: { tone: "gold", text: "Two readings give the same scale, but only a few dimensions or rooms were found to check it." },
   ROOMS_ONLY: { tone: "gold", text: "No scale or dimension is printed, but the room sizes written on the plan give one." },
-  WITNESS_CONFLICT: { tone: "red", text: "The scale found on this sheet and the room sizes written on its plan disagree. Check one known length." },
+  WITNESS_CONFLICT: { tone: "red", text: "The scale found on this sheet disagrees with a second reading of it (the room sizes, or the scale bar). Check one known length." },
   CONFLICT: { tone: "red", text: "The printed scale and the printed dimensions disagree. The dimensions are usually right." },
   CONFLICT_UNRESOLVED: { tone: "red", text: "The printed scale and the dimensions disagree and neither can be trusted. Calibrate by hand." },
   MULTI_SCALE: { tone: "gold", text: "This sheet shows more than one scale." },
@@ -21,7 +21,11 @@ export const NOTE_TEXT: Record<string, { tone: Tone; text: string }> = {
   SCALE_CONFLICT: { tone: "red", text: "Two different scales were found on this sheet." },
   SCALE_CONFLICT_UNRESOLVED: { tone: "red", text: "Two different scales were found and neither could be confirmed." },
   SCALE_FROM_ROOMS: { tone: "gold", text: "No scale or dimension is printed on this sheet. The scale comes from the room sizes written on the plan." },
-  SCALE_WITNESS_CONFLICT: { tone: "red", text: "The room sizes written on the plan and the other readings of this sheet give different scales." },
+  SCALE_WITNESS_CONFLICT: { tone: "red", text: "The room sizes or the scale bar and the other readings of this sheet give different scales." },
+  SCALE_BAR_UNCONFIRMED: { tone: "gold", text: "A graphic scale bar was found, but nothing printed confirms it. A bar alone is not used to set the scale." },
+  SCALE_BAR_DIFFERS: { tone: "gold", text: "The scale bar of the sheet is not the scale the few readable dimensions give." },
+  SCALE_TEXT_REPAIRED: { tone: "gold", text: "The printed scale was misread (its quote marks were lost) and was put right using the scale bar." },
+  SCALE_FROM_TITLE_STRIP: { tone: "gold", text: "The scale was read from the scale box of the title strip. No dimension confirmed it." },
   NOT_TO_SCALE: { tone: "red", text: "The sheet says NOT TO SCALE. Only measure along printed dimensions." },
   MULTI_SCALE: { tone: "gold", text: "Different parts of the sheet are drawn at different scales." },
   FEW_DIMENSIONS: { tone: "gold", text: "Few printed dimensions were found, so the scale is less certain." },

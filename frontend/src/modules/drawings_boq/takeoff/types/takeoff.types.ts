@@ -262,6 +262,11 @@ export interface ScaleWitness {
   spread_pct: number | null;
   strong: boolean;
   trial_ratio?: number;
+  unit?: string;
+  values?: number[];
+  scale_ratio?: number;
+  snapped?: boolean;
+  caption_ratio?: number | null;
   items?: Array<{ text: string; ratio: number; inlier: boolean; x: number; y: number }>;
   check?: { p1: Pt; p2: Pt; value: string; unit: string; text?: string; length_pt?: number } | null;
 }

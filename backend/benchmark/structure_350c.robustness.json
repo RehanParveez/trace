@@ -1,0 +1,513 @@
+{
+ "clean": {
+  "pages": 8,
+  "problems": [],
+  "totals": {
+   "COLUMN": 1,
+   "BEAM": 19,
+   "DOOR": 2,
+   "WALL": 44,
+   "ROOM": 3,
+   "SLAB": 9,
+   "SITE": 3
+  }
+ },
+ "variants": {
+  "rotate view 90": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 31,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 1,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 2,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 18,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 96,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    }
+   },
+   "pages": 8,
+   "pages_changed": [],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 10.5
+  },
+  "turn drawing 90": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 31,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 1,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 2,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 18,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 96,
+     "extra": 2,
+     "recall": 1.0
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    }
+   },
+   "pages": 8,
+   "pages_changed": [
+    7
+   ],
+   "pages_silent": [
+    7
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 10.5
+  },
+  "shrink to half size": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 26,
+     "extra": 3,
+     "recall": 0.839
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 1,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 3,
+     "extra": 0,
+     "recall": 0.5
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 3,
+     "extra": 0,
+     "recall": 0.6
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 18,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 62,
+     "extra": 0,
+     "recall": 0.646
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    }
+   },
+   "pages": 8,
+   "pages_changed": [
+    5,
+    6,
+    7
+   ],
+   "pages_silent": [
+    5,
+    6,
+    7
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 22.2
+  },
+  "enlarge to double size": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 26,
+     "extra": 5,
+     "recall": 0.839
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 1,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 4,
+     "extra": 0,
+     "recall": 0.667
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 2,
+     "extra": 1,
+     "recall": 0.4
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 18,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 86,
+     "extra": 19,
+     "recall": 0.896
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 1,
+     "extra": 0,
+     "recall": 0.333
+    }
+   },
+   "pages": 8,
+   "pages_changed": [
+    5,
+    6,
+    7
+   ],
+   "pages_silent": [
+    5,
+    6,
+    7
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 60.5
+  },
+  "drop the title block": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 29,
+     "extra": 2,
+     "recall": 0.935
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 1,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 2,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 6,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 5,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 3,
+     "extra": 0,
+     "recall": 1.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 16,
+     "extra": 0,
+     "recall": 0.889
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 96,
+     "extra": 8,
+     "recall": 1.0
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 3,
+     "extra": 1,
+     "recall": 1.0
+    }
+   },
+   "pages": 8,
+   "pages_changed": [
+    1,
+    3,
+    8
+   ],
+   "pages_silent": [
+    1,
+    3
+   ],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 8.7
+  },
+  "strip all text": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 0,
+     "extra": 68,
+     "recall": 0.0
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 0,
+     "extra": 2,
+     "recall": 0.0
+    },
+    "LINTEL": {
+     "base": 0,
+     "kept": 0,
+     "extra": 9,
+     "recall": null
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 5,
+     "extra": 22,
+     "recall": 0.833
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 0,
+     "extra": 24,
+     "recall": 0.0
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 80,
+     "extra": 229,
+     "recall": 0.833
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 0,
+     "extra": 5,
+     "recall": 0.0
+    }
+   },
+   "pages": 8,
+   "pages_changed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 4.4
+  },
+  "scan 150 dpi, skew 0.6": {
+   "families": {
+    "BEAM": {
+     "base": 31,
+     "kept": 2,
+     "extra": 0,
+     "recall": 0.065
+    },
+    "COLUMN": {
+     "base": 1,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "DOOR": {
+     "base": 2,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "ROOM": {
+     "base": 6,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "ROOM_AREA": {
+     "base": 5,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "SITE": {
+     "base": 3,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "SLAB": {
+     "base": 18,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "WALL": {
+     "base": 96,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    },
+    "WALL_LENGTH": {
+     "base": 3,
+     "kept": 0,
+     "extra": 0,
+     "recall": 0.0
+    }
+   },
+   "pages": 8,
+   "pages_changed": [
+    1,
+    3,
+    5,
+    6,
+    7
+   ],
+   "pages_silent": [],
+   "pages_unread": [],
+   "problems": [],
+   "seconds": 64.6
+  }
+ }
+}

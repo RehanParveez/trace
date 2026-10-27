@@ -5,7 +5,9 @@ import tempfile
 import shutil
 import csv
 import subprocess
+import math
 import time
+import math
 from concurrent.futures import ThreadPoolExecutor
 from app.modules.drawings_boq.takeoff.prep import scan_lookalike as SL
 
@@ -27,6 +29,10 @@ RECHECK_ON = os.environ.get("TRACE_SCAN_RECHECK", "1") != "0"
 RECHECK_BUDGET_S = float(os.environ.get("TRACE_SCAN_RECHECK_S", "20"))
 REREAD_SCALES = (3, 4, 5)
 REREAD_PAD_PX = 6
+SKEW_MAX_DEG = 6.0
+SKEW_MIN_DEG = 3.5
+SKEW_MIN_GAIN = 1.04
+SKEW_SIDE_PX = 1600
 
 def available() -> bool:
   if shutil.which("tesseract") is None:
@@ -223,6 +229,41 @@ def _build_word(text: str, a0: float, b0: float, a1: float, b1: float, view_angl
   return Word(text=text, x0=x0, y0=y0, x1=x1, y1=y1, angle=user_angle(view_angle, rotation), size=height / 0.75,
     cx=(x0 + x1) / 2, cy=(y0 + y1) / 2, length=length, height=height)
 
+def _sharpness(small, phi: float) -> float:
+  """How sharply the dark rows of the sheet separate when it is turned by phi: straight text and straight lines give tall, narrow row sums."""
+  import numpy as np
+  from PIL import Image
+  turned = small.rotate(phi, resample=Image.BILINEAR, fillcolor=255)
+  rows = (np.asarray(turned) < 160).sum(axis=1).astype("float64")
+  return float((rows * rows).sum())
+
+def skew_angle(img, min_deg: float | None = None) -> float:
+  """Degrees to turn the sheet (anticlockwise, as PIL turns it) to make its lines level; 0.0 when it is level already, or when no angle is clearly better."""
+  from PIL import Image
+  scale = SKEW_SIDE_PX / max(img.size)
+  small = img.resize((max(1, int(img.size[0] * scale)), max(1, int(img.size[1] * scale))), Image.BILINEAR) if scale < 1.0 else img
+  base = _sharpness(small, 0.0)
+  if base <= 0:
+    return 0.0
+  coarse = [i * 0.5 for i in range(-int(SKEW_MAX_DEG * 2), int(SKEW_MAX_DEG * 2) + 1)]
+  best = max(coarse, key=lambda a: _sharpness(small, a))
+  fine = [best + i * 0.1 for i in range(-5, 6)]
+  best = max(fine, key=lambda a: _sharpness(small, a))
+  limit = SKEW_MIN_DEG if min_deg is None else min_deg
+  if abs(best) < limit or _sharpness(small, best) < SKEW_MIN_GAIN * base:
+    return 0.0
+  return round(best, 1)
+
+def unskew_box(box: tuple, phi: float, width_pt: float, height_pt: float) -> tuple:
+  """A word box (left, top, right, bottom, in points from the top left) read on the sheet turned by phi, as it lies on the sheet before it was turned."""
+  a0, b0, a1, b1 = box
+  cx, cy = width_pt / 2.0, height_pt / 2.0
+  x, y = (a0 + a1) / 2.0 - cx, (b0 + b1) / 2.0 - cy
+  r = math.radians(phi)
+  ox, oy = x * math.cos(r) - y * math.sin(r), x * math.sin(r) + y * math.cos(r)
+  hw, hh = (a1 - a0) / 2.0, (b1 - b0) / 2.0
+  return (cx + ox - hw, cy + oy - hh, cx + ox + hw, cy + oy + hh)
+
 def _overlap(a: tuple, b: tuple) -> float:
   ix = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
   iy = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
@@ -335,6 +376,15 @@ def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float
     return [], info
   info["ocr_dpi"] = round(scale * 72.0, 1)
   H = img.size[1]
+  phi = 0.0
+  try:
+    phi = skew_angle(img)
+  except Exception:
+    phi = 0.0
+  if phi:
+    from PIL import Image
+    img = img.rotate(phi, resample=Image.BICUBIC, fillcolor=255)
+    info["ocr_deskew_deg"] = phi
   views = {0: img}
   
   if 90 in PASSES:
@@ -384,6 +434,12 @@ def read_page(page, rotation: int, cropbox: tuple, images: list, budget_s: float
           break
       
   settled, report = _settle(rows_kept, views, partial)
+  if phi:
+    w_pt, h_pt = img.size[0] / scale, img.size[1] / scale
+    for row in list(rows_kept) + list(settled):
+      if not row.get("_unskewed"):
+        row["box"] = unskew_box(row["box"], phi, w_pt, h_pt)
+        row["_unskewed"] = True
   words: list = []
   confs: list = []
   for row in settled:

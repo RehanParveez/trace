@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 from app.engine.measure import readings as QSR
 
-EXTRACT_VERSION = 76
+EXTRACT_VERSION = 77
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -434,6 +434,7 @@ NOTES = {
   "RAFT_EDGE_FORM_ASSUMED": ("info", "Shuttering is taken round the outline of the raft, as high as the raft is thick. The underside rests on the bed and the top needs none. Usual practice, not printed on the drawing."),
   "OUTLINED_TEXT_READ": ("warning", "The lettering of this sheet is drawn as outlines, not as text. It was read from the picture of the sheet, so a mark, a scale or a figure may be misread. Check the numbers that matter against the drawing before accepting."),
   "OUTLINED_TEXT_NOT_READ": ("warning", "The lettering of this sheet is drawn as outlines, not as text, and could not be read from the picture. The scale, the marks and the sizes printed on it are missing, so what was read from it is only the drawn lines. Measure it by hand, or send the drawing with live text."),
+  "NO_LETTERING_PAGE": ("warning", "This sheet has a drawing on it but no readable lettering: the text was turned into line strokes, so there are no words to read. The title, the scale, the marks, the sizes and the notes are missing, and any length or area read from the drawn lines is at a scale nobody checked. Measure it by hand, or send the drawing with live text."),
   "RAFT_NOT_READ": ("warning", "A note on this sheet names the raft and carries figures, but no thickness is printed beside a word such as THK or DEEP, so no raft item is made. A figure beside bars, spacing or cover is not a thickness. Measure the raft by hand or type its thickness in a note."),
   "RAFT_UNIT_ASSUMED": ("warning", "The raft thickness has no unit written beside it. A figure below 100 is taken as inches and a larger one as millimetres. Check it against the drawing."),
   "DRAIN_REPEAT_SET_ASIDE": ("info", "This pipe is also read on an earlier sheet of the same drawing, so it is set aside here as the same pipe drawn again. Restore it if it is a different pipe."),

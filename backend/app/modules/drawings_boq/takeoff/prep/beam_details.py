@@ -4,6 +4,7 @@ import io
 import os
 import re
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark, ocr_available
+from app.modules.drawings_boq.takeoff.prep import marks as M
 import math
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
@@ -124,7 +125,7 @@ def parse_stirrup(text: str) -> dict | None:
 def parse_dim(text: str, bare_ok: bool = False) -> float | None:
   """"18"" is eighteen inches. The reader writes the inch mark as a quote and sometimes loses it; a bare number is taken only when the caller says the reading
   was a clear one (bare_ok) and the number has two digits, since a bare 8 is too often a 9."""
-  t = (text or "").replace(" ", "").replace("'", '"')
+  t = M.clean(text).replace(" ", "").replace("'", '"')
   m = _DIM.match(t)
   if m:
     v = float(m.group("v"))

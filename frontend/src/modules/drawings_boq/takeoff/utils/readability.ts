@@ -14,10 +14,12 @@ export const READABILITY_TONE: Record<Exclude<ReadabilityState, "NOT_READ">, "gr
 
 export const READABILITY_REASON_TEXT: Record<string, string> = {
   TEXT_NOT_RECOVERED: "Lettering drawn as outlines could not be read",
+  NO_LETTERING: "Drawing with no readable lettering",
   STAGE_FAILED: "A reading step failed",
   SCALE_LOOKS_WRONG: "The scale looks wrong",
   SCALE_CONFLICT: "The scale is in conflict",
   SCALE_UNVERIFIED: "The scale is not checked against a dimension",
+  LINES_FROM_PICTURE: "Lines traced from a picture of the sheet",
   TEXT_FROM_PICTURE: "Lettering read from the picture",
   TIME_LIMIT: "Reading took too long",
   VALUES_DISAGREE: "The drawing disagrees with itself",

@@ -11,7 +11,7 @@ from app.modules.drawings_boq.takeoff.prep import units as UN
 from app.modules.drawings_boq.takeoff.prep import room_witness as RW
 from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 28
+ANALYSIS_VERSION = 36
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -56,6 +56,9 @@ def classify_content(raw: RawPage) -> tuple[str, dict]:
     
   diag = math.hypot(w, h)
   info = {"image_cover": round(cover, 3), "segments": n, "line_length_pt": round(total_len, 1), "max_image_dpi": round(max_dpi, 1)}
+  if (raw.stats.get("raster_lines") or {}).get("segments"):
+    info["lines_from_picture"] = True
+    return "RASTER", info
   if cover >= 0.55 and total_len < 30.0 * diag:
     return "RASTER", info
   if cover >= 0.55:

@@ -2,6 +2,8 @@ from __future__ import annotations
 import re
 import math
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines
+from app.modules.drawings_boq.takeoff.prep import marks as M
+from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
 MM_INCH = 25.4
 MM_FOOT = 304.8
@@ -35,10 +37,9 @@ _FRACTIONS = {"½": " 1/2", "¼": " 1/4", "¾": " 3/4", "⅛": " 1/8", "⅜": " 
 
 def _fix(text: str) -> str:
   """Same clean-up as the opening schedule reader. Kept here so this module imports nothing from schedules.py (schedules.py imports this one)."""
-  s = text
+  s = M.tidy(text)
   for k, v in _FRACTIONS.items():
     s = s.replace(k, v)
-  s = s.replace("’", "'").replace("′", "'").replace("“", '"').replace("”", '"').replace("″", '"')
   return re.sub(r"\s+", " ", s).strip()
 
 def _frame(w) -> tuple:

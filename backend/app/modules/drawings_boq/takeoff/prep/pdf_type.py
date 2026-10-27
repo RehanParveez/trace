@@ -3,8 +3,8 @@ import os
 import math
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
 
-VECTOR_TEXT, VECTOR_OUTLINED, RASTER, IMAGE_PAGE, EMPTY = "VECTOR_TEXT", "VECTOR_OUTLINED", "RASTER", "IMAGE_PAGE", "EMPTY"
-TYPES = (VECTOR_TEXT, VECTOR_OUTLINED, RASTER, IMAGE_PAGE, EMPTY)
+VECTOR_TEXT, VECTOR_OUTLINED, VECTOR_NOLETTER, RASTER, IMAGE_PAGE, EMPTY = "VECTOR_TEXT", "VECTOR_OUTLINED", "VECTOR_NOLETTER", "RASTER", "IMAGE_PAGE", "EMPTY"
+TYPES = (VECTOR_TEXT, VECTOR_OUTLINED, VECTOR_NOLETTER, RASTER, IMAGE_PAGE, EMPTY)
 
 ENABLED = os.environ.get("TRACE_OUTLINED_OCR", "1") != "0"
 OCR_BUDGET_S = float(os.environ.get("TRACE_OUTLINED_OCR_BUDGET_S", "75"))
@@ -85,11 +85,14 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
   cover = image_cover(out.images, crop)
   info: dict = {"image_cover": round(cover, 2)}
   suspect = None if scanned else outlined_signal(out.rings, stats)
+  bare = None
+  if not scanned and not suspect and cover < ocr_layer.MIN_COVER and len(out.words) <= EMPTY_MAX_WORDS and len(out.segs) // 5 >= SUSPECT_GLYPHS:
+    bare = {"drawn_segments": len(out.segs) // 5}
   added = 0
   error = None
 
-  if suspect:
-    info.update(suspect)
+  if suspect or bare:
+    info.update(suspect or bare)
     if not ENABLED:
       error = "DISABLED"
     elif not ocr_layer.available():
@@ -112,6 +115,9 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
   elif suspect and added:
     kind = VECTOR_OUTLINED
     info["text_recovered"] = True
+  elif bare and added:
+    kind = VECTOR_OUTLINED
+    info.update(text_recovered=True, lettering="STROKES")
   elif suspect and error:
     kind = VECTOR_OUTLINED
     info.update(text_recovered=False, ocr_error=error)
@@ -119,6 +125,11 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
     kind = IMAGE_PAGE
   elif len(out.words) <= EMPTY_MAX_WORDS and not out.rings and len(out.segs) // 5 < EMPTY_MAX_DRAWN:
     kind = EMPTY
+  elif len(out.words) <= EMPTY_MAX_WORDS and len(out.segs) // 5 >= SUSPECT_GLYPHS:
+    kind = VECTOR_NOLETTER
+    info.update(text_recovered=False, drawn_segments=len(out.segs) // 5)
+    if error:
+      info["ocr_error"] = error
   else:
     kind = VECTOR_TEXT
   stats["pdf_type"] = {"type": kind, **info}

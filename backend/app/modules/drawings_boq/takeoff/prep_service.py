@@ -28,6 +28,8 @@ from app.modules.drawings_boq.takeoff.prep import beam_details
 from app.modules.drawings_boq.takeoff.prep import tank_details
 from app.modules.drawings_boq.takeoff.extract import electrical as electrical_reader
 from app.modules.drawings_boq.takeoff.prep import footing_sections, units as unit_reader
+from app.modules.drawings_boq.takeoff.prep import sheet_marks
+from app.modules.drawings_boq.takeoff.prep import scale_bar
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
@@ -120,6 +122,36 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["footing_sections"] = sections
   except Exception:
     result.meta["footing_sections_reader"] = "FAILED"
+  try:
+    marks = sheet_marks.read(page, raw.rotation, tuple(raw.cropbox), result.index.words)
+    strip = marks.get("strip")
+    if strip:
+      result.meta["sheet_strip"] = strip
+      title = result.meta.get("title")
+      if isinstance(title, dict) and strip.get("sheet_no") and not title.get("sheet_no"):
+        title["sheet_no"] = strip["sheet_no"]
+      ident = result.meta.get("identity")
+      if isinstance(ident, dict):
+        for field, name in (("sheet_no", "sheet_no"), ("revision", "revision"), ("scale", "scale_text")):
+          if strip.get(field) and not ident.get(name):
+            ident[name] = strip[field]
+
+    if marks.get("list"):
+      result.meta["drawing_list"] = marks["list"]
+  except Exception:
+    result.meta["sheet_marks_reader"] = "FAILED"
+  try:
+    full = result.detected_scale
+    if isinstance(full, dict):
+      raster = result.content_kind == "RASTER"
+      strip_scale = (result.meta.get("sheet_strip") or {}).get("scale")
+      look = raster and (full.get("agreement") in ("DECLARED_ONLY", "DIMENSIONS_WEAK") or bool(strip_scale))
+      found = scale_bar.read_bar(page, raw.rotation, tuple(raw.cropbox), result.index.words, float(result.meta.get("user_unit") or 1.0), result.meta.get("units_hint"), look)
+      result.detected_scale = scale_bar.apply(full, found["bar"], found["caption"], strip_scale, raster)
+      if found["bar"] is not None:
+        result.meta["scale_bar"] = {**{k: v for k, v in found["bar"].items() if k != "others"}, "basis": found["basis"], "caption_ratio": found["caption"]}
+  except Exception:
+    result.meta["scale_bar_reader"] = "FAILED"
 
 class PrepService:
   def __init__(self, session):
@@ -688,6 +720,8 @@ class PrepService:
     n = rec.get("support") or 0
     if rec.get("region"):
       return f"{base} (view)"[:120]
+    if rec.get("basis") in ("MEASURED_FROM_SCALE_BAR", "DECLARED_AND_BAR"):
+      return f"{base} · scale bar agrees"[:120] if rec.get("basis") == "DECLARED_AND_BAR" else f"{base} · from the scale bar"[:120]
     if n and rec.get("basis") == "MEASURED_FROM_ROOMS":
       return f"{base} · {n} room size{'s' if n != 1 else ''} agree"[:120]
     if n:

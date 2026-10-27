@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import {Button, EmptyState, ErrorState, Icon, LoadingState, Badge,
 } from "../../organizations/components/OrganizationUi";
 import { drawingsBoqApi } from "../api/drawings-boq.api";
+import { getApiErrorCode } from "../../../shared/utils/apiError";
 import {useDrawingElementsPage, useDrawingLevels,
 } from "../hooks";
 import type {Drawing, DrawingElement, DrawingElementFilters, NormalizationStatus,
@@ -553,7 +554,9 @@ export function DrawingElementsDialog({
                 ) : null}
                 {readSheets.isError || syncRegister.isError ? (
                   <p className="text-[var(--color-danger)]">
-                    {t("drawings.elements.pdfFailed", "The sheets could not be read just now. Try again, or measure by hand on the Measure page.")}
+                    {getApiErrorCode(readSheets.error) === "SCHEMA_BEHIND" || getApiErrorCode(syncRegister.error) === "SCHEMA_BEHIND"
+                      ? t("drawings.elements.schemaBehind", "The database is behind the program: a migration has not been applied. Run alembic upgrade head in the backend folder, restart the API and the worker, then read the sheets again.")
+                      : t("drawings.elements.pdfFailed", "The sheets could not be read just now. Try again, or measure by hand on the Measure page.")}
                   </p>
                 ) : null}
                 <div className="flex flex-wrap items-center gap-2">

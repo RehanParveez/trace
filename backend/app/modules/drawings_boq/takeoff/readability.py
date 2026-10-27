@@ -6,10 +6,12 @@ MAX_SHEETS_LISTED = 12
 
 REASONS = {
   "TEXT_NOT_RECOVERED": (BADLY, "The lettering is drawn as outlines and could not be read, so the scale, marks and sizes printed on these sheets are missing."),
+  "NO_LETTERING": (BADLY, "These sheets have a drawing on them but no readable lettering (the text was turned into line strokes), so the title, scale, marks, sizes and notes are missing."),
   "STAGE_FAILED": (BADLY, "A reading step failed and was skipped on these sheets, so its items are missing."),
   "SCALE_LOOKS_WRONG": (BADLY, "The doors and rooms drawn are not the size doors and rooms are built, so the scale used for these sheets is probably wrong."),
   "SCALE_CONFLICT": (WITH_QUESTIONS, "The sheet prints conflicting scale information."),
   "SCALE_UNVERIFIED": (WITH_QUESTIONS, "The scale is taken from the title block and not checked against a printed dimension."),
+  "LINES_FROM_PICTURE": (BADLY, "The lines of these sheets were traced from a picture of the sheet. Walls may include furniture and dimension lines or miss some walls, doors are found only where the swing arc and the leaf come out of the picture clearly, and windows, rooms and stairs are mostly not read, so the quantities need checking against the drawing."),
   "TEXT_FROM_PICTURE": (WITH_QUESTIONS, "The lettering was read from the picture of the sheet, so a mark or a figure may be misread."),
   "TIME_LIMIT": (WITH_QUESTIONS, "Reading took too long and some items may be missing."),
   "VALUES_DISAGREE": (WITH_QUESTIONS, "The drawing prints different values for the same thing."),
@@ -28,8 +30,12 @@ def sheet_status(stats: dict | None, notes: list | None, scale_unverified: bool 
 
   if pdf.get("type") == "VECTOR_OUTLINED":
     found.append("TEXT_FROM_PICTURE" if pdf.get("text_recovered") else "TEXT_NOT_RECOVERED")
+  elif pdf.get("type") == "VECTOR_NOLETTER":
+    found.append("NO_LETTERING")
   elif pdf.get("type") == "RASTER" or "SCAN_TEXT_READ" in codes:
     found.append("TEXT_FROM_PICTURE")
+  if pdf.get("lines_from_picture"):
+    found.append("LINES_FROM_PICTURE")
   if stats.get("stage_failures"):
     found.append("STAGE_FAILED")
   if (stats.get("scale_plausibility") or {}).get("status") == "IMPLAUSIBLE" or "SCALE_LOOKS_WRONG" in codes:

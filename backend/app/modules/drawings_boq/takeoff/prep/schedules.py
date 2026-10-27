@@ -2,6 +2,7 @@ from __future__ import annotations
 import re
 import math
 from collections import Counter
+from app.modules.drawings_boq.takeoff.prep import marks as M
 from app.modules.drawings_boq.takeoff.prep import lintels as lintel_reader
 from app.modules.drawings_boq.takeoff.prep import lintel_matrix
 from app.modules.drawings_boq.takeoff.prep import stairs as stair_reader
@@ -42,10 +43,9 @@ _LENGTH = re.compile(r"\d{1,3}\s*'\s*-?\s*(?:\d{1,2}(?:\s+\d{1,2}/\d{1,2})?)?\s*
 _SPLIT_X = re.compile(r"\s*[xX×]\s*")
 
 def _fix(text: str) -> str:
-  s = text
+  s = M.tidy(text)
   for k, v in _FRACTIONS.items():
     s = s.replace(k, v)
-  s = s.replace("’", "'").replace("′", "'").replace("“", '"').replace("”", '"').replace("″", '"')
   return re.sub(r"\s+", " ", s).strip()
 
 def norm_mark(text: str) -> str | None:

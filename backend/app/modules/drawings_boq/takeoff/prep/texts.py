@@ -4,6 +4,7 @@ import re
 import math
 from decimal import Decimal, InvalidOperation
 from app.modules.drawings_boq.takeoff.scale import parse_scale_text
+from app.modules.drawings_boq.takeoff.prep import marks as M
 
 MM_PER_INCH = 25.4
 MM_PER_FOOT = 304.8
@@ -39,7 +40,7 @@ _FEET_NO_MARK = re.compile(r"^(\d{1,3})\s*-\s*(\d{1,2}(?:\.\d+)?(?: \d+/\d+)?)\s
 
 def normalize_dimension_text(text: str) -> str:
   """Drawings print 7'-1½" with a fraction sign, or 12-0" with the foot mark left out. Both are read as feet and inches."""
-  s = (text or "").strip().replace("’", "'").replace("′", "'").replace("”", '"').replace("″", '"').replace("“", '"')
+  s = M.clean(text)
   for sign, plain in _VULGAR.items():
     s = s.replace(sign, plain)
   s = re.sub(r"\s+", " ", s).strip()
@@ -179,8 +180,8 @@ def build_lines(words: list) -> list[TextLine]:
 _LABEL_SCALE = re.compile(r"\bSCALES?\b\s*[:=\-]?\s*(?P<v>.{0,40})", re.I)
 _RATIO_RE = re.compile(r"(?<![\d.:/])(?P<a>\d+(?:\.\d+)?)\s*:\s*(?P<b>\d+(?:\.\d+)?)(?![\d:])")
 _SLASH_RATIO_RE = re.compile(r"^\s*(?P<a>1)\s*/\s*(?P<b>\d{1,5})(?![\d/\"'])")
-_IMPERIAL_RE = re.compile(r"\d+(?:\s*/\s*\d+)?(?:\.\d+)?\s*\"\s*=\s*\d+(?:\.\d+)?\s*'(?:\s*-?\s*\d+(?:\.\d+)?\s*\")?", re.I)
-_NTS_RE = re.compile(r"\b(N\.?\s?T\.?\s?S\.?|NOT\s+TO\s+SCALE|AS\s+SHOWN|NO\s+SCALE)\b", re.I)
+_IMPERIAL_RE = re.compile(r"(?:\d+\s+)?\d+(?:\s*/\s*\d+)?(?:\.\d+)?\s*\"\s*=\s*\d+(?:\.\d+)?\s*'(?:\s*-?\s*\d+(?:\.\d+)?\s*\")?", re.I)
+_NTS_RE = re.compile(r"\b(N\.?\s?T\.?\s?S\.?|NOT\s+(?:DRAWN\s+)?(?:TO\s+)?(?:BE\s+)?SCALED?|DON[\u2019']?T\s+SCALE|AS\s+SHOWN|NO\s+SCALE)\b", re.I)
 
 def find_scale_candidates(lines: list[TextLine]) -> list[dict]:
   out: list[dict] = []

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import math
+import contextvars
 import numpy as np
 import time
 from app.modules.drawings_boq.takeoff.extract import config as C
@@ -16,7 +17,9 @@ ARC_TOL_PT = 1.5
 LEAF_COVER_MIN = 0.25          
 WALL_BAND_PT = 2.0              
 JAMB_REL, JAMB_ABS = 0.14, 1.5   
-HEAVY_SHARE = 0.6              
+PICTURE_JAMB_SLACK_PT = 5.0
+FROM_PICTURE: contextvars.ContextVar = contextvars.ContextVar("opening_lines_from_picture", default=False)
+HEAVY_SHARE = 0.6
 BIN_MIN, SPAN_BINS_MIN = 10, 85.0   
 SWING_MM = (450.0, 1300.0)     
 SWING_MM_UNVERIFIED = (350.0, 1700.0)
@@ -198,8 +201,8 @@ def _merge(found: list) -> list:
     keep.append(a)
   return keep
 
-def _at_jamb(x: float, y: float, r: float, ends) -> bool:
-  return len(ends) > 0 and float(np.hypot(ends[:, 0] - x, ends[:, 1] - y).min()) <= JAMB_REL * r + JAMB_ABS
+def _at_jamb(x: float, y: float, r: float, ends, slack: float = 0.0) -> bool:
+  return len(ends) > 0 and float(np.hypot(ends[:, 0] - x, ends[:, 1] - y).min()) <= JAMB_REL * r + JAMB_ABS + slack
 
 def _wall_bands(walls: list, mm_per_pt: float) -> list:
   out = []
@@ -231,6 +234,7 @@ def find_swings(index, mm_per_pt: float, *, scale_verified: bool = True, deadlin
   heavy = float(wall_pen) if wall_pen else float(np.percentile(pens, 99)) if len(pens) else 0.0
   ends, _ = _heavy_ends(segs, kinds, heavy)
   bands = _wall_bands(walls, mm_per_pt)
+  slack = PICTURE_JAMB_SLACK_PT if FROM_PICTURE.get() else 0.0
   lo_mm, hi_mm = SWING_MM if scale_verified else SWING_MM_UNVERIFIED
   arcs = _hough(segs, kinds, ln, deadline)
   stats["arcs"] = len(arcs)
@@ -241,7 +245,7 @@ def find_swings(index, mm_per_pt: float, *, scale_verified: bool = True, deadlin
       stats["rejected_size"] += 1
       continue
   
-    if not _at_jamb(a["x"], a["y"], a["r"], ends) and not _in_wall(a["x"], a["y"], bands):
+    if not _at_jamb(a["x"], a["y"], a["r"], ends, slack) and not _in_wall(a["x"], a["y"], bands):
       stats["rejected_no_hinge"] += 1
       continue
     cov, ang = _leaf(a, segs, kinds, ln)

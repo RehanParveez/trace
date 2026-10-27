@@ -26,7 +26,10 @@ class IntegrityService(NotesService):
 
     out = checks.run(
       [{"page_no": s.page_no, "prep_status": s.prep_status, "content_kind": s.content_kind, "has_facts": (s.prep_meta or {}).get("facts") is not None,
-        "text_source": (s.prep_meta or {}).get("text_source"), "pdf_type": (s.prep_meta or {}).get("pdf_type")} for s in sheets],
+        "text_source": (s.prep_meta or {}).get("text_source"), "pdf_type": (s.prep_meta or {}).get("pdf_type"),
+        "sheet_no": ((s.prep_meta or {}).get("sheet_strip") or {}).get("sheet_no"),
+        "sheet_title": ((s.prep_meta or {}).get("sheet_strip") or {}).get("title") or ((s.prep_meta or {}).get("title") or {}).get("title"),
+        "drawing_list": (s.prep_meta or {}).get("drawing_list")} for s in sheets],
       [{"page_no": page_of.get(e.sheet_id), "extract_version": e.extract_version, "mm_per_pt": float(e.mm_per_pt) if e.mm_per_pt is not None else None,
         "scale_unverified": bool(e.scale_unverified), "decisions_stale": bool(decided.stale(e.stats, in_force)),
         "stage_failures": len((e.stats or {}).get("stage_failures") or [])} for e in extractions],

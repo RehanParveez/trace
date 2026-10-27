@@ -2,7 +2,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.core.database import dispose_engine
+from app.core.database import dispose_engine, engine
+from app.core import schema_check as SC
 from app.core.exceptions import TraceException, trace_exception_handler
 from app.core.logging import configure_logging
 from app.modules.identity.router import router as identity_router
@@ -53,6 +54,12 @@ from app.core.crypto import check_settings as check_encryption_settings
 async def lifespan(app: FastAPI):
   configure_logging()
   check_encryption_settings()
+  try:
+    state = await SC.check(engine)
+    if state["state"] in ("BEHIND", "AHEAD"):
+      SC.log.error("database %s the code (%s): run `alembic upgrade head`", state["state"], state["reason"])
+  except Exception:
+    pass
   yield
   await dispose_engine()
 
@@ -64,6 +71,7 @@ app = FastAPI(
 )
 
 app.add_exception_handler(TraceException, trace_exception_handler)
+app.add_exception_handler(SC.DBAPIError, SC.db_error_handler)
 
 app.add_middleware(
   CORSMiddleware,
@@ -173,3 +181,7 @@ async def ready() -> dict[str, str]:
 @app.get(settings.api_v1_prefix + "/system/ping", tags=["system"])
 async def api_ping() -> dict[str, str]:
   return {"message": "Trace API is running"}
+
+@app.get(settings.api_v1_prefix + "/system/schema", tags=["system"])
+async def api_schema() -> dict:
+  return await SC.check(engine)

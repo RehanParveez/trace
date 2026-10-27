@@ -2135,13 +2135,19 @@ def _pdf_type_notes(res: Extraction, pdf: dict | None) -> None:
   res.stats["pdf_type"] = pdf
   if pdf.get("type") == "VECTOR_OUTLINED" and not pdf.get("text_recovered"):
     res.notes.append(C.note("OUTLINED_TEXT_NOT_READ", ocr_error=pdf.get("ocr_error")))
+  if pdf.get("type") == "VECTOR_NOLETTER":
+    res.notes.append(C.note("NO_LETTERING_PAGE", drawn_segments=pdf.get("drawn_segments")))
 
 def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
   scan = kw.pop("scan_reading", None)
   pdf = kw.pop("pdf_type", None)
   identity = kw.pop("identity", None)
   electrical = kw.pop("electrical", None)
-  res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)
+  token = OS.FROM_PICTURE.set(bool((pdf or {}).get("lines_from_picture")))
+  try:
+    res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)
+  finally:
+    OS.FROM_PICTURE.reset(token)
   _identity_gate(res, identity)
   _pdf_type_notes(res, pdf)
   _with_electrical(res, electrical, kw)

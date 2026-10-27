@@ -4,6 +4,7 @@ import re
 import time
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, to_visual
 from app.modules.drawings_boq.takeoff.prep.details import ocr_available
+from app.modules.drawings_boq.takeoff.prep import marks as M
 from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
 
@@ -43,7 +44,7 @@ def kind_of(text: str) -> str:
 def parse_length(text: str) -> dict | None:
   """A size as the reader returns it. 3'-6" is 42 inches; 6" is 6. The apostrophe is often read as a slash or lost ("3/-6"") and a bare quote is a
   clear inch value; anything else (a bare number, 14-3) is not taken."""
-  t = (text or "").replace(" ", "")
+  t = M.clean(text).replace(" ", "")
   m = FEET_INCH.match(t)
   if m and ("'" in t or "’" in t or "/" in t):
     feet, inch = int(m.group(1)), int(m.group(2))
