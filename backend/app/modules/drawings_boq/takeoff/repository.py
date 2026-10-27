@@ -1,7 +1,7 @@
 from __future__ import annotations
 from app.engine.measure import takeoff as tk
 from app.engine.measure.member_steel import STEEL_FAMILIES, clean_steel
-from app.modules.drawings_boq.models import TakeoffViewAlignment, TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
+from app.modules.drawings_boq.models import DrawingFormat, TakeoffViewAlignment, TakeoffSheet, TakeoffCalibration, BuildingLevel, CalculationRun, Drawing, TakeoffMeasurement, TakeoffCandidate, DrawingElement
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 from app.modules.drawings_boq.takeoff.register import row_id
@@ -281,6 +281,12 @@ class TakeoffRepository:
   async def drawing(self, org: UUID, drawing_id: UUID) -> Drawing | None:
     return (await self.session.execute(
       select(Drawing).where(Drawing.id == drawing_id, Drawing.organization_id == org))).scalar_one_or_none()
+
+  async def project_pdf_drawings(self, org: UUID, project_id: UUID, current_only: bool = True) -> list[Drawing]:
+    stmt = select(Drawing).where(Drawing.organization_id == org, Drawing.project_id == project_id, Drawing.format == DrawingFormat.PDF)
+    if current_only:
+      stmt = stmt.where(Drawing.is_current_revision.is_(True))
+    return list((await self.session.execute(stmt.order_by(Drawing.created_at, Drawing.id))).scalars().all())
 
   async def sheets(self, org: UUID, drawing_id: UUID) -> list[TakeoffSheet]:
     return list((await self.session.execute(

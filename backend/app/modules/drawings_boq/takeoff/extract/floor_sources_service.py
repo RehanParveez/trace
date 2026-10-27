@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import base_plan as BP
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
 from app.modules.drawings_boq.takeoff.extract.pipeline import _status
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest
@@ -25,29 +26,41 @@ def clear_other_sheet_flag(rows: list) -> list:
 class FloorSourceService(ExtractService):
   """The floors of a drawing, with the sheets each was read from, and the choice of which sheet to use."""
 
-  async def _read(self, org: UUID, drawing_id: UUID) -> tuple:
-    await self.core._pdf_drawing(org, drawing_id)
-    sheets = await self.core.repo.sheets(org, drawing_id)
+  async def _read(self, org: UUID, drawing_id: UUID, project: bool = False) -> tuple:
+    drawing = await self.core._pdf_drawing(org, drawing_id)
+    drawings = [drawing]
+    if project and settings.takeoff_project_facts and drawing.is_current_revision:
+      drawings = await self.core.repo.project_pdf_drawings(org, drawing.project_id)
+      if drawing.id not in {d.id for d in drawings}:
+        drawings = [*drawings, drawing]
+    owner = {}
+    sheets = []
+    for order, d in enumerate(drawings):
+      for s in await self.core.repo.sheets(org, d.id):
+        owner[s.id] = (order, d)
+        sheets.append(s)
     exts = {e.sheet_id: e for e in await self.repo.extractions(org, [s.id for s in sheets])}
     rows = await self.repo.candidates(org, [s.id for s in sheets if s.id in exts])
     await self._heal(org, rows)
     by: dict = {}
     for r in rows:
       by.setdefault(r.sheet_id, []).append(r)
-    read = [{"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": exts[s.id].stats, "candidates": by.get(s.id, [])}
-      for s in sheets if s.id in exts]
+    read = [{"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": exts[s.id].stats, "candidates": by.get(s.id, []),
+      "identity": (s.prep_meta or {}).get("identity"), "clues": (s.prep_meta or {}).get("floor_clues"),
+      "drawing_id": owner[s.id][1].id, "drawing_name": owner[s.id][1].original_filename, "drawing_order": owner[s.id][0]} for s in sheets if s.id in exts]
     return read, by
 
   @staticmethod
   def _view(drawing_id: UUID, read: list) -> dict:
-    return {"drawing_id": drawing_id, **FS.build(read)}
+    n = len({r.get("drawing_id") for r in read if r.get("drawing_id")})
+    return {"drawing_id": drawing_id, "project_wide": n > 1, "drawings": max(n, 1), **FS.build(read)}
 
   async def floor_sources(self, org: UUID, drawing_id: UUID) -> dict:
-    read, _ = await self._read(org, drawing_id)
+    read, _ = await self._read(org, drawing_id, project=True)
     return self._view(drawing_id, read)
 
   async def choose(self, org: UUID, user_id: UUID, drawing_id: UUID, payload, automatic: bool = False) -> dict:
-    read, by = await self._read(org, drawing_id)
+    read, by = await self._read(org, drawing_id, project=True)
     view = FS.build(read)
     entries = {f["floor"]: f for f in view["floors"]}
     
@@ -77,7 +90,8 @@ class FloorSourceService(ExtractService):
       keep = plan["keep"]
       sheet_floor = {r["sheet_id"]: (None if (r["title"] or {}).get("composite") else (r["title"] or {}).get("level_hint")) for r in read}
       kept_by_floor[floor] = keep["sheet_id"]
-      away = [c for s in plan["set_aside"] for c in by.get(s["sheet_id"], []) if FS.in_floor(c, floor, sheet_floor[s["sheet_id"]]) and c.decision == "NEW"]
+      away = [c for s in plan["set_aside"] for c in by.get(s["sheet_id"], []) if FS.in_floor(c, floor, sheet_floor[s["sheet_id"]]) and c.decision == "NEW"
+        and not (BP.is_services(c) and s["sheet_id"] in plan["services_kept"])]
       back = [c for c in by.get(keep["sheet_id"], []) if FS.in_floor(c, floor, sheet_floor[keep["sheet_id"]]) and c.decision == "REJECTED" and FS.is_set_aside(c)]
       for c in away:
         c.decision, c.decided_by_user_id, c.decided_at = "REJECTED", user_id, _now()

@@ -429,6 +429,10 @@ def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: flo
   frames, faces = collect_faces(index, mm_per_pt, deadline, min_width)
   pieces = pair_faces(faces, mm_per_pt, deadline)
   runs = join_runs(pieces, frames, mm_per_pt, deadline, straight_lines(index))
+  from app.modules.drawings_boq.takeoff.extract import frame_band as FB
+  border = {id(r) for r in FB.frame_runs(index, runs, frames)}
+  if border:
+    runs = [r for r in runs if id(r) not in border]
   stats = settle_junctions(runs, frames, mm_per_pt)
   ref = weight_reference(runs)
   
@@ -440,7 +444,7 @@ def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: flo
       r.end0 = r.end1 = "FREE"
       r.ext0 = r.ext1 = 0.0
     stats = settle_junctions(runs, frames, mm_per_pt)
-  stats.update({"faces": len(faces), "pieces": len(pieces), "runs": len(runs), "dropped_light_loose": len(loose), "weight_ref_pt": round(ref, 4)})
+  stats.update({"faces": len(faces), "pieces": len(pieces), "runs": len(runs), "dropped_light_loose": len(loose), "weight_ref_pt": round(ref, 4), "frame_runs_dropped": len(border)})
   return frames, runs, stats
 
 PEN_MIN_SHARE = 0.05

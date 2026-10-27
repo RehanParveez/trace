@@ -21,6 +21,8 @@ import { SourceTotalsPanel } from "../components/SourceTotalsPanel";
 import { planBoxes as planBoxesOf } from "../utils/floorSources";
 import { FloorLevels } from "../components/FloorLevels";
 import { FoundTab } from "../components/FoundTab";
+import { ProjectFactsPanel } from "../components/ProjectFactsPanel";
+import { ProjectPlansPanel } from "../components/ProjectPlansPanel";
 import { candidatePoints } from "../utils/candidates";
 import type { TakeoffCandidate } from "../types/takeoff.types";
 import { ScalePanel } from "../components/ScalePanel";
@@ -28,6 +30,7 @@ import { CompanyConventionsPanel } from "../components/CompanyConventionsPanel";
 import type { CaptureState } from "../components/ScalePanel";
 import { SheetStrip } from "../components/SheetStrip";
 import { SheetIdentityBar } from "../components/SheetIdentityBar";
+import { SheetRolePanel } from "../components/SheetRolePanel";
 import { AiShadowCard } from "../ai_reader/components/AiShadowCard";
 import { sheetTitle } from "../utils/sheetTitle";
 import { Toolbar } from "../components/Toolbar";
@@ -896,6 +899,9 @@ export function TakeoffPage() {
 
       <SheetStrip sheets={sheets} calibrations={overview.data?.calibrations ?? []} measurements={allMeasurements} currentId={sheet.id} onSelect={selectSheet} />
       <SheetIdentityBar sheet={sheet} drawingId={drawingId} canEdit={canEditPermission} />
+      <SheetRolePanel sheets={sheets} drawingId={drawingId} canEdit={canEditPermission} currentSheetId={sheet.id} onSelect={selectSheet} />
+      <ProjectPlansPanel drawingId={drawingId} canEdit={canEdit} drawings={(projectDrawings.data ?? []).filter((d) => d.is_current_revision).length} />
+      <ProjectFactsPanel projectId={projectId} drawings={(projectDrawings.data ?? []).filter((d) => d.is_current_revision).length} />
       <AiShadowCard drawingId={drawingId} canEdit={canEditPermission} />
       <Toolbar
         tool={tool}

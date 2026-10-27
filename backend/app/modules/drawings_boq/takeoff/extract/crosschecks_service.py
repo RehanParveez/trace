@@ -16,7 +16,7 @@ class CrossCheckService(ExtractService):
     for r in rows:
       by.setdefault(r.sheet_id, []).append(r)
     return [{"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": exts[s.id].stats, "candidates": by.get(s.id, []),
-      "schedule": (s.prep_meta or {}).get("schedule")} for s in sheets if s.id in exts]
+      "schedule": (s.prep_meta or {}).get("schedule"), "outline_check": (s.prep_meta or {}).get("outline_check")} for s in sheets if s.id in exts]
 
   async def checks(self, org: UUID, drawing_id: UUID) -> dict:
     return {"drawing_id": drawing_id, **CK.run(await self._read(org, drawing_id))}

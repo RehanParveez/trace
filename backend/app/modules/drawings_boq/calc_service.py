@@ -287,7 +287,7 @@ class CalculationService:
       if cleaned:
         settings["derived_params"] = cleaned
       printed = printed_params.for_run(await printed_for_drawings(self.session, organization_id, [d.id for d in chosen if d.format == DrawingFormat.PDF]))
-      if printed["params"] or printed["lap_table_mm"] or printed["grades"].get("concrete") or printed["grades"].get("steel"):
+      if printed["params"] or printed["lap_table_mm"] or (printed.get("grades") or {}).get("concrete") or (printed.get("grades") or {}).get("steel"):
         settings["drawing_params"] = printed
       element_values = await ElementParametersService(self.session).stored_for_run(organization_id, project_id)
       if element_values:

@@ -40,12 +40,20 @@ class SheetResponse(BaseModel):
   created_at: datetime
   updated_at: datetime
 
-IdentityDiscipline = Literal["ARCHITECTURAL", "STRUCTURAL", "ELECTRICAL", "PLUMBING", "HVAC", "FIRE", "SITE"]
+IdentityDiscipline = Literal["ARCHITECTURAL", "STRUCTURAL", "ELECTRICAL", "PLUMBING", "HVAC", "FIRE", "GAS", "SITE"]
+IdentityRole = Literal["PLAN", "STRUCTURAL", "COMPOSITE", "SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "SITE", "LEGEND", "SPEC", "COVER", "DIVIDER", "UNKNOWN"]
+IdentityPlanKind = Literal["WORKING", "FURNITURE", "OVERLAY", "FRAMING", "FOUNDATION"]
+IdentityFloor = Literal["BASEMENT", "GROUND", "FIRST", "SECOND", "THIRD", "FOURTH", "MEZZANINE", "ROOF", "FOUNDATION", "TYPICAL"]
+IdentityReadAs = Literal["PLAN_ITEMS", "SYMBOLS_ONLY", "DETAILS_ONLY", "SKIP"]
 IdentitySheetType = Literal["PLAN", "POINTS_PLAN", "SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "LEGEND", "SPEC"]
 
 class SheetIdentityOverride(BaseModel):
   discipline: IdentityDiscipline | None = None
   sheet_type: IdentitySheetType | None = None
+  role: IdentityRole | None = None
+  plan_kind: IdentityPlanKind | None = None
+  floor: IdentityFloor | None = None
+  read_as: IdentityReadAs | None = None
 
 class SheetUpdateRequest(BaseModel):
   label: str | None = Field(default=None, max_length=200)

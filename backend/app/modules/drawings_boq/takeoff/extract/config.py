@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 from app.engine.measure import readings as QSR
 
-EXTRACT_VERSION = 77
+EXTRACT_VERSION = 79
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -444,6 +444,11 @@ NOTES = {
   "ROOM_GEOMETRY_REPAIRED": ("info", "A few wall outlines on this sheet touched in a way the geometry engine could not cut directly. They were repaired automatically; check the room areas of this sheet."),
   "ROOM_FACE_SKIPPED": ("warning", "A closed space between walls on this sheet could not be cut cleanly and was left out. Rooms may be missing here."),
   "SHEET_NOT_A_PLAN": ("warning", "This sheet is a section, elevation, detail, schedule or similar sheet, not a floor plan, yet walls or rooms were read from it. They are probably hatching or drawn detail, not plan walls. They are held back from the bulk accept (a reason is given on each item), and this sheet takes no part in choosing the sheet of a floor. Accept an item by hand only if the sheet really holds a plan."),
+  "SHEET_NOT_READ_ROLE": ("info", "This sheet is an elevation, a legend, a specification, a cover or a divider, not a plan, so nothing was read from it (no walls, rooms, doors, windows or finishes). Its role is named in this note. If the sheet does hold a plan, press Read as plan on the sheet bar and read it again."),
+  "SHEET_READ_DETAILS_ONLY": ("info", "This sheet is a detail, a schedule or a section, so only its structure details were read. No walls, rooms, doors, windows or finishes were taken from it. If it does hold a plan, press Read as plan on the sheet bar and read it again."),
+  "SHEET_READ_SYMBOLS_ONLY": ("info", "This sheet is a plan of the services, a drawing laid over the architect's walls, or a site plan, so only its site, electrical and drainage items were read. The walls, rooms, doors and windows come from the architectural sheets of the floor. If it is also a working drawing, press Read as plan on the sheet bar and read it again."),
+  "MIXED_SHEET": ("info", "This sheet shows services (electrical, plumbing or similar) and also the dimensions and sized rooms of a working drawing, so it is read as a working plan as well as for its symbols. Check its walls against the architectural sheet of the same floor."),
+  "FLOOR_FROM_SHEET_ORDER": ("warning", "The floor of this sheet is not written on it. It was worked out from the rooms it shares with named sheets and from its place in the set of drawings, which is a guess. Confirm the floor on the sheet bar."),
   "SERVICES_SHEET_BACKDROP_LEFT_OUT": ("info", "This sheet is a plan of the electrical, plumbing, air-conditioning or fire work. The walls, rooms, doors and windows drawn on it are the architect's plan behind its symbols, so they were not taken from it: they come from the architectural sheets of the same floor. What was left out is listed in this note. If this sheet is not a plan of the services, change what it is on the sheet bar and read it again."),
   "SCALE_LOOKS_WRONG": ("warning","The doors or the named rooms drawn on this sheet are not the size doors and rooms are built, so the scale used for this sheet is probably wrong. A scale that would fit is suggested in this note. It has NOT been applied: confirm the scale on the Measure page."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),

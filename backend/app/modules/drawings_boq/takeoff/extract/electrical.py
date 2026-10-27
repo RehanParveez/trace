@@ -21,7 +21,7 @@ GROUP_RULES = (
   (BOARD, re.compile(r"\b(?:BOARD|DB|UPS|GENERATOR|EARTH|MCB|METER)\b", re.I)),
   (LIGHT, re.compile(r"\b(?:LIGHT|LAMP|TUBE|FIXTURE|LUMINAIRE|BULB)S?\b", re.I)),
 )
-LEGEND_WORDS = re.compile(r"\b(?:LEGEND|SYMBOLS?)\b", re.I)
+LEGEND_WORDS = re.compile(r"\b(?:LEGENDS?|SYMBOLS?)\b", re.I)
 ELECTRIC_WORD = re.compile(r"ELECTRIC", re.I)
 PLAN_WORD = re.compile(r"\bPLAN\b", re.I)
 CONFIDENCE_PICTURE, CONFIDENCE_TEXT = 0.6, 0.7

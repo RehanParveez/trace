@@ -9,6 +9,8 @@ DISCIPLINE_WORDS = (
   ("HVAC", r"\bA\.?\s?C\.?\s+POINTS?\b|\bAC\s+POINTS?\b|\bDUCT(?:S|ING)?\b|\bVENTILATION\b|\bSPLIT\s+UNITS?\b", 2),
   ("FIRE", r"\bFIRE\s+(?:FIGHTING|ALARM|PROTECTION|SAFETY)\b", 3),
   ("FIRE", r"\bSPRINKLERS?\b|\bHYDRANTS?\b", 2),
+  ("GAS", r"\bSUI\s+GAS\b|\bGAS\s+(?:PIPE|LINE|LAYOUT|PLAN)\b", 3),
+  ("GAS", r"\bGAS\b", 1.5),
   ("STRUCTURAL", r"\bSTR\w?CT\w?R(?:E|AL)\b", 3),
   ("STRUCTURAL", r"\bFOUNDATIONS?\b|\bFOOTINGS?\b|\bFRAMING\b|\bREINFORCEMENT\b|\bRAFT\b|\bPILES?\b|\bLINTELS?\b|\bX-?SECTIONS?\b", 2),
   ("STRUCTURAL", r"\bBEAMS?\b|\bCOLUMNS?\b|\bSLABS?\b", 1.5),
@@ -19,7 +21,7 @@ DISCIPLINE_WORDS = (
   ("SITE", r"\bSITE\s+PLAN\b|\bLOCATION\s+PLAN\b|\bPLOT\s+PLAN\b|\bKEY\s+PLAN\b", 3),
 )
 
-SERVICES = ("ELECTRICAL", "PLUMBING", "HVAC", "FIRE")
+SERVICES = ("ELECTRICAL", "PLUMBING", "HVAC", "FIRE", "GAS")
 
 SHEET_TYPE_WORDS = (
   ("LEGEND", r"\bLEGENDS?\b|\bSYMBOLS?\b|\bABBREVIATIONS?\b|\bDRAWING\s+LIST\b|\bINDEX\b"),

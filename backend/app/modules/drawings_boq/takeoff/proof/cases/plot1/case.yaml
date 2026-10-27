@@ -1,0 +1,17 @@
+name: plot1
+tier: A
+pdfs:
+- Islamabad_Plot_1.pdf
+sha256:
+  Islamabad_Plot_1.pdf: 67c298b63898208242ab2b1bc25fc68b58519e14cacbf90b2c7356bfebcc8484
+workbook:
+  path: BOQ_Worksheet_Map.xlsx
+  format: WORKSHEET_MAP
+block_floor:
+  UPTO PLINTH LEVEL: FOUNDATION
+  FROM PLINTH LEVEL TO LINTEL LEVEL: BASEMENT
+  FROM LINTEL LEVEL TO BASEMENT SLAB: BASEMENT
+  FROM BASEMENT SLAB ~ G.F SLAB: GROUND
+  FROM G.F SLAB ~ F.F SLAB: FIRST
+  FROM F.F SLAB ~ ROOF TOP SLAB: ROOF
+note: 'Islamabad Plot_1, six A4 sheets. QS: BOQ_Worksheet_Map.xlsx (sheet Summary chain).'

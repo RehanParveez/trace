@@ -16,6 +16,7 @@ export const takeoffKeys = {
   projectDrawings: (projectId: string) => [...takeoffKeys.all, "project-drawings", projectId] as const,
   reconciliation: (projectId: string) => [...takeoffKeys.all, "reconciliation", projectId] as const,
   facts: (drawingId: string) => [...takeoffKeys.all, "facts", drawingId] as const,
+  projectFacts: (projectId: string) => [...takeoffKeys.all, "project-facts", projectId] as const,
   frame: (drawingId: string) => [...takeoffKeys.all, "frame", drawingId] as const,
   floors: (drawingId: string) => [...takeoffKeys.all, "floors", drawingId] as const,
   floorSources: (drawingId: string) => [...takeoffKeys.all, "floor-sources", drawingId] as const,
@@ -424,6 +425,15 @@ export function useReaderTrace(drawingId: string | undefined, enabled = true) {
     queryKey: [...takeoffKeys.all, "trace", drawingId ?? ""],
     queryFn: () => takeoffApi.readerTrace(drawingId as string),
     enabled: Boolean(drawingId) && enabled,
+  });
+}
+
+export function useProjectFacts(projectId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.projectFacts(projectId ?? ""),
+    queryFn: () => takeoffApi.projectFacts(projectId as string),
+    enabled: Boolean(projectId) && enabled,
+    staleTime: 15_000,
   });
 }
 

@@ -1,0 +1,513 @@
+- key: EXCAVATION/FOUNDATION
+  item: Excavation
+  unit: cft
+  qs: 16766.171
+  drawing: 16766.171
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: Upto Plinth Level
+  family: EXCAVATION
+- key: TERMITE/FOUNDATION
+  item: Termite
+  unit: sft
+  qs: 2214.102
+  drawing: 2214.102
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'Upto Plinth Level. D15: "Sitting & Kitchen" is a typed 350 sft.'
+  family: TERMITE
+- key: MEMBRANE/FOUNDATION
+  item: Membrane 9" wide
+  unit: sft
+  qs: 2254.505
+  drawing: null
+  class: QS_ERROR
+  tolerance_pct: 5.0
+  note: 'Upto Plinth Level. Assumed in the workbook: ten 4 x 11 ft pieces are added to the 9 in strip; the handoff lists the membrane pieces as a QS error. No drawing figure until the QS answers (Pack 142).'
+  family: MEMBRANE
+- key: BRICK_FOUNDATION/FOUNDATION
+  item: 'Brick Work Foundation 1:6'
+  unit: cft
+  qs: 526.882
+  drawing: 526.882
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: Upto Plinth Level
+  family: BRICK_FOUNDATION
+- key: PCC/FOUNDATION
+  item: 'Lean 1:4:8'
+  unit: cft
+  qs: 325.933
+  drawing: 325.933
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: Upto Plinth Level
+  family: PCC
+- key: RCC_FOOTINGS/FOUNDATION
+  item: RCC Foundation
+  unit: cft
+  qs: 159.375
+  drawing: 159.375
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: Upto Plinth Level
+  family: RCC_FOOTINGS
+- key: RCC_PLINTH_BEAM/FOUNDATION
+  item: RCC Plinth Beam
+  unit: cft
+  qs: 141.93
+  drawing: 141.93
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: Upto Plinth Level
+  family: RCC_PLINTH_BEAM
+- key: RCC_COLUMNS/FOUNDATION
+  item: RCC Columns
+  unit: cft
+  qs: 39.376
+  drawing: 39.376
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: Upto Plinth Level
+  family: RCC_COLUMNS
+- key: STEEL/FOUNDATION
+  item: Steel
+  unit: kgs
+  qs: 944.976
+  drawing: 944.976
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'Upto Plinth Level. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: BRICK_WALLS/BASEMENT
+  item: 'Brick Work from Plinth to Lintel Basement 1:5'
+  unit: cft
+  qs: 551.965
+  drawing: 551.965
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Plinth Level To Lintel Level
+  family: BRICK_WALLS
+- key: RCC_COLUMNS/BASEMENT
+  item: RCC Columns
+  unit: cft
+  qs: 87.188
+  drawing: 87.188
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Plinth Level To Lintel Level
+  family: RCC_COLUMNS
+- key: RCC_WALLS/BASEMENT
+  item: RCC Walls
+  unit: cft
+  qs: 1071.0
+  drawing: 1071.0
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Plinth Level To Lintel Level
+  family: RCC_WALLS
+- key: RCC_LINTELS/BASEMENT
+  item: RCC Lintel Beam
+  unit: cft
+  qs: 30.563
+  drawing: 30.563
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From Plinth Level To Lintel Level
+  family: RCC_LINTELS
+- key: WALL_PLASTER/BASEMENT
+  item: 'Plaster 1:4'
+  unit: sft
+  qs: 3254.47
+  drawing: 3254.47
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From Plinth Level To Lintel Level
+  family: WALL_PLASTER
+- key: STEEL/BASEMENT
+  item: Steel
+  unit: kgs
+  qs: 5990.278
+  drawing: 5990.278
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From Plinth Level To Lintel Level. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: BRICK_WALLS/BASEMENT/2
+  item: 'Brick Work from Lintel to Basement Slab 1:5'
+  unit: cft
+  qs: 217.067
+  drawing: 217.067
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Lintel Level To Basement Slab
+  family: BRICK_WALLS
+- key: RCC_COLUMNS/BASEMENT/2
+  item: RCC Columns
+  unit: cft
+  qs: 25.594
+  drawing: 25.594
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Lintel Level To Basement Slab
+  family: RCC_COLUMNS
+- key: RCC_WALLS/BASEMENT/2
+  item: RCC Walls
+  unit: cft
+  qs: 441.0
+  drawing: 441.0
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Lintel Level To Basement Slab
+  family: RCC_WALLS
+- key: RCC_ROOF_BEAMS/BASEMENT
+  item: RCC Roof Beams
+  unit: cft
+  qs: 82.543
+  drawing: 82.543
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Lintel Level To Basement Slab
+  family: RCC_ROOF_BEAMS
+- key: RCC_STAIR/BASEMENT
+  item: RCC Staircase
+  unit: cft
+  qs: 40.546
+  drawing: 40.546
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From Lintel Level To Basement Slab
+  family: RCC_STAIR
+- key: RCC_SLABS/BASEMENT
+  item: RCC Basement Slab
+  unit: cft
+  qs: 841.772
+  drawing: 777.274
+  class: QS_ERROR
+  tolerance_pct: 5.0
+  note: 'From Lintel Level To Basement Slab. D1: the workbook total includes 64.498 cft of roof beams; the slab alone is 1554.547 x 0.5 = 777.274. D12 (6 in against 5 in) is also open.'
+  family: RCC_SLABS
+- key: WALL_PLASTER/BASEMENT/2
+  item: 'Plaster 1:4'
+  unit: sft
+  qs: 1032.846
+  drawing: 1032.846
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From Lintel Level To Basement Slab
+  family: WALL_PLASTER
+- key: STEEL/BASEMENT/2
+  item: Steel
+  unit: kgs
+  qs: 3472.627
+  drawing: 3472.627
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From Lintel Level To Basement Slab. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: BRICK_WALLS/GROUND
+  item: 'Brick Work from Basement to G.F Slab 1:5'
+  unit: cft
+  qs: 1818.954
+  drawing: 1818.954
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'From Basement Slab ~ G.F Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  family: BRICK_WALLS
+- key: RCC_COLUMNS/GROUND
+  item: RCC Columns
+  unit: cft
+  qs: 110.25
+  drawing: 110.25
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Basement Slab ~ G.F Slab
+  family: RCC_COLUMNS
+- key: RCC_LINTELS/GROUND
+  item: RCC Lintel Beam
+  unit: cft
+  qs: 43.501
+  drawing: 43.501
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From Basement Slab ~ G.F Slab
+  family: RCC_LINTELS
+- key: RCC_ROOF_BEAMS/GROUND
+  item: RCC Roof Beams
+  unit: cft
+  qs: 162.815
+  drawing: 162.815
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From Basement Slab ~ G.F Slab
+  family: RCC_ROOF_BEAMS
+- key: RCC_STAIR/GROUND
+  item: RCC Staircase
+  unit: cft
+  qs: 40.546
+  drawing: 40.546
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From Basement Slab ~ G.F Slab
+  family: RCC_STAIR
+- key: RCC_SLABS/GROUND
+  item: RCC G.F Slab
+  unit: cft
+  qs: 808.327
+  drawing: 808.327
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'From Basement Slab ~ G.F Slab. D12: QS uses 6 in slabs; the drawing prints 5 in.'
+  family: RCC_SLABS
+- key: WALL_PLASTER/GROUND
+  item: 'Plaster 1:4'
+  unit: sft
+  qs: 6494.8
+  drawing: 6494.8
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From Basement Slab ~ G.F Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  family: WALL_PLASTER
+- key: STEEL/GROUND
+  item: Steel
+  unit: kgs
+  qs: 5018.122
+  drawing: 5018.122
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From Basement Slab ~ G.F Slab. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: BRICK_WALLS/FIRST
+  item: 'Brick Work from G.F to F.F Slab 1:5'
+  unit: cft
+  qs: 1753.281
+  drawing: 1753.281
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'From G.F Slab ~ F.F Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  family: BRICK_WALLS
+- key: RCC_COLUMNS/FIRST
+  item: RCC Columns
+  unit: cft
+  qs: 86.625
+  drawing: 86.625
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From G.F Slab ~ F.F Slab
+  family: RCC_COLUMNS
+- key: RCC_LINTELS/FIRST
+  item: RCC Lintel Beam
+  unit: cft
+  qs: 48.845
+  drawing: 48.845
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From G.F Slab ~ F.F Slab
+  family: RCC_LINTELS
+- key: RCC_ROOF_BEAMS/FIRST
+  item: RCC Roof Beams
+  unit: cft
+  qs: 162.815
+  drawing: 162.815
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From G.F Slab ~ F.F Slab
+  family: RCC_ROOF_BEAMS
+- key: RCC_STAIR/FIRST
+  item: RCC Staircase
+  unit: cft
+  qs: 40.546
+  drawing: 40.546
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From G.F Slab ~ F.F Slab
+  family: RCC_STAIR
+- key: RCC_SLABS/FIRST
+  item: RCC F.F Slab
+  unit: cft
+  qs: 808.846
+  drawing: 808.846
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'From G.F Slab ~ F.F Slab. D12: QS uses 6 in slabs; the drawing prints 5 in.'
+  family: RCC_SLABS
+- key: WALL_PLASTER/FIRST
+  item: 'Plaster 1:4'
+  unit: sft
+  qs: 2392.048
+  drawing: 2392.048
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From G.F Slab ~ F.F Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  family: WALL_PLASTER
+- key: STEEL/FIRST
+  item: Steel
+  unit: kgs
+  qs: 4771.696
+  drawing: 4771.696
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From G.F Slab ~ F.F Slab. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: BRICK_WALLS/ROOF
+  item: 'Brick Work from F.F to Mumty Slab 1:5'
+  unit: cft
+  qs: 555.281
+  drawing: 555.281
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'From F.F Slab ~ Roof Top Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  family: BRICK_WALLS
+- key: RCC_COLUMNS/ROOF
+  item: RCC Columns
+  unit: cft
+  qs: 16.031
+  drawing: 16.031
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From F.F Slab ~ Roof Top Slab
+  family: RCC_COLUMNS
+- key: RCC_LINTELS/ROOF
+  item: RCC Lintel Beam
+  unit: cft
+  qs: 19.781
+  drawing: 19.781
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: From F.F Slab ~ Roof Top Slab
+  family: RCC_LINTELS
+- key: RCC_ROOF_BEAMS/ROOF
+  item: RCC Roof Beams
+  unit: cft
+  qs: 59.577
+  drawing: 59.577
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: From F.F Slab ~ Roof Top Slab
+  family: RCC_ROOF_BEAMS
+- key: RCC_SLABS/ROOF
+  item: RCC Mumty Slab
+  unit: cft
+  qs: 339.75
+  drawing: 339.75
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'From F.F Slab ~ Roof Top Slab. D12: QS uses 6 in slabs; the drawing prints 5 in.'
+  family: RCC_SLABS
+- key: WALL_PLASTER/ROOF
+  item: 'Plaster 1:4'
+  unit: sft
+  qs: 1610.0
+  drawing: 1610.0
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From F.F Slab ~ Roof Top Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  family: WALL_PLASTER
+- key: STEEL/ROOF
+  item: Steel
+  unit: kgs
+  qs: 1852.794
+  drawing: 1852.794
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'From F.F Slab ~ Roof Top Slab. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: TANKS/OTHERS
+  item: UGWT
+  unit: cft
+  qs: 93.5
+  drawing: 93.5
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'Others. D7: both tanks carry the same concrete; the drawing shows separate details.'
+  family: TANKS
+- key: TANKS/OTHERS/2
+  item: OHWT
+  unit: cft
+  qs: 93.5
+  drawing: 93.5
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'Others. D7: both tanks carry the same concrete; the drawing shows separate details.'
+  family: TANKS
+- key: TANKS/OTHERS/3
+  item: Septic Tank
+  unit: cft
+  qs: 78.375
+  drawing: 78.375
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'Others. D7: both tanks carry the same concrete; the drawing shows separate details.'
+  family: TANKS
+- key: STEEL/OTHERS
+  item: Steel
+  unit: kgs
+  qs: 1572.544
+  drawing: 1572.544
+  class: NEEDS_DECISION
+  tolerance_pct: 10.0
+  note: 'Others. D2, D3, D8: steel total leaves out the basement stair, has typed kg and half the C-1 rings.'
+  family: STEEL
+- key: CEILING_PLASTER/OTHERS
+  item: 'Ceiling/Roof Plaster 1:4'
+  unit: sft
+  qs: 4917.137
+  drawing: 4917.137
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: Others
+  family: CEILING_PLASTER
+- key: DOORS/OTHERS
+  item: Doors
+  unit: sft
+  qs: 668.5
+  drawing: 668.5
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'Others. The spec lists a Plot_1 door defect; none is named in the handoff or in D1 to D16. Marked for a decision, drawing figure kept as the QS.'
+  family: DOORS
+- key: DOOR_FRAMES/OTHERS
+  item: Door Frames (MS)
+  unit: sft
+  qs: 336.376
+  drawing: 336.376
+  class: DRAWING
+  tolerance_pct: 5.0
+  note: Others
+  family: DOOR_FRAMES
+- key: WINDOWS/OTHERS
+  item: Windows & Ventilators (Single Glazed)
+  unit: sft
+  qs: 661.625
+  drawing: null
+  class: QS_ERROR
+  tolerance_pct: 5.0
+  note: Others. D9 ground W2 counted 2.5; the basement and mumty windows are QS errors (handoff section 5). No drawing figure until counted by mark.
+  family: WINDOWS
+- key: KACHA/OTHERS
+  item: PCC/Kacha on Floor
+  unit: sft
+  qs: 4060.253
+  drawing: 4060.253
+  class: NEEDS_DECISION
+  tolerance_pct: 5.0
+  note: 'Others. D15: "Sitting & Kitchen" is a typed 350 sft.'
+  family: KACHA
+- key: ROOF_TREATMENT/OTHERS
+  item: Roof Treatment
+  unit: sft
+  qs: 1982.754
+  drawing: 1982.754
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: Others
+  family: ROOF_TREATMENT
+- key: FORMWORK/OTHERS
+  item: Form Work/Shuttering
+  unit: sft
+  qs: 13735.035
+  drawing: 13735.035
+  class: NEEDS_DECISION
+  tolerance_pct: 15.0
+  note: 'Others. D10: stair form work is treated three ways.'
+  family: FORMWORK

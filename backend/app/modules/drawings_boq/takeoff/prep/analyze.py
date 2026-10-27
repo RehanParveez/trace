@@ -11,7 +11,7 @@ from app.modules.drawings_boq.takeoff.prep import units as UN
 from app.modules.drawings_boq.takeoff.prep import room_witness as RW
 from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 36
+ANALYSIS_VERSION = 38
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -311,13 +311,15 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
     "schedule": schedules.read_schedules(raw.words),
     "projections": _projections(lines, raw),
     "views": sheet_views.summary(found_views),
+    "floor_clues": _floor_clues(lines, hint, pairs),
   }
   pdf = raw.stats.get("pdf_type")
   if pdf:
     meta["pdf_type"] = pdf
     if pdf.get("type") == "VECTOR_OUTLINED" and pdf.get("text_recovered"):
       meta["text_source"] = "OUTLINED"
-    meta["identity"] = _identity(raw, title, meta["views"])
+    meta["identity"] = _identity(raw, title, meta["views"], meta.get("floor_clues"))
+  meta["outline"] = _outline(index, content_kind, meta.get("identity"), deadline)
   if meta["text_source"] == "OCR":
     meta["scan_reading"]= {k: raw.stats[k] for k in ("ocr_checked", "ocr_repaired", "ocr_split", "ocr_unchecked", "ocr_repairs", "ocr_split_at") if k in raw.stats}
   return PageAnalysis(content_kind=content_kind, text_chars=int(raw.stats.get("text_chars", 0)), vector_ops=int(raw.stats.get("path_objects", 0)),
@@ -334,10 +336,34 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
   out.meta["frame"] = frame.to_json()
   return out
 
-def _identity(raw, title: dict, views: list) -> dict | None:
+def _identity(raw, title: dict, views: list, clues: dict | None = None) -> dict | None:
   try:
-    from app.modules.drawings_boq.takeoff.extract import sheet_identity
-    return sheet_identity.identify(raw.words, raw.cropbox, title, views)
+    from app.modules.drawings_boq.takeoff.extract import pageroles, sheet_identity
+    from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
+    identity = sheet_identity.identify(raw.words, raw.cropbox, title, views)
+    role = pageroles.page_role(raw.words, sheet_kind(raw.words), drawn=len(raw.kinds))
+    facts = {**(clues or {}), "drawn": len(raw.kinds), "words": len(raw.words), "pdf_type": (raw.stats.get("pdf_type") or {}).get("type")}
+    sheet_identity.complete(identity, raw.words, role, views, facts, bool(title.get("composite")))
+    if identity.get("floor") and not title.get("level_hint") and not title.get("composite"):
+      title["level_hint"] = identity["floor"]
+    return identity
+  except Exception:
+    return None
+
+def _outline(index, content_kind: str, identity: dict | None, deadline: float) -> dict | None:
+  try:
+    i = identity or {}
+    if content_kind == "RASTER" or i.get("role") in ("COVER", "DIVIDER") or i.get("read_as") not in (None, "PLAN_ITEMS"):
+      return None
+    from app.modules.drawings_boq.takeoff.prep import outline
+    return outline.samples(index, deadline)
+  except Exception:
+    return None
+
+def _floor_clues(lines, hint, pairs) -> dict | None:
+  try:
+    from app.modules.drawings_boq.takeoff.prep import floor_clues
+    return floor_clues.read(lines, hint, pairs)
   except Exception:
     return None
 

@@ -32,7 +32,11 @@ from app.modules.drawings_boq.takeoff.prep import sheet_marks
 from app.modules.drawings_boq.takeoff.prep import scale_bar
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
-from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, analyze_page
+from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION, AGREE_TOL as ANALYSIS_AGREE_TOL, analyze_page
+from app.core.config import settings
+from app.modules.drawings_boq.takeoff.prep import project_facts as PF, outline_witness as OW
+from app.modules.drawings_boq.takeoff.extract import scale_outline as SO
+from app.modules.drawings_boq.takeoff.extract.scalegate import auto_scale_gate
 from app.modules.drawings_boq.takeoff.prep.codec import encode_index
 from app.modules.drawings_boq.takeoff.sheet_reason import failure_text
 from app.shared.storage import download_to_path
@@ -58,7 +62,7 @@ def compact_scale(full: dict) -> dict:
     "declared": declared.get("primary"), "multi_scale": bool(declared.get("multi_scale")), "not_to_scale": bool(declared.get("not_to_scale")),
     "clusters": measured.get("clusters") or [], "dimensions_read": measured.get("pairs_found", 0),
     "dimension_mismatches": len(measured.get("mismatches") or []), "notes": full.get("notes") or [],
-    "paper": full.get("paper"), "units_hint": full.get("units_hint"),
+    "paper": full.get("paper"), "units_hint": full.get("units_hint"), "outline": (full.get("outline") or {}).get("verdict"),
   }
 
 def _download_bytes(storage_key: str) -> bytes:
@@ -140,6 +144,11 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["drawing_list"] = marks["list"]
   except Exception:
     result.meta["sheet_marks_reader"] = "FAILED"
+  try:
+    from app.modules.drawings_boq.takeoff.prep import title_ocr
+    title_ocr.apply(page, raw, result.meta)
+  except Exception:
+    result.meta["floor_ocr"] = {"error": "FAILED"}
   try:
     full = result.detected_scale
     if isinstance(full, dict):
@@ -224,6 +233,8 @@ class PrepService:
           doc.close()
         except Exception:
           pass
+    if prepared:
+      await self._outline_pass_safe(org, drawing.project_id)
     refreshed = await self.repo.sheets(org, drawing_id)
     remaining = sum(1 for s in refreshed if (wanted is None or s.id in wanted) and (s.prep_status != "READY" or self._stale(s)) and s.prep_status != "FAILED")
     return {"drawing_id": drawing_id, "prepared": prepared, "skipped": skipped, "failed": failed, "remaining": remaining,
@@ -245,6 +256,7 @@ class PrepService:
         pass
     if not ok:
       raise TraceException(sheet.prep_error or "This sheet could not be read.", status_code=422, code="SHEET_PREP_FAILED")
+    await self._outline_pass_safe(org, drawing.project_id)
     return await self._sheet(org, sheet_id)
 
   async def _mark_failed(self, org: UUID, sheet_id: UUID, message: str) -> None:
@@ -271,9 +283,22 @@ class PrepService:
       if keep in old_meta:
         meta[keep] = old_meta[keep]
     if (old_meta.get("identity") or {}).get("basis") == "PERSON":
+      person = dict(old_meta["identity"])
+      said = set(person.get("person_set") or [])
       if meta.get("identity") is not None:
         meta["identity_read"] = meta["identity"]
-      meta["identity"] = old_meta["identity"]
+        for key in ("role", "role_title", "plan_kind", "mixed", "floor", "floor_basis"):
+          if key in said or (key == "floor_basis" and "floor" in said):
+            continue
+          if key in meta["identity"]:
+            person[key] = meta["identity"][key]
+          else:
+            person.pop(key, None)
+            
+      from app.modules.drawings_boq.takeoff.extract import sheet_identity as _sid
+      meta["identity"] = _sid.refresh_person(person)
+      if "floor" in said and person.get("floor") and isinstance(meta.get("title"), dict) and not meta["title"].get("composite"):
+        meta["title"]["level_hint"] = person["floor"]
     kind_changed = False
     if old_meta.get("kind_source") != "USER" and locked.content_kind != result.content_kind:
       locked.content_kind, kind_changed = result.content_kind, True
@@ -544,6 +569,144 @@ class PrepService:
       out.append(row)
     return out
 
+  async def _project_sheets(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> list:
+    """[(drawing, sheet)] for every sheet of every PDF drawing of the project (the current revisions only, unless exclude_superseded is False), in the order the drawings were added."""
+    out: list = []
+    for d in await self.repo.project_pdf_drawings(org, project_id, current_only=exclude_superseded):
+      for s in await self.repo.sheets(org, d.id):
+        out.append((d, s))
+    return out
+
+  async def project_facts(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    """Every fact the drawing_* accessors give, gathered over all the PDFs of the project; each item that names pages also has sources: [{drawing_id, page_no}]."""
+    pairs = await self._project_sheets(org, project_id, exclude_superseded=exclude_superseded)
+    return PF.project_of([(d.id, s) for d, s in pairs])
+
+  async def project_storey_heights(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["storey_heights"]
+
+  async def project_slab_values(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> list:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["slab_values"]
+
+  async def project_spec_facts(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["spec_facts"]
+
+  async def project_beam_sections(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> list:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["beam_sections"]
+
+  async def project_tank_details(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> list:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["tank_details"]
+
+  async def project_footing_sections(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> list:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["footing_sections"]
+
+  async def project_units(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["units"]
+
+  async def project_schedule(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["schedule"]
+
+  async def project_electrical_legend(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    """The electrical legend printed on any sheet of any PDF of the project: {pages, rows, sources}."""
+    pairs = await self._project_sheets(org, project_id, exclude_superseded=exclude_superseded)
+    sheets, table = PF.stamp([(d.id, s) for d, s in pairs])
+    got = electrical_reader.gather_legend([{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend")} for s in sheets if s.prep_meta.get("electrical_legend")])
+    return PF.unstamp(got, table)
+
+  async def project_wall_vocab(self, org: UUID, project_id: UUID, imperial: bool | None, *, exclude_superseded: bool = True) -> list:
+    """The wall thicknesses (mm) the own floor sheets of all the project's PDFs snapped to at least twice."""
+    own = [s.id for _d, s in await self._project_sheets(org, project_id, exclude_superseded=exclude_superseded)
+      if not ((s.prep_meta or {}).get("title") or {}).get("composite")]
+    if not own:
+      return []
+    got = (await self.session.execute(select(TakeoffCandidate.facts).where(TakeoffCandidate.organization_id == org, TakeoffCandidate.sheet_id.in_(own),
+      TakeoffCandidate.category == "WALL", TakeoffCandidate.decision != "REJECTED"))).scalars().all()
+    rows = [((f or {}).get("thickness_used_mm"), (f or {}).get("thickness_standard_mm"), False) for f in got if (f or {}).get("thickness_used_mm")]
+    return unit_reader.wall_vocabulary(rows, imperial)
+
+  async def project_facts_view(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    pairs = await self._project_sheets(org, project_id, exclude_superseded=exclude_superseded)
+    drawings: dict = {}
+    for d, _s in pairs:
+      slot = drawings.setdefault(d.id, {"drawing_id": d.id, "name": d.original_filename, "sheets": 0, "current": bool(d.is_current_revision)})
+      slot["sheets"] += 1
+    facts = PF.project_of([(d.id, s) for d, s in pairs]) if pairs else {}
+    return {"project_id": project_id, "drawings": list(drawings.values()), "facts": {k: facts[k] for k in PF.FACT_NAMES if k in facts}}
+
+  async def fact_bundle(self, org: UUID, drawing, *, project: bool | None = None) -> dict:
+    """The facts the reader takes for one drawing (project_facts.bundle): its own, with what the other current PDFs of the project print added where the drawing prints nothing. With
+    TAKEOFF_PROJECT_FACTS off, or a project of one PDF, they are the drawing's own, as drawing_* gives them."""
+    use = settings.takeoff_project_facts if project is None else project
+    pairs = [(d.id, s) for d, s in await self._project_sheets(org, drawing.project_id)] if use and drawing.is_current_revision else []
+    if not any(d == drawing.id for d, _ in pairs):
+      pairs = [(drawing.id, s) for s in await self.repo.sheets(org, drawing.id)] + ([p for p in pairs if p[0] != drawing.id] if use and drawing.is_current_revision else [])
+    return PF.bundle(pairs, drawing.id)
+
+  async def _outline_pass_safe(self, org: UUID, project_id: UUID) -> None:
+    if not settings.takeoff_project_facts:
+      return
+    try:
+      await self.outline_pass(org, project_id)
+    except Exception:
+      log.exception("The outline scale check of project %s failed; the scales of its sheets are as they were read", project_id)
+      await self.session.rollback()
+
+  async def outline_pass(self, org: UUID, project_id: UUID) -> dict:
+    pairs = await self._project_sheets(org, project_id)
+    entries, held = [], {}
+    for d, s in pairs:
+      meta = s.prep_meta or {}
+      samples = (meta.get("outline") or {}).get("samples")
+      if s.prep_status != "READY" or not samples:
+        continue
+      
+      row = await self.prep.meta(org, s.id)
+      full = dict((row.analysis if row is not None else None) or {})
+      if not full:
+        continue
+      base = OW.original(full)
+      ok, _code, _msg = auto_scale_gate(base)
+      rec = base.get("recommended") or {}
+      unit = float(meta.get("user_unit") or 1.0)
+      mm = float(rec["ratio"]) * SO.PT_MM * unit if rec.get("ratio") else None
+      ident, title = meta.get("identity") or {}, meta.get("title") or {}
+      floor = ident.get("floor") or (None if title.get("composite") else title.get("level_hint"))
+      entries.append({"id": s.id, "page_no": s.page_no, "floor": floor, "trusted": bool(ok and mm), "mm_per_pt": mm, "samples": samples})
+      held[s.id] = (s, row, full, unit)
+      
+    if not entries:
+      return {}
+    pages = {e["id"]: e["page_no"] for e in entries}
+    verdicts = SO.propose(entries, list(drawing_facts.FLOOR_ORDER))
+    out: dict = {}
+    for sid, (s, row, full, unit) in held.items():
+      v = verdicts.get(sid)
+      refs = [{"sheet_id": str(r), "page_no": pages.get(r)} for r in (v or {}).get("refs") or []]
+      prop = None
+      
+      if v:
+        prop = {**v, "ratio": (v["mm_per_pt"] / (SO.PT_MM * unit)) if v.get("mm_per_pt") else None}
+      new_full = OW.rebuild(full, prop, refs, ANALYSIS_AGREE_TOL)
+      check = (new_full.get("outline") or {}).get("verdict")
+      locked = await self._sheet(org, sid, lock=True)
+      same_check = (locked.prep_meta or {}).get("outline_check") == check
+      if new_full == full and same_check:
+        out[sid] = v["status"] if v else None
+        continue
+      if row is not None and new_full != full:
+        row.analysis = new_full
+        locked.detected_scale = compact_scale(new_full)
+      meta = dict(locked.prep_meta or {})
+      if check is None:
+        meta.pop("outline_check", None)
+      else:
+        meta["outline_check"] = check
+      locked.prep_meta = meta
+      out[sid] = v["status"] if v else None
+    await self.session.flush()
+    await self.session.commit()
+    return out
+
   @staticmethod
   def _schedule_sheets(sheets: list) -> list:
     out = []
@@ -596,9 +759,8 @@ class PrepService:
     sheets = await self.repo.sheets(org, drawing_id)
     return unit_reader.drawing_imperial([{"page_no": s.page_no, "units": (s.prep_meta or {}).get("units"), "hint": (s.prep_meta or {}).get("units_hint")} for s in sheets])
 
-  async def sheet_units(self, org: UUID, sheet) -> dict:
-    """Whether this sheet is dimensioned in feet and inches, from its own labels, with the answer of the whole drawing when the sheet does not decide."""
-    drawing = await self.drawing_units(org, sheet.drawing_id)
+  async def sheet_units(self, org: UUID, sheet, drawing_units: dict | None = None) -> dict:
+    drawing = drawing_units if drawing_units is not None else await self.drawing_units(org, sheet.drawing_id)
     meta = sheet.prep_meta or {}
     return unit_reader.sheet_imperial(meta.get("units"), meta.get("units_hint"), drawing)
 

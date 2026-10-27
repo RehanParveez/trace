@@ -134,10 +134,33 @@ def schedule_marks(read: list) -> list:
     return [_check("SCHEDULE_MARKS_NOT_FOUND", WARN, None, f"The schedule lists {', '.join(missing)} but no plan shows {'it' if len(missing) == 1 else 'them'}: not drawn, not read, or a different mark on the plan.", [p for m in missing for p in listed[m]], marks=missing, listed=len(listed))]
   return [_check("SCHEDULE_MARKS_FOUND", PASS, None, f"All {len(listed)} marks of the opening schedule are found on a plan.", [p for v in listed.values() for p in v], listed=len(listed))]
 
+def _pages(v: dict) -> list:
+  return [r["page_no"] for r in v.get("refs") or [] if r.get("page_no")]
+
+def outline(read: list) -> list:
+  out: list = []
+  for sh in read:
+    v = sh.get("outline_check") or {}
+    status = v.get("status")
+    if not status:
+      continue
+    page, floor = sh["page_no"], _sheet_floor(sh)
+    refs = _pages(v)
+    near = ", ".join(str(p) for p in refs)
+    if status == "PROPOSED" and v.get("applied"):
+      out.append(_check("SCALE_FROM_OUTLINE", WARN, floor, f"Page {page} prints no scale that could be trusted. Its scale (about 1:{float(v['ratio']):.1f}) is the one that makes its outer walls the size of the outer walls of page {near}. Check one known length before measuring.", [page, *refs], ratio=v["ratio"], k=v.get("k")))
+    elif status == "AGREES" and v.get("same_floor") and refs:
+      out.append(_check("OUTLINE_AGREES", PASS, floor, f"The outer walls of page {page} are the size of the outer walls of page {near} at the scales they have.", [page, *refs], k=v.get("k")))
+    elif status == "DIFFERS" and v.get("same_floor"):
+      out.append(_check("OUTLINE_DIFFERS", INFO, floor, f"The outer walls of page {page} are not the shape of the outer walls of the other plan(s) of the same floor. It may be another building, a floor that steps back, or a plan of the services with its own walls. Its scale was not checked against them.", [page, *refs]))
+    elif status == "SCALE_DIFFERS" and v.get("rank") == 0:
+      out.append(_check("OUTLINE_SCALE_DIFFERS", WARN, floor, f"{v.get('note')} (page {page} against page {near}, the same floor). One of the two scales is wrong: check one known length on each.", [page, *refs], k=v.get("k")))
+  return out
+
 def run(read: list) -> dict:
   """read: [{"sheet_id", "page_no", "title", "stats", "candidates", "schedule"}] of the sheets that have been read. -> {"checks": [...], "warnings", "info", "passed"}"""
   from app.modules.drawings_boq.takeoff.extract import shape_checks as SC
-  checks = [*rooms_and_slab(read), *columns_up(read), *columns_and_footings(read), *schedule_marks(read), *SC.run(read)]
+  checks = [*rooms_and_slab(read), *columns_up(read), *columns_and_footings(read), *schedule_marks(read), *SC.run(read), *outline(read)]
   order = {WARN: 0, INFO: 1, PASS: 2}
   checks.sort(key=lambda c: (order[c["status"]], _rank(c["floor"]) if c["floor"] else 99, c["code"]))
   return {"checks": checks, "warnings": sum(1 for c in checks if c["status"] == WARN), "info": sum(1 for c in checks if c["status"] == INFO),

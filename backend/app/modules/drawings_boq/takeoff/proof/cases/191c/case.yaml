@@ -1,0 +1,11 @@
+name: 191c
+tier: A
+pdfs:
+- 191-C_DHA_BWP_STR_DRAWING_1.pdf
+- 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf
+sha256: {}
+workbook:
+  path: Quantities_191-C.xlsx
+  format: SUMMARY
+note: 'DHA Bahawalpur 10 marla, one building in two PDFs (structure 11 pages, architecture 49 pages). The workbook was not available when this folder was made: expected.yaml
+  is empty.'

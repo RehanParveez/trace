@@ -2,8 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, ApproveReadyBody, ApproveReadyResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, CrossChecks, ReadyToAccept, TypedMemory, KnownFact, FactsCheck, ReaderTrace, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt,
-} from "../types/takeoff.types";
+  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, ProjectFacts, CrossChecks, ReadyToAccept, TypedMemory, KnownFact, FactsCheck, ReaderTrace, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt, SheetIdentityOverride } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
 
@@ -23,7 +22,7 @@ export const takeoffApi = {
   async prepareSheet(sheetId: string): Promise<TakeoffSheet> {
     return (await apiClient.post<TakeoffSheet>(`${BASE}/takeoff/sheets/${sheetId}/prepare`)).data;
   },
-  async updateSheet(sheetId: string, body: { label?: string | null; scale_text?: string | null; content_kind?: string | null; level_id?: string | null; identity?: { discipline: string | null; sheet_type: string | null } | null }): Promise<TakeoffSheet> {
+  async updateSheet(sheetId: string, body: { label?: string | null; scale_text?: string | null; content_kind?: string | null; level_id?: string | null; identity?: SheetIdentityOverride | null }): Promise<TakeoffSheet> {
     return (await apiClient.patch<TakeoffSheet>(`${BASE}/takeoff/sheets/${sheetId}`, body)).data;
   },
   async analysis(sheetId: string): Promise<SheetAnalysis> {
@@ -97,6 +96,9 @@ export const takeoffApi = {
   },
   async reconcileColumns(drawingId: string, query: ReconcileQuery = {}): Promise<ColumnReconcile> {
     return (await apiClient.get<ColumnReconcile>(`${BASE}/drawings/${drawingId}/takeoff/reconcile`, { params: query })).data;
+  },
+  async projectFacts(projectId: string, excludeSuperseded = true): Promise<ProjectFacts> {
+    return (await apiClient.get<ProjectFacts>(`${BASE}/projects/${projectId}/takeoff/project-facts`, { params: { exclude_superseded: excludeSuperseded } })).data;
   },
   async floorSources(drawingId: string): Promise<FloorSources> {
     return (await apiClient.get<FloorSources>(`${BASE}/drawings/${drawingId}/takeoff/floor-sources`)).data;

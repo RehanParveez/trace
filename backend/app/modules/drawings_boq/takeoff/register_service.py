@@ -108,7 +108,7 @@ class RegisterService:
     for c in cands:
       cands_by_sheet.setdefault(c.sheet_id, []).append(c)
     floor_view = FS.build([{"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": extractions[s.id].stats,
-      "candidates": cands_by_sheet.get(s.id, [])} for s in sheets if s.id in extractions])
+      "candidates": cands_by_sheet.get(s.id, []), "identity": (s.prep_meta or {}).get("identity"), "clues": (s.prep_meta or {}).get("floor_clues")} for s in sheets if s.id in extractions])
     undecided = [{"floor": f["floor"], "pages": [x["page_no"] for x in f["sources"] if x["open"] + x["accepted"] > 0]}
       for f in floor_view["floors"] if f["state"] == "DOUBLE"]
     

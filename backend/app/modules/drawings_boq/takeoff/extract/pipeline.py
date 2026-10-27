@@ -1664,13 +1664,20 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
   sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
-  footing_sections: list | None = None, spec_facts: dict | None = None) -> Extraction:
+  footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
     "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source in ("OCR", "OUTLINED") else 1.0)}
   
   res = Extraction()
+  role_info = role_info or {}
+  if read_as:
+    res.stats["read_as"] = read_as
+  if read_as == "SKIP":
+    res.notes.append(C.note("SHEET_NOT_READ_ROLE", role=role_info.get("role"), title=role_info.get("title")))
+    return res
+  partial = read_as in ("DETAILS_ONLY", "SYMBOLS_ONLY")
   if text_source == "OCR":
     res.notes.append(C.note("SCAN_TEXT_READ"))
   elif text_source == "OUTLINED":
@@ -1695,8 +1702,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     res.stats["column_details"] = {t: {"sizes_in": r.get("sizes_in") or []} for t, r in (col_details or {}).items()}
     plans = _view_plans(views, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")})
   else:
-    found = _tag_candidates(index, words, shapes, mm_per_pt, hint, sheet_heights, ctx, openings, col_details=col_details)
-    only = [v for v in views if v["structural"] and not v.get("foundation")]
+    found = [] if partial else _tag_candidates(index, words, shapes, mm_per_pt, hint, sheet_heights, ctx, openings, col_details=col_details)
+    only = [] if partial else [v for v in views if v["structural"] and not v.get("foundation")]
     if len(only) == 1:
       in_view = [w for w in words if VW.contains(only[0], w.cx, w.cy)]
       strips = _apply_strips(index, only[0], in_view, found, mm_per_pt, ctx, imp_here, beam_sections, only[0].get("level_hint") or level_hint)
@@ -1710,10 +1717,10 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     
   res.stats["schedule_marks"] = len(openings)
   kind = sheet_kind(sheet_words if sheet_words is not None else words)
-  slab_plan = SPL.read(words, lines, hint) if not composite_structural else None
+  slab_plan = SPL.read(words, lines, hint) if not composite_structural and not partial else None
   if slab_plan and kind["kind"] == "UNKNOWN":
     kind = {"kind": "STRUCTURAL", "title": "slab plan (read from its bar strings and panel sizes)"}
-  if not composite_structural and kind["kind"] == "STRUCTURAL":
+  if not composite_structural and not partial and kind["kind"] == "STRUCTURAL":
     one = _sheet_plan(words, lines, level_hint, kind.get("title"), None if scale_unverified else mm_per_pt)
     plans = [one] if one else []
   areas = {a["key"]: a for a in ((schedule or {}).get("areas") or []) if a.get("kind") == "FLOOR"}
@@ -1755,7 +1762,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   if kind["kind"] != "STRUCTURAL" and not composite_structural and level_hint and sheet_words is None:
     res.stats["column_shapes"] = CS.census(index.rings, mm_per_pt, imp_here, _snap_inch, level_hint)
   frames, runs = [], []
-  if kind["kind"] == "STRUCTURAL" or composite_structural:
+  if partial:
+    res.notes.append(C.note("SHEET_READ_" + str(read_as), role=role_info.get("role"), title=role_info.get("title")))
+  elif kind["kind"] == "STRUCTURAL" or composite_structural:
     res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"] or (views[0]["caption"] if views else None)))
   else:
     try:
@@ -2080,6 +2089,8 @@ def _run_extraction_upright(index, mm_per_pt: float, *, composite: bool = False,
   started = time.monotonic()
   budget_s = float(kw.get("budget_s", 25.0))
   regions, found = [], {}
+  if kw.get("read_as") == "SKIP":
+    return _read_sheet(index, mm_per_pt, **kw)
   if site_only:
     res = Extraction()
     res.stats["plan_regions"] = {"count": 0}
@@ -2087,7 +2098,7 @@ def _run_extraction_upright(index, mm_per_pt: float, *, composite: bool = False,
     res.notes.append(C.note("SHEET_SITE_ITEMS_ONLY"))
     return _with_site(res, index, mm_per_pt, kw)
   
-  if sum(1 for c in VW.captions(index.words) if c["kind"] == "STRUCT_PLAN") < 2 and sheet_kind(index.words)["kind"] != "STRUCTURAL":
+  if kw.get("read_as") in (None, "PLAN_ITEMS") and sum(1 for c in VW.captions(index.words) if c["kind"] == "STRUCT_PLAN") < 2 and sheet_kind(index.words)["kind"] != "STRUCTURAL":
     try:
       regions, found = PR.find(index, mm_per_pt, started + 0.3 * budget_s, composite)
     except W.TimeLimit:
@@ -2117,7 +2128,7 @@ def _with_electrical(res: Extraction, electrical: dict | None, kw: dict) -> None
 def _identity_gate(res: Extraction, identity: dict | None) -> None:
   if not identity:
     return
-  res.stats["sheet_identity"] = {k: identity.get(k) for k in ("discipline", "sheet_type", "floor", "basis", "confidence")}
+  res.stats["sheet_identity"] = {k: identity.get(k) for k in ("discipline", "sheet_type", "floor", "basis", "confidence", "role", "plan_kind", "floor_basis", "read_as")}
   if not SID.gates_services(identity):
     return
   left: dict = {}
@@ -2143,12 +2154,18 @@ def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) 
   pdf = kw.pop("pdf_type", None)
   identity = kw.pop("identity", None)
   electrical = kw.pop("electrical", None)
+  if identity:
+    kw["read_as"] = SID.read_as(identity)
+    kw["role_info"] = {"role": identity.get("role"), "title": identity.get("role_title")}
   token = OS.FROM_PICTURE.set(bool((pdf or {}).get("lines_from_picture")))
   try:
     res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)
   finally:
     OS.FROM_PICTURE.reset(token)
   _identity_gate(res, identity)
+  _identity_gate(res, identity)
+  if (identity or {}).get("mixed"):
+    res.notes.append(C.note("MIXED_SHEET", discipline=identity.get("discipline")))
   _pdf_type_notes(res, pdf)
   _with_electrical(res, electrical, kw)
   _scan_reading_notes(res, scan)

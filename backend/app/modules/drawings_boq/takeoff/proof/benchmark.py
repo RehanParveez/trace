@@ -10,11 +10,99 @@ from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.proof import benchmark_sheet as BS
 from app.modules.drawings_boq.takeoff.proof import known_facts as K
 from app.modules.drawings_boq.takeoff.proof import readsummary as RS
+from app.modules.drawings_boq.takeoff.extract import base_plan as BP
+from app.modules.drawings_boq.takeoff.prep.project_facts import summary as PF_SUMMARY
 
 DEFAULT_MM_PER_PT = 25.4 / 72.0 * 100.0           
 PAGE_BUDGET_S = 30.0
 
-def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False) -> tuple:
+def analyse_pdf(pdf: bytes, pages: list | None = None) -> tuple:
+  """(document, {page: analysis}, problems): every page of the PDF read the way the application reads a sheet when it prepares it. read_pdf takes this as prepared, so a set of PDFs can be
+  analysed first and read together."""
+  from app.modules.drawings_boq.takeoff import prep_service as PSV
+  from app.modules.drawings_boq.takeoff.prep.analyze import analyze_page
+  from app.modules.drawings_boq.takeoff.prep.extract import extract_page, open_document
+  doc = open_document(pdf)
+  total = len(doc)
+  want = [p for p in (pages or range(1, total + 1)) if 1 <= p <= total]
+  analysed, problems = {}, []
+  for no in want:
+    try:
+      raw = extract_page(doc, no - 1, budget_s=20)
+      analysed[no] = analyze_page(raw, 1.0, budget_s=20)
+      PSV._read_details(doc, no, raw, analysed[no])
+    except Exception as exc:
+      problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
+  return doc, analysed, problems
+
+def _outline_scales(prepared: list) -> list:
+  """The outline scale check (extract/scale_outline.propose) over the analysed PDFs of a set, as the application does it after the sheets are prepared. -> for each PDF {page: {"mm_per_pt",
+  "ratio", "refs": [(pdf index, page)]}} of the sheets that printed no scale and take one from the outline of the other plans."""
+  from app.modules.drawings_boq.takeoff.extract import scale_outline as SO
+  from app.modules.drawings_boq.takeoff.extract.scalegate import auto_scale_gate
+  from app.modules.drawings_boq.takeoff.prep import facts as DF, outline_witness as OW
+  from app.modules.drawings_boq.takeoff.prep.analyze import AGREE_TOL
+  entries, held = [], {}
+  for i, (_doc, analysed, _problems) in enumerate(prepared):
+    for no, a in analysed.items():
+      samples = ((a.meta or {}).get("outline") or {}).get("samples")
+      if not samples:
+        continue
+      full = a.detected_scale or {}
+      ok, _code, _msg = auto_scale_gate(full)
+      rec = full.get("recommended") or {}
+      mm = float(rec["ratio"]) * SO.PT_MM if rec.get("ratio") else None
+      ident, title = a.meta.get("identity") or {}, a.meta.get("title") or {}
+      floor = ident.get("floor") or (None if title.get("composite") else title.get("level_hint"))
+      entries.append({"id": (i, no), "page_no": no, "floor": floor, "trusted": bool(ok and mm), "mm_per_pt": mm, "samples": samples})
+      held[(i, no)] = full
+  verdicts = SO.propose(entries, list(DF.FLOOR_ORDER))
+  out = [dict() for _ in prepared]
+  for key, full in held.items():
+    v = verdicts.get(key)
+    if not v or v["status"] != SO.PROPOSED:
+      continue
+    prop = {**v, "ratio": v["mm_per_pt"] / SO.PT_MM}
+    new = OW.rebuild(full, prop, [{"sheet_id": str(r), "page_no": r[1]} for r in v["refs"]], AGREE_TOL)
+    if new.get("agreement") == "OUTLINE_ONLY":
+      ratio = float(new["recommended"]["ratio"])
+      out[key[0]][key[1]] = {"ratio": ratio, "mm_per_pt": ratio * 25.4 / 72.0, "refs": list(v["refs"])}
+  return out
+
+def _merge_project(sheets: list, others: list) -> dict:
+  """The facts of this PDF with what the other PDFs of the set print added (prep/project_facts.bundle). others: [(pdf name, sheets)]."""
+  from app.modules.drawings_boq.takeoff.prep import project_facts as PF
+  return PF.bundle([("this", s) for s in sheets] + [(name, s) for name, group in others for s in group], "this")
+
+def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None) -> list:
+  """The PDFs of a set read together, the way the application reads the PDFs of a project: [(name, pdf bytes)] -> [(name, rows, problems)]. Every PDF is analysed first. A sheet that printed
+  no scale takes one from the outline of the other plans (any PDF), what one PDF does not print is taken from the others, and a floor drawn on plans of several PDFs keeps its base plan
+  and sets the others aside. A set of one PDF is read as read_pdf reads it, except for the scale from the outline and the choice of the base plan. project=False (or TAKEOFF_PROJECT_FACTS off)
+  reads each PDF alone."""
+  from types import SimpleNamespace
+  from app.core.config import settings
+  use = settings.takeoff_project_facts if project is None else project
+  prepared = [analyse_pdf(data, (pages or {}).get(name)) for name, data in items]
+  scales = _outline_scales(prepared) if use else [dict() for _ in prepared]
+  groups = [[SimpleNamespace(page_no=no, label=None, prep_meta=a.meta) for no, a in sorted(analysed.items())] for _doc, analysed, _p in prepared]
+  out, every = [], []
+  for i, (name, data) in enumerate(items):
+    others = [(items[j][0], groups[j]) for j in range(len(items)) if j != i] if use and len(items) > 1 else []
+    rows, problems = read_pdf(data, (pages or {}).get(name), budget_s=budget_s, scale_unverified=scale_unverified, prepared=prepared[i], project={"others": others, "scales": scales[i]})
+    for r in rows:
+      r["drawing"], r["drawing_order"] = name, i
+    out.append((name, rows, problems))
+    every.extend(rows)
+  if use:
+    choose_floor_sources(every)
+  for doc, _a, _p in prepared:
+    try:
+      doc.close()
+    except Exception:
+      pass
+  return out
+
+def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, prepared: tuple | None = None, project: dict | None = None) -> tuple:
   """Every page of the set read the way the application reads a drawing: the pictures on each sheet are read when it is analysed, and what the whole drawing prints (floor
   heights from the sections, slab values, specification, beam sections, tank and footing details, units, schedules) is gathered from all the sheets and given to each one. Only
   the database is left out. The wall thicknesses the drawing's own sheets agree on are gathered as the sheets are read, plain sheets first, as a first run does."""
@@ -28,17 +116,8 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
   from app.modules.drawings_boq.takeoff.extract.structure import column_details
   from app.modules.drawings_boq.takeoff.prep.extract import extract_page, open_document
   
-  doc = open_document(pdf)
-  total = len(doc)
-  want = [p for p in (pages or range(1, total + 1)) if 1 <= p <= total]
-  analysed, problems = {}, []
-  for no in want:
-    try:
-      raw = extract_page(doc, no - 1, budget_s=20)
-      analysed[no] = analyze_page(raw, 1.0, budget_s=20)
-      PSV._read_details(doc, no, raw, analysed[no])
-    except Exception as exc:                                                       
-      problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
+  doc, analysed, problems = prepared if prepared is not None else analyse_pdf(pdf, pages)
+  problems = list(problems)
   sheets = [SimpleNamespace(page_no=no, label=None, prep_meta=a.meta) for no, a in sorted(analysed.items())]
   schedule = DS.gather(PSV.PrepService._schedule_sheets(sheets))
   floor_keys = PSV.PrepService._floor_keys(sheets)
@@ -49,6 +128,12 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     "tank_details": TD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("tank_details")} for s in sheets if s.prep_meta.get("tank_details")]),
     "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])]}
   units = UR.drawing_imperial([{"page_no": s.page_no, "units": s.prep_meta.get("units"), "hint": s.prep_meta.get("units_hint")} for s in sheets])
+  merged = _merge_project(sheets, project["others"]) if project and project.get("others") else None
+  if merged is not None:
+    known = merged["facts"]
+    schedule, units = known["schedule"], known["units"]
+    drawing = {"floor_heights": known["storey_heights"], "slab_values": known["slab_values"], "spec_facts": known["spec_facts"], "beam_sections": known["beam_sections"],
+      "tank_details": known["tank_details"], "footing_sections": known["footing_sections"]}
   legend = EL.gather_legend([{"page_no": no, "legend": EL.read_legend_rows(doc[no - 1], a.index.words, identity=a.meta.get("identity"))} for no, a in analysed.items() if EL.is_legend_sheet(a.index.words, a.meta.get("identity"))])
   
   read, wall_rows = [], []
@@ -60,11 +145,12 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     level_hint = None if title.get("composite") else title.get("level_hint")
     
     measured = ((a.detected_scale or {}).get("measured") or {}).get("clusters") or []
-    mm_per_pt = float(measured[0]["ratio"]) * 25.4 / 72.0 if measured else DEFAULT_MM_PER_PT
+    from_outline = ((project or {}).get("scales") or {}).get(no) if not measured else None
+    mm_per_pt = float(measured[0]["ratio"]) * 25.4 / 72.0 if measured else (from_outline["mm_per_pt"] if from_outline else DEFAULT_MM_PER_PT)
     try:
       res = P.run_extraction(a.index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=1.0, scale_unverified=scale_unverified, content_kind=a.content_kind,
         budget_s=budget_s, schedule=schedule, views_meta=meta.get("views"), frame=meta.get("frame"), col_details=column_details(meta), floor_heights=drawing["floor_heights"],
-        level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), pdf_type=meta.get("pdf_type"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
+        level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), pdf_type=meta.get("pdf_type"), identity=meta.get("identity"), scan_reading=meta.get("scan_reading"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
         with_finishes=True, beam_sections=drawing["beam_sections"], tank_details=drawing["tank_details"], imperial=units["imperial"], wall_vocab=UR.wall_vocabulary(wall_rows, units["imperial"]),
         footing_sections=drawing["footing_sections"], spec_facts=drawing["spec_facts"],
         electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and no not in legend["pages"] and EL.is_plan_sheet(a.index.words, meta.get("identity")) else None)
@@ -126,29 +212,37 @@ def qs_volume(f: dict, read: list) -> dict:
 def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
   chosen = {str(k).upper(): int(v) for k, v in (chosen or {}).items()}
   by_floor: dict = {}
-  composite: dict = {}
-  
+  info: dict = {}
+
   for sh in read:
     title = sh.get("title") or {}
-    composite[sh["page_no"]] = bool(title.get("composite"))
+    meta = sh.get("meta") or {}
+    key = (sh.get("drawing_order") or 0, sh["page_no"])
+    info[key] = {"page_no": sh["page_no"], "drawing_order": key[0], "from_plans": bool(title.get("composite")), "plan_kind": (meta.get("identity") or {}).get("plan_kind"),
+      "dims": int((meta.get("floor_clues") or {}).get("dim_pairs") or 0), "advice": ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice"),
+      "read_as": (sh.get("stats") or {}).get("read_as")}
+    
     sheet_floor = None if title.get("composite") else title.get("level_hint")
     floors = set(FO.floors_read(sh.get("stats"), title)[0]) | ({sheet_floor} if sheet_floor else set())
     for fl in floors:
-      rows = [c for c in sh["candidates"] if FS.in_floor(c, fl, sheet_floor)]
+      rows = [c for c in sh["candidates"] if FS.in_floor(c, fl, sheet_floor) and not FS.is_set_aside(c)]
       if rows:
-        by_floor.setdefault(fl, {})[sh["page_no"]] = rows
-        
+        by_floor.setdefault(fl, {})[key] = rows
+
   used = {}
   for floor, pages in by_floor.items():
-    if len(pages) < 2:
+    pool = [k for k in pages if BP.eligible(info[k])]
+    if len(pool) < 2:
       continue
-    own = [p for p in pages if not composite[p]]
-    keep = chosen[floor] if chosen.get(floor) in pages else min(own or pages)
-    used[floor] = keep
-    for page, rows in pages.items():
+    keep = next((k for k in pool if k[1] == chosen.get(floor)), None) or min(pool, key=lambda k: BP.key(info[k]))
+    used[floor] = keep[1]
+    for page in pool:
       if page != keep:
-        for c in rows:
-          c.facts = {**(c.facts or {}), FS.SET_ASIDE: {"by": FS.SET_ASIDE_BY, "page_no": keep}}
+        services = BP.keeps_services(info[page], info[keep], [info[k] for k in pool])
+        for c in pages[page]:
+          if services and BP.is_services(c):
+            continue
+          c.facts = {**(c.facts or {}), FS.SET_ASIDE: {"by": FS.SET_ASIDE_BY, "page_no": keep[1]}}
   return used
 
 def load_facts(path: str) -> tuple:

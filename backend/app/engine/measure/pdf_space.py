@@ -294,6 +294,7 @@ def _stage_pieces(setup, z0: float, z1: float, area: float, slices: list) -> dic
     net = area * (hi - lo) - _slice_in(slices, lo, hi)
     if net > 0:
       out[band.stage] = out.get(band.stage, 0.0) + net
+  return out
 
 def split_space(ctx, ledger: list, solids: list = ()) -> SpaceResult:
   takeoff = getattr(ctx, "takeoff", None)

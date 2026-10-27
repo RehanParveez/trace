@@ -37,6 +37,7 @@ from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.prep import project_facts as PF
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
 from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
@@ -330,15 +331,12 @@ class ExtractService:
     drawing = await self.core._pdf_drawing(org, sheet.drawing_id)
     CO.hold(await CCV.in_force(self.session, org))
     in_force = decided.effective(drawing.ingestion_meta)
-    schedule = await self.prep.drawing_schedule(org, sheet.drawing_id)
-    floor_heights = await self.prep.drawing_storey_heights(org, sheet.drawing_id)
-    slab_values = await self.prep.drawing_slab_values(org, sheet.drawing_id)
-    beam_sections = await self.prep.drawing_beam_sections(org, sheet.drawing_id)
-    tank_details = await self.prep.drawing_tank_details(org, sheet.drawing_id)
-    footing_sections = await self.prep.drawing_footing_sections(org, sheet.drawing_id)
-    spec_facts = await self.prep.drawing_spec_facts(org, sheet.drawing_id)
+    bundle = await self.prep.fact_bundle(org, drawing)
+    known = bundle["facts"]
+    schedule, floor_heights, slab_values, beam_sections = known["schedule"], known["storey_heights"], known["slab_values"], known["beam_sections"]
+    tank_details, footing_sections, spec_facts = known["tank_details"], known["footing_sections"], known["spec_facts"]
     electrical = await self.prep.sheet_electrical(org, sheet, index.words)
-    units = await self.prep.sheet_units(org, sheet)
+    units = await self.prep.sheet_units(org, sheet, known["units"])
     wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
     title = (sheet.prep_meta or {}).get("title") or {}
     level_hint = None if title.get("composite") else title.get("level_hint")
@@ -361,6 +359,8 @@ class ExtractService:
       raise NoPlanRegions()                                   
     found = result.candidates
     result.stats["sheet_units"] = {"imperial": units["imperial"], "basis": units.get("basis"), "differs": bool(units.get("differs"))}
+    if bundle.get("drawings", 1) > 1:
+      result.stats["project_facts"] = PF.summary(bundle)
     if units.get("differs"):
       result.notes.append(C.note("SHEET_UNITS_DIFFER", imperial=bool(units["imperial"])))
     result.stats["floors_read_elsewhere"] = await self._repeated_floors(org, sheet, title, result)

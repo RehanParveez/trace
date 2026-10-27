@@ -81,6 +81,7 @@ class Settings(BaseSettings):
   engine_layer_org_ids: str = ""
   engine_derived_org_ids: str = ""
   engine_pdf_derived_auto: bool = True
+  takeoff_project_facts: bool = True
   engine_default_convention: str = "FRAME_MONOLITHIC_A"
 
   calc_max_concurrent_runs_per_org: int = 3

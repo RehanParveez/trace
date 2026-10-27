@@ -1,0 +1,9 @@
+# case.yaml: what a case is. The PDFs and workbooks are not committed; put them in the folder named by TRACE_CASES_DIR.
+# sha256 is checked before a case is scored; a name with no hash is not checked.
+name: 350c
+tier: B
+pdfs:
+- 350-c_structure.pdf
+sha256:
+  350-c_structure.pdf: 399463b87d100e8a66ab284c36d344552281219deb2bd1b5ca19f915923b5d4c
+note: 350-C structure.

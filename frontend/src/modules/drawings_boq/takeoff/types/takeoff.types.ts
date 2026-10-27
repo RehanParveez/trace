@@ -51,6 +51,27 @@ export interface SheetIdentity {
   basis?: "TITLE_BLOCK" | "TITLE" | "TEXT" | "PERSON" | "NONE";
   confidence?: number;
   evidence?: SheetIdentityEvidence[];
+  role?: SheetRole | null;
+  role_title?: string | null;
+  plan_kind?: PlanKind | null;
+  floor_basis?: FloorBasis | null;
+  read_as?: ReadAs | null;
+  mixed?: boolean;
+  person_set?: string[];
+}
+
+export type SheetRole = "PLAN" | "STRUCTURAL" | "COMPOSITE" | "SECTION" | "ELEVATION" | "DETAIL" | "SCHEDULE" | "SITE" | "LEGEND" | "SPEC" | "COVER" | "DIVIDER" | "UNKNOWN";
+export type PlanKind = "WORKING" | "FURNITURE" | "OVERLAY" | "FRAMING" | "FOUNDATION";
+export type FloorBasis = "TITLE" | "VIEW" | "ORDER" | "PERSON";
+export type ReadAs = "PLAN_ITEMS" | "SYMBOLS_ONLY" | "DETAILS_ONLY" | "SKIP";
+
+export interface SheetIdentityOverride {
+  discipline?: string | null;
+  sheet_type?: string | null;
+  role?: SheetRole | null;
+  plan_kind?: PlanKind | null;
+  floor?: string | null;
+  read_as?: ReadAs | null;
 }
 
 export interface CalibrationWarning { code?: string; message?: string; [key: string]: unknown }
@@ -885,6 +906,13 @@ export interface FloorSource {
   combined?: number;
   added?: number;
   added_wall_m?: number;
+  floor_basis?: FloorBasis | null;
+  floor_guess?: "SHARES_ROOM_SIZES" | "PORCH_OR_LAWN_LABELS" | "MUMTY_OR_STAIR_TOWER_LABELS" | "PAGE_ORDER" | null;
+  drawing_id?: string | null;
+  drawing_name?: string | null;
+  plan_kind?: "WORKING" | "FURNITURE" | "OVERLAY" | "FRAMING" | "FOUNDATION" | null;
+  dims?: number;
+  base?: boolean;
 }
 
 export interface FloorEntry {
@@ -893,11 +921,35 @@ export interface FloorEntry {
   choosable: boolean;
   chosen_sheet_id: string | null;
   suggested_sheet_id: string | null;
+  base_sheet_id?: string | null;
+  base_reason?: string | null;
   conflict: boolean;
   sources: FloorSource[];
+  notes?: Array<{ code: string; pages?: number[]; [key: string]: unknown }>;
 }
 
-export interface FloorSources { drawing_id: string; floors: FloorEntry[]; to_decide: number }
+export interface FloorOrdered { sheet_id: string; page_no: number | null; floor: string; reason: "SHARES_ROOM_SIZES" | "PORCH_OR_LAWN_LABELS" | "MUMTY_OR_STAIR_TOWER_LABELS" | "PAGE_ORDER"; floor_basis: "ORDER"; pages: number[] }
+
+export interface FloorSources { drawing_id: string; floors: FloorEntry[]; to_decide: number; ordered?: FloorOrdered[]; project_wide?: boolean; drawings?: number }
+
+export interface FactSource { drawing_id: string; page_no: number }
+
+export interface ProjectFactsDrawing { drawing_id: string; name: string; sheets: number; current: boolean }
+
+export interface ProjectFacts {
+  project_id: string;
+  drawings: ProjectFactsDrawing[];
+  facts: {
+    storey_heights?: Record<string, { clear_mm?: number; sources?: FactSource[] }>;
+    slab_values?: Array<{ mm: number; sources?: FactSource[] }>;
+    spec_facts?: Record<string, unknown>;
+    beam_sections?: Array<{ mark?: string; kind?: string; depth_mm?: number; sources?: FactSource[] }>;
+    tank_details?: unknown[];
+    footing_sections?: unknown[];
+    schedule?: Record<string, unknown>;
+    units?: { imperial?: boolean | null; sources?: FactSource[] };
+  };
+}
 
 export interface TypedValue { kind: string; field: string; value_mm: number; times: number; at: string }
 

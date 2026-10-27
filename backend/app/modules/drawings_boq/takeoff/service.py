@@ -265,7 +265,6 @@ class TakeoffService:
     return sheet
 
   async def _set_identity(self, org: UUID, sheet: TakeoffSheet, user_id: UUID, wanted) -> None:
-    """A person's word on the discipline and the kind of sheet. It is kept when the sheet is prepared again, and the reading is kept beside it so it can be brought back."""
     meta = dict(sheet.prep_meta or {})
     before = meta.get("identity")
     
@@ -278,10 +277,50 @@ class TakeoffService:
       else:
         meta.pop("identity", None)
     else:
-      if before is not None and before.get("basis") != "PERSON":
+      from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
+      given = wanted.model_fields_set
+      machine = before is None or before.get("basis") != "PERSON"
+      if before is not None and machine:
         meta["identity_read"] = before
-      meta["identity"] = {**(before or {}), "discipline": wanted.discipline, "sheet_type": wanted.sheet_type, "basis": "PERSON", "confidence": 1.0,
-        "evidence": [{"text": "set by a person"}]}
+      new = {**(before or {}), "basis": "PERSON", "confidence": 1.0, "evidence": [{"text": "set by a person"}]}
+      if machine:
+        new.pop("read_as", None)
+      said = set(new.get("person_set") or [])
+      
+      for key in ("discipline", "sheet_type"):
+        if key in given or not given:
+          new[key] = getattr(wanted, key)
+          said.add(key)
+      for key in ("role", "plan_kind", "read_as"):
+        if key in given:
+          if getattr(wanted, key) is None:
+            said.discard(key)
+            new.pop(key, None)
+          else:
+            new[key] = getattr(wanted, key)
+            said.add(key)
+      if "floor" in given:
+        if wanted.floor is None:
+          said.discard("floor")
+          read = meta.get("identity_read") or {}
+          new["floor"], new["floor_basis"] = read.get("floor"), read.get("floor_basis")
+        else:
+          said.add("floor")
+          new["floor"], new["floor_basis"] = wanted.floor, "PERSON"
+          title = dict(meta.get("title") or {})
+          if not title.get("composite"):
+            title["level_hint"] = wanted.floor
+            meta["title"] = title
+            try:
+              from app.modules.drawings_boq.takeoff.levels import ensure_level
+              sheet.level_id = await ensure_level(self.session, org, sheet.drawing_id, wanted.floor)
+            except Exception:
+              pass
+            
+      if given & {"discipline", "sheet_type"} and "plan_kind" not in given:
+        new["plan_kind"] = SID.plan_kind(new, {"role": new.get("role"), "title": new.get("role_title")}, meta.get("floor_clues"))
+      new["person_set"] = sorted(said)
+      meta["identity"] = SID.refresh_person(new)
     sheet.prep_meta = meta
     try:
       drawing = await self._pdf_drawing(org, sheet.drawing_id)

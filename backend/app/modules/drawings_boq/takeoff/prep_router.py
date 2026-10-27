@@ -12,6 +12,7 @@ from app.modules.drawings_boq.takeoff.schemas import SheetResponse
 from app.modules.drawings_boq.takeoff.prep_schemas import (PrepareRequest, AnalysisResponse, AutoCalibrateRequest, AutoCalibrateResponse, PickRequest,
   PickResponse, PrepareResponse, FactsResponse, ShapeDetailResponse, ShapeListResponse, SnapRequest, SnapResponse, TagDetailResponse,
   TagListResponse, TextResponse, VectorResponse)
+from app.modules.drawings_boq.takeoff.extract.project_schemas import ProjectFactsResponse
 from typing import Literal
 
 router = APIRouter()
@@ -36,6 +37,12 @@ async def prepare_drawing(
   current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
 ):
   return await PrepService(session).prepare_drawing(_org(current_user), drawing_id, current_user.id, payload or PrepareRequest())
+
+@router.get("/projects/{project_id}/takeoff/project-facts", response_model=ProjectFactsResponse)
+async def get_project_facts(
+  project_id: UUID, exclude_superseded: bool = Query(True), current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await PrepService(session).project_facts_view(_org(current_user), project_id, exclude_superseded=exclude_superseded)
 
 @router.get("/drawings/{drawing_id}/takeoff/facts", response_model=FactsResponse)
 async def get_drawing_facts(

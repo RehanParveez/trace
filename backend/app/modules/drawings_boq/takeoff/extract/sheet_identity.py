@@ -5,6 +5,14 @@ from app.modules.drawings_boq.takeoff.extract import identity_words as IW
 from app.modules.drawings_boq.takeoff.prep import title_block as TB
 
 HEADLINES = 6
+READ_AS = ("PLAN_ITEMS", "SYMBOLS_ONLY", "DETAILS_ONLY", "SKIP")
+PLAN_KINDS = ("WORKING", "FURNITURE", "OVERLAY", "FRAMING", "FOUNDATION")
+FLOOR_BASES = ("TITLE", "VIEW", "ORDER", "PERSON")
+MIXED_DIMENSIONS = 10          
+MIXED_ROOM_SIZES = 4
+COVER_MAX_DRAWN = 200            
+COVER_MAX_WORDS = 150
+TITLE_OCR_BUDGET_S = 4.0
 TOP_LINES = 3
 MIN_LINE_CHARS = 4
 REST_WEIGHT = 0.6
@@ -110,10 +118,132 @@ def identify(words: list, cropbox: tuple, title: dict | None = None, views: list
     "evidence": [h for h in hits if h["discipline"] == discipline][:4] + ([{"sheet_type": sheet_type, "text": type_line[:60]}] if sheet_type and type_line else []),
     "views": found_views}
 
-def gates_services(identity: dict | None) -> bool:
+_FRAMING = re.compile(r"\b(?:BEAMS?|SLABS?|FRAMING)\b|\bROOF\s+PLAN\b", re.I)
+_FOUNDATION = re.compile(r"\bFOUNDATIONS?\b|\bFOOTINGS?\b", re.I)
+_FURNITURE = re.compile(r"\bFURNITURE\b", re.I)
+
+def _services_plan(i: dict, clues: dict | None = None) -> bool:
+  """A plan of the services: a service discipline and a plan title; or, when no title says what the sheet is, a confidently named service discipline and a drawing with sized rooms."""
+  if i.get("discipline") not in IW.SERVICES:
+    return False
+  if i.get("sheet_type") in IW.PLAN_TYPES:
+    return True
+  need = GATE_TEXT if i.get("basis") == "TEXT" else GATE_TITLE
+  return i.get("sheet_type") is None and i.get("basis") != "PERSON" and float(i.get("confidence") or 0.0) >= need and int((clues or {}).get("room_sizes") or 0) >= MIXED_ROOM_SIZES
+
+def plan_kind(identity: dict, role: dict | None = None, clues: dict | None = None) -> str | None:
+  role = role or {}
+  clues = clues or {}
+  kind = role.get("role")
+  title = " ".join(str(x) for x in (identity.get("title"), role.get("title")) if x)
+  dense = int(clues.get("dim_pairs") or 0) >= MIXED_DIMENSIONS and int(clues.get("room_sizes") or 0) >= MIXED_ROOM_SIZES
+  identity.pop("mixed", None)
+  
+  if _services_plan(identity, clues):
+    if dense:
+      identity["mixed"] = True
+      return "WORKING"
+    return "OVERLAY"
+  if kind in ("SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "LEGEND", "SPEC", "COVER", "DIVIDER", "SITE"):
+    return None
+  if _FOUNDATION.search(title):
+    return "FOUNDATION"
+  if (identity.get("discipline") == "STRUCTURAL" or kind == "STRUCTURAL") and _FRAMING.search(title):
+    return "FRAMING"
+  if role.get("purpose") == "FURNITURE" or _FURNITURE.search(title):
+    return "FURNITURE"
+  return "WORKING" if (role.get("purpose") == "WORKING" or dense) else None
+
+def read_as(identity: dict | None) -> str:
   i = identity or {}
   if i.get("basis") == "PERSON":
-    return bool(i.get("discipline") in IW.SERVICES and i.get("sheet_type") in IW.PLAN_TYPES)
+    if i.get("read_as") in READ_AS:
+      return i["read_as"]
+    if i.get("sheet_type") in ("SECTION", "DETAIL", "SCHEDULE"):
+      return "DETAILS_ONLY"
+    if i.get("sheet_type") in ("LEGEND", "SPEC", "ELEVATION"):
+      return "SKIP"
+    return "SYMBOLS_ONLY" if gates_services(i) or is_electrical_plan(i) else "PLAN_ITEMS"
+
+  if i.get("mixed"):
+    return "PLAN_ITEMS"
+  role = i.get("role")
+  if (gates_services(i) or is_electrical_plan(i) or i.get("plan_kind") == "OVERLAY") and role not in ("COVER", "DIVIDER"):
+    return "SYMBOLS_ONLY"
+  if role in ("DETAIL", "SCHEDULE", "SECTION"):
+    return "DETAILS_ONLY"
+  if role == "SITE":
+    return "SYMBOLS_ONLY"
+  if role in PR.NOT_A_PLAN:
+    return "SKIP"
+  return "PLAN_ITEMS"
+
+def refresh_person(identity: dict) -> dict:
+  if "read_as" not in (identity.get("person_set") or []):
+    identity["read_as"] = read_as({**identity, "read_as": None})
+  return identity
+
+def _floor_texts(identity: dict, words: list) -> list:
+  headlines = [t for t, _s in _lines(words)[:HEADLINES]]
+  return [x for x in ([identity.get("title")] + headlines + [identity.get("role_title")]) if x]
+
+def _view_floor(views: list | None) -> str | None:
+  plans = [v for v in views or [] if v.get("plan")]
+  floors = [v.get("level_hint") or read_view(v.get("caption")).get("floor") for v in plans]
+  return floors[0] if plans and all(floors) and len(set(floors)) == 1 else None
+
+def floor_of(identity: dict, words: list, views: list | None = None, ocr_lines: list | None = None) -> tuple:
+  key = _level_of(_floor_texts(identity, words))
+  if key:
+    return key, "TITLE"
+  key = _view_floor(views if views is not None else identity.get("views"))
+  if key:
+    return key, "VIEW"
+  if ocr_lines:
+    key = _level_of([t for t, _s in sorted(ocr_lines, key=lambda x: -x[1])])
+    if key:
+      return key, "TITLE"
+  return None, None
+
+def wants_title_ocr(identity: dict | None) -> bool:
+  i = identity or {}
+  return bool(i) and i.get("basis") != "PERSON" and not i.get("floor") and not i.get("title") and i.get("role") in ("PLAN", "UNKNOWN", None) and i.get("read_as") in (None, "PLAN_ITEMS")
+
+def _holds_floor_plans(views: list | None) -> bool:
+  return any(v.get("plan") and (v.get("level_hint") or v.get("structural")) for v in views or [])
+
+def complete(identity: dict | None, words: list, role: dict | None, views: list | None = None, clues: dict | None = None, composite: bool = False) -> dict | None:
+  if not identity:
+    return identity
+  role = dict(role or {})
+  if role.get("role") in ("SECTION", "ELEVATION", "DETAIL", "SCHEDULE", "SITE", "UNKNOWN", None) and _holds_floor_plans(views):
+    role = {"role": "COMPOSITE", "title": role.get("title"), "also": [r for r in [role.get("role"), *(role.get("also") or [])] if r], "basis": "VIEWS", "purpose": role.get("purpose")}
+
+  c = clues or {}
+  if role.get("role") in ("PLAN", "STRUCTURAL", "UNKNOWN", None) and c.get("pdf_type") == "VECTOR_TEXT" and 0 <= int(c.get("drawn", -1)) < COVER_MAX_DRAWN and int(c.get("words") or 0) < COVER_MAX_WORDS       and not int(c.get("room_sizes") or 0) and not int(c.get("dim_pairs") or 0):
+    role = {"role": "DIVIDER" if role.get("title") or identity.get("title") else "COVER", "title": role.get("title") or identity.get("title"), "also": [], "basis": "SPARSE_DRAWING"}
+  identity["role"] = role.get("role")
+  identity["role_title"] = (role.get("title") or "")[:80] or None
+  identity["plan_kind"] = plan_kind(identity, role, clues)
+  had = identity.get("floor")
+  floor, basis = floor_of(identity, words, views if views is not None else identity.get("views"))
+
+  if had:
+    basis = "TITLE"
+  elif floor:
+    identity["floor"] = floor
+  identity["floor_basis"] = basis if identity.get("floor") else None
+  if composite or role.get("role") == "COMPOSITE":
+    identity["floor"], identity["floor_basis"] = None, None
+  identity["read_as"] = read_as(identity)
+  return identity
+
+def gates_services(identity: dict | None) -> bool:
+  i = identity or {}
+  if i.get("mixed"):
+    return False
+  if i.get("basis") == "PERSON":
+    return bool(i.get("read_as") != "PLAN_ITEMS" and i.get("discipline") in IW.SERVICES and i.get("sheet_type") in IW.PLAN_TYPES)
   if i.get("discipline") not in IW.SERVICES or i.get("sheet_type") not in IW.PLAN_TYPES or _SITE.search(str(i.get("title") or "")):
     return False
   return float(i.get("confidence") or 0.0) >= (GATE_TEXT if i.get("basis") == "TEXT" else GATE_TITLE)
