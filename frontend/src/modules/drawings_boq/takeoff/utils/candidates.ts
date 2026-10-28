@@ -19,6 +19,7 @@ export const CATEGORY_TEXT: Record<CandidateCategory, { one: string; many: strin
 };
 
 import { isNeckColumn, isTankWall, pickGivesDepth } from "./choices";
+import { roomTypeText } from "../types/finishRules.types";
 
 export type HeightField =
   | "wall_height_mm"
@@ -197,6 +198,10 @@ export type FoundationItem =
   | "FLOOR_WET"
   | "WALL_TILE"
   | "WET_WATERPROOF"
+  | "FLOOR_PORCH"
+  | "FLOOR_TERRACE"
+  | "FLOOR_PASSAGE"
+  | "FLOOR_LAWN"
   | "FLOOR_CS_BED"
   | "FLOOR_BRICK_TILES"
   | "FLOOR_MUD_PLASTER"
@@ -264,13 +269,17 @@ const FOUNDATION_ITEMS: FoundationItem[] = [
   "FLOOR_WET",
   "WALL_TILE",
   "WET_WATERPROOF",
+  "FLOOR_PORCH",
+  "FLOOR_TERRACE",
+  "FLOOR_PASSAGE",
+  "FLOOR_LAWN",
   "FLOOR_CS_BED",
   "FLOOR_BRICK_TILES",
   "FLOOR_MUD_PLASTER",
   "FLOOR_COMPACTED_MUD",
   "ROOF_PCC",
   "ROOF_BALLAST",
-"ROOF_SCREED",
+  "ROOF_SCREED",
   "ROOF_MEMBRANE",
   "ROOF_POLYTHENE",
   "BOUNDARY_RETURNS",
@@ -340,6 +349,14 @@ function siteFields(c: Pick<TakeoffCandidate, "category" | "missing" | "facts">)
 }
 
 const BRICK_STEP_FIELDS: HeightField[] = ["brick_step_1_height_mm", "brick_step_2_height_mm", "brick_step_3_height_mm", "brick_step_4_height_mm"];
+
+function ruleSource(f: Record<string, unknown>): string | null {
+  const rules = Array.isArray(f.height_rules) ? (f.height_rules as Array<Record<string, unknown>>) : [];
+  const r = rules[0];
+  if (!r) return null;
+  const whose = r.origin === "CODE_DEFAULT_ASSUMED" ? "rule book default" : r.origin === "QS_WORKBOOK" ? "QS workbook rule" : r.origin === "PROJECT" ? "project rule" : "company rule";
+  return `${whose}${r.value === "CEILING" ? ", to the ceiling" : ""}`;
+}
 
 export function foundationItem(c: Pick<TakeoffCandidate, "category" | "facts">): FoundationItem | null {
   if (c.category !== "WALL") return null;
@@ -481,6 +498,10 @@ export const ITEM_TEXT: Record<FoundationItem, string> = {
   FLOOR_WET: "Floor tile in baths and toilets",
   WALL_TILE: "Wall tile in kitchens",
   WET_WATERPROOF: "Waterproofing in baths and toilets",
+  FLOOR_PORCH: "Floor tile of the porch",
+  FLOOR_TERRACE: "Floor tile of the terraces",
+  FLOOR_PASSAGE: "Paving of the passages",
+  FLOOR_LAWN: "Paving of the lawns and yards",
   FLOOR_CS_BED: "Cement-sand bed under the floor finish",
   FLOOR_BRICK_TILES: "Brick tiles (specification)",
   FLOOR_MUD_PLASTER: "Mud plaster (specification)",
@@ -702,6 +723,18 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     return [area !== null ? `${area.toFixed(2)} m² of roof` : null, basis, f.roof_found_by === "TOP_OF_SHEET" ? "top floor assumed to be the roof" : null, f.layers_defined === true ? `layers from ${typeof f.layers_heading === "string" ? f.layers_heading.toLowerCase() : "the specification"}` : Array.isArray(f.layer_sets) ? "roof layers printed under several headings, none chosen" : "layers not read", roofFallText(f), roofEdgeText(f)].filter(Boolean).join(" · ");
   }
 
+  if (item === "FLOOR_PORCH" || item === "FLOOR_TERRACE" || item === "FLOOR_PASSAGE" || item === "FLOOR_LAWN") {
+    const area = num(f.area_m2);
+    const rooms = num(f.room_count);
+    const rule = (f.item_rule ?? null) as Record<string, unknown> | null;
+    return [
+      area !== null ? `${area.toFixed(2)} m² of floor` : null,
+      rooms !== null ? `total of ${rooms} room${rooms === 1 ? "" : "s"}` : null,
+      typeof f.room_type === "string" ? roomTypeText(f.room_type) : null,
+      rule ? `item set by the rule ${String(rule.key)}${rule.rule_id ? ` (${String(rule.rule_id)})` : ""}` : null,
+    ].filter(Boolean).join(" · ");
+  }
+
   if (item === "FLOOR_FINISH" || item === "CEILING_PAINT" || item === "FLOOR_WET") {
     const area = num(f.area_m2);
     const rooms = num(f.room_count);
@@ -732,7 +765,7 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     return [
       item === "DADO" ? (area !== null ? `${area.toFixed(2)} m²` : null) : len !== null ? `${len.toFixed(2)} m` : null,
       item === "DADO" && len !== null ? `${len.toFixed(2)} m round the baths` : per !== null ? `${per.toFixed(2)} m round the rooms` : null,
-      item === "DADO" && high !== null ? `${Math.round(high)} mm high` : null,
+      item === "DADO" && high !== null ? `${Math.round(high)} mm high${ruleSource(f) ? ` (${ruleSource(f)})` : ""}` : null,
       doors !== null && off !== null ? `${doors} door${doors === 1 ? "" : "s"} taken off (${off.toFixed(2)} m)` : null,
       item === "DADO" && winCount > 0 && winArea !== null ? `${winCount} window${winCount === 1 ? "" : "s"} taken off (${winArea.toFixed(2)} m²)` : null,
       item === "DADO" && sills ? `${sills} window sill${sills === 1 ? "" : "s"} assumed` : null,
@@ -763,7 +796,7 @@ function foundationLineBase(c: TakeoffCandidate, item: FoundationItem): string {
     const unsized = num(f.windows_unsized);
     return [
       len !== null ? `${len.toFixed(2)} m of wall` : null,
-      num(f.tile_height_mm) !== null ? `${Math.round(num(f.tile_height_mm) as number)} mm high (QS)` : null,
+      num(f.tile_height_mm) !== null ? `${Math.round(num(f.tile_height_mm) as number)} mm high${Array.isArray(f.tile_band_mm) ? " (a band)" : ""} (${ruleSource(f) ?? "QS"})` : null,
       rooms !== null ? `${rooms} kitchen${rooms === 1 ? "" : "s"}` : null,
       doors ? `${doors} door${doors === 1 ? "" : "s"} taken off` : null,
       winCount > 0 ? `${winCount} window${winCount === 1 ? "" : "s"} taken off inside the tile height` : null,
@@ -1079,7 +1112,7 @@ function factLineBase(c: TakeoffCandidate): string {
   if (c.category === "ROOM") {
     const label = num(f.label_area_m2);
     const p = num(f.perimeter_m);
-    return [p !== null ? `perimeter ${p.toFixed(2)} m` : null, label !== null ? `label says ${label.toFixed(2)} m²` : null].filter(Boolean).join(" · ");
+    return [typeof f.room_type === "string" ? roomTypeText(f.room_type) : null, p !== null ? `perimeter ${p.toFixed(2)} m` : null, label !== null ? `label says ${label.toFixed(2)} m²` : null].filter(Boolean).join(" · ");
     }
 
   if (c.category === "BEAM") {

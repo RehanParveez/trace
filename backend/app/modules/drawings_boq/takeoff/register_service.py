@@ -12,6 +12,7 @@ from app.modules.drawings_boq.takeoff.sheet_reason import sheet_reason
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.measurement_params import MeasurementParametersService
+from app.modules.drawings_boq.datums import DatumsService
 from sqlalchemy import delete, select
 from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
@@ -158,8 +159,8 @@ class RegisterService:
     """The floors of a drawing with the level of each, as the register places members in height, and the natural ground and footing level used for footings.
     {"floors": [rows for the screen], "datum": what z = 0 is, "footing": {...}}."""
     drawing = await self._drawing(org, drawing_id)
-    prepared = await PrepService(self.session).drawing_floor_heights(org, drawing_id)
-    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"])
+    prepared = await PrepService(self.session).drawing_floor_heights(org, drawing_id, await DatumsService(self.session).stored_for_run(org, drawing.project_id))
+    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"], prepared["levels"], prepared["decisions"])
     
     footing = await self._footing_level(org, drawing, floors, prepared["levels_mm"])
     return {"drawing_id": drawing_id, "datum": Z.datum_of(floors), "floors": Z.floors_report(floors, prepared["floor_keys"], prepared["heights"]),
@@ -167,8 +168,9 @@ class RegisterService:
         "bottom_below_ngl_mm": footing.bottom_below_ngl_mm, "usable": footing.usable}}
 
   async def _datums(self, org: UUID, drawing) -> tuple:
-    prepared = await PrepService(self.session).drawing_floor_heights(org, drawing.id)
-    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"])
+    prepared = await PrepService(self.session).drawing_floor_heights(org, drawing.id, await DatumsService(self.session).stored_for_run(org, drawing.project_id))
+    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"], prepared["levels"], prepared["decisions"])
+    return floors
     return floors, await self._footing_level(org, drawing, floors, prepared["levels_mm"])
 
   async def _footing_level(self, org: UUID, drawing, floors: dict, levels_mm: list) -> Z.FootingLevel:

@@ -259,7 +259,8 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
 def _datums(acc: Accepted) -> dict:
   out: dict = {}
   for drawing_id, prepared in acc.meta.items():
-    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"])
+    floors = Z.build_floors(prepared["heights"], prepared["floor_keys"], prepared["levels"], prepared["decisions"])
+    out[drawing_id]
     out[drawing_id] = (floors, Z.FootingLevel(Z.ngl_from_marks(floors, prepared["levels_mm"]), None, Z.MARK_NGL, Z.datum_of(floors)))
   return out
 

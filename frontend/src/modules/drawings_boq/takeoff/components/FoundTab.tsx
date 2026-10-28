@@ -31,10 +31,13 @@ import { useChooseMarks, useMarkEntities } from "../hooks/useMarkEntities";
 import { markToast } from "../utils/markEntities";
 import type { MarkChoiceBody } from "../types/markEntities.types";
 import { FoundPanel } from "./FoundPanel";
+import { ElectricalCountsPanel } from "./ElectricalCountsPanel";
+import { RoomTypesPanel } from "./RoomTypesPanel";
 
 interface Props {
   sheet: TakeoffSheet;
   drawingId: string | undefined;
+  projectId?: string;
   canEdit: boolean;
   scaleReady: boolean;
   focusId?: string | null;
@@ -180,6 +183,8 @@ export function FoundTab(p: Props) {
       onDismiss={() => setRepeat([])}
     />
     <ReadyToAcceptPanel data={ready.data} pageNo={sheet.page_no} canEdit={p.canEdit} busy={accept.isPending || decide.isPending} onAccept={onAccept} />
+    <ElectricalCountsPanel candidates={list.data?.candidates ?? []} onShow={p.onShow} />
+    <RoomTypesPanel candidates={list.data?.candidates ?? []} projectId={p.projectId} canEdit={p.canEdit} />
     <FoundPanel
       sheet={sheet}
       data={list.data}

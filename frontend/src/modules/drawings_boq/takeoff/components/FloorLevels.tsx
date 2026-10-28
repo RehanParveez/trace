@@ -24,6 +24,11 @@ export function FloorLevels({ datums, loading, error, onRetry }: Props) {
       <p className="text-[11.5px] text-[var(--color-text-secondary)]">
         {datumText(datums?.datum)} {t("boq.takeoff.floors.help", "A figure printed on a building section is firm; one taken from level marks or a typical floor height is an assumption.")}
       </p>
+       {rows.some((r) => r.decisions.length > 0) ? (
+        <p className="text-[11.5px] text-[var(--color-warning)]" data-testid="floor-decisions-help">
+          {t("boq.takeoff.floors.decide", "Two sources give different levels for a floor. Give the right one as a reference level (FFL for the lowest floor, SLAB_1 and so on for the top of each floor) to settle it.")}
+        </p>
+      ) : null}
       <table className="w-full text-[11.5px]">
         <thead>
           <tr className="text-left text-[var(--color-text-muted)]">
@@ -42,6 +47,23 @@ export function FloorLevels({ datums, loading, error, onRetry }: Props) {
                   {r.placed ? <Badge tone={gradeTone(r.grade)}>{gradeLabel(r.grade)}</Badge> : null}
                   <span>{r.reason ?? `${r.source} · ${r.levelSource}`}</span>
                 </div>
+                {r.sources.length > 0 ? (
+                  <ul className="mt-0.5 text-[11px] text-[var(--color-text-muted)]" data-testid={`floor-sources-${r.key}`}>
+                    {r.sources.map((s) => <li key={s}>{s}</li>)}
+                  </ul>
+                ) : null}
+                {r.decisions.map((d) => (
+                  <p key={d} className="mt-0.5 text-[11px] text-[var(--color-warning)]" data-testid={`floor-decision-${r.key}`} data-open={r.open}>{d}</p>
+                ))}
+                {r.sources.length > 0 ? (
+                  <ul className="mt-0.5 text-[11px] text-[var(--color-text-muted)]" data-testid={`floor-sources-${r.key}`}>
+                    {r.sources.map((s) => <li key={s}>{s}</li>)}
+                  </ul>
+                ) : null}
+                {r.decisions.map((d) => (
+                  <p key={d} className="mt-0.5 text-[11px] text-[var(--color-warning)]" data-testid={`floor-decision-${r.key}`} data-open={r.open}>{d}</p>
+                ))}
+
               </td>
               <td className="py-1 pr-2 text-right font-mono">{r.level}</td>
               <td className="py-1 pr-2 text-right font-mono">{r.soffit}</td>

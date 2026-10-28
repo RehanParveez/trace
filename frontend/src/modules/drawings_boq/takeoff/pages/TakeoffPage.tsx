@@ -1054,6 +1054,7 @@ export function TakeoffPage() {
                 key={sheet.id}
                 sheet={sheet}
                 drawingId={drawingId}
+                projectId={projectId}
                 canEdit={canEdit}
                 scaleReady={Boolean(defaultCal)}
                 onGoScale={() => view.setTab("scale")}
@@ -1065,7 +1066,7 @@ export function TakeoffPage() {
                 onShowBox={(b) => { const padX = (b.x1 - b.x0) * 0.04, padY = (b.y1 - b.y0) * 0.04; viewerRef.current?.focusBox({ x0: b.x0 - padX, y0: b.y0 - padY, x1: b.x1 + padX, y1: b.y1 + padY }); }}
               />
             ) : null}
-            {tab === "found" && sheet ? <CompanyConventionsPanel canManage={canManageCompany} /> : null}
+            {tab === "found" && sheet ? <CompanyConventionsPanel canManage={canManageCompany} projectId={projectId} canOverride={canEditPermission} /> : null}
             {tab === "frame" ? (
               <FramePanel
                 frame={frame.data}

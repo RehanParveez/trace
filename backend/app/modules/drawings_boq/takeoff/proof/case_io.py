@@ -40,6 +40,18 @@ def load_case(folder: str) -> dict:
   out["facts"] = load_facts(os.path.join(folder, "facts.yaml"))
   return out
 
+def load_company_rules(case: dict) -> tuple:
+  name = case.get("company_rules")
+  if not name:
+    return [], [], None
+  
+  from app.engine.measure import rulebook as RB
+  path = os.path.join(case["folder"], str(name))
+  if not os.path.isfile(path):
+    return [], [f"{name} is not in the case folder."], str(name)
+  rows, problems = RB.load_rules(path)
+  return rows, problems, str(name)
+
 def load_expected(path: str) -> list:
   if not os.path.isfile(path):
     return []
@@ -66,7 +78,7 @@ def load_expected(path: str) -> list:
         raise ValueError(f"{path}, {key}: {name} must be a number or null.")
     tol = e.get("tolerance_pct")
     out.append({"key": key, "item": str(e.get("item") or ""), "unit": str(e.get("unit") or ""), "qs": None if qs is None else float(qs), "drawing": None if drawing is None else float(drawing),
-      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "floor": e.get("floor"),
+      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "floor": e.get("floor"),
       "match": [str(w).lower() for w in (e.get("match") or [])]})
   return out
 
@@ -174,7 +186,7 @@ def draft_expected(lines, block_floor: dict | None = None) -> tuple:
     entries.append(e)
   return entries, left
 
-FIELD_ORDER = ("key", "item", "unit", "qs", "drawing", "class", "tolerance_pct", "note", "family", "floor", "match")
+FIELD_ORDER = ("key", "item", "unit", "qs", "drawing", "class", "tolerance_pct", "note", "family", "families", "floor", "match")
 
 def dump_expected(entries: list, header: str = "") -> str:
   out = [("# " + h).rstrip() for h in header.splitlines()] if header else []

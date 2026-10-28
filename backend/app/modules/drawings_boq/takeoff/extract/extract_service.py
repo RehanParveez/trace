@@ -18,7 +18,9 @@ from pydantic import ValidationError
 from app.core.exceptions import TraceException
 from app.engine.measure import readings as QS
 from app.engine.measure import company as CO
+from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq import company_conventions as CCV
+from app.modules.drawings_boq import rule_book_service as RBS
 from app.modules.drawings_boq.takeoff.decisions import store as decided
 from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff import repository as repo_mod
@@ -332,6 +334,9 @@ class ExtractService:
     
     drawing = await self.core._pdf_drawing(org, sheet.drawing_id)
     CO.hold(await CCV.in_force(self.session, org))
+    book = await RBS.snapshot(self.session, org, sheet.project_id)
+    if book is not None:
+      RB.hold(book)
     in_force = decided.effective(drawing.ingestion_meta)
     bundle = await self.prep.fact_bundle(org, drawing)
     known = bundle["facts"]
@@ -372,6 +377,7 @@ class ExtractService:
     result.stats["drainage_elsewhere"] = await self._repeated_drainage(org, sheet, result)
     result.stats["decisions"] = in_force
     result.stats["company"] = CO.stamp()
+    result.stats["rule_book"] = RB.book_ref()
     codes = {c.work_item for c in found if c.work_item}
     catalog = await work_item_catalog(self.session, org, codes) if codes else {}
     KD.drop_unknown_codes(found, catalog)

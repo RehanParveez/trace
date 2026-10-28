@@ -23,6 +23,7 @@ from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.prep import census, facts as drawing_facts, schedules as drawing_schedules
 from app.modules.drawings_boq.takeoff.prep.storeys import storey_heights
+from app.modules.drawings_boq.takeoff.model import levels as LV
 from app.modules.drawings_boq.takeoff.levels import ensure_level, level_spec
 from app.modules.drawings_boq.takeoff.prep import details
 from app.modules.drawings_boq.takeoff.prep import beam_details
@@ -347,10 +348,10 @@ class PrepService:
     suggested = (out.get("suggest") or {}).get("wall_height")
     
     keys = [a["key"] for a in out["schedule"]["areas"] if a.get("kind") == "FLOOR"]
-    heights = drawing_facts.floor_heights(keys, out["ladder"], suggested["slab_mm"] if suggested else None)
     floor_keys = self._floor_keys(sheets)
     printed = storey_heights(floor_keys, out.get("storeys"))
-    heights = {**heights, **printed}
+    heights = LV.merged_heights(LV.candidates({"floor_keys": floor_keys, "schedule_floor_keys": keys, "ladder": out["ladder"], "storeys": out.get("storeys"),
+    "slab_mm": suggested["slab_mm"] if suggested else None}))
     out["suggest"]["wall_height_by_floor"] = heights
     structure = await self._structure(org, sheets)
     out["views"] = structure["views"]
@@ -387,22 +388,21 @@ class PrepService:
     read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
     return storey_heights(self._floor_keys(sheets), drawing_facts.gather(read).get("storeys"))
 
-  async def drawing_floor_heights(self, org: UUID, drawing_id: UUID) -> dict:
-    """What the drawing prints about the heights of its floors, for placing members in height: {"heights": {floor key: {clear_mm, floor_to_floor_mm, basis,
-    level_mm}}, "floor_keys": the floors the drawing shows, "levels_mm": the level marks printed on the elevations}. The same heights the Facts tab offers for
-    walls, section heights over level marks over the typical floor-to-floor height; level_mm is the printed level of the floor where there is one."""
-    sheets = await self.repo.sheets(org, drawing_id)
+  async def drawing_floor_heights(self, org: UUID, drawing_id: UUID, typed: dict | None = None) -> dict:
+    return self.floor_heights_from(await self.repo.sheets(org, drawing_id), typed)
+
+  @classmethod
+  def floor_heights_from(cls, sheets: list, typed: dict | None = None) -> dict:
+    """drawing_floor_heights for sheets already loaded (anything with page_no, label and prep_meta). No database."""
     read = [{"page_no": s.page_no, "label": s.label, "facts": (s.prep_meta or {}).get("facts")} for s in sheets if (s.prep_meta or {}).get("facts") is not None]
     gathered = drawing_facts.gather(read)
-    schedule = drawing_schedules.gather(self._schedule_sheets(sheets))
+    schedule = drawing_schedules.gather(cls._schedule_sheets(sheets))
     suggested = (gathered.get("suggest") or {}).get("wall_height")
-    keys = [a["key"] for a in schedule["areas"] if a.get("kind") == "FLOOR"]
-    heights = drawing_facts.floor_heights(keys, gathered["ladder"], suggested["slab_mm"] if suggested else None)
-    
-    floor_keys = self._floor_keys(sheets)
-    heights = {**heights, **storey_heights(floor_keys, gathered.get("storeys"))}
+    facts = {"floor_keys": cls._floor_keys(sheets), "schedule_floor_keys": [a["key"] for a in schedule["areas"] if a.get("kind") == "FLOOR"], "ladder": gathered.get("ladder"),
+      "storeys": gathered.get("storeys"), "slab_mm": suggested["slab_mm"] if suggested else None}
+    ladder = LV.build_all(facts, typed)
     levels = (gathered.get("ladder") or {}).get("levels_mm") or []
-    return {"heights": heights, "floor_keys": floor_keys, "levels_mm": [float(x) for x in levels]}
+    return {"heights": ladder.heights, "floor_keys": facts["floor_keys"], "levels_mm": [float(x) for x in levels], "levels": list(ladder.levels), "decisions": list(ladder.decisions), "facts": facts}
 
   async def drawing_slab_values(self, org: UUID, drawing_id: UUID) -> list:
     """The slab thicknesses printed for slabs in general anywhere on the drawing: [{mm, count, pages, scopes}], most often printed first."""
@@ -832,7 +832,14 @@ class PrepService:
     if not electrical_reader.is_plan_sheet(words, (sheet.prep_meta or {}).get("identity")):
       return None
     legend = await self.drawing_electrical_legend(org, sheet.drawing_id)
-    if not legend["rows"] or sheet.page_no in legend["pages"]:
+    if not legend["rows"]:
+      try:
+        drawing = await self.core._pdf_drawing(org, sheet.drawing_id)
+        got = await self.project_electrical_legend(org, drawing.project_id)
+        legend = {"pages": [], "rows": [{**r, "blocks": {}} for r in got["rows"]]}
+      except Exception:
+        logging.getLogger(__name__).exception("The project's electrical legend could not be read for sheet %s", sheet.id)
+    if not legend["rows"]:
       return None
     try:
       drawing = await self.core._pdf_drawing(org, sheet.drawing_id)

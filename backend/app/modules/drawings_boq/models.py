@@ -4441,14 +4441,121 @@ class CompanyConvention(Base, TimestampMixin):
 
   id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
   
-  organization_id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
   key: Mapped[str] = mapped_column(String(64), nullable=False)
   value: Mapped[object] = mapped_column(JSONB, nullable=False)
   unit: Mapped[str | None] = mapped_column(String(24), nullable=True)
   origin: Mapped[str] = mapped_column(String(24), nullable=False)
-  set_by_user_id: Mapped[UUID | None] = mapped_column(PGUUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL", name="fk_company_conventions_set_by"), nullable=True)
+  
+  set_by_user_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_company_conventions_set_by"),
+    nullable=True,
+  )
+  
   set_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
+  
   evidence: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+class RuleBook(Base):
+  """One version of a company's rule book. A change to the rules makes the next version (the old one stays, not active); a run holds the id and the version it was made with."""
+  __tablename__ = "rule_book"
+
+  __table_args__ = (
+    UniqueConstraint("organization_id", "name", "version", name="uq_rule_book_org_name_version"),
+    Index("ix_rule_book_org", "organization_id"),
+    Index("uq_rule_book_active", "organization_id", unique=True, postgresql_where=text("is_active")),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  organization_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("organizations.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  name: Mapped[str] = mapped_column(String(80), nullable=False)
+  version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+  is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+  created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
+
+class Rule(Base):
+  """One rule of a book version: a key, the scope it applies to ({} for everywhere), a value (a figure, a choice or a named formula), its class and its origin. A rule that changes is a new row in the new
+  book version that supersedes the old one; a rule that is deleted is a superseding row with a null value."""
+  __tablename__ = "rule"
+
+  __table_args__ = (
+    UniqueConstraint("book_id", "key", "scope", name="uq_rule_book_key_scope"),
+    CheckConstraint("cls IN ('PRINTED','STANDARD','JUDGEMENT')", name="ck_rule_cls"),
+    CheckConstraint("origin IN ('COMPANY','QS_WORKBOOK','PROJECT','CODE_DEFAULT_ASSUMED')", name="ck_rule_origin"),
+    Index("ix_rule_book", "book_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  book_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rule_book.id", ondelete="CASCADE"),
+    nullable=False,
+  )
+  
+  key: Mapped[str] = mapped_column(String(64), nullable=False)
+  scope: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  value: Mapped[object] = mapped_column(JSONB, nullable=True)
+  unit: Mapped[str | None] = mapped_column(String(24), nullable=True)
+  cls: Mapped[str] = mapped_column(String(12), nullable=False, default="JUDGEMENT")
+  origin: Mapped[str] = mapped_column(String(24), nullable=False)
+  note: Mapped[str | None] = mapped_column(Text, nullable=True)
+  version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+  
+  supersedes_id: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("rule.id", ondelete="SET NULL", name="fk_rule_supersedes"),
+    nullable=True,
+  )
+  
+  created_at: Mapped[datetime] = mapped_column(
+    DateTime(timezone=True),
+    nullable=False,
+    server_default=text("now()"),
+  )
+
+class ProjectRuleOverride(Base):
+  """A rule set for one project: it wins over the company's rule for that key and scope, and is read only on that project's runs."""
+  __tablename__ = "project_rule_override"
+
+  __table_args__ = (
+    UniqueConstraint("project_id", "key", "scope", name="uq_project_rule_override_key_scope"),
+    Index("ix_project_rule_override_project", "project_id"),
+  )
+
+  id: Mapped[UUID] = mapped_column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+  
+  project_id: Mapped[UUID] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("projects.id", ondelete="CASCADE"), 
+    nullable=False,
+  )
+  
+  key: Mapped[str] = mapped_column(String(64), nullable=False)
+  scope: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict, server_default=text("'{}'::jsonb"))
+  value: Mapped[object] = mapped_column(JSONB, nullable=False)
+  unit: Mapped[str | None] = mapped_column(String(24), nullable=True)
+  note: Mapped[str | None] = mapped_column(Text, nullable=True)
+  
+  set_by: Mapped[UUID | None] = mapped_column(
+    PGUUID(as_uuid=True),
+    ForeignKey("users.id", ondelete="SET NULL", name="fk_project_rule_override_set_by"),
+    nullable=True,
+  )
+  
+  set_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=text("now()"))
 
 class ProjectDatum(Base, TimestampMixin):
   __tablename__ = "project_datums"

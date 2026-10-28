@@ -3,6 +3,8 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 from app.engine.measure import proposed as QP
 from app.engine.measure import readings as QS
 from app.modules.drawings_boq.takeoff.prep import footing_sections as FSEC
+from app.modules.drawings_boq.takeoff.extract import room_types as RT
+from app.modules.drawings_boq.takeoff.extract import room_types as RT
 
 EXCAVATION_AREA = "EXCAVATION_AREA"
 TRENCH = "TRENCH"
@@ -208,13 +210,12 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
   return out
 
 def under_floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
-  """The termite treatment under the floor of the lowest storey: the total of its room areas."""
   total = 0.0
   used = 0
   
   for r in rooms:
     f = r.facts or {}
-    if r.category != "ROOM" or r.status == "INVALID" or any(n.get("code") == "ROOM_INSIDE_ROOM" for n in r.notes or []):
+    if r.category != "ROOM" or r.status == "INVALID" or any(n.get("code") == "ROOM_INSIDE_ROOM" for n in r.notes or []) or not RT.floored(r):
       continue
     a = float(f.get("area_m2") or 0.0)
     if a > 0.0:

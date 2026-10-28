@@ -3,12 +3,13 @@ import contextvars
 from contextlib import contextmanager
 from app.engine.measure import proposed
 from app.engine.measure import company as CO
+from app.engine.measure import rulebook as RB
 
-QS_NAME = "M. Junaid"
-ANSWERED_BEFORE = "2026-10-19"
-ANSWERED_ON = "2026-10-22"          
+QS_NAME = RB.QS_SEED.get("name", "")
+ANSWERED_BEFORE = RB.QS_SEED.get("answered_before", "")
+ANSWERED_ON = RB.QS_SEED.get("answered_on", "")
 NEW = ANSWERED_ON
-LATEST = "2026-10-26"
+LATEST = RB.QS_SEED.get("latest", "")
 SOURCE = "qs"
 
 APPLIED, CONFIRM, OPEN, PLOT = "APPLIED", "CONFIRM", "OPEN", "PLOT"
@@ -307,25 +308,28 @@ def deciding(values: dict | None):
   finally:
     _DECIDED.reset(token)
 
+def qs() -> dict:
+  return RB.qs()
+
 def param(name: str):
   decided = _DECIDED.get()
   if decided and name in decided:
     return decided[name]
-  return CO.pick(name, PARAM_VALUES.get(name))
+  return RB.pick(name, PARAM_VALUES.get(name))
 
 def convention(name: str):
-  return CO.pick(name, CONVENTIONS.get(name))
+  return RB.pick(name, CONVENTIONS.get(name))
 
 def choice(name: str):
   decided = _DECIDED.get()
   if decided and name in decided:
     return decided[name]
-  return CO.pick(name, CHOICES.get(name))
+  return RB.pick(name, CHOICES.get(name))
 
 def flag(name: str) -> bool:
   if name == "wall_height_floor_to_floor":
-    return choice("wall_height_basis") != "CLEAR"          
-  return bool(CO.pick(name, FLAGS.get(name)))
+    return choice("wall_height_basis") != "CLEAR"
+  return bool(RB.pick(name, FLAGS.get(name)))
 
 PER_DRAWING = ("wall_height_basis", "opening_rules_basis", "tie_band_single_count", "brick_net_of_lintels")
 NOT_READ = ("footing_below_ground_mm", "stair_waist_mm", "lintel_bearing_mm", "beam_formwork_mm_per_rft", "lintel_formwork_mm_per_rft", "brick_length_centre_line")
@@ -430,7 +434,7 @@ def figure(key: str, value) -> str:
   return f"{v:g} {unit}"
 
 def in_force(key: str):
-  return CO.pick(key, code_default(key))
+  return RB.pick(key, code_default(key))
 
 def company_differs(*keys: str) -> bool:
   """True when the company holds a figure for any of these that is not the software's own."""
@@ -451,7 +455,7 @@ def conventions_words(*keys: str) -> str:
 
 def whose(keys, as_qs: str, as_company: str) -> str:
   """The wording of a note: the QS's own when the figure is still the QS's, the company's when the company set it."""
-  return as_company if CO.origin_of(*keys) == CO.COMPANY else as_qs
+  return as_company if CO.origin_of(*keys) in (CO.COMPANY, CO.PROJECT) else as_qs
 
 def by_status() -> dict:
   out = {s: 0 for s in STATUSES}
@@ -461,7 +465,7 @@ def by_status() -> dict:
 
 def public() -> dict:
   """What the API shows: the answers, the site assumptions the QS set and the conventions used while reading."""
-  return {"qs": QS_NAME, "answered_on": ANSWERED_ON, "sections": [{"key": k, "title": v} for k, v in SECTIONS.items()], "answers": [dict(a) for a in READINGS],
+  return {"qs": qs()["name"], "answered_on": qs()["answered_on"], "sections": [{"key": k, "title": v} for k, v in SECTIONS.items()], "answers": [dict(a) for a in READINGS],
     "params": dict(PARAM_VALUES), "conventions": dict(CONVENTIONS), "choices": dict(CHOICES), "choice_options": {k: dict(v) for k, v in CHOICE_OPTIONS.items()}, "counts": by_status(), "proposed": proposed.public()}
 
 def note_text(*ids: str) -> str:

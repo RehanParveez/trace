@@ -1,4 +1,4 @@
-import type { FloorDatums, FloorLevel, FootingLevelState, MemberZ, ZDatum, ZGrade } from "../types/takeoff.types";
+import type { FloorDatums, FloorLevel, FootingLevelState, LevelDecision, LevelSource, MemberZ, ZDatum, ZGrade } from "../types/takeoff.types";
 
 const FLOOR_NAME: Record<string, string> = {
   BASEMENT: "Basement", GROUND: "Ground floor", FIRST: "First floor", SECOND: "Second floor", THIRD: "Third floor", FOURTH: "Fourth floor", ROOF: "Roof",
@@ -17,6 +17,7 @@ export function levelText(mm: number | null | undefined): string {
 
 const SOURCE: Record<string, string> = {
   SECTION: "storey height printed on a building section",
+  PLAN_NOTES: "storey height printed in the room notes of the plans",
   LEVEL_MARKS: "level marks on the elevations",
   TYPICAL: "typical floor-to-floor height",
   DATUM: "the floor level every height is measured from",
@@ -28,9 +29,28 @@ export function sourceText(source: string | null | undefined): string {
 
 const LEVEL_SOURCE: Record<string, string> = {
   PRINTED_MARK: "level printed on the drawing",
+  TYPED_LEVEL: "level you gave as a reference level",
   SUM_OF_STOREYS: "level of the floor below plus its storey height",
   AT_DATUM: "the datum itself",
 };
+
+const KIND_TEXT: Record<string, string> = { PERSON: "you", SECTION: "a building section", PLAN_NOTES: "the plan notes", LEVEL_MARKS: "the level marks", ASSUMED: "an assumption" };
+const FIELD_TEXT: Record<string, string> = { level_mm: "level", clear_mm: "clear height", floor_to_floor_mm: "floor to floor" };
+
+function metres(mm: number): string {
+  return `${(mm / 1000).toFixed(3)} m`;
+}
+
+export function sourceLine(s: LevelSource): string {
+  const value = s.field === "level_mm" ? levelText(s.value) : metres(s.value);
+  return `${FIELD_TEXT[s.field] ?? s.field} ${value} from ${KIND_TEXT[s.kind] ?? s.kind}${s.used ? " (used)" : ""}`;
+}
+
+export function decisionLine(d: LevelDecision): string {
+  const show = (v: number) => (d.id.startsWith("level:") ? levelText(v) : metres(v));
+  const options = d.options.map((o) => `${show(o.value)} (${o.sources.map((k) => KIND_TEXT[k] ?? k).join(", ")})`).join(" or ");
+  return `${d.question}: ${options}. ${d.chosen === null ? "The most trusted is used until you decide." : `You chose ${show(d.chosen)}.`}`;
+}
 
 const DATUM_TEXT: Record<ZDatum, string> = {
   DRAWING_LEVEL_ZERO: "Heights are the levels printed on the drawing, measured from its own zero mark (±0).",
@@ -66,12 +86,16 @@ export interface FloorRow {
   grade: ZGrade;
   reason: string | null;
   placed: boolean;
+  sources: string[];
+  decisions: string[];
+  open: boolean;
 }
 
 export function floorRows(datums: Pick<FloorDatums, "floors"> | undefined): FloorRow[] {
   return (datums?.floors ?? []).map((f: FloorLevel) => ({
     key: f.key, name: floorName(f.key), level: levelText(f.level_mm), soffit: levelText(f.soffit_mm), top: levelText(f.top_mm), source: sourceText(f.source),
     levelSource: f.level_source ? (LEVEL_SOURCE[f.level_source] ?? f.level_source) : "—", grade: f.grade, reason: f.reason, placed: f.level_mm !== null,
+    sources: (f.sources ?? []).map(sourceLine), decisions: (f.decisions ?? []).map(decisionLine), open: (f.decisions ?? []).some((d) => d.chosen === null),
   }));
 }
 

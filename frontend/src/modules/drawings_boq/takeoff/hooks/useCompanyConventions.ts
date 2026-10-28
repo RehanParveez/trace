@@ -1,11 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { companyConventionsApi } from "../api/companyConventions.api";
-import type { ConventionsUpdate } from "../types/companyConventions.types";
+import type { ConventionsUpdate, ProjectOverridesUpdate } from "../types/companyConventions.types";
 
-export const companyConventionKeys = { all: ["company-conventions"] as const };
+export const companyConventionKeys = { all: ["company-conventions"] as const, project: (projectId: string) => ["company-conventions", "project", projectId] as const };
 
-export function useCompanyConventions(enabled = true) {
-  return useQuery({ queryKey: companyConventionKeys.all, queryFn: () => companyConventionsApi.get(), enabled });
+export function useCompanyConventions(enabled = true, projectId?: string | null) {
+  return useQuery({ queryKey: projectId ? companyConventionKeys.project(projectId) : companyConventionKeys.all, queryFn: () => companyConventionsApi.get(projectId), enabled });
+}
+
+export function useSaveProjectConventions(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ProjectOverridesUpdate) => companyConventionsApi.saveProject(projectId as string, body),
+    onSuccess: (data) => { if (projectId) qc.setQueryData(companyConventionKeys.project(projectId), data); },
+  });
 }
 
 export function useSaveCompanyConventions() {

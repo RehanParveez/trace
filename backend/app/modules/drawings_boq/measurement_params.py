@@ -11,12 +11,19 @@ from app.modules.drawings_boq.takeoff.printed_service import printed_for_project
 from decimal import Decimal
 from app.modules.projects.repository import ProjectRepository
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.core.exceptions import TraceException
 from app.core.database import get_db
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
 from app.dependencies.permissions import require_permission
+
+def checked_override(key: str, raw):
+  if key.startswith("stage."):
+    from app.modules.drawings_boq.rule_book_service import checked_value
+    return checked_value(key, raw)
+  from app.modules.drawings_boq.company_conventions import checked
+  return checked(key, raw)
 
 def parameter_ranges() -> dict[str, tuple[float, float, float | None]]:
   out = {name: (low, high, default) for name, (default, low, high) in derived_module.PARAMS.items()}
@@ -150,11 +157,67 @@ async def put_measurement_parameters(
 
 @router.get("/company-conventions", response_model=CompanyConventionsResponse)
 async def get_company_conventions(
+  project_id: UUID | None = Query(default=None, description="Show the figures this project holds in place of the company's."),
   current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
   session: AsyncSession = Depends(get_db),
 ):
-  """Every convention the company can hold: the figure in force, where it comes from, and how many sheets were last read with another figure."""
-  return await CompanyConventionsService(session).view(current_user.active_membership.organization_id)
+  """Every convention the company can hold: the figure in force, its class and version in the company's rule book, where it comes from, and how many sheets were last read with another figure."""
+  return await CompanyConventionsService(session).view(current_user.active_membership.organization_id, project_id)
+
+class ProjectRuleOverridesUpdate(BaseModel):
+  values: dict[str, float | str | bool | None] = Field(default_factory=dict, description="Key to figure for this project. A null figure removes the project's figure, so the company's applies again.")
+  note: str | None = Field(default=None, max_length=500)
+
+@router.put("/projects/{project_id}/rule-overrides", response_model=CompanyConventionsResponse)
+async def put_project_rule_overrides(
+  project_id: UUID,
+  payload: ProjectRuleOverridesUpdate,
+  current_user: User = Depends(require_permission(PermissionKey.CALC_RUN)),
+  session: AsyncSession = Depends(get_db),
+):
+  """Set or clear the figures one project holds in place of the company's. They are read on this project's runs only."""
+  cleaned = {k: (None if v is None else checked_override(k, v)) for k, v in payload.values.items()}
+  return await CompanyConventionsService(session).update_project(current_user.active_membership.organization_id, current_user.id, project_id, cleaned, payload.note)
+
+class FinishRuleItem(BaseModel):
+  key: str = Field(description="A finish rule: finish.floor_item, finish.dado_height_mm, finish.kitchen_band, finish.ceiling_includes, finish.pcc_under or finish.room_type.")
+  scope: dict[str, str] = Field(default_factory=dict, description="room_type, level or room_name, as the rule allows.")
+  value: float | str | list[str] | dict[str, float] | None = Field(default=None, description="The value; null removes the project's rule.")
+
+class ProjectFinishRulesUpdate(BaseModel):
+  rules: list[FinishRuleItem] = Field(default_factory=list)
+  note: str | None = Field(default=None, max_length=500)
+
+class ProjectFinishRulesResponse(BaseModel):
+  rules: list[FinishRuleItem] = Field(default_factory=list)
+
+@router.get("/projects/{project_id}/finish-rules", response_model=ProjectFinishRulesResponse)
+async def get_project_finish_rules(
+  project_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+  from app.modules.drawings_boq import rule_book_service as RBS
+  if await ProjectRepository(session).get_by_id_and_org(project_id, current_user.active_membership.organization_id) is None:
+    raise TraceException("Project not found.", status_code=404, code="PROJECT_NOT_FOUND")
+  rows = [RBS.scoped_row(o) for o in await RBS.overrides_of(session, project_id) if o.key.startswith("finish.")]
+  return ProjectFinishRulesResponse(rules=[FinishRuleItem(**r) for r in rows])
+
+@router.put("/projects/{project_id}/finish-rules", response_model=ProjectFinishRulesResponse)
+async def put_project_finish_rules(
+  project_id: UUID,
+  payload: ProjectFinishRulesUpdate,
+  current_user: User = Depends(require_permission(PermissionKey.CALC_RUN)),
+  session: AsyncSession = Depends(get_db),
+):
+  from app.modules.drawings_boq import rule_book_service as RBS
+  if await ProjectRepository(session).get_by_id_and_org(project_id, current_user.active_membership.organization_id) is None:
+    raise TraceException("Project not found.", status_code=404, code="PROJECT_NOT_FOUND")
+  if any(not r.key.startswith("finish.") for r in payload.rules):
+    raise TraceException("Only finish rules are set here.", status_code=422, code="FINISH_RULE_REFUSED")
+  rows = await RBS.set_scoped(session, project_id, current_user.id, [r.model_dump() for r in payload.rules], payload.note)
+  await session.commit()
+  return ProjectFinishRulesResponse(rules=[FinishRuleItem(**r) for r in rows if r["key"].startswith("finish.")])
 
 @router.put("/company-conventions", response_model=CompanyConventionsResponse)
 async def put_company_conventions(

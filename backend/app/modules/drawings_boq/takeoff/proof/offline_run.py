@@ -196,7 +196,7 @@ def run_engine(inputs: tk.TakeoffInputs | None, profile: ResolvedRuleProfile, ru
     state["extra_ledger"] += res.ledger
 
   def pdf_takeoff():
-    res = tk.measure_takeoff(ctx, profile, inputs, state["ledger"] + state["extra_ledger"], state["accepted"])
+    res = kernel.run_stage(tk.measure_takeoff, ctx, profile, inputs, state["ledger"] + state["extra_ledger"], state["accepted"])
     if res.dropped_keys:
       state["ledger"] = tk.apply_replacements(state["ledger"], res.dropped_keys)
       state["extra_ledger"] = tk.apply_replacements(state["extra_ledger"], res.dropped_keys)
@@ -231,31 +231,33 @@ def run_engine(inputs: tk.TakeoffInputs | None, profile: ResolvedRuleProfile, ru
       state["extra_solids"] += res_solids
       state["extra_ledger"] += res_rows
       
-    res = kernel.measure_derived(ctx, profile, state["accepted"], state["solids"], L, X)
+    res = kernel.run_stage(kernel.measure_derived, ctx, profile, state["accepted"], state["solids"], L, X)
     add(res.solids, res.ledger)
-    dp = kernel.measure_dpc(ctx, profile, state["accepted"], state["solids"], L, state["extra_ledger"])
+    dp = kernel.run_stage(kernel.measure_dpc, ctx, profile, state["accepted"], state["solids"], L, state["extra_ledger"])
     add(dp.solids, dp.ledger)
-    ww = kernel.measure_wall_foundation(ctx, profile, state["accepted"], state["solids"], L, state["extra_ledger"])
+    ww = kernel.run_stage(kernel.measure_wall_foundation, ctx, profile, state["accepted"], state["solids"], L, state["extra_ledger"])
     add(ww.solids, ww.ledger)
-    wf = kernel.measure_wall_finishes(ctx, profile, state["accepted"], state["solids"], L, state["extra_ledger"])
+    wf = kernel.run_stage(kernel.measure_wall_finishes, ctx, profile, state["accepted"], state["solids"], L, state["extra_ledger"])
     add(wf.solids, wf.ledger)
-    oa = kernel.measure_opening_area(ctx, state["accepted"], state["solids"], L, state["extra_ledger"])
+    oa = kernel.run_stage(kernel.measure_opening_area, ctx, state["accepted"], state["solids"], L, state["extra_ledger"])
+    
     add(oa.solids, oa.ledger)
-    rt = kernel.measure_roof_treatment(ctx, state["accepted"], state["solids"], L, state["extra_ledger"])
+    rt = kernel.run_stage(kernel.measure_roof_treatment, ctx, state["accepted"], state["solids"], L, state["extra_ledger"])
     add(rt.solids, rt.ledger)
-    rd = kernel.measure_roof_deck(ctx, L, state["extra_ledger"])
+    rd = kernel.run_stage(kernel.measure_roof_deck, ctx, L, state["extra_ledger"])
     add(rd.solids, rd.ledger)
-    pm = kernel.measure_plaster_mortar(ctx, L, state["extra_ledger"])
+    pm = kernel.run_stage(kernel.measure_plaster_mortar, ctx, L, state["extra_ledger"])
+    
     add(pm.solids, pm.ledger)
-    ss = kernel.measure_soil_stabilisation(ctx, L, state["extra_ledger"])
+    ss = kernel.run_stage(kernel.measure_soil_stabilisation, ctx, L, state["extra_ledger"])
     add(ss.solids, ss.ledger)
-    fl_solids, fl_rows, fl_stats = kernel.measure_floor_works(ctx, state["accepted"], L, state["extra_ledger"])
+    fl_solids, fl_rows, fl_stats = kernel.run_stage(kernel.measure_floor_works, ctx, state["accepted"], L, state["extra_ledger"])
     add(fl_solids, fl_rows)
-    fw = kernel.measure_formwork(ctx, profile, L, state["extra_ledger"], state["accepted"])
+    fw = kernel.run_stage(kernel.measure_formwork, ctx, profile, L, state["extra_ledger"], state["accepted"])
     add(fw.solids, fw.ledger)
-    st = kernel.measure_pdf_steel(ctx, L, state["extra_ledger"])
+    st = kernel.run_stage(kernel.measure_pdf_steel, ctx, L, state["extra_ledger"])
     add(st.solids, st.ledger)
-    sa = kernel.measure_steel_allowances(ctx, L, state["extra_ledger"])
+    sa = kernel.run_stage(kernel.measure_steel_allowances, ctx, L, state["extra_ledger"])
     add(sa.solids, sa.ledger)
     result.stats["derived"] = {**res.stats, "dpc": dp.stats, "floor_works": fl_stats, "formwork": fw.stats, "steel": st.stats, "wall_foundation": ww.stats,
       "wall_finishes": wf.stats, "opening_area": oa.stats, "roof_treatment": rt.stats, "roof_deck": rd.stats, "plaster_mortar": pm.stats, "soil_stabilisation": ss.stats,

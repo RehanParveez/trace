@@ -135,7 +135,8 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
       "tank_details": known["tank_details"], "footing_sections": known["footing_sections"]}
   opening_heights = OHT.decide(merged["facts"]["opening_labels"] if merged is not None else OHT.gather(sheets))
   vocab = MV.build(sheets + [s for _name, group in ((project or {}).get("others") or []) for s in group])
-  legend = EL.gather_legend([{"page_no": no, "legend": EL.read_legend_rows(doc[no - 1], a.index.words, identity=a.meta.get("identity"))} for no, a in analysed.items() if EL.is_legend_sheet(a.index.words, a.meta.get("identity"))])
+  legend = EL.project_rows(EL.gather_legend([{"page_no": no, "legend": a.meta.get("electrical_legend")} for no, a in analysed.items() if a.meta.get("electrical_legend")]),
+    [{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend")} for _name, group in ((project or {}).get("others") or []) for s in group if (s.prep_meta or {}).get("electrical_legend")])
   
   read, wall_rows = [], []
   order = sorted(analysed.items(), key=lambda kv: (bool(((kv[1].meta.get("title")) or {}).get("composite")), kv[0]))
@@ -160,7 +161,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
         level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), pdf_type=meta.get("pdf_type"), identity=meta.get("identity"), scan_reading=meta.get("scan_reading"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
         with_finishes=True, beam_sections=drawing["beam_sections"], tank_details=drawing["tank_details"], imperial=units["imperial"], wall_vocab=UR.wall_vocabulary(wall_rows, units["imperial"]),
         footing_sections=drawing["footing_sections"], spec_facts=drawing["spec_facts"], mark_vocab=vocab, opening_heights=opening_heights,
-        electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and no not in legend["pages"] and EL.is_plan_sheet(a.index.words, meta.get("identity")) else None)
+        electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and EL.is_plan_sheet(a.index.words, meta.get("identity")) else None)
     except Exception as exc:
       problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
       continue
@@ -233,7 +234,7 @@ def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
     sheet_floor = None if title.get("composite") else title.get("level_hint")
     floors = set(FO.floors_read(sh.get("stats"), title)[0]) | ({sheet_floor} if sheet_floor else set())
     for fl in floors:
-      rows = [c for c in sh["candidates"] if FS.in_floor(c, fl, sheet_floor) and not FS.is_set_aside(c)]
+      rows = [c for c in sh["candidates"] if FS.in_floor(c, fl, sheet_floor) and not FS.is_set_aside(c) and not BP.is_electrical(c)]
       if rows:
         by_floor.setdefault(fl, {})[key] = rows
 

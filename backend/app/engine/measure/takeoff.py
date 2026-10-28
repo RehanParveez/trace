@@ -212,6 +212,8 @@ class FloorDatum:
   soffit_mm: float | None = None
   top_mm: float | None = None
   grade: str = "ASSUMED"
+  sources: tuple = ()
+  decisions: tuple = ()
 
 @dataclass(frozen=True)
 class TakeoffInputs:

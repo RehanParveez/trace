@@ -350,6 +350,14 @@ DERIVED_ASSUMED = (
   ("BOUNDARY_RETURNS_ASSUMED", "side and rear walls", "the side and rear walls are not drawn; their lengths are typed, the two sides are taken as equal, and the height and thickness are those of the front wall"),
 )
 
+RULE_WHOSE = {"CODE_DEFAULT_ASSUMED": "the seed of the rule book", "COMPANY": "your company's rule", "QS_WORKBOOK": "a rule of the QS workbook", "PROJECT": "this project's rule"}
+
+def _rule_text(r: dict) -> str:
+  scope = ", ".join(f"{k} {v}" for k, v in (r.get("scope") or {}).items())
+  what = f"{r['height_mm']:g} mm" if r.get("height_mm") is not None else str(r.get("value"))
+  to_ceiling = "; to the ceiling" if r.get("value") == "CEILING" else ""
+  return f"{what} from the rule {r.get('key')}" + (f" for {scope}" if scope else "") + f" ({RULE_WHOSE.get(r.get('origin'), r.get('origin'))}; {r.get('rule_id')}, version {r.get('version')}){to_ceiling}"
+
 def _derived(inp: _Inputs, cand) -> None:
   """A finishing or foundation item worked out from other readings (rooms, walls, openings): its quantity is as good as those readings, and each value the rules assume is listed."""
   facts = cand.facts or {}
@@ -394,6 +402,11 @@ def _derived(inp: _Inputs, cand) -> None:
   for code, name, how in DERIVED_ASSUMED:
     if code in inp.codes:
       inp.add(name, ASSUMED, how)
+  for r in facts.get("height_rules") or []:
+    inp.add("height", ASSUMED, _rule_text(r))
+  for label, key in (("tile band", "band_rule"), ("floor item", "item_rule"), ("room types", "rooms_rule")):
+    if facts.get(key):
+      inp.add(label, ASSUMED, _rule_text(facts[key]))
   for need in getattr(cand, "missing", None) or []:
     inp.add(need.replace("_mm", "").replace("_", " "), MISSING, "not on the drawing; type it when you accept the item")
 

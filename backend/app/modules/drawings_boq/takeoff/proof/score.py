@@ -14,6 +14,7 @@ from app.modules.drawings_boq.lab.aliases import KEY_LABEL, SOFTWARE_UNIT, bill_
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.engine.measure import rulebook as RB
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 
@@ -34,19 +35,28 @@ def r3(v):
     return [r3(x) for x in v]
   return v
 
+CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
+
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
+
+WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
+WALL_FAMILY_OF_CODE = {"MAS-BRICK": "BRICK_WALLS", "CON-RCC": "RCC_WALLS"}
+
+def family_of(r: dict) -> str | None:
+  trace = r.get("trace") or {}
+  inputs = trace.get("inputs") or {}
+  src = inputs.get("formwork_source") or inputs.get("steel_source") or {}
+  family = software_key(r.get("formula_code") or "", inputs.get("tag") or src.get("tag"), trace.get("label"))
+  if family is None and r.get("formula_code") == WALL_FORMULA:
+    family = WALL_FAMILY_OF_CODE.get(r.get("work_item_code"))
+  return family
 
 def trace_lines(rows: list, floor_of: dict, catalog: dict) -> list:
   groups: dict = {}
   for r in rows:
-    trace = r.get("trace") or {}
-    inputs = trace.get("inputs") or {}
-
-    src = inputs.get("formwork_source") or inputs.get("steel_source") or {}
-    tag = inputs.get("tag") or src.get("tag")
-    family = software_key(r.get("formula_code") or "", tag, trace.get("label"))
+    family = family_of(r)
     floor = floor_of.get(str(r.get("level_id"))) if r.get("level_id") else None
     code = r.get("work_item_code") or "?"
     unit = SOFTWARE_UNIT.get(family) if family in SOFTWARE_UNIT else (r.get("unit") or "")
@@ -76,8 +86,17 @@ def resolve(entry: dict, lines: list) -> list:
   if exact:
     return exact
   parts = key.split("/")
+  if len(parts) >= 2 and parts[1] in ("ALL", "*"):
+    every = [l for l in lines if l["code"] == parts[0]]
+    if every:
+      return every
   if len(parts) == 2 and parts[0] and any(l["code"] == parts[0] for l in lines):
     got = [l for l in lines if l["code"] == parts[0] and (l["floor"] or "-") == parts[1]]
+    if got:
+      return got
+  fams = entry.get("families")
+  if fams:
+    got = [l for l in lines if l["family"] in fams]
     if got:
       return got
   fam = entry.get("family")
@@ -305,7 +324,46 @@ def invariants(reads: list, accs: list, rows: list) -> list:
   add("LEDGER_ROWS_ARE_POSITIVE_AND_HAVE_A_UNIT", bad, "A ledger row has a zero, negative or missing quantity, or no unit.")
   return res
 
-def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = BM.PAGE_BUDGET_S, reader=None, both: bool = True) -> tuple:
+STAGE_NOTES = (("plinth level to lintel level", "PLINTH_TO_LINTEL"), ("lintel level to", "LINTEL_TO_SLAB"))
+STAGE_FAMILIES = ("BRICK_WALLS", "WALL_PLASTER")
+
+def stage_view(case: dict, ledger: list, floor_of: dict, catalog: dict) -> dict | None:
+  rows: dict = {}
+  for r in ledger:
+    fam = family_of(r)
+    if fam not in STAGE_FAMILIES:
+      continue
+    floor = floor_of.get(str(r.get("level_id"))) if r.get("level_id") else None
+    rows.setdefault((fam, floor), []).append((r.get("work_stage"), float(r.get("quantity") or 0.0), r.get("unit") or ""))
+    
+  out = []
+  for e in case.get("expected") or []:
+    fam = e.get("family")
+    parts = str(e["key"]).split("/")
+    if fam not in STAGE_FAMILIES or len(parts) < 2 or e.get("qs") in (None, 0):
+      continue
+    
+    note = str(e.get("note") or "").lower()
+    stage = next((s for text, s in STAGE_NOTES if text in note), None)
+    got = [x for x in rows.get((fam, parts[1]), []) if stage is None or x[0] == stage]
+    unit = e.get("unit") or ""
+    si = sum(q for _s, q, _u in got)
+    si_unit = got[0][2] if got else ""
+    ours = to_unit(si, si_unit, unit) if got else None
+    diff = _pct(ours, e["qs"])
+    out.append({"key": e["key"], "family": fam, "floor": parts[1], "stage": stage or "ALL", "unit": unit, "qs": e["qs"], "trace": None if ours is None else round(ours, 3),
+      "diff_pct_qs": None if diff is None else round(diff, 3), "within_10": diff is not None and abs(diff) <= 10.0, "stages": sorted({str(x[0]) for x in got})})
+  if not out:
+    return None
+  return {"lines": out, "within_10": sum(1 for l in out if l["within_10"]), "of": len(out)}
+
+def engine_digest(ledger: list, floor_of: dict) -> str:
+  """The hash of the engine's output: the ledger rows as (work item, floor, unit, quantity, label), sorted. It does not depend on how the score reads them."""
+  items = sorted([r.get("work_item_code") or "?", str(floor_of.get(str(r.get("level_id"))) if r.get("level_id") else ""), r.get("unit") or "", str(round(float(r.get("quantity") or 0), 6)),
+    str(((r.get("trace") or {}).get("label")) or "")] for r in ledger)
+  return hashlib.sha256(json.dumps(items, sort_keys=True, default=str).encode()).hexdigest()
+
+def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = BM.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None) -> tuple:
   t0 = time.monotonic()
   reads, problems, timings = [], [], {}
   whole = None
@@ -376,6 +434,13 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     "accept": [{k: t.get(k) for k in ("candidates", "ready_would_accept", "all_would_accept", "accepted", "accept_refused", "confirmed", "confirm_refused")} for t in tallies],
     "engine_errors": errors, "problems": sorted(problems, key=lambda p: (str(p.get("pdf")), p.get("page") or 0, str(p.get("message")))),
     "ledger_rows": len(ledger), "files": {n: case["sha256"].get(n) for n in case["pdfs"]}}
+  if rules:
+    doc["rules"] = rules
+  floor_all = {str(k): v for a in accs for k, v in a.floor_of.items()}
+  doc["engine_digest"] = engine_digest(ledger, floor_all)
+  view = stage_view(case, ledger, floor_all, catalog)
+  if view:
+    doc["stage_view"] = view
   doc["hash"] = digest(doc)
   doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
@@ -410,6 +475,16 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
   s = doc["summary"]
   out = [f"# Score: {doc['case']} (tier {doc['tier']})", "", f"Hash `{doc['hash']}`. Policy: {doc['policy']}. {s['lines']} lines with a Trace and a QS number; {s['within_10']} within 10% and {s['within_5']} within 5% of the QS; "
     f"{s['against_drawing']} with a drawing figure, {s['within_10_drawing']} within 10% and {s['within_5_drawing']} within 5% of it.", ""]
+  if doc.get("rules"):
+    r = doc["rules"]
+    out += [f"**Run under the rules of the case:** {r['file']}, {r['count']} rules ({', '.join(r['keys'])}). {r['note']}", ""]
+  if doc.get("engine_digest"):
+    out += [f"Engine output `{doc['engine_digest'][:16]}`: the hash of the ledger rows themselves. A change to how the score reads the ledger changes the hash above and not this one.", ""]
+  if doc.get("stage_view"):
+    v = doc["stage_view"]
+    out += [f"**Brick and plaster by stage** ({v['within_10']} of {v['of']} within 10% of the QS; not part of the hash)", "", "| Line | Floor | Stage | Unit | QS | Trace | Diff % | Stages found |", "|---|---|---|---|---|---|---|---|"]
+    out += [f"| {l['key']} | {l['floor']} | {l['stage']} | {l['unit']} | {_fmt(l['qs'])} | {_fmt(l['trace'])} | {_fmt(l['diff_pct_qs'])} | {', '.join(l['stages'])} |" for l in v["lines"]]
+    out += [""]
   if doc.get("other_policy") and doc["other_policy"]["summary"]:
     o = doc["other_policy"]["summary"]
     out += [f"Other policy ({doc['other_policy']['policy']}): {o['lines']} lines, {o['within_10']} within 10%, {o['within_5']} within 5% of the QS.", ""]
@@ -456,6 +531,8 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--cases-dir", help=f"the folder with the PDFs (default: {CIO.CASES_DIR_ENV})")
   ap.add_argument("--page-budget", type=float, default=BM.PAGE_BUDGET_S)
   ap.add_argument("--no-other", action="store_true", help="skip the second policy (faster)")
+  ap.add_argument("--seed-rules", action="store_true", help="ignore the company_rules of the cases and run on the seed rules alone")
+  ap.add_argument("--rules", help="run every case named under this rules file (a company_rules file), whatever its case.yaml says")
 
   args = ap.parse_args(argv)
   names = args.cases or CIO.list_cases()
@@ -479,7 +556,20 @@ def main(argv: list | None = None) -> int:
       done[name] = {"case": name, "tier": case["tier"], "status": "NO_FILES", "problems": probs}
       continue
 
-    doc, timings = run_case(case, files, profile, rule_set, catalog, ready_only=args.ready_only, page_budget=args.page_budget, both=not args.no_other)
+    if args.seed_rules:
+      rows, rule_problems, rule_file = [], [], None
+    elif args.rules:
+      rows, rule_problems = RB.load_rules(args.rules)
+      rule_file = os.path.basename(args.rules)
+    else:
+      rows, rule_problems, rule_file = CIO.load_company_rules(case)
+    if rule_problems:
+      print(f"{name}: SKIPPED. {' '.join(rule_problems)}")
+      done[name] = {"case": name, "status": "BAD_CASE", "message": " ".join(rule_problems)}
+      continue
+    note = {"file": rule_file, "count": len(rows), "keys": sorted({r["key"] for r in rows}), "note": CASE_RULES_NOTE} if rows else None
+    with RB.using_case(rows):
+      doc, timings = run_case(case, files, profile, rule_set, catalog, ready_only=args.ready_only, page_budget=args.page_budget, both=not args.no_other, rules=note)
     base = load_baseline(args.baseline, name)
     folder_out = os.path.join(args.out, name)
     os.makedirs(folder_out, exist_ok=True)

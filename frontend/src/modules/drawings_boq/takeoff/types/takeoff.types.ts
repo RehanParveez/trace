@@ -875,10 +875,29 @@ export interface FloorLevel {
   floor_to_floor_mm: number | null;
   soffit_mm: number | null;
   top_mm: number | null;
-  source: "SECTION" | "LEVEL_MARKS" | "TYPICAL" | "DATUM" | null;
-  level_source: "PRINTED_MARK" | "SUM_OF_STOREYS" | "AT_DATUM" | null;
+  source: "SECTION" | "PLAN_NOTES" | "LEVEL_MARKS" | "TYPICAL" | "DATUM" | null;
+  level_source: "PRINTED_MARK" | "TYPED_LEVEL" | "SUM_OF_STOREYS" | "AT_DATUM" | null;
   grade: ZGrade;
   reason: string | null;
+  sources?: LevelSource[];
+  decisions?: LevelDecision[];
+}
+
+export interface LevelSource {
+  kind: "PERSON" | "SECTION" | "PLAN_NOTES" | "LEVEL_MARKS" | "ASSUMED";
+  field: "level_mm" | "clear_mm" | "floor_to_floor_mm";
+  value: number;
+  how: string;
+  basis: string;
+  used: boolean;
+}
+
+export interface LevelDecision {
+  id: string;
+  question: string;
+  options: Array<{ value: number; sources: string[] }>;
+  chosen: number | null;
+  open: boolean;
 }
 
 export type ZDatum = "DRAWING_LEVEL_ZERO" | "GROUND_FLOOR_LEVEL";

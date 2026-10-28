@@ -1,6 +1,8 @@
 from __future__ import annotations
 import math
+import os
 from dataclasses import dataclass, field, replace
+from app.engine.measure import rulebook as RB
 from app.engine.measure.models import CalculationContext, LedgerEntry, ModelElement, Solid
 from app.engine.measure.spatial import prism_and_polygon
 from collections import Counter
@@ -43,6 +45,11 @@ DEFAULTS = {
   "parapet_height_mm": 914.4,
 }
 OVERRIDE_RANGE = (-100000.0, 300000.0)
+RULE_PREFIX = "stage."
+PLINTH_STOREY = "stage.plinth_storey"
+LOWEST, GROUND_STOREY = "LOWEST", "GROUND"
+LEVELS_ENV = "TRACE_LEVELS"
+STAGE_RULES = {"dpc_below_ffl_mm": (0.0, 2000.0), "lintel_height_mm": (1500.0, 3500.0), "parapet_height_mm": (0.0, 3000.0)}
 MIN_PARAPET_MM = 100.0
 FFL_BIN_MM = 5.0
 HEAD_CLEARANCE_MM = 100.0
@@ -81,13 +88,44 @@ class StageSetup:
 
 def _p(ctx: CalculationContext, key: str) -> float:
   value = (ctx.convention_params or {}).get(key)
+  if value is None and key in STAGE_RULES:
+    value = RB.pick(RULE_PREFIX + key, DEFAULTS[key])
   try:
     return float(value) if value is not None else DEFAULTS[key]
   except (TypeError, ValueError):
     return DEFAULTS[key]
 
 def _given(ctx: CalculationContext, key: str) -> bool:
-  return (ctx.convention_params or {}).get(key) is not None
+  if (ctx.convention_params or {}).get(key) is not None:
+    return True
+  return key in STAGE_RULES and RB.enabled() and RB.resolve(RULE_PREFIX + key).origin != RB.CODE_DEFAULT_ASSUMED
+
+def levels_entry() -> bool:
+  """True with TRACE_LEVELS=entry: the stages are counted from the ground floor and the levels take the whole entry of their most trusted source, as before the building model."""
+  return os.environ.get(LEVELS_ENV, "").strip().lower() == "entry"
+
+def plinth_floor(ctx: CalculationContext, floors: list):
+  ground = next((f for f in floors if f.key == "GROUND"), None)
+  if levels_entry() or str(RB.pick(PLINTH_STOREY, LOWEST)).upper() == GROUND_STOREY:
+    return ground
+  return min(floors, key=lambda f: f.level_mm) if floors else None
+
+def checked_rule(key: str, raw):
+  name = key[len(RULE_PREFIX):] if key.startswith(RULE_PREFIX) else key
+  if key == PLINTH_STOREY:
+    v = str(raw).strip().upper()
+    if v not in (LOWEST, GROUND_STOREY):
+      raise ValueError(f"The storey the plinth is counted from is {LOWEST} or {GROUND_STOREY}.")
+    return v
+  if name not in STAGE_RULES:
+    raise ValueError(f"{key} is not a stage rule.")
+  low, high = STAGE_RULES[name]
+  if isinstance(raw, bool) or not isinstance(raw, (int, float)) or raw != raw or not low <= float(raw) <= high:
+    raise ValueError(f"{key} is between {low:g} and {high:g} mm.")
+  return float(raw)
+
+def seed_expect() -> dict:
+  return {**{RULE_PREFIX + k: DEFAULTS[k] for k in STAGE_RULES}, PLINTH_STOREY: LOWEST}
 
 def typed_overrides(ctx: CalculationContext) -> dict:
   out: dict = {}

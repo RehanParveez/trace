@@ -24,6 +24,7 @@ from app.engine.measure.formwork import formwork_check, measure_formwork
 from app.engine.measure.model_floor_works import floor_works_check, measure_floor_works
 from app.engine.measure.pdf_steel import measure_pdf_steel, pdf_steel_check
 from app.engine.measure import model_range as MR
+from app.engine.measure import rulebook as RB
 from app.engine.measure.one_total import one_total_check
 from app.engine.measure import ifc_rebar as IB
 from app.engine.measure.wall_finishes import measure_wall_finishes, wall_finishes_check
@@ -67,6 +68,23 @@ class InvariantViolation(Exception):
   def __init__(self, failures: list[str]):
     super().__init__("; ".join(failures[:5]))
     self.failures = failures
+
+def run_stage(fn, *args, **kwargs):
+  clash = RB.clash_mark()
+  res = fn(*args, **kwargs)
+  rows = res.ledger if hasattr(res, "ledger") else res[1]
+  rules, clashes = RB.stamp(), RB.clashes(clash)
+  for i, r in enumerate(rows):
+    inputs = (r.trace or {}).get("inputs")
+    if not isinstance(inputs, dict):
+      continue
+    if rules:
+      inputs["rules"] = [dict(x) for x in rules]
+    if clashes:
+      inputs["rule_clashes"] = [dict(x) for x in clashes]
+      if isinstance(rows, list) and RB.PRINTED_OVER_COMPANY_RULE not in r.warnings:
+        rows[i] = replace(r, warnings=(*r.warnings, RB.PRINTED_OVER_COMPANY_RULE))
+  return res
 
 def _issue(code: str, severity: str, message: str) -> dict:
   return {"code": code, "severity": severity, "message": message}
@@ -697,7 +715,7 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
   layer_info: dict = layer_stats(ctx)
   derived_info: dict = derived_stats(ctx)
   if ctx.takeoff is not None:
-    takeoff_res = measure_takeoff(ctx, profile, ctx.takeoff, ledger + extra_ledger, accepted)
+    takeoff_res = run_stage(measure_takeoff, ctx, profile, ctx.takeoff, ledger + extra_ledger, accepted)
     ledger = apply_replacements(ledger, takeoff_res.dropped_keys)
     extra_ledger = apply_replacements(extra_ledger, takeoff_res.dropped_keys)
     live = {e.solid_id for e in ledger + extra_ledger}
@@ -720,45 +738,48 @@ def run(ctx: CalculationContext, elements: list[ModelElement], profile=None) -> 
     stage_info = staged.stats
   steel_marks: list = []
   if ctx.derived_mode and profile is not None:
-    derived_res = measure_derived(ctx, profile, accepted, solids, ledger, extra_ledger)
+    derived_res = run_stage(measure_derived, ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += derived_res.solids
     extra_ledger += derived_res.ledger
     derived_info = derived_res.stats
-    dpc_res = measure_dpc(ctx, profile, accepted, solids, ledger, extra_ledger)
+    dpc_res = run_stage(measure_dpc, ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += dpc_res.solids
     extra_ledger += dpc_res.ledger
-    wall_works_res = measure_wall_foundation(ctx, profile, accepted, solids, ledger, extra_ledger)
+    wall_works_res = run_stage(measure_wall_foundation, ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += wall_works_res.solids
     extra_ledger += wall_works_res.ledger
-    wall_fin_res = measure_wall_finishes(ctx, profile, accepted, solids, ledger, extra_ledger)
+    
+    wall_fin_res = run_stage(measure_wall_finishes, ctx, profile, accepted, solids, ledger, extra_ledger)
     extra_solids += wall_fin_res.solids
     extra_ledger += wall_fin_res.ledger
-    open_res = measure_opening_area(ctx, accepted, solids, ledger, extra_ledger)
+    open_res = run_stage(measure_opening_area, ctx, accepted, solids, ledger, extra_ledger)
     extra_solids += open_res.solids
     extra_ledger += open_res.ledger
-    roof_res = measure_roof_treatment(ctx, accepted, solids, ledger, extra_ledger)
+    roof_res = run_stage(measure_roof_treatment, ctx, accepted, solids, ledger, extra_ledger)
     extra_solids += roof_res.solids
     extra_ledger += roof_res.ledger
-    deck_res = measure_roof_deck(ctx, ledger, extra_ledger)
+    deck_res = run_stage(measure_roof_deck, ctx, ledger, extra_ledger)
     extra_solids += deck_res.solids
     extra_ledger += deck_res.ledger
-    mortar_res = measure_plaster_mortar(ctx, ledger, extra_ledger)
+    mortar_res = run_stage(measure_plaster_mortar, ctx, ledger, extra_ledger)
+    
     extra_solids += mortar_res.solids
     extra_ledger += mortar_res.ledger
-    soil_res = measure_soil_stabilisation(ctx, ledger, extra_ledger)
+    soil_res = run_stage(measure_soil_stabilisation, ctx, ledger, extra_ledger)
     extra_solids += soil_res.solids
     extra_ledger += soil_res.ledger
-    floor_solids, floor_rows, floor_stats = measure_floor_works(ctx, accepted, ledger, extra_ledger)
+    floor_solids, floor_rows, floor_stats = run_stage(measure_floor_works, ctx, accepted, ledger, extra_ledger)
     extra_solids += floor_solids
     extra_ledger += floor_rows
-    formwork_res = measure_formwork(ctx, profile, ledger, extra_ledger, accepted)
+    formwork_res = run_stage(measure_formwork, ctx, profile, ledger, extra_ledger, accepted)
     extra_solids += formwork_res.solids
     extra_ledger += formwork_res.ledger
-    steel_res = measure_pdf_steel(ctx, ledger, extra_ledger)
+    
+    steel_res = run_stage(measure_pdf_steel, ctx, ledger, extra_ledger)
     steel_marks = steel_res.marks
     extra_solids += steel_res.solids
     extra_ledger += steel_res.ledger
-    allow_res = measure_steel_allowances(ctx, ledger, extra_ledger)
+    allow_res = run_stage(measure_steel_allowances, ctx, ledger, extra_ledger)
     extra_solids += allow_res.solids
     extra_ledger += allow_res.ledger
     derived_info = {**derived_info, "dpc": dpc_res.stats, "floor_works": floor_stats, "formwork": formwork_res.stats, "steel": steel_res.stats,

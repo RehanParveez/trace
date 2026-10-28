@@ -94,7 +94,7 @@ def build_space(cand, m, sheet, *, view: str, floors: dict, floor_key: str | Non
     covered_by_band=kind == "LINTEL" and bool((cand.facts or {}).get("tie_band")))
 
 def floor_data(group: str, floors: dict) -> tuple:
-  return tuple(tk.FloorDatum(group, f.key, float(f.level_mm), f.soffit_mm, f.top_mm, f.grade) for f in floors.values())
+  return tuple(tk.FloorDatum(group, f.key, float(f.level_mm), f.soffit_mm, f.top_mm, f.grade, f.sources, f.decisions) for f in floors.values())
 
 async def load_space(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
 

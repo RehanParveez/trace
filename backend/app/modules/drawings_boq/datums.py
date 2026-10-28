@@ -54,13 +54,17 @@ class DatumsUpdate(BaseModel):
   values: dict[str, float | None] = Field(default_factory=dict,
     description="Datum name to level in millimetres. A null value removes the level you typed so the run finds it again.")
 
+LEVEL_PREFIX = "LEVEL:"
+
 def label_of(name: str) -> str:
   if name in EXPLAIN:
     return EXPLAIN[name]
+  if name.startswith(LEVEL_PREFIX):
+    return f"Level of the {name[len(LEVEL_PREFIX):].lower()} floor"
   m = re.match(r"^SLAB_(\d+)$", name)
   return f"Top of floor slab {m.group(1)}" if m else name
 
-def datums_of_stats(stats: dict) -> list[dict]:
+def _stage_datums(stats: dict) -> list[dict]:
   stages = (stats or {}).get("stages") or {}
   if stages.get("resolved"):
     return list(stages.get("datums") or [])
@@ -69,6 +73,31 @@ def datums_of_stats(stats: dict) -> list[dict]:
     if (pdf[group] or {}).get("resolved"):
       return list(pdf[group].get("datums") or [])
   return []
+
+def _source_line(s: dict) -> str:
+  how = {"TYPED": "typed", "SUM_OF_STOREYS": "worked out from the storey height next to it", "AT_DATUM": "the datum", "TYPICAL": "typical storey"}.get(str(s.get("how")), "printed")
+  return f"{s.get('kind')} {s.get('field')} {s.get('value')} ({how}{', used' if s.get('used') else ''})"
+
+def levels_of_stats(stats: dict) -> list[dict]:
+  groups = ((stats or {}).get("pdf_space") or {}).get("levels") or {}
+  out: dict = {}
+  for group in sorted(groups):
+    for row in groups[group] or []:
+      key = str(row.get("key") or "")
+      if not key or key in out or row.get("level_mm") is None:
+        continue
+      sources = [s for s in row.get("sources") or [] if s.get("field") == "level_mm"]
+      used = next((s for s in sources if s.get("used")), None)
+      kind = "typed" if used and used.get("how") == "TYPED" else "default" if used and used.get("how") == "AT_DATUM" else "drawing"
+      open_q = [d for d in row.get("decisions") or [] if d.get("chosen") is None]
+      text = "; ".join(_source_line(s) for s in sources)
+      for d in open_q:
+        text = f"OPEN: {d.get('question')}: " + " or ".join(f"{o.get('value')} ({'/'.join(o.get('sources') or [])})" for o in d.get("options") or []) + ". The most trusted is used until you decide. " + text
+      out[key] = {"name": LEVEL_PREFIX + key, "z_mm": float(row["level_mm"]), "source": kind, "note": text[:300] or None}
+  return list(out.values())
+
+def datums_of_stats(stats: dict) -> list[dict]:
+  return _stage_datums(stats) + levels_of_stats(stats)
 
 class DatumsService:
   def __init__(self, session: AsyncSession):

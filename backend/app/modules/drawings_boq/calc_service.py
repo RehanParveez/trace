@@ -25,6 +25,8 @@ from app.modules.projects.repository import ProjectRepository
 from app.modules.drawings_boq.service import DrawingBOQService
 from app.engine.measure import company as CO
 from app.modules.drawings_boq import company_conventions as CCV
+from app.modules.drawings_boq import rule_book_service as RBS
+from app.engine.measure import rulebook as RB
 from app.core.config import settings
 from app.engine.measure import finishes as fin
 from app.modules.drawings_boq.spatial_repository import load_reinforcements_inputs
@@ -299,6 +301,9 @@ class CalculationService:
     held = await CCV.in_force(self.session, organization_id)
     if held:
       settings["company_conventions"] = held
+    book = await RBS.snapshot(self.session, organization_id, project_id)
+    if book:
+      settings["rule_book"] = book
     settings.update(await OneTotalService(self.session).run_settings(organization_id, project_id, chosen, derived_params))
     profile, mappings, elements, reinforcements = await self._load_inputs(organization_id, ids, rule_set.id, project_id)
     convention_params = await self._convention_params(effective_convention)
@@ -416,6 +421,8 @@ class CalculationService:
     drawing_ids = list(run.drawing_revision_ids)
     run_settings = {k: v for k, v in (run.settings or {}).items() if k not in _SNAPSHOT_KEYS}
     CO.hold(run_settings.get("company_conventions"))
+    if run_settings.get("rule_book"):
+      RB.hold(run_settings["rule_book"])
     expected_fingerprint = run.fingerprint
     engine_version = run.engine_version
     convention_code = run.convention_code

@@ -108,16 +108,23 @@ def lazy_imports(root: pathlib.Path) -> list:
           misses.append((*where, f"from {node.module} import {a.name}", "name not found"))
   return misses
 
+def seed_check() -> list:
+  from app.engine.measure import rulebook
+  return rulebook.seed_problems()
+
 def main() -> int:
   root = _root()
   failed = import_all(root)
   misses = lazy_imports(root)
+  seed = seed_check()
+  for key, what in seed:
+    print(f"RULE SEED      {key}: {what}")
   for name, err in failed:
     print(f"IMPORT FAILS   {name}: {err}")
   for file, line, text, why in misses:
     print(f"LAZY IMPORT    {file}:{line}  {text}  ({why})")
-  print(f"{len(failed)} module(s) fail to import, {len(misses)} in-function import(s) do not resolve.")
-  return 1 if failed or misses else 0
+  print(f"{len(failed)} module(s) fail to import, {len(misses)} in-function import(s) do not resolve, {len(seed)} seed figure(s) differ from the code.")
+  return 1 if failed or misses or seed else 0
 
 if __name__ == "__main__":
   sys.exit(main())

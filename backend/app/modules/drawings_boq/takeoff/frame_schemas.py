@@ -82,6 +82,8 @@ class FloorLevelResponse(BaseModel):
   level_source: str | None = None
   grade: Literal["PRINTED", "TYPED", "ASSUMED"] = "ASSUMED"
   reason: str | None = None
+  sources: list[dict] = []
+  decisions: list[dict] = []
 
 class FootingLevelResponse(BaseModel):
   ngl_mm: float | None = None

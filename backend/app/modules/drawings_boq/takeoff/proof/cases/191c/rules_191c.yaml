@@ -1,0 +1,37 @@
+origin: QS_WORKBOOK
+rules:
+  - key: finish.floor_item
+    scope: {room_type: PORCH}
+    value: FIN-PORCH-TILE
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: "Pourch Mate Tile (16x16)" is a line of its own, apart from the "G.F Floor Tile Work (24x48)"'
+  - key: finish.floor_item
+    scope: {room_type: PASSAGE}
+    value: FIN-PAVING
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: "Tuff Tile (8x4) Passage Area" is a line of its own'
+  - key: finish.dado_height_mm
+    scope: {room_type: BATH}
+    value: CEILING
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the line is "Bath Room Wall Tile", not a dado, and the bill has no other bath wall item; taken to the ceiling'
+  - key: finish.dado_height_mm
+    scope: {room_type: WC}
+    value: CEILING
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: a W.C is tiled as the bath is ("Bath Room Wall Tile")'
+  - key: finish.dado_height_mm
+    scope: {room_type: PWD}
+    value: CEILING
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: a powder room is tiled as the bath is ("Bath Room Wall Tile")'
+  - key: finish.ceiling_includes
+    scope: {}
+    value: [BEDROOM, BATH, PWD, WC, KITCHEN, LOUNGE, DINING, DRAWING, PORCH, TERRACE, PASSAGE, LAWN, STAIR, STORE, SERVANT, OTHER]
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: "False Ceiling" is one line for the building, so porch, terrace and passage rooms are in it. The same list as the seed; it moves nothing on 191-C, where the reader finds no terrace or passage room'
+  - key: finish.pcc_under
+    scope: {}
+    value: [BEDROOM, BATH, PWD, WC, KITCHEN, LOUNGE, DINING, DRAWING, PORCH, TERRACE, PASSAGE, LAWN, STAIR, STORE, SERVANT, OTHER]
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: "P.C.C Concrete (1:2:4) under Floor" is one line for the building, so the bed is under porch and passage rooms too. The same list as the seed; it moves nothing on 191-C'

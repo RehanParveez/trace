@@ -1,12 +1,14 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from app.modules.drawings_boq.takeoff.prep.facts import FLOOR_ORDER
+from app.modules.drawings_boq.takeoff.model import levels as LV
 
 PRINTED, TYPED, ASSUMED = "PRINTED", "TYPED", "ASSUMED"
 TYPED_NGL, MARK_NGL = "TYPED", "LEVEL_MARK"
 DRAWING_ZERO, GROUND_LEVEL = "DRAWING_LEVEL_ZERO", "GROUND_FLOOR_LEVEL"
 SECTION, LEVEL_MARKS, TYPICAL, DATUM = "SECTION", "LEVEL_MARKS", "TYPICAL", "DATUM"
 PRINTED_MARK, SUM_OF_STOREYS, AT_DATUM = "PRINTED_MARK", "SUM_OF_STOREYS", "AT_DATUM"
+TYPED_LEVEL = "TYPED_LEVEL"
 FLOOR_LEVEL, SLAB_SOFFIT, SLAB_TOP = "FLOOR_LEVEL", "SLAB_SOFFIT", "SLAB_TOP"
 ELEMENT_HEIGHT, ELEMENT_DEPTH, FOOTING_LEVEL = "ELEMENT_HEIGHT", "ELEMENT_DEPTH", "FOOTING_LEVEL"
 NO_FLOOR, NO_SIZE, NEEDS_FOOTING_LEVEL, NEEDS_OPENING_HEAD = "NO_FLOOR", "NO_SIZE", "NEEDS_FOOTING_LEVEL", "NEEDS_OPENING_HEAD"
@@ -25,6 +27,8 @@ class Floor:
   grade: str
   level_source: str = SUM_OF_STOREYS
   datum: str = GROUND_LEVEL
+  sources: tuple = ()
+  decisions: tuple = ()
 
   @property
   def soffit_mm(self) -> float | None:
@@ -36,7 +40,7 @@ class Floor:
 
   def as_dict(self) -> dict:
     return {"key": self.key, "level_mm": self.level_mm, "clear_mm": self.clear_mm, "floor_to_floor_mm": self.floor_to_floor_mm, "soffit_mm": self.soffit_mm,
-      "top_mm": self.top_mm, "source": self.source, "level_source": self.level_source, "grade": self.grade}
+      "top_mm": self.top_mm, "source": self.source, "level_source": self.level_source, "grade": self.grade, "sources": list(self.sources), "decisions": list(self.decisions)}
 
 @dataclass(frozen=True)
 class ZRange:
@@ -89,49 +93,45 @@ def _grade(basis: str) -> str:
 def _lowest(*grades: str) -> str:
   return ASSUMED if ASSUMED in grades else TYPED if TYPED in grades else PRINTED
 
-def build_floors(heights: dict | None, floor_keys: list | None) -> dict:
-  heights = heights or {}
-  keys = [k for k in FLOOR_ORDER if k in set(floor_keys or ()) | set(heights)]
-  if "GROUND" not in keys:
+def floors_from_levels(levels, decisions=()) -> dict:
+  rows = {l.key: l for l in (levels or ()) if l.level_mm is not None}
+  if "GROUND" not in rows:
     return {}
+  by_floor: dict = {}
+  for d in decisions or ():
+    by_floor.setdefault(str(d.id).split(":", 1)[1], []).append(d.as_dict())
 
-  def entry(key: str) -> dict:
-    return heights.get(key) or {}
+  def make(l, basis, grade, how, datum):
+    return Floor(l.key, l.level_mm, l.clear_mm, l.f2f_mm, basis, grade, how, datum, tuple(s.as_dict() for s in l.sources), tuple(by_floor.get(l.key, ())))
 
-  g = entry("GROUND")
-  printed_ground = _signed(g.get("level_mm"))
-  datum = DRAWING_ZERO if printed_ground is not None else GROUND_LEVEL
-  basis = g.get("basis") or DATUM
-  out: dict = {"GROUND": Floor("GROUND", printed_ground if printed_ground is not None else 0.0, _num(g.get("clear_mm")), _num(g.get("floor_to_floor_mm")), basis,
-    _grade(basis), PRINTED_MARK if printed_ground is not None else AT_DATUM, datum)}
+  def how_of(l):
+    return TYPED_LEVEL if l.level_how == LV.TYPED else PRINTED_MARK if l.level_how == LV.PRINTED_MARK else SUM_OF_STOREYS if l.level_how == LV.SUM_OF_STOREYS else AT_DATUM
+
+  g = rows["GROUND"]
+  datum = GROUND_LEVEL if g.level_how == LV.AT_DATUM else DRAWING_ZERO
+  basis = g.basis or DATUM
+  out: dict = {"GROUND": make(g, basis, TYPED if g.level_how == LV.TYPED else _grade(basis), how_of(g), datum)}
   grade_below = out["GROUND"].grade
-  prev = out["GROUND"]
-  
-  for key in [k for k in keys if FLOOR_ORDER.index(k) > FLOOR_ORDER.index("GROUND")]:
-    e = entry(key)
-    basis = e.get("basis") or TYPICAL
-    printed = _signed(e.get("level_mm")) if datum == DRAWING_ZERO else None
-    if printed is not None:
-      level, how, grade = printed, PRINTED_MARK, _grade(basis)
-    elif prev.floor_to_floor_mm is not None:
-      level, how, grade = round(prev.level_mm + prev.floor_to_floor_mm, 1), SUM_OF_STOREYS, _lowest(grade_below, _grade(basis))
+  for key in [k for k in FLOOR_ORDER if k in rows and FLOOR_ORDER.index(k) > FLOOR_ORDER.index("GROUND")]:
+    l = rows[key]
+    basis = l.basis or TYPICAL
+    if l.level_how in (LV.PRINTED_MARK, LV.TYPED):
+      grade = TYPED if l.level_how == LV.TYPED else _grade(basis)
     else:
-      break
+      grade = _lowest(grade_below, _grade(basis))
     grade_below = grade
-    out[key] = Floor(key, level, _num(e.get("clear_mm")), _num(e.get("floor_to_floor_mm")), basis, grade, how, datum)
-    prev = out[key]
-    
-  if "BASEMENT" in keys:
-    e = entry("BASEMENT")
-    basis = e.get("basis") or TYPICAL
-    printed = _signed(e.get("level_mm")) if datum == DRAWING_ZERO else None
-    f2f = _num(e.get("floor_to_floor_mm"))
-    if printed is not None:
-      out["BASEMENT"] = Floor("BASEMENT", printed, _num(e.get("clear_mm")), f2f, basis, _grade(basis), PRINTED_MARK, datum)
-    elif f2f is not None:
-      out["BASEMENT"] = Floor("BASEMENT", round(out["GROUND"].level_mm - f2f, 1), _num(e.get("clear_mm")), f2f, basis, _lowest(out["GROUND"].grade, _grade(basis)),
-        SUM_OF_STOREYS, datum)
+    out[key] = make(l, basis, grade, how_of(l), datum)
+  if "BASEMENT" in rows:
+    l = rows["BASEMENT"]
+    basis = l.basis or TYPICAL
+    grade = (TYPED if l.level_how == LV.TYPED else _grade(basis)) if l.level_how in (LV.PRINTED_MARK, LV.TYPED) else _lowest(out["GROUND"].grade, _grade(basis))
+    out["BASEMENT"] = make(l, basis, grade, how_of(l), datum)
   return out
+
+def build_floors(heights: dict | None, floor_keys: list | None, levels=None, decisions=()) -> dict:
+  if levels is None:
+    levels = LV.from_heights(heights, floor_keys)
+  return floors_from_levels(levels, decisions)
 
 def datum_of(floors: dict) -> str:
   for f in floors.values():

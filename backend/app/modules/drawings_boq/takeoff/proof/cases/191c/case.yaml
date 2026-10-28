@@ -7,5 +7,5 @@ sha256: {}
 workbook:
   path: Quantities_191-C.xlsx
   format: SUMMARY
-note: 'DHA Bahawalpur 10 marla, one building in two PDFs (structure 11 pages, architecture 49 pages). The workbook was not available when this folder was made: expected.yaml
-  is empty.'
+company_rules: rules_191c.yaml
+note: 'DHA Bahawalpur 10 marla, one building in two PDFs (structure 11 pages, architecture 49 pages). expected.yaml holds the bill lines Trace tries to measure, read from the workbook (Pack 143b); the electrical, plumbing, joinery and metal lines are not in it.'

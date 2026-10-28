@@ -59,6 +59,7 @@ WORK_ITEMS = [
   ("FIN-BALCONY-TILE", "Balcony floor tile finish", "m2", "Finishes", "TILING"),
   ("FIN-TERRACE-TILE", "Terrace floor tile finish", "m2", "Finishes", "TILING"),
   ("FIN-PORCH-TILE", "Porch floor tile finish", "m2", "Finishes", "TILING"),
+  ("FIN-PAVING", "Paving, tuff tile or similar, to passages and open floors", "m2", "Finishes", "TILING"),
 
 ]
 

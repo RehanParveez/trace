@@ -48,6 +48,7 @@ from app.modules.drawings_boq.takeoff.extract import beam_marks as BM
 from app.modules.drawings_boq.takeoff.extract import plan_regions as PR
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
+from app.modules.drawings_boq.takeoff.extract import room_types as RT
 from app.modules.drawings_boq.takeoff.extract import openings_area as OA
 from app.modules.drawings_boq.takeoff.extract import earth_fill as EF
 from app.modules.drawings_boq.takeoff.extract import roof_treatment as RF
@@ -884,7 +885,7 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=N
     name = " / ".join(room_names) if room_names else None
     minx, miny, maxx, maxy = poly.bounds
     facts = {"name": name, "area_m2": round(d["area_m2"], 3), "perimeter_m": round(d["perimeter_m"], 3), "holes": d["holes"],
-      "bbox_mm": [round((maxx - minx) * f), round((maxy - miny) * f)], "size_text": d["size_text"], "outline_from": how}
+      "bbox_mm": [round((maxx - minx) * f), round((maxy - miny) * f)], "size_text": d["size_text"], "outline_from": how, "room_type": RT.type_of_name(name)}
     if how == "CLOSED":
       facts["closed_across"] = {"openings": via[0], "width_mm": via[1]}
     if d["label_area_m2"] is not None:
@@ -904,7 +905,7 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=N
     notes = [C.note("ROOM_OUTLINE_REPLACED", measured_area_m2=round(replaced[i], 3), label_area_m2=round(area, 3))] if i in replaced else []
     notes.append(C.note("ROOM_FROM_LABEL", size_text=p["size_text"]))
     facts = {"name": p["name"], "area_m2": round(area, 3), "perimeter_m": round(2.0 * (p["a_mm"] + p["b_mm"]) / 1000.0, 3), "holes": 0,
-      "bbox_mm": [round(p["a_mm"]), round(p["b_mm"])], "size_text": p["size_text"], "label_area_m2": round(area, 3), "outline_from": "LABEL"}
+      "bbox_mm": [round(p["a_mm"]), round(p["b_mm"])], "size_text": p["size_text"], "label_area_m2": round(area, 3), "outline_from": "LABEL", "room_type": RT.type_of_name(p["name"])}
     work_item, mode, kind = C.SUGGESTIONS["ROOM"]
     
     cand = Candidate(key=_key("ROOM", round(p["x"] / 3), round(p["y"] / 3)), category="ROOM", kind=kind, quantity_mode=mode,
@@ -1616,10 +1617,11 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
     cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
     if cand is not None:
       out.append(cand)
+  out.extend(FN.floor_typed_candidates(rooms, ctx, level_hint, spec, Candidate, _finish))
 
-  skirting = FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
-  dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows)
-  tile = FN.wall_tile_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows)
+  skirting =FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
+  dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows, walls)
+  tile = FN.wall_tile_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows, walls)
   proof = FN.wet_waterproof_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
   out.extend(c for c in (skirting, dado, tile, proof) if c is not None)
   out.extend(FN.plaster_candidates(walls, mm_per_pt, ctx, level_hint, spec, Candidate, _finish))
@@ -2162,7 +2164,7 @@ def _scan_reading_notes(res: Extraction, scan: dict | None) -> None:
     res.notes.append(C.note("SCAN_FIGURES_REPAIRED", count=int(scan["ocr_repaired"]), repairs=list(scan.get("ocr_repairs") or [])))
 
 def _with_electrical(res: Extraction, electrical: dict | None, kw: dict) -> None:
-  found = EL.candidates(electrical, _site_ctx(kw), Candidate, _finish_site)
+  found = EL.candidates(electrical, _site_ctx(kw), Candidate, _finish_site, kw.get("level_hint"))
   res.candidates.extend(found)
   res.notes.extend(EL.sheet_notes(electrical))
   res.stats["electrical_items"] = len(found)

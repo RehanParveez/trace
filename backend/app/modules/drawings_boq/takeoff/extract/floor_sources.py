@@ -23,7 +23,7 @@ def is_set_aside(c) -> bool:
 def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   title = sheet["title"] or {}
   sheet_floor = None if title.get("composite") else title.get("level_hint")
-  rows = [c for c in sheet["candidates"] if in_floor(c, floor, sheet_floor)]
+  rows = [c for c in sheet["candidates"] if in_floor(c, floor, sheet_floor) and not BP.is_electrical(c)]
   walls = [c for c in rows if c.category == "WALL"]
   plan = next((p for p in ((sheet["stats"] or {}).get("plan_regions") or {}).get("plans") or [] if p.get("level_hint") == floor), None)
   open_n = sum(1 for c in rows if c.decision == "NEW")
@@ -115,6 +115,6 @@ def set_aside_floors(rows: list, sheet_floor: str | None) -> dict:
   by: dict = {}
   for c in rows:
     fl = FO.level_of(c) or sheet_floor
-    if c.category != "SLAB" and fl:
+    if c.category != "SLAB" and fl and not BP.is_electrical(c):
       by.setdefault(fl, []).append(c)
   return {fl: dict(cs[0].facts[SET_ASIDE]) for fl, cs in by.items() if all(c.decision == "REJECTED" and is_set_aside(c) for c in cs)}

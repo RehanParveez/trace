@@ -90,7 +90,7 @@ class FloorSourceService(ExtractService):
       sheet_floor = {r["sheet_id"]: (None if (r["title"] or {}).get("composite") else (r["title"] or {}).get("level_hint")) for r in read}
       kept_by_floor[floor] = keep["sheet_id"]
       away = [c for s in plan["set_aside"] for c in by.get(s["sheet_id"], []) if FS.in_floor(c, floor, sheet_floor[s["sheet_id"]]) and c.decision == "NEW"
-        and not (BP.is_services(c) and s["sheet_id"] in plan["services_kept"])]
+        and not (BP.is_services(c) and s["sheet_id"] in plan["services_kept"]) and not BP.is_electrical(c)]
       back = [c for c in by.get(keep["sheet_id"], []) if FS.in_floor(c, floor, sheet_floor[keep["sheet_id"]]) and c.decision == "REJECTED" and FS.is_set_aside(c)]
       for c in away:
         c.decision, c.decided_by_user_id, c.decided_at = "REJECTED", user_id, _now()

@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 from app.engine.measure import readings as QSR
 
-EXTRACT_VERSION = 87
+EXTRACT_VERSION = 89
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -324,6 +324,11 @@ NOTES = {
   "WINDOW_SILL_ASSUMED": ("warning", "Some of these windows print no sill level, so one is assumed: 5 ft (1524 mm) for a bath or toilet window and 3 ft 6 in (1067 mm) for a kitchen window. The windows that use an assumed sill are marked in the item. Write the sill beside the window on the plan (W=width X height S=sill) to replace it."),
   "FLOOR_WET_SEPARATE": ("info", "The baths and toilets are left out of this floor finish. Their floor is tile and is a line of its own on this floor, so the two lines do not count the same floor twice."),
   "FLOOR_WET_FROM_ROOMS": ("info", "The tile on the floors of the baths and toilets of this storey: the total of their room areas. They are not in the floor finish of this storey, which is the dry rooms. The tile is the floor tile of the finish rules; choose another work item when you accept it if the bill has the tile by kind."),
+  "FLOOR_TYPED_FROM_ROOMS": ("info", "The floor of the rooms of one type (porch, terrace, passage or lawn) as a line of its own, because the rule finish.floor_item gives that type a work item of its own: the total of their room areas. The rule is on this item."),
+  "FLOOR_TYPES_SET_APART": ("info", "Rooms of some types (porch, terrace, passage, lawn) have a floor item of their own by a rule, so they are not in this floor finish. They are lines of their own."),
+  "DADO_HEIGHT_FROM_RULE": ("info", "The height of the tile on these walls is set by a rule of the rule book (the rule is on this item), not printed on the drawing."),
+  "DADO_CEILING_HEIGHT_ASSUMED": ("warning", "A rule tiles these walls to the ceiling, but no clear height of this storey was read from its walls; the 7 ft of the seed is used. Type the height when you accept the item."),
+  "KITCHEN_BAND_FROM_RULE": ("info", "Only a band of the kitchen wall is tiled, as the rule finish.kitchen_band says; the band and the rule are on this item."),
   "WET_WATERPROOF_FROM_ROOMS": ("info", "The waterproofing of the baths and toilets of this storey: the floor of each. The QS said on 26 Oct that it is the floor only, with no turn-up up the walls."),
   "WET_TURNUP_DEFAULT": ("warning", "The waterproofing is taken up the walls 300 mm (1 ft). That is usual site practice, not a height printed on the drawing. If the specification or the QS gives another height, the area is the floor plus the length round the rooms (in the item) times that height."),
   "WALL_TILE_WINDOWS_NOT_DEDUCTED": ("warning", "Some windows in these kitchens have no size, neither on the plan nor in a schedule that was read, so they are not taken off the wall tile. The number of them is in the item."),
@@ -443,6 +448,9 @@ NOTES = {
   "ELECTRICAL_PICTURE_MATCH": ("info", "This symbol is counted by matching its picture in the legend against the plan. A drawing that looks like the symbol would be counted too, and a symbol drawn differently from the legend would be missed: check the number against the plan."),
   "ELECTRICAL_OTHER_SIZE_SET_ASIDE": ("warning", "Some marks that match this symbol are drawn at another size from most of them and are not counted. Check the plan for them."),
   "ELECTRICAL_SYMBOLS_NOT_READ": ("warning", "The legend has symbols the reader cannot count (their picture is too simple to tell from other drawing, or the plan draws them differently). Count the ones on this sheet by hand."),
+  "ELECTRICAL_LEGEND_BY_STRUCTURE": ("info", "The legend has no table drawn with ruling lines, so its rows were found by their structure: a symbol with its description beside it, row after row, in a column. Check a few rows against the legend."),
+  "ELECTRICAL_LEGEND_OCR": ("warning", "The description of this legend row is drawn as outlines, not as text, so it was read by OCR and may have letters wrong. The kind of point (light, fan, socket, switch ...) follows from it. Check it against the legend."),
+  "ELECTRICAL_LEGEND_FROM_PROJECT": ("info", "This drawing prints no legend of its own, so the legend of another drawing of the project was used."),
   "ELECTRICAL_READ_FAILED": ("warning", "The electrical symbols of this sheet could not be counted. Count them by hand."),
   "DRAIN_CHAMBERS_COUNT_ONLY": ("info", "Only the number of chambers marked on this sheet is counted, once for each mark. Their depth, size, cover, the excavation and the pipes between them are not taken."),
   "TANK_SLABS_QS": ("info", "The QS gave the slabs of a tank: a top slab of 6 inches and a bottom slab of 8 inches (S11). His sheet shows 6 inches for both slabs of the water tanks, so confirm the 8 inches with him. A slab the tank detail prints replaces his value for that slab."),

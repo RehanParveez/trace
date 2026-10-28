@@ -221,11 +221,10 @@ def _slice_in(slices: list, lo: float, hi: float) -> float:
   return total
 
 def dpc_datum(ctx, floors: list) -> S.Datum | None:
-  """The damp-proof course level of a drawing on its own: the typed level, or the ground floor level less the DPC drop."""
   typed = S.typed_overrides(ctx)
   if "DPC" in typed:
     return S._typed("DPC", typed["DPC"], "damp-proof course level")
-  ground = next((f for f in floors if f.key == "GROUND"), None)
+  ground = S.plinth_floor(ctx, floors)
   if "FFL" in typed:
     ffl = typed["FFL"]
   elif ground is not None:
@@ -238,7 +237,7 @@ def dpc_datum(ctx, floors: list) -> S.Datum | None:
 
 def pdf_datums(ctx, floors: list, lintel_z: float | None = None) -> S.StageSetup:
   typed = S.typed_overrides(ctx)
-  ground = next((f for f in floors if f.key == "GROUND"), None)
+  ground = S.plinth_floor(ctx, floors)
   if ground is None and "FFL" not in typed:
     return S.StageSetup(reason="NO_GROUND_FLOOR")
   base = float(ground.level_mm) if ground is not None else typed["FFL"]
@@ -252,7 +251,7 @@ def pdf_datums(ctx, floors: list, lintel_z: float | None = None) -> S.StageSetup
     slabs = [S._typed("SLAB_1", typed["SLAB_1"], "top of the floor slab")]
   if not slabs:
     return S.StageSetup(reason="NO_SLAB_LEVEL")
-  ffl = S._typed("FFL", typed["FFL"], "finished level of the ground floor") if "FFL" in typed else S.Datum("FFL", base, "drawing", "finished level of the ground floor")
+  ffl = S._typed("FFL", typed["FFL"], "finished level of the ground floor") if "FFL" in typed else S.Datum("FFL", base, "drawing", "finished level of the ground floor" if ground is None or ground.key == "GROUND" else "finished level of the lowest storey")
   given = (ctx.convention_params or {}).get("dpc_below_ffl_mm") is not None
   
   if "DPC" in typed:
@@ -269,8 +268,8 @@ def pdf_datums(ctx, floors: list, lintel_z: float | None = None) -> S.StageSetup
       "no opening heights on the drawing; floor level plus the lintel height")
   return S.build_setup(ctx, ffl, dpc, lintel, slabs)
 
-def _lintel_z(members, group) -> float | None:
-  bases = [float(m.z0_mm) for m in members if m.group == group and m.category == "LINTEL" and m.z0_mm is not None and m.floor == "GROUND"]
+def _lintel_z(members, group, floor: str = "GROUND") -> float | None:
+  bases = [float(m.z0_mm) for m in members if m.group == group and m.category == "LINTEL" and m.z0_mm is not None and m.floor == floor]
   return min(bases) if bases else None
 
 def _groups(setup) -> list:
@@ -431,8 +430,11 @@ def split_space(ctx, ledger: list, solids: list = ()) -> SpaceResult:
     for f in getattr(takeoff, "floors", ()) or ():
       floors_by_group[f.group].append(f)
     for group in sorted({m.group for m in members}):
-      setups[group] = pdf_datums(ctx, floors_by_group.get(group, []), _lintel_z(members, group))
+      base = S.plinth_floor(ctx, floors_by_group.get(group, []))
+      setups[group] = pdf_datums(ctx, floors_by_group.get(group, []), _lintel_z(members, group, base.key if base is not None else "GROUND"))
     stats["datums"] = {g: S.datum_payload(s) for g, s in sorted(setups.items())}
+    stats["levels"] = {g: [{"key": f.key, "level_mm": round(f.level_mm, 1), "soffit_mm": f.soffit_mm, "top_mm": f.top_mm, "grade": f.grade, "sources": list(f.sources),
+      "decisions": list(f.decisions)} for f in sorted(fl, key=lambda f: f.level_mm)] for g, fl in sorted(floors_by_group.items())}
     stats["unused_overrides"] = S.unused_overrides(ctx, list(setups.values()))
 
   parts_of: dict = defaultdict(list)

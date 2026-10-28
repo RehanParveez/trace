@@ -21,6 +21,12 @@ export interface ConventionRow {
   set_at: string | null;
   evidence: string | null;
   sheets_read_with_other_value: number;
+  cls: "PRINTED" | "STANDARD" | "JUDGEMENT";
+  version: number | null;
+  rule_id: string | null;
+  scope: Record<string, unknown>;
+  scoped: Array<{ scope: Record<string, unknown>; value: unknown; cls: string; origin: string; version: number; rule_id: string }>;
+  project_override: { value: unknown; note: string | null; set_at: string | null } | null;
 }
 
 export interface CompanyConventions {
@@ -29,6 +35,13 @@ export interface CompanyConventions {
   assumed: number;
   qs_name: string;
   qs_answered_on: string;
+  book: { id: string; name: string; version: number } | null;
+  project_id: string | null;
+}
+
+export interface ProjectOverridesUpdate {
+  values: Record<string, number | string | boolean | null>;
+  note?: string | null;
 }
 
 export interface ConventionsUpdate {

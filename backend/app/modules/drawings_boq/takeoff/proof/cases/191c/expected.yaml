@@ -1,1 +1,308 @@
-[]
+- key: EXCAVATION/ALL
+  item: Excavation of Main building
+  unit: cft
+  qs: 2928.125
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 5.
+  family: EXCAVATION
+- key: FILLING/ALL
+  item: Back filling
+  unit: cft
+  qs: 7903.162
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 6. The bill's back filling; Trace measures the filling under floors.
+  family: FILLING
+- key: TERMITE/ALL
+  item: Termite
+  unit: sft
+  qs: 3055.485
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 7.
+  family: TERMITE
+- key: PCC/ALL
+  item: 'P.C.C Concrete (1:4:8) under Footing'
+  unit: cft
+  qs: 308.476
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: 'BOQ Grey Structure work · Grey Structure · row 8. Footing PCC, two mixes in two bill lines.'
+  family: PCC
+- key: PCC/ALL/2
+  item: 'P.C.C Concrete (1:6:12) under Footing'
+  unit: cft
+  qs: 85.358
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: 'BOQ Grey Structure work · Grey Structure · row 9. Footing PCC, two mixes in two bill lines.'
+  family: PCC
+- key: KACHA/ALL
+  item: 'P.C.C Concrete (1:2:4) under Floor'
+  unit: sft
+  qs: 2065.083
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: 'BOQ Grey Structure work · Grey Structure · row 15. The bed under the floor, both floors.'
+  family: KACHA
+- key: RCC_COLUMNS/ALL
+  item: 'Column Concrete (1:2:4)'
+  unit: cft
+  qs: 110.958
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 10.
+  family: RCC_COLUMNS
+- key: RCC_BEAMS_SLABS/ALL
+  item: 'Roof Beams & Slab Concrete (1:2:4)'
+  unit: cft
+  qs: 1372.996
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 11. The bill joins roof beams and slabs in one line.
+  families: [RCC_ROOF_BEAMS, RCC_SLABS]
+- key: RCC_STAIR/ALL
+  item: 'Stair Concrete (1:2:4)'
+  unit: cft
+  qs: 63.093
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 12.
+  family: RCC_STAIR
+- key: RCC_LINTELS/ALL
+  item: Doors & Windows Lintel Concrete
+  unit: cft
+  qs: 102.538
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 13.
+  family: RCC_LINTELS
+- key: TANKS/ALL
+  item: 'OHWT , Septic T, UGWT Concrete'
+  unit: cft
+  qs: 308.325
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 14. Concrete of the three tanks.
+  family: TANKS
+- key: STEEL/ALL
+  item: Reinforcement
+  unit: kg
+  qs: 5500.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 16.
+  family: STEEL
+- key: ROOF_TREATMENT/ALL
+  item: Roof Water Proofing
+  unit: sft
+  qs: 1156.92
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 30.
+  family: ROOF_TREATMENT
+- key: BRICK_FOUNDATION/ALL
+  item: Brick Work In Sub Structure
+  unit: cft
+  qs: 926.78
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 21.
+  family: BRICK_FOUNDATION
+- key: BRICK_WALLS/GROUND
+  item: Brick Work In Sup Structure G.F
+  unit: cft
+  qs: 1701.336
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: 'BOQ Grey Structure work · Grey Structure · row 22. Joined with the boundary wall: Trace puts the boundary wall on the ground floor.'
+  family: BRICK_WALLS
+  floor: GROUND
+- key: BRICK_WALLS/GROUND/2
+  item: Brick Work Boundary Wall
+  unit: cft
+  qs: 963.944
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: 'BOQ Grey Structure work · Grey Structure · row 25. Joined with the ground floor: Trace puts the boundary wall on the ground floor.'
+  family: BRICK_WALLS
+  floor: GROUND
+- key: BRICK_WALLS/FIRST
+  item: Brick Work In Sup Structure F.F
+  unit: cft
+  qs: 1397.394
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 23.
+  family: BRICK_WALLS
+  floor: FIRST
+- key: BRICK_WALLS/ROOF
+  item: Brick Work In Sup Structure Mumty.F
+  unit: cft
+  qs: 235.898
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 24.
+  family: BRICK_WALLS
+  floor: ROOF
+- key: WALL_PLASTER/ALL
+  item: Plaster work internal G.F
+  unit: sft
+  qs: 3874.304
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: 'BOQ Grey Structure work · Grey Structure · row 26. Internal G.F, internal F.F and external are three bill lines; Trace gives plaster by floor.'
+  family: WALL_PLASTER
+- key: WALL_PLASTER/ALL/2
+  item: Plaster work internal F.F
+  unit: sft
+  qs: 3016.279
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 27. See the first plaster line.
+  family: WALL_PLASTER
+- key: WALL_PLASTER/ALL/3
+  item: Plaster work External
+  unit: sft
+  qs: 6577.764
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 29. See the first plaster line.
+  family: WALL_PLASTER
+- key: CEILING_PLASTER/ALL
+  item: False Ceiling
+  unit: sft
+  qs: 3024.906
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Finishes Work · row 5.
+  family: CEILING_PLASTER
+- key: MAS-DPC/ALL
+  item: 'DPC (1:2:4)'
+  unit: sft
+  qs: 390.756
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 17. Horizontal and vertical DPC are two bill lines.
+- key: MAS-DPC/ALL/2
+  item: 'Vertical DPC (1:2:4)'
+  unit: sft
+  qs: 164.97
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work · Grey Structure · row 18. See the first DPC line.
+- key: FIN-FLOOR/GROUND
+  item: G.F Floor Tile Work (24"x48")
+  unit: sft
+  qs: 1014.043
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 7. Trace's floor finish of the ground floor.
+- key: FIN-FLOOR/FIRST
+  item: F.F Floor Tile Work (24"x48")
+  unit: sft
+  qs: 867.627
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 8. Trace's floor finish of the first floor.
+- key: FIN-FLOOR-TILE/ALL
+  item: Bath Room Floor Tile (12"x24")
+  unit: sft
+  qs: 251.345
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 11.
+- key: FIN-DADO/ALL
+  item: Bath Room Wall Tile (12"x24")
+  unit: sft
+  qs: 1168.03
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 12. The bill tiles the bath walls; Trace's dado height is a rule (Pack 142).
+- key: FIN-WALL-TILE/ALL
+  item: Kitchen Wall Tile (12"x24")
+  unit: sft
+  qs: 146.605
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 13. The bill does not say which band of the wall is tiled.
+- key: FIN-PORCH-TILE/ALL
+  item: Pourch Mate Tile (16"x16")
+  unit: sft
+  qs: 440.52
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 14. Has a number only when a rule gives the porch an item of its own.
+- key: FIN-PAVING/ALL
+  item: Tuff Tile (8"x4") Passage Area
+  unit: sft
+  qs: 348.48
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 15. Has a number only when a rule gives the passage an item of its own.
+- key: FIN-PAINT/ALL
+  item: Paint Work internal
+  unit: sft
+  qs: 5967.466
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Marble Work · row 28. Whether the bill's internal paint includes ceilings is not stated.
+- key: FIN-PAINT-EXT/ALL
+  item: Paint Work External
+  unit: sft
+  qs: 6076.014
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Marble Work · row 29.
+- key: DOORS/ALL
+  item: Wooden Doors
+  unit: sft
+  qs: 471.75
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Marble Work · row 22.
+  family: DOORS
+- key: WINDOWS/ALL
+  item: Aluminum Glass Windows
+  unit: sft
+  qs: 633.37
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Marble Work · row 26.
+  family: WINDOWS

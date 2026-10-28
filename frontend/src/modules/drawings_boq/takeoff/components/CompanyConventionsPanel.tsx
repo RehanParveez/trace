@@ -1,12 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button, inputClass, useToast } from "../../../organizations/components/OrganizationUi";
-import { useAdoptQsConventions, useCompanyConventions, useSaveCompanyConventions } from "../hooks/useCompanyConventions";
+import { useAdoptQsConventions, useCompanyConventions, useSaveCompanyConventions, useSaveProjectConventions } from "../hooks/useCompanyConventions";
 import type { ConventionRow } from "../types/companyConventions.types";
 import { takeoffErrorMessage } from "../utils/errors";
 
 interface Props {
   canManage: boolean;
+  projectId?: string;
+  canOverride?: boolean;
 }
 
 function shown(r: ConventionRow): string {
@@ -22,13 +24,18 @@ function inchText(r: ConventionRow, draft: string | undefined): string | null {
   return Number.isFinite(v) ? `${(v / 25.4).toFixed(2).replace(/\.?0+$/, "")} in` : null;
 }
 
-export function CompanyConventionsPanel({ canManage }: Props) {
+const CLASS_TEXT: Record<string, string> = { PRINTED: "printed", STANDARD: "standard", JUDGEMENT: "judgement" };
+
+export function CompanyConventionsPanel({ canManage, projectId, canOverride = false }: Props) {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Record<string, string>>({});
-  const q = useCompanyConventions(open);
+  const q = useCompanyConventions(open, projectId);
   const save = useSaveCompanyConventions();
+  const saveProject = useSaveProjectConventions(projectId);
+  const [overriding, setOverriding] = useState<string | null>(null);
+  const [overrideDraft, setOverrideDraft] = useState<string>("");
   const adopt = useAdoptQsConventions();
   const rows = q.data?.rows ?? [];
   const groups = useMemo(() => {
@@ -40,11 +47,18 @@ export function CompanyConventionsPanel({ canManage }: Props) {
     return out;
   }, [rows]);
   const changed = rows.filter((r) => r.editable && draft[r.key] !== undefined && draft[r.key] !== shown(r));
-  const busy = save.isPending || adopt.isPending;
+  const busy = save.isPending || adopt.isPending || saveProject.isPending;
 
   function submit(values: Record<string, number | string | null>) {
     save.mutate({ values }, {
       onSuccess: () => { setDraft({}); showToast({ tone: "success", title: t("boq.takeoff.company.saved", "Company conventions saved. Sheets already read keep their old figures until they are read again.") }); },
+      onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.company.saveFailed", "Could not save"), description: takeoffErrorMessage(e) }),
+    });
+  }
+
+  function submitProject(key: string, value: number | string | null) {
+    saveProject.mutate({ values: { [key]: value } }, {
+      onSuccess: () => { setOverriding(null); setOverrideDraft(""); showToast({ tone: "success", title: t("boq.takeoff.company.projectSaved", "Saved for this project. Its next calculation uses it.") }); },
       onError: (e) => showToast({ tone: "error", title: t("boq.takeoff.company.saveFailed", "Could not save"), description: takeoffErrorMessage(e) }),
     });
   }
@@ -105,6 +119,12 @@ export function CompanyConventionsPanel({ canManage }: Props) {
                           {r.origin === "COMPANY" ? t("boq.takeoff.company.originCompany", "set by you") : r.origin === "QS_WORKBOOK" ? t("boq.takeoff.company.originQs", "from the QS") : t("boq.takeoff.company.originAssumed", "assumed")}
                         </Badge>
                       ) : <Badge tone="slate">{t("boq.takeoff.company.fixed", "not set here")}</Badge>}
+                      {r.editable ? <span className="text-[11px] text-[var(--color-text-muted)]" data-testid={`rule-meta-${r.key}`}>{CLASS_TEXT[r.cls] ?? r.cls}{r.version !== null ? ` · v${r.version}` : ""}{Object.keys(r.scope ?? {}).length ? ` · ${JSON.stringify(r.scope)}` : ""}</span> : null}
+                      {r.editable && projectId && canOverride ? (
+                        <Button size="sm" variant="ghost" disabled={busy} data-testid={`override-${r.key}`} onClick={() => { setOverriding(overriding === r.key ? null : r.key); setOverrideDraft(r.project_override ? String(r.project_override.value) : shown(r)); }}>
+                          {r.project_override ? t("boq.takeoff.company.projectFigure", "This project: {{v}}", { v: String(r.project_override.value) }) : t("boq.takeoff.company.overrideProject", "Set for this project")}
+                        </Button>
+                      ) : null}
                       {r.editable && r.sheets_read_with_other_value > 0 ? (
                         <span className="text-[11px] text-[var(--color-text-secondary)]">{t("boq.takeoff.company.stale", "{{n}} sheets read with another figure", { n: r.sheets_read_with_other_value })}</span>
                       ) : null}
@@ -112,6 +132,14 @@ export function CompanyConventionsPanel({ canManage }: Props) {
                         <Button size="sm" variant="ghost" disabled={busy} onClick={() => submit({ [r.key]: null })}>{t("boq.takeoff.company.clear", "Clear")}</Button>
                       ) : null}
                     </div>
+                    {overriding === r.key ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        <input className={`${inputClass} w-28`} type="number" step="any" min={r.low} max={r.high} value={overrideDraft} onChange={(e) => setOverrideDraft(e.target.value)} />
+                        <Button size="sm" variant="primary" disabled={busy || overrideDraft === ""} onClick={() => submitProject(r.key, r.kind === "CHOICE" ? overrideDraft : Number(overrideDraft))}>{t("boq.takeoff.company.save1", "Save")}</Button>
+                        {r.project_override ? <Button size="sm" variant="ghost" disabled={busy} onClick={() => submitProject(r.key, null)}>{t("boq.takeoff.company.useCompany", "Use the company's")}</Button> : null}
+                      </div>
+                    ) : null}
+                    {r.scoped?.length ? <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">{r.scoped.map((s) => `${JSON.stringify(s.scope)}: ${String(s.value)} (v${s.version})`).join(" · ")}</p> : null}
                     {!r.editable && r.why_fixed ? <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">{r.why_fixed}</p> : null}
                     {r.editable && r.evidence ? <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">{r.evidence}</p> : null}
                   </li>
