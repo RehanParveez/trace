@@ -8,6 +8,7 @@ from app.modules.drawings_boq.takeoff.prep import marks as M
 from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
 from app.engine.measure import stages as S
+from app.modules.drawings_boq.takeoff.prep import schedules as SCH
 
 CAPTION = re.compile(r"\b(?:SECTION|DETAIL|PLAN)\b.*\b(?:TANKS?|W\.?\s?T)\b|\b(?:TANKS?|W\.?\s?T)\b.*\b(?:SECTION|DETAIL|PLAN)\b", re.I)
 WALL_NOTE = re.compile(r"^\s*(\d{1,2})?\s*([½¼¾]|\d/\d)?\s*[\"”″]\s*(?:TH[K]?\.?\s*:?\s*)?R\.?\s?C\.?\s?C\.?\s+(WALL|SLAB)\b", re.I)
@@ -15,8 +16,10 @@ SIZE_SPLIT = re.compile(r"\s*[xX×]\s*")
 VULGAR = {"½": 0.5, "¼": 0.25, "¾": 0.75}
 BARE_CAPTION = re.compile(r"^(?:O\s*[/.]?\s*H|OVER\s*HEAD|U\s*[/.]?\s*G|UNDER\s*GROUND)\.?\s*WATER\s*TANK$", re.I) 
 VIEW_SECTION = re.compile(r"\b(?:SECTION|DETAIL)\b", re.I)
-KIND_OHWT = re.compile(r"\bO\s*[/.]?\s*H\b|OVER\s*HEAD|OHWT", re.I)
-KIND_UGWT = re.compile(r"\bU\s*[/.]?\s*G\b|UNDER\s*GROUND|UGWT", re.I)
+KIND_OHWT = re.compile(r"(?<![A-Z])O\s*[./]?\s*H(?:\s*[./]?\s*W\.?\s*T?)?(?![A-Z])|OVER\s*[- ]?HEAD|OHWT", re.I)
+KIND_UGWT = re.compile(r"(?<![A-Z])U\s*[./]?\s*G(?:\s*[./]?\s*W\.?\s*T?)?(?![A-Z])|UNDER\s*[- ]?GROUND|UGWT", re.I)
+KIND_SEPTIC = re.compile(r"SEPTIC", re.I)
+METRIC_LEN = re.compile(r"^\d{1,2}\.\d{1,3}$")
 MAX_CAPTION_CHARS = 48
 REGION_HALF_WIDTH_PT = 75.0
 REGION_HEIGHT_PT = 170.0
@@ -56,17 +59,37 @@ def parse_length(text: str) -> dict | None:
     return {"inches": int(m.group(1)), "text": f"{int(m.group(1))}\""}
   return None
 
+def _length_in(part: str) -> float | None:
+  """One length of a caption in inches: 11'-0", 5', 8'-1½", or a metric 2.4 (metres)."""
+  t = part.replace(" ", "")
+  if METRIC_LEN.match(t):
+    return round(float(t) * 1000.0 / 25.4, 2)
+  mm = SCH.feet_inches_mm(t)
+  return None if mm is None else round(mm / 25.4, 2)
+
+def caption_sizes(text: str) -> dict | None:
+  tail = re.split(r"\b(?:DETAIL|SECTION|PLAN)\b", text or "", flags=re.I)[-1]
+  m = re.search(r"\d", tail)
+  if not m:
+    return None
+  parts = SIZE_SPLIT.split(tail[m.start():].strip())
+  if len(parts) not in (2, 3):
+    return None
+  got = [_length_in(p) for p in parts]
+  if any(v is None for v in got):
+    return None
+  plan = sorted(got[:2], reverse=True)
+  if not all(24 <= v <= 360 for v in plan):
+    return None
+  depth = got[2] if len(got) == 3 and 12 <= got[2] <= 240 else None
+  if len(got) == 3 and depth is None:
+    return None
+  return {"plan_in": plan, "depth_in": depth}
+
 def plan_size(text: str) -> list | None:
-  """The two lengths a tank caption ends with ("O.H.W.TANK DETAIL 11'-0"x9'-3""): [inches, inches], the longer first; None when it ends with no pair of lengths (2 to 30 ft)."""
-  tail = re.split(r"\b(?:DETAIL|SECTION|PLAN)\b", text or "", flags=re.I)[-1].strip()
-  parts = SIZE_SPLIT.split(tail)
-  if len(parts) != 2:
-    return None
-  mm = [S.feet_inches_mm(p.replace(" ", "")) for p in parts]
-  if any(v is None for v in mm):
-    return None
-  inches = sorted((round(v / 25.4, 2) for v in mm), reverse=True)
-  return inches if all(24 <= v <= 360 for v in inches) else None
+  """The two lengths a tank caption ends with, the longer first; None when it ends with no pair of lengths (2 to 30 ft)."""
+  got = caption_sizes(text)
+  return got["plan_in"] if got else None
 
 def note_inches(whole: str | None, frac: str | None) -> float | None:
   """4½ -> 4.5, 6 -> 6.0; None when there is no number."""
@@ -106,14 +129,17 @@ def wall_notes(lines: list, vis, caps_v: list) -> dict:
   return out
 
 def captions(lines: list) -> list:
-  """[{"text", "kind", "view", "x", "y"}]: the lines that name a tank drawing ("SECTION OF O/H WATER TANK", "Detail of U/G.W.Tank", "PLAN OF OVER HEAD WATER TANK")."""
   out = []
   for ln in lines:
     text = (ln.text or "").strip()
-    if not text or len(text) > MAX_CAPTION_CHARS or not ln.spans or not (CAPTION.search(text) or BARE_CAPTION.match(text)):
+    if not text or len(text) > MAX_CAPTION_CHARS or not ln.spans:
+      continue
+    sized = caption_sizes(text)
+    if not (CAPTION.search(text) or BARE_CAPTION.match(text) or (sized and (KIND_OHWT.search(text) or KIND_UGWT.search(text) or KIND_SEPTIC.search(text)))):
       continue
     ws = [w for _, _, w in ln.spans]
-    out.append({"text": text, "kind": kind_of(text), "view": "SECTION" if VIEW_SECTION.search(text) else "PLAN", "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws), "plan_in": plan_size(text), "span": [[ws[0].cx, ws[0].cy], [ws[-1].cx, ws[-1].cy]]})
+    out.append({"text": text, "kind": kind_of(text), "view": "SECTION" if VIEW_SECTION.search(text) else "PLAN", "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws),
+      "plan_in": sized["plan_in"] if sized else None, "depth_in": sized["depth_in"] if sized else None, "span": [[ws[0].cx, ws[0].cy], [ws[-1].cx, ws[-1].cy]]})
   return out
 
 def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float) -> tuple:
@@ -228,7 +254,7 @@ def read_tank_details(words: list, page, page_wh: tuple, crop: tuple, rotation: 
   for c in caps:
     region = _region(cap_v[id(c)], others, Wv, Hv)
     rec = {"kind": c["kind"], "view": c["view"], "caption": c["text"], "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
-      "lengths": [], "bar_notes": bar_notes(lines, vis, region), "read": "NONE", "plan_in": c.get("plan_in"), "wall_notes": notes_of.get(id(c), [])}
+      "lengths": [], "bar_notes": bar_notes(lines, vis, region), "read": "NONE", "plan_in": c.get("plan_in"), "depth_in": c.get("depth_in"), "wall_notes": notes_of.get(id(c), [])}
     text_lengths = PT.tank_lengths(PT.region_words(words, region, crop, rotation, page_wh))
     rec["lengths"] = text_lengths
     rec["read"] = "TEXT" if text_lengths else "NONE"
@@ -256,5 +282,5 @@ def gather(sheets: list) -> list:
     for d in sh.get("details") or []:
       if d.get("lengths") or d.get("bar_notes") or d.get("plan_in") or d.get("wall_notes"):
         out.append({"kind": d["kind"], "view": d["view"], "caption": d["caption"], "page_no": sh.get("page_no"), "lengths": list(d.get("lengths") or []),
-          "bar_notes": list(d.get("bar_notes") or []), "plan_in": d.get("plan_in"), "wall_notes": list(d.get("wall_notes") or [])})
+          "bar_notes": list(d.get("bar_notes") or []), "plan_in": d.get("plan_in"), "depth_in": d.get("depth_in"), "wall_notes": list(d.get("wall_notes") or [])})
   return out

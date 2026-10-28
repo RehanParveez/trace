@@ -2,9 +2,40 @@ from __future__ import annotations
 import re
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
+from app.engine.measure import readings as QSR
 
 KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF", "BAND": "TIE"}
 ALSO_OFFERED = {"ROOF": ("BEAM",), "PLINTH": ("GRADE",)}
+
+WEB_BELOW_SLAB, FULL_DEPTH = "WEB_BELOW_SLAB", "FULL_DEPTH"
+FULL_DEPTH_ROLES = ("PLINTH", "BAND")
+FULL_DEPTH_MARKS = ("GB", "PB", "TB")
+BASIS_NOTES = {WEB_BELOW_SLAB: "BEAM_DEPTH_WEB_BELOW_SLAB", FULL_DEPTH: "BEAM_DEPTH_FULL"}
+
+def depth_basis(c) -> str | None:
+  """How the depth of this beam is counted (Pack 135): the overall depth under the QS convention beam_depth_includes_slab (the engine then gives the slab the part of the beam inside it and the
+  beam keeps its web), or in full for a plinth, grade, tie or band beam, which has no slab over it. None for an upstand beam, which carries its own note (BEAM_UPSTAND)."""
+  f = c.facts or {}
+  if f.get("upstand"):
+    return None
+  letters = re.sub(r"[^A-Z]", "", norm_mark(str(c.tag or "")))
+  if f.get("beam_role") in FULL_DEPTH_ROLES or letters in FULL_DEPTH_MARKS:
+    return FULL_DEPTH
+  return WEB_BELOW_SLAB if QSR.param("beam_depth_includes_slab") else FULL_DEPTH
+
+def basis_note(c) -> None:
+  """Puts the note and the fact that say which basis the depth of the beam is counted on. Does nothing while the depth is not known."""
+  if not (c.params or {}).get("depth_mm"):
+    return
+  basis = depth_basis(c)
+  if basis is None:
+    return
+  note = C.note(BASIS_NOTES[basis])
+  note["origin"] = QSR.CO.origin_of("beam_depth_includes_slab")
+  c.notes = [n for n in c.notes or [] if n.get("code") not in BASIS_NOTES.values()] + [note]
+  if c.facts is None:
+    c.facts = {}
+  c.facts["depth_basis"] = basis
 
 def _text(s: dict) -> str:
   size = f"{s['depth_mm'] / 25.4:g} in deep" if s.get("depth_mm") else "depth not read"
@@ -50,6 +81,7 @@ def list_for_strips(c, sections: list) -> bool:
     c.missing = [m for m in (c.missing or []) if m != "depth_mm"]
     f["section_mark"], f["section_pages"], f["section_assumed"] = s["mark"], list(s.get("pages") or []), True
     f["section_options"] = [option(s)]
+    basis_note(c)
     c.notes.append(C.note("BEAM_SECTION_FROM_DETAIL", mark=s["mark"], depth_mm=s["depth_mm"]))
     if s.get("steel"):
       c.params["steel"] = dict(s["steel"])
@@ -108,6 +140,7 @@ def apply_marked(c, sections: list) -> bool:
     f["steel_text"] = s.get("steel_text")
     f["steel_source"] = {"grade": "PRINTED", "text": f"beam section {s['mark']}"}
     c.notes.append(C.note("STEEL_FROM_DETAIL", text=s.get("steel_text")))
+  basis_note(c)
   return True
 
 def apply(beams: list, sections: list) -> dict:
@@ -149,6 +182,7 @@ def apply(beams: list, sections: list) -> dict:
         f["steel_text"] = s.get("steel_text")
         f["steel_source"] = {"grade": "ASSUMED" if how else "PRINTED", "text": f"beam section {s['mark']}"}
         c.notes.append(C.note("STEEL_FROM_DETAIL", text=s.get("steel_text")))
+      basis_note(c)
       stats["applied"] += 1
     else:
       f["section_options"] = [option(s) for s in opts]

@@ -101,12 +101,15 @@ def _tank_item(kind: str, labels: list, details: list, own: set | None = None) -
     facts["sizes_source"] = "DRAWING_ASSUMED"
     facts["sizes_assumed"] = dict(derived["basis"])
     facts["sizes_from"] = dict(derived.get("source") or {})
+    facts["size_basis"] = derived.get("size_basis")
     if derived["slabs_mm"]:
       facts["tank_slabs_mm"] = dict(derived["slabs_mm"])
     missing = [m for m in missing if m not in derived["sizes_mm"]]
     codes = [(c, e) for c, e in codes if c not in ("SITE_TANK_SIZES_TYPED", "SITE_TANK_SIZES_LISTED")]
     said = "; ".join(f"{TANK_WORDS_FOR[t].replace('the ', '', 1)}: {b}" for t, b in derived["basis"].items())
     codes.append(("TANK_SIZES_DERIVED", {"kind": kind, "derived": said, "left": ", ".join(derived["left"]) or None, "printed": listed["message"] if listed else None}))
+    if derived.get("size_basis") in ("INSIDE_ASSUMED", "OUTSIDE_NO_WALL"):
+      codes.append(("TANK_SIZE_BASIS_ASSUMED", {"kind": kind, "basis": derived["size_basis"]}))
   if len(labels) > 1:
     codes.append(("SITE_LABEL_REPEATED", {"count": len(labels)}))
   return {"site_kind": kind, "tag": TANK_TAG[kind], "label": LABEL[kind], "x": first.cx, "y": first.cy, "facts": facts, "params": {}, "missing": missing,

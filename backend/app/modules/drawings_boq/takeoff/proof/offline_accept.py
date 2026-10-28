@@ -19,6 +19,7 @@ from app.modules.drawings_boq.takeoff import service as svc_mod
 from app.modules.drawings_boq.takeoff.extract import ready as RD
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract import slab_openings_service as SOS
+from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 from app.modules.drawings_boq.takeoff.prep import facts as drawing_facts, printed_params
 from app.modules.drawings_boq.takeoff.extract import extract_service as ES
 from app.modules.drawings_boq.takeoff import z_range as Z
@@ -93,6 +94,11 @@ def _apply_slab_openings(sheets: list, read: list) -> None:
   known = {(c.facts or {}).get("floor") for c in rows if c.category == "SLAB"} | set(levels)
   SOS.annotate(rows, SO.place(levels, {k for k in known if k}))
 
+def _apply_beam_sources(sheets: list, read: list) -> None:
+  exts = {r["sheet_id"]: SimpleNamespace(stats=r.get("stats") or {}) for r in read}
+  rows = [c for r in read for c in r["candidates"]]
+  BOS.annotate(rows, BOS.strips_by_level(sheets, exts), BOS.walls_by_level(rows, {s.id: s.page_no for s in sheets}))
+
 def _calibration(case: str, sheet: TakeoffSheet, ratio: float) -> TakeoffCalibration:
   text = f"1:{ratio:g}"
   built = svc_mod.build_calibration("SCALE_RATIO", None, Decimal(str(round(ratio, 6))), text, None, repo_mod.sheet_user_unit(sheet))
@@ -159,6 +165,7 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     out.printed[drawing_id] = printed_params.from_items(gathered["items"])
     out.meta[drawing_id] = PrepService.floor_heights_from([SimpleNamespace(page_no=r["page_no"], label=None, prep_meta=r.get("meta") or {}) for r in rows])
     _apply_slab_openings(list(sheets.values()), read_for_ready)
+    _apply_beam_sources(list(sheets.values()), read_for_ready)
   
   failed_ids: set = set()
   refused: dict = {}

@@ -74,9 +74,76 @@ def wall_groups(walls: list) -> dict:
     groups.setdefault(round(t, 1), []).append(w)
   return groups
 
-def _section_facts(sec: dict) -> dict:
-  return {"footing_section": {"caption": sec.get("caption"), "masonry_only": sec.get("masonry_only"), "caption_wall_in": sec.get("caption_wall_in"), "calibration": sec.get("calibration"), "scale_mm_per_pt": sec.get("scale_mm_per_pt"),
-    "pcc": sec.get("pcc"), "footing": sec.get("footing"), "steps": sec.get("steps"), "total_depth_mm": sec.get("total_depth_mm"), "steel": sec.get("steel") or []}}
+def _section_facts(sec: dict, how: str | None = None) -> dict:
+  out = {"caption": sec.get("caption"), "masonry_only": sec.get("masonry_only"), "caption_wall_in": sec.get("caption_wall_in"), "calibration": sec.get("calibration"), "scale_mm_per_pt": sec.get("scale_mm_per_pt"),
+    "pcc": sec.get("pcc"), "footing": sec.get("footing"), "steps": sec.get("steps"), "total_depth_mm": sec.get("total_depth_mm"), "steel": sec.get("steel") or []}
+  if sec.get("mark"):
+    out.update({"mark": sec.get("mark"), "exterior": sec.get("exterior"), "wall_in": sec.get("wall_in"), "base_width_mm": sec.get("base_width_mm"), "pcc_mm": sec.get("pcc_mm"), "sand_mm": sec.get("sand_mm"),
+      "shaft_mm": sec.get("shaft_mm"), "page_no": sec.get("page_no"), "typed_by": how})
+  return {"footing_section": out}
+
+def outer_flags(walls: list, mm_per_pt: float | None) -> dict:
+  """wall key -> True for a wall on the outer outline of the floor, False for one inside it (the rule the plaster uses); empty while the scale of the sheet is unknown."""
+  if not mm_per_pt:
+    return {}
+  from app.modules.drawings_boq.takeoff.extract import finishes as FN
+  ws = FN.plaster_walls(walls)
+  if not ws:
+    return {}
+  turn = FN.plan_angle(ws)
+  ends = [FN._turned(p, turn) for w in ws for p in (w.geometry["points"][0], w.geometry["points"][-1])]
+  box = (min(p[0] for p in ends), min(p[1] for p in ends), max(p[0] for p in ends), max(p[1] for p in ends))
+  return {w.key: bool(FN._is_outer(w, box, mm_per_pt, turn)) for w in ws}
+
+def _along(p: tuple, a: tuple, b: tuple) -> float:
+  """Distance from a point to the run from a to b."""
+  dx, dy = b[0] - a[0], b[1] - a[1]
+  n = dx * dx + dy * dy
+  t = 0.0 if n <= 0.0 else max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / n))
+  return ((p[0] - (a[0] + t * dx)) ** 2 + (p[1] - (a[1] + t * dy)) ** 2) ** 0.5
+
+def mark_runs(walls: list, words: list, mm_per_pt: float | None, sections: list | None, is_mark) -> dict:
+  """wall key -> the mark of the footing section written beside the run on a foundation plan (within WALL_SECTION_MARK_REACH_MM of it); empty when the sheet is no foundation plan, prints none, or two marks stand equally near."""
+  marks = {str(s.get("mark")).upper() for s in sections or [] if s.get("mark") and s.get("read") == "OK"}
+  if not marks or not mm_per_pt or not words:
+    return {}
+  
+  reach = C.WALL_SECTION_MARK_REACH_MM / mm_per_pt
+  tags = [(str(wd.text).strip().upper().replace(" ", ""), (wd.cx, wd.cy)) for wd in words]
+  tags = [(t, p) for t, p in tags if t in marks and is_mark(t)]
+  out: dict = {}
+  for w in walls:
+    pts = (w.geometry or {}).get("points") or []
+    if w.category != "WALL" or len(pts) < 2:
+      continue
+    near = sorted((min(_along(p, tuple(a), tuple(b)) for a, b in zip(pts, pts[1:])), t) for t, p in tags)
+    near = [n for n in near if n[0] <= reach]
+    if near and (len(near) == 1 or near[1][1] == near[0][1] or near[1][0] > 1.15 * near[0][0]):
+      out[w.key] = near[0][1]
+  return out
+
+def _spread(centre: list, i: int) -> list:
+  return [[round(centre[0][0] + (i - 1) * C.FOUNDATION_MARKER_OFFSET, 4), centre[0][1]]]
+
+def _drawn_mm(ws: list, used: float) -> float:
+  tot = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws) or 1.0
+  return sum(float((w.facts or {}).get("thickness_mm") or used) * float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws) / tot
+
+def typed_groups(walls: list, sections: list | None, outer: dict | None = None, marks: dict | None = None) -> list:
+  out: list = []
+  for t, ws in sorted(wall_groups(walls).items(), reverse=True):
+    drawn = _drawn_mm(ws, t)
+    split: dict = {}
+    for w in ws:
+      sec, how = FSEC.type_run(sections, t, drawn_mm=drawn, exterior=(outer or {}).get(w.key), mark=(marks or {}).get(w.key))
+      slot = split.setdefault((sec.get("mark"), sec.get("page_no"), sec.get("caption")) if sec else None, [sec, [], []])
+      slot[1].append(w)
+      slot[2].append(how)
+    for sec, run, hows in split.values():
+      how = max(set(hows), key=lambda h: (hows.count(h), h or "")) if sec else None
+      tail = (str(sec.get("mark") or "SECTION"),) if sec is not None and len(split) > 1 else ()
+      out.append((t, run, sec, how, tail))
+  return out
 
 def _assumed(item: str) -> dict:
   """The depth used for an item when the drawing prints none (the workbook's, or usual practice), with its reason."""
@@ -88,9 +155,9 @@ def _working_space(bed_w: float, depth: float, length_mm: float) -> dict:
   return {"used_mm": used, "qs_answer_mm": qs, "trench_width_mm": round(bed_w + 2.0 * used, 1), "trench_width_qs_mm": round(bed_w + 2.0 * qs, 1),
     "extra_m3": round(2.0 * (qs - used) * float(depth) * float(length_mm) / 1e9, 3)}
 
-def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None) -> list:
+def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None, outer: dict | None = None, marks: dict | None = None) -> list:
   out: list = []
-  for t, ws in sorted(wall_groups(walls).items(), reverse=True):
+  for t, ws, sec, how, tail in typed_groups(walls, sections, outer, marks):
     length_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws)
     rcc_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in ws if (w.facts or {}).get("construction") == "RCC")
     pts = [p for w in ws for p in ((w.geometry or {}).get("points") or [])]
@@ -98,37 +165,46 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
     base_facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(ws), "length_m": round(length_m, 3),
       "rcc_length_m": round(rcc_m, 3), "wall_keys": [w.key for w in ws]}
     where = f" · {spec[0]}" if spec else ""
-    
-    label_t = f"{_inch_label(t)} in walls · {length_m:.2f} m{where}"
+    mark_txt = f" · section {tail[0]}" if tail else ""
+    suffix = f"-{tail[0]}" if tail else ""
+    label_t = f"{_inch_label(t)} in walls · {length_m:.2f} m{where}{mark_txt}"
     centre = [_centre(pts)]
     params = {"length_mm": round(length_m * 1000.0, 1)}
     walls_note = C.note("FOUNDATION_FROM_WALLS")
-    sec = FSEC.for_wall(sections, t)
+    if sec:
+      for w in ws:
+        w.facts = w.facts if w.facts is not None else {}
+        w.facts["footing_section"] = {"mark": sec.get("mark"), "typed_by": how, "wall_in": sec.get("wall_in"), "caption": sec.get("caption")}
     if sec and sec.get("pcc") and sec.get("total_depth_mm"):
-      base_facts.update(_section_facts(sec))
+      base_facts.update(_section_facts(sec, how))
       
       sec_note = C.note("FOUNDATION_FROM_SECTION", caption=sec.get("caption"), total_depth_mm=sec["total_depth_mm"])
       sec_extra = [C.note("FOOTING_SECTION_CAPTION_WALL")] if sec.get("caption_wall_in") else []
+      if sec.get("sand_mm"):
+        sec_extra.append(C.note("FOOTING_SAND_NOT_MEASURED", sand_mm=sec["sand_mm"]))
       bed_w, bed_t = float(sec["pcc"]["width_mm"]), float(sec["pcc"]["depth_mm"])
       space = _working_space(bed_w, float(sec["total_depth_mm"]), params["length_mm"])
-      out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre,
+      out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or "", *tail), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN{suffix}", centre,
         {**params, "width_mm": space["trench_width_mm"], "depth_mm": float(sec["total_depth_mm"])}, [],
         [walls_note, sec_note, *sec_extra, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_WORKING_SPACE_QS_ALTERNATIVE")], {**base_facts, "working_space": space}, 0.72))
-      out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
+      out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or "", *tail), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN{suffix}", centre,
         {**params, "width_mm": bed_w, "depth_mm": bed_t}, [], [walls_note, sec_note, *sec_extra], dict(base_facts), 0.78))
-      out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
+      out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or "", *tail), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN{suffix}",
         centre, {**params, "width_mm": bed_w}, [], [walls_note, sec_note, *sec_extra, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.72))
       continue
   
     width_note = C.note("FOUNDATION_WIDTH_TYPED")
     dug = _assumed(TRENCH)
     bed_mm = float(QS.param("pcc_thickness_mm"))
-    out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or ""), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN", centre, {**params, "depth_mm": dug["mm"]},
-      ["strip_width_mm"], [walls_note, width_note, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_DEPTH_ASSUMED", reason=dug["text"])], {**base_facts, "depth_assumed": dug}, 0.65))
-    out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or ""), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN", centre,
-       {**params, "depth_mm": bed_mm}, ["strip_width_mm"], [walls_note, width_note], {**base_facts, "depth_from": "QS_ANSWER"}, 0.7))
-    out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or ""), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN",
-      centre, dict(params), ["strip_width_mm"], [walls_note, width_note, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.65))
+    many = FSEC.options(sections, t, drawn_mm=_drawn_mm(ws, t))
+    extra = [C.note("FOUNDATION_OPTIONS", marks=[o.get("mark") for o in many], pages=[o.get("page_no") for o in many])] if many else []
+    base_facts.update({"section_options": [{"mark": o.get("mark"), "page_no": o.get("page_no"), "total_depth_mm": o.get("total_depth_mm"), "base_width_mm": o.get("base_width_mm")} for o in many]} if many else {})
+    out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or "", *tail), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN{suffix}", centre, {**params, "depth_mm": dug["mm"]},
+      ["strip_width_mm"], [walls_note, width_note, *extra, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_DEPTH_ASSUMED", reason=dug["text"])], {**base_facts, "depth_assumed": dug}, 0.65))
+    out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or "", *tail), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN{suffix}", centre,
+       {**params, "depth_mm": bed_mm}, ["strip_width_mm"], [walls_note, width_note, *extra], {**base_facts, "depth_from": "QS_ANSWER"}, 0.7))
+    out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or "", *tail), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN{suffix}",
+      centre, dict(params), ["strip_width_mm"], [walls_note, width_note, *extra, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.65))
   return out
 
 def under_floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
@@ -197,9 +273,9 @@ def pad_candidates(footings: list, ctx: dict, cls, finish, sections: list | None
       params, missing, notes, facts, 0.75, count=len(pts)))
   return out
 
-def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None) -> list:
+def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None, outer: dict | None = None, marks: dict | None = None) -> list:
   out: list = []
-  for t, ws in sorted(wall_groups(walls).items(), reverse=True):
+  for t, ws, sec, how, tail in typed_groups(walls, sections, outer, marks):
     brick = [w for w in ws if (w.facts or {}).get("construction") != "RCC"]
     length_m = sum(float((w.facts or {}).get("length_cc_m") or 0.0) for w in brick)
     if length_m <= 0.0:
@@ -207,28 +283,38 @@ def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, 
   
     pts = [p for w in brick for p in ((w.geometry or {}).get("points") or [])]
     cls_name = strip_class(t)
-    sec = FSEC.for_wall(sections, t)
     where = f" · {spec[0]}" if spec else ""
+    mark_txt = f" · section {tail[0]}" if tail else ""
+    suffix = f"-{tail[0]}" if tail else ""
     centre = [_centre(pts)]
     if sec and sec.get("steps"):
+      shaft = float(sec.get("shaft_mm") or 0.0)
       n = len(sec["steps"])
+      total = n + (1 if shaft > 0.0 else 0)
       
       for i, st in enumerate(sec["steps"], start=1):
         facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
-          "step_no": i, "steps_in_class": n, "wall_keys": [w.key for w in brick], **_section_facts(sec)}
-        label = f"Brick foundation step {i} of {n} under {_inch_label(t)} in walls · {length_m:.2f} m{where}"
-        out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or ""), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}", centre,
+          "step_no": i, "steps_in_class": total, "wall_keys": [w.key for w in brick], **_section_facts(sec, how)}
+        label = f"Brick foundation step {i} of {total} under {_inch_label(t)} in walls · {length_m:.2f} m{where}{mark_txt}"
+        out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or "", *tail), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}{suffix}", _spread(centre, i),
           {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(st["width_mm"]), "depth_mm": float(st["height_mm"])}, [],
           [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_FROM_SECTION", steps=n, caption=sec.get("caption")), *([C.note("FOOTING_SECTION_CAPTION_WALL")] if sec.get("caption_wall_in") else []), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.74))
+      if shaft > 0.0:
+        facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
+          "step_no": total, "steps_in_class": total, "shaft": True, "wall_keys": [w.key for w in brick], **_section_facts(sec, how)}
+        label = f"Brick foundation wall below the ground under {_inch_label(t)} in walls · {length_m:.2f} m{where}{mark_txt}"
+        out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), total, level_hint or "", *tail), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{total}{suffix}", _spread(centre, total),
+          {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(sec["wall_width_mm"]), "depth_mm": shaft}, [],
+          [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_SHAFT_FROM_SECTION", height_mm=shaft, caption=sec.get("caption")), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.7))
       foot = sec.get("footing")
       
       if foot:
         facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
-          "wall_keys": [w.key for w in brick], **_section_facts(sec)}
+          "wall_keys": [w.key for w in brick], **_section_facts(sec, how)}
         notes = [C.note("FOUNDATION_FROM_WALLS"), C.note("RCC_STRIP_FROM_SECTION", caption=sec.get("caption")), C.note("BRICK_STEPS_BRICK_ONLY")]
         notes.append(C.note("RCC_STRIP_STEEL_PRINTED", bars=sec["steel"]) if sec.get("steel") else C.note("RCC_STRIP_STEEL_NOT_READ"))
-        out.append(_make(cls, ctx, finish, (RCC_STRIP, round(t), level_hint or ""), RCC_STRIP, f"Reinforced concrete strip footing under {_inch_label(t)} in walls · {length_m:.2f} m{where}",
-          f"RCC-STRIP-{_inch_label(t)}IN", centre, {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(foot["width_mm"]), "depth_mm": float(foot["depth_mm"])}, [],
+        out.append(_make(cls, ctx, finish, (RCC_STRIP, round(t), level_hint or "", *tail), RCC_STRIP, f"Reinforced concrete strip footing under {_inch_label(t)} in walls · {length_m:.2f} m{where}{mark_txt}",
+          f"RCC-STRIP-{_inch_label(t)}IN{suffix}", centre, {"length_mm": round(length_m * 1000.0, 1), "width_mm": float(foot["width_mm"]), "depth_mm": float(foot["depth_mm"])}, [],
           notes, facts, 0.74))
       continue
   
@@ -236,8 +322,8 @@ def brick_step_candidates(walls: list, ctx: dict, level_hint: str | None, spec, 
     for i in range(1, steps + 1):
       facts = {"derived_from": "WALLS", "strip_class": cls_name, "wall_thickness_mm": t, "wall_count": len(brick), "length_m": round(length_m, 3),
         "step_no": i, "steps_in_class": steps, "wall_keys": [w.key for w in brick]}
-      label = f"Brick foundation step {i} of {steps} under {_inch_label(t)} in walls · {length_m:.2f} m{where}"
-      out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or ""), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}", centre,
+      label = f"Brick foundation step {i} of {steps} under {_inch_label(t)} in walls · {length_m:.2f} m{where}{mark_txt}"
+      out.append(_make(cls, ctx, finish, (BRICK_STEP, round(t), i, level_hint or "", *tail), BRICK_STEP, label, f"BRICK-STEP-{_inch_label(t)}IN-{i}{suffix}", _spread(centre, i),
         {"length_mm": round(length_m * 1000.0, 1)}, ["step_height_mm", "step_offset_mm"],
         [C.note("FOUNDATION_FROM_WALLS"), C.note("BRICK_STEPS_ASSUMED"), C.note("BRICK_STEPS_QS_SHEET", **QP.brick_step_extra(cls_name, i)), C.note("BRICK_STEPS_BRICK_ONLY")], facts, 0.6))
   return out

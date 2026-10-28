@@ -24,7 +24,7 @@ def findings(cands: list, details: dict | None) -> list:
   for c in cands:
     if c.category != "COLUMN" or (c.facts or {}).get("neck_of") or (c.facts or {}).get("from_shapes") or ((c.facts or {}).get("view") or {}).get("foundation") or _size(c) is None:
       continue
-    if c.tag:
+    if c.tag and not (c.facts or {}).get("mark_from_size"):
       plan.setdefault(norm_mark(c.tag), set()).add(_size(c))
     else:
       loose[_size(c)] = loose.get(_size(c), 0) + int(c.count or 0)
@@ -70,7 +70,7 @@ def apply(cands: list, found: list, status) -> None:
     if chk["kind"] == "NO_DETAIL":
       hit = [c for c in cols if c.tag and norm_mark(c.tag) == chk["mark"]]
     elif chk["kind"] == "BY_SIZE":
-      hit = [c for c in cols if not c.tag and _size(c) == tuple(chk["size_in"])]
+       hit = [c for c in cols if (not c.tag or (c.facts or {}).get("mark_from_size")) and _size(c) == tuple(chk["size_in"])]
     else:
       hit = cols[:1]
     for c in hit:

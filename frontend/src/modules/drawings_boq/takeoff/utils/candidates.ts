@@ -1026,8 +1026,12 @@ function sectionText(f: Record<string, unknown>): string | null {
   const t = typeof f.host_thickness_mm === "number" ? f.host_thickness_mm : null;
   if (f.frame_width_from === "WALL") parts.push(`frame as wide as the wall${t !== null ? ` (${(t / 25.4).toFixed(1).replace(/\.0$/, "")} in)` : ""}, assumed`);
   if (f.bed_depth_from === "STRIP_SECTION") parts.push("bed thickness taken from the wall footing section, assumed");
-  const sec = f.footing_section as { caption_wall_in?: unknown; masonry_only?: unknown } | null | undefined;
+  const sec = f.footing_section as { caption_wall_in?: unknown; masonry_only?: unknown; mark?: unknown; typed_by?: unknown } | null | undefined;
   if (sec && typeof sec === "object") {
+    if (typeof sec.mark === "string" && sec.mark) {
+      const how = sec.typed_by === "MARK" ? "its mark stands beside the wall" : sec.typed_by === "THICKNESS_SIDE" ? "matched by the thickness and the side of the wall" : sec.typed_by === "THICKNESS" ? "matched by the thickness of the wall" : null;
+      parts.push(`footing section ${sec.mark}${how ? `, ${how}` : ""}`);
+    }
     if (typeof sec.caption_wall_in === "number") parts.push(`section read for the wall its picture shows (its caption says ${sec.caption_wall_in} in)`);
     if (sec.masonry_only === true) parts.push("masonry steps on the bed, no reinforced footing");
   }

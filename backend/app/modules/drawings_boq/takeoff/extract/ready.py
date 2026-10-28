@@ -22,7 +22,7 @@ NOT_A_PLAN_KINDS = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR")
 
 def from_non_plan(sh: dict, c) -> bool:
   """True for a wall, room, opening, lintel, stair or wall-derived beam read from a sheet whose role says it is not a plan (section, elevation, detail, schedule, specification)."""
-  if ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice") != "SKIP":
+  if ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice") != "SKIP" or (c.facts or {}).get("derived_from") == "SLAB":
     return False
   return c.category in NOT_A_PLAN_KINDS or (c.category == "BEAM" and (c.facts or {}).get("derived_from") == "WALLS")
 
@@ -39,6 +39,7 @@ REASON_TEXT = {
   "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
   "LAYOUT_SOURCE_UNDECIDED": "This plan is printed on several sheets (the same named rooms with the same areas) and was read from each. Choose the sheet that governs it before accepting, or the plan is counted once for every sheet it is printed on.",
   "STAIR_TWIN_ABOVE": "This flight is the second view of a stair measured on another floor (the UP flight below it, laid on the same place). It is kept as a sighting with no quantity; accepting it counts the stair twice.",
+  "BEAM_FROM_FRAMING_PLAN": "The framing plan of this floor draws its roof beams, and they are the ones to measure. This beam is worked out from the brick walls and is kept as a sighting with no quantity; accepting it as well counts the beam twice.",
   "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet, or the floor finish already accepted for this floor carries the baths and toilets. Accepting it here as well counts it twice.",
   "MARK_ON_SEVERAL_SHEETS": "The same mark of this floor is shown on another sheet with the same count and size, and that sheet is the one to use (a schedule before a detail before a plan label, then a sheet that names its floor). Choose the sheet in the list of marks, or accept this one by hand.",
   "MARK_SHEETS_DISAGREE": "The same mark of this floor is shown on more than one sheet with a different count or size. Choose the sheet that governs it in the list of marks before accepting, or the mark is counted from every sheet.",
@@ -92,6 +93,8 @@ def ready(read: list, checks: list | None = None) -> dict:
         why.append("NOT_A_PLAN_SHEET")
       if c.decision == "NEW" and c.id in twins:
         why.append("STAIR_TWIN_ABOVE")
+      if c.decision == "NEW" and c.category == "BEAM" and any(n.get("code") == "BEAM_FROM_FRAMING_PLAN" for n in c.notes or []):
+        why.append("BEAM_FROM_FRAMING_PLAN")
       if c.decision == "NEW" and guard.clash(c, fl) is not None:
         why.append("MARK_ACCEPTED_ELSEWHERE")
       elif c.decision == "NEW" and not skip_mark(sh, c) and (code := ME.held_code(marks, c, fl)):

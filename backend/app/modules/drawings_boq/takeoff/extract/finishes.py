@@ -510,6 +510,14 @@ def door_hosts(walls: list, role: str = "DOOR") -> dict:
         h.setdefault("t_" + key, []).append(t)
   return hosts
 
+def frame_width(h: dict) -> tuple:
+  thin, thick = sorted(h.get("t_thin") or []), sorted(h.get("t_thick") or [])
+  tn, tk = (thin[len(thin) // 2] if thin else None), (thick[len(thick) // 2] if thick else None)
+  if tn is not None and tk is not None:
+    n, k = max(int(h.get("thin") or 0), 1), max(int(h.get("thick") or 0), 1)
+    return (n * tn + k * tk) / (n + k), True
+  return (tn if tn is not None else tk), False
+
 def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
   """The frames of the doors of a floor: for every door mark, the two sides and the top of the door times the width of the frame. The width of the frame
   is the thickness of the wall the door stands in, so the doors of a mark are asked for the thin or the thick width by the walls they were found in."""
@@ -539,13 +547,12 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
     where = f" · {spec[0]}" if spec else ""
     notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL")]
     params, missing = {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"]
-    thicknesses = sorted(h.get("t_thin" if thin else "t_thick") or [])
-    host_t = thicknesses[len(thicknesses) // 2] if thicknesses else None
-    if host_t is not None and (h["thick"] if thin else h["thin"]) == 0 and min(abs(host_t - usual) for usual in (114.3, 228.6)) <= 0.05 * host_t:
+    host_t, mixed = frame_width(h)
+    if host_t is not None and C.FRAME_WALL_MIN_MM <= host_t <= C.FRAME_WALL_MAX_MM:
       params["width_mm"], missing = round(host_t, 1), []
       facts["frame_width_from"] = "WALL"
       facts["host_thickness_mm"] = round(host_t, 1)
-      notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_FROM_WALL")]
+      notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_MIXED_HOSTS" if mixed else "DOOR_FRAME_WIDTH_FROM_WALL")]
     if f.get("height_assumed") and not f.get("size_schedule_mm"):
       facts["height_assumed"] = True
       notes.append(C.note("OPENING_HEIGHT_ASSUMED", height_mm=height))

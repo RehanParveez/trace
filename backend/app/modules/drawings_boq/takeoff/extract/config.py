@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 from app.engine.measure import readings as QSR
 
-EXTRACT_VERSION = 82
+EXTRACT_VERSION = 87
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -23,12 +23,24 @@ COLUMN_CENSUS_POINTS = 80
 SLAB_SECTION_MIN_MM = 75.0
 SLAB_SECTION_MAX_MM = 400.0
 BEAM_WIDTH_SNAP_TOL = 0.035       
+BEAM_JOIN_PAD_MM = 50.0
+BEAM_FRAMING_MIN_SHARE = 0.5
+MARK_BY_SIZE_TOL_MM = 25.0
+FRAME_WALL_MIN_MM = 75.0
+FRAME_WALL_MAX_MM = 600.0
+TERRACE_MIN_M2 = 4.0
+TERRACE_MIN_SHARE = 0.10
+NGL_REACH = 8.0
+FILL_MIN_MM = 25.0
+FILL_MAX_MM = 1500.0
 STRIP_MAX_SEGMENTS = 150000       
 SLAB_LABEL_MIN_COUNT = 2       
 SLAB_LABEL_SECTIONS_TOL_MM = 6.0  
 SLAB_SECTION_TOL_MM = 2.0
 FOUNDATION_THIN_WALL_MAX_MM = 150.0
 TRENCH_SIDE_ALLOWANCE_MM = 76.2
+WALL_SECTION_MARK_REACH_MM = 1500.0
+FOUNDATION_MARKER_OFFSET = 3.0
 BRICK_STEPS_THICK = 4
 BRICK_STEPS_THIN = 3
 OUTER_WALL_TOL_FACTOR = 1.5
@@ -212,6 +224,10 @@ NOTES = {
   "BEAM_STRIP_SECTION_UNUSABLE": ("warning", "The structural sheet has a beam section with this mark, but its depth could not be read or the readings disagree. Type the depth when you accept the beam."),
   "BEAM_STRIP_SECTION_FROM_MARK": ("info", "The depth (and the bars, if they were read) are those of the beam section with this mark on the structural sheet. They were read from the drawing picture, so check them against the detail."),
   "BEAM_STRIPS_OVERLAP_WALL_BEAMS": ("warning", "Roof beams were also worked out from the brick walls of this floor, and the beams drawn on the plan may lie under the same walls. Measure one of the two for any length they share, or the beam is counted twice."),
+  "BEAM_DEPTH_WEB_BELOW_SLAB": ("info", "The depth of this beam is its overall depth, as the QS answered (N1). The part inside the slab is counted with the slab, so the concrete of this beam is its web below the slab: width x (depth - slab thickness) x length, and its shuttering follows. Where the floor has no slab measured, the full depth is counted. Set 'Beam depth includes the slab' to 0 in the conventions to count the full depth everywhere."),
+  "BEAM_DEPTH_FULL": ("info", "The depth of this beam is counted in full: a plinth, grade, tie or band beam has no slab over it, or the conventions take the printed depth as the web."),
+  "BEAM_STRIPS_JOINED": ("info", "Some strips of this beam were cut in two by a crossing beam. They are joined into one run, from the outer end of the first to the outer end of the second, so the width of the crossing beam is counted once. The note gives the number of joins and how much they changed the length."),
+  "BEAM_FROM_FRAMING_PLAN": ("warning", "The framing plan of this floor draws its roof beams (the strips are at least half as long as the beams worked out from the brick walls), so the beams of the framing plan are the ones to measure. This beam, worked out from the walls, is kept as a sighting and is not measured; accepting it as well counts the beam twice."),
   "BEAM_STRIPS_DRAWN_ON_FLOOR": ("info", "The framing plan of this floor draws hatched beams. They may lie under the walls this beam is worked out from; measure one of the two for any length they share."),
   "ROOM_NO_LABEL": ("warning", "No room name was found inside this outline."),
   "ROOM_MULTIPLE_LABELS": ("warning", "More than one room name is inside this outline. It may be an open plan area."),
@@ -268,6 +284,9 @@ NOTES = {
   "TRENCH_WORKING_SPACE_QS_ALTERNATIVE": ("info", "The QS first answered 1 ft of working space on each side of the trench, his workbook shows 3 in (a 3.5 ft bed in a 4 ft trench), and on 26 Oct he said a foundation trench takes 3 in and only open excavation about 1 ft. The 3 in is used. The width and the extra digging with 1 ft a side are worked out beside this item for comparison."),
   "BRICK_STEPS_QS_SHEET": ("info", "Suggestion from the QS workbook, not an answer from the QS: the step heights and the offset of his brick foundation sheet."),
   "FOUNDATION_FROM_SECTION": ("info", "The widths and depths are those of the footing section the drawing prints for this wall, measured from its lines (the section is drawn to its own scale, which is set from the wall thickness and the widths written inside its steps, and the two agree). Check them against the section."),
+  "FOOTING_SAND_NOT_MEASURED": ("info", "The footing section prints a layer of sand under the concrete bed. The trench is dug to the bottom of it, so it is inside the depth of the trench, but the catalog has no item for sand under a strip footing and the QS bill has no line for it, so it is shown here and not measured on its own."),
+  "FOUNDATION_OPTIONS": ("warning", "The drawings print more than one set of footing sections for walls of this thickness (for example one set on each of two foundation option sheets), and they differ. None was chosen. Choose the sheet that was built in the floor sources, or type the width of the strip."),
+  "BRICK_SHAFT_FROM_SECTION": ("info", "This is the brick wall between the top step of the footing and the natural surface level: the depth written on the section less the steps, the concrete bed and the sand. It is as thick as the wall in the section. The plinth above the natural surface level is not in this figure."),
   "BRICK_STEPS_FROM_SECTION": ("info", "The number of steps, and the width and height of each, are those of the footing section the drawing prints for this wall, measured from its lines. Check them against the section."),
   "RCC_STRIP_FROM_SECTION": ("info", "The reinforced concrete strip footing under the brick steps is the one drawn on the footing section for this wall: its width and depth are measured from the section, its length is the brick walls laid end to end."),
   "RCC_STRIP_STEEL_NOT_READ": ("warning", "The bars of the strip footing are written on the footing section as drawn lines, not as text that could be read, so no steel is taken for it. Add the bars by hand from the section."),
@@ -322,6 +341,10 @@ NOTES = {
   
   "DOOR_WIDTH_ASSUMED": ("warning", "Some of the doors have no width, neither on the plan nor in a schedule that was read, so each is taken as 900 mm (3 ft) wide when it is taken off. The number of such doors is in the item. Give the door sizes (a door schedule) to replace the assumed width."),
   
+  "ROOF_TERRACE_BELOW_UPPER": ("info", "The slab of this floor reaches past the floor above it, so the part that the floor above does not stand on is a roof of its own (a terrace). The footprint of the floor above (taken from its slab area table) is taken off. Reject this line if the area is not exposed."),
+  "CEILING_PROJECTION_SOFFIT": ("info", "The underside of the part of this floor's slab that reaches past the walls (the widths the plans print) is plastered and painted like the ceiling, and a surveyor lists it with the ceiling plaster. Reject this line to leave this floor's soffit out."),
+  "ROOF_PLAN_ROOMS_UNNAMED": ("info", "Enclosed spaces on a roof plan that carry no room name (a stair head, a tank stand, a parapet bay) are not rooms of a floor, so they get no kacha bed, floor finish, ceiling or skirting. Rooms that are named on the roof plan (a mumty with its rooms) are kept."),
+  "FILL_DEPTH_FROM_LEVELS": ("info", "The depth of the filling is the level of the floor less the natural ground less the floor build-up the specification prints under it (the plain concrete, the ballast, the sand and the bed). The natural ground is the NGL mark when one is printed, otherwise the road level the floor levels are given from. Type another depth when you accept the item to override it."),
   "ROOF_PROJECTION_OPTIONAL": ("info", "The part of this floor's slab that reaches past the walls, taken from the widths the plans print. A surveyor lists the strip of every floor with the roof treatment (his Roof Treatment sheet does); reject this line to leave this floor's strip out."),
   "ROOF_TOP_FLOOR_ASSUMED": ("warning", "No plan is named roof, so the highest floor shown on this sheet is taken as the roof. If the building has more floors than are drawn here, the roof is above them: reject this item."),
   "PLASTER_FROM_WALLS": ("info", "This item is not drawn on the plan. It is worked out from the walls measured on this floor: the length of each wall, centre to centre, times its height, less the doors and windows set in it, for every face that is plastered. It is counted once for each floor, as the QS does (S4)."),
@@ -332,6 +355,9 @@ NOTES = {
   "OPENING_AREA_FROM_OPENINGS": ("info", "The area is the number of openings of this mark times the width times the height of the size in the schedule (or the drawn size where the schedule has none). The count is a separate item."),
   "OPENING_MATERIAL_NOT_READ": ("info", "The drawing does not print what the door or window is made of, or how much of a window is glass, so the area is for the opening as a whole. Choose the work item that matches the material when you accept it."),
   "TANK_STEEL_NOTES_LISTED": ("info", "The tank drawing prints bar notes. They are listed with this item as sets you can choose from; which bars belong to the walls and which to the slabs is not printed, so none is assumed. Choose them when you accept the tank to have its steel weighed."),
+   "COLUMN_MARK_FROM_SIZE": ("info", "These squares have no mark beside them on the plan. Their mark is the mark of the one column detail that has their size (within 25 mm); when no detail, or more than one, has that size they are named UNMARKED and their size. Check it against the column details."),
+  "DOOR_MARK_FROM_WIDTH": ("info", "This door is drawn with no mark. Its mark is the mark of the schedule or plan-label door of the same width (within 25 mm); when no door, or more than one mark, has that width it is named D and its width in millimetres."),
+  "DOOR_FRAME_WIDTH_MIXED_HOSTS": ("info", "The doors of this mark stand in walls of different thickness. The frame width is the average of the walls they stand in, weighted by the number of doors in each, so each door is framed to its own wall. The walls are in the facts. Type the widths to override."),
   "DOOR_FRAME_WIDTH_BY_WALL": ("warning", "The frame is as wide as the wall it stands in. Doors of this mark were found mostly in walls of this class, so the matching frame width is asked for. Check it against the plan."),
   "LINTEL_SECTION_FROM_TABLE": ("info", "The lintel section is the row of the lintel table printed on the drawing that holds this opening's width. The length is the opening width plus the bearing on each side."),
   "LINTEL_HEAD_AT_DOOR": ("info", "The lintel sits on the head of its door, the door height from the schedule above the floor. That gives it its height in the building."),
@@ -365,6 +391,7 @@ NOTES = {
   "STAIR_DIRECTION_UNKNOWN": ("warning", "No UP or DN is written beside this staircase. It is paired with a flight on the floor above or below only by where it stands, and only when the two plans can be laid on one another. Check on the plan whether it is the same staircase as one on another floor."),
   "SITE_TANK_SIZES_TYPED": ("warning", "A tank is labelled on this sheet but its sizes are not printed as text the reader can take. Type the outside length, width and height and the thickness of its walls when you accept it. The concrete is worked out as the walls of that thickness plus a top slab of 6 inches and a bottom slab of 8 inches, as the QS gave (S11)."),
   "SITE_TANK_SIZES_LISTED": ("info", "The structural sheet draws this tank in a plan and a section. The sizes are listed below: those written as text in the PDF are exact; those read from the picture show the number of readings that agreed (a size read only twice can be a misreading, so check it on the drawing). The drawing does not say which size is the outside length, the water depth or the wall, so none is applied: type the outside sizes and the thickness from them."),
+  "TANK_SIZE_BASIS_ASSUMED": ("warning", "The tank caption gives a size without saying whether it is the inside or the outside, and the section of the tank prints no lengths that could check it. It is taken as the inside size and the walls are added on each side. If the caption is the outside size, the tank comes out too big: check the detail, or type the sizes when you accept the item."),
   "TANK_SIZES_DERIVED": ("warning", "The sizes of this tank were worked out from what its drawings print: the size in the caption, the wall and slab thicknesses in the notes, and the lengths in the pictures. A caption does not say whether its size is the inside or the outside, so the sizes here are assumptions with the reason given below (a thickness printed in a note is exact); check them against the drawing and type another to replace any of them. The top slab is taken from a note that prints it, and the top and bottom slab from the section when it prints the thickness (that replaces the QS's 8 in bottom slab)."),
   "SITE_LABEL_REPEATED": ("info", "The label of this tank is written more than once on this sheet (the plans, the elevations and the sections each show it). It is one tank and is listed once."),
   "SITE_WALL_THICKNESS_TYPED": ("warning", "The elevation prints the length and the height of the boundary wall but not its thickness. Type the thickness when you accept it. The wall is measured as its length x height x thickness; the piers are measured at the wall height."),

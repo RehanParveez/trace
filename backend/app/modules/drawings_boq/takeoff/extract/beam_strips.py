@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import numpy as np
+from app.modules.drawings_boq.takeoff.extract import config as C
 
 HATCH_ANGLE_TOL_DEG = 6.0
 HATCH_MIN_MM = 60.0
@@ -309,6 +310,65 @@ def assign(legs: list, marks: list, mm_per_pt: float) -> dict:
       break
   return stats
 
+def _span(leg: dict) -> tuple:
+  i = 0 if leg["axis"] == "H" else 1
+  a, b = leg["p0"][i], leg["p1"][i]
+  return (a, b) if a <= b else (b, a)
+
+def _line(leg: dict) -> float:
+  return leg["p0"][1] if leg["axis"] == "H" else leg["p0"][0]
+
+def _crossing(legs: list, a: dict, b: dict, lo: float, hi: float, pad_pt: float) -> dict | None:
+  """The widest leg of the other axis whose centre line passes through the stretch between the inner ends of a and b: the beam that cut them in two."""
+  mid, line = (lo + hi) / 2.0, (_line(a) + _line(b)) / 2.0
+  point = (mid, line) if a["axis"] == "H" else (line, mid)
+  best = None
+  for o in legs:
+    if o is a or o is b or o["axis"] == a["axis"]:
+      continue
+    if _dist_to_leg(o, *point) <= 0.5 * o["width_pt"] + pad_pt and (best is None or o["width_pt"] > best["width_pt"]):
+      best = o
+  return best
+
+def _can_join(legs: list, a: dict, b: dict, mm_per_pt: float) -> bool:
+  """a and b run along one line, carry the same mark or no mark, and a beam crosses between them: the gap is no wider than that beam plus BEAM_JOIN_PAD_MM, or they overlap by no more than a width."""
+  if a["axis"] != b["axis"] or abs(_line(a) - _line(b)) > JOIN_TOL_FACTOR * min(a["width_pt"], b["width_pt"]):
+    return False
+  if a["tag"] is not None and b["tag"] is not None and a["tag"] != b["tag"]:
+    return False
+  (a_lo, a_hi), (b_lo, b_hi) = _span(a), _span(b)
+  if b_lo < a_lo:
+    a_lo, a_hi, b_lo, b_hi = b_lo, b_hi, a_lo, a_hi
+  gap = b_lo - a_hi
+  pad_pt = C.BEAM_JOIN_PAD_MM / mm_per_pt
+  cross = _crossing(legs, a, b, min(a_hi, b_lo), max(a_hi, b_lo), pad_pt)
+  if cross is None:
+    return False
+  return gap <= cross["width_pt"] + pad_pt if gap > 0 else -gap <= max(a["width_pt"], b["width_pt"])
+
+def _merged(a: dict, b: dict, mm_per_pt: float) -> dict:
+  (a_lo, a_hi), (b_lo, b_hi) = _span(a), _span(b)
+  lo, hi = min(a_lo, b_lo), max(a_hi, b_hi)
+  la, lb = a["length_pt"], b["length_pt"]
+  longer = a if la >= lb else b
+  tagged = a if a["tag"] is not None else b
+  line = (_line(a) * la + _line(b) * lb) / (la + lb)
+  p0, p1 = ((lo, line), (hi, line)) if a["axis"] == "H" else ((line, lo), (line, hi))
+  delta = float(a.get("join_delta_mm") or 0.0) + float(b.get("join_delta_mm") or 0.0) + ((hi - lo) - (la + lb)) * mm_per_pt
+  return {**longer, "p0": p0, "p1": p1, "length_pt": hi - lo, "tag": tagged["tag"], "via": tagged["via"], "labels": set(a["labels"]) | set(b["labels"]),
+    "joined": int(a.get("joined") or 0) + int(b.get("joined") or 0) + 1, "join_delta_mm": delta}
+
+def join_across(legs: list, mm_per_pt: float) -> int:
+  joins = 0
+  while True:
+    pair = next(((i, j) for i in range(len(legs)) for j in range(i + 1, len(legs)) if _can_join(legs, legs[i], legs[j], mm_per_pt)), None)
+    if pair is None:
+      return joins
+    i, j = pair
+    legs[i] = _merged(legs[i], legs[j], mm_per_pt)
+    del legs[j]
+    joins += 1
+
 def read(segments: list, marks: list, mm_per_pt: float) -> dict:
   """The hatched beams of one plan. segments: the lines inside the plan, (x1, y1, x2, y2, kind); marks: [(tag, x, y, angle)] its beam marks.
   Returns {"legs": [{"axis", "p0", "p1", "width_mm", "length_mm", "tag", "via"}], "unplaced": {tag: n}, "conflicts": n, "inherited": n}."""
@@ -322,13 +382,15 @@ def read(segments: list, marks: list, mm_per_pt: float) -> dict:
   for leg in legs:
     _refine_edges(leg, lines)
   stats = assign(legs, marks, mm_per_pt)
+  stats["joins"] = join_across(legs, mm_per_pt)
   out = []
   
   for leg in legs:
     out.append({"axis": leg["axis"], "p0": [round(leg["p0"][0], 3), round(leg["p0"][1], 3)], "p1": [round(leg["p1"][0], 3), round(leg["p1"][1], 3)],
-      "width_mm": round(leg["width_pt"] * mm_per_pt, 1), "length_mm": round(leg["length_pt"] * mm_per_pt, 1), "tag": leg["tag"], "via": leg["via"]})
+      "width_mm": round(leg["width_pt"] * mm_per_pt, 1), "length_mm": round(leg["length_pt"] * mm_per_pt, 1), "tag": leg["tag"], "via": leg["via"],
+      "joined": int(leg.get("joined") or 0), "join_delta_mm": round(float(leg.get("join_delta_mm") or 0.0), 1)})
   out.sort(key=lambda l: (str(l["tag"] or "~"), l["axis"], l["p0"]))
-  return {"legs": out, "unplaced": stats["unplaced"], "conflicts": stats["conflicts"], "inherited": stats["inherited"]}
+  return {"legs": out, "unplaced": stats["unplaced"], "conflicts": stats["conflicts"], "inherited": stats["inherited"], "joins": stats["joins"]}
 
 def by_tag(result: dict) -> dict:
   """{tag: [leg, ...]} for the legs that have a mark, and the legs that have none under None."""

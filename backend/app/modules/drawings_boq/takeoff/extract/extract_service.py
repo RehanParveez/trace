@@ -642,6 +642,9 @@ class ExtractService:
       if held_by is not None:
         failed.append(_fail(cid, AG.CODE, held_by))
         continue
+      if not payload.allow_repeat_marks and any(n.get("code") == "BEAM_FROM_FRAMING_PLAN" for n in cand.notes or []):
+        failed.append(_fail(cid, "BEAM_FROM_FRAMING_PLAN", C.NOTES["BEAM_FROM_FRAMING_PLAN"][1]))
+        continue
       try:
         request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
           params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_roof_params(cand), **_concrete_member(cand, code)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,

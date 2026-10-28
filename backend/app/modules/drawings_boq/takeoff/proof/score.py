@@ -14,6 +14,8 @@ from app.modules.drawings_boq.lab.aliases import KEY_LABEL, SOFTWARE_UNIT, bill_
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from types import SimpleNamespace
+from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH"
 STATUS_RANK = {MATCH: 0, NEAR: 1, DIFF: 2, NO_TRUTH: 3, MISSING: 4, EXTRA: 4}
@@ -277,15 +279,27 @@ def invariants(reads: list, accs: list, rows: list) -> list:
       if c.category == "BEAM" and c.tag:
         seen.setdefault((c.tag, _cand_floor(acc, c)), set()).add(acc.sheets[c.sheet_id].page_no)
     beam_two += [f"{next(iter(acc.drawings.values()))} p.{p}" for k, ps in seen.items() if len(ps) > 1 for p in ps]
+    exts = {s["sheet_id"]: SimpleNamespace(stats=s.get("stats") or {}) for rd in acc.read.values() for s in rd}
+    owned = BOS.framing_floors(BOS.strips_by_level(list(acc.sheets.values()), exts), BOS.walls_by_level(list(acc.candidates), {k: v.page_no for k, v in acc.sheets.items()}))
+    for level in owned:
+      by_source: dict = {}
+      for c in live:
+        f = c.facts or {}
+        if c.category == "BEAM" and f.get("level_hint") == level:
+          kind = "WALLS" if f.get("derived_from") == "WALLS" and f.get("beam_role") == "ROOF" else "STRIPS" if f.get("from_strips") and BOS.roof_mark(c.tag) else None
+          if kind:
+            by_source.setdefault(kind, set()).add(acc.sheets[c.sheet_id].page_no)
+      if len(by_source) == 2:
+        beam_two += [f"{next(iter(acc.drawings.values()))} p.{p}" for ps in by_source.values() for p in ps]
     seen = {}
     for c in live:
-      if c.category == "WALL":
+      if c.category == "WALL" and not (c.facts or {}).get("foundation_item"):
         seen.setdefault(_cand_floor(acc, c) or "-", set()).add(acc.sheets[c.sheet_id].page_no)
     floor_two += [f"{next(iter(acc.drawings.values()))} p.{p}" for k, ps in seen.items() if len(ps) > 1 for p in ps]
 
   add("EACH_STAIR_FLIGHT_ONCE_IN_THE_BUILDING", doubled, "A stair flight and its twin on the floor above are both accepted.")
   add("NO_MEMBER_ON_TWO_SHEETS", member_two, "A column or footing mark of one floor is accepted from more than one sheet.")
-  add("NO_BEAM_ON_TWO_SOURCES", beam_two, "A beam mark of one floor is accepted from more than one sheet.")
+  add("NO_BEAM_ON_TWO_SOURCES", beam_two, "A beam mark of one floor is accepted from more than one sheet, or a floor whose framing plan draws the roof beams has them accepted from the walls as well.")
   add("ONE_ARCHITECTURE_SOURCE_PER_FLOOR", floor_two, "Walls of one floor are accepted from more than one sheet.")
   bad = [f"{r.get('work_item_code')}" for r in rows if not (float(r.get("quantity") or 0) > 0) or not math.isfinite(float(r.get("quantity") or 0)) or not r.get("unit")]
   add("LEDGER_ROWS_ARE_POSITIVE_AND_HAVE_A_UNIT", bad, "A ledger row has a zero, negative or missing quantity, or no unit.")

@@ -45,7 +45,7 @@ def link_of(row) -> dict:
     return {"status": NOT_LINKED, "detail": None, "how": None, "needs": ["depth_mm"], "reason": "NO_SECTION_PRINTED_FOR_THIS_BEAM"}
   if g == "FOOTING_STRIP":
     if f.get("footing_section"):
-      return {"status": LINKED, "detail": (f["footing_section"] or {}).get("caption"), "how": "SECTION", "needs": [], "reason": None}
+      return {"status": LINKED, "detail": (f["footing_section"] or {}).get("mark") or (f["footing_section"] or {}).get("caption"), "how": "SECTION", "needs": [], "reason": None}
     return {"status": NOT_LINKED, "detail": None, "how": None, "needs": miss, "reason": "NO_USABLE_FOOTING_SECTION_FOR_THIS_WALL"}
   if g == "FOOTING_PAD":
     sized = bool(f.get("size_detail_mm") or "SIZE_FROM_DETAIL" in codes or "SIZE_FROM_SCHEDULE" in codes)

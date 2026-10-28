@@ -11,6 +11,7 @@ export const HELD_TEXT: Record<string, string> = {
   FLOOR_SOURCE_UNDECIDED: "the floor is open on two sheets",
   NOT_A_PLAN_SHEET: "the sheet is a section, elevation, detail or specification, not a floor plan",
   STAIR_TWIN_ABOVE: "the second view of a stair measured on another floor; it has no quantity of its own",
+  BEAM_FROM_FRAMING_PLAN: "the framing plan of this floor draws its roof beams and is the one to measure; this beam is worked out from the walls and has no quantity of its own",
   MARK_ACCEPTED_ELSEWHERE: "the same mark is already accepted from another sheet; open that sheet, or accept it there on purpose",
   MARK_ON_SEVERAL_SHEETS: "the same mark is shown on another sheet with the same count and size; choose the sheet in the list of marks",
   MARK_SHEETS_DISAGREE: "the same mark is shown on several sheets with a different count or size; choose the sheet in the list of marks",

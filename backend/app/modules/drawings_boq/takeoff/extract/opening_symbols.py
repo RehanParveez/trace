@@ -654,7 +654,25 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
     notes.append(C.note("OPENING_SCALE_FROM_SCHEDULE_DISAGREES", used_mm_per_pt=round(mm_per_pt, 3), implied_mm_per_pt=round(implied, 3), pairs=verdict["agree"], of=verdict["pairs"]))
   elif settled:
     notes.append(C.note("SCALE_SETTLED_BY_SCHEDULE", pairs=verdict["agree"], of=verdict["pairs"], factor=verdict["factor"]))
+  _mark_doors_by_width(new, cands)
   return {"new": new, "notes": notes, "stats": stats, "settled": settled}
+
+def _mark_doors_by_width(new: list, existing: list) -> None:
+  marked: dict = {}
+  for c in existing:
+    f = c.facts or {}
+    size = f.get("size_schedule_mm") or f.get("size_drawn_mm")
+    if c.category == "DOOR" and c.tag and not str(c.tag).upper().startswith(("DRAWN-", "LABEL-")) and size and size[0]:
+      marked.setdefault(str(c.tag).upper(), float(size[0]))
+  for c in new:
+    f = c.facts or {}
+    if c.category != "DOOR" or not str(c.tag or "").upper().startswith(("DRAWN-", "LABEL-")) or not (f.get("size_drawn_mm") or [None])[0]:
+      continue
+    width = float(f["size_drawn_mm"][0])
+    hits = sorted(m for m, w in marked.items() if abs(w - width) <= C.MARK_BY_SIZE_TOL_MM)
+    f["tag_drawn"] = c.tag
+    c.tag = hits[0] if len(hits) == 1 else f"D-{round(width):d}"
+    c.notes.append(C.note("DOOR_MARK_FROM_WIDTH", mark=c.tag, how="DOOR" if len(hits) == 1 else "NAMED"))
 
 def _worst(c) -> str:
   sev = {n.get("severity") for n in c.notes}

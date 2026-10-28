@@ -297,7 +297,15 @@ def _with_clear_height(heights: dict, floor_heights: dict | None, level_hint: st
 def _height_note(h: dict) -> dict:
    return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}))
 
-def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: bool, heights: dict | None = None) -> Candidate | None:
+def _mark_by_size(a: float, b: float, col_details: dict | None) -> tuple:
+  """(mark, how): the mark of the one column detail that has this size within MARK_BY_SIZE_TOL_MM, else (UNMARKED-<size>, "NAMED")."""
+  want = sorted((float(a), float(b)))
+  hits = sorted(m for m, rec in (col_details or {}).items() if any(len(s) == 2 and all(abs(x * 25.4 - y) <= C.MARK_BY_SIZE_TOL_MM for x, y in zip(sorted(s), want)) for s in (rec.get("sizes_in") or [])))
+  if len(hits) == 1:
+    return hits[0], "DETAIL"
+  return f"UNMARKED-{round(want[0] / 25.4):g}x{round(want[1] / 25.4):g}" if want[0] else "UNMARKED", "NAMED"
+
+def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: bool, heights: dict | None = None, col_details: dict | None = None) -> Candidate | None:
   """A framing view with no column marks at all (a mumty or a stair head) still shows its columns as black squares."""
   sized = [s for s in squares if 150.0 <= s["a"] <= 600.0 and s["b"] <= 900.0]
   if not sized:
@@ -306,16 +314,17 @@ def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: boo
   b = sorted(s["b"] for s in sized)[len(sized) // 2]
   a, b = (_snap_inch(a), _snap_inch(b)) if imperial else (M._round5(a), M._round5(b))
   work_item, mode, kind = C.SUGGESTIONS["COLUMN"]
-  notes = [C.note("UNMARKED_COLUMNS"), C.note("COLUMN_SIZE_FROM_PLAN")]
+  mark, how = _mark_by_size(a, b, col_details)
+  notes = [C.note("UNMARKED_COLUMNS"), C.note("COLUMN_SIZE_FROM_PLAN"), C.note("COLUMN_MARK_FROM_SIZE", mark=mark, how=how)]
   h = (heights or {}).get("COLUMN")
   
   if h:
     notes.append(_height_note(h))
   spec = level_spec(v.get("level_hint"))
-  label = f"Columns (no mark) ×{len(sized)} · {_fmt_mm(a)}×{_fmt_mm(b)} mm" + (f" · {spec[0]}" if spec else "")
-  facts = {"tag": None, "count": len(sized), "size_drawn_mm": [a, b], "size_used_mm": [a, b], "matched_shapes": len(sized),
+  label = f"Columns (no mark) ×{len(sized)}· {_fmt_mm(a)}×{_fmt_mm(b)} mm" + (f" · {spec[0]}" if spec else "")
+  facts = {"tag": mark, "mark_from_size": how, "count": len(sized), "size_drawn_mm": [a, b], "size_used_mm": [a, b], "matched_shapes": len(sized),
     "view": {"key": v["key"], "caption": v["caption"], "kind": v["kind"], "level_hint": v.get("level_hint")}}
-  cand = Candidate(key=_key("COLUMN", "UNMARKED", v["key"]), category="COLUMN", kind=kind, quantity_mode=mode, label=label, tag=None,
+  cand = Candidate(key=_key("COLUMN", "UNMARKED", v["key"]), category="COLUMN", kind=kind, quantity_mode=mode, label=label, tag=mark,
     geometry={"points": [[round(s["cx"], 4), round(s["cy"], 4)] for s in sized]},
     params={"length_mm": a, "width_mm": b, "dims_basis": "DRAWN", **({"depth_mm": h["mm"]} if h else {})},
     missing=[] if h else ["height_mm"], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="TAG_SCAN", count=len(sized))
@@ -434,6 +443,9 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
     c.missing = ["depth_mm"]
     c.notes = [n for n in c.notes if n.get("code") != "BEAM_LENGTH_NOT_READ"]
     c.notes.append(C.note("BEAM_LENGTH_FROM_STRIPS", strips=len(legs), length_m=round(total / 1000.0, 3)))
+    joined = [l for l in legs if l.get("joined")]
+    if joined:
+      c.notes.append(C.note("BEAM_STRIPS_JOINED", runs=len(joined), joins=sum(l["joined"] for l in joined), length_change_m=round(sum(l["join_delta_mm"] for l in joined) / 1000.0, 3)))
     
     if net["columns"]:
       nn = C.note("BEAM_NET_OF_COLUMNS", gross_m=round(net["gross_mm"] / 1000.0, 3), taken_m=round(net["taken_mm"] / 1000.0, 3), columns=net["columns"])
@@ -449,7 +461,7 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
     if not BS.apply_marked(c, sections or []):
       BS.list_for_strips(c, sections or [])
     c.facts.update({"from_strips": True, "count": 1, "marks_printed": marks_printed, "strip_count": len(legs), "length_m": round(total / 1000.0, 3), "beam_width_mm": width,
-      "length_gross_m": round(net["gross_mm"] / 1000.0, 3), "columns_taken": net["columns"],
+      "length_gross_m": round(net["gross_mm"] / 1000.0, 3), "columns_taken": net["columns"], "strip_joins": sum(l.get("joined") or 0 for l in legs),
       "level_hint": level_hint, "strips": [{"p0": l["p0"], "p1": l["p1"], "length_mm": l["length_mm"], "net_mm": n, "via": l["via"]} for l, n in zip(legs, net["legs"])]})
     c.label = f"{c.tag} · {total / 1000.0:.2f} m × {_inch_label(width)} in · {len(legs)} strip{'s' if len(legs) != 1 else ''}{where}"
     c.status = _status(c.notes)
@@ -461,6 +473,9 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
     width = _beam_width_mm([l["width_mm"] for l in orphans], imperial)
     longest = max(orphans, key=lambda l: l["length_mm"])
     notes = [C.note("BEAM_STRIP_NO_MARK", strips=len(orphans)), C.note("BEAM_LENGTH_FROM_STRIPS", strips=len(orphans), length_m=round(total / 1000.0, 3))]
+    joined = [l for l in orphans if l.get("joined")]
+    if joined:
+      notes.append(C.note("BEAM_STRIPS_JOINED", runs=len(joined), joins=sum(l["joined"] for l in joined), length_change_m=round(sum(l["join_delta_mm"] for l in joined) / 1000.0, 3)))
     facts = {"from_strips": True, "count": 1, "tag": None, "strip_count": len(orphans), "length_m": round(total / 1000.0, 3), "beam_width_mm": width, "level_hint": level_hint,
       "length_gross_m": round(net["gross_mm"] / 1000.0, 3), "columns_taken": net["columns"],
       "strips": [{"p0": l["p0"], "p1": l["p1"], "length_mm": l["length_mm"], "net_mm": n, "via": None} for l, n in zip(orphans, net["legs"])]}
@@ -1553,12 +1568,14 @@ def _beam_candidates(walls: list, ctx: dict, level_hint: str | None, lowest: boo
   return out
 
 def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx: dict, level_hint: str | None, sections: list | None = None, mm_per_pt: float | None = None,
-  spec_facts: dict | None = None, sink: dict | None = None) -> list:
+  spec_facts: dict | None = None, sink: dict | None = None, fill_levels: dict | None = None, words: list | None = None, is_mark=None) -> list:
   """The work under the lowest floor that is worked out from what is already read: a trench, a concrete bed and termite treatment under the walls, the
   termite treatment under the floor, and, on a basement, the dig over the whole outline of the basement."""
   spec = level_spec(level_hint)
-  out = FD.strip_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections)
-  out.extend(FD.brick_step_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections))
+  outer = FD.outer_flags(walls, mm_per_pt)
+  marks = FD.mark_runs(walls, words, mm_per_pt, sections, is_mark) if words and is_mark else {}
+  out = FD.strip_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections, outer, marks)
+  out.extend(FD.brick_step_candidates(walls, ctx, level_hint, spec, Candidate, _finish, sections, outer, marks))
   membrane = FD.membrane_candidate(walls, ctx, level_hint, spec, Candidate, _finish, mm_per_pt)
   if membrane is not None:
     out.append(membrane)
@@ -1569,7 +1586,7 @@ def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx:
   if sink is not None:
     sink["notes"] = layer_notes
     sink["stats"] = layer_stats
-  fill = EF.fill_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
+  fill = EF.fill_candidate(rooms, ctx, level_hint, spec, Candidate, _finish, fill_levels)
   if fill is not None:
     out.append(fill)
   floor = FD.under_floor_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
@@ -1592,6 +1609,8 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   """The finishes of every floor that are worked out from what is already read: the kacha bed and the ceiling plaster from the room areas, the plaster on
    the faces of the walls, and the frames of the doors."""
   spec = level_spec(level_hint)
+  if level_hint == "ROOF":
+    rooms = [r for r in rooms if (r.facts or {}).get("name")]
   out = []
   for build in (FN.kacha_candidate, FN.ceiling_candidate, FN.floor_candidate, FN.floor_wet_candidate, FN.ceiling_paint_candidate):
     cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
@@ -1886,6 +1905,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           mm_per_pt, ctx, level_hint, [c for c in res.candidates if c.category == "WINDOW"], S.arched_marks(schedule)), [])
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
+        if level_hint == "ROOF" and any(r.category == "ROOM" and not (r.facts or {}).get("name") for r in rooms):
+          res.notes.append(C.note("ROOF_PLAN_ROOMS_UNNAMED", rooms=sum(1 for r in rooms if r.category == "ROOM" and not (r.facts or {}).get("name"))))
         scaffold, scaffold_notes = STG.scaffold_candidates(finishes, floor_heights, level_hint, ctx, Candidate, _finish)
         res.candidates.extend(scaffold)
         res.notes.extend(scaffold_notes[:1])
@@ -1894,7 +1915,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         sink: dict = {}
         
         below = _stage(res, "FOUNDATION", lambda: _foundation_candidates([*walls, *QR.counted_completion(completion)], rooms, schedule, ctx, level_hint,
-          footing_sections, mm_per_pt, spec_facts, sink), [])
+          footing_sections, mm_per_pt, spec_facts, sink, EF.fill_depth(floor_heights, level_hint, EF.natural_ground_mm(index.words), spec_facts), index.words,
+          lambda tag: M.category_of(tag, mark_vocab, discipline, plan_kind) == "WALL_SECTION"), [])
         res.candidates.extend(below)
         res.stats["foundation_items"] = len(below)
         res.notes.extend(sink.get("notes") or [])

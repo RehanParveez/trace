@@ -42,37 +42,66 @@ def _note_value(mine: list, part: str) -> tuple | None:
   return ranked[0][0], text[ranked[0][0]]
 
 def _caption_size(mine: list) -> tuple | None:
-  """(longer, shorter, caption) in inches when the tank captions of this kind that end with a size all name the same one (to the inch)."""
-  found = {tuple(d["plan_in"]): d.get("caption") for d in mine if d.get("plan_in")}
+  """(longer, shorter, caption, depth) in inches when the tank captions of this kind that end with a size all name the same one (to the inch)."""
+  found = {tuple(d["plan_in"]): (d.get("caption"), d.get("depth_in")) for d in mine if d.get("plan_in")}
   if len({tuple(round(v) for v in k) for k in found}) != 1:
     return None
   key = next(iter(found))
-  return key[0], key[1], found[key]
+  return key[0], key[1], found[key][0], found[key][1]
+
+SIZE_CHECK_IN = 1.0
 
 def derive(kind: str | None, details: list) -> dict | None:
+  """The sizes of a tank from what its drawings print: the caption's size, the wall and slab notes, and the lengths of the plan and section. A caption size is the inside size unless the section says it is the
+  outside: the outer size equals the inside size plus two walls within 1 in (size_basis INSIDE_CHECKED / OUTSIDE_CHECKED); with nothing to check against it is taken as the inside size (INSIDE_ASSUMED)."""
   mine = _drawings(kind, details)
 
   if not mine:
     return None
   size, wall, slab = _caption_size(mine), _note_value(mine, "WALL"), _note_value(mine, "SLAB")
+  old = _from_lengths(mine, wall[0] if wall else None) if kind != "SEPTIC" else None
   sizes: dict = {}
   basis: dict = {}
   source: dict = {}
   slabs = None
+  size_basis = None
+  
+  t_in = wall[0] if wall else ((old["sizes_mm"]["thickness_mm"] / MM_PER_IN) if old and old["sizes_mm"].get("thickness_mm") else None)
   if size:
-    a, b, cap = size
-    sizes["length_mm"], sizes["width_mm"] = a * MM_PER_IN, b * MM_PER_IN
-    basis["length_mm"] = f"{_ft(a)} is the longer of the two sizes in the caption \"{cap}\"; the caption does not say inside or outside, so it is taken as the outside length"
-    basis["width_mm"] = f"{_ft(b)} is the shorter of the two sizes in the caption \"{cap}\"; taken as the outside width"
+    a, b, cap, depth = size
+    outer = None
+    if old and t_in and "length_mm" in old["sizes_mm"] and "width_mm" in old["sizes_mm"]:
+      out_l, out_w = old["sizes_mm"]["length_mm"] / MM_PER_IN, old["sizes_mm"]["width_mm"] / MM_PER_IN
+      if abs(a - out_l) <= SIZE_CHECK_IN and abs(b - out_w) <= SIZE_CHECK_IN:
+        size_basis, outer = "OUTSIDE_CHECKED", (a, b)
+      elif abs(a + 2 * t_in - out_l) <= SIZE_CHECK_IN and abs(b + 2 * t_in - out_w) <= SIZE_CHECK_IN:
+        size_basis, outer = "INSIDE_CHECKED", (a + 2 * t_in, b + 2 * t_in)
+    if outer is None and t_in:
+      size_basis, outer = "INSIDE_ASSUMED", (a + 2 * t_in, b + 2 * t_in)
+    if outer is None:
+      size_basis, outer = "OUTSIDE_NO_WALL", (a, b)
+    sizes["length_mm"], sizes["width_mm"] = outer[0] * MM_PER_IN, outer[1] * MM_PER_IN
+    says = {"OUTSIDE_CHECKED": "the outside size, which the section confirms", "INSIDE_CHECKED": "the inside size, which the section confirms; the wall is added on each side",
+      "INSIDE_ASSUMED": "taken as the inside size (nothing on the section checks it); the wall is added on each side", "OUTSIDE_NO_WALL": "used as it is, because no wall thickness is printed to add"}[size_basis]
+    basis["length_mm"] = f"{_ft(a)} is the longer of the two sizes in the caption \"{cap}\", {says}, so the outside length is {_ft(outer[0])}"
+    basis["width_mm"] = f"{_ft(b)} is the shorter of the two sizes in the caption \"{cap}\", {says}, so the outside width is {_ft(outer[1])}"
     source["length_mm"] = source["width_mm"] = "CAPTION"
+    
+    if depth and t_in and size_basis != "OUTSIDE_CHECKED":
+      top = slab[0] if slab else t_in
+      sizes["height_mm"] = (depth + top + t_in) * MM_PER_IN
+      basis["height_mm"] = f"{_ft(depth)} is the third size in the caption (the inside depth); the top slab of {top:g}\" and the bottom slab of {t_in:g}\" are added"
+      source["height_mm"] = "CAPTION"
+    elif depth and size_basis == "OUTSIDE_CHECKED":
+      sizes["height_mm"] = depth * MM_PER_IN
+      basis["height_mm"] = f"{_ft(depth)} is the third size in the caption (the outside height, as the other two sizes are)"
+      source["height_mm"] = "CAPTION"
   if wall:
     sizes["thickness_mm"] = wall[0] * MM_PER_IN
     basis["thickness_mm"] = f"{wall[0]:g}\" is the wall thickness the tank detail prints (\"{wall[1]}\")"
     source["thickness_mm"] = "NOTE"
   if slab:
     slabs = {"top_mm": slab[0] * MM_PER_IN}
-  old = _from_lengths(mine, wall[0] if wall else None) if kind != "SEPTIC" else None
-
   if old:
     for token, value in old["sizes_mm"].items():
       if token not in sizes:
@@ -81,7 +110,7 @@ def derive(kind: str | None, details: list) -> dict | None:
   if not sizes:
     return None
   left = [name for token, name in (("length_mm", "outside length"), ("width_mm", "outside width"), ("height_mm", "outside height"), ("thickness_mm", "wall thickness")) if token not in sizes]
-  return {"sizes_mm": sizes, "slabs_mm": slabs, "basis": basis, "source": source, "left": left}
+  return {"sizes_mm": sizes, "slabs_mm": slabs, "basis": basis, "source": source, "left": left, "size_basis": size_basis}
 
 def _from_lengths(mine: list, wall_in: float | None) -> dict | None:
   plans = [d for d in mine if d.get("view") == "PLAN"]
@@ -103,10 +132,10 @@ def _from_lengths(mine: list, wall_in: float | None) -> dict | None:
   slabs = None
 
   if wall_in is None and any(x["inches"] == t for d in sections for x in d.get("lengths") or []):
-   slabs = {"top_mm": t * MM_PER_IN, "bottom_mm": t * MM_PER_IN}
-   plan_big, section_big = feet(plans), feet(sections)
-   common = plan_big & section_big
-   width = None
+    slabs = {"top_mm": t * MM_PER_IN, "bottom_mm": t * MM_PER_IN}
+  plan_big, section_big = feet(plans), feet(sections)
+  common = plan_big & section_big
+  width = None
   if len(common) == 1:
     width = next(iter(common))
     sizes["width_mm"] = (width + 2 * t) * MM_PER_IN

@@ -497,10 +497,10 @@
   item: Roof Treatment
   unit: sft
   qs: 1982.754
-  drawing: 1982.754
-  class: DRAWING
+  drawing: 2184.0
+  class: NEEDS_DECISION
   tolerance_pct: 10.0
-  note: Others
+  note: 'Others. The workbook has no line for the roof of the mumty (44.6 m2, 480 sft); the drawing figure adds it.'
   family: ROOF_TREATMENT
 - key: FORMWORK/OTHERS
   item: Form Work/Shuttering
