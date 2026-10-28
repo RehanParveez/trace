@@ -934,6 +934,25 @@ export interface FloorSources { drawing_id: string; floors: FloorEntry[]; to_dec
 
 export interface FactSource { drawing_id: string; page_no: number }
 
+export interface MarkConflict { category: string; basis: string; text?: string | null; page_no?: number | null; drawing_id?: string | null }
+
+export interface MarkRow {
+  mark: string;
+  category: string;
+  basis: string;
+  text?: string | null;
+  page_no?: number | null;
+  drawing_id?: string | null;
+  drawing_name?: string | null;
+  params?: { wall_thickness_mm?: number; exterior?: boolean; [key: string]: unknown };
+  editable: boolean;
+  conflict?: MarkConflict | null;
+}
+
+export interface ProjectMarks { project_id: string; drawings: number; categories: string[]; disciplines: Array<{ discipline: string; marks: MarkRow[] }> }
+
+export interface SetMarkBody { discipline: string; mark: string; category: string | null }
+
 export interface ProjectFactsDrawing { drawing_id: string; name: string; sheets: number; current: boolean }
 
 export interface ProjectFacts {

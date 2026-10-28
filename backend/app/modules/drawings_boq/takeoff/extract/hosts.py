@@ -14,11 +14,11 @@ def _seg_distance(p0, p1, q) -> float:
   s = max(0.0, min(1.0, ((q[0] - p0[0]) * vx + (q[1] - p0[1]) * vy) / ln2))
   return math.hypot(q[0] - (p0[0] + s * vx), q[1] - (p0[1] + s * vy))
 
-def score(wall_pts: list, gap_pts: list, q, mm_per_pt: float) -> float | None:
+def score(wall_pts: list, gap_pts: list, q, mm_per_pt: float, reach_mm: float = HOST_MAX_MM) -> float | None:
   """Distance in mm from a mark to a wall (smaller is a better host), or None when the wall is too far to hold the opening."""
   d = _seg_distance(wall_pts[0], wall_pts[1], q) * mm_per_pt
   
-  if d > HOST_MAX_MM:
+  if d > reach_mm:
     return None
   best = d
   for a, b in gap_pts or []:

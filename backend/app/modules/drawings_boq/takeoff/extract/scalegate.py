@@ -25,7 +25,12 @@ def _hint(a: dict) -> str:
       txt = f"1:{near}" if abs(r / near - 1.0) <= 0.05 else f"1:{r:.0f}"
       if txt not in out:
         out.append(txt)
-    return f" The printed dimensions suggest about {', '.join(out)}." if out else ""
+    if out:
+      return f" The printed dimensions suggest about {', '.join(out)}."
+    for w in a.get("witnesses") or []:
+      if w.get("source") == "ROOM_LABELS" and w.get("ratio") and not w.get("strong") and int(w.get("support") or 0) >= 2:
+        return f" The {int(w['support'])} {'slab panel' if w.get('panels') else 'room'} sizes written on the plan that agree suggest about 1:{float(w['ratio']):.0f}, too few to rely on."
+    return ""
   except Exception:
     return ""
 

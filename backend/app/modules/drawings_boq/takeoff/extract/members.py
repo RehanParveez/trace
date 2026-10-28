@@ -3,6 +3,7 @@ import re
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.texts import parse_dimension, is_tag
 from app.modules.drawings_boq.takeoff.prep import schedules as S
+from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
 from app.modules.drawings_boq.takeoff.prep.census import _is_rectangle, dense_flags
 import math
 from bisect import bisect_left, bisect_right
@@ -10,12 +11,8 @@ from statistics import median
 
 _SIZE = re.compile(r"(?P<a>\d[\d.,'\"′″½¼¾\-\s]*?)\s*[xX×]\s*(?P<b>\d[\d.,'\"′″½¼¾\-\s]*)")
 
-def category_of(tag: str) -> str | None:
-  t = (tag or "").strip().upper()
-  for cat, pat in C.TAG_CATEGORIES:
-    if pat.match(t):
-      return cat
-  return None
+def category_of(tag: str, vocab: dict | None = None, discipline: str | None = None, plan_kind: str | None = None) -> str | None:
+  return MV.category_of(tag, vocab, discipline, plan_kind)
 
 def _round5(v: float) -> float:
   return float(round(v / 5.0) * 5)
@@ -98,10 +95,11 @@ def _plausible(cat: str, size: tuple) -> bool:
 
 HEADERS = {"MARK", "MARKS", "MK", "TAG", "ID", "NO", "REF", "TYPE", "SYMBOL", "SR", "S.NO"}
 
-def schedule_rows(words: list, hint: str | None) -> tuple:
+def schedule_rows(words: list, hint: str | None, vocab: dict | None = None, discipline: str | None = None, plan_kind: str | None = None) -> tuple:
 
   tag_of = {id(w): is_tag(w.text) for w in words}
-  marks = [w for w in words if tag_of[id(w)] and category_of(w.text) is not None]
+  cat_of = {id(w): category_of(w.text, vocab, discipline, plan_kind) for w in words if tag_of[id(w)]}
+  marks = [w for w in words if tag_of[id(w)] and MV.counted(cat_of[id(w)])]
   if not marks:
     return {}, set()
   
@@ -137,7 +135,7 @@ def schedule_rows(words: list, hint: str | None) -> tuple:
     if not chain:
       continue
     size = parse_size(" ".join(o.text for o in chain), hint)
-    if size is None or not _plausible(category_of(w.text), size):
+    if size is None or not _plausible(cat_of[id(w)], size):
       continue
     rows.setdefault(w.text.strip().upper(), []).append(size)
     row_ids.add(id(w))
@@ -158,27 +156,33 @@ def height_hints(lines: list, hint: str | None) -> dict:
         out[cat] = {"mm": _round5(mm), "text": ln.text[:80]}
   return out
 
-def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None, openings: dict | None = None, plan_view: bool = False) -> list[dict]:
-  """openings: mark -> (width_mm, height_mm, type) from the drawing's door / window / ventilator schedule (any sheet of the drawing).
-  plan_view: the words are those of one structural plan, where marks sit close together beside rebar notes; closeness is then no sign of a schedule table."""
+def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None, openings: dict | None = None, plan_view: bool = False,
+  vocab: dict | None = None, discipline: str | None = None, plan_kind: str | None = None, skipped: dict | None = None) -> list[dict]:
   openings = openings or {}
+  kind = {"vocab": vocab, "discipline": discipline, "plan_kind": plan_kind}
 
   flags = dense_flags(words) if words and not plan_view else [False] * len(words)
-  sched, row_ids = schedule_rows(words, hint)
+  sched, row_ids = schedule_rows(words, hint, **kind)
   table_ids = S.table_marks(words) if words else set()
   if openings:
-    # With the drawing's schedule read, door and window marks are judged by that table, not by a guess from the text around each mark.
-    row_ids = row_ids - {id(w) for w in words if category_of(w.text) in ("DOOR", "WINDOW")}
+    row_ids = row_ids - {id(w) for w in words if category_of(w.text, **kind) in ("DOOR", "WINDOW")}
   groups: dict = {}
   for w, dense in zip(words, flags):
     if not is_tag(w.text):
       continue
-    cat = category_of(w.text)
+    cat = category_of(w.text, **kind)
     if cat is None:
+      continue
+    if not MV.counted(cat):
+      if skipped is not None:
+        row = skipped.setdefault(w.text.strip().upper(), {"tag": w.text.strip().upper(), "category": cat, "count": 0, "points": []})
+        row["count"] += 1
+        if len(row["points"]) < 60:
+          row["points"].append([round(w.cx, 4), round(w.cy, 4)])
       continue
     mk = S.norm_mark(w.text)
     if mk and S.mark_type(mk) == "VENTILATOR" and mk not in openings:
-      continue  # "V1" is a ventilator only when the drawing's own schedule says so
+      continue  
     key = w.text.strip().upper()
     g = groups.setdefault(key, {"tag": key, "category": cat, "points": [], "dense": 0})
     if dense or id(w) in row_ids or id(w) in table_ids:

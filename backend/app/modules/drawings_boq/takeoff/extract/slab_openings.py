@@ -127,15 +127,31 @@ def attach_landings(stairs: list, landings: list, mm_per_pt: float, gap) -> tupl
     st.notes.append(C.note("STAIR_LANDINGS_ADDED", count=len(items), area_m2=st.facts["landings_area_m2"]))
   return sum(len(v) for v in taken.values()), left
 
-def sheet_entries(stairs: list, voids: list, level: str | None) -> list:
+def covered_by_label(box, voids: list, mm_per_pt: float | None) -> str | None:
+  if not box or not mm_per_pt or mm_per_pt <= 0:
+    return None
+  reach = C.VOID_LABEL_REACH_MM / mm_per_pt
+  x0, y0, x1, y1 = (float(v) for v in box)
+  for v in voids or []:
+    if v.get("x") is None or v.get("y") is None:
+      continue
+    if math.hypot(max(x0 - v["x"], 0.0, v["x"] - x1), max(y0 - v["y"], 0.0, v["y"] - y1)) <= reach:
+      return v["name"]
+  return None
+
+def sheet_entries(stairs: list, voids: list, level: str | None, mm_per_pt: float | None = None) -> list:
   out = []
   for st in stairs:
     f = st.facts or {}
     way = f.get("direction")
-    if way not in ("UP", "DOWN") or not f.get("flight_area_m2") or f.get("short_flight") or f.get("details_printed") is False:
+    if way not in ("UP", "DOWN") or not f.get("flight_area_m2") or f.get("short_flight") or f.get("details_printed") is False or f.get("external"):
       continue
-    out.append({"kind": "STAIR_WELL", "way": way, "level_hint": level, "area_m2": float(f["flight_area_m2"]), "name": "Stair well", "key": st.key,
-      "text": f"{f.get('steps') or '?'} steps, {f.get('treads_drawn') or '?'} treads drawn"})
+    entry = {"kind": "STAIR_WELL", "way": way, "level_hint": level, "area_m2": float(f["flight_area_m2"]), "name": "Stair well", "key": st.key,
+      "text": f"{f.get('steps') or '?'} steps, {f.get('treads_drawn') or '?'} treads drawn"}
+    printed = covered_by_label(f.get("flight_box"), voids, mm_per_pt)
+    if printed:
+      entry["covered_by"] = printed
+    out.append(entry)
   for v in voids:
     out.append({"kind": "PRINTED", "side": v["side"], "level_hint": level, "area_m2": v["area_m2"], "name": v["name"], "text": v["text"], "key": None})
   return out
@@ -172,6 +188,8 @@ def place(levels: dict, known) -> dict:
   for lvl, grp in levels.items():
     for e in grp["entries"]:
       item = {**e, "page_no": grp["page_no"], "from_level": lvl}
+      if e["kind"] == "STAIR_WELL" and e.get("covered_by"):
+        continue
       if e["kind"] == "STAIR_WELL":
         if e["way"] == "UP":
           up.setdefault(lvl, []).append(item)

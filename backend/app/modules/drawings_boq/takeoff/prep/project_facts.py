@@ -1,9 +1,10 @@
 from __future__ import annotations
 from types import SimpleNamespace
+from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
 
 STRIDE = 1000                      
 HEIGHT_TOL_MM = 1.0                
-FACT_NAMES = ("storey_heights", "slab_values", "spec_facts", "beam_sections", "tank_details", "footing_sections", "schedule", "units")
+FACT_NAMES = ("storey_heights", "slab_values", "spec_facts", "beam_sections", "tank_details", "footing_sections", "schedule", "units", "opening_labels")
 
 def stamp(pairs: list) -> tuple:
   order: dict = {}
@@ -66,6 +67,7 @@ def gather_all(sheets: list) -> dict:
     "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])],
     "units": UR.drawing_imperial([{"page_no": s.page_no, "units": s.prep_meta.get("units"), "hint": s.prep_meta.get("units_hint")} for s in sheets]),
     "schedule": DS.gather(PSV.PrepService._schedule_sheets(sheets)),
+    "opening_labels": OHT.gather(sheets),
   }
 
 def project_of(pairs: list) -> dict:
@@ -179,6 +181,7 @@ def merge(own: dict, other: dict) -> dict:
     if other["units"].get("imperial") is not None and units.get("imperial") != other["units"]["imperial"]:
       found.append(_conflict("UNITS", "imperial", units, other["units"]))
   put("units", units, src, found)
+  put("opening_labels", OHT.merge(own["opening_labels"], other["opening_labels"]), [])
   return {"facts": facts, "filled": filled, "conflicts": conflicts}
 
 def bundle(pairs: list, own_drawing) -> dict:

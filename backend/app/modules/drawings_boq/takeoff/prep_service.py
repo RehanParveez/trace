@@ -9,6 +9,7 @@ from app.modules.drawings_boq.models import BuildingLevel, TakeoffCalibration, T
 from sqlalchemy import select
 from decimal import Decimal
 import asyncio
+import json
 import logging
 import re
 from uuid import UUID, uuid4
@@ -29,6 +30,8 @@ from app.modules.drawings_boq.takeoff.prep import tank_details
 from app.modules.drawings_boq.takeoff.extract import electrical as electrical_reader
 from app.modules.drawings_boq.takeoff.prep import footing_sections, units as unit_reader
 from app.modules.drawings_boq.takeoff.prep import sheet_marks
+from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
+from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
 from app.modules.drawings_boq.takeoff.prep import scale_bar
 from app.modules.drawings_boq.takeoff.prep import checks as checks_mod
 from app.modules.drawings_boq.takeoff.prep import picture_checks, reader_status
@@ -126,6 +129,10 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["footing_sections"] = sections
   except Exception:
     result.meta["footing_sections_reader"] = "FAILED"
+  try:
+    result.meta["mark_evidence"] = MV.read_sheet(result.index, result.index.words, result.meta.get("units_hint"), page_no)
+  except Exception:
+    result.meta["mark_evidence_reader"] = "FAILED"
   try:
     marks = sheet_marks.read(page, raw.rotation, tuple(raw.cropbox), result.index.words)
     strip = marks.get("strip")
@@ -235,7 +242,8 @@ class PrepService:
           pass
     if prepared:
       await self._outline_pass_safe(org, drawing.project_id)
-    refreshed = await self.repo.sheets(org, drawing_id)
+      await self._marks_pass_safe(org, drawing.project_id)
+    refreshed =await self.repo.sheets(org, drawing_id)
     remaining = sum(1 for s in refreshed if (wanted is None or s.id in wanted) and (s.prep_status != "READY" or self._stale(s)) and s.prep_status != "FAILED")
     return {"drawing_id": drawing_id, "prepared": prepared, "skipped": skipped, "failed": failed, "remaining": remaining,
       "elapsed_seconds": round(time.monotonic() - started, 2), "sheets": refreshed}
@@ -257,6 +265,7 @@ class PrepService:
     if not ok:
       raise TraceException(sheet.prep_error or "This sheet could not be read.", status_code=422, code="SHEET_PREP_FAILED")
     await self._outline_pass_safe(org, drawing.project_id)
+    await self._marks_pass_safe(org, drawing.project_id)
     return await self._sheet(org, sheet_id)
 
   async def _mark_failed(self, org: UUID, sheet_id: UUID, message: str) -> None:
@@ -606,8 +615,14 @@ class PrepService:
   async def project_schedule(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
     return (await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["schedule"]
 
+  async def project_opening_heights(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
+    """The door and window heights the plans of the whole project print in their D= / W= labels, {"DOOR": {"height_mm", "n", "of", "basis"}, ...}; a kind whose labels do not agree is left out."""
+    return OHT.decide((await self.project_facts(org, project_id, exclude_superseded=exclude_superseded))["opening_labels"])
+
+  async def drawing_opening_heights(self, org: UUID, drawing_id: UUID) -> dict:
+    return OHT.decide(OHT.gather(await self.repo.sheets(org, drawing_id)))
+
   async def project_electrical_legend(self, org: UUID, project_id: UUID, *, exclude_superseded: bool = True) -> dict:
-    """The electrical legend printed on any sheet of any PDF of the project: {pages, rows, sources}."""
     pairs = await self._project_sheets(org, project_id, exclude_superseded=exclude_superseded)
     sheets, table = PF.stamp([(d.id, s) for d, s in pairs])
     got = electrical_reader.gather_legend([{"page_no": s.page_no, "legend": s.prep_meta.get("electrical_legend")} for s in sheets if s.prep_meta.get("electrical_legend")])
@@ -631,7 +646,7 @@ class PrepService:
       slot = drawings.setdefault(d.id, {"drawing_id": d.id, "name": d.original_filename, "sheets": 0, "current": bool(d.is_current_revision)})
       slot["sheets"] += 1
     facts = PF.project_of([(d.id, s) for d, s in pairs]) if pairs else {}
-    return {"project_id": project_id, "drawings": list(drawings.values()), "facts": {k: facts[k] for k in PF.FACT_NAMES if k in facts}}
+    return {"project_id": project_id, "drawings": list(drawings.values()), "facts": {k: facts[k] for k in PF.FACT_NAMES if k in facts and k != "opening_labels"}}
 
   async def fact_bundle(self, org: UUID, drawing, *, project: bool | None = None) -> dict:
     """The facts the reader takes for one drawing (project_facts.bundle): its own, with what the other current PDFs of the project print added where the drawing prints nothing. With
@@ -650,6 +665,84 @@ class PrepService:
     except Exception:
       log.exception("The outline scale check of project %s failed; the scales of its sheets are as they were read", project_id)
       await self.session.rollback()
+
+  @staticmethod
+  def _person_marks(drawings: list) -> dict:
+    """What people set, {discipline: {mark: entry}}, read from the vocabulary stored on the drawings."""
+    out: dict = {}
+    for d in drawings:
+      for disc, marks in MV.person_entries((d.ingestion_meta or {}).get("marks")).items():
+        out.setdefault(disc, {}).update(marks)
+    return out
+
+  async def _marks_build(self, org: UUID, project_id: UUID, person: dict | None = None) -> tuple:
+    drawings = await self.repo.project_pdf_drawings(org, project_id)
+    pairs = [(str(d.id), s) for d in drawings for s in await self.repo.sheets(org, d.id)]
+    vocab = MV.build(pairs, self._person_marks(drawings) if person is None else person)
+    return drawings, json.loads(json.dumps(vocab, default=str))
+
+  async def project_marks(self, org: UUID, project_id: UUID) -> dict:
+    return (await self._marks_build(org, project_id))[1]
+
+  async def marks_pass(self, org: UUID, project_id: UUID, person: dict | None = None) -> dict:
+    drawings, vocab = await self._marks_build(org, project_id, person)
+    changed = False
+    for d in drawings:
+      if (d.ingestion_meta or {}).get("marks") != vocab:
+        d.ingestion_meta = {**(d.ingestion_meta or {}), "marks": vocab}
+        changed = True
+    if changed:
+      await self.session.flush()
+      await self.session.commit()
+    return vocab
+
+  async def _marks_pass_safe(self, org: UUID, project_id: UUID) -> None:
+    try:
+      await self.marks_pass(org, project_id)
+    except Exception:
+      log.exception("The mark vocabulary of project %s could not be rebuilt; the marks are read by their letters", project_id)
+      await self.session.rollback()
+
+  async def drawing_marks(self, org: UUID, drawing) -> dict:
+    """The vocabulary the reader takes for a drawing: the one kept on the drawing, or (a drawing prepared before it was kept) built from the project's sheets now."""
+    stored = (drawing.ingestion_meta or {}).get("marks")
+    if isinstance(stored, dict):
+      return stored
+    try:
+      return await self.project_marks(org, drawing.project_id)
+    except Exception:
+      log.exception("The mark vocabulary of project %s could not be built; the marks are read by their letters", drawing.project_id)
+      return {}
+
+  async def marks_view(self, org: UUID, project_id: UUID) -> dict:
+    drawings, vocab = await self._marks_build(org, project_id)
+    names = {str(d.id): d.original_filename for d in drawings}
+    rows = []
+    for disc, marks in vocab.items():
+      rows.append({"discipline": disc, "marks": [{"mark": m, "category": e["category"], "basis": e["basis"], "text": e.get("text"), "page_no": e.get("page_no"),
+        "drawing_id": e.get("drawing_id"), "drawing_name": names.get(str(e.get("drawing_id"))), "params": e.get("params") or {}, "editable": True,
+        "conflict": e.get("conflict")} for m, e in marks.items()]})
+    return {"project_id": project_id, "drawings": len(drawings), "categories": list(MV.CATEGORIES), "disciplines": rows}
+
+  async def set_mark(self, org: UUID, user_id: UUID, project_id: UUID, discipline: str, mark: str, category: str | None) -> dict:
+    key = MV.norm(mark)
+    disc = (discipline or "").strip().upper()
+    
+    if not key or not disc:
+      raise TraceException("Give the discipline and the mark.", status_code=422, code="MARK_MISSING")
+    if category is not None and category not in MV.CATEGORIES:
+      raise TraceException("That is not a kind of mark.", status_code=422, code="MARK_CATEGORY")
+    drawings = await self.repo.project_pdf_drawings(org, project_id)
+    if not drawings:
+      raise TraceException("This project has no PDF drawings.", status_code=404, code="PROJECT_HAS_NO_PDF")
+    person = self._person_marks(drawings)
+    if category is None:
+      person.get(disc, {}).pop(key, None)
+    else:
+      person.setdefault(disc, {})[key] = {"category": category, "text": f"Set by a person: {key} is {category.lower().replace('_', ' ')}", "page_no": None, "params": {}}
+    await self.marks_pass(org, project_id, person)
+    await self.core._log(org, user_id, drawings[0].id, AuditAction.UPDATE, f"Mark {key} ({disc}) " + (f"set to {category}" if category else "back to what the drawing says"), commit=True)
+    return await self.marks_view(org, project_id)
 
   async def outline_pass(self, org: UUID, project_id: UUID) -> dict:
     pairs = await self._project_sheets(org, project_id)
@@ -836,7 +929,7 @@ class PrepService:
       w = next((x for x in (full.get("witnesses") or []) if x.get("source") == "ROOM_LABELS" and x.get("ratio") and x.get("strong")), None)
       if w is None:
         return None
-      return {"method": "SCALE_RATIO", "ratio": w["ratio"], "scale_text": f"1:{_trim(w['ratio'])}", "basis": "MEASURED_FROM_ROOMS", "trust": 0.85,
+      return {"method": "SCALE_RATIO", "ratio": w["ratio"], "scale_text": f"1:{_trim(w['ratio'])}", "basis": "MEASURED_FROM_PANELS" if w.get("panels") else "MEASURED_FROM_ROOMS", "trust": 0.85,
         "check": w.get("check"), "support": w["support"]}
     if use == "DIMENSIONS":
       if not clusters or clusters[0].get("support", 0) < 2:
@@ -886,6 +979,12 @@ class PrepService:
       return f"{base} · scale bar agrees"[:120] if rec.get("basis") == "DECLARED_AND_BAR" else f"{base} · from the scale bar"[:120]
     if n and rec.get("basis") == "MEASURED_FROM_ROOMS":
       return f"{base} · {n} room size{'s' if n != 1 else ''} agree"[:120]
+    if n and rec.get("basis") in ("MEASURED_FROM_PANELS", "PANELS_AND_OUTLINE"):
+      return f"{base} · {n} slab panel size{'s' if n != 1 else ''} agree"[:120]
+    if rec.get("basis") == "MEASURED_FROM_OUTLINE":
+      return f"{base} · from the outline of the other plans"[:120]
+    if str(rec.get("basis") or "").endswith("_AND_OUTLINE"):
+      return f"{base} · outline of the other plans agrees"[:120]
     if n:
       return f"{base} · {n} printed dimension{'s' if n != 1 else ''} agree"[:120]
     return f"{base} · printed scale, unverified"[:120]

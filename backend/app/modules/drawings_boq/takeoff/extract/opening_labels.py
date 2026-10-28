@@ -12,7 +12,7 @@ SIZE_MIN_MM, SIZE_MAX_MM = 300.0, 6000.0
 DOOR_NOTE_MM = (1800.0, 3500.0)
 WINDOW_NOTE_MM = (300.0, 3500.0)
 
-_ANCHOR = re.compile(r"^\s*([WD])\s*=\s*(.*)$", re.I)
+_ANCHOR = re.compile(r"^\s*([WDV])\s*=\s*(.*)$", re.I)
 _SILL = re.compile(r"^\s*SILL\s*=\s*(.*)$", re.I)
 _PIECE = re.compile(r"^[0-9'\"\-\.xX\u00d7/\u00bd\s]+$")
 _FTIN = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*'\s*(?:-?\s*(\d+)(?:\s+(12|1\s+2|\u00bd|1/2))?\s*\"?)?\s*$")
@@ -145,7 +145,7 @@ def read(words: list, imperial: bool = True) -> dict:
       if sill is not None and not (0.0 <= sill <= 2500.0):
         sill = None
     labels.append({"kind": kind, "x": float(a.cx), "y": float(a.cy), "w_mm": round(width, 1), "h_mm": None if height is None else round(height, 1),
-      "sill_mm": None if sill is None else round(sill, 1), "text": f"{m.group(1).upper()}={text}"})
+      "sill_mm": None if sill is None else round(sill, 1), "text": f"{m.group(1).upper()}={text}", "ventilator": m.group(1).upper() == "V"})
   return {"labels": labels, "unread": unread}
 
 def pair(symbols: list, labels: list, kind: str, mm_per_pt: float, scale_verified: bool) -> int:

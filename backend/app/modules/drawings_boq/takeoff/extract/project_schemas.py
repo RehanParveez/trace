@@ -9,6 +9,33 @@ class ProjectDrawing(BaseModel):
   sheets: int = 0
   current: bool = True
 
+class MarkRow(BaseModel):
+  mark: str
+  category: str = Field(description="COLUMN, FOOTING, BEAM, DOOR, WINDOW, WALL_SECTION, SECTION_REF, SLAB_PANEL or UNKNOWN.")
+  basis: str = Field(description="SECTION_TITLE, SCHEDULE, LEGEND, SECTION_SYMBOL, DEFAULT or PERSON.")
+  text: str | None = None
+  page_no: int | None = None
+  drawing_id: str | None = None
+  drawing_name: str | None = None
+  params: dict[str, Any] = Field(default_factory=dict)
+  editable: bool = True
+  conflict: dict[str, Any] | None = Field(default=None, description="The weaker reading of the same mark, when the drawings give it two meanings.")
+
+class MarkDiscipline(BaseModel):
+  discipline: str
+  marks: list[MarkRow]
+
+class ProjectMarksResponse(BaseModel):
+  project_id: UUID
+  drawings: int = 0
+  categories: list[str] = Field(default_factory=list)
+  disciplines: list[MarkDiscipline] = Field(default_factory=list)
+
+class SetMarkRequest(BaseModel):
+  discipline: str = Field(min_length=1, max_length=40)
+  mark: str = Field(min_length=1, max_length=20)
+  category: str | None = Field(default=None, description="What the mark is; null takes a person's setting back.")
+
 class ProjectFactsResponse(BaseModel):
   project_id: UUID
   drawings: list[ProjectDrawing]

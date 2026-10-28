@@ -4,7 +4,7 @@ import { Badge, Button, Field, inputClass, Toggle } from "../../../organizations
 import type { LengthUnit, Pt, SheetAnalysis, TakeoffCalibration, TakeoffSheet } from "../types/takeoff.types";
 import { dist } from "../utils/geometry";
 import { fmtPlain, fmtRatio } from "../utils/format";
-import { AGREEMENT, checkBand, needsAcknowledgement, noteInfo } from "../utils/scaleText";
+import { AGREEMENT, basisText, checkBand, needsAcknowledgement, noteInfo } from "../utils/scaleText";
 
 export interface CaptureState { target: "ref" | "check" | null; ref: Pt[]; check: Pt[] }
 
@@ -138,7 +138,7 @@ export function ScalePanel(p: Props) {
             <div className="mt-3 rounded-[8px] bg-[var(--color-surface-muted)] p-2.5">
               <div className="text-[12.5px]">
                 {t("boq.takeoff.scale.recommended", "Recommended")}: <span className="font-mono font-semibold" data-testid="recommended-ratio">{fmtRatio(rec.ratio)}</span>
-                <span className="ml-2 text-[11.5px] text-[var(--color-text-muted)]">{rec.basis.replace(/_/g, " ").toLowerCase()} · trust {Math.round(rec.trust * 100)}%</span>
+                <span className="ml-2 text-[11.5px] text-[var(--color-text-muted)]">{basisText(rec.basis)} · trust {Math.round(rec.trust * 100)}%</span>
               </div>
               {ack ? (
                 <label className="mt-2 flex items-start gap-2 text-[12px] text-[var(--color-danger)]">

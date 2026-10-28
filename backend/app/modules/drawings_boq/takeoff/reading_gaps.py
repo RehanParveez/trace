@@ -27,7 +27,7 @@ def _anchor(geometry) -> list | None:
 def _error_codes(notes) -> list:
   return [str(n.get("code")) for n in (notes or []) if isinstance(n, dict) and n.get("severity") == "error" and n.get("code")]
 
-def reading_gaps(words: list, candidates: list, index=None, plan_boxes: list | None = None) -> dict:
+def reading_gaps(words: list, candidates: list, index=None, plan_boxes: list | None = None, vocab: dict | None = None, discipline: str | None = None, plan_kind: str | None = None) -> dict:
   read = {norm_mark(c.tag) for c in candidates if getattr(c, "tag", None)}
   flags = dense_flags(words) if words else []
   by: dict = {}
@@ -44,8 +44,8 @@ def reading_gaps(words: list, candidates: list, index=None, plan_boxes: list | N
       
   tags = []
   for key, row in by.items():
-    category = M.category_of(row["tag"])
-    tags.append({"tag": row["tag"], "category": category, "reason": NO_MEMBER if category else UNKNOWN_KIND, "count": row["count"], "points": row["points"]})
+    category = M.category_of(row["tag"], vocab, discipline, plan_kind)
+    tags.append({"tag": row["tag"], "category": category, "reason": NO_MEMBER if category in ("COLUMN", "FOOTING", "BEAM", "DOOR", "WINDOW") else UNKNOWN_KIND, "count": row["count"], "points": row["points"]})
   tags.sort(key=lambda t: (t["reason"] != NO_MEMBER, -t["count"], t["tag"]))
   aside = []
   for c in candidates:

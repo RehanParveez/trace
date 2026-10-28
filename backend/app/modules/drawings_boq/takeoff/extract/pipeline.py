@@ -53,6 +53,7 @@ from app.modules.drawings_boq.takeoff.extract import earth_fill as EF
 from app.modules.drawings_boq.takeoff.extract import roof_treatment as RF
 from app.modules.drawings_boq.takeoff.extract import flights as FL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
+from app.modules.drawings_boq.takeoff.extract import stair_external as SX
 from app.modules.drawings_boq.takeoff.extract import structure as ST
 from app.modules.drawings_boq.takeoff.extract import column_census as CS
 from app.modules.drawings_boq.takeoff.extract import beam_strips as BSP
@@ -66,7 +67,8 @@ from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.prep import views as VW
 from app.modules.drawings_boq.takeoff.extract import round_columns as RND
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark as ST_norm
-from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint
+from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint, is_tag
+from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
 import time
 
 SCAN_TEXT_FACTOR = 0.8
@@ -119,11 +121,11 @@ def _finish(c: Candidate, ctx: dict, base: float) -> Candidate:
 
 _snap_inch = ST.snap_inch
 
-def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None, view=None, groups=None, imperial: bool = False, footing: dict | None = None, col_details: dict | None = None) -> list:
+def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None, view=None, groups=None, imperial: bool = False, footing: dict | None = None, col_details: dict | None = None, marks: dict | None = None) -> list:
   """view: one drawing of a composite sheet (its marks are counted inside it only). groups: the marks already found in that view.
   footing: {"assigned": {mark: (a, b)}, "assumed": bool, "options": [...]} the footing sizes read from the footing section details."""
   if groups is None:
-    groups = M.tag_members(words, shapes, f, hint, openings)
+    groups = M.tag_members(words, shapes, f, hint, openings, **(marks or {}))
   out = []
   
   clusters: dict = {}
@@ -477,7 +479,7 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
     "unmarked_m": round(sum(l["length_mm"] for l in orphans or []) / 1000.0, 3), "unplaced_marks": res["unplaced"], "level_hint": level_hint}
 
 def _structure_candidates(index, views: list, f: float, hint, heights, ctx, imperial: bool, view_scales: dict | None = None, col_details: dict | None = None,
-  floor_heights: dict | None = None, beam_sections: list | None = None) -> tuple:
+  floor_heights: dict | None = None, beam_sections: list | None = None, marks: dict | None = None) -> tuple:
   """A sheet that shows several structural plans (foundation, basement / ground / first framing plans, mumty framing plan): each plan is read on
   its own, so the C1 marks of the ground floor are not added to the C1 marks of the first floor. Footings are read from the foundation plan only
 
@@ -498,7 +500,8 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
     ws, sh = words_by.get(v["key"], []), shapes_by.get(v["key"], [])
    
     keep = ("FOOTING",) if v.get("foundation") else ("COLUMN", "BEAM")
-    found[v["key"]] = [g for g in M.tag_members(ws, sh, f, hint, None, plan_view=True) if g["category"] in keep]
+    found[v["key"]] = [g for g in M.tag_members(ws, sh, f, hint, None, plan_view=True, **{**(marks or {}), "plan_kind": "FOUNDATION" if v.get("foundation") else (marks or {}).get("plan_kind")})
+      if g["category"] in keep]
   
   seen: dict = {}
   for gs in found.values():
@@ -1613,11 +1616,11 @@ def _settle_scale(res: Extraction) -> None:
       c.notes = [n for n in c.notes if n.get("code") != "SCALE_UNVERIFIED"]
       c.status = _status(c.notes)
 
-def _opening_symbols(index, walls: list, mm_per_pt: float, ctx: dict, imperial: bool, deadline: float, res: Extraction, wall_pen: float | None = None) -> None:
+def _opening_symbols(index, walls: list, mm_per_pt: float, ctx: dict, imperial: bool, deadline: float, res: Extraction, wall_pen: float | None = None, opening_heights: dict | None = None) -> None:
   verified = not ctx.get("scale_unverified")
   try:
     symbols = OS.read(index, walls, mm_per_pt, scale_verified=verified, deadline=deadline, wall_pen=wall_pen, imperial=imperial)
-    sym = OS.reconcile(res.candidates, symbols, mm_per_pt, scale_verified=verified, imperial=imperial, ctx=ctx, cls=Candidate, finish=_finish)
+    sym = OS.reconcile(res.candidates, symbols, mm_per_pt, scale_verified=verified, imperial=imperial, ctx=ctx, cls=Candidate, finish=_finish, set_heights=opening_heights)
   except Exception as exc:
     res.notes.append(C.note("OPENING_SYMBOLS_FAILED", error=type(exc).__name__))
     res.stats["opening_symbols"] = {"error": f"{type(exc).__name__}: {exc}"}
@@ -1659,12 +1662,25 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
   return {"key": "", "caption": title, "level_hint": level_hint, "centre": ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0), "note_mm": note,
     "panels": len(marks), "marks": marks, "view": None, "bbox": [min(xs) - 30.0, min(ys) - 30.0, max(xs) + 30.0, max(ys) + 30.0], "mm_per_pt": mm_per_pt}
 
+def _mark_stats(res: Extraction, words: list, marks: dict) -> None:
+  vocab, disc = marks["vocab"], marks["discipline"]
+  seen = {MV.norm(w.text) for w in words if is_tag(w.text)}
+  for mark, kept, other in MV.conflicts(vocab, disc):
+    if mark in seen:
+      res.notes.append(C.note("MARK_MEANING_CONFLICT", mark=mark, kept={k: kept.get(k) for k in ("category", "basis", "text", "page_no")}, other={k: other.get(k) for k in ("category", "basis", "text", "page_no")}))
+  rows = []
+  for row in sorted(marks["skipped"].values(), key=lambda r: (r["category"], r["tag"])):
+    e = MV.entry_of(vocab, row["tag"], disc)
+    rows.append({**row, "basis": e["basis"] if e else "DEFAULT", "text": e.get("text") if e else None, "params": dict(e.get("params") or {}) if e else {}})
+  res.stats["marks"] = {"discipline": disc, "plan_kind": marks["plan_kind"], "in_vocabulary": len((vocab or {}).get(disc) or {}), "not_counted": rows}
+
 def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unverified: bool = False, content_kind: str = "VECTOR",
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
   sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
-  footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None) -> Extraction:
+  footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None,
+  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
@@ -1692,17 +1708,19 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   sheet_heights = QR.less_beams(_with_floor_height(heights, floor_heights, level_hint), bool(lowest_level), _ft_in)
   shapes = M.member_shapes(index.rings, mm_per_pt)
   openings = S.opening_lookup(schedule)
+  plan_kind = role_info.get("plan_kind")
+  marks = {"vocab": mark_vocab, "discipline": discipline, "plan_kind": plan_kind, "skipped": {}}
   views = VW.find_views(index)
   
   composite_structural = sum(1 for v in views if v["structural"]) >= 2
   if composite_structural:
-    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, imp_here, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details, floor_heights, beam_sections)
+    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, imp_here, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details, floor_heights, beam_sections, marks)
     res.candidates.extend(found)
     res.stats["views"] = vstats
     res.stats["column_details"] = {t: {"sizes_in": r.get("sizes_in") or []} for t, r in (col_details or {}).items()}
     plans = _view_plans(views, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")})
   else:
-    found = [] if partial else _tag_candidates(index, words, shapes, mm_per_pt, hint, sheet_heights, ctx, openings, col_details=col_details)
+    found = [] if partial else _tag_candidates(index, words, shapes, mm_per_pt, hint, sheet_heights, ctx, openings, col_details=col_details, marks=marks)
     only = [] if partial else [v for v in views if v["structural"] and not v.get("foundation")]
     if len(only) == 1:
       in_view = [w for w in words if VW.contains(only[0], w.cx, w.cy)]
@@ -1716,6 +1734,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     plans = []
     
   res.stats["schedule_marks"] = len(openings)
+  _mark_stats(res, words, marks)
   kind = sheet_kind(sheet_words if sheet_words is not None else words)
   slab_plan = SPL.read(words, lines, hint) if not composite_structural and not partial else None
   if slab_plan and kind["kind"] == "UNKNOWN":
@@ -1778,7 +1797,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.stats["beam_sections"] = BS.apply(beams, beam_sections or [])
       res.candidates.extend(beams)
       res.stats["wall_beams"] = len(beams)
-      _stage(res, "OPENING_SYMBOLS", lambda: _opening_symbols(index, walls, mm_per_pt, ctx, imp_sheet, deadline, res, wstats.get("wall_pen_pt")), None)
+      _stage(res, "OPENING_SYMBOLS", lambda: _opening_symbols(index, walls, mm_per_pt, ctx, imp_sheet, deadline, res, wstats.get("wall_pen_pt"), opening_heights), None)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
       wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
       wstats["opening_rules"] = OPR.apply(walls)
@@ -1834,6 +1853,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.candidates.extend(stairs)
       res.notes.extend(stair_notes)
       res.stats["stairs"] = len(stairs)
+      res.stats["stairs_external"] = SX.mark(stairs, lines, walls, mm_per_pt)
       res.stats["stairs_size_not_printed"] = sum(1 for c in stairs if (c.facts or {}).get("details_printed") is False)
       labels = SO.read_labels(lines, hint, mm_per_pt)
       attached, unplaced = SO.attach_landings(stairs, labels["landings"], mm_per_pt, FL._gap)
@@ -1843,7 +1863,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         res.notes.append(C.note("STAIR_LANDING_NOT_PLACED", size=lan["text"], area_m2=lan["area_m2"]))
       if labels["unsized"]:
         res.notes.append(C.note("SLAB_OPENING_SIZE_NOT_PRINTED", count=labels["unsized"]))
-      res.stats["slab_openings"] = SO.sheet_entries(stairs, labels["voids"], level_hint)
+      res.stats["slab_openings"] = SO.sheet_entries(stairs, labels["voids"], level_hint, mm_per_pt)
       res.stats["stair_landings"] = {"printed": len(labels["landings"]), "attached": attached}
       if wstats.get("dropped_treads"):
         res.notes.append(C.note("STAIR_TREADS_NOT_WALLS", count=wstats["dropped_treads"], metres=wstats["treads_m"]))
@@ -1920,7 +1940,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   unmapped: dict = {}
   for g in census.tag_census(words):
       
-    if g["tag"] not in mapped and M.category_of(g["tag"]) is None and g["in_drawing"] >= 2:
+    if g["tag"] not in mapped and M.category_of(g["tag"], mark_vocab, discipline, plan_kind) is None and g["in_drawing"] >= 2:
       unmapped[g["tag"]] = g["in_drawing"]
   res.unmapped_tags = [{"tag": t, "count": n} for t, n in sorted(unmapped.items(), key=lambda kv: (-kv[1], kv[0]))][:30]
   res.stats["seconds"] = round(time.monotonic() - started, 3)
@@ -2156,7 +2176,8 @@ def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) 
   electrical = kw.pop("electrical", None)
   if identity:
     kw["read_as"] = SID.read_as(identity)
-    kw["role_info"] = {"role": identity.get("role"), "title": identity.get("role_title")}
+    kw["role_info"] = {"role": identity.get("role"), "title": identity.get("role_title"), "plan_kind": identity.get("plan_kind")}
+    kw["discipline"] = identity.get("discipline")
   token = OS.FROM_PICTURE.set(bool((pdf or {}).get("lines_from_picture")))
   try:
     res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)

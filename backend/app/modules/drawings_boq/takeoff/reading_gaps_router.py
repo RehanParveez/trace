@@ -51,7 +51,7 @@ class ReadingGapsService:
     self.repo = ExtractRepository(session)
 
   async def sheet(self, org: UUID, sheet_id: UUID) -> dict:
-    await self.prep._sheet(org, sheet_id)
+    sheet = await self.prep._sheet(org, sheet_id)
     index = await self.prep._index(org, sheet_id)
     extraction = await self.repo.extraction(org, sheet_id)
     if extraction is None:
@@ -59,7 +59,10 @@ class ReadingGapsService:
     candidates = await self.repo.candidates(org, [sheet_id])
     plans = ((extraction.stats or {}).get("plan_regions") or {}).get("plans") or []
     boxes = [p["bbox"] for p in plans if isinstance(p, dict) and p.get("bbox")]
-    return {"sheet_id": sheet_id, "read": True, **reading_gaps(index.words, candidates, index=index, plan_boxes=boxes)}
+    drawing = await self.prep.core._pdf_drawing(org, sheet.drawing_id)
+    ident = (sheet.prep_meta or {}).get("identity") or {}
+    vocab = await self.prep.drawing_marks(org, drawing)
+    return {"sheet_id": sheet_id, "read": True, **reading_gaps(index.words, candidates, index=index, plan_boxes=boxes, vocab=vocab, discipline=ident.get("discipline"), plan_kind=ident.get("plan_kind"))}
 
 @router.get("/takeoff/sheets/{sheet_id}/reading-gaps", response_model=ReadingGapsResponse)
 @router.get("/takeoff/sheets/{sheet_id}/left-out", response_model=ReadingGapsResponse, deprecated=True)

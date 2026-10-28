@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.prep.details import ocr_available
 from app.modules.drawings_boq.takeoff.prep import marks as M
 from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
+from app.engine.measure import stages as S
 
 CAPTION = re.compile(r"\b(?:SECTION|DETAIL|PLAN)\b.*\b(?:TANKS?|W\.?\s?T)\b|\b(?:TANKS?|W\.?\s?T)\b.*\b(?:SECTION|DETAIL|PLAN)\b", re.I)
 WALL_NOTE = re.compile(r"^\s*(\d{1,2})?\s*([½¼¾]|\d/\d)?\s*[\"”″]\s*(?:TH[K]?\.?\s*:?\s*)?R\.?\s?C\.?\s?C\.?\s+(WALL|SLAB)\b", re.I)

@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.extract import base_plan as BP
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
 from app.modules.drawings_boq.takeoff.extract.pipeline import _status
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest
+from app.core.config import settings
 
 def _now() -> datetime:
   return datetime.now(timezone.utc)
@@ -24,8 +25,6 @@ def clear_other_sheet_flag(rows: list) -> list:
   return changed
 
 class FloorSourceService(ExtractService):
-  """The floors of a drawing, with the sheets each was read from, and the choice of which sheet to use."""
-
   async def _read(self, org: UUID, drawing_id: UUID, project: bool = False) -> tuple:
     drawing = await self.core._pdf_drawing(org, drawing_id)
     drawings = [drawing]

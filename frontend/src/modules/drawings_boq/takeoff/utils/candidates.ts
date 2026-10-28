@@ -1153,7 +1153,8 @@ function factLineBase(c: TakeoffCandidate): string {
     const landings = Array.isArray(f.landings) ? f.landings.length : 0;
     const landingArea = num(f.landings_area_m2);
     const landingText = landings > 0 ? `plus ${landings} landing${landings === 1 ? "" : "s"}${landingArea !== null ? ` (${landingArea.toFixed(2)} m²)` : ""}` : null;
-    return [way, drawnOnly ? "riser and steps not printed on any sheet" : null, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, drawnOnly && treads !== null ? `${treads} treads drawn${pitch !== null ? `, ${Math.round(pitch)} mm apart` : ""}` : f.short_flight === true && treads !== null ? `only ${treads} treads drawn` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : f.width_source === "DRAWN" ? " (as drawn)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null, rise ? (rise.differs ? `rise differs from the ${Math.round(rise.storey_mm ?? 0)} mm storey` : "rise matches the storey") : null, landingText].filter(Boolean).join(" · ");
+    const twin = num(f.twin_of_page);
+    return [twin !== null ? `twin of page ${twin}, measured there` : null, f.external === true ? "external stair" : null, way, drawnOnly ? "riser and steps not printed on any sheet" : null, steps !== null ? `${steps} steps` : null, inch(f.riser_mm) ? `riser ${inch(f.riser_mm)} in` : null, inch(f.tread_mm) ? `tread ${inch(f.tread_mm)} in` : null, drawnOnly && treads !== null ? `${treads} treads drawn${pitch !== null ? `, ${Math.round(pitch)} mm apart` : ""}` : f.short_flight === true && treads !== null ? `only ${treads} treads drawn` : null, width !== null ? `${Math.round(width)} mm wide${f.width_source === "PRINTED_BESIDE" ? " (printed beside it)" : f.width_source === "DRAWN" ? " (as drawn)" : ""}` : "size needed", waist !== null ? `waist ${Math.round(waist)} mm ${f.waist_source === "PRINTED" ? "printed" : "assumed"}` : c.missing.includes("waist_mm") ? "waist slab to type" : null, rise ? (rise.differs ? `rise differs from the ${Math.round(rise.storey_mm ?? 0)} mm storey` : "rise matches the storey") : null, landingText].filter(Boolean).join(" · ");
   }
 
   if (c.category === "SITE") return siteLine(c);
@@ -1186,12 +1187,22 @@ function factLineBase(c: TakeoffCandidate): string {
   const drawn = Array.isArray(f.size_drawn_mm) ? (f.size_drawn_mm as number[]) : null;
 
   const parts: string[] = [];
+  const heightFrom = f.height_assumed === true ? null : f.height_source === "LABEL" ? "the plan label" : f.height_source === "NOTE" ? "a note on the sheet" : f.height_source === "SET_LABELS" ? "the labels of the set" : null;
+  if (f.found_by === "LABEL") {
+    const n = num(f.labels);
+    parts.push(`${n ?? c.count} from printed labels, no drawn symbol`);
+    if (drawn) parts.push(`${Math.round(drawn[0])}${f.height_assumed === true ? ` mm wide, height assumed ${Math.round(drawn[1])} mm` : `×${Math.round(drawn[1])} mm`}`);
+    if (heightFrom) parts.push(`height from ${heightFrom}`);
+    if (f.gap_check === "NO_GAP") parts.push("no gap in the wall");
+    return parts.join(" · ");
+  }
   if (c.category === "FOOTING" && Array.isArray(f.paired_column)) parts.push(`written beside ${String(f.paired_column[0])} on the foundation plan`);
   if (f.found_by === "SYMBOL_SCAN") {
     const n = num(f.symbols);
     parts.push(`${n ?? c.count} drawn, no mark on the plan`);
     if (drawn) parts.push(`${Math.round(drawn[0])} mm wide`);
     if (drawn && f.height_assumed === true) parts.push(`height assumed ${Math.round(drawn[1])} mm`);
+    if (drawn && heightFrom) parts.push(`${Math.round(drawn[1])} mm high, from ${heightFrom}`);
     return parts.join(" · ");
   }
   if (c.category === "COLUMN") {
@@ -1203,6 +1214,7 @@ function factLineBase(c: TakeoffCandidate): string {
   if (sched) parts.push(`schedule ${Math.round(sched[0])}×${Math.round(sched[1])}`);
   if (drawn) parts.push(`drawn ${Math.round(drawn[0])}${f.height_assumed === true ? ` mm wide, height assumed ${Math.round(drawn[1])} mm` : `×${Math.round(drawn[1])}`}`);
   const seen = f.symbols as { marks?: unknown; found?: unknown } | undefined;
+  if (drawn && heightFrom && !sched) parts.push(`height from ${heightFrom}`);
   if (seen && typeof seen.marks === "number" && typeof seen.found === "number") parts.push(`${seen.found} of ${seen.marks} seen drawn`);
   const width = num(f.width_drawn_mm);
   if (width !== null && !drawn) parts.push(`drawn width ${Math.round(width)} mm`);

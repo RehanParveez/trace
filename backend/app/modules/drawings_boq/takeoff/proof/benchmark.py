@@ -64,9 +64,10 @@ def _outline_scales(prepared: list) -> list:
       continue
     prop = {**v, "ratio": v["mm_per_pt"] / SO.PT_MM}
     new = OW.rebuild(full, prop, [{"sheet_id": str(r), "page_no": r[1]} for r in v["refs"]], AGREE_TOL)
-    if new.get("agreement") == "OUTLINE_ONLY":
+    settled = bool(((new.get("outline") or {}).get("verdict") or {}).get("settled"))
+    if new.get("agreement") == "OUTLINE_ONLY" or settled:
       ratio = float(new["recommended"]["ratio"])
-      out[key[0]][key[1]] = {"ratio": ratio, "mm_per_pt": ratio * 25.4 / 72.0, "refs": list(v["refs"])}
+      out[key[0]][key[1]] = {"ratio": ratio, "mm_per_pt": ratio * 25.4 / 72.0, "refs": list(v["refs"]), "settled": settled}
   return out
 
 def _merge_project(sheets: list, others: list) -> dict:
@@ -108,13 +109,11 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
   the database is left out. The wall thicknesses the drawing's own sheets agree on are gathered as the sheets are read, plain sheets first, as a first run does."""
   from types import SimpleNamespace
   from app.modules.drawings_boq.takeoff import prep_service as PSV
-  from app.modules.drawings_boq.takeoff.prep.analyze import analyze_page
   from app.modules.drawings_boq.takeoff.prep import beam_details as BD, facts as DF, tank_details as TD, units as UR
-  from app.modules.drawings_boq.takeoff.prep import schedules as DS
+  from app.modules.drawings_boq.takeoff.prep import schedules as DS, mark_vocab as MV, opening_heights as OHT
   from app.modules.drawings_boq.takeoff.prep.storeys import storey_heights
   from app.modules.drawings_boq.takeoff.extract import electrical as EL, pipeline as P, spec_facts as SPF
   from app.modules.drawings_boq.takeoff.extract.structure import column_details
-  from app.modules.drawings_boq.takeoff.prep.extract import extract_page, open_document
   
   doc, analysed, problems = prepared if prepared is not None else analyse_pdf(pdf, pages)
   problems = list(problems)
@@ -134,6 +133,8 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     schedule, units = known["schedule"], known["units"]
     drawing = {"floor_heights": known["storey_heights"], "slab_values": known["slab_values"], "spec_facts": known["spec_facts"], "beam_sections": known["beam_sections"],
       "tank_details": known["tank_details"], "footing_sections": known["footing_sections"]}
+  opening_heights = OHT.decide(merged["facts"]["opening_labels"] if merged is not None else OHT.gather(sheets))
+  vocab = MV.build(sheets + [s for _name, group in ((project or {}).get("others") or []) for s in group])
   legend = EL.gather_legend([{"page_no": no, "legend": EL.read_legend_rows(doc[no - 1], a.index.words, identity=a.meta.get("identity"))} for no, a in analysed.items() if EL.is_legend_sheet(a.index.words, a.meta.get("identity"))])
   
   read, wall_rows = [], []
@@ -145,14 +146,20 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     level_hint = None if title.get("composite") else title.get("level_hint")
     
     measured = ((a.detected_scale or {}).get("measured") or {}).get("clusters") or []
-    from_outline = ((project or {}).get("scales") or {}).get(no) if not measured else None
-    mm_per_pt = float(measured[0]["ratio"]) * 25.4 / 72.0 if measured else (from_outline["mm_per_pt"] if from_outline else DEFAULT_MM_PER_PT)
+    from_outline = ((project or {}).get("scales") or {}).get(no)
+    if from_outline and measured and not from_outline.get("settled"):
+      from_outline = None
+    verdict = a.detected_scale or {}
+    labels = float((verdict.get("recommended") or {}).get("ratio")) if not measured and verdict.get("agreement") == "ROOMS_ONLY" and (verdict.get("recommended") or {}).get("ratio") else None
+    used = from_outline["ratio"] if from_outline else (float(measured[0]["ratio"]) if measured else labels)
+    source = ("SETTLED" if from_outline.get("settled") else "OUTLINE") if from_outline else ("MEASURED" if measured else ("LABELS" if labels else "DEFAULT"))
+    mm_per_pt = used * 25.4 / 72.0 if used else DEFAULT_MM_PER_PT
     try:
       res = P.run_extraction(a.index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=1.0, scale_unverified=scale_unverified, content_kind=a.content_kind,
         budget_s=budget_s, schedule=schedule, views_meta=meta.get("views"), frame=meta.get("frame"), col_details=column_details(meta), floor_heights=drawing["floor_heights"],
         level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), pdf_type=meta.get("pdf_type"), identity=meta.get("identity"), scan_reading=meta.get("scan_reading"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
         with_finishes=True, beam_sections=drawing["beam_sections"], tank_details=drawing["tank_details"], imperial=units["imperial"], wall_vocab=UR.wall_vocabulary(wall_rows, units["imperial"]),
-        footing_sections=drawing["footing_sections"], spec_facts=drawing["spec_facts"],
+        footing_sections=drawing["footing_sections"], spec_facts=drawing["spec_facts"], mark_vocab=vocab, opening_heights=opening_heights,
         electrical=EL.count_page(doc, no, legend["rows"]) if legend["rows"] and no not in legend["pages"] and EL.is_plan_sheet(a.index.words, meta.get("identity")) else None)
     except Exception as exc:
       problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
@@ -164,12 +171,13 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
       if not title.get("composite") and c.category == "WALL" and f.get("thickness_used_mm"):
         wall_rows.append((f.get("thickness_used_mm"), f.get("thickness_standard_mm"), False))
     read.append({"page_no": no, "title": title, "schedule": schedule, "candidates": res.candidates, "notes": [n.get("code") for n in res.notes], "mm_per_pt": round(mm_per_pt, 4),
-      "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts"), "stats": res.stats})
+      "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts"), "stats": res.stats,
+      "meta": meta, "ratio": used, "scale_source": source, "content_kind": a.content_kind})
   read.sort(key=lambda sh: sh["page_no"])
   return read, problems
 
 EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT", "DRAINAGE", "QS_VOLUME") + BS.SHEET_KINDS
-CFT_MM3 = 304.8 ** 3                         # one cubic foot, in cubic millimetres
+CFT_MM3 = 304.8 ** 3                       
 
 def member_cft(c) -> float | None:
   """The concrete of a footing, column or beam item in cubic feet (number of pieces x length x width x depth, or height for a column); None while a size is missing."""

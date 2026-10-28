@@ -2,7 +2,7 @@ import { apiClient } from "../../../../shared/api/client";
 import type {AcceptBody, AcceptResult, ApproveReadyBody, ApproveReadyResult, CandidateList, DecideResult, DrawingExtractResult, ExtractResult, RegisterSyncResult,
   AutoCalibrateResult, BulkConfirmResult, CalibrationCreate, ModeOption, PickResult, PrepareResult, PreviewRequest, PreviewResult, ProjectTakeoffDrawing,
   DrawingFacts, Reconciliation, ShapeDetail, ShapeList, SheetAnalysis, SnapKind, SnapResult, TagDetail, TagSummary, TakeoffCalibration, TakeoffMeasurement,
-  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, ProjectFacts, CrossChecks, ReadyToAccept, TypedMemory, KnownFact, FactsCheck, ReaderTrace, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt, SheetIdentityOverride } from "../types/takeoff.types";
+  Frame, FramePlaceBody, FloorDatums, FloorChoiceBody, FloorChoiceResult, FloorSources, ProjectFacts, ProjectMarks, SetMarkBody, CrossChecks, ReadyToAccept, TypedMemory, KnownFact, FactsCheck, ReaderTrace, ColumnReconcile, ReconcileQuery, TakeoffOverview, TakeoffSheet, TextResult, VectorResult, MeasurementCreate, MeasurementUpdate, Pt, SheetIdentityOverride } from "../types/takeoff.types";
 
 const BASE = "/drawings-boq";
 
@@ -99,6 +99,12 @@ export const takeoffApi = {
   },
   async projectFacts(projectId: string, excludeSuperseded = true): Promise<ProjectFacts> {
     return (await apiClient.get<ProjectFacts>(`${BASE}/projects/${projectId}/takeoff/project-facts`, { params: { exclude_superseded: excludeSuperseded } })).data;
+  },
+  async projectMarks(projectId: string): Promise<ProjectMarks> {
+    return (await apiClient.get<ProjectMarks>(`${BASE}/projects/${projectId}/takeoff/marks`)).data;
+  },
+  async setProjectMark(projectId: string, body: SetMarkBody): Promise<ProjectMarks> {
+    return (await apiClient.put<ProjectMarks>(`${BASE}/projects/${projectId}/takeoff/marks`, body)).data;
   },
   async floorSources(drawingId: string): Promise<FloorSources> {
     return (await apiClient.get<FloorSources>(`${BASE}/drawings/${drawingId}/takeoff/floor-sources`)).data;

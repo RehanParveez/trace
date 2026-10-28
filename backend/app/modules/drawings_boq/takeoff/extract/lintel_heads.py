@@ -19,7 +19,7 @@ def door_heads(openings: list) -> list:
   out = []
   for o in openings:
     f = o.facts or {}
-    size = f.get("size_schedule_mm") or (f.get("size_drawn_mm") if f.get("height_source") in ("LABEL", "NOTE") else None)
+    size = f.get("size_schedule_mm") or (f.get("size_drawn_mm") if f.get("height_source") in ("LABEL", "NOTE", "SET_LABELS") else None)
     if o.category != "DOOR" or not size or len(size) < 2:
       continue
     h = _sane(size[1])

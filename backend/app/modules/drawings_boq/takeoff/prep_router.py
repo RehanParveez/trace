@@ -12,7 +12,7 @@ from app.modules.drawings_boq.takeoff.schemas import SheetResponse
 from app.modules.drawings_boq.takeoff.prep_schemas import (PrepareRequest, AnalysisResponse, AutoCalibrateRequest, AutoCalibrateResponse, PickRequest,
   PickResponse, PrepareResponse, FactsResponse, ShapeDetailResponse, ShapeListResponse, SnapRequest, SnapResponse, TagDetailResponse,
   TagListResponse, TextResponse, VectorResponse)
-from app.modules.drawings_boq.takeoff.extract.project_schemas import ProjectFactsResponse
+from app.modules.drawings_boq.takeoff.extract.project_schemas import ProjectFactsResponse, ProjectMarksResponse, SetMarkRequest
 from typing import Literal
 
 router = APIRouter()
@@ -43,6 +43,18 @@ async def get_project_facts(
   project_id: UUID, exclude_superseded: bool = Query(True), current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
   return await PrepService(session).project_facts_view(_org(current_user), project_id, exclude_superseded=exclude_superseded)
+
+@router.get("/projects/{project_id}/takeoff/marks", response_model=ProjectMarksResponse)
+async def get_project_marks(
+  project_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await PrepService(session).marks_view(_org(current_user), project_id)
+
+@router.put("/projects/{project_id}/takeoff/marks", response_model=ProjectMarksResponse)
+async def set_project_mark(
+  project_id: UUID, payload: SetMarkRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await PrepService(session).set_mark(_org(current_user), current_user.id, project_id, payload.discipline, payload.mark, payload.category)
 
 @router.get("/drawings/{drawing_id}/takeoff/facts", response_model=FactsResponse)
 async def get_drawing_facts(

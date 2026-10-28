@@ -109,7 +109,7 @@ class AcceptRequest(BaseModel):
   level_id: UUID | None = None
   section_picks: dict[UUID, str] | None = Field(default=None, max_length=500, description="The beam section (mark) chosen for a beam that lists several, by candidate id. Its depth and bars are put on the beam.")
   steel: dict[UUID, SteelParam] | None = Field(default=None, description="Bars, rings or mesh typed for a candidate, by candidate id. They replace the ones read from the drawing.")
-  allow_repeat_marks: bool = Field(default=False, description="True accepts a column, footing, door or window mark even when the same mark of the same floor is already accepted from another sheet. Left false, the second one is refused (MARK_ACCEPTED_ELSEWHERE) so the mark is not counted twice.")
+  allow_repeat_marks: bool = Field(default=False, description="True accepts a column, footing, door or window mark even when the same mark of the same floor is already accepted from another sheet. Left false, the second one is refused (MARK_ACCEPTED_ELSEWHERE) so the mark is not counted twice. It also lets a stair flight through that is the second view of a stair measured on another floor (STAIR_TWIN_ABOVE).")
 
   @field_validator("work_items")
   @classmethod

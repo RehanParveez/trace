@@ -22,6 +22,7 @@ import { planBoxes as planBoxesOf } from "../utils/floorSources";
 import { FloorLevels } from "../components/FloorLevels";
 import { FoundTab } from "../components/FoundTab";
 import { ProjectFactsPanel } from "../components/ProjectFactsPanel";
+import { ProjectMarksPanel } from "../components/ProjectMarksPanel";
 import { ProjectPlansPanel } from "../components/ProjectPlansPanel";
 import { candidatePoints } from "../utils/candidates";
 import type { TakeoffCandidate } from "../types/takeoff.types";
@@ -902,6 +903,7 @@ export function TakeoffPage() {
       <SheetRolePanel sheets={sheets} drawingId={drawingId} canEdit={canEditPermission} currentSheetId={sheet.id} onSelect={selectSheet} />
       <ProjectPlansPanel drawingId={drawingId} canEdit={canEdit} drawings={(projectDrawings.data ?? []).filter((d) => d.is_current_revision).length} />
       <ProjectFactsPanel projectId={projectId} drawings={(projectDrawings.data ?? []).filter((d) => d.is_current_revision).length} />
+      <ProjectMarksPanel projectId={projectId} canEdit={canEditPermission} />
       <AiShadowCard drawingId={drawingId} canEdit={canEditPermission} />
       <Toolbar
         tool={tool}

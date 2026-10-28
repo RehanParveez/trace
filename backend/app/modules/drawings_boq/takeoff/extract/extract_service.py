@@ -7,6 +7,7 @@ import time
 from uuid import UUID
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.prep.analyze import ANALYSIS_VERSION
+from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
 from app.modules.drawings_boq.takeoff.levels import ensure_level
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
@@ -272,19 +273,20 @@ class ExtractService:
       return rows
     sheets = {s.id: s for s in await self.core.repo.sheets(org, sheet.drawing_id)}
     every = await self.repo.candidates(org, list(sheets))
-    _, _, owners = ST.pairs(every, sheets)
-    lone = set(ST.alone(every, sheets))
+    solved = ST.solve(every, sheets)
+    lone = set(solved.lone)
     
     out = []
     for r in rows:
-      pages = owners.get(r.id)
-      if not pages and r.id not in lone:
+      info = solved.info.get(r.id)
+      if not info and r.id not in lone:
         out.append(r)
         continue
       copy = CandidateResponse.model_validate(r)
-      if pages:
-        note = C.note("STAIR_SAME_AS_UP_FLIGHT", pages=pages)
-        note["message"] += f" The UP flight is on sheet {', '.join(str(p) for p in pages)}."
+      if info:
+        note = C.note("STAIR_TWIN_ABOVE", page=info["twin_of_page"], how=info["how"], gap_m=info["gap_m"])
+        note["message"] += f" The stair is measured from the flight on sheet {info['twin_of_page']}."
+        copy.facts = {**copy.facts, "twin_of_page": info["twin_of_page"], "twin_of_how": info["how"]}
       else:
         note = C.note("STAIR_FLIGHT_NO_PARTNER")
       copy.notes = [*copy.notes, note]
@@ -338,6 +340,8 @@ class ExtractService:
     electrical = await self.prep.sheet_electrical(org, sheet, index.words)
     units = await self.prep.sheet_units(org, sheet, known["units"])
     wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
+    mark_vocab = await self.prep.drawing_marks(org, drawing)
+    opening_heights = OHT.decide(known["opening_labels"])
     title = (sheet.prep_meta or {}).get("title") or {}
     level_hint = None if title.get("composite") else title.get("level_hint")
     floors = self.prep._floor_keys(await self.prep.repo.sheets(org, sheet.drawing_id))
@@ -348,7 +352,7 @@ class ExtractService:
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
         col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"), pdf_type=(sheet.prep_meta or {}).get("pdf_type"), identity=(sheet.prep_meta or {}).get("identity"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
-        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts, electrical=electrical)
+        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts, electrical=electrical, mark_vocab=mark_vocab, opening_heights=opening_heights)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")

@@ -3,6 +3,7 @@ from app.modules.drawings_boq.takeoff.extract import crosschecks as CK
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
+from app.modules.drawings_boq.takeoff import stair_pairs as SP
 from app.modules.drawings_boq.takeoff.extract import layout_groups as LG
 from app.modules.drawings_boq.takeoff.extract import mark_entities as ME
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
@@ -37,6 +38,7 @@ REASON_TEXT = {
   "ADDED_FROM_SECOND_SHEET": "Only the sheet that shows every plan has this item, not the floor's own sheet. That sheet is drawn small, so check it on the sheet before accepting.",
   "FLOOR_SOURCE_UNDECIDED": "This floor is open on two sheets. Choose the sheet to use for it before accepting, or the floor is counted twice.",
   "LAYOUT_SOURCE_UNDECIDED": "This plan is printed on several sheets (the same named rooms with the same areas) and was read from each. Choose the sheet that governs it before accepting, or the plan is counted once for every sheet it is printed on.",
+  "STAIR_TWIN_ABOVE": "This flight is the second view of a stair measured on another floor (the UP flight below it, laid on the same place). It is kept as a sighting with no quantity; accepting it counts the stair twice.",
   "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet, or the floor finish already accepted for this floor carries the baths and toilets. Accepting it here as well counts it twice.",
   "MARK_ON_SEVERAL_SHEETS": "The same mark of this floor is shown on another sheet with the same count and size, and that sheet is the one to use (a schedule before a detail before a plan label, then a sheet that names its floor). Choose the sheet in the list of marks, or accept this one by hand.",
   "MARK_SHEETS_DISAGREE": "The same mark of this floor is shown on more than one sheet with a different count or size. Choose the sheet that governs it in the list of marks before accepting, or the mark is counted from every sheet.",
@@ -67,6 +69,7 @@ def ready(read: list, checks: list | None = None) -> dict:
   ok: list = []
   guard = AG.Guard(AG.held_marks(read, lambda c, sh: _floor(c, _sheet_floor(sh))))
   skip_mark = mark_skip(layout_open)
+  twins = SP.sightings([c for s in read for c in s["candidates"]], SP.sheets_of(read))
   marks = ME.lookup(ME.build([s for s in read if "title" in s and "stats" in s], skip_mark))
   held: list = []
   
@@ -87,6 +90,8 @@ def ready(read: list, checks: list | None = None) -> dict:
         why.append("LAYOUT_SOURCE_UNDECIDED")
       if c.decision == "NEW" and from_non_plan(sh, c):
         why.append("NOT_A_PLAN_SHEET")
+      if c.decision == "NEW" and c.id in twins:
+        why.append("STAIR_TWIN_ABOVE")
       if c.decision == "NEW" and guard.clash(c, fl) is not None:
         why.append("MARK_ACCEPTED_ELSEWHERE")
       elif c.decision == "NEW" and not skip_mark(sh, c) and (code := ME.held_code(marks, c, fl)):

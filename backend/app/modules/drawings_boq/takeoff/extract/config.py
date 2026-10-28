@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 from app.engine.measure import readings as QSR
 
-EXTRACT_VERSION = 79
+EXTRACT_VERSION = 82
  
 LINTEL_BEARING_MM = 152.4
 STAIR_WAIST_DEFAULT_MM = 127.0                              
@@ -66,6 +66,11 @@ WALL_MIN_OVERLAP_MM = 300.0
 WALL_MIN_RUN_MM = 900.0       
 WALL_GAP_MAX_MM = 2500.0      
 WALL_GAP_CLEAR_MAX_MM = 3200.0
+STAIR_TWIN_REACH_MM = 1000.0          
+STAIR_TWIN_WIDTH_TOL = 0.15           
+STAIR_TWIN_SAME_SCALE_TOL = 0.05      
+STAIR_EXTERNAL_MIN_WALLS = 6          
+STAIR_EXTERNAL_PAIRED = False         
 STAIR_MIN_TREADS = 4
 STAIR_TREAD_TOL = 0.12
 STAIR_LINE_MIN = 0.6
@@ -282,6 +287,9 @@ NOTES = {
   "OPENING_HEIGHT_ASSUMED": ("warning", "The plan prints no height for these openings. A door is taken as 7 ft (2134 mm) high and a window as 4 ft (1219 mm) high, the usual sizes of a house. The area, the plaster and paint taken off, and the frame use that height. Type the real size when you accept the item, or give the door and window schedule."),
   "OPENING_SIZE_FROM_PLAN_LABEL": ("info", "The width and height of these openings are the sizes written beside them on the plan (a window as W=width X height with its sill, a door as D=width X height). They are not the default height of 7 ft for a door and 4 ft for a window. Check them on the plan."),
   "OPENING_HEIGHT_FROM_NOTE": ("info", "The plan prints no height beside these openings, but a note on the sheet gives one height to all doors or all windows. That height is used instead of the default."),
+  "OPENING_FROM_LABEL": ("info", "This item was found from the size labels printed on the plan (D=... or W=...), not from a drawn door leaf or window symbol and not from a mark. Each label that no drawn symbol took makes one opening of the size it prints, in the wall gap of that width beside it, or on the nearest wall when there is none. A label that is printed twice at the same place counts once. Check the count against the plan."),
+  "OPENING_LABEL_NO_GAP": ("warning", "The labels of this item stand beside a wall, but no gap in the wall has the width the label prints, so the opening is placed on the nearest wall by its label alone. It still comes off the wall it is on. Check that the opening exists and where it is."),
+  "OPENING_HEIGHT_FROM_SET": ("info", "The plan prints no height beside these openings and the sheet has no note for it, but at least three labels in the set print the same height for this kind of opening and they are most of the labelled ones. That height is used instead of the default of 7 ft for a door and 4 ft for a window."),
   "OPENING_LABEL_DIFFERS_FROM_SCHEDULE": ("warning", "The height written beside these openings on the plan is more than 5% different from the height in the schedule. The schedule is used. Check which one is right."),
   "OPENING_LABELS_UNPAIRED": ("info", "Some size labels on the plan (D=... or W=...) were read, but no door or window symbol stands close enough to them (or the width of the symbol does not agree with the label), so they were not used. The openings they belong to keep the default height. The labels are listed with this note."),
   "SCALE_SETTLED_BY_SCHEDULE": ("info", "No printed dimension confirmed the scale of this sheet, but the widths of the doors and windows in the schedule agree with the widths of the same openings drawn on the plan (at least three marks, within 12%). The scale is taken as confirmed, so the unverified-scale warning is lifted from this sheet and widths are no longer rounded to 50 mm."),
@@ -354,7 +362,7 @@ NOTES = {
   "STAIR_DOWN_FLIGHT": ("warning", "This flight is marked DN. It is the same staircase as the UP flight on the floor below. Accept it only once, on one of the two plans."),
   "STAIR_FOUND_NO_DETAILS": ("warning", "A flight of steps with UP or DN beside it is drawn on this plan, but no sheet of the drawing prints the riser, tread and number of steps of the stair. Only what is drawn is known (the width and the tread of the flight, the treads drawn). The stair is listed so it is not forgotten; measure it by hand."),
   "STAIR_SHORT_FLIGHT": ("info", "Only a few treads of this flight are drawn (the rest is a turn or a dotted flight below). It was taken as a stair because UP or DN is written beside it. Check it on the plan."),
-  "STAIR_DIRECTION_UNKNOWN": ("info", "No UP or DN is written beside this staircase. Check on the plan whether it is the same staircase as one on another floor."),
+  "STAIR_DIRECTION_UNKNOWN": ("warning", "No UP or DN is written beside this staircase. It is paired with a flight on the floor above or below only by where it stands, and only when the two plans can be laid on one another. Check on the plan whether it is the same staircase as one on another floor."),
   "SITE_TANK_SIZES_TYPED": ("warning", "A tank is labelled on this sheet but its sizes are not printed as text the reader can take. Type the outside length, width and height and the thickness of its walls when you accept it. The concrete is worked out as the walls of that thickness plus a top slab of 6 inches and a bottom slab of 8 inches, as the QS gave (S11)."),
   "SITE_TANK_SIZES_LISTED": ("info", "The structural sheet draws this tank in a plan and a section. The sizes are listed below: those written as text in the PDF are exact; those read from the picture show the number of readings that agreed (a size read only twice can be a misreading, so check it on the drawing). The drawing does not say which size is the outside length, the water depth or the wall, so none is applied: type the outside sizes and the thickness from them."),
   "TANK_SIZES_DERIVED": ("warning", "The sizes of this tank were worked out from what its drawings print: the size in the caption, the wall and slab thicknesses in the notes, and the lengths in the pictures. A caption does not say whether its size is the inside or the outside, so the sizes here are assumptions with the reason given below (a thickness printed in a note is exact); check them against the drawing and type another to replace any of them. The top slab is taken from a note that prints it, and the top and bottom slab from the section when it prints the thickness (that replaces the QS's 8 in bottom slab)."),
@@ -415,6 +423,8 @@ NOTES = {
   "WALL_PEN_SELECTED": ("info", "Walls were read from the heaviest line weight on this sheet. Lines in lighter weights (dimensions, furniture, fittings, boundary lines) were not read as walls."),
   "LIGHT_PEN_WALLS_KEPT": ("info", "Some walls on this ground-level sheet are drawn in a lighter line weight than the main walls (boundary, lawn and thin partition walls). The long ones of 4.5 to 6 inch thickness were read as walls. Stair treads and furniture lines were not."),
   "LIGHT_PEN_WALL": ("info", "This wall is drawn in a lighter line weight than the main walls on the sheet. Check it is a wall and not a boundary line."),
+  "STAIR_TWIN_ABOVE": ("warning", "This flight is the second view of a stair that is measured on another floor: laid on one another, the two plans put it within a metre of that flight (the two halves of one stair well). It is kept as a sighting with no quantity; the concrete is measured once, on the flight it is the twin of. Accept it only if the plan really has a second stair here."),
+  "STAIR_EXTERNAL": ("info", "This stair is outside the building (a label names it external, or it lies outside the thick walls of the plan). It is not paired with a stair on another floor and it is not taken out of a slab."),
   "STAIR_SAME_AS_UP_FLIGHT": ("warning", "This DN flight is the same staircase as the UP flight drawn on the floor below. It is one concrete stair: accept only one of them, or it is counted twice."),
   "STAIR_FLIGHT_NO_PARTNER": ("info", "This flight has no flight written the other way on the floor above (for UP) or below (for DN). Its other half may be a turn the treads of which are not drawn, or the stair may serve one floor only. Check it is not listed twice or missing."),
   "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
@@ -447,6 +457,7 @@ NOTES = {
   "SHEET_NOT_READ_ROLE": ("info", "This sheet is an elevation, a legend, a specification, a cover or a divider, not a plan, so nothing was read from it (no walls, rooms, doors, windows or finishes). Its role is named in this note. If the sheet does hold a plan, press Read as plan on the sheet bar and read it again."),
   "SHEET_READ_DETAILS_ONLY": ("info", "This sheet is a detail, a schedule or a section, so only its structure details were read. No walls, rooms, doors, windows or finishes were taken from it. If it does hold a plan, press Read as plan on the sheet bar and read it again."),
   "SHEET_READ_SYMBOLS_ONLY": ("info", "This sheet is a plan of the services, a drawing laid over the architect's walls, or a site plan, so only its site, electrical and drainage items were read. The walls, rooms, doors and windows come from the architectural sheets of the floor. If it is also a working drawing, press Read as plan on the sheet bar and read it again."),
+  "MARK_MEANING_CONFLICT": ("warning", "This mark is given two meanings on the drawing set (for this discipline). The one with the stronger evidence is used; check the mark in the marks list of the project."),
   "MIXED_SHEET": ("info", "This sheet shows services (electrical, plumbing or similar) and also the dimensions and sized rooms of a working drawing, so it is read as a working plan as well as for its symbols. Check its walls against the architectural sheet of the same floor."),
   "FLOOR_FROM_SHEET_ORDER": ("warning", "The floor of this sheet is not written on it. It was worked out from the rooms it shares with named sheets and from its place in the set of drawings, which is a guess. Confirm the floor on the sheet bar."),
   "SERVICES_SHEET_BACKDROP_LEFT_OUT": ("info", "This sheet is a plan of the electrical, plumbing, air-conditioning or fire work. The walls, rooms, doors and windows drawn on it are the architect's plan behind its symbols, so they were not taken from it: they come from the architectural sheets of the same floor. What was left out is listed in this note. If this sheet is not a plan of the services, change what it is on the sheet bar and read it again."),

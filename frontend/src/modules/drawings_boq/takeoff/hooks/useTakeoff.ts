@@ -2,7 +2,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import { takeoffApi } from "../api/takeoff.api";
 import { approveAll} from "../utils/approve";
 import type { ApproveSummary } from "../utils/approve";
-import type { AcceptBody, ApproveReadyBody, FloorChoiceBody, KnownFact, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
+import type { SetMarkBody, AcceptBody, ApproveReadyBody, FloorChoiceBody, KnownFact, FramePlaceBody, ReconcileQuery, CalibrationCreate, DrawingExtractResult, MeasurementCreate, MeasurementUpdate, PrepareResult, RegisterSyncResult, TakeoffSheet } from "../types/takeoff.types";
 import { drawingsBoqKeys } from "../../hooks/useDrawingsBoq";
 
 export const takeoffKeys = {
@@ -17,6 +17,7 @@ export const takeoffKeys = {
   reconciliation: (projectId: string) => [...takeoffKeys.all, "reconciliation", projectId] as const,
   facts: (drawingId: string) => [...takeoffKeys.all, "facts", drawingId] as const,
   projectFacts: (projectId: string) => [...takeoffKeys.all, "project-facts", projectId] as const,
+  projectMarks: (projectId: string) => [...takeoffKeys.all, "project-marks", projectId] as const,
   frame: (drawingId: string) => [...takeoffKeys.all, "frame", drawingId] as const,
   floors: (drawingId: string) => [...takeoffKeys.all, "floors", drawingId] as const,
   floorSources: (drawingId: string) => [...takeoffKeys.all, "floor-sources", drawingId] as const,
@@ -434,6 +435,25 @@ export function useProjectFacts(projectId: string | undefined, enabled = true) {
     queryFn: () => takeoffApi.projectFacts(projectId as string),
     enabled: Boolean(projectId) && enabled,
     staleTime: 15_000,
+  });
+}
+
+export function useProjectMarks(projectId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: takeoffKeys.projectMarks(projectId ?? ""),
+    queryFn: () => takeoffApi.projectMarks(projectId as string),
+    enabled: Boolean(projectId) && enabled,
+    staleTime: 15_000,
+  });
+}
+
+export function useSetProjectMark(projectId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SetMarkBody) => takeoffApi.setProjectMark(projectId as string, body),
+    onSuccess: (data) => {
+      if (projectId) qc.setQueryData(takeoffKeys.projectMarks(projectId), data);
+    },
   });
 }
 

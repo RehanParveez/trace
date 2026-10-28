@@ -363,8 +363,15 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     "engine_errors": errors, "problems": sorted(problems, key=lambda p: (str(p.get("pdf")), p.get("page") or 0, str(p.get("message")))),
     "ledger_rows": len(ledger), "files": {n: case["sha256"].get(n) for n in case["pdfs"]}}
   doc["hash"] = digest(doc)
+  doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
   return doc, timings
+
+def _mark_lines(reads: list) -> list:
+  from types import SimpleNamespace
+  from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
+  sheets = [(name, SimpleNamespace(page_no=r["page_no"], prep_meta=r.get("meta") or {})) for name, rows in reads for r in rows]
+  return MV.lines_for(MV.build(sheets))
 
 def _fmt(v, nd=1):
   return "" if v is None else f"{v:,.{nd}f}"
@@ -407,6 +414,8 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     worse = _worse(baseline, doc)
     out += ["", f"Lines that got worse than the baseline: {len(worse)}."] + [f"- {k}: {_fmt(o['trace'])} -> {_fmt(n['trace'])} ({o['status']} -> {n['status']})" for k, o, n in worse]
   out += ["", "## Invariants", ""] + [f"- {i['status']} {i['name']}" + (f": {i['count']} ({', '.join(i['pages'][:6])})" if i["status"] == "FAIL" else "") for i in doc["invariants"]]
+  if doc.get("marks"):
+    out += ["", "## Mark vocabulary", ""] + [f"- {m}" for m in doc["marks"]]
   if doc["facts"]:
     out += ["", "## Facts", "", f"{doc['facts_tally']}"] + [f"- {f['status']}: {f['text']}. {f['message']}" for f in doc["facts"] if f["status"] != "PASS"][:30]
   if doc["engine_errors"]:

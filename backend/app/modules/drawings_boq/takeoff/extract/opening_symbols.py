@@ -6,6 +6,7 @@ import time
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import opening_labels as OL
+from app.modules.drawings_boq.takeoff.extract import label_openings as LO
 from app.modules.drawings_boq.takeoff.extract import schedule_scale as SS
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines
 
@@ -392,11 +393,14 @@ def read(index, walls: list, mm_per_pt: float, *, scale_verified: bool = True, d
   
   paired = {"DOOR": OL.pair(doors, printed["labels"], "DOOR", mm_per_pt, scale_verified), "WINDOW": OL.pair(windows, printed["labels"], "WINDOW", mm_per_pt, scale_verified)}
   height_notes = OL.height_notes(build_lines(words)) if words else {}
-  stats = {"swings": len(swings), "doors": len(doors), "double_doors": sum(1 for d in doors if d["leaves"] == 2), "windows": len(windows), "swing_search": sstats,
+  made = LO.make(printed["labels"], walls, {"DOOR": doors, "WINDOW": windows}, mm_per_pt)
+  printed["unread"] += made["stats"]["no_wall"]
+  stats = {"swings": len(swings),"doors": len(doors), "double_doors": sum(1 for d in doors if d["leaves"] == 2), "windows": len(windows), "swing_search": sstats,
     "window_search": wstats, "timed_out": bool(deadline is not None and time.monotonic() > deadline), "seconds": round(time.monotonic() - started, 3),
-    "labels": {"read": len(printed["labels"]), "unread": printed["unread"], "paired": paired, "unpaired": sum(1 for l in printed["labels"] if not l.get("paired"))},
+    "labels": {"read": len(printed["labels"]), "unread": printed["unread"], "paired": paired,
+      "unpaired": sum(1 for l in printed["labels"] if not l.get("paired") and not l.get("opened")), "opened": made["stats"]},
     "height_notes": height_notes}
-  return {"doors": doors, "windows": windows, "stats": stats, "labels": printed["labels"], "height_notes": height_notes}
+  return {"doors": doors, "windows": windows, "label_doors": made["DOOR"], "label_windows": made["WINDOW"], "stats": stats, "labels": printed["labels"], "height_notes": height_notes}
 
 KINDS = ("DOOR", "WINDOW")
 HEIGHT_ASSUMED_MM = {"DOOR": DOOR_HEIGHT_ASSUMED_MM, "WINDOW": WINDOW_HEIGHT_ASSUMED_MM}
@@ -412,7 +416,7 @@ def _marks(cands: list, category: str) -> list:
   rows = []
   for c in cands:
     f = c.facts or {}
-    if c.category != category or c.status == "INVALID" or f.get("found_by") == "SYMBOL_SCAN" or f.get("opening_kind") == "VENTILATOR":
+    if c.category != category or c.status == "INVALID" or f.get("found_by") in ("SYMBOL_SCAN", "LABEL") or f.get("opening_kind") == "VENTILATOR":
       continue
     rows.extend((c, k) for k in range(len((c.geometry or {}).get("points") or [])))
   return rows
@@ -440,24 +444,30 @@ def _match(rows: list, symbols: list, reach_pt: float) -> dict:
 def _class_width(width_mm: float, scale_verified: bool, imperial: bool) -> float:
   return snap_width(width_mm, imperial) if scale_verified else float(round(width_mm / 50.0) * 50)
 
-def _height_of(kind: str, height_notes: dict | None) -> tuple:
-  """(height, basis): the height a sheet note gives to all doors or all windows, else the default."""
+def _height_of(kind: str, height_notes: dict | None, set_heights: dict | None = None) -> tuple:
   noted = (height_notes or {}).get(kind)
-  return (float(noted), "NOTE") if noted else (HEIGHT_ASSUMED_MM[kind], "ASSUMED")
+  if noted:
+    return float(noted), "NOTE"
+  shared = (set_heights or {}).get(kind)
+  if shared and shared.get("height_mm"):
+    return float(shared["height_mm"]), "SET_LABELS"
+  return HEIGHT_ASSUMED_MM[kind], "ASSUMED"
 
 def _height_note(basis: str, height: float, label_n: int = 0) -> dict | None:
   if basis == "LABEL":
     return C.note("OPENING_SIZE_FROM_PLAN_LABEL")
   if basis == "NOTE":
     return C.note("OPENING_HEIGHT_FROM_NOTE", height_mm=height)
+  if basis == "SET_LABELS":
+    return C.note("OPENING_HEIGHT_FROM_SET", height_mm=height)
   return C.note("OPENING_HEIGHT_ASSUMED", height_mm=height)
 
-def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finish, scale_verified: bool, height: float | None = None, basis: str = "ASSUMED", sill: float | None = None):
+def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finish, scale_verified: bool, height: float | None = None, basis: str = "ASSUMED", sill: float | None = None, label_only: bool = False):
   work_item, mode, ckind = C.SUGGESTIONS[kind]
   height = HEIGHT_ASSUMED_MM[kind] if height is None else height
   n = len(items)
   
-  facts = {"opening_kind": kind, "found_by": "SYMBOL_SCAN", "symbols": n, "double_leaf": sum(1 for i in items if i.get("leaves") == 2), "width_drawn_mm": width,
+  facts = {"opening_kind": kind, "found_by": "LABEL" if label_only else "SYMBOL_SCAN", "symbols": 0 if label_only else n, "double_leaf": sum(1 for i in items if i.get("leaves") == 2), "width_drawn_mm": width,
     "widths_measured_mm": sorted(round(i["width_mm"]) for i in items), "size_drawn_mm": [width, height], "height_assumed": basis == "ASSUMED", "area_each_m2": round(width * height / 1e6, 3),
     "width_snapped": bool(scale_verified)}
   if basis != "ASSUMED":
@@ -467,13 +477,29 @@ def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finis
     facts["label_texts"] = sorted({i["label"]["text"] for i in items if i.get("label")})[:6]
   if sill is not None:
     facts["sill_mm"] = sill
+  in_gap = sum(1 for i in items if i.get("gap")) if label_only else n
+  if label_only:
+    facts["labels"] = n
+    facts["in_gap"] = in_gap
+    facts["label_texts"] = sorted({i["label"]["text"] for i in items if i.get("label")})[:6]
+    if any(i.get("ventilator") for i in items):
+      facts["ventilator"] = True
+    if in_gap < n:
+      facts["gap_check"] = "NO_GAP"
     
-  notes = [C.note("OPENING_FROM_SYMBOLS"), _height_note(basis, height)]
+  notes = [C.note("OPENING_FROM_LABEL" if label_only else "OPENING_FROM_SYMBOLS"), _height_note(basis, height)]
+  if label_only and in_gap < n:
+    notes.append(C.note("OPENING_LABEL_NO_GAP"))
   noun = "Door" if kind == "DOOR" else "Window"
   size_text = f"{width:g} mm" if basis == "ASSUMED" else f"{width:g}×{height:g} mm"
-  how = "drawn, no mark" if basis == "ASSUMED" else ("size from the plan labels, no mark" if basis == "LABEL" else "drawn, height from a note, no mark")
-  tag = f"DRAWN-{kind}-{width:g}" if basis == "ASSUMED" else f"DRAWN-{kind}-{width:g}x{height:g}" + (f"s{sill:g}" if sill is not None else "")
-  key = ("OPNSYM", kind, width) if basis == "ASSUMED" else ("OPNSYM", kind, width, height, sill)
+  how = "drawn, no mark" if basis == "ASSUMED" else ("size from the plan labels, no mark" if basis == "LABEL" else "drawn, height from a note, no mark" if basis == "NOTE" else "drawn, height from the set's labels, no mark")
+  if label_only:
+    how = "from the plan label, no symbol" + {"ASSUMED": "", "LABEL": "", "NOTE": " · height from a note", "SET_LABELS": " · height from the set's labels"}[basis] + ("" if in_gap == n else " · no gap in the wall")
+  pre = "LABEL" if label_only else "DRAWN"
+  tag = f"{pre}-{kind}-{width:g}" if basis == "ASSUMED" else f"{pre}-{kind}-{width:g}x{height:g}" + (f"s{sill:g}" if sill is not None else "")
+  key = (("OPNLBL" if label_only else "OPNSYM"), kind, width) if basis == "ASSUMED" else (("OPNLBL" if label_only else "OPNSYM"), kind, width, height, sill) + ((in_gap == n,) if label_only else ())
+  if label_only and basis == "ASSUMED":
+    key += (in_gap == n,)
   cand = cls(key=FD._key_of(key), category=kind, kind=ckind, quantity_mode=mode, label=f"{noun} {size_text} ×{n} · {how}", tag=tag,
     geometry={"points": [[round(i["x"], 3), round(i["y"], 3)] for i in items]}, params={}, missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes,
     source="VECTOR_SNAP", count=n)
@@ -509,11 +535,12 @@ def _schedule_pairs(cands: list, symbols: dict, reach: float) -> list:
         out.append({"kind": kind, "tag": getattr(c, "tag", None), "factor": float(sched[0]) / width})
   return out
 
-def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: bool, imperial: bool, ctx: dict, cls, finish) -> dict:
+def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: bool, imperial: bool, ctx: dict, cls, finish, set_heights: dict | None = None) -> dict:
   new, notes = [], []
   hnotes = symbols.get("height_notes") or {}
+  sets = set_heights or {}
   
-  stats = {"marks": {}, "symbols": {}, "matched": {}, "unmatched_symbols": {}, "marks_without_symbol": {}, "drawn_items": 0}
+  stats = {"marks": {}, "symbols": {}, "matched": {}, "unmatched_symbols": {}, "marks_without_symbol": {}, "drawn_items": 0, "label_items": {}, "set_heights": sets}
   reach = REACH_MM / mm_per_pt
   verdict = SS.verdict(_schedule_pairs(cands, symbols, reach))
   stats["schedule_scale"] = verdict
@@ -522,9 +549,16 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
   
   for kind, key in (("DOOR", "doors"), ("WINDOW", "windows")):
     syms = symbols.get(key) or []
+    lonly = symbols.get("label_" + key) or []
     rows = _marks(cands, kind)
     stats["symbols"][kind], stats["marks"][kind] = len(syms), len(rows)
-    if not syms and not rows:
+    if rows and lonly:
+      for s in lonly:
+        s["label"]["opened"] = False
+      stats["label_items"][kind] = {"made": len(lonly), "kept": 0, "reason": "MARKS_COUNT_THE_OPENINGS"}
+      
+      lonly = []
+    if not syms and not rows and not lonly:
       continue
     if not rows:
       groups: dict = {}
@@ -533,13 +567,28 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
         if lab and lab.get("h_mm"):
           key = (float(lab["w_mm"]), float(lab["h_mm"]), "LABEL", lab.get("sill_mm"))
         else:
-          height, basis = _height_of(kind, hnotes)
+          height, basis = _height_of(kind, hnotes, sets)
           key = (float(lab["w_mm"]) if lab else _class_width(s["width_mm"], scale_verified, imperial), height, basis, lab.get("sill_mm") if lab else None)
         groups.setdefault(key, []).append(s)
       for key in sorted(groups, key=lambda k: (k[0], k[1], k[3] or 0.0, k[2])):
         new.append(_group_candidate(kind, key[0], groups[key], ctx, cls, finish, scale_verified, height=key[1], basis=key[2], sill=key[3]))
       stats["drawn_items"] += len(groups)
       stats["matched"][kind] = 0
+      
+      lgroups: dict = {}
+      for s in lonly:
+        lab = s["label"]
+        if lab.get("h_mm"):
+          lkey = (float(lab["w_mm"]), float(lab["h_mm"]), "LABEL", lab.get("sill_mm"), bool(s.get("gap")))
+        else:
+          height, basis = _height_of(kind, None if s.get("ventilator") else hnotes, None if s.get("ventilator") else sets)
+          lkey = (float(lab["w_mm"]), height, basis, lab.get("sill_mm"), bool(s.get("gap")))
+        lgroups.setdefault(lkey, []).append(s)
+      for lkey in sorted(lgroups, key=lambda k: (k[0], k[1], k[3] or 0.0, k[2], k[4])):
+        new.append(_group_candidate(kind, lkey[0], lgroups[lkey], ctx, cls, finish, scale_verified, height=lkey[1], basis=lkey[2], sill=lkey[3], label_only=True))
+      if lonly:
+        stats["label_items"][kind] = {"made": len(lonly), "kept": len(lonly), "groups": len(lgroups)}
+        stats["drawn_items"] += len(lgroups)
       continue
   
     match = _match(rows, syms, reach)
@@ -580,7 +629,7 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
           c.notes.append(C.note("OPENING_SIZE_FROM_PLAN_LABEL"))
         else:
           w = float(printed["w_mm"]) if printed else _class_width(width, scale_verified, imperial)
-          h, basis = _height_of(kind, hnotes)
+          h, basis = _height_of(kind, hnotes, sets)
           f["size_drawn_mm"] = [w, h]
           f["height_assumed"] = basis == "ASSUMED"
           if basis != "ASSUMED":
@@ -596,7 +645,7 @@ def reconcile(cands: list, symbols: dict, mm_per_pt: float, *, scale_verified: b
       stats.setdefault("unmatched_at", {})[kind] = [[round(sy["x"], 1), round(sy["y"], 1), round(sy["width_mm"])] for si, sy in enumerate(syms) if si not in set(match.values())]
     if unmatched or lacking:
       notes.append(C.note("OPENING_SYMBOLS_VS_MARKS", kind=kind, marks=len(rows), symbols=len(syms), matched=len(match)))
-  unpaired = [l for l in (symbols.get("labels") or []) if not l.get("paired")]
+  unpaired = [l for l in (symbols.get("labels") or []) if not l.get("paired") and not l.get("opened")]
   if unpaired:
     notes.append(C.note("OPENING_LABELS_UNPAIRED", count=len(unpaired), labels=sorted({l["text"] for l in unpaired})[:8]))
   if verdict["status"] == "DISAGREES":

@@ -174,3 +174,28 @@ def apply(verdict: dict, notes: list, rooms: dict | None, declared: dict, agree_
       + "Check one known length before measuring.")}]
     return out, notes
   return verdict, notes
+
+PANEL_KINDS = ("FRAMING",)
+PANEL_BASIS = {"MEASURED_FROM_ROOMS": "MEASURED_FROM_PANELS", "DIMENSIONS_AND_ROOMS": "DIMENSIONS_AND_PANELS", "DECLARED_AND_ROOMS": "DECLARED_AND_PANELS"}
+
+def label_panels(detected: dict, identity: dict | None) -> bool:
+  """On a framing plan (a slab and beam plan) the size labels the witness read are slab-panel sizes, not room sizes: the basis of the scale, the witness and the notes say so.
+  detected is the scale block of the analysis and is changed in place. True when the sheet is a framing plan and something was named."""
+  if not identity or identity.get("plan_kind") not in PANEL_KINDS:
+    return False
+  named = False
+  rec = detected.get("recommended")
+  if rec and rec.get("basis") in PANEL_BASIS:
+    rec["basis"] = PANEL_BASIS[rec["basis"]]
+    named = True
+  for w in detected.get("witnesses") or []:
+    if w.get("source") == "ROOM_LABELS":
+      w["panels"] = True
+      named = True
+  for n in detected.get("notes") or []:
+    if n.get("code") in ("SCALE_FROM_ROOMS", "SCALE_WITNESS_CONFLICT"):
+      if n["code"] == "SCALE_FROM_ROOMS":
+        n["code"] = "SCALE_FROM_PANELS"
+      n["message"] = str(n.get("message") or "").replace("room sizes", "slab panel sizes").replace("rooms agree", "panels agree")
+      named = True
+  return named
