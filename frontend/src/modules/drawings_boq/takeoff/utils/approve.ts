@@ -21,6 +21,7 @@ export const SIZE_FIELDS: Array<{ key: string; label: string }> = [
 const ZERO_OK = ["boundary_side_mm", "boundary_rear_mm"];
 
 export const REASON_LABEL: Record<string, string> = {
+  REVIEW: "no printed source gives its value and no second independent sighting agrees with it",
   ASSUMED: "a size was paired, defaulted or is disputed on the drawing",
   VALUE_MISSING: "a size is missing",
   WARNING: "the reader raised a warning",

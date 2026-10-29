@@ -3,8 +3,10 @@ import re
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.engine.measure import readings as QSR
+from app.modules.drawings_boq.takeoff.model import rules as MR
 from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff.extract import slab_label as SL
+from app.modules.drawings_boq.takeoff.extract import safe as SF
 
 KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF", "BAND": "TIE"}
 ALSO_OFFERED = {"ROOF": ("BEAM",), "PLINTH": ("GRADE",)}
@@ -18,12 +20,7 @@ def depth_basis(c) -> str | None:
   """How the depth of this beam is counted (Pack 135): the overall depth under the QS convention beam_depth_includes_slab (the engine then gives the slab the part of the beam inside it and the
   beam keeps its web), or in full for a plinth, grade, tie or band beam, which has no slab over it. None for an upstand beam, which carries its own note (BEAM_UPSTAND)."""
   f = c.facts or {}
-  if f.get("upstand"):
-    return None
-  letters = re.sub(r"[^A-Z]", "", norm_mark(str(c.tag or "")))
-  if f.get("beam_role") in FULL_DEPTH_ROLES or letters in FULL_DEPTH_MARKS:
-    return FULL_DEPTH
-  return WEB_BELOW_SLAB if QSR.param("beam_depth_includes_slab") else FULL_DEPTH
+  return MR.depth_basis(f.get("beam_role"), norm_mark(str(c.tag or "")), bool(QSR.param("beam_depth_includes_slab")), bool(f.get("upstand")))
 
 def basis_note(c) -> None:
   """Puts the note and the fact that say which basis the depth of the beam is counted on. Does nothing while the depth is not known."""

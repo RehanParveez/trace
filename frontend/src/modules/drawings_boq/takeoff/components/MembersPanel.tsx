@@ -10,7 +10,7 @@ interface Props {
 }
 
 const KIND: Record<string, string> = { COLUMN: "Columns", FOOTING: "Footings", BEAM: "Beams" };
-const BASIS: Record<string, string> = { SCHEDULE: "schedule", DETAIL: "detail", PLAN: "plan" };
+const BASIS: Record<string, string> = { SCHEDULE: "schedule", DETAIL: "detail", PLAN: "plan", IFC: "IFC model" };
 
 export function sizeText(mm: number[] | null): string {
   if (!mm || mm.length === 0) return "size not read";
@@ -26,6 +26,7 @@ export function MembersPanel({ data, currentSheetId, onOpenSheet }: Props) {
   const members = data?.members ?? [];
   if (members.length === 0) return null;
   const several = members.filter((m) => new Set(m.sightings.map((s) => `${s.drawing_id}:${s.page_no}`)).size > 1);
+  const withIfc = members.filter((m) => m.sightings.some((s) => s.basis === "IFC")).length;
   const open = (data?.decisions ?? []).filter((d) => d.open).length;
   return (
     <details className="border-b border-[var(--color-border)] p-3 text-[12px]" data-testid="members">
@@ -33,6 +34,7 @@ export function MembersPanel({ data, currentSheetId, onOpenSheet }: Props) {
         <span className="font-semibold">{t("boq.takeoff.members.title", "Columns, footings and beams, each once")}</span>
         <Badge tone="slate">{t("boq.takeoff.members.count", "{{n}} members", { n: members.length })}</Badge>
         {several.length > 0 ? <Badge tone="blue">{t("boq.takeoff.members.several", "{{n}} seen on more than one sheet", { n: several.length })}</Badge> : null}
+        {withIfc > 0 ? <Badge tone="green">{t("boq.takeoff.members.withIfc", "{{n}} also in the IFC model", { n: withIfc })}</Badge> : null}
         {open > 0 ? <Badge tone="gold">{t("boq.takeoff.members.toDecide", "{{n}} to decide", { n: open })}</Badge> : null}
       </summary>
       <p className="mt-2 text-[11.5px] text-[var(--color-text-secondary)]">
@@ -55,7 +57,9 @@ export function MembersPanel({ data, currentSheetId, onOpenSheet }: Props) {
                   <ul className="mt-1 space-y-0.5">
                     {m.sightings.map((s, i) => (
                       <li key={`${s.drawing_id}-${s.page_no}-${s.candidate_key}-${i}`} className="flex flex-wrap items-center gap-2" data-testid={`sighting-${m.id}-${s.page_no}`}>
-                        <span>{t("boq.takeoff.members.page", "Page {{n}}", { n: s.page_no })} · {BASIS[s.basis] ?? s.basis}</span>
+                        <span>
+                          {s.basis === "IFC" ? t("boq.takeoff.members.ifc", "IFC model") : `${t("boq.takeoff.members.page", "Page {{n}}", { n: s.page_no })} \u00b7 ${BASIS[s.basis] ?? s.basis}`}
+                        </span>
                         {s.sheet_id && s.sheet_id !== currentSheetId ? <Button size="sm" variant="ghost" onClick={() => onOpenSheet(s.sheet_id as string)}>{t("boq.takeoff.members.open", "Open")}</Button> : null}
                       </li>
                     ))}

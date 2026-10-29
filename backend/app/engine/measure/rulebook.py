@@ -47,6 +47,16 @@ def _load_seed() -> tuple:
 
 SEED, SEED_VERSION, SEED_ROWS, QS_SEED = _load_seed()
 
+UNVERIFIED_SOURCE = "common practice, clause not verified"
+SOURCE_FORMS = ("verified: ", "exact ", "derived ")     
+
+def _load_sources() -> dict:
+  import yaml
+  raw = yaml.safe_load(SEED_FILE.read_text(encoding="utf-8")) or {}
+  return {str(r["key"]): str(r["source"]) for r in raw.get("rules") or [] if r.get("source")}
+
+SOURCES = _load_sources()
+
 _ROWS = contextvars.ContextVar("rule_book_rows", default=None)
 _OVER = contextvars.ContextVar("rule_book_overrides", default=None)
 _USED = contextvars.ContextVar("rule_book_used", default=None)
@@ -200,6 +210,9 @@ def load_rules(path) -> tuple:
   for i, r in enumerate(raw.get("rules") or [], 1):
     where = f"{path.name}, rule {i}"
     key, scope = str(r.get("key") or ""), dict(r.get("scope") or {})
+    if str(r.get("status") or "").upper() == "DRAFT" and not r.get("confirmed_by"):
+      problems.append(f"{where}: {key or 'a rule'} is a DRAFT drafted from a workbook and not confirmed by a person; it is not used.")
+      continue
     cls, origin = str(r.get("cls") or JUDGEMENT).upper(), str(r.get("origin") or default_origin).upper()
     if cls not in CLASSES or origin not in (COMPANY, QS_WORKBOOK):
       problems.append(f"{where}: class {cls} or origin {origin} is not one the book holds.")
@@ -207,6 +220,13 @@ def load_rules(path) -> tuple:
     if key in FR.KEYS:
       try:
         value = FR.checked(key, scope, r.get("value"))
+      except ValueError as exc:
+        problems.append(f"{where}: {exc}")
+        continue
+    elif key.startswith("formula."):
+      from app.engine.measure import rule_formulas as RF
+      try:
+        value = RF.checked(r.get("value"))
       except ValueError as exc:
         problems.append(f"{where}: {exc}")
         continue
@@ -284,6 +304,14 @@ def seed_problems() -> list:
       out.append((key, "missing from the seed"))
     elif not _same(s.value, expected):
       out.append((key, f"seed {s.value!r}, code {expected!r}"))
+  for key, rv in SEED.items():
+    if rv.cls != STANDARD:
+      continue
+    src = SOURCES.get(key)
+    if not src:
+      out.append((key, f"a STANDARD row needs a source: the standard and clause it was checked in, or '{UNVERIFIED_SOURCE}'"))
+    elif src != UNVERIFIED_SOURCE and not src.startswith(SOURCE_FORMS):
+      out.append((key, f"source {src!r} is not '{UNVERIFIED_SOURCE}' and does not say what text it was verified in (verified: ...)"))
   for field in ("name", "answered_before", "answered_on", "latest"):
     if not QS_SEED.get(field):
       out.append((f"qs.{field}", "missing from the seed"))

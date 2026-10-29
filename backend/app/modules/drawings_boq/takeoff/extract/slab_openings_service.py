@@ -37,7 +37,7 @@ def annotate(rows: list, placed: dict) -> set:
       if len(big) < len(items):
         small = [i for i in items if not i["deduct"]]
         n = C.note("SLAB_OPENINGS_SMALL", count=len(small))
-        n["message"] = ("Not deducted, 0.1 m² or smaller (IS 1200 Part 2 cl. 4.1.6): " + "; ".join(f"{i['name']} {i['area_m2']:.2f} m² ({i['text']})" for i in small) + ".")
+        n["message"] = ("Not deducted, 0.1 m² or smaller (IS 1200 Part 2, clause not verified): " + "; ".join(f"{i['name']} {i['area_m2']:.2f} m² ({i['text']})" for i in small) + ".")
         
         notes.append(n)
     if f != (r.facts or {}) or notes != (r.notes or []):

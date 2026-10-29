@@ -23,6 +23,7 @@ class MemberSet:
   decisions: tuple = ()
   unregistered: tuple = ()
   counts: dict = field(default_factory=dict)
+  ifc_sizes: dict = field(default_factory=dict)
 
   def summary(self) -> dict:
     by_kind: dict = {}
@@ -195,6 +196,43 @@ def build(read: list, levels=None, skip=None) -> MemberSet:
     for mk in {m.mark for m in members if m.kind == kind and m.floor == floor and m.mark}:
       counts.setdefault((kind, mk), {})[floor] = sum(1 for m in members if m.kind == kind and m.floor == floor and m.mark == mk)
   return MemberSet(tuple(members), tuple(decisions), tuple(unregistered), counts)
+
+def _mark_key(mark) -> str:
+  return "".join(ch for ch in str(mark or "").upper() if ch.isalnum())
+
+def merge(ms: MemberSet, ifc: tuple) -> MemberSet:
+  if not ifc:
+    return ms
+
+  members = list(ms.members)
+  decisions = list(ms.decisions)
+  sizes: dict = dict(ms.ifc_sizes)
+  slots: dict = {}
+  
+  for i, m in enumerate(members):
+    if m.mark:
+      slots.setdefault((m.kind, m.floor, _mark_key(m.mark)), []).append(i)
+  by_key: dict = {}
+  for im in ifc:
+    by_key.setdefault((im.kind, im.floor, _mark_key(im.mark) if im.mark else None), []).append(im)
+  extra = []
+  for key, group in sorted(by_key.items(), key=lambda kv: str(kv[0])):
+    mine = sorted(slots.get(key, []), key=lambda i: (members[i].size_mm is None, members[i].size_mm or ()))
+    theirs = sorted(group, key=lambda m: (m.size_mm is None, m.size_mm or ()))
+    for n, im in enumerate(theirs):
+      if n >= len(mine):
+        extra.append(im)
+        continue
+      k = mine[n]
+      m = members[k]
+      
+      members[k] = Member(m.id, m.kind, m.mark, m.floor, m.outline, m.size_mm or im.size_mm, m.height_mm if m.height_mm is not None else im.height_mm, m.sightings + im.sightings)
+      if im.size_mm:
+        sizes.setdefault(m.id, []).append(im.size_mm)
+      if m.size_mm and im.size_mm and not _same_size(m.size_mm, im.size_mm):
+        decisions.append(Decision(f"ifc_size:{m.id}", f"Size of {m.mark} on {m.floor or 'its sheet'}: the PDF and the IFC model differ",
+          ({"value": list(m.size_mm), "sources": [m.sightings[0].basis]}, {"value": list(im.size_mm), "sources": ["IFC"]}), None))
+  return MemberSet(tuple(members) + tuple(extra), tuple(decisions), ms.unregistered, ms.counts, sizes)
 
 def as_rows(ms: MemberSet, sheet_of: dict | None = None) -> list:
   sheet_of = sheet_of or {}

@@ -227,6 +227,77 @@ async def put_company_conventions(
 ):
   return await CompanyConventionsService(session).update(current_user.active_membership.organization_id, current_user.id, payload)
 
+class DraftRuleItem(BaseModel):
+  id: str
+  key: str
+  scope: dict = Field(default_factory=dict)
+  value: object = None
+  unit: str | None = None
+  cls: str | None = None
+  source: dict = Field(default_factory=dict, description="The workbook, sheet and cell the rule was drafted from.")
+  note: str | None = None
+  needs: list[str] = Field(default_factory=list, description="Values the workbook does not state and a person has to type before the rule can be confirmed.")
+  seed: dict | None = Field(default=None, description="The figure the software holds for the same rule, and whether it is the same.")
+  confirmable: bool
+  why_not: str | None = None
+  confirmed_by: str | None = None
+
+class DraftRulesResponse(BaseModel):
+  drafts: list[DraftRuleItem]
+
+class DraftRulesImport(BaseModel):
+  workbook: str | None = None
+  rules: list[dict] = Field(min_length=1, max_length=500)
+
+class DraftConfirm(BaseModel):
+  value: object | None = Field(default=None, description="The whole value to publish, when the person changed or completed the drafted one.")
+
+@router.get("/rule-book/drafts", response_model=DraftRulesResponse)
+async def get_rule_drafts(
+  current_user: User = Depends(require_permission(PermissionKey.DRAWING_READ)),
+  session: AsyncSession = Depends(get_db),
+):
+ 
+  from app.modules.drawings_boq import rule_drafts as RD
+  return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in await RD.list_drafts(session, current_user.active_membership.organization_id)])
+
+@router.post("/rule-book/drafts", response_model=DraftRulesResponse)
+async def import_rule_drafts(
+  payload: DraftRulesImport,
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  
+  from app.modules.drawings_boq import rule_drafts as RD
+  out = await RD.import_drafts(session, current_user.active_membership.organization_id, payload.model_dump())
+  await session.commit()
+  return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in out])
+
+@router.post("/rule-book/drafts/{draft_id}/confirm", response_model=DraftRulesResponse)
+async def confirm_rule_draft(
+  draft_id: UUID,
+  payload: DraftConfirm,
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+
+  from app.modules.drawings_boq import rule_drafts as RD
+  out = await RD.confirm(session, current_user.active_membership.organization_id, current_user.id, draft_id, payload.value)
+  await session.commit()
+  return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in out])
+
+@router.delete("/rule-book/drafts/{draft_id}", response_model=DraftRulesResponse)
+async def reject_rule_draft(
+  draft_id: UUID,
+  current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MANAGE)),
+  session: AsyncSession = Depends(get_db),
+):
+  
+  from app.modules.drawings_boq import rule_drafts as RD
+  out = await RD.reject(session, current_user.active_membership.organization_id, draft_id)
+  await session.commit()
+  return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in out])
+
 @router.post("/company-conventions/adopt-qs", response_model=CompanyConventionsResponse)
 async def adopt_qs_conventions(
   current_user: User = Depends(require_permission(PermissionKey.ORGANIZATION_MANAGE)),

@@ -209,6 +209,7 @@ export interface ApproveReadyBody {
   accept_assumed?: boolean;
   accept_warned?: boolean;
   accept_added?: boolean;
+  accept_review?: boolean;
   confirm?: boolean;
   dry_run?: boolean;
   batch?: number;
@@ -1002,7 +1003,8 @@ export interface CrossCheck {
   numbers: Record<string, unknown>;
 }
 
-export interface ReadyItem { id: string; category: string; tag: string | null; floor: string | null; page_no: number; grade: string | null }
+export interface SafeBasis { status: "SAFE" | "REVIEW"; basis: "PRINTED_SOURCE" | "TWO_SIGHTINGS" | "NONE"; text: string }
+export interface ReadyItem { id: string; category: string; tag: string | null; floor: string | null; page_no: number; grade: string | null; safe?: boolean; safe_basis?: SafeBasis }
 export interface HeldItem extends ReadyItem { reasons: Array<{ code: string; message: string }> }
 export interface ReadyToAccept { drawing_id: string; ready: ReadyItem[]; held: HeldItem[]; held_by_reason: Record<string, number>; checks_warning: number }
 

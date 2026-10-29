@@ -4,6 +4,7 @@ import { Badge, Button, inputClass, useToast } from "../../../organizations/comp
 import { useAdoptQsConventions, useCompanyConventions, useSaveCompanyConventions, useSaveProjectConventions } from "../hooks/useCompanyConventions";
 import type { ConventionRow } from "../types/companyConventions.types";
 import { takeoffErrorMessage } from "../utils/errors";
+import { RuleDraftsPanel } from "./RuleDraftsPanel";
 
 interface Props {
   canManage: boolean;
@@ -153,6 +154,7 @@ export function CompanyConventionsPanel({ canManage, projectId, canOverride = fa
               <Button size="sm" variant="ghost" disabled={busy} onClick={() => setDraft({})}>{t("boq.takeoff.company.discard", "Discard")}</Button>
             </div>
           ) : null}
+          <RuleDraftsPanel canManage={canManage} />
           {q.data && !canManage ? <p className="text-[11px] text-[var(--color-text-muted)]">{t("boq.takeoff.company.readOnly", "Only someone who manages the organization can change these.")}</p> : null}
         </div>
       ) : null}

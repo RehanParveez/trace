@@ -31,8 +31,8 @@ ORG = uuid5(NAMESPACE, "organisation")
 PROJECT = uuid5(NAMESPACE, "project")
 BATCH = AP.DEFAULT_BATCH
 MAX_ROUNDS = 80
-ALL_POLICY = {"accept_assumed": True, "accept_warned": True, "accept_added": False}      
-READY_POLICY = {"accept_assumed": False, "accept_warned": False, "accept_added": False}  
+ALL_POLICY = {"accept_assumed": True, "accept_warned": True, "accept_added": False, "accept_review": True}      
+READY_POLICY = {"accept_assumed": False, "accept_warned": False, "accept_added": False, "accept_review": False}  
 
 def uid(*parts) -> UUID:
   return uuid5(NAMESPACE, "|".join(str(p) for p in parts))

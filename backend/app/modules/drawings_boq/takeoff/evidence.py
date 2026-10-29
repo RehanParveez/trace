@@ -177,7 +177,7 @@ def _slab(inp: _Inputs, cand) -> None:
     big = [o for o in opens if o.get("deduct")]
     wells = [o for o in big if o.get("kind") == "STAIR_WELL"]
     named = ", ".join(f"{o['name']} {o['area_m2']:.2f} m2" for o in big) or "none"
-    small = f"; {len(opens) - len(big)} of 0.1 m2 or less left in (IS 1200 Part 2 cl. 4.1.6)" if len(big) < len(opens) else ""
+    small = f"; {len(opens) - len(big)} of 0.1 m2 or less left in (IS 1200 Part 2, clause not verified)" if len(big) < len(opens) else ""
     text = f"taken off: {named}{small}"
     if wells:
       inp.measured("openings", f"{text}. A stair well is the area the treads drawn cover on the plan, so a stair drawn short of its cut line takes off less than the well")

@@ -12,7 +12,7 @@ MAX_LISTED = 40
 def typed_values(raw: dict | None) -> dict:
   return {k: raw[k] for k in TYPED_KEYS if raw and raw.get(k) is not None}
 
-def pick(ready: dict, *, accept_assumed: bool, accept_warned: bool, typed: dict, exclude: set | None = None, accept_added: bool = False) -> dict:
+def pick(ready: dict, *, accept_assumed: bool, accept_warned: bool, typed: dict, exclude: set | None = None, accept_added: bool = False, accept_review: bool = False) -> dict:
   exclude = exclude or set()
   skipped: dict = {}
   ids = [i["id"] for i in ready.get("ready", []) if i["id"] not in exclude]
@@ -29,7 +29,7 @@ def pick(ready: dict, *, accept_assumed: bool, accept_warned: bool, typed: dict,
     
     if blocked is None:
       for c in codes:
-        ok = (bool(typed) if c == "VALUE_MISSING" else accept_assumed if c == "ASSUMED" else accept_warned if c in ("WARNING", "CHECK_WARNS") else accept_added if c == "ADDED_FROM_SECOND_SHEET" else False)
+        ok = (bool(typed) if c == "VALUE_MISSING" else accept_assumed if c == "ASSUMED" else accept_warned if c in ("WARNING", "CHECK_WARNS") else accept_added if c == "ADDED_FROM_SECOND_SHEET" else accept_review if c == "REVIEW" else False)
         if not ok:
           blocked = c
           break
@@ -46,14 +46,14 @@ def by_code(failures: list) -> dict:
     out[code] = out.get(code, 0) + 1
   return out
 
-async def run(steps, *, accept_assumed: bool = False, accept_warned: bool = False, accept_added: bool = False, typed: dict | None = None, exclude: set | None = None, batch: int = DEFAULT_BATCH,
-  confirm: bool = True, dry_run: bool = False) -> dict:
+async def run(steps, *, accept_assumed: bool = False, accept_warned: bool = False, accept_added: bool = False, accept_review: bool = False, typed: dict | None = None, exclude: set | None = None,
+  batch: int = DEFAULT_BATCH, confirm: bool = True, dry_run: bool = False) -> dict:
   typed = typed_values(typed)
   batch = max(1, min(int(batch), MAX_BATCH))
   floors_pending = await steps.floors_pending() if dry_run else 0
   
   floors = [] if dry_run else await steps.choose_floors()
-  chosen = pick(await steps.ready(), accept_assumed=accept_assumed, accept_warned=accept_warned, typed=typed, exclude=exclude, accept_added=accept_added)
+  chosen = pick(await steps.ready(), accept_assumed=accept_assumed, accept_warned=accept_warned, typed=typed, exclude=exclude, accept_added=accept_added, accept_review=accept_review)
   ids = chosen["ids"]
   take, remaining = ids[:batch], max(0, len(ids) - batch)
   out = {"dry_run": dry_run, "floors_chosen": floors, "floors_pending": floors_pending, "would_accept": len(ids), "accepted": 0, "accept_failed": [], "failed_ids": [],

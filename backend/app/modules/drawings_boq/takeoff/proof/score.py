@@ -18,6 +18,7 @@ from app.engine.measure import rulebook as RB
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 from app.modules.drawings_boq.takeoff.extract import slab_label as SL
+from app.modules.drawings_boq.takeoff.extract import safe as SF
 from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff import register as RGS
 
@@ -482,6 +483,67 @@ def decisions_view(accs: list) -> dict:
     "decisions": [{"kind": d["kind"], "id": d["id"], "facts": d["facts"], "rows": d["rows"], "default": d["default"], "options": [{"value": o["value"], "label": o["label"], "trust": o["trust"], "quantity": o["quantity"], "unit": o["unit"],
       "sources": [f"{s['discipline'].lower()} p{s['page_no'] if s['page_no'] is not None else '-'} {s['basis']}" for s in o["sources"]]} for o in d["options"]]} for d in view["decisions"]]}
 
+def safe_view(expected: list, ledger: list, floor_of: dict, catalog: dict, accs: list) -> dict:
+  """Safe precision and safe coverage over the ledger rows (the rows that make the bill). A row is SAFE when the candidate its measurement came from is (extract.safe). Coverage: the share of ledger rows that are SAFE.
+  Precision: of the SAFE rows that can be judged, the share within tolerance of the drawing column. A row can be judged when the ledger line it belongs to (work item, family, floor) is covered by an expected line with
+  a drawing figure; it takes the verdict of that line (all the expected lines covering it must be within tolerance). This is a line-level test: a wrong row inside a right line is not caught. Rows that cannot be judged are
+  counted apart."""
+  lines = trace_lines(ledger, floor_of, catalog)
+  verdict: dict = {}
+  verdict_qs: dict = {}
+  for e in expected:
+    got = resolve(e, lines)
+    conv = [to_unit(l["si"], l["unit"], e["unit"]) for l in got]
+    if not got or any(c is None for c in conv):
+      continue
+    fam = e.get("family")
+    tol = e["tolerance_pct"] if e.get("tolerance_pct") is not None else (T.default_for(fam) if fam else T.DEFAULT_TOLERANCE_PCT)
+    for column, book, name in ((e.get("drawing"), verdict, "drawing"), (e.get("qs"), verdict_qs, "qs")):
+      if column is None:
+        continue
+      ok = _status(sum(conv), column, tol) == MATCH
+      for l in got:
+        book.setdefault(l["key"], []).append(ok)
+        
+  info: dict = {}
+  cand_of: dict = {}
+  for acc in accs:
+    for read in acc.read.values():
+      info.update(SF.assess(read, _live))
+    cand_of.update({str(c.measurement_id): str(c.id) for c in acc.candidates if c.measurement_id})
+  out = {"rows": 0, "safe_rows": 0, "review_rows": 0, "judged_safe": 0, "judged_safe_within": 0, "judged_review": 0, "judged_review_within": 0, "unjudged_safe": 0, "unjudged_review": 0, "qs_judged_safe": 0, "qs_judged_safe_within": 0, "by_basis": {}}
+  for r in ledger:
+    mid = ((r.get("trace") or {}).get("inputs") or {}).get("measurement_id")
+    got = info.get(cand_of.get(str(mid)))
+    if got is None:
+      continue
+    safe = got["status"] == SF.SAFE
+    fam = family_of(r)
+    floor = floor_of.get(str(r.get("level_id"))) if r.get("level_id") else None
+    cell = f"{r.get('work_item_code') or '?'}/{fam or '-'}/{floor or '-'}"
+    v = verdict.get(cell)
+    q = verdict_qs.get(cell)
+    if safe and q:
+      out["qs_judged_safe"] += 1
+      out["qs_judged_safe_within"] += 1 if all(q) else 0
+    out["rows"] += 1
+    out["safe_rows" if safe else "review_rows"] += 1
+    if safe:
+      out["by_basis"][got["basis"]] = out["by_basis"].get(got["basis"], 0) + 1
+    if not v:
+      out["unjudged_safe" if safe else "unjudged_review"] += 1
+      continue
+    out["judged_safe" if safe else "judged_review"] += 1
+    if all(v):
+      out["judged_safe_within" if safe else "judged_review_within"] += 1
+      
+  pct = lambda a, b: round(100.0 * a / b, 1) if b else None
+  out["safe_coverage_pct"] = pct(out["safe_rows"], out["rows"])
+  out["safe_precision_pct"] = pct(out["judged_safe_within"], out["judged_safe"])
+  out["review_precision_pct"] = pct(out["judged_review_within"], out["judged_review"])
+  out["safe_precision_vs_qs_pct"] = pct(out["qs_judged_safe_within"], out["qs_judged_safe"])
+  return out
+
 def register_view(accs: list) -> dict:
   rows = own = every = unaccepted = 0
   for acc in accs:
@@ -664,6 +726,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     doc["rules"] = rules
   floor_all = {str(k): v for a in accs for k, v in a.floor_of.items()}
   doc["engine_digest"] = engine_digest(ledger, floor_all)
+  doc["safe"] = safe_view(case["expected"], ledger, floor_all, catalog, accs)
   steel_runs = steel_by_policy.get(main_ready) or []
   steel_stats = {"reason": next((s.get("reason") for s in steel_runs if s.get("reason")), None) if not any(s.get("ran") for s in steel_runs) else None,
     "outside_band": {fam: {"members": sum(((s.get("outside_band") or {}).get(fam) or {}).get("members", 0) for s in steel_runs)} for fam in sorted({f for s in steel_runs for f in (s.get("outside_band") or {})})}}
@@ -732,6 +795,10 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     if wv.get("register"):
       rv = wv["register"]
       out += [f"**Register rows with a warning** (not part of the hash): {rv['warning_rows']} of {rv['rows']} ({rv['share_pct']}%) by the row-scope rule; {rv['warning_rows_if_every_note_counted']} ({rv['share_pct_if_every_note_counted']}%) if every warning note counted, as before the scopes; {rv['warning_rows_before_accepting']} ({rv['share_pct_before_accepting']}%) as the register lists them before anything is accepted (a value still missing is a row warning).", ""]
+  if doc.get("safe") and doc["safe"]["rows"]:
+    sf = doc["safe"]
+    out += [f"**Safe to accept**: {sf['safe_rows']} of {sf['rows']} ledger rows are SAFE (coverage {sf['safe_coverage_pct']}%); of the {sf['judged_safe']} SAFE rows that a drawing figure can judge, {sf['judged_safe_within']} are within tolerance (precision {sf['safe_precision_pct']}%; against the QS column {sf['safe_precision_vs_qs_pct']}% of {sf['qs_judged_safe']}); "
+      f"for REVIEW rows the figure is {sf['review_precision_pct']}% of {sf['judged_review']}. Not judged: {sf['unjudged_safe']} SAFE, {sf['unjudged_review']} REVIEW. By basis: {sf['by_basis']}.", ""]
   if doc.get("steel"):
     sv = doc["steel"]
     out += [f"**Steel by stage** (not part of the hash): {sv['total_trace']:,} kg, {sv['measured_kg']:,} from printed bars and {sv['estimated_kg']:,} from the usual band" + (f"; the QS has {sv['total_qs']:,}" + (f" ({sv['total_diff_pct']:+.1f}%)" if sv.get("total_diff_pct") is not None else "") if sv.get("total_qs") else "") + (f"; the steel stage did not run: {sv['reason']}" if sv.get("reason") else "") + ".", ""]

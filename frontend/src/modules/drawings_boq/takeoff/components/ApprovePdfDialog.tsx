@@ -17,7 +17,7 @@ interface ApprovePdfDialogProps {
   onClose: () => void;
 }
 
-const HELD_ORDER = ["ASSUMED", "VALUE_MISSING", "WARNING", "CHECK_WARNS", "ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED", "ADDED_FROM_SECOND_SHEET", "NOT_A_PLAN_SHEET", "MARK_ON_SEVERAL_SHEETS", "MARK_SHEETS_DISAGREE"];
+const HELD_ORDER = ["REVIEW", "ASSUMED", "VALUE_MISSING", "WARNING", "CHECK_WARNS", "ERROR", "NOT_MEASURABLE", "FLOOR_SOURCE_UNDECIDED", "ADDED_FROM_SECOND_SHEET", "NOT_A_PLAN_SHEET", "MARK_ON_SEVERAL_SHEETS", "MARK_SHEETS_DISAGREE"];
 
 export function PreviewBlock({ data }: { data: ApproveReadyResult }) {
   const { t } = useTranslation();
@@ -102,14 +102,15 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
   const [assumed, setAssumed] = useState(false);
   const [warned, setWarned] = useState(false);
   const [added, setAdded] = useState(false);
-  const [sizes, setSizes] = useState<Record<string, string>>({});
+  const [review, setReview] = useState(false);
+  const [sizes,setSizes] = useState<Record<string, string>>({});
   const [applied, setApplied] = useState<Record<string, number>>({});
   const [progress, setProgress] = useState<ApproveSummary | null>(null);
   const [result, setResult] = useState<ApproveSummary | null>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const { typed, bad } = useMemo(() => typedFromInputs(sizes), [sizes]);
 
-  const preview = useApprovePreview(drawingId, { accept_assumed: assumed, accept_warned: warned, accept_added: added, typed: applied }, result === null);
+  const preview = useApprovePreview(drawingId, { accept_assumed: assumed, accept_warned: warned, accept_added: added, accept_review: review, typed: applied }, result === null);
   const approve = useApproveReady(drawingId);
   const { data: proposedSet } = useQsProposed();
 
@@ -134,7 +135,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
   function start() {
     setResult(null);
     approve.mutate(
-      { body: { accept_assumed: assumed, accept_warned: warned, accept_added: added, confirm: true, typed }, onProgress: setProgress },
+      { body: { accept_assumed: assumed, accept_warned: warned, accept_added: added, accept_review: review, confirm: true, typed }, onProgress: setProgress },
       { onSuccess: (sum) => setResult(sum) },
     );
   }
@@ -159,7 +160,7 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
         <div className="space-y-4 overflow-y-auto px-5 py-4 text-[12.5px] text-[var(--color-text-secondary)]">
           <p>
             {t("takeoff.approve.intro",
-              "This uses each floor's own sheet where a floor was read from two sheets, accepts the items that are ready, and confirms them as measurements. The calculation run then counts this PDF. Items held back stay on the Measure page for you to check.")}
+              "This uses each floor's own sheet where a floor was read from two sheets, accepts the items that are safe to accept (a printed source gives the value, or two independent sightings agree), and confirms them as measurements. The calculation run then counts this PDF. Items held back stay on the Measure page for you to check.")}
           </p>
 
           {result === null ? (
@@ -175,6 +176,16 @@ export function ApprovePdfDialog({ projectId, drawingId, filename, onClose }: Ap
               <ReviewPanel drawingId={drawingId} />
 
               <div className="space-y-2">
+                <label className="flex items-start gap-2" data-testid="approve-review">
+                  <input type="checkbox" checked={review} disabled={approve.isPending} onChange={(e) => setReview(e.target.checked)} />
+                  <span>
+                    {t("takeoff.approve.acceptReview", "Also approve items that are not safe to accept without a look")}
+                    {(skipped.REVIEW ?? 0) > 0 ? <Badge tone="gold">{skipped.REVIEW}</Badge> : null}
+                    <span className="block text-[11px] text-[var(--color-text-muted)]">
+                      {t("takeoff.approve.acceptReviewHint", "No printed source gives their value and no second sheet agrees with it. They stay marked as review.")}
+                    </span>
+                  </span>
+                </label>
                 <label className="flex items-start gap-2">
                   <input type="checkbox" checked={assumed} disabled={approve.isPending} onChange={(e) => setAssumed(e.target.checked)} />
                   <span>

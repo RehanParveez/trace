@@ -34,6 +34,20 @@ export function ReadyToAcceptPanel(p: Props) {
           {t("boq.takeoff.ready.accept", "Accept these {{n}}", { n: ready.length })}
         </Button>
       </div>
+      {ready.length > 0 ? (
+        <details className="text-[11.5px] text-[var(--color-text-secondary)]" data-testid="ready-basis">
+          <summary className="cursor-pointer">{t("boq.takeoff.ready.basis", "Why these are safe")}</summary>
+          <ul className="mt-1 space-y-0.5">
+            {ready.map((r) => (
+              <li key={r.id}>
+                <span className="font-semibold">{r.tag ?? r.category}</span>
+                {r.floor ? ` \u00b7 ${r.floor}` : ""}
+                {` \u00b7 ${r.safe_basis?.text ?? ""}`}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {held.length > 0 ? (
         <p className="text-[11.5px] text-[var(--color-text-secondary)]" data-testid="ready-held">
           {t("boq.takeoff.ready.held", "{{n}} need a look first: {{why}}.", { n: held.length, why: heldLine(held) })}

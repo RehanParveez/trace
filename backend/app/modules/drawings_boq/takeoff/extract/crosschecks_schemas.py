@@ -25,6 +25,8 @@ class ReadyItem(BaseModel):
   floor: str | None = None
   page_no: int
   grade: str | None = None
+  safe: bool = False
+  safe_basis: dict | None = None
 
 class HeldReason(BaseModel):
   code: str

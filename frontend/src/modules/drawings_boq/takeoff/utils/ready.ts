@@ -2,6 +2,7 @@ import type { HeldItem, ReadyItem, ReadyToAccept } from "../types/takeoff.types"
 
 export const HELD_TEXT: Record<string, string> = {
   ALREADY_DECIDED: "already accepted or rejected",
+  REVIEW: "no printed source and no second independent sighting",
   ERROR: "an error found on it",
   WARNING: "a warning on it",
   NOT_MEASURABLE: "beam marks only counted",

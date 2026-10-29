@@ -3,7 +3,7 @@ export interface MemberSighting {
   page_no: number;
   sheet_id: string | null;
   candidate_key: string;
-  basis: "SCHEDULE" | "DETAIL" | "PLAN";
+  basis: "SCHEDULE" | "DETAIL" | "PLAN" | "IFC";
 }
 
 export interface Member {

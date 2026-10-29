@@ -9,6 +9,7 @@ from app.modules.drawings_boq.takeoff.extract import opening_labels as OL
 from app.modules.drawings_boq.takeoff.extract import label_openings as LO
 from app.modules.drawings_boq.takeoff.extract import schedule_scale as SS
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 
 DASH_MAX_PT = 18.0                 
 DASH_MIN_PT = 0.8

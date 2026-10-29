@@ -145,5 +145,5 @@ def build(rows: list) -> dict:
       f"Cement: a bag is {QP.BAG_KG:g} kg and cement weighs {QP.CEMENT_KG_M3:g} kg per cubic metre.",
       f"Brickwork: a brick of {QP.BRICK_MM[0]:g} x {QP.BRICK_MM[1]:g} x {QP.BRICK_MM[2]:g} mm with a {QP.JOINT_MM:g} mm joint gives {n:.0f} bricks and {mortar:.3f} m3 of mortar in a cubic metre.",
       f"Where the drawing prints no mix: concrete {_label(QP.DEFAULT_RCC_MIX)}, plain concrete {_label(QP.DEFAULT_PCC_MIX)}, brickwork mortar {_label(QP.DEFAULT_BRICK_MORTAR)}, plaster mortar {_label(QP.DEFAULT_PLASTER_MORTAR)} (marked ASSUMED on the line).",
-      "Nominal mixes of the grades follow IS 456 (M10 1:3:6, M15 1:2:4, M20 1:1.5:3, M25 1:1:2); 3000 psi is taken as 1:2:4 and 4000 psi as 1:1.5:3, as site practice.",
+      "Nominal mixes of the grades are those of IS 456 (clause not verified) (M10 1:3:6, M15 1:2:4, M20 1:1.5:3, M25 1:1:2); 3000 psi is taken as 1:2:4 and 4000 psi as 1:1.5:3, as site practice.",
     ]}

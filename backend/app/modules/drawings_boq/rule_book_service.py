@@ -12,6 +12,7 @@ from app.engine.measure import company as CO
 
 BOOK_NAME = "Company rules"
 FORMULA_PREFIX = "formula."
+DRAFT_PREFIX = "draft:"
 
 def _scope_key(scope) -> str:
   return json.dumps(scope or {}, sort_keys=True)
@@ -46,8 +47,9 @@ def checked_value(key: str, raw, scope=None):
 async def active_book(session: AsyncSession, organization_id: UUID) -> RuleBook | None:
   return (await session.execute(select(RuleBook).where(RuleBook.organization_id == organization_id, RuleBook.is_active.is_(True)))).scalar_one_or_none()
 
-async def rules_of(session: AsyncSession, book_id: UUID) -> list:
-  return list((await session.execute(select(Rule).where(Rule.book_id == book_id))).scalars().all())
+async def rules_of(session: AsyncSession, book_id: UUID, drafts: bool = False) -> list:
+  rows = list((await session.execute(select(Rule).where(Rule.book_id == book_id))).scalars().all())
+  return rows if drafts else [r for r in rows if not r.key.startswith(DRAFT_PREFIX)]
 
 async def overrides_of(session: AsyncSession, project_id: UUID) -> list:
   return list((await session.execute(select(ProjectRuleOverride).where(ProjectRuleOverride.project_id == project_id))).scalars().all())
@@ -71,7 +73,7 @@ def _same(a, b) -> bool:
 async def publish(session: AsyncSession, organization_id: UUID, changes: list, *, note: str | None = None) -> RuleBook:
   old = await active_book(session, organization_id)
   if old is not None:
-    old_rules = {(r.key, _scope_key(r.scope)): r for r in await rules_of(session, old.id) if r.value is not None}
+    old_rules = {(r.key, _scope_key(r.scope)): r for r in await rules_of(session, old.id, drafts=True) if r.value is not None}
     old.is_active = False
     await session.flush()
   else:

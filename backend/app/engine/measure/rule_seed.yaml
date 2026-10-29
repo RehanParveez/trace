@@ -1,4 +1,4 @@
-version: 5
+version: 6
 qs: {name: "M. Junaid", answered_before: "2026-10-19", answered_on: "2026-10-22", latest: "2026-10-26"}
 rules:
 
@@ -43,25 +43,25 @@ rules:
   - {key: props_step_mm, value: 1000.0, unit: "mm", cls: JUDGEMENT}
   - {key: arch_rise_ratio, value: 0.5, unit: "ratio", cls: JUDGEMENT}
   - {key: arch_wall_mm, value: 228.6, unit: "mm", cls: JUDGEMENT}
-  - {key: concrete_dry_factor, value: 1.54, unit: "ratio", cls: STANDARD}
-  - {key: mortar_dry_factor, value: 1.27, unit: "ratio", cls: STANDARD}
-  - {key: plaster_dry_factor, value: 1.33, unit: "ratio", cls: STANDARD}
-  - {key: bag_kg, value: 50.0, unit: "kg", cls: STANDARD}
-  - {key: cement_kg_m3, value: 1440.0, unit: "kg/m3", cls: STANDARD}
-  - {key: brick_mm, value: [228.6, 114.3, 76.2], unit: "mm", cls: STANDARD}
-  - {key: joint_mm, value: 10.0, unit: "mm", cls: STANDARD}
-  - {key: default_rcc_mix, value: [1.0, 2.0, 4.0], unit: "parts", cls: STANDARD}
-  - {key: default_pcc_mix, value: [1.0, 4.0, 8.0], unit: "parts", cls: STANDARD}
-  - {key: default_brick_mortar, value: [1.0, 5.0], unit: "parts", cls: STANDARD}
-  - {key: default_plaster_mortar, value: [1.0, 4.0], unit: "parts", cls: STANDARD}
-  - {key: nominal_mix_by_grade, value: {"M10": [1.0, 3.0, 6.0], "M15": [1.0, 2.0, 4.0], "M20": [1.0, 1.5, 3.0], "M25": [1.0, 1.0, 2.0]}, unit: "parts", cls: STANDARD}
-  - {key: nominal_mix_by_psi, value: {"3000psi": [1.0, 2.0, 4.0], "4000psi": [1.0, 1.5, 3.0]}, unit: "parts", cls: STANDARD}
+  - {key: concrete_dry_factor, value: 1.54, unit: "ratio", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: mortar_dry_factor, value: 1.27, unit: "ratio", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: plaster_dry_factor, value: 1.33, unit: "ratio", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: bag_kg, value: 50.0, unit: "kg", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: cement_kg_m3, value: 1440.0, unit: "kg/m3", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: brick_mm, value: [228.6, 114.3, 76.2], unit: "mm", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: joint_mm, value: 10.0, unit: "mm", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: default_rcc_mix, value: [1.0, 2.0, 4.0], unit: "parts", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: default_pcc_mix, value: [1.0, 4.0, 8.0], unit: "parts", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: default_brick_mortar, value: [1.0, 5.0], unit: "parts", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: default_plaster_mortar, value: [1.0, 4.0], unit: "parts", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: nominal_mix_by_grade, value: {"M10": [1.0, 3.0, 6.0], "M15": [1.0, 2.0, 4.0], "M20": [1.0, 1.5, 3.0], "M25": [1.0, 1.0, 2.0]}, unit: "parts", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: nominal_mix_by_psi, value: {"3000psi": [1.0, 2.0, 4.0], "4000psi": [1.0, 1.5, 3.0]}, unit: "parts", cls: STANDARD, source: "common practice, clause not verified"}
   - {key: bare_figure_inches_below, value: 100.0, unit: "in", cls: JUDGEMENT}
   - {key: raft_pcc_mm, value: 76.2, unit: "mm", cls: JUDGEMENT}
   - {key: brick_step_offset_mm, value: 114.3, unit: "mm", cls: JUDGEMENT}
   - {key: brick_step_heights_mm, value: {"THICK": [152.4, 152.4, 381.0, 228.6], "THIN": [152.4, 228.6, 381.0]}, unit: "mm", cls: JUDGEMENT}
-  - {key: cft_per_m3, value: 35.3146667, unit: "cft per m3", cls: STANDARD}
-  - {key: sft_per_m2, value: 10.7639104, unit: "sft per m2", cls: STANDARD}
+  - {key: cft_per_m3, value: 35.3146667, unit: "cft per m3", cls: STANDARD, source: "exact unit conversion, no standard needed"}
+  - {key: sft_per_m2, value: 10.7639104, unit: "sft per m2", cls: STANDARD, source: "exact unit conversion, no standard needed"}
   - {key: finish.floor_item, scope: {}, value: "FIN-FLOOR", unit: null, cls: JUDGEMENT}
   - {key: finish.floor_item, scope: {room_type: LAWN}, value: "NONE", unit: null, cls: JUDGEMENT}
   - {key: finish.dado_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
@@ -73,7 +73,7 @@ rules:
   - {key: stage.lintel_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.parapet_height_mm, scope: {}, value: 914.4, unit: "mm", cls: JUDGEMENT}
   - {key: finish.wall_faces, scope: {}, value: "OUTLINE", unit: null, cls: JUDGEMENT}
-  - {key: steel.unit_weight_divisor, scope: {}, value: 162.2, unit: "kg/m = d2 / value", cls: STANDARD}
+  - {key: steel.unit_weight_divisor, scope: {}, value: 162.2, unit: "kg/m = d2 / value", cls: STANDARD, source: "derived from the density of steel (7850 kg/m3) and the area of the bar, no clause needed"}
   - {key: steel.band.SLAB.low, scope: {}, value: 55, unit: "kg/m3", cls: JUDGEMENT}
   - {key: steel.band.SLAB.likely, scope: {}, value: 67, unit: "kg/m3", cls: JUDGEMENT}
   - {key: steel.band.SLAB.high, scope: {}, value: 78.5, unit: "kg/m3", cls: JUDGEMENT}

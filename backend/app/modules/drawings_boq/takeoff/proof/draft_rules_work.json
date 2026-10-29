@@ -1,0 +1,654 @@
+{
+ "origin": "QS_WORKBOOK",
+ "status": "DRAFT",
+ "workbook": "BOQ_Worksheet_Map.xlsx",
+ "sha256": "2efbc59a356688ba44d3c39f1d0782bed9adfb1ab45cb829f5f0f04f48f93a34",
+ "rules": [
+  {
+   "key": "cft_per_m3",
+   "scope": {},
+   "value": 35.32,
+   "unit": "cft per m3",
+   "cls": "STANDARD",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B2",
+    "text": "35.32 cft per m3; 10.76 sft per m2",
+    "item": "Unit conversions",
+    "qs_cell": "Every sheet bottom rows"
+   },
+   "note": "The workbook types this conversion; the seed holds the exact one. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "cft_per_m3",
+    "value": 35.3146667,
+    "same": true
+   }
+  },
+  {
+   "key": "sft_per_m2",
+   "scope": {},
+   "value": 10.76,
+   "unit": "sft per m2",
+   "cls": "STANDARD",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B2",
+    "text": "35.32 cft per m3; 10.76 sft per m2",
+    "item": "Unit conversions",
+    "qs_cell": "Every sheet bottom rows"
+   },
+   "note": "The workbook types this conversion; the seed holds the exact one. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "sft_per_m2",
+    "value": 10.7639104,
+    "same": true
+   }
+  },
+  {
+   "key": "steel.unit_weight_divisor",
+   "scope": {},
+   "value": 162.53,
+   "unit": "kg/m = d2 / value",
+   "cls": "STANDARD",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B3",
+    "text": "Dia(#)^2 / (24 x 2.204) kg per ft, rounded to 3 dp (#3 0.170, #4 0.302, #5 0.473, #6 0.681)",
+    "item": "Steel unit weight",
+    "qs_cell": "All bar sheets col J"
+   },
+   "note": "kg per ft = d(eighths of an inch)^2 / (24 x 2.204); with d in mm that is d^2 / 162.53 kg per m. The workbook's own listed weights (#3 to #6) agree. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "steel.unit_weight_divisor",
+    "value": 162.2,
+    "same": false
+   }
+  },
+  {
+   "key": "slab_thickness_mm",
+   "scope": {},
+   "value": 152.4,
+   "unit": "mm",
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B6",
+    "text": "0.5 ft (6 in) in Concrete Work for B.F, G.F, F.F, mumty slabs",
+    "item": "Slab thickness",
+    "qs_cell": "Concrete Work G59, G111, G163, G193"
+   },
+   "note": "Slab thickness the workbook types. Drawing note on sheet 6 says all slabs are 5 in thick unless noted on plan. Check. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "slab_thickness_mm",
+    "value": 152.4,
+    "same": true
+   }
+  },
+  {
+   "key": "slab_steel_kg_per_m2",
+   "scope": {},
+   "value": 17.2223,
+   "unit": "kg/m2",
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B7",
+    "text": "1.6 kg per sft of slab area",
+    "item": "Slab steel rate",
+    "qs_cell": "Steel Summary J1"
+   },
+   "note": "1.6 kg per sft of slab area; Not from a bar schedule; drawing prints bar size and spacing only Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "slab_steel_kg_per_m2",
+    "value": 16.1459,
+    "same": false
+   }
+  },
+  {
+   "key": "steel_wastage_pct",
+   "scope": {},
+   "value": 5.0,
+   "unit": "%",
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B9",
+    "text": "5% added in the Breakdown (x1.05)",
+    "item": "Steel waste",
+    "qs_cell": "Breakdown of Summary steel lines"
+   },
+   "note": "Steel waste added in the Breakdown. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "steel_wastage_pct",
+    "value": 5.0,
+    "same": true
+   }
+  },
+  {
+   "key": "basement_dig_mm",
+   "scope": {},
+   "value": 2438.4,
+   "unit": "mm",
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B10",
+    "text": "Complete area 30 x 54 x 8 ft deep",
+    "item": "Basement block",
+    "qs_cell": "Excavation row 9"
+   },
+   "note": "Depth of the basement block (30 x 54 ft). Typed. 8 ft depth is a QS value Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "basement_dig_mm",
+    "value": 2438.4,
+    "same": true
+   }
+  },
+  {
+   "key": "trench_depth_mm",
+   "scope": {},
+   "value": 914.4,
+   "unit": "mm",
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B11",
+    "text": "Outer walls 4 ft wide, inner walls 4 ft (3 ft for 4.5-in walls), 3 ft deep",
+    "item": "Trench rule",
+    "qs_cell": "Excavation rows 11-32"
+   },
+   "note": "Depth of the trench the workbook types. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "trench_depth_mm",
+    "value": 914.4,
+    "same": true
+   }
+  },
+  {
+   "key": "lintel_bearing_mm",
+   "scope": {},
+   "value": 152.4,
+   "unit": "mm",
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Constants and rules",
+    "cell": "B16",
+    "text": "Opening width + 1 ft bearing each side (D3 3 ft opening -> 4 ft, D2 3.5 -> 4.5, W2 6 -> 7)",
+    "item": "Lintel length rule",
+    "qs_cell": "Concrete Work rows 36-43",
+    "examples": [
+     [
+      3.0,
+      4.0
+     ],
+     [
+      3.5,
+      4.5
+     ],
+     [
+      6.0,
+      7.0
+     ]
+    ]
+   },
+   "note": "Bearing on the wall at each end of a lintel, from the opening and lintel lengths in the worked examples. The wording says 1 ft each side; its 3 worked examples add 1 ft in all, 0.5 ft each side. The examples are used. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "lintel_bearing_mm",
+    "value": 152.4,
+    "same": true
+   }
+  },
+  {
+   "key": "formula.strip",
+   "scope": {
+    "item": "Excavation",
+    "block": "Building inner Portion",
+    "width_ft": 3.0,
+    "depth_ft": 3.0
+   },
+   "value": {
+    "formula": "strip",
+    "params": {
+     "width_mm": 914.4,
+     "depth_mm": 914.4,
+     "length_basis": "CENTRE"
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Excavation",
+    "cell": "F26",
+    "text": "4 rows with width 3 ft and depth/thickness 3 ft",
+    "map_cell": "Line items!J17",
+    "rows": 4,
+    "first_row": 26
+   },
+   "note": "Excavation, Building inner Portion: 4 rows are the wall length x 3 ft x 3 ft. The length is taken along the centre line of the wall (the QS answered a centre line for brick; the workbook does not say for this item). Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": []
+  },
+  {
+   "key": "formula.strip",
+   "scope": {
+    "item": "Excavation",
+    "block": "Building inner Portion",
+    "width_ft": 4.0,
+    "depth_ft": 3.0
+   },
+   "value": {
+    "formula": "strip",
+    "params": {
+     "width_mm": 1219.2,
+     "depth_mm": 914.4,
+     "length_basis": "CENTRE"
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Excavation",
+    "cell": "F22",
+    "text": "6 rows with width 4 ft and depth/thickness 3 ft",
+    "map_cell": "Line items!J13",
+    "rows": 6,
+    "first_row": 22
+   },
+   "note": "Excavation, Building inner Portion: 6 rows are the wall length x 4 ft x 3 ft. The length is taken along the centre line of the wall (the QS answered a centre line for brick; the workbook does not say for this item). Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": []
+  },
+  {
+   "key": "formula.strip",
+   "scope": {
+    "item": "Excavation",
+    "block": "Building outer Portion",
+    "width_ft": 4.0,
+    "depth_ft": 3.0
+   },
+   "value": {
+    "formula": "strip",
+    "params": {
+     "width_mm": 1219.2,
+     "depth_mm": 914.4,
+     "length_basis": "CENTRE"
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Excavation",
+    "cell": "F11",
+    "text": "10 rows with width 4 ft and depth/thickness 3 ft",
+    "map_cell": "Line items!J3",
+    "rows": 10,
+    "first_row": 11
+   },
+   "note": "Excavation, Building outer Portion: 10 rows are the wall length x 4 ft x 3 ft. The length is taken along the centre line of the wall (the QS answered a centre line for brick; the workbook does not say for this item). Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": []
+  },
+  {
+   "key": "formula.strip",
+   "scope": {
+    "item": "PCC 1;4;8",
+    "block": "Building inner Portion",
+    "width_ft": 1.5,
+    "depth_ft": 0.25
+   },
+   "value": {
+    "formula": "strip",
+    "params": {
+     "width_mm": 457.2,
+     "depth_mm": 76.2,
+     "length_basis": "CENTRE"
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "PCC 1;4;8",
+    "cell": "F24",
+    "text": "4 rows with width 1.5 ft and depth/thickness 0.25 ft",
+    "map_cell": "Line items!J71",
+    "rows": 4,
+    "first_row": 24
+   },
+   "note": "PCC 1;4;8, Building inner Portion: 4 rows are the wall length x 1.5 ft x 0.25 ft. The length is taken along the centre line of the wall (the QS answered a centre line for brick; the workbook does not say for this item). Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": []
+  },
+  {
+   "key": "formula.strip",
+   "scope": {
+    "item": "PCC 1;4;8",
+    "block": "Building inner Portion",
+    "width_ft": 4.0,
+    "depth_ft": 0.25
+   },
+   "value": {
+    "formula": "strip",
+    "params": {
+     "width_mm": 1219.2,
+     "depth_mm": 76.2,
+     "length_basis": "CENTRE"
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "PCC 1;4;8",
+    "cell": "F20",
+    "text": "7 rows with width 4 ft and depth/thickness 0.25 ft",
+    "map_cell": "Line items!J67",
+    "rows": 7,
+    "first_row": 20
+   },
+   "note": "PCC 1;4;8, Building inner Portion: 7 rows are the wall length x 4 ft x 0.25 ft. The length is taken along the centre line of the wall (the QS answered a centre line for brick; the workbook does not say for this item). Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": []
+  },
+  {
+   "key": "formula.strip",
+   "scope": {
+    "item": "PCC 1;4;8",
+    "block": "Building outer Portion",
+    "width_ft": 3.5,
+    "depth_ft": 0.25
+   },
+   "value": {
+    "formula": "strip",
+    "params": {
+     "width_mm": 1066.8,
+     "depth_mm": 76.2,
+     "length_basis": "CENTRE"
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "PCC 1;4;8",
+    "cell": "F9",
+    "text": "10 rows with width 3.5 ft and depth/thickness 0.25 ft",
+    "map_cell": "Line items!J57",
+    "rows": 10,
+    "first_row": 9
+   },
+   "note": "PCC 1;4;8, Building outer Portion: 10 rows are the wall length x 3.5 ft x 0.25 ft. The length is taken along the centre line of the wall (the QS answered a centre line for brick; the workbook does not say for this item). Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": []
+  },
+  {
+   "key": "formula.frame",
+   "scope": {
+    "item": "Door Frames"
+   },
+   "value": {
+    "formula": "frame",
+    "params": {
+     "add_mm": 0.0,
+     "section_by_width": [
+      {
+       "max_width_mm": 762.0,
+       "width_mm": 114.3,
+       "depth_mm": null
+      },
+      {
+       "max_width_mm": 1219.2,
+       "width_mm": 228.6,
+       "depth_mm": null
+      }
+     ]
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Door Frames",
+    "cell": "E9",
+    "text": "12 rows with length = width + 7 + 7 (ft)",
+    "map_cell": "Line items!N469",
+    "rows": 12,
+    "first_row": 9
+   },
+   "note": "A door frame is (width + 7 ft + 7 ft) x a face width of 0.375 ft up to a 2.5 ft door, 0.75 ft up to a 4 ft door. The two 7 ft are the door height, which the workbook types for every door (2133.6 mm). The workbook multiplies by the face width only and states no depth of the frame section; the library needs one, so the row cannot be confirmed until a person types it. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [
+    "section_by_width[0].depth_mm",
+    "section_by_width[1].depth_mm"
+   ]
+  },
+  {
+   "key": "formula.steps",
+   "scope": {
+    "walls": "THICK"
+   },
+   "value": {
+    "formula": "steps",
+    "params": {
+     "table": [
+      {
+       "width_mm": 571.5,
+       "height_mm": 152.4
+      },
+      {
+       "width_mm": 457.2,
+       "height_mm": 152.4
+      },
+      {
+       "width_mm": 342.9,
+       "height_mm": 381.0
+      },
+      {
+       "width_mm": 228.6,
+       "height_mm": 228.6
+      }
+     ]
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Brick Work",
+    "cell": "F10",
+    "text": "4 steps for thick walls",
+    "cells": [
+     "Brick Work!F10 (1st Step)",
+     "Brick Work!F23 (2nd Step)",
+     "Brick Work!F36 (3rd Step)",
+     "Brick Work!F49 (4th Step)"
+    ]
+   },
+   "note": "Steps of the brick foundation under walls of 9 in and thicker (the group with the wider step in each block): 22.5 in wide x 0.5 ft high, 18 in wide x 0.5 ft high, 13.5 in wide x 1.25 ft high, 9 in wide x 0.75 ft high. The step is a group of at least two rows with the same width and height; which group is the thin wall's is read from the narrower step, not from a label. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "brick_step_heights_mm",
+    "value": [
+     152.4,
+     152.4,
+     381.0,
+     228.6
+    ],
+    "same": true,
+    "compares": "the heights of the steps"
+   }
+  },
+  {
+   "key": "formula.steps",
+   "scope": {
+    "walls": "THIN"
+   },
+   "value": {
+    "formula": "steps",
+    "params": {
+     "table": [
+      {
+       "width_mm": 342.9,
+       "height_mm": 152.4
+      },
+      {
+       "width_mm": 228.6,
+       "height_mm": 228.6
+      },
+      {
+       "width_mm": 114.3,
+       "height_mm": 381.0
+      }
+     ]
+    }
+   },
+   "unit": null,
+   "cls": "JUDGEMENT",
+   "origin": "QS_WORKBOOK",
+   "status": "DRAFT",
+   "confirmed_by": null,
+   "source": {
+    "workbook": "BOQ_Worksheet_Map.xlsx",
+    "sheet": "Brick Work",
+    "cell": "F14",
+    "text": "3 steps for thin walls",
+    "cells": [
+     "Brick Work!F14 (1st Step)",
+     "Brick Work!F27 (2nd Step)",
+     "Brick Work!F40 (3rd Step)"
+    ]
+   },
+   "note": "Steps of the brick foundation under the 4.5 in walls (the group with the narrower step): 13.5 in wide x 0.5 ft high, 9 in wide x 0.75 ft high, 4.5 in wide x 1.25 ft high. The step is a group of at least two rows with the same width and height; which group is the thin wall's is read from the narrower step, not from a label. Drafted from the workbook; not used by any run until a person confirms it.",
+   "needs": [],
+   "seed": {
+    "key": "brick_step_heights_mm",
+    "value": [
+     152.4,
+     228.6,
+     381.0
+    ],
+    "same": true,
+    "compares": "the heights of the steps"
+   }
+  }
+ ],
+ 
+ "not_drafted": [
+  {
+   "what": "Bars each",
+   "where": "Constants and rules!B4",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Cut length",
+   "where": "Constants and rules!B5",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Staircase steel",
+   "where": "Constants and rules!B8",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Wall heights",
+   "where": "Constants and rules!B14",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Lintel size",
+   "where": "Constants and rules!B15",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Door height",
+   "where": "Constants and rules!B18",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Columns",
+   "where": "Constants and rules!B19",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Density check",
+   "where": "Constants and rules!B20",
+   "why": "no shape of the closed library or key of the rule book covers this rule"
+  },
+  {
+   "what": "Termite strips",
+   "where": "Termite!F (28 rows, widths 1.5, 3, 3.5, 4.625, 4.63, 7.25, 8, 12, 16, 17 ft)",
+   "why": "termite treatment is an area (width x length, in sft); the library's strip gives a volume (width x depth x length)"
+  },
+  {
+   "what": "One-off strip widths",
+   "where": "Excavation, PCC",
+   "why": "1 rows have a width or depth that no other row shares (for example a width typed as =2.25+0.6); a rule needs a repeat"
+  }
+ ],
+ "note": "Every row is a DRAFT: confirmed_by is null and no run uses it until a person confirms it."
+}

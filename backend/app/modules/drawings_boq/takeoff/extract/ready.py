@@ -7,6 +7,8 @@ from app.modules.drawings_boq.takeoff import stair_pairs as SP
 from app.modules.drawings_boq.takeoff.extract import layout_groups as LG
 from app.modules.drawings_boq.takeoff.extract import mark_entities as ME
 from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+from app.modules.drawings_boq.takeoff.extract import safe as SF
+from app.modules.drawings_boq.takeoff.model import members as MB
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 
@@ -41,6 +43,7 @@ REASON_TEXT = {
   "LAYOUT_SOURCE_UNDECIDED": "This plan is printed on several sheets (the same named rooms with the same areas) and was read from each. Choose the sheet that governs it before accepting, or the plan is counted once for every sheet it is printed on.",
   "STAIR_TWIN_ABOVE": "This flight is the second view of a stair measured on another floor (the UP flight below it, laid on the same place). It is kept as a sighting with no quantity; accepting it counts the stair twice.",
   "BEAM_FROM_FRAMING_PLAN": "The framing plan of this floor draws its roof beams, and they are the ones to measure. This beam is worked out from the brick walls and is kept as a sighting with no quantity; accepting it as well counts the beam twice.",
+  "REVIEW": "Not safe to accept without a look: no printed source gives its value directly and no second independent sighting (another sheet, another kind of evidence) agrees with it. The reason is on the row.",
   "MARK_ACCEPTED_ELSEWHERE": "The same mark of this floor is already accepted from another sheet, or the floor finish already accepted for this floor carries the baths and toilets. Accepting it here as well counts it twice.",
   "MARK_ON_SEVERAL_SHEETS": "The same mark of this floor is shown on another sheet with the same count and size, and that sheet is the one to use (a schedule before a detail before a plan label, then a sheet that names its floor). Choose the sheet in the list of marks, or accept this one by hand.",
   "MARK_SHEETS_DISAGREE": "The same mark of this floor is shown on more than one sheet with a different count or size. Choose the sheet that governs it in the list of marks before accepting, or the mark is counted from every sheet.",
@@ -63,7 +66,7 @@ def undecided_sources(read: list) -> set:
       out.update((s["sheet_id"], f["floor"]) for s in f["sources"] if s["open"] + s["accepted"] > 0)
   return out
 
-def ready(read: list, checks: list | None = None) -> dict:
+def ready(read: list, checks: list | None = None, ifc: tuple = ()) -> dict:
   checks = checks if checks is not None else CK.run(read)["checks"]
   warned = _warned(checks)
   undecided = undecided_sources(read)
@@ -73,6 +76,7 @@ def ready(read: list, checks: list | None = None) -> dict:
   skip_mark = mark_skip(layout_open)
   twins = SP.sightings([c for s in read for c in s["candidates"]], SP.sheets_of(read))
   marks = ME.lookup(ME.build([s for s in read if "title" in s and "stats" in s], skip_mark))
+  seen = SF.sightings(read, ifc)
   held: list = []
   
   for sh in read:
@@ -118,6 +122,10 @@ def ready(read: list, checks: list | None = None) -> dict:
         why.append("ASSUMED" if ev["grade"] == "ASSUMED" else "VALUE_MISSING")
       if any((wf is None or wf == fl) and (kinds is None or c.category in kinds) for wf, kinds, _ in warned):
         why.append("CHECK_WARNS")
+      info = SF.classify(c, ev, seen.get(MB.key_of(c)), sh["page_no"])
+      item["safe"], item["safe_basis"] = info["status"] == SF.SAFE, info
+      if not why and info["status"] != SF.SAFE:
+        why.append("REVIEW")
       (held if why else ok).append(item)
       
   by: dict = {}

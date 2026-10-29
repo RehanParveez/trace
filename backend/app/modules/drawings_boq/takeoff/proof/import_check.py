@@ -111,6 +111,8 @@ def lazy_imports(root: pathlib.Path) -> list:
 def scope_check() -> list:
   from app.modules.drawings_boq.takeoff.extract import config as C
   from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+  from app.modules.drawings_boq.takeoff.extract import safe as SF
+  from app.modules.drawings_boq.takeoff.model import members as MB
   out = [(k, "has no scope in extract.note_scope") for k in sorted(set(C.NOTES) - set(NS.SCOPE))]
   out += [(k, "is in extract.note_scope but not in config.NOTES") for k in sorted(set(NS.SCOPE) - set(C.NOTES))]
   out += [(k, f"has the scope {v!r}") for k, v in sorted(NS.SCOPE.items()) if v not in (NS.ROW, NS.SHEET, NS.DRAWING)]
