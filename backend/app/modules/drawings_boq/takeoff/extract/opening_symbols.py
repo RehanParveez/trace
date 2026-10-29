@@ -20,6 +20,14 @@ WALL_BAND_PT = 2.0
 JAMB_REL, JAMB_ABS = 0.14, 1.5   
 PICTURE_JAMB_SLACK_PT = 5.0
 FROM_PICTURE: contextvars.ContextVar = contextvars.ContextVar("opening_lines_from_picture", default=False)
+REF_MM_PER_PT = 26.0               
+UNIT_PT: contextvars.ContextVar = contextvars.ContextVar("opening_unit_pt", default=1.0)
+
+def _u() -> float:
+  return UNIT_PT.get()
+
+def unit_for(mm_per_pt: float) -> float:
+  return min(max(REF_MM_PER_PT / mm_per_pt, 0.2), 5.0) if mm_per_pt and mm_per_pt > 0 else 1.0
 HEAVY_SHARE = 0.6
 BIN_MIN, SPAN_BINS_MIN = 10, 85.0   
 SWING_MM = (450.0, 1300.0)     
@@ -37,6 +45,8 @@ REACH_MM = 2000.0
 WIDTHS_IMPERIAL = (610.0, 686.0, 762.0, 813.0, 838.0, 914.0, 1067.0, 1219.0, 1524.0, 1829.0, 2134.0)
 WIDTHS_METRIC = (600.0, 700.0, 750.0, 800.0, 900.0, 1000.0, 1200.0, 1500.0, 1800.0, 2100.0)
 
+_KEY_OFF, _KEY_SPAN = 1 << 20, 1 << 21     
+
 def _arrays(index) -> tuple:
   segs = np.asarray(index.segs, dtype=np.float32).reshape(-1, 5)
   kinds = np.asarray(index.kinds, dtype=np.uint8)
@@ -44,7 +54,8 @@ def _arrays(index) -> tuple:
   return segs[:n], kinds[:n]
 
 def _hough(segs, kinds, ln, deadline: float | None) -> list:
-  ok = np.where((kinds < 2) & (ln >= DASH_MIN_PT) & (ln <= DASH_MAX_PT))[0]
+  u = _u()
+  ok = np.where((kinds < 2) & (ln >= DASH_MIN_PT * u) & (ln <= DASH_MAX_PT * u))[0]
   if len(ok) == 0:
     return []
 
@@ -55,7 +66,8 @@ def _hough(segs, kinds, ln, deadline: float | None) -> list:
   
   mx, my = (s[:, 0] + s[:, 2]) / 2.0, (s[:, 1] + s[:, 3]) / 2.0
   nx, ny = -(s[:, 3] - s[:, 1]) / l, (s[:, 2] - s[:, 0]) / l
-  rs = np.arange(R_MIN_PT, R_MAX_PT + 1.0, 1.0)
+  rc = np.arange(R_MIN_PT, R_MAX_PT + 1.0, 1.0)     
+  rs = rc * u
   keys, who = [], []
   step = 6000
   for lo in range(0, len(ok), step):
@@ -63,10 +75,10 @@ def _hough(segs, kinds, ln, deadline: float | None) -> list:
       return []
     sl = slice(lo, lo + step)
     for sign in (1.0, -1.0):
-      kx = np.round(mx[sl, None] + sign * nx[sl, None] * rs[None, :]).astype(np.int64)
-      ky = np.round(my[sl, None] + sign * ny[sl, None] * rs[None, :]).astype(np.int64)
-      kr = np.broadcast_to(np.round(rs).astype(np.int64)[None, :], kx.shape)
-      keys.append(((kx + 2000) * 4_000_000 + (ky + 2000) * 1000 + kr).ravel())
+      kx = np.round((mx[sl, None] + sign * nx[sl, None] * rs[None, :]) / u).astype(np.int64)
+      ky = np.round((my[sl, None] + sign * ny[sl, None] * rs[None, :]) / u).astype(np.int64)
+      kr = np.broadcast_to(rc.astype(np.int64)[None, :], kx.shape)
+      keys.append((((kx + _KEY_OFF) * _KEY_SPAN + (ky + _KEY_OFF)) * 256 + kr).ravel())
       who.append(np.repeat(np.arange(lo, min(lo + step, len(ok))), len(rs)))
       
   keys, who = np.concatenate(keys), np.concatenate(who)
@@ -78,13 +90,13 @@ def _hough(segs, kinds, ln, deadline: float | None) -> list:
   for ci in np.where(cnt >= 4)[0]:
     sel = np.unique(who[start[ci]:start[ci] + cnt[ci]])
     k = int(uk[ci])
-    peaks.append((k // 4_000_000 - 2000, (k // 1000) % 4000 - 2000, k % 1000, sel))
+    peaks.append((((k // 256) // _KEY_SPAN - _KEY_OFF) * u, ((k // 256) % _KEY_SPAN - _KEY_OFF) * u, (k % 256) * u, sel))
   peaks.sort(key=lambda t: -len(t[3]))
 
   out, used = [], []
   for x, y, r, sel in peaks:
     d = np.hypot(mx[sel] - x, my[sel] - y)
-    good = np.abs(d - r) <= ARC_TOL_PT
+    good = np.abs(d - r) <= ARC_TOL_PT * u
     if int(good.sum()) < 6:
       continue
     chosen = frozenset(sel[good].tolist())
@@ -100,7 +112,8 @@ def _hough(segs, kinds, ln, deadline: float | None) -> list:
   return out
 
 def _coverage(cx: float, cy: float, r: float, ang: float, segs, ln, idx) -> float:
-  tol = max(2.5, 0.2 * r)
+  u = _u()
+  tol = max(2.5 * u, 0.2 * r)
   ux, uy = math.cos(math.radians(ang)), math.sin(math.radians(ang))
   spans = []
   
@@ -111,14 +124,14 @@ def _coverage(cx: float, cy: float, r: float, ang: float, segs, ln, idx) -> floa
       continue
   
     t1, t2 = (x1 - cx) * ux + (y1 - cy) * uy, (x2 - cx) * ux + (y2 - cy) * uy
-    lo, hi = max(min(t1, t2), -1.0), min(max(t1, t2), 0.97 * r)      
-    if hi - lo > 0.5:
+    lo, hi = max(min(t1, t2), -1.0 * u), min(max(t1, t2), 0.97 * r)      
+    if hi - lo > 0.5 * u:
       spans.append((lo, hi))
   spans.sort()
   
   total, cur = 0.0, None
   for lo, hi in spans:
-    if cur is None or lo > cur[1] + 1.5:
+    if cur is None or lo > cur[1] + 1.5 * u:
       total += 0.0 if cur is None else cur[1] - cur[0]
       cur = [lo, hi]
     else:
@@ -129,7 +142,7 @@ def _coverage(cx: float, cy: float, r: float, ang: float, segs, ln, idx) -> floa
 def _leaf(a: dict, segs, kinds, ln) -> tuple:
   cx, cy, r = a["x"], a["y"], a["r"]
   near = np.minimum(np.hypot(segs[:, 0] - cx, segs[:, 1] - cy), np.hypot(segs[:, 2] - cx, segs[:, 3] - cy))
-  idx = np.where((kinds == 0) & (ln >= 1.0) & (near <= r + 4.0))[0]
+  idx = np.where((kinds == 0) & (ln >= 1.0 * _u()) & (near <= r + 4.0 * _u()))[0]
   best = (0.0, None)
   
   for end in (a["a0"], a["a0"] + a["span"]):
@@ -147,7 +160,8 @@ def _heavy_ends(segs, kinds, heavy: float):
   return ends, hv
 
 def _leaf_first(segs, kinds, ln, ends, bands: list, deadline: float | None) -> list:
-  thin = np.where((kinds < 2) & (ln <= DASH_MAX_PT) & (ln >= DASH_MIN_PT))[0]
+  u = _u()
+  thin = np.where((kinds < 2) & (ln <= DASH_MAX_PT * u) & (ln >= DASH_MIN_PT * u))[0]
   if len(thin) == 0 or (len(ends) == 0 and not bands):
     return []
 
@@ -155,7 +169,7 @@ def _leaf_first(segs, kinds, ln, ends, bands: list, deadline: float | None) -> l
   order = np.argsort(mids[:, 0])
   mids = mids[order]
   xs = mids[:, 0]
-  leaves = np.where((kinds == 0) & (ln >= 12.0) & (ln <= 110.0))[0]
+  leaves = np.where((kinds == 0) & (ln >= 12.0 * u) & (ln <= 110.0 * u))[0]
   out = []
   
   for n_i, i in enumerate(leaves):
@@ -165,10 +179,10 @@ def _leaf_first(segs, kinds, ln, ends, bands: list, deadline: float | None) -> l
       px, py, qx, qy, L = float(px), float(py), float(qx), float(qy), float(ln[i])
       if not _at_jamb(px, py, L, ends) and not _in_wall(px, py, bands):
         continue
-      lo, hi = np.searchsorted(xs, px - L - 2.5), np.searchsorted(xs, px + L + 2.5)
+      lo, hi = np.searchsorted(xs, px - L - 2.5 * u), np.searchsorted(xs, px + L + 2.5 * u)
       sub = mids[lo:hi]
       d = np.hypot(sub[:, 0] - px, sub[:, 1] - py)
-      sel = sub[np.abs(d - L) <= 2.0]
+      sel = sub[np.abs(d - L) <= 2.0 * u]
       if len(sel) < 4:
         continue
     
@@ -197,13 +211,13 @@ def _merge(found: list) -> list:
   keep = []
   
   for a in found:
-    if any(math.hypot(a["x"] - b["x"], a["y"] - b["y"]) <= max(6.0, 0.2 * a["r"]) and abs(a["r"] - b["r"]) <= max(4.0, 0.2 * a["r"]) for b in keep):
+    if any(math.hypot(a["x"] - b["x"], a["y"] - b["y"]) <= max(6.0 * _u(), 0.2 * a["r"]) and abs(a["r"] - b["r"]) <= max(4.0 * _u(), 0.2 * a["r"]) for b in keep):
       continue
     keep.append(a)
   return keep
 
 def _at_jamb(x: float, y: float, r: float, ends, slack: float = 0.0) -> bool:
-  return len(ends) > 0 and float(np.hypot(ends[:, 0] - x, ends[:, 1] - y).min()) <= JAMB_REL * r + JAMB_ABS + slack
+  return len(ends) > 0 and float(np.hypot(ends[:, 0] - x, ends[:, 1] - y).min()) <= JAMB_REL * r + (JAMB_ABS + slack) * _u()
 
 def _wall_bands(walls: list, mm_per_pt: float) -> list:
   out = []
@@ -220,7 +234,7 @@ def _in_wall(x: float, y: float, bands: list) -> bool:
     vx, vy = p1[0] - p0[0], p1[1] - p0[1]
     l2 = vx * vx + vy * vy
     t = 0.0 if l2 <= 0.0 else max(0.0, min(1.0, ((x - p0[0]) * vx + (y - p0[1]) * vy) / l2))
-    if math.hypot(x - (p0[0] + t * vx), y - (p0[1] + t * vy)) <= half + WALL_BAND_PT:
+    if math.hypot(x - (p0[0] + t * vx), y - (p0[1] + t * vy)) <= half + WALL_BAND_PT * _u():
       return True
   return False
 
@@ -263,7 +277,7 @@ def find_swings(index, mm_per_pt: float, *, scale_verified: bool = True, deadlin
   
   out = []
   for a in swings:
-    x, y = _snap_point(a["x"], a["y"], segs, JAMB_REL * a["r"] + JAMB_ABS + 2.0)
+    x, y = _snap_point(a["x"], a["y"], segs, JAMB_REL * a["r"] + (JAMB_ABS + 2.0) * _u())
     out.append({"x": x, "y": y, "hx": a["x"], "hy": a["y"], "r_pt": a["r"], "leaf_mm": a["r"] * mm_per_pt, "span": a["span"], "by": a["by"],
       "ends": a["ends"]})
   return out, stats
@@ -285,7 +299,7 @@ def pair_doors(swings: list, mm_per_pt: float) -> list:
       
       s = a["r_pt"] + b["r_pt"]
       d = math.hypot(a["hx"] - b["hx"], a["hy"] - b["hy"])
-      if abs(a["r_pt"] - b["r_pt"]) > 0.15 * max(a["r_pt"], b["r_pt"]) or abs(d - s) > DOUBLE_TOL * s + 3.0:
+      if abs(a["r_pt"] - b["r_pt"]) > 0.15 * max(a["r_pt"], b["r_pt"]) or abs(d - s) > DOUBLE_TOL * s + 3.0 * _u():
         continue
       to_b = math.degrees(math.atan2(b["hy"] - a["hy"], b["hx"] - a["hx"])) % 360.0
       if _facing(a, b, to_b):
@@ -314,8 +328,8 @@ def _facing(a: dict, b: dict, to_b: float) -> bool:
 def _glazing(segs, kinds, ln, a, b, t_pt: float) -> tuple:
   ax, ay, bx, by = float(a[0]), float(a[1]), float(b[0]), float(b[1])
   L = math.hypot(bx - ax, by - ay)
-  
-  if L < 4.0:
+  u = _u()
+  if L < 4.0 * u:
     return 0, 0.0
   dx, dy = (bx - ax) / L, (by - ay) / L
   nx, ny = -dy, dx
@@ -332,11 +346,11 @@ def _glazing(segs, kinds, ln, a, b, t_pt: float) -> tuple:
   off = (((s[:, 0] - ax) * nx + (s[:, 1] - ay) * ny) + ((s[:, 2] - ax) * nx + (s[:, 3] - ay) * ny)) / 2.0
   t1, t2 = (s[:, 0] - ax) * dx + (s[:, 1] - ay) * dy, (s[:, 2] - ax) * dx + (s[:, 3] - ay) * dy
   cover = (np.clip(np.maximum(t1, t2), 0.0, L) - np.clip(np.minimum(t1, t2), 0.0, L)) / L
-  keep = (np.abs(off) <= t_pt / 2.0 + 1.5) & (cover >= WINDOW_COVER_MIN)
+  keep = (np.abs(off) <= t_pt / 2.0 + 1.5 * u) & (cover >= WINDOW_COVER_MIN)
   groups: list = []
   
   for o in np.sort(off[keep]):
-    if not groups or o - groups[-1][-1] > 0.35:
+    if not groups or o - groups[-1][-1] > 0.35 * u:
       groups.append([float(o)])
     else:
       groups[-1].append(float(o))
@@ -375,7 +389,7 @@ def find_windows(index, walls: list, mm_per_pt: float, deadline: float | None = 
       L = math.hypot(b[0] - a[0], b[1] - a[1])
       dx, dy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
       mx, my = (a[0] + b[0]) / 2.0 - dy * off, (a[1] + b[1]) / 2.0 + dx * off
-      px, py = _snap_point(mx, my, segs, 1.0)
+      px, py = _snap_point(mx, my, segs, 1.0 * _u())
       out.append({"x": px, "y": py, "width_mm": g, "lines": n, "wall_key": w.key})
   return out, stats
 
@@ -384,6 +398,13 @@ def snap_width(mm: float, imperial: bool) -> float:
   return best if abs(best - mm) <= SNAP_TOL * best else float(round(mm / 5.0) * 5)
 
 def read(index, walls: list, mm_per_pt: float, *, scale_verified: bool = True, deadline: float | None = None, wall_pen: float | None = None, imperial: bool = True) -> dict:
+  token = UNIT_PT.set(unit_for(mm_per_pt))
+  try:
+    return _read(index, walls, mm_per_pt, scale_verified=scale_verified, deadline=deadline, wall_pen=wall_pen, imperial=imperial)
+  finally:
+    UNIT_PT.reset(token)
+
+def _read(index, walls: list, mm_per_pt: float, *, scale_verified: bool = True, deadline: float | None = None, wall_pen: float | None = None, imperial: bool = True) -> dict:
   started = time.monotonic()
   swings, sstats = find_swings(index, mm_per_pt, scale_verified=scale_verified, deadline=deadline, wall_pen=wall_pen, walls=walls)
   doors = pair_doors(swings, mm_per_pt)
@@ -675,5 +696,4 @@ def _mark_doors_by_width(new: list, existing: list) -> None:
     c.notes.append(C.note("DOOR_MARK_FROM_WIDTH", mark=c.tag, how="DOOR" if len(hits) == 1 else "NAMED"))
 
 def _worst(c) -> str:
-  sev = {n.get("severity") for n in c.notes}
-  return "INVALID" if "error" in sev else "WARNING" if "warning" in sev else "VALID"
+  return NS.status_of(c.notes)

@@ -17,6 +17,9 @@ from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.engine.measure import rulebook as RB
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
+from app.modules.drawings_boq.takeoff.extract import slab_label as SL
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+from app.modules.drawings_boq.takeoff import register as RGS
 
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH"
 STATUS_RANK = {MATCH: 0, NEAR: 1, DIFF: 2, NO_TRUTH: 3, MISSING: 4, EXTRA: 4}
@@ -322,6 +325,30 @@ def invariants(reads: list, accs: list, rows: list) -> list:
   add("ONE_ARCHITECTURE_SOURCE_PER_FLOOR", floor_two, "Walls of one floor are accepted from more than one sheet.")
   bad = [f"{r.get('work_item_code')}" for r in rows if not (float(r.get("quantity") or 0) > 0) or not math.isfinite(float(r.get("quantity") or 0)) or not r.get("unit")]
   add("LEDGER_ROWS_ARE_POSITIVE_AND_HAVE_A_UNIT", bad, "A ledger row has a zero, negative or missing quantity, or no unit.")
+  stale, disagree = [], []
+  for acc in accs:
+    where = next(iter(acc.drawings.values()))
+    reg_rows = []
+    for c in acc.candidates:
+      if c.decision == "REJECTED":
+        continue
+      tag = f"{where} p.{acc.sheets[c.sheet_id].page_no}"
+      if c.category == "SLAB" and (c.facts or {}).get("label_parts") and c.label != SL.current(c):
+        stale.append(tag)
+      if RGS._spec(c) is None or (c.facts or {}).get("foundation_item"):
+        continue
+      issues, status = RGS._issues(c)
+      if c.status != NS.status_of(c.notes) and c.status != "INVALID":
+        disagree.append(tag)
+      if status != ("INVALID" if c.status == "INVALID" else NS.status_of(issues)):
+        disagree.append(tag)
+      reg_rows += [{"ifc_type": RGS._spec(c)["ifc_type"], "normalization_status": status}] * RGS.rows_of(c)
+    head = RGS.header_totals(reg_rows)
+    if head["total"] != len(reg_rows) or sum(head["by_type"].values()) != len(reg_rows) or sum(head["by_status"].values()) != len(reg_rows) \
+       or head["needs_review"] != sum(1 for r in reg_rows if r["normalization_status"] != "VALID"):
+      disagree.append(where)
+  add("SLAB_LABEL_PRINTS_THE_THICKNESS_MEASURED_WITH", stale, "A slab row's label prints a thickness other than the one it is measured with.")
+  add("STATUS_AND_HEADER_TOTALS_AGREE_WITH_THEIR_ROWS", disagree, "A candidate's status is not what its notes give (a warning of ROW scope makes it a WARNING, an error INVALID, otherwise VALID), a register row's status is not what its issues give, or a header total is not the count of its rows.")
   return res
 
 STAGE_NOTES = (("plinth level to lintel level", "PLINTH_TO_LINTEL"), ("lintel level to", "LINTEL_TO_SLAB"))
@@ -455,7 +482,24 @@ def decisions_view(accs: list) -> dict:
     "decisions": [{"kind": d["kind"], "id": d["id"], "facts": d["facts"], "rows": d["rows"], "default": d["default"], "options": [{"value": o["value"], "label": o["label"], "trust": o["trust"], "quantity": o["quantity"], "unit": o["unit"],
       "sources": [f"{s['discipline'].lower()} p{s['page_no'] if s['page_no'] is not None else '-'} {s['basis']}" for s in o["sources"]]} for o in d["options"]]} for d in view["decisions"]]}
 
-def warnings_view(ledger: list) -> dict:
+def register_view(accs: list) -> dict:
+  rows = own = every = unaccepted = 0
+  for acc in accs:
+    for c in acc.candidates:
+      if c.decision == "REJECTED" or RGS._spec(c) is None or (c.facts or {}).get("foundation_item"):
+        continue
+      issues, status = RGS._issues(c)
+      n = RGS.rows_of(c)
+      rows += n
+      own += n if status == "WARNING" else 0
+      every += n if status != "INVALID" and any(i["severity"] == "warning" for i in issues) else 0
+      unaccepted += n if c.status != "INVALID" and (NS.status_of(c.notes) == "WARNING" or c.missing) else 0
+  pct = lambda k: round(100.0 * k / rows, 1) if rows else 0.0
+  return {"rows": rows, "warning_rows": own, "share_pct": pct(own), "warning_rows_if_every_note_counted": every, "share_pct_if_every_note_counted": pct(every),
+    "warning_rows_before_accepting": unaccepted, "share_pct_before_accepting": pct(unaccepted)}
+
+def warnings_view(ledger: list, accs: list | None = None) -> dict:
+
   carried = ("SLAB_THICKNESS_DISAGREES", "BEAM_SECTIONS_LISTED")
   by: dict = {}
   hit = own = 0
@@ -466,8 +510,11 @@ def warnings_view(ledger: list) -> dict:
     for c in set(codes):
       by[c] = by.get(c, 0) + 1
   n = len(ledger)
-  return {"rows": n, "with_warnings": hit, "share_pct": round(100.0 * hit / n, 1) if n else 0.0, "without_conflict_codes": own, "share_pct_without_conflict_codes": round(100.0 * own / n, 1) if n else 0.0,
+  out = {"rows": n, "with_warnings": hit,"share_pct": round(100.0 * hit / n, 1) if n else 0.0, "without_conflict_codes": own, "share_pct_without_conflict_codes": round(100.0 * own / n, 1) if n else 0.0,
     "by_code": sorted(by.items(), key=lambda kv: (-kv[1], kv[0]))[:14]}
+  if accs:
+    out["register"] = register_view(accs)
+  return out
 
 def engine_digest(ledger: list, floor_of: dict) -> str:
   """The hash of the engine's output: the ledger rows as (work item, floor, unit, quantity, label), sorted. It does not depend on how the score reads them."""
@@ -632,7 +679,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   wf = wall_faces_view(accs)
   if wf:
     doc["wall_faces"] = wf
-  doc["warnings"] = warnings_view(ledger)
+  doc["warnings"] = warnings_view(ledger, accs)
   doc["fact_decisions"] = decisions_view(accs)
   doc["options"] = options_view(accs)
   doc["quantities"] = quantities_view(ledger, floor_all)
@@ -682,9 +729,12 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
   if doc.get("warnings"):
     wv = doc["warnings"]
     out += [f"**Rows with a warning** (not part of the hash): {wv['with_warnings']} of {wv['rows']} ledger rows ({wv['share_pct']}%); {wv['without_conflict_codes']} ({wv['share_pct_without_conflict_codes']}%) when the two warnings that a decision now carries are left out. Most often: " + ", ".join(f"{c} {n}" for c, n in wv["by_code"][:8]) + ".", ""]
+    if wv.get("register"):
+      rv = wv["register"]
+      out += [f"**Register rows with a warning** (not part of the hash): {rv['warning_rows']} of {rv['rows']} ({rv['share_pct']}%) by the row-scope rule; {rv['warning_rows_if_every_note_counted']} ({rv['share_pct_if_every_note_counted']}%) if every warning note counted, as before the scopes; {rv['warning_rows_before_accepting']} ({rv['share_pct_before_accepting']}%) as the register lists them before anything is accepted (a value still missing is a row warning).", ""]
   if doc.get("steel"):
     sv = doc["steel"]
-    out += [f"**Steel by stage** (not part of the hash): {sv['total_trace']:,} kg, {sv['measured_kg']:,} from printed bars and {sv['estimated_kg']:,} from the usual band" + (f"; the QS has {sv['total_qs']:,} ({sv['total_diff_pct']:+.1f}%)" if sv.get("total_qs") else "") + (f"; the steel stage did not run: {sv['reason']}" if sv.get("reason") else "") + ".", ""]
+    out += [f"**Steel by stage** (not part of the hash): {sv['total_trace']:,} kg, {sv['measured_kg']:,} from printed bars and {sv['estimated_kg']:,} from the usual band" + (f"; the QS has {sv['total_qs']:,}" + (f" ({sv['total_diff_pct']:+.1f}%)" if sv.get("total_diff_pct") is not None else "") if sv.get("total_qs") else "") + (f"; the steel stage did not run: {sv['reason']}" if sv.get("reason") else "") + ".", ""]
     out += ["| Stage | QS | Trace | Bars | Band | Difference |", "|---|---|---|---|---|---|"]
     for s in sv["stages"]:
       out += [f"| {s['stage']} | {s['qs'] if s['qs'] is not None else ''} | {s['trace'] if s['trace'] is not None else ''} | {s['measured_kg']} | {s['estimated_kg']} | {'' if s['diff_pct_qs'] is None else format(s['diff_pct_qs'], '+.1f') + '%'} |"]

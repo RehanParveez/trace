@@ -462,6 +462,8 @@ def evidence_for(cand) -> dict:
       inp.add("area", ASSUMED, "the outline and the printed size disagree" if "ROOM_SIZE_MISMATCH" in codes else "taken from a drawn outline, not from the wall layout")
     elif from_label:
       inp.add("area", PRINTED, "the size printed in the room label")
+    elif facts.get("area_basis") == "LABEL" and facts.get("deviation_pct") is not None:
+      inp.add("area", VERIFIED, f"the size printed in the room label; the outline of the walls agrees within {abs(facts['deviation_pct']):.1f}%")
     elif facts.get("outline_from") == "CLOSED" and facts.get("deviation_pct") is not None:
       inp.add("area", VERIFIED, f"measured inside the walls, joined across {(facts.get('closed_across') or {}).get('openings', 0)} door or window openings; the printed area agrees within {abs(facts['deviation_pct']):.1f}%")
     elif facts.get("label_area_m2") is not None and facts.get("deviation_pct") is not None:

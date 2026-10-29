@@ -5,6 +5,8 @@ import math
 import re
 from app.engine.measure import opening_rules as OPR
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+from app.modules.drawings_boq.takeoff.extract import slab_label as SL
 from app.modules.drawings_boq.takeoff.orientation import carry as OC, frame as OF, turn as OT
 from app.modules.drawings_boq.takeoff.extract import members as M
 from app.modules.drawings_boq.takeoff.extract import rooms as R
@@ -107,8 +109,7 @@ def _key(*parts) -> str:
   return hashlib.sha1("|".join(str(p) for p in parts).encode()).hexdigest()[:24]
 
 def _status(notes: list) -> str:
-  sev = {n["severity"] for n in notes}
-  return "INVALID" if "error" in sev else "WARNING" if "warning" in sev else "VALID"
+  return NS.status_of(notes)
 
 def _fmt_mm(v: float) -> str:
   return str(int(round(v))) if abs(v - round(v)) < 0.05 else f"{v:.1f}"
@@ -322,7 +323,7 @@ def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: boo
   if h:
     notes.append(_height_note(h))
   spec = level_spec(v.get("level_hint"))
-  label = f"Columns (no mark) ×{len(sized)}· {_fmt_mm(a)}×{_fmt_mm(b)} mm" + (f" · {spec[0]}" if spec else "")
+  label = f"Columns (no mark) ×{len(sized)} · {_fmt_mm(a)}×{_fmt_mm(b)} mm" + (f" · {spec[0]}" if spec else "")
   facts = {"tag": mark, "mark_from_size": how, "count": len(sized), "size_drawn_mm": [a, b], "size_used_mm": [a, b], "matched_shapes": len(sized),
     "view": {"key": v["key"], "caption": v["caption"], "kind": v["kind"], "level_hint": v.get("level_hint")}}
   cand = Candidate(key=_key("COLUMN", "UNMARKED", v["key"]), category="COLUMN", kind=kind, quantity_mode=mode, label=label, tag=mark,
@@ -558,7 +559,7 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
         c.status = _status(c.notes)
     has_columns = any(g["category"] == "COLUMN" for g in groups)
     if not has_columns and not v.get("foundation"):
-      extra = _unmarked_columns(v, squares_by.get(v["key"], []), f, ctx, imperial, view_heights)
+      extra = _unmarked_columns(v, squares_by.get(v["key"], []), f, ctx, imperial, view_heights, col_details)
       
       if extra is not None:
         cands.append(extra)
@@ -881,10 +882,16 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=N
     if d["deviation_pct"] is not None and abs(d["deviation_pct"]) > C.ROOM_SIZE_TOL * 100:
       notes.append(C.note("ROOM_SIZE_MISMATCH", label_area_m2=round(d["label_area_m2"], 3), measured_area_m2=round(d["area_m2"], 3)))
       base *= 0.9
+    area_m2, area_basis = d["area_m2"], "OUTLINE"
+    if d["label_area_m2"] is not None and d["deviation_pct"] is not None:
+      if abs(d["deviation_pct"]) <= C.ROOM_AREA_AGREE * 100 and R.is_rectangular(poly):
+        area_m2, area_basis = d["label_area_m2"], "LABEL"
+      elif abs(d["deviation_pct"]) > C.ROOM_AREA_AGREE * 100 and not any(n["code"] == "ROOM_SIZE_MISMATCH" for n in notes):
+        notes.append(C.note("ROOM_AREA_OUTLINE_DIFFERS", label_area_m2=round(d["label_area_m2"], 3), outline_area_m2=round(d["area_m2"], 3)))
     cx, cy = poly.centroid.x, poly.centroid.y
     name = " / ".join(room_names) if room_names else None
     minx, miny, maxx, maxy = poly.bounds
-    facts = {"name": name, "area_m2": round(d["area_m2"], 3), "perimeter_m": round(d["perimeter_m"], 3), "holes": d["holes"],
+    facts = {"name": name, "area_m2": round(area_m2, 3), "outline_area_m2": round(d["area_m2"], 3), "area_basis": area_basis, "perimeter_m": round(d["perimeter_m"], 3), "holes": d["holes"],
       "bbox_mm": [round((maxx - minx) * f), round((maxy - miny) * f)], "size_text": d["size_text"], "outline_from": how, "room_type": RT.type_of_name(name)}
     if how == "CLOSED":
       facts["closed_across"] = {"openings": via[0], "width_mm": via[1]}
@@ -893,7 +900,7 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=N
       facts["deviation_pct"] = round(d["deviation_pct"], 2)
     work_item, mode, kind = C.SUGGESTIONS["ROOM"]
     cand = Candidate(key=_key("ROOM", round(cx / 3), round(cy / 3)), category="ROOM", kind=kind, quantity_mode=mode,
-      label=(name or "Room") + f" · {d['area_m2']:.2f} m²", tag=None, geometry=R.polygon_geometry(poly), params={"dims_basis": "DRAWN"},
+      label=(name or "Room") + f" · {area_m2:.2f} m²", tag=None, geometry=R.polygon_geometry(poly), params={"dims_basis": "DRAWN"},
       missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
     out.append(_finish(cand, ctx, base))
   for i, p in enumerate(pairs):
@@ -905,7 +912,7 @@ def _room_candidates(index, frames, runs, lines, f, hint, ctx, res=None, walls=N
     notes = [C.note("ROOM_OUTLINE_REPLACED", measured_area_m2=round(replaced[i], 3), label_area_m2=round(area, 3))] if i in replaced else []
     notes.append(C.note("ROOM_FROM_LABEL", size_text=p["size_text"]))
     facts = {"name": p["name"], "area_m2": round(area, 3), "perimeter_m": round(2.0 * (p["a_mm"] + p["b_mm"]) / 1000.0, 3), "holes": 0,
-      "bbox_mm": [round(p["a_mm"]), round(p["b_mm"])], "size_text": p["size_text"], "label_area_m2": round(area, 3), "outline_from": "LABEL", "room_type": RT.type_of_name(p["name"])}
+      "bbox_mm": [round(p["a_mm"]), round(p["b_mm"])], "size_text": p["size_text"], "label_area_m2": round(area, 3), "outline_from": "LABEL", "area_basis": "LABEL", "room_type": RT.type_of_name(p["name"])}
     work_item, mode, kind = C.SUGGESTIONS["ROOM"]
     
     cand = Candidate(key=_key("ROOM", round(p["x"] / 3), round(p["y"] / 3)), category="ROOM", kind=kind, quantity_mode=mode,
@@ -1180,10 +1187,11 @@ def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict, impli
     base *= 0.9
   m2 = float(area["m2"])
   gross_m2 = float(outline[0]) * float(outline[1]) / 1e6 if outline else m2
-  label = "Slab" + (f" {_inch_text(t)}" if t else "") + f" · {gross_m2:.2f} m²" + (f" · {spec[0]}" if spec else "")
+  label_parts = SL.parts("Slab", " ", f" · {gross_m2:.2f} m²" + (f" · {spec[0]}" if spec else ""))
+  label = SL.compose(label_parts, t)
   facts = {"floor": hint, "area_m2": m2, "area_text": f"{area['value']:g} {area['unit']}", "area_name": area.get("name"), "area_pages": area.get("pages", []),
     "thickness_mm": t, "thickness_source": source, "thickness_options": options, "thickness_sections_mm": implied_mm, "panels": plan.get("panels", 0),
-    "panel_marks": plan.get("marks", [])}
+    "panel_marks": plan.get("marks", []), "label_parts": label_parts}
   
   if dims:
     facts["dims_mm"] = [float(dims[0]), float(dims[1])]
@@ -1251,7 +1259,9 @@ def _slab_panel_candidates(found: dict, note_mm, level_hint: str | None, slab_va
           if x["code"] == "SLAB_THICKNESS_DISAGREES":
             x["message"] = _thickness_text(vols, t, source)
 
-    label = "Slab panel " + g["text"] + (f" · {_inch_text(t)}" if t else "") + (f" · {spec[0]}" if spec else "")
+    label_parts = SL.parts("Slab panel " + g["text"], " · ", (f" · {spec[0]}" if spec else ""))
+    facts["label_parts"] = label_parts
+    label = SL.compose(label_parts, t)
     cand = Candidate(key=_key("SLAB", "PANEL", level_hint or "", round(g["length_mm"]), round(g["width_mm"])), category="SLAB", kind=kind, quantity_mode=mode, label=label, tag="SLAB",
       geometry={"points": [g["points"][0]]}, params=params, missing=missing, work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="PRINTED", count=int(g["count"]))
     cand.status = _status(cand.notes)
@@ -1619,7 +1629,7 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
       out.append(cand)
   out.extend(FN.floor_typed_candidates(rooms, ctx, level_hint, spec, Candidate, _finish))
 
-  skirting =FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
+  skirting = FN.skirting_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)
   dado = FN.dado_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows, walls)
   tile = FN.wall_tile_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish, windows, walls)
   proof = FN.wet_waterproof_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)

@@ -6,6 +6,7 @@ from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
 from app.modules.drawings_boq.takeoff import stair_pairs as SP
 from app.modules.drawings_boq.takeoff.extract import layout_groups as LG
 from app.modules.drawings_boq.takeoff.extract import mark_entities as ME
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _sheet_floor, _floor, _live
 from app.modules.drawings_boq.takeoff.evidence import evidence_for
 
@@ -103,7 +104,7 @@ def ready(read: list, checks: list | None = None) -> dict:
         why.append("ADDED_FROM_SECOND_SHEET")
       if c.status == "INVALID":
         why.append("ERROR")
-      elif c.status == "WARNING":
+      elif c.status == "WARNING" or NS.has_warning(c.notes):
         why.append("WARNING")
       f = c.facts or {}
       

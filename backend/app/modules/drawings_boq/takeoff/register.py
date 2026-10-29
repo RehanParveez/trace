@@ -7,6 +7,8 @@ from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff import stair_twins
 from app.modules.drawings_boq.takeoff import placement as PL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+from app.modules.drawings_boq.takeoff.extract import slab_label as SL
 from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.extract import wall_net as WN
 
@@ -70,14 +72,44 @@ def _num(v):
   return f if f == f else None
 
 def _issues(cand) -> tuple[list, str]:
-  issues = [{"code": n.get("code"), "severity": n.get("severity", "info"), "message": n.get("message", "")} for n in (cand.notes or [])]
+  """The issues of a row, each with its scope, and its status. Only a warning of ROW scope (about this row's own number) makes the row a WARNING; a sheet or drawing warning is shown once on the sheet or drawing."""
+  issues = [{"code": n.get("code"), "severity": n.get("severity", "info"), "message": n.get("message", ""), "scope": NS.note_scope(n)} for n in (cand.notes or [])]
   if cand.decision != "ACCEPTED":
     for need in cand.missing or []:
       code, text = MISSING_TEXT.get(need, ("MISSING_VALUE", f"{need} is not on the drawing."))
-      issues.append({"code": code, "severity": "warning", "message": text})
-  sev = {i["severity"] for i in issues}
-  status = "INVALID" if (cand.status == "INVALID" or "error" in sev) else "WARNING" if ("warning" in sev or cand.status == "WARNING") else "VALID"
+      issues.append({"code": code, "severity": "warning", "message": text, "scope": NS.ROW})
+  status = "INVALID" if cand.status == "INVALID" else NS.status_of(issues)
   return issues, status
+
+def rows_of(cand) -> int:
+  """How many register rows one candidate makes."""
+  return 1 if cand.category in ("WALL", "ROOM", "SLAB") else max(1, min(int(cand.count or 1), MAX_ROWS_PER_CANDIDATE))
+
+def conditions_of(rows: list) -> list:
+  """The sheet and drawing conditions of the rows, once each: [{scope, code, severity, message, rows, sheets}], the ones with the most rows first. Computed from the rows' own issues, so it can never disagree with them."""
+  out: dict = {}
+  for r in rows:
+    props = ((r.get("properties") if isinstance(r, dict) else getattr(r, "properties", None)) or {}).get("_pdf") or {}
+    page = props.get("page_no")
+    for i in (r.get("normalization_issues") if isinstance(r, dict) else getattr(r, "normalization_issues", None)) or []:
+      if not isinstance(i, dict) or NS.note_scope(i) == NS.ROW:
+        continue
+      slot = out.setdefault((NS.note_scope(i), i.get("code")), {"scope": NS.note_scope(i), "code": i.get("code"), "severity": i.get("severity"), "message": i.get("message"), "rows": 0, "sheets": set()})
+      slot["rows"] += 1
+      if page is not None:
+        slot["sheets"].add(page)
+  return sorted(({**v, "sheets": sorted(v["sheets"])} for v in out.values()), key=lambda v: (v["scope"] != NS.SHEET, -v["rows"], str(v["code"])))
+
+def header_totals(rows: list) -> dict:
+  """The totals the register header shows, all counted from the rows listed under it: rows, rows by kind, rows that need a look (not VALID), rows by status, and the sheet and drawing conditions."""
+  by_type: dict = {}
+  status: dict = {}
+  for r in rows:
+    t = r["ifc_type"] if isinstance(r, dict) else getattr(r, "ifc_type", None)
+    s = (r["normalization_status"] if isinstance(r, dict) else getattr(r, "normalization_status", None)) or "PENDING"
+    by_type[t] = by_type.get(t, 0) + 1
+    status[s] = status.get(s, 0) + 1
+  return {"total": len(rows), "by_type": by_type, "by_status": status, "needs_review": len(rows) - status.get("VALID", 0), "conditions": conditions_of(rows)}
 
 def _positions(cand, n: int) -> list:
   if cand.category == "SLAB":
@@ -339,7 +371,9 @@ def _wall_beam(cand) -> bool:
 def _name(cand, i: int, n: int) -> str:
   if cand.category == "ROOM":
     return (cand.facts or {}).get("name") or "Room (no name found)"
-  if cand.category in ("WALL", "SLAB", "SITE") or _wall_beam(cand):
+  if cand.category == "SLAB":
+    return SL.current(cand)
+  if cand.category in ("WALL", "SITE") or _wall_beam(cand):
     return cand.label
   base = cand.tag or cand.label
   return f"{base} ({i + 1} of {n})" if n > 1 else base
@@ -355,15 +389,15 @@ def rows_for_candidate(cand, *, sheet, level_id, level_name: str | None, measure
   spec = _spec(cand)
   if spec is None or cand.decision == "REJECTED" or (cand.facts or {}).get("foundation_item"):
     return []
-  n = 1 if cand.category in ("WALL", "ROOM", "SLAB") else max(1, min(int(cand.count or 1), MAX_ROWS_PER_CANDIDATE))
+  n = rows_of(cand)
   issues, status = _issues(cand)
   also_on = sorted(set(also_on))
   
   if also_on and cand.category == "STAIR":
-    issues.append({"code": "STAIR_DRAWN_ON_OTHER_SHEET", "severity": "info",
+    issues.append({"code": "STAIR_DRAWN_ON_OTHER_SHEET", "severity": "info", "scope": NS.ROW,
       "message": "This staircase is also drawn as a DN flight on sheet " + ", ".join(str(x) for x in also_on) + ". It is one stair, listed once here. Measure it once."})
   elif also_on:
-    issues.append({"code": "SAME_MARK_ON_OTHER_SHEET", "severity": "info",
+    issues.append({"code": "SAME_MARK_ON_OTHER_SHEET", "severity": "info", "scope": NS.ROW,
       "message": "This mark is also on sheet " + ", ".join(str(x) for x in also_on) + ". It is listed once here. Measure it once, not on every sheet."})
   qty, unit, qsrc = _quantity(cand, n, measurement)
   sizes = _sizes(cand)

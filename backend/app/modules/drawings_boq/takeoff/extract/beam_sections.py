@@ -3,6 +3,8 @@ import re
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.engine.measure import readings as QSR
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+from app.modules.drawings_boq.takeoff.extract import slab_label as SL
 
 KIND_OF_ROLE = {"PLINTH": "PLINTH", "ROOF": "ROOF", "BAND": "TIE"}
 ALSO_OFFERED = {"ROOF": ("BEAM",), "PLINTH": ("GRADE",)}

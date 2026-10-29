@@ -108,6 +108,14 @@ def lazy_imports(root: pathlib.Path) -> list:
           misses.append((*where, f"from {node.module} import {a.name}", "name not found"))
   return misses
 
+def scope_check() -> list:
+  from app.modules.drawings_boq.takeoff.extract import config as C
+  from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+  out = [(k, "has no scope in extract.note_scope") for k in sorted(set(C.NOTES) - set(NS.SCOPE))]
+  out += [(k, "is in extract.note_scope but not in config.NOTES") for k in sorted(set(NS.SCOPE) - set(C.NOTES))]
+  out += [(k, f"has the scope {v!r}") for k, v in sorted(NS.SCOPE.items()) if v not in (NS.ROW, NS.SHEET, NS.DRAWING)]
+  return out
+
 def seed_check() -> list:
   from app.engine.measure import rulebook
   return rulebook.seed_problems()
@@ -117,14 +125,17 @@ def main() -> int:
   failed = import_all(root)
   misses = lazy_imports(root)
   seed = seed_check()
+  scopes = scope_check()
+  for key, what in scope_check():
+    print(f"NOTE SCOPE     {key}: {what}")
   for key, what in seed:
     print(f"RULE SEED      {key}: {what}")
   for name, err in failed:
     print(f"IMPORT FAILS   {name}: {err}")
   for file, line, text, why in misses:
     print(f"LAZY IMPORT    {file}:{line}  {text}  ({why})")
-  print(f"{len(failed)} module(s) fail to import, {len(misses)} in-function import(s) do not resolve, {len(seed)} seed figure(s) differ from the code.")
-  return 1 if failed or misses or seed else 0
+  print(f"{len(failed)} module(s) fail to import, {len(misses)} in-function import(s) do not resolve, {len(seed)} seed figure(s) differ from the code, {len(scopes)} note code(s) without a valid scope.")
+  return 1 if failed or misses or seed or scopes else 0
 
 if __name__ == "__main__":
   sys.exit(main())

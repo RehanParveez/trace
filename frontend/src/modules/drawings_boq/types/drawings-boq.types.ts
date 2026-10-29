@@ -874,6 +874,7 @@ export interface NormalizationIssue {
   code: string;
   severity: string;
   message: string;
+  scope?: "ROW" | "SHEET" | "DRAWING" | null;
 }
 
 export interface SpaceResponse {

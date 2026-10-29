@@ -22,6 +22,7 @@ import { EVIDENCE_LABEL, EVIDENCE_TONE, evidenceCheck, evidenceCounts, evidenceT
 import { CoveragePanel } from "../takeoff/components/CoveragePanel";
 import { memberZ, zText } from "../takeoff/utils/floors";
 import { coordText, frameText, withFrames } from "../utils/frameGrid";
+import { conditionsOf, rowIssues } from "../utils/noteScope";
 
 interface DrawingElementsDialogProps {
   drawing: Drawing;
@@ -263,6 +264,7 @@ export function DrawingElementsDialog({
   );
   
   const rowsShown = useMemo(() => sortRegister(withFrames(items), levelNames), [items, levelNames]);
+  const conditions = useMemo(() => conditionsOf(items), [items]);
   const total = elementsQuery.data?.total ?? null;
   const hasFilter = Boolean(structuralRole.trim() || discipline.trim() || levelId || normalizationStatus);
 
@@ -651,6 +653,20 @@ export function DrawingElementsDialog({
           </div>
         ) : null}
 
+        {conditions.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-[11px]" data-testid="register-conditions">
+            <span className="font-semibold">{t("drawings.elements.conditions", "Sheet and drawing conditions")}</span>
+            {conditions.map((c) => (
+              <span key={`${c.scope}|${c.code}`} title={c.message}>
+                <Badge tone={c.severity === "warning" ? "gold" : "slate"}>{c.code}</Badge>{" "}
+                {c.scope === "SHEET" ? t("drawings.elements.scopeSheet", "sheet") : t("drawings.elements.scopeDrawing", "drawing")}
+                {` \u00b7 ${c.rows} ${c.rows === 1 ? "row" : "rows"}`}
+                {c.sheets.length > 0 ? ` \u00b7 ${c.sheets.length === 1 ? "sheet" : "sheets"} ${c.sheets.join(", ")}` : ""}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
         <div className="min-h-0 flex-1 overflow-auto bg-[var(--color-surface)]">
           {elementsQuery.isLoading && items.length === 0 ? (
             <LoadingState label={t("drawings.elements.loading")} />
@@ -733,8 +749,8 @@ export function DrawingElementsDialog({
 
                       <td
                         className="border-b border-[var(--color-border)] px-3 py-2.5 text-[10px]"
-                        title={(element.normalization_issues ?? [])
-                          .map((issue) => (issue as { message?: string }).message)
+                        title={rowIssues(element.normalization_issues)
+                          .map((issue) => issue.message)
                           .filter(Boolean)
                           .join("\n") || undefined}
                       >

@@ -25,6 +25,7 @@ from app.modules.drawings_boq.takeoff.decisions import store as decided
 from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import slab_label as SL
 from app.modules.drawings_boq.takeoff.extract import conflicts as CF
 from app.modules.drawings_boq.takeoff.extract import revisions as RV
 from app.modules.drawings_boq.finish_schedule.common import work_item_catalog

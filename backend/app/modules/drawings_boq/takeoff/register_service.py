@@ -143,14 +143,11 @@ class RegisterService:
       sheet_status.append({"page_no": sh.page_no, "sheet_id": str(sh.id), "title": title.get("title") or sh.label, "level": levels.get(sh.level_id) if sh.level_id else None,
         "status": status, "items": per_sheet.get(str(sh.id), 0), "code": code, "message": message if status != "READ" else None, "severity": severity,
         "action": action, "composite": bool(title.get("composite"))})
-    by_cat: dict = {}
-    
-    for r in rows:
-      by_cat[r["ifc_type"]] = by_cat.get(r["ifc_type"], 0) + 1
-    return {"drawing_id": drawing_id, "total": len(rows), "added": added, "updated": updated, "removed": len(gone), "by_type": by_cat,
+    header = R.header_totals(rows)
+    return {"drawing_id": drawing_id, "total": header["total"], "added": added, "updated": updated, "removed": len(gone), "by_type": header["by_type"], "conditions": header["conditions"],
       "sheets": len(sheets), "sheets_read": len(read_ids), "waiting": waiting, "set_aside": set_aside, "sheet_status": sheet_status,
       "measured": evidence_tally(rows)["MEASURED"], "valid_on_assumption": valid_on_assumption(rows),
-      "needs_review": sum(1 for r in rows if r["normalization_status"] != "VALID"),
+      "needs_review": header["needs_review"],
       "decisions": len({r["properties"]["_pdf"]["candidate_id"] for r in rows if r["normalization_status"] != "VALID"}),
       "evidence": evidence_tally(rows), "totals": RG.totals(rows), "source_mix": RG.source_mix(rows),
       "floors_to_decide": len(undecided), "floors_undecided": undecided}

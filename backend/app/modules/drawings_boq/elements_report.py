@@ -423,6 +423,11 @@ def _summary_block(st, reco: dict, is_pdf: bool, facts: dict | None, rows: list,
     on_assumption = valid_on_assumption(rows)
     if on_assumption:
       lines.append(("Marked VALID but resting on an assumption or a gap", f"{on_assumption:,} rows (their status says VALID; a value of the row is assumed, disputed or missing)"))
+    from app.modules.drawings_boq.takeoff import register as RGS
+    conds = RGS.conditions_of(rows)
+    if conds:
+      shown = "; ".join(f"{c['code']} ({c['scope'].lower()}, {c['rows']:,} row{'s' if c['rows'] != 1 else ''})" for c in conds[:6]) + (f"; and {len(conds) - 6} more" if len(conds) > 6 else "")
+      lines.append(("Sheet and drawing conditions", f"{shown}. These hold for every row they name and are not repeated on each row."))
     decisions = len(decision_groups(rows, {id(r): i for i, r in enumerate(rows, start=1)}))
     if review:
       lines.append(("Decisions", f"{decisions:,} decision{'s' if decisions != 1 else ''} cover the {review:,} rows that need a look (rows of one item share one decision)"))

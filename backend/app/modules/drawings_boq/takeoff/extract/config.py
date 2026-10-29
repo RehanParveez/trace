@@ -135,6 +135,8 @@ ROOM_MIN_M2 = 1.2
 ROOM_MAX_M2 = 800.0
 ROOM_SIZE_TOL = 0.08          
 ROOM_DUPLICATE_SHARE = 0.6    
+ROOM_AREA_AGREE = 0.05       
+ROOM_RECT_FILL = 0.97 
 PLAUS_DOOR_TYPICAL_MM = 900.0   
 PLAUS_DOOR_OFF_BY = 1.3          
 PLAUS_ROOM_OFF_BY = 1.5          
@@ -239,6 +241,7 @@ NOTES = {
   "ROOM_CLOSURE_SKIPPED": ("warning", "The walls of this sheet could not be joined across the door and window openings (the geometry engine refused them), so the rooms are placed at their labels and outlines as before. Read the sheet again; if it comes back, send it to support."),
   "LINTEL_RCC_LEFT_OUT": ("info", "Some of the openings of this mark stand in RCC walls, which need no separate lintel. They are not counted here; the number left out is on the row."),
   "LINTEL_WIDTH_FROM_WALL": ("info", "These openings stand in 4.5 inch walls. The lintel is made as wide as the wall, not the 9 inch of the lintel table; its depth and bars are the table's. Check the section if the drawing details these lintels."),
+  "ROOM_AREA_OUTLINE_DIFFERS": ("info", "The size printed in the room label and the outline of the walls differ by more than 5%. The outline is used for the area (the printed size may be the box round an L-shaped room). Both figures are on the item."),
   "ROOM_OUTLINE_REPLACED": ("info", "The walls drawn around this label gave another area than the printed size, so the printed size is used."),
   "SLAB_AREA_FROM_TABLE": ("info", "The slab area is the covered area of this floor printed in the area table of the drawing, taken as one rectangle (its printed length x width). Openings in the slab (a stair well, a shaft) are not deducted and cantilevers beyond the covered area (sunshades, porch roofs) are not added. Check both against the framing plan."),
   "SLAB_SIZE_NOT_PRINTED": ("warning", "The area table gives the covered area of this floor but not its length and width, so the slab cannot be measured from it. Measure the slab with the area tool."),
@@ -521,7 +524,7 @@ NOTE_CONVENTIONS = {
 
 def note(code: str, **extra) -> dict:
   sev, msg = NOTES[code]
-  out = {"code": code, "severity": sev, "message": msg}
+  out = {"code": code, "severity": sev, "message": msg, "scope": NS.scope_of(code)}
   keys = NOTE_CONVENTIONS.get(code)
   if keys:
     out["origin"] = QSR.CO.origin_of(*keys)

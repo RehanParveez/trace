@@ -185,7 +185,7 @@ def tag_members(words: list, shapes: list, mm_per_pt: float, hint: str | None, o
       continue  
     key = w.text.strip().upper()
     g = groups.setdefault(key, {"tag": key, "category": cat, "points": [], "dense": 0})
-    if dense or id(w) in row_ids or id(w) in table_ids:
+    if (dense and not (openings and cat in ("DOOR", "WINDOW"))) or id(w) in row_ids or id(w) in table_ids:
       g["dense"] += 1
       
     else:

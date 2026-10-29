@@ -230,6 +230,12 @@ def describe(poly: Polygon, names: list, sizes: list, mm_per_pt: float) -> dict:
     out.update({"size_text": t, "label_area_m2": la, "deviation_pct": (area_m2 / la - 1.0) * 100.0 if la > 0 else None})
   return out
 
+def is_rectangular(poly: Polygon) -> bool:
+  if poly.is_empty or len(poly.interiors) > 0:
+    return False
+  box = poly.minimum_rotated_rectangle
+  return box.area > 0.0 and poly.area / box.area >= C.ROOM_RECT_FILL
+
 def ring_json(ring) -> list:
   coords = list(ring.coords)[:-1]
   return [[round(x, 4), round(y, 4)] for x, y in coords]

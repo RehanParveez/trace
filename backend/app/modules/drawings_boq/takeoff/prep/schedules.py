@@ -27,6 +27,7 @@ PLAUSIBLE = {
 MAX_SIZE_REACH_PT = 160.0   
 MAX_ROW_OFFSET_PT = 5.0     
 NAME_COLUMN_TOL_PT = 6.0
+REF_HEADER_TEXT_PT = 4.5 
 MAX_OPENINGS = 80
 MAX_AREAS = 24
 
@@ -167,12 +168,16 @@ def _scan(words: list) -> tuple:
     if not heads or not sizes_h:
       continue
     name_cols = sorted({round(al) for al, _ in heads})
+    head_sizes = sorted(w.size for _, w in heads + sizes_h if w.size)
+    unit = (head_sizes[len(head_sizes) // 2] / REF_HEADER_TEXT_PT) if head_sizes else 1.0
+    unit = min(max(unit, 0.2), 5.0)
+    reach_pt, row_offset_pt, column_tol_pt = MAX_SIZE_REACH_PT * unit, MAX_ROW_OFFSET_PT * unit, NAME_COLUMN_TOL_PT * unit
     marks = []
     for ac, al, w in items:
       mk = norm_mark(w.text)
       if mk is None:
         continue
-      if any(abs(al - c) <= NAME_COLUMN_TOL_PT for c in name_cols):
+      if any(abs(al - c) <= column_tol_pt for c in name_cols):
         marks.append((ac, al, w, mk))
     if len(marks) < 2:
       continue
@@ -181,10 +186,10 @@ def _scan(words: list) -> tuple:
     rows: dict = {i: [] for i in range(len(marks))}
     
     for ac, al, w in dims:
-      best, best_d = None, MAX_ROW_OFFSET_PT + 1e-6
+      best, best_d = None, row_offset_pt + 1e-6
       for i, (mac, mal, _, _) in enumerate(marks):
         d = abs(ac - mac)
-        if d < best_d and 2.0 < al - mal <= MAX_SIZE_REACH_PT:
+        if d < best_d and 2.0 * unit < al - mal <= reach_pt:
           best, best_d = i, d
       if best is not None:
         rows[best].append((ac, al, w))
