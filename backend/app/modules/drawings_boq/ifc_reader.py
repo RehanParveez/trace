@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 import re
 import math
+import time
 import ifcopenshell
 import numpy as np
 import ifcopenshell.util.element
@@ -11,7 +12,7 @@ import ifcopenshell.util.unit
 from functools import lru_cache
 from app.engine.measure.steel import is_steel_role
 from app.engine.measure.spatial import PRISM_VOLUME_TOLERANCE
-from app.modules.drawings_boq.ifc_types import (COUNT_ROLES, DEFAULT_DISCIPLINE, DEFAULT_MESH_FALLBACK_LIMIT, DEFAULT_QUANTITY_KIND_ORDER, DISCIPLINE_BY_ROLE, EXCLUDED_IFC_TYPES, LINEAR_ROLES,
+from app.modules.drawings_boq.ifc_types import (COUNT_ROLES, DEFAULT_DISCIPLINE, DEFAULT_MESH_FALLBACK_LIMIT, IFC_MESH_BUDGET_S, DEFAULT_QUANTITY_KIND_ORDER, DISCIPLINE_BY_ROLE, EXCLUDED_IFC_TYPES, LINEAR_ROLES,
   LOW_CLASSIFICATION_CONFIDENCE, MESH_FALLBACK_ROLES, NAME_KEYWORD_ROLES, NO_LEGACY_BOQ_ROLES, PREDEFINED_TYPE_ROLE_OVERRIDES, QUANTITY_KIND_ORDER_BY_ROLE, QUANTITY_PROPS_BY_KIND,
   REQUIRED_DIMENSIONS_BY_ROLE, ROLE_BY_IFC_TYPE, SLAB_ROLES, SUPERTYPE_FALLBACK_TYPES, WALL_ROLES,
 )
@@ -25,6 +26,7 @@ _MM3_PER_M3 = 1_000_000_000.0
 QTO_MESH_TOLERANCE = 0.02
 CONCRETE_ONLY_ROLES = frozenset({"COLUMN", "BEAM", "SLAB", "SLAB_FOUNDATION", "SLAB_ROOF", "WALL", "WALL_EXTERNAL", "WALL_INTERNAL", "FOOTING", "PILE", "PILE_CAP", "STAIR"})
 LEVEL_TOLERANCE_MM = 500.0
+STOREY_FREE_ROLES = frozenset({"FOOTING", "PILE", "CAISSON", "SLAB_FOUNDATION", "EARTHWORKS", "EARTHWORKS_CUT", "EARTHWORKS_FILL", "PAVEMENT", "COURSE", "KERB", "WALL_FOUNDATION"})
 NOT_FLOOR_SLAB_ROLES = frozenset({"SLAB_FOUNDATION", "SLAB_LANDING"})
 _CONCRETE_TEXT = re.compile(r"concrete|cement|\brcc\b|grout", re.I)
 _PILE_CAP_NAME = re.compile(r"(?<![a-z])pile[\s_\-]*caps?(?![a-z])", re.I)
@@ -117,6 +119,11 @@ class _Geometry:
   profile_area_mm2: float | None = None
   depth_mm: float | None = None
   mesh_volume_mm3: float | None = None
+  body: str | None = None               
+  net_mm3: float | None = None          
+  openings: int = 0
+  openings_mm3: float | None = None     
+  openings_cutter_mm3: float | None = None   
   issues: list[dict] = field(default_factory=list)
  
 def humanize_ifc_type(ifc_type: str) -> str:
@@ -622,7 +629,26 @@ def _extruded_geometry(element, role: str, scales: _Scales) -> _Geometry | None:
     geometry.issues.append(_issue("GEOMETRY_CLIPPED", "info", "Solid has a boolean clipping; dimensions are those of the unclipped solid."))
   return geometry
  
+class _MeshBudget:
+  def __init__(self, limit: int, seconds: float):
+    self.limit, self.seconds = limit, seconds
+    self.left = limit
+    self.deadline = time.monotonic() + seconds
+    self.used = self.refused_count = self.refused_time = 0
+
+  def take(self) -> bool:
+    if self.left <= 0:
+      self.refused_count += 1
+      return False
+    if time.monotonic() > self.deadline:
+      self.refused_time += 1
+      return False
+    self.left -= 1
+    self.used += 1
+    return True
+
 _MESH_SETTINGS = None
+_VOLUME_SETTINGS: dict = {}
  
 def _mesh_settings():
   global _MESH_SETTINGS
@@ -634,10 +660,26 @@ def _mesh_settings():
     _MESH_SETTINGS = settings
   return _MESH_SETTINGS
  
- 
+def _volume_settings(voids: bool = True):
+  """Settings for a volume only: the body in its own coordinates (the volume does not need the world), with its openings cut (the net body) or not (the gross body)."""
+  if voids not in _VOLUME_SETTINGS:
+    import ifcopenshell.geom
+
+    settings = ifcopenshell.geom.settings()
+    settings.set("use-world-coords", False)
+    settings.set("disable-opening-subtractions", not voids)
+    _VOLUME_SETTINGS[voids] = settings
+  return _VOLUME_SETTINGS[voids]
+
+def _welded(verts_mm: np.ndarray, faces: np.ndarray) -> tuple:
+  """The mesh with the points that coincide (to 0.01 mm) made one. A body cut by openings comes out of the mesher with a point for each face that meets there, and the closed-surface test below counts edges between points."""
+  _, first, inverse = np.unique(np.round(verts_mm, 2), axis=0, return_index=True, return_inverse=True)
+  return verts_mm[first], np.asarray(inverse).reshape(-1)[faces]
+
 def _closed_mesh_volume_mm3(verts_mm: np.ndarray, faces: np.ndarray) -> float | None:
   if faces.size == 0:
     return None
+  verts_mm, faces = _welded(verts_mm, faces)
   edges = np.sort(np.concatenate([faces[:, [0, 1]], faces[:, [1, 2]], faces[:, [2, 0]]]), axis=1)
   _, counts = np.unique(edges, axis=0, return_counts=True)
   if not np.all(counts % 2 == 0):
@@ -648,18 +690,18 @@ def _closed_mesh_volume_mm3(verts_mm: np.ndarray, faces: np.ndarray) -> float | 
 _UP_COSINE = 0.99
 _OUTLINE_MAX_POINTS = 1000
 
-def _shape_mm(element):
+def _shape_mm(element, settings=None):
   try:
     import ifcopenshell.geom
-    shape = ifcopenshell.geom.create_shape(_mesh_settings(), element)
+    shape = ifcopenshell.geom.create_shape(settings or _mesh_settings(), element)
     verts = np.asarray(shape.geometry.verts, dtype=float).reshape(-1, 3) * 1000.0
     faces = np.asarray(shape.geometry.faces, dtype=int).reshape(-1, 3)
   except Exception:
     return None
   return (verts, faces) if verts.size else None
 
-def _mesh_volume_mm3(element) -> float | None:
-  shape = _shape_mm(element)
+def _mesh_volume_mm3(element, voids: bool = True) -> float | None:
+  shape = _shape_mm(element, _volume_settings(voids))
   return _closed_mesh_volume_mm3(*shape) if shape else None
 
 def _prism_qto_disagree(geometry: _Geometry, flat_qto: dict, scales: _Scales) -> bool:
@@ -671,7 +713,64 @@ def _prism_qto_disagree(geometry: _Geometry, flat_qto: dict, scales: _Scales) ->
   prism_mm3 = geometry.profile_area_mm2 * geometry.depth_mm
   return abs(prism_mm3 - qto_mm3) > QTO_MESH_TOLERANCE * qto_mm3
 
-def _plan_union(vertices: np.ndarray, faces: np.ndarray, normals: np.ndarray, length: np.ndarray, sign: float):
+def _measure_swept(element, geometry: _Geometry, flat_qto: dict, scales: _Scales, budget: _MeshBudget) -> None:
+  """A body swept from a profile is measured as profile x depth only when nothing cuts it. A boolean body (a wall cut by a roof slope) is measured from its mesh, and so is a body with openings whose
+  model quantity is missing or disagrees with the profile; the mesh is the body with its openings cut, which is the volume that is there. What the openings take out is recorded: the host's mesh with
+  the openings against without them (`openings_mm3`), and the volume of the openings' own meshes for reference (`openings_cutter_mm3`, larger, because a cutter is bigger than the wall it cuts)."""
+  clipped = any(i["code"] == "GEOMETRY_CLIPPED" for i in geometry.issues)
+  openings = [r.RelatedOpeningElement for r in (getattr(element, "HasOpenings", None) or []) if getattr(r, "RelatedOpeningElement", None) is not None]
+  has_volume = _qto_quantity("volume", flat_qto, scales) is not None
+  if not (clipped or _prism_qto_disagree(geometry, flat_qto, scales) or (openings and not has_volume)):
+    return
+  if geometry.mesh_volume_mm3 is not None or not budget.take():
+    return
+  net = _mesh_volume_mm3(element)
+  if net is None:
+    return
+  geometry.mesh_volume_mm3 = geometry.net_mm3 = net
+  if clipped:
+    geometry.body = "BOOLEAN_MESH"
+    geometry.issues = [i for i in geometry.issues if i["code"] != "GEOMETRY_CLIPPED"]
+    geometry.issues.append(_issue("BOOLEAN_MESH", "info", "The body is a boolean (clipped) solid; its volume is measured from its mesh, not from the unclipped profile."))
+  if openings:
+    gross = _mesh_volume_mm3(element, voids=False)
+    geometry.openings = len(openings)
+    if gross is not None:
+      geometry.openings_mm3 = max(gross - net, 0.0)
+    geometry.openings_cutter_mm3 = sum(v for v in (_mesh_volume_mm3(o, voids=False) for o in openings) if v) or None
+
+def _storey_world_z(model, scales: _Scales) -> dict:
+  """{storey GlobalId: the z of its placement in the model's world coordinates, in mm}. The elevation a storey names is relative to its building; the elements' boxes are in the world, which can sit hundreds of
+  metres up (a survey height), so a storey is compared with an element at its placement."""
+  out: dict = {}
+  for storey in model.by_type("IfcBuildingStorey"):
+    try:
+      if storey.ObjectPlacement is not None:
+        out[storey.GlobalId] = float(ifcopenshell.util.placement.get_local_placement(storey.ObjectPlacement)[2, 3]) * scales.mm_per_unit
+    except Exception:
+      continue
+  return out
+
+def _storey_issue(levels: list, storey_z: dict, level_gid: str | None, base_mm: float | None, top_mm: float | None) -> dict | None:
+  if level_gid is None or base_mm is None or top_mm is None:
+    return None
+  height = {l.global_id: (storey_z[l.global_id] if l.global_id in storey_z else (float(l.elevation_mm) if l.elevation_mm is not None else None)) for l in levels}
+  ordered = sorted((l for l in levels if height.get(l.global_id) is not None), key=lambda l: height[l.global_id])
+  mine = next((i for i, l in enumerate(ordered) if l.global_id == level_gid), None)
+  if mine is None:
+    return None
+  mid = base_mm
+  low = height[ordered[mine].global_id] - LEVEL_TOLERANCE_MM
+  high = height[ordered[mine + 1].global_id] + LEVEL_TOLERANCE_MM if mine + 1 < len(ordered) else float("inf")
+  if low <= mid <= high:
+    return None
+  inside = next((l.name for l in reversed(ordered) if height[l.global_id] - LEVEL_TOLERANCE_MM <= mid), None)
+  base = height[ordered[mine].global_id]
+  return _issue("IFC_STOREY_DISAGREES", "warning",
+    f"The element is filed on storey '{ordered[mine].name}' but its foot is {mid - base:+.0f} mm from that storey's level, "
+    + (f"on '{inside}'." if inside else "below the lowest level."))
+
+def _plan_union(vertices: np.ndarray,faces: np.ndarray, normals: np.ndarray, length: np.ndarray, sign: float):
   """The union, in plan, of the triangles that face up (sign +1) or down (sign -1)."""
   from shapely.geometry import Polygon
   from shapely.ops import unary_union
@@ -736,6 +835,8 @@ def _mesh_bbox_geometry(element, role: str) -> _Geometry | None:
   dx, dy, dz = (geometry.bbox_max - geometry.bbox_min).tolist()
   long_, short = max(dx, dy), min(dx, dy)
   geometry.mesh_volume_mm3 = _closed_mesh_volume_mm3(verts_mm, faces)
+  if role in WALL_ROLES:
+    geometry.net_mm3 = geometry.mesh_volume_mm3
   if role in SLAB_ROLES and geometry.mesh_volume_mm3:
     geometry.placement = _top_face_outline(verts_mm, faces, geometry.mesh_volume_mm3, dz)
   if role in LINEAR_ROLES and role not in WALL_ROLES and len(verts_mm) >= 4:
@@ -1225,8 +1326,9 @@ def _normalise_element(
   element,
   scales: _Scales,
   levels: list[ReadLevel],
-  mesh_budget: list[int],
+  mesh_budget: _MeshBudget,
   schema_id: str,
+  storey_z: dict | None = None,
 ) -> ReadElement:
   psets = ifcopenshell.util.element.get_psets(element, psets_only=True) or {}
   qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True) or {}
@@ -1244,15 +1346,12 @@ def _normalise_element(
       geometry = _extruded_geometry(element, role, scales)
     except Exception:
       geometry = None
-    if geometry is None and role in MESH_FALLBACK_ROLES and mesh_budget[0] > 0:
-      mesh_budget[0] -= 1
+    if geometry is None and role in MESH_FALLBACK_ROLES and mesh_budget.take():
       geometry = _mesh_bbox_geometry(element, role)
   if geometry is None:
     geometry = _Geometry(kind="UNSUPPORTED")
-  if (geometry.kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") and role not in WALL_ROLES and geometry.mesh_volume_mm3 is None and mesh_budget[0] > 0
-      and _prism_qto_disagree(geometry, flat_qto, scales)):
-    mesh_budget[0] -= 1
-    geometry.mesh_volume_mm3 = _mesh_volume_mm3(element)
+  if geometry.kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT"):
+    _measure_swept(element, geometry, flat_qto, scales, mesh_budget)
  
   dims = {k: v for k, v in geometry.dims.items() if v is not None and v > 0}
   qto_dims = _dims_from_qto(role, element, flat_qto, scales)
@@ -1285,9 +1384,9 @@ def _normalise_element(
   if source == "NONE":
     for kind in order:
       if kind == "volume" and geometry.profile_area_mm2 and geometry.depth_mm:
-        cubic_mm = geometry.profile_area_mm2 * geometry.depth_mm
+        cubic_mm = geometry.net_mm3 or geometry.profile_area_mm2 * geometry.depth_mm
         quantity, unit, source = Decimal(repr(cubic_mm / _MM3_PER_M3)), "m3", "GEOMETRY"
-        quantity_basis = "Profile area x depth"
+        quantity_basis = "Closed 3D mesh volume, openings cut" if geometry.net_mm3 else "Profile area x depth"
         break
       
       if kind == "length" and dims.get("length"):
@@ -1302,6 +1401,19 @@ def _normalise_element(
   volume_mm3 = float(volume_m3[0]) * _MM3_PER_M3 if volume_m3 else (
     geometry.profile_area_mm2 * geometry.depth_mm if geometry.profile_area_mm2 and geometry.depth_mm else None
   )
+  geometry_measures = False
+  if geometry.net_mm3 and unit == "m3" and source == "GEOMETRY" and geometry.profile_area_mm2 and geometry.depth_mm:
+  
+    volume_mm3, geometry_measures = geometry.net_mm3, True
+    issues.append(_issue("QUANTITY_FROM_MESH", "info", "Geometry is the measure: volume from the 3D mesh of the body, openings cut."))
+  elif (source == "QTO" and unit == "m3" and volume_m3 and geometry.net_mm3 and (role in WALL_ROLES or geometry.body)
+        and abs(volume_mm3 - geometry.net_mm3) > QTO_MESH_TOLERANCE * geometry.net_mm3):
+  
+    geometry_measures = True
+    quantity, source = Decimal(repr(geometry.net_mm3 / _MM3_PER_M3)), "GEOMETRY"
+    quantity_basis = "Closed 3D mesh volume, openings cut"
+    issues.append(_issue("QUANTITY_FROM_MESH", "info", f"Geometry is the measure: {geometry.net_mm3 / _MM3_PER_M3:.4f} m3 from the 3D mesh."))
+    issues.append(_issue("QTO_DISAGREES_GEOMETRY_USED", "warning", f"The model's own volume, {volume_mm3 / _MM3_PER_M3:.4f} m3, differs from the 3D geometry by more than {QTO_MESH_TOLERANCE:.0%}; the geometry is used."))
   reference_mm3 = geometry.mesh_volume_mm3
   if reference_mm3 is None and geometry.profile_area_mm2 and geometry.depth_mm and not any(i["code"] == "GEOMETRY_CLIPPED" for i in geometry.issues):
     reference_mm3 = geometry.profile_area_mm2 * geometry.depth_mm
@@ -1314,6 +1426,8 @@ def _normalise_element(
         quantity_basis = "Closed 3D mesh volume"
         issues.append(_issue("QUANTITY_FROM_MESH", "info", "No usable Qto volume; volume taken from the closed 3D mesh."))
         
+    elif geometry_measures:
+      pass
     elif abs(volume_mm3 - reference_mm3) > QTO_MESH_TOLERANCE * reference_mm3:
       issues.append(_issue(
         "QTO_MESH_MISMATCH", "warning",
@@ -1354,6 +1468,10 @@ def _normalise_element(
       issues.append(_issue("LEVEL_INFERRED", "info", "No storey container; level inferred from element elevation."))
   if level_gid is None and levels:
     issues.append(_issue("NO_LEVEL", "info", "Element could not be assigned to a level."))
+  elif role not in STOREY_FREE_ROLES:
+    storey = _storey_issue(levels, storey_z or {}, level_gid, base_mm, top_mm)
+    if storey:
+      issues.append(storey)
  
   if source == "NONE" and role in NO_LEGACY_BOQ_ROLES:
     issues.append(_issue("STORED_ONLY", "info", f"Role {role} is stored for later phases; no BOQ quantity is taken from it here."))
@@ -1390,6 +1508,11 @@ def _normalise_element(
     properties["_ifc"]["layers"] = layers
   if geometry.kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") and geometry.mesh_volume_mm3:
     properties["_ifc"]["mesh_volume_mm3"] = round(float(geometry.mesh_volume_mm3), 1)
+  if geometry.body:
+    properties["_ifc"]["body"] = geometry.body
+  if geometry.openings:
+    properties["_ifc"]["openings"] = {"count": geometry.openings, "openings_mm3": round(geometry.openings_mm3, 1) if geometry.openings_mm3 is not None else None,
+      "cutters_mm3": round(geometry.openings_cutter_mm3, 1) if geometry.openings_cutter_mm3 is not None else None}
   if role == "REBAR":
     try:
       rebar = _rebar_fields(element, psets, qtos, scales)
@@ -1485,7 +1608,7 @@ def _infer_levels(elements: list[ReadElement]) -> tuple[list[ReadLevel], dict]:
   return [ReadLevel(global_id=f"INFERRED-LEVEL-{i + 1}", name=f"Level {i + 1} (inferred)", elevation_mm=_dec(t), sequence=i)
     for i, t in enumerate(tops)], info
 
-def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMIT) -> IfcReadResult:
+def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMIT, mesh_budget_s: float = IFC_MESH_BUDGET_S) -> IfcReadResult:
   model = ifcopenshell.open(path)
   scales = _resolve_scales(model)
   levels = _read_levels(model, scales)
@@ -1508,11 +1631,12 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
     raw_elements.append(element)
   raw_elements.sort(key=lambda e: e.id())
  
-  mesh_budget = [mesh_fallback_limit]
+  mesh_budget = _MeshBudget(mesh_fallback_limit, mesh_budget_s)
+  storey_z = _storey_world_z(model, scales)
   elements: list[ReadElement] = []
   for element in raw_elements:
     try:
-      elements.append(_normalise_element(element, scales, levels, mesh_budget, schema_id))
+      elements.append(_normalise_element(element, scales, levels, mesh_budget, schema_id, storey_z))
     except Exception as exc:
       elements.append(
         ReadElement(
@@ -1533,8 +1657,10 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
  
   if not elements:
     model_issues.append(_issue("NO_ELEMENTS", "error", "No supported building elements were found in the model."))
-  if mesh_budget[0] <= 0:
-    model_issues.append(_issue("MESH_FALLBACK_LIMIT_REACHED", "info", f"Mesh bounding-box fallback limit ({mesh_fallback_limit}) reached; later elements may lack geometry."))
+  if mesh_budget.refused_count:
+    model_issues.append(_issue("MESH_FALLBACK_LIMIT_REACHED", "info", f"Mesh fallback limit ({mesh_fallback_limit} elements) reached; {mesh_budget.refused_count} later elements were not meshed and may lack geometry."))
+  if mesh_budget.refused_time:
+    model_issues.append(_issue("MESH_BUDGET_REACHED", "warning", f"The mesh time budget ({mesh_budget_s:g} s) ran out; {mesh_budget.refused_time} elements were not meshed and may lack geometry or a cross-check."))
  
   if not levels and elements:
     levels, level_info = _infer_levels(elements)
@@ -1568,8 +1694,17 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
     "by_role": {},
     "by_discipline": {},
     "excluded": excluded_counts,
+    "mesh": {"budget_s": mesh_budget_s, "limit": mesh_fallback_limit, "elements_meshed": mesh_budget.used, "refused_by_count": mesh_budget.refused_count, "refused_by_time": mesh_budget.refused_time,
+      "boolean_bodies": 0, "voided_elements": 0, "openings": 0, "openings_mm3": 0.0, "storey_disagrees": 0},
   }
   for e in elements:
+    ifc = (e.properties or {}).get("_ifc") or {}
+    stats["mesh"]["boolean_bodies"] += 1 if ifc.get("body") else 0
+    if ifc.get("openings"):
+      stats["mesh"]["voided_elements"] += 1
+      stats["mesh"]["openings"] += int(ifc["openings"]["count"])
+      stats["mesh"]["openings_mm3"] += float(ifc["openings"]["openings_mm3"] or 0.0)
+    stats["mesh"]["storey_disagrees"] += 1 if any(i["code"] == "IFC_STOREY_DISAGREES" for i in e.issues) else 0
     stats["by_geometry_kind"][e.geometry_kind] = stats["by_geometry_kind"].get(e.geometry_kind, 0) + 1
     stats["by_role"][e.structural_role] = stats["by_role"].get(e.structural_role, 0) + 1
     stats["by_discipline"][e.discipline] = stats["by_discipline"].get(e.discipline, 0) + 1
@@ -1586,4 +1721,3 @@ def read_ifc(path: str, *, mesh_fallback_limit: int = DEFAULT_MESH_FALLBACK_LIMI
     boundaries=spatial.boundaries if spatial else [],
     relations=spatial.relations if spatial else [],
   )
- 

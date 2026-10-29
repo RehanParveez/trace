@@ -9,6 +9,7 @@ import math
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
+from app.modules.drawings_boq.takeoff.prep import page_unit as PU
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
 from app.modules.drawings_boq.takeoff.prep import schedules as S
 import subprocess
@@ -135,14 +136,14 @@ def parse_dim(text: str, bare_ok: bool = False) -> float | None:
     return None
   return v if INCH_MIN <= v <= INCH_MAX else None
 
-def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float) -> tuple:
+def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float, k: float = 1.0) -> tuple:
   """The rectangle (visual page units) of the detail drawn above a caption: as wide as a detail, as tall as one, and no taller than the next caption above."""
   vx, vy = cap_v
-  top = vy - REGION_HEIGHT_PT
+  top = vy - REGION_HEIGHT_PT * k
   for ox, oy in others_v:
-    if (ox, oy) != cap_v and abs(ox - vx) < NEIGHBOUR_REACH_PT and oy < vy - 12.0:
-      top = max(top, oy + 4.0)
-  return (max(0.0, vx - REGION_HALF_WIDTH_PT), max(0.0, top), min(Wv, vx + REGION_HALF_WIDTH_PT), max(0.0, vy - REGION_BELOW_PT))
+    if (ox, oy) != cap_v and abs(ox - vx) < NEIGHBOUR_REACH_PT * k and oy < vy - 12.0 * k:
+      top = max(top, oy + 4.0 * k)
+  return (max(0.0, vx - REGION_HALF_WIDTH_PT * k), max(0.0, top), min(Wv, vx + REGION_HALF_WIDTH_PT * k), max(0.0, vy - REGION_BELOW_PT * k))
 
 SCALES = (6, 8, 11)
 MIN_VOTES_BARS = 2
@@ -151,7 +152,7 @@ CLUSTER_PT = 5.0
 
 WORKERS = max(1, min(4, os.cpu_count() or 1))
 
-def _read_picture(page, region: tuple, Hv: float, Wv: float, deadline: float) -> dict:
+def _read_picture(page, region: tuple, Hv: float, Wv: float, deadline: float, k: float = 1.0) -> dict:
   
   from PIL import Image
   renders = []
@@ -159,7 +160,7 @@ def _read_picture(page, region: tuple, Hv: float, Wv: float, deadline: float) ->
     if time.monotonic() > deadline:
       break
     try:
-      renders.append((sc, page.render(scale=sc, crop=(region[0], Hv - region[3], Wv - region[2], region[1])).to_pil().convert("L")))
+      renders.append((sc / k, page.render(scale=sc / k, crop=(region[0], Hv - region[3], Wv - region[2], region[1])).to_pil().convert("L")))
     except Exception:
       continue
   
@@ -302,10 +303,10 @@ def interpret(picture: dict, box_ratio: float | None = None) -> dict:
 COLUMN_PAD_PT = (25.0, 28.0, 50.0, 8.0)
 COLUMN_MIN_BARS = 4
 
-def column_region(box_v: tuple, Wv: float, Hv: float) -> tuple:
+def column_region(box_v: tuple, Wv: float, Hv: float, k: float = 1.0) -> tuple:
   """The rectangle (visual page units) round the drawn outline of a column detail where its bar notes are written: a little to the left and above, more to the right
   where the arrows end, and just below."""
-  left, above, right, below = COLUMN_PAD_PT
+  left, above, right, below = (v * k for v in COLUMN_PAD_PT)
   return (max(0.0, box_v[0] - left), max(0.0, box_v[1] - above), min(Wv, box_v[2] + right), min(Hv, box_v[3] + below))
 
 def interpret_column(picture: dict) -> dict:
@@ -346,7 +347,8 @@ def interpret_column(picture: dict) -> dict:
 
 def column_bars(words: list, page, box_v: tuple, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool, deadline: float) -> dict:
   Wv, Hv = page_wh
-  region = column_region(box_v, Wv, Hv)
+  k = PU.factor(page_wh)
+  region = column_region(box_v, Wv, Hv, k)
   text_pic = PT.beam_picture(PT.region_words(words, region, crop, rotation, page_wh))
   got = interpret_column(text_pic)
   steel = got["steel"] or {}
@@ -390,13 +392,14 @@ def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rot
     ws = [w for _, _, w in ln.spans]
     lx, ly = sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws)
     near = sorted((math.hypot(c["x"] - lx, c["y"] - ly), i) for i, c in enumerate(caps))
-    if near and near[0][0] <= UPSTAND_REACH_PT:
+    if near and near[0][0] <= UPSTAND_REACH_PT * PU.factor(page_wh):
       caps[near[0][1]]["upstand"] = True
   for c in caps:
     if UPSTAND_WORD.search(c["text"]):
       c["upstand"] = True
   ocr = bool(use_ocr and ocr_available())
   Wv, Hv = page_wh
+  k = PU.factor(page_wh)
   def vis(px, py):
     u, v = to_visual(px, py, crop, rotation)
     return u * Wv, v * Hv
@@ -411,20 +414,20 @@ def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rot
 
   out = []
   for c in caps:
-    region = _region(cap_v[id(c)], others, Wv, Hv)
+    region = _region(cap_v[id(c)], others, Wv, Hv, k)
     rec = {"mark": c["mark"], "caption": c["text"], "kind": c["kind"], "upstand": bool(c.get("upstand")), "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
       "width_in": None, "depth_in": None, "steel": None, "read": "NONE", "checks": {}}
     inside = PT.region_words(words, region, crop, rotation, page_wh)
     text_pic = PT.beam_picture(inside)
     got = interpret(text_pic)
     rec.update(width_in=got["width_in"], depth_in=got["depth_in"], steel=got["steel"], checks=got["checks"])
-    sized = region[2] - region[0] > 20 and region[3] - region[1] > 20
+    sized = region[2] - region[0] > 20 * k and region[3] - region[1] > 20 * k
     
     if _whole(got):
       rec["read"] = "TEXT"            
     elif ocr and sized and time.monotonic() < deadline:
       try:
-        picture = _read_picture(page, region, Hv, Wv, deadline)
+        picture = _read_picture(page, region, Hv, Wv, deadline, k)
         merged = {k: text_pic[k] + picture[k] for k in ("bars", "stirrups", "dims")}
         got = interpret(merged)
         rec.update(width_in=got["width_in"], depth_in=got["depth_in"], steel=got["steel"], checks=got["checks"])

@@ -124,6 +124,8 @@ def _measured_as(row) -> str:
     return "Excluded: not a concrete element"
   if "QTO_MESH_MISMATCH" in codes:
     return "Model quantity, disagrees with 3D geometry: review" + suffix
+  if source == "GEOMETRY" and "QUANTITY_FROM_MESH" in codes:
+    return "Geometry is the measure: closed 3D mesh volume, openings cut" + suffix
   if kind in ("EXTRUDED_PROFILE", "AXIS_SWEPT") and source != "QTO":
     return ("Exact profile x length" if kind == "AXIS_SWEPT" else "Exact profile x depth") + suffix
   if source == "QTO":

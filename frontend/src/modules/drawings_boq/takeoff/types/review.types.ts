@@ -130,6 +130,7 @@ export interface SteelMark {
   kg_each: number;
   kg: number;
   concrete_m3: number | null;
+  lines?: Array<{ role: string | null; bar: number | string | null; dia_mm: number | null; count: number | string | null; cut_m: number | null; kg: number | null }>;
 }
 
 export interface SteelRollup {

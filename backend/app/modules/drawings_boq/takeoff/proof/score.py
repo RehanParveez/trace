@@ -38,7 +38,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -402,6 +402,43 @@ def options_view(accs: list) -> dict:
     "groups": [{"kind": g["kind"], "caption": g["caption"], "floor": g["floor"], "sheet_no": g["sheet_no"], "state": g["state"], "default": g["default"],
       "options": [{"value": o["value"], "text": o["text"], "pages": o["pages"], "items": o["items"], "live": o["live"]} for o in g["options"]]} for g in view["groups"]]}
 
+STEEL_STAGE_OF = {"FOUNDATION": "BASEMENT", "BASEMENT": "BASEMENT", "GROUND": "GROUND", "FIRST": "FIRST", "SECOND": "SECOND", "ROOF": "ROOF"}
+
+def steel_view(case: dict, ledger: list, floor_of: dict, steel_stats: dict | None = None) -> dict | None:
+  rows = [r for r in ledger if (r.get("work_item_code") or "") == "STL-REBAR"]
+  qs_rows = [e for e in case.get("expected") or [] if e.get("family") == "STEEL" and e.get("qs") not in (None, 0)]
+  if not rows and not qs_rows:
+    return None
+  
+  by: dict = {}
+  for r in rows:
+    floor = floor_of.get(str(r.get("level_id"))) if r.get("level_id") else None
+    slot = by.setdefault(floor or "NO_FLOOR", {"measured": 0.0, "estimated": 0.0, "members": 0})
+    kg = float(r.get("quantity") or 0.0)
+    slot["estimated" if "STEEL_ESTIMATED" in (r.get("warnings") or ()) else "measured"] += kg
+    slot["members"] += 1
+    
+  qs: dict = {}
+  for e in qs_rows:
+    parts = str(e["key"]).split("/")
+    stage = "ALL" if len(parts) < 2 or parts[1] == "ALL" else "OTHERS" if parts[1] == "OTHERS" else STEEL_STAGE_OF.get(parts[1], parts[1])
+    qs[stage] = qs.get(stage, 0.0) + float(e["qs"])
+    
+  out = []
+  for stage in [s for s in ("BASEMENT", "GROUND", "FIRST", "SECOND", "ROOF") if s in qs or s in by] + [s for s in ("OTHERS", "ALL") if s in qs]:
+    mine = by.get(stage) or {"measured": 0.0, "estimated": 0.0, "members": 0}
+    ours = mine["measured"] + mine["estimated"] if stage not in ("OTHERS", "ALL") else None
+    diff = _pct(ours, qs.get(stage)) if (ours is not None and qs.get(stage)) else None
+    out.append({"stage": stage, "qs": qs.get(stage), "trace": None if ours is None else round(ours, 1), "measured_kg": round(mine["measured"], 1), "estimated_kg": round(mine["estimated"], 1),
+      "members": mine["members"], "diff_pct_qs": None if diff is None else round(diff, 1), "within_10": diff is not None and abs(diff) <= 10.0})
+  total = sum(s["measured"] + s["estimated"] for s in by.values())
+  total_qs = sum(qs.values())
+  stats = steel_stats or {}
+  return {"stages": out, "total_trace": round(total, 1), "total_qs": round(total_qs, 1) if qs else None, "total_diff_pct": None if not (qs and total) else round(_pct(total, total_qs), 1),
+    "measured_kg": round(sum(s["measured"] for s in by.values()), 1), "estimated_kg": round(sum(s["estimated"] for s in by.values()), 1),
+    "within_10": sum(1 for s in out if s["within_10"]), "of": sum(1 for s in out if s["diff_pct_qs"] is not None),
+    "reason": stats.get("reason"), "outside_band": stats.get("outside_band") or {}}
+
 def decisions_view(accs: list) -> dict:
   from app.modules.drawings_boq.takeoff.extract import conflicts as CF
   rows: list = []
@@ -438,7 +475,68 @@ def engine_digest(ledger: list, floor_of: dict) -> str:
     str(((r.get("trace") or {}).get("label")) or "")] for r in ledger)
   return hashlib.sha256(json.dumps(items, sort_keys=True, default=str).encode()).hexdigest()
 
-def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = BM.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None) -> tuple:
+MOVE_PCT = 1.0
+
+def quantities_view(ledger: list, floor_of: dict) -> dict:
+  """What the engine measured, summed per work item, floor and unit: {"CODE|FLOOR|unit": total}. Not part of the hash; the robustness run compares it."""
+  out: dict = {}
+  for r in ledger:
+    k = f"{r.get('work_item_code') or '?'}|{floor_of.get(str(r.get('level_id'))) if r.get('level_id') else ''}|{r.get('unit') or ''}"
+    out[k] = round(out.get(k, 0.0) + float(r.get("quantity") or 0.0), 6)
+  return dict(sorted(out.items()))
+
+def _moves(clean: dict, now: dict) -> list:
+  out = []
+  for k in sorted(set(clean) | set(now)):
+    a, b = clean.get(k), now.get(k)
+    if (a or 0.0) < 1e-6 and (b or 0.0) < 1e-6:
+      continue
+    if a is None or a < 1e-6:
+      pct = 100.0
+    elif b is None:
+      pct = 100.0
+    else:
+      pct = abs(b - a) / abs(a) * 100.0
+    out.append({"key": k, "clean": a, "now": b, "pct": round(pct, 2)})
+  return sorted(out, key=lambda m: (-m["pct"], m["key"]))
+
+def robust_run(case: dict, files: dict, profile, rule_set, catalog, clean: dict, *, ready_only: bool, page_budget: float, rules, keep: dict) -> dict:
+  import tempfile
+  from app.modules.drawings_boq.takeoff.proof import perturb as PB, robustness as RBS
+  variants = (("rescale 0.5", lambda b: PB.rescale(b, 0.5)), ("rescale 2.0", lambda b: PB.rescale(b, 2.0)), ("rotate view 90", lambda b: PB.rotate_view(b, 90)))
+  base_reads = {n: rows for n, rows in keep.get("reads") or []}
+  out: dict = {}
+  for vname, fn in variants:
+    with tempfile.TemporaryDirectory() as tmp:
+      moved_files = {}
+      for name in case["pdfs"]:
+        with open(files[name], "rb") as fh:
+          data = fh.read()
+        path = os.path.join(tmp, name)
+        with open(path, "wb") as fh:
+          fh.write(fn(data))
+        moved_files[name] = path
+        
+      k2: dict = {}
+      try:
+        doc2, _t = run_case(case, moved_files, profile, rule_set, catalog, ready_only=ready_only, page_budget=page_budget, both=False, rules=rules, keep=k2)
+      except Exception as exc:
+        out[vname] = {"error": f"{type(exc).__name__}: {str(exc)[:160]}"}
+        continue
+    moves = _moves(clean.get("quantities") or {}, doc2.get("quantities") or {})
+    over = [m for m in moves if m["pct"] > MOVE_PCT]
+    new_reads = {n: rows for n, rows in k2.get("reads") or []}
+    
+    pages = {}
+    for n, rows in base_reads.items():
+      s = RBS.score(rows, new_reads.get(n) or [])
+      pages[n] = {"pages": s["pages"], "changed": s["pages_changed"], "unread": s["pages_unread"], "families": {f: v["recall"] for f, v in s["families"].items() if v["recall"] is not None and v["recall"] < 1.0}}
+    out[vname] = {"worst_pct": moves[0]["pct"] if moves else 0.0, "worst_key": moves[0]["key"] if moves else None, "quantities": len(moves), "moved": len(over), "top": over[:20], "reads": pages,
+      "lines_within_10": doc2["summary"]["within_10"], "problems": len(doc2.get("problems") or [])}
+  worst = max((v.get("worst_pct", 0.0) for v in out.values()), default=0.0)
+  return {"move_pct": MOVE_PCT, "worst_pct": worst, "variants": out}
+
+def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only: bool = False, page_budget: float = BM.PAGE_BUDGET_S, reader=None, both: bool = True, rules: dict | None = None, keep: dict | None = None) -> tuple:
   t0 = time.monotonic()
   reads, problems, timings = [], [], {}
   whole = None
@@ -466,8 +564,13 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     reads.append((name, rows))
     timings[f"read {name}"] = round(time.monotonic() - t, 1)
 
+  if keep is not None:
+    keep["reads"] = reads
+  steel_by_policy: dict = {}
+
   def engine(policy_ready: bool) -> tuple:
     accs, ledger, errors, tallies = [], [], [], []
+    steel_by_policy[policy_ready] = []
     for name, rows in reads:
       acc = OA.accept_case(case["name"], [(name, rows)], profile, ready_only=policy_ready)
       accs.append(acc)
@@ -476,6 +579,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
       inputs = OA.build_inputs(acc)
       printed = acc.printed[next(iter(acc.printed))] if acc.printed else {}
       res = OR.run_engine(inputs, profile, rule_set, printed, case=case["name"])
+      steel_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("steel") or {})
 
       for e in res.errors:
         errors.append({"pdf": name, **(e if isinstance(e, dict) else {"message": str(e)})})
@@ -513,6 +617,12 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     doc["rules"] = rules
   floor_all = {str(k): v for a in accs for k, v in a.floor_of.items()}
   doc["engine_digest"] = engine_digest(ledger, floor_all)
+  steel_runs = steel_by_policy.get(main_ready) or []
+  steel_stats = {"reason": next((s.get("reason") for s in steel_runs if s.get("reason")), None) if not any(s.get("ran") for s in steel_runs) else None,
+    "outside_band": {fam: {"members": sum(((s.get("outside_band") or {}).get(fam) or {}).get("members", 0) for s in steel_runs)} for fam in sorted({f for s in steel_runs for f in (s.get("outside_band") or {})})}}
+  steel = steel_view(case, ledger, floor_all, steel_stats)
+  if steel:
+    doc["steel"] = steel
   view = stage_view(case, ledger, floor_all, catalog)
   if view:
     doc["stage_view"] = view
@@ -525,6 +635,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   doc["warnings"] = warnings_view(ledger)
   doc["fact_decisions"] = decisions_view(accs)
   doc["options"] = options_view(accs)
+  doc["quantities"] = quantities_view(ledger, floor_all)
   doc["hash"] = digest(doc)
   doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
@@ -571,6 +682,24 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
   if doc.get("warnings"):
     wv = doc["warnings"]
     out += [f"**Rows with a warning** (not part of the hash): {wv['with_warnings']} of {wv['rows']} ledger rows ({wv['share_pct']}%); {wv['without_conflict_codes']} ({wv['share_pct_without_conflict_codes']}%) when the two warnings that a decision now carries are left out. Most often: " + ", ".join(f"{c} {n}" for c, n in wv["by_code"][:8]) + ".", ""]
+  if doc.get("steel"):
+    sv = doc["steel"]
+    out += [f"**Steel by stage** (not part of the hash): {sv['total_trace']:,} kg, {sv['measured_kg']:,} from printed bars and {sv['estimated_kg']:,} from the usual band" + (f"; the QS has {sv['total_qs']:,} ({sv['total_diff_pct']:+.1f}%)" if sv.get("total_qs") else "") + (f"; the steel stage did not run: {sv['reason']}" if sv.get("reason") else "") + ".", ""]
+    out += ["| Stage | QS | Trace | Bars | Band | Difference |", "|---|---|---|---|---|---|"]
+    for s in sv["stages"]:
+      out += [f"| {s['stage']} | {s['qs'] if s['qs'] is not None else ''} | {s['trace'] if s['trace'] is not None else ''} | {s['measured_kg']} | {s['estimated_kg']} | {'' if s['diff_pct_qs'] is None else format(s['diff_pct_qs'], '+.1f') + '%'} |"]
+    if sv.get("outside_band"):
+      out += ["", "Members whose own bars give a steel intensity outside the usual band (STEEL_OUTSIDE_BAND): " + ", ".join(f"{k} {v['members']}" for k, v in sv["outside_band"].items()) + "."]
+    out += [""]
+  if doc.get("robust"):
+    rb = doc["robust"]
+    out += [f"**Robustness** (not part of the hash; more than {rb['move_pct']:g}% is a move): worst move {rb['worst_pct']:g}%."]
+    for vn, v in rb["variants"].items():
+      if "error" in v:
+        out += [f"- {vn}: failed, {v['error']}"]
+        continue
+      out += [f"- {vn}: worst {v['worst_pct']:g}% ({v['worst_key']}); {v['moved']} of {v['quantities']} quantities move by more than {rb['move_pct']:g}%; {v['lines_within_10']} lines within 10% of the QS."]
+    out += [""]
   if doc.get("options"):
     ov = doc["options"]
     out += [f"**Options and revisions** (not part of the hash): {len(ov['groups'])} groups, {ov['to_decide']} open; {ov['print_an_option']} of {ov['sheets']} sheets print an option label, {ov['print_a_stamp']} print a revision stamp."]
@@ -640,6 +769,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--cases-dir", help=f"the folder with the PDFs (default: {CIO.CASES_DIR_ENV})")
   ap.add_argument("--page-budget", type=float, default=BM.PAGE_BUDGET_S)
   ap.add_argument("--no-other", action="store_true", help="skip the second policy (faster)")
+  ap.add_argument("--robust", action="store_true", help="read each case again with every sheet half and twice the size and turned a quarter, and record the worst move of any quantity")
   ap.add_argument("--seed-rules", action="store_true", help="ignore the company_rules of the cases and run on the seed rules alone")
   ap.add_argument("--rules", help="run every case named under this rules file (a company_rules file), whatever its case.yaml says")
 
@@ -678,7 +808,12 @@ def main(argv: list | None = None) -> int:
       continue
     note = {"file": rule_file, "count": len(rows), "keys": sorted({r["key"] for r in rows}), "note": CASE_RULES_NOTE} if rows else None
     with RB.using_case(rows):
-      doc, timings = run_case(case, files, profile, rule_set, catalog, ready_only=args.ready_only, page_budget=args.page_budget, both=not args.no_other, rules=note)
+      keep: dict = {}
+      doc, timings = run_case(case, files, profile, rule_set, catalog, ready_only=args.ready_only, page_budget=args.page_budget, both=not args.no_other, rules=note, keep=keep)
+      if args.robust:
+        t = time.monotonic()
+        doc["robust"] = robust_run(case, files, profile, rule_set, catalog, doc, ready_only=args.ready_only, page_budget=args.page_budget, rules=note, keep=keep)
+        timings["robustness run"] = round(time.monotonic() - t, 1)
     base = load_baseline(args.baseline, name)
     folder_out = os.path.join(args.out, name)
     os.makedirs(folder_out, exist_ok=True)

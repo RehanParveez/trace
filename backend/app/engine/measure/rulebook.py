@@ -277,6 +277,13 @@ def seed_problems() -> list:
       out.append((key, "missing from the seed"))
     elif not _same(s.value, expected):
       out.append((key, f"seed {s.value!r}, code {expected!r}"))
+  from app.engine.measure import steel_rules as SRL
+  for key, expected in SRL.seed_expect().items():
+    s = SEED.get(key)
+    if s is None:
+      out.append((key, "missing from the seed"))
+    elif not _same(s.value, expected):
+      out.append((key, f"seed {s.value!r}, code {expected!r}"))
   for field in ("name", "answered_before", "answered_on", "latest"):
     if not QS_SEED.get(field):
       out.append((f"qs.{field}", "missing from the seed"))

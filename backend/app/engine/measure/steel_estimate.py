@@ -2,7 +2,8 @@ from __future__ import annotations
 from decimal import Decimal
 from app.engine.measure.member_steel import clean_steel
 from dataclasses import dataclass, field
-from app.engine.measure.rebar import ESTIMATE_BANDS, REBAR_WORK_ITEM
+from app.engine.measure.rebar import REBAR_WORK_ITEM
+from app.engine.measure import steel_rules as SRL
 from math import sqrt
 from app.engine.measure.takeoff import range_trace
 from app.engine.measure.units import q6, q4
@@ -15,9 +16,9 @@ FORMULA = "PDF_MEMBER_STEEL_WEIGHT"
 RECIPE = "PDF_MEMBER_STEEL_ESTIMATE"
 CODE_ESTIMATED = "STEEL_ESTIMATED"
 SWITCH, SLAB_RULE, WASTAGE = "steel_estimate_from_volume", "slab_steel_kg_per_m2", "steel_wastage_pct"
-FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB"}
+FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB", "RCC_WALL": "WALL", "STAIR": "STAIR", "TANK": "TANK", "PARAPET": "PARAPET"}
 SLAB_CATEGORIES = ("SLAB", "CHAJJA", "BALCONY_SLAB")
-NOT_ESTIMATED = ("RCC_WALL", "STAIR", "TANK", "PARAPET")
+NOT_ESTIMATED = ()
 RULE_PCT = 10.0
 MM3_PER_M3 = Decimal("1000000000")
 MM2_PER_M2 = Decimal("1000000")
@@ -53,7 +54,7 @@ def figure(category: str, length_mm, width_mm, depth_mm, rule: Decimal, wastage:
     return None
   volume = length * width * depth / MM3_PER_M3
   area = length * width / MM2_PER_M2
-  low_i, likely_i, high_i = ESTIMATE_BANDS[family]
+  low_i, likely_i, high_i = SRL.band(family)
   if category in SLAB_CATEGORIES and rule > 0:
     basis, unit, quantity = "QS_RULE", "kg/m2", area
     rate, rate_low, rate_high = rule, rule * Decimal("0.9"), rule * Decimal("1.1")
@@ -108,7 +109,7 @@ def estimate_steel(ctx, params: dict, members, counted: set) -> EstimateResult:
     for i in range(m.count):
       eid = m.element_ids[i] if i < len(m.element_ids) else None
       solid_id = uuid5(ctx.run_id, f"solid|steel-est|{m.measurement_id}|{i}")
-      solids.append(Solid(id=solid_id, element_id=eid, ifc_type={"LINTEL": "IfcBeam", "BEAM": "IfcBeam", "COLUMN": "IfcColumn", "FOOTING": "IfcFooting"}.get(m.category, "IfcSlab"),
+      solids.append(Solid(id=solid_id, element_id=eid, ifc_type={"LINTEL": "IfcBeam", "BEAM": "IfcBeam", "COLUMN": "IfcColumn", "FOOTING": "IfcFooting", "RCC_WALL": "IfcWall", "PARAPET": "IfcWall", "STAIR": "IfcStair", "TANK": "IfcTank"}.get(m.category, "IfcSlab"),
         role=m.category, level_id=m.level_id, geometry_kind="QTO_ONLY", classification_confidence=m.confidence, confidence_factor=FACTOR_ASSUMED,
         component_type="DERIVED_STEEL", gross_length_m=q6(m.length_mm / Decimal("1000")), status="REVIEW_REQUIRED"))
       est = {"basis": basis, "unit": unit, "quantity": str(q6(fg["quantity"])), "kg_per_unit": str(fg["rate"]), "kg_per_unit_low": str(fg["rate_low"]), "kg_per_unit_high": str(fg["rate_high"]),

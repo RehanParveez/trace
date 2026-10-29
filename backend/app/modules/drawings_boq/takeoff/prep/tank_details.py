@@ -9,6 +9,7 @@ from app.modules.drawings_boq.takeoff.prep import picture_cache as PC
 from app.modules.drawings_boq.takeoff.prep import picture_text as PT
 from app.engine.measure import stages as S
 from app.modules.drawings_boq.takeoff.prep import schedules as SCH
+from app.modules.drawings_boq.takeoff.prep import page_unit as PU
 
 CAPTION = re.compile(r"\b(?:SECTION|DETAIL|PLAN)\b.*\b(?:TANKS?|W\.?\s?T)\b|\b(?:TANKS?|W\.?\s?T)\b.*\b(?:SECTION|DETAIL|PLAN)\b", re.I)
 WALL_NOTE = re.compile(r"^\s*(\d{1,2})?\s*([½¼¾]|\d/\d)?\s*[\"”″]\s*(?:TH[K]?\.?\s*:?\s*)?R\.?\s?C\.?\s?C\.?\s+(WALL|SLAB)\b", re.I)
@@ -100,7 +101,7 @@ def note_inches(whole: str | None, frac: str | None) -> float | None:
     extra = VULGAR[frac] if frac in VULGAR else int(frac.split("/")[0]) / max(1, int(frac.split("/")[1]))
   return float(whole or 0) + extra
 
-def wall_notes(lines: list, vis, caps_v: list) -> dict:
+def wall_notes(lines: list, vis, caps_v: list, k: float = 1.0) -> dict:
   """id(caption) -> [{"part": "WALL" | "SLAB", "inches", "text"}]: the thickness notes of the tank details ('4½"TH: R.C.C WALL', '5" TH: R.C.C SLAB', '6" R.C.C WALL'), each given to the
   tank caption below it whose written line stands nearest across (the figure is wider than its caption), within the reach the region of a caption has. A brick wall or an insulation sheet is not a note of the tank's concrete."""
   out: dict = {}
@@ -120,7 +121,7 @@ def wall_notes(lines: list, vis, caps_v: list) -> dict:
     for c, (cx, cy) in caps_v:
       xs = sorted(vis(*pt)[0] for pt in c["span"])
       across = 0.0 if xs[0] <= nx <= xs[-1] else min(abs(nx - xs[0]), abs(nx - xs[-1]))
-      if 0 < cy - ny <= 2.0 * REGION_HEIGHT_PT and across <= 2.0 * REGION_HALF_WIDTH_PT:
+      if 0 < cy - ny <= 2.0 * REGION_HEIGHT_PT * k and across <= 2.0 * REGION_HALF_WIDTH_PT * k:
         below.append((across, cy - ny, c))
     if not below:
       continue
@@ -142,15 +143,15 @@ def captions(lines: list) -> list:
       "plan_in": sized["plan_in"] if sized else None, "depth_in": sized["depth_in"] if sized else None, "span": [[ws[0].cx, ws[0].cy], [ws[-1].cx, ws[-1].cy]]})
   return out
 
-def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float) -> tuple:
+def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float, k: float = 1.0) -> tuple:
   vx, vy = cap_v
-  top = vy - REGION_HEIGHT_PT
+  top = vy - REGION_HEIGHT_PT * k
   for ox, oy in others_v:
-    if (ox, oy) != cap_v and abs(ox - vx) < NEIGHBOUR_REACH_PT and oy < vy - 12.0:
-      top = max(top, oy + 4.0)
-  return (max(0.0, vx - REGION_HALF_WIDTH_PT), max(0.0, top), min(Wv, vx + REGION_HALF_WIDTH_PT), max(0.0, vy - 3.0))
+    if (ox, oy) != cap_v and abs(ox - vx) < NEIGHBOUR_REACH_PT * k and oy < vy - 12.0 * k:
+      top = max(top, oy + 4.0 * k)
+  return (max(0.0, vx - REGION_HALF_WIDTH_PT * k), max(0.0, top), min(Wv, vx + REGION_HALF_WIDTH_PT * k), max(0.0, vy - 3.0 * k))
 
-def read_lengths(page, region: tuple, Wv: float, Hv: float, deadline: float, status: dict | None = None) -> list:
+def read_lengths(page, region: tuple, Wv: float, Hv: float, deadline: float, status: dict | None = None, k: float = 1.0) -> list:
   """[{"text", "inches", "votes", "source": "PICTURE"}]: the sizes written in the picture, most often read first. A reading is one size at one rendering size and
   one turn of the picture, so the same label found by both of the reading modes at one size counts once. The readings run side by side (the reader is a
   separate program). A picture read before (same pixels) comes from the cache. `status["complete"]` says whether every reading ran before the deadline; a cut-off
@@ -161,7 +162,7 @@ def read_lengths(page, region: tuple, Wv: float, Hv: float, deadline: float, sta
   imgs = []
   for sc in SCALES:
     try:
-      img = page.render(scale=sc, crop=(region[0], Hv - region[3], Wv - region[2], region[1])).to_pil().convert("L")
+      img = page.render(scale=sc / k, crop=(region[0], Hv - region[3], Wv - region[2], region[1])).to_pil().convert("L")
     except Exception:
       continue
   
@@ -236,6 +237,7 @@ def read_tank_details(words: list, page, page_wh: tuple, crop: tuple, rotation: 
     return {"ocr": "NONE", "details": []}
   ocr = bool(use_ocr and ocr_available())
   Wv, Hv = page_wh
+  k = PU.factor(page_wh)
   def vis(px, py):
     u, v = to_visual(px, py, crop, rotation)
     return u * Wv, v * Hv
@@ -249,10 +251,10 @@ def read_tank_details(words: list, page, page_wh: tuple, crop: tuple, rotation: 
   except Exception:
     pass
 
-  notes_of = wall_notes(lines, vis, [(c, cap_v[id(c)]) for c in caps])
+  notes_of = wall_notes(lines, vis, [(c, cap_v[id(c)]) for c in caps], k)
   out = []
   for c in caps:
-    region = _region(cap_v[id(c)], others, Wv, Hv)
+    region = _region(cap_v[id(c)], others, Wv, Hv, k)
     rec = {"kind": c["kind"], "view": c["view"], "caption": c["text"], "x": round(c["x"], 1), "y": round(c["y"], 1), "region": [round(v, 1) for v in region],
       "lengths": [], "bar_notes": bar_notes(lines, vis, region), "read": "NONE", "plan_in": c.get("plan_in"), "depth_in": c.get("depth_in"), "wall_notes": notes_of.get(id(c), [])}
     text_lengths = PT.tank_lengths(PT.region_words(words, region, crop, rotation, page_wh))
@@ -262,7 +264,7 @@ def read_tank_details(words: list, page, page_wh: tuple, crop: tuple, rotation: 
       try:
         status: dict = {}
         
-        picture = read_lengths(page, region, Wv, Hv, time.monotonic() + each, status)
+        picture = read_lengths(page, region, Wv, Hv, time.monotonic() + each, status, k)
         rec["lengths"] = merge_lengths(text_lengths, picture)
         if picture:
           rec["read"] = "TEXT+OCR" if text_lengths else "OCR"

@@ -1,4 +1,4 @@
-version: 4
+version: 5
 qs: {name: "M. Junaid", answered_before: "2026-10-19", answered_on: "2026-10-22", latest: "2026-10-26"}
 rules:
 
@@ -73,3 +73,28 @@ rules:
   - {key: stage.lintel_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.parapet_height_mm, scope: {}, value: 914.4, unit: "mm", cls: JUDGEMENT}
   - {key: finish.wall_faces, scope: {}, value: "OUTLINE", unit: null, cls: JUDGEMENT}
+  - {key: steel.unit_weight_divisor, scope: {}, value: 162.2, unit: "kg/m = d2 / value", cls: STANDARD}
+  - {key: steel.band.SLAB.low, scope: {}, value: 55, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.SLAB.likely, scope: {}, value: 67, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.SLAB.high, scope: {}, value: 78.5, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.BEAM.low, scope: {}, value: 78.5, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.BEAM.likely, scope: {}, value: 118, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.BEAM.high, scope: {}, value: 157, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.COLUMN.low, scope: {}, value: 78.5, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.COLUMN.likely, scope: {}, value: 196, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.COLUMN.high, scope: {}, value: 392, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.FOOTING.low, scope: {}, value: 50, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.FOOTING.likely, scope: {}, value: 75, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.FOOTING.high, scope: {}, value: 100, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.WALL.low, scope: {}, value: 40, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.WALL.likely, scope: {}, value: 65, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.WALL.high, scope: {}, value: 100, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.STAIR.low, scope: {}, value: 60, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.STAIR.likely, scope: {}, value: 90, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.STAIR.high, scope: {}, value: 130, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.TANK.low, scope: {}, value: 80, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.TANK.likely, scope: {}, value: 110, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.TANK.high, scope: {}, value: 150, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.PARAPET.low, scope: {}, value: 40, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.PARAPET.likely, scope: {}, value: 65, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: steel.band.PARAPET.high, scope: {}, value: 100, unit: "kg/m3", cls: JUDGEMENT}

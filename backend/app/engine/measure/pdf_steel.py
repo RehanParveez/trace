@@ -1,7 +1,8 @@
 from __future__ import annotations
 from decimal import Decimal
 from dataclasses import dataclass, field
-from app.engine.measure.rebar import REBAR_WORK_ITEM, ESTIMATE_BANDS
+from app.engine.measure.rebar import REBAR_WORK_ITEM
+from app.engine.measure import steel_rules as SRL
 from app.engine.measure.ifc_rebar import FORMULA_IFC_BAR
 from app.engine.measure.models import CalculationContext, LedgerEntry, Solid
 from uuid import uuid5
@@ -45,10 +46,11 @@ MAX_MARKS = 5000
 CODE_ASSUMED = "STEEL_ASSUMED"
 CODE_INTENSITY = "STEEL_INTENSITY_OUT_OF_RANGE"
 CODE_RING_ZONE = "STEEL_RING_ZONE_ASSUMED"
-STEEL_CODES = (CODE_ASSUMED, CODE_INTENSITY, CODE_RING_ZONE)
+CODE_OUTSIDE_BAND = "STEEL_OUTSIDE_BAND"
+STEEL_CODES = (CODE_ASSUMED, CODE_INTENSITY, CODE_RING_ZONE, CODE_OUTSIDE_BAND)
 MM = Decimal("1000")
 MM3_PER_M3 = Decimal("1000000000")
-INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB"}
+INTENSITY_FAMILY = {"LINTEL": "BEAM", "BEAM": "BEAM", "COLUMN": "COLUMN", "FOOTING": "FOOTING", "SLAB": "SLAB", "CHAJJA": "SLAB", "BALCONY_SLAB": "SLAB", "RCC_WALL": "WALL", "STAIR": "STAIR", "TANK": "TANK", "PARAPET": "PARAPET"}
 
 @dataclass(frozen=True)
 class SteelResult:
@@ -81,8 +83,22 @@ def grade_groups(lines: list, bare: Decimal, grade: dict, ring_grade: dict, wast
 
 def intensity_range(category: str) -> tuple | None:
   family = INTENSITY_FAMILY.get(category)
-  band = ESTIMATE_BANDS.get(family or "")
+  band = SRL.band(family)
   return (band[0], band[2]) if band else None
+
+def member_band(category: str, bare_kg, volume_m3) -> dict | None:
+  """STEEL_OUTSIDE_BAND: the steel built from a member's own bars, per m3 of its concrete, against the usual band of its family (rule rows steel.band.*). None when it is inside or has no band. The two
+  check each other: a bar-built figure outside the band means the bars or the size were read wrong, or the member is unusual; the figure is never changed."""
+  family = INTENSITY_FAMILY.get(category)
+  band = SRL.band(family)
+  if band is None or not volume_m3 or volume_m3 <= 0:
+    return None
+  value = Decimal(str(bare_kg)) / Decimal(str(volume_m3))
+  if value < band[0]:
+    return {"status": "BELOW_BAND", "kg_per_m3": str(q4(value)), "band": [str(band[0]), str(band[2])]}
+  if value > band[2]:
+    return {"status": "ABOVE_BAND", "kg_per_m3": str(q4(value)), "band": [str(band[0]), str(band[2])]}
+  return None
 
 def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) -> SteelResult:
   """Reinforcement weight (kg) for the members read from a PDF whose bars are printed or typed with them. One row per mark, so a row opens the mark it
@@ -114,6 +130,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
   lap_table = ((getattr(ctx, "drawing_params", None) or {}).get("lap_table_mm") or None) if params[LAP_PARAM]["source"] == "drawing" else None
   counted = counted_measurement_ids(extra_ledger)
   skipped: dict = {}
+  outside: dict = {}
   by_category: dict = {}
   by_dia: dict = {}
   family_volume: dict = {}
@@ -163,6 +180,10 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     factor = FACTOR_ASSUMED if (assumed or ring_info) else FACTOR_CONFIRMED
     confidence = max(Decimal("0"), min(Decimal("1"), q4(m.confidence * factor)))
     warnings = ([CODE_ASSUMED] if assumed else []) + ([CODE_RING_ZONE] if ring_info else [])
+    own = member_band(cat, bare, m.length_mm * m.width_mm * m.depth_mm / MM3_PER_M3)
+    if own:
+      warnings.append(CODE_OUTSIDE_BAND)
+      outside.setdefault(INTENSITY_FAMILY[cat], []).append({"tag": m.tag, "kg_per_m3": own["kg_per_m3"], "status": own["status"], "page_no": m.page_no})
     spec = {"kind": DERIVED, "recipe": RECIPE_CODE, "item": "STEEL", "category": cat,
       "params": {n: params[n]["value"] for n in (*used, WASTAGE_PARAM, *(("ring_dense_default", "ring_dense_spacing_mm") if ring_info else ()))},
       "basis": {n: params[n]["source"] for n in (*used, *(("ring_dense_spacing_mm",) if ring_info else ()))}}
@@ -228,7 +249,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     if vol <= 0:
       continue
     value_kgm3 = family_kg[fam] / vol
-    low, high = ESTIMATE_BANDS[fam][0], ESTIMATE_BANDS[fam][2]
+    low, high = SRL.band(fam)[0], SRL.band(fam)[2]
     status = "BELOW_RANGE" if value_kgm3 < low else "ABOVE_RANGE" if value_kgm3 > high else "IN_RANGE"
     intensity[fam] = {"kg": str(q6(family_kg[fam])), "concrete_m3": str(q6(vol)), "kg_per_m3": str(q4(value_kgm3)), "range": [str(low), str(high)], "status": status}
   stats.update({
@@ -237,6 +258,7 @@ def measure_pdf_steel(ctx: CalculationContext, ledger: list, extra_ledger=()) ->
     "by_category": {k: {"marks": v["marks"], "kg": str(q6(v["kg"])), "bare_kg": str(q6(v["bare_kg"]))} for k, v in sorted(by_category.items())},
     "by_diameter": {k: {"kg": str(q6(v["kg"])), "length_m": str(q6(v["length_m"]))} for k, v in sorted(by_dia.items(), key=lambda kv: Decimal(kv[0]))},
     "intensity": intensity,
+    "outside_band": {k: {"members": len(v), "examples": v[:5]} for k, v in sorted(outside.items())},
     "by_grade": {k or "NONE": {"marks": v["marks"], "kg": str(q6(v["kg"]))} for k, v in sorted(by_grade.items())},
     "grade_clash": {k: v for k, v in sorted(grade_clash.items())},
     "split_marks": split_marks,

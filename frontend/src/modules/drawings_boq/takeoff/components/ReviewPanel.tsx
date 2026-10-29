@@ -287,6 +287,26 @@ export function SteelBlock({ data, loading, error, inputs, onInput, bad }: Steel
           </tbody>
         </table>
       ) : null}
+      {(data?.marks ?? []).some((m) => (m.lines ?? []).length > 0) ? (
+        <details data-testid="review-steel-schedule">
+          <summary className="cursor-pointer font-semibold text-[var(--color-text-primary)]">{t("takeoff.review.steel.schedule", "Steel schedule by member")}</summary>
+          <ul className="mt-1 space-y-1.5">
+            {(data?.marks ?? []).filter((m) => (m.lines ?? []).length > 0).slice(0, 60).map((m) => (
+              <li key={m.item_ids.join("-")} data-testid={`steel-mark-${m.tag ?? m.item_ids[0]}`}>
+                <span className="font-semibold">{m.tag ?? m.category}</span> <span className={MUTED}>· {m.floor ?? ""} · {m.count} {t("takeoff.review.steel.nos", "nos")} · {kgText(m.kg)}{m.steel_text ? ` · ${m.steel_text}` : ""}</span>
+                <table className="mt-0.5 w-full text-left text-[11.5px]">
+                  <thead><tr className="text-[var(--color-text-muted)]"><th>{t("takeoff.review.steel.bar", "Bars")}</th><th className="text-right">{t("takeoff.review.steel.dia", "Dia mm")}</th><th className="text-right">{t("takeoff.review.steel.number", "Number")}</th><th className="text-right">{t("takeoff.review.steel.cut", "Length m")}</th><th className="text-right">kg</th></tr></thead>
+                  <tbody>
+                    {(m.lines ?? []).map((ln, i) => (
+                      <tr key={i}><td>{ln.role ?? ""}</td><td className="text-right">{ln.dia_mm !== null && ln.dia_mm !== undefined ? ln.dia_mm.toFixed(1) : (ln.bar ?? "")}</td><td className="text-right">{ln.count ?? ""}</td><td className="text-right">{ln.cut_m !== null ? ln.cut_m.toFixed(2) : ""}</td><td className="text-right">{ln.kg !== null ? ln.kg.toFixed(1) : ""}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
       {data?.unprinted?.enabled && data.unprinted.members > 0 ? (
         <p data-testid="review-steel-unprinted" className="text-[var(--color-warning)]">
           {t("takeoff.review.steel.unprinted", {

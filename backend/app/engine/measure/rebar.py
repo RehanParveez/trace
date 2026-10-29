@@ -26,6 +26,10 @@ ESTIMATE_BANDS = {
   "BEAM": (Decimal("78.5"), Decimal("118"), Decimal("157")),
   "COLUMN": (Decimal("78.5"), Decimal("196"), Decimal("392")),
   "FOOTING": (Decimal("50"), Decimal("75"), Decimal("100")),
+  "WALL": (Decimal("40"), Decimal("65"), Decimal("100")),
+  "STAIR": (Decimal("60"), Decimal("90"), Decimal("130")),
+  "TANK": (Decimal("80"), Decimal("110"), Decimal("150")),
+  "PARAPET": (Decimal("40"), Decimal("65"), Decimal("100")),
 }
 
 ESTIMATE_DIA_MIX = {
@@ -110,7 +114,8 @@ def unit_weight(sizes, designation, dia_mm: Decimal, grade) -> tuple[Decimal, li
   size = lookup_size(sizes, designation, dia_mm, grade)
   if size is not None:
     return size.kg_per_m, []
-  return (dia_mm * dia_mm / KG_M_DIVISOR).quantize(Decimal("0.0001")), ["UNIT_WEIGHT_COMPUTED"]
+  from app.engine.measure import steel_rules as SRL
+  return (dia_mm * dia_mm / SRL.divisor()).quantize(Decimal("0.0001")), ["UNIT_WEIGHT_COMPUTED"]
 
 def pick_rule(rules, family, role, bar_role: str, allow_all: bool = True):
   scopes = [s for s in (str(role or "").upper(), family) if s]

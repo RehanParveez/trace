@@ -167,7 +167,9 @@ def rollup(rows: list, conventions: dict | None = None, ranges: dict | None = No
       rule_check["bar_kg"] += kg
       rule_check["rule_kg"] += area_m2 * est_rule * (1 + wastage / 100)
     marks.append({"item_ids": [str(r.id)], "tag": r.tag, "category": r.category, "family": fam, "floor": _floor(f), "count": n, "decision": r.decision,
-      "steel_text": f.get("steel_text"), "source": src, "kg_each": float(got["kg_each"]), "kg": float(kg), "concrete_m3": float(conc) if conc is not None else None})
+      "steel_text": f.get("steel_text"), "source": src, "kg_each": float(got["kg_each"]), "kg": float(kg), "concrete_m3": float(conc) if conc is not None else None,
+      "lines": [{"role": ln.get("role") or ln.get("kind"), "bar": ln.get("bar"), "dia_mm": float(ln["dia_mm"]) if ln.get("dia_mm") is not None else None, "count": ln.get("count"),
+        "cut_m": float(ln["cut_length_m"]) if ln.get("cut_length_m") is not None else None, "kg": float(ln["kg"]) if ln.get("kg") is not None else None} for ln in got["lines"]]})
     slot = by_family.setdefault(fam, {"marks": 0, "members": 0, "kg": Decimal("0"), "bare_kg": Decimal("0"), "kg_sized": Decimal("0"), "concrete_m3": Decimal("0")})
     slot["marks"] += 1
     slot["members"] += n

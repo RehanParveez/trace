@@ -29,8 +29,9 @@ def dia_mm(g: dict) -> Decimal:
 bar_dia_mm_of = dia_mm
 
 def kg_per_m(g: dict) -> Decimal:
+  from app.engine.measure import steel_rules as SRL
   d = dia_mm(g)
-  return (d * d / KG_M_DIVISOR).quantize(Decimal("0.0001"))
+  return (d * d / SRL.divisor()).quantize(Decimal("0.0001"))
 
 def _bar_of(g) -> dict | None:
   """The size of a set as {"bar": n} or {"dia_mm": d}, or None when it does not read."""
