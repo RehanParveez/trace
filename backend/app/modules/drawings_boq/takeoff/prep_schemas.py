@@ -150,7 +150,7 @@ class ColumnDetail(BaseModel):
   mark: str
   caption: str | None = None
   page_no: int | None = None
-  read: Literal["OCR", "OCR_SQUARE", "PARTIAL", "NONE", "TIMEOUT"] = "NONE"
+  read: Literal["TEXT", "TEXT_SQUARE", "OCR", "OCR_SQUARE", "PARTIAL", "NONE", "TIMEOUT"] = "NONE"
   w_in: float | None = None
   h_in: float | None = None
 

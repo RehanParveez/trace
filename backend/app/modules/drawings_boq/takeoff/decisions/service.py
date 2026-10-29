@@ -56,9 +56,43 @@ class DecisionsService(ExtractService):
         "options": [{"value": o["value"], "label": o["label"], "text": o["text"], "is_default": o["value"] == catalog.default_value(d), "in_force": o["value"] == eff[k],
           "effect": (fx["options"] or {}).get(o["value"])} for o in d["options"]],
         "stale_pages": stale_pages, "accepted_stale": sum(1 for r in rows if r.decision == "ACCEPTED" and r.sheet_id in set(stale_ids))})
-    return {"drawing_id": drawing_id, "items": items, "stale_pages": sorted(every_stale), "sheets_read": len(exts)}
+    return {"drawing_id": drawing_id, "items": items, "stale_pages": sorted(every_stale), "sheets_read": len(exts), "facts": await self._facts(org, drawing_id), "sheets": await self._sheets(org, drawing_id)}
+
+  async def _sheets(self, org: UUID, drawing_id: UUID) -> list:
+    from app.modules.drawings_boq.takeoff.extract.revisions_service import RevisionService
+    return (await RevisionService(self.session).revisions(org, drawing_id))["groups"]
+
+  async def _facts(self, org: UUID, drawing_id: UUID) -> list:
+    from app.modules.drawings_boq.takeoff.extract.review_service import ReviewService
+    got = await ReviewService(self.session).conflicts(org, drawing_id)
+    
+    out = []
+    for d in got["decisions"]:
+      k = catalog.fact_kind(d["kind"]) or {}
+      out.append({"id": d["id"], "kind": d["kind"], "title": k.get("title", d["kind"]), "question": d["question"], "affects": k.get("affects", ""), "tolerance": k.get("tolerance", 0.0), "unit": k.get("unit", ""),
+        "facts": d["facts"], "rows": d["rows"], "default": d["default"], "chosen": d["chosen"], "open": d["open"], "options": [{**o} for o in d["options"]]})
+    return out
 
   async def choose(self, org: UUID, user_id: UUID, drawing_id: UUID, payload) -> dict:
+    if payload.decision_id:
+      from app.modules.drawings_boq.takeoff.extract.revisions_service import RevisionService
+      from app.modules.drawings_boq.takeoff.extract.revisions_schemas import ChooseRevisionsRequest, RevisionChoice
+      groups = await RevisionService(self.session).revisions(org, drawing_id)
+      if any(g["id"] == payload.decision_id for g in groups["groups"]):
+        if payload.value is None:
+          raise TraceException("Name the value to use for this decision.", status_code=422, code="DECISION_VALUE")
+        done = await RevisionService(self.session).choose_revisions(org, user_id, drawing_id, ChooseRevisionsRequest(choices=[RevisionChoice(id=payload.decision_id, value=payload.value)]))
+        if done["blocked"]:
+          raise TraceException(done["blocked"][0]["message"], status_code=422, code=done["blocked"][0]["code"])
+        return await self.view(org, drawing_id)
+      from app.modules.drawings_boq.takeoff.extract.review_service import ReviewService
+      from app.modules.drawings_boq.takeoff.extract.review_schemas import ResolveConflictsRequest
+      if payload.value is None:
+        raise TraceException("Name the value to use for this decision.", status_code=422, code="DECISION_VALUE")
+      done = await ReviewService(self.session).resolve(org, user_id, drawing_id, ResolveConflictsRequest(decisions={payload.decision_id: payload.value}))
+      if not done["resolved"] and not any(d["id"] == payload.decision_id for d in done["conflicts"]["decisions"]):
+        raise TraceException("This decision is not asked for this drawing.", status_code=422, code="DECISION_UNKNOWN")
+      return await self.view(org, drawing_id)
     d = catalog.by_key(payload.key)
 
     if d is None:

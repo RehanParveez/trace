@@ -38,7 +38,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -357,6 +357,81 @@ def stage_view(case: dict, ledger: list, floor_of: dict, catalog: dict) -> dict 
     return None
   return {"lines": out, "within_10": sum(1 for l in out if l["within_10"]), "of": len(out)}
 
+def members_view(accs: list) -> dict | None:
+  from app.modules.drawings_boq.takeoff.model import members as MB
+  from app.modules.drawings_boq.takeoff.extract import layout_groups as LG
+  from app.modules.drawings_boq.takeoff.extract.ready import mark_skip
+  plans = [{**r, "drawing_id": str(did)} for a in accs for did, rd in a.read.items() for r in rd if "title" in r and "stats" in r]
+  found = MB.build(plans, None, mark_skip(LG.undecided_sheets(plans)))
+  return found.summary() if found.members else None
+
+def wall_faces_view(accs: list) -> dict | None:
+  
+  from app.modules.drawings_boq.takeoff.extract import finishes as FN, config as XC
+  from app.modules.drawings_boq.takeoff.model import walls as MW
+  rows = []
+  for a in accs:
+    for did, rd in a.read.items():
+      for r in rd:
+        cands = r.get("candidates") or []
+        walls = FN.plaster_walls([c for c in cands if c.category == "WALL" and c.decision == "ACCEPTED"])
+        rooms = FN.usable_rooms([c for c in cands if c.category == "ROOM" and c.decision == "ACCEPTED"])
+        mm = r.get("mm_per_pt")
+        if not walls or not rooms or not mm:
+          continue
+        g = MW.build(walls, rooms, mm, None, XC.WALL_GAP_CLEAR_MAX_MM)
+        faces = FN.plaster_faces(walls, mm)
+        sides = g.sides()
+        rows.append({"page_no": r["page_no"], "floor": (r.get("title") or {}).get("level_hint"), "walls": len(walls), "rooms": len(rooms), "closed": g.closed, "open_rooms": sorted(g.open_rooms),
+          "outline_in_m": round(sum(f["in"] * f["l"] for f in faces), 1), "outline_out_m": round(sum(f["out"] * f["l"] for f in faces), 1),
+          "graph_in_m": round(sum(s[0] * f["l"] for s, f in zip(sides, faces)), 1), "graph_out_m": round(sum(s[1] * f["l"] for s, f in zip(sides, faces)), 1)})
+  rows.sort(key=lambda x: (str(x["floor"]), x["page_no"]))
+  return {"floors": rows, "closed": sum(1 for x in rows if x["closed"]), "of": len(rows)} if rows else None
+
+def options_view(accs: list) -> dict:
+  from app.modules.drawings_boq.takeoff.extract import revisions as RV
+  sheets: list = []
+  for a in accs:
+    for did, rd in a.read.items():
+      for r in rd:
+        sheets.append({"sheet_id": (str(did), r["page_no"]), "page_no": r["page_no"], "title": r.get("title"), "stats": r.get("stats"), "identity": ((getattr(a.sheets.get(r.get("sheet_id")), "prep_meta", None) or {}).get("identity")),
+          "candidates": r.get("candidates") or [], "drawing_id": str(did)})
+  view = RV.build(sheets)
+  ident = [s["identity"] or {} for s in sheets]
+  return {"sheets": len(sheets), "print_an_option": sum(1 for i in ident if i.get("option")), "print_a_stamp": sum(1 for i in ident if i.get("stamps")), "to_decide": view["to_decide"], "tolerance": view["tolerance"],
+    "groups": [{"kind": g["kind"], "caption": g["caption"], "floor": g["floor"], "sheet_no": g["sheet_no"], "state": g["state"], "default": g["default"],
+      "options": [{"value": o["value"], "text": o["text"], "pages": o["pages"], "items": o["items"], "live": o["live"]} for o in g["options"]]} for g in view["groups"]]}
+
+def decisions_view(accs: list) -> dict:
+  from app.modules.drawings_boq.takeoff.extract import conflicts as CF
+  rows: list = []
+  sheets: dict = {}
+  for a in accs:
+    for did, rd in a.read.items():
+      for r in rd:
+        sid = (str(did), r["page_no"])
+        sheets[sid] = {"page_no": r["page_no"], "discipline": CF.sheet_discipline(r.get("title"))}
+        for c in r.get("candidates") or []:
+          rows.append(SimpleNamespace(id=str(getattr(c, "id", None) or f"{did}-{r['page_no']}-{getattr(c, 'key', None) or getattr(c, 'ckey', '')}"), decision=getattr(c, "decision", "NEW"), sheet_id=sid, category=c.category, facts=c.facts, params=c.params, tag=c.tag, count=c.count, label=c.label, notes=c.notes))
+  view = CF.build(rows, sheets, [], None)
+  return {"per_row_conflicts": len(view["conflicts"]), "facts": len(view["facts"]), "open": view["open_decisions"], "tolerances": view["tolerances"],
+    "decisions": [{"kind": d["kind"], "id": d["id"], "facts": d["facts"], "rows": d["rows"], "default": d["default"], "options": [{"value": o["value"], "label": o["label"], "trust": o["trust"], "quantity": o["quantity"], "unit": o["unit"],
+      "sources": [f"{s['discipline'].lower()} p{s['page_no'] if s['page_no'] is not None else '-'} {s['basis']}" for s in o["sources"]]} for o in d["options"]]} for d in view["decisions"]]}
+
+def warnings_view(ledger: list) -> dict:
+  carried = ("SLAB_THICKNESS_DISAGREES", "BEAM_SECTIONS_LISTED")
+  by: dict = {}
+  hit = own = 0
+  for r in ledger:
+    codes = [str(c) for c in (r.get("warnings") or [])]
+    hit += 1 if codes else 0
+    own += 1 if any(c not in carried for c in codes) else 0
+    for c in set(codes):
+      by[c] = by.get(c, 0) + 1
+  n = len(ledger)
+  return {"rows": n, "with_warnings": hit, "share_pct": round(100.0 * hit / n, 1) if n else 0.0, "without_conflict_codes": own, "share_pct_without_conflict_codes": round(100.0 * own / n, 1) if n else 0.0,
+    "by_code": sorted(by.items(), key=lambda kv: (-kv[1], kv[0]))[:14]}
+
 def engine_digest(ledger: list, floor_of: dict) -> str:
   """The hash of the engine's output: the ledger rows as (work item, floor, unit, quantity, label), sorted. It does not depend on how the score reads them."""
   items = sorted([r.get("work_item_code") or "?", str(floor_of.get(str(r.get("level_id"))) if r.get("level_id") else ""), r.get("unit") or "", str(round(float(r.get("quantity") or 0), 6)),
@@ -441,6 +516,15 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   view = stage_view(case, ledger, floor_all, catalog)
   if view:
     doc["stage_view"] = view
+  mem = members_view(accs)
+  if mem:
+    doc["members"] = mem
+  wf = wall_faces_view(accs)
+  if wf:
+    doc["wall_faces"] = wf
+  doc["warnings"] = warnings_view(ledger)
+  doc["fact_decisions"] = decisions_view(accs)
+  doc["options"] = options_view(accs)
   doc["hash"] = digest(doc)
   doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
@@ -480,6 +564,31 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     out += [f"**Run under the rules of the case:** {r['file']}, {r['count']} rules ({', '.join(r['keys'])}). {r['note']}", ""]
   if doc.get("engine_digest"):
     out += [f"Engine output `{doc['engine_digest'][:16]}`: the hash of the ledger rows themselves. A change to how the score reads the ledger changes the hash above and not this one.", ""]
+  if doc.get("members"):
+    mm = doc["members"]
+    out += ["**Members** (not part of the hash): " + "; ".join(f"{k.lower()}s {v['members']} ({v['sightings']} sightings, {v['on_several_sheets']} seen on more than one sheet)" for k, v in mm["by_kind"].items())
+      + f". Marks on several floors: {len(mm['marks_on_several_floors'])}, with different counts: {mm['marks_with_different_counts']}. Sheets not laid over their base plan: {len(mm['unregistered_sheets'])}. Decisions: {mm['decisions']}.", ""]
+  if doc.get("warnings"):
+    wv = doc["warnings"]
+    out += [f"**Rows with a warning** (not part of the hash): {wv['with_warnings']} of {wv['rows']} ledger rows ({wv['share_pct']}%); {wv['without_conflict_codes']} ({wv['share_pct_without_conflict_codes']}%) when the two warnings that a decision now carries are left out. Most often: " + ", ".join(f"{c} {n}" for c, n in wv["by_code"][:8]) + ".", ""]
+  if doc.get("options"):
+    ov = doc["options"]
+    out += [f"**Options and revisions** (not part of the hash): {len(ov['groups'])} groups, {ov['to_decide']} open; {ov['print_an_option']} of {ov['sheets']} sheets print an option label, {ov['print_a_stamp']} print a revision stamp."]
+    for g in ov["groups"]:
+      out += [f"- {g['kind']} · {g['caption']}{' · sheet ' + g['sheet_no'] if g['sheet_no'] else ''} · {g['state']} · default {g['default'] or 'none'}: " + " | ".join(f"{o['value']} on page {', '.join(str(x) for x in o['pages'])} ({o['live']} items measured)" for o in g["options"])]
+    out += [""]
+  if doc.get("fact_decisions"):
+    fd = doc["fact_decisions"]
+    out += [f"**Open decisions** (not part of the hash): {fd['open']} of {len(fd['decisions'])} decisions; they replace {fd['per_row_conflicts']} per-row conflicts; {fd['facts']} facts. Tolerance per kind: " + "; ".join(f"{k} {t['tolerance']:g} {t['unit']}" for k, t in fd["tolerances"].items()) + ".", ""]
+    for d in fd["decisions"]:
+      out += [f"- {d['kind']} ({', '.join(d['facts'][:3])}{' and %d more' % (len(d['facts']) - 3) if len(d['facts']) > 3 else ''}; {d['rows']} rows; default {d['default'] or 'none, tied'}): " + " | ".join(f"{o['label']} [{o['trust']}] {o['quantity']} {o['unit']} from {', '.join(o['sources'])}" for o in d["options"])]
+    if fd["decisions"]:
+      out += [""]
+  if doc.get("wall_faces"):
+    wf = doc["wall_faces"]
+    out += [f"**Wall faces** ({wf['closed']} of {wf['of']} plan sheets have walls that close; not part of the hash)", "", "| Page | Floor | Walls | Rooms | Closed | Rooms in the open | Inside, outline (m) | Inside, graph (m) | Outside, outline (m) | Outside, graph (m) |", "|---|---|---|---|---|---|---|---|---|---|"]
+    out += [f"| {x['page_no']} | {x['floor']} | {x['walls']} | {x['rooms']} | {'yes' if x['closed'] else 'no'} | {', '.join(x['open_rooms'])} | {x['outline_in_m']} | {x['graph_in_m']} | {x['outline_out_m']} | {x['graph_out_m']} |" for x in wf["floors"]]
+    out += [""]
   if doc.get("stage_view"):
     v = doc["stage_view"]
     out += [f"**Brick and plaster by stage** ({v['within_10']} of {v['of']} within 10% of the QS; not part of the hash)", "", "| Line | Floor | Stage | Unit | QS | Trace | Diff % | Stages found |", "|---|---|---|---|---|---|---|---|"]

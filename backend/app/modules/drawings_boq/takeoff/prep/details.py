@@ -10,7 +10,7 @@ import time
 from collections import Counter
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, to_visual
 
-COLUMN_CAPTION = re.compile(r"^\s*(?:(?P<m1>[A-Z]{1,3}\s*-?\s*\d{1,2})\s+COLUMN(?:\s+DETAILS?)?|COLUMN\s+(?:DETAILS?\s+)?(?P<m2>[A-Z]{1,3}\s*-?\s*\d{1,2}))\s*$", re.I)
+COLUMN_CAPTION = re.compile(r"^\s*(?:(?P<m1>[A-Z]{1,3}\s*-?\s*\d{1,2})\s+COLUMN(?:\s+(?:DETAILS?|SEC(?:TION)?\.?))?|COLUMN\s+(?:(?:DETAILS?|SEC(?:TION)?\.?)\s+)?(?P<m2>[A-Z]{1,3}\s*-?\s*\d{1,2}))\s*$", re.I)
 LABEL = re.compile(r"^(\d{1,2}(?:\.\d)?)\s*[\"”″'’′]{1,2}$")
 INCH_MIN, INCH_MAX = 8.0, 48.0
 BOX_MIN_PT, BOX_MAX_PT = 8.0, 90.0
@@ -210,6 +210,36 @@ def _variants(strip, vertical: bool, far_start: bool):
     for rot in ((-90, 90) if vertical else (0,)):
       yield rot, psm, (im.rotate(rot, expand=True, fillcolor=255) if rot else im)
 
+def text_box_labels(words: list, vis, box_vis: list) -> dict:
+  x0, y0, x1, y1 = box_vis
+  depth = max(STRIP_DEPTH_PT, 0.8 * max(x1 - x0, y1 - y0))
+  tw, th = 0.15 * (x1 - x0), 0.15 * (y1 - y0)
+  found: dict = {False: [], True: []}
+  raw: list = []
+  
+  for w in words:
+    v = parse_label(w.text)
+    if v is None:
+      continue
+    vx, vy = vis(w.cx, w.cy)
+    if x0 + tw <= vx <= x1 - tw and y0 - depth <= vy < y0:
+      found[False].append((y0 - vy, v))
+    elif x0 + tw <= vx <= x1 - tw and y1 < vy <= y1 + depth:
+      found[False].append((vy - y1, v))
+    elif y0 + th <= vy <= y1 - th and x0 - depth <= vx < x0:
+      found[True].append((x0 - vx, v))
+    elif y0 + th <= vy <= y1 - th and x1 < vx <= x1 + depth:
+      found[True].append((vx - x1, v))
+    else:
+      continue
+    raw.append(w.text)
+  out: dict = {"w_in": None, "h_in": None, "raw": raw[:16]}
+  for vertical, key in ((False, "w_in"), (True, "h_in")):
+    values = {v for _, v in found[vertical]}
+    if len(values) == 1:
+      out[key] = values.pop()
+  return out
+
 def read_box_labels(page, box_vis: list, page_wh: tuple, deadline: float) -> dict:
   """The two dimensions written beside a detail box, in inches: {w_in, h_in, w_votes, h_votes, raw}. A value needs MIN_AGREE agreeing readings
   and a clear margin; the sides are read in turn and reading stops as soon as the horizontal and the vertical label are both settled."""
@@ -279,9 +309,16 @@ def read_column_details(words: list, index, page, page_wh: tuple, crop: tuple, r
     segs, _, _ = index.window(c["x"] - SEARCH_REACH_PT, c["y"] - SEARCH_REACH_PT, c["x"] + SEARCH_REACH_PT, c["y"] + SEARCH_REACH_PT)
     box = find_box(segs, c["x"], c["y"], vis)
     rec = {"mark": c["mark"], "caption": c["text"], "x": round(c["x"], 1), "y": round(c["y"], 1),
-           "box": box["native"] if box else None, "w_in": None, "h_in": None, "read": "NONE"}
+      "box": box["native"] if box else None, "w_in": None, "h_in": None, "read": "NONE"}
     
-    if box and ocr:
+    if box:
+      txt = text_box_labels(words, vis, box["visual"])
+      bw, bh = box["visual"][2] - box["visual"][0], box["visual"][3] - box["visual"][1]
+      if txt["w_in"] and txt["h_in"]:
+        rec.update(w_in=txt["w_in"], h_in=txt["h_in"], raw=txt["raw"], read="TEXT")
+      elif (txt["w_in"] or txt["h_in"]) and abs(bw - bh) <= SQUARE_TOL * max(bw, bh):
+        rec.update(w_in=txt["w_in"] or txt["h_in"], h_in=txt["w_in"] or txt["h_in"], raw=txt["raw"], read="TEXT_SQUARE")
+    if box and ocr and rec["read"] == "NONE":
       got = read_box_labels(page, box["visual"], page_wh, deadline)
       rec.update(w_in=got["w_in"], h_in=got["h_in"], w_votes=got["w_votes"], h_votes=got["h_votes"], raw=got["raw"])
       bw, bh = box["visual"][2] - box["visual"][0], box["visual"][3] - box["visual"][1]

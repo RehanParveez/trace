@@ -15,8 +15,12 @@ from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import Choos
 from app.modules.drawings_boq.takeoff.extract.floor_union_service import FloorUnionService
 from app.modules.drawings_boq.takeoff.extract.layout_groups_schemas import ChooseLayoutsRequest, ChooseLayoutsResponse, LayoutGroupsResponse
 from app.modules.drawings_boq.takeoff.extract.layout_groups_service import LayoutGroupService
+from app.modules.drawings_boq.takeoff.extract.revisions_schemas import ChooseRevisionsRequest, ChooseRevisionsResponse, RevisionsResponse
+from app.modules.drawings_boq.takeoff.extract.revisions_service import RevisionService
 from app.modules.drawings_boq.takeoff.extract.mark_entities_schemas import ChooseMarksRequest, ChooseMarksResponse, MarkEntitiesResponse
 from app.modules.drawings_boq.takeoff.extract.mark_entities_service import MarkEntityService
+from app.modules.drawings_boq.takeoff.extract.members_schemas import MembersResponse
+from app.modules.drawings_boq.takeoff.extract.members_service import MemberService
 from app.modules.drawings_boq.takeoff.extract.review_schemas import ConflictsResponse, LinksResponse, ResolveConflictsRequest, ResolveConflictsResponse, SteelRollupResponse
 from app.modules.drawings_boq.takeoff.extract.review_service import ReviewService
 from app.modules.drawings_boq.takeoff.approve_schemas import ApproveReadyRequest, ApproveReadyResponse
@@ -110,11 +114,29 @@ async def choose_layout_groups(
 ):
   return await LayoutGroupService(session).choose_layouts(_org(current_user), current_user.id, drawing_id, payload)
 
+@router.get("/drawings/{drawing_id}/takeoff/revisions", response_model=RevisionsResponse)
+async def revisions(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await RevisionService(session).revisions(_org(current_user), drawing_id)
+
+@router.post("/drawings/{drawing_id}/takeoff/revisions/choose", response_model=ChooseRevisionsResponse)
+async def choose_revisions(
+  drawing_id: UUID, payload: ChooseRevisionsRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await RevisionService(session).choose_revisions(_org(current_user), current_user.id, drawing_id, payload)
+
 @router.get("/drawings/{drawing_id}/takeoff/mark-entities", response_model=MarkEntitiesResponse)
 async def mark_entities(
   drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
   return await MarkEntityService(session).mark_entities(_org(current_user), drawing_id)
+
+@router.get("/drawings/{drawing_id}/takeoff/members", response_model=MembersResponse)
+async def members(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await MemberService(session).members(_org(current_user), drawing_id)
 
 @router.post("/drawings/{drawing_id}/takeoff/mark-entities/choose", response_model=ChooseMarksResponse)
 async def choose_mark_entities(

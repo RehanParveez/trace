@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field
 from uuid import UUID
+from app.modules.drawings_boq.takeoff.extract.revisions_schemas import RevisionGroup
 
 class DecisionFigure(BaseModel):
   key: str
@@ -39,12 +40,44 @@ class DecisionItem(BaseModel):
   stale_pages: list[int] = Field(default_factory=list, description="Pages read before the choice in force; they are read again to apply it.")
   accepted_stale: int = Field(default=0, description="Items already accepted from those pages; they keep the value they were accepted with.")
 
+class FactDecisionSource(BaseModel):
+  discipline: str
+  page_no: int | None = None
+  basis: str
+
+class FactDecisionOption(BaseModel):
+  value: str
+  label: str | None = None
+  trust: str | None = None
+  default: bool = False
+  quantity: float | None = None
+  unit: str | None = None
+  sources: list[FactDecisionSource] = Field(default_factory=list)
+
+class FactDecisionItem(BaseModel):
+  id: str
+  kind: str
+  title: str
+  question: str
+  affects: str
+  tolerance: float
+  unit: str
+  facts: list[str]
+  rows: int
+  default: str | None = Field(default=None, description="The value from the most trusted source; None when two values tie.")
+  chosen: str | None = None
+  open: bool = True
+  options: list[FactDecisionOption]
+
 class DecisionsResponse(BaseModel):
   drawing_id: UUID
   items: list[DecisionItem]
+  sheets: list[RevisionGroup] = Field(default_factory=list, description="Options the set prints (which was built) and sheets printed with more than one revision (which is current), one decision each, with the sheets of each value.")
+  facts: list[FactDecisionItem] = Field(default_factory=list, description="Printed facts the sheets read differently, one decision each, with the sources and the rows they affect.")
   stale_pages: list[int] = Field(default_factory=list)
   sheets_read: int = 0
 
 class ChooseDecisionRequest(BaseModel):
-  key: str
+  key: str = Field(default="", description="A decision of the catalog; empty when decision_id names a fact decision.")
+  decision_id: str | None = Field(default=None, description="A fact decision (from facts): value is then the option's value.")
   value: str | None = Field(default=None, description="The option chosen; null goes back to the default.")

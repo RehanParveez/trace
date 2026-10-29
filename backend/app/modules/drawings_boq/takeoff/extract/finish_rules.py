@@ -8,7 +8,9 @@ KITCHEN_BAND = "finish.kitchen_band"
 CEILING_INCLUDES = "finish.ceiling_includes"
 PCC_UNDER = "finish.pcc_under"
 ROOM_TYPE = RT.ROOM_TYPE_KEY
-KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE)
+WALL_FACES = "finish.wall_faces"
+OUTLINE, GRAPH = "OUTLINE", "GRAPH"
+KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES)
 
 TO_CEILING = "CEILING"
 FULL = "full"
@@ -16,7 +18,7 @@ NONE = "NONE"
 DADO_FALLBACK_MM = 2134.0
 DEFAULT_FLOOR_ITEM = "FIN-FLOOR"
 HEIGHT_MIN_MM, HEIGHT_MAX_MM = 300.0, 6000.0
-SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",)}
+SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: ()}
 HEIGHT_TYPES = (*RT.WET, RT.KITCHEN)
 TYPED_FLOORS = {RT.PORCH: "FLOOR_PORCH", RT.TERRACE: "FLOOR_TERRACE", RT.PASSAGE: "FLOOR_PASSAGE", RT.LAWN: "FLOOR_LAWN"}
 TYPED_ITEM_CODE = {"FLOOR_PORCH": "FIN-PORCH-TILE", "FLOOR_TERRACE": "FIN-TERRACE-TILE", "FLOOR_PASSAGE": "FIN-PAVING", "FLOOR_LAWN": "FIN-PAVING"}
@@ -121,6 +123,11 @@ def checked(key: str, scope, raw):
     if not isinstance(raw, (list, tuple)) or not raw or any(x not in RT.TYPES for x in raw) or len(set(raw)) != len(raw):
       raise ValueError("Give a list of room types, each once.")
     return [str(x) for x in raw]
+  if key == WALL_FACES:
+    v = raw.strip().upper() if isinstance(raw, str) else ""
+    if v not in (OUTLINE, GRAPH):
+      raise ValueError(f"The sides of a wall are decided by {OUTLINE} (the outline of the floor) or {GRAPH} (the wall graph).")
+    return v
   if not isinstance(raw, str) or raw not in RT.TYPES:
     raise ValueError("The type of a room is one of " + ", ".join(RT.TYPES) + ".")
   if not (scope or {}).get("room_name"):
@@ -129,4 +136,4 @@ def checked(key: str, scope, raw):
 
 def seed_expect() -> dict:
   every = [t for t in RT.TYPES if t not in RT.NOT_FLOORED]
-  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every)}
+  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE}

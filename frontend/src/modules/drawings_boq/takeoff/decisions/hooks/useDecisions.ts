@@ -20,6 +20,8 @@ function useAfterChange(drawingId: string | undefined) {
   return () => {
     if (!drawingId) return;
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "decisions", drawingId] });
+    void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "review"] });
+    void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "candidates"] });
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "integrity", drawingId] });
   };
 }

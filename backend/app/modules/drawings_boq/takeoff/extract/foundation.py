@@ -343,7 +343,7 @@ def _outside_extent(walls: list, mm_per_pt: float):
   from app.engine.measure import readings as QS
   faces = FN.plaster_faces(walls, mm_per_pt)
   outer = [r for r in faces if r["out"]]
-  length_m = sum(float(r["l"]) for r in outer)
+  length_m = sum(float(r["l"]) * float(r["out"]) for r in outer)
   if length_m <= 0.0:
      return None
   height = float(QS.convention("basement_wall_height_mm"))

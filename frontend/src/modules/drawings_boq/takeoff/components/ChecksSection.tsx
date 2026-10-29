@@ -50,7 +50,7 @@ export function ChecksSection({ facts }: Props) {
                   <span className="font-semibold text-[var(--color-text-primary)]">{d.mark}</span>
                   {state === "NOT_READ" ? ` · ${t("drawings.checks.notRead", "size not read")}` : ` · ${detailSizeText(d)}`}
                   {state === "PARTIAL" ? ` · ${t("drawings.checks.partial", "only one side read")}` : ""}
-                  {d.read === "OCR_SQUARE" ? ` · ${t("drawings.checks.square", "square box, one side read")}` : ""}
+                  {d.read === "OCR_SQUARE" || d.read === "TEXT_SQUARE" ? ` · ${t("drawings.checks.square", "square box, one side read")}` : ""}
                   {d.page_no ? ` · ${t("drawings.checks.page", { defaultValue: "page {{p}}", p: d.page_no })}` : ""}
                 </li>
               );

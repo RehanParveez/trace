@@ -655,7 +655,7 @@ export interface ColumnDetail {
   mark: string;
   caption?: string | null;
   page_no?: number | null;
-  read: "OCR" | "OCR_SQUARE" | "PARTIAL" | "NONE";
+  read: "TEXT" | "TEXT_SQUARE" | "OCR" | "OCR_SQUARE" | "PARTIAL" | "NONE";
   w_in: number | null;
   h_in: number | null;
   steel_read?: "TEXT" | "TEXT+OCR" | "OCR" | "NONE" | "TIMEOUT" | "FAILED" | null;

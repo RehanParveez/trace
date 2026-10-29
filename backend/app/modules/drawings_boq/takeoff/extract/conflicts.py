@@ -1,6 +1,7 @@
 from __future__ import annotations
 import hashlib
 from app.engine.measure import readings as QS
+from app.modules.drawings_boq.takeoff.model import facts as FACTS
 
 STRUCTURAL, ARCHITECTURAL, UNKNOWN = "STRUCTURAL", "ARCHITECTURAL", "UNKNOWN"
 POLICIES = ("STRUCTURAL", "ARCHITECTURAL", "LARGER", "SMALLER", "AS_READ", "QS")
@@ -188,7 +189,84 @@ def build(rows: list, sheets: dict, sections: list | None = None, policy: dict |
   by_kind: dict = {}
   for c in found:
     by_kind[c["kind"]] = by_kind.get(c["kind"], 0) + 1
-  return {"conflicts": found, "policy": pol, "defaults": dict(DEFAULT_POLICY), "by_kind": by_kind, "undecided": sum(1 for c in found if c["governing_index"] is None)}
+  facts, decisions = FACTS.build([*readings(found), *agreed_readings(live)])
+  held = {d.id: d for d in decisions}
+  for c in found:
+    ptr = FACTS.point(c["kind"], FACTS.scope_of(c), c["values"])
+    c["fact_key"], c["decision_id"] = ptr["key"], ptr["decision_id"]
+  shown = []
+  for d in decisions:
+    rec = d.as_dict()
+    own = [c for c in found if c.get("decision_id") == d.id]
+    for o in rec["options"]:
+      qs = [v["quantity"] for c in own for v in c["values"] if FACTS.token(c["kind"], v) == o["value"] and v.get("quantity") is not None]
+      o["quantity"], o["unit"] = (round(sum(qs), 3) if qs else None), (own[0]["unit"] if own else None)
+    shown.append(rec)
+  return {"conflicts": found, "policy": pol, "defaults": dict(DEFAULT_POLICY), "by_kind": by_kind, "undecided": sum(1 for c in found if c["governing_index"] is None),
+    "facts": [f.as_dict() for f in facts], "decisions": shown, "open_decisions": sum(1 for d in held.values() if d.open), "tolerances": FACTS.TOLERANCE}
+
+def readings(found: list) -> list:
+  """What the facts are built from: one reading per row that has a conflict, with every value it prints and where."""
+  out = []
+  for c in found:
+    gi = c.get("governing_index")
+    chosen = FACTS.token(c["kind"], c["values"][gi]) if c.get("governing_by") == "CHOSEN" and gi is not None else None
+    out.append({"kind": c["kind"], "scope": FACTS.scope_of(c), "row_id": c["item_ids"][0], "chosen": chosen,
+      "values": [{"value_mm": v.get("value_mm"), "count": v.get("count"), "mark": v.get("mark"), "label": v.get("label"), "sources": v.get("sources") or []} for v in c["values"]]})
+  return out
+
+def agreed_readings(rows: list) -> list:
+  """Slabs and beams whose sheets print one value: the fact holds it and no decision is asked."""
+  out = []
+  for r in rows:
+    f = r.facts or {}
+    if r.category == "SLAB":
+      opts = f.get("thickness_options") or []
+      if opts and len({round(o["mm"] / SUBSTANTIVE_MM) for o in opts}) == 1:
+        out.append({"kind": SLAB, "scope": str(f.get("floor") or ""), "row_id": str(r.id), "chosen": None, "values": [{"value_mm": float(opts[0]["mm"]), "sources": [{"discipline": STRUCTURAL, "page_no": None, "basis": s} for s in opts[0].get("sources") or []]}]})
+    elif r.category == "BEAM":
+      opts = [o for o in f.get("section_options") or [] if o.get("depth_mm")]
+      if len(opts) == 1:
+        out.append({"kind": BEAM, "scope": str(r.tag or "Beam"), "row_id": str(r.id), "chosen": None, "values": [{"value_mm": float(opts[0]["depth_mm"]), "mark": opts[0].get("mark"), "sources": [{"discipline": STRUCTURAL, "page_no": None, "basis": "DETAIL"}]}]})
+  return out
+
+def point(row) -> bool:
+  f = dict(row.facts or {})
+  if row.category == "SLAB":
+    opts = f.get("thickness_options") or []
+    vals = [{"value_mm": float(o["mm"])} for o in sorted(opts, key=lambda o: o["mm"])]
+    scope = str(f.get("floor") or "")
+    kind = SLAB
+    
+  elif row.category == "BEAM":
+    opts = [o for o in f.get("section_options") or [] if o.get("depth_mm")]
+    vals = [{"value_mm": float(o["depth_mm"]), "mark": o["mark"]} for o in sorted(opts, key=lambda o: o["depth_mm"])]
+    scope, kind = str(row.tag or "Beam"), BEAM
+  else:
+    return False
+  if not vals:
+    return False
+
+  if kind == SLAB:
+    seen: dict = {}
+    for v in vals:
+      seen.setdefault(round(v["value_mm"] / SUBSTANTIVE_MM), v)
+    vals = list(seen.values())
+  f["fact"] = FACTS.point(kind, scope, vals)
+  row.facts = f
+  return True
+
+def expand_decisions(view: dict, chosen: dict | None) -> dict:
+  """{decision id: value} -> {conflict id: millimetres or count}, for every conflict the decision settles. A value the decision does not hold is left out."""
+  out: dict = {}
+  for did, tok in (chosen or {}).items():
+    for c in view["conflicts"]:
+      if c.get("decision_id") != did:
+        continue
+      v = next((v for v in c["values"] if FACTS.token(c["kind"], v) == str(tok)), None)
+      if v is not None:
+        out[c["id"]] = v["count"] if c["kind"] == COUNT else v["value_mm"]
+  return out
 
 def resolutions(conflicts: list, choices: dict | None = None, use_policy: bool = True) -> list:
   out = []

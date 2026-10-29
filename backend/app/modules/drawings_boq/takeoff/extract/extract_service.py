@@ -26,6 +26,7 @@ from app.engine.measure import takeoff as tk
 from app.modules.drawings_boq.takeoff import repository as repo_mod
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import conflicts as CF
+from app.modules.drawings_boq.takeoff.extract import revisions as RV
 from app.modules.drawings_boq.finish_schedule.common import work_item_catalog
 from app.modules.drawings_boq.takeoff.prep_schemas import AutoCalibrateRequest
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
@@ -42,7 +43,6 @@ from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.prep import project_facts as PF
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
-from app.modules.drawings_boq.takeoff.extract.column_shapes_service import reconcile_columns
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
 from app.modules.drawings_boq.takeoff.extract.slab_openings_service import reconcile_slab_openings
 from app.modules.drawings_boq.takeoff.detail_only.apply import apply_decisions as apply_detail_decisions
@@ -53,7 +53,6 @@ from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import CandidateResponse
 from app.modules.drawings_boq.takeoff import corrections as CR
 from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _status, run_extraction
-from app.modules.drawings_boq.takeoff.extract.structure import column_details
 from app.modules.drawings_boq.takeoff.levels import view_level_id
 from app.modules.drawings_boq.takeoff.schemas import MeasurementCreateRequest, MeasurementParams
 
@@ -355,7 +354,7 @@ class ExtractService:
       with QS.deciding(decided.overrides(drawing.ingestion_meta)):
         result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, site_only=site_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
-        col_details=column_details(sheet.prep_meta), floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"), pdf_type=(sheet.prep_meta or {}).get("pdf_type"), identity=(sheet.prep_meta or {}).get("identity"),
+        col_details=known["column_details"], floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"), pdf_type=(sheet.prep_meta or {}).get("pdf_type"), identity=(sheet.prep_meta or {}).get("identity"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
         imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts, electrical=electrical, mark_vocab=mark_vocab, opening_heights=opening_heights)
     except Exception:
@@ -446,6 +445,7 @@ class ExtractService:
     title = (sheet.prep_meta or {}).get("title") or {}
     sheet_floor = None if title.get("composite") else title.get("level_hint")
     aside = FS.set_aside_floors(list(old.values()), sheet_floor)
+    sheet_mark = RV.sheet_mark(list(old.values()))
     added = updated = 0
     seen: set = set()
     for c in found:
@@ -463,6 +463,7 @@ class ExtractService:
         self.session.add(row)
         added += 1
         mark = aside.get(FO.level_of(c) or sheet_floor) if c.category != "SLAB" else None
+        mark = mark or sheet_mark
         if mark is None and (c.facts or {}).get("drain_repeat"):
           mark = {"by": DR.REPEAT_BY, "page_no": c.facts["drain_repeat"]["page_no"]}
         if mark:
@@ -477,6 +478,7 @@ class ExtractService:
       kept = mark or ((row.facts or {}).get(FS.SET_ASIDE) if row.decision == "REJECTED" else None)
       row.confidence, row.facts, row.notes, row.source = Decimal(str(c.confidence)), ({**c.facts, FS.SET_ASIDE: kept} if kept else c.facts), c.notes, c.source
       row.extract_version, row.mm_per_pt = C.EXTRACT_VERSION, Decimal(str(mm_per_pt))
+      CF.point(row)
       CF.reapply(row, chosen)
     gone = [r.id for k, r in old.items() if k not in seen and r.decision != "ACCEPTED" and not (r.facts or {}).get("from_shapes")]
     await self.repo.delete_candidates(org, gone)

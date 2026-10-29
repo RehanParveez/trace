@@ -41,6 +41,7 @@ class ReviewService(FloorUnionService):
     sections = await self.prep.drawing_beam_sections(org, drawing_id)
     view = CF.build(rows, sheets, sections, payload.policy)
     picks = {k: v for k, v in (payload.choices or {}).items()}
+    picks.update(CF.expand_decisions(view, getattr(payload, "decisions", None)))
     wanted = CF.resolutions(view["conflicts"], picks, use_policy=payload.apply_policy)
     by_id = {str(r.id): r for r in rows}
     section_of = {norm_mark(str(s["mark"])): s for s in sections if s.get("mark")}

@@ -32,7 +32,7 @@ def column_detail_marks(sheets: list) -> dict:
     
       rec = by.setdefault(mark, {"pages": set(), "sizes": set(), "shown": mark})
       rec["pages"].add(sh.get("page_no"))
-      if d.get("read") in ("OCR", "OCR_SQUARE") and d.get("w_in") and d.get("h_in"):
+      if d.get("read") in ("TEXT", "TEXT_SQUARE", "OCR", "OCR_SQUARE") and d.get("w_in") and d.get("h_in"):
         rec["sizes"].add((min(d["w_in"], d["h_in"]), max(d["w_in"], d["h_in"])))
         
   out = {}

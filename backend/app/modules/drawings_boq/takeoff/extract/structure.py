@@ -122,7 +122,7 @@ def column_details(meta: dict | None) -> dict:
   A mark whose details give different sizes is marked as disagreeing and carries no size."""
   by: dict = {}
   for d in (meta or {}).get("details") or []:
-    if d.get("read") not in ("OCR", "OCR_SQUARE") or not d.get("w_in") or not d.get("h_in"):
+    if d.get("read") not in ("TEXT", "TEXT_SQUARE", "OCR", "OCR_SQUARE") or not d.get("w_in") or not d.get("h_in"):
       continue
     by.setdefault(d["mark"], set()).add((min(d["w_in"], d["h_in"]), max(d["w_in"], d["h_in"])))
   out = {}

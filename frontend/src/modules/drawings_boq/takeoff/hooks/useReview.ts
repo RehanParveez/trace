@@ -17,6 +17,7 @@ function useRefreshAfterChange(drawingId: string | undefined) {
   return () => {
     if (!drawingId) return;
     void qc.invalidateQueries({ queryKey: reviewKeys.all });
+    void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "decisions", drawingId] });
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "approve-preview"] });
     void qc.invalidateQueries({ queryKey: [...takeoffKeys.all, "candidates"] });
     void qc.invalidateQueries({ queryKey: takeoffKeys.floorSources(drawingId) });

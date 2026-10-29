@@ -45,7 +45,7 @@ class FloorSourceService(ExtractService):
     for r in rows:
       by.setdefault(r.sheet_id, []).append(r)
     read = [{"sheet_id": s.id, "page_no": s.page_no, "title": (s.prep_meta or {}).get("title"), "stats": exts[s.id].stats, "candidates": by.get(s.id, []),
-      "identity": (s.prep_meta or {}).get("identity"), "clues": (s.prep_meta or {}).get("floor_clues"),
+      "identity": (s.prep_meta or {}).get("identity"), "clues": (s.prep_meta or {}).get("floor_clues"), "mm_per_pt": float(exts[s.id].mm_per_pt) if exts[s.id].mm_per_pt is not None else None,
       "drawing_id": owner[s.id][1].id, "drawing_name": owner[s.id][1].original_filename, "drawing_order": owner[s.id][0]} for s in sheets if s.id in exts]
     return read, by
 

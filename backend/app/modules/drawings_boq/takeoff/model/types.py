@@ -37,13 +37,18 @@ class Decision:
   question: str
   options: tuple = ()
   chosen: Any = None
+  kind: str = ""
+  facts: tuple = ()
+  rows: tuple = ()
+  default: Any = None
 
   @property
   def open(self) -> bool:
     return self.chosen is None
 
   def as_dict(self) -> dict:
-    return {"id": self.id, "question": self.question, "options": [dict(o) for o in self.options], "chosen": self.chosen, "open": self.open}
+    return {"id": self.id, "kind": self.kind, "question": self.question, "options": [dict(o) for o in self.options], "chosen": self.chosen, "default": self.default, "open": self.open,
+      "facts": list(self.facts), "rows": len(self.rows), "row_ids": list(self.rows)[:200]}
 
 @dataclass(frozen=True)
 class Sighting:
@@ -67,6 +72,7 @@ class Member:
 class Face:
   side: str
   bounds: str = "OUTSIDE"
+  length_share: float = 1.0
 
 @dataclass(frozen=True)
 class WallRun:
@@ -84,3 +90,6 @@ class Fact:
   unit: str | None = None
   sources: tuple = ()
   decision_id: str | None = None
+
+  def as_dict(self) -> dict:
+    return {"key": self.key, "value": self.value, "unit": self.unit, "sources": list(self.sources), "decision_id": self.decision_id}

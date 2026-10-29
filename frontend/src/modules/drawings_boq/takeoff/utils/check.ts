@@ -9,7 +9,7 @@ export function detailSizeText(d: Pick<ColumnDetail, "w_in" | "h_in">): string {
 export type DetailState = "READ" | "PARTIAL" | "NOT_READ";
 
 export function detailState(d: ColumnDetail): DetailState {
-  if (d.read === "OCR" || d.read === "OCR_SQUARE") return "READ";
+  if (d.read === "TEXT" || d.read === "TEXT_SQUARE" || d.read === "OCR" || d.read === "OCR_SQUARE") return "READ";
   return d.read === "PARTIAL" ? "PARTIAL" : "NOT_READ";
 }
 

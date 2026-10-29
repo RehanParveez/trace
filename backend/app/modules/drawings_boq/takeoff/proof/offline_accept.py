@@ -159,7 +159,7 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
         out.problems.append({"pdf": pdf_name, "page": r["page_no"], "code": "SCALE_DEFAULTED", "message": "No scale could be measured on this sheet; it was read at 1:100."})
       cal = _calibration(case, sheet, float(r["ratio"]) if r.get("ratio") else 100.0)
       cals[sheet.id] = cal
-      read_for_ready.append({"sheet_id": sheet.id, "page_no": r["page_no"], "title": r.get("title"), "stats": r.get("stats"), "candidates": cands, "schedule": r.get("schedule")})
+      read_for_ready.append({"sheet_id": sheet.id, "page_no": r["page_no"], "title": r.get("title"), "stats": r.get("stats"), "candidates": cands, "schedule": r.get("schedule"), "mm_per_pt": r.get("mm_per_pt")})
     out.read[drawing_id] = read_for_ready
     gathered = drawing_facts.gather([{"page_no": r["page_no"], "label": None, "facts": r.get("facts")} for r in rows if r.get("facts") is not None])
     out.printed[drawing_id] = printed_params.from_items(gathered["items"])

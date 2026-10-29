@@ -9,6 +9,7 @@ SET_ASIDE = "set_aside"
 SET_ASIDE_BY = "FLOOR_CHOICE"
 LAYOUT_BY = "LAYOUT_CHOICE"
 MARK_BY = "MARK_CHOICE"
+OPTION_BY = "OPTION_CHOICE"
 
 ORDER = ["FOUNDATION", "BASEMENT", "GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH", "TYPICAL", "ROOF"]
 
@@ -18,7 +19,7 @@ def in_floor(c, floor: str, sheet_floor: str | None) -> bool:
 
 def is_set_aside(c) -> bool:
   """Rejected because the floor's other sheet was chosen, or because the other sheet holds the same item (a combine)."""
-  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY)
+  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY, OPTION_BY)
 
 def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   title = sheet["title"] or {}

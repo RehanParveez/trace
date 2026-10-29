@@ -180,7 +180,7 @@ async def put_project_rule_overrides(
   return await CompanyConventionsService(session).update_project(current_user.active_membership.organization_id, current_user.id, project_id, cleaned, payload.note)
 
 class FinishRuleItem(BaseModel):
-  key: str = Field(description="A finish rule: finish.floor_item, finish.dado_height_mm, finish.kitchen_band, finish.ceiling_includes, finish.pcc_under or finish.room_type.")
+  key: str = Field(description="A finish rule: finish.floor_item, finish.dado_height_mm, finish.kitchen_band, finish.ceiling_includes, finish.pcc_under, finish.wall_faces or finish.room_type.")
   scope: dict[str, str] = Field(default_factory=dict, description="room_type, level or room_name, as the rule allows.")
   value: float | str | list[str] | dict[str, float] | None = Field(default=None, description="The value; null removes the project's rule.")
 

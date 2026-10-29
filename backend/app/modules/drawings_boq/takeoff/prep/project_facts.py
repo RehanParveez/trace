@@ -4,7 +4,7 @@ from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
 
 STRIDE = 1000                      
 HEIGHT_TOL_MM = 1.0                
-FACT_NAMES = ("storey_heights", "slab_values", "spec_facts", "beam_sections", "tank_details", "footing_sections", "schedule", "units", "opening_labels")
+FACT_NAMES = ("storey_heights", "slab_values", "spec_facts", "beam_sections", "tank_details", "footing_sections", "schedule", "units", "opening_labels", "column_details")
 
 def stamp(pairs: list) -> tuple:
   order: dict = {}
@@ -50,6 +50,10 @@ def strip_sources(value):
     return {k: strip_sources(v) for k, v in value.items() if k != "sources"}
   return value
 
+def column_details_of(metas: list) -> dict:
+  from app.modules.drawings_boq.takeoff.extract.structure import column_details
+  return column_details({"details": [d for m in metas for d in ((m or {}).get("details") or [])]})
+
 def gather_all(sheets: list) -> dict:
   from app.modules.drawings_boq.takeoff import prep_service as PSV
   from app.modules.drawings_boq.takeoff.extract import spec_facts as SPF
@@ -65,6 +69,7 @@ def gather_all(sheets: list) -> dict:
     "beam_sections": BD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("beam_details")} for s in sheets if s.prep_meta.get("beam_details")]),
     "tank_details": TD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("tank_details")} for s in sheets if s.prep_meta.get("tank_details")]),
     "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])],
+    "column_details": column_details_of([s.prep_meta for s in sheets]),
     "units": UR.drawing_imperial([{"page_no": s.page_no, "units": s.prep_meta.get("units"), "hint": s.prep_meta.get("units_hint")} for s in sheets]),
     "schedule": DS.gather(PSV.PrepService._schedule_sheets(sheets)),
     "opening_labels": OHT.gather(sheets),
@@ -182,6 +187,14 @@ def merge(own: dict, other: dict) -> dict:
       found.append(_conflict("UNITS", "imperial", units, other["units"]))
   put("units", units, src, found)
   put("opening_labels", OHT.merge(own["opening_labels"], other["opening_labels"]), [])
+  cols, found = dict(own["column_details"]), []
+  for mark, rec in other["column_details"].items():
+    mine = cols.get(mark)
+    if mine is None or not mine.get("sizes_in"):
+      cols[mark] = rec
+    elif rec.get("sizes_in") and rec["sizes_in"] != mine["sizes_in"]:
+      found.append(_conflict("COLUMN_DETAIL", mark, mine["sizes_in"], rec["sizes_in"]))
+  put("column_details", cols, [], found)
   return {"facts": facts, "filled": filled, "conflicts": conflicts}
 
 def bundle(pairs: list, own_drawing) -> dict:

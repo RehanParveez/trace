@@ -34,6 +34,36 @@ export interface ValueConflict {
   policy: ConflictPolicy | string;
   spread: number;
   spread_pct: number;
+  fact_key?: string | null;
+  decision_id?: string | null;
+}
+
+export interface FactSource { discipline: ConflictDiscipline | string; page_no: number | null; basis: string }
+
+export interface FactOption {
+  value: string;
+  value_mm: number | null;
+  count: number | null;
+  mark: string | null;
+  label: string | null;
+  sources: FactSource[];
+  trust: "SCHEDULE" | "DETAIL_OR_SECTION" | "NOTE" | "PLAN" | null;
+  default: boolean;
+  quantity: number | null;
+  unit: string | null;
+}
+
+export interface FactDecision {
+  id: string;
+  kind: ConflictKind | string;
+  question: string;
+  options: FactOption[];
+  chosen: string | null;
+  default: string | null;
+  open: boolean;
+  facts: string[];
+  rows: number;
+  row_ids: string[];
 }
 
 export interface ConflictsResult {
@@ -42,11 +72,14 @@ export interface ConflictsResult {
   policy: Record<string, string>;
   by_kind: Record<string, number>;
   undecided: number;
+  decisions?: FactDecision[];
+  open_decisions?: number;
 }
 
 export interface ResolveConflictsBody {
   policy?: Record<string, string>;
   choices?: Record<string, number>;
+  decisions?: Record<string, string>;
   apply_policy?: boolean;
 }
 

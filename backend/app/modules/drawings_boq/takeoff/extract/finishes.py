@@ -3,6 +3,7 @@ import math
 from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.model import walls as MW
 import re
 from app.engine.measure import proposed as QP
 from app.engine.measure import opening_rules as OPR
@@ -514,8 +515,9 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
   for w in ws:
     outer = _is_outer(w, box, mm_per_pt, turn)
     h = (w.facts or {}).get("clear_height_mm") or (w.params or {}).get("height_mm")
-    face = {"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": 1 if outer else 2,
-      "out": 1 if outer else 0}
+    sides = (w.facts or {}).get("face_sides")
+    face = {"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": sides["in"] if sides else 1 if outer else 2,
+      "out": sides["out"] if sides else 1 if outer else 0}
 
     if OPR.is1200():
       d_in, d_out, rev = OPR.plaster_sides((w.params or {}).get("openings"), float((w.facts or {}).get("thickness_used_mm") or (w.params or {}).get("thickness_mm") or 0.0), face["in"], face["out"])
@@ -523,11 +525,25 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
     out.append(face)
   return out
 
+def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None) -> dict:
+  mode = str(FR.rule(FR.WALL_FACES).value or FR.OUTLINE).upper()
+  if mode != FR.GRAPH:
+    return {"mode": mode, "used": False, "open_rooms": []}
+  ws = plaster_walls(walls)
+  if not ws or not mm_per_pt:
+    return {"mode": mode, "used": False, "open_rooms": []}
+  g = MW.build(ws, usable_rooms(rooms), mm_per_pt, floor, C.WALL_GAP_CLEAR_MAX_MM)
+  if not g.closed:
+    return {"mode": mode, "used": False, "open_rooms": list(g.open_rooms), "rooms": g.rooms_seen}
+  for w, (inside, outside) in zip(ws, g.sides()):
+    w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}}
+  return {"mode": mode, "used": True, "open_rooms": [], "rooms": g.rooms_seen, "faces": g.faces}
+
 def plaster_area(faces: list, side: str, typed_height_mm: float | None = None) -> float | None:
   """Net plastered area in m2 for the faces on one side, or None while a wall that needs a height has none."""
   total = 0.0
   for r in faces:
-    n = int(r.get(side) or 0)
+    n = float(r.get(side) or 0.0)
     if n <= 0:
       continue
     h = r.get("h") or typed_height_mm

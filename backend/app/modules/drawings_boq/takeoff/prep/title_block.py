@@ -9,6 +9,33 @@ LABELS = (
   ("project", re.compile(r"^(?:PROJECT(?:\s+NAME)?|CLIENT|OWNER)\s*[:\-]?\s*(?P<v>.*)$", re.I)),
   ("date", re.compile(r"^DATE\s*[:\-]?\s*(?P<v>.*)$", re.I)),
 )
+
+OPTION_RX = re.compile(r"\bOPTION\s*#?\s*(\d+|[A-C])\b|\bALT(?:ERNATIVE)?\s*#?\s*(\d)\b", re.I)
+REV_RX = re.compile(r"\bREV(?:ISION)?\.?\s*#?\s*(\d+|[A-Z])\b", re.I)
+DATE_RX = re.compile(r"\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})\b")
+
+def option_of(texts: list) -> dict | None:
+  for t in texts:
+    m = OPTION_RX.search(t or "")
+    if m:
+      label = f"OPTION {m.group(1).upper()}" if m.group(1) else f"ALT {m.group(2)}"
+      return {"label": label, "text": re.sub(r"\s+", " ", t.strip())[:90]}
+  return None
+
+def _iso(m) -> str | None:
+  d, mo, y = int(m.group(1)), int(m.group(2)), int(m.group(3))
+  return f"{y:04d}-{mo:02d}-{d:02d}" if 1 <= mo <= 12 and 1 <= d <= 31 else None
+
+def stamps_of(texts: list) -> list:
+  out: list = []
+  for t in texts:
+    m = REV_RX.search(t or "")
+    if m:
+      d = DATE_RX.search(t)
+      out.append({"rev": m.group(1).upper(), "date": _iso(d) if d else None})
+  seen: set = set()
+  return [s for s in out if not ((s["rev"], s["date"]) in seen or seen.add((s["rev"], s["date"])))]
+
 ZONE_RIGHT = 0.70
 ZONE_BOTTOM = 0.30
 MAX_VALUE = 80

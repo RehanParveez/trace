@@ -113,8 +113,10 @@ def identify(words: list, cropbox: tuple, title: dict | None = None, views: list
   found_views = []
   for v in views or []:
     found_views.append({"key": v.get("key"), "caption": v.get("caption"), "scale_text": v.get("scale_text"), **read_view(v.get("caption"))})
+  every = [t for t, _s in _lines(words)]
   return {"discipline": discipline, "sheet_type": sheet_type, "floor": floor, "title": fields.get("title") or title.get("title"), "sheet_no": fields.get("sheet_no") or title.get("sheet_no"),
     "scale_text": fields.get("scale"), "revision": fields.get("revision"), "project": fields.get("project"), "basis": basis, "confidence": confidence,
+    "option": TB.option_of(every), "stamps": TB.stamps_of(every),
     "evidence": [h for h in hits if h["discipline"] == discipline][:4] + ([{"sheet_type": sheet_type, "text": type_line[:60]}] if sheet_type and type_line else []),
     "views": found_views}
 

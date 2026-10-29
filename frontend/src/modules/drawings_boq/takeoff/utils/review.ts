@@ -81,6 +81,16 @@ export function sourcesText(v: ConflictValue): string {
   return Array.from(new Set(parts)).join(" · ");
 }
 
+export const TRUST_LABEL: Record<string, string> = { SCHEDULE: "schedule", DETAIL_OR_SECTION: "detail or section", NOTE: "note", PLAN: "plan" };
+
+export function factSourcesText(sources: Array<{ discipline: string; page_no: number | null; basis: string }>): string {
+  const parts = sources.map((s) => {
+    const who = DISCIPLINE_LABEL[s.discipline] ?? String(s.discipline);
+    return s.page_no ? `${who}, page ${s.page_no}` : who;
+  });
+  return Array.from(new Set(parts)).join(" · ");
+}
+
 export function choiceOf(v: ConflictValue): number | null {
   if (v.value_mm !== null && v.value_mm !== undefined) return v.value_mm;
   if (v.count !== null && v.count !== undefined) return v.count;

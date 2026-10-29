@@ -1,4 +1,4 @@
-version: 3
+version: 4
 qs: {name: "M. Junaid", answered_before: "2026-10-19", answered_on: "2026-10-22", latest: "2026-10-26"}
 rules:
 
@@ -72,3 +72,4 @@ rules:
   - {key: stage.dpc_below_ffl_mm, scope: {}, value: 0.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.lintel_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.parapet_height_mm, scope: {}, value: 914.4, unit: "mm", cls: JUDGEMENT}
+  - {key: finish.wall_faces, scope: {}, value: "OUTLINE", unit: null, cls: JUDGEMENT}

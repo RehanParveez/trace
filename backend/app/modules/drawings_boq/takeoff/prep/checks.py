@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-READ_OK = ("OCR", "OCR_SQUARE")
+READ_OK = ("TEXT", "TEXT_SQUARE", "OCR", "OCR_SQUARE")
 
 def inches(a, b) -> str:
   def one(v):

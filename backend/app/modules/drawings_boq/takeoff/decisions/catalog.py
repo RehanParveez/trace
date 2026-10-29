@@ -40,6 +40,16 @@ DECISIONS = [
      ("IS1200", "A rule for each item (IS 1200)", QS.CHOICE_OPTIONS[OPENINGS]["IS1200"], None))},
 ]
 
+from app.modules.drawings_boq.takeoff.model.facts import TOLERANCE
+
+FACT_KINDS = [
+  {"kind": "SLAB_THICKNESS", "title": "Slab thickness", "affects": "concrete, formwork and steel of every slab on the floors that read the same two values", **TOLERANCE["SLAB_THICKNESS"]},
+  {"kind": "BEAM_SECTION", "title": "Beam section", "affects": "concrete, formwork and steel of every beam the plan labels without a mark", **TOLERANCE["BEAM_SECTION"]},
+  {"kind": "SOURCE_COUNT", "title": "Count on two sheets", "affects": "the doors or windows of that mark and the lintels over them", **TOLERANCE["SOURCE_COUNT"]}]
+
+def fact_kind(kind: str) -> dict | None:
+  return next((k for k in FACT_KINDS if k["kind"] == kind), None)
+
 def by_key(key: str) -> dict | None:
   return next((d for d in DECISIONS if d["key"] == key), None)
 

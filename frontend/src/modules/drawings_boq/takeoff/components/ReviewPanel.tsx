@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Badge, Button } from "../../../organizations/components/OrganizationUi";
 import { useCombineFloorSources, useMemberLinks, useResolveConflicts, useReviewFloors, useSteelRollup, useValueConflicts } from "../hooks/useReview";
-import type { CombineResult, ConflictsResult, LinksResult, SteelRollup, ValueConflict } from "../types/review.types";
+import type { CombineResult, ConflictsResult, FactDecision, LinksResult, SteelRollup, ValueConflict } from "../types/review.types";
 import type { FloorSources } from "../types/takeoff.types";
 import {BY_LABEL, KIND_LABEL, LINK_GROUP_LABEL, LINK_REASON, LINK_STATUS_LABEL, POLICY_KINDS, policyOptionsFor, STEEL_FIELDS, STEEL_STATUS_LABEL, canChoose, choiceOf, conflictsByKind, conventionsFromInputs,
-   deltaText, kgText, linkTone, mmText, needsText, quantityText, rangeText, sourcesText, steelTone,
+   TRUST_LABEL, factSourcesText, deltaText, kgText, linkTone, mmText, needsText, quantityText, rangeText, sourcesText, steelTone,
 } from "../utils/review";
 
 const MAX_OPEN_LINKS = 12;
@@ -65,7 +65,34 @@ interface ConflictsProps {
   busy: boolean;
   onApplyPolicy: () => void;
   onChoose: (conflictId: string, value: number) => void;
-  skipped?: Array<{ id: string; message: string }>;
+  onChooseDecision?: (decisionId: string, value: string) => void;
+  skipped?:Array<{ id: string; message: string }>;
+}
+
+function DecisionRow({ d, p }: { d: FactDecision; p: ConflictsProps }) {
+  const { t } = useTranslation();
+  return (
+    <li className="rounded-[8px] border border-[var(--color-border)] p-2" data-testid={`decision-fact-${d.id}`} data-open={d.open}>
+      <p className="font-semibold text-[var(--color-text-primary)]">{d.question}</p>
+      <p className={MUTED}>{t("takeoff.review.decision.rows", { defaultValue: "Settles {{n}} rows: {{facts}}", n: d.rows, facts: d.facts.slice(0, 4).map((k) => k.split(":").slice(1).join(":") || k).join(", ") + (d.facts.length > 4 ? ` +${d.facts.length - 4}` : "") })}</p>
+      <ul className="mt-1 space-y-1">
+        {d.options.map((o) => (
+          <li key={o.value} className="flex flex-wrap items-center gap-x-2 gap-y-1" data-testid={`decision-fact-${d.id}-${o.value}`} data-in-force={d.chosen === o.value}>
+            <span className="font-semibold text-[var(--color-text-primary)]">{o.label ?? o.value}</span>
+            {o.trust ? <Badge tone={o.default ? "green" : "slate"}>{TRUST_LABEL[o.trust] ?? o.trust}{o.default ? " · " + t("takeoff.review.decision.default", "more trusted") : ""}</Badge> : null}
+            {o.quantity != null ? <span>{o.quantity.toLocaleString("en-US", { maximumFractionDigits: 2 })} {o.unit ?? ""}</span> : null}
+            <span className={MUTED}>{factSourcesText(o.sources)}</span>
+            {p.canEdit && p.onChooseDecision && d.chosen !== o.value ? (
+              <Button size="sm" variant="ghost" disabled={p.busy} onClick={() => p.onChooseDecision?.(d.id, o.value)} data-testid={`decision-fact-use-${d.id}-${o.value}`}>
+                {t("takeoff.review.decision.use", "Use for all rows")}
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {d.open && d.default == null ? <p className={MUTED}>{t("takeoff.review.decision.tied", "The sources are equally trusted, so this is left to you.")}</p> : null}
+    </li>
+  );
 }
 
 export function ConflictsBlock(p: ConflictsProps) {
@@ -100,6 +127,12 @@ export function ConflictsBlock(p: ConflictsProps) {
             <Button size="sm" variant="secondary" disabled={p.busy || undecided === 0} onClick={p.onApplyPolicy} data-testid="review-apply-policy">
               {t("takeoff.review.conflicts.apply", "Use the policy for every open item")}
             </Button>
+          ) : null}
+          {(p.data?.decisions ?? []).length > 0 ? (
+            <div className="space-y-2" data-testid="review-decisions">
+              <p className="font-semibold text-[var(--color-text-primary)]">{t("takeoff.review.decision.title", "Decisions")} <span className="font-normal text-[var(--color-text-muted)]">· {(p.data?.decisions ?? []).length}</span></p>
+              <ul className="space-y-2">{(p.data?.decisions ?? []).map((d) => <DecisionRow key={d.id} d={d} p={p} />)}</ul>
+            </div>
           ) : null}
           {groups.map((g) => (
             <div key={g.kind} className="space-y-2" data-testid={`review-kind-${g.kind}`}>
@@ -322,7 +355,8 @@ export function ReviewPanel({ drawingId, canEdit = true }: { drawingId: string; 
       <ConflictsBlock data={conflicts.data} loading={conflicts.isLoading} error={conflicts.isError} policy={policy} canEdit={canEdit} busy={busy} skipped={skipped}
         onPolicy={(k, v) => setPolicy((s) => ({ ...s, [k]: v }))}
         onApplyPolicy={() => resolve.mutate({ policy, apply_policy: true }, { onSuccess: (r) => setSkipped(r.skipped) })}
-        onChoose={(id, value) => resolve.mutate({ policy, choices: { [id]: value } }, { onSuccess: (r) => setSkipped(r.skipped) })} />
+        onChoose={(id, value) => resolve.mutate({ policy, choices: { [id]: value } }, { onSuccess: (r) => setSkipped(r.skipped) })}
+        onChooseDecision={(id, value) => resolve.mutate({ policy, decisions: { [id]: value } }, { onSuccess: (r) => setSkipped(r.skipped) })} />
       {resolve.isError || combine.isError ? <p className="text-[var(--color-danger)]">{t("takeoff.review.failed", "That did not go through. What was done is kept. Try again.")}</p> : null}
       <LinksBlock data={links.data} loading={links.isLoading} error={links.isError} />
       <SteelBlock data={steel.data} loading={steel.isLoading} error={steel.isError} inputs={steelInputs} bad={bad}

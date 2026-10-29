@@ -39,6 +39,39 @@ class Conflict(BaseModel):
   policy: str
   spread: float = 0.0
   spread_pct: float = 0.0
+  fact_key: str | None = None
+  decision_id: str | None = Field(default=None, description="The decision that settles this value for every row that reads the same set of values; None when the sheets agree.")
+
+class FactOption(BaseModel):
+  value: str
+  value_mm: float | None = None
+  count: int | None = None
+  mark: str | None = None
+  label: str | None = None
+  sources: list[ConflictSource] = Field(default_factory=list)
+  trust: str | None = Field(default=None, description="The most trusted kind of source that prints this value: SCHEDULE, DETAIL_OR_SECTION, NOTE or PLAN.")
+  default: bool = False
+  quantity: float | None = None
+  unit: str | None = None
+
+class FactDecision(BaseModel):
+  id: str
+  kind: str
+  question: str
+  options: list[FactOption]
+  chosen: str | None = None
+  default: str | None = Field(default=None, description="The value from the most trusted source; None when two values tie, and then a person decides.")
+  open: bool = True
+  facts: list[str] = Field(default_factory=list)
+  rows: int = 0
+  row_ids: list[str] = Field(default_factory=list)
+
+class FactRecord(BaseModel):
+  key: str
+  value: float | str | None = None
+  unit: str | None = None
+  sources: list[str] = Field(default_factory=list)
+  decision_id: str | None = None
 
 class ConflictsResponse(BaseModel):
   drawing_id: UUID
@@ -46,10 +79,15 @@ class ConflictsResponse(BaseModel):
   policy: dict[str, str]
   by_kind: dict[str, int]
   undecided: int = 0
+  facts: list[FactRecord] = Field(default_factory=list)
+  decisions: list[FactDecision] = Field(default_factory=list)
+  open_decisions: int = 0
+  tolerances: dict[str, dict] = Field(default_factory=dict)
 
 class ResolveConflictsRequest(BaseModel):
   policy: dict[str, str] | None = Field(default=None, description="Policy per kind of conflict: STRUCTURAL, ARCHITECTURAL, LARGER, SMALLER or AS_READ.")
   choices: dict[str, float] | None = Field(default=None, max_length=500, description="The value chosen per conflict id: millimetres, or a count for a source count.")
+  decisions: dict[str, str] | None = Field(default=None, max_length=200, description="The value chosen per decision id (the option's value): applied to every row the decision settles.")
   apply_policy: bool = Field(default=False, description="Write the policy's pick to every open item whose conflict has none chosen.")
 
 class ResolveConflictsResponse(BaseModel):

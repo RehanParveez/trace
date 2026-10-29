@@ -96,6 +96,7 @@ def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_B
     every.extend(rows)
   if use:
     choose_floor_sources(every)
+    choose_revisions(every)
   for doc, _a, _p in prepared:
     try:
       doc.close()
@@ -113,7 +114,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
   from app.modules.drawings_boq.takeoff.prep import schedules as DS, mark_vocab as MV, opening_heights as OHT
   from app.modules.drawings_boq.takeoff.prep.storeys import storey_heights
   from app.modules.drawings_boq.takeoff.extract import electrical as EL, pipeline as P, spec_facts as SPF
-  from app.modules.drawings_boq.takeoff.extract.structure import column_details
+  from app.modules.drawings_boq.takeoff.prep.project_facts import column_details_of
   
   doc, analysed, problems = prepared if prepared is not None else analyse_pdf(pdf, pages)
   problems = list(problems)
@@ -125,14 +126,15 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
   drawing = {"floor_heights": storey_heights(floor_keys, gathered.get("storeys")), "slab_values": DF.slab_values(gathered["items"]), "spec_facts": SPF.build(gathered["items"]),
     "beam_sections": BD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("beam_details")} for s in sheets if s.prep_meta.get("beam_details")]),
     "tank_details": TD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("tank_details")} for s in sheets if s.prep_meta.get("tank_details")]),
-    "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])]}
+    "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])],
+    "column_details": column_details_of([s.prep_meta for s in sheets])}
   units = UR.drawing_imperial([{"page_no": s.page_no, "units": s.prep_meta.get("units"), "hint": s.prep_meta.get("units_hint")} for s in sheets])
   merged = _merge_project(sheets, project["others"]) if project and project.get("others") else None
   if merged is not None:
     known = merged["facts"]
     schedule, units = known["schedule"], known["units"]
     drawing = {"floor_heights": known["storey_heights"], "slab_values": known["slab_values"], "spec_facts": known["spec_facts"], "beam_sections": known["beam_sections"],
-      "tank_details": known["tank_details"], "footing_sections": known["footing_sections"]}
+      "tank_details": known["tank_details"], "footing_sections": known["footing_sections"], "column_details": known["column_details"]}
   opening_heights = OHT.decide(merged["facts"]["opening_labels"] if merged is not None else OHT.gather(sheets))
   vocab = MV.build(sheets + [s for _name, group in ((project or {}).get("others") or []) for s in group])
   legend = EL.project_rows(EL.gather_legend([{"page_no": no, "legend": a.meta.get("electrical_legend")} for no, a in analysed.items() if a.meta.get("electrical_legend")]),
@@ -157,7 +159,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     mm_per_pt = used * 25.4 / 72.0 if used else DEFAULT_MM_PER_PT
     try:
       res = P.run_extraction(a.index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=1.0, scale_unverified=scale_unverified, content_kind=a.content_kind,
-        budget_s=budget_s, schedule=schedule, views_meta=meta.get("views"), frame=meta.get("frame"), col_details=column_details(meta), floor_heights=drawing["floor_heights"],
+        budget_s=budget_s, schedule=schedule, views_meta=meta.get("views"), frame=meta.get("frame"), col_details=drawing["column_details"], floor_heights=drawing["floor_heights"],
         level_hint=level_hint, slab_values=drawing["slab_values"], text_source=meta.get("text_source", "TEXT"), pdf_type=meta.get("pdf_type"), identity=meta.get("identity"), scan_reading=meta.get("scan_reading"), lowest_level=bool(level_hint) and bool(floor_keys) and floor_keys[0] == level_hint,
         with_finishes=True, beam_sections=drawing["beam_sections"], tank_details=drawing["tank_details"], imperial=units["imperial"], wall_vocab=UR.wall_vocabulary(wall_rows, units["imperial"]),
         footing_sections=drawing["footing_sections"], spec_facts=drawing["spec_facts"], mark_vocab=vocab, opening_heights=opening_heights,
@@ -217,6 +219,12 @@ def qs_volume(f: dict, read: list) -> dict:
   if lo <= found <= hi:
     return {**base, "status": K.PASS, "message": f"{found:g} cft from {len(items)} items, inside the QS's {lo:g} to {hi:g} cft."}
   return {**base, "status": K.FAIL, "message": f"The QS has {lo:g} to {hi:g} cft; {found:g} cft is read from {len(items)} items."}
+
+def choose_revisions(read: list) -> dict:
+  from app.modules.drawings_boq.takeoff.extract import revisions as RV
+  sheets = [{"sheet_id": (sh.get("drawing_order") or 0, sh["page_no"]), "page_no": sh["page_no"], "title": sh.get("title"), "stats": sh.get("stats"), "identity": (sh.get("meta") or {}).get("identity"),
+    "candidates": sh["candidates"], "drawing_id": sh.get("drawing_order") or 0} for sh in read]
+  return RV.apply_defaults(sheets)
 
 def choose_floor_sources(read: list, chosen: dict | None = None) -> dict:
   chosen = {str(k).upper(): int(v) for k, v in (chosen or {}).items()}

@@ -1901,6 +1901,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       rooms = _stage(res, "ROOMS", lambda: _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx, res, walls), [])
       res.candidates.extend(rooms)
       res.candidates.extend(completion)
+      if with_finishes or lowest_level:
+        faced = FN.attach_faces([*walls, *QR.counted_completion(completion)], rooms, mm_per_pt, level_hint)
+        if faced.get("used"):
+          res.notes.append(C.note("WALL_FACES_FROM_GRAPH", rooms=faced.get("rooms"), spaces=faced.get("faces")))
+        elif faced.get("mode") == "GRAPH":
+          res.notes.append(C.note("WALL_FACES_OPEN", rooms=faced.get("open_rooms")))
       
       if with_finishes:
         finishes = _stage(res, "FINISHES", lambda: _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"],
