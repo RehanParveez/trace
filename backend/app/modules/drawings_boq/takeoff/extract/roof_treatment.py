@@ -3,6 +3,7 @@ from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.engine.measure import rule_formulas as RF
 from app.modules.drawings_boq.takeoff.extract import spec_facts as SF
 from app.modules.drawings_boq.takeoff.levels import level_spec
 
@@ -100,6 +101,8 @@ def _common(slab, how: str, role: str) -> dict:
     out["view"] = f["view"]
   return out
 
+ROOF_AREA_DEFAULTS = {"include_projection": False}   
+
 def _deck(slab, how: str, role: str, ctx: dict, cls, finish, spec_facts: dict | None, standing_m2: float | None = None, many: bool = False) -> list:
   """The roof over a slab: its covered area, less the footprint of what stands on it (the head room on the main roof, the floor above on a terrace). The part of the slab that reaches past the walls is a
   line of its own (_projection). many: the roof plan has several roof slabs (a split-level roof), each its own roof."""
@@ -117,12 +120,17 @@ def _deck(slab, how: str, role: str, ctx: dict, cls, finish, spec_facts: dict | 
   notes = [C.note("ROOF_TREATMENT_AREA_ONLY")]
   if how == "TOP_OF_SHEET":
     notes.append(C.note("ROOF_TOP_FLOOR_ASSUMED", floor=name))
+  footprint = 0.0
   if standing_m2 is not None:
     footprint = float(standing_m2)
     if 0 < footprint < area:
-      area = round(area - footprint, 3)
       facts["upper_roof_footprint_m2"] = round(footprint, 3)
       notes.append(C.note("ROOF_TERRACE_BELOW_UPPER" if role == "TERRACE_ROOF" else "ROOF_MAIN_UNDER_UPPER_ROOF", floor=name, footprint=round(footprint, 2)))
+    else:
+      footprint = 0.0
+  got, applied = RF.run("roof_area", ROOF_AREA_DEFAULTS, {"covered_m2": area, "projection_m2": projection, "standing_m2": footprint})
+  area = got["area_m2"]
+  facts["formula"] = {k: applied[k] for k in ("formula", "source", "rule_id", "version")}
   facts.update({"area_m2": round(area, 3), "area_basis": basis, "roof_part": "DECK", "projection_area_m2": projection if projection >= MIN_PROJECTION_M2 else None})
   
   notes.extend(_printed_layers(facts, spec_facts))
@@ -193,3 +201,18 @@ def roof_candidates(slabs: list, ctx: dict, cls, finish, spec_facts: dict | None
     out += _projection(c, how, ctx, cls, finish)
     out += _soffit(c, how, ctx, cls, finish)
   return out
+
+def from_outline(level_hint: str | None, outline: dict | None, walls: list, ctx: dict, cls, finish) -> list:
+  area = float((outline or {}).get("area_m2") or 0.0)
+  if str(level_hint or "").upper() != "ROOF" or area <= 0.0:
+    return []
+  
+  pts = [p for w in walls if (w.geometry or {}).get("points") for p in w.geometry["points"][:1]]
+  facts = {"derived_from": "OUTLINE", "roof_floor": "ROOF", "roof_found_by": "OUTLINE", "roof_role": "ROOF_SLAB", "covered_area_m2": None, "gross_area_m2": None, "layers": None, "slope": None,
+    "layers_defined": False, "area_m2": round(area, 3), "area_basis": "OUTLINE_ASSUMED", "roof_part": "DECK", "projection_area_m2": None, "outline_perimeter_m": (outline or {}).get("perimeter_m"), "edge_m": None, "edge_basis": None}
+  notes = [C.note("ROOF_TREATMENT_AREA_ONLY"), C.note("ROOF_FROM_OUTLINE", area_m2=round(area, 2), perimeter_m=(outline or {}).get("perimeter_m"))]
+  cand = FD._make(cls, ctx, finish, (ITEM, "ROOF"), ITEM, f"Roof treatment · {area:.2f} m² · from the outline of the walls", "ROOF-TREATMENT", [FD._centre(pts)] if pts else [[0.0, 0.0]],
+    {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], notes, facts, 0.5)
+  cand.facts = {**(cand.facts or {}), FS.SET_ASIDE: {"by": FS.ASSUMED_BY, "page_no": None}}
+  return [cand]
+

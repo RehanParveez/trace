@@ -43,6 +43,7 @@ FLAGS = {
   "derived_scaffold": True,
   "derived_props": True,
   "page_role_vote": True,
+  "plaster_courtyard_external": True,
 }
 
 CHOICES = {
@@ -400,6 +401,7 @@ LABELS = {
   "derived_scaffold": ("How the QS counts", "Scaffolding on the outside walls is billed"),
   "derived_props": ("How the QS counts", "Props under a high slab are billed"),
   "page_role_vote": ("How the QS counts", "A page's role is voted from several signals"),
+  "plaster_courtyard_external": ("How the QS counts", "The walls round a court or light well are outer faces"),
   "brick_opening_min_m2": ("Openings and units", "Smallest opening deducted from brickwork"),
   "rcc_wall_opening_min_m2": ("Openings and units", "Smallest opening deducted from a concrete wall"),
   "plaster_opening_min_m2": ("Openings and units", "Smallest opening deducted from plaster and paint"),

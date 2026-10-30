@@ -224,6 +224,31 @@ def decisions_of(cands: dict, levels, person: dict | None = None) -> list:
       out.append(Decision(f"{ident}:{key}", question, options, chosen))
   return out
 
+FLOOR_TO_FLOOR, FLOOR_TO_SOFFIT = "FLOOR_TO_FLOOR", "FLOOR_TO_SOFFIT"
+HEIGHT_FIELD = {FLOOR_TO_FLOOR: F2F, FLOOR_TO_SOFFIT: CLEAR}
+RULE, PLAN_NOTE = "RULE", "PLAN_NOTE"
+HEIGHT_KINDS = {SECTION: "SECTION", PLAN_NOTES: "PLAN_NOTES", LEVEL_MARKS: "LEVEL_MARKS"}
+
+def height(heights: dict | None, what: str, floor: str | None) -> tuple:
+  entry = (heights or {}).get(floor or "") or {}
+  field = HEIGHT_FIELD.get(what)
+  v = NORM[field](entry.get(field)) if field else None
+  source = {"what": what, "floor": floor, "kind": HEIGHT_KINDS.get(kind_of(entry), ASSUMED) if v is not None else "NONE", "basis": entry.get("basis"),
+    "entry": {k: entry.get(k) for k in (LEVEL, CLEAR, F2F) if entry.get(k) is not None}}
+  return (v, source) if v is not None else (None, source)
+
+def rule_source(what: str, floor: str | None, key: str) -> dict:
+  """The source of a height the rule book gives (a convention of the QS or of the company), named by its rule key."""
+  return {"what": what, "floor": floor, "kind": RULE, "basis": key, "entry": {}}
+
+def note_source(floor: str | None, heights: dict | None, mm: float) -> dict:
+  """The source of a height written as a note on the plan, with the clear height the floor's entry prints when that differs from it by more than DISAGREE_MM (a STOREY_HEIGHT)."""
+  clear, _ = height(heights, FLOOR_TO_SOFFIT, floor)
+  out = {"what": FLOOR_TO_SOFFIT, "floor": floor, "kind": PLAN_NOTE, "basis": None, "entry": {}}
+  if clear is not None and abs(clear - float(mm)) > DISAGREE_MM:
+    out["disagrees"] = {"ladder_mm": round(clear, 1), "note_mm": round(float(mm), 1), "ladder_kind": HEIGHT_KINDS.get(kind_of((heights or {}).get(floor or "") or {}), ASSUMED)}
+  return out
+
 @dataclass(frozen=True)
 class Ladder:
   levels: tuple = ()

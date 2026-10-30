@@ -443,7 +443,7 @@ class ExtractService:
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
         col_details=known["column_details"], floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"), pdf_type=(sheet.prep_meta or {}).get("pdf_type"), identity=(sheet.prep_meta or {}).get("identity"),
         lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
-        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, spec_facts=spec_facts, electrical=electrical, mark_vocab=mark_vocab, opening_heights=opening_heights)
+        imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, footing_views=known.get("footing_views") or [], spec_facts=spec_facts, electrical=electrical, mark_vocab=mark_vocab, opening_heights=opening_heights)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)
       raise TraceException("This sheet could not be read automatically. Measure it by hand.", status_code=422, code="EXTRACTION_FAILED")

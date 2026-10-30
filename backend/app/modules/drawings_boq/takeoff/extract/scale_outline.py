@@ -2,6 +2,10 @@ from __future__ import annotations
 import math
 
 OUTLINE_AGREE = 0.02            
+PLOTTING_SCALES = (50, 75, 100, 125, 150, 200)    
+PLOTTING_TOL = 0.02
+WALL_MM = 229.0                  
+MIN_ELONGATION = 0.05           
 K_MIN, K_MAX = 0.25, 4.0        
 PT_MM = 25.4 / 72.0
 
@@ -17,6 +21,35 @@ def _shape(s: dict) -> float:
 
 def _same_shape(a: dict, b: dict) -> bool:
   return abs(_shape(a) / _shape(b) - 1.0) <= OUTLINE_AGREE
+
+def plotting_scale(ratio: float | None) -> int | None:
+  """The plotting scale (1:50 ... 1:200) a ratio is within PLOTTING_TOL of, or None."""
+  if not ratio or ratio <= 0:
+    return None
+  best = min(PLOTTING_SCALES, key=lambda s: abs(math.log(float(ratio) / s)))
+  return best if abs(float(ratio) / best - 1.0) <= PLOTTING_TOL else None
+
+def implied_offset(ref: dict, target: dict, wall_mm: float = WALL_MM) -> dict | None:
+  s_ref = float(ref["mm_per_pt"])
+  r = _pick(ref["samples"], s_ref)
+  if r is None:
+    return None
+  ref_short, ref_long = s_ref * float(r["short_pt"]), s_ref * float(r["long_pt"])
+  fits = []
+  for t in target["samples"]:
+    gap = float(t["long_pt"]) - float(t["short_pt"])
+    if gap <= 0 or gap / float(t["long_pt"]) < MIN_ELONGATION or ref_long <= ref_short:
+      continue
+    s = (ref_long - ref_short) / gap
+    d = s * float(t["short_pt"]) - ref_short
+    plot = plotting_scale(s / PT_MM)
+    if plot is None or not (0.0 <= d <= 4.0 * wall_mm) or _pick(target["samples"], s) is not t:
+      continue
+    fits.append((abs(math.log(float(t["f"]) / s)), s, d, plot, t))
+  if not fits:
+    return None
+  _off, s, d, plot, t = min(fits, key=lambda x: x[0])
+  return {"mm_per_pt": s, "k": s / s_ref, "ref_sample": r, "target_sample": t, "offset_mm": round(d, 1), "t_mm": round(d / 2.0, 1), "plotting_scale": plot}
 
 def implied(ref: dict, target: dict) -> dict | None:
   s_ref = float(ref["mm_per_pt"])
@@ -37,10 +70,14 @@ def implied(ref: dict, target: dict) -> dict | None:
     nearest = _pick(target["samples"], mm)
     if nearest is t:
       fits.append((off, mm, t))
-  if not fits:
-    return None
-  off, mm, t = min(fits, key=lambda x: x[0])
-  return {"mm_per_pt": mm, "k": mm / s_ref, "ref_sample": r, "target_sample": t}
+  plain = None
+  if fits:
+    off, mm, t = min(fits, key=lambda x: x[0])
+    plain = {"mm_per_pt": mm, "k": mm / s_ref, "ref_sample": r, "target_sample": t}
+  if plain is not None and plotting_scale(plain["mm_per_pt"] / PT_MM) is not None:
+    return plain
+  shifted = implied_offset(ref, target)
+  return shifted or plain      
 
 def _rank(ref: dict, target: dict, order: dict) -> tuple:
   a, b = ref.get("floor"), target.get("floor")

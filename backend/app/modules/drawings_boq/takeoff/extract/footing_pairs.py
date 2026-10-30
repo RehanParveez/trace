@@ -38,7 +38,23 @@ def summary(pairs: list) -> dict:
 def _area(mm) -> float:
   return float(mm[0]) * float(mm[1]) if mm else 0.0
 
-def assign(groups: list, sizes: list, pairs: dict, column_mm: dict, n_stair: int) -> dict:
+def from_views(viewed: dict) -> dict:
+  return {"assigned": {m: tuple(s) for m, s in viewed.items()}, "assumed": False, "options": [], "basis": "VIEW", "stair": None, "pair_of": {}, "evidence": [], "viewed": sorted(viewed)}
+
+def assign(groups: list, sizes: list, pairs: dict, column_mm: dict, n_stair: int, viewed: dict | None = None) -> dict:
+  viewed = viewed or {}
+  mine = {g["tag"]: tuple(viewed[norm_mark(g["tag"])]) for g in groups if g["category"] == "FOOTING" and not g.get("stair") and norm_mark(g["tag"]) in viewed}
+  groups = [g for g in groups if g["tag"] not in mine]
+  if mine:
+    left = Counter(sizes)
+    left.subtract(Counter(tuple(s) for s in mine.values()))
+    sizes = [s for s, n in left.items() if n > 0 for _ in range(n)]
+  out = _assign(groups, sizes, pairs, column_mm, n_stair)
+  out["assigned"].update(mine)
+  out["viewed"] = sorted(mine)
+  return out
+
+def _assign(groups: list, sizes: list, pairs: dict, column_mm: dict, n_stair: int) -> dict:
   out = ST.assign_footing_sizes(groups, sizes)
   out.update({"basis": "ORDER", "stair": None, "pair_of": {}, "evidence": []})
   marks = sorted({g["tag"] for g in groups if g["category"] == "FOOTING" and not g.get("stair")}, key=ST._mark_order)

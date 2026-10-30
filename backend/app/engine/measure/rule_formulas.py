@@ -93,3 +93,15 @@ def is_formula(value) -> bool:
 def evaluate(spec: dict, inputs: dict) -> dict:
   spec = checked(spec)
   return FORMULAS[spec["formula"]][0](spec["params"], inputs)
+
+PREFIX = "formula."
+
+def run(name: str, defaults: dict, inputs: dict, scope: dict | None = None) -> tuple:
+  from app.engine.measure import rulebook as RB
+  rv = RB.resolve(PREFIX + name, scope)
+  params, rule_id, version, source = defaults, None, None, "CODE"
+  if rv.rule_id is not None and is_formula(rv.value) and rv.value.get("formula") == name:
+    params, rule_id, version, source = checked(rv.value)["params"], rv.rule_id, rv.version, "RULE"
+  spec = checked({"formula": name, "params": params})
+  applied = {"formula": name, "source": source, "rule_id": rule_id, "version": version, "params": spec["params"]}
+  return FORMULAS[name][0](spec["params"], inputs), applied

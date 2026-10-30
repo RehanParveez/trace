@@ -1,6 +1,7 @@
 from __future__ import annotations
 from app.engine.measure import readings as QS
 from app.engine.measure import proposed as PR
+from app.modules.drawings_boq.takeoff.model import levels as LV
 from app.modules.drawings_boq.takeoff.extract import config as C
 
 BASEMENT = "BASEMENT"
@@ -44,16 +45,16 @@ def less_beams(heights: dict, lowest_level: bool, ft_in) -> dict:
 def floor_heights(heights: dict, floors: dict | None, level_hint: str | None, ft_in, clear_only) -> dict:
   if not QS.flag("wall_height_floor_to_floor"):
     return clear_only(heights, floors, level_hint)
+  f2f, src = LV.height(floors, LV.FLOOR_TO_FLOOR, level_hint)
   fh = (floors or {}).get(level_hint or "") or {}
-  f2f = fh.get("floor_to_floor_mm")
   
   if f2f:
     how = "worked out from the room notes of the plans (ceiling height and level above the road)" if fh.get("basis") == "PLAN_NOTES" else "printed on the building section"
-    entry = {"mm": float(f2f), "text": f"floor-to-floor height {ft_in(float(f2f))} {how}", "basis": "SECTION", **({"source": "PLAN_NOTES"} if fh.get("basis") == "PLAN_NOTES" else {})}
+    entry = {"mm": float(f2f), "text": f"floor-to-floor height {ft_in(float(f2f))} {how}", "basis": "SECTION", **({"source": "PLAN_NOTES"} if fh.get("basis") == "PLAN_NOTES" else {}), "ladder": src}
   elif str(level_hint or "").upper() == BASEMENT:
     mm = float(QS.convention("basement_floor_to_floor_mm"))
     entry = {"mm": mm, "text": f"basement floor-to-floor height {ft_in(mm)}, " + QS.whose(["basement_floor_to_floor_mm"], "as the QS gave it (S5)", "as your company's convention has it"), "basis": "QS",
-      "origin": QS.CO.origin_of("basement_floor_to_floor_mm")}
+      "origin": QS.CO.origin_of("basement_floor_to_floor_mm"), "ladder": LV.rule_source(LV.FLOOR_TO_FLOOR, level_hint, "basement_floor_to_floor_mm")}
   else:
     return clear_only(heights, floors, level_hint)
   out = dict(heights)
@@ -96,7 +97,7 @@ def rcc_heights(cands: list, level_hint: str | None) -> int:
     c.params = {**(c.params or {}), "height_mm": mm, "dims_basis": "SPECIFIED"}
     c.missing = [m for m in (c.missing or []) if m != "height_mm"]
     c.notes = [x for x in (c.notes or []) if x.get("code") not in HEIGHT_CODES]
-    c.notes.append(C.note("HEIGHT_FROM_QS", origin=QS.CO.origin_of("basement_wall_height_mm"),
+    c.notes.append(C.note("HEIGHT_FROM_QS", origin=QS.CO.origin_of("basement_wall_height_mm"), ladder=LV.rule_source("WALL_HEIGHT", level_hint, "basement_wall_height_mm"),
       text=f"basement concrete wall {_ft_in(mm)} high for the estimate, " + QS.whose(["basement_wall_height_mm"], "as the QS gave it (S1, S5)", "as your company's convention has it")))
     stamp(c, "S1", "S5")
     n += 1
@@ -135,7 +136,7 @@ def apply(cands: list, level_hint: str | None) -> dict:
       c.params = {**(c.params or {}), "depth_mm": size["mm"], "dims_basis": "SPECIFIED"}
       c.missing = [m for m in c.missing if m != "height_mm"]
       c.facts = {**f, "neck_assumed": {"mm": size["mm"], "text": size["text"], "evidence": size["evidence"]}}
-      nh = C.note("NECK_HEIGHT_ASSUMED", height_mm=size["mm"])
+      nh = C.note("NECK_HEIGHT_ASSUMED", height_mm=size["mm"], ladder=LV.rule_source("FOOTING_TOP", None, "neck_height_mm"))
       whose = (f"as your company's convention has it ({size['evidence'].rstrip('.').lower()})" if size.get("origin") == QS.CO.COMPANY and QS.company_differs("neck_height_mm")
         else f"as the QS's workbook has it ({size['evidence'].rstrip('.')})")
       nh["message"] = (f"The neck column runs from the top of the footing to the lowest floor. That height is not printed on the sheet. {size['text']} is used, {whose}. Type another height to override it.")

@@ -34,9 +34,15 @@ def _hint(a: dict) -> str:
   except Exception:
     return ""
 
+PLAIN_ROUTES = ("OUTLINE_ONLY", "ROOMS_ONLY")     
+
 def auto_scale_gate(analysis: dict | None) -> tuple:
   a = analysis or {}
   agreement, rec = a.get("agreement"), a.get("recommended")
+  if agreement in PLAIN_ROUTES and rec is not None:
+    from app.modules.drawings_boq.takeoff.extract import scale_outline as SO
+    if SO.plotting_scale(float(rec.get("ratio") or 0.0)) is None:
+      return False, "SCALE_NEEDS_CONFIRMATION", f"The scale found for this sheet, 1:{float(rec.get('ratio') or 0.0):.1f}, comes from the outline of the walls or the room sizes and is not a plotting scale, and no printed dimension confirms it. Confirm the scale on the Measure page."
   if rec is None or agreement in (None, "NONE"):
     hint = _hint(a)
     if hint:

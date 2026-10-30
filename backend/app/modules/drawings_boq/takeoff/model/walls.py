@@ -6,6 +6,7 @@ from app.modules.drawings_boq.takeoff.model.types import WallRun, Face
 from shapely.strtree import STRtree
 from shapely.geometry import Polygon, LineString, Point, box
 from shapely.ops import unary_union
+from shapely.prepared import prep
 
 DRAWN, PLASTER_DRAWN, DRAWN_UNMATCHED = "DRAWN", "PLASTER_DRAWN", "DRAWN_UNMATCHED"
 
@@ -69,16 +70,8 @@ def _ring(room):
   ring = g.get("outer") or g.get("points") or []
   return [tuple(p) for p in ring] if len(ring) >= 3 else None
 
-def build(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None, bridge_mm: float = 0.0) -> WallGraph:
-  segs = []
-  for w in walls:
-    pts = (w.geometry or {}).get("points") or []
-    a, b = (tuple(pts[0]), tuple(pts[-1])) if len(pts) >= 2 else (None, None)
-    segs.append((w, a, b))
-  live = [(w, a, b) for w, a, b in segs if a is not None and (a[0] != b[0] or a[1] != b[1])]
-  if not live or not mm_per_pt:
-    return WallGraph(tuple(WallRun(str(i), floor, (0.0, 0.0), (0.0, 0.0), _thickness_mm(w), ()) for i, (w, _a, _b) in enumerate(segs)))
-
+def _solid_of(segs: list, mm_per_pt: float, bridge_mm: float) -> tuple:
+  """The rectangle of every wall and their union, with the free ends that meet another wall within bridge_mm run on to it. (rects by index, solid.)"""
   rects: dict = {}
   for k, (w, a, b) in enumerate(segs):
     if a is None or (a[0] == b[0] and a[1] == b[1]):
@@ -114,8 +107,21 @@ def build(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None, 
         if near > 0:
           extra.append(LineString([tip, (tip[0] + sign * ux * (near + 1e-6), tip[1] + sign * uy * (near + 1e-6))]).buffer(t / 2.0, cap_style=2, join_style=2))
     if extra:
-      solid = unary_union([solid, *extra])
+       solid = unary_union([solid, *extra])
       
+  return rects, solid
+
+def build(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None, bridge_mm: float = 0.0) -> WallGraph:
+  segs = []
+  for w in walls:
+    pts = (w.geometry or {}).get("points") or []
+    a, b = (tuple(pts[0]), tuple(pts[-1])) if len(pts) >= 2 else (None, None)
+    segs.append((w, a, b))
+  live = [(w, a, b) for w, a, b in segs if a is not None and (a[0] != b[0] or a[1] != b[1])]
+  if not live or not mm_per_pt:
+    return WallGraph(tuple(WallRun(str(i), floor, (0.0, 0.0), (0.0, 0.0), _thickness_mm(w), ()) for i, (w, _a, _b) in enumerate(segs)))
+
+  rects, solid = _solid_of(segs, mm_per_pt, bridge_mm)
   minx, miny, maxx, maxy = solid.bounds
   pad = max(maxx - minx, maxy - miny) * 0.05 + 10.0
   frame = box(minx - pad, miny - pad, maxx + pad, maxy + pad)
@@ -185,3 +191,55 @@ def build(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None, 
     faces = tuple(Face(side, bound, round(cnt / steps, 4)) for side in ("L", "R") for bound, cnt in sorted(tally[side].items()))
     runs.append(WallRun(str(k), floor, (round(a[0], 3), round(a[1], 3)), (round(b[0], 3), round(b[1], 3)), _thickness_mm(w), faces))
   return WallGraph(tuple(runs), len(closed_spaces), open_rooms, sum(1 for _r, p, bd in room_rows if p.area * sqm >= MIN_ROOM_M2 and bd != OUTSIDE))
+
+def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float = 0.0, close_mm: float = 0.0, courtyard_external: bool = True) -> tuple:
+  segs = []
+  
+  for w in walls:
+    pts = (w.geometry or {}).get("points") or []
+    a, b = (tuple(pts[0]), tuple(pts[-1])) if len(pts) >= 2 else (None, None)
+    segs.append((w, a, b))
+    
+  live = [k for k, (w, a, b) in enumerate(segs) if a is not None and (a[0] != b[0] or a[1] != b[1])]
+  if not live or not mm_per_pt:
+    return [(0.0, 0.0)] * len(segs), {"perimeter_m": 0.0, "outer_face_m": 0.0, "area_m2": 0.0}
+  rects, solid = _solid_of(segs, mm_per_pt, bridge_mm)
+  closed = solid.buffer(close_mm / mm_per_pt).buffer(-close_mm / mm_per_pt) if close_mm else solid
+  polys = list(closed.geoms) if hasattr(closed, "geoms") else [closed]
+  outline = unary_union([Polygon(p.exterior) for p in polys if not p.is_empty and hasattr(p, "exterior")])
+  
+  if courtyard_external:
+    courts = [Polygon(ring) for r in rooms if RT.of_room(r) in OUTSIDE_TYPES and (ring := _ring(r)) is not None]
+    courts = [c.buffer(0) for c in courts]
+    inner = [c for c in courts if outline.contains(c.representative_point()) and outline.buffer(-1e-6).contains(c)]
+    if inner:
+      outline = outline.difference(unary_union(inner))
+      
+  sqm = (mm_per_pt ** 2) / 1e6
+  inside_outline = prep(outline)
+  out, outer_cc = [], 0.0
+  for k, (w, a, b) in enumerate(segs):
+    if k not in rects:
+      out.append((0.0, 0.0))
+      continue
+    t = _thickness_mm(w) / mm_per_pt
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    n = math.hypot(dx, dy)
+    ux, uy = dx / n, dy / n
+    nx, ny = -uy, ux
+    steps = max(1, int(round(n * mm_per_pt / STEP_MM)))
+    off = t / 2.0 + PROBE_SHARE * t
+    inside = outside = 0
+    for s_ in range(steps):
+      f = (s_ + 0.5) / steps
+      cx, cy = a[0] + dx * f, a[1] + dy * f
+      for sign in (1.0, -1.0):
+        if inside_outline.contains(Point(cx + sign * nx * off, cy + sign * ny * off)):
+          inside += 1
+        else:
+          outside += 1
+    out.append((round(inside / steps, 4), round(outside / steps, 4)))
+    outer_cc += (outside / steps) * n * mm_per_pt / 1000.0
+  perimeter = sum(p.length for p in (list(outline.geoms) if hasattr(outline, "geoms") else [outline])) * mm_per_pt / 1000.0
+  parts = sorted((round(g.length * mm_per_pt / 1000.0, 2) for g in (list(outline.geoms) if hasattr(outline, "geoms") else [outline])), reverse=True)
+  return out, {"perimeter_m": round(perimeter, 3), "outer_face_m": round(outer_cc, 3), "area_m2": round(outline.area * sqm, 3), "parts_m": parts[:6]}

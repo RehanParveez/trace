@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.model import walls as MW
 import re
 from app.engine.measure import proposed as QP
 from app.engine.measure import opening_rules as OPR
+from app.engine.measure import rule_formulas as RF
 from app.engine.measure import readings as QS
 from shapely.geometry import LineString, Point
 from app.modules.drawings_boq.takeoff.orientation import axes as AX
@@ -464,7 +465,7 @@ def paint_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str |
     if area is not None:
       area = max(0.0, area - less)
     facts = {"derived_from": "WALLS", "plaster_side": side, "wall_count": len(faces), "outer_wall_count": outer, "face_length_m": round(face_len, 3),
-      "opening_m2": round(open_m2, 3), "less_dado_m2": round(less, 3), "faces": faces, "conventions": conventions_applied("deduct_opening_paint")}
+      "opening_m2": round(open_m2, 3), "less_dado_m2": round(less, 3), "faces": faces, "conventions": conventions_applied("deduct_opening_paint"), "heights_from": heights_from(walls)}
     if area is not None:
       facts["area_m2"] = round(area, 3)
       before = plaster_area(open_off(gross), side)
@@ -550,9 +551,16 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
 
 def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None) -> dict:
   mode = str(FR.rule(FR.WALL_FACES).value or FR.OUTLINE).upper()
-  if mode != FR.GRAPH:
-    return {"mode": mode, "used": False, "open_rooms": []}
   ws = plaster_walls(walls)
+  if mode != FR.GRAPH:
+    if not ws or not mm_per_pt:
+      return {"mode": mode, "used": False, "open_rooms": []}
+    sides, stats = MW.outline_sides(ws, usable_rooms(rooms), mm_per_pt, C.WALL_GAP_CLEAR_MAX_MM, C.OUTLINE_CLOSE_MM, bool(QS.flag("plaster_courtyard_external")))
+    if not stats["perimeter_m"]:
+      return {"mode": mode, "used": False, "open_rooms": []}
+    for w, (inside, outside) in zip(ws, sides):
+      w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}, "outline_perimeter_m": stats["perimeter_m"], "outline_parts_m": stats["parts_m"]}
+    return {"mode": mode, "used": False, "outline": stats, "open_rooms": []}
   if not ws or not mm_per_pt:
     return {"mode": mode, "used": False, "open_rooms": []}
   g = MW.build(ws, usable_rooms(rooms), mm_per_pt, floor, C.WALL_GAP_CLEAR_MAX_MM)
@@ -561,6 +569,17 @@ def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None =
   for w, (inside, outside) in zip(ws, g.sides()):
     w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}}
   return {"mode": mode, "used": True, "open_rooms": [], "rooms": g.rooms_seen, "faces": g.faces}
+
+def heights_from(walls: list) -> list:
+  out: list = []
+  for w in plaster_walls(walls):
+    for n in w.notes or []:
+      src = n.get("ladder") if str(n.get("code") or "").startswith("HEIGHT_FROM") else None
+      if src:
+        item = {"kind": src.get("kind"), "what": src.get("what"), "floor": src.get("floor"), "basis": src.get("basis")}
+        if item not in out:
+          out.append(item)
+  return out
 
 def open_off(faces: list) -> list:
   return [{**r, "o": 0.0, **({"o_in": 0.0, "o_out": 0.0, "rev": 0.0} if "o_in" in r else {})} for r in faces]
@@ -616,6 +635,10 @@ def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str
     area = plaster_area(faces, side)
     facts = {"derived_from": "WALLS", "plaster_side": side, "wall_count": len(faces), "outer_wall_count": outer, "face_length_m": round(face_len, 3),
       "opening_m2": round(open_m2, 3), "faces": faces, "conventions": conventions_applied("deduct_opening_plaster")}
+    facts["heights_from"] = heights_from(walls)
+    perimeter = max((float((w.facts or {}).get("outline_perimeter_m") or 0.0) for w in plaster_walls(walls)), default=0.0)
+    if perimeter:
+      facts["outline_perimeter_m"] = perimeter
     if area is not None:
       facts["area_m2"] = round(area, 3)
       facts["before_deductions_m2"], facts["after_deductions_m2"] = round(plaster_area(open_off(gross), side) or 0.0, 3), round(area, 3)
@@ -655,6 +678,8 @@ def frame_width(h: dict) -> tuple:
     return (n * tn + k * tk) / (n + k), True
   return (tn if tn is not None else tk), False
 
+FRAME_DEFAULTS = {"add_mm": 0.0, "section_by_width": [{"max_width_mm": 1e9, "width_mm": 0.0, "depth_mm": 0.0}]}   
+
 def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
   """The frames of the doors of a floor: for every door mark, the two sides and the top of the door times the width of the frame. The width of the frame
   is the thickness of the wall the door stands in, so the doors of a mark are asked for the thin or the thick width by the walls they were found in."""
@@ -683,8 +708,14 @@ def door_frame_candidates(doors: list, walls: list, ctx: dict, level_hint: str |
       
     where = f" · {spec[0]}" if spec else ""
     notes = [C.note("DOOR_FRAME_FROM_DOORS"), C.note("DOOR_FRAME_WIDTH_BY_WALL")]
-    params, missing = {"length_mm": round(2.0 * height + width, 1)}, ["frame_width_mm"]
+    framed, applied = RF.run("frame", FRAME_DEFAULTS, {"opening_width_mm": width, "opening_height_mm": height})
+    params, missing = {"length_mm": round(framed["length_mm"], 1)}, ["frame_width_mm"]
+    facts["formula"] = {k: applied[k] for k in ("formula", "source", "rule_id", "version")}
     host_t, mixed = frame_width(h)
+    
+    if host_t is None and applied["source"] == "RULE" and framed["section_mm"][0] > 0.0:
+      host_t = float(framed["section_mm"][0])
+      facts["frame_width_from"] = "RULE"
     if host_t is not None and C.FRAME_WALL_MIN_MM <= host_t <= C.FRAME_WALL_MAX_MM:
       params["width_mm"], missing = round(host_t, 1), []
       facts["frame_width_from"] = "WALL"

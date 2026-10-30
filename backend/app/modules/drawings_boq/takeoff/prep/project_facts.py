@@ -4,7 +4,7 @@ from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
 
 STRIDE = 1000                      
 HEIGHT_TOL_MM = 1.0                
-FACT_NAMES = ("storey_heights", "slab_values", "spec_facts", "beam_sections", "tank_details", "footing_sections", "schedule", "units", "opening_labels", "column_details")
+FACT_NAMES = ("storey_heights", "slab_values", "spec_facts", "beam_sections", "tank_details", "footing_sections", "footing_views", "schedule", "units", "opening_labels", "column_details")
 
 def stamp(pairs: list) -> tuple:
   order: dict = {}
@@ -69,6 +69,7 @@ def gather_all(sheets: list) -> dict:
     "beam_sections": BD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("beam_details")} for s in sheets if s.prep_meta.get("beam_details")]),
     "tank_details": TD.gather([{"page_no": s.page_no, "details": s.prep_meta.get("tank_details")} for s in sheets if s.prep_meta.get("tank_details")]),
     "footing_sections": [{**sec, "page_no": s.page_no} for s in sheets for sec in (s.prep_meta.get("footing_sections") or [])],
+    "footing_views": [{**v, "page_no": s.page_no} for s in sheets for v in (s.prep_meta.get("footing_views") or [])],
     "column_details": column_details_of([s.prep_meta for s in sheets]),
     "units": UR.drawing_imperial([{"page_no": s.page_no, "units": s.prep_meta.get("units"), "hint": s.prep_meta.get("units_hint")} for s in sheets]),
     "schedule": DS.gather(PSV.PrepService._schedule_sheets(sheets)),
@@ -157,6 +158,10 @@ def merge(own: dict, other: dict) -> dict:
 
   items, src, _ = _keyed(own["footing_sections"], other["footing_sections"], "FOOTING_SECTION", lambda x: (str(x.get("caption")), x.get("wall_in")))
   put("footing_sections", items, src)
+
+  items, src, _ = _keyed(own.get("footing_views") or [], other.get("footing_views") or [], "FOOTING_VIEW", lambda x: str(x.get("mark")),
+    lambda a, b: a.get("size_mm") and b.get("size_mm") and a["size_mm"] != b["size_mm"])
+  put("footing_views", items, src)
 
   sched, src, found = dict(own["schedule"]), [], []
   for k, v in other["schedule"].items():

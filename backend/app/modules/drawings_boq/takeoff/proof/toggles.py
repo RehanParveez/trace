@@ -11,6 +11,10 @@ TOGGLES = {
   "derived_scaffold": ("SCF-EXTERNAL",),
   "derived_props": ("FRM-PROPS",),
 }
+
+FORMULA_RULES = {
+  "formula.frame": {"scope": {}, "value": {"formula": "frame", "params": {"add_mm": 100.0, "section_by_width": [{"max_width_mm": 1e9, "width_mm": 0.0, "depth_mm": 0.0}]}}, "items": ("JOI-DOOR-FRAME",)},
+}
 PLASTER_ITEMS = ("PLASTER_INSIDE", "PLASTER_OUTSIDE")
 AREA_TOL_M2 = 0.01
 
@@ -37,7 +41,36 @@ def _deducted_m2(accs: list) -> float:
         total += float(f["before_deductions_m2"]) - float(f["after_deductions_m2"])
   return total
 
+def prove_formula(case_name: str, key: str, cases_dir: str | None = None) -> dict:
+  from app.modules.drawings_boq.takeoff.proof import case_io as CIO, offline_run as OR
+  spec = FORMULA_RULES[key]
+  profile, rule_set = OR.seed_profile()
+  catalog = OR.work_item_catalog()
+  case = CIO.load_case(os.path.join(CIO.HERE, case_name))
+  files, missing = CIO.find_files(case, CIO.cases_dir(cases_dir))
+  
+  if missing:
+    return {"case": case_name, "key": key, "ok": False, "why": f"the PDFs are missing: {', '.join(missing)}"}
+  rows, _problems, _file = CIO.load_company_rules(case)
+  rule = {"id": f"toggle:{key}", "key": key, "scope": spec["scope"], "value": spec["value"], "unit": None, "cls": "JUDGEMENT", "origin": "COMPANY", "version": 1, "note": "a formula rule put in force to prove it moves only its own rows"}
+  base_ledger, _ = _run(case, files, rows, profile, rule_set, catalog)
+  flip_ledger, flip_accs = _run(case, files, [*rows, rule], profile, rule_set, catalog)
+  a, b = _totals(base_ledger), _totals(flip_ledger)
+  moved = {f"{k[0]} ({k[1]})": [round(a.get(k, 0.0), 6), round(b.get(k, 0.0), 6)] for k in sorted(set(a) | set(b), key=str) if abs(a.get(k, 0.0) - b.get(k, 0.0)) > 1e-6 * max(1.0, abs(a.get(k, 0.0)))}
+  stray = [k for k in moved if k.split(" ")[0] not in set(spec["items"])]
+  used = sum(1 for acc in flip_accs for c in acc.candidates if c.decision == "ACCEPTED" and ((c.facts or {}).get("formula") or {}).get("rule_id") == rule["id"])
+  out = {"case": case_name, "key": key, "moved": moved, "stray": stray, "rows_named_rule": used, "rows": [len(base_ledger), len(flip_ledger)]}
+  
+  out["ok"] = bool(moved) and not stray and used > 0
+  if not moved:
+    out["why"] = "nothing moved: the rule changed no line, so it proves nothing"
+  elif used == 0:
+    out["why"] = "no accepted row names the rule in its facts"
+  return out
+
 def prove(case_name: str, key: str, cases_dir: str | None = None) -> dict:
+  if key in FORMULA_RULES:
+    return prove_formula(case_name, key, cases_dir)
   from app.modules.drawings_boq.takeoff.proof import case_io as CIO, offline_run as OR
   profile, rule_set = OR.seed_profile()
   catalog = OR.work_item_catalog()
@@ -81,6 +114,9 @@ def main(argv: list | None = None) -> int:
     print(f"{'ok  ' if r['ok'] else 'FAIL'}  {r['case']} {key}")
     for k, (x, y) in (r.get("moved") or {}).items():
       print(f"      {k}: {x} -> {y}")
+    for k in ("rows_named_rule",):
+      if k in r:
+        print(f"      {k}: {r[k]}")
     for k in ("plaster_delta_m2", "openings_taken_off_m2", "why"):
       if k in r:
         print(f"      {k}: {r[k]}")

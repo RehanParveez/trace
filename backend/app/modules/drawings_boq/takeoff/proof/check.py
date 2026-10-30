@@ -5,7 +5,7 @@ import pathlib
 import sys
 
 CHECK_CASES = ("plot1", "191c")
-TOGGLE_CHECKS = (("plot1", "deduct_opening_plaster"),)    
+TOGGLE_CHECKS = (("plot1", "deduct_opening_plaster"), ("plot1", "formula.frame"))    
 CASES = pathlib.Path(__file__).resolve().parent / "cases"
 
 def hash_file(case: str) -> pathlib.Path:
@@ -101,7 +101,8 @@ def main(argv: list | None = None) -> int:
     from app.modules.drawings_boq.takeoff.proof import toggles as TG
     for case, key in TOGGLE_CHECKS:
       r = TG.prove(case, key, args.cases_dir)
-      note = r.get("why") or ("moved only " + ", ".join(r["moved"]) + (f"; plaster by {r['plaster_delta_m2']:g} m2 = the openings taken off" if "plaster_delta_m2" in r else ""))
+      note = r.get("why") or ("moved only " + ", ".join(r["moved"]) + (f"; plaster by {r['plaster_delta_m2']:g} m2 = the openings taken off" if "plaster_delta_m2" in r else "")
+        + (f"; {r['rows_named_rule']} accepted rows name the rule" if "rows_named_rule" in r else ""))
       if r.get("stray"):
         note = "also moved " + ", ".join(r["stray"])
       results.append((f"toggle {case} {key}", bool(r["ok"]), note))

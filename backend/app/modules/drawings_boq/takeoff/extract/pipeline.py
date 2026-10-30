@@ -22,6 +22,7 @@ from app.modules.drawings_boq.takeoff.extract import rcc_ring as RR
 from app.modules.drawings_boq.takeoff.extract import completion as CP
 from app.modules.drawings_boq.takeoff.extract import rules as QR
 from app.modules.drawings_boq.takeoff.model import walls as MW
+from app.modules.drawings_boq.takeoff.model import levels as LV
 from app.modules.drawings_boq.takeoff.extract import neck as NK
 from app.modules.drawings_boq.takeoff.extract import footing_pairs as FP
 from app.modules.drawings_boq.takeoff.extract import column_marks as CM
@@ -71,6 +72,7 @@ from app.modules.drawings_boq.takeoff.prep import schedules as S
 from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff.prep import views as VW
 from app.modules.drawings_boq.takeoff.extract import round_columns as RND
+from app.modules.drawings_boq.takeoff.extract import mark_join as MJ
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark as ST_norm
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint, is_tag
 from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
@@ -191,9 +193,16 @@ def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None, 
       elif detail:
         used = detail
         facts["size_detail_mm"] = list(detail)
-        notes.append(C.note("SIZE_FROM_DETAIL"))
+        seen_on_view = cat == "FOOTING" and tag in ((footing or {}).get("viewed") or ())
+        dn = C.note("SIZE_FROM_DETAIL")
+        if seen_on_view:
+          dn["message"] = f"The size is printed on the view captioned 'FOUNDATION PLAN {tag}' of this drawing, from the two overall dimensions of the pad."
+          facts["footing_view"] = {"mark": tag, "size_mm": list(detail)}
+        notes.append(dn)
         
-        if g.get("stair"):
+        if seen_on_view:
+          pass
+        elif g.get("stair"):
           sn = C.note("FOOTING_SIZE_BY_ELIMINATION")
           sn["message"] = FP.stair_message(detail)
           notes.append(sn)
@@ -236,7 +245,7 @@ def _tag_candidates(index, words, shapes, f, hint, heights, ctx, openings=None, 
       
       if h:
         params[dim] = h["mm"]
-        notes.append(_height_note(h))
+        notes.extend(_height_notes(h))
       else:
         missing.append("height_mm" if cat == "COLUMN" else "depth_mm")
       params["dims_basis"] = "SPECIFIED" if (sched or h) else "DRAWN"
@@ -281,25 +290,35 @@ def _ft_in(mm: float) -> str:
   return f"{inches // 12}'-{inches % 12}\""
 
 def _with_floor_height(heights: dict, floor_heights: dict | None, level_hint: str | None) -> dict:
-  """A wall and a column take the floor-to-floor height of the floor (the QS, S5); the clear height is the fallback."""
-  return QR.floor_heights(heights, floor_heights, level_hint, _ft_in, _with_clear_height)
+  got = QR.floor_heights(heights, floor_heights, level_hint, _ft_in, _with_clear_height)
+  return {cat: ({**e, "ladder": LV.note_source(level_hint, floor_heights, e["mm"])} if isinstance(e, dict) and "ladder" not in e and "mm" in e else e) for cat, e in got.items()}
 
 def _with_clear_height(heights: dict, floor_heights: dict | None, level_hint: str | None) -> dict:
   """The height notes of the sheet, with the clear storey height printed on the building sections added for the floor this plan shows. A height
   written as a note on the plan itself is kept; the section height only fills a gap."""
   fh = (floor_heights or {}).get(level_hint or "")
+  out = {cat: ({**e, "ladder": LV.note_source(level_hint, floor_heights, e["mm"])} if isinstance(e, dict) and "ladder" not in e and "mm" in e else e) for cat, e in heights.items()}
   
   if not fh or not fh.get("clear_mm"):
-    return heights
+    return out
   how = "given by the room notes of the plans (ceiling height)" if fh.get("basis") == "PLAN_NOTES" else "printed on the building section"
-  entry = {"mm": float(fh["clear_mm"]), "text": f"clear storey height {_ft_in(float(fh['clear_mm']))} {how}", "basis": "SECTION"}
-  out = dict(heights)
+  clear, source = LV.height(floor_heights, LV.FLOOR_TO_SOFFIT, level_hint)
+  entry = {"mm": float(fh["clear_mm"]), "text": f"clear storey height {_ft_in(float(fh['clear_mm']))} {how}", "basis": "SECTION", "ladder": source}
   for cat in ("WALL", "COLUMN"):
     out.setdefault(cat, entry)
   return out
 
 def _height_note(h: dict) -> dict:
-   return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}))
+   return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}),
+     **({"ladder": h["ladder"]} if h.get("ladder") else {}))
+
+def _height_notes(h: dict) -> list:
+  """The note of a height, and STOREY_HEIGHT beside it when the height is a note of the plan that differs from the clear height the floor's entry prints (Pack 196)."""
+  out = [_height_note(h)]
+  bad = ((h.get("ladder") or {}).get("disagrees"))
+  if bad:
+    out.append(C.note("STOREY_HEIGHT", floor=(h["ladder"] or {}).get("floor"), **bad))
+  return out
 
 def _mark_by_size(a: float, b: float, col_details: dict | None) -> tuple:
   """(mark, how): the mark of the one column detail that has this size within MARK_BY_SIZE_TOL_MM, else (UNMARKED-<size>, "NAMED")."""
@@ -323,7 +342,7 @@ def _unmarked_columns(v: dict, squares: list, f: float, ctx: dict, imperial: boo
   h = (heights or {}).get("COLUMN")
   
   if h:
-    notes.append(_height_note(h))
+    notes.extend(_height_notes(h))
   spec = level_spec(v.get("level_hint"))
   label = f"Columns (no mark) ×{len(sized)} · {_fmt_mm(a)}×{_fmt_mm(b)} mm" + (f" · {spec[0]}" if spec else "")
   facts = {"tag": mark, "mark_from_size": how, "count": len(sized), "size_drawn_mm": [a, b], "size_used_mm": [a, b], "matched_shapes": len(sized),
@@ -353,7 +372,7 @@ def _unmarked_round_columns(v: dict, rounds: list, f: float, ctx: dict, imperial
     side = round(d * math.sqrt(math.pi) / 2.0, 1)
     notes = [C.note("UNMARKED_COLUMNS"), C.note("COLUMN_SIZE_FROM_PLAN")]
     if h:
-      notes.append(_height_note(h))
+      notes.extend(_height_notes(h))
     label = f"Round columns (no mark) ×{len(rs)} · {_fmt_mm(d)} mm dia" + (f" · {spec[0]}" if spec else "")
     facts = {"tag": None, "count": len(rs), "size_drawn_mm": [d, d], "size_used_mm": [side, side], "section": "CIRCULAR", "diameter_mm": d, "equivalent_square_mm": side,
       "matched_shapes": len(rs), "view": {"key": v["key"], "caption": v["caption"], "kind": v["kind"], "level_hint": v.get("level_hint")}}
@@ -498,7 +517,7 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
     "unmarked_m": round(sum(l["length_mm"] for l in orphans or []) / 1000.0, 3), "unplaced_marks": res["unplaced"], "level_hint": level_hint}
 
 def _structure_candidates(index, views: list, f: float, hint, heights, ctx, imperial: bool, view_scales: dict | None = None, col_details: dict | None = None,
-  floor_heights: dict | None = None, beam_sections: list | None = None, marks: dict | None = None) -> tuple:
+  floor_heights: dict | None = None, beam_sections: list | None = None, marks: dict | None = None, viewed: dict | None = None) -> tuple:
   """A sheet that shows several structural plans (foundation, basement / ground / first framing plans, mumty framing plan): each plan is read on
   its own, so the C1 marks of the ground floor are not added to the C1 marks of the first floor. Footings are read from the foundation plan only
 
@@ -548,7 +567,7 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
     
     if v.get("foundation"):
       stair_words = ST.stair_footings(ws)
-      footing = FP.assign(groups, sizes, FP.summary(FP.label_pairs(ws)), column_mm, len(stair_words))
+      footing = FP.assign(groups, sizes, FP.summary(FP.label_pairs(ws)), column_mm, len(stair_words), viewed)
       for w in stair_words:
         groups.append({"tag": "STAIR-F", "category": "FOOTING", "points": [[round(w.cx, 4), round(w.cy, 4)]], "count": 1, "schedule_rows": 0,
           "matched": 0, "stair": True})
@@ -586,6 +605,21 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
   _settle_hidden_columns(out)
   CM.apply(out, CM.findings(out, col_details), _status)
   return out, stats
+
+def _join_footing_views(res, footing_views: list | None) -> None:
+  if not footing_views:
+    return
+  foot = [c for c in res.candidates if c.category == "FOOTING" and c.tag and not (c.facts or {}).get("stair") and not (c.facts or {}).get("neck_of")]
+  out = MJ.join({c.tag: int(c.count or 0) for c in foot}, footing_views, "FOOTING")
+  lacking = {i["mark"]: i for i in out["issues"] if i["code"] == MJ.MARK_WITHOUT_DETAIL}
+  for c in foot:
+    issue = lacking.get(MJ.norm(c.tag))
+    if issue is not None:
+      n = C.note(MJ.MARK_WITHOUT_DETAIL)
+      n["message"] = issue["message"] + " Its size is not taken from a view."
+      c.notes.append(n)
+      c.status = _status(c.notes)
+  res.stats["mark_join"] = {"FOOTING": {"views": len(footing_views), "marks": {m: j["size_mm"] for m, j in out["joined"].items()}, "issues": [i for i in out["issues"] if i["code"] != MJ.DETAIL_WITHOUT_MARK]}}
 
 def _is_imperial(words) -> bool:
   """A drawing dimensioned in feet and inches: several words such as 30'-0" or 13'-6"."""
@@ -797,7 +831,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     h = heights.get("WALL")
     if h:
       params["height_mm"] = h["mm"]
-      notes.append(_height_note(h))
+      notes.extend(_height_notes(h))
       
     else:
       missing.append("height_mm")
@@ -843,7 +877,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     
     if h:
       params["height_mm"] = h["mm"]
-      notes.append(_height_note(h))
+      notes.extend(_height_notes(h))
     else:
       missing.append("height_mm")
       
@@ -1763,9 +1797,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   budget_s: float = 25.0, schedule: dict | None = None, views_meta: list | None = None, col_details: dict | None = None,
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
-  sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
+   sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
   footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None,
-  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, page_unit: float = 1.0) -> Extraction:
+  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, footing_views: list | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   work = W.Work(C.PAGE_WORK_BUDGET, started + C.PAGE_HARD_STOP_FACTOR * budget_s)
@@ -1796,17 +1830,20 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   openings = S.opening_lookup(schedule)
   plan_kind = role_info.get("plan_kind")
   marks = {"vocab": mark_vocab, "discipline": discipline, "plan_kind": plan_kind, "skipped": {}}
-  views = VW.find_views(index, page_unit)
+  views = VW.find_views(index)
+  viewed = MJ.sizes(footing_views or [])
   
   composite_structural = sum(1 for v in views if v["structural"]) >= 2
   if composite_structural:
-    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, imp_here, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details, floor_heights, beam_sections, marks)
+    found, vstats = _structure_candidates(index, views, mm_per_pt, hint, heights, ctx, imp_here, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")}, col_details, floor_heights, beam_sections, marks, viewed)
+    if partial:
+      found = [c for c in found if c.category != "FOOTING"]       
     res.candidates.extend(found)
     res.stats["views"] = vstats
     res.stats["column_details"] = {t: {"sizes_in": r.get("sizes_in") or []} for t, r in (col_details or {}).items()}
     plans = _view_plans(views, {v["key"]: v.get("scale") for v in (views_meta or []) if v.get("scale")})
   else:
-    found = [] if partial else _tag_candidates(index, words, shapes, mm_per_pt, hint, sheet_heights, ctx, openings, col_details=col_details, marks=marks)
+    found = [] if partial else _tag_candidates(index, words, shapes, mm_per_pt, hint, sheet_heights, ctx, openings, col_details=col_details, marks=marks, footing=FP.from_views(viewed) if viewed else None)
     only = [] if partial else [v for v in views if v["structural"] and not v.get("foundation")]
     if len(only) == 1:
       in_view = [w for w in words if VW.contains(only[0], w.cx, w.cy)]
@@ -1855,6 +1892,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   props = STG.props_candidates([c for c in res.candidates if c.category == "SLAB"], floor_heights, ctx, Candidate, _finish)
   res.candidates.extend(props)
   res.stats["props_items"] = len(props)
+  _join_footing_views(res, footing_views)
   pads = FD.pad_candidates([c for c in res.candidates if c.category == "FOOTING"], ctx, Candidate, _finish, footing_sections)
   res.candidates.extend(pads)
   res.stats["concrete_beds"] = len(pads)
@@ -1972,6 +2010,11 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
           res.notes.append(C.note("WALL_FACES_FROM_GRAPH", rooms=faced.get("rooms"), spaces=faced.get("faces")))
         elif faced.get("mode") == "GRAPH":
           res.notes.append(C.note("WALL_FACES_OPEN", rooms=faced.get("open_rooms")))
+        elif faced.get("outline"):
+          res.stats["floor_outline"] = faced["outline"]
+          res.notes.append(C.note("WALL_FACES_FROM_OUTLINE", perimeter_m=faced["outline"]["perimeter_m"], outer_face_m=faced["outline"]["outer_face_m"]))
+          if not any(c.category == "SLAB" for c in res.candidates):
+            res.candidates.extend(RF.from_outline(level_hint, faced["outline"], [*walls, *QR.counted_completion(completion)], ctx, Candidate, _finish))
       
       if with_finishes:
         finishes = _stage(res, "FINISHES", lambda: _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"],
@@ -2144,6 +2187,8 @@ def _site_candidates(found: list, ctx: dict) -> list:
       if extra.get("printed"):
         n["message"] += " Printed: " + extra["printed"] + "."
     notes.append(n)
+    if ctx.get("scale_unverified"):
+      notes.append(C.note("SCALE_UNVERIFIED"))
     params = {"dims_basis": "SPECIFIED", **it["params"]}
     mode_of = "COUNT_X_AREA" if it["site_kind"] == "GATE" else mode
     cand = Candidate(key=_key("SITE", it["site_kind"], round(it["x"], 1), round(it["y"], 1)), category="SITE", kind=kind, quantity_mode=mode_of, label=it["label"], tag=it["tag"],
@@ -2175,12 +2220,14 @@ def _tank_twin_walls(res: Extraction, sites: list) -> int:
   return n
 
 def _finish_site(c: Candidate, ctx: dict, base: float) -> Candidate:
+  if ctx.get("scale_unverified") and not any(n.get("code") == "SCALE_UNVERIFIED" for n in c.notes):
+    c.notes.append(C.note("SCALE_UNVERIFIED"))
   c.status = _status(c.notes)
   c.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
   return c
 
 def _site_ctx(kw: dict) -> dict:
-  return {"content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") in ("OCR", "OUTLINED") else 1.0)}
+  return {"scale_unverified": bool(kw.get("scale_unverified")), "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(kw.get("content_kind", "VECTOR"), 0.95) * (SCAN_TEXT_FACTOR if kw.get("text_source", "TEXT") in ("OCR", "OUTLINED") else 1.0)}
 
 def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction:
   ctx = _site_ctx(kw)

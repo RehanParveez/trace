@@ -29,6 +29,7 @@ SIZE_TOL_PCT = 2.0
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH"
 STATUS_RANK = {MATCH: 0, NEAR: 1, DIFF: 2, NO_TRUTH: 3, MISSING: 4, EXTRA: 4}
 CLASS_RANK = {"DRAWING": 0, "CONVENTION": 1, "NEEDS_DECISION": 2, "QS_ERROR": 3}
+DETAIL_SHEET_CATEGORIES = ("WALL", "ROOM", "DOOR", "WINDOW")      
 PLAN_CATEGORIES = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR", "COLUMN", "BEAM", "SLAB", "FOOTING")
 NOT_PLAN_TYPES = ("SECTION", "DETAIL", "SCHEDULE", "NOTES", "COVER", "LEGEND", "ELEVATION")
 
@@ -46,7 +47,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -292,9 +293,53 @@ def size_fact(read: list, f: dict) -> dict:
     return {"text": text, "status": "PASS", "expected": stated, "found": shown, "message": f"{f.get('mark')} read as {', '.join(shown)}: as stated.", "pages": sorted({p for p, _d in sized})}
   return {"text": text, "status": "FAIL", "expected": stated, "found": shown, "message": f"{f.get('mark')} was read as {', '.join(shown)}; {stated} is stated.", "pages": sorted({p for p, _d in sized})}
 
+STEP_TOL_IN = 0.5
+
+def _steps_of(rec: dict) -> list:
+  return sorted((float(s["width_in"]), float(s["height_in"])) for s in rec.get("steps") or [])
+
+def _step_text(steps: list) -> str:
+  return ", ".join(f"{w:g} x {h:g}" for w, h in steps) + " in" if steps else "none"
+
+def step_fact(read: list, f: dict) -> dict:
+  mark = str(f.get("section") or "").strip().upper().replace(" ", "")
+  by_mark = bool(re.fullmatch(r"[A-Z]{1,2}\d{1,2}", mark))
+  want = sorted((float(s["width_in"]), float(s["height_in"])) for s in f["steps"])
+  text = f"step table {f.get('section')} ({len(want)} steps)"
+  stated = _step_text(want)
+  
+  recs = []
+  for sh in read:
+    for rec in ((sh.get("meta") or {}).get("footing_sections") or []):
+      if rec.get("read") != "OK" or not rec.get("steps"):
+        continue
+      if by_mark and str(rec.get("mark") or "").upper() == mark or not by_mark and rec.get("wall_in") is not None and abs(float(rec["wall_in"]) - float(f["thickness_in"])) < 0.01:
+        recs.append((sh["page_no"], rec))
+        
+  if not recs:
+    return {"text": text, "status": "MISSING", "expected": stated, "found": None, "message": "No section of that " + ("mark" if by_mark else "wall") + " was read with steps.", "pages": []}
+  def same(a, b):
+    return len(a) == len(b) and all(abs(x[0] - y[0]) <= STEP_TOL_IN and abs(x[1] - y[1]) <= STEP_TOL_IN for x, y in zip(a, b))
+  pages = sorted({p for p, _r in recs})
+  shown = sorted({_step_text(_steps_of(r)) for _p, r in recs})
+  ok = [r for _p, r in recs if same(_steps_of(r), want)]
+  if ok and f.get("base_width_in") is not None:
+    base = [round(float(r["base_width_mm"]) / 25.4, 1) for r in ok if r.get("base_width_mm")]
+    if base and not any(abs(b - float(f["base_width_in"])) <= STEP_TOL_IN for b in base):
+      return {"text": text, "status": "FAIL", "expected": stated, "found": shown, "message": f"The steps are as stated; the base is read {base[0]:g} in wide and {float(f['base_width_in']):g} in is stated.", "pages": pages}
+  if ok:
+    return {"text": text, "status": "PASS", "expected": stated, "found": shown, "message": f"{len(want)} steps read: as stated.", "pages": pages}
+  return {"text": text, "status": "FAIL", "expected": stated, "found": shown, "message": f"The section was read with {'; '.join(shown)}; {stated} is stated.", "pages": pages}
+
 def check_facts(read: list, facts: list) -> list:
   out = []
   for i, f in enumerate(facts):
+    if str(f.get("kind") or "").upper() == "STEP_TABLE":
+      try:
+        out.append(step_fact(read, f))
+      except (KeyError, TypeError, ValueError) as e:
+        out.append({"text": f"fact {i + 1} (STEP_TABLE {f.get('section') or ''})".strip(), "status": "INVALID", "expected": None, "found": None, "message": f"missing or bad value: {e}", "pages": []})
+      continue
     if str(f.get("kind") or "").upper() in ("FOOTING_SIZE", "COLUMN_SIZE"):
       try:
         out.append(size_fact(read, f))
@@ -376,6 +421,27 @@ def page_votes(reads: list) -> list:
           "signals": [f"{s['signal']} {s['certainty']}: {s['why']}" for s in vote.get("signals") or []]})
   return {"pages": out, "plan_pages": plans, "held": sum(1 for p in out if p["held"])}
 
+def height_sources(reads: list) -> list:
+  seen: dict = {}
+  for _pdf, read in reads:
+    for r in read:
+      for c in r["candidates"]:
+        if not _live(c):
+          continue
+        for n in c.notes or []:
+          src = n.get("ladder") if (str(n.get("code") or "").startswith("HEIGHT_FROM") or n.get("code") == "NECK_HEIGHT_ASSUMED") else None
+          if src:
+            mm = (c.params or {}).get("height_mm") or (c.params or {}).get("depth_mm") or n.get("height_mm")
+            key = (src.get("kind"), src.get("what"), src.get("floor"), src.get("basis"), round(float(mm), 1) if mm else None)
+            seen[key] = seen.get(key, 0) + 1
+  return [{"kind": k[0], "what": k[1], "floor": k[2], "basis": k[3], "mm": k[4], "rows": n} for k, n in sorted(seen.items(), key=lambda kv: str(kv[0]))]
+
+def _held_for_scale(r: dict, live: list) -> bool:
+  return _is_plan(r) and bool(live) and r.get("ratio") is None and all(any(n.get("code") == "SCALE_UNVERIFIED" for n in c.notes or []) for c in live)
+
+def scale_held(reads: list) -> list:
+  return [f"{pdf} p.{r['page_no']}" for pdf, read in reads for r in read if _held_for_scale(r, [c for c in r["candidates"] if _live(c)])]
+
 def invariants(reads: list, accs: list, rows: list) -> list:
   res = []
   def add(name, bad, why):
@@ -390,7 +456,8 @@ def invariants(reads: list, accs: list, rows: list) -> list:
       live = [c for c in r["candidates"] if _live(c)]
       ident = (r.get("meta") or {}).get("identity") or {}
       if not _is_plan(r):
-        non_plan += [tag] * sum(1 for c in live if c.category in PLAN_CATEGORIES)
+        wanted = DETAIL_SHEET_CATEGORIES if (ident.get("role_vote") or {}).get("role") == PRL.DETAIL else PLAN_CATEGORIES
+        non_plan += [tag] * sum(1 for c in live if c.category in wanted)
       if ident.get("discipline") == "STRUCTURAL":
         structural += [tag] * sum(1 for c in live if c.category in ("DOOR", "WINDOW"))
       if _is_plan(r) and live:
@@ -398,10 +465,26 @@ def invariants(reads: list, accs: list, rows: list) -> list:
         if not title.get("composite") and not (title.get("level_hint") or ident.get("floor")):
           no_floor.append(tag)
         if r.get("ratio") is None:
-          no_scale.append(tag)
+          if not _held_for_scale(r, live):
+            no_scale.append(tag)      
 
   add("PLAN_ITEMS_ONLY_ON_PLAN_PAGES", non_plan, "Walls, rooms, openings or members were read on a page that is not a plan.")
   add("NO_WINDOWS_ON_STRUCTURAL_SHEETS", structural, "A door or window was read on a structural sheet.")
+  uncited = []
+  for pdf, read in reads:
+    for r in read:
+      for c in r["candidates"]:
+        if not _live(c):
+          continue
+        f = c.facts or {}
+        
+        for n in c.notes or []:
+          if str(n.get("code") or "").startswith("HEIGHT_FROM") or n.get("code") == "NECK_HEIGHT_ASSUMED":
+            if (n.get("ladder") or {}).get("kind") in (None, "NONE"):
+              uncited.append(f"{pdf} p.{r['page_no']}")
+        if f.get("foundation_item") in ("PLASTER_INSIDE", "PLASTER_OUTSIDE", "PAINT_INSIDE", "PAINT_OUTSIDE") and f.get("area_m2") is not None and not f.get("heights_from"):
+          uncited.append(f"{pdf} p.{r['page_no']}")
+  add("EVERY_HEIGHT_CITES_A_LEVEL", uncited, "A row that uses a storey height does not say which entry of the table of floor heights, which note of the plan or which rule it took it from.")
   add("EVERY_PLAN_PAGE_HAS_A_FLOOR_AND_A_SCALE", no_floor + no_scale, "A plan page with items has no floor, or its scale was not measured and 1:100 was used.")
   doubled, member_two, beam_two, floor_two, finish_two, silent = [], [], [], [], [], []
   for acc in accs:
@@ -505,6 +588,32 @@ def stage_view(case: dict, ledger: list, floor_of: dict, catalog: dict) -> dict 
   if not out:
     return None
   return {"lines": out, "within_10": sum(1 for l in out if l["within_10"]), "of": len(out)}
+
+def mark_join_view(reads: list) -> dict | None:
+  from app.modules.drawings_boq.takeoff.extract import mark_join as MJ
+  rows = [r for _pdf, read in reads for r in read]
+  layout: dict = {"FOOTING": {}, "COLUMN": {}}
+  for r in rows:
+    if (r.get("stats") or {}).get("read_as") == "DETAILS_ONLY":
+      continue
+    for c in r["candidates"]:
+      f = c.facts or {}
+      if c.category in layout and c.tag and _live(c) and not f.get("stair") and not f.get("neck_of") and not f.get("from_shapes") and not f.get("mark_from_size"):
+        k = MJ.norm(c.tag)
+        layout[c.category][k] = max(layout[c.category].get(k, 0), int(c.count or 0))
+        
+  views = {"FOOTING": [{**v, "page_no": r["page_no"]} for r in rows for v in ((r.get("meta") or {}).get("footing_views") or [])], "COLUMN": []}
+  for r in rows:
+    for d in ((r.get("meta") or {}).get("details") or []):
+      if d.get("mark") and d.get("w_in") and d.get("h_in") and d.get("read") in ("TEXT", "TEXT_SQUARE", "OCR", "OCR_SQUARE"):
+        views["COLUMN"].append({"mark": d["mark"], "size_mm": sorted([round(d["w_in"] * 25.4, 1), round(d["h_in"] * 25.4, 1)]), "page_no": r["page_no"]})
+  out: dict = {}
+  for kind in ("FOOTING", "COLUMN"):
+    if not views[kind]:
+      continue
+    j = MJ.join(layout[kind], views[kind], kind)
+    out[kind] = {"views": len(views[kind]), "marks_on_plans": len(layout[kind]), "sized": sorted(m for m, v in j["joined"].items() if v["size_mm"]), "issues": j["issues"]}
+  return out or None
 
 def members_view(accs: list) -> dict | None:
   from app.modules.drawings_boq.takeoff.model import members as MB
@@ -783,7 +892,9 @@ def robust_run(case: dict, files: dict, profile, rule_set, catalog, clean: dict,
       s = RBS.score(rows, new_reads.get(n) or [])
       pages[n] = {"pages": s["pages"], "changed": s["pages_changed"], "unread": s["pages_unread"], "families": {f: v["recall"] for f, v in s["families"].items() if v["recall"] is not None and v["recall"] < 1.0}}
     out[vname] = {"worst_pct": moves[0]["pct"] if moves else 0.0, "worst_key": moves[0]["key"] if moves else None, "quantities": len(moves), "moved": len(over), "top": over[:20], "reads": pages,
-      "lines_within_10": doc2["summary"]["within_10"], "problems": len(doc2.get("problems") or [])}
+      "lines_within_10": doc2["summary"]["within_10"], "problems": len(doc2.get("problems") or []),
+      "invariants_failing": {i["name"]: i["count"] for i in doc2.get("invariants") or [] if i["status"] == "FAIL"}, "pages_held_for_scale": len(doc2.get("scale_held") or []),
+      "pages_voted": len((doc2.get("page_votes") or {}).get("pages") or [])}
   worst = max((v.get("worst_pct", 0.0) for v in out.values()), default=0.0)
   return {"move_pct": MOVE_PCT, "worst_pct": worst, "variants": out}
 
@@ -876,7 +987,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   facts = check_facts([r for _n, rows in reads for r in rows], case["facts"])
   doc = {"case": case["name"], "tier": case["tier"], "status": "SCORED", "policy": "ready_only" if main_ready else "accept_all", "lines": lines, "facts": facts,
     "facts_tally": {s: sum(1 for f in facts if f["status"] == s) for s in sorted({f["status"] for f in facts})},
-    "invariants": invariants(reads, accs, ledger), "page_votes": page_votes(reads), "summary": summarise(lines),
+    "invariants": invariants(reads, accs, ledger), "page_votes": page_votes(reads), "scale_held": scale_held(reads), "height_sources": height_sources(reads), "summary": summarise(lines),
     "other_policy": {"policy": "accept_all" if main_ready else "ready_only", "summary": other} if other is not None else None,
     "accept": [{k: t.get(k) for k in ("candidates", "ready_would_accept", "all_would_accept", "accepted", "accept_refused", "confirmed", "confirm_refused")} for t in tallies],
     "engine_errors": errors, "problems": sorted(problems, key=lambda p: (str(p.get("pdf")), p.get("page") or 0, str(p.get("message")))),
@@ -901,8 +1012,10 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   mem = members_view(accs)
   if mem:
     doc["members"] = mem
+  mj = mark_join_view(reads)
+  if mj:
+    doc["mark_join"] = mj
   wf = wall_faces_view(accs)
-  
   if wf:
      doc["wall_faces"] = wf
   doc["warnings"] = warnings_view(ledger, accs)
@@ -981,6 +1094,10 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     mm = doc["members"]
     out += ["**Members** (not part of the hash): " + "; ".join(f"{k.lower()}s {v['members']} ({v['sightings']} sightings, {v['on_several_sheets']} seen on more than one sheet)" for k, v in mm["by_kind"].items())
       + f". Marks on several floors: {len(mm['marks_on_several_floors'])}, with different counts: {mm['marks_with_different_counts']}. Sheets not laid over their base plan: {len(mm['unregistered_sheets'])}. Decisions: {mm['decisions']}.", ""]
+  if doc.get("mark_join"):
+    for kind, mj in doc["mark_join"].items():
+      out += [f"**Mark join, {kind.lower()}s** (not part of the hash): {mj['views']} detail views, {mj['marks_on_plans']} marks on the plans, {len(mj['sized'])} marks with a size from a view ({', '.join(mj['sized']) or 'none'}); "
+        + (f"{len(mj['issues'])} issues: " + "; ".join(f"{i['code']} {i['mark']}" for i in mj["issues"]) if mj["issues"] else "no issues") + ".", ""]
   if doc.get("warnings"):
     wv = doc["warnings"]
     out += [f"**Rows with a warning** (not part of the hash): {wv['with_warnings']} of {wv['rows']} ledger rows ({wv['share_pct']}%); {wv['without_conflict_codes']} ({wv['share_pct_without_conflict_codes']}%) when the two warnings that a decision now carries are left out. Most often: " + ", ".join(f"{c} {n}" for c, n in wv["by_code"][:8]) + ".", ""]
@@ -1055,6 +1172,11 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
   if baseline:
     worse = _worse(baseline, doc)
     out += ["", f"Lines that got worse than the baseline: {len(worse)}."] + [f"- {k}: {_fmt(o['trace'])} -> {_fmt(n['trace'])} ({o['status']} -> {n['status']})" for k, o, n in worse]
+  if doc.get("scale_held"):
+    out += ["", f"## Plan pages held for want of a scale ({len(doc['scale_held'])}; every item says SCALE_UNVERIFIED)", ""] + [f"- {t}" for t in doc["scale_held"]]
+  hs = doc.get("height_sources") or []
+  if hs:
+    out += ["", "## Where the heights came from", ""] + [f"- {h['kind']} {h['what']} {h['floor'] or ''}{' (' + str(h['basis']) + ')' if h['basis'] else ''}: {h['mm']} mm, {h['rows']} rows" for h in hs]
   pv = doc.get("page_votes") or {}
   if pv.get("pages"):
     out += ["", f"## Page roles voted ({len(pv['pages'])} pages; {pv.get('held', 0)} held of {pv.get('plan_pages', 0)} plan pages)", ""]

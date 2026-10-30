@@ -5,6 +5,7 @@ from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE
 import math
 from uuid import uuid5
 from app.engine.measure import proposed as QP
+from app.engine.measure import rule_formulas as RF
 from app.engine.measure import stages as S
 from app.engine.measure.models import Solid, CalculationContext, LedgerEntry
 from app.engine.measure.derived import CODE_ASSUMED, DERIVED, FACTOR_ASSUMED, WALL_BED_ROLES, WALL_MIN_BURIED_MM, resolve_params
@@ -56,8 +57,12 @@ def steps_of(cls: str, thickness_mm: float) -> list:
   offset = QP.BRICK_STEP_OFFSET_MM
   return [{"step_no": i, "height_mm": h, "width_mm": round(thickness_mm + (n - i) * offset, 1)} for i, h in enumerate(heights, start=1)]
 
-def _m3(mm3: float) -> Decimal:
-  return q6(Decimal(repr(float(mm3))) / MM3_PER_M3)
+def _steps_for(cls: str, thickness_mm: float, length_mm: float) -> tuple:
+  code = steps_of(cls, thickness_mm)
+  _, applied = RF.run("steps", {"table": [{"width_mm": s["width_mm"], "height_mm": s["height_mm"]} for s in code]}, {"length_mm": length_mm}, {"walls": cls})
+  if applied["source"] == "CODE":
+    return code, applied
+  return [{"step_no": i, "height_mm": r["height_mm"], "width_mm": r["width_mm"]} for i, r in enumerate(applied["params"]["table"], start=1)], applied
 
 def _m2(mm2: float) -> Decimal:
   return q6(Decimal(repr(float(mm2))) / MM2_PER_M2)
@@ -152,17 +157,18 @@ def measure_wall_foundation(ctx: CalculationContext, profile, elements: list, so
       continue
   
     cls = strip_class(thickness)
-    steps = steps_of(cls, thickness)
+    steps, applied = _steps_for(cls, thickness, length)
     walls += 1
     length_total += length
     slot = by_class.setdefault(cls, {"walls": 0, "length_m": 0.0})
     slot["walls"] += 1
     slot["length_m"] += length / 1000.0
-    detail = {"strip_class": cls, "wall_length_mm": round(length, 1), "wall_thickness_mm": round(thickness, 1), "steps_source": "QS workbook"}
+    detail = {"strip_class": cls, "wall_length_mm": round(length, 1), "wall_thickness_mm": round(thickness, 1), "steps_source": "QS workbook" if applied["source"] == "CODE" else "rule " + str(applied["rule_id"]),
+      "formula": {k: applied[k] for k in ("formula", "source", "rule_id", "version")}}
 
     if wanted[BRICK_STEP]:
       parts = [{"op": "step", "step_no": s["step_no"], "height_mm": s["height_mm"], "width_mm": s["width_mm"],
-        "m3": str(_m3(length * s["width_mm"] * s["height_mm"]))} for s in steps]
+        "m3": str(q6(Decimal(repr(RF.steps({"table": [{"width_mm": s["width_mm"], "height_mm": s["height_mm"]}]}, {"length_mm": length})["volume_m3"]))))} for s in steps]
       qty = q6(sum((Decimal(p["m3"]) for p in parts), Decimal("0")))
       if qty > 0:
         s_, r_ = _row(ctx, el, solid, BRICK_STEP, qty, "m3", FORMULA_VOLUME, params, level, [*parts, {"op": "net_volume", "m3": str(qty)}],

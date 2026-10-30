@@ -1,5 +1,5 @@
 from __future__ import annotations
-from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _finish, _fmt_mm, _height_note, _key, _status, _with_floor_height
+from app.modules.drawings_boq.takeoff.extract.pipeline import Candidate, _finish, _fmt_mm, _height_notes, _key, _status, _with_floor_height
 from app.modules.drawings_boq.takeoff.extract import kinds as KD
 from app.modules.drawings_boq.takeoff.extract import column_census as CS
 from app.modules.drawings_boq.takeoff.extract import config as C
@@ -26,7 +26,7 @@ def _candidate(entry: dict, floor: dict, ext, heights: dict | None) -> Candidate
   if unplaced:
     notes.append(C.note("COLUMN_NOT_PLACED", unplaced=unplaced))
   if h:
-    notes.append(_height_note(h))
+    notes.extend(_height_notes(h))
   spec = level_spec(floor["level"])
   tag = entry.get("tag")
   

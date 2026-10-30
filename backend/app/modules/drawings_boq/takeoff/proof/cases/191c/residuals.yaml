@@ -10,9 +10,6 @@
   cause: 'not diagnosed; -32.6%: termite extent is his choice (floors only, plus porch, plus trenches)'
   pack: '202'
   question: '191-C questionnaire: termite'
-- line: PCC/ALL
-  cause: 'not diagnosed; -11.0%: the 1:4:8 footing PCC needs the footings joined from layout plus details'
-  pack: '164'
 - line: PCC/ALL/2
   cause: 'not diagnosed; no Trace number: the 1:6:12 line (the second mix) is not read'
   pack: '164'
@@ -95,10 +92,10 @@
   cause: 'not diagnosed; no Trace number: paving at the gate and front belongs to site works'
   pack: '199'
 - line: FIN-PAINT/ALL
-  cause: 'not diagnosed; +23.7%: whether the bill''s internal paint includes ceilings and the plaster faces are not complete'
-  pack: '169'
+  cause: 'not diagnosed; -19.4% (+23.7% before Pack 169, which moves the outer faces from the inside paint to the outside paint; the two paints together did not change): whether the bill''s internal paint includes ceilings'
+  pack: '170'
 - line: FIN-PAINT-EXT/ALL
-  cause: 'not diagnosed; -75.6%: external paint needs the outer faces and, for the facade tile, the elevations'
+  cause: 'not diagnosed; -33.3% (-75.6% before Pack 169, which finds the outer faces from the outline of the floor): the outline reads 77% to 94% of the outline length as outer face, and the facade tile needs the elevations'
   pack: '204'
 - line: WINDOWS/ALL
   cause: 'not diagnosed; -15.9%: windows read from the plan differ from the printed labels; opening areas follow the schedule'

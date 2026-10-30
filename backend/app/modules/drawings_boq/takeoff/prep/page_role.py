@@ -1,13 +1,18 @@
 from __future__ import annotations
 
+import re
+
 ARCH_PLAN, FURNITURE_PLAN, STRUCT_PLAN, DETAIL, SECTION, ELEVATION, MEP_PLAN, NOTES, SCHEDULE, COVER = (
   "ARCH_PLAN", "FURNITURE_PLAN", "STRUCT_PLAN", "DETAIL", "SECTION", "ELEVATION", "MEP_PLAN", "NOTES", "SCHEDULE", "COVER")
 ROLES = (ARCH_PLAN, FURNITURE_PLAN, STRUCT_PLAN, DETAIL, SECTION, ELEVATION, MEP_PLAN, NOTES, SCHEDULE, COVER)
 PLAN_ROLES = (ARCH_PLAN, FURNITURE_PLAN, STRUCT_PLAN, MEP_PLAN)
-WEIGHTS = {"TITLE_BLOCK": 0.35, "DRAWING_LIST": 0.30, "VIEW_TITLES": 0.20, "CONTENT": 0.15}
-
+WEIGHTS = {"TITLE_BLOCK": 0.35, "DRAWING_LIST": 0.30, "VIEW_TITLES": 0.20, "CONTENT": 0.15, "VIEW_COUNT": 0.30}
+DETAIL_TITLE = re.compile(r"\bSEC(?:TION)?\.?\s*\w+\s*[-\u2013]\s*\w+|\bFOUNDATION\s+PLAN\s+\w+|\bTYP\.|\bDETAILS?\b", re.I)   
+MIN_DETAIL_VIEWS = 3            
+DETAIL_SHARE = 0.8              
+MAX_ROOM_SIZES = 3             
 PASS = 0.6                      
-STRONG = 0.7                    
+STRONG = 0.7                   
 IMAGE_PAGE_COVER = 0.5          
 IMAGE_PAGE_MAX_WORDS = 120
 VIEW_MAJORITY = 0.5             
@@ -68,6 +73,12 @@ def content_signal(pdf_type: str | None, image_cover: float, words: int, drawn: 
   if pdf_type == "IMAGE_PAGE" and float(image_cover or 0.0) >= IMAGE_PAGE_COVER and int(words or 0) <= IMAGE_PAGE_MAX_WORDS:
     return _signal("CONTENT", COVER, 0.85, f"{round(float(image_cover) * 100)}% of the page is one picture and it has {int(words)} words")
   return None
+
+def detail_sheet_signal(views: list | None, room_sizes: int) -> dict | None:
+  titled = [v for v in views or [] if DETAIL_TITLE.search(str(v.get("caption") or ""))]
+  if len(titled) < MIN_DETAIL_VIEWS or len(titled) < DETAIL_SHARE * len(views or []) or int(room_sizes or 0) > MAX_ROOM_SIZES:
+    return None
+  return _signal("VIEW_COUNT", DETAIL, 0.9, f"{len(titled)} of its {len(views or [])} views are titled as details and it prints {int(room_sizes or 0)} room sizes")
 
 def decide(signals: list) -> dict:
   spoke = [s for s in signals if s]

@@ -79,8 +79,9 @@ WALL_MIN_OVERLAP_MM = 300.0
 WALL_MIN_RUN_MM = 900.0       
 WALL_GAP_MAX_MM = 2500.0      
 WALL_GAP_CLEAR_MAX_MM = 3200.0
+OUTLINE_CLOSE_MM = 1200.0       
 STAIR_TWIN_REACH_MM = 1000.0          
-STAIR_TWIN_WIDTH_TOL = 0.15           
+STAIR_TWIN_WIDTH_TOL = 0.15                   
 STAIR_TWIN_SAME_SCALE_TOL = 0.05      
 STAIR_EXTERNAL_MIN_WALLS = 6          
 STAIR_EXTERNAL_PAIRED = False         
@@ -204,6 +205,7 @@ NOTES = {
   "FOOTING_SIZE_PAIRED": ("warning", "The footing details print sizes but not which footing mark each belongs to. The pad sizes were given by the size of the column each footing is written beside on the foundation plan. Check the pairing."),
   "FOOTING_SIZE_BY_ELIMINATION": ("warning", "The footing details print one more size than the footing marks use. That size is taken for the stair footing. Check it."),
   "NECK_HEIGHT_ASSUMED": ("warning", "The drawing does not print the height of the neck column. The height from the QS's workbook is used. Type another height to override it."),
+  "MARK_WITHOUT_DETAIL": ("warning", "A footing mark of the plan has no detail view carrying the same mark, though the drawing prints such views for other marks."),
   "COLUMN_MARK_NO_DETAIL": ("warning", "No column detail is captioned with this mark. A detail of the same size is proposed. Check it."),
   "COLUMN_MARK_BY_SIZE": ("warning", "Squares are drawn on this plan with no mark. A column detail of the same size that no plan mark uses is proposed for them. Check it."),
   "COLUMN_DETAIL_NO_PLAN_MARK": ("info", "A column detail has no mark on any framing plan. Check whether it belongs to a column of this job."),
@@ -428,11 +430,14 @@ NOTES = {
   "LINTEL_SPAN_ABOVE_TABLE": ("warning", "This opening is wider than every row of the lintel table, so no lintel section was chosen. Type the section when you measure it."),
   "LINTEL_IN_THIN_WALL": ("warning", "Some of these openings sit in 4.5 inch walls. The lintel table is 9 inches wide, so check the section for those."),
   "LINTEL_IN_RCC_WALL": ("info", "Some of these openings sit in RCC walls, which need no separate lintel. The count includes them; reduce it if you measure."),
+  "STOREY_HEIGHT": ("warning", "The height written as a note on this plan differs from the clear height of the floor that the building sections or the room notes print. The note is used; check which is right, or type the height you want."),
   "HEIGHT_FROM_NOTE": ("info", "The height comes from a note on the drawing."),
   "COUNT_MATCHES_OTHER_FLOOR": ("info", "Fewer columns of this size are drawn than there are marks (some are hidden inside the walls), but the same marks and the same number appear on another floor where every column is drawn. The marks are counted."),
   "HEIGHT_FROM_SECTION": ("info", "The height is the floor-to-floor height of the floor, printed on the building section or, where no section prints it, worked out from the room notes of the plans (ceiling height and level of the floor), which is how the QS measures a wall and a column (S5)."),
   "HEIGHT_FROM_QS": ("info", "The height was given by the QS (S1, S5) and is used for the estimate. Type another height when you accept the item to override it."),
   "FOOTING_DEPTH_QS": ("info", "The drawing prints the footing thickness only as a symbol. The QS gave 0.75 ft (228.6 mm), so that is used. Type another depth when you accept the footing to override it."),
+  "ROOF_FROM_OUTLINE": ("warning", "No roof slab is read on this roof plan. The area inside the outline of its walls is kept here as the roof treatment, set aside: another sheet may give the roof from its slab, and counting both would count the roof twice. Take it if no slab roof is read for this building."),
+  "WALL_FACES_FROM_OUTLINE": ("info", "The outer faces of the walls of this floor were found from the outline of the floor: a face is outer when the point just off the wall on that side is outside the walls with their openings closed. The outline length and the outer faces are on the row."),
   "WALL_FACES_FROM_GRAPH": ("info", "The sides of the walls of this floor were decided by the wall graph: each side of each wall faces a room, a closed space or the outside, and the plaster, the paint and the membrane are measured from that, not from the outline of the floor."),
   "WALL_FACES_OPEN": ("warning", "The rule asks for the wall graph, but the walls of this floor do not close: a room lies in the open air. The sides of its walls are decided by the outline of the floor, as with the rule at OUTLINE."),
   "MEMBRANE_OUTSIDE_QS": ("info", "This item is not drawn on the plan. On a basement the QS puts the membrane on the outside of every outer wall, up the full wall height of 11 ft, and counts it once (S1). The length is the outside face of the outer walls, the same length the outside plaster uses, with the closing stretch of the concrete wall (S8). Inside and outside plaster are separate items."),

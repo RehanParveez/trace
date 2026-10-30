@@ -34,8 +34,8 @@
   cause: 'not diagnosed; -7.8%: lintel lengths and sizes are not read from the lintel detail'
   pack: '166'
 - line: WALL_PLASTER
-  cause: 'not diagnosed; -7.1%: plaster is taken on the wall faces the reader finds; the outer faces are not complete'
-  pack: '169'
+  cause: 'not diagnosed; -10.7% (-7.1% before Pack 169, which finds more outer faces and moves 528 sft of plaster from this inside line to the outside plaster, 5,194 sft, that no line of the workbook is compared with in this score; the two together did not change)'
+  pack: '170'
 - line: RCC_ROOF_BEAMS
   cause: 'not diagnosed; -8.2%: the roof beam depths wait on an open section decision'
   pack: '163'

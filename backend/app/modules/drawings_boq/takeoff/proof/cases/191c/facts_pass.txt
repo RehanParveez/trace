@@ -1,2 +1,10 @@
 column C1 9 x 18 in
 column C2 9 x 18 in
+footing F1 5 x 4 ft
+footing F2 6 x 4 ft
+footing F3 5 x 4.5 ft
+footing F4 6 x 4.5 ft
+step table W1 (4 steps)
+step table W2 (4 steps)
+step table W3 (4 steps)
+step table W4 (4 steps)

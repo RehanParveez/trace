@@ -29,7 +29,7 @@ from app.modules.drawings_boq.takeoff.prep import details
 from app.modules.drawings_boq.takeoff.prep import beam_details
 from app.modules.drawings_boq.takeoff.prep import tank_details
 from app.modules.drawings_boq.takeoff.extract import electrical as electrical_reader
-from app.modules.drawings_boq.takeoff.prep import footing_sections, units as unit_reader
+from app.modules.drawings_boq.takeoff.prep import footing_sections, footing_views, units as unit_reader
 from app.modules.drawings_boq.takeoff.prep import sheet_marks
 from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
 from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
@@ -130,6 +130,12 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["footing_sections"] = sections
   except Exception:
     result.meta["footing_sections_reader"] = "FAILED"
+  try:
+    views = footing_views.read(result.index.words)
+    if views:
+      result.meta["footing_views"] = views
+  except Exception:
+    result.meta["footing_views_reader"] = "FAILED"
   try:
     result.meta["mark_evidence"] = MV.read_sheet(result.index, result.index.words, result.meta.get("units_hint"), page_no)
   except Exception:
@@ -853,6 +859,11 @@ class PrepService:
     """The footing sections read from the pictures on any sheet of the drawing: [{caption, wall_width_mm, steps, footing, pcc, total_depth_mm, read, issues, page_no}]."""
     sheets = await self.repo.sheets(org, drawing_id)
     return [{**sec, "page_no": s.page_no} for s in sheets for sec in ((s.prep_meta or {}).get("footing_sections") or [])]
+
+  async def drawing_footing_views(self, org: UUID, drawing_id: UUID) -> list:
+    """The footing plan views read from any sheet of the drawing: [{mark, caption, read, size_mm, dims, issues, page_no}]."""
+    sheets = await self.repo.sheets(org, drawing_id)
+    return [{**v, "page_no": s.page_no} for s in sheets for v in ((s.prep_meta or {}).get("footing_views") or [])]
 
   async def drawing_units(self, org: UUID, drawing_id: UUID) -> dict:
     """Whether the whole drawing is dimensioned in feet and inches, decided from every sheet's text together: {"imperial": True | False | None, "basis", "pages"}."""
