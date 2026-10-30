@@ -54,7 +54,7 @@ SUGGESTIONS = {
   "DOOR": ("DOR-NOS", "DIRECT", "COUNT"),
   "WINDOW": ("WIN-NOS", "DIRECT", "COUNT"),
   "WALL": ("MAS-BRICK", "LENGTH_X_HEIGHT_X_THICKNESS", "LENGTH"),
-  "ROOM": ("FIN-FLOOR", "DIRECT", "AREA"),
+  "ROOM": (None, "DIRECT", "AREA"),     
   "SLAB": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
   "LINTEL": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
   "STAIR": ("CON-RCC", "COUNT_X_VOLUME", "COUNT"),
@@ -115,8 +115,10 @@ STAIR_OWN_WIDTH_TOL = 0.02
 STANDARD_TOL = 0.04             
 IMPERIAL_WALLS_MM = (76.2, 114.3, 152.4, 228.6, 342.9, 457.2)             
 IMPERIAL_TOL = 0.06
+BRICK_SIZES_MM = (114.3, 228.6, 342.9) 
+BRICK_TOL_MM = 6.0                      
 TANK_LABEL = re.compile(r"O\.?\s?H\.?\s?W\.?\s?T|U\.?\s?G\.?\s?W\.?\s?T|\bTANK\b|SEPTIC|\bSUMP\b|MANHOLE", re.I)
-TANK_REACH_MM = 2200.0        
+TANK_REACH_MM = 2200.0       
 TANK_MAX_MM = 7000.0
 WALL_BRIDGE_MAX_MM = 1600.0   
 WALL_STUB_MAX_MM = 2000.0     
@@ -170,6 +172,10 @@ NOTES = {
   "SCALE_UNVERIFIED": ("warning", "The scale of this sheet is not checked against a printed dimension, so every size here is only as good as that scale."),
   "SHEET_UNITS_DIFFER": ("info", "This sheet is dimensioned in other units than the rest of the drawing (feet and inches against millimetres). Its own units are used for it."),
   "THICKNESS_OFF_STANDARD": ("warning", "The drawn thickness is not a standard wall size. Check it before measuring."),
+  "PAGE_ROLE_VOTED": ("info", "This page is not read as a plan: the signals of the page (its title block, the titles under its views, the list of drawings, what it is made of) vote for the role named, and a plan reader would read nothing true from it."),
+  "PAGE_ROLE_UNSURE": ("warning", "Two strong signals of this page name different roles, so its role is not decided. It is read as it was before the vote, and it is listed with its votes for you to set its role."),
+  "WALL_PLASTER_DRAWN": ("info", "This wall is drawn at its plaster faces: a brick wall of the size named, with plaster on both faces. The brick is taken at the brick size."),
+  "WALL_THICKNESS_BASIS": ("warning", "Some walls on this sheet are drawn at their brick size and some at their plaster faces. Each takes the brick size it matches. Check that the sheet is not drawn both ways by mistake."),
   "WALL_OPENINGS_INCLUDED": ("info", "The length runs through the door and window openings. Deduct the openings in the measurement."),
   "WALL_WIDE_OPENING": ("info", "The wall runs through an opening wider than 2.5 m with nothing drawn in it, so it is counted as one wall. Deduct the opening when you measure."),
   "WALL_BRIDGED": ("info", "The wall lines stop at an opening (a door or window) and the wall runs on to the cross wall. The length includes that opening."),
@@ -302,6 +308,7 @@ NOTES = {
   "FILL_FROM_ROOMS": ("info", "This item is not drawn on the plan. The area of the earth filling under the floor is the total of the room areas found on the lowest floor; the volume is that area times the depth you give. The earth under the walls is not included."),
   "FILL_DEPTH_ASSUMED": ("warning", "No depth of filling is printed on the plans that were read (only that it is done in compacted layers). The depth used is assumed, not read and not an answer from the QS: the usual filling up to the plinth, 1.5 ft in layers of 6 in. Change the depth of the measurement if the plinth is higher or lower."),
   "CEILING_FROM_ROOMS": ("info", "The area of the ceiling plaster is the total of the room areas found on this floor. The undersides of the roof projections are not included; they are on the slab sheet."),
+  "ROOM_IN_FLOOR_TOTAL": ("info", "This room is a space, not a floor finish: its floor is in the floor finish of its storey (the total of the rooms, with the baths and the typed floors apart), which is the one place the floor is billed. A room is billed on its own only on a storey that has no such total, or when the firm bills floors room by room (the rule floor_finish_by_room)."),
   "FLOOR_FROM_ROOMS": ("info", "The area of the floor finish is the total of the room areas found on this floor, leaving out lift shafts, lawns and courtyards. The walls are not included. What the finish is made of (tile, marble, mosaic) is not drawn on the plan: choose the work item when you accept it."),
   "CEILING_PAINT_FROM_ROOMS": ("info", "The area of the ceiling paint is the total of the room areas found on this floor, the same as the ceiling plaster. The undersides of the roof projections are not included; they are on the slab sheet."),
   "SKIRTING_FROM_ROOMS": ("info", "The skirting is the length round every dry room found on this floor, less the width of the doors on its outline. Baths and toilets have a dado and no skirting. Lift shafts, lawns and courtyards are left out."),

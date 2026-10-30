@@ -6,6 +6,12 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 BASEMENT = "BASEMENT"
 HEIGHT_CODES = ("HEIGHT_FROM_SECTION", "HEIGHT_FROM_NOTE", "HEIGHT_FROM_QS")
 
+def floor_finish_by_room() -> bool:
+  return bool(QS.flag("floor_finish_by_room"))
+
+def wall_plaster_mm() -> float:
+  return float(QS.param("wall_plaster_face_mm") or 0.0) if QS.flag("wall_plaster_drawn") else 0.0
+
 def _ft_in(mm: float) -> str:
   inches = round(mm / 25.4)
   return f"{inches // 12}'-{inches % 12}\""

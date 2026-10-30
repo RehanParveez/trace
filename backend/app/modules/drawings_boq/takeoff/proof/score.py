@@ -15,7 +15,9 @@ from app.modules.drawings_boq.lab.aliases import KEY_LABEL, SOFTWARE_UNIT, bill_
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+from app.modules.drawings_boq.takeoff.proof import levels as LV
 from app.engine.measure import rulebook as RB
+from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 from app.modules.drawings_boq.takeoff.extract import slab_label as SL
@@ -44,7 +46,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -314,6 +316,9 @@ def check_facts(read: list, facts: list) -> list:
 
 def _is_plan(r: dict) -> bool:
   ident = (r.get("meta") or {}).get("identity") or {}
+  vote = ident.get("role_vote") or {}
+  if vote.get("role") and not vote.get("held"):
+    return vote["role"] in PRL.PLAN_ROLES
   if ident.get("sheet_type") == "PLAN":
     return True
   return any(v.get("sheet_type") == "PLAN" for v in (ident.get("views") or []))
@@ -327,6 +332,49 @@ def _cand_floor(acc, c) -> str | None:
     return acc.floor_of.get(__import__("uuid").UUID(str(view["level_id"])))
   s = acc.sheets.get(c.sheet_id)
   return acc.floor_of.get(s.level_id) if s is not None and s.level_id else None
+
+def _floor_finish_sources(acc) -> list:
+  """The pages of the storeys whose floor finish has two sources: rooms accepted for a floor finish and a floor total accepted too, or finish areas that add up to more than the gross floor area of the
+  storey (the area table of the set, when it has one). Rooms are billed only when the storey has no total (Pack 158)."""
+  from app.modules.drawings_boq.takeoff.extract import finishes as FN
+  code_of = {m.id: m.work_item_code for m in acc.measurements}
+  gross: dict = {}
+  for read in acc.read.values():
+    for r in read:
+      for a in ((r.get("schedule") or {}).get("areas") or []):
+        if a.get("kind") == "FLOOR" and a.get("m2"):
+          gross[a.get("key")] = float(a["m2"])
+          
+  floors: dict = {}
+  for c in acc.candidates:
+    if c.decision != "ACCEPTED":
+      continue
+    f = c.facts or {}
+    code = code_of.get(c.measurement_id) or ""
+    if c.category == "ROOM" and code.startswith("FIN-FLOOR"):
+      src = "ROOMS"
+    elif f.get("foundation_item") in FN.FLOOR_ITEMS:
+      src = "TOTAL"
+    else:
+      continue
+    d = floors.setdefault(_cand_floor(acc, c) or "-", {"src": set(), "area": 0.0, "pages": set()})
+    d["src"].add(src)
+    d["area"] += float(f.get("area_m2") or 0.0)
+    d["pages"].add(acc.sheets[c.sheet_id].page_no)
+  where = next(iter(acc.drawings.values()))
+  return [f"{where} p.{p}" for k, d in floors.items() if len(d["src"]) > 1 or (k in gross and d["area"] > gross[k]) for p in sorted(d["pages"])]
+
+def page_votes(reads: list) -> list:
+  out, plans = [], 0
+  for pdf, read in reads:
+    for r in read:
+      ident = (r.get("meta") or {}).get("identity") or {}
+      vote = ident.get("role_vote") or {}
+      plans += 1 if _is_plan(r) else 0
+      if vote.get("read_as") or (vote.get("held") and str(vote.get("why") or "").startswith("two strong")):
+        out.append({"pdf": pdf, "page": r["page_no"], "role": vote.get("role"), "held": bool(vote.get("held")), "votes": vote.get("votes"), "why": vote.get("why"), "read_as": vote.get("read_as"),
+          "signals": [f"{s['signal']} {s['certainty']}: {s['why']}" for s in vote.get("signals") or []]})
+  return {"pages": out, "plan_pages": plans, "held": sum(1 for p in out if p["held"])}
 
 def invariants(reads: list, accs: list, rows: list) -> list:
   res = []
@@ -355,7 +403,7 @@ def invariants(reads: list, accs: list, rows: list) -> list:
   add("PLAN_ITEMS_ONLY_ON_PLAN_PAGES", non_plan, "Walls, rooms, openings or members were read on a page that is not a plan.")
   add("NO_WINDOWS_ON_STRUCTURAL_SHEETS", structural, "A door or window was read on a structural sheet.")
   add("EVERY_PLAN_PAGE_HAS_A_FLOOR_AND_A_SCALE", no_floor + no_scale, "A plan page with items has no floor, or its scale was not measured and 1:100 was used.")
-  doubled, member_two, beam_two, floor_two = [], [], [], []
+  doubled, member_two, beam_two, floor_two, finish_two, silent = [], [], [], [], [], []
   for acc in accs:
     live = [c for c in acc.candidates if c.decision == "ACCEPTED"]
     _also, hidden = ST.twins(acc.candidates, acc.sheets)
@@ -388,11 +436,15 @@ def invariants(reads: list, accs: list, rows: list) -> list:
       if c.category == "WALL" and not (c.facts or {}).get("foundation_item"):
         seen.setdefault(_cand_floor(acc, c) or "-", set()).add(acc.sheets[c.sheet_id].page_no)
     floor_two += [f"{next(iter(acc.drawings.values()))} p.{p}" for k, ps in seen.items() if len(ps) > 1 for p in ps]
+    finish_two += _floor_finish_sources(acc)
+    silent += _silent_decisions(acc)
 
   add("EACH_STAIR_FLIGHT_ONCE_IN_THE_BUILDING", doubled, "A stair flight and its twin on the floor above are both accepted.")
   add("NO_MEMBER_ON_TWO_SHEETS", member_two, "A column or footing mark of one floor is accepted from more than one sheet.")
   add("NO_BEAM_ON_TWO_SOURCES", beam_two, "A beam mark of one floor is accepted from more than one sheet, or a floor whose framing plan draws the roof beams has them accepted from the walls as well.")
   add("ONE_ARCHITECTURE_SOURCE_PER_FLOOR", floor_two, "Walls of one floor are accepted from more than one sheet.")
+  add("NO_SILENT_DECISION", silent, "A billed row depends on a decision with no governing option, or a beam with several printed sections has no depth and does not list them.")
+  add("ONE_FLOOR_FINISH_SOURCE", finish_two, "The floor finish of a storey is accepted from its rooms and from a total made of the rooms, or the finish area accepted for the storey is more than its gross area.")
   bad = [f"{r.get('work_item_code')}" for r in rows if not (float(r.get("quantity") or 0) > 0) or not math.isfinite(float(r.get("quantity") or 0)) or not r.get("unit")]
   add("LEDGER_ROWS_ARE_POSITIVE_AND_HAVE_A_UNIT", bad, "A ledger row has a zero, negative or missing quantity, or no unit.")
   stale, disagree = [], []
@@ -536,7 +588,7 @@ def steel_view(case: dict, ledger: list, floor_of: dict, steel_stats: dict | Non
     "within_10": sum(1 for s in out if s["within_10"]), "of": sum(1 for s in out if s["diff_pct_qs"] is not None),
     "reason": stats.get("reason"), "outside_band": stats.get("outside_band") or {}}
 
-def decisions_view(accs: list) -> dict:
+def _decision_rows(accs: list) -> tuple:
   from app.modules.drawings_boq.takeoff.extract import conflicts as CF
   rows: list = []
   sheets: dict = {}
@@ -547,6 +599,27 @@ def decisions_view(accs: list) -> dict:
         sheets[sid] = {"page_no": r["page_no"], "discipline": CF.sheet_discipline(r.get("title"))}
         for c in r.get("candidates") or []:
           rows.append(SimpleNamespace(id=str(getattr(c, "id", None) or f"{did}-{r['page_no']}-{getattr(c, 'key', None) or getattr(c, 'ckey', '')}"), decision=getattr(c, "decision", "NEW"), sheet_id=sid, category=c.category, facts=c.facts, params=c.params, tag=c.tag, count=c.count, label=c.label, notes=c.notes))
+  return rows, sheets
+
+def _silent_decisions(acc) -> list:
+  from app.modules.drawings_boq.takeoff.extract import conflicts as CF
+  rows, sheets = _decision_rows([acc])
+  billed = {str(c.id) for c in acc.candidates if c.decision == "ACCEPTED"}
+  where = next(iter(acc.drawings.values()))
+  page_of = {str(c.id): f"{where} p.{acc.sheets[c.sheet_id].page_no}" for c in acc.candidates}
+  bad = [page_of[i] for c in CF.build(rows, sheets, [], None)["conflicts"] if c["governing_index"] is None for i in c["item_ids"] if i in billed and i in page_of]
+  for c in acc.candidates:
+    if c.category != "BEAM" or c.decision == "REJECTED":
+      continue
+    f = c.facts or {}
+    
+    if len([o for o in f.get("section_options") or [] if o.get("depth_mm")]) >= 2 and not (c.params or {}).get("depth_mm") and not any(n.get("code") == "BEAM_SECTIONS_LISTED" for n in c.notes or []):
+      bad.append(page_of[str(c.id)])
+  return bad
+
+def decisions_view(accs: list) -> dict:
+  from app.modules.drawings_boq.takeoff.extract import conflicts as CF
+  rows, sheets = _decision_rows(accs)
   view = CF.build(rows, sheets, [], None)
   return {"per_row_conflicts": len(view["conflicts"]), "facts": len(view["facts"]), "open": view["open_decisions"], "tolerances": view["tolerances"],
     "decisions": [{"kind": d["kind"], "id": d["id"], "facts": d["facts"], "rows": d["rows"], "default": d["default"], "options": [{"value": o["value"], "label": o["label"], "trust": o["trust"], "quantity": o["quantity"], "unit": o["unit"],
@@ -749,30 +822,30 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     keep["reads"] = reads
   steel_by_policy: dict = {}
 
-  def engine(policy_ready: bool) -> tuple:
+  decision_log: dict = {}
+
+  def engine(policy_ready: bool, decisions: dict | None = None, record: bool = True) -> tuple:
     errors, tallies = [], []
-    steel_by_policy[policy_ready] = []
+    if record:
+      steel_by_policy[policy_ready] = []
     names = [name for name, _rows in reads]
-    
-    acc = OA.accept_case(case["name"], reads, profile, ready_only=policy_ready)
+    acc = OA.accept_case(case["name"], reads, profile, ready_only=policy_ready, decisions=decisions)
+    if decisions:
+      decision_log.update(acc.decision_log)
     tallies.append(acc.tally)
     inputs = OA.build_inputs(acc)
     res = OR.run_engine(inputs, profile, rule_set, acc.printed_all, case=case["name"])
-    steel_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("steel") or {})
+    
+    if record:
+      steel_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("steel") or {})
     for e in res.errors:
       errors.append({"pdf": ", ".join(names), **(e if isinstance(e, dict) else {"message": str(e)})})
     ledger = [{**{k: v for k, v in r.items() if k != "_entry"}, "quantity": float(r["quantity"])} for r in res.rows]
-    if not policy_ready:
+    if not policy_ready and record:
       for p in acc.problems:
         problems.append({"pdf": p.get("pdf"), "page": p.get("page"), "message": f"{p.get('code')}: {p.get('message')}"})
     accs = OA.split_by_drawing(acc)
-    
-    floor_of = {}
-    for a in accs:
-      floor_of.update({str(k): v for k, v in a.floor_of.items()})
-    lines = trace_lines(ledger, floor_of, catalog, derive={e.get("family") for e in case["expected"] if e.get("family")})
-    sc, extra = score_lines(case["expected"], lines)
-    return accs, ledger, errors, tallies, sc + extra_lines(extra)
+    return accs, ledger, errors, tallies, score_ledger(case["expected"], ledger, accs, catalog)
 
   t = time.monotonic()
   main_ready = ready_only
@@ -787,10 +860,23 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     other = summarise(other_lines)
     timings["accept and run (other policy)"] = round(time.monotonic() - t, 1)
 
+  decisions = {d["id"]: d["value"] for d in case.get("decisions") or []}
+  if decisions:
+    t = time.monotonic()
+    accs_d, ledger_d, errors_d, _t, lines_d = engine(main_ready, decisions, False)
+    errors += [{"level": "decided", **e} for e in errors_d]
+    timings["accept and run (decided)"] = round(time.monotonic() - t, 1)
+  else:
+    accs_d, ledger_d, lines_d = accs, ledger, lines
+  expected_r, applied, pending, correction_problems = LV.corrected_expected(case["expected"], case.get("corrections") or [])
+  lines_r = score_ledger(expected_r, ledger_d, accs_d, catalog) if applied else lines_d
+  levels = LV.build(lines, lines_d, lines_r, decisions=case.get("decisions") or [], decision_log=decision_log, corrections=case.get("corrections") or [], applied=applied, pending=pending,
+    correction_problems=correction_problems, ledger=ledger_d, residuals=case.get("residuals") or [])
+
   facts = check_facts([r for _n, rows in reads for r in rows], case["facts"])
   doc = {"case": case["name"], "tier": case["tier"], "status": "SCORED", "policy": "ready_only" if main_ready else "accept_all", "lines": lines, "facts": facts,
     "facts_tally": {s: sum(1 for f in facts if f["status"] == s) for s in sorted({f["status"] for f in facts})},
-    "invariants": invariants(reads, accs, ledger), "summary": summarise(lines),
+    "invariants": invariants(reads, accs, ledger), "page_votes": page_votes(reads), "summary": summarise(lines),
     "other_policy": {"policy": "accept_all" if main_ready else "ready_only", "summary": other} if other is not None else None,
     "accept": [{k: t.get(k) for k in ("candidates", "ready_would_accept", "all_would_accept", "accepted", "accept_refused", "confirmed", "confirm_refused")} for t in tallies],
     "engine_errors": errors, "problems": sorted(problems, key=lambda p: (str(p.get("pdf")), p.get("page") or 0, str(p.get("message")))),
@@ -798,6 +884,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   
   if rules:
     doc["rules"] = rules
+  doc["levels"] = levels
   floor_all = {str(k): v for a in accs for k, v in a.floor_of.items()}
   doc["engine_digest"] = engine_digest(ledger, floor_all)
   doc["safe"] = safe_view(case["expected"], ledger, floor_all, catalog, accs)
@@ -827,6 +914,14 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
   return doc, timings
+
+def score_ledger(expected: list, ledger: list, accs: list, catalog: dict) -> list:
+  floor_of: dict = {}
+  for a in accs:
+    floor_of.update({str(k): v for k, v in a.floor_of.items()})
+  lines = trace_lines(ledger, floor_of, catalog, derive={e.get("family") for e in expected if e.get("family")})
+  sc, extra = score_lines(expected, lines)
+  return sc + extra_lines(extra)
 
 def work_view(reads: list) -> dict:
   from app.modules.drawings_boq.takeoff.extract import config as XC
@@ -944,6 +1039,8 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
   if doc.get("other_policy") and doc["other_policy"]["summary"]:
     o = doc["other_policy"]["summary"]
     out += [f"Other policy ({doc['other_policy']['policy']}): {o['lines']} lines, {o['within_10']} within 10%, {o['within_5']} within 5% of the QS.", ""]
+  if doc.get("levels"):
+    out += LV.render(doc["levels"])
   cols = "| Line | Unit | Trace | QS | Drawing | Diff % QS | Diff % drawing | Status | Class |" + (" Before | Before status |" if baseline else "")
 
   out += [cols, "|" + "---|" * (cols.count("|") - 1)]
@@ -958,6 +1055,10 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
   if baseline:
     worse = _worse(baseline, doc)
     out += ["", f"Lines that got worse than the baseline: {len(worse)}."] + [f"- {k}: {_fmt(o['trace'])} -> {_fmt(n['trace'])} ({o['status']} -> {n['status']})" for k, o, n in worse]
+  pv = doc.get("page_votes") or {}
+  if pv.get("pages"):
+    out += ["", f"## Page roles voted ({len(pv['pages'])} pages; {pv.get('held', 0)} held of {pv.get('plan_pages', 0)} plan pages)", ""]
+    out += [f"- {p['pdf']} p.{p['page']}: {p['role'] or 'HELD'} ({p['why'] or 'read as ' + str(p['read_as'])}); " + "; ".join(p["signals"]) for p in pv["pages"]]
   out += ["", "## Invariants", ""] + [f"- {i['status']} {i['name']}" + (f": {i['count']} ({', '.join(i['pages'][:6])})" if i["status"] == "FAIL" else "") for i in doc["invariants"]]
   if doc.get("marks"):
     out += ["", "## Mark vocabulary", ""] + [f"- {m}" for m in doc["marks"]]

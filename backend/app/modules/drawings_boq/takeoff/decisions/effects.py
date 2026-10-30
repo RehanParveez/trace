@@ -2,7 +2,6 @@ from __future__ import annotations
 from app.modules.drawings_boq.takeoff.decisions import catalog
 from app.modules.drawings_boq.takeoff.extract import wall_net
 
-CFT = 35.3146667
 HEIGHT_NOTES = ("HEIGHT_FROM_SECTION", "HEIGHT_FROM_QS")
 
 def _fig(key: str, value: float, unit: str) -> dict:
@@ -119,7 +118,7 @@ def _opening_changes(rows: list) -> dict:
     kind = OPR.wall_kind(c)
     for o in ops:
       a, n = OPR.each_m2(o), int(o.get("nos") or 1)
-      sheet_off = a >= OPR.SHEET_MIN_M2
+      sheet_off = a >= OPR.plaster_min_m2()
       if kind and OPR.deducts(kind, a) and not sheet_off:
         if kind == "RCC":
           rcc += n * a * t / 1000.0

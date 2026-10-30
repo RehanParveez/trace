@@ -35,6 +35,14 @@ FLAGS = {
   "wall_height_floor_to_floor": True,
   "rcc_ring_closed": True,
   "brick_length_centre_line": True,
+  "floor_finish_by_room": False,
+  "wall_plaster_drawn": True,
+  "deduct_opening_brick": True,
+  "deduct_opening_plaster": True,
+  "deduct_opening_paint": True,
+  "derived_scaffold": True,
+  "derived_props": True,
+  "page_role_vote": True,
 }
 
 CHOICES = {
@@ -71,6 +79,16 @@ PARAM_VALUES = {
   "finish_opening_rule": 0.0,
   "roof_turnup_mm": 0.0,
   "beam_lintel_qs_rate": 0.0,
+  "wall_plaster_face_mm": 12.5,
+  "brick_opening_min_m2": 0.1,
+  "rcc_wall_opening_min_m2": 0.4,
+  "plaster_opening_min_m2": 0.5,
+  "plaster_opening_one_face_max_m2": 3.0,
+  "scaffold_above_mm": 3600.0,
+  "props_above_mm": 3600.0,
+  "cft_per_m3": 35.3146667,
+  "sft_per_m2": 10.7639104,
+  "round_cft_dp": -1.0,
 }
 
 def _a(ident, section, topic, question, answer, status, applied, confirm=None, params=None, conventions=None, workbook=None, on=None):
@@ -334,7 +352,8 @@ def flag(name: str) -> bool:
 PER_DRAWING = ("wall_height_basis", "opening_rules_basis", "tie_band_single_count", "brick_net_of_lintels")
 NOT_READ = ("footing_below_ground_mm", "stair_waist_mm", "lintel_bearing_mm", "beam_formwork_mm_per_rft", "lintel_formwork_mm_per_rft", "brick_length_centre_line")
 DEPTHS = {"basement_dig_mm": "BASEMENT_DIG_MM", "trench_depth_mm": "TRENCH_DEPTH_MM", "fill_depth_mm": "FILL_DEPTH_MM"}
-BOUNDS = {"mm": (1.0, 30000.0), "mm per rft": (1.0, 2000.0), "%": (0.0, 100.0), "kg/m2": (0.0, 200.0)}
+BOUNDS = {"mm": (1.0, 30000.0), "mm per rft": (1.0, 2000.0), "%": (0.0, 100.0), "kg/m2": (0.0, 200.0), "m2": (0.0, 20.0), "cft per m3": (30.0, 40.0), "sft per m2": (10.0, 11.5),
+  "decimals": (-1.0, 6.0)}
 WHY_FIXED = {
   "PER_DRAWING": "Decided for each drawing on its decisions screen. The figure here is only where every drawing starts.",
   "NOT_READ": "Held for reference. The software does not read this figure yet; the value it uses is a constant in the code.",
@@ -372,6 +391,24 @@ LABELS = {
   "tie_band_replaces_lintel": ("How the QS counts", "A tie band replaces the lintel"),
   "rcc_ring_closed": ("How the QS counts", "Concrete wall ring counted as closed"),
   "brick_length_centre_line": ("How the QS counts", "Brick wall length on the centre line"),
+  "floor_finish_by_room": ("How the QS counts", "Floor finish billed room by room"),
+  "wall_plaster_drawn": ("How the QS counts", "A sheet drawn at the plaster faces is read as brick walls"),
+  "wall_plaster_face_mm": ("Heights and depths", "Plaster on each face of a wall"),
+  "deduct_opening_brick": ("How the QS counts", "Openings come off brickwork"),
+  "deduct_opening_plaster": ("How the QS counts", "Openings come off plaster"),
+  "deduct_opening_paint": ("How the QS counts", "Openings come off paint"),
+  "derived_scaffold": ("How the QS counts", "Scaffolding on the outside walls is billed"),
+  "derived_props": ("How the QS counts", "Props under a high slab are billed"),
+  "page_role_vote": ("How the QS counts", "A page's role is voted from several signals"),
+  "brick_opening_min_m2": ("Openings and units", "Smallest opening deducted from brickwork"),
+  "rcc_wall_opening_min_m2": ("Openings and units", "Smallest opening deducted from a concrete wall"),
+  "plaster_opening_min_m2": ("Openings and units", "Smallest opening deducted from plaster and paint"),
+  "plaster_opening_one_face_max_m2": ("Openings and units", "Largest opening that comes off one face of the plaster only"),
+  "scaffold_above_mm": ("Heights and depths", "Building height above which scaffolding is billed"),
+  "props_above_mm": ("Heights and depths", "Clear height above which props are billed"),
+  "cft_per_m3": ("Openings and units", "Cubic feet in a cubic metre"),
+  "sft_per_m2": ("Openings and units", "Square feet in a square metre"),
+  "round_cft_dp": ("Openings and units", "Decimals of a cubic foot in the bill (-1 for none)"),
   "wall_height_basis": ("Decided for each drawing", "Height of a brick wall"),
   "tie_band_single_count": ("Decided for each drawing", "Tie band at lintel level"),
   "brick_net_of_lintels": ("Decided for each drawing", "Brick and the lintels over its openings"),
@@ -394,7 +431,12 @@ def code_default(key: str):
     return getattr(proposed, DEPTHS[key])
   return None
 
+UNIT_OF = {"brick_opening_min_m2": "m2", "rcc_wall_opening_min_m2": "m2", "plaster_opening_min_m2": "m2", "plaster_opening_one_face_max_m2": "m2",
+  "cft_per_m3": "cft per m3", "sft_per_m2": "sft per m2", "round_cft_dp": "decimals"}
+
 def _unit(key: str):
+  if key in UNIT_OF:
+    return UNIT_OF[key]
   if key in CHOICES or key in FLAGS or (key in PARAM_VALUES and not key.endswith(("_mm", "_pct", "_kg_per_m2"))):
     return None
   if key.endswith("_mm_per_rft"):

@@ -7,6 +7,27 @@ from shapely.strtree import STRtree
 from shapely.geometry import Polygon, LineString, Point, box
 from shapely.ops import unary_union
 
+DRAWN, PLASTER_DRAWN, DRAWN_UNMATCHED = "DRAWN", "PLASTER_DRAWN", "DRAWN_UNMATCHED"
+
+def brick_thickness(drawn_mm: float, sizes: tuple, plaster_mm: float, tol_mm: float = 6.0) -> tuple:
+  best = None
+  for s in sizes:
+    for extra, basis in ((0.0, DRAWN), (2.0 * float(plaster_mm), PLASTER_DRAWN)):
+      gap = abs(float(drawn_mm) - (s + extra))
+      if gap <= tol_mm and (best is None or gap < best[0] - 1e-9):
+        best = (gap, float(s), basis)
+  return (best[1], best[2]) if best else (float(drawn_mm), DRAWN_UNMATCHED)
+
+def plaster_band(drawn_mm: float, sizes: tuple, plaster_mm: float, tol_mm: float = 6.0) -> float | None:
+  for s in sizes:
+    if s - tol_mm <= float(drawn_mm) <= s + 2.0 * float(plaster_mm) + tol_mm:
+      return float(s)
+  return None
+
+def sheet_basis(lengths: dict) -> tuple:
+  p, d = float(lengths.get(PLASTER_DRAWN, 0.0)), float(lengths.get(DRAWN, 0.0))
+  return (PLASTER_DRAWN if p > d else DRAWN), (p > 0.0 and d > 0.0)
+
 OUTSIDE, UNNAMED = "OUTSIDE", "UNNAMED"
 FREE = "FREE"
 STEP_MM = 50.0
@@ -41,7 +62,7 @@ def _end_free(w, k: int) -> bool:
 
 def _thickness_mm(w) -> float:
   f = w.facts or {}
-  return float(f.get("thickness_used_mm") or (w.params or {}).get("thickness_mm") or 228.6)
+  return float(f.get("thickness_face_mm") or f.get("thickness_used_mm") or (w.params or {}).get("thickness_mm") or 228.6)
 
 def _ring(room):
   g = room.geometry or {}

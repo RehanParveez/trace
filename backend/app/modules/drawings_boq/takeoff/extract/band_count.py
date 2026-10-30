@@ -3,8 +3,7 @@ from app.engine.measure import readings as QS
 from app.engine.measure import proposed as PR
 from app.modules.drawings_boq.takeoff.extract import config as C
 
-CFT = 35.3146667
-TIE_BAND_MIN_WALL_MM = 200.0     
+TIE_BAND_MIN_WALL_MM = 200.0      
 
 def single_count() -> bool:
   v = QS.param("tie_band_single_count")
@@ -128,9 +127,10 @@ def resolve(beams: list, roof_band: dict | None, lintels: list, level_hint: str 
       b.params["length_mm"] = round(new * 1000.0, 1)
       
   counted = sum(_beam_m3(c, float((c.facts or {}).get("length_m") or 0.0), assumed)[0] for c in keep if _role(c) in ("ROOF", "BAND")) + lint_m3
+  cft = float(QS.param("cft_per_m3"))
   rec = {"floor": level_hint, "mode": "SINGLE" if one else "SEPARATE", "member": member, "roof_band_printed": printed, "roof_band_read": bool(roof_band_read), "roof_band": dict(roof_band) if roof_band else None,
     "without_band_m3": round(without, 3), "with_band_m3": round(with_, 3), "delta_m3": round(band_m3, 3), "counted_m3": round(counted, 3),
-    "without_band_cft": round(without * CFT, 1), "with_band_cft": round(with_ * CFT, 1), "delta_cft": round(band_m3 * CFT, 1), "counted_cft": round(counted * CFT, 1),
+    "without_band_cft": round(without * cft, 1), "with_band_cft": round(with_ * cft, 1), "delta_cft": round(band_m3 * cft, 1), "counted_cft": round(counted * cft, 1),
     "tie_band_solid_m": round(sum(solid.values()), 3),
     "depth_assumed": bool(roof_assumed or band_assumed), "lintels_counted": lintels_counted(),
     "dropped": [{"tag": g.tag, "why": why, "length_m": (g.facts or {}).get("length_m")} for g, why in gone]}

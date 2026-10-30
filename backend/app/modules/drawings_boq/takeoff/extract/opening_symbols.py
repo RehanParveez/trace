@@ -522,7 +522,8 @@ def _group_candidate(kind: str, width: float, items: list, ctx: dict, cls, finis
   key = (("OPNLBL" if label_only else "OPNSYM"), kind, width) if basis == "ASSUMED" else (("OPNLBL" if label_only else "OPNSYM"), kind, width, height, sill) + ((in_gap == n,) if label_only else ())
   if label_only and basis == "ASSUMED":
     key += (in_gap == n,)
-  cand = cls(key=FD._key_of(key), category=kind, kind=ckind, quantity_mode=mode, label=f"{noun} {size_text} ×{n} · {how}", tag=tag,
+  first = min((round(i["x"] / 2.0), round(i["y"] / 2.0)) for i in items)      
+  cand = cls(key=FD._key_of(key + first), category=kind, kind=ckind, quantity_mode=mode, label=f"{noun} {size_text} ×{n} · {how}", tag=tag,
     geometry={"points": [[round(i["x"], 3), round(i["y"], 3)] for i in items]}, params={}, missing=[], work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes,
     source="VECTOR_SNAP", count=n)
   return finish(cand, ctx, 0.6)

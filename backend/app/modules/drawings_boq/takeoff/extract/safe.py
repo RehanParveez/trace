@@ -50,6 +50,9 @@ def sightings(read: list, ifc: tuple = ()) -> dict:
   return out
 
 def classify(c, ev: dict, seen: list | None, page_no: int | None = None) -> dict:
+  f = c.facts or {}
+  if c.category == "BEAM" and f.get("section_assumed"):
+    return {"status": REVIEW, "basis": NOT_SAFE, "text": f"the section of this beam ({f.get('section_mark')}) is one of those printed that the plan does not place; an assumed section is never safe"}
   names = printed_source(ev)
   if names:
     return {"status": SAFE, "basis": PRINTED_SOURCE, "text": "one printed source gives " + ", ".join(names)}

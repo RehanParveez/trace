@@ -1,9 +1,6 @@
 from __future__ import annotations
 import re
 
-M3_TO_CFT = 35.3146667
-M2_TO_SFT = 10.7639104
-
 BILL_ALIASES = (
   (r"\bexcavation\b", "EXCAVATION"),
   (r"\btermite\b", "TERMITE"),
@@ -38,7 +35,7 @@ KEY_LABEL = {
   "EXCAVATION": "Excavation", "TERMITE": "Termite treatment", "MEMBRANE": "Membrane", "BRICK_FOUNDATION": "Brick work in foundation",
   "PCC": "Lean concrete", "RCC_FOOTINGS": "RCC footings", "RCC_PLINTH_BEAM": "RCC plinth beam", "RCC_COLUMNS": "RCC columns",
   "BRICK_BOUNDARY": "Boundary wall brick work", "DOOR_FRAMES_RFT": "Door frames (running length)", "DPC_VERTICAL": "Vertical DPC", "RCC_WALLS": "RCC walls", "RCC_LINTELS": "RCC lintels", "RCC_ROOF_BEAMS": "RCC roof beams", "RCC_STAIR": "RCC staircase",
-  "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "BRICK_WALLS": "Brick work above plinth",
+  "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "WALL_PLASTER_EXT": "External plaster", "BRICK_WALLS": "Brick work above plinth",
   "STEEL": "Reinforcement steel", "DOOR_FRAMES": "Door frames", "DOORS": "Doors", "WINDOWS": "Windows and ventilators",
   "KACHA": "Kacha or PCC on floor", "FILLING": "Earth filling under floors",  "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
 }
@@ -46,7 +43,7 @@ KEY_LABEL = {
 SOFTWARE_UNIT = {
   "EXCAVATION": "m3", "TERMITE": "m2", "MEMBRANE": "m2", "BRICK_FOUNDATION": "m3", "PCC": "m3", "RCC_FOOTINGS": "m3",
   "RCC_PLINTH_BEAM": "m3", "RCC_COLUMNS": "m3", "RCC_WALLS": "m3", "RCC_LINTELS": "m3", "RCC_ROOF_BEAMS": "m3", "RCC_STAIR": "m3",
-  "RCC_SLABS": "m3", "CEILING_PLASTER": "m2", "WALL_PLASTER": "m2", "BRICK_WALLS": "m3", "STEEL": "kg", "DOOR_FRAMES": "m2",
+  "RCC_SLABS": "m3", "CEILING_PLASTER": "m2", "WALL_PLASTER": "m2", "WALL_PLASTER_EXT": "m2", "BRICK_WALLS": "m3", "STEEL": "kg", "DOOR_FRAMES": "m2",
   "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3", "BRICK_BOUNDARY": "m3", "DOOR_FRAMES_RFT": "m",
 }
 
@@ -65,9 +62,9 @@ def bill_key(item: str, overrides: dict | None = None) -> str | None:
 def bill_quantity(key: str, unit: str, quantity: float) -> tuple:
   u = unit.strip().lower()
   if u in ("sft", "sqft", "sq ft", "sq.ft", "sq.ft."):
-    return quantity, "m2", quantity / M2_TO_SFT
+    return quantity, "m2", quantity / sft_per_m2()
   if u in ("cft", "cuft", "cu ft", "cu.ft", "cu.ft."):
-    return quantity, "m3", quantity / M3_TO_CFT
+    return quantity, "m3", quantity / cft_per_m3()
   if u in ("sqm", "m2", "sq m", "m²"):
     return quantity, "m2", quantity
   if u in ("cum", "m3", "cu m", "m³"):
@@ -116,6 +113,8 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "ROOF_TREATMENT"
   if t.startswith("CEILING-PLASTER"):
     return "CEILING_PLASTER"
+  if t.startswith("PLASTER-OUTSIDE"):
+    return "WALL_PLASTER_EXT"
   if t.startswith("PLASTER"):
     return "WALL_PLASTER"
   if t.startswith("DOOR-AREA"):
@@ -136,15 +135,28 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "RCC_SLABS"
   if re.match(r"F\d+$", t):
     return "RCC_FOOTINGS"
-  if re.match(r"C\d+$", t) or "columns" in lab:
+  if re.match(r"C\d+$", t) or "columns" in lab or "neck column" in lab:
     return "RCC_COLUMNS"
   if "brick" in lab:
     return "BRICK_WALLS"
   return None
 
+def cft_per_m3() -> float:
+  from app.engine.measure import readings as QS
+  return float(QS.param("cft_per_m3"))
+
+def sft_per_m2() -> float:
+  from app.engine.measure import readings as QS
+  return float(QS.param("sft_per_m2"))
+
+def round_cft(value: float) -> float:
+  from app.engine.measure import readings as QS
+  dp = int(round(float(QS.param("round_cft_dp"))))
+  return value if dp < 0 else round(value, dp)
+
 def software_to_bill_unit(unit: str, quantity: float) -> float:
   if unit == "m3":
-    return quantity * M3_TO_CFT
+    return round_cft(quantity * cft_per_m3())
   if unit == "m2":
-    return quantity * M2_TO_SFT
+    return quantity * sft_per_m2()
   return quantity

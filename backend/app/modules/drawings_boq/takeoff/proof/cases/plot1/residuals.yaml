@@ -1,0 +1,55 @@
+- line: EXCAVATION/FOUNDATION
+  cause: 'not diagnosed; +5.04%: just over the limit; the trench extent is read by rule, not from the foundation drawing'
+  pack: '170'
+- line: TERMITE/FOUNDATION
+  cause: 'not diagnosed; +9.0%: the QS types 350 sft for the Sitting & Kitchen room (D15) and Trace measures the plan'
+  pack: '170'
+  question: D15 in expected.yaml
+- line: MEMBRANE/FOUNDATION
+  cause: '-12.2%: the workbook assumes ten 4 x 11 ft pieces (class QS_ERROR); Trace measures the area'
+  question: his signed figure in qs_corrections.yaml
+- line: BRICK_FOUNDATION/FOUNDATION
+  cause: 'not diagnosed; -17.3%: the brick steps of the foundation are not read from the section'
+  pack: '173'
+- line: PCC/FOUNDATION
+  cause: 'not diagnosed; -7.3%: PCC strip widths and extents come from a rule, not the layout'
+  pack: '170'
+- line: RCC_FOOTINGS/FOUNDATION
+  cause: 'not diagnosed; -10.6%: footing sizes and counts are not joined from layout plus details'
+  pack: '164'
+- line: RCC_COLUMNS
+  cause: '-5.7% (was -14.7% before Pack 157, which lets the neck columns through): the neck columns are counted; the rest is the column heights and the basement lifts, not diagnosed'
+  pack: '164'
+- line: STEEL
+  cause: '-16.3% (was -19.0% before Pack 157): bars not read for every member, the basement stage is left out (D2, D3, D8)'
+  pack: '195'
+  question: D2, D3, D8 in expected.yaml
+- line: FORMWORK/OTHERS
+  cause: 'not diagnosed; +5.3% (was +0.9% before Pack 157): the plinth beam and the neck columns now have formwork, the QS figure may not include them'
+  pack: '164'
+- line: BRICK_WALLS
+  cause: 'not diagnosed; -13.0%: opening deductions and the basement stage differ from the bill (NEEDS_DECISION)'
+  pack: '198'
+- line: RCC_LINTELS
+  cause: 'not diagnosed; -7.8%: lintel lengths and sizes are not read from the lintel detail'
+  pack: '166'
+- line: WALL_PLASTER
+  cause: 'not diagnosed; -7.1%: plaster is taken on the wall faces the reader finds; the outer faces are not complete'
+  pack: '169'
+- line: RCC_ROOF_BEAMS
+  cause: 'not diagnosed; -8.2%: the roof beam depths wait on an open section decision'
+  pack: '163'
+  question: decision aa06c5dc850cad14 in the score md
+- line: RCC_STAIR
+  cause: 'not diagnosed; +53.8%: the stair concrete is taken as a box, not from waist and risers'
+  pack: '165'
+- line: TANKS
+  cause: 'no Trace number: the tanks are not billed (D7: both carry the same concrete)'
+  pack: '167'
+  question: D7 in expected.yaml
+- line: WINDOWS/OTHERS
+  cause: '-14.6%: the QS counted ground W2 as 2.5 (D9, class QS_ERROR)'
+  question: his signed figure in qs_corrections.yaml
+- line: ROOF_TREATMENT/OTHERS
+  cause: 'not diagnosed; +10.2%: the roof area taken for the treatment differs from the bill''s (NEEDS_DECISION)'
+  pack: '169'

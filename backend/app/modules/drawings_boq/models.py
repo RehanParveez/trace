@@ -4158,6 +4158,7 @@ class TakeoffMeasurement(Base, TimestampMixin):
   source: Mapped[str] = mapped_column(String(12), nullable=False, default="MANUAL", server_default="MANUAL")
   status: Mapped[str] = mapped_column(String(10), nullable=False, default="DRAFT", server_default="DRAFT")
   geometry_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+  role: Mapped[str] = mapped_column(String(24), nullable=False, default="", server_default="")
   computed: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
   last_result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
   

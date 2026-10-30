@@ -1,0 +1,2 @@
+column C1 9 x 9 in
+footing F1 3 x 3 ft

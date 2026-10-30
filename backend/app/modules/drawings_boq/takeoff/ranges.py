@@ -8,7 +8,26 @@ ASSUMED_PCT = 10.0
 EXACT = ("PRINTED", "VERIFIED", "CONFIRMED")
 NOT_QUANTITY = ("name", "mark", "position", "material", "host wall", "tank drawings", "levels")    
 
+def _beam_alternatives(cand) -> tuple | None:
+  from app.engine.measure import readings as QS
+  f, p = cand.facts or {}, cand.params or {}
+  try:
+    used = float(p.get("depth_mm"))
+  except (TypeError, ValueError):
+    return None
+  depths = [float(o["depth_mm"]) for o in f.get("section_options") or [] if o.get("depth_mm")]
+  if not f.get("section_assumed") or len(depths) < 2 or used <= 0:
+    return None
+  
+  cut = float(QS.convention("slab_thickness_mm") or 0.0) if f.get("depth_basis") == "WEB_BELOW_SLAB" else 0.0
+  eff = [d - cut for d in [used, *depths]]
+  if eff[0] <= 0 or min(eff) < 0:
+    return None
+  return (round((min(eff) - eff[0]) / eff[0] * 100.0, 2), round((max(eff) - eff[0]) / eff[0] * 100.0, 2))
+
 def _alternatives(cand, name: str) -> tuple | None:
+  if name == "depth" and cand.category == "BEAM":
+    return _beam_alternatives(cand)
   if name != "thickness" or cand.category != "SLAB":
     return None
   used = ((cand.params or {}).get("depth_mm"))

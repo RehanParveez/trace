@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.model import walls as MW
 import re
 from app.engine.measure import proposed as QP
 from app.engine.measure import opening_rules as OPR
+from app.engine.measure import readings as QS
 from shapely.geometry import LineString, Point
 from app.modules.drawings_boq.takeoff.orientation import axes as AX
 from app.modules.drawings_boq.takeoff.extract import room_types as RT
@@ -30,9 +31,8 @@ WALL_TILE = "WALL_TILE"
 WET_WATERPROOF = "WET_WATERPROOF"
 ITEMS = (KACHA_FLOOR, CEILING_PLASTER, PLASTER_INSIDE, PLASTER_OUTSIDE, DOOR_FRAME, ARCH_CENTRING, DOOR_AREA, WINDOW_AREA, FLOOR_FINISH, CEILING_PAINT, SKIRTING, DADO, PAINT_INSIDE, PAINT_OUTSIDE,
   FLOOR_WET, WALL_TILE, WET_WATERPROOF, *FR.TYPED_ITEM_CODE)
-OPENING_MIN_M2 = 0.5            
 
-WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER", DOOR_FRAME: "JOI-DOOR-FRAME", DOOR_AREA: "JOI-DOOR-AREA", WINDOW_AREA: "JOI-WIN-AREA", FLOOR_FINISH: "FIN-FLOOR", CEILING_PAINT: "FIN-CEIL-PAINT", SKIRTING: "FIN-SKIRT", DADO: "FIN-DADO",
+WORK_ITEM = {KACHA_FLOOR: "FLR-KACHA-BED", CEILING_PLASTER: "FIN-PLASTER", PLASTER_INSIDE: "FIN-PLASTER", PLASTER_OUTSIDE: "FIN-PLASTER-EXT", DOOR_FRAME: "JOI-DOOR-FRAME", DOOR_AREA: "JOI-DOOR-AREA", WINDOW_AREA: "JOI-WIN-AREA", FLOOR_FINISH: "FIN-FLOOR", CEILING_PAINT: "FIN-CEIL-PAINT", SKIRTING: "FIN-SKIRT", DADO: "FIN-DADO",
   PAINT_INSIDE: "FIN-PAINT", PAINT_OUTSIDE: "FIN-PAINT-EXT", FLOOR_WET: "FIN-FLOOR-TILE", WALL_TILE: "FIN-WALL-TILE", WET_WATERPROOF: "FIN-WATERPROOF-WET", ARCH_CENTRING: "FRM-ARCH", **FR.TYPED_ITEM_CODE}
 SIDE = {PLASTER_INSIDE: "in", PLASTER_OUTSIDE: "out", PAINT_INSIDE: "in", PAINT_OUTSIDE: "out"}
 
@@ -161,6 +161,23 @@ def floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, f
   return _make(cls, ctx, finish, (FLOOR_FINISH, level_hint or ""), FLOOR_FINISH, label, "FLOOR-FINISH", [FD._centre(_room_points(body))],
     {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("FLOOR_FROM_ROOMS")] + ([C.note("FLOOR_WET_SEPARATE")] if wet else []) + ([C.note("FLOOR_TYPES_SET_APART")] if apart else []),
     facts, 0.7, work_item=main if main != WORK_ITEM[FLOOR_FINISH] else None)
+
+ROOM_FLOOR_ITEM = "FIN-FLOOR"
+FLOOR_ITEMS = (FLOOR_FINISH, FLOOR_WET, *FR.TYPED_TEXT)
+
+def floor_source(rooms: list, finishes: list, by_room: bool, note, status_of) -> str:
+  aggregates = [c for c in finishes if (c.facts or {}).get("foundation_item") in FLOOR_ITEMS]
+  source = "ROOMS" if by_room or not aggregates else "TOTAL"
+  
+  if source == "ROOMS":
+    finishes[:] = [c for c in finishes if c not in aggregates]
+    for r in rooms:
+      r.work_item = ROOM_FLOOR_ITEM
+  else:
+    for r in rooms:
+      r.notes.append(note("ROOM_IN_FLOOR_TOTAL"))
+      r.status = status_of(r.notes)
+  return source
 
 def floor_typed_candidates(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish) -> list:
   if level_hint == "ROOF":
@@ -427,9 +444,13 @@ def paint_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str |
   faces = plaster_faces(walls, mm_per_pt)
   if not faces:
     return []
+  gross = faces
+  if not QS.flag("deduct_opening_paint"):
+    faces = open_off(faces)
   pts = [p for w in plaster_walls(walls) for p in w.geometry["points"]]
   centre = [FD._centre(pts)]
   outer = sum(1 for r in faces if r["out"])
+  
   out = []
   for item, side, text, tag in PAINT_ITEMS:
     if sum(r[side] for r in faces) == 0:
@@ -443,9 +464,11 @@ def paint_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str |
     if area is not None:
       area = max(0.0, area - less)
     facts = {"derived_from": "WALLS", "plaster_side": side, "wall_count": len(faces), "outer_wall_count": outer, "face_length_m": round(face_len, 3),
-      "opening_m2": round(open_m2, 3), "less_dado_m2": round(less, 3), "faces": faces}
+      "opening_m2": round(open_m2, 3), "less_dado_m2": round(less, 3), "faces": faces, "conventions": conventions_applied("deduct_opening_paint")}
     if area is not None:
       facts["area_m2"] = round(area, 3)
+      before = plaster_area(open_off(gross), side)
+      facts["before_deductions_m2"], facts["after_deductions_m2"] = round(before - less if before is not None else 0.0, 3), round(area, 3)
     notes = [C.note("PAINT_FROM_PLASTER"), C.note("PLASTER_OUTER_BY_OUTLINE")]
     if area is None:
       notes.append(C.note("PLASTER_HEIGHT_FROM_WALLS"))
@@ -462,7 +485,7 @@ def _opening_m2(params: dict) -> float:
   for o in (params or {}).get("openings") or []:
     if isinstance(o, dict):
       each = float(o.get("width_mm") or 0.0) * float(o.get("height_mm") or 0.0) / 1e6
-      if each >= OPENING_MIN_M2:
+      if each >= OPR.plaster_min_m2():
         total += float(o.get("nos") or 0) * each
   return total
 
@@ -539,6 +562,15 @@ def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None =
     w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}}
   return {"mode": mode, "used": True, "open_rooms": [], "rooms": g.rooms_seen, "faces": g.faces}
 
+def open_off(faces: list) -> list:
+  return [{**r, "o": 0.0, **({"o_in": 0.0, "o_out": 0.0, "rev": 0.0} if "o_in" in r else {})} for r in faces]
+
+def conventions_applied(flag: str) -> list:
+  out = [{"key": flag, "value": bool(QS.flag(flag))}, {"key": "plaster_opening_min_m2", "value": OPR.plaster_min_m2()}, {"key": "opening_rules_basis", "value": QS.choice("opening_rules_basis")}]
+  if OPR.is1200():
+    out.append({"key": "plaster_opening_one_face_max_m2", "value": OPR.plaster_one_face_max_m2()})
+  return out
+
 def plaster_area(faces: list, side: str, typed_height_mm: float | None = None) -> float | None:
   """Net plastered area in m2 for the faces on one side, or None while a wall that needs a height has none."""
   total = 0.0
@@ -564,6 +596,9 @@ def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str
   faces = plaster_faces(walls, mm_per_pt)
   if not faces:
     return []
+  gross = faces
+  if not QS.flag("deduct_opening_plaster"):
+    faces = open_off(faces)
 
   pts = [p for w in plaster_walls(walls) for p in w.geometry["points"]]
   centre = [FD._centre(pts)]
@@ -580,9 +615,10 @@ def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str
     open_m2 = side_open_m2(faces, side)
     area = plaster_area(faces, side)
     facts = {"derived_from": "WALLS", "plaster_side": side, "wall_count": len(faces), "outer_wall_count": outer, "face_length_m": round(face_len, 3),
-      "opening_m2": round(open_m2, 3), "faces": faces}
+      "opening_m2": round(open_m2, 3), "faces": faces, "conventions": conventions_applied("deduct_opening_plaster")}
     if area is not None:
       facts["area_m2"] = round(area, 3)
+      facts["before_deductions_m2"], facts["after_deductions_m2"] = round(plaster_area(open_off(gross), side) or 0.0, 3), round(area, 3)
     notes = [C.note("PLASTER_FROM_WALLS"), C.note("PLASTER_OUTER_BY_OUTLINE")]
     if item == PLASTER_OUTSIDE:
       notes.append(C.note("PLASTER_OUTSIDE_SEPARATE"))

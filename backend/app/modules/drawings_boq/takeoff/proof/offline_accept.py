@@ -52,6 +52,8 @@ class Accepted:
   printed_all: dict = field(default_factory=dict)       
   problems: list = field(default_factory=list)
   tally: dict = field(default_factory=dict)
+  refusals: list = field(default_factory=list)         
+  decision_log: dict = field(default_factory=dict)     
 
 def _sheet_for(case: str, drawing_id: UUID, r: dict, levels: dict) -> TakeoffSheet:
   title = r.get("title") or {}
@@ -123,12 +125,52 @@ def _measurement(case: str, sheet: TakeoffSheet, cand: TakeoffCandidate, request
     quantity_mode=request.quantity_mode, geometry=geometry, params=svc_mod.TakeoffService._params_json(request.params), work_item_code=code,
     level_id=request.level_id if request.level_id is not None else sheet.level_id, label=(request.label or "").strip() or None, tag=(request.tag or "").strip() or None,
     material_grade=(request.material_grade or "").strip() or None, recon_mode=request.recon_mode, source=request.source, status="DRAFT",
-    geometry_hash=tk.geometry_hash(request.kind, geometry), computed=None)
+    geometry_hash=tk.geometry_hash(request.kind, geometry), role=request.role, computed=None)
+
+def _who(c) -> dict:
+  f = (c.facts or {}) if c is not None else {}
+  return {} if c is None else {"category": c.category, "tag": c.tag, "label": (c.label or "")[:60], "foundation_item": f.get("foundation_item"), "face": f.get("face"), "ckey": c.ckey}
 
 def _fail_text(exc) -> tuple:
   return (getattr(exc, "code", None) or type(exc).__name__, getattr(exc, "message", None) or str(exc))
 
-def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, policy: dict | None = None) -> Accepted:
+def apply_decisions(out: Accepted, decisions: dict) -> dict:
+  from app.modules.drawings_boq.takeoff.extract import conflicts as CF
+  from app.modules.drawings_boq.takeoff.extract import review_service as RS
+  titles = {r["sheet_id"]: r.get("title") for read in out.read.values() for r in read}
+  sheets = {sid: {"page_no": sh.page_no, "discipline": CF.sheet_discipline(titles.get(sid))} for sid, sh in out.sheets.items()}
+  rows = list(out.candidates)
+  view = CF.build(rows, sheets, [], None)
+  held = {d["id"]: d for d in view["decisions"]}
+  chosen, unmatched = {}, []
+  
+  for did, value in sorted(decisions.items()):
+    d = held.get(did)
+    if d is None:
+      unmatched.append({"id": did, "value": value, "why": "the readings raise no such decision"})
+    elif str(value) not in {str(o["value"]) for o in d["options"]}:
+      unmatched.append({"id": did, "value": value, "why": "not one of its options: " + ", ".join(str(o["value"]) for o in d["options"])})
+    else:
+      chosen[did] = str(value)
+  by_id = {str(r.id): r for r in rows}
+  done: dict = {did: 0 for did in chosen}
+  picks = CF.expand_decisions(view, chosen)
+  owner = {c["id"]: c.get("decision_id") for c in view["conflicts"]}
+  
+  for rec in CF.resolutions(view["conflicts"], picks, use_policy=False):
+    for iid in rec["item_ids"]:
+      row = by_id.get(iid)
+      if row is None or row.decision != "NEW" or not CF.apply_to_row(row, rec, None):
+        continue
+      drop = RS.DROP_AFTER_CHOICE.get(rec["kind"], ())
+      if drop:
+        row.notes = [n for n in (row.notes or []) if n.get("code") not in drop]
+      if rec["kind"] == CF.COUNT:
+        RS.ReviewService._follow_lintels(rows, row, int(rec["count"]))
+      done[owner.get(rec["conflict_id"])] = done.get(owner.get(rec["conflict_id"]), 0) + 1
+  return {"applied": [{"id": did, "value": chosen[did], "rows": done.get(did, 0)} for did in sorted(chosen)], "unmatched": unmatched}
+
+def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, policy: dict | None = None, decisions: dict | None = None) -> Accepted:
   policy = policy or (READY_POLICY if ready_only else ALL_POLICY)
   catalog = work_item_catalog()
   typed = {name: None for name in ES.ACCEPT_TYPED_FIELDS}
@@ -171,6 +213,8 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     _apply_beam_sources(list(sheets.values()), read_for_ready)
   
   out.printed_all = printed_params.from_items(drawing_facts.gather(every_page)["items"])
+  if decisions:
+    out.decision_log = apply_decisions(out, decisions)
   failed_ids: set = set()
   refused: dict = {}
   drafts: list = []
@@ -228,7 +272,10 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
 
   profile_of = profile
   confirmed_failed: dict = {}
-  twins: set = set()
+  twins: dict = {}
+  held_m = {m.id: m for m, _s in drafts}
+  cand_of = {c.measurement_id: c for c in out.candidates if c.measurement_id}
+  sheet_page = {sid: sh.page_no for sid, sh in out.sheets.items()}
   used_cals: dict = {}
 
   for m, sheet in drafts:
@@ -240,11 +287,14 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
         raise TraceException(f"Work item {m.work_item_code} was not found.", status_code=404, code="WORK_ITEM_NOT_FOUND")
       comp = svc_mod.confirm_computed(repo_mod.measurement_input(m), repo_mod.sheet_input(sheet), wi, cal,
         repo_mod.calibration_input(cal, repo_mod.sheet_user_unit(sheet)) if cal is not None else None, profile_of)
-      twin = (m.sheet_id, m.geometry_hash, m.work_item_code, m.quantity_mode)
+      twin = svc_mod.twin_key(m)
 
       if twin in twins:
+        mine, held = cand_of.get(m.id), cand_of.get(twins[twin])
+        out.refusals.append({"page": sheet_page.get(m.sheet_id), "work_item": m.work_item_code, "mode": m.quantity_mode, "key": [str(x) for x in twin], "role": m.role, "held_role": getattr(held_m.get(twins[twin]), "role", None),
+          "refused": _who(mine), "held": _who(held)})
         raise TraceException("The same extent is already confirmed for this work item on this sheet; confirming it again would count it twice.", status_code=422, code="DUPLICATE_MEASUREMENT")
-      twins.add(twin)
+      twins[twin] = m.id
     except TraceException as exc:
       confirmed_failed[exc.code] = confirmed_failed.get(exc.code, 0) + 1
       continue

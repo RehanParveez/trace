@@ -196,6 +196,8 @@ def _beam_from_walls(inp: _Inputs, cand) -> None:
     inp.add("depth", MISSING, "the beam section printed on the drawing is not read; type the depth when you accept the beam")
   elif f.get("depth_choice"):
     inp.add("depth", ASSUMED, _depth_choice_text(f["depth_choice"]))
+  elif f.get("section_assumed"):
+    inp.add("depth", ASSUMED, f"the plan does not say which of the beam sections printed on the drawing lies here; the principal one, {f.get('section_mark')}, is used (the others are on the decision)")
   else:
     inp.add("depth", CONFIRMED, "typed by you")
   inp.add("position", ASSUMED, "a beam is assumed on top of every brick wall; the plan does not draw it")
@@ -450,6 +452,8 @@ def evidence_for(cand) -> dict:
     inp.measured("length", "centre line measured from the drawn wall")
     if "THICKNESS_OFF_STANDARD" in codes:
       inp.add("thickness", ASSUMED, "the drawn thickness is not a standard wall size")
+    elif "WALL_PLASTER_DRAWN" in codes:
+      inp.measured("thickness", "measured from the drawn wall, which is drawn at its plaster faces, less the plaster on both faces")
     else:
       inp.measured("thickness", "measured from the drawn wall and snapped to a standard size")
     inp.height("height", _value(params, "height_mm"))
@@ -481,7 +485,7 @@ def evidence_for(cand) -> dict:
     
   if cand.decision == "ACCEPTED":
     for it in inp.items:
-      if it["basis"] in (ASSUMED, MISSING):
+      if it["basis"] in (ASSUMED, MISSING) and not (it["name"] == "depth" and facts.get("section_assumed")):
         it["how"] = "confirmed by you (was: " + it["how"] + ")"
         it["basis"] = CONFIRMED
         

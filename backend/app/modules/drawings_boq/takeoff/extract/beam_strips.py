@@ -34,9 +34,9 @@ def hatch_strokes(segments: list, mm_per_pt: float) -> list:
       out.append((s[0], s[1], s[2], s[3]))
   return out
 
-def components(strokes: list) -> list:
-  """Strokes whose middles lie within LINK_PT of each other form one patch of hatch: [[stroke, ...]]."""
-  cell = LINK_PT
+def components(strokes: list, unit: float = 1.0) -> list:
+  """Strokes whose middles lie within LINK_PT of each other form one patch of hatch: [[stroke, ...]]. LINK_PT is the distance on the reference sheet; unit is the sheet's size against it."""
+  cell = LINK_PT * unit
   mids = [((s[0] + s[2]) / 2.0, (s[1] + s[3]) / 2.0) for s in strokes]
   grid: dict = {}
   for i, m in enumerate(mids):
@@ -121,12 +121,12 @@ def _label(mask):
           stack.append((ny, nx))
   return lab, n
 
-def legs_of(strokes: list, mm_per_pt: float) -> list:
+def legs_of(strokes: list, mm_per_pt: float, unit: float = 1.0) -> list:
   """The straight legs of one patch of hatch: [{"axis": "H" | "V", "p0", "p1", "width_pt", "length_pt"}], p0 and p1 the ends of the centre line (page units).
   The width is that of the hatched band, the length runs end to end on the centre line."""
   xs = [v for s in strokes for v in (s[0], s[2])]
   ys = [v for s in strokes for v in (s[1], s[3])]
-  g = GRID_PT
+  g = GRID_PT * unit
   r = max(2, int(round(CLOSE_FACTOR * _pitch(strokes) / g)))
   
   x0, y0 = min(xs) - (r + 2) * g, min(ys) - (r + 2) * g
@@ -369,15 +369,15 @@ def join_across(legs: list, mm_per_pt: float) -> int:
     del legs[j]
     joins += 1
 
-def read(segments: list, marks: list, mm_per_pt: float) -> dict:
+def read(segments: list, marks: list, mm_per_pt: float, unit: float = 1.0) -> dict:
   """The hatched beams of one plan. segments: the lines inside the plan, (x1, y1, x2, y2, kind); marks: [(tag, x, y, angle)] its beam marks.
   Returns {"legs": [{"axis", "p0", "p1", "width_mm", "length_mm", "tag", "via"}], "unplaced": {tag: n}, "conflicts": n, "inherited": n}."""
   strokes = hatch_strokes(segments, mm_per_pt)
   legs: list = []
   
-  for comp in components(strokes):
+  for comp in components(strokes, unit):
     if len(comp) >= MIN_PATCH_STROKES:
-      legs.extend(legs_of(comp, mm_per_pt))
+      legs.extend(legs_of(comp, mm_per_pt, unit))
   lines = _axis_lines(segments) if legs else ([], [])
   for leg in legs:
     _refine_edges(leg, lines)

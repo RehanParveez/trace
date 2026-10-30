@@ -4,8 +4,9 @@ from app.modules.drawings_boq.takeoff.prep.texts import _LEVEL_WORDS, build_line
 import math
 from statistics import median
 from app.modules.drawings_boq.takeoff.scale import parse_scale_text
+from app.modules.drawings_boq.takeoff.prep import page_unit as PU
 
-CAPTION_SIZE_FACTOR = 1.2      
+CAPTION_SIZE_FACTOR = 1.2   
 CELL_DIVISOR = 400.0          
 CELL_MIN, CELL_MAX = 2.0, 10.0
 LINK_CELLS = 2                 
@@ -14,7 +15,9 @@ FRAME_LINE_FRACTION = 0.35
 CAPTION_REACH_FRACTION = 0.12  
 VIEW_MARGIN_CELLS = 2.0
 MAX_CAPTION_LINES = 4
-MAX_SEGMENTS = 600000          
+SORT_BAND_PT = 40.0   
+NOTE_PAD_PT = 25.0    
+MAX_SEGMENTS = 600000 
 
 _STRUCT_WORD = re.compile(r"\b(?:FOUNDATIONS?|FOOTINGS?|FRAMING|COLUMNS?|BEAMS?|SLABS?)\b", re.I)
 _PLAN_WORD = re.compile(r"\b(?:PLANS?|LAYOUTS?)\b", re.I)
@@ -175,14 +178,15 @@ def _slug(text: str) -> str:
   words = re.findall(r"[A-Z0-9]+", (text or "").upper())
   return "-".join(words[:4]) or "VIEW"
 
-def find_views(index) -> list[dict]:
+def find_views(index, unit: float | None = None) -> list[dict]:
   """The drawings on a sheet: [{key, kind, caption, level_hint, bbox, declared_ratio, scale_text, plan, structural, ...}], each placed by its caption."""
   words = index.words
   if not words or not len(index.kinds) or len(index.kinds) > MAX_SEGMENTS:
     return []
   b = index.bbox
+  unit = PU.of_box(b) if unit is None else unit
   diag = math.hypot(b[2] - b[0], b[3] - b[1])
-  cell = min(max(diag / CELL_DIVISOR, CELL_MIN), CELL_MAX)
+  cell = min(max(diag / CELL_DIVISOR, CELL_MIN * unit), CELL_MAX * unit)
   caps = captions(words)
   if not caps:
     return []
@@ -216,13 +220,13 @@ def find_views(index) -> list[dict]:
       "core_bbox": [round(v, 2) for v in blocks[i]["bbox"]], "declared_ratio": cap["declared_ratio"], "scale_text": cap["scale_text"],
       "caption_bbox": [round(v, 2) for v in cap["bbox"]], "plan": kind in ("STRUCT_PLAN", "PLAN"), "structural": kind == "STRUCT_PLAN",
       "cells": blocks[i]["cells"]})
-  views.sort(key=lambda v: (-round((v["bbox"][1] + v["bbox"][3]) / 2.0 / 40.0), round((v["bbox"][0] + v["bbox"][2]) / 2.0 / 40.0)))
+  views.sort(key=lambda v: (-round((v["bbox"][1] + v["bbox"][3]) / 2.0 / (SORT_BAND_PT * unit)), round((v["bbox"][0] + v["bbox"][2]) / 2.0 / (SORT_BAND_PT * unit))))
   count: dict = {}
   for v in views:
     base = f"{v['kind']}:{v['level_hint'] or '-'}:{_slug(v['caption'])}"
     count[base] = count.get(base, 0) + 1
     v["key"] = base if count[base] == 1 else f"{base}#{count[base]}"
-  annotate(views, words)
+  annotate(views, words, unit)
   return views
 
 def contains(view: dict, x: float, y: float, core: bool = False) -> bool:
@@ -254,16 +258,17 @@ _SLAB_NOTE = re.compile(r"\bSLABS?\s+(?:ARE|IS)\s+(\d+(?:\.\d+)?)\s*(?:\"|â€|â€
 _SLAB_PANEL = re.compile(r"^[A-Z]{1,2}S-?\d{1,2}$")
 _FOUNDATION = re.compile(r"\bFOUNDATIONS?\b|\bFOOTINGS?\b", re.I)
 
-def annotate(views: list, words: list) -> None:
+def annotate(views: list, words: list, unit: float = 1.0) -> None:
   """What the text around a plan view says about it: whether it is the foundation plan, the slab thickness note and the slab panel marks."""
   lines = build_lines(words)
+  pad = NOTE_PAD_PT * unit
   for v in views:
     v["foundation"] = bool(v["structural"] and _FOUNDATION.search(v["caption"]))
     if not v["structural"]:
       continue
     cb = v["caption_bbox"]
-    x0, y0 = min(v["bbox"][0], cb[0]) - 25.0, min(v["bbox"][1], cb[1]) - 25.0
-    x1, y1 = max(v["bbox"][2], cb[2]) + 25.0, max(v["bbox"][3], cb[3]) + 25.0
+    x0, y0 = min(v["bbox"][0], cb[0]) - pad, min(v["bbox"][1], cb[1]) - pad
+    x1, y1 = max(v["bbox"][2], cb[2]) + pad, max(v["bbox"][3], cb[3]) + pad
     note = None
     for ln in lines:
       ws = [w for _, _, w in ln.spans]

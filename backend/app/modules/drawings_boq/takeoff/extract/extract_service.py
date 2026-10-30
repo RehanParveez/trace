@@ -239,7 +239,7 @@ def request_for(cand, plan: AcceptPlan, typed: dict, stamp, own_level) -> Measur
   params = plan.params
   return MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
     params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_roof_params(cand), **_concrete_member(cand, plan.code)}), work_item_code=plan.code, level_id=own_level,
-    label=cand.label, tag=cand.tag, source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand))
+    label=cand.label, tag=cand.tag, source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand), role=KD.role_of(cand))
 
 def apply_accepted(cand, plan: AcceptPlan, stamp, typed: dict) -> None:
   params, missing, section = plan.params, plan.missing, plan.section

@@ -167,6 +167,8 @@ def read_as(identity: dict | None) -> str:
       return "SKIP"
     return "SYMBOLS_ONLY" if gates_services(i) or is_electrical_plan(i) else "PLAN_ITEMS"
 
+  if (i.get("role_vote") or {}).get("read_as") in READ_AS:
+    return i["role_vote"]["read_as"]
   if i.get("mixed"):
     return "PLAN_ITEMS"
   role = i.get("role")

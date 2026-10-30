@@ -199,6 +199,32 @@ def missing_attributes(root: pathlib.Path) -> list:
         out.append((rel, n.lineno, f"{n.value.id}.{n.attr}", alias[n.value.id].__name__))
   return out
 
+POINT_LIST = "point_constants.txt"
+
+def point_constants(root: pathlib.Path) -> list:
+  here = pathlib.Path(__file__).resolve().parent
+  known = {tuple(ln.split(None, 1)) for ln in (here / POINT_LIST).read_text(encoding="utf-8").splitlines() if ln.strip() and not ln.startswith("#")}
+  base = root.joinpath("modules", "drawings_boq", "takeoff")
+  out: list = []
+  
+  for path in sorted(base.rglob("*.py")):
+    if "__pycache__" in path.parts or "proof" in path.parts:
+      continue
+    rel = path.relative_to(base).as_posix()
+    try:
+      tree = ast.parse(path.read_text(encoding="utf-8"))
+    except SyntaxError:
+      continue
+    for node in tree.body:
+      targets = list(node.targets) if isinstance(node, ast.Assign) else ([node.target] if isinstance(node, ast.AnnAssign) else [])
+      names = []
+      for t in targets:
+        names.extend(e for e in (t.elts if isinstance(t, ast.Tuple) else [t]) if isinstance(e, ast.Name))
+      for n in names:
+        if n.id.endswith("_PT") and (rel, n.id) not in known:
+          out.append((rel, n.lineno, n.id))
+  return out
+
 def scope_check() -> list:
   from app.modules.drawings_boq.takeoff.extract import config as C
   from app.modules.drawings_boq.takeoff.extract import note_scope as NS
@@ -222,6 +248,9 @@ def main() -> int:
   undefined = undefined_names(root)
   structure = structure_problems(root)
   attrs = missing_attributes(root)
+  points = point_constants(root)
+  for file, line, name in points:
+    print(f"POINT CONSTANT {file}:{line}  {name}  (a distance in points holds on one sheet size only: use prep/page_unit or millimetres)")
   for file, line, text in undefined:
     print(f"UNDEFINED NAME {file}:{line}  {text}")
   for file, line, kind, text, known in structure:
@@ -236,8 +265,8 @@ def main() -> int:
     print(f"IMPORT FAILS   {name}: {err}")
   for file, line, text, why in misses:
     print(f"LAZY IMPORT    {file}:{line}  {text}  ({why})")
-  print(f"{len(failed)} module(s) fail to import, {len(misses)} in-function import(s) do not resolve, {len(seed)} seed figure(s) differ from the code, {len(scopes)} note code(s) without a valid scope, {len(undefined)} undefined name(s), {len([x for x in structure if not x[4]])} structure problem(s), {len(attrs)} module attribute(s) that do not exist.")
-  return 1 if failed or misses or seed or scopes or undefined or attrs or any(not x[4] for x in structure) else 0
+  print(f"{len(failed)} module(s) fail to import, {len(misses)} in-function import(s) do not resolve, {len(seed)} seed figure(s) differ from the code, {len(scopes)} note code(s) without a valid scope, {len(undefined)} undefined name(s), {len([x for x in structure if not x[4]])} structure problem(s), {len(attrs)} module attribute(s) that do not exist, {len(points)} new point constant(s).")
+  return 1 if failed or misses or seed or scopes or undefined or attrs or points or any(not x[4] for x in structure) else 0
 
 if __name__ == "__main__":
   sys.exit(main())

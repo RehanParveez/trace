@@ -34,6 +34,22 @@ rules:
   - {key: tie_band_replaces_lintel, value: 0.0, unit: null, cls: JUDGEMENT}
   - {key: rcc_ring_closed, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: brick_length_centre_line, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: floor_finish_by_room, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: wall_plaster_drawn, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: wall_plaster_face_mm, value: 12.5, unit: "mm", cls: JUDGEMENT}
+  - {key: deduct_opening_brick, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: deduct_opening_plaster, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: deduct_opening_paint, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: derived_scaffold, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: derived_props, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: page_role_vote, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: brick_opening_min_m2, value: 0.1, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: rcc_wall_opening_min_m2, value: 0.4, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: plaster_opening_min_m2, value: 0.5, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: plaster_opening_one_face_max_m2, value: 3.0, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
+  - {key: scaffold_above_mm, value: 3600.0, unit: "mm", cls: JUDGEMENT}
+  - {key: props_above_mm, value: 3600.0, unit: "mm", cls: JUDGEMENT}
+  - {key: round_cft_dp, value: -1.0, unit: "decimals", cls: JUDGEMENT}
   - {key: wall_height_basis, value: "BETWEEN_BEAMS", unit: null, cls: JUDGEMENT}
   - {key: tie_band_single_count, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: brick_net_of_lintels, value: 1.0, unit: null, cls: JUDGEMENT}

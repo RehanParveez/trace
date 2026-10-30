@@ -39,6 +39,78 @@ def load_case(folder: str) -> dict:
     "block_floor": dict(raw.get("block_floor") or {}), "company_rules": raw.get("company_rules"), "note": raw.get("note") or "", "folder": folder}
   out["expected"] = load_expected(os.path.join(folder, "expected.yaml"))
   out["facts"] = load_facts(os.path.join(folder, "facts.yaml"))
+  out["decisions"] = load_decisions(folder)
+  out["corrections"] = load_corrections(folder)
+  out["residuals"] = load_residuals(folder)
+  return out
+
+ANSWERED_BY = ("DRAWING", "QS")
+
+def _list_file(path: str) -> list:
+  if not os.path.isfile(path):
+    return []
+  doc = _yaml(path) or []
+  if not isinstance(doc, list):
+    raise ValueError(f"{path} must be a list.")
+  return doc
+
+def _need(path: str, i: int, e, *names) -> None:
+  if not isinstance(e, dict):
+    raise ValueError(f"{path}, entry {i + 1}: every entry is a mapping.")
+  for n in names:
+    if e.get(n) in (None, ""):
+      raise ValueError(f"{path}, entry {i + 1}: `{n}` is missing.")
+
+def load_decisions(folder: str) -> list:
+  """decisions.yaml: one answer to one open decision, [{id, value, answered_by (DRAWING or QS), date, source}]. `id` is the decision id the score prints under 'Open decisions',
+  `value` one of that decision's option values. DRAWING means the answer was read off the drawing by Rehan, QS that the QS gave it."""
+  path = os.path.join(folder, "decisions.yaml")
+  out, seen = [], set()
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "id", "value", "answered_by", "date", "source")
+    by = str(e["answered_by"]).upper()
+    if by not in ANSWERED_BY:
+      raise ValueError(f"{path}, entry {i + 1}: answered_by must be one of {', '.join(ANSWERED_BY)}.")
+    if not isinstance(e["id"], str):
+      raise ValueError(f"{path}, entry {i + 1}: write the id in quotes ({e['id']!r} was read as a number).")
+    value = e["value"]
+    if isinstance(value, float) and value.is_integer():
+      value = int(value)
+    did = e["id"]
+    if did in seen:
+      raise ValueError(f"{path}: the decision {did} is answered twice.")
+    seen.add(did)
+    out.append({"id": did, "value": str(value), "answered_by": by, "date": str(e["date"]), "source": str(e["source"])})
+  return out
+
+def load_corrections(folder: str) -> list:
+  path = os.path.join(folder, "qs_corrections.yaml")
+  out, seen = [], set()
+  
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "line", "qs_figure", "corrected", "reason")
+    for n in ("qs_figure", "corrected"):
+      if isinstance(e[n], bool) or not isinstance(e[n], (int, float)):
+        raise ValueError(f"{path}, entry {i + 1}: {n} must be a number.")
+    if not isinstance(e.get("signed"), bool):
+      raise ValueError(f"{path}, entry {i + 1}: `signed` must be true or false.")
+    if str(e["line"]) in seen:
+      raise ValueError(f"{path}: the line {e['line']} is corrected twice.")
+    seen.add(str(e["line"]))
+    out.append({"line": str(e["line"]), "qs_figure": float(e["qs_figure"]), "corrected": float(e["corrected"]), "reason": str(e["reason"]), "signed": e["signed"]})
+  return out
+
+def load_residuals(folder: str) -> list:
+  path = os.path.join(folder, "residuals.yaml")
+  out, seen = [], set()
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "line", "cause")
+    if e.get("pack") in (None, "") and e.get("question") in (None, ""):
+      raise ValueError(f"{path}, entry {i + 1}: give the `pack` that will fix {e['line']} or the `question` that is open.")
+    if str(e["line"]) in seen:
+      raise ValueError(f"{path}: the line {e['line']} is listed twice.")
+    seen.add(str(e["line"]))
+    out.append({"line": str(e["line"]), "cause": str(e["cause"]), "pack": None if e.get("pack") in (None, "") else str(e["pack"]), "question": None if e.get("question") in (None, "") else str(e["question"])})
   return out
 
 def load_company_rules(case: dict) -> tuple:

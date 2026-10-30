@@ -342,6 +342,24 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
   out.meta["frame"] = frame.to_json()
   return out
 
+def _vote(identity: dict, raw, views: list) -> None:
+  from app.engine.measure import readings as QS
+  from app.modules.drawings_boq.takeoff.extract import drawing_list, sheet_identity
+  from app.modules.drawings_boq.takeoff.prep import page_role as PRL
+  if not QS.flag("page_role_vote"):
+    return
+  heading = drawing_list.heading_of(raw.words)
+  is_list = heading is not None and len(drawing_list.read(raw.words, heading).get("entries") or []) >= drawing_list.MIN_ENTRIES
+  stats = raw.stats or {}
+  pdf = stats.get("pdf_type") or {}
+  content = PRL.content_signal(pdf.get("type"), float(pdf.get("image_cover") or 0.0), len(raw.words), len(raw.kinds))
+  if is_list:
+    signals = [PRL.drawing_list_signal(True), content]     
+  else:
+    signals = [PRL.title_block_signal(identity, sheet_identity.read_view), PRL.view_titles_signal(views, sheet_identity.read_view), content]
+  PRL.apply(identity, signals)
+  identity["read_as"] = sheet_identity.read_as(identity)
+
 def _identity(raw, title: dict, views: list, clues: dict | None = None) -> dict | None:
   try:
     from app.modules.drawings_boq.takeoff.extract import pageroles, sheet_identity
@@ -350,6 +368,7 @@ def _identity(raw, title: dict, views: list, clues: dict | None = None) -> dict 
     role = pageroles.page_role(raw.words, sheet_kind(raw.words), drawn=len(raw.kinds))
     facts = {**(clues or {}), "drawn": len(raw.kinds), "words": len(raw.words), "pdf_type": (raw.stats.get("pdf_type") or {}).get("type")}
     sheet_identity.complete(identity, raw.words, role, views, facts, bool(title.get("composite")))
+    _vote(identity, raw, views)
     if identity.get("floor") and not title.get("level_hint") and not title.get("composite"):
       title["level_hint"] = identity["floor"]
     return identity

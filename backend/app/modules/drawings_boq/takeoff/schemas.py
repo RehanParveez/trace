@@ -199,6 +199,7 @@ class MeasurementCreateRequest(BaseModel):
   material_grade: str | None = Field(default=None, max_length=50)
   recon_mode: ReconMode = "AUTO"
   source: Source = "MANUAL"
+  role: str = Field(default="", max_length=24)
 
 class MeasurementUpdateRequest(BaseModel):
   quantity_mode: str | None = Field(default=None, max_length=40)

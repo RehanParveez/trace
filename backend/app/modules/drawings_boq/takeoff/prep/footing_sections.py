@@ -2,6 +2,8 @@ from __future__ import annotations
 import math
 import re
 
+from app.modules.drawings_boq.takeoff.prep import page_unit as PU
+
 CAPTION = re.compile(r"FOOTING\s+FOR\s+(\d+(?:\.\d+)?)\s*[\"”'’]*\s*(?:THICK|THK)?", re.I)
 STEEL = re.compile(r"#\s*(\d+)\s*@\s*(\d+(?:\.\d+)?)\s*[\"”]?", re.I)
 INCH_LABEL = re.compile(r"^(\d+)\s*[\"”]$")
@@ -429,9 +431,21 @@ def read_stepped(index, words: list, u: tuple, w: tuple, lines: list, caps: list
     rec["read"] = "UNUSABLE" if BAD_ISSUES & set(rec["issues"]) else "OK"
   return out
 
-def read(index, words: list) -> list:
+def read(index, words: list, page_wh: tuple | None = None) -> list:
   if not words:
     return []
+  if page_wh is None:
+    return _read(index, words)
+  cindex, cwords, k = PU.canon(index, words, page_wh)
+  out = _read(cindex, cwords)
+  for rec in out:
+    if rec.get("axis") is not None:
+      rec["axis"] = round(rec["axis"] * k, 1)
+    if rec.get("scale_mm_per_pt") is not None:
+      rec["scale_mm_per_pt"] = round(rec["scale_mm_per_pt"] / k, 4)
+  return out
+
+def _read(index, words: list) -> list:
   u, w = _frame(words)
   lines = _lines(words, u, w)
   caps = []

@@ -20,7 +20,26 @@ def kind_of(cand) -> str:
   item = facts.get("site_kind") if cand.category == "SITE" else facts.get("foundation_item")
   return item if item in ITEM_KINDS else cand.category
 
+BEAM_ROLES = {"PLINTH": "PLINTH_BEAM", "ROOF": "ROOF_BEAM", "BAND": "TIE_BAND"}
+FACE_ROLES = {"PLASTER_INSIDE": "FACE_IN", "PAINT_INSIDE": "FACE_IN", "PLASTER_OUTSIDE": "FACE_OUT", "PAINT_OUTSIDE": "FACE_OUT"}
+
+def role_of(cand) -> str:
+  f = getattr(cand, "facts", None) or {}
+  item, cat = f.get("foundation_item"), cand.category
+  if cat == "FOOTING":
+    return "FOOTING"
+  if cat == "COLUMN":
+    return "NECK" if f.get("neck_of") is not None or f.get("neck_assumed") is not None else "COLUMN"
+  if cat == "BEAM":
+    return BEAM_ROLES.get(f.get("beam_role"), "")
+  if cat == "LINTEL":
+    return "LINTEL"
+  if item == "RCC_STRIP":
+    return "PLINTH_BEAM"
+  return FACE_ROLES.get(item, "")
+
 def default_code(cand) -> str | None:
+  """The work item the reader proposes for the kind of this item (the code stored on a sheet read before the code existed is out of date)."""
   """The work item the reader proposes for the kind of this item (the code stored on a sheet read before the code existed is out of date)."""
   return getattr(cand, "suggested_work_item", None) or DEFAULT_CODE.get(kind_of(cand)) or (C.SUGGESTIONS.get(cand.category) or (None,))[0]
 

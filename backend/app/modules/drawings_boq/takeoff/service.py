@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import logging
 from datetime import datetime, timezone
 from app.core.exceptions import TraceException
 from app.engine.measure import takeoff as tk
@@ -25,6 +26,11 @@ from app.modules.drawings_boq.takeoff.scale import parse_scale_text, to_mm
 from app.shared.storage import download_to_path
 
 MAX_SHEETS = 300
+log = logging.getLogger(__name__)
+TWIN_FIELDS = ("sheet_id", "geometry_hash", "work_item_code", "quantity_mode", "role")
+
+def twin_key(m) -> tuple:
+  return tuple(getattr(m, f) or "" if f == "role" else getattr(m, f) for f in TWIN_FIELDS)
 MATERIAL_FIELDS = ("quantity_mode", "geometry", "params", "calibration_id", "work_item_code", "level_id", "recon_mode", "material_grade")
 
 def _now() -> datetime:
@@ -490,7 +496,7 @@ class TakeoffService:
       level_id=payload.level_id if payload.level_id is not None else sheet.level_id,
       label=(payload.label or "").strip() or None, tag=(payload.tag or "").strip() or None,
       material_grade=(payload.material_grade or "").strip() or None, recon_mode=payload.recon_mode, source=source,
-        status="DRAFT", geometry_hash=tk.geometry_hash(payload.kind, geometry), created_by_user_id=user_id)
+        status="DRAFT", geometry_hash=tk.geometry_hash(payload.kind, geometry), role=(getattr(payload, "role", "") or "").strip(), created_by_user_id=user_id)
     m.computed = self._evaluate(m, sheet, cal, await self._profile(org))
     self.session.add(m)
     await self.session.flush()
@@ -586,12 +592,11 @@ class TakeoffService:
     comp = confirm_computed(repo_mod.measurement_input(m), repo_mod.sheet_input(sheet), wi, cal,
       repo_mod.calibration_input(cal, repo_mod.sheet_user_unit(sheet)) if cal is not None else None, await self._profile(org))
     twin = (await self.session.execute(
-      select(TakeoffMeasurement.id).where(
-        TakeoffMeasurement.organization_id == org, TakeoffMeasurement.sheet_id == m.sheet_id,
-        TakeoffMeasurement.status == "CONFIRMED", TakeoffMeasurement.id != m.id,
-        TakeoffMeasurement.geometry_hash == m.geometry_hash, TakeoffMeasurement.work_item_code == m.work_item_code,
-        TakeoffMeasurement.quantity_mode == m.quantity_mode))).first()
+      select(TakeoffMeasurement.id, TakeoffMeasurement.role, TakeoffMeasurement.tag).where(
+        TakeoffMeasurement.organization_id == org, TakeoffMeasurement.status == "CONFIRMED", TakeoffMeasurement.id != m.id,
+        *[getattr(TakeoffMeasurement, f) == (getattr(m, f) or "" if f == "role" else getattr(m, f)) for f in TWIN_FIELDS]))).first()
     if twin is not None:
+      log.warning("DUPLICATE_MEASUREMENT: %s (tag %s, role %r) refused, held by %s (tag %s, role %r); key %s", m.id, m.tag, m.role, twin[0], twin[2], twin[1], twin_key(m))
       fail("The same extent is already confirmed for this work item on this sheet; confirming it again would count it twice.",
         "DUPLICATE_MEASUREMENT")
     return computed_json(comp)

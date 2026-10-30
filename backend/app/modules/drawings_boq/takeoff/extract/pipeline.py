@@ -21,6 +21,7 @@ from app.modules.drawings_boq.takeoff.extract import rcc as RC
 from app.modules.drawings_boq.takeoff.extract import rcc_ring as RR
 from app.modules.drawings_boq.takeoff.extract import completion as CP
 from app.modules.drawings_boq.takeoff.extract import rules as QR
+from app.modules.drawings_boq.takeoff.model import walls as MW
 from app.modules.drawings_boq.takeoff.extract import neck as NK
 from app.modules.drawings_boq.takeoff.extract import footing_pairs as FP
 from app.modules.drawings_boq.takeoff.extract import column_marks as CM
@@ -63,6 +64,7 @@ from app.modules.drawings_boq.takeoff.extract import beam_strips as BSP
 from app.modules.drawings_boq.takeoff.extract import beam_net as BN
 from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.prep import census
+from app.modules.drawings_boq.takeoff.prep import page_unit as PU
 from app.modules.drawings_boq.takeoff.prep import lintels as LT
 from app.modules.drawings_boq.takeoff.prep import steel_notes as SN
 from app.modules.drawings_boq.takeoff.prep import schedules as S
@@ -415,7 +417,7 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
   
   if truncated:
     return None
-  res = BSP.read(segments, marks, f)
+  res = BSP.read(segments, marks, f, ctx.get("page_unit", 1.0))
   if not res["legs"] and not marks:
     return None
 
@@ -687,6 +689,47 @@ def _tread_ladders(walls: list, f: float) -> set:
       chain = [t] if t is not None else []
   return gone
 
+def _wall_basis(pending: list, plaster_mm: float) -> dict:
+  walls = [e for e in pending if (e[0].facts or {}).get("construction") != "RCC"]
+  metres: dict = {}
+  
+  for cand, _base, _off in walls:
+    f = cand.facts
+    metres[f["thickness_basis"]] = metres.get(f["thickness_basis"], 0.0) + float(f["length_cc_m"])
+  sheet, mixed = MW.sheet_basis(metres)
+  out = {"basis": sheet, "mixed": mixed, "metres": {k: round(v, 2) for k, v in sorted(metres.items())}, "converted": 0}
+  for entry in walls:
+    cand = entry[0]
+    f = cand.facts
+    size = f["thickness_used_mm"]
+    
+    if sheet == MW.PLASTER_DRAWN and f["thickness_basis"] == MW.DRAWN_UNMATCHED and plaster_mm > 0.0:
+      band = MW.plaster_band(f["thickness_mm"], C.BRICK_SIZES_MM, plaster_mm, C.BRICK_TOL_MM)
+      if band is not None:
+        size = band
+        f["thickness_basis"] = MW.PLASTER_DRAWN
+        f["thickness_standard_mm"], f["thickness_used_mm"] = size, size
+        cand.params = {**cand.params, "thickness_mm": size}
+        cand.label = f"Wall {_fmt_mm(size)} mm · {f['length_cc_m']:.2f} m"
+        if entry[2]:
+          cand.notes = [n for n in cand.notes if n.get("code") != "THICKNESS_OFF_STANDARD"]
+          entry[1] /= 0.85
+          entry[2] = False
+        out["converted"] += 1
+        
+    if sheet == MW.PLASTER_DRAWN and f["thickness_basis"] == MW.PLASTER_DRAWN:
+      f["thickness_face_mm"] = f["thickness_mm"]
+      cand.notes.append(C.note("WALL_PLASTER_DRAWN", drawn_mm=f["thickness_mm"], brick_mm=size, plaster_mm=round((f["thickness_mm"] - size) / 2.0, 1)))
+    elif f["thickness_basis"] == MW.PLASTER_DRAWN:
+      f["thickness_face_mm"] = f["thickness_mm"]
+  if mixed:
+    lesser = MW.DRAWN if sheet == MW.PLASTER_DRAWN else MW.PLASTER_DRAWN
+    odd = [e[0] for e in walls if e[0].facts["thickness_basis"] == lesser]
+    if odd:
+      top = max(odd, key=lambda c: c.facts["length_cc_m"])
+      top.notes.append(C.note("WALL_THICKNESS_BASIS", metres=out["metres"], sheet=sheet))
+  return out
+
 def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None, work: W.Work | None = None) -> tuple:
   frames, runs, stats = W.detect_walls(index, f, deadline, at_grade, work)
   rcc = RC.rcc_runs(index.rings, f)
@@ -701,13 +744,15 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
   extra = W.bridge_ends(runs, frames, f)
   stats["bridged_ends"] = sum(1 for v in extra.values() for x in v if x > 0.0)
   
-  out = []
+  plaster_mm = float(QR.wall_plaster_mm())
+  pending: list = []
   for r in runs:
     fr = frames[r.peak]
     add0, add1 = extra.get(id(r), (0.0, 0.0))
     p0, p1 = fr.pt(r.s0 - r.ext0 - add0, r.dc), fr.pt(r.s1 + r.ext1 + add1, r.dc)
     t_mm = r.t_pt * f
     std, use_t = W.snap_thickness(t_mm, imperial, wall_vocab)
+    brick, basis = MW.brick_thickness(t_mm, C.BRICK_SIZES_MM, plaster_mm, C.BRICK_TOL_MM)
     cc_m = ((r.s1 + r.ext1 + add1) - (r.s0 - r.ext0 - add0)) * f / 1000.0
     clear_m = r.clear_pt * f / 1000.0
     if std is None and cc_m * 1000.0 < C.WALL_STUB_MAX_MM:
@@ -733,7 +778,10 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     gaps = [round((b - a) * f) for a, b in spans]
     notes: list = []
     base = 0.8
-    if std is None:
+    if basis != MW.DRAWN_UNMATCHED and not (basis == MW.DRAWN and std is not None and abs(use_t - brick) <= C.BRICK_TOL_MM):
+      std, use_t = brick, brick
+    off_standard = std is None
+    if off_standard:
       notes.append(C.note("THICKNESS_OFF_STANDARD", drawn_mm=round(t_mm, 1)))
       base *= 0.85
       
@@ -756,7 +804,7 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     params["dims_basis"] = "SPECIFIED" if h else "DRAWN"
     if cc_m * 1000.0 <= 0:
       continue
-    facts = {"thickness_mm": round(t_mm, 1), "thickness_standard_mm": std, "thickness_used_mm": use_t, "length_cc_m": round(cc_m, 3),
+    facts = {"thickness_mm": round(t_mm, 1), "thickness_standard_mm": std, "thickness_used_mm": use_t, "thickness_basis": basis, "length_cc_m": round(cc_m, 3),
       "length_clear_m": round(clear_m, 3), "gaps_mm": gaps, "ends": [r.end0, r.end1], "method": "CENTRE_LINE",
       "gap_pts": [[[round(x, 3) for x in fr.pt(a, r.dc)], [round(x, 3) for x in fr.pt(b, r.dc)]] for a, b in spans]}
     
@@ -772,7 +820,10 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     cand = Candidate(key=key, category="WALL", kind=kind, quantity_mode=mode, label=f"Wall {_fmt_mm(use_t)} mm · {cc_m:.2f} m", tag=None,
       geometry={"points": [[round(p0[0], 4), round(p0[1], 4)], [round(p1[0], 4), round(p1[1], 4)]], "closed": False}, params=params,
       missing=missing, work_item=work_item, status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
-    out.append(_finish(cand, ctx, base))
+    pending.append([cand, base, off_standard])
+  stats["wall_basis"] = _wall_basis(pending, plaster_mm)
+  
+  out = [_finish(c, ctx, b) for c, b, _off in pending]
   if outer_only:
     treads = _tread_ladders(out, f)
     if treads:
@@ -1036,13 +1087,14 @@ def _outline_axes(dims, printed: list) -> tuple | None:
     return a, b
   return None
 
-CFT_PER_M3 = 35.3146667
+def _cft_per_m3() -> float:
+  return float(QR.QS.param("cft_per_m3"))
 
 def _vol_text(area_m2: float, t_mm) -> str:
   if not t_mm:
     return f"{area_m2:.2f} m²"
   m3 = area_m2 * float(t_mm) / 1000.0
-  return f"{area_m2:.2f} m², {m3:.2f} m³ ({m3 * CFT_PER_M3:,.0f} cft) at {_inch_text(float(t_mm))}"
+  return f"{area_m2:.2f} m², {m3:.2f} m³ ({m3 * _cft_per_m3():,.0f} cft) at {_inch_text(float(t_mm))}"
 
 def _strip_name(r: dict) -> str:
   return f"{r['text'] or 'roof projection'} on the {r['side'].lower()}"
@@ -1133,8 +1185,8 @@ def _thickness_volumes(options: list, length_mm, width_mm, used_mm) -> list:
   for o in options:
     m3 = float(length_mm) * float(width_mm) * float(o["mm"]) / 1e9
     who = [k for k in WITNESS_ORDER if k in o["sources"]] or list(o["sources"])
-    out.append({"mm": o["mm"], "witnesses": who, "pages": list(o.get("pages") or []), "m3": round(m3, 3), "cft": round(m3 * CFT_PER_M3, 1),
-      "delta_m3": round(m3 - base, 3), "delta_cft": round((m3 - base) * CFT_PER_M3, 1), "used": abs(float(o["mm"]) - float(used_mm)) <= 1.0})
+    out.append({"mm": o["mm"], "witnesses": who, "pages": list(o.get("pages") or []), "m3": round(m3, 3), "cft": round(m3 * _cft_per_m3(), 1),
+      "delta_m3": round(m3 - base, 3), "delta_cft": round((m3 - base) * _cft_per_m3(), 1), "used": abs(float(o["mm"]) - float(used_mm)) <= 1.0})
   return out
 
 def _thickness_text(vols: list, used_mm, source) -> str:
@@ -1679,7 +1731,9 @@ def _view_plans(views: list, scales: dict | None = None) -> list:
       "view": {"key": v["key"], "caption": v["caption"], "kind": v["kind"], "level_hint": v.get("level_hint")}})
   return out
 
-def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | None, mm_per_pt: float | None = None) -> dict | None:
+SHEET_PLAN_PAD_PT = 30.0   
+
+def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | None, mm_per_pt: float | None = None, unit: float = 1.0) -> dict | None:
   if not level_hint or not words or VW._FOUNDATION.search(title or ""):
     return None
   note = None
@@ -1691,7 +1745,7 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
   marks = sorted({w.text.strip().upper() for w in words if VW._SLAB_PANEL.match(w.text.strip().upper())})
   xs, ys = [w.cx for w in words], [w.cy for w in words]
   return {"key": "", "caption": title, "level_hint": level_hint, "centre": ((min(xs) + max(xs)) / 2.0, (min(ys) + max(ys)) / 2.0), "note_mm": note,
-    "panels": len(marks), "marks": marks, "view": None, "bbox": [min(xs) - 30.0, min(ys) - 30.0, max(xs) + 30.0, max(ys) + 30.0], "mm_per_pt": mm_per_pt}
+    "panels": len(marks), "marks": marks, "view": None, "bbox": [min(xs) - SHEET_PLAN_PAD_PT * unit, min(ys) - SHEET_PLAN_PAD_PT * unit, max(xs) + SHEET_PLAN_PAD_PT * unit, max(ys) + SHEET_PLAN_PAD_PT * unit], "mm_per_pt": mm_per_pt}
 
 def _mark_stats(res: Extraction, words: list, marks: dict) -> None:
   vocab, disc = marks["vocab"], marks["discipline"]
@@ -1711,11 +1765,11 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
   sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
   footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None,
-  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None) -> Extraction:
+  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, page_unit: float = 1.0) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   work = W.Work(C.PAGE_WORK_BUDGET, started + C.PAGE_HARD_STOP_FACTOR * budget_s)
-  ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
+  ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified, "page_unit": page_unit,
     "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source in ("OCR", "OUTLINED") else 1.0)}
   
   res = Extraction()
@@ -1742,7 +1796,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   openings = S.opening_lookup(schedule)
   plan_kind = role_info.get("plan_kind")
   marks = {"vocab": mark_vocab, "discipline": discipline, "plan_kind": plan_kind, "skipped": {}}
-  views = VW.find_views(index)
+  views = VW.find_views(index, page_unit)
   
   composite_structural = sum(1 for v in views if v["structural"]) >= 2
   if composite_structural:
@@ -1772,7 +1826,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   if slab_plan and kind["kind"] == "UNKNOWN":
     kind = {"kind": "STRUCTURAL", "title": "slab plan (read from its bar strings and panel sizes)"}
   if not composite_structural and not partial and kind["kind"] == "STRUCTURAL":
-    one = _sheet_plan(words, lines, level_hint, kind.get("title"), None if scale_unverified else mm_per_pt)
+    one = _sheet_plan(words, lines, level_hint, kind.get("title"), None if scale_unverified else mm_per_pt, page_unit)
     plans = [one] if one else []
   areas = {a["key"]: a for a in ((schedule or {}).get("areas") or []) if a.get("kind") == "FLOOR"}
   seen_floor: set = set()
@@ -1922,6 +1976,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       if with_finishes:
         finishes = _stage(res, "FINISHES", lambda: _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"],
           mm_per_pt, ctx, level_hint, [c for c in res.candidates if c.category == "WINDOW"], S.arched_marks(schedule)), [])
+        res.stats["floor_source"] = FN.floor_source([r for r in rooms if r.category == "ROOM"], finishes, QR.floor_finish_by_room(), C.note, _status)
         res.candidates.extend(finishes)
         res.stats["finish_items"] = len(finishes)
         if level_hint == "ROOF" and any(r.category == "ROOM" and not (r.facts or {}).get("name") for r in rooms):
@@ -2134,7 +2189,7 @@ def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction
   boundary = BDY.candidates(sites, ctx, Candidate, _finish_site)
   res.candidates.extend(boundary)
   res.stats["boundary_items"] = len(boundary)
-  drainage = DR.candidates(index.words, kw.get("floor_heights"), ctx, Candidate, _finish_site)
+  drainage = [] if kw.get("read_as") == "DETAILS_ONLY" else DR.candidates(index.words, kw.get("floor_heights"), ctx, Candidate, _finish_site)
   res.candidates.extend(drainage)
   res.stats["drainage_items"] = len(drainage)
   piles_rafts, pr_notes = PRF.candidates(index.words, kw.get("schedule"), ctx, Candidate, _finish_site)
@@ -2229,6 +2284,16 @@ def _pdf_type_notes(res: Extraction, pdf: dict | None) -> None:
   if pdf.get("type") == "VECTOR_NOLETTER":
     res.notes.append(C.note("NO_LETTERING_PAGE", drawn_segments=pdf.get("drawn_segments")))
 
+def _vote_notes(res: Extraction, identity: dict | None) -> None:
+  vote = (identity or {}).get("role_vote")
+  if not vote:
+    return
+  res.stats["role_vote"] = {"role": vote.get("role"), "votes": vote.get("votes"), "held": vote.get("held"), "why": vote.get("why"), "read_as": vote.get("read_as")}
+  if vote.get("read_as"):
+    res.notes.append(C.note("PAGE_ROLE_VOTED", role=vote.get("role"), votes=vote.get("votes"), signals=[f"{s['signal']}: {s['why']}" for s in vote.get("signals") or []]))
+  elif vote.get("held") and vote.get("why", "").startswith("two strong"):
+    res.notes.append(C.note("PAGE_ROLE_UNSURE", votes=vote.get("votes"), why=vote.get("why"), signals=[f"{s['signal']}: {s['why']}" for s in vote.get("signals") or []]))
+
 def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
   scan = kw.pop("scan_reading", None)
   pdf = kw.pop("pdf_type", None)
@@ -2245,6 +2310,7 @@ def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) 
     OS.FROM_PICTURE.reset(token)
   _identity_gate(res, identity)
   _identity_gate(res, identity)
+  _vote_notes(res, identity)
   if (identity or {}).get("mixed"):
     res.notes.append(C.note("MIXED_SHEET", discipline=identity.get("discipline")))
   _pdf_type_notes(res, pdf)
@@ -2253,6 +2319,7 @@ def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) 
   return res
 
 def _run_extraction_framed(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
+  kw.setdefault("page_unit", PU.of_box(index.bbox))
   fr = OF.Frame.from_json(frame) if frame else OF.detect(index.words, index.bbox, index.segs, index.kinds)
   
   if fr.identity:

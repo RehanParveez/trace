@@ -58,9 +58,11 @@ def _number(mark) -> int:
 def principal(role: str | None, opts: list) -> tuple:
   with_depth = [s for s in opts if s.get("depth_mm")]
   if role == "ROOF":
-    general = [s for s in with_depth if s.get("kind") == "BEAM"]
+    general = sorted((s for s in with_depth if s.get("kind") == "BEAM"), key=lambda s: _number(s.get("mark")))
     if len(general) == 1:
       return general[0], "GENERAL"
+    if general:
+      return general[0], "FIRST_GENERAL"
   own = sorted((s for s in with_depth if s.get("kind") == KIND_OF_ROLE.get(role or "")), key=lambda s: _number(s.get("mark")))
   return (own[0], "FIRST") if own else (None, None)
 
@@ -158,7 +160,7 @@ def apply(beams: list, sections: list) -> dict:
       c.notes.append(C.note("BEAM_MARK_SECTION_UNUSABLE", mark=f["beam_mark"]))
     chosen_one = marked if marked is not None and marked.get("depth_mm") else opts[0] if len(opts) == 1 and opts[0].get("depth_mm") else None
     how = None
-    if chosen_one is None and not f.get("beam_mark") and len(opts) > 1:
+    if chosen_one is None and not f.get("beam_mark") and len(opts) > 1 and f.get("level_hint"):      
       chosen_one, how = principal(f.get("beam_role"), opts)
     if chosen_one is not None:
       s = chosen_one

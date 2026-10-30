@@ -125,7 +125,7 @@ def _read_details(doc, page_no: int, raw, result) -> None:
   except Exception:
     result.meta["electrical_reader"] = "FAILED"
   try:
-    sections = footing_sections.read(result.index, result.index.words)
+    sections = footing_sections.read(result.index, result.index.words, size)
     if sections:
       result.meta["footing_sections"] = sections
   except Exception:

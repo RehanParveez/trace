@@ -1,0 +1,123 @@
+- line: EXCAVATION/ALL
+  cause: 'not diagnosed; -15.5%: the bill''s excavation depth and extent are his convention'
+  pack: '202'
+  question: '191-C questionnaire: excavation'
+- line: FILLING/ALL
+  cause: 'not diagnosed; -81.8%: back filling method is his choice (under rooms, inside walls, to plinth) and the depth needs the level table'
+  pack: '202'
+  question: '191-C questionnaire: back filling'
+- line: TERMITE/ALL
+  cause: 'not diagnosed; -32.6%: termite extent is his choice (floors only, plus porch, plus trenches)'
+  pack: '202'
+  question: '191-C questionnaire: termite'
+- line: PCC/ALL
+  cause: 'not diagnosed; -11.0%: the 1:4:8 footing PCC needs the footings joined from layout plus details'
+  pack: '164'
+- line: PCC/ALL/2
+  cause: 'not diagnosed; no Trace number: the 1:6:12 line (the second mix) is not read'
+  pack: '164'
+- line: KACHA/ALL
+  cause: 'not diagnosed; +6.2%: the bed under the floors is taken on rooms; the bill may include passages'
+  pack: '170'
+  question: '191-C questionnaire: kacha floor'
+- line: RCC_COLUMNS/ALL
+  cause: 'no Trace number: the structure PDF has no accepted column yet'
+  pack: '164'
+- line: RCC_BEAMS_SLABS/ALL
+  cause: '-78.1% (-75.7% before Pack 168, the beam is as wide as the wall: 229 mm, not 254; no Trace number before Pack 159): only the roof beams read from the walls are billed, on the principal section B2 9 in (a range of -4% to +300% is on each); the slabs are not read from
+    the slab plans and the beam marks of the structure set (B1 to B4) are not billed'
+  pack: '162'
+- line: RCC_STAIR/ALL
+  cause: 'no Trace number: the stair is not read from the stair detail'
+  pack: '165'
+- line: RCC_LINTELS/ALL
+  cause: 'no Trace number: lintels are not read from the lintel detail'
+  pack: '166'
+- line: TANKS/ALL
+  cause: 'no Trace number: the tanks are not billed'
+  pack: '167'
+- line: STEEL/ALL
+  cause: '-80.8% (-78.6% before Pack 168, the beams are narrower; no Trace number before Pack 159): only the steel of the roof beams read from the walls is counted; no other member carries bars yet'
+  pack: '195'
+- line: ROOF_TREATMENT/ALL
+  cause: 'not diagnosed; no Trace number: roof treatment has no area without the outer faces'
+  pack: '169'
+- line: BRICK_FOUNDATION/ALL
+  cause: 'not diagnosed; -27.1%: the brick steps of the wall footings (W1 to W4) are not read from the sections'
+  pack: '173'
+- line: BRICK_WALLS/GROUND
+  cause: '+16.2% (+26.4% before Pack 168, which takes the 9 in and 4.5 in walls at 229 and 114 mm where they were 254 and 127): the ground floor does not deduct openings (WALL_OPENINGS_INCLUDED); only some of its walls carry the doors and windows found beside them, which is the reading of the openings, not a convention (Pack 198 makes the convention a rule and leaves this alone)'
+  pack: unassigned
+- line: BRICK_WALLS/FIRST
+  cause: 'not diagnosed; -6.6% (+3.8% before Pack 168, when the brick was taken 10% thick): the walls of this floor now come out under the bill'
+  pack: unassigned
+- line: BRICK_BOUNDARY/ALL
+  cause: 'not diagnosed; no Trace number: the boundary wall is not read from plan and elevation'
+  pack: '171'
+- line: BRICK_WALLS/ROOF
+  cause: 'not diagnosed; no Trace number: the mumty and parapet walls of the roof plan are not read'
+  pack: '171'
+- line: WALL_PLASTER
+  cause: -26.4% (was -37.5% before Pack 157, which lets the outside plaster rows through, billed as external plaster and added to this line because the bill's third plaster line is external); the outer
+    faces are still incomplete
+  pack: '169'
+- line: CEILING_PLASTER/ALL
+  cause: 'not diagnosed; -27.5%: ceilings of passages and the porch are not in the extent'
+  pack: '170'
+  question: '191-C questionnaire: false ceiling and ceiling plaster'
+- line: MAS-DPC/ALL
+  cause: 'not diagnosed; -58.8% (-54.2% before Pack 168, which takes the walls at their brick thickness): horizontal DPC is taken on a part of the walls'
+  pack: '169'
+- line: DPC_VERTICAL/ALL
+  cause: 'not diagnosed; no Trace number: vertical DPC has no reading'
+  pack: '169'
+- line: FIN-FLOOR/GROUND
+  cause: '-8.0% (was +113.7% before Pack 158, which bills the floor from the dry-room total and no longer from the rooms as well): the QS''s ground-floor figure and the total of the dry rooms differ by
+    81 sft; not diagnosed, not checked how he groups the dry rooms'
+  pack: '170'
+- line: FIN-FLOOR-TILE/ALL
+  cause: 'not diagnosed; -28.4%: the tiled areas outside the rooms (passages) are left out'
+  pack: '170'
+  question: '191-C questionnaire: passage tile'
+- line: FIN-DADO/ALL
+  cause: 'not diagnosed; -10.5%: the bill tiles the bath walls to a height and wet rooms are his choice'
+  pack: '202'
+  question: '191-C questionnaire: wet rooms and dado'
+- line: FIN-WALL-TILE/ALL
+  cause: 'not diagnosed; +51.8%: the kitchen tile band height is his choice (printed note, 7 ft, to the ceiling)'
+  pack: '202'
+  question: '191-C questionnaire: kitchen tile band'
+- line: FIN-PORCH-TILE/ALL
+  cause: 'not diagnosed; -51.9%: porch tile extent is his choice (porch, plus car porch, plus front)'
+  pack: '202'
+  question: '191-C questionnaire: porch tile'
+- line: FIN-PAVING/ALL
+  cause: 'not diagnosed; no Trace number: paving at the gate and front belongs to site works'
+  pack: '199'
+- line: FIN-PAINT/ALL
+  cause: 'not diagnosed; +23.7%: whether the bill''s internal paint includes ceilings and the plaster faces are not complete'
+  pack: '169'
+- line: FIN-PAINT-EXT/ALL
+  cause: 'not diagnosed; -75.6%: external paint needs the outer faces and, for the facade tile, the elevations'
+  pack: '204'
+- line: WINDOWS/ALL
+  cause: 'not diagnosed; -15.9%: windows read from the plan differ from the printed labels; opening areas follow the schedule'
+  pack: '198'
+- line: ELE-LIGHT/ALL
+  cause: 'not diagnosed; -19.4%: electrical symbols are not all recognised'
+  pack: '184'
+- line: ELE-FAN/ALL
+  cause: 'not diagnosed; -18.2%: electrical symbols are not all recognised'
+  pack: '184'
+- line: ELE-SOCKET/ALL
+  cause: 'not diagnosed; -31.5%: electrical symbols are not all recognised'
+  pack: '184'
+- line: ELE-SWITCH/ALL
+  cause: 'not diagnosed; no Trace number: no switch symbol is read'
+  pack: '184'
+- line: ELE-LOWV/ALL
+  cause: 'not diagnosed; -37.5%: low-voltage symbols are not all recognised'
+  pack: '184'
+- line: DOOR_FRAMES_RFT/ALL
+  cause: 'not diagnosed; +10.1% (was -2.5% before Pack 157): two doors of size 762 that were dropped by a key collision are counted now, so the frames grew by 41 rft; the QS may count them differently'
+  question: '191-C questionnaire: door frames'
