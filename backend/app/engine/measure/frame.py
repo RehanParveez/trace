@@ -199,20 +199,6 @@ def frames_of(takeoff) -> dict:
       1.0 if a.grade == CONFIRMED else 0.5) for a in items}
     ref = next((a for a in items if a.reference), items[0])
     out[group] = Frame(ref.view, (float(ref.origin_x_mm), float(ref.origin_y_mm)), made)
-  return Frame(ref_key, origin, out)
-
-def frames_of(takeoff) -> dict:
-  """One frame per group of views (a drawing): {group: Frame}, from the alignments a run was given. Views of different drawings are never placed in one frame."""
-  by_group: dict = {}
-  for a in tuple(getattr(takeoff, "alignments", ()) or ()):
-    by_group.setdefault(a.group, []).append(a)
-  out = {}
-  
-  for group, items in by_group.items():
-    made = {a.view: Alignment(a.view, float(a.dx_mm), float(a.dy_mm), a.method, a.grade, a.supporters, a.compared, float(a.residual_mm),
-      1.0 if a.grade == CONFIRMED else 0.5) for a in items}
-    ref = next((a for a in items if a.reference), items[0])
-    out[group] = Frame(ref.view, (float(ref.origin_x_mm), float(ref.origin_y_mm)), made)
   return out
 
 def nudge(a: Alignment, dx: float, dy: float) -> Alignment:

@@ -82,11 +82,31 @@ class Run:
   w: float = 0.0         
   pen_kept: bool = False   
 
-class TimeLimit(Exception):
-  pass
+BRIDGE_WORK = 25      
 
-def _check(deadline: float | None) -> None:
-  if deadline is not None and time.monotonic() > deadline:
+class TimeLimit(Exception):
+  by = "WALL_CLOCK"
+
+class WorkLimit(TimeLimit):
+  by = "WORK_BUDGET"
+
+class Work:
+  def __init__(self, limit: int | None = None, hard_deadline: float | None = None):
+    self.limit, self.hard_deadline, self.spent, self.stopped_by = limit, hard_deadline, 0, None
+
+  def tick(self, n: int = 1) -> None:
+    self.spent += n
+    if self.limit is not None and self.spent > self.limit:
+      self.stopped_by = "WORK_BUDGET"
+      raise WorkLimit()
+    if self.hard_deadline is not None and time.monotonic() > self.hard_deadline:
+      self.stopped_by = "WALL_CLOCK"
+      raise TimeLimit()
+
+def _check(deadline: float | None, work: Work | None = None, n: int = 1) -> None:
+  if work is not None:
+    work.tick(n)
+  elif deadline is not None and time.monotonic() > deadline:
     raise TimeLimit()
 
 def angle_peaks(theta_deg: np.ndarray, weight: np.ndarray, max_peaks: int = 12, min_share: float = 0.01) -> list[float]:
@@ -114,7 +134,7 @@ def angle_peaks(theta_deg: np.ndarray, weight: np.ndarray, max_peaks: int = 12, 
       work[b] = 0.0
   return peaks
 
-def collect_faces(index, mm_per_pt: float, deadline: float | None = None, min_width: float = 0.0) -> tuple[list[Frame], list[Face]]:
+def collect_faces(index, mm_per_pt: float, deadline: float | None = None, min_width: float = 0.0, work: Work | None = None) -> tuple[list[Frame], list[Face]]:
   if len(index.kinds) == 0:
     return [], []
 
@@ -140,8 +160,8 @@ def collect_faces(index, mm_per_pt: float, deadline: float | None = None, min_wi
   min_face = max(2.0, C.WALL_MIN_FACE_MM / mm_per_pt)
   faces: list[Face] = []
   for pi, fr in enumerate(frames):
-    _check(deadline)
     sel = ok & (nearest == pi)
+    _check(deadline, work, 1 + int(sel.sum()))
     if not sel.any():
       continue
   
@@ -182,7 +202,7 @@ def collect_faces(index, mm_per_pt: float, deadline: float | None = None, min_wi
 def _standard(t_mm: float) -> bool:
   return any(abs(t_mm / s - 1.0) <= C.STANDARD_TOL for s in C.STANDARD_WALLS_MM)
 
-def pair_faces(faces: list[Face], mm_per_pt: float, deadline: float | None = None) -> list[Piece]:
+def pair_faces(faces: list[Face], mm_per_pt: float, deadline: float | None = None, work: Work | None = None) -> list[Piece]:
   t_min, t_max = C.WALL_T_MIN_MM / mm_per_pt, C.WALL_T_MAX_MM / mm_per_pt
   min_overlap = C.WALL_MIN_OVERLAP_MM / mm_per_pt
   by_peak: dict = {}
@@ -193,10 +213,10 @@ def pair_faces(faces: list[Face], mm_per_pt: float, deadline: float | None = Non
   for peak, ids in by_peak.items():
     ids.sort(key=lambda i: faces[i].d)
     for a in range(len(ids)):
-      _check(deadline)
       fa = faces[ids[a]]
-      
+      visited = 1
       for b in range(a + 1, len(ids)):
+        visited += 1
         fb = faces[ids[b]]
         gap = fb.d - fa.d
         if gap > t_max:
@@ -210,6 +230,7 @@ def pair_faces(faces: list[Face], mm_per_pt: float, deadline: float | None = Non
         t_mm = gap * mm_per_pt
         score = (o1 - o0) * (1.5 if _standard(t_mm) else 1.0)
         cands.append((score, ids[a], ids[b], o0, o1))
+      _check(deadline, work, visited)
   cands.sort(key=lambda c: -c[0])
   claimed: dict = {}
 
@@ -254,7 +275,7 @@ def band_is_clear(lines, fr: Frame, dc: float, a: float, b: float, t_pt: float) 
   over = np.minimum(np.maximum(sa, sb), b) - np.maximum(np.minimum(sa, sb), a)
   return not bool((inside & (over > BAND_MIN_OVERLAP_PT)).any())
 
-def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadline: float | None = None, lines=None) -> list[Run]:
+def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadline: float | None = None, lines=None, work: Work | None = None) -> list[Run]:
   if not pieces:
     return []
   gap_max = C.WALL_GAP_MAX_MM / mm_per_pt
@@ -264,6 +285,7 @@ def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadli
 
   def bridge_kind(peak: int, dc: float, a: float, b: float, t_pt: float) -> str:
     
+    _check(deadline, work, BRIDGE_WORK)
     fr = frames[peak]
     band = Polygon([fr.pt(a + 0.3, dc - 0.25), fr.pt(b - 0.3, dc - 0.25), fr.pt(b - 0.3, dc + 0.25), fr.pt(a + 0.3, dc + 0.25)])
     join_t = 0.0
@@ -285,6 +307,7 @@ def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadli
   for p in pieces:
     by_peak.setdefault(p.peak, []).append(p)
   for peak, plist in by_peak.items():
+    _check(deadline, work, 1 + len(plist))
     plist.sort(key=lambda p: (p.dc, p.s0))
     clusters: list[list[Piece]] = []
     for p in plist:
@@ -299,7 +322,7 @@ def join_runs(pieces: list[Piece], frames: list[Frame], mm_per_pt: float, deadli
         clusters.append([p])
         
     for cl in clusters:
-      _check(deadline)
+      _check(deadline, work, 1 + len(cl))
       cl.sort(key=lambda p: p.s0)
       dc = sum(p.dc for p in cl) / len(cl)
       cur = None
@@ -425,10 +448,10 @@ def weight_reference(runs: list[Run]) -> float:
 def is_light(r: Run, ref: float) -> bool:
   return ref > 0.0 and r.w < LIGHT_RATIO * ref
 
-def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: float) -> tuple[list[Frame], list[Run], dict]:
-  frames, faces = collect_faces(index, mm_per_pt, deadline, min_width)
-  pieces = pair_faces(faces, mm_per_pt, deadline)
-  runs = join_runs(pieces, frames, mm_per_pt, deadline, straight_lines(index))
+def _detect_once(index, mm_per_pt: float, deadline: float | None, min_width: float, work: Work | None = None) -> tuple[list[Frame], list[Run], dict]:
+  frames, faces = collect_faces(index, mm_per_pt, deadline, min_width, work)
+  pieces = pair_faces(faces, mm_per_pt, deadline, work)
+  runs = join_runs(pieces, frames, mm_per_pt, deadline, straight_lines(index), work)
   from app.modules.drawings_boq.takeoff.extract import frame_band as FB
   border = {id(r) for r in FB.frame_runs(index, runs, frames)}
   if border:
@@ -534,8 +557,8 @@ def add_light_walls(frames: list, runs: list, all_frames: list, all_runs: list, 
   metres = sum((r.s1 - r.s0) for r in keep) * mm_per_pt / 1000.0
   return frames, runs, {"light_walls_kept": len(keep), "light_walls_m": round(metres, 1)}
 
-def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grade: bool = False) -> tuple[list[Frame], list[Run], dict]:
-  frames, runs, stats = _detect_once(index, mm_per_pt, deadline, 0.0)
+def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grade: bool = False, work: Work | None = None) -> tuple[list[Frame], list[Run], dict]:
+  frames, runs, stats = _detect_once(index, mm_per_pt, deadline, 0.0, work)
   classes = pen_classes(index)
   stats["pens"] = [[w, round(s, 3)] for w, s in classes]
   stats["wall_pen_pt"] = None
@@ -549,7 +572,7 @@ def detect_walls(index, mm_per_pt: float, deadline: float | None = None, at_grad
       break
     if share < PEN_MIN_SHARE:
       continue
-    f2, r2, s2 = _detect_once(index, mm_per_pt, deadline, w - 0.005)
+    f2, r2, s2 = _detect_once(index, mm_per_pt, deadline, w - 0.005, work)
     if len(r2) >= PEN_MIN_RUNS and _standard_length_mm(r2, mm_per_pt) >= PEN_KEEP_SHARE * base:
       if at_grade:
         f2, r2, kept = add_light_walls(f2, r2, frames, runs, w, mm_per_pt)

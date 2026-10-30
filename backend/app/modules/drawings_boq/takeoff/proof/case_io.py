@@ -9,7 +9,8 @@ from app.modules.drawings_boq.lab.aliases import bill_key
 
 CASE_CLASSES = ("DRAWING", "QS_ERROR", "CONVENTION", "NEEDS_DECISION")
 FORMATS = ("WORKSHEET_MAP", "SUMMARY")
-FACT_KINDS = ("COUNT_BY_MARK", "COUNT_BY_LABEL", "MEMBER_SIZE", "LEVEL", "ROOM_SIZE", "AREA", "SLAB_THICKNESS", "BEAM_SIZE", "TANK_SIZE", "ELEC_COUNT")
+FACT_KINDS = ("COUNT_BY_MARK", "COUNT_BY_LABEL", "MEMBER_SIZE", "LEVEL", "ROOM_SIZE", "AREA", "SLAB_THICKNESS", "BEAM_SIZE", "TANK_SIZE", "ELEC_COUNT",
+  "WALL_RUN", "FOOTING_SIZE", "COLUMN_SIZE", "STEP_TABLE")
 CASES_DIR_ENV = "TRACE_CASES_DIR"
 HERE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cases")
 
@@ -78,7 +79,7 @@ def load_expected(path: str) -> list:
         raise ValueError(f"{path}, {key}: {name} must be a number or null.")
     tol = e.get("tolerance_pct")
     out.append({"key": key, "item": str(e.get("item") or ""), "unit": str(e.get("unit") or ""), "qs": None if qs is None else float(qs), "drawing": None if drawing is None else float(drawing),
-      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "floor": e.get("floor"),
+      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "floor": e.get("floor"), "grade": e.get("grade"),
       "match": [str(w).lower() for w in (e.get("match") or [])]})
   return out
 
@@ -186,7 +187,7 @@ def draft_expected(lines, block_floor: dict | None = None) -> tuple:
     entries.append(e)
   return entries, left
 
-FIELD_ORDER = ("key", "item", "unit", "qs", "drawing", "class", "tolerance_pct", "note", "family", "families", "floor", "match")
+FIELD_ORDER = ("key", "item", "unit", "qs", "drawing", "class", "tolerance_pct", "note", "family", "families", "floor", "grade", "match")
 
 def dump_expected(entries: list, header: str = "") -> str:
   out = [("# " + h).rstrip() for h in header.splitlines()] if header else []

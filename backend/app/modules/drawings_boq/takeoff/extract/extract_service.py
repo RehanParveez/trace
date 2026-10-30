@@ -1,6 +1,7 @@
 from __future__ import annotations
 import logging
 import asyncio
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from decimal import Decimal
 import time
@@ -72,8 +73,6 @@ HEIGHT_FIELDS = {
 }
 
 def height_field(category: str, need: str, facts: dict | None) -> tuple | None:
-  """(request field, measurement target, words) for a size a candidate is missing, or None when no field types it. Some members take another field: a plinth beam, a
-  tie band, a neck column, a tank wall."""
   if category == "WALL" and (facts or {}).get("foundation_item") in BDY.ITEMS:
     return BDY.field_of(need)
   if category == "WALL" and (facts or {}).get("foundation_item") in DR.TYPED_FIELD:
@@ -83,6 +82,7 @@ def height_field(category: str, need: str, facts: dict | None) -> tuple | None:
   if spec is None:
     return None
   field, target, words = spec
+  
   f = facts or {}
   if category == "BEAM" and f.get("beam_role") == "PLINTH":
     field, words = "plinth_beam_depth_mm", "the plinth beam depth"
@@ -122,6 +122,7 @@ def fill_missing(category: str, missing: list, params: dict, typed: dict, notes:
   if item in DR.ITEMS:
     return DR.fill_drainage(item, missing, params, typed, facts or {})
   out = dict(params or {})
+  
   if category == "SLAB" and typed.get("slab_thickness_mm") is not None and any(n.get("code") == "SLAB_THICKNESS_DISAGREES" for n in notes or []):
     out["depth_mm"] = float(typed["slab_thickness_mm"])
     out["dims_basis"] = "SPECIFIED"
@@ -178,6 +179,91 @@ def _roof_params(cand) -> dict:
   slope = f.get("slope") if isinstance(f.get("slope"), dict) else {}
   roof = {k: v for k, v in {"fall_mm": slope.get("avg_mm"), "fall_min_mm": slope.get("min_mm"), "fall_max_mm": slope.get("max_mm"), "edge_m": f.get("edge_m")}.items() if v}
   return {"roof": roof} if roof else {}
+
+ACCEPT_TYPED_FIELDS = (
+  "wall_height_mm", "column_height_mm", "footing_depth_mm", "slab_thickness_mm", "beam_depth_mm",
+  "plinth_beam_depth_mm", "tie_band_depth_mm", "excavation_depth_mm", "fill_depth_mm", "trench_depth_mm",
+  "pcc_thickness_mm", "pcc_strip_width_mm", "pcc_strip_width_thin_mm",
+  "brick_step_1_height_mm", "brick_step_2_height_mm", "brick_step_3_height_mm", "brick_step_4_height_mm",
+  "brick_step_offset_mm", "membrane_width_mm",
+  "door_frame_width_mm", "door_frame_width_thin_mm", "tile_height_mm",
+  "stair_waist_mm", "neck_height_mm", "tank_wall_height_mm",
+  "boundary_side_mm", "boundary_rear_mm",
+  "rain_pipe_length_mm", "sewer_length_mm",
+  "site_length_mm", "site_width_mm", "site_height_mm", "site_thickness_mm",
+)
+
+@dataclass
+class AcceptPlan:
+  """What accepting one candidate will measure: the work item, the params with every typed value filled in, the values still missing before the fill, the beam section chosen (or None), and whether a person typed steel."""
+  code: str | None
+  params: dict
+  missing: list
+  section: dict | None
+  steel_typed: bool = False
+
+def plan_accept(cand, given: dict, typed: dict, catalog: dict, *, section_pick=None, steel=None, allow_repeat_marks: bool = False) -> tuple:
+  if cand.status == "INVALID":
+    return None, ("CANDIDATE_INVALID", "This item has an error and cannot be measured.")
+  if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") != "WALLS" and not (cand.facts or {}).get("from_strips"):
+    return None, ("CANDIDATE_NOT_MEASURABLE", "Beam marks are only counted. Draw the beam lengths with the length tool.")
+  if not allow_repeat_marks and any(n.get("code") == "BEAM_FROM_FRAMING_PLAN" for n in cand.notes or []):
+    return None, ("BEAM_FROM_FRAMING_PLAN", C.NOTES["BEAM_FROM_FRAMING_PLAN"][1])
+  missing, start, section = cand.missing or [], cand.params or {}, None
+  
+  if section_pick is not None:
+    section, problem = BS.chosen(cand.facts, section_pick)
+    if problem:
+      return None, problem
+    start = BS.with_section(start, section)
+    if section.get("depth_mm"):
+      missing = [m for m in missing if m != "depth_mm"]
+  params, problem = fill_missing(cand.category, missing, start, typed, cand.notes or [], cand.facts or {})
+  
+  if problem:
+    return None, problem
+  if steel is not None:
+    params = {**params, "steel": steel.model_dump(mode="json", exclude_none=True)}
+  code = KD.code_for(cand, given)
+  if code and code not in catalog and given.get(KD.kind_of(cand)):
+    return None, ("WORK_ITEM_NOT_FOUND", f"Work item '{code}' is not in the catalog.")
+  if code and code not in catalog:
+    code = None
+  return AcceptPlan(code=code, params=params, missing=missing, section=section, steel_typed=steel is not None), None
+
+def grade_stamp(cand, code, concrete_rules) -> dict | None:
+  stamp = GS.stamp_for(cand, concrete_rules) if GS.member_of(cand) is not None and GS.is_concrete_code(code) else None
+  return stamp if stamp is not None else GS.mix_stamp(cand)
+
+def request_for(cand, plan: AcceptPlan, typed: dict, stamp, own_level) -> MeasurementCreateRequest:
+  params = plan.params
+  return MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
+    params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_roof_params(cand), **_concrete_member(cand, plan.code)}), work_item_code=plan.code, level_id=own_level,
+    label=cand.label, tag=cand.tag, source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand))
+
+def apply_accepted(cand, plan: AcceptPlan, stamp, typed: dict) -> None:
+  params, missing, section = plan.params, plan.missing, plan.section
+  used = TM.fields_used(cand.category, missing, cand.facts, typed, cand.notes, height_field)
+  
+  if used:
+    cand.facts = {**(cand.facts or {}), TM.KEY: used}
+  if stamp:
+    cand.facts = {**(cand.facts or {}), GS.KEY: stamp}
+  if params != (cand.params or {}):
+    if cand.category == "SLAB":
+      cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}
+    if cand.category == "SITE":
+      cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": SI.typed_sizes((cand.facts or {}).get("site_kind"), missing, typed, cand.facts or {})}
+    if FD.is_foundation(cand):
+      cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": {k: params[k] for k in ("width_mm", "depth_mm") if params.get(k) is not None}}
+    if section is not None:
+      cand.facts = {**(cand.facts or {}), "section_mark": section["mark"], "section_chosen": True, "steel_text": section.get("steel_text"),
+        "steel_source": {"grade": "PRINTED", "text": f"beam section {section['mark']} (chosen)"}}
+    if plan.steel_typed:
+      cand.facts = {**(cand.facts or {}), "steel_source": {"grade": "TYPED", "text": None}}
+    cand.params = params
+    if cand.category == "SLAB":
+      cand.label = SL.current(cand)
 
 class ExtractService:
   def __init__(self, session):
@@ -575,18 +661,7 @@ class ExtractService:
     guard = AG.Guard() if payload.allow_repeat_marks or not rows else await AG.load(self.session, org, next(iter(rows.values())).project_id, list(rows.values()))
     wanted = {c for c in [*(given.values()), *(KD.default_code(r) for r in rows.values())] if c}
     catalog = await work_item_catalog(self.session, org, wanted) if wanted else {}
-    typed = {"wall_height_mm": payload.wall_height_mm, "column_height_mm": payload.column_height_mm, "footing_depth_mm": payload.footing_depth_mm,
-      "slab_thickness_mm": payload.slab_thickness_mm, "beam_depth_mm": payload.beam_depth_mm,
-      "plinth_beam_depth_mm": payload.plinth_beam_depth_mm, "tie_band_depth_mm": payload.tie_band_depth_mm, "excavation_depth_mm": payload.excavation_depth_mm, "fill_depth_mm": payload.fill_depth_mm, "trench_depth_mm": payload.trench_depth_mm,
-      "pcc_thickness_mm": payload.pcc_thickness_mm, "pcc_strip_width_mm": payload.pcc_strip_width_mm, "pcc_strip_width_thin_mm": payload.pcc_strip_width_thin_mm,
-      "brick_step_1_height_mm": payload.brick_step_1_height_mm, "brick_step_2_height_mm": payload.brick_step_2_height_mm,
-      "brick_step_3_height_mm": payload.brick_step_3_height_mm, "brick_step_4_height_mm": payload.brick_step_4_height_mm,
-      "brick_step_offset_mm": payload.brick_step_offset_mm, "membrane_width_mm": payload.membrane_width_mm,
-      "door_frame_width_mm": payload.door_frame_width_mm, "door_frame_width_thin_mm": payload.door_frame_width_thin_mm, "tile_height_mm": payload.tile_height_mm,
-      "stair_waist_mm": payload.stair_waist_mm, "neck_height_mm": payload.neck_height_mm, "tank_wall_height_mm": payload.tank_wall_height_mm,
-      "boundary_side_mm": payload.boundary_side_mm, "boundary_rear_mm": payload.boundary_rear_mm,
-      "rain_pipe_length_mm": payload.rain_pipe_length_mm, "sewer_length_mm": payload.sewer_length_mm,
-      "site_length_mm": payload.site_length_mm, "site_width_mm": payload.site_width_mm, "site_height_mm": payload.site_height_mm, "site_thickness_mm": payload.site_thickness_mm}
+    typed = {name: getattr(payload, name) for name in ACCEPT_TYPED_FIELDS}
     accepted: list = []
     failed: list = []
     sheet_levels: dict = {}
@@ -601,63 +676,34 @@ class ExtractService:
       if cand.decision == "ACCEPTED":
         failed.append(_fail(cid, "CANDIDATE_ALREADY_ACCEPTED", "This item is already a measurement."))
         continue
-      if cand.status == "INVALID":
-        failed.append(_fail(cid, "CANDIDATE_INVALID", "This item has an error and cannot be measured."))
-        continue
-      if cand.category == "BEAM" and (cand.facts or {}).get("derived_from") != "WALLS" and not (cand.facts or {}).get("from_strips"):
-                
-        failed.append(_fail(cid, "CANDIDATE_NOT_MEASURABLE", "Beam marks are only counted. Draw the beam lengths with the length tool."))
-        continue
-      missing, start, section = cand.missing or [], cand.params or {}, None
-      pick = (payload.section_picks or {}).get(cid)
-      if pick is not None:
-        section, problem = BS.chosen(cand.facts, pick)
-        if problem:
-          failed.append(_fail(cid, *problem))
-          continue
-        start = BS.with_section(start, section)
-        if section.get("depth_mm"):
-          missing = [m for m in missing if m != "depth_mm"]
-      params, problem = fill_missing(cand.category, missing, start, typed, cand.notes or [], cand.facts or {})
+      plan, problem = plan_accept(cand, given, typed, catalog, section_pick=(payload.section_picks or {}).get(cid), steel=(payload.steel or {}).get(cid),
+        allow_repeat_marks=bool(payload.allow_repeat_marks))
       if problem:
         failed.append(_fail(cid, *problem))
         continue
-    
+      
+      params, missing, section, code = plan.params, plan.missing, plan.section, plan.code
       before_params, before_snap = dict(cand.params or {}), CR.snapshot(cand)
-      typed_steel = (payload.steel or {}).get(cid)
-      if typed_steel is not None:
-        params = {**params, "steel": typed_steel.model_dump(mode="json", exclude_none=True)}
-      code = KD.code_for(cand, given)
-      if code and code not in catalog and given.get(KD.kind_of(cand)):
-        failed.append(_fail(cid, "WORK_ITEM_NOT_FOUND", f"Work item '{code}' is not in the catalog."))
-        continue
-      if code and code not in catalog:
-        code = None
-        
       if cand.sheet_id not in sheet_levels:
         sheet_levels[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).level_id
       own_level = view_level_id(cand) or sheet_levels[cand.sheet_id]
-      stamp = None
+      rules: list = []
+      
       if GS.member_of(cand) is not None and GS.is_concrete_code(code):
         if cand.sheet_id not in sheet_drawings:
           sheet_drawings[cand.sheet_id] = (await self.core._sheet(org, cand.sheet_id)).drawing_id
         did = sheet_drawings[cand.sheet_id]
         if did not in concrete_rules:
           concrete_rules[did] = ((await printed_for_drawings(self.session, org, [did])).get("grades") or {}).get("concrete") or []
-        stamp = GS.stamp_for(cand, concrete_rules[did])
-      if stamp is None:
-        stamp = GS.mix_stamp(cand)
+        rules = concrete_rules[did]
+      stamp = grade_stamp(cand, code, rules)
       held_by = guard.clash(cand, own_level)
+      
       if held_by is not None:
         failed.append(_fail(cid, AG.CODE, held_by))
         continue
-      if not payload.allow_repeat_marks and any(n.get("code") == "BEAM_FROM_FRAMING_PLAN" for n in cand.notes or []):
-        failed.append(_fail(cid, "BEAM_FROM_FRAMING_PLAN", C.NOTES["BEAM_FROM_FRAMING_PLAN"][1]))
-        continue
       try:
-        request = MeasurementCreateRequest(kind=cand.kind, quantity_mode=cand.quantity_mode, geometry=cand.geometry,
-          params=MeasurementParams(**{**params, **_openings_params(cand, params, typed), **_roof_params(cand), **_concrete_member(cand, code)}), work_item_code=code, level_id=payload.level_id or own_level, label=cand.label, tag=cand.tag,
-          source=cand.source, material_grade=stamp["grade"][:50] if stamp else _spec_grade(cand))
+        request = request_for(cand, plan, typed, stamp, payload.level_id or own_level)
       except ValidationError:
         failed.append(_fail(cid, "CANDIDATE_BAD_VALUES", "The values found for this item cannot be used. Draw it by hand."))
         continue
@@ -665,24 +711,7 @@ class ExtractService:
         async with self.session.begin_nested():
           m = await self.core.create_measurement(org, cand.sheet_id, user_id, request, commit=False)
           cand.decision, cand.measurement_id, cand.decided_by_user_id, cand.decided_at = "ACCEPTED", m.id, user_id, _now()
-          used = TM.fields_used(cand.category, missing, cand.facts, typed, cand.notes, height_field)
-          if used:
-            cand.facts = {**(cand.facts or {}), TM.KEY: used}
-          if stamp:
-            cand.facts = {**(cand.facts or {}), GS.KEY: stamp}
-          if params != (cand.params or {}):
-            if cand.category == "SLAB":
-              cand.facts = {**(cand.facts or {}), "thickness_mm": params.get("depth_mm"), "thickness_source": "TYPED"}
-            if cand.category == "SITE":
-              cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": SI.typed_sizes((cand.facts or {}).get("site_kind"), missing, typed, cand.facts or {})}
-            if FD.is_foundation(cand):
-              cand.facts = {**(cand.facts or {}), "sizes_source": "TYPED", "sizes_mm": {k: params[k] for k in ("width_mm", "depth_mm") if params.get(k) is not None}}
-            if section is not None:
-              cand.facts = {**(cand.facts or {}), "section_mark": section["mark"], "section_chosen": True, "steel_text": section.get("steel_text"),
-                "steel_source": {"grade": "PRINTED", "text": f"beam section {section['mark']} (chosen)"}}
-            if typed_steel is not None:
-              cand.facts = {**(cand.facts or {}), "steel_source": {"grade": "TYPED", "text": None}}
-            cand.params = params
+          apply_accepted(cand, plan, stamp, typed)
       except TraceException as exc:
         failed.append(_fail(cid, exc.code, exc.message))
         continue

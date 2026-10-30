@@ -3,9 +3,11 @@ tier: A
 pdfs:
 - 191-C_DHA_BWP_STR_DRAWING_1.pdf
 - 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf
-sha256: {}
+sha256:
+  191-C_DHA_BWP_STR_DRAWING_1.pdf: c0f63cff857718f2d0c1dcef25e1aeb4fab943d6ea13242b5d60e70aa234e43a
+  191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf: 6fac7864791a67e97b8205e0b82fa448fc419a378c4533ee0b33530cfb79cd22
 workbook:
   path: Quantities_191-C.xlsx
   format: SUMMARY
 company_rules: rules_191c.yaml
-note: 'DHA Bahawalpur 10 marla, one building in two PDFs (structure 11 pages, architecture 49 pages). expected.yaml holds the bill lines Trace tries to measure, read from the workbook (Pack 143b); the electrical, plumbing, joinery and metal lines are not in it.'
+note: 'DHA Bahawalpur 10 marla, one building in two PDFs (structure 11 pages, architecture 49 pages). expected.yaml holds the bill lines Trace tries to measure, read from the workbook (Pack 143b); the electrical counts are in it with the QS count and no drawing count yet; the plumbing, conduit, joinery and metal lines are not.'

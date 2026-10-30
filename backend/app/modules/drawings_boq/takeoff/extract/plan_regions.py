@@ -165,7 +165,7 @@ def _fit(regions: list) -> list:
         out[lo][3], out[hi][1] = min(out[lo][3], max(mid, lc[3])), max(out[hi][1], min(mid, hc[1]))
   return out
 
-def find(index, mm_per_pt: float, deadline: float | None = None, composite: bool = False) -> tuple:
+def find(index, mm_per_pt: float, deadline: float | None = None, composite: bool = False, work: W.Work | None = None) -> tuple:
   """The floor plans of a sheet that holds several drawings: ([{key, kind, caption, level_hint, bbox, core_bbox, caption_bbox, wall_m, ...}], stats).
 
   Nothing is returned for an ordinary one-plan sheet (the whole sheet is read as before): this is for a sheet with two or more floor plan
@@ -174,7 +174,7 @@ def find(index, mm_per_pt: float, deadline: float | None = None, composite: bool
   floor = [i for i, c in enumerate(every) if is_floor_plan(c)]
   if len(floor) < (1 if composite else 2):
     return [], {}
-  frames, runs, _ = W.detect_walls(index, mm_per_pt, deadline, False)
+  frames, runs, _ = W.detect_walls(index, mm_per_pt, deadline, False, work)
   if not runs:
     return [], {}
 

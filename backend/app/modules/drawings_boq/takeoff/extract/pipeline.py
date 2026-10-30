@@ -687,8 +687,8 @@ def _tread_ladders(walls: list, f: float) -> set:
       chain = [t] if t is not None else []
   return gone
 
-def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None) -> tuple:
-  frames, runs, stats = W.detect_walls(index, f, deadline, at_grade)
+def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None, work: W.Work | None = None) -> tuple:
+  frames, runs, stats = W.detect_walls(index, f, deadline, at_grade, work)
   rcc = RC.rcc_runs(index.rings, f)
   stats["rcc_runs"] = len(rcc)
   stats["dropped_stubs"] = 0
@@ -1714,6 +1714,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
+  work = W.Work(C.PAGE_WORK_BUDGET, started + C.PAGE_HARD_STOP_FACTOR * budget_s)
   ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified,
     "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source in ("OCR", "OUTLINED") else 1.0)}
   
@@ -1818,7 +1819,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     res.notes.append(C.note("STRUCTURAL_SHEET", title=kind["title"] or (views[0]["caption"] if views else None)))
   else:
     try:
-      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, imp_sheet, bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"), outer_only, wall_vocab)
+      frames, runs, walls, wstats = _wall_candidates(index, mm_per_pt, sheet_heights, ctx, deadline, imp_sheet, bool(lowest_level) or str(level_hint or "").upper() in ("GROUND", "BASEMENT"), outer_only, wall_vocab, work)
       res.candidates.extend(walls)
       wstats["tank_walls"] = _mark_tanks(words, walls, mm_per_pt)
       _drop_tank_heights(walls)
@@ -1941,10 +1942,14 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         if sink.get("stats"):
           res.stats["floor_layers"] = sink["stats"]
           
-    except W.TimeLimit:
+    except W.TimeLimit as stop:
       res.notes.append(C.note("TIME_LIMIT"))
+      if stop.by == "WALL_CLOCK":
+        res.notes.append(C.note("WALL_CLOCK_STOP"))
+      res.stats["wall_stop"] = {"by": stop.by, "work": work.spent, "budget": work.limit}
+    res.stats["wall_work"] = work.spent
   if role["role"] == "UNKNOWN" and sum(1 for c in res.candidates if c.category == "ROOM" and c.facts.get("name")) >= 3:
-    role.update(role="PLAN", basis="CONTENT", advice="READ")   
+    role.update(role="PLAN", basis="CONTENT", advice="READ") 
   if role["advice"] == "SKIP":
     walls_read = sum(1 for c in res.candidates if c.category in ("WALL", "ROOM"))
     if walls_read:
@@ -2017,6 +2022,8 @@ def _read_regions(index, mm_per_pt: float, regions: list, found: dict, *, starte
   unmapped: dict = {}
   openings: list = []
   per: list = []
+  works: list = [int(found.get("wall_work") or 0)]
+  stops: list = []
   left = len(regions)
   for r in regions:
     sub = PR.sub_index(index, r)
@@ -2046,6 +2053,9 @@ def _read_regions(index, mm_per_pt: float, regions: list, found: dict, *, starte
     for t in part.unmapped_tags:
       unmapped[t["tag"]] = unmapped.get(t["tag"], 0) + int(t["count"])
     openings.extend(part.stats.get("slab_openings") or [])
+    works.append(int(part.stats.get("wall_work") or 0))
+    if part.stats.get("wall_stop"):
+      stops.append(part.stats["wall_stop"])
     for k, v in (part.stats.get("walls") or {}).items():
       if isinstance(v, (int, float)) and not isinstance(v, bool):
         merged[k] = round(merged.get(k, 0) + v, 3)
@@ -2058,6 +2068,9 @@ def _read_regions(index, mm_per_pt: float, regions: list, found: dict, *, starte
   res.unmapped_tags = [{"tag": t, "count": n} for t, n in sorted(unmapped.items(), key=lambda kv: (-kv[1], kv[0]))][:30]
   res.stats["walls"] = merged
   res.stats["slab_openings"] = openings
+  res.stats["wall_work"] = max(works)
+  if stops:
+    res.stats["wall_stop"] = stops[0]
   res.stats["plan_regions"] = {**found, "count": len(regions), "plans": per}
   res.notes.insert(0, C.note("PLAN_REGIONS_READ", plans=[{"caption": r["caption"], "level_hint": r["level_hint"]} for r in regions]))
   return res
@@ -2149,6 +2162,7 @@ def _run_extraction_upright(index, mm_per_pt: float, *, composite: bool = False,
   started = time.monotonic()
   budget_s = float(kw.get("budget_s", 25.0))
   regions, found = [], {}
+  find_stop = None
   if kw.get("read_as") == "SKIP":
     return _read_sheet(index, mm_per_pt, **kw)
   if site_only:
@@ -2159,16 +2173,22 @@ def _run_extraction_upright(index, mm_per_pt: float, *, composite: bool = False,
     return _with_site(res, index, mm_per_pt, kw)
   
   if kw.get("read_as") in (None, "PLAN_ITEMS") and sum(1 for c in VW.captions(index.words) if c["kind"] == "STRUCT_PLAN") < 2 and sheet_kind(index.words)["kind"] != "STRUCTURAL":
+    find_work = W.Work(int(0.3 * C.PAGE_WORK_BUDGET) if C.PAGE_WORK_BUDGET else None, started + C.PAGE_HARD_STOP_FACTOR * 0.3 * budget_s)
     try:
-      regions, found = PR.find(index, mm_per_pt, started + 0.3 * budget_s, composite)
-    except W.TimeLimit:
+      regions, found = PR.find(index, mm_per_pt, started + 0.3 * budget_s, composite, find_work)
+    except W.TimeLimit as stop:
       regions, found = [], {}
+      find_stop = {"by": stop.by, "work": find_work.spent, "budget": find_work.limit}
+    found = {**found, "wall_work": find_work.spent}
   if not regions:
     if regions_only:
       res = Extraction()
       res.stats["plan_regions"] = {"count": 0}
       return res
-    return _with_site(_read_sheet(index, mm_per_pt, **kw), index, mm_per_pt, kw)
+    res = _with_site(_read_sheet(index, mm_per_pt, **kw), index, mm_per_pt, kw)
+    if find_stop:
+      res.stats["plan_regions_stop"] = find_stop
+    return res
   return _with_site(_read_regions(index, mm_per_pt, regions, found, started=started, budget_s=budget_s, **{k: v for k, v in kw.items() if k != "budget_s"}), index, mm_per_pt, kw)
 
 def _scan_reading_notes(res: Extraction, scan: dict | None) -> None:

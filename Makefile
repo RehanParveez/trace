@@ -13,5 +13,8 @@ backend-test:
 backend-lint:
 	docker compose run --rm backend ruff check app tests
 
+check:
+	cd backend && python scripts/check.py
+
 db-migrate:
 	docker compose run --rm backend alembic upgrade head

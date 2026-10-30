@@ -96,10 +96,31 @@ def build_space(cand, m, sheet, *, view: str, floors: dict, floor_key: str | Non
 def floor_data(group: str, floors: dict) -> tuple:
   return tuple(tk.FloorDatum(group, f.key, float(f.level_mm), f.soffit_mm, f.top_mm, f.grade, f.sources, f.decisions) for f in floors.values())
 
+def space_from(ms: list, sheets: dict, sp_by: dict, floor_of: dict, walls: dict, datums: dict) -> tuple:
+  from app.modules.drawings_boq.takeoff.repository import view_key
+  out: list = []
+  floors_out: list = []
+  
+  for did, (floors, _) in sorted(datums.items(), key=lambda kv: str(kv[0])):
+    floors_out.extend(floor_data(str(did), floors))
+  for m in sorted(ms, key=lambda x: str(x.id)):
+    cand = sp_by.get(m.id)
+    if cand is None:
+      continue
+  
+    sheet = sheets[m.sheet_id]
+    floors, footing = datums.get(sheet.drawing_id, ({}, None))
+    lvl = view_level_id(cand) or sheet.level_id
+    walls_by_key = {k[1]: w for k, w in walls.items() if k[0] == sheet.id}
+    item = build_space(cand, m, sheet, view=view_key(cand, sheet), floors=floors, floor_key=floor_of.get(lvl) if lvl else None, footing=footing,
+      walls_by_key=walls_by_key)
+    if item is not None:
+      out.append(item)
+  return tuple(out), tuple(floors_out)
+
 async def load_space(session: AsyncSession, org: UUID, measurements: list, sheets: dict) -> tuple:
 
   from app.modules.drawings_boq.takeoff.register_service import RegisterService
-  from app.modules.drawings_boq.takeoff.repository import view_key
   ids = [m.id for m in measurements if m.quantity_mode in SPACE_MODES]
   if not ids:
     return (), ()
@@ -132,22 +153,4 @@ async def load_space(session: AsyncSession, org: UUID, measurements: list, sheet
     if d is None or d.format != DrawingFormat.PDF:
       continue
     datums[did] = await service._datums(org, d)
-  out: list = []
-  floors_out: list = []
-  
-  for did, (floors, _) in sorted(datums.items(), key=lambda kv: str(kv[0])):
-    floors_out.extend(floor_data(str(did), floors))
-  for m in sorted(measurements, key=lambda x: str(x.id)):
-    cand = by_measurement.get(m.id)
-    if cand is None:
-      continue
-  
-    sheet = sheets[m.sheet_id]
-    floors, footing = datums.get(sheet.drawing_id, ({}, None))
-    lvl = view_level_id(cand) or sheet.level_id
-    walls_by_key = {k[1]: w for k, w in walls.items() if k[0] == sheet.id}
-    item = build_space(cand, m, sheet, view=view_key(cand, sheet), floors=floors, floor_key=floor_of.get(lvl) if lvl else None, footing=footing,
-      walls_by_key=walls_by_key)
-    if item is not None:
-      out.append(item)
-  return tuple(out), tuple(floors_out)
+  return space_from(measurements, sheets, by_measurement, floor_of, walls, datums)

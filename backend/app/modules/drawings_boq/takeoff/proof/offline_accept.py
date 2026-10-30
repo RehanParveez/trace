@@ -49,6 +49,7 @@ class Accepted:
   floor_of: dict = field(default_factory=dict)          
   meta: dict = field(default_factory=dict)              
   printed: dict = field(default_factory=dict)           
+  printed_all: dict = field(default_factory=dict)       
   problems: list = field(default_factory=list)
   tally: dict = field(default_factory=dict)
 
@@ -138,6 +139,7 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
   cals: dict = {}
 
   wanted_all = {"ready_only": 0, "all": 0}
+  every_page: list = []
   for pdf_name, rows in reads:
     drawing_id = uid(case, "drawing", pdf_name)
     out.drawings[drawing_id] = pdf_name
@@ -161,12 +163,14 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
       cals[sheet.id] = cal
       read_for_ready.append({"sheet_id": sheet.id, "page_no": r["page_no"], "title": r.get("title"), "stats": r.get("stats"), "candidates": cands, "schedule": r.get("schedule"), "mm_per_pt": r.get("mm_per_pt")})
     out.read[drawing_id] = read_for_ready
-    gathered = drawing_facts.gather([{"page_no": r["page_no"], "label": None, "facts": r.get("facts")} for r in rows if r.get("facts") is not None])
-    out.printed[drawing_id] = printed_params.from_items(gathered["items"])
+    pages = [{"page_no": r["page_no"], "label": None, "facts": r.get("facts")} for r in rows if r.get("facts") is not None]
+    every_page.extend(pages)
+    out.printed[drawing_id] = printed_params.from_items(drawing_facts.gather(pages)["items"])
     out.meta[drawing_id] = PrepService.floor_heights_from([SimpleNamespace(page_no=r["page_no"], label=None, prep_meta=r.get("meta") or {}) for r in rows])
     _apply_slab_openings(list(sheets.values()), read_for_ready)
     _apply_beam_sources(list(sheets.values()), read_for_ready)
   
+  out.printed_all = printed_params.from_items(drawing_facts.gather(every_page)["items"])
   failed_ids: set = set()
   refused: dict = {}
   drafts: list = []
@@ -256,11 +260,21 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     "policy": "ready_only" if policy == READY_POLICY else "all"})
   return out
 
+def split_by_drawing(acc: Accepted) -> list:
+  out = []
+  for drawing_id, pdf in acc.drawings.items():
+    sheets = {sid: s for sid, s in acc.sheets.items() if s.drawing_id == drawing_id}
+    ms = [m for m in acc.measurements if m.sheet_id in sheets]
+    cal_ids = {m.calibration_id for m in ms if m.calibration_id}
+    out.append(Accepted(case=acc.case, drawings={drawing_id: pdf}, sheets=sheets, read={drawing_id: acc.read[drawing_id]}, candidates=[c for c in acc.candidates if c.sheet_id in sheets],
+      calibrations=[c for c in acc.calibrations if c.id in cal_ids], measurements=ms, floor_of=dict(acc.floor_of), meta={drawing_id: acc.meta[drawing_id]},
+      printed={drawing_id: acc.printed[drawing_id]}, printed_all=acc.printed_all, problems=[p for p in acc.problems if p.get("pdf") == pdf], tally=acc.tally))
+  return out
+
 def _datums(acc: Accepted) -> dict:
   out: dict = {}
   for drawing_id, prepared in acc.meta.items():
     floors = Z.build_floors(prepared["heights"], prepared["floor_keys"], prepared["levels"], prepared["decisions"])
-    out[drawing_id]
     out[drawing_id] = (floors, Z.FootingLevel(Z.ngl_from_marks(floors, prepared["levels_mm"]), None, Z.MARK_NGL, Z.datum_of(floors)))
   return out
 

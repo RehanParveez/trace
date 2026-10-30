@@ -18,6 +18,7 @@ httpx
 pytest
 pytest-asyncio
 ruff
+pyflakes
 email-validator
 ifcopenshell
 reportlab

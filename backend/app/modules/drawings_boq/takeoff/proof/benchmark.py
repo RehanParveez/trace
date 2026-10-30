@@ -313,6 +313,7 @@ def check_extras(extras: list, pdf: bytes, electrical: dict | None, read: list |
     
     counts = ES.read_electrical(open_document(pdf), int(electrical["legend_page"]) - 1, [int(p) - 1 for p in electrical["plan_pages"]])["pages"]
   tagged = len(out)
+  prev: dict = {}
   for f in extras:
     for r in out[tagged:]:
       r.setdefault("checked_by", str(prev.get("checked_by") or "").strip())

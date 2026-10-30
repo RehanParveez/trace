@@ -78,6 +78,34 @@ def computed_json(comp: tk.Computed) -> dict:
     "uncertainty_pct": str(comp.uncertainty_pct), "warnings": list(comp.warnings), "steps": comp.steps, "inputs": comp.inputs,
   }
 
+def _refuse(message: str, code: str):
+  raise TraceException(message, status_code=422, code=code)
+
+def confirm_precheck(m) -> None:
+  """The checks on a measurement before anything is looked up: it has a work item, and that work item is one a PDF drawing can measure."""
+  if not m.work_item_code:
+    _refuse("Choose a work item before confirming.", "MEASUREMENT_NEEDS_WORK_ITEM")
+  if m.work_item_code in tk.RESERVED_CODES:
+    _refuse(f"{m.work_item_code} is measured from bar schedules or the model, not from a PDF drawing.", "WORK_ITEM_RESERVED")
+
+def confirm_computed(mi, si, wi, cal, ci, profile) -> tk.Computed:
+  if tk.needs_calibration(mi.kind, mi.quantity_mode):
+    if cal is None:
+      _refuse("Calibrate the sheet before confirming this measurement.", "PDF_UNCALIBRATED")
+    if not cal.usable:
+      _refuse(cal.reason or "The calibration is not usable.", "CALIBRATION_UNUSABLE")
+  try:
+    cal_eval = tk.evaluate_calibration(ci) if ci is not None else None
+    comp = tk.compute_measurement(mi, si, cal_eval, profile)
+  except tk.TakeoffError as exc:
+    raise _fail(exc)
+  if comp.quantity <= 0:
+    _refuse("The measurement comes to zero. Check the dimensions and deductions.", "ZERO_QUANTITY")
+  family = UNIT_TABLE.get((wi.unit or "").strip().lower())
+  if family is not None and family[0] != comp.unit:
+    _refuse(f"Work item {wi.code} is measured in {family[0]}, but this measurement gives {comp.unit}. Change the quantity mode or the work item.", "TAKEOFF_UNIT_MISMATCH")
+  return comp
+
 def page_geometry(contents: bytes) -> list[dict]:
   try:
     reader = PdfReader(BytesIO(contents))
@@ -552,31 +580,11 @@ class TakeoffService:
   async def _validate_confirmable(self, org: UUID, m: TakeoffMeasurement, sheet: TakeoffSheet) -> dict:
     def fail(message: str, code: str):
       raise TraceException(message, status_code=422, code=code)
-    if not m.work_item_code:
-      fail("Choose a work item before confirming.", "MEASUREMENT_NEEDS_WORK_ITEM")
-    if m.work_item_code in tk.RESERVED_CODES:
-      fail(f"{m.work_item_code} is measured from bar schedules or the model, not from a PDF drawing.", "WORK_ITEM_RESERVED")
+    confirm_precheck(m)
     wi = await require_work_item(self.session, org, m.work_item_code)
     cal = await self.repo.calibration(org, m.calibration_id) if m.calibration_id else None
-    
-    if tk.needs_calibration(m.kind, m.quantity_mode):
-      if cal is None:
-        fail("Calibrate the sheet before confirming this measurement.", "PDF_UNCALIBRATED")
-      if not cal.usable:
-        fail(cal.reason or "The calibration is not usable.", "CALIBRATION_UNUSABLE")
-        
-    try:
-      cal_eval = tk.evaluate_calibration(repo_mod.calibration_input(cal, repo_mod.sheet_user_unit(sheet))) if cal is not None else None
-      comp = tk.compute_measurement(repo_mod.measurement_input(m), repo_mod.sheet_input(sheet), cal_eval, await self._profile(org))
-    except tk.TakeoffError as exc:
-      raise _fail(exc)
-    if comp.quantity <= 0:
-      fail("The measurement comes to zero. Check the dimensions and deductions.", "ZERO_QUANTITY")
-    family = UNIT_TABLE.get((wi.unit or "").strip().lower())
-    if family is not None and family[0] != comp.unit:
-      fail(f"Work item {wi.code} is measured in {family[0]}, but this measurement gives {comp.unit}. Change the quantity mode or the work item.",
-        "TAKEOFF_UNIT_MISMATCH")
-      
+    comp = confirm_computed(repo_mod.measurement_input(m), repo_mod.sheet_input(sheet), wi, cal,
+      repo_mod.calibration_input(cal, repo_mod.sheet_user_unit(sheet)) if cal is not None else None, await self._profile(org))
     twin = (await self.session.execute(
       select(TakeoffMeasurement.id).where(
         TakeoffMeasurement.organization_id == org, TakeoffMeasurement.sheet_id == m.sheet_id,

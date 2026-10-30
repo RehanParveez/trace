@@ -32,8 +32,9 @@
   drawing: null
   class: CONVENTION
   tolerance_pct: 10.0
-  note: 'BOQ Grey Structure work · Grey Structure · row 8. Footing PCC, two mixes in two bill lines.'
+  note: 'BOQ Grey Structure work · Grey Structure · row 8. Footing PCC, one line for each mix; this is the 1:4:8. Trace''s 1:4:8 is the strip under the walls (the 1:2:4 bed under the floor is the KACHA line).'
   family: PCC
+  grade: '1:4:8'
 - key: PCC/ALL/2
   item: 'P.C.C Concrete (1:6:12) under Footing'
   unit: cft
@@ -41,8 +42,9 @@
   drawing: null
   class: CONVENTION
   tolerance_pct: 10.0
-  note: 'BOQ Grey Structure work · Grey Structure · row 9. Footing PCC, two mixes in two bill lines.'
+  note: 'BOQ Grey Structure work · Grey Structure · row 9. The 1:6:12 line. The structure drawings print 1:4:8 for every footing and wall footing (pages 5 to 8), so no 1:6:12 is read: this line has no Trace number.'
   family: PCC
+  grade: '1:6:12'
 - key: KACHA/ALL
   item: 'P.C.C Concrete (1:2:4) under Floor'
   unit: sft
@@ -131,19 +133,18 @@
   drawing: null
   class: CONVENTION
   tolerance_pct: 10.0
-  note: 'BOQ Grey Structure work · Grey Structure · row 22. Joined with the boundary wall: Trace puts the boundary wall on the ground floor.'
+  note: BOQ Grey Structure work · Grey Structure · row 22. The ground floor above the plinth only; the boundary wall is the BRICK_BOUNDARY line.
   family: BRICK_WALLS
   floor: GROUND
-- key: BRICK_WALLS/GROUND/2
+- key: BRICK_BOUNDARY/ALL
   item: Brick Work Boundary Wall
   unit: cft
   qs: 963.944
   drawing: null
   class: CONVENTION
   tolerance_pct: 10.0
-  note: 'BOQ Grey Structure work · Grey Structure · row 25. Joined with the ground floor: Trace puts the boundary wall on the ground floor.'
-  family: BRICK_WALLS
-  floor: GROUND
+  note: 'BOQ Grey Structure work · Grey Structure · row 25. Boundary wall brick work. Trace reads the boundary wall from a printed length, side and rear lengths typed at accept; none is read on this set, so the line has no Trace number.'
+  family: BRICK_BOUNDARY
 - key: BRICK_WALLS/FIRST
   item: Brick Work In Sup Structure F.F
   unit: cft
@@ -207,15 +208,16 @@
   drawing: null
   class: CONVENTION
   tolerance_pct: 10.0
-  note: BOQ Grey Structure work · Grey Structure · row 17. Horizontal and vertical DPC are two bill lines.
-- key: MAS-DPC/ALL/2
+  note: 'BOQ Grey Structure work · Grey Structure · row 17. Horizontal DPC (the DPC_LAYER of the derived works, 17 ledger rows).'
+- key: DPC_VERTICAL/ALL
   item: 'Vertical DPC (1:2:4)'
   unit: sft
   qs: 164.97
   drawing: null
   class: CONVENTION
   tolerance_pct: 10.0
-  note: BOQ Grey Structure work · Grey Structure · row 18. See the first DPC line.
+  note: 'BOQ Grey Structure work · Grey Structure · row 18. Vertical DPC. Trace has no vertical DPC: the line has no Trace number. The structure drawing prints it (page 5, ''typical detail of the exterior wall''), but gives no length.'
+  family: DPC_VERTICAL
 - key: FIN-FLOOR/GROUND
   item: G.F Floor Tile Work (24"x48")
   unit: sft
@@ -292,17 +294,65 @@
   item: Wooden Doors
   unit: sft
   qs: 471.75
-  drawing: null
+  drawing: 405.0
   class: CONVENTION
   tolerance_pct: 10.0
-  note: BOQ Finishing work · Marble Work · row 22.
+  note: 'BOQ Finishing work · Marble Work · row 22. Drawing figure: the 14 printed D= labels of the ground and first floor plans (pages 9 and 10), width x height each: 243.0 + 162.0 = 405.0 sft. Trace reads 15 doors; one more than there are labels. Rehan to check against the plans.'
   family: DOORS
+- key: DOOR_FRAMES_RFT/ALL
+  item: Door Frame
+  unit: rft
+  qs: 325.25
+  drawing: null
+  class: CONVENTION
+  note: BOQ Finishing work · Marble Work · row 23. The bill gives frames in running feet. Trace measures each frame as length x width in sft; the length of each frame (the two jambs and the head) is worked out from the same rows.
+  family: DOOR_FRAMES_RFT
 - key: WINDOWS/ALL
   item: Aluminum Glass Windows
   unit: sft
   qs: 633.37
-  drawing: null
+  drawing: 663.5
   class: CONVENTION
   tolerance_pct: 10.0
-  note: BOQ Finishing work · Marble Work · row 26.
+  note: 'BOQ Finishing work · Marble Work · row 26. Drawing figure: the 16 printed W= labels of the plans (pages 9 and 10), width x height each: 6 on the ground floor, 10 on the first. Rehan to check against the plans.'
   family: WINDOWS
+- key: ELE-LIGHT/ALL
+  item: Light fixtures (LED lights)
+  unit: nos
+  qs: 103.0
+  drawing: null
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: 'QS count (the workbook gives no drawing count). Electric finishes · Lighting Fixtures, items 1 to 8: ceiling 8, surface 74, mirror 5, flood 2, gate 2, facade 6, boundary wall 5, niche 1. Interior only would be 87. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+- key: ELE-FAN/ALL
+  item: Fans (ceiling and wall bracket)
+  unit: nos
+  qs: 11.0
+  drawing: null
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: 'QS count (the workbook gives no drawing count). Electric finishes · items 11 and 12: 9 ceiling fans and 2 wall bracket fans (the fan boxes in Electric Grey, item 9, are 11). The 12 exhaust fans (items 18 and 19) are not counted here. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+- key: ELE-SOCKET/ALL
+  item: Power sockets
+  unit: nos
+  qs: 54.0
+  drawing: null
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: 'QS count (the workbook gives no drawing count). Electric finishes · items 8 and 9: 13 A 45, 15 A 9. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+- key: ELE-SWITCH/ALL
+  item: Gang switches
+  unit: nos
+  qs: 27.0
+  drawing: null
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: 'QS count (the workbook gives no drawing count). Electric finishes · Gang Switches, items 2 to 9: 2 gang 3, 2 gang + socket 3, 4 gang 5, 4 gang + dimmer 3, 6 gang + dimmer 6, 2 gang + dimmer 1, 6 gang 4, 2 way 2. Trace counts no switches. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+- key: ELE-LOWV/ALL
+  item: Telephone and TV sockets
+  unit: nos
+  qs: 16.0
+  drawing: null
+  class: DRAWING
+  tolerance_pct: 10.0
+  note: 'QS count (the workbook gives no drawing count). Electric finishes · Telephone socket 8 and TV socket 8. The drawing count is for Rehan: electrical plans, pages 29 and 30.'

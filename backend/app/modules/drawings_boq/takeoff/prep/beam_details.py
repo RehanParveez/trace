@@ -380,9 +380,6 @@ def _whole(got: dict) -> bool:
 
 def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool = True, budget_s: float = OCR_BUDGET_S) -> dict:
   """Every beam section on the sheet: its mark, kind and, when the character reader is available, the size and bars written on it."""
-
-def read_beam_details(words: list, index, page, page_wh: tuple, crop: tuple, rotation: int, use_ocr: bool = True, budget_s: float = OCR_BUDGET_S) -> dict:
-  """Every beam section on the sheet: its mark, kind and, when the character reader is available, the size and bars written on it."""
   lines = build_lines(words)
   caps = caption_marks(lines)
   for ln in lines:

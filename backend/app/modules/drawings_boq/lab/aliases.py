@@ -9,6 +9,7 @@ BILL_ALIASES = (
   (r"\btermite\b", "TERMITE"),
   (r"\bmembrane\b", "MEMBRANE"),
   (r"brick\s*work\s*foundation", "BRICK_FOUNDATION"),
+  (r"boundary\s*wall", "BRICK_BOUNDARY"),
   (r"brick\s*work", "BRICK_WALLS"),
   (r"\blean\b|\bpcc\s*1\s*[:;]\s*4\s*[:;]\s*8", "PCC"),
   (r"rcc\s*foundation|rcc\s*footing", "RCC_FOOTINGS"),
@@ -36,7 +37,7 @@ BILL_ALIASES = (
 KEY_LABEL = {
   "EXCAVATION": "Excavation", "TERMITE": "Termite treatment", "MEMBRANE": "Membrane", "BRICK_FOUNDATION": "Brick work in foundation",
   "PCC": "Lean concrete", "RCC_FOOTINGS": "RCC footings", "RCC_PLINTH_BEAM": "RCC plinth beam", "RCC_COLUMNS": "RCC columns",
-  "RCC_WALLS": "RCC walls", "RCC_LINTELS": "RCC lintels", "RCC_ROOF_BEAMS": "RCC roof beams", "RCC_STAIR": "RCC staircase",
+  "BRICK_BOUNDARY": "Boundary wall brick work", "DOOR_FRAMES_RFT": "Door frames (running length)", "DPC_VERTICAL": "Vertical DPC", "RCC_WALLS": "RCC walls", "RCC_LINTELS": "RCC lintels", "RCC_ROOF_BEAMS": "RCC roof beams", "RCC_STAIR": "RCC staircase",
   "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "BRICK_WALLS": "Brick work above plinth",
   "STEEL": "Reinforcement steel", "DOOR_FRAMES": "Door frames", "DOORS": "Doors", "WINDOWS": "Windows and ventilators",
   "KACHA": "Kacha or PCC on floor", "FILLING": "Earth filling under floors",  "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
@@ -46,7 +47,7 @@ SOFTWARE_UNIT = {
   "EXCAVATION": "m3", "TERMITE": "m2", "MEMBRANE": "m2", "BRICK_FOUNDATION": "m3", "PCC": "m3", "RCC_FOOTINGS": "m3",
   "RCC_PLINTH_BEAM": "m3", "RCC_COLUMNS": "m3", "RCC_WALLS": "m3", "RCC_LINTELS": "m3", "RCC_ROOF_BEAMS": "m3", "RCC_STAIR": "m3",
   "RCC_SLABS": "m3", "CEILING_PLASTER": "m2", "WALL_PLASTER": "m2", "BRICK_WALLS": "m3", "STEEL": "kg", "DOOR_FRAMES": "m2",
-  "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3",
+  "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3", "BRICK_BOUNDARY": "m3", "DOOR_FRAMES_RFT": "m",
 }
 
 NOT_MEASURED = ("TANKS", "LUMP_SUM")
@@ -101,6 +102,8 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "MEMBRANE"
   if t.startswith("BRICK-STEP"):
     return "BRICK_FOUNDATION"
+  if t.startswith("BOUNDARY-RETURNS"):
+    return "BRICK_BOUNDARY"
   if t.startswith("PCC"):
     return "PCC"
   if t.startswith("PLINTH-BEAM"):

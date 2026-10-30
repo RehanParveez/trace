@@ -1,1 +1,14 @@
-[]
+- {kind: FOOTING_SIZE, mark: F1, L: 5, W: 4, source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 6, text: "foundation plan F1"}, status: TO_CHECK}
+- {kind: FOOTING_SIZE, mark: F2, L: 6, W: 4, source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 6, text: "foundation plan F2"}, status: TO_CHECK}
+- {kind: FOOTING_SIZE, mark: F3, L: 5, W: 4.5, source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 7, text: "foundation plan F3"}, status: TO_CHECK}
+- {kind: FOOTING_SIZE, mark: F4, L: 6, W: 4.5, source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 7, text: "foundation plan F4"}, status: TO_CHECK}
+- {kind: COLUMN_SIZE, mark: C1, b: 9, d: 18, steel: "4-#6 and 4-#4, rings #3@6 in", source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 6, text: "column section C1"}, status: TO_CHECK}
+- {kind: COLUMN_SIZE, mark: C2, b: 9, d: 18, steel: "8-#6, rings #3@6 in", source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 6, text: "column section C2"}, status: TO_CHECK}
+- {kind: BEAM_SIZE, mark: B1, printed: '12"x13½"', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 9, text: "ground floor slab reinforcement layout plan"}, status: TO_CHECK}
+- {kind: BEAM_SIZE, mark: B2, printed: '9"x14"', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 9, text: "ground floor slab reinforcement layout plan"}, status: TO_CHECK}
+- {kind: BEAM_SIZE, mark: B3, printed: '15"x9"', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 9, text: "ground floor slab reinforcement layout plan"}, status: TO_CHECK}
+- {kind: BEAM_SIZE, mark: B4, printed: '18"x9"', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 9, text: "ground floor slab reinforcement layout plan"}, status: TO_CHECK}
+- {kind: STEP_TABLE, section: W1, thickness_in: 4.5, wall: interior, base_width_in: 27, steps: [{width_in: 9, height_in: 3}, {width_in: 13.5, height_in: 3}, {width_in: 18, height_in: 3}, {width_in: 22.5, height_in: 3}], pcc: '4 in thick 1:4:8 on 2 in sand', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 5, text: "section W1-W1"}, status: TO_CHECK}
+- {kind: STEP_TABLE, section: W2, thickness_in: 4.5, wall: exterior, base_width_in: 27, steps: [{width_in: 9, height_in: 3}, {width_in: 13.5, height_in: 3}, {width_in: 18, height_in: 3}, {width_in: 22.5, height_in: 3}], pcc: '4 in thick 1:4:8 on 2 in sand', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 5, text: "section W2-W2"}, status: TO_CHECK}
+- {kind: STEP_TABLE, section: W3, thickness_in: 9, wall: interior, base_width_in: 33, steps: [{width_in: 13.5, height_in: 3}, {width_in: 18, height_in: 3}, {width_in: 22.5, height_in: 3}, {width_in: 27, height_in: 3}], pcc: '4 in thick 1:4:8 on 2 in sand', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 5, text: "section W3-W3"}, status: TO_CHECK}
+- {kind: STEP_TABLE, section: W4, thickness_in: 9, wall: exterior, base_width_in: 33, steps: [{width_in: 13.5, height_in: 3}, {width_in: 18, height_in: 3}, {width_in: 22.5, height_in: 3}, {width_in: 27, height_in: 3}], pcc: '4 in thick 1:4:8 on 2 in sand', source: {pdf: 191-C_DHA_BWP_STR_DRAWING_1.pdf, page: 5, text: "section W4-W4"}, status: TO_CHECK}

@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import sys
 import time
 from app.modules.drawings_boq.takeoff.proof import known_facts as KF
@@ -22,6 +23,7 @@ from app.modules.drawings_boq.takeoff.extract import safe as SF
 from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff import register as RGS
 
+SIZE_TOL_PCT = 2.0
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH"
 STATUS_RANK = {MATCH: 0, NEAR: 1, DIFF: 2, NO_TRUTH: 3, MISSING: 4, EXTRA: 4}
 CLASS_RANK = {"DRAWING": 0, "CONVENTION": 1, "NEEDS_DECISION": 2, "QS_ERROR": 3}
@@ -42,7 +44,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -57,24 +59,47 @@ def family_of(r: dict) -> str | None:
     family = WALL_FAMILY_OF_CODE.get(r.get("work_item_code"))
   return family
 
-def trace_lines(rows: list, floor_of: dict, catalog: dict) -> list:
+GRADE_SPLIT = ("PCC",)       
+
+def _nos(r: dict) -> float:
+  for step in ((r.get("trace") or {}).get("steps") or []):
+    if step.get("op") == "count" and step.get("nos") is not None:
+      try:
+        return float(step["nos"])
+      except (TypeError, ValueError):
+        return 1.0
+  return 1.0
+
+def frame_length_m(r: dict) -> float:
+  """The running length of the door frames of a ledger row: the length each frame is measured round (two jambs and the head) times how many there are."""
+  try:
+    return float(((r.get("trace") or {}).get("inputs") or {}).get("length_mm") or 0.0) / 1000.0 * _nos(r)
+  except (TypeError, ValueError):
+    return 0.0
+
+def trace_lines(rows: list, floor_of: dict, catalog: dict, derive=()) -> list:
   groups: dict = {}
   for r in rows:
     family = family_of(r)
     floor = floor_of.get(str(r.get("level_id"))) if r.get("level_id") else None
     code = r.get("work_item_code") or "?"
     unit = SOFTWARE_UNIT.get(family) if family in SOFTWARE_UNIT else (r.get("unit") or "")
-    k = (code, family or "-", floor or "-", unit)
+    grade = str(r.get("material_grade") or "-") if family in GRADE_SPLIT else ""
+    k = (code, family or "-", floor or "-", unit, grade)
     g = groups.setdefault(k, {"si": 0.0, "rows": 0})
     q = float(r.get("quantity") or 0)
     g["si"] += q
     g["rows"] += 1
+    if "DOOR_FRAMES_RFT" in derive and family == "DOOR_FRAMES":
+      d = groups.setdefault((code, "DOOR_FRAMES_RFT", floor or "-", "m", ""), {"si": 0.0, "rows": 0})
+      d["si"] += frame_length_m(r)
+      d["rows"] += 1
 
   out = []
-  for (code, family, floor, unit), g in sorted(groups.items()):
+  for (code, family, floor, unit, grade), g in sorted(groups.items()):
     wi = catalog.get(code)
-    out.append({"key": f"{code}/{family}/{floor}", "code": code, "family": None if family == "-" else family, "floor": None if floor == "-" else floor, "unit": unit, "si": g["si"],
-      "rows": g["rows"], "description": (getattr(wi, "description", None) or code)})
+    out.append({"key": f"{code}/{family}/{floor}" + (f"@{grade}" if grade else ""), "code": code, "family": None if family == "-" else family, "floor": None if floor == "-" else floor, "unit": unit,
+      "grade": grade or None, "si": g["si"], "rows": g["rows"], "description": (getattr(wi, "description", None) or code)})
   return out
 
 def to_unit(value_si: float, si_unit: str, unit: str):
@@ -85,6 +110,8 @@ def to_unit(value_si: float, si_unit: str, unit: str):
 
 def resolve(entry: dict, lines: list) -> list:
   key = entry["key"]
+  if entry.get("grade"):
+    lines = [l for l in lines if l.get("grade") == entry["grade"]]
   exact = [l for l in lines if l["key"] == key]
 
   if exact:
@@ -227,10 +254,52 @@ def known_fact(f: dict) -> tuple:
     return KF.normalise({"kind": "ROOM_AREA", "name": f["label"], "floor": f.get("floor"), "area_m2": m2, "tolerance_pct": f.get("tolerance_pct")}), None
   return None, f"No check for {kind or 'this kind of'} facts exists yet."
 
+def _mark(text) -> str:
+  return re.sub(r"[^A-Z0-9]", "", str(text or "").upper())
+
+def size_fact(read: list, f: dict) -> dict:
+  """FOOTING_SIZE (mark, L and W in feet) and COLUMN_SIZE (mark, b and d in inches): the plan size the reader gave the items of that mark, against the size stated. The two sides may be turned
+  (a footing read 5 by 4 is a footing stated 4 by 5). MISSING when no item carries the mark, or none carries a size."""
+  kind = str(f.get("kind")).upper()
+  category = "FOOTING" if kind == "FOOTING_SIZE" else "COLUMN"
+  mark = _mark(f.get("mark"))
+  to_mm = 304.8 if category == "FOOTING" else 25.4
+  names = ("L", "W") if category == "FOOTING" else ("b", "d")
+  want = sorted(float(f[n]) * to_mm for n in names)
+  tol = float(f["tolerance_pct"] if f.get("tolerance_pct") is not None else SIZE_TOL_PCT) / 100.0
+  unit = "ft" if category == "FOOTING" else "in"
+  stated = " x ".join(f"{float(f[n]):g}" for n in names) + f" {unit}"
+  sized, marked = [], []
+  for sh in read:
+    for c in sh["candidates"]:
+      if c.category == category and _mark(c.tag) == mark:
+        marked.append(sh["page_no"])
+        p = c.params or {}
+        if p.get("length_mm") and p.get("width_mm"):
+          sized.append((sh["page_no"], sorted([float(p["length_mm"]), float(p["width_mm"])])))
+          
+  text = f"{category.lower()} {f.get('mark')} {stated}"
+  if not marked:
+    return {"text": text, "status": "MISSING", "expected": stated, "found": None, "message": f"No {category.lower()} marked {f.get('mark')} was read.", "pages": []}
+  if not sized:
+    return {"text": text, "status": "MISSING", "expected": stated, "found": None, "message": f"{f.get('mark')} was read on page(s) {sorted(set(marked))} with no size.", "pages": sorted(set(marked))}
+  def close(a, b):
+    return all(abs(x - y) <= tol * y for x, y in zip(a, b))
+  shown = sorted({" x ".join(f"{v / to_mm:g}" for v in dims) + f" {unit}" for _p, dims in sized})
+  if any(close(dims, want) for _p, dims in sized):
+    return {"text": text, "status": "PASS", "expected": stated, "found": shown, "message": f"{f.get('mark')} read as {', '.join(shown)}: as stated.", "pages": sorted({p for p, _d in sized})}
+  return {"text": text, "status": "FAIL", "expected": stated, "found": shown, "message": f"{f.get('mark')} was read as {', '.join(shown)}; {stated} is stated.", "pages": sorted({p for p, _d in sized})}
+
 def check_facts(read: list, facts: list) -> list:
   out = []
   for i, f in enumerate(facts):
-    label = f"fact {i + 1} ({f.get('kind')} {f.get('mark') or f.get('label') or ''})".strip()
+    if str(f.get("kind") or "").upper() in ("FOOTING_SIZE", "COLUMN_SIZE"):
+      try:
+        out.append(size_fact(read, f))
+      except (KeyError, TypeError, ValueError) as e:
+        out.append({"text": f"fact {i + 1} ({f.get('kind')} {f.get('mark') or ''})".strip(), "status": "INVALID", "expected": None, "found": None, "message": f"missing or bad value: {e}", "pages": []})
+      continue
+    label = f"fact {i + 1} ({f.get('kind')} {f.get('mark') or f.get('label') or f.get('name') or f.get('section') or ''})".strip()
     try:
       known, why = known_fact(f)
     except (ValueError, TypeError) as e:
@@ -668,8 +737,11 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     problems += [{"pdf": name, "page": p, "message": m} for p, m in probs]
 
     for r in rows:
-      if r.get("seconds") is not None and r["seconds"] >= page_budget:
-        problems.append({"pdf": name, "page": r["page_no"], "message": f"the page took {r['seconds']} s (the budget is {page_budget:g} s)"})
+      for stop in [(r.get("stats") or {}).get("wall_stop"), (r.get("stats") or {}).get("plan_regions_stop")]:
+        if not stop:
+          continue
+        how = "the work budget" if stop.get("by") == "WORK_BUDGET" else "the safety clock, so another machine may read it differently"
+        problems.append({"pdf": name, "page": r["page_no"], "message": f"the wall reading of the page was stopped by {how} after {stop.get('work')} primitives"})
     reads.append((name, rows))
     timings[f"read {name}"] = round(time.monotonic() - t, 1)
 
@@ -678,34 +750,35 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   steel_by_policy: dict = {}
 
   def engine(policy_ready: bool) -> tuple:
-    accs, ledger, errors, tallies = [], [], [], []
+    errors, tallies = [], []
     steel_by_policy[policy_ready] = []
-    for name, rows in reads:
-      acc = OA.accept_case(case["name"], [(name, rows)], profile, ready_only=policy_ready)
-      accs.append(acc)
-      tallies.append(acc.tally)
-      problems_here = acc.problems
-      inputs = OA.build_inputs(acc)
-      printed = acc.printed[next(iter(acc.printed))] if acc.printed else {}
-      res = OR.run_engine(inputs, profile, rule_set, printed, case=case["name"])
-      steel_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("steel") or {})
-
-      for e in res.errors:
-        errors.append({"pdf": name, **(e if isinstance(e, dict) else {"message": str(e)})})
-      ledger += [{**{k: v for k, v in r.items() if k != "_entry"}, "quantity": float(r["quantity"])} for r in res.rows]
-      if not policy_ready:
-        for p in problems_here:
-          problems.append({"pdf": name, "page": p.get("page"), "message": f"{p.get('code')}: {p.get('message')}"})
+    names = [name for name, _rows in reads]
+    
+    acc = OA.accept_case(case["name"], reads, profile, ready_only=policy_ready)
+    tallies.append(acc.tally)
+    inputs = OA.build_inputs(acc)
+    res = OR.run_engine(inputs, profile, rule_set, acc.printed_all, case=case["name"])
+    steel_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("steel") or {})
+    for e in res.errors:
+      errors.append({"pdf": ", ".join(names), **(e if isinstance(e, dict) else {"message": str(e)})})
+    ledger = [{**{k: v for k, v in r.items() if k != "_entry"}, "quantity": float(r["quantity"])} for r in res.rows]
+    if not policy_ready:
+      for p in acc.problems:
+        problems.append({"pdf": p.get("pdf"), "page": p.get("page"), "message": f"{p.get('code')}: {p.get('message')}"})
+    accs = OA.split_by_drawing(acc)
+    
     floor_of = {}
     for a in accs:
       floor_of.update({str(k): v for k, v in a.floor_of.items()})
-    lines = trace_lines(ledger, floor_of, catalog)
+    lines = trace_lines(ledger, floor_of, catalog, derive={e.get("family") for e in case["expected"] if e.get("family")})
     sc, extra = score_lines(case["expected"], lines)
     return accs, ledger, errors, tallies, sc + extra_lines(extra)
 
   t = time.monotonic()
   main_ready = ready_only
   accs, ledger, errors, tallies, lines = engine(main_ready)
+  if keep is not None:
+    keep["ledger"], keep["accs"] = ledger, accs
   timings["accept and run"] = round(time.monotonic() - t, 1)
   other = None
   if both:
@@ -722,6 +795,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     "accept": [{k: t.get(k) for k in ("candidates", "ready_would_accept", "all_would_accept", "accepted", "accept_refused", "confirmed", "confirm_refused")} for t in tallies],
     "engine_errors": errors, "problems": sorted(problems, key=lambda p: (str(p.get("pdf")), p.get("page") or 0, str(p.get("message")))),
     "ledger_rows": len(ledger), "files": {n: case["sha256"].get(n) for n in case["pdfs"]}}
+  
   if rules:
     doc["rules"] = rules
   floor_all = {str(k): v for a in accs for k, v in a.floor_of.items()}
@@ -731,6 +805,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   steel_stats = {"reason": next((s.get("reason") for s in steel_runs if s.get("reason")), None) if not any(s.get("ran") for s in steel_runs) else None,
     "outside_band": {fam: {"members": sum(((s.get("outside_band") or {}).get(fam) or {}).get("members", 0) for s in steel_runs)} for fam in sorted({f for s in steel_runs for f in (s.get("outside_band") or {})})}}
   steel = steel_view(case, ledger, floor_all, steel_stats)
+  
   if steel:
     doc["steel"] = steel
   view = stage_view(case, ledger, floor_all, catalog)
@@ -740,9 +815,11 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   if mem:
     doc["members"] = mem
   wf = wall_faces_view(accs)
+  
   if wf:
-    doc["wall_faces"] = wf
+     doc["wall_faces"] = wf
   doc["warnings"] = warnings_view(ledger, accs)
+  doc["reading_work"] = work_view(reads)
   doc["fact_decisions"] = decisions_view(accs)
   doc["options"] = options_view(accs)
   doc["quantities"] = quantities_view(ledger, floor_all)
@@ -750,6 +827,26 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   doc["marks"] = _mark_lines(reads)
   timings["total"] = round(time.monotonic() - t0, 1)
   return doc, timings
+
+def work_view(reads: list) -> dict:
+  from app.modules.drawings_boq.takeoff.extract import config as XC
+  used = [(r.get("stats", {}).get("wall_work") or 0, name, r["page_no"]) for name, rows in reads for r in rows]
+  stops = [(name, r["page_no"], st) for name, rows in reads for r in rows for st in [(r.get("stats") or {}).get("wall_stop"), (r.get("stats") or {}).get("plan_regions_stop")] if st]
+  top = max(used, default=(0, None, None))
+  budget = XC.PAGE_WORK_BUDGET
+  return {"budget": budget, "pages": len(used), "most_used": top[0], "most_used_at": f"{top[1]} p.{top[2]}" if top[1] else None,
+    "over_half": sum(1 for u in used if budget and u[0] > budget / 2),
+    "stopped_by_work": [f"{n} p.{p}" for n, p, st in stops if st.get("by") == "WORK_BUDGET"], "stopped_by_clock": [f"{n} p.{p}" for n, p, st in stops if st.get("by") != "WORK_BUDGET"]}
+
+def dump_view(keep: dict) -> tuple:
+  cands = []
+  for acc in keep.get("accs") or []:
+    for c in acc.candidates:
+      sheet = acc.sheets[c.sheet_id]
+      cands.append({"pdf": acc.drawings.get(sheet.drawing_id), "page": sheet.page_no, "ckey": c.ckey, "category": c.category, "kind": c.kind, "label": c.label, "tag": c.tag,
+        "quantity_mode": c.quantity_mode, "status": c.status, "decision": c.decision, "count": c.count, "missing": list(c.missing or []), "params": c.params, "facts": c.facts,
+        "notes": [n.get("code") for n in (c.notes or [])], "work_item": c.suggested_work_item, "confidence": float(c.confidence) if c.confidence is not None else None})
+  return list(keep.get("ledger") or []), sorted(cands, key=lambda d: (str(d["pdf"]), d["page"] or 0, str(d["category"]), str(d["ckey"])))
 
 def _mark_lines(reads: list) -> list:
   from types import SimpleNamespace
@@ -795,6 +892,10 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     if wv.get("register"):
       rv = wv["register"]
       out += [f"**Register rows with a warning** (not part of the hash): {rv['warning_rows']} of {rv['rows']} ({rv['share_pct']}%) by the row-scope rule; {rv['warning_rows_if_every_note_counted']} ({rv['share_pct_if_every_note_counted']}%) if every warning note counted, as before the scopes; {rv['warning_rows_before_accepting']} ({rv['share_pct_before_accepting']}%) as the register lists them before anything is accepted (a value still missing is a row warning).", ""]
+  if doc.get("reading_work") and doc["reading_work"].get("pages"):
+    rw = doc["reading_work"]
+    out += [f"**Reading work** (not part of the hash): the wall reading of the busiest page used {rw['most_used']:,} of the {('{:,}'.format(rw['budget']) if rw['budget'] else 'unlimited')} primitives it may ({rw['most_used_at']}); {rw['over_half']} page(s) used more than half. "
+      f"Stopped by the work budget: {', '.join(rw['stopped_by_work']) or 'none'}. Stopped by the safety clock (such a page can read differently on another machine): {', '.join(rw['stopped_by_clock']) or 'none'}.", ""]
   if doc.get("safe") and doc["safe"]["rows"]:
     sf = doc["safe"]
     out += [f"**Safe to accept**: {sf['safe_rows']} of {sf['rows']} ledger rows are SAFE (coverage {sf['safe_coverage_pct']}%); of the {sf['judged_safe']} SAFE rows that a drawing figure can judge, {sf['judged_safe_within']} are within tolerance (precision {sf['safe_precision_pct']}%; against the QS column {sf['safe_precision_vs_qs_pct']}% of {sf['qs_judged_safe']}); "
@@ -888,6 +989,7 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--no-other", action="store_true", help="skip the second policy (faster)")
   ap.add_argument("--robust", action="store_true", help="read each case again with every sheet half and twice the size and turned a quarter, and record the worst move of any quantity")
   ap.add_argument("--seed-rules", action="store_true", help="ignore the company_rules of the cases and run on the seed rules alone")
+  ap.add_argument("--dump", action="store_true", help="also write ledger.json and candidates.json beside score.json (every ledger row, and every candidate read with how it was decided)")
   ap.add_argument("--rules", help="run every case named under this rules file (a company_rules file), whatever its case.yaml says")
 
   args = ap.parse_args(argv)
@@ -938,6 +1040,11 @@ def main(argv: list | None = None) -> int:
       json.dump(r3(doc), fh, indent=1, sort_keys=True, ensure_ascii=False, default=str)
     with open(os.path.join(folder_out, "score.md"), "w", encoding="utf-8") as fh:
       fh.write(render_md(doc, base, timings))
+    if args.dump:
+      ledger_rows, candidate_rows = dump_view(keep)
+      for fname, body in (("ledger.json", ledger_rows), ("candidates.json", candidate_rows)):
+        with open(os.path.join(folder_out, fname), "w", encoding="utf-8") as fh:
+          json.dump(r3(body), fh, indent=1, sort_keys=True, ensure_ascii=False, default=str)
     s = doc["summary"]
     print(f"{name}: {s['lines']} lines, {s['within_10']} within 10%, {s['within_5']} within 5% of the QS; invariants failing: {sum(1 for i in doc['invariants'] if i['status'] == 'FAIL')}; hash {doc['hash'][:16]}; {timings['total']} s")
     done[name] = doc

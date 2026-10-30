@@ -260,12 +260,3 @@ class ConventionResponse(BaseModel):
   conserves_volume: bool
   parameters: dict
   
-class FinishRuleSchema(BaseModel):
-  space_category: str = Field(default="ALL", min_length=1, max_length=40)
-  surface: Literal["FLOOR", "WALL", "CEILING", "SKIRTING", "DADO", "STAIR", "WATERPROOFING"]
-  work_item_code: str = Field(min_length=1, max_length=50)
-  height_mm: Decimal | None = Field(default=None, gt=0)
-  deduct_openings: bool = True
-  priority: int = 0
-  exclude: bool = False
-  extra_config: dict = Field(default_factory=dict)

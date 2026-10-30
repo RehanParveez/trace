@@ -11,6 +11,7 @@ FAMILIES = (
   ("FINISHES", "Plaster, paint and floor finishes", ("FIN-",)),
   ("OPENINGS", "Doors and windows", ("DOR-", "WIN-", "JOI-")),
 )
+WATERPROOF_PREFIXES = ("FIN-WATERPROOF", "FIN-ROOF", "ROOF-")
 NEEDS = (
   ("CONCRETE", "STEEL", "STEEL_MISSING", "The bill has concrete but no reinforcement steel.",
    "Steel comes from the derived works of the run. Switch derived works on (see the skipped stages above) and run again, or read the bar schedule."),
@@ -83,7 +84,7 @@ def _skipped(stages: list) -> list:
     out.append({"stage": s["stage"], "reason": reason, "lost": lost, "fix": fix, "operator_note": operator_note})
   return out
 
-def build(*, stages: list, run_settings: dict, ledger: list, funnel: dict | None, held_by_reason: dict | None, derived: dict | None = None, boq_error: str | None = None) -> dict:
+def build(*, stages: list, run_settings: dict, ledger: list, funnel: dict | None, held_by_reason: dict | None, derived: dict | None = None, boq_error: str | None = None, spec: dict | None = None) -> dict:
   run_settings = run_settings or {}
   fam = families(ledger)
   present = {f["family"] for f in fam if f["present"]}

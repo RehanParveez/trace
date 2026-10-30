@@ -65,7 +65,7 @@ def clean_panels(raw) -> list | None:
 
 def two_way(length: Decimal, width: Decimal, mesh: dict, cover: Decimal) -> list:
   from app.engine.measure.member_steel import _line
-  a, b = length - 2 * cover, width - 2 * cove
+  a, b = length - 2 * cover, width - 2 * cover
   if a <= 0 or b <= 0:
     return []
   layers = int(mesh.get("layers", 1))

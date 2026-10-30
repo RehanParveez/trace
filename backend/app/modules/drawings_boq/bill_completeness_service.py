@@ -30,7 +30,8 @@ class BillCompletenessService:
     held = await self._held(org, run.project_id)
     stats = dict(run.stats or {})
     out = BC.build(stages=stages, run_settings=dict(run.settings or {}), ledger=ledger, funnel=funnel, held_by_reason=held,
-      derived=stats.get("derived") if isinstance(stats.get("derived"), dict) else None, boq_error=stats.get("boq_error") or None)
+      derived=stats.get("derived") if isinstance(stats.get("derived"), dict) else None, boq_error=stats.get("boq_error") or None,
+      spec=await self._spec(org, run.project_id, run_id))
     return {"run_id": run_id, **out}
 
   async def _spec(self, org: UUID, project_id: UUID, run_id: UUID) -> dict:

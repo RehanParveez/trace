@@ -167,7 +167,6 @@ class RegisterService:
   async def _datums(self, org: UUID, drawing) -> tuple:
     prepared = await PrepService(self.session).drawing_floor_heights(org, drawing.id, await DatumsService(self.session).stored_for_run(org, drawing.project_id))
     floors = Z.build_floors(prepared["heights"], prepared["floor_keys"], prepared["levels"], prepared["decisions"])
-    return floors
     return floors, await self._footing_level(org, drawing, floors, prepared["levels_mm"])
 
   async def _footing_level(self, org: UUID, drawing, floors: dict, levels_mm: list) -> Z.FootingLevel:

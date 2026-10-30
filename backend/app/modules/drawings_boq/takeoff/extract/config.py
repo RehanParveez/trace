@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from app.engine.measure import readings as QSR
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 
 EXTRACT_VERSION = 89
  
@@ -137,8 +138,10 @@ ROOM_SIZE_TOL = 0.08
 ROOM_DUPLICATE_SHARE = 0.6    
 ROOM_AREA_AGREE = 0.05       
 ROOM_RECT_FILL = 0.97 
+PAGE_WORK_BUDGET = 12_000_000 
+PAGE_HARD_STOP_FACTOR = 3.0   
 PLAUS_DOOR_TYPICAL_MM = 900.0   
-PLAUS_DOOR_OFF_BY = 1.3          
+PLAUS_DOOR_OFF_BY = 1.3                    
 PLAUS_ROOM_OFF_BY = 1.5          
 PLAUS_MIN_DOORS = 3
 PLAUS_MIN_ROOMS = 3
@@ -503,6 +506,7 @@ NOTES = {
   "SERVICES_SHEET_BACKDROP_LEFT_OUT": ("info", "This sheet is a plan of the electrical, plumbing, air-conditioning or fire work. The walls, rooms, doors and windows drawn on it are the architect's plan behind its symbols, so they were not taken from it: they come from the architectural sheets of the same floor. What was left out is listed in this note. If this sheet is not a plan of the services, change what it is on the sheet bar and read it again."),
   "SCALE_LOOKS_WRONG": ("warning","The doors or the named rooms drawn on this sheet are not the size doors and rooms are built, so the scale used for this sheet is probably wrong. A scale that would fit is suggested in this note. It has NOT been applied: confirm the scale on the Measure page."),
   "TIME_LIMIT": ("warning", "Reading this sheet took too long and some items may be missing. Read it again."),
+  "WALL_CLOCK_STOP": ("warning", "The machine was too slow for this sheet, so the safety clock stopped the reading before it was done. Items may be missing, and a second reading may give different ones. Read it again."),
   "SCALE_CONFLICT": ("warning", "Conflicting scale information was found on the sheet. Confirm the correct scale before relying on measured sizes."),
   "DIMENSION_CONFLICT": ("warning", "Conflicting dimension values were found for this item. Verify which dimension should be used."),
   "SCHEDULE_MARK_NOT_FOUND": ("warning", "A drawing mark has no matching entry in the available schedule."),

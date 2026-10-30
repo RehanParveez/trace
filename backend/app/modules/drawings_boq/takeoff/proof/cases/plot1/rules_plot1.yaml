@@ -1,0 +1,44 @@
+origin: QS_WORKBOOK
+rules:
+  - key: neck_height_mm
+    value: 1066.8
+    unit: mm
+    cls: JUDGEMENT
+    note: "3.5 ft: Concrete Work!G15, G16, G17 (neck columns C-1, C-2, C-3)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Concrete Work, cell: G15}
+  - key: basement_wall_height_mm
+    value: 3657.6
+    unit: mm
+    cls: JUDGEMENT
+    note: "12 ft: the RCC wall is taken in two lifts, 8.5 ft (Concrete Work!G30) and 3.5 ft (Concrete Work!G33)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Concrete Work, cell: "G30+G33"}
+  - key: basement_dig_mm
+    value: 2438.4
+    unit: mm
+    cls: JUDGEMENT
+    note: "8 ft: Excavation!G9 (the basement dig over the complete area, 30 x 54 ft)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Excavation, cell: G9}
+  - key: trench_depth_mm
+    value: 914.4
+    unit: mm
+    cls: JUDGEMENT
+    note: "3 ft: Excavation!G11 and every trench line below it (4 ft wide under 9 in walls, 3 ft under 4.5 in walls: Excavation!F11, F26)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Excavation, cell: G11}
+  - key: pcc_thickness_mm
+    value: 76.2
+    unit: mm
+    cls: JUDGEMENT
+    note: "3 in (0.25 ft): PCC 1;4;8!G9 and every strip line"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: PCC 1;4;8, cell: G9}
+  - key: slab_steel_kg_per_m2
+    value: 17.2223
+    unit: kg/m2
+    cls: JUDGEMENT
+    note: "1.6 kg per sft: Steel Summary!J1 (the slab steel is the slab concrete in cft x 1.6); 1.6 x 10.7639 sft per m2"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Steel Summary, cell: J1}
+  - key: steel_wastage_pct
+    value: 5.0
+    unit: "%"
+    cls: JUDGEMENT
+    note: "5%: Steel Summary!A26 ('Steel Waistage 5% in Tons', D26 = D24*5%)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Steel Summary, cell: A26}
