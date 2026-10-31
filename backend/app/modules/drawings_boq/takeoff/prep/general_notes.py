@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 import re
 import statistics
+from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.prep import facts as F
 
 GUTTER_SHARE = 0.01
@@ -17,8 +18,12 @@ _VALUE = re.compile(r"(?P<v>" + _NUM + r")\s*" + _INCH_MARK + r"\s*$")
 _STRENGTH = re.compile(r"\bCONCRE\w*\s+FOR\s+(?P<scope>[A-Z&, ]+?)\s+TO\s+HAVE\b.*?\bMINIMUM\s+OF\s+(?P<psi>\d{3,5})\s*(?:P\.?\s?S\.?\s?I\.?)", re.I)
 _GRADE = re.compile(r"\b(?:GRADE\s+(?P<g1>40|60|75)|(?P<g2>40|60|75)\s+GRADE)\b", re.I)
 _BINDERS = re.compile(r"\b(?:BINDERS?|STIRRUPS?|TIES|LINKS?|HOOPS?)\b", re.I)
+_COVER_NOTE = re.compile(r"\bCLEAR\s+COVER\b", re.I)
+_NEXT_NOTE = re.compile(r"^\d{1,2}\s*[-.)]\s*[A-Z]")
+COVER_TABLE_ROWS = 12
 _BAR_TOKEN = re.compile(r"^#(?P<n>\d{1,2})$")
 _INCH_TOKEN = re.compile(r"^(?P<v>\d{1,3})\s*(?:''|’’|”|″|\")$")
+WHERE_STARTS = ("FROM ", "ON ")
 COVER_SCOPES = (("FOUNDATION", ("footing",)), ("SLAB", ("slab",)), ("COLUMN", ("column", "beam")), ("BEAM", ("beam",)), ("WALL", ("wall",)))
 
 def _columns(words: list) -> list:
@@ -134,7 +139,7 @@ def _covers(entry: dict) -> list:
     scopes = next((s for key, s in COVER_SCOPES if key in up), None)
     where = ""
 
-    if scopes is None and label is not None and "FACE" in up:
+    if scopes is None and label is not None and ("FACE" in up or up.lstrip("- ").startswith(WHERE_STARTS)):
       scopes, where = label, _scope_words(name)
     elif scopes is not None:
       label = scopes
@@ -168,12 +173,49 @@ def lap_items(cols: list) -> list:
         break
   return out
 
-def read(words: list | None) -> list:
-  cols = read_columns(words)
-  if not cols:
-    return []
+def _upright(words: list, angle: int) -> list:
+  """The words that read at `angle` as plain words of a page that reads at 0: along the text is x, across it (up) is y. Words at 0 degrees are returned as they are."""
+  rad = math.radians(angle)
+  ux, uy = math.cos(rad), math.sin(rad)
   out: list = []
-  for e in entries(cols):
-    out.extend(items_of(e))
-  out.extend(lap_items(cols))
+  for w in words:
+    if round(w.angle / 90.0) % 4 != angle // 90 or abs(((w.angle + 45) % 90) - 45) > 6 or not w.text.strip():
+      continue
+    along, across = w.cx * ux + w.cy * uy, -w.cx * uy + w.cy * ux
+    out.append(SimpleNamespace(text=w.text, cx=along, cy=across, x0=along - float(w.length) / 2.0, length=float(w.length), size=float(w.size), angle=0.0))
+  return out
+
+def table_covers(cols: list) -> list:
+  for i, item in enumerate(cols):
+    if _COVER_NOTE.search(F._fix(item["row"]["text"])):
+      block: list = []
+      head = item["heading"]
+      
+      for nxt in cols[i + 1:i + 1 + COVER_TABLE_ROWS]:
+        if _NEXT_NOTE.match(F._fix(nxt["row"]["text"]).strip()):
+          break
+        if nxt["heading"] != head and nxt["heading"]:
+          block.append([nxt["heading"]])
+        head = nxt["heading"]
+        block.append(nxt["row"]["texts"])
+      found = _covers({"rows": block})
+      if found:
+        return found
+  return []
+
+def read(words: list | None) -> list:
+  out: list = []
+  for angle in (0, 90, 180, 270):
+    ws = words if angle == 0 else _upright(words or [], angle)
+    cols = read_columns(ws)
+    if not cols:
+      continue
+    got: list = []
+    
+    for e in entries(cols):
+      got.extend(items_of(e))
+    if not any(i["kind"] == "CLEAR_COVER" for i in got):
+      got.extend(table_covers(cols))
+    got.extend(lap_items(cols))
+    out.extend(got)
   return out

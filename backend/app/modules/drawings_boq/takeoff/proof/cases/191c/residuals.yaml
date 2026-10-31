@@ -49,13 +49,13 @@
   cause: 'not diagnosed; -6.6% (+3.8% before Pack 168, when the brick was taken 10% thick): the walls of this floor now come out under the bill'
   pack: unassigned
 - line: BRICK_BOUNDARY/ALL
-  cause: 'not diagnosed; no Trace number: the boundary wall is not read from plan and elevation'
-  pack: '171'
+  cause: 'not diagnosed; no Trace number: this set has no boundary-wall plan or elevation, so there is nothing to read; the line is its own (the tag BOUNDARY-RETURNS keeps it out of every floor line) and waits for a drawing or for the lengths typed at accept'
+  pack: unassigned
 - line: BRICK_WALLS/ROOF
-  cause: 'not diagnosed; no Trace number: the mumty and parapet walls of the roof plan are not read'
-  pack: '171'
+  cause: '+28.8% (no Trace number before Pack 171): 46.4 m of parapet at 914 mm (rule stage.parapet_height_mm) and 8.6 m of mumty wall at 3810 mm (the floor-to-floor height of the top floor, taken because the roof plan prints none); the mumty is lower than a storey, which is the likely excess. The height of the parapet and of the mumty is not read from the elevations (PARAPET LEVEL and PARAPET TOP LEV. print 6 inch apart, which do not say which is the top)'
+  pack: unassigned
 - line: WALL_PLASTER
-  cause: -26.4% (was -37.5% before Pack 157, which lets the outside plaster rows through, billed as external plaster and added to this line because the bill's third plaster line is external); the outer
+  cause: -14.4% (was -26.4% before Pack 171, which gives the roof walls their heights so the roof plaster is measured; -37.5% before Pack 157, which lets the outside plaster rows through, billed as external plaster and added to this line because the bill's third plaster line is external); the outer
     faces are still incomplete
   pack: '169'
 - line: CEILING_PLASTER/ALL
@@ -85,17 +85,11 @@
   pack: '202'
   question: '191-C questionnaire: kitchen tile band'
 - line: FIN-PORCH-TILE/ALL
-  cause: 'not diagnosed; -51.9%: porch tile extent is his choice (porch, plus car porch, plus front)'
+  cause: 'not diagnosed; -51.9%: porch tile extent is his choice (porch, plus car porch, plus front). Pack 199 reads the front court (459 sft) as one region named by its only label, FRONT LAWN, and lists it unbilled: the plan draws the lawn hatch as a pattern fill with no outline, so the lawn and the paved front cannot be split'
   pack: '202'
   question: '191-C questionnaire: porch tile'
-- line: FIN-PAVING/ALL
-  cause: 'not diagnosed; no Trace number: paving at the gate and front belongs to site works'
-  pack: '199'
-- line: FIN-PAINT/ALL
-  cause: 'not diagnosed; -19.4% (+23.7% before Pack 169, which moves the outer faces from the inside paint to the outside paint; the two paints together did not change): whether the bill''s internal paint includes ceilings'
-  pack: '170'
 - line: FIN-PAINT-EXT/ALL
-  cause: 'not diagnosed; -33.3% (-75.6% before Pack 169, which finds the outer faces from the outline of the floor): the outline reads 77% to 94% of the outline length as outer face, and the facade tile needs the elevations'
+  cause: 'not diagnosed; -26.2% (-33.3% before Pack 171, which gives the roof walls their heights so their outer faces are painted; -75.6% before Pack 169, which finds the outer faces from the outline of the floor): the outline reads 77% to 94% of the outline length as outer face, and the facade tile needs the elevations'
   pack: '204'
 - line: WINDOWS/ALL
   cause: 'not diagnosed; -15.9%: windows read from the plan differ from the printed labels; opening areas follow the schedule'

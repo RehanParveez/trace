@@ -1,10 +1,6 @@
 - line: EXCAVATION/FOUNDATION
   cause: 'not diagnosed; +5.04%: just over the limit; the trench extent is read by rule, not from the foundation drawing'
   pack: '170'
-- line: TERMITE/FOUNDATION
-  cause: 'not diagnosed; +9.0%: the QS types 350 sft for the Sitting & Kitchen room (D15) and Trace measures the plan'
-  pack: '170'
-  question: D15 in expected.yaml
 - line: MEMBRANE/FOUNDATION
   cause: '-12.2%: the workbook assumes ten 4 x 11 ft pieces (class QS_ERROR); Trace measures the area'
   question: his signed figure in qs_corrections.yaml
@@ -12,7 +8,7 @@
   cause: 'not diagnosed; -17.3%: the brick steps of the foundation are not read from the section'
   pack: '173'
 - line: PCC/FOUNDATION
-  cause: 'not diagnosed; -7.3%: PCC strip widths and extents come from a rule, not the layout'
+  cause: 'not diagnosed; -13.6%: the strips now follow his widths (281.7 cft against his 286.0); the three footing beds (F1 x10, STAIR-F, F2 x4, about 49.8 cft) are VALID but not accepted, so they are not in the line'
   pack: '170'
 - line: RCC_FOOTINGS/FOUNDATION
   cause: 'not diagnosed; -10.6%: footing sizes and counts are not joined from layout plus details'

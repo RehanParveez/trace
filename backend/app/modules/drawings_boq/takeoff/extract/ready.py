@@ -36,6 +36,7 @@ REASON_TEXT = {
   "WARNING": "The reader raised a warning on it.",
   "NOT_MEASURABLE": "A beam mark is only counted; its lengths are drawn by hand.",
   "VALUE_MISSING": "A value is missing; type it when accepting this item.",
+  "TANK_SIZE": "This tank is found by its label but its sizes are not all read from the drawings. Decision TANK_SIZE: type the outside length, width and height and the wall thickness when accepting it. Nothing is assumed.",
   "ASSUMED": "A value was paired, defaulted or is disputed on the drawing.",
   "CHECK_WARNS": "A check between the readers is warning about this kind of item on this floor.",
   "ADDED_FROM_SECOND_SHEET": "Only the sheet that shows every plan has this item, not the floor's own sheet. That sheet is drawn small, so check it on the sheet before accepting.",
@@ -114,11 +115,13 @@ def ready(read: list, checks: list | None = None, ifc: tuple = ()) -> dict:
       
       if c.category == "BEAM" and f.get("derived_from") != "WALLS" and not f.get("from_strips"):
         why.append("NOT_MEASURABLE")
-      if c.missing:
+      if c.missing and c.category == "SITE" and f.get("tank_kind"):
+        why.append("TANK_SIZE")
+      elif c.missing:
         why.append("VALUE_MISSING")
       ev = evidence_for(c)
       item["grade"] = ev["grade"]
-      if ev["grade"] in ("ASSUMED", "MISSING") and "VALUE_MISSING" not in why:
+      if ev["grade"] in ("ASSUMED", "MISSING") and "VALUE_MISSING" not in why and "TANK_SIZE" not in why:
         why.append("ASSUMED" if ev["grade"] == "ASSUMED" else "VALUE_MISSING")
       if any((wf is None or wf == fl) and (kinds is None or c.category in kinds) for wf, kinds, _ in warned):
         why.append("CHECK_WARNS")

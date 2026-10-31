@@ -103,14 +103,6 @@ def lap_of(g: dict, lap_dia: Decimal, lap_table: dict | None) -> Decimal:
       return printed
   return lap_dia * dia_mm(g)
 
-def lap_of(g: dict, lap_dia: Decimal, lap_table: dict | None) -> Decimal:
-  """The lap of a bar with the lift above: the length the drawing prints for its size, else the lap in diameters."""
-  if lap_table and g.get("bar") is not None:
-    printed = _num(lap_table.get(str(int(g["bar"]))))
-    if printed is not None:
-      return printed
-  return lap_dia * dia_mm(g)
-
 def member_lines(category: str, length: Decimal, width: Decimal, depth: Decimal, steel: dict, cover: Decimal, hook_dia: Decimal,
     lap_dia: Decimal = Decimal("0"), anchor_dia: Decimal = Decimal("0"), lap_table: dict | None = None, extra: dict | None = None) -> tuple:
   lines: list = []

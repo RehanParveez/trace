@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 import numpy as np
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import beam_dashed as BDA
 
 HATCH_ANGLE_TOL_DEG = 6.0
 HATCH_MIN_MM = 60.0
@@ -369,7 +370,7 @@ def join_across(legs: list, mm_per_pt: float) -> int:
     del legs[j]
     joins += 1
 
-def read(segments: list, marks: list, mm_per_pt: float, unit: float = 1.0) -> dict:
+def read(segments: list, marks: list, mm_per_pt: float, unit: float = 1.0, dashed: bool = False) -> dict:
   """The hatched beams of one plan. segments: the lines inside the plan, (x1, y1, x2, y2, kind); marks: [(tag, x, y, angle)] its beam marks.
   Returns {"legs": [{"axis", "p0", "p1", "width_mm", "length_mm", "tag", "via"}], "unplaced": {tag: n}, "conflicts": n, "inherited": n}."""
   strokes = hatch_strokes(segments, mm_per_pt)
@@ -378,9 +379,12 @@ def read(segments: list, marks: list, mm_per_pt: float, unit: float = 1.0) -> di
   for comp in components(strokes, unit):
     if len(comp) >= MIN_PATCH_STROKES:
       legs.extend(legs_of(comp, mm_per_pt, unit))
+  if not legs and dashed:
+    legs = BDA.legs(segments, mm_per_pt)
   lines = _axis_lines(segments) if legs else ([], [])
   for leg in legs:
-    _refine_edges(leg, lines)
+    if not leg.get("dashed"):
+      _refine_edges(leg, lines)
   stats = assign(legs, marks, mm_per_pt)
   stats["joins"] = join_across(legs, mm_per_pt)
   out = []
@@ -388,7 +392,7 @@ def read(segments: list, marks: list, mm_per_pt: float, unit: float = 1.0) -> di
   for leg in legs:
     out.append({"axis": leg["axis"], "p0": [round(leg["p0"][0], 3), round(leg["p0"][1], 3)], "p1": [round(leg["p1"][0], 3), round(leg["p1"][1], 3)],
       "width_mm": round(leg["width_pt"] * mm_per_pt, 1), "length_mm": round(leg["length_pt"] * mm_per_pt, 1), "tag": leg["tag"], "via": leg["via"],
-      "joined": int(leg.get("joined") or 0), "join_delta_mm": round(float(leg.get("join_delta_mm") or 0.0), 1)})
+      "joined": int(leg.get("joined") or 0), "join_delta_mm": round(float(leg.get("join_delta_mm") or 0.0), 1), **({"dashed": True} if leg.get("dashed") else {})})
   out.sort(key=lambda l: (str(l["tag"] or "~"), l["axis"], l["p0"]))
   return {"legs": out, "unplaced": stats["unplaced"], "conflicts": stats["conflicts"], "inherited": stats["inherited"], "joins": stats["joins"]}
 

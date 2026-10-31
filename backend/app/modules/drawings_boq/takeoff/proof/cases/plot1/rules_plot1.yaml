@@ -42,3 +42,18 @@ rules:
     cls: JUDGEMENT
     note: "5%: Steel Summary!A26 ('Steel Waistage 5% in Tons', D26 = D24*5%)"
     source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Steel Summary, cell: A26}
+
+  - key: finish.strip_widths_mm
+    scope: {item: termite_strip}
+    value: {outer: 914.4, inner: 1066.8, thin: 457.2}
+    unit: mm
+    cls: JUDGEMENT
+    note: "3 ft under the outer walls (Termite!F10), 3.5 ft under the inner 9 in walls (Termite!F21), 1.5 ft under the 4.5 in walls (Termite!F25)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Termite, cell: "F10, F21, F25"}
+  - key: finish.strip_widths_mm
+    scope: {item: pcc_strip}
+    value: {outer: 1066.8, inner: 1219.2, thin: 457.2}
+    unit: mm
+    cls: JUDGEMENT
+    note: "3.5 ft under the outer walls (PCC 1;4;8!F9), 4 ft under the inner 9 in walls (F20), 1.5 ft under the 4.5 in walls (F24)"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: PCC 1;4;8, cell: "F9, F20, F24"}

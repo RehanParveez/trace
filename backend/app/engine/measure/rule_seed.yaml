@@ -81,6 +81,10 @@ rules:
   - {key: sft_per_m2, value: 10.7639104, unit: "sft per m2", cls: STANDARD, source: "exact unit conversion, no standard needed"}
   - {key: finish.floor_item, scope: {}, value: "FIN-FLOOR", unit: null, cls: JUDGEMENT}
   - {key: finish.floor_item, scope: {room_type: LAWN}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.site_item, scope: {}, value: "FIN-PAVING", unit: null, cls: JUDGEMENT}
+  - {key: finish.site_item, scope: {region: LAWN}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.site_item, scope: {region: OPEN_SITE}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.site_layers, scope: {}, value: [], unit: null, cls: JUDGEMENT}
   - {key: finish.dado_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: finish.kitchen_band, scope: {}, value: "full", unit: null, cls: JUDGEMENT}
   - {key: finish.ceiling_includes, scope: {}, value: ["BEDROOM", "BATH", "PWD", "WC", "KITCHEN", "LOUNGE", "DINING", "DRAWING", "PORCH", "TERRACE", "PASSAGE", "LAWN", "STAIR", "STORE", "SERVANT", "OTHER"], unit: null, cls: JUDGEMENT}
@@ -90,6 +94,7 @@ rules:
   - {key: stage.lintel_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.parapet_height_mm, scope: {}, value: 914.4, unit: "mm", cls: JUDGEMENT}
   - {key: finish.wall_faces, scope: {}, value: "OUTLINE", unit: null, cls: JUDGEMENT}
+  - {key: finish.extent, scope: {}, value: "FLOOR_AREA", unit: null, cls: JUDGEMENT}
   - {key: steel.unit_weight_divisor, scope: {}, value: 162.2, unit: "kg/m = d2 / value", cls: STANDARD, source: "derived from the density of steel (7850 kg/m3) and the area of the bar, no clause needed"}
   - {key: steel.band.SLAB.low, scope: {}, value: 55, unit: "kg/m3", cls: JUDGEMENT}
   - {key: steel.band.SLAB.likely, scope: {}, value: 67, unit: "kg/m3", cls: JUDGEMENT}

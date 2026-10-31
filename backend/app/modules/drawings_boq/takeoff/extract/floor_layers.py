@@ -3,6 +3,8 @@ from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import spec_facts as SF
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import extent as EXT
+from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
 
 FLOOR_CS_BED = "FLOOR_CS_BED"
 FLOOR_BRICK_TILES = "FLOOR_BRICK_TILES"
@@ -48,7 +50,7 @@ def _layer(cls, ctx: dict, finish, key_parts: tuple, item: str, label: str, tag:
     source="VECTOR_SNAP", count=1)
   return finish(cand, ctx, base)
 
-def candidates(rooms: list, spec: dict | None, ctx: dict, level_hint: str | None, lv_spec, cls, finish) -> tuple:
+def candidates(rooms: list, spec: dict | None, ctx: dict, level_hint: str | None, lv_spec, cls, finish, walls: list | None = None, outer: dict | None = None) -> tuple:
   head = SF.floor_set(spec, level_hint)
   under = head["heading"] if head else None
   layers = head["layers"] if head else (spec or {}).get("layers") or {}
@@ -67,18 +69,26 @@ def candidates(rooms: list, spec: dict | None, ctx: dict, level_hint: str | None
   
     text, tag = TEXT[item]
     mix = lay.get("mix")
-    facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), "layer": name, "thickness_mm": lay["value_mm"], "mix": mix,
+    area_m2, count_n, ext = total, used, None
+    if item == FD.FLOOR_PCC and EXT.mode_of("pcc_floor", level_hint)[0] != FR.FLOOR_AREA:
+      ext = EXT.area("pcc_floor", rooms, walls, outer, level_hint, None, FR.PCC_UNDER)
+      if ext["rooms"] and ext["area_m2"] > 0.0:
+        area_m2, count_n = ext["area_m2"], ext["rooms"]
+        
+    facts = {"derived_from": "ROOMS", "room_count": count_n, "area_m2": round(area_m2, 3), **(ext["facts"] if ext else {}), "layer": name, "thickness_mm": lay["value_mm"], "mix": mix,
       "spec_pages": lay.get("pages") or [], "spec_count": lay.get("count"), "spec_others": lay.get("others") or [], "spec_text": lay.get("text"), "spec_heading": under}
     
     if mix and item in MIX_WHAT:
       facts["spec_grade"] = {"grade": mix, "what": MIX_WHAT[item], "pages": lay.get("pages") or []}
-    label = f"{text} · {total:.2f} m² × {lay['value_mm'] / 25.4:g} in" + (f" ({mix})" if mix else "") + (f" · {lv_spec[0]}" if lv_spec else "")
+    label = f"{text} · {area_m2:.2f} m² × {lay['value_mm'] / 25.4:g} in" + (f" ({mix})" if mix else "") + (f" · {lv_spec[0]}" if lv_spec else "")
     item_notes = [C.note("FLOOR_LAYER_UNDER_HEADING", layer=name, thickness_mm=lay["value_mm"], heading=under, pages=lay.get("pages") or []) if under
                   
       else C.note("FLOOR_LAYER_FROM_SPEC", layer=name, thickness_mm=lay["value_mm"], pages=lay.get("pages") or [])]
     if lay.get("others"):
       item_notes.append(C.note("SPEC_VALUE_PRINTED_TWO_WAYS", layer=name, chosen_mm=lay["value_mm"], others=lay["others"]))
-    out.append(_layer(cls, ctx, finish, (item, level_hint or ""), item, label, tag, [FD._centre(pts)], _params(item, total, lay["value_mm"]), item_notes, facts, 0.6))
+    if ext and ext["note"]:
+      item_notes.append(C.note(ext["note"]))
+    out.append(_layer(cls, ctx, finish, (item, level_hint or ""), item, label, tag, [FD._centre(pts)], _params(item, area_m2, lay["value_mm"]), item_notes, facts, 0.6))
     stats["made"].append(name)
     
   stats["left_out"] = sorted(n for n in layers if n not in ITEM_OF)

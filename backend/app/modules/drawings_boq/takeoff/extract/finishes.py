@@ -2,6 +2,7 @@ from __future__ import annotations
 import math
 from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
+from app.modules.drawings_boq.takeoff.extract import extent as EXT
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.model import walls as MW
 import re
@@ -62,23 +63,30 @@ def room_total(rooms: list, include: set | None = None) -> tuple:
       pts.extend((r.geometry or {}).get("outer") or (r.geometry or {}).get("points") or [])
   return total, used, pts
 
-def _area_item(item: str, rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, text: str, tag: str, note: str, rule_key: str | None = None):
+def _area_item(item: str, rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, text: str, tag: str, note: str, rule_key: str | None = None, extent: str | None = None,
+  walls: list | None = None, outer: dict | None = None):
   include, rule = FR.room_types_in(rule_key, level_hint) if rule_key else (None, None)
   total, used, pts = room_total(rooms, include)
   if used == 0:
     return None
-  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3)}
+  ext = None
+  
+  if extent is not None and EXT.mode_of(extent, level_hint)[0] in (FR.GROSS, FR.STRIPS):
+    ext = EXT.area(extent, rooms, walls, outer, level_hint, include, rule_key)
+    if ext["rooms"] and ext["area_m2"] > 0.0:
+      total, used = ext["area_m2"], ext["rooms"]
+  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), **(ext["facts"] if ext else {})}
   if rule is not None and not FR.is_default(rule):
     facts["rooms_rule"] = FR.evidence(rule_key, rule, **({"level": level_hint} if level_hint else {}))
   label = f"{text} · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
   return _make(cls, ctx, finish, (item, level_hint or ""), item, label, tag, [FD._centre(pts)], {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [],
-    [C.note(note)] + ([C.note("NO_WORK_ITEM")] if WORK_ITEM[item] is None else []), facts, 0.75)
+    [C.note(note)] + ([C.note("NO_WORK_ITEM")] if WORK_ITEM[item] is None else []) + ([C.note(ext["note"])] if ext and ext["note"] else []), facts, 0.75)
 
-def kacha_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
-  return _area_item(KACHA_FLOOR, rooms, ctx, level_hint, spec, cls, finish, "Kacha bed under the floor", "KACHA-FLOOR", "KACHA_FROM_ROOMS", FR.PCC_UNDER)
+def kacha_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, walls: list | None = None, outer: dict | None = None):
+  return _area_item(KACHA_FLOOR, rooms, ctx, level_hint, spec, cls, finish, "Kacha bed under the floor", "KACHA-FLOOR", "KACHA_FROM_ROOMS", FR.PCC_UNDER, "pcc_floor", walls, outer)
 
-def ceiling_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
-  return _area_item(CEILING_PLASTER, rooms, ctx, level_hint, spec, cls, finish, "Ceiling plaster", "CEILING-PLASTER", "CEILING_FROM_ROOMS", FR.CEILING_INCLUDES)
+def ceiling_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, walls: list | None = None, outer: dict | None = None):
+  return _area_item(CEILING_PLASTER, rooms, ctx, level_hint, spec, cls, finish, "Ceiling plaster", "CEILING-PLASTER", "CEILING_FROM_ROOMS", FR.CEILING_INCLUDES, "ceiling", walls, outer)
 
 NOT_FINISHED = ("LIFT",)        
 DOOR_ON_BOUNDARY_MM = 300.0
@@ -207,9 +215,9 @@ def floor_wet_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cl
   return _make(cls, ctx, finish, (FLOOR_WET, level_hint or ""), FLOOR_WET, label, "FLOOR-WET", [FD._centre(_room_points(wet))],
     {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("FLOOR_WET_FROM_ROOMS")], facts, 0.7)
 
-def ceiling_paint_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
+def ceiling_paint_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, walls: list | None = None, outer: dict | None = None):
   """The paint on the ceiling of this storey: the same area as the ceiling plaster."""
-  return _area_item(CEILING_PAINT, rooms, ctx, level_hint, spec, cls, finish, "Ceiling paint", "CEILING-PAINT", "CEILING_PAINT_FROM_ROOMS")
+  return _area_item(CEILING_PAINT, rooms, ctx, level_hint, spec, cls, finish, "Ceiling paint", "CEILING-PAINT", "CEILING_PAINT_FROM_ROOMS", None, "ceiling", walls, outer)
 
 def door_assignment(rooms: list, doors: list, mm_per_pt: float) -> dict:
   """{id(room): (width of doors in m, number of doors, how many of them have an assumed width)}. A door opens into at most two rooms: the two whose outlines are nearest its centre, each within

@@ -9,19 +9,33 @@ CEILING_INCLUDES = "finish.ceiling_includes"
 PCC_UNDER = "finish.pcc_under"
 ROOM_TYPE = RT.ROOM_TYPE_KEY
 WALL_FACES = "finish.wall_faces"
+EXTENT = "finish.extent"
+STRIP_WIDTHS = "finish.strip_widths_mm"
+SITE_ITEM = "finish.site_item"
+SITE_LAYERS = "finish.site_layers"
+SITE_REGIONS = ("PASSAGE", "DRIVE", "PORCH", "RAMP", "COURTYARD", "LAWN", "OPEN_SITE")
+LAYER_MM = (10.0, 1000.0)
+LAYERS_MAX = 6
+FLOOR_AREA, GROSS, STRIPS, ROOMS = "FLOOR_AREA", "GROSS", "STRIPS", "ROOMS"
+EXTENT_MODES = (FLOOR_AREA, GROSS, STRIPS, ROOMS)
+EXTENT_ITEMS = ("termite", "pcc_floor", "fill", "ceiling")
+STRIP_ITEMS = ("termite_strip", "pcc_strip")
+STRIP_CLASSES = ("outer", "inner", "thin")
+STRIP_WIDTH_MM = (100.0, 3000.0)
 OUTLINE, GRAPH = "OUTLINE", "GRAPH"
-KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES)
+KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES, EXTENT, STRIP_WIDTHS, SITE_ITEM, SITE_LAYERS)
 
 TO_CEILING = "CEILING"
 FULL = "full"
 NONE = "NONE"
 DADO_FALLBACK_MM = 2134.0
 DEFAULT_FLOOR_ITEM = "FIN-FLOOR"
+DEFAULT_SITE_ITEM = "FIN-PAVING"
 HEIGHT_MIN_MM, HEIGHT_MAX_MM = 300.0, 6000.0
-SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: ()}
+SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",)}
 HEIGHT_TYPES = (*RT.WET, RT.KITCHEN)
 TYPED_FLOORS = {RT.PORCH: "FLOOR_PORCH", RT.TERRACE: "FLOOR_TERRACE", RT.PASSAGE: "FLOOR_PASSAGE", RT.LAWN: "FLOOR_LAWN"}
-TYPED_ITEM_CODE = {"FLOOR_PORCH": "FIN-PORCH-TILE", "FLOOR_TERRACE": "FIN-TERRACE-TILE", "FLOOR_PASSAGE": "FIN-PAVING", "FLOOR_LAWN": "FIN-PAVING"}
+TYPED_ITEM_CODE = {"FLOOR_PORCH": "FIN-PORCH-TILE", "FLOOR_TERRACE": "FIN-TERreturn str(rv.value) if rv.value is not None else DEFAULT_FLOOR_ITEMRACE-TILE", "FLOOR_PASSAGE": "FIN-PAVING", "FLOOR_LAWN": "FIN-PAVING"}
 TYPED_TEXT = {"FLOOR_PORCH": "Floor tile of the porch", "FLOOR_TERRACE": "Floor tile of the terraces", "FLOOR_PASSAGE": "Paving of the passages", "FLOOR_LAWN": "Paving of the lawns and yards"}
 
 def rule(key: str, **scope) -> RB.RuleValue:
@@ -40,6 +54,14 @@ def floor_item(room_type: str) -> tuple:
 def default_floor_item() -> str:
   rv = rule(FLOOR_ITEM)
   return str(rv.value) if rv.value is not None else DEFAULT_FLOOR_ITEM
+
+def site_item(region: str) -> tuple:
+  rv = rule(SITE_ITEM, region=region)
+  return (str(rv.value) if rv.value is not None else NONE), rv
+
+def site_layers(region: str) -> tuple:
+  rv = rule(SITE_LAYERS, region=region)
+  return (list(rv.value) if isinstance(rv.value, (list, tuple)) else []), rv
 
 def height_mm(room_type: str, clear_mm: float | None) -> tuple:
   rv = rule(DADO_HEIGHT, room_type=room_type)
@@ -75,9 +97,13 @@ def _scope_problem(key: str, scope) -> str | None:
   scope = scope or {}
   if not isinstance(scope, dict) or any(k not in allowed for k in scope):
     return f"{key} can be scoped by {', '.join(allowed)} only."
+  if scope.get("item") is not None and scope["item"] not in (EXTENT_ITEMS if key == EXTENT else (*EXTENT_ITEMS, *STRIP_ITEMS)):
+    return f"{scope['item']} is not an item with an extent: {', '.join(EXTENT_ITEMS if key == EXTENT else (*EXTENT_ITEMS, *STRIP_ITEMS))}."
   t = scope.get("room_type")
   if t is not None and t not in RT.TYPES:
     return f"{t} is not a room type."
+  if scope.get("region") is not None and scope["region"] not in SITE_REGIONS:
+    return f"{scope['region']} is not an outdoor region: {', '.join(SITE_REGIONS)}."
   return None
 
 def checked(key: str, scope, raw):
@@ -88,6 +114,29 @@ def checked(key: str, scope, raw):
   if bad:
     raise ValueError(bad)
   t = (scope or {}).get("room_type")
+  if key == SITE_ITEM:
+    region = (scope or {}).get("region")
+    if not isinstance(raw, str) or not raw.strip():
+      raise ValueError("The item of an outdoor region is a work item code, or NONE to leave the region out.")
+    code = raw.strip().upper()
+    
+    if region is None and code == NONE:
+      raise ValueError("NONE is for one region; it cannot be the item of every region.")
+    if region == "OPEN_SITE" and code != NONE:
+      raise ValueError("Open site has no label to say what it is, so it is listed and not billed: its item is NONE.")
+    return code
+  if key == SITE_LAYERS:
+    if not isinstance(raw, (list, tuple)) or len(raw) > LAYERS_MAX:
+      raise ValueError(f"Give a list of at most {LAYERS_MAX} layers, each {{work_item, thickness_mm}}, top to bottom (an empty list for none).")
+    
+    layers = []
+    for layer in raw:
+      ok = isinstance(layer, dict) and set(layer) == {"work_item", "thickness_mm"} and isinstance(layer["work_item"], str) and layer["work_item"].strip()
+      ok = ok and isinstance(layer["thickness_mm"], (int, float)) and not isinstance(layer["thickness_mm"], bool) and LAYER_MM[0] <= float(layer["thickness_mm"]) <= LAYER_MM[1]
+      if not ok:
+        raise ValueError(f"A layer is {{work_item, thickness_mm}} with the thickness {LAYER_MM[0]:g} to {LAYER_MM[1]:g} mm.")
+      layers.append({"work_item": layer["work_item"].strip().upper(), "thickness_mm": float(layer["thickness_mm"])})
+    return layers
   if key == FLOOR_ITEM:
     if not isinstance(raw, str) or not raw.strip():
       raise ValueError("The floor item is a work item code, or NONE to leave the room out.")
@@ -123,6 +172,16 @@ def checked(key: str, scope, raw):
     if not isinstance(raw, (list, tuple)) or not raw or any(x not in RT.TYPES for x in raw) or len(set(raw)) != len(raw):
       raise ValueError("Give a list of room types, each once.")
     return [str(x) for x in raw]
+  if key == EXTENT:
+    v = raw.strip().upper() if isinstance(raw, str) else ""
+    if v not in EXTENT_MODES:
+      raise ValueError(f"The extent of an item is one of {', '.join(EXTENT_MODES)}.")
+    return v
+  if key == STRIP_WIDTHS:
+    ok = isinstance(raw, dict) and set(raw) == set(STRIP_CLASSES) and all(isinstance(x, (int, float)) and not isinstance(x, bool) and STRIP_WIDTH_MM[0] <= float(x) <= STRIP_WIDTH_MM[1] for x in raw.values())
+    if not ok:
+      raise ValueError(f"Strip widths are {{outer, inner, thin}} in mm, each {STRIP_WIDTH_MM[0]:g} to {STRIP_WIDTH_MM[1]:g}: outer for a wall on the outline, thin for an inner wall under 150 mm, inner for the others.")
+    return {k: float(raw[k]) for k in STRIP_CLASSES}
   if key == WALL_FACES:
     v = raw.strip().upper() if isinstance(raw, str) else ""
     if v not in (OUTLINE, GRAPH):
@@ -136,4 +195,4 @@ def checked(key: str, scope, raw):
 
 def seed_expect() -> dict:
   every = [t for t in RT.TYPES if t not in RT.NOT_FLOORED]
-  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE}
+  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: []}

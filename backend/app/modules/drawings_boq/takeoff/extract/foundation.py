@@ -3,8 +3,6 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 from app.engine.measure import proposed as QP
 from app.engine.measure import readings as QS
 from app.modules.drawings_boq.takeoff.prep import footing_sections as FSEC
-from app.modules.drawings_boq.takeoff.extract import room_types as RT
-from app.modules.drawings_boq.takeoff.extract import room_types as RT
 
 EXCAVATION_AREA = "EXCAVATION_AREA"
 TRENCH = "TRENCH"
@@ -157,6 +155,14 @@ def _working_space(bed_w: float, depth: float, length_mm: float) -> dict:
   return {"used_mm": used, "qs_answer_mm": qs, "trench_width_mm": round(bed_w + 2.0 * used, 1), "trench_width_qs_mm": round(bed_w + 2.0 * qs, 1),
     "extra_m3": round(2.0 * (qs - used) * float(depth) * float(length_mm) / 1e9, 3)}
 
+def _ruled_note(ruled: dict | None) -> list:
+  return [C.note("STRIP_WIDTH_FROM_RULE")] if ruled else []
+
+def _ruled_facts(facts: dict, ruled: dict | None, section_width: float | None) -> dict:
+  if not ruled:
+    return dict(facts)
+  return {**facts, "strip_widths_mm": ruled["widths_mm"], "strip_classes": ruled["by_class"], "strip_width_rule": ruled["rule"], **({"section_width_mm": section_width} if section_width else {})}
+
 def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, finish, sections: list | None = None, outer: dict | None = None, marks: dict | None = None) -> list:
   out: list = []
   for t, ws, sec, how, tail in typed_groups(walls, sections, outer, marks):
@@ -173,6 +179,8 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
     centre = [_centre(pts)]
     params = {"length_mm": round(length_m * 1000.0, 1)}
     walls_note = C.note("FOUNDATION_FROM_WALLS")
+    from app.modules.drawings_boq.takeoff.extract import extent as EXT
+    ruled = {k: EXT.strip_width(k, ws, outer, level_hint) for k in ("termite_strip", "pcc_strip")}
     if sec:
       for w in ws:
         w.facts = w.facts if w.facts is not None else {}
@@ -186,13 +194,14 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
         sec_extra.append(C.note("FOOTING_SAND_NOT_MEASURED", sand_mm=sec["sand_mm"]))
       bed_w, bed_t = float(sec["pcc"]["width_mm"]), float(sec["pcc"]["depth_mm"])
       space = _working_space(bed_w, float(sec["total_depth_mm"]), params["length_mm"])
+      
       out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or "", *tail), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN{suffix}", centre,
         {**params, "width_mm": space["trench_width_mm"], "depth_mm": float(sec["total_depth_mm"])}, [],
         [walls_note, sec_note, *sec_extra, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_WORKING_SPACE_QS_ALTERNATIVE")], {**base_facts, "working_space": space}, 0.72))
       out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or "", *tail), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN{suffix}", centre,
-        {**params, "width_mm": bed_w, "depth_mm": bed_t}, [], [walls_note, sec_note, *sec_extra], dict(base_facts), 0.78))
+        {**params, "width_mm": (ruled["pcc_strip"] or {}).get("width_mm", bed_w), "depth_mm": bed_t}, [], [walls_note, sec_note, *sec_extra, *_ruled_note(ruled["pcc_strip"])], _ruled_facts(base_facts, ruled["pcc_strip"], bed_w), 0.78))
       out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or "", *tail), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN{suffix}",
-        centre, {**params, "width_mm": bed_w}, [], [walls_note, sec_note, *sec_extra, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.72))
+        centre, {**params, "width_mm": (ruled["termite_strip"] or {}).get("width_mm", bed_w)}, [], [walls_note, sec_note, *sec_extra, C.note("TERMITE_BOTTOM_ONLY"), *_ruled_note(ruled["termite_strip"])], _ruled_facts(base_facts, ruled["termite_strip"], bed_w), 0.72))
       continue
   
     width_note = C.note("FOUNDATION_WIDTH_TYPED")
@@ -203,31 +212,29 @@ def strip_candidates(walls: list, ctx: dict, level_hint: str | None, spec, cls, 
     base_facts.update({"section_options": [{"mark": o.get("mark"), "page_no": o.get("page_no"), "total_depth_mm": o.get("total_depth_mm"), "base_width_mm": o.get("base_width_mm")} for o in many]} if many else {})
     out.append(_make(cls, ctx, finish, (TRENCH, round(t), level_hint or "", *tail), TRENCH, f"Trench under {label_t}", f"TRENCH-{_inch_label(t)}IN{suffix}", centre, {**params, "depth_mm": dug["mm"]},
       ["strip_width_mm"], [walls_note, width_note, *extra, C.note("TRENCH_WORKING_SPACE_ASSUMED"), C.note("TRENCH_DEPTH_ASSUMED", reason=dug["text"])], {**base_facts, "depth_assumed": dug}, 0.65))
+    pr, tr = ruled["pcc_strip"], ruled["termite_strip"]
     out.append(_make(cls, ctx, finish, (PCC_STRIP, round(t), level_hint or "", *tail), PCC_STRIP, f"Concrete bed under {label_t}", f"PCC-STRIP-{_inch_label(t)}IN{suffix}", centre,
-       {**params, "depth_mm": bed_mm}, ["strip_width_mm"], [walls_note, width_note, *extra], {**base_facts, "depth_from": "QS_ANSWER"}, 0.7))
+       {**params, "depth_mm": bed_mm, **({"width_mm": pr["width_mm"]} if pr else {})}, [] if pr else ["strip_width_mm"], [walls_note, *([] if pr else [width_note]), *extra, *_ruled_note(pr)],
+       _ruled_facts({**base_facts, "depth_from": "QS_ANSWER"}, pr, None), 0.7))
+    
     out.append(_make(cls, ctx, finish, (TERMITE_STRIP, round(t), level_hint or "", *tail), TERMITE_STRIP, f"Termite treatment under {label_t}", f"TERMITE-STRIP-{_inch_label(t)}IN{suffix}",
-      centre, dict(params), ["strip_width_mm"], [walls_note, width_note, *extra, C.note("TERMITE_BOTTOM_ONLY")], dict(base_facts), 0.65))
+      centre, {**params, **({"width_mm": tr["width_mm"]} if tr else {})}, [] if tr else ["strip_width_mm"], [walls_note, *([] if tr else [width_note]), *extra, C.note("TERMITE_BOTTOM_ONLY"), *_ruled_note(tr)],
+      _ruled_facts(dict(base_facts), tr, None), 0.65))
   return out
 
-def under_floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish):
-  total = 0.0
-  used = 0
-  
-  for r in rooms:
-    f = r.facts or {}
-    if r.category != "ROOM" or r.status == "INVALID" or any(n.get("code") == "ROOM_INSIDE_ROOM" for n in r.notes or []) or not RT.floored(r):
-      continue
-    a = float(f.get("area_m2") or 0.0)
-    if a > 0.0:
-      total += a
-      used += 1
-  if used == 0:
+def under_floor_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, walls: list | None = None, outer: dict | None = None):
+  from app.modules.drawings_boq.takeoff.extract import extent as EXT
+  from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
+  got = EXT.area("termite", rooms, walls, outer, level_hint, None, FR.PCC_UNDER)
+  total, used = got["area_m2"], got["rooms"]
+  if used == 0 or total <= 0.0:
     return None
   pts = [p for r in rooms for p in ((r.geometry or {}).get("outer") or (r.geometry or {}).get("points") or [])]
-  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3)}
+  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), **got["facts"]}
   label = f"Termite treatment under the floor · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
+  notes = [C.note("UNDER_FLOOR_FROM_ROOMS")] if got["note"] != "EXTENT_STRIPS" else []
   return _make(cls, ctx, finish, (TERMITE_FLOOR, level_hint or ""), TERMITE_FLOOR, label, "TERMITE-UNDER-FLOOR", [_centre(pts)],
-    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], [C.note("UNDER_FLOOR_FROM_ROOMS")], facts, 0.75)
+    {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0}, [], notes + ([C.note(got["note"])] if got["note"] else []), facts, 0.75)
 
 def excavation_candidate(dims, outline_facts: dict, ctx: dict, level_hint: str | None, spec, cls, finish, centre: list):
   """The dig over the whole basement: the outline of the basement slab (covered area widened by its projections) x a depth that is typed."""

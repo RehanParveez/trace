@@ -29,7 +29,7 @@ def pick(ready: dict, *, accept_assumed: bool, accept_warned: bool, typed: dict,
     
     if blocked is None:
       for c in codes:
-        ok = (bool(typed) if c == "VALUE_MISSING" else accept_assumed if c == "ASSUMED" else accept_warned if c in ("WARNING", "CHECK_WARNS") else accept_added if c == "ADDED_FROM_SECOND_SHEET" else accept_review if c == "REVIEW" else False)
+        ok = (bool(typed) if c in ("VALUE_MISSING", "TANK_SIZE") else accept_assumed if c == "ASSUMED" else accept_warned if c in ("WARNING", "CHECK_WARNS") else accept_added if c == "ADDED_FROM_SECOND_SHEET" else accept_review if c == "REVIEW" else False)
         if not ok:
           blocked = c
           break

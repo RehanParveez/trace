@@ -16,6 +16,7 @@ from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof import levels as LV
+from app.modules.drawings_boq.takeoff.proof import steel_coverage as SC
 from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 from types import SimpleNamespace
@@ -722,7 +723,7 @@ def _silent_decisions(acc) -> list:
       continue
     f = c.facts or {}
     
-    if len([o for o in f.get("section_options") or [] if o.get("depth_mm")]) >= 2 and not (c.params or {}).get("depth_mm") and not any(n.get("code") == "BEAM_SECTIONS_LISTED" for n in c.notes or []):
+    if len([o for o in f.get("section_options") or [] if o.get("depth_mm")]) >= 2 and not (c.params or {}).get("depth_mm") and not any(n.get("code") in ("BEAM_SECTIONS_LISTED", "BEAM_MARK_NO_SECTION") for n in c.notes or []):
       bad.append(page_of[str(c.id)])
   return bad
 
@@ -1006,6 +1007,8 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   
   if steel:
     doc["steel"] = steel
+    dumped_ledger, dumped_cands = dump_view({"accs": accs, "ledger": ledger})
+    steel["coverage"] = SC.coverage(dumped_cands, dumped_ledger)
   view = stage_view(case, ledger, floor_all, catalog)
   if view:
     doc["stage_view"] = view
@@ -1121,6 +1124,8 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     if sv.get("outside_band"):
       out += ["", "Members whose own bars give a steel intensity outside the usual band (STEEL_OUTSIDE_BAND): " + ", ".join(f"{k} {v['members']}" for k, v in sv["outside_band"].items()) + "."]
     out += [""]
+    if sv.get("coverage"):
+      out += SC.lines(sv["coverage"])
   if doc.get("robust"):
     rb = doc["robust"]
     out += [f"**Robustness** (not part of the hash; more than {rb['move_pct']:g}% is a move): worst move {rb['worst_pct']:g}%."]

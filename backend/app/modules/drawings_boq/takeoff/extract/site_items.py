@@ -82,7 +82,25 @@ def _tank_labels(words: list) -> dict:
         break
   return out
 
-def _tank_item(kind: str, labels: list, details: list, own: set | None = None) -> dict:
+NEAR_LABEL_LINES = 5.0
+NEAR_LENGTHS_MAX = 6
+
+def _lengths_near(words: list, label) -> list:
+  ux, uy = _axes(label.angle)
+  h = max(label.height, 1.0)
+  a0, c0 = _along(label, ux, uy), _across(label, ux, uy)
+  found: dict = {}
+  for o in words:
+    t = (o.text or "").strip()
+    if "'" not in t or _length_mm(t) is None:
+      continue
+    
+    d = max(abs(_along(o, ux, uy) - a0), abs(_across(o, ux, uy) - c0)) / h
+    if d <= NEAR_LABEL_LINES:
+      found.setdefault(t, d)
+  return [t for t, _ in sorted(found.items(), key=lambda kv: kv[1])][:NEAR_LENGTHS_MAX]
+
+def _tank_item(kind: str, labels: list, details: list, own: set | None = None, words: list | None = None) -> dict:
   first = labels[0]
   facts: dict = {"site_kind": kind, "tank_kind": kind, "labels_on_sheet": len(labels), "sizes_mm": {}}
   codes = [("SITE_TANK_SIZES_TYPED", {"kind": kind})]
@@ -110,6 +128,11 @@ def _tank_item(kind: str, labels: list, details: list, own: set | None = None) -
     codes.append(("TANK_SIZES_DERIVED", {"kind": kind, "derived": said, "left": ", ".join(derived["left"]) or None, "printed": listed["message"] if listed else None}))
     if derived.get("size_basis") in ("INSIDE_ASSUMED", "OUTSIDE_NO_WALL"):
       codes.append(("TANK_SIZE_BASIS_ASSUMED", {"kind": kind, "basis": derived["size_basis"]}))
+  if missing:
+    near = _lengths_near(words, first) if words else []
+    if near:
+      facts["lengths_near_label"] = near
+    codes.append(("TANK_SIZE_HELD", {"kind": kind, "missing": list(missing), **({"lengths_near_label": near} if near else {})}))
   if len(labels) > 1:
     codes.append(("SITE_LABEL_REPEATED", {"count": len(labels)}))
   return {"site_kind": kind, "tag": TANK_TAG[kind], "label": LABEL[kind], "x": first.cx, "y": first.cy, "facts": facts, "params": {}, "missing": missing,
@@ -281,7 +304,7 @@ def find(words: list, mm_per_pt: float, tank_details: list | None = None) -> lis
   
   own = {(ln.text or "").strip() for ln in build_lines(words)} if tank_details else set()
   for kind, labels in sorted(_tank_labels(words).items()):
-    out.append(_tank_item(kind, labels, tank_details or [], own))
+    out.append(_tank_item(kind, labels, tank_details or [], own, words))
   caps = VW.captions(words)
   for cap in caps:
     if cap["kind"] == "ELEVATION" and BOUNDARY_CAPTION.search(cap["text"]):

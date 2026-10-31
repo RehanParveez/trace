@@ -59,7 +59,7 @@ def layers_of(depth_mm: float, layer_mm: float | None) -> int:
     return 0
   return int(math.ceil(round(depth_mm / layer, 6)))
 
-def fill_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, levels: dict | None = None):
+def fill_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, finish, levels: dict | None = None, walls: list | None = None, outer: dict | None = None):
   if level_hint == "BASEMENT":
     return None
   total, used, pts = 0.0, 0, []
@@ -76,12 +76,21 @@ def fill_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, fi
       pts.extend((r.geometry or {}).get("outer") or (r.geometry or {}).get("points") or [])
   if used == 0:
     return None
+  from app.modules.drawings_boq.takeoff.extract import extent as EXT
+  from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
+  mode, _rv = EXT.mode_of("fill", level_hint)
+  ext = None
+  if mode != FR.FLOOR_AREA:
+    ext = EXT.area("fill", rooms, walls, outer, level_hint, None, FR.PCC_UNDER)
+    if ext["rooms"] and ext["area_m2"] > 0.0:
+      total, used = ext["area_m2"], ext["rooms"]
   if levels is not None and levels["mm"] < C.FILL_MIN_MM:
     return None
+  
   from_levels = levels is not None and levels["mm"] <= C.FILL_MAX_MM
   dug = FD._assumed(FILL_ITEM)
   depth = levels["mm"] if from_levels else dug["mm"]
-  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), "layers": layers_of(depth, None)}
+  facts = {"derived_from": "ROOMS", "room_count": used, "area_m2": round(total, 3), "layers": layers_of(depth, None), **(ext["facts"] if ext else {})}
   if from_levels:
     facts["depth_from_levels"] = levels
   else:
@@ -89,5 +98,5 @@ def fill_candidate(rooms: list, ctx: dict, level_hint: str | None, spec, cls, fi
   label = f"Earth filling under the floor · {total:.2f} m²" + (f" · {spec[0]}" if spec else "")
   return FD._make(cls, ctx, finish, (FILL_ITEM, level_hint or ""), FILL_ITEM, label, "EARTH-FILL", [FD._centre(pts)],
     {"length_mm": round(total * 1000.0, 1), "width_mm": 1000.0, "depth_mm": depth}, [],
-    [C.note("FILL_FROM_ROOMS"), C.note("FILL_DEPTH_FROM_LEVELS", **{k: levels[k] for k in ("mm", "level_mm", "ground_mm", "ground_basis", "build_up_mm")}) if from_levels else C.note("FILL_DEPTH_ASSUMED", reason=dug["text"])], facts, 0.7)
+    [C.note("FILL_FROM_ROOMS"), C.note("FILL_DEPTH_FROM_LEVELS", **{k: levels[k] for k in ("mm", "level_mm", "ground_mm", "ground_basis", "build_up_mm")}) if from_levels else C.note("FILL_DEPTH_ASSUMED", reason=dug["text"])] + ([C.note(ext["note"])] if ext and ext["note"] else []), facts, 0.7)
 

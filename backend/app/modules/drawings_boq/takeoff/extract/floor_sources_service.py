@@ -123,8 +123,8 @@ class FloorSourceService(ExtractService):
     out = await self.choose(org, user_id, drawing_id, ChooseFloorSourcesRequest(use_suggested=True), automatic=True)
     return out["chosen"]
 
-  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, regions_only: bool = False) -> dict:
-    out = await super().extract_sheet(org, sheet_id, user_id, payload, regions_only=regions_only)
+  async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, regions_only: bool = False, site_only: bool = False) -> dict:
+    out = await super().extract_sheet(org, sheet_id, user_id, payload, regions_only=regions_only, site_only=site_only)
     if not getattr(payload, "choose_floors", True):
       return out
     sheet = await self.core._sheet(org, sheet_id)

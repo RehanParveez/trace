@@ -15,6 +15,7 @@ from app.modules.drawings_boq.takeoff.extract import geo_safe as GS
 from app.modules.drawings_boq.takeoff.extract import scaleplausible as SP
 from app.modules.drawings_boq.takeoff.extract import spec_facts as SPF
 from app.modules.drawings_boq.takeoff.extract import floor_layers as FLL
+from app.modules.drawings_boq.takeoff.extract import extent as EXT
 from app.modules.drawings_boq.takeoff.extract.sheetkind import sheet_kind
 from app.modules.drawings_boq.takeoff.extract import walls as W
 from app.modules.drawings_boq.takeoff.extract import rcc as RC
@@ -48,6 +49,7 @@ from app.modules.drawings_boq.takeoff.extract import band_count as BC
 from app.modules.drawings_boq.takeoff.extract import slab_projection as SPJ
 from app.modules.drawings_boq.takeoff.extract import slab_panels as SPN
 from app.modules.drawings_boq.takeoff.extract import slab_plan as SPL
+from app.modules.drawings_boq.takeoff.extract import slab_geometry as SG
 from app.modules.drawings_boq.takeoff.extract import beam_marks as BM
 from app.modules.drawings_boq.takeoff.extract import plan_regions as PR
 from app.modules.drawings_boq.takeoff.extract import foundation as FD
@@ -56,12 +58,15 @@ from app.modules.drawings_boq.takeoff.extract import room_types as RT
 from app.modules.drawings_boq.takeoff.extract import openings_area as OA
 from app.modules.drawings_boq.takeoff.extract import earth_fill as EF
 from app.modules.drawings_boq.takeoff.extract import roof_treatment as RF
+from app.modules.drawings_boq.takeoff.extract import roof_walls as RW
+from app.modules.drawings_boq.takeoff.extract import outdoor as OD
 from app.modules.drawings_boq.takeoff.extract import flights as FL
 from app.modules.drawings_boq.takeoff.extract import slab_openings as SO
 from app.modules.drawings_boq.takeoff.extract import stair_external as SX
 from app.modules.drawings_boq.takeoff.extract import structure as ST
 from app.modules.drawings_boq.takeoff.extract import column_census as CS
 from app.modules.drawings_boq.takeoff.extract import beam_strips as BSP
+from app.modules.drawings_boq.takeoff.extract import beam_labels as BL
 from app.modules.drawings_boq.takeoff.extract import beam_net as BN
 from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.prep import census
@@ -309,8 +314,8 @@ def _with_clear_height(heights: dict, floor_heights: dict | None, level_hint: st
   return out
 
 def _height_note(h: dict) -> dict:
-   return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}),
-     **({"ladder": h["ladder"]} if h.get("ladder") else {}))
+  return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_RULE" if h.get("basis") == "RULE" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}),
+    **({"ladder": h["ladder"]} if h.get("ladder") else {}))
 
 def _height_notes(h: dict) -> list:
   """The note of a height, and STOREY_HEIGHT beside it when the height is a note of the plan that differs from the clear height the floor's entry prints (Pack 196)."""
@@ -428,6 +433,13 @@ def _beam_width_mm(widths: list, imperial: bool) -> float:
   n = round(mid / 25.4)
   return round(n * 25.4, 1) if imperial and n >= 1 and abs(mid - n * 25.4) <= C.BEAM_WIDTH_SNAP_TOL * mid else round(mid, 1)
 
+def _strip_scale(index, lines: list, ctx: dict, mm_per_pt: float, scale_unverified: bool) -> tuple:
+  if not scale_unverified:
+    return mm_per_pt, None
+  unit = ctx.get("page_unit") or 1.0
+  scale = SG.scale_from_walls(SG.wall_notes(lines), SG.gap_peaks(index, unit), unit)
+  return (float(scale["mm_per_pt"]), scale) if scale.get("mm_per_pt") else (mm_per_pt, None)
+
 def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: dict, imperial: bool, sections: list | None, level_hint: str | None, squares: list | None = None) -> dict | None:
   beams = [c for c in cands if c.category == "BEAM" and c.tag and not (c.facts or {}).get("derived_from")]
   tags = {str(c.tag).strip().upper() for c in beams}
@@ -436,7 +448,8 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
   
   if truncated:
     return None
-  res = BSP.read(segments, marks, f, ctx.get("page_unit", 1.0))
+  label_sizes = BL.sizes(words, marks, f)
+  res = BSP.read(segments, marks, f, ctx.get("page_unit", 1.0), dashed=not ctx.get("scale_unverified") or bool(ctx.get("strip_scale")))
   if not res["legs"] and not marks:
     return None
 
@@ -466,6 +479,11 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
     c.missing = ["depth_mm"]
     c.notes = [n for n in c.notes if n.get("code") != "BEAM_LENGTH_NOT_READ"]
     c.notes.append(C.note("BEAM_LENGTH_FROM_STRIPS", strips=len(legs), length_m=round(total / 1000.0, 3)))
+    dashed = [l for l in legs if l.get("dashed")]
+    if dashed:
+      c.notes.append(C.note("BEAM_LENGTH_FROM_DASHED_PAIRS", pairs=len(dashed), length_m=round(sum(l["length_mm"] for l in dashed) / 1000.0, 3)))
+    if ctx.get("strip_scale"):
+      c.notes.append(C.note("BEAM_SCALE_FROM_WALLS", thickness_mm=ctx["strip_scale"]["thickness_mm"], gap_pt=ctx["strip_scale"]["gap_pt"], mm_per_pt=ctx["strip_scale"]["mm_per_pt"]))
     joined = [l for l in legs if l.get("joined")]
     if joined:
       c.notes.append(C.note("BEAM_STRIPS_JOINED", runs=len(joined), joins=sum(l["joined"] for l in joined), length_change_m=round(sum(l["join_delta_mm"] for l in joined) / 1000.0, 3)))
@@ -483,10 +501,11 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
       c.notes.append(C.note("BEAM_MARK_WITHOUT_STRIP", marks=missed, strips=len(legs)))
     if not BS.apply_marked(c, sections or []):
       BS.list_for_strips(c, sections or [])
+    BL.apply(c, label_sizes.get(tag, []), width)
     c.facts.update({"from_strips": True, "count": 1, "marks_printed": marks_printed, "strip_count": len(legs), "length_m": round(total / 1000.0, 3), "beam_width_mm": width,
       "length_gross_m": round(net["gross_mm"] / 1000.0, 3), "columns_taken": net["columns"], "strip_joins": sum(l.get("joined") or 0 for l in legs),
       "level_hint": level_hint, "strips": [{"p0": l["p0"], "p1": l["p1"], "length_mm": l["length_mm"], "net_mm": n, "via": l["via"]} for l, n in zip(legs, net["legs"])]})
-    c.label = f"{c.tag} · {total / 1000.0:.2f} m × {_inch_label(width)} in · {len(legs)} strip{'s' if len(legs) != 1 else ''}{where}"
+    c.label = f"{c.tag} · {total / 1000.0:.2f} m × {_inch_label(c.params['width_mm'])} in · {len(legs)} strip{'s' if len(legs) != 1 else ''}{where}"
     c.status = _status(c.notes)
   orphans = by.get(None)
   
@@ -656,7 +675,7 @@ def _mark_tanks(words, walls: list, f: float) -> int:
       if c.facts.get("enclosure"):
         continue
       pts = (c.geometry or {}).get("points") or []
-      if len(pts) < 2:
+      if len(pts) < 2 or float(c.facts.get("length_cc_m") or 0.0) * 1000.0 > C.TANK_MAX_MM:
         continue
       if H._seg_distance(pts[0], pts[1], (w.cx, w.cy)) * f <= C.TANK_REACH_MM:
         near.append(c)
@@ -1309,6 +1328,73 @@ def _slab_candidate(plan: dict, areas: dict, slab_values: list, ctx: dict, impli
   cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
   return cand, []
 
+def _slab_candidate_from_plan(plan: dict, index, words: list, lines: list, slab_values: list, ctx: dict, implied_mm: float | None, mm_per_pt: float, scale_unverified: bool) -> tuple:
+  hint = plan.get("level_hint")
+  spec = level_spec(hint)
+  floor = spec[0] if spec else hint
+  unit = ctx.get("page_unit") or 1.0
+  peaks = SG.gap_peaks(index, unit)
+  scale = {"status": "PAGE_SCALE", "mm_per_pt": mm_per_pt} if not scale_unverified else SG.scale_from_walls(SG.wall_notes(lines), peaks, unit)
+  if not scale.get("mm_per_pt"):
+    return None, [C.note("SLAB_SCALE_NOT_ESTABLISHED", floor=floor, reason=scale.get("status"))]
+  mm = float(scale["mm_per_pt"])
+  env = SG.envelope(index, words, mm, unit, peaks[0][0] if peaks else None)
+  
+  if env is None:
+    return None, [C.note("SLAB_SCALE_NOT_ESTABLISHED", floor=floor, reason="NO_OUTLINE")]
+  t, source, notes = _slab_thickness(plan.get("note_mm"), slab_values, implied_mm)
+  options = _slab_options(t, source, slab_values, implied_mm, plan.get("note_mm"))
+  
+  if implied_mm:
+    notes.append(C.note("SLAB_THICKNESS_SECTIONS", implied_mm=implied_mm))
+  for n in notes:
+    if n["code"] == "SLAB_THICKNESS_DISAGREES" and implied_mm:
+      n["sections_mm"] = implied_mm
+  base = 0.6
+  notes.append(C.note("SLAB_AREA_FROM_PLAN", gross_m2=env["gross_m2"], net_m2=env["net_m2"], spread=env["spread"]))
+  if scale["status"] == "FOUND":
+    notes.append(C.note("SLAB_SCALE_FROM_WALLS", thickness_mm=scale["thickness_mm"], gap_pt=scale["gap_pt"], pairs=scale["pairs"], mm_per_pt=scale["mm_per_pt"]))
+    notes.append(C.note("SCALE_UNVERIFIED"))
+    
+    base *= 0.85
+  if env["voids"]:
+    notes.append(C.note("SLAB_VOIDS_FROM_PLAN", voids=env["voids"]))
+  if not env["stable"]:
+    base *= 0.8
+  length = float(env["bbox_mm"][0])
+  width = round(env["net_m2"] * 1e6 / length, 1)
+  params: dict = {"dims_basis": "DRAWN", "length_mm": length, "width_mm": width}
+  missing: list = []
+  if t:
+    params["depth_mm"] = t
+  else:
+    missing.append("thickness_mm")
+    base *= 0.8
+  if any(n["code"] == "SLAB_THICKNESS_DISAGREES" for n in notes):
+    base *= 0.9
+  label_parts = SL.parts("Slab", " ", f" · {env['net_m2']:.2f} m²" + (f" · {floor}" if floor else ""))
+  facts = {"floor": hint, "area_m2": env["net_m2"], "gross_area_m2": env["gross_m2"], "area_basis": "PLAN_OUTLINE", "voids": env["voids"], "area_sweep_m2": env["sweep_m2"], "area_spread": env["spread"],
+    "scale_basis": scale["status"], "mm_per_pt": round(mm, 4), "wall_gap_pt": scale.get("gap_pt"), "thickness_mm": t, "thickness_source": source, "thickness_options": options,
+    "thickness_sections_mm": implied_mm, "panels": plan.get("panels", 0), "panel_marks": plan.get("marks", []), "label_parts": label_parts, "outline_dims_mm": [length, width]}
+  vols = _thickness_volumes(options, length, width, t)
+  
+  if vols:
+    facts["thickness_volumes"] = vols
+    if len(vols) > 1:
+      for n in notes:
+        if n["code"] == "SLAB_THICKNESS_DISAGREES":
+          n["message"] = _thickness_text(vols, t, source)
+  if t:
+    facts["volume_m3"] = round(length * width * t / 1e9, 4)
+  work_item, mode, kind = C.SUGGESTIONS["SLAB"]
+  cand = Candidate(key=_key("SLAB", hint, plan.get("key") or ""), category="SLAB", kind=kind, quantity_mode=mode, label=SL.compose(label_parts, t), tag="SLAB",
+    geometry={"points": [[round(plan["centre"][0], 4), round(plan["centre"][1], 4)]]}, params=params, missing=missing, work_item=work_item,
+    status="VALID", confidence=0.0, facts=facts, notes=notes, source="VECTOR_SNAP", count=1)
+  
+  cand.status = _status(cand.notes)
+  cand.confidence = round(max(0.0, min(1.0, base * ctx["content_factor"])), 4)
+  return cand, []
+
 def _slab_panel_candidates(found: dict, note_mm, level_hint: str | None, slab_values: list, ctx: dict, implied_mm: float | None) -> list:
   t, source, thickness_notes = _slab_thickness(note_mm, slab_values, implied_mm)
   options = _slab_options(t, source, slab_values, implied_mm, note_mm)
@@ -1399,7 +1485,10 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict, mar
     drawn = not (o.facts or {}).get("size_schedule_mm") and bool((o.facts or {}).get("size_drawn_mm"))
     size = (o.facts or {}).get("size_schedule_mm") or ((o.facts or {}).get("size_drawn_mm") if drawn else None)
     pts = (o.geometry or {}).get("points") or []
-    if o.category not in ("DOOR", "WINDOW") or not size or not o.tag or not pts:
+    if o.category not in ("DOOR", "WINDOW"):
+      continue
+    if not size or not o.tag or not pts:
+      o.notes.append(C.note("LINTEL_NOT_LISTED_NO_WIDTH"))
       continue
     span = float(size[0])
     sec = LT.section_for(table, span)
@@ -1440,12 +1529,17 @@ def _lintel_candidates(openings: list, table: list, hosted: dict, ctx: dict, mar
         facts["table_span_max_mm"] = sec["span_max_mm"]
         facts["table_pages"] = list(sec.get("pages") or [])
         notes.append(C.note("LINTEL_SECTION_FROM_TABLE"))
+        if sec.get("from_details"):
+          facts["table_mark"] = sec.get("mark")
+          notes.append(C.note("LINTEL_SIZES_FROM_DETAILS"))
         if thin_part:
           notes.append(C.note("LINTEL_WIDTH_FROM_WALL", wall_mm=width, table_mm=sec["width_mm"], count=n))
         if sec.get("steel"):
           params["steel"] = dict(sec["steel"])
           facts["steel_text"] = LT.steel_text(sec["steel"])
           notes.append(C.note("LINTEL_STEEL_FROM_TABLE"))
+          if sec["steel"].get("extra"):
+            notes.append(C.note("LINTEL_EXTRA_BAR_STRAIGHT"))
         label = f"Lintel {o.tag} ×{n} · {_inch_text(width)}×{_inch_text(depth)} · {_fmt_mm(params['length_mm'])} mm long" + (f" · in {_inch_text(width)} wall" if thin_part else "")
       else:
         missing.append("size")
@@ -1677,16 +1771,16 @@ def _foundation_candidates(walls: list, rooms: list, schedule: dict | None, ctx:
   if membrane is not None:
     out.append(membrane)
   out.extend(FD.membrane_layer_candidates(walls, ctx, level_hint, spec, Candidate, _finish, mm_per_pt, SPF.waterproof_for(spec_facts, level_hint)))
-  layer_items, layer_notes, layer_stats = FLL.candidates(rooms, spec_facts, ctx, level_hint, spec, Candidate, _finish)
+  layer_items, layer_notes, layer_stats = FLL.candidates(rooms, spec_facts, ctx, level_hint, spec, Candidate, _finish, walls, outer if EXT.needs_outer(level_hint) else None)
   out.extend(layer_items)
   
   if sink is not None:
     sink["notes"] = layer_notes
     sink["stats"] = layer_stats
-  fill = EF.fill_candidate(rooms, ctx, level_hint, spec, Candidate, _finish, fill_levels)
+  fill = EF.fill_candidate(rooms, ctx, level_hint, spec, Candidate, _finish, fill_levels, walls, outer if EXT.needs_outer(level_hint) else None)
   if fill is not None:
     out.append(fill)
-  floor = FD.under_floor_candidate(rooms, ctx, level_hint, spec, Candidate, _finish)
+  floor = FD.under_floor_candidate(rooms, ctx, level_hint, spec, Candidate, _finish, walls, outer if EXT.needs_outer(level_hint) else None)
   if floor is not None:
     out.append(floor)
     
@@ -1709,8 +1803,9 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   if level_hint == "ROOF":
     rooms = [r for r in rooms if (r.facts or {}).get("name")]
   out = []
+  edge = FD.outer_flags(walls, mm_per_pt) if EXT.needs_outer(level_hint) else None
   for build in (FN.kacha_candidate, FN.ceiling_candidate, FN.floor_candidate, FN.floor_wet_candidate, FN.ceiling_paint_candidate):
-    cand = build(rooms, ctx, level_hint, spec, Candidate, _finish)
+    cand = build(rooms, ctx, level_hint, spec, Candidate, _finish, *((walls, edge) if build in (FN.kacha_candidate, FN.ceiling_candidate, FN.ceiling_paint_candidate) else ()))
     if cand is not None:
       out.append(cand)
   out.extend(FN.floor_typed_candidates(rooms, ctx, level_hint, spec, Candidate, _finish))
@@ -1799,7 +1894,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
    sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
   footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None,
-  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, footing_views: list | None = None) -> Extraction:
+  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, footing_views: list | None = None, page_unit: float = 1.0) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   work = W.Work(C.PAGE_WORK_BUDGET, started + C.PAGE_HARD_STOP_FACTOR * budget_s)
@@ -1847,7 +1942,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     only = [] if partial else [v for v in views if v["structural"] and not v.get("foundation")]
     if len(only) == 1:
       in_view = [w for w in words if VW.contains(only[0], w.cx, w.cy)]
-      strips = _apply_strips(index, only[0], in_view, found, mm_per_pt, ctx, imp_here, beam_sections, only[0].get("level_hint") or level_hint)
+      strip_mm, ctx["strip_scale"] = _strip_scale(index, lines, ctx, mm_per_pt, scale_unverified)
+      strips = _apply_strips(index, only[0], in_view, found, strip_mm, ctx, imp_here, beam_sections, only[0].get("level_hint") or level_hint)
       if strips is not None:
         res.stats["beam_strips"] = strips
       if not any(c.category == "COLUMN" for c in found):
@@ -1884,7 +1980,17 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
 
       res.notes = [n for n in res.notes if n.get("code") != "SLAB_AREA_NOT_FOUND"]
       res.stats["slab_plan"] = {"panels": len(slab_plan["panels"]), "labels": slab_plan["labels"], "labels_outside": slab_plan["labels_outside"], "strings": slab_plan["strings"], "area_m2": slab_plan["area_m2"]}
+  if not composite_structural and not partial and kind["kind"] == "STRUCTURAL" and plans and not any(c.category == "SLAB" for c in res.candidates):
+    plan = plans[0]
+    cand, notes = _slab_candidate_from_plan(plan, index, words, lines, slab_values or [], ctx, _implied_slab_mm(floor_heights, plan.get("level_hint")), mm_per_pt, scale_unverified)
+    if cand is not None:
+      SPN.attach(cand, plan, index, C.note)
+      cand.status = _status(cand.notes)
+      res.candidates.append(cand)
+      res.notes = [n for n in res.notes if n.get("code") != "SLAB_AREA_NOT_FOUND"]
+    res.notes.extend(notes)
   res.stats["slabs"] = sum(1 for c in res.candidates if c.category == "SLAB")
+  
   res.candidates.extend(RF.roof_candidates([c for c in res.candidates if c.category == "SLAB"], ctx, Candidate, _finish, spec_facts))
   roof_layers, roof_notes, res.stats["roof_layers"] = FLL.roof_candidates([c for c in res.candidates if (c.facts or {}).get("foundation_item") == FD.ROOF_TREATMENT], spec_facts, ctx, Candidate, _finish)
   res.candidates.extend(roof_layers)
@@ -2004,6 +2110,8 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       rooms = _stage(res, "ROOMS", lambda: _room_candidates(index, frames, runs, lines, mm_per_pt, hint, ctx, res, walls), [])
       res.candidates.extend(rooms)
       res.candidates.extend(completion)
+      if str(level_hint or "").upper() == "ROOF" and not ctx.get("scale_unverified"):
+        res.stats["roof_walls"] = RW.apply(walls, rooms, mm_per_pt, floor_heights, level_hint, lambda fl: _with_floor_height({}, floor_heights, fl).get("WALL"), C.note, _height_notes, _status)
       if with_finishes or lowest_level:
         faced = FN.attach_faces([*walls, *QR.counted_completion(completion)], rooms, mm_per_pt, level_hint)
         if faced.get("used"):
@@ -2028,6 +2136,13 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         res.candidates.extend(scaffold)
         res.notes.extend(scaffold_notes[:1])
         res.stats["scaffold_items"] = len(scaffold)
+        if str(level_hint or "").upper() == "GROUND" or lowest_level:
+          outdoor = _stage(res, "OUTDOOR", lambda: OD.read(index, walls, rooms, mm_per_pt, ctx, level_hint, level_spec(level_hint), Candidate, _finish, FN._make), None)
+          if outdoor:
+            res.candidates.extend(outdoor["candidates"])
+            res.notes.extend(outdoor["notes"])
+            if outdoor["stats"]:
+              res.stats["outdoor"] = outdoor["stats"]
       if lowest_level:
         sink: dict = {}
         
