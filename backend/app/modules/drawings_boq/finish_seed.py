@@ -60,6 +60,9 @@ WORK_ITEMS = [
   ("FIN-TERRACE-TILE", "Terrace floor tile finish", "m2", "Finishes", "TILING"),
   ("FIN-PORCH-TILE", "Porch floor tile finish", "m2", "Finishes", "TILING"),
   ("FIN-PAVING", "Paving, tuff tile or similar, to passages and open floors", "m2", "Finishes", "TILING"),
+  ("FIN-SILL-MARBLE", "Window sill, marble or granite", "m2", "Finishes", "TILING"),
+  ("FIN-WATER-STOPPER", "Water stopper at the door of a wet room", "m", "Finishes", "TILING"),
+  ("FIN-FACADE-TILE", "Tile or cladding to the face of a building (read from an elevation)", "m2", "Finishes", "TILING"),
 
 ]
 

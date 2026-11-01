@@ -34,7 +34,7 @@
   cause: 'no Trace number: the tanks are not billed'
   pack: '167'
 - line: STEEL/ALL
-  cause: '-80.8% (-78.6% before Pack 168, the beams are narrower; no Trace number before Pack 159): only the steel of the roof beams read from the walls is counted; no other member carries bars yet'
+  cause: '-65.5% (-67.1% before Pack 209, which reads the first-floor slab plan at the scale of the ground-floor plan and adds its beams; -80.8% before): the steel of the roof beams and the lintels is counted; footings and the other beams have no bar section joined, and columns carry no bars yet'
   pack: '195'
 - line: ROOF_TREATMENT/ALL
   cause: 'not diagnosed; no Trace number: roof treatment has no area without the outer faces'
@@ -84,6 +84,18 @@
   cause: 'not diagnosed; +51.8%: the kitchen tile band height is his choice (printed note, 7 ft, to the ceiling)'
   pack: '202'
   question: '191-C questionnaire: kitchen tile band'
+- line: FIN-FACADE-TILE/ALL
+  cause: 'not diagnosed; -39.7%: the front elevation is read for the zones drawn with a pattern of joints (42 zones, 46.4 m2 without counting a place twice, 499 sft). The QS bills 827.6 sft. A tile that is drawn as a plain outline with no joint lines is not found, and the rectangle round a pattern includes any window inside it, so the estimate can be too low and too high in different places. Windows are not deducted; the side and rear elevations draw no joint pattern'
+  pack: '204'
+  question: '191-C questionnaire: which faces of the front elevation are tile'
+- line: FIN-SILL-MARBLE/ALL
+  cause: 'not diagnosed; -94.0%: sills are taken for the 5 windows that print a sill of 300 mm or more (13 ft of width, 0.23 m deep = 9.8 sft). Ten of the 15 windows read print a sill under 300 mm (floor-level windows and door-windows) and get none, and the plan reads 15 windows against the bill window area that is 16% larger. The bill gives 163.9 sft for the sills and does not say how long or how deep; the depth is a rule (230 mm), not a figure on the drawing'
+  pack: '205'
+  question: '191-C questionnaire: which windows have a marble sill, and how deep'
+- line: FIN-WATER-STOPPER/ALL
+  cause: 'not diagnosed; -85.5%: the stopper is taken at the doors of the finished baths and toilets that have a door assigned to them (4 doors, 9.5 ft). The bill gives 65.4 rft, about 20 doors of 3 ft, and does not say which doors'
+  pack: '205'
+  question: '191-C questionnaire: where the water stopper is laid'
 - line: FIN-PORCH-TILE/ALL
   cause: 'not diagnosed; -51.9%: porch tile extent is his choice (porch, plus car porch, plus front). Pack 199 reads the front court (459 sft) as one region named by its only label, FRONT LAWN, and lists it unbilled: the plan draws the lawn hatch as a pattern fill with no outline, so the lawn and the paved front cannot be split'
   pack: '202'

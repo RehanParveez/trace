@@ -3,6 +3,7 @@ import re
 from app.modules.drawings_boq.takeoff.extract import pageroles as PR
 from app.modules.drawings_boq.takeoff.extract import identity_words as IW
 from app.modules.drawings_boq.takeoff.prep import title_block as TB
+from app.modules.drawings_boq.takeoff.extract import sheet_sections as SS
 
 HEADLINES = 6
 READ_AS = ("PLAN_ITEMS", "SYMBOLS_ONLY", "DETAILS_ONLY", "SKIP")
@@ -116,6 +117,7 @@ def identify(words: list, cropbox: tuple, title: dict | None = None, views: list
   every = [t for t, _s in _lines(words)]
   return {"discipline": discipline, "sheet_type": sheet_type, "floor": floor, "title": fields.get("title") or title.get("title"), "sheet_no": fields.get("sheet_no") or title.get("sheet_no"),
     "scale_text": fields.get("scale"), "revision": fields.get("revision"), "project": fields.get("project"), "basis": basis, "confidence": confidence,
+    "named": bool(named), "sparse": len(words) <= SS.SPARSE_WORDS, "sheet_code": SS.code_of(words, cropbox), "purpose": PR.purpose(PR._title_lines(words)),
     "option": TB.option_of(every), "stamps": TB.stamps_of(every),
     "evidence": [h for h in hits if h["discipline"] == discipline][:4] + ([{"sheet_type": sheet_type, "text": type_line[:60]}] if sheet_type and type_line else []),
     "views": found_views}
@@ -142,7 +144,7 @@ def plan_kind(identity: dict, role: dict | None = None, clues: dict | None = Non
   identity.pop("mixed", None)
   
   if _services_plan(identity, clues):
-    if dense:
+    if dense and identity.get("basis") not in SS.BASES:
       identity["mixed"] = True
       return "WORKING"
     return "OVERLAY"
@@ -152,9 +154,10 @@ def plan_kind(identity: dict, role: dict | None = None, clues: dict | None = Non
     return "FOUNDATION"
   if (identity.get("discipline") == "STRUCTURAL" or kind == "STRUCTURAL") and _FRAMING.search(title):
     return "FRAMING"
-  if role.get("purpose") == "FURNITURE" or _FURNITURE.search(title):
+  purpose = role.get("purpose") or identity.get("purpose")
+  if purpose == "FURNITURE" or _FURNITURE.search(title):
     return "FURNITURE"
-  return "WORKING" if (role.get("purpose") == "WORKING" or dense) else None
+  return "WORKING" if (purpose == "WORKING" or dense) else None
 
 def read_as(identity: dict | None) -> str:
   i = identity or {}
@@ -171,6 +174,8 @@ def read_as(identity: dict | None) -> str:
     return i["role_vote"]["read_as"]
   if i.get("mixed"):
     return "PLAN_ITEMS"
+  if i.get("duplicate_of"):
+    return "SYMBOLS_ONLY"
   role = i.get("role")
   if (gates_services(i) or is_electrical_plan(i) or i.get("plan_kind") == "OVERLAY") and role not in ("COVER", "DIVIDER"):
     return "SYMBOLS_ONLY"

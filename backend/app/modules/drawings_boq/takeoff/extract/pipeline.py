@@ -39,6 +39,8 @@ from app.modules.drawings_boq.takeoff.extract import drainage as DR
 from app.modules.drawings_boq.takeoff.extract import piles_rafts as PRF
 from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
+from app.modules.drawings_boq.takeoff.extract import elevation as ELV
+from app.modules.drawings_boq.takeoff.extract import fittings as FIT
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
 from app.modules.drawings_boq.takeoff.extract import opening_symbols as OS
 from app.modules.drawings_boq.takeoff.prep import tank_details as TD
@@ -433,11 +435,18 @@ def _beam_width_mm(widths: list, imperial: bool) -> float:
   n = round(mid / 25.4)
   return round(n * 25.4, 1) if imperial and n >= 1 and abs(mid - n * 25.4) <= C.BEAM_WIDTH_SNAP_TOL * mid else round(mid, 1)
 
+def _wall_scale(lines: list, peaks: list, unit: float, ctx: dict) -> dict:
+  scale = SG.scale_from_walls(SG.wall_notes(lines), peaks, unit)
+  sib = ctx.get("scale_sibling")
+  if scale.get("mm_per_pt") or not sib:
+    return scale
+  return {"status": "FOUND", "mm_per_pt": sib["mm_per_pt"], "thickness_mm": sib.get("thickness_mm"), "gap_pt": sib["gap_pt"], "pairs": sib["pairs"], "half_pairs": 0, "double_pairs": 0, "from_page": sib["from_page"]}
+
 def _strip_scale(index, lines: list, ctx: dict, mm_per_pt: float, scale_unverified: bool) -> tuple:
   if not scale_unverified:
     return mm_per_pt, None
   unit = ctx.get("page_unit") or 1.0
-  scale = SG.scale_from_walls(SG.wall_notes(lines), SG.gap_peaks(index, unit), unit)
+  scale = _wall_scale(lines, SG.gap_peaks(index, unit), unit, ctx)
   return (float(scale["mm_per_pt"]), scale) if scale.get("mm_per_pt") else (mm_per_pt, None)
 
 def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: dict, imperial: bool, sections: list | None, level_hint: str | None, squares: list | None = None) -> dict | None:
@@ -484,6 +493,8 @@ def _apply_strips(index, view: dict, words: list, cands: list, f: float, ctx: di
       c.notes.append(C.note("BEAM_LENGTH_FROM_DASHED_PAIRS", pairs=len(dashed), length_m=round(sum(l["length_mm"] for l in dashed) / 1000.0, 3)))
     if ctx.get("strip_scale"):
       c.notes.append(C.note("BEAM_SCALE_FROM_WALLS", thickness_mm=ctx["strip_scale"]["thickness_mm"], gap_pt=ctx["strip_scale"]["gap_pt"], mm_per_pt=ctx["strip_scale"]["mm_per_pt"]))
+      if ctx["strip_scale"].get("from_page"):
+        c.notes.append(C.note("SCALE_FROM_SIBLING_PLAN", from_page=ctx["strip_scale"]["from_page"], mm_per_pt=ctx["strip_scale"]["mm_per_pt"]))
     joined = [l for l in legs if l.get("joined")]
     if joined:
       c.notes.append(C.note("BEAM_STRIPS_JOINED", runs=len(joined), joins=sum(l["joined"] for l in joined), length_change_m=round(sum(l["join_delta_mm"] for l in joined) / 1000.0, 3)))
@@ -1334,7 +1345,7 @@ def _slab_candidate_from_plan(plan: dict, index, words: list, lines: list, slab_
   floor = spec[0] if spec else hint
   unit = ctx.get("page_unit") or 1.0
   peaks = SG.gap_peaks(index, unit)
-  scale = {"status": "PAGE_SCALE", "mm_per_pt": mm_per_pt} if not scale_unverified else SG.scale_from_walls(SG.wall_notes(lines), peaks, unit)
+  scale = {"status": "PAGE_SCALE", "mm_per_pt": mm_per_pt} if not scale_unverified else _wall_scale(lines, peaks, unit, ctx)
   if not scale.get("mm_per_pt"):
     return None, [C.note("SLAB_SCALE_NOT_ESTABLISHED", floor=floor, reason=scale.get("status"))]
   mm = float(scale["mm_per_pt"])
@@ -1354,6 +1365,8 @@ def _slab_candidate_from_plan(plan: dict, index, words: list, lines: list, slab_
   notes.append(C.note("SLAB_AREA_FROM_PLAN", gross_m2=env["gross_m2"], net_m2=env["net_m2"], spread=env["spread"]))
   if scale["status"] == "FOUND":
     notes.append(C.note("SLAB_SCALE_FROM_WALLS", thickness_mm=scale["thickness_mm"], gap_pt=scale["gap_pt"], pairs=scale["pairs"], mm_per_pt=scale["mm_per_pt"]))
+    if scale.get("from_page"):
+      notes.append(C.note("SCALE_FROM_SIBLING_PLAN", from_page=scale["from_page"], mm_per_pt=scale["mm_per_pt"]))
     notes.append(C.note("SCALE_UNVERIFIED"))
     
     base *= 0.85
@@ -1820,6 +1833,7 @@ def _finish_candidates(walls: list, rooms: list, doors: list, mm_per_pt: float, 
   out.extend(FN.door_frame_candidates(doors, walls, ctx, level_hint, spec, Candidate, _finish))
   out.extend(FN.arch_candidates(doors, windows or [], walls, arched or set(), ctx, level_hint, spec, Candidate, _finish))
   out.extend(OA.opening_area_candidates(doors, windows or [], ctx, level_hint, spec, Candidate, _finish))
+  out.extend(c for c in (FIT.sill_candidate(windows or [], ctx, level_hint, spec, Candidate, _finish), FIT.stopper_candidate(rooms, doors, mm_per_pt, ctx, level_hint, spec, Candidate, _finish)) if c is not None)
   return out
 
 def _settle_scale(res: Extraction) -> None:
@@ -1893,12 +1907,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   floor_heights: dict | None = None, level_hint: str | None = None, slab_values: list | None = None, text_source: str = "TEXT",
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
    sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
-  footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None,
+  footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None, scale_sibling: dict | None = None,
   mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, footing_views: list | None = None, page_unit: float = 1.0) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   work = W.Work(C.PAGE_WORK_BUDGET, started + C.PAGE_HARD_STOP_FACTOR * budget_s)
-  ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified, "page_unit": page_unit,
+  ctx = {"cal_factor": cal_factor, "scale_unverified": scale_unverified, "page_unit": page_unit, "scale_sibling": scale_sibling,
     "content_factor": {"VECTOR": 1.0, "UNKNOWN": 0.95, "RASTER": 0.85}.get(content_kind, 0.95) * (SCAN_TEXT_FACTOR if text_source in ("OCR", "OUTLINED") else 1.0)}
   
   res = Extraction()
@@ -1907,6 +1921,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     res.stats["read_as"] = read_as
   if read_as == "SKIP":
     res.notes.append(C.note("SHEET_NOT_READ_ROLE", role=role_info.get("role"), title=role_info.get("title")))
+    if role_info.get("role") == "ELEVATION":
+      facade = _stage(res, "ELEVATION", lambda: ELV.read(index, mm_per_pt, ctx, level_hint, Candidate, _finish, FN._make), None)
+      if facade:
+        res.candidates.extend(facade["candidates"])
+        res.notes.extend(facade["notes"])
+        res.stats["elevation"] = facade["stats"]
     return res
   partial = read_as in ("DETAILS_ONLY", "SYMBOLS_ONLY")
   if text_source == "OCR":
@@ -2465,6 +2485,7 @@ def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) 
     kw["read_as"] = SID.read_as(identity)
     kw["role_info"] = {"role": identity.get("role"), "title": identity.get("role_title"), "plan_kind": identity.get("plan_kind")}
     kw["discipline"] = identity.get("discipline")
+    kw["scale_sibling"] = identity.get("scale_sibling")
   token = OS.FROM_PICTURE.set(bool((pdf or {}).get("lines_from_picture")))
   try:
     res = _run_extraction_framed(index, mm_per_pt, frame=frame, **kw)

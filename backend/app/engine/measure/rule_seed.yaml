@@ -85,6 +85,11 @@ rules:
   - {key: finish.site_item, scope: {region: LAWN}, value: "NONE", unit: null, cls: JUDGEMENT}
   - {key: finish.site_item, scope: {region: OPEN_SITE}, value: "NONE", unit: null, cls: JUDGEMENT}
   - {key: finish.site_layers, scope: {}, value: [], unit: null, cls: JUDGEMENT}
+  - {key: finish.facade_item, scope: {}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.sill_item, scope: {}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.sill_depth_mm, scope: {}, value: 230.0, unit: "mm", cls: JUDGEMENT}
+  - {key: finish.stopper_item, scope: {}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.stair_external, scope: {}, value: "BILL_SEPARATE", unit: null, cls: JUDGEMENT}
   - {key: finish.dado_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: finish.kitchen_band, scope: {}, value: "full", unit: null, cls: JUDGEMENT}
   - {key: finish.ceiling_includes, scope: {}, value: ["BEDROOM", "BATH", "PWD", "WC", "KITCHEN", "LOUNGE", "DINING", "DRAWING", "PORCH", "TERRACE", "PASSAGE", "LAWN", "STAIR", "STORE", "SERVANT", "OTHER"], unit: null, cls: JUDGEMENT}

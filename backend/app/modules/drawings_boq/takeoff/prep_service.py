@@ -9,6 +9,7 @@ from app.modules.drawings_boq.models import BuildingLevel, TakeoffCalibration, T
 from sqlalchemy import select
 from decimal import Decimal
 import asyncio
+import copy
 import json
 import logging
 import re
@@ -248,6 +249,7 @@ class PrepService:
         except Exception:
           pass
     if prepared:
+      await self._sections_pass_safe(org, drawing_id)
       await self._outline_pass_safe(org, drawing.project_id)
       await self._marks_pass_safe(org, drawing.project_id)
     refreshed =await self.repo.sheets(org, drawing_id)
@@ -271,6 +273,7 @@ class PrepService:
         pass
     if not ok:
       raise TraceException(sheet.prep_error or "This sheet could not be read.", status_code=422, code="SHEET_PREP_FAILED")
+    await self._sections_pass_safe(org, sheet.drawing_id)
     await self._outline_pass_safe(org, drawing.project_id)
     await self._marks_pass_safe(org, drawing.project_id)
     return await self._sheet(org, sheet_id)
@@ -662,6 +665,30 @@ class PrepService:
     if not any(d == drawing.id for d, _ in pairs):
       pairs = [(drawing.id, s) for s in await self.repo.sheets(org, drawing.id)] + ([p for p in pairs if p[0] != drawing.id] if use and drawing.is_current_revision else [])
     return PF.bundle(pairs, drawing.id)
+
+  async def sections_pass(self, org: UUID, drawing_id: UUID) -> list:
+    from app.modules.drawings_boq.takeoff.extract import sheet_sections as SS
+    sheets = [s for s in await self.repo.sheets(org, drawing_id) if s.prep_status == "READY" and (s.prep_meta or {}).get("identity")]
+    identities = {s.id: copy.deepcopy(s.prep_meta["identity"]) for s in sheets}
+    changed = SS.apply([(s.page_no, identities[s.id]) for s in sheets])
+    from app.modules.drawings_boq.takeoff.extract import wall_scale as WS
+    changed += WS.apply([(s.page_no, (s.prep_meta or {}).get("wall_gap"), identities[s.id]) for s in sheets])
+    pages = {c["page"] for c in changed}
+    for s in sheets:
+      if s.page_no not in pages:
+        continue
+      locked = await self._sheet(org, s.id, lock=True)
+      locked.prep_meta = {**(locked.prep_meta or {}), "identity": identities[s.id]}
+    await self.session.flush()
+    await self.session.commit()
+    return changed
+
+  async def _sections_pass_safe(self, org: UUID, drawing_id: UUID) -> None:
+    try:
+      await self.sections_pass(org, drawing_id)
+    except Exception:
+      log.exception("The section check of drawing %s failed; its sheets keep the discipline they were read with", drawing_id)
+      await self.session.rollback()
 
   async def _outline_pass_safe(self, org: UUID, project_id: UUID) -> None:
     if not settings.takeoff_project_facts:

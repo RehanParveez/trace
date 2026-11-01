@@ -13,6 +13,7 @@ from app.modules.drawings_boq.takeoff.levels import ensure_level
 from app.modules.drawings_boq.takeoff.register_service import RegisterService
 from app.modules.drawings_boq.takeoff.extract.extract_repository import ExtractRepository
 from app.modules.drawings_boq.takeoff.extract.scalegate import auto_scale_gate, composite_issue
+from app.modules.drawings_boq.takeoff.extract import sheet_sections as SS
 from app.modules.drawings_boq.models import TakeoffExtraction, TakeoffCandidate
 from app.modules.audit.models import AuditAction
 from pydantic import ValidationError
@@ -367,23 +368,47 @@ class ExtractService:
     out = []
     for r in rows:
       info = solved.info.get(r.id)
-      if not info and r.id not in lone:
+      outside = solved.external.get(r.id)
+      if not info and r.id not in lone and outside is None and r.id not in solved.unpaired:
         out.append(r)
         continue
+      
       copy = CandidateResponse.model_validate(r)
-      if info:
-        note = C.note("STAIR_TWIN_ABOVE", page=info["twin_of_page"], how=info["how"], gap_m=info["gap_m"])
-        note["message"] += f" The stair is measured from the flight on sheet {info['twin_of_page']}."
+      notes = []
+      if info and info.get("external") == "EXCLUDED":
+        notes.append(C.note("STAIR_EXTERNAL_EXCLUDED"))
+      elif info:
+        twin = info.get("external") == "TWIN"
+        note = C.note("STAIR_EXTERNAL_TWIN" if twin else "STAIR_TWIN_ABOVE", page=info["twin_of_page"], how=info["how"], gap_m=info["gap_m"])
+        note["message"] += f" The stair is measured from the {'copy' if twin else 'flight'} on sheet {info['twin_of_page']}."
         copy.facts = {**copy.facts, "twin_of_page": info["twin_of_page"], "twin_of_how": info["how"]}
-      else:
-        note = C.note("STAIR_FLIGHT_NO_PARTNER")
-      copy.notes = [*copy.notes, note]
+        notes.append(note)
+        
+      elif r.id in lone:
+        notes.append(C.note("STAIR_FLIGHT_NO_PARTNER"))
+      if outside is not None and not (info and info.get("external") == "TWIN"):
+        copy.facts = {**copy.facts, "external": True, "stair_group": "EXTERNAL", "external_mode": outside["mode"]}
+        if outside["also_page"] is not None:
+          copy.facts = {**copy.facts, "external_also_on_page": outside["also_page"]}
+        if outside["mode"] == "BILL_SEPARATE" and not str(copy.label or "").startswith("External steps"):
+          copy.label = f"External steps · {copy.label}"
+      if r.id in solved.unpaired:
+        notes.append(C.note("STAIR_EXTERNAL_UNPAIRED"))
+      copy.notes = [*copy.notes, *notes]
       out.append(copy)
     return out
 
   async def candidates(self, org: UUID, sheet_id: UUID) -> dict:
     sheet = await self.core._sheet(org, sheet_id)
     return await self._list(org, sheet)
+
+  async def wall_schedule(self, org: UUID, drawing_id: UUID) -> dict:
+    from app.modules.drawings_boq.takeoff import wall_schedule as WSC
+    await self.core._pdf_drawing(org, drawing_id)
+    sheets = {s.id: s for s in await self.core.repo.sheets(org, drawing_id)}
+    every = await self.repo.candidates(org, list(sheets))
+    rows = WSC.rows(every, sheets)
+    return {"drawing_id": drawing_id, "rows": rows, "floors": WSC.summary(rows)}
 
   async def drawing_candidates(self, org: UUID, drawing_id: UUID) -> dict:
     await self.core._pdf_drawing(org, drawing_id)
@@ -611,6 +636,7 @@ class ExtractService:
     current = await self._current_sheet_ids(org, sheets) if getattr(payload, "only_unread", False) else set()
     titles = {s.id: dict((s.prep_meta or {}).get("title") or {}) for s in sheets}
     composite = {sid for sid, t in titles.items() if t.get("composite")}
+    identities = {s.id: (s.prep_meta or {}).get("identity") for s in sheets}
     
     plan = [(s.id, s.page_no) for s in sheets if s.id not in composite] + [(s.id, s.page_no) for s in sheets if s.id in composite]
     singles_read = any(e.sheet_id not in composite for e in await self.repo.extractions(org, [s.id for s in sheets]))
@@ -640,6 +666,12 @@ class ExtractService:
           skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": code, "message": message, "severity": severity})
           continue
       
+      quiet = SS.not_a_plan(identities.get(sheet_id))
+      if quiet is not None:
+        code, severity, message = quiet
+        await self._set_aside(org, sheet_id, code, message, severity)
+        skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": code, "message": message, "severity": severity})
+        continue
       if time.monotonic() - started > 80 and done:
         skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": "TIME_BUDGET", "message": "Run it again for the remaining sheets."})
         continue

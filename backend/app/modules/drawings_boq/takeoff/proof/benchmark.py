@@ -33,6 +33,10 @@ def analyse_pdf(pdf: bytes, pages: list | None = None) -> tuple:
       PSV._read_details(doc, no, raw, analysed[no])
     except Exception as exc:
       problems.append((no, f"{type(exc).__name__}: {str(exc)[:80]}"))
+  from app.modules.drawings_boq.takeoff.extract import sheet_sections as SS
+  SS.apply([(no, a.meta.get("identity")) for no, a in analysed.items()])
+  from app.modules.drawings_boq.takeoff.extract import wall_scale as WS
+  WS.apply([(no, a.meta.get("wall_gap"), a.meta.get("identity")) for no, a in analysed.items() if a.meta.get("identity")])
   return doc, analysed, problems
 
 def _outline_scales(prepared: list) -> list:

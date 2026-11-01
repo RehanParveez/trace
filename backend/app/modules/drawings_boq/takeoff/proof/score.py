@@ -458,7 +458,7 @@ def invariants(reads: list, accs: list, rows: list) -> list:
       ident = (r.get("meta") or {}).get("identity") or {}
       if not _is_plan(r):
         wanted = DETAIL_SHEET_CATEGORIES if (ident.get("role_vote") or {}).get("role") == PRL.DETAIL else PLAN_CATEGORIES
-        non_plan += [tag] * sum(1 for c in live if c.category in wanted)
+        non_plan += [tag] * sum(1 for c in live if c.category in wanted and (c.facts or {}).get("derived_from") != "ELEVATION_JOINT_ZONES")
       if ident.get("discipline") == "STRUCTURAL":
         structural += [tag] * sum(1 for c in live if c.category in ("DOOR", "WINDOW"))
       if _is_plan(r) and live:

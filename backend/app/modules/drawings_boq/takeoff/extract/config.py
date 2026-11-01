@@ -84,7 +84,7 @@ STAIR_TWIN_REACH_MM = 1000.0
 STAIR_TWIN_WIDTH_TOL = 0.15                   
 STAIR_TWIN_SAME_SCALE_TOL = 0.05      
 STAIR_EXTERNAL_MIN_WALLS = 6          
-STAIR_EXTERNAL_PAIRED = False         
+STAIR_EXTERNAL_TREADS_APART = 1
 STAIR_MIN_TREADS = 4
 STAIR_TREAD_TOL = 0.12
 STAIR_LINE_MIN = 0.6
@@ -307,6 +307,14 @@ NOTES = {
   "OUTDOOR_REGION_UNBILLED": ("info", "Some open ground of the plot is listed and not billed: a region whose item is NONE by the rules (the lawn), or one with no label. Their areas are in the reading report."),
   "OUTDOOR_REGION_MIXED": ("warning", "A region of open ground carries the labels of more than one kind (a lawn and a drive, say) with no line drawn between them, so it is not split and not billed. Draw the parts by hand."),
   "SITE_LAYERS_FROM_RULE": ("info", "This layer under the paving comes from the rule finish.site_layers, not from the drawing. The rule is on this item."),
+  "ELEVATION_LEVELS_AGREE": ("info", "The levels printed on this elevation (the lowest and the highest on one side) give the same scale as the sheet, to within 5 %, which supports the scale of this sheet."),
+  "ELEVATION_LEVELS_DIFFER": ("warning", "The levels printed on this elevation give a scale that differs from the sheet's by more than 5 %. The printed scale of an elevation is often not the scale it was plotted at: check the scale of this sheet before you rely on an area taken from it."),
+  "ELEVATION_ZONES_ESTIMATED": ("warning", "This area is the zones of the face drawn with a pattern of joints (three or more parallel hairlines at the spacing of a tile or a block), as rectangles round the lines of each pattern, a place covered twice counted once. The rectangle holds whatever is drawn inside it: a window or a door within a pattern is not taken off, and a zone that the pattern does not fill is counted whole. It is an estimate, not a measurement; the zones are in the facts."),
+  "FITTING_SILL_FROM_WINDOWS": ("info", "Window sills: the width of every sized window with a printed sill of 300 mm or more, times the sill depth (the rule finish.sill_depth_mm). A window with a printed sill under 300 mm is a door-window and has none."),
+  "FITTING_SILL_WINDOWS_LEFT_OUT": ("warning", "Windows with no size, and windows with no printed sill, are left out of the sills, so the sill length is short by their width. How many of each is in the row's facts."),
+  "FITTING_STOPPER_FROM_DOORS": ("info", "Water stopper: the width of the doors on the outline of the finished baths and toilets of this storey. A door is assigned to the two rooms nearest its centre, by position."),
+  "SCALE_FROM_SIBLING_PLAN": ("warning", "The scale of this plan is not its own: its printed wall note gives none, and its wall gaps (the most common one and its double) match those of another plan of the same drawing, on a sheet of the same size, that has a scale from a full-brick wall note. The two are taken to be drawn at one scale. Check it before you rely on a length taken from this plan."),
+  "ELEVATION_ZONES_UNBILLED": ("info", "The patterned zones of this elevation are measured and listed, and not billed: the rule finish.facade_item gives this elevation no item. Their area is in the reading report."),
   "ROOF_WALL_UNCLASSED": ("warning", "This wall of the roof plan is neither on the outline of the roof nor round a room, so it is not known whether it is a parapet, a mumty wall, a tank stand or a screen. It has no height and is not measured until you give one."),
   "EXTENT_STRIPS": ("info", "A rule counts this item as strips along the walls, with the widths the rule gives for the outer walls, the inner walls and the thin inner walls, worked by the strip formula on the centre length of each wall. The strips are in the facts."),
   "EXTENT_RULE_NOT_FOLLOWED": ("warning", "A rule asks for another extent than the floor area, but it cannot be followed on this floor (no wall with a length, or no strip widths for this item). The floor area is used instead; the reason is in the facts."),
@@ -509,8 +517,11 @@ NOTES = {
   "LIGHT_PEN_WALLS_KEPT": ("info", "Some walls on this ground-level sheet are drawn in a lighter line weight than the main walls (boundary, lawn and thin partition walls). The long ones of 4.5 to 6 inch thickness were read as walls. Stair treads and furniture lines were not."),
   "LIGHT_PEN_WALL": ("info", "This wall is drawn in a lighter line weight than the main walls on the sheet. Check it is a wall and not a boundary line."),
   "STAIR_TWIN_ABOVE": ("warning", "This flight is the second view of a stair that is measured on another floor: laid on one another, the two plans put it within a metre of that flight (the two halves of one stair well). It is kept as a sighting with no quantity; the concrete is measured once, on the flight it is the twin of. Accept it only if the plan really has a second stair here."),
-  "STAIR_EXTERNAL": ("info", "This stair is outside the building (a label names it external, or it lies outside the thick walls of the plan). It is not paired with a stair on another floor and it is not taken out of a slab."),
+  "STAIR_EXTERNAL": ("info", "This stair is outside the building (a label names it external, or it lies outside the thick walls of the plan). It is not paired with a stair on another floor and it is not taken out of a slab; where another sheet shows the same outside stair, the copy at the larger scale is the one measured."),
   "STAIR_SAME_AS_UP_FLIGHT": ("warning", "This DN flight is the same staircase as the UP flight drawn on the floor below. It is one concrete stair: accept only one of them, or it is counted twice."),
+  "STAIR_EXTERNAL_TWIN": ("warning", "This is the second view of an outside stair that is measured on another sheet: laid on one another, the two sheets put it within a metre of that stair, with the same width and a riser count within one. The copy on the sheet drawn at the larger scale is the one measured. This one is kept as a sighting with no quantity."),
+  "STAIR_EXTERNAL_UNPAIRED": ("warning", "This is an outside stair and another sheet shows a stair of the same width and riser count that could be the same stair, but the two sheets have no common frame (no walls to lay one on the other, and not the same scale). Nothing is paired: both are kept, so the stair may be counted twice. Accept one and reject the other."),
+  "STAIR_EXTERNAL_EXCLUDED": ("info", "This is an outside stair and the rule finish.stair_external is EXCLUDE: it is kept as a sighting with no quantity."),
   "STAIR_FLIGHT_NO_PARTNER": ("info", "This flight has no flight written the other way on the floor above (for UP) or below (for DN). Its other half may be a turn the treads of which are not drawn, or the stair may serve one floor only. Check it is not listed twice or missing."),
   "STRUCTURAL_SHEET": ("info", "This looks like a foundation, column, beam or roof sheet, so walls and rooms were not read from it. Read them from the floor plan."),
   "SHEET_READ_UPRIGHT": ("info", "The drawing on this sheet is turned or crooked on the page (its text does not run left to right). It was straightened before it was read, so its text, marks and schedule are read as on an upright sheet; positions shown on the drawing are the page's own."),

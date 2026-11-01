@@ -12,6 +12,7 @@ MIN_LEVEL_REPEATS = 2
 
 _IN = r"(?P<in>\d{1,3}(?:\s+\d{1,2}/\d{1,2}|\s*/\s*\d{1,2})?)\s*(?:\"|″|”|'')"
 _SLAB_THICK = re.compile(_IN + r"\s*THICK\s+(?:R\.?\s?C\.?\s?C\.?\s+)?SLAB", re.I)
+_SLAB_THICK_WORD = re.compile(r"(?P<in>\d{1,3}(?:\s+\d{1,2}/\d{1,2}|\s*/\s*\d{1,2})?)\s*(?:INCH(?:ES)?|IN\.?)\s+THICK\s+(?:R\.?\s?C\.?\s?C\.?\s+)?SLAB", re.I)
 _SLAB_NOTE = re.compile(r"(?P<scope>[A-Z][A-Z ]*?)\bSLABS?\s+(?:ARE|IS)\s+" + _IN + r"\s*THICK", re.I)
 _WALL_THICK = re.compile(_IN + r"\s*THICK\s+R\.?\s?C\.?\s?C\.?\s+WALL", re.I)
 _BRICK_COLUMN = re.compile(r"BRICK\s+COLUMNS?\s+(?P<a>\d{1,2})\s*(?:\"|″|”)?\s*[X×]\s*(?P<b>\d{1,2})\s*(?:\"|″|”)?", re.I)
@@ -162,10 +163,15 @@ def read_line(text: str) -> list[dict]:
   if len(t) < 6:
     return []
   out: list[dict] = []
-  m = _SLAB_THICK.search(t)
-  if m and inches_mm(m.group("in")):
-    out.append(_item("SLAB_THICKNESS", t, value_mm=inches_mm(m.group("in")), scope="slab"))
-  else:
+  found = []
+  for rx in (_SLAB_THICK, _SLAB_THICK_WORD):
+    for m in rx.finditer(t):
+      mm = inches_mm(m.group("in"))
+      if mm and mm not in found:
+        found.append(mm)
+  for mm in found:
+    out.append(_item("SLAB_THICKNESS", t, value_mm=mm, scope="slab"))
+  if not found:
     m = _SLAB_NOTE.search(t)
     if m and inches_mm(m.group("in")):
       scope = _clean_scope(m.group("scope"))

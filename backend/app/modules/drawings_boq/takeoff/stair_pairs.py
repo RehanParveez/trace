@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.prep.facts import FLOOR_ORDER
 from app.modules.drawings_boq.takeoff.extract import floor_union as FU
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
 
 def level_key(sheet) -> str | None:
   title = ((getattr(sheet, "prep_meta", None) or {}).get("title")) or {}
@@ -102,10 +103,48 @@ def _evidence(lo, hi, frames: _Frames) -> tuple | None:
     return None
   return _box_gap(blo, _in_frame(bhi, reg)) * mlo, how
 
+def _treads(c) -> int | None:
+  v = _facts(c).get("treads_drawn")
+  return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+def _alike(a, b) -> bool:
+  ta, tb = _treads(a), _treads(b)
+  return _widths_agree(a, b) and (ta is None or tb is None or abs(ta - tb) <= C.STAIR_EXTERNAL_TREADS_APART)
+
+def pair_external(candidates: list, sheets: dict, frames: _Frames, taken: set) -> SimpleNamespace:
+  live = [c for c in candidates if c.category == "STAIR" and c.decision != "REJECTED" and c.sheet_id in sheets]
+  pairs: list = []
+  blind: set = set()
+  used: set = set()
+  for e in sorted((c for c in live if _facts(c).get("external")), key=lambda c: (sheets[c.sheet_id].page_no, str(c.id))):
+    if e.id in used:
+      continue
+    best, apart = None, []
+    for o in live:
+      if o.id == e.id or o.id in used or o.id in taken or o.sheet_id == e.sheet_id or not _alike(e, o):
+        continue
+      
+      ev = _evidence(e, o, frames)
+      if ev is None:
+        apart.append(o)
+      elif ev[0] <= C.STAIR_TWIN_REACH_MM and (best is None or ev[0] < best[0]):
+        best = (ev[0], o, ev[1])
+    if best is None:
+      if apart:
+        blind.update([e.id, *(o.id for o in apart)])
+      continue
+    
+    gap, o, how = best
+    me, mo = _mm_per_pt(e), _mm_per_pt(o)
+    keep, drop = (o, e) if me is not None and mo is not None and mo < me else (e, o)
+    used.update((e.id, o.id))
+    pairs.append(SimpleNamespace(keep=keep, drop=drop, how=how, gap_mm=gap))
+  return SimpleNamespace(pairs=pairs, blind=blind)
+
 def _flights(candidates: list, sheets: dict) -> dict:
   out: dict = {}
   for c in candidates:
-    if c.category != "STAIR" or c.decision == "REJECTED" or c.sheet_id not in sheets or (_facts(c).get("external") and not C.STAIR_EXTERNAL_PAIRED):
+    if c.category != "STAIR" or c.decision == "REJECTED" or c.sheet_id not in sheets or _facts(c).get("external"):
       continue
     key = level_key(sheets[c.sheet_id]) or _view_floor(c)
     if key in FLOOR_ORDER:
@@ -180,6 +219,22 @@ def solve(candidates: list, sheets: dict) -> SimpleNamespace:
     info.setdefault(p.hi.id, {"twin_of_page": sheets[p.lo.sheet_id].page_no, "twin_of": str(p.lo.id), "how": p.how,
       "gap_m": None if p.gap_mm is None else round(p.gap_mm / 1000.0, 2), "unknown_way": p.unknown_way})
     
+  taken = {p.lo.id for p in pairs} | {p.hi.id for p in pairs}
+  out_pairs = pair_external(candidates, sheets, frames, taken)
+  mode = FR.stair_external()[0]
+  external: dict = {}
+  for p in out_pairs.pairs:
+    hidden.add(p.drop.id)
+    info[p.drop.id] = {"twin_of_page": sheets[p.keep.sheet_id].page_no, "twin_of": str(p.keep.id), "how": p.how, "gap_m": round(p.gap_mm / 1000.0, 2), "unknown_way": False, "external": "TWIN"}
+    external[p.keep.id] = {"mode": mode, "also_page": sheets[p.drop.sheet_id].page_no}
+  for c in candidates:
+    if c.category == "STAIR" and c.decision != "REJECTED" and _facts(c).get("external") and c.id not in info:
+      external.setdefault(c.id, {"mode": mode, "also_page": None})
+  if mode == FR.EXCLUDE:
+    for cid in external:
+      hidden.add(cid)
+      info[cid] = {"twin_of_page": None, "twin_of": None, "how": None, "gap_m": None, "unknown_way": False, "external": "EXCLUDED"}
+  
   also = {k: sorted(set(v)) for k, v in also.items()}
   owners_of = {k: sorted(set(v)) for k, v in owners_of.items()}
   lone: list = []
@@ -191,8 +246,8 @@ def solve(candidates: list, sheets: dict) -> SimpleNamespace:
       lone.extend(d.id for d in fl if d.id not in owners_of)
   for key, fl in up.items():
     if any(k in have_down for k in FLOOR_ORDER[FLOOR_ORDER.index(key) + 1:]):
-      lone.extend(u.id for u in fl if u.id not in also)
-  return SimpleNamespace(pairs=pairs, hidden=hidden, also=also, owners=owners_of, up=up, down=down, lone=lone, info=info)
+      lone.extend(u.id for u in fl if u.id not in also and u.id not in external)
+  return SimpleNamespace(pairs=pairs, hidden=hidden, also=also, owners=owners_of, up=up, down=down, lone=lone, info=info, external=external, unpaired=out_pairs.blind)
 
 def sightings(candidates: list, sheets: dict) -> dict:
   return {k: v["twin_of_page"] for k, v in solve(candidates, sheets).info.items()}

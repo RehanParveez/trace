@@ -58,6 +58,11 @@ class DrawingCandidatesResponse(BaseModel):
   drawing_id: UUID
   sheets: list[CandidateListResponse]
 
+class WallScheduleResponse(BaseModel):
+  drawing_id: UUID
+  rows: list[dict]
+  floors: list[dict]
+
 class ExtractResponse(CandidateListResponse):
   added: int = 0
   updated: int = 0

@@ -11,6 +11,7 @@ DETAIL_TITLE = re.compile(r"\bSEC(?:TION)?\.?\s*\w+\s*[-\u2013]\s*\w+|\bFOUNDATI
 MIN_DETAIL_VIEWS = 3            
 DETAIL_SHARE = 0.8              
 MAX_ROOM_SIZES = 3             
+NO_PLAN_ROLES = (DETAIL, SECTION, SCHEDULE, NOTES)          
 PASS = 0.6                      
 STRONG = 0.7                   
 IMAGE_PAGE_COVER = 0.5          
@@ -91,6 +92,9 @@ def decide(signals: list) -> dict:
   strong = sorted({s["role"] for s in spoke if s["certainty"] >= STRONG})
   top = next(iter(shares), None)
   clash = len(strong) > 1
+  if clash and all(r in NO_PLAN_ROLES for r in strong) and top in NO_PLAN_ROLES:
+    return {"role": DETAIL, "votes": shares, "held": False, "why": "a tie between " + ", ".join(strong) + ": none of them is a plan, read as details", "read_as": READ_AS_OF[DETAIL], "signals": spoke}
+
   
   held = not spoke or shares.get(top, 0.0) < PASS or clash
   why = "no signal had an opinion" if not spoke else ("two strong signals disagree: " + ", ".join(strong)) if clash else (f"no role reaches {PASS:g}") if held else None

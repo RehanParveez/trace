@@ -30,6 +30,21 @@ rules:
     value: [BEDROOM, BATH, PWD, WC, KITCHEN, LOUNGE, DINING, DRAWING, PORCH, TERRACE, PASSAGE, LAWN, STAIR, STORE, SERVANT, OTHER]
     cls: JUDGEMENT
     note: 'read from the QS totals, not stated by him: "False Ceiling" is one line for the building, so porch, terrace and passage rooms are in it. The same list as the seed; it moves nothing on 191-C, where the reader finds no terrace or passage room'
+  - key: finish.facade_item
+    scope: {elevation: FRONT}
+    value: FIN-FACADE-TILE
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the bill has one line, "Tile Work of Front side (front elevation)". The zones of the front elevation that are drawn with a pattern of joints are taken as that tile. Their area is estimated from the rectangle round each pattern, so it includes whatever lies inside it and leaves out tile that is not drawn as joints; it may be rough'
+  - key: finish.sill_item
+    scope: {}
+    value: FIN-SILL-MARBLE
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the bill has one line, "Windows Sill Marble", 163.9 sft. Every window with a printed sill of 300 mm or more is taken to have a marble sill as wide as the window and as deep as the seed depth (230 mm, a 9-inch wall); the typical sill detail prints "WALL THICKNESS" and no figure'
+  - key: finish.stopper_item
+    scope: {}
+    value: FIN-WATER-STOPPER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the bill has one line, "Water Stoper", 65.4 rft. The doors on the outline of the finished baths and toilets are taken as the places it is laid; the bill does not say which doors'
   - key: finish.pcc_under
     scope: {}
     value: [BEDROOM, BATH, PWD, WC, KITCHEN, LOUNGE, DINING, DRAWING, PORCH, TERRACE, PASSAGE, LAWN, STAIR, STORE, SERVANT, OTHER]

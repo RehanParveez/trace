@@ -1,43 +1,38 @@
 - line: EXCAVATION/FOUNDATION
-  cause: 'not diagnosed; +5.04%: just over the limit; the trench extent is read by rule, not from the foundation drawing'
+  cause: '+5.04% (+845 cft), measured by explain_line: the basement dig matches to the cubic foot (12,960); the 9 in trench is 4.5 x 3.5 ft in Trace against 4 x 3 ft in the workbook (width +530, depth +596, run -70) and the 4.5 in trench is smaller in Trace (-211); the trench sizes are read by rule, not from the foundation drawing'
   pack: '170'
 - line: MEMBRANE/FOUNDATION
   cause: '-12.2%: the workbook assumes ten 4 x 11 ft pieces (class QS_ERROR); Trace measures the area'
   question: his signed figure in qs_corrections.yaml
 - line: BRICK_FOUNDATION/FOUNDATION
-  cause: 'not diagnosed; -17.3%: the brick steps of the foundation are not read from the section'
+  cause: '-17.3% (-91 cft), measured by explain_line: the 9 in 4th step (0.75 x 0.75 ft, -71.0) and the 4.5 in 3rd step (0.375 x 1.25 ft, -19.3) are in the workbook only; the other steps differ by run length (-4.5 to -8.4) and the 4.5 in 1st step is deeper in Trace (+15.3)'
   pack: '173'
-- line: PCC/FOUNDATION
-  cause: 'not diagnosed; -13.6%: the strips now follow his widths (281.7 cft against his 286.0); the three footing beds (F1 x10, STAIR-F, F2 x4, about 49.8 cft) are VALID but not accepted, so they are not in the line'
-  pack: '170'
 - line: RCC_FOOTINGS/FOUNDATION
-  cause: 'not diagnosed; -10.6%: footing sizes and counts are not joined from layout plus details'
+  cause: '-10.6% (-17 cft), measured by explain_line: F-3 (3 nos, 3.5 x 5 x 0.75 ft, 39.4 cft) is in the workbook only; Trace reads F2 as 5 x 5 ft against 3.5 x 5 ft in the workbook (+22.5); F1 matches'
   pack: '164'
 - line: RCC_COLUMNS
-  cause: '-5.7% (was -14.7% before Pack 157, which lets the neck columns through): the neck columns are counted; the rest is the column heights and the basement lifts, not diagnosed'
+  cause: '-5.7% (-21 cft), measured by explain_line: C3 (0.75 x 1.5 ft, 61.6 cft) is in the workbook only; Trace has three unmarked 9 x 9 in columns on the roof (+16.0); C1 and C2 are +49.1 and -24.4 by count, width and height, after the volume given to beams and slabs under FRAME_MONOLITHIC_A (-203.9)'
   pack: '164'
 - line: STEEL
   cause: '-16.3% (was -19.0% before Pack 157): bars not read for every member, the basement stage is left out (D2, D3, D8)'
   pack: '195'
   question: D2, D3, D8 in expected.yaml
-- line: FORMWORK/OTHERS
-  cause: 'not diagnosed; +5.3% (was +0.9% before Pack 157): the plinth beam and the neck columns now have formwork, the QS figure may not include them'
-  pack: '164'
 - line: BRICK_WALLS
-  cause: 'not diagnosed; -13.0%: opening deductions and the basement stage differ from the bill (NEEDS_DECISION)'
+  cause: '-13.0% (-637 cft), measured by explain_line: the 9 in wall runs are shorter in Trace on the ground (-411), first (-493) and roof (-48) floors; heights are +435.6 higher in Trace and the volume given to beams and slabs takes back -465.1 (FRAME_MONOLITHIC_A); Trace deducts 258.7 cft less than the workbook (openings 220.7, lintels 38.0)'
   pack: '198'
 - line: RCC_LINTELS
-  cause: 'not diagnosed; -7.8%: lintel lengths and sizes are not read from the lintel detail'
+  cause: '-7.8% (-11 cft), measured by explain_line: counts differ by mark (W1 -9.0, W4 -2.2, W2 +3.8, V4 +1.5, unmarked openings +7.7); the W2 lintel is 6 in deep in Trace against 9 in (-9.0) and V1 is longer and deeper (+7.9); extent +4.3, section -15.4'
   pack: '166'
 - line: WALL_PLASTER
   cause: 'not diagnosed; -10.7% (-7.1% before Pack 169, which finds more outer faces and moves 528 sft of plaster from this inside line to the outside plaster, 5,194 sft, that no line of the workbook is compared with in this score; the two together did not change)'
   pack: '170'
 - line: RCC_ROOF_BEAMS
-  cause: 'not diagnosed; -8.2%: the roof beam depths wait on an open section decision'
+  cause: '-8.2% (-38.5 cft), measured by explain_line: Trace takes the beam 15 in deep (+286.2) and gives the slab overlap back (-286.1, FRAME_MONOLITHIC_A), so the depth nets to the workbook''s 9 in; what is left is run length (9 in beams -68.2, 4.5 in beams +29.6)'
   pack: '163'
   question: decision aa06c5dc850cad14 in the score md
 - line: RCC_STAIR
-  cause: 'not diagnosed; +53.8%: the stair concrete is taken as a box, not from waist and risers'
+  cause: '+25.8% (+31 cft), measured by hand from the ledger and the workbook rows: Trace has four flights (two on the basement sheet) against three blocks of 40.5 cft in the workbook; the extra 914 mm wide flight is +34.0 and the three shared flights are -2.6'
+
   pack: '165'
 - line: TANKS
   cause: 'no Trace number: the tanks are not billed (D7: both carry the same concrete)'

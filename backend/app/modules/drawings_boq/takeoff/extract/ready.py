@@ -24,8 +24,7 @@ HELD_BY = {
 NOT_A_PLAN_KINDS = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR")
 
 def from_non_plan(sh: dict, c) -> bool:
-  """True for a wall, room, opening, lintel, stair or wall-derived beam read from a sheet whose role says it is not a plan (section, elevation, detail, schedule, specification)."""
-  if ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice") != "SKIP" or (c.facts or {}).get("derived_from") == "SLAB":
+  if ((sh.get("stats") or {}).get("sheet_role") or {}).get("advice") != "SKIP" or (c.facts or {}).get("derived_from") in ("SLAB", "FOOTINGS"):
     return False
   return c.category in NOT_A_PLAN_KINDS or (c.category == "BEAM" and (c.facts or {}).get("derived_from") == "WALLS")
 

@@ -11,7 +11,7 @@ from app.modules.drawings_boq.takeoff.prep import units as UN
 from app.modules.drawings_boq.takeoff.prep import room_witness as RW
 from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 47
+ANALYSIS_VERSION = 51
 PT_MM = 25.4 / 72.0
 STANDARD_RATIOS = (1, 2, 2.5, 4, 5, 8, 10, 12, 16, 20, 24, 25, 30, 32, 40, 48, 50, 60, 64, 75, 96, 100, 120, 125, 128, 150, 192, 200, 250, 300, 400, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 5000)
 AGREE_TOL = 0.015
@@ -326,6 +326,7 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
     meta["identity"] = _identity(raw, title, meta["views"], meta.get("floor_clues"))
     RW.label_panels(detected, meta["identity"])
   meta["outline"] = _outline(index, content_kind, meta.get("identity"), deadline)
+  meta["wall_gap"] = _wall_gap(index, lines, (meta.get("paper") or {}).get("name"))
   if meta["text_source"] == "OCR":
     meta["scan_reading"]= {k: raw.stats[k] for k in ("ocr_checked", "ocr_repaired", "ocr_split", "ocr_unchecked", "ocr_repairs", "ocr_split_at") if k in raw.stats}
   return PageAnalysis(content_kind=content_kind, text_chars=int(raw.stats.get("text_chars", 0)), vector_ops=int(raw.stats.get("path_objects", 0)),
@@ -375,6 +376,20 @@ def _identity(raw, title: dict, views: list, clues: dict | None = None) -> dict 
     if identity.get("floor") and not title.get("level_hint") and not title.get("composite"):
       title["level_hint"] = identity["floor"]
     return identity
+  except Exception:
+    return None
+
+
+def _wall_gap(index, lines: list, paper: str | None) -> dict | None:
+  try:
+    from app.modules.drawings_boq.takeoff.extract import slab_geometry as SG, wall_scale as WS
+    notes = SG.wall_notes(lines)
+    if not notes:
+      return None
+    from app.modules.drawings_boq.takeoff.prep import page_unit as PU
+    unit = PU.of_box(index.bbox)
+    peaks = SG.gap_peaks(index, unit)
+    return WS.gap_of(unit, paper, notes, peaks, SG.scale_from_walls(notes, peaks, unit))
   except Exception:
     return None
 

@@ -261,6 +261,30 @@
   class: CONVENTION
   tolerance_pct: 10.0
   note: BOQ Finishing work · Tile Work · row 13. The bill does not say which band of the wall is tiled.
+- key: FIN-FACADE-TILE/ALL
+  item: Tile Work of Front side (front elevation)
+  unit: sft
+  qs: 827.605
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Tile Work · row 5. Has a number only when a rule names the front elevation's patterned zones as this tile (Pack 204); the area is estimated from the rectangle round each pattern of joints.
+- key: FIN-SILL-MARBLE/ALL
+  item: Windows Sill Marble
+  unit: sft
+  qs: 163.9
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Finishing work · Marble Work. Has a number only when a rule names the item (Pack 205); the depth of the sill is a rule.
+- key: FIN-WATER-STOPPER/ALL
+  item: Water Stoper
+  unit: rft
+  qs: 65.4
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: BOQ Grey Structure work. Has a number only when a rule names the item (Pack 205); the bill does not say which doors.
 - key: FIN-PORCH-TILE/ALL
   item: Pourch Mate Tile (16"x16")
   unit: sft

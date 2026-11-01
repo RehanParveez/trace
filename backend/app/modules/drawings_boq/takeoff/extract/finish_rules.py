@@ -13,6 +13,16 @@ EXTENT = "finish.extent"
 STRIP_WIDTHS = "finish.strip_widths_mm"
 SITE_ITEM = "finish.site_item"
 SITE_LAYERS = "finish.site_layers"
+FACADE_ITEM = "finish.facade_item"
+SILL_ITEM = "finish.sill_item"
+SILL_DEPTH = "finish.sill_depth_mm"
+STOPPER_ITEM = "finish.stopper_item"
+STAIR_EXTERNAL = "finish.stair_external"
+BILL_SEPARATE, WITH_STAIR, EXCLUDE = "BILL_SEPARATE", "WITH_STAIR", "EXCLUDE"
+STAIR_EXTERNAL_MODES = (BILL_SEPARATE, WITH_STAIR, EXCLUDE)
+SILL_DEPTH_FALLBACK_MM = 230.0
+SILL_DEPTH_MIN_MAX_MM = (50.0, 600.0)
+ELEVATIONS = ("FRONT", "REAR", "SIDE", "LEFT", "RIGHT", "UNNAMED")
 SITE_REGIONS = ("PASSAGE", "DRIVE", "PORCH", "RAMP", "COURTYARD", "LAWN", "OPEN_SITE")
 LAYER_MM = (10.0, 1000.0)
 LAYERS_MAX = 6
@@ -23,7 +33,7 @@ STRIP_ITEMS = ("termite_strip", "pcc_strip")
 STRIP_CLASSES = ("outer", "inner", "thin")
 STRIP_WIDTH_MM = (100.0, 3000.0)
 OUTLINE, GRAPH = "OUTLINE", "GRAPH"
-KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES, EXTENT, STRIP_WIDTHS, SITE_ITEM, SITE_LAYERS)
+KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES, EXTENT, STRIP_WIDTHS, SITE_ITEM, SITE_LAYERS, FACADE_ITEM, SILL_ITEM, SILL_DEPTH, STOPPER_ITEM, STAIR_EXTERNAL)
 
 TO_CEILING = "CEILING"
 FULL = "full"
@@ -32,7 +42,7 @@ DADO_FALLBACK_MM = 2134.0
 DEFAULT_FLOOR_ITEM = "FIN-FLOOR"
 DEFAULT_SITE_ITEM = "FIN-PAVING"
 HEIGHT_MIN_MM, HEIGHT_MAX_MM = 300.0, 6000.0
-SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",)}
+SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",), FACADE_ITEM: ("elevation",), SILL_ITEM: (), SILL_DEPTH: (), STOPPER_ITEM: (), STAIR_EXTERNAL: ()}
 HEIGHT_TYPES = (*RT.WET, RT.KITCHEN)
 TYPED_FLOORS = {RT.PORCH: "FLOOR_PORCH", RT.TERRACE: "FLOOR_TERRACE", RT.PASSAGE: "FLOOR_PASSAGE", RT.LAWN: "FLOOR_LAWN"}
 TYPED_ITEM_CODE = {"FLOOR_PORCH": "FIN-PORCH-TILE", "FLOOR_TERRACE": "FIN-TERreturn str(rv.value) if rv.value is not None else DEFAULT_FLOOR_ITEMRACE-TILE", "FLOOR_PASSAGE": "FIN-PAVING", "FLOOR_LAWN": "FIN-PAVING"}
@@ -57,6 +67,26 @@ def default_floor_item() -> str:
 
 def site_item(region: str) -> tuple:
   rv = rule(SITE_ITEM, region=region)
+  return (str(rv.value) if rv.value is not None else NONE), rv
+
+def facade_item(view: str) -> tuple:
+  rv = rule(FACADE_ITEM, elevation=view)
+  return (str(rv.value) if rv.value is not None else NONE), rv
+
+def sill_item() -> tuple:
+  rv = rule(SILL_ITEM)
+  return (str(rv.value) if rv.value is not None else NONE), rv
+
+def sill_depth() -> tuple:
+  rv = rule(SILL_DEPTH)
+  return (float(rv.value) if rv.value is not None else SILL_DEPTH_FALLBACK_MM), rv
+
+def stair_external() -> tuple:
+  rv = rule(STAIR_EXTERNAL)
+  return (str(rv.value) if rv.value in STAIR_EXTERNAL_MODES else BILL_SEPARATE), rv
+
+def stopper_item() -> tuple:
+  rv = rule(STOPPER_ITEM)
   return (str(rv.value) if rv.value is not None else NONE), rv
 
 def site_layers(region: str) -> tuple:
@@ -104,6 +134,8 @@ def _scope_problem(key: str, scope) -> str | None:
     return f"{t} is not a room type."
   if scope.get("region") is not None and scope["region"] not in SITE_REGIONS:
     return f"{scope['region']} is not an outdoor region: {', '.join(SITE_REGIONS)}."
+  if scope.get("elevation") is not None and scope["elevation"] not in ELEVATIONS:
+    return f"{scope['elevation']} is not an elevation: {', '.join(ELEVATIONS)}."
   return None
 
 def checked(key: str, scope, raw):
@@ -125,6 +157,24 @@ def checked(key: str, scope, raw):
     if region == "OPEN_SITE" and code != NONE:
       raise ValueError("Open site has no label to say what it is, so it is listed and not billed: its item is NONE.")
     return code
+  if key == STAIR_EXTERNAL:
+    mode = raw.strip().upper() if isinstance(raw, str) else None
+    if mode not in STAIR_EXTERNAL_MODES:
+      raise ValueError(f"A stair outside the building is {', '.join(STAIR_EXTERNAL_MODES)}.")
+    return mode
+  if key == SILL_DEPTH:
+    lo, hi = SILL_DEPTH_MIN_MAX_MM
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)) or not lo <= float(raw) <= hi:
+      raise ValueError(f"The depth of a window sill is {lo:g} to {hi:g} mm.")
+    return float(raw)
+  if key in (SILL_ITEM, STOPPER_ITEM):
+    if not isinstance(raw, str) or not raw.strip():
+      raise ValueError("The item is a work item code, or NONE to bill nothing.")
+    return raw.strip().upper()
+  if key == FACADE_ITEM:
+    if not isinstance(raw, str) or not raw.strip():
+      raise ValueError("The item of the patterned zones of an elevation is a work item code, or NONE to bill nothing from it.")
+    return raw.strip().upper()
   if key == SITE_LAYERS:
     if not isinstance(raw, (list, tuple)) or len(raw) > LAYERS_MAX:
       raise ValueError(f"Give a list of at most {LAYERS_MAX} layers, each {{work_item, thickness_mm}}, top to bottom (an empty list for none).")
@@ -195,4 +245,4 @@ def checked(key: str, scope, raw):
 
 def seed_expect() -> dict:
   every = [t for t in RT.TYPES if t not in RT.NOT_FLOORED]
-  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: []}
+  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: [], FACADE_ITEM: NONE, SILL_ITEM: NONE, SILL_DEPTH: SILL_DEPTH_FALLBACK_MM, STOPPER_ITEM: NONE, STAIR_EXTERNAL: BILL_SEPARATE}

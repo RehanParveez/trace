@@ -3,10 +3,10 @@ from app.modules.identity.models import User
 from uuid import UUID
 from app.modules.identity.enums import PermissionKey
 from app.modules.drawings_boq.takeoff.extract.extract_schemas import (ExtractResponse, ExtractRequest, AcceptRequest, AcceptResponse, CandidateListResponse, DecideRequest, DecideResponse, 
-  DrawingCandidatesResponse, DrawingExtractResponse, RegisterSyncResponse
+  DrawingCandidatesResponse, DrawingExtractResponse, RegisterSyncResponse, WallScheduleResponse
 )
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Response
 from app.dependencies.permissions import require_permission
 from app.core.database import get_db
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
@@ -65,6 +65,21 @@ async def drawing_candidates(
   drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
   return await ExtractService(session).drawing_candidates(_org(current_user), drawing_id)
+
+@router.get("/drawings/{drawing_id}/takeoff/wall-schedule", response_model=WallScheduleResponse)
+async def wall_schedule(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await ExtractService(session).wall_schedule(_org(current_user), drawing_id)
+
+@router.get("/drawings/{drawing_id}/takeoff/wall-schedule.xlsx", response_class=Response, responses={200: {"content": {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}}}})
+async def wall_schedule_xlsx(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  from app.modules.drawings_boq.takeoff import wall_schedule as WSC
+  got = await ExtractService(session).wall_schedule(_org(current_user), drawing_id)
+  return Response(content=WSC.to_xlsx(got["rows"], got["floors"]), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    headers={"Content-Disposition": 'attachment; filename="wall-schedule.xlsx"'})
 
 @router.post("/takeoff/candidates/accept", response_model=AcceptResponse)
 async def accept_candidates(

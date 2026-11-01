@@ -8,11 +8,13 @@ from app.modules.drawings_boq.takeoff.extract import staging as STG
 from app.modules.drawings_boq.takeoff.extract import drainage as DR
 from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.modules.drawings_boq.takeoff.extract import outdoor as OD
+from app.modules.drawings_boq.takeoff.extract import elevation as ELV
+from app.modules.drawings_boq.takeoff.extract import fittings as FIT
 from app.modules.drawings_boq.takeoff.extract import config as C
 
-ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *FLL.ITEMS, *BDY.ITEMS, *STG.ITEMS, *DR.ITEMS, *EL.ITEMS, *SI.SITE_KINDS, *OD.ITEMS)))
+ITEM_KINDS = tuple(dict.fromkeys((*FD.ITEMS, *FN.ITEMS, *FLL.ITEMS, *BDY.ITEMS, *STG.ITEMS, *DR.ITEMS, *EL.ITEMS, *SI.SITE_KINDS, *OD.ITEMS, *ELV.ITEMS, *FIT.ITEMS)))
 KINDS = (*C.CATEGORIES, *ITEM_KINDS)
-DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **FLL.WORK_ITEM, **BDY.WORK_ITEM, **STG.WORK_ITEM, **DR.WORK_ITEM, **EL.WORK_ITEM, **SI.WORK_ITEM, **OD.WORK_ITEM}
+DEFAULT_CODE = {**FD.WORK_ITEM, **FN.WORK_ITEM, **FLL.WORK_ITEM, **BDY.WORK_ITEM, **STG.WORK_ITEM, **DR.WORK_ITEM, **EL.WORK_ITEM, **SI.WORK_ITEM, **OD.WORK_ITEM, **ELV.WORK_ITEM, **FIT.WORK_ITEM}
 
 def kind_of(cand) -> str:
   """The category of the item, or the name of the piece of work for the items that are not drawn on the plan."""

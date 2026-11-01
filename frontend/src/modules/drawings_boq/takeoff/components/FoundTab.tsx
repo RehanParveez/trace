@@ -28,6 +28,7 @@ import { layoutToast } from "../utils/layoutGroups";
 import type { LayoutChoiceBody } from "../types/layoutGroups.types";
 import { MarkEntitiesPanel } from "./MarkEntitiesPanel";
 import { MembersPanel } from "./MembersPanel";
+import { WallSchedulePanel } from "../wall_schedule/components/WallSchedulePanel";
 import { useMembers } from "../hooks/useMembers";
 import { useChooseMarks, useMarkEntities } from "../hooks/useMarkEntities";
 import { markToast } from "../utils/markEntities";
@@ -172,6 +173,7 @@ export function FoundTab(p: Props) {
     <LayoutGroupsPanel data={layouts.data} canEdit={p.canEdit} busy={chooseLayout.isPending} currentSheetId={sheet.id} onChoose={onChooseLayout} onOpenSheet={p.onOpenSheet} />
     <MarkEntitiesPanel data={marks.data} canEdit={p.canEdit} busy={chooseMark.isPending} currentSheetId={sheet.id} onChoose={onChooseMark} onOpenSheet={p.onOpenSheet} />
     <MembersPanel data={members.data} currentSheetId={sheet.id} onOpenSheet={p.onOpenSheet} />
+    {p.drawingId ? <WallSchedulePanel drawingId={p.drawingId} /> : null}
     <KnownFactsPanel result={knownFacts.data} busy={knownFacts.isPending} failed={knownFacts.isError} onCheck={(facts) => knownFacts.mutate(facts)} />
     <ReaderTracePanel data={readerTrace.data} loading={readerTrace.isLoading} error={readerTrace.isError} onRetry={() => void readerTrace.refetch()} />
     {p.drawingId ? <DetailOnlyPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}
