@@ -132,7 +132,7 @@ def _read_details(doc, page_no: int, raw, result) -> None:
   except Exception:
     result.meta["footing_sections_reader"] = "FAILED"
   try:
-    views = footing_views.read(result.index.words)
+    views = footing_views.read(result.index.words, size)
     if views:
       result.meta["footing_views"] = views
   except Exception:

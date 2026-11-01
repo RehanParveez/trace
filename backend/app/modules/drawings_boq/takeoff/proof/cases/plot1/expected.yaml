@@ -122,8 +122,10 @@
   drawing: 3254.47
   class: DRAWING
   tolerance_pct: 10.0
-  note: From Plinth Level To Lintel Level
+  note: 'From Plinth Level To Lintel Level. His Plaster 1:4 rows take the inside face of the outer walls only. Compared with inside plus outside plaster above ground.'
   family: WALL_PLASTER
+  families: [WALL_PLASTER, WALL_PLASTER_EXT]
+  faces: ABOVE_GROUND
 - key: STEEL/BASEMENT
   item: Steel
   unit: kgs
@@ -194,8 +196,10 @@
   drawing: 1032.846
   class: DRAWING
   tolerance_pct: 10.0
-  note: From Lintel Level To Basement Slab
+  note: 'From Lintel Level To Basement Slab. His Plaster 1:4 rows take the inside face of the outer walls only. Compared with inside plus outside plaster above ground.'
   family: WALL_PLASTER
+  families: [WALL_PLASTER, WALL_PLASTER_EXT]
+  faces: ABOVE_GROUND
 - key: STEEL/BASEMENT/2
   item: Steel
   unit: kgs
@@ -266,8 +270,10 @@
   drawing: 6494.8
   class: NEEDS_DECISION
   tolerance_pct: 10.0
-  note: 'From Basement Slab ~ G.F Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  note: 'From Basement Slab ~ G.F Slab. D13: the basement wall list is repeated on the ground and first floors. His Plaster 1:4 rows take the outer walls on both faces and inner walls on both faces. Compared with inside plus outside plaster above ground.'
   family: WALL_PLASTER
+  families: [WALL_PLASTER, WALL_PLASTER_EXT]
+  faces: ABOVE_GROUND
 - key: STEEL/GROUND
   item: Steel
   unit: kgs
@@ -338,8 +344,10 @@
   drawing: 2392.048
   class: NEEDS_DECISION
   tolerance_pct: 10.0
-  note: 'From G.F Slab ~ F.F Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  note: 'From G.F Slab ~ F.F Slab. D13: the basement wall list is repeated on the ground and first floors. His Plaster 1:4 rows take the inside faces, while his deductions are taken on both faces. Compared with inside plus outside plaster above ground.'
   family: WALL_PLASTER
+  families: [WALL_PLASTER, WALL_PLASTER_EXT]
+  faces: ABOVE_GROUND
 - key: STEEL/FIRST
   item: Steel
   unit: kgs
@@ -401,8 +409,10 @@
   drawing: 1610.0
   class: NEEDS_DECISION
   tolerance_pct: 10.0
-  note: 'From F.F Slab ~ Roof Top Slab. D13: the basement wall list is repeated on the ground and first floors.'
+  note: 'From F.F Slab ~ Roof Top Slab. D13: the basement wall list is repeated on the ground and first floors. His Plaster 1:4 rows take the inside and outside faces of the walls. Compared with inside plus outside plaster above ground.'
   family: WALL_PLASTER
+  families: [WALL_PLASTER, WALL_PLASTER_EXT]
+  faces: ABOVE_GROUND
 - key: STEEL/ROOF
   item: Steel
   unit: kgs

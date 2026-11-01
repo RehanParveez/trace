@@ -45,6 +45,9 @@ def load_case(folder: str) -> dict:
   return out
 
 ANSWERED_BY = ("DRAWING", "QS")
+EVIDENCE_KINDS = ("DRAWING", "WORKBOOK")
+SIGNERS = ("REHAN_EVIDENCE",)
+DRAWING_REF = re.compile(r"\.pdf,? p\.\s*\d+", re.I)
 
 def _list_file(path: str) -> list:
   if not os.path.isfile(path):
@@ -83,21 +86,41 @@ def load_decisions(folder: str) -> list:
     out.append({"id": did, "value": str(value), "answered_by": by, "date": str(e["date"]), "source": str(e["source"])})
   return out
 
+def _evidence(path: str, i: int, e) -> list:
+  rows = e.get("evidence")
+  if not isinstance(rows, list) or not rows:
+    raise ValueError(f"{path}, entry {i + 1} ({e.get('line')}): no evidence. List what shows his figure departs from the drawing as `evidence: [{{kind: DRAWING or WORKBOOK, ref, says}}]`; a correction without it is refused.")
+  out = []
+  for j, x in enumerate(rows):
+    if not isinstance(x, dict) or str(x.get("kind") or "").upper() not in EVIDENCE_KINDS or any(x.get(n) in (None, "") for n in ("ref", "says")):
+      raise ValueError(f"{path}, entry {i + 1} ({e.get('line')}), evidence {j + 1}: each piece of evidence is {{kind: {' or '.join(EVIDENCE_KINDS)}, ref, says}}.")
+    kind = str(x["kind"]).upper()
+    if kind == "DRAWING" and not DRAWING_REF.search(str(x["ref"])):
+      raise ValueError(f"{path}, entry {i + 1} ({e.get('line')}), evidence {j + 1}: a DRAWING reference names the PDF and the page, like `Islamabad_Plot_1.pdf p.6`.")
+    out.append({"kind": kind, "ref": str(x["ref"]), "says": str(x["says"])})
+  return out
+
 def load_corrections(folder: str) -> list:
+  """qs_corrections.yaml: a claim that one of his figures departs from the drawing, [{line, qs_figure, corrected, reason, evidence, signed, signed_by}]. It is applied at the `ruled` level only
+  when it has evidence and is signed by REHAN_EVIDENCE; the score prints both figures. It is not his agreement."""
   path = os.path.join(folder, "qs_corrections.yaml")
   out, seen = [], set()
-  
+
   for i, e in enumerate(_list_file(path)):
     _need(path, i, e, "line", "qs_figure", "corrected", "reason")
+    evidence = _evidence(path, i, e)
     for n in ("qs_figure", "corrected"):
       if isinstance(e[n], bool) or not isinstance(e[n], (int, float)):
         raise ValueError(f"{path}, entry {i + 1}: {n} must be a number.")
     if not isinstance(e.get("signed"), bool):
       raise ValueError(f"{path}, entry {i + 1}: `signed` must be true or false.")
+    if e["signed"] and str(e.get("signed_by") or "").upper() not in SIGNERS:
+      raise ValueError(f"{path}, entry {i + 1} ({e['line']}): a signed correction names `signed_by: {SIGNERS[0]}`.")
     if str(e["line"]) in seen:
       raise ValueError(f"{path}: the line {e['line']} is corrected twice.")
     seen.add(str(e["line"]))
-    out.append({"line": str(e["line"]), "qs_figure": float(e["qs_figure"]), "corrected": float(e["corrected"]), "reason": str(e["reason"]), "signed": e["signed"]})
+    out.append({"line": str(e["line"]), "qs_figure": float(e["qs_figure"]), "corrected": float(e["corrected"]), "reason": str(e["reason"]), "signed": e["signed"], "evidence": evidence,
+      "signed_by": str(e["signed_by"]).upper() if e.get("signed_by") else None})
   return out
 
 def load_residuals(folder: str) -> list:
@@ -149,9 +172,12 @@ def load_expected(path: str) -> list:
     for name, v in (("qs", qs), ("drawing", drawing)):
       if v is not None and (isinstance(v, bool) or not isinstance(v, (int, float))):
         raise ValueError(f"{path}, {key}: {name} must be a number or null.")
+    if e.get("faces") not in (None, "ABOVE_GROUND"):
+      raise ValueError(f"{path}, {key}: faces is ABOVE_GROUND or left out.")
+    
     tol = e.get("tolerance_pct")
     out.append({"key": key, "item": str(e.get("item") or ""), "unit": str(e.get("unit") or ""), "qs": None if qs is None else float(qs), "drawing": None if drawing is None else float(drawing),
-      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "floor": e.get("floor"), "grade": e.get("grade"),
+      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "faces": e.get("faces"), "floor": e.get("floor"), "grade": e.get("grade"),
       "match": [str(w).lower() for w in (e.get("match") or [])]})
   return out
 
@@ -161,7 +187,12 @@ def load_facts(path: str) -> list:
   doc = _yaml(path) or []
   if not isinstance(doc, list):
     raise ValueError(f"{path} must be a list of facts.")
-  return [dict(f) for f in doc if isinstance(f, dict)]
+  facts = [dict(f) for f in doc if isinstance(f, dict)]
+  from app.modules.drawings_boq.takeoff.proof import fact_kinds as FK
+  bad = [f"fact {i + 1} ({f.get('kind')} {f.get('mark') or f.get('name') or f.get('section') or ''}): {why}" for i, f in enumerate(facts) for why in FK.source_problems(f)]
+  if bad:
+    raise ValueError(f"{path}: every fact must cite a drawing PDF and page.\n" + "\n".join(bad))
+  return facts
 
 def cases_dir(explicit: str | None = None) -> str | None:
   return explicit or os.environ.get(CASES_DIR_ENV) or None
@@ -259,7 +290,7 @@ def draft_expected(lines, block_floor: dict | None = None) -> tuple:
     entries.append(e)
   return entries, left
 
-FIELD_ORDER = ("key", "item", "unit", "qs", "drawing", "class", "tolerance_pct", "note", "family", "families", "floor", "grade", "match")
+FIELD_ORDER = ("key", "item", "unit", "qs", "drawing", "class", "tolerance_pct", "note", "family", "families", "faces", "floor", "grade", "match")
 
 def dump_expected(entries: list, header: str = "") -> str:
   out = [("# " + h).rstrip() for h in header.splitlines()] if header else []

@@ -11,6 +11,11 @@ LAYOUT_BY = "LAYOUT_CHOICE"
 MARK_BY = "MARK_CHOICE"
 OPTION_BY = "OPTION_CHOICE"
 ASSUMED_BY = "ASSUMED_ALTERNATIVE"     
+TANK_BY = "TANK_PAIR"
+COPY_BY = "COPY_CHOICE"
+OPENINGS = ("DOOR", "WINDOW")
+PLAN, KEY_PLAN = "PLAN", "KEY_PLAN"
+COPY_PREFIX = "FLOOR_COPY:"
 
 ORDER = ["FOUNDATION", "BASEMENT", "GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH", "TYPICAL", "ROOF"]
 
@@ -20,7 +25,7 @@ def in_floor(c, floor: str, sheet_floor: str | None) -> bool:
 
 def is_set_aside(c) -> bool:
   """Rejected because the floor's other sheet was chosen, or because the other sheet holds the same item (a combine)."""
-  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY, OPTION_BY, ASSUMED_BY)
+  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY, OPTION_BY, ASSUMED_BY, COPY_BY, TANK_BY)
 
 def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   title = sheet["title"] or {}
@@ -28,8 +33,9 @@ def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   rows = [c for c in sheet["candidates"] if in_floor(c, floor, sheet_floor) and not BP.is_electrical(c)]
   walls = [c for c in rows if c.category == "WALL"]
   plan = next((p for p in ((sheet["stats"] or {}).get("plan_regions") or {}).get("plans") or [] if p.get("level_hint") == floor), None)
-  open_n = sum(1 for c in rows if c.decision == "NEW")
-  accepted = sum(1 for c in rows if c.decision == "ACCEPTED")
+  own = [c for c in rows if "copy_used" not in (c.facts or {})]
+  open_n = sum(1 for c in own if c.decision == "NEW")
+  accepted = sum(1 for c in own if c.decision == "ACCEPTED")
   
   basis = "ORDER" if sheet.get("_order") else ((sheet.get("identity") or {}).get("floor_basis") if (sheet.get("identity") or {}).get("floor") == floor else None) or "TITLE"
   return {"sheet_id": sheet["sheet_id"], "page_no": sheet["page_no"], "from_plans": from_plans, "drawing_id": sheet.get("drawing_id"), "drawing_name": sheet.get("drawing_name"),
@@ -61,10 +67,12 @@ def build(sheets: list) -> dict:
   """sheets: [{"sheet_id", "page_no", "title", "stats", "candidates"}], only sheets that have been read. -> {"floors": [...], "to_decide": n}"""
   by_floor: dict = {}
   guesses = FOR.assign(sheets) if any(s.get("clues") for s in sheets) else {}
+  placed: list = []
   for sheet in sheets:
     guess = guesses.get(sheet["sheet_id"])
     if guess:
       sheet = {**sheet, "title": {**(sheet["title"] or {}), "level_hint": guess["floor"]}, "_order": guess}
+    placed.append(sheet)
     floors, from_plans = FO.floors_read(sheet["stats"], sheet["title"])
     for fl in floors:
       by_floor.setdefault(fl, []).append(_source(sheet, fl, from_plans))
@@ -98,7 +106,9 @@ def build(sheets: list) -> dict:
       "notes": [C.note("FLOOR_FROM_SHEET_ORDER", pages=[s["page_no"] for s in sources if s["floor_basis"] == "ORDER"])] if any(s["floor_basis"] == "ORDER" for s in sources) else []})
   pages = {s["sheet_id"]: s["page_no"] for s in sheets}
   ordered = [{"sheet_id": sid, "page_no": pages.get(sid), "floor": g["floor"], "reason": g["reason"], "floor_basis": "ORDER", "pages": g["pages"]} for sid, g in guesses.items()]
-  return {"floors": out, "to_decide": sum(1 for f in out if f["state"] == "DOUBLE"), "ordered": sorted(ordered, key=lambda x: x["page_no"] or 0)}
+  copies = [{"floor": e["floor"], "kept_page": e["kept_page"], "aside_page": e["aside_page"], "default": PLAN, "marks": [{"mark": m, "plan": n[0], "key_plan": n[1]} for m, n in e["marks"].items()],
+    "notes": [C.note("FLOOR_COPY_DEFAULT_USED", floor=e["floor"], pages=[e["kept_page"], e["aside_page"]])]} for e in floor_copies(placed).values()]
+  return {"floors": out, "to_decide": sum(1 for f in out if f["state"] == "DOUBLE"), "ordered": sorted(ordered, key=lambda x: x["page_no"] or 0), "copies": copies}
 
 def plan_choice(entry: dict, sheet_id) -> dict:
   """What choosing one source of a floor does: {"keep": the source, "set_aside": the others, "blocked": why not, if it cannot be done}."""
@@ -120,3 +130,75 @@ def set_aside_floors(rows: list, sheet_floor: str | None) -> dict:
     if c.category != "SLAB" and fl and not BP.is_electrical(c):
       by.setdefault(fl, []).append(c)
   return {fl: dict(cs[0].facts[SET_ASIDE]) for fl, cs in by.items() if all(c.decision == "REJECTED" and is_set_aside(c) for c in cs)}
+
+def opening_mark(c) -> str:
+  f = c.facts or {}
+  tag = c.tag if c.category in OPENINGS else (f.get("opening_tag") or f.get("door_tag") or f.get("mark")) if f.get("derived_from") in ("OPENINGS", "DOORS", "WINDOWS") else None
+  return str(tag or "").strip().upper()
+
+def copy_counts(kept: list, aside: list) -> dict:
+  """Openings by mark on the copy of a floor that is kept and on the copy that was set aside: {mark: (kept_n, aside_n)}. An opening without a mark is not counted."""
+  out: dict = {}
+  for i, rows in enumerate((kept, aside)):
+    for c in rows:
+      mark = opening_mark(c) if c.category in OPENINGS else ""
+      if mark:
+        out.setdefault(mark, [0, 0])[i] += int(c.count or 1)
+  return {m: (v[0], v[1]) for m, v in sorted(out.items())}
+
+def floor_copies(sheets: list) -> dict:
+  kept: dict = {}
+  aside: dict = {}
+  for sh in sheets:
+    title = sh.get("title") or {}
+    sheet_floor = None if title.get("composite") else title.get("level_hint")
+    for c in sh["candidates"]:
+      floor = FO.level_of(c) or sheet_floor
+      if c.category not in OPENINGS or not floor:
+        continue
+      held = (c.facts or {}).get(SET_ASIDE) or {}
+      if held.get("by") == SET_ASIDE_BY:
+        aside.setdefault((floor, held.get("page_no"), sh["page_no"]), []).append(c)
+      elif not is_set_aside(c) and c.decision != "REJECTED":
+        kept.setdefault((floor, sh["page_no"]), []).append(c)
+        
+  out: dict = {}
+  for (floor, kept_page, aside_page), rows in sorted(aside.items(), key=lambda kv: (str(kv[0][0]), kv[0][1] or 0, kv[0][2])):
+    counts = copy_counts(kept.get((floor, kept_page), []), rows)
+    differ = {m: n for m, n in counts.items() if n[0] != n[1]}
+    if differ and floor not in out:
+      out[floor] = {"floor": floor, "kept_page": kept_page, "aside_page": aside_page, "marks": differ, "counts": counts}
+  return out
+
+def _marked(sheets: list, entry: dict):
+  marks = set(entry["marks"])
+  for sh in sheets:
+    title = sh.get("title") or {}
+    sheet_floor = None if title.get("composite") else title.get("level_hint")
+    for c in sh["candidates"]:
+      if (FO.level_of(c) or sheet_floor) == entry["floor"] and opening_mark(c) in marks:
+        yield c, sh["page_no"], ((c.facts or {}).get(SET_ASIDE) or {}).get("by") == SET_ASIDE_BY
+
+def note_default(sheets: list, entry: dict) -> int:
+  n = 0
+  for c, page, aside in _marked(sheets, entry):
+    if page == entry["kept_page"] and not aside and not is_set_aside(c):
+      c.notes = [*(c.notes or []), C.note("FLOOR_COPY_DEFAULT_USED", floor=entry["floor"], pages=[entry["kept_page"], entry["aside_page"]])]
+      n += 1
+  return n
+
+def swap_copy(sheets: list, entry: dict) -> int:
+  moved = 0
+  for c, page, aside in list(_marked(sheets, entry)):
+    facts = dict(c.facts or {})
+    if page == entry["aside_page"] and aside:
+      facts.pop(SET_ASIDE)
+      facts["copy_used"] = {"from_page": entry["aside_page"], "kept_page": entry["kept_page"]}
+      c.facts, c.decision = facts, "NEW"
+      moved += 1
+      
+    elif page == entry["kept_page"] and not is_set_aside(c) and c.decision != "REJECTED":
+      facts[SET_ASIDE] = {"by": COPY_BY, "page_no": entry["aside_page"]}
+      c.facts, c.decision = facts, "REJECTED"
+      moved += 1
+  return moved

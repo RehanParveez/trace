@@ -539,6 +539,11 @@ def split_space(ctx, ledger: list, solids: list = ()) -> SpaceResult:
     out.append(row)
   out.sort(key=lambda r: (r.work_item_code, str(r.level_id), str(r.solid_id), r.work_stage or ""))
   stats.update({"rows_cut": cut, "rows_netted": tagged, "rows_by_stage": dict(sorted(per_stage.items()))})
+  if stage_on:
+    from app.engine.measure.finish_stage import cut_finishes
+    out, finish_replaced, finish_added, stats["finish_stages"] = cut_finishes(ctx, out, setups)
+    replaced += finish_replaced
+    added += finish_added
   return SpaceResult(ledger=out, replaced=replaced, added=added, deductions=out_deductions, stats=stats)
 
 

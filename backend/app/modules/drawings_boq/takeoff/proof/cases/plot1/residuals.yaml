@@ -2,19 +2,13 @@
   cause: '+5.04% (+845 cft), measured by explain_line: the basement dig matches to the cubic foot (12,960); the 9 in trench is 4.5 x 3.5 ft in Trace against 4 x 3 ft in the workbook (width +530, depth +596, run -70) and the 4.5 in trench is smaller in Trace (-211); the trench sizes are read by rule, not from the foundation drawing'
   pack: '170'
 - line: MEMBRANE/FOUNDATION
-  cause: '-12.2%: the workbook assumes ten 4 x 11 ft pieces (class QS_ERROR); Trace measures the area'
-  question: his signed figure in qs_corrections.yaml
-- line: BRICK_FOUNDATION/FOUNDATION
-  cause: '-17.3% (-91 cft), measured by explain_line: the 9 in 4th step (0.75 x 0.75 ft, -71.0) and the 4.5 in 3rd step (0.375 x 1.25 ft, -19.3) are in the workbook only; the other steps differ by run length (-4.5 to -8.4) and the 4.5 in 1st step is deeper in Trace (+15.3)'
-  pack: '173'
-- line: RCC_FOOTINGS/FOUNDATION
-  cause: '-10.6% (-17 cft), measured by explain_line: F-3 (3 nos, 3.5 x 5 x 0.75 ft, 39.4 cft) is in the workbook only; Trace reads F2 as 5 x 5 ft against 3.5 x 5 ft in the workbook (+22.5); F1 matches'
-  pack: '164'
+  cause: 'not diagnosed; +7.4% against the signed 1,814.505 sft (-13.6% against the QS as written, 2,254.505): Trace measures 1,948.6 sft, 134.1 sft more than the wall runs times 11 ft that remain after the ten 4 x 11 ft pieces come off'
+  question: the membrane correction rests on workbook rows only; a drawing page that shows the membrane widths would settle it
 - line: RCC_COLUMNS
   cause: '-5.7% (-21 cft), measured by explain_line: C3 (0.75 x 1.5 ft, 61.6 cft) is in the workbook only; Trace has three unmarked 9 x 9 in columns on the roof (+16.0); C1 and C2 are +49.1 and -24.4 by count, width and height, after the volume given to beams and slabs under FRAME_MONOLITHIC_A (-203.9)'
   pack: '164'
 - line: STEEL
-  cause: '-10.3% (-17.1% before Pack 213, which gives the 40 C1 columns the 4-#6 of the 9x9 detail proposed for them; was -19.0% before Pack 157): bars not read for every member (the footings F2 and the stair footing print none, the stairs have no section joined), the basement stage is left out (D2, D3, D8)'
+  cause: '-9.0% (-10.3% before Pack 227, which bills the O/H tank steel at the seed rate steel.band.TANK.likely, +303.7 kg; -17.1% before Pack 213, which gives the 40 C1 columns the 4-#6 of the 9x9 detail proposed for them; was -19.0% before Pack 157): bars not read for every member (the footings F2 and the stair footing print none, the stairs have no section joined), the basement stage is left out (D2, D3, D8)'
   pack: '195'
   question: D2, D3, D8 in expected.yaml
 - line: BRICK_WALLS
@@ -24,19 +18,19 @@
   cause: '-7.8% (-11 cft), measured by explain_line: counts differ by mark (W1 -9.0, W4 -2.2, W2 +3.8, V4 +1.5, unmarked openings +7.7); the W2 lintel is 6 in deep in Trace against 9 in (-9.0) and V1 is longer and deeper (+7.9); extent +4.3, section -15.4'
   pack: '166'
 - line: WALL_PLASTER
-  cause: 'not diagnosed; -10.7% (-7.1% before Pack 169, which finds more outer faces and moves 528 sft of plaster from this inside line to the outside plaster, 5,194 sft, that no line of the workbook is compared with in this score; the two together did not change)'
+  cause: 'not diagnosed; +13.7% as written (14,784.164 sft), -7.6% against the signed 18,189.461 sft (the first floor plaster taken on both faces, Pack 226R); Trace finds more outer faces and moves 528 sft of plaster from this inside line to the outside plaster (Pack 169); the basement outside plaster is cut at the ground (Pack 225)'
   pack: '170'
 - line: RCC_ROOF_BEAMS
   cause: '-8.2% (-38.5 cft), measured by explain_line: Trace takes the beam 15 in deep (+286.2) and gives the slab overlap back (-286.1, FRAME_MONOLITHIC_A), so the depth nets to the workbook''s 9 in; what is left is run length (9 in beams -68.2, 4.5 in beams +29.6)'
   pack: '163'
   question: decision aa06c5dc850cad14 in the score md
 - line: TANKS
-  cause: 'no Trace number: the tanks are not billed (D7: both carry the same concrete)'
-  pack: '167'
-  question: D7 in expected.yaml
+  cause: '-65.0% as read (92.9 cft: only the O/H tank is billed, its plan size from the four walls the plan draws round it); +25.0% (331.7 cft) once the QS sizes in decisions.yaml are answered. The U/G tank then matches his 93.5 cft; the septic tank adds about 145 cft of slabs and walls against his 78.4 cft of slabs, because the rules give it walls of 152.4 mm over 1,524 mm and his septic tank has no concrete walls'
+  pack: '227'
+  question: does the septic tank of Plot_1 have concrete walls, and what depth does its section print (D7 in expected.yaml)
 - line: WINDOWS/OTHERS
-  cause: '-14.6%: the QS counted ground W2 as 2.5 (D9, class QS_ERROR)'
-  question: his signed figure in qs_corrections.yaml
+  cause: '-20.2% against the signed 707.625 sft (-14.6% as written, 661.625): Trace counts 565.0 sft; 78.6 sft of the gap is the first floor Opening of 9.25 x 8.5 ft in his sheet, which is not a window or ventilator mark, and the other 64.0 sft is not diagnosed'
+  question: his signed figure in qs_corrections.yaml (ventilators of the basement plan, +46.0 sft); the Opening stays a residual until its use is known
 - line: ROOF_TREATMENT/OTHERS
   cause: 'not diagnosed; +10.2%: the roof area taken for the treatment differs from the bill''s (NEEDS_DECISION)'
   pack: '169'

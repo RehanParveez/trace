@@ -953,6 +953,7 @@ def takeoff_check(solids: list, ledger: list, deductions=()) -> list:
       failures.append(f"negative PDF deduction on solid {d.from_solid_id}")
     taken[d.from_solid_id] += d.quantity
   held_rows: dict = defaultdict(lambda: ZERO)
+  below_grade: dict = {}
   units: dict = {}
   for r in ledger:
     if getattr(r, "source_kind", "MODEL") != SOURCE_KIND:
@@ -968,6 +969,8 @@ def takeoff_check(solids: list, ledger: list, deductions=()) -> list:
       failures.append(f"takeoff row without calibration on solid {r.solid_id}")
     held_rows[(r.solid_id, r.work_item_code)] += r.quantity
     units[(r.solid_id, r.work_item_code)] = r.unit
+    if (inputs.get("below_grade") or {}).get("removed_m2") is not None:
+      below_grade[(r.solid_id, r.work_item_code)] = Decimal(str(inputs["below_grade"]["removed_m2"]))
   for (solid_id, code), total in held_rows.items():
     s = by_id.get(solid_id)
     if s is None:
@@ -983,6 +986,8 @@ def takeoff_check(solids: list, ledger: list, deductions=()) -> list:
     expected = q6(held)
     if unit == "m3" and taken.get(solid_id):
       expected = max(ZERO, q6(held - taken[solid_id]))
+    if unit == "m2" and (solid_id, code) in below_grade:
+      expected = max(ZERO, q6(held - below_grade[(solid_id, code)]))
     if total != expected:
       failures.append(f"takeoff quantity {total} != solid quantity {expected} on solid {solid_id}")
   return failures

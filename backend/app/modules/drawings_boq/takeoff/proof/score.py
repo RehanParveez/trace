@@ -8,6 +8,7 @@ import re
 import sys
 import time
 from app.modules.drawings_boq.takeoff.proof import known_facts as KF
+from app.modules.drawings_boq.takeoff.proof import fact_kinds as FK
 from app.modules.drawings_boq.lab import tolerances as T
 from app.modules.drawings_boq.takeoff.proof import offline_accept as OA
 from app.modules.drawings_boq.takeoff.proof import offline_run as OR
@@ -21,13 +22,13 @@ from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 from app.modules.drawings_boq.takeoff.extract import identity_words as IW
 from app.modules.drawings_boq.takeoff.extract import floor_order as FO
-from app.modules.drawings_boq.takeoff.extract import floor_order as FO
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 from app.modules.drawings_boq.takeoff.extract import slab_label as SL
 from app.modules.drawings_boq.takeoff.extract import safe as SF
 from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 from app.modules.drawings_boq.takeoff import register as RGS
+from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 
 SIZE_TOL_PCT = 2.0
 MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH"
@@ -51,7 +52,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join", "floor_copies", "tanks")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -115,6 +116,10 @@ def to_unit(value_si: float, si_unit: str, unit: str):
     return None
   return value_si * (qty / one_si)
 
+ABOVE_GROUND = "ABOVE_GROUND"
+BELOW_GROUND = ("BASEMENT",)
+OUTSIDE_FAMILIES = ("WALL_PLASTER_EXT",)
+
 def resolve(entry: dict, lines: list) -> list:
   key = entry["key"]
   if entry.get("grade"):
@@ -134,7 +139,7 @@ def resolve(entry: dict, lines: list) -> list:
       return got
   fams = entry.get("families")
   if fams:
-    got = [l for l in lines if l["family"] in fams]
+    got = [l for l in lines if l["family"] in fams and not (entry.get("faces") == ABOVE_GROUND and l["family"] in OUTSIDE_FAMILIES and l["floor"] in BELOW_GROUND)]
     if got:
       return got
   fam = entry.get("family")
@@ -207,6 +212,13 @@ def score_lines(expected: list, lines: list) -> tuple:
       continue
     extra.append(l)
   return out, extra
+
+def d1_signed(doc: dict) -> int:
+  return ((((doc.get("levels") or {}).get("ruled") or {}).get("summary")) or {}).get("within_2", 0)
+
+def stage_count(doc: dict) -> str:
+  v = doc.get("stage_view")
+  return f"{v['within_10']} of {v['of']} within 10%" if v else "none"
 
 def extra_lines(extra: list) -> list:
   by: dict = {}
@@ -338,6 +350,9 @@ def step_fact(read: list, f: dict) -> dict:
 def check_facts(read: list, facts: list) -> list:
   out = []
   for i, f in enumerate(facts):
+    if str(f.get("kind") or "").upper() in FK.KINDS:
+      out.append(FK.check(read, f, i))
+      continue
     if str(f.get("kind") or "").upper() == "STEP_TABLE":
       try:
         out.append(step_fact(read, f))
@@ -450,16 +465,11 @@ def ordered_floors(read: list) -> dict:
   sheets = [{"sheet_id": r["page_no"], "page_no": r["page_no"], "title": r.get("title"), "identity": (r.get("meta") or {}).get("identity"), "clues": (r.get("meta") or {}).get("floor_clues")} for r in read]
   return {sid: g["floor"] for sid, g in FO.assign(sheets).items()}
 
-def ordered_floors(read: list) -> dict:
-  sheets = [{"sheet_id": r["page_no"], "page_no": r["page_no"], "title": r.get("title"), "identity": (r.get("meta") or {}).get("identity"), "clues": (r.get("meta") or {}).get("floor_clues")} for r in read]
-  return {sid: g["floor"] for sid, g in FO.assign(sheets).items()}
-
 def invariants(reads: list, accs: list, rows: list) -> list:
   res = []
   def add(name, bad, why):
     pages = sorted(set(bad))
     res.append({"name": name, "status": "FAIL" if bad else "PASS", "count": len(bad), "pages": pages[:40], "why": why})
-  pdf_of = {}
 
   non_plan, structural, no_floor, no_scale = [], [], [], []
   for pdf, read in reads:
@@ -571,12 +581,13 @@ def invariants(reads: list, accs: list, rows: list) -> list:
 
 STAGE_NOTES = (("plinth level to lintel level", "PLINTH_TO_LINTEL"), ("lintel level to", "LINTEL_TO_SLAB"))
 STAGE_FAMILIES = ("BRICK_WALLS", "WALL_PLASTER")
+STAGE_ROW_FAMILIES = STAGE_FAMILIES + OUTSIDE_FAMILIES
 
 def stage_view(case: dict, ledger: list, floor_of: dict, catalog: dict) -> dict | None:
   rows: dict = {}
   for r in ledger:
     fam = family_of(r)
-    if fam not in STAGE_FAMILIES:
+    if fam not in STAGE_ROW_FAMILIES:
       continue
     floor = floor_of.get(str(r.get("level_id"))) if r.get("level_id") else None
     rows.setdefault((fam, floor), []).append((r.get("work_stage"), float(r.get("quantity") or 0.0), r.get("unit") or ""))
@@ -590,7 +601,10 @@ def stage_view(case: dict, ledger: list, floor_of: dict, catalog: dict) -> dict 
     
     note = str(e.get("note") or "").lower()
     stage = next((s for text, s in STAGE_NOTES if text in note), None)
-    got = [x for x in rows.get((fam, parts[1]), []) if stage is None or x[0] == stage]
+    fams = e.get("families") or [fam]
+    if e.get("faces") == ABOVE_GROUND and parts[1] in BELOW_GROUND:
+      fams = [f for f in fams if f not in OUTSIDE_FAMILIES]
+    got = [x for f in fams for x in rows.get((f, parts[1]), []) if stage is None or x[0] == stage]
     unit = e.get("unit") or ""
     si = sum(q for _s, q, _u in got)
     si_unit = got[0][2] if got else ""
@@ -746,6 +760,14 @@ def decisions_view(accs: list) -> dict:
   return {"per_row_conflicts": len(view["conflicts"]), "facts": len(view["facts"]), "open": view["open_decisions"], "tolerances": view["tolerances"],
     "decisions": [{"kind": d["kind"], "id": d["id"], "facts": d["facts"], "rows": d["rows"], "default": d["default"], "options": [{"value": o["value"], "label": o["label"], "trust": o["trust"], "quantity": o["quantity"], "unit": o["unit"],
       "sources": [f"{s['discipline'].lower()} p{s['page_no'] if s['page_no'] is not None else '-'} {s['basis']}" for s in o["sources"]]} for o in d["options"]]} for d in view["decisions"]]}
+
+def copies_view(accs: list) -> list:
+  return [{"id": FS.COPY_PREFIX + fl, "floor": fl, "default": FS.PLAN, "kept_page": e["kept_page"], "aside_page": e["aside_page"], "marks": [{"mark": m, "plan": n[0], "key_plan": n[1]} for m, n in e["marks"].items()],
+    "same": sum(1 for n in e["counts"].values() if n[0] == n[1])} for acc in accs for fl, e in sorted(acc.copies.items())]
+
+def tanks_view(accs: list) -> list:
+  return [{"kind": t["kind"], "complete": t["complete"], "kept_page": t.get("kept_page"), "pages": t["pages"], "plan_mm": t.get("plan_mm"), "depth_mm": t["depth_mm"], "wall_mm": t["wall_mm"], "top_mm": t["top_mm"], "base_mm": t["base_mm"],
+    "sources": t["sources"], "assumed": t["assumed"]} for acc in accs for t in acc.tanks]
 
 def safe_view(expected: list, ledger: list, floor_of: dict, catalog: dict, accs: list) -> dict:
   """Safe precision and safe coverage over the ledger rows (the rows that make the bill). A row is SAFE when the candidate its measurement came from is (extract.safe). Coverage: the share of ledger rows that are SAFE.
@@ -1024,6 +1046,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   view = stage_view(case, ledger, floor_all, catalog)
   if view:
     doc["stage_view"] = view
+    doc["levels"]["stages"] = view
   mem = members_view(accs)
   if mem:
     doc["members"] = mem
@@ -1036,6 +1059,8 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   doc["warnings"] = warnings_view(ledger, accs)
   doc["reading_work"] = work_view(reads)
   doc["fact_decisions"] = decisions_view(accs)
+  doc["floor_copies"] = copies_view(accs)
+  doc["tanks"] = tanks_view(accs)
   doc["options"] = options_view(accs)
   doc["quantities"] = quantities_view(ledger, floor_all)
   doc["hash"] = digest(doc)
@@ -1099,7 +1124,9 @@ def _worse(before: dict, now: dict) -> list:
 def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = None) -> str:
   s = doc["summary"]
   out = [f"# Score: {doc['case']} (tier {doc['tier']})", "", f"Hash `{doc['hash']}`. Policy: {doc['policy']}. {s['lines']} lines with a Trace and a QS number; {s['within_10']} within 10% and {s['within_5']} within 5% of the QS; "
-    f"{s['against_drawing']} with a drawing figure, {s['within_10_drawing']} within 10% and {s['within_5_drawing']} within 5% of it.", ""]
+    f"{s['against_drawing']} with a drawing figure, {s['within_10_drawing']} within 10% and {s['within_5_drawing']} within 5% of it.", "",
+    f"**Two figures for D1.** Within 10% of the QS as written: {s['within_10']} of {s['lines']}. Within 2% of the signed figure: {d1_signed(doc)} of {s['lines']} ({doc['levels']['corrections']['signed']} corrections signed). "
+    f"Floor stages within 10%: {stage_count(doc)}.", ""]
   if doc.get("rules"):
     r = doc["rules"]
     out += [f"**Run under the rules of the case:** {r['file']}, {r['count']} rules ({', '.join(r['keys'])}). {r['note']}", ""]
@@ -1160,6 +1187,16 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
       out += [f"- {d['kind']} ({', '.join(d['facts'][:3])}{' and %d more' % (len(d['facts']) - 3) if len(d['facts']) > 3 else ''}; {d['rows']} rows; default {d['default'] or 'none, tied'}): " + " | ".join(f"{o['label']} [{o['trust']}] {o['quantity']} {o['unit']} from {', '.join(o['sources'])}" for o in d["options"])]
     if fd["decisions"]:
       out += [""]
+  if doc.get("floor_copies"):
+    out += ["**Two copies of a floor** (decision FLOOR_COPY:<floor>, PLAN or KEY_PLAN; not part of the hash). Openings by mark on the plan that is used and on the key plan set aside; the plan is the default.", "", "| Decision | Plan page | Key plan page | Marks that differ (plan / key plan) | Marks that agree |", "|---|---|---|---|---|"]
+    out += [f"| {x['id']} | {x['kept_page']} | {x['aside_page']} | " + ", ".join(f"{m['mark']} {m['plan']}/{m['key_plan']}" for m in x["marks"]) + f" | {x['same']} |" for x in doc["floor_copies"]]
+    out += [""]
+  if doc.get("tanks"):
+    out += ["**Tanks** (one record per kind of tank; decision TANK_SIZE:<kind> as length x width, or length x width x height x thickness, in mm; not part of the hash). Sizes are outside sizes in mm; each says the route it comes from and its page.", "", "| Tank | Plan | Depth | Wall | Top / base slab | Kept on page | Sheets | Sources |", "|---|---|---|---|---|---|---|---|"]
+    out += [f"| {t['kind']} | " + (f"{t['plan_mm'][0]:g} x {t['plan_mm'][1]:g}" if t.get("plan_mm") else "not found") + f" | {t['depth_mm']:g} | {t['wall_mm']:g} | {t['top_mm']:g} / {t['base_mm']:g} | {t['kept_page'] or 'held'} | "
+      + ", ".join(str(p) for p in t["pages"]) + " | " + "; ".join(f"{k}: {v['route'].lower()}" + (f" p.{v['page_no']}" if v.get("page_no") else "") for k, v in t["sources"].items()) + " |" for t in doc["tanks"]]
+    out += [""]
+
   if doc.get("wall_faces"):
     wf = doc["wall_faces"]
     out += [f"**Wall faces** ({wf['closed']} of {wf['of']} plan sheets have walls that close; not part of the hash)", "", "| Page | Floor | Walls | Rooms | Closed | Rooms in the open | Inside, outline (m) | Inside, graph (m) | Outside, outline (m) | Outside, graph (m) |", "|---|---|---|---|---|---|---|---|---|---|"]
@@ -1286,7 +1323,7 @@ def main(argv: list | None = None) -> int:
         with open(os.path.join(folder_out, fname), "w", encoding="utf-8") as fh:
           json.dump(r3(body), fh, indent=1, sort_keys=True, ensure_ascii=False, default=str)
     s = doc["summary"]
-    print(f"{name}: {s['lines']} lines, {s['within_10']} within 10%, {s['within_5']} within 5% of the QS; invariants failing: {sum(1 for i in doc['invariants'] if i['status'] == 'FAIL')}; hash {doc['hash'][:16]}; {timings['total']} s")
+    print(f"{name}: {s['lines']} lines, {s['within_10']} within 10%, {s['within_5']} within 5% of the QS as written, {d1_signed(doc)} within 2% of the signed figure; floor stages {stage_count(doc)}; invariants failing: {sum(1 for i in doc['invariants'] if i['status'] == 'FAIL')}; hash {doc['hash'][:16]}; {timings['total']} s")
     done[name] = doc
 
   combined = {"cases": {k: r3(v) for k, v in sorted(done.items())}}

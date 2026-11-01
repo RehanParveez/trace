@@ -3,7 +3,8 @@ import statistics
 
 LIMIT_PCT = 5.0
 WIDE_PCT = 10.0
-QS_TOLERANCE = 1e-6      
+SIGNED_PCT = 2.0
+QS_TOLERANCE = 1e-6     
 
 def corrected_expected(expected: list, corrections: list) -> tuple:
   by_key = {e["key"]: e for e in expected}
@@ -19,12 +20,18 @@ def corrected_expected(expected: list, corrections: list) -> tuple:
       problems.append(f"{c['line']}: the correction starts from {c['qs_figure']:g} but expected.yaml has {e['qs']}")
       continue
   
-    rec = {"line": c["line"], "qs_figure": c["qs_figure"], "corrected": c["corrected"], "reason": c["reason"]}
+    if abs(c["corrected"] - c["qs_figure"]) <= QS_TOLERANCE * max(1.0, abs(c["qs_figure"])):
+      problems.append(f"{c['line']}: the correction changes nothing ({c['corrected']:g} is the QS figure)")
+      continue
+    rec = {"line": c["line"], "qs_figure": c["qs_figure"], "corrected": c["corrected"], "reason": c["reason"], "evidence": c.get("evidence") or [], "signed_by": c.get("signed_by")}
     if c["signed"]:
       out[c["line"]]["qs"] = c["corrected"]
       applied.append(rec)
     else:
       pending.append(rec)
+  moved = sorted(k for k in out if out[k]["qs"] != by_key[k]["qs"])
+  if moved != sorted(a["line"] for a in applied):
+    problems.append("the corrected level differs from the QS figures on: " + ", ".join(moved) + ", which are not the signed corrections")
   return [out[e["key"]] for e in expected], applied, pending, problems
 
 def _row(l: dict) -> dict:
@@ -37,7 +44,7 @@ def level_view(lines: list) -> dict:
   within_5 = sum(1 for e in errs if e <= LIMIT_PCT)
   
   return {"lines": [_row(l) for l in judged], "summary": {"with_qs": len(judged), "with_trace": len(both), "no_trace": len(judged) - len(both), "within_5": within_5,
-    "within_10": sum(1 for e in errs if e <= WIDE_PCT), "share_within_5_pct": round(100.0 * within_5 / len(judged), 1) if judged else None,
+    "within_2": sum(1 for e in errs if e <= SIGNED_PCT), "within_10": sum(1 for e in errs if e <= WIDE_PCT), "share_within_5_pct": round(100.0 * within_5 / len(judged), 1) if judged else None,
     "median_abs_error_pct": round(statistics.median(errs), 2) if errs else None}}
 
 def over_limit(lines: list, limit: float = LIMIT_PCT) -> list:
@@ -65,6 +72,13 @@ def facts_regressions(facts: list, passed: list) -> list:
   now = {str(f["text"]): f.get("status") for f in facts}
   return sorted(t for t in passed if now.get(t) != "PASS")
 
+def stages_passed(view: dict | None) -> list:
+  return sorted(f"{l['key']} {l['stage']}" for l in ((view or {}).get("lines") or []) if l.get("within_10"))
+
+def stages_regressions(view: dict | None, passed: list) -> list:
+  now = set(stages_passed(view))
+  return sorted(p for p in passed if p not in now)
+
 def build(accept_all: list, decided: list, ruled: list, *, decisions: list, decision_log: dict | None, corrections: list, applied: list, pending: list, correction_problems: list,
   ledger: list, residuals: list) -> dict:
   return {"accept_all": level_view(accept_all), "decided": level_view(decided), "ruled": level_view(ruled),
@@ -79,8 +93,20 @@ def _pct(v) -> str:
 def _n(v) -> str:
   return "" if v is None else f"{v:,.1f}"
 
+def render_corrections(cr: dict) -> list:
+  out = ["### QS corrections and their evidence", "",
+    "Each is a claim, signed by Rehan from the evidence listed, that the QS figure departs from the drawing. It is not the QS's agreement. Both figures are always printed.", ""]
+  rows = [(x, "signed, applied at the ruled level") for x in cr["applied"]] + [(x, "unsigned, not applied") for x in cr["pending"]]
+  if not rows:
+    return out + ["None.", ""]
+  for x, state in rows:
+    out += [f"- **{x['line']}**: QS wrote {x['qs_figure']:,.3f}, corrected {x['corrected']:,.3f} ({x['corrected'] - x['qs_figure']:+,.3f}); {state}" + (f" by {x['signed_by']}" if x.get("signed_by") and state.startswith("signed") else "") + f". {x['reason']}"]
+    out += [f"  - {e['kind'].lower()}: {e['ref']}: {e['says']}" for e in x.get("evidence") or []]
+  return out + [""]
+
 def render(lv: dict) -> list:
   a, d, r = lv["accept_all"], lv["decided"], lv["ruled"]
+  written = {x["line"]: x["qs_figure"] for x in lv["corrections"]["applied"]}
   out = ["## Three levels", "",
     "`accept_all`: everything the readings give is accepted. `decided`: the answers in decisions.yaml applied first. `ruled`: decided, against the QS figures with his signed corrections. Differences are against the QS figure of that level.", "",
     "| Line | Unit | QS (ruled) | accept_all | diff | decided | diff | ruled | diff |", "|---|---|---|---|---|---|---|---|---|"]
@@ -89,7 +115,7 @@ def render(lv: dict) -> list:
   
   for l in r["lines"]:
     x, y = da.get(l["key"]) or {}, dd.get(l["key"]) or {}
-    out.append(f"| {l['key']} | {l['unit']} | {_n(l['qs'])} | {_n(x.get('trace'))} | {_pct(x.get('diff_pct_qs'))} | {_n(y.get('trace'))} | {_pct(y.get('diff_pct_qs'))} | {_n(l['trace'])} | {_pct(l['diff_pct_qs'])} |")
+    out.append(f"| {l['key']} | {l['unit']} | {_n(l['qs'])}" + (f" (QS wrote {_n(written[l['key']])})" if l["key"] in written else "") + f" | {_n(x.get('trace'))} | {_pct(x.get('diff_pct_qs'))} | {_n(y.get('trace'))} | {_pct(y.get('diff_pct_qs'))} | {_n(l['trace'])} | {_pct(l['diff_pct_qs'])} |")
   for name, v in (("accept_all", a), ("decided", d), ("ruled", r)):
     s = v["summary"]
     out.append(f"| **{name}** | | {s['with_qs']} lines | within 5%: {s['within_5']} | within 10%: {s['within_10']} | no Trace number: {s['no_trace']} | median error {s['median_abs_error_pct'] if s['median_abs_error_pct'] is not None else '-'}% | {s['share_within_5_pct'] if s['share_within_5_pct'] is not None else '-'}% within 5% | |")
@@ -98,5 +124,6 @@ def render(lv: dict) -> list:
     + (f"; **not matched: {', '.join(x['id'] for x in dc['unmatched'])}**" if dc["unmatched"] else "") + ".",
     f"**QS corrections** (qs_corrections.yaml): {cr['entries']} listed, {cr['signed']} signed and applied, {cr['unsigned']} unsigned and not applied" + (f"; **problems: {'; '.join(cr['problems'])}**" if cr["problems"] else "") + ".",
     f"**Rules the ruled level rests on**: {len(ru['case_file'])} from the case's rule file, {len(ru['seed_unconfirmed'])} seed rules, UNCONFIRMED until the QS confirms them" + (f" ({', '.join(x[5:] for x in ru['seed_unconfirmed'])})" if ru["seed_unconfirmed"] else "") + ".",
-    f"**Residuals** (residuals.yaml): {rs['over']} lines over {rs['limit_pct']:g}% at the ruled level, {rs['entries']} entries; no entry for: {', '.join(rs['missing']) or 'none'}; stale: {', '.join(rs['stale']) or 'none'}.", ""]
-  return out
+     f"**Residuals** (residuals.yaml): {rs['over']} lines over {rs['limit_pct']:g}% at the ruled level, {rs['entries']} entries; no entry for: {', '.join(rs['missing']) or 'none'}; stale: {', '.join(rs['stale']) or 'none'}.", ""]
+  return out + render_corrections(cr)
+

@@ -31,6 +31,7 @@ from app.modules.drawings_boq.takeoff.extract import wide_openings as WO
 from app.modules.drawings_boq.takeoff.extract import lintel_heads as LH
 from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import tank_sections as TS
+from app.modules.drawings_boq.takeoff.extract import tank_record as TR
 from app.modules.drawings_boq.takeoff.extract import tank_steel as TSTEEL
 from app.modules.drawings_boq.takeoff.extract import site_items as SI
 from app.modules.drawings_boq.takeoff.extract import boundary as BDY
@@ -2381,6 +2382,7 @@ def _with_site(res: Extraction, index, mm_per_pt: float, kw: dict) -> Extraction
   res.stats["qs_site"] = QR.apply(sites, None)
   res.stats["site_items"] = {c.facts["site_kind"]: 1 for c in sites}
   res.stats["site_tank_walls"] = _tank_twin_walls(res, sites)
+  res.stats["tank_fields"] = TR.sheet_fields(sites, [c for c in res.candidates if c.category == "WALL"], index.words, mm_per_pt)
   _list_views(res, index)
   return res
 

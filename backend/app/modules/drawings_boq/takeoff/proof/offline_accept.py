@@ -10,6 +10,7 @@ from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.levels import LEVELS, KEY_PREFIX, view_level_id
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import tank_record as TR
 from app.engine.measure import takeoff as tk
 from pydantic import ValidationError
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
@@ -54,6 +55,8 @@ class Accepted:
   tally: dict = field(default_factory=dict)
   refusals: list = field(default_factory=list)         
   decision_log: dict = field(default_factory=dict)     
+  copies: dict = field(default_factory=dict)           
+  tanks: list = field(default_factory=list)
 
 def _sheet_for(case: str, drawing_id: UUID, r: dict, levels: dict) -> TakeoffSheet:
   title = r.get("title") or {}
@@ -134,9 +137,39 @@ def _who(c) -> dict:
 def _fail_text(exc) -> tuple:
   return (getattr(exc, "code", None) or type(exc).__name__, getattr(exc, "message", None) or str(exc))
 
+def apply_copy_decisions(out: Accepted, decisions: dict) -> tuple:
+  applied, unmatched = [], []
+  for did, value in sorted(decisions.items()):
+    entry = out.copies.get(did[len(FS.COPY_PREFIX):])
+    if entry is None:
+      unmatched.append({"id": did, "value": value, "why": "the readings raise no such decision"})
+    elif str(value) not in (FS.PLAN, FS.KEY_PLAN):
+      unmatched.append({"id": did, "value": value, "why": f"not one of its options: {FS.PLAN}, {FS.KEY_PLAN}"})
+    else:
+      applied.append({"id": did, "value": str(value), "rows": FS.swap_copy(out.read[entry["drawing_id"]], entry) if value == FS.KEY_PLAN else 0})
+  return applied, unmatched
+
+def apply_tank_decisions(out: Accepted, decisions: dict) -> tuple:
+  applied, unmatched = [], []
+  for did, value in sorted(decisions.items()):
+    rec = next((t for t in out.tanks if TR.DECISION_PREFIX + t["kind"] == did), None)
+    if rec is None:
+      unmatched.append({"id": did, "value": value, "why": "the readings raise no such decision"})
+    elif TR.decided(value) is None:
+      unmatched.append({"id": did, "value": value, "why": "not two or four sizes in mm: length x width, or length x width x height x thickness"})
+    else:
+      applied.append({"id": did, "value": str(value), "rows": 1})
+  return applied, unmatched
+
 def apply_decisions(out: Accepted, decisions: dict) -> dict:
   from app.modules.drawings_boq.takeoff.extract import conflicts as CF
   from app.modules.drawings_boq.takeoff.extract import review_service as RS
+  copy_ids = {k: v for k, v in decisions.items() if k.startswith(FS.COPY_PREFIX)}
+  tank_ids = {k: v for k, v in decisions.items() if k.startswith(TR.DECISION_PREFIX)}
+  copy_applied, copy_unmatched = apply_copy_decisions(out, copy_ids)
+  tank_applied, tank_unmatched = apply_tank_decisions(out, tank_ids)
+  copy_applied, copy_unmatched = copy_applied + tank_applied, copy_unmatched + tank_unmatched
+  decisions = {k: v for k, v in decisions.items() if k not in copy_ids and k not in tank_ids}
   titles = {r["sheet_id"]: r.get("title") for read in out.read.values() for r in read}
   sheets = {sid: {"page_no": sh.page_no, "discipline": CF.sheet_discipline(titles.get(sid))} for sid, sh in out.sheets.items()}
   rows = list(out.candidates)
@@ -168,7 +201,7 @@ def apply_decisions(out: Accepted, decisions: dict) -> dict:
       if rec["kind"] == CF.COUNT:
         RS.ReviewService._follow_lintels(rows, row, int(rec["count"]))
       done[owner.get(rec["conflict_id"])] = done.get(owner.get(rec["conflict_id"]), 0) + 1
-  return {"applied": [{"id": did, "value": chosen[did], "rows": done.get(did, 0)} for did in sorted(chosen)], "unmatched": unmatched}
+  return {"applied": [{"id": did, "value": chosen[did], "rows": done.get(did, 0)} for did in sorted(chosen)] + copy_applied, "unmatched": unmatched + copy_unmatched}
 
 def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, policy: dict | None = None, decisions: dict | None = None) -> Accepted:
   policy = policy or (READY_POLICY if ready_only else ALL_POLICY)
@@ -186,6 +219,7 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     drawing_id = uid(case, "drawing", pdf_name)
     out.drawings[drawing_id] = pdf_name
     BM.choose_floor_sources(rows)
+    out.tanks.extend({**t, "drawing_id": drawing_id} for t in TR.pair(rows, {k: v for k, v in (decisions or {}).items() if k.startswith(TR.DECISION_PREFIX)}))
     level_ids, floor_of = _levels(case, drawing_id, rows)
     out.floor_of.update(floor_of)
     sheets, read_for_ready = {}, []
@@ -213,8 +247,14 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     _apply_beam_sources(list(sheets.values()), read_for_ready)
   
   out.printed_all = printed_params.from_items(drawing_facts.gather(every_page)["items"])
+  for drawing_id, read in out.read.items():
+    out.copies.update({fl: {**e, "drawing_id": drawing_id} for fl, e in FS.floor_copies(read).items()})
   if decisions:
     out.decision_log = apply_decisions(out, decisions)
+  decided = {d["id"] for d in out.decision_log.get("applied") or []}
+  for fl, e in out.copies.items():
+    if FS.COPY_PREFIX + fl not in decided:
+      FS.note_default(out.read[e["drawing_id"]], e)
   failed_ids: set = set()
   refused: dict = {}
   drafts: list = []
@@ -318,7 +358,8 @@ def split_by_drawing(acc: Accepted) -> list:
     cal_ids = {m.calibration_id for m in ms if m.calibration_id}
     out.append(Accepted(case=acc.case, drawings={drawing_id: pdf}, sheets=sheets, read={drawing_id: acc.read[drawing_id]}, candidates=[c for c in acc.candidates if c.sheet_id in sheets],
       calibrations=[c for c in acc.calibrations if c.id in cal_ids], measurements=ms, floor_of=dict(acc.floor_of), meta={drawing_id: acc.meta[drawing_id]},
-      printed={drawing_id: acc.printed[drawing_id]}, printed_all=acc.printed_all, problems=[p for p in acc.problems if p.get("pdf") == pdf], tally=acc.tally))
+      printed={drawing_id: acc.printed[drawing_id]}, printed_all=acc.printed_all, problems=[p for p in acc.problems if p.get("pdf") == pdf], tally=acc.tally,
+      copies={fl: e for fl, e in acc.copies.items() if e["drawing_id"] == drawing_id}, tanks=[t for t in acc.tanks if t["drawing_id"] == drawing_id]))
   return out
 
 def _datums(acc: Accepted) -> dict:

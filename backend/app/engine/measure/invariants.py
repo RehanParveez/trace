@@ -18,7 +18,7 @@ def stage_split_check(ledger) -> tuple:
     if not cut or getattr(r, "work_stage", None) is None:
       continue
     g = groups.setdefault(_group_key(r), {"whole": set(), "sum": Decimal("0"), "stages": []})
-    g["whole"].add(str(cut.get("of_m3")))
+    g["whole"].add(str(cut.get("of_m3") if cut.get("of_m3") is not None else cut.get("of_m2")))
     g["sum"] += r.quantity
     g["stages"].append(r.work_stage)
   failures: list = []

@@ -1,5 +1,6 @@
 from __future__ import annotations
 from app.engine.measure import rulebook as RB
+from app.engine.measure import finish_stage as FST
 from app.modules.drawings_boq.takeoff.extract import room_types as RT
 
 FLOOR_ITEM = "finish.floor_item"
@@ -18,6 +19,7 @@ SILL_ITEM = "finish.sill_item"
 SILL_DEPTH = "finish.sill_depth_mm"
 STOPPER_ITEM = "finish.stopper_item"
 STAIR_EXTERNAL = "finish.stair_external"
+EXTERNAL_BELOW_GRADE = FST.BELOW_GRADE_RULE
 BILL_SEPARATE, WITH_STAIR, EXCLUDE = "BILL_SEPARATE", "WITH_STAIR", "EXCLUDE"
 STAIR_EXTERNAL_MODES = (BILL_SEPARATE, WITH_STAIR, EXCLUDE)
 SILL_DEPTH_FALLBACK_MM = 230.0
@@ -42,7 +44,7 @@ DADO_FALLBACK_MM = 2134.0
 DEFAULT_FLOOR_ITEM = "FIN-FLOOR"
 DEFAULT_SITE_ITEM = "FIN-PAVING"
 HEIGHT_MIN_MM, HEIGHT_MAX_MM = 300.0, 6000.0
-SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",), FACADE_ITEM: ("elevation",), SILL_ITEM: (), SILL_DEPTH: (), STOPPER_ITEM: (), STAIR_EXTERNAL: ()}
+SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",), FACADE_ITEM: ("elevation",), SILL_ITEM: (), SILL_DEPTH: (), STOPPER_ITEM: (), STAIR_EXTERNAL: (), EXTERNAL_BELOW_GRADE: ()}
 HEIGHT_TYPES = (*RT.WET, RT.KITCHEN)
 TYPED_FLOORS = {RT.PORCH: "FLOOR_PORCH", RT.TERRACE: "FLOOR_TERRACE", RT.PASSAGE: "FLOOR_PASSAGE", RT.LAWN: "FLOOR_LAWN"}
 TYPED_ITEM_CODE = {"FLOOR_PORCH": "FIN-PORCH-TILE", "FLOOR_TERRACE": "FIN-TERreturn str(rv.value) if rv.value is not None else DEFAULT_FLOOR_ITEMRACE-TILE", "FLOOR_PASSAGE": "FIN-PAVING", "FLOOR_LAWN": "FIN-PAVING"}
@@ -232,6 +234,11 @@ def checked(key: str, scope, raw):
     if not ok:
       raise ValueError(f"Strip widths are {{outer, inner, thin}} in mm, each {STRIP_WIDTH_MM[0]:g} to {STRIP_WIDTH_MM[1]:g}: outer for a wall on the outline, thin for an inner wall under 150 mm, inner for the others.")
     return {k: float(raw[k]) for k in STRIP_CLASSES}
+  if key == EXTERNAL_BELOW_GRADE:
+    v = raw.strip().upper() if isinstance(raw, str) else ""
+    if v not in FST.BELOW_GRADE_MODES:
+      raise ValueError(f"The outside of a wall below natural ground is {FST.EXCLUDE} (no plaster or paint) or {FST.INCLUDE}.")
+    return v
   if key == WALL_FACES:
     v = raw.strip().upper() if isinstance(raw, str) else ""
     if v not in (OUTLINE, GRAPH):
@@ -245,4 +252,4 @@ def checked(key: str, scope, raw):
 
 def seed_expect() -> dict:
   every = [t for t in RT.TYPES if t not in RT.NOT_FLOORED]
-  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: [], FACADE_ITEM: NONE, SILL_ITEM: NONE, SILL_DEPTH: SILL_DEPTH_FALLBACK_MM, STOPPER_ITEM: NONE, STAIR_EXTERNAL: BILL_SEPARATE}
+  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: [], FACADE_ITEM: NONE, SILL_ITEM: NONE, SILL_DEPTH: SILL_DEPTH_FALLBACK_MM, STOPPER_ITEM: NONE, STAIR_EXTERNAL: BILL_SEPARATE, EXTERNAL_BELOW_GRADE: FST.EXCLUDE}

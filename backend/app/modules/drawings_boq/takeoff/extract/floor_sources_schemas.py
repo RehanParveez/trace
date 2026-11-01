@@ -46,6 +46,7 @@ class FloorSourcesResponse(BaseModel):
   floors: list[FloorEntry]
   to_decide: int = 0
   ordered: list[dict] = Field(default_factory=list, description="Every sheet whose floor was guessed (floor_basis ORDER): sheet_id, page_no, floor, reason, pages.")
+  copies: list[dict] = Field(default_factory=list, description="Floors printed twice (a plan and a key plan) whose copies disagree on the openings: floor, kept_page, aside_page, default (PLAN), marks [{mark, plan, key_plan}], notes. Decision FLOOR_COPY:<floor> takes PLAN or KEY_PLAN.")
 
 class FloorChoice(BaseModel):
   floor: str = Field(min_length=1, max_length=20)

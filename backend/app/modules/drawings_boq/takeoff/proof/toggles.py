@@ -32,13 +32,18 @@ def _run(case: dict, files: dict, rows: list, profile, rule_set, catalog) -> tup
     S.run_case(case, files, profile, rule_set, catalog, both=False, keep=keep)
   return keep["ledger"], keep["accs"]
 
-def _deducted_m2(accs: list) -> float:
+def _deducted_m2(accs: list, ledger: list) -> float:
+  share = {}
+  for r in ledger:
+    inputs = (r.get("trace") or {}).get("inputs") or {}
+    if inputs.get("measurement_id"):
+      share[str(inputs["measurement_id"])] = float((inputs.get("below_grade") or {}).get("share_above", 1.0))
   total = 0.0
   for acc in accs:
     for c in acc.candidates:
       f = c.facts or {}
       if c.decision == "ACCEPTED" and f.get("foundation_item") in PLASTER_ITEMS and f.get("before_deductions_m2") is not None:
-        total += float(f["before_deductions_m2"]) - float(f["after_deductions_m2"])
+        total += (float(f["before_deductions_m2"]) - float(f["after_deductions_m2"])) * share.get(str(c.measurement_id), 0.0)
   return total
 
 def prove_formula(case_name: str, key: str, cases_dir: str | None = None) -> dict:
@@ -94,7 +99,7 @@ def prove(case_name: str, key: str, cases_dir: str | None = None) -> dict:
     out["why"] = "nothing moved: the switch changed no line, so it proves nothing"
   if key == "deduct_opening_plaster" and moved:
     wall = sum(b.get((c, "m2"), 0.0) - a.get((c, "m2"), 0.0) for c in ("FIN-PLASTER", "FIN-PLASTER-EXT"))
-    took = _deducted_m2(base_accs)
+    took = _deducted_m2(base_accs, base_ledger)
     out["plaster_delta_m2"], out["openings_taken_off_m2"] = round(wall, 4), round(took, 4)
     if abs(wall - took) > AREA_TOL_M2:
       out["ok"] = False

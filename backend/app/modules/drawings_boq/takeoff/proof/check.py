@@ -1,6 +1,7 @@
 from __future__ import annotations
 import argparse
 import json
+import os
 import pathlib
 import sys
 
@@ -16,6 +17,15 @@ def facts_file(case: str) -> pathlib.Path:
 
 def read_facts_pass(case: str) -> list:
   p = facts_file(case)
+  if not p.is_file():
+    return []
+  return [ln for ln in p.read_text(encoding="utf8").splitlines() if ln.strip() and not ln.startswith("#")]
+
+def stages_file(case: str) -> pathlib.Path:
+  return CASES / case / "stages_pass.txt"
+
+def read_stages_pass(case: str) -> list:
+  p = stages_file(case)
   if not p.is_file():
     return []
   return [ln for ln in p.read_text(encoding="utf8").splitlines() if ln.strip() and not ln.startswith("#")]
@@ -43,6 +53,14 @@ def main(argv: list | None = None) -> int:
   print("== import check")
   results.append(("import check", IC.main() == 0, ""))
 
+  from app.modules.drawings_boq.takeoff.proof import case_io as CIO
+  for case in CHECK_CASES:
+    try:
+      CIO.load_case(os.path.join(CIO.HERE, case))
+      results.append((f"case files {case}", True, ""))
+    except ValueError as e:
+      results.append((f"case files {case}", False, str(e)))
+
   print("== score")
   score_args = [*CHECK_CASES, "--out", args.out, "--no-other"] + (["--cases-dir", args.cases_dir] if args.cases_dir else []) + (["--robust"] if args.robust else [])
   SC.main(score_args)
@@ -62,11 +80,14 @@ def main(argv: list | None = None) -> int:
       over = {name: v for name, v in (rb.get("variants") or {}).items() if v.get("error") or v.get("moved")}
       note = "; ".join(f"{name}: " + (v["error"] if v.get("error") else f"{v['moved']} line(s) over {rb.get('move_pct', 1.0):g}%, worst {v['worst_key']} {v['worst_pct']}%") for name, v in over.items())
       results.append((f"robustness {case}", not over and bool(rb), note or ("" if rb else "no robustness run in score.json")))
+      
     if args.write_hashes:
       hash_file(case).write_text(got + "\n", encoding="utf8")
       passed = LV.facts_passed(doc.get("facts") or [])
       facts_file(case).write_text("# Printed facts that pass (their text), one per line. python scripts/check.py --write-hashes rewrites it; proof/check.py fails when one of them stops passing.\n" + "\n".join(passed) + ("\n" if passed else ""), encoding="utf8", newline="\n")
-      results.append((f"engine output {case}", True, f"written: {got[:16]}, {len(passed)} passing fact(s)"))
+      stages = LV.stages_passed(doc.get("stage_view"))
+      stages_file(case).write_text("# Brick and plaster stages within 10% of the QS (line and stage), one per line. proof/check.py --write-hashes rewrites it; proof/check.py fails when the count drops.\n" + "\n".join(stages) + ("\n" if stages else ""), encoding="utf8", newline="\n")
+      results.append((f"engine output {case}", True, f"written: {got[:16]}, {len(passed)} passing fact(s), {len(stages)} stage(s) within 10%"))
       continue
   
     lv = doc.get("levels") or {}
@@ -87,6 +108,11 @@ def main(argv: list | None = None) -> int:
     results.append((f"residuals {case}", not bad, "; ".join(bad) if bad else f"{rs.get('over', 0)} line(s) over {rs.get('limit_pct', 5):g}%, all explained"))
     lost = LV.facts_regressions(doc.get("facts") or [], read_facts_pass(case))
     results.append((f"facts {case}", not lost, ("no longer pass: " + "; ".join(lost)) if lost else f"{len(read_facts_pass(case))} passing fact(s) still pass"))
+    
+    held = read_stages_pass(case)
+    now = LV.stages_passed(doc.get("stage_view"))
+    lost_stages = LV.stages_regressions(doc.get("stage_view"), held)
+    results.append((f"floor stages {case}", len(now) >= len(held), (f"{len(now)} within 10% now, {len(held)} held; no longer within 10%: " + "; ".join(lost_stages)) if len(now) < len(held) else f"{len(now)} within 10%, {len(held)} held"))
     want = read_hash(case)
     
     if want is None:

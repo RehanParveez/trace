@@ -24,14 +24,11 @@
   cause: 'no Trace number: the stair is not read from the stair detail'
   pack: '165'
 - line: STEEL/ALL
-  cause: 'not diagnosed; +6.3% (+4.4% before Pack 219, which adds the two lintels of the wide windows): the steel of the lintels follows their volume; the slab and stair steel are not read from the drawing, so the total is not a comparison yet'
+  cause: 'not diagnosed; +24.8% (+6.3% before Pack 227, which bills the three tanks and their steel at the seed rate steel.band.TANK.likely, 110 kg per m3, +1,015 kg: if the bill leaves the tank steel out, or the rate is too high, that is the +1,015; +4.4% before Pack 219, which adds the two lintels of the wide windows): the steel of the lintels follows their volume; the slab and stair steel are not read from the drawing, so the total is not a comparison yet'
   pack: '219'
 - line: RCC_LINTELS/ALL
   cause: 'not diagnosed; -13.9% (was -33.3% before Pack 219, which lets the label of a wide window reach its wall so the two 9 ft windows of the first floor get their lintels): the lintels come to 88 cft against the bill; the sections come from the lintel detail L1 to L4, the rest is the bill''s extent'
   pack: '219'
-- line: TANKS/ALL
-  cause: 'no Trace number: the tanks are not billed'
-  pack: '167'
 - line: ROOF_TREATMENT/ALL
   cause: 'not diagnosed; no Trace number: roof treatment has no area without the outer faces'
   pack: '169'

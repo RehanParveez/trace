@@ -487,6 +487,16 @@ LEDGER_WARNING_CATALOG = {
     "The stage this quantity falls in depends on a reference level the drawing does not give (the DPC or the lintel level), so an assumed level was used. "
     "The total quantity is not affected, only which stage it is shown under.",
     "Set the DPC drop below floor level or the lintel height on the measurement convention, or confirm the levels with the engineer."),
+  "FINISH_STAGE_BY_HEIGHT": ("info", "NONE",
+    "A finish area is one figure for a whole floor, so it was shared between the stages the floor's walls stand in in proportion to their height. "
+    "The openings were not taken from one stage rather than another, so the stage figures are exact only in total.",
+    "Nothing to do for the total. For the stage split, measure the finish wall by wall."),
+  "FINISH_BELOW_GRADE": ("info", "NONE",
+    "The outside plaster or paint of this floor was cut at natural ground level: the part of its walls that stands below the ground is against earth and is not finished on the outside.",
+    "Nothing to do if the outside of the wall is against earth. If a lightwell or an open face is drawn, set the rule finish.external_below_grade to INCLUDE or type the ground level."),
+  "NGL_ASSUMED_PLINTH": ("warning", "NONE",
+    "No natural ground level was given, so the plinth (the ground floor level less the DPC drop) stood in for it. A wall face that stands above the plinth but below the real ground, or the other way round, is billed wrongly.",
+    "Type the natural ground level below the floor level (ngl_below_ffl_mm) for the project."),
   "OVER_DEDUCTED": ("error", "APPROVAL", "Deductions exceeded the gross volume; the quantity was clamped to zero.",
     "Report this model; the allocation is inconsistent."),
 }

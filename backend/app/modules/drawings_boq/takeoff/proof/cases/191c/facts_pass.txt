@@ -1,9 +1,19 @@
+11 window on the First floor
+6 window on the Ground floor
+beam B1 12"x13½"
+beam B2 9"x14"
+beam B3 15"x9"
+beam B4 18"x9"
 column C1 9 x 18 in
 column C2 9 x 18 in
 footing F1 5 x 4 ft
 footing F2 6 x 4 ft
 footing F3 5 x 4.5 ft
 footing F4 6 x 4.5 ft
+legend ceiling fan x3 on the First floor
+legend ceiling fan x6 on the Ground floor
+legend smoke detector x1 on the First floor
+legend smoke detector x3 on the Ground floor
 step table W1 (4 steps)
 step table W2 (4 steps)
 step table W3 (4 steps)

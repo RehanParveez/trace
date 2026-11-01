@@ -47,7 +47,7 @@ SOFTWARE_UNIT = {
   "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3", "BRICK_BOUNDARY": "m3", "DOOR_FRAMES_RFT": "m",
 }
 
-NOT_MEASURED = ("TANKS", "LUMP_SUM")
+NOT_MEASURED = ("LUMP_SUM",)
 
 _COMPILED = tuple((re.compile(p, re.I), k) for p, k in BILL_ALIASES)
 
@@ -133,6 +133,8 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "RCC_STAIR"
   if t == "SLAB":
     return "RCC_SLABS"
+  if t in ("OHWT", "UGWT", "SEPTIC"):
+    return "TANKS"
   if re.match(r"F\d+$", t):
     return "RCC_FOOTINGS"
   if re.match(r"C\d+$", t) or "columns" in lab or "neck column" in lab:
