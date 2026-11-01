@@ -5,6 +5,7 @@ import ctypes
 import time
 from array import array
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
+from app.modules.drawings_boq.takeoff.prep import glyph_shift
 from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
 from app.modules.drawings_boq.takeoff.prep import raster_lines as RL
 
@@ -364,6 +365,9 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
         stats["truncated"] = True
         break
     out.words = _text_words(page, stats)
+    repaired = glyph_shift.repair(out.words)
+    if repaired:
+      stats["glyph_shift_words"] = repaired
     scanned = ocr_layer.needs_ocr(out.words, out.images, crop, stats)
     if scanned:
       found, info = ocr_layer.read_page(page, out.rotation, crop, out.images, budget_s=min(ocr_layer.SCAN_OCR_BUDGET_S, max(15.0, budget_s)))

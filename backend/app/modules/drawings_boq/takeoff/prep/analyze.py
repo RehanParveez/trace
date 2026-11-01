@@ -345,7 +345,7 @@ def analyze_page(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.0) -
 
 def _vote(identity: dict, raw, views: list, facts: dict | None = None) -> None:
   from app.engine.measure import readings as QS
-  from app.modules.drawings_boq.takeoff.extract import drawing_list, sheet_identity
+  from app.modules.drawings_boq.takeoff.extract import drawing_list, pageroles, sheet_identity
   from app.modules.drawings_boq.takeoff.prep import page_role as PRL
   if not QS.flag("page_role_vote"):
     return
@@ -355,12 +355,14 @@ def _vote(identity: dict, raw, views: list, facts: dict | None = None) -> None:
   pdf = stats.get("pdf_type") or {}
   content = PRL.content_signal(pdf.get("type"), float(pdf.get("image_cover") or 0.0), len(raw.words), len(raw.kinds))
   details = PRL.detail_sheet_signal(views, int((facts or {}).get("room_sizes") or 0))
+  lines = [t for t, _s in pageroles._title_lines(raw.words)]
+  texts = PRL.text_signal(lines, int((facts or {}).get("room_sizes") or 0), len(raw.words)) or PRL.section_layer_signal(lines, int((facts or {}).get("room_sizes") or 0))
   if is_list:
     signals = [PRL.drawing_list_signal(True), content]      
   elif details is not None:
     signals = [details, content]                           
   else:
-    signals = [PRL.title_block_signal(identity, sheet_identity.read_view), PRL.view_titles_signal(views, sheet_identity.read_view), content]
+    signals = [PRL.title_block_signal(identity, sheet_identity.read_view), PRL.view_titles_signal(views, sheet_identity.read_view), content or texts]
   PRL.apply(identity, signals)
   identity["read_as"] = sheet_identity.read_as(identity)
 

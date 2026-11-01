@@ -2,6 +2,7 @@ from __future__ import annotations
 import re
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.engine.measure.steel_grammar import steel_text
 
 def _size(c) -> tuple | None:
   p = c.params or {}
@@ -64,7 +65,19 @@ def findings(cands: list, details: dict | None) -> list:
 
 CODES = {"NO_DETAIL": "COLUMN_MARK_NO_DETAIL", "BY_SIZE": "COLUMN_MARK_BY_SIZE", "NO_PLAN_MARK": "COLUMN_DETAIL_NO_PLAN_MARK"}
 
-def apply(cands: list, found: list, status) -> None:
+def _lend(c, chk: dict, details: dict | None) -> bool:
+  entry = next((e for e in ((details or {}).get(chk.get("detail")) or {}).get("steel_by_size") or [] if tuple(e["size_in"]) == tuple(chk["size_in"])), None)
+  have = dict((c.params or {}).get("steel") or {})
+  if not entry or have.get("vertical"):
+    return False
+  c.params["steel"] = {**have, "vertical": dict(entry["vertical"]), **({"ring": dict(entry["ring"])} if entry.get("ring") and "ring" not in have else {})}
+  c.facts = {**(c.facts or {}), "steel_text": steel_text(c.params["steel"]),
+    "steel_source": {"grade": "ASSUMED", "text": f"column detail {chk['detail']} ({_text(tuple(chk['size_in']))}), proposed for this column", "how": "PROPOSED_DETAIL"}}
+  c.notes = [n for n in c.notes if n.get("code") != "STEEL_NOT_PRINTED"]
+  c.notes.append(C.note("COLUMN_STEEL_FROM_PROPOSED_DETAIL", text=c.facts["steel_text"], detail=chk["detail"]))
+  return True
+
+def apply(cands: list, found: list, status, details: dict | None = None) -> None:
   cols = [c for c in cands if c.category == "COLUMN" and not (c.facts or {}).get("neck_of") and not (c.facts or {}).get("from_shapes")]
   for chk in found:
     if chk["kind"] == "NO_DETAIL":
@@ -74,6 +87,8 @@ def apply(cands: list, found: list, status) -> None:
     else:
       hit = cols[:1]
     for c in hit:
+      if chk.get("detail"):
+        _lend(c, chk, details)
       n = C.note(CODES[chk["kind"]])
       n["message"] = chk["text"]
       c.notes.append(n)

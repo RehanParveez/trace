@@ -1,6 +1,7 @@
 name: 652d
 tier: B
 pdfs:
-- 652-D.pdf
-sha256: {}
-note: 652-D. File name assumed; the PDF was not available.
+- 652-D_MEP.pdf
+sha256:
+  652-D_MEP.pdf: ce7fffb5414e46429628b236343bc24a164e50626c88e445f340f15554b8c594
+note: 652-D MEP set, 23 pages, as sent.

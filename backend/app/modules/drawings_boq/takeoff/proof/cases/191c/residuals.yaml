@@ -20,33 +20,29 @@
 - line: RCC_COLUMNS/ALL
   cause: 'no Trace number: the structure PDF has no accepted column yet'
   pack: '164'
-- line: RCC_BEAMS_SLABS/ALL
-  cause: '-78.1% (-75.7% before Pack 168, the beam is as wide as the wall: 229 mm, not 254; no Trace number before Pack 159): only the roof beams read from the walls are billed, on the principal section B2 9 in (a range of -4% to +300% is on each); the slabs are not read from
-    the slab plans and the beam marks of the structure set (B1 to B4) are not billed'
-  pack: '162'
 - line: RCC_STAIR/ALL
   cause: 'no Trace number: the stair is not read from the stair detail'
   pack: '165'
+- line: STEEL/ALL
+  cause: 'not diagnosed; +6.3% (+4.4% before Pack 219, which adds the two lintels of the wide windows): the steel of the lintels follows their volume; the slab and stair steel are not read from the drawing, so the total is not a comparison yet'
+  pack: '219'
 - line: RCC_LINTELS/ALL
-  cause: 'no Trace number: lintels are not read from the lintel detail'
-  pack: '166'
+  cause: 'not diagnosed; -13.9% (was -33.3% before Pack 219, which lets the label of a wide window reach its wall so the two 9 ft windows of the first floor get their lintels): the lintels come to 88 cft against the bill; the sections come from the lintel detail L1 to L4, the rest is the bill''s extent'
+  pack: '219'
 - line: TANKS/ALL
   cause: 'no Trace number: the tanks are not billed'
   pack: '167'
-- line: STEEL/ALL
-  cause: '-65.5% (-67.1% before Pack 209, which reads the first-floor slab plan at the scale of the ground-floor plan and adds its beams; -80.8% before): the steel of the roof beams and the lintels is counted; footings and the other beams have no bar section joined, and columns carry no bars yet'
-  pack: '195'
 - line: ROOF_TREATMENT/ALL
   cause: 'not diagnosed; no Trace number: roof treatment has no area without the outer faces'
   pack: '169'
 - line: BRICK_FOUNDATION/ALL
-  cause: 'not diagnosed; -27.1%: the brick steps of the wall footings (W1 to W4) are not read from the sections'
+  cause: 'not diagnosed; -27.1%: the steps of the wall footings are read from the sections W1 to W4 (675 cft: five rows for the 4.5 in wall over 42.0 m and 12.5 m, five for the 9 in wall over 46.7 m); the rest is the bill''s extent of brick below the plinth, which the drawing does not state'
   pack: '173'
 - line: BRICK_WALLS/GROUND
   cause: '+16.2% (+26.4% before Pack 168, which takes the 9 in and 4.5 in walls at 229 and 114 mm where they were 254 and 127): the ground floor does not deduct openings (WALL_OPENINGS_INCLUDED); only some of its walls carry the doors and windows found beside them, which is the reading of the openings, not a convention (Pack 198 makes the convention a rule and leaves this alone)'
   pack: unassigned
 - line: BRICK_WALLS/FIRST
-  cause: 'not diagnosed; -6.6% (+3.8% before Pack 168, when the brick was taken 10% thick): the walls of this floor now come out under the bill'
+  cause: 'not diagnosed; -12.9% (-8.3% before Pack 219, which finds the host wall of two wide windows and so takes their area off; +3.8% before Pack 168, when the brick was taken 10% thick): the windows come out as the 17 printed labels, about one 9 ft 6 in by 8 ft 8 in window more than the bill has'
   pack: unassigned
 - line: BRICK_BOUNDARY/ALL
   cause: 'not diagnosed; no Trace number: this set has no boundary-wall plan or elevation, so there is nothing to read; the line is its own (the tag BOUNDARY-RETURNS keeps it out of every floor line) and waits for a drawing or for the lengths typed at accept'
@@ -56,7 +52,7 @@
   pack: unassigned
 - line: WALL_PLASTER
   cause: -14.4% (was -26.4% before Pack 171, which gives the roof walls their heights so the roof plaster is measured; -37.5% before Pack 157, which lets the outside plaster rows through, billed as external plaster and added to this line because the bill's third plaster line is external); the outer
-    faces are still incomplete
+    faces are still incomplete; -15.7% after Pack 219, which takes the area of the two wide windows off the walls
   pack: '169'
 - line: CEILING_PLASTER/ALL
   cause: 'not diagnosed; -27.5%: ceilings of passages and the porch are not in the extent'
@@ -101,11 +97,12 @@
   pack: '202'
   question: '191-C questionnaire: porch tile'
 - line: FIN-PAINT-EXT/ALL
-  cause: 'not diagnosed; -26.2% (-33.3% before Pack 171, which gives the roof walls their heights so their outer faces are painted; -75.6% before Pack 169, which finds the outer faces from the outline of the floor): the outline reads 77% to 94% of the outline length as outer face, and the facade tile needs the elevations'
+  cause: 'not diagnosed; -27.9% (-26.2% before Pack 219, which takes the area of the two wide windows off; -33.3% before Pack 171, which gives the roof walls their heights so their outer faces are painted; -75.6% before Pack 169, which finds the outer faces from the outline of the floor): the outline reads 77% to 94% of the outline length as outer face, and the facade tile needs the elevations'
   pack: '204'
 - line: WINDOWS/ALL
-  cause: 'not diagnosed; -15.9%: windows read from the plan differ from the printed labels; opening areas follow the schedule'
+  cause: 'not diagnosed; +12.8% (was -15.9% before Pack 219): windows are now the 17 printed labels, 714.4 sft; the bill''s 633.4 sft is 81 sft lower, about one 9 ft 6 in by 8 ft 8 in window (the terrace window of the first floor); the drawing prints it'
   pack: '198'
+  question: '191-C questionnaire: terrace window of the first floor'
 - line: ELE-LIGHT/ALL
   cause: 'not diagnosed; -19.4%: electrical symbols are not all recognised'
   pack: '184'

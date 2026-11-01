@@ -1,9 +1,9 @@
 name: 909a
 tier: B
 pdfs:
-- Electrical_Drawings_10_Marla_House.pdf
-- Public_Health_Plumbing_Drawings_10_Marla_House.pdf
+- 909-A_ELECTRICAL_DRAWINGS.pdf
+- 909-A_PLUMBING_DRAWINGS.pdf
 sha256:
-  Electrical_Drawings_10_Marla_House.pdf: c330a44d04a7e0a4562dba24adeaaabda22f8366550b031962f53ea05d49d799
-  Public_Health_Plumbing_Drawings_10_Marla_House.pdf: 7324341d74ca38012602362e818acfd43a79457bac0e696278728fc3e77ce237
-note: 909-A electrical (7 pages) and plumbing (19 pages). The two uploaded 10 Marla service sets are taken to be 909-A; check this.
+  909-A_ELECTRICAL_DRAWINGS.pdf: 22a320ea0919133158d817b177e922fbda91fce5fb8870d891b772a9dabe3cc4
+  909-A_PLUMBING_DRAWINGS.pdf: 869b535980d76e2793fe280abf5b1c5075a3248e9a3e19af16ad04c4e0699f4c
+note: 909-A electrical (9 pages) and plumbing (6 pages), the two sets as sent. They replace the two 10 Marla service sets that stood in for 909-A before.

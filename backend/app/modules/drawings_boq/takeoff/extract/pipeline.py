@@ -633,7 +633,7 @@ def _structure_candidates(index, views: list, f: float, hint, heights, ctx, impe
       "slab_panels": v.get("slab_panels", 0), "slab_note_mm": v.get("slab_note_mm"),
       "column_marks": [] if v.get("foundation") else _column_marks(cands), "beam_strips": strip_stats})
   _settle_hidden_columns(out)
-  CM.apply(out, CM.findings(out, col_details), _status)
+  CM.apply(out, CM.findings(out, col_details), _status, col_details)
   return out, stats
 
 def _join_footing_views(res, footing_views: list | None) -> None:
@@ -1881,9 +1881,9 @@ def _sheet_plan(words: list, lines: list, level_hint: str | None, title: str | N
     return None
   note = None
   for ln in lines:
-    m = VW._SLAB_NOTE.search(ln.text)
-    if m:
-      note = round(float(m.group(1)) * 25.4, 1)
+    inches = VW.slab_note_inches(ln.text)
+    if inches:
+      note = round(inches * 25.4, 1)
       break
   marks = sorted({w.text.strip().upper() for w in words if VW._SLAB_PANEL.match(w.text.strip().upper())})
   xs, ys = [w.cx for w in words], [w.cy for w in words]
@@ -1993,7 +1993,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.candidates.append(cand)
     res.notes.extend(notes)
   if slab_plan and kind["kind"] == "STRUCTURAL" and not any(c.category == "SLAB" for c in res.candidates):
-    note_mm = next((round(float(m.group(1)) * 25.4, 1) for m in (VW._SLAB_NOTE.search(ln.text) for ln in lines) if m), None)
+    note_mm = next((round(i * 25.4, 1) for i in (VW.slab_note_inches(ln.text) for ln in lines) if i), None)
     panels = _slab_panel_candidates(slab_plan, note_mm, level_hint, slab_values or [], ctx, _implied_slab_mm(floor_heights, level_hint))
     if panels:
       res.candidates.extend(panels)

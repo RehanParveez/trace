@@ -14,7 +14,7 @@
   cause: '-5.7% (-21 cft), measured by explain_line: C3 (0.75 x 1.5 ft, 61.6 cft) is in the workbook only; Trace has three unmarked 9 x 9 in columns on the roof (+16.0); C1 and C2 are +49.1 and -24.4 by count, width and height, after the volume given to beams and slabs under FRAME_MONOLITHIC_A (-203.9)'
   pack: '164'
 - line: STEEL
-  cause: '-16.3% (was -19.0% before Pack 157): bars not read for every member, the basement stage is left out (D2, D3, D8)'
+  cause: '-10.3% (-17.1% before Pack 213, which gives the 40 C1 columns the 4-#6 of the 9x9 detail proposed for them; was -19.0% before Pack 157): bars not read for every member (the footings F2 and the stair footing print none, the stairs have no section joined), the basement stage is left out (D2, D3, D8)'
   pack: '195'
   question: D2, D3, D8 in expected.yaml
 - line: BRICK_WALLS
@@ -30,10 +30,6 @@
   cause: '-8.2% (-38.5 cft), measured by explain_line: Trace takes the beam 15 in deep (+286.2) and gives the slab overlap back (-286.1, FRAME_MONOLITHIC_A), so the depth nets to the workbook''s 9 in; what is left is run length (9 in beams -68.2, 4.5 in beams +29.6)'
   pack: '163'
   question: decision aa06c5dc850cad14 in the score md
-- line: RCC_STAIR
-  cause: '+25.8% (+31 cft), measured by hand from the ledger and the workbook rows: Trace has four flights (two on the basement sheet) against three blocks of 40.5 cft in the workbook; the extra 914 mm wide flight is +34.0 and the three shared flights are -2.6'
-
-  pack: '165'
 - line: TANKS
   cause: 'no Trace number: the tanks are not billed (D7: both carry the same concrete)'
   pack: '167'

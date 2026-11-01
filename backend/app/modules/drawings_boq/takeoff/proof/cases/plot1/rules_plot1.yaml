@@ -57,3 +57,9 @@ rules:
     cls: JUDGEMENT
     note: "3.5 ft under the outer walls (PCC 1;4;8!F9), 4 ft under the inner 9 in walls (F20), 1.5 ft under the 4.5 in walls (F24)"
     source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: PCC 1;4;8, cell: "F9, F20, F24"}
+  - key: finish.stair_external
+    scope: {}
+    value: EXCLUDE
+    cls: JUDGEMENT
+    note: "read from the QS totals, not stated by him: the workbook has three staircase blocks of 40.5 cft (Concrete Work!G66, G118 and the block of the third floor), one for each internal stair. The 3 ft wide stair in the rear lawn of the basement plan is outside the building and is in none of them, so a stair outside the building is left out of the stair concrete"
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Concrete Work, cell: "G62:G66, G114:G118"}

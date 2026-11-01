@@ -144,9 +144,14 @@ def attach(candidates: list, found: dict, note, imperial: bool = True) -> dict:
       c.notes.append(note("STEEL_NOT_PRINTED"))
       stats["not_read"] += 1
       continue
-    c.params["steel"] = dict(entry["steel"])
-    c.facts["steel_text"] = entry["steel_text"]
-    c.facts["steel_source"] = {"grade": "PRINTED", "text": entry["text"]}
+    lent = ((c.facts or {}).get("steel_source") or {}).get("how") == "PROPOSED_DETAIL"
+    if lent:
+      c.params["steel"] = {**(c.params.get("steel") or {}), **entry["steel"]}
+      c.facts["steel_text"] = steel_text(c.params["steel"])
+    else:
+      c.params["steel"] = dict(entry["steel"])
+      c.facts["steel_text"] = entry["steel_text"]
+      c.facts["steel_source"] = {"grade": "PRINTED", "text": entry["text"]}
     c.notes.append(note("STEEL_FROM_DETAIL", text=entry["steel_text"]))
     stats["attached"] += 1
   return stats

@@ -134,7 +134,22 @@ def column_details(meta: dict | None) -> dict:
       rec["size_mm"] = (round(a * INCH_MM, 1), round(b * INCH_MM, 1))
     out[mark] = rec
   _column_steel_of(meta, out)
+  _steel_by_size(meta, out)
   return out
+
+def _steel_by_size(meta: dict | None, out: dict) -> None:
+  for d in (meta or {}).get("details") or []:
+    if d.get("read") not in ("TEXT", "TEXT_SQUARE", "OCR", "OCR_SQUARE") or not d.get("w_in") or not d.get("h_in") or d.get("steel_conflict"):
+      continue
+    notes = d.get("bar_notes") or []
+    vertical = (d.get("steel") or {}).get("vertical") or (dict(notes[0]) if len(notes) == 1 else None)
+    ring = (d.get("steel") or {}).get("ring")
+    if not vertical:
+      continue
+    size = [round(min(d["w_in"], d["h_in"])), round(max(d["w_in"], d["h_in"]))]
+    rec = out.get(d["mark"])
+    if rec is not None:
+      rec.setdefault("steel_by_size", []).append({"size_in": size, "vertical": {k: vertical[k] for k in ("n", "bar")}, **({"ring": dict(ring)} if ring else {})})
 
 def _bar_text(n: dict) -> str:
   return f"{n['n']} #{n['bar']}"

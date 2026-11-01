@@ -145,7 +145,7 @@ def _region(cap_v: tuple, others_v: list, Wv: float, Hv: float, k: float = 1.0) 
       top = max(top, oy + 4.0 * k)
   return (max(0.0, vx - REGION_HALF_WIDTH_PT * k), max(0.0, top), min(Wv, vx + REGION_HALF_WIDTH_PT * k), max(0.0, vy - REGION_BELOW_PT * k))
 
-SCALES = (6, 8, 11)
+SCALES = (4, 6, 8, 11)
 MIN_VOTES_BARS = 2
 MIN_VOTES_DIM = 2
 CLUSTER_PT = 5.0
@@ -217,7 +217,7 @@ def _read_picture(page, region: tuple, Hv: float, Wv: float, deadline: float, k:
         out[k].append(item)
   reads = len(renders)
   result = {**out, "reads": reads, "complete": complete}
-  if complete and key:
+  if complete and key and (out["bars"] or out["stirrups"] or out["dims"]):
     PC.put(key, out)
   return result
 

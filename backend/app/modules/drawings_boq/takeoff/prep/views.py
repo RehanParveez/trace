@@ -255,6 +255,15 @@ def split(items: list, views: list, point) -> dict:
   return out
 
 _SLAB_NOTE = re.compile(r"\bSLABS?\s+(?:ARE|IS)\s+(\d+(?:\.\d+)?)\s*(?:\"|”|″|IN\b|INCH)", re.I)
+def _spaced(word: str) -> str:
+  return r"\s?".join(word)
+
+_SLAB_NOTE_EQ = re.compile(r"\b" + _spaced("SLAB") + r"\s*" + _spaced("THICKNESS") + r"\s*[=:]\s*(\d+(?:\.\d+)?)\s*(?:\"|”|″|IN\b|INCH)", re.I)
+
+def slab_note_inches(text: str) -> float | None:
+  m = _SLAB_NOTE.search(text) or _SLAB_NOTE_EQ.search(text)
+  return float(m.group(1)) if m else None
+
 _SLAB_PANEL = re.compile(r"^[A-Z]{1,2}S-?\d{1,2}$")
 _FOUNDATION = re.compile(r"\bFOUNDATIONS?\b|\bFOOTINGS?\b", re.I)
 
@@ -275,9 +284,9 @@ def annotate(views: list, words: list, unit: float = 1.0) -> None:
       cx, cy = sum(w.cx for w in ws) / len(ws), sum(w.cy for w in ws) / len(ws)
       if not (x0 <= cx <= x1 and y0 <= cy <= y1):
         continue
-      m = _SLAB_NOTE.search(ln.text)
-      if m:
-        note = round(float(m.group(1)) * 25.4, 1)
+      inches = slab_note_inches(ln.text)
+      if inches:
+        note = round(inches * 25.4, 1)
         break
     v["slab_note_mm"] = note
     marks = {w.text.strip().upper() for w in words if _SLAB_PANEL.match(w.text.strip().upper()) and contains(v, w.cx, w.cy, core=True)}

@@ -1,6 +1,7 @@
 name: 201cd
 tier: B
 pdfs:
-- 201-CD.pdf
-sha256: {}
-note: 201-CD. File name assumed; the PDF was not available.
+- MEP_201-CD.pdf
+sha256:
+  MEP_201-CD.pdf: 1d8e7f8a83f5572cdbd182ef9993ffb9ae4e896ee543839c822b42f7f1c7070c
+note: 201-CD MEP set, 12 pages, as sent.

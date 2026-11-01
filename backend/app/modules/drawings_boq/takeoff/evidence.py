@@ -127,6 +127,9 @@ def _slab(inp: _Inputs, cand) -> None:
   
   if f.get("dims_mm"):
     inp.add("size", PRINTED, f"length and width printed in the area table{' (sheet ' + pages + ')' if pages else ''}, and their product agrees with the printed area")
+  elif f.get("area_basis") == "PLAN_OUTLINE" and f.get("area_m2") is not None:
+    spread = f.get("area_spread")
+    inp.measured("size", f"the covered area measured from the outline of the slab plan, {f['area_m2']:g} m2 with the marked voids taken off" + (f"; moving the wall gap tolerance moves it by {spread * 100:.1f}%" if spread is not None else ""))
   elif f.get("area_m2") is not None:
     inp.add("size", MISSING, "the area table prints the covered area but not its length and width")
   else:

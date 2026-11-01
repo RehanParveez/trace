@@ -3,6 +3,7 @@ from app.modules.drawings_boq.takeoff.extract import hosts as H
 import math
 
 LABEL_HOST_REACH_MM = 1500.0    
+LABEL_WIDTH_SLACK_MM = 600.0    
 GAP_WIDTH_TOL = 0.15             
 SAME_LABEL_MM = 300.0            
 SYMBOL_NEAR_REL, SYMBOL_NEAR_MM = 0.75, 150.0   
@@ -23,12 +24,16 @@ def _project(p0, p1, q) -> tuple:
   s = 0.0 if l2 <= 0.0 else max(0.0, min(1.0, ((q[0] - p0[0]) * vx + (q[1] - p0[1]) * vy) / l2))
   return p0[0] + s * vx, p0[1] + s * vy
 
+def reach_mm(lab: dict) -> float:
+  return max(LABEL_HOST_REACH_MM, 0.5 * float(lab["w_mm"]) + LABEL_WIDTH_SLACK_MM)
+
 def _place(lab: dict, rows: list, mm_per_pt: float) -> dict | None:
   q = (float(lab["x"]), float(lab["y"]))
+  reach = reach_mm(lab)
   near = []
   for row in rows:
     w, p0, p1, gaps = row
-    sc = H.score([p0, p1], [g for g, _ in gaps], q, mm_per_pt, reach_mm=LABEL_HOST_REACH_MM)
+    sc = H.score([p0, p1], [g for g, _ in gaps], q, mm_per_pt, reach_mm=reach)
     if sc is not None:
       near.append((sc, row))
       
@@ -41,7 +46,7 @@ def _place(lab: dict, rows: list, mm_per_pt: float) -> dict | None:
       if abs(g - want) > GAP_WIDTH_TOL * want:
         continue
       d = H._seg_distance(a, b, q) * mm_per_pt
-      if d <= LABEL_HOST_REACH_MM and (best is None or d < best[0]):
+      if d <= reach and (best is None or d < best[0]):
         best = (d, w, gi, ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0), g)
   if best is not None:
     return {"wall": best[1], "gap": best[2], "gap_mm": best[4], "point": best[3]}

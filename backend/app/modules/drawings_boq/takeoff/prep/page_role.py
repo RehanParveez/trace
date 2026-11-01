@@ -27,6 +27,8 @@ def _signal(name: str, role: str | None, certainty: float, why: str, **extra) ->
   return {"signal": name, "role": role, "certainty": round(float(certainty), 2), "why": why, **extra}
 
 def _plan_role(sheet_type: str | None, discipline: str | None, plan_kind: str | None, services: tuple) -> str | None:
+  if sheet_type == "POINTS_PLAN":
+    return MEP_PLAN
   if sheet_type == "PLAN":
     if discipline in services:
       return MEP_PLAN
@@ -38,14 +40,16 @@ def _plan_role(sheet_type: str | None, discipline: str | None, plan_kind: str | 
 def title_block_signal(identity: dict | None, read_view=None, services: tuple = ("ELECTRICAL", "PLUMBING", "FIRE", "HVAC", "GAS")) -> dict | None:
   i = identity or {}
   sheet_type, certainty = i.get("sheet_type"), 0.9 if i.get("basis") == "TITLE_BLOCK" else 0.75 if i.get("basis") == "TITLE" else 0.6
+  got: dict = {}
   if i.get("title") and read_view is not None:
-    own = read_view(i["title"]).get("sheet_type")
+    got = read_view(i["title"])
+    own = got.get("sheet_type")
     
     if own:
       sheet_type = own
     elif sheet_type:
       certainty = min(certainty, 0.6)
-  role = _plan_role(sheet_type, i.get("discipline"), i.get("plan_kind"), services)
+  role = _plan_role(sheet_type, i.get("discipline"), i.get("plan_kind") or got.get("plan_kind"), services)
   if role is None:
     return None
   return _signal("TITLE_BLOCK", role, certainty, f"the sheet says {sheet_type}" + (f": {i['title']}" if i.get("title") else ""))
@@ -55,7 +59,7 @@ def view_titles_signal(views: list | None, read_view, services: tuple = ("ELECTR
   total = 0
   for v in views or []:
     r = read_view(v.get("caption"))
-    role = _plan_role(r.get("sheet_type"), r.get("discipline"), None, services)
+    role = _plan_role(r.get("sheet_type"), r.get("discipline"), r.get("plan_kind"), services)
     total += 1
     if role is not None:
       kinds[role] = kinds.get(role, 0) + 1
@@ -74,6 +78,45 @@ def content_signal(pdf_type: str | None, image_cover: float, words: int, drawn: 
   if pdf_type == "IMAGE_PAGE" and float(image_cover or 0.0) >= IMAGE_PAGE_COVER and int(words or 0) <= IMAGE_PAGE_MAX_WORDS:
     return _signal("CONTENT", COVER, 0.85, f"{round(float(image_cover) * 100)}% of the page is one picture and it has {int(words)} words")
   return None
+
+
+COVER_LINE = re.compile(r"\b(?:OWNER|CLIENT)\s+NAME\b|\b(?:PROJECT|OWNER|CLIENT)\s*:|\bDRAWINGS?\s+FOR\s+(?:THE\s+)?PROPOSED\b|\bDESIGN\s+DRAWINGS?\b|\bSUBMITTED\s+(?:TO|BY)\b", re.I)
+COVER_MIN_LINES = 2
+COVER_MAX_WORDS = 80
+ABBREVIATION_LINE = re.compile(r"^[A-Za-z][A-Za-z.]*(?:\s+[A-Za-z][A-Za-z.]*){0,3}\s+[A-Z]{2,4}$")
+MIN_ABBREVIATIONS = 4
+
+def _abbreviates(line: str) -> bool:
+  if not ABBREVIATION_LINE.match(line.strip()):
+    return False
+  *name, code = line.split()
+  letters = re.sub(r"[^A-Za-z]", "", "".join(name)).upper()
+  if not letters or letters[0] != code[0] or code == name[-1].upper():
+    return False
+  rest = iter(letters)
+  return all(ch in rest for ch in code)
+
+def text_signal(lines: list, room_sizes: int, words: int) -> dict | None:
+  if int(room_sizes or 0) > 0:
+    return None
+  cover = sum(1 for t in lines if COVER_LINE.search(t))
+  if cover >= COVER_MIN_LINES and int(words or 0) <= COVER_MAX_WORDS:
+    return _signal("CONTENT", COVER, 0.85, f"{cover} lines read as a title page (project, owner, drawings for the proposed plot) and the sheet has {int(words or 0)} words")
+  abbreviations = sum(1 for t in lines if _abbreviates(t))
+  if abbreviations >= MIN_ABBREVIATIONS:
+    return _signal("CONTENT", NOTES, 0.8, f"{abbreviations} lines are a name followed by its abbreviation: a list of symbols")
+  return None
+
+SECTION_LAYER = re.compile(r"\bCOMPACTED\s+EARTH\b|\bHARD\s*CORE\b|\bBRICK\s+SOLING\b|\bSAND\s+FILLING\b", re.I)
+SECTION_LAYER_WORDS = 4
+
+def section_layer_signal(lines: list, room_sizes: int) -> dict | None:
+  if int(room_sizes or 0) > 0:
+    return None
+  labels = [t for t in lines if SECTION_LAYER.search(t) and len([w for w in t.split() if not re.search(r"[0-9'\"]", w)]) <= SECTION_LAYER_WORDS]
+  if not labels:
+    return None
+  return _signal("CONTENT", SECTION, 0.7, f"the sheet labels a foundation layer ({labels[0].strip()[:40]}) and prints no room size")
 
 def detail_sheet_signal(views: list | None, room_sizes: int) -> dict | None:
   titled = [v for v in views or [] if DETAIL_TITLE.search(str(v.get("caption") or ""))]

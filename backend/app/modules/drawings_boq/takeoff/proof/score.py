@@ -19,6 +19,9 @@ from app.modules.drawings_boq.takeoff.proof import levels as LV
 from app.modules.drawings_boq.takeoff.proof import steel_coverage as SC
 from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
+from app.modules.drawings_boq.takeoff.extract import identity_words as IW
+from app.modules.drawings_boq.takeoff.extract import floor_order as FO
+from app.modules.drawings_boq.takeoff.extract import floor_order as FO
 from types import SimpleNamespace
 from app.modules.drawings_boq.takeoff.extract import beam_overlap_service as BOS
 from app.modules.drawings_boq.takeoff.extract import slab_label as SL
@@ -365,9 +368,9 @@ def _is_plan(r: dict) -> bool:
   vote = ident.get("role_vote") or {}
   if vote.get("role") and not vote.get("held"):
     return vote["role"] in PRL.PLAN_ROLES
-  if ident.get("sheet_type") == "PLAN":
+  if ident.get("sheet_type") in IW.PLAN_TYPES:
     return True
-  return any(v.get("sheet_type") == "PLAN" for v in (ident.get("views") or []))
+  return any(v.get("sheet_type") in IW.PLAN_TYPES for v in (ident.get("views") or []))
 
 def _live(c) -> bool:
   return c.decision != "REJECTED" and not (c.facts or {}).get("set_aside")
@@ -443,6 +446,14 @@ def _held_for_scale(r: dict, live: list) -> bool:
 def scale_held(reads: list) -> list:
   return [f"{pdf} p.{r['page_no']}" for pdf, read in reads for r in read if _held_for_scale(r, [c for c in r["candidates"] if _live(c)])]
 
+def ordered_floors(read: list) -> dict:
+  sheets = [{"sheet_id": r["page_no"], "page_no": r["page_no"], "title": r.get("title"), "identity": (r.get("meta") or {}).get("identity"), "clues": (r.get("meta") or {}).get("floor_clues")} for r in read]
+  return {sid: g["floor"] for sid, g in FO.assign(sheets).items()}
+
+def ordered_floors(read: list) -> dict:
+  sheets = [{"sheet_id": r["page_no"], "page_no": r["page_no"], "title": r.get("title"), "identity": (r.get("meta") or {}).get("identity"), "clues": (r.get("meta") or {}).get("floor_clues")} for r in read]
+  return {sid: g["floor"] for sid, g in FO.assign(sheets).items()}
+
 def invariants(reads: list, accs: list, rows: list) -> list:
   res = []
   def add(name, bad, why):
@@ -452,6 +463,7 @@ def invariants(reads: list, accs: list, rows: list) -> list:
 
   non_plan, structural, no_floor, no_scale = [], [], [], []
   for pdf, read in reads:
+    ordered = ordered_floors(read)
     for r in read:
       tag = f"{pdf} p.{r['page_no']}"
       live = [c for c in r["candidates"] if _live(c)]
@@ -463,7 +475,7 @@ def invariants(reads: list, accs: list, rows: list) -> list:
         structural += [tag] * sum(1 for c in live if c.category in ("DOOR", "WINDOW"))
       if _is_plan(r) and live:
         title = r.get("title") or {}
-        if not title.get("composite") and not (title.get("level_hint") or ident.get("floor")):
+        if not title.get("composite") and not (title.get("level_hint") or ident.get("floor")) and r["page_no"] not in ordered:
           no_floor.append(tag)
         if r.get("ratio") is None:
           if not _held_for_scale(r, live):

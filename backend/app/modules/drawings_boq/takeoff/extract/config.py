@@ -91,6 +91,7 @@ STAIR_LINE_MIN = 0.6
 STAIR_LINE_MAX = 1.3
 STAIR_ALIGN_PT = 2.5
 STAIR_LABEL_REACH_MM = 6000.0
+STAIR_OPEN_REACH_MM = 3000.0
 STAIR_SHORT_MIN_TREADS = 3           
 STAIR_SHORT_LABEL_REACH_MM = 2000.0  
 STAIR_PROBES = tuple((t, w) for t in (230.0, 280.0, 330.0) for w in (900.0, 1100.0, 1400.0))
@@ -206,6 +207,7 @@ NOTES = {
   "FOOTING_SIZE_BY_ELIMINATION": ("warning", "The footing details print one more size than the footing marks use. That size is taken for the stair footing. Check it."),
   "NECK_HEIGHT_ASSUMED": ("warning", "The drawing does not print the height of the neck column. The height from the QS's workbook is used. Type another height to override it."),
   "MARK_WITHOUT_DETAIL": ("warning", "A footing mark of the plan has no detail view carrying the same mark, though the drawing prints such views for other marks."),
+  "COLUMN_STEEL_FROM_PROPOSED_DETAIL": ("warning", "No column detail is captioned with this mark, so the bars of the detail of the same size that is proposed for it are taken (and its rings, if the sheet gave none). The detail is a guess at which one belongs to this column: check it, or type the bars when you accept the column."),
   "COLUMN_MARK_NO_DETAIL": ("warning", "No column detail is captioned with this mark. A detail of the same size is proposed. Check it."),
   "COLUMN_MARK_BY_SIZE": ("warning", "Squares are drawn on this plan with no mark. A column detail of the same size that no plan mark uses is proposed for them. Check it."),
   "COLUMN_DETAIL_NO_PLAN_MARK": ("info", "A column detail has no mark on any framing plan. Check whether it belongs to a column of this job."),
@@ -517,7 +519,7 @@ NOTES = {
   "LIGHT_PEN_WALLS_KEPT": ("info", "Some walls on this ground-level sheet are drawn in a lighter line weight than the main walls (boundary, lawn and thin partition walls). The long ones of 4.5 to 6 inch thickness were read as walls. Stair treads and furniture lines were not."),
   "LIGHT_PEN_WALL": ("info", "This wall is drawn in a lighter line weight than the main walls on the sheet. Check it is a wall and not a boundary line."),
   "STAIR_TWIN_ABOVE": ("warning", "This flight is the second view of a stair that is measured on another floor: laid on one another, the two plans put it within a metre of that flight (the two halves of one stair well). It is kept as a sighting with no quantity; the concrete is measured once, on the flight it is the twin of. Accept it only if the plan really has a second stair here."),
-  "STAIR_EXTERNAL": ("info", "This stair is outside the building (a label names it external, or it lies outside the thick walls of the plan). It is not paired with a stair on another floor and it is not taken out of a slab; where another sheet shows the same outside stair, the copy at the larger scale is the one measured."),
+  "STAIR_EXTERNAL": ("info", "This stair is outside the building (a label names it external, a lawn, garden or yard is named beside it, or it lies outside the thick walls of the plan). It is not paired with a stair on another floor and it is not taken out of a slab; where another sheet shows the same outside stair, the copy at the larger scale is the one measured."),
   "STAIR_SAME_AS_UP_FLIGHT": ("warning", "This DN flight is the same staircase as the UP flight drawn on the floor below. It is one concrete stair: accept only one of them, or it is counted twice."),
   "STAIR_EXTERNAL_TWIN": ("warning", "This is the second view of an outside stair that is measured on another sheet: laid on one another, the two sheets put it within a metre of that stair, with the same width and a riser count within one. The copy on the sheet drawn at the larger scale is the one measured. This one is kept as a sighting with no quantity."),
   "STAIR_EXTERNAL_UNPAIRED": ("warning", "This is an outside stair and another sheet shows a stair of the same width and riser count that could be the same stair, but the two sheets have no common frame (no walls to lay one on the other, and not the same scale). Nothing is paired: both are kept, so the stair may be counted twice. Accept one and reject the other."),

@@ -1,9 +1,13 @@
 from __future__ import annotations
 import re
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import room_types as RT
 
 _EXT = re.compile(r"(?<![A-Z])(?:EXT\.?|EXTERNAL|EXTERIOR|OUTSIDE)(?![A-Z])", re.I)
 _STAIR = re.compile(r"STAIR|(?<![A-Z])STEPS?(?![A-Z])", re.I)
+
+_OPEN = re.compile(r"(?<![A-Z])(?:LAWN|GARDEN|YARD|COURT\s*YARD)(?![A-Z])", re.I)
+_VOID = re.compile(r"(?<![A-Z])(?:BELOW|ABOVE|OPEN\s+TO)(?![A-Z])", re.I)
 
 def labels(lines: list) -> list:
   out = []
@@ -15,6 +19,28 @@ def labels(lines: list) -> list:
     if not ws:
       continue
     out.append({"text": text, "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
+  return out
+
+def open_labels(lines: list) -> list:
+  """The names of open ground (REAR LAWN, GARDEN, YARD): a stair drawn in one climbs out of it, not out of a room. A label that says what lies below or above (LAWN BELOW on a floor plan) names a void, not the ground the stair stands in."""
+  out = []
+  for ln in lines:
+    text = (getattr(ln, "text", "") or "").strip()
+    if not text or len(text) > 30 or not _OPEN.search(text) or _VOID.search(text):
+      continue
+    ws = [w for _, _, w in ln.spans]
+    if not ws:
+      continue
+    out.append({"text": text, "x": sum(w.cx for w in ws) / len(ws), "y": sum(w.cy for w in ws) / len(ws)})
+  return out
+
+def room_labels(lines: list) -> list:
+  out = []
+  for ln in lines:
+    for _, _, w in ln.spans:
+      text = (getattr(w, "text", "") or "").strip()
+      if len(text) >= 3 and RT.type_of(text) not in (RT.OTHER, RT.LAWN):
+        out.append({"text": text, "x": w.cx, "y": w.cy})
   return out
 
 def outline(walls: list, mm_per_pt: float) -> tuple | None:
@@ -58,11 +84,23 @@ def mark(stairs: list, lines: list, walls: list, mm_per_pt: float | None) -> int
     if best is not None:
       named.add(id(best))
       
+  open_reach2 = (C.STAIR_OPEN_REACH_MM / mm_per_pt) ** 2
+  in_open: set = set()
+  rooms = room_labels(lines)
+  for lab in open_labels(lines):
+    best, best_d = None, open_reach2
+    for c in boxed:
+      d = _gap(c.facts["flight_box"], lab["x"], lab["y"])
+      if d <= best_d:
+        best, best_d = c, d
+    if best is not None and not any(_gap(best.facts["flight_box"], r["x"], r["y"]) < best_d for r in rooms):
+      in_open.add(id(best))
   frame = outline(walls, mm_per_pt)
+  
   count = 0
   for c in stairs:
     box = (c.facts or {}).get("flight_box")
-    by = "LABEL" if id(c) in named else ("OUTLINE" if frame is not None and box and _outside(box, frame) else None)
+    by = "LABEL" if id(c) in named else ("OPEN_SPACE" if id(c) in in_open else ("OUTLINE" if frame is not None and box and _outside(box, frame) else None))
     if by is None:
       continue
     c.facts = {**(c.facts or {}), "external": True, "external_by": by}

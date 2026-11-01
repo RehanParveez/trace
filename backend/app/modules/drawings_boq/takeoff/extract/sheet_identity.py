@@ -78,13 +78,18 @@ def _level_of(texts: list) -> str | None:
         return code
   return None
 
+_VIEW_FRAMING = re.compile(r"\b(?:BEAMS?|SLABS?|FRAMING|COLUMNS?)\b", re.I)
+
 def read_view(caption: str | None) -> dict:
   text = caption or ""
   score, _hits, _top = _scores([(text, 1.0)])
   ordered = sorted(score.items(), key=lambda kv: -kv[1])
   discipline = ordered[0][0] if ordered and ordered[0][1] >= MIN_SCORE else None
   sheet_type, _ = _type_of([text])
-  return {"discipline": discipline, "sheet_type": sheet_type, "floor": _level_of([text])}
+  kind = None
+  if sheet_type == "PLAN":
+    kind = "FOUNDATION" if _FOUNDATION.search(text) else "FRAMING" if _VIEW_FRAMING.search(text) else None
+  return {"discipline": discipline, "sheet_type": sheet_type, "floor": _level_of([text]), "plan_kind": kind}
 
 def identify(words: list, cropbox: tuple, title: dict | None = None, views: list | None = None) -> dict:
   title = title or {}
