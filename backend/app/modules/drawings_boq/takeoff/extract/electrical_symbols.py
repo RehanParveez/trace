@@ -455,7 +455,20 @@ def read_legend(page) -> list:
   tp = page.get_textpage()
   heights = _height_table(tp)
   found = _read_ruled(page, objs, tp, rot, ox, oy, wu, hu, heights)
-  return found if found else _read_structured(page, objs, tp, rot, ox, oy, wu, hu, heights)
+  return _distinct_names(found if found else _read_structured(page, objs, tp, rot, ox, oy, wu, hu, heights))
+
+def _distinct_names(found: list) -> list:
+  by: dict = collections.defaultdict(list)
+  for s in found:
+    by[s.name.upper()].append(s)
+  for same in by.values():
+    if len(same) < 2:
+      continue
+    tags = [s.token for s in same]
+    by_token = all(tags) and len(set(tags)) == len(tags)
+    for n, s in enumerate(same, 1):
+      s.name = f"{s.name} ({s.token if by_token else n})"
+  return found
 
 def title_box(page, lines: list | None = None) -> tuple | None:
   """The box of the title block, from its own label words (client, project, drawn, checked, title ...) in the lower right of the sheet, in the display frame; None when fewer than three are found."""

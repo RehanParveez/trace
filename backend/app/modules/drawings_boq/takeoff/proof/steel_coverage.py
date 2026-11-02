@@ -1,15 +1,17 @@
 from __future__ import annotations
 from app.engine.measure.member_steel import BAR_ROLES, clean_steel
+from app.modules.drawings_boq.takeoff import repository as TR
 
 KINDS = ("BEAM", "LINTEL", "COLUMN", "FOOTING", "SLAB", "CHAJJA", "BALCONY_SLAB", "RCC_WALL", "STAIR", "TANK", "PARAPET")
 NO_SECTION_JOINED, SECTION_HAS_NO_BARS, BARS_UNREADABLE = "NO_SECTION_JOINED", "SECTION_HAS_NO_BARS", "BARS_UNREADABLE"
-MAIN_BARS_NOT_READ = "MAIN_BARS_NOT_READ"
+MAIN_BARS_NOT_READ, BARS_NOT_MEASURABLE = "MAIN_BARS_NOT_READ", "BARS_NOT_MEASURABLE"
 
 REASON_TEXT = {
   NO_SECTION_JOINED: "no section, schedule row or note was joined to the member",
   SECTION_HAS_NO_BARS: "a section was joined to the member but no bars were read from it",
   BARS_UNREADABLE: "bars are printed with the member (a note, a string, a panel) but could not be tied to it",
   MAIN_BARS_NOT_READ: "rings were read but no main bars: the member is counted from its rings alone",
+  BARS_NOT_MEASURABLE: "bar strings are printed with the member but the sheet has no verified scale, so no length is read and the band stands",
 }
 
 LINTEL_ROW_AS_PRINTED, SECTION_ASSUMED, SHORT_NECK_ANCHORAGE = "LINTEL_ROW_AS_PRINTED", "SECTION_ASSUMED", "SHORT_NECK_ANCHORAGE"
@@ -25,8 +27,10 @@ VERDICT_TEXT = {
   NO_SECTION_TO_COMPARE: "no section is joined to compare with: flagged for review",
 }
 
+MESH_KEYS = ("mesh",)
+
 def _main(steel: dict | None) -> bool:
-  return any(steel.get(r) for r in BAR_ROLES) if steel else False
+  return any(steel.get(r) for r in BAR_ROLES + MESH_KEYS) if steel else False
 
 def _steel(c: dict) -> dict | None:
   return clean_steel((c.get("params") or {}).get("steel")) or None
@@ -39,7 +43,8 @@ def reason(c: dict) -> str | None:
   if steel:
     return MAIN_BARS_NOT_READ
   panel = f.get("panel_steel") or {}
-  
+  if (f.get("slab_bar_strings") or {}).get("strings"):
+    return BARS_NOT_MEASURABLE
   if f.get("steel_text") or f.get("steel_source") or (panel.get("strings") or 0) > 0:
     return BARS_UNREADABLE
   if f.get("section_mark") or f.get("section_options"):
@@ -68,6 +73,14 @@ def verdict(row: dict, c: dict | None) -> str:
     return MATCHES_SECTION if same else DIFFERS_FROM_SECTION
   return NO_SECTION_TO_COMPARE
 
+def kind_of(c: dict) -> str | None:
+  f = c.get("facts") or {}
+  if c.get("category") == "WALL":
+    return "RCC_WALL" if f.get("construction") == "RCC" else None
+  if c.get("category") == "SITE":
+    return TR.FORMWORK_SITE.get(f.get("site_kind"))
+  return c.get("category")
+
 def _find(cands: list, src: dict) -> dict | None:
   size = [round(float(x)) for x in src.get("size_mm") or []]
   for c in cands:
@@ -80,11 +93,11 @@ def _find(cands: list, src: dict) -> dict | None:
   return None
 
 def coverage(cands: list, ledger: list) -> dict:
-  accepted = [c for c in cands if c.get("decision") == "ACCEPTED" and c.get("category") in KINDS]
+  accepted = [{**c, "category": kind_of(c)} for c in cands if c.get("decision") == "ACCEPTED" and kind_of(c) in KINDS]
   kinds: dict = {}
   
   for c in accepted:
-    k = kinds.setdefault(c["category"], {"members": 0, "printed": 0, "rings_only": 0, "band": 0, "reasons": {}})
+    k = kinds.setdefault(c["category"], {"members": 0, "printed": 0, "rings_only": 0, "band": 0, "reasons": {}, "kg_printed": 0.0, "kg_band": 0.0})
     n = int(c.get("count") or 1)
     k["members"] += n
     why = reason(c)
@@ -104,10 +117,16 @@ def coverage(cands: list, ledger: list) -> dict:
     q = float(r.get("quantity") or 0.0)
     pct = float(((r.get("spec") or {}).get("params") or {}).get("steel_wastage_pct") or 0.0)
     waste += q - q / (1 + pct / 100.0)
+    row_kind = (((r.get("trace") or {}).get("inputs") or {}).get("steel_source") or {}).get("category")
+    slot = kinds.get(row_kind)
     if "STEEL_ESTIMATED" in (r.get("warnings") or ()):
       kg_band += q
+      if slot:
+        slot["kg_band"] += q
     else:
       kg_printed += q
+      if slot:
+        slot["kg_printed"] += q
       if _main(clean_steel((((r.get("trace") or {}).get("inputs") or {}).get("steel_source") or {}).get("steel")) or None):
         kg_main += q
   total = kg_printed + kg_band
@@ -125,6 +144,8 @@ def coverage(cands: list, ledger: list) -> dict:
     slot["rows"] += 1
     slot["categories"][o["category"]] = slot["categories"].get(o["category"], 0) + 1
     
+  for v in kinds.values():
+    v["kg_printed"], v["kg_band"] = round(v["kg_printed"], 1), round(v["kg_band"], 1)
   return {"kinds": {k: kinds[k] for k in KINDS if k in kinds}, "members": sum(v["members"] for v in kinds.values()), "printed": sum(v["printed"] for v in kinds.values()),
     "printed_kg": round(kg_printed, 1), "band_kg": round(kg_band, 1), "printed_share_pct": round(100.0 * kg_printed / total, 1) if total else None,
     "main_bars_kg": round(kg_main, 1), "main_bars_share_pct": round(100.0 * kg_main / total, 1) if total else None,
@@ -135,9 +156,9 @@ def coverage(cands: list, ledger: list) -> dict:
 def lines(cov: dict) -> list:
   out = [f"**Steel coverage** (not part of the hash): {cov['printed']} of {cov['members']} accepted members have main bars read from the drawing; {cov['printed_kg']:,} kg of the {cov['printed_kg'] + cov['band_kg']:,.1f} kg "
     f"({cov['printed_share_pct']}%) come from printed bars and {cov['band_kg']:,} kg from the usual band; {cov['main_bars_kg']:,} kg ({cov['main_bars_share_pct']}%) are from members whose main bars were read, the rest of the printed kg being rings alone. Waste is inside every row; its own line is {cov['waste_kg']:,} kg at {', '.join(f'{p:g}' for p in cov['waste_pct'])} % (rule steel_wastage_pct).", "",
-    "| Kind | Members | Main bars read | Rings only | On the band | Why no main bars |", "|---|---|---|---|---|---|"]
+    "| Kind | Members | Main bars read | Rings only | On the band | kg from printed bars | kg from the band | Why no main bars |", "|---|---|---|---|---|---|---|---|"]
   for kind, v in cov["kinds"].items():
-    out.append(f"| {kind} | {v['members']} | {v['printed']} | {v['rings_only']} | {v['band']} | " + ("; ".join(f"{k} {n}" for k, n in sorted(v["reasons"].items())) or "") + " |")
+    out.append(f"| {kind} | {v['members']} | {v['printed']} | {v['rings_only']} | {v['band']} | {v['kg_printed']:,} | {v['kg_band']:,} | " + ("; ".join(f"{k} {n}" for k, n in sorted(v["reasons"].items())) or "") + " |")
     
   ob = cov["outside_band"]
   if ob["rows"]:

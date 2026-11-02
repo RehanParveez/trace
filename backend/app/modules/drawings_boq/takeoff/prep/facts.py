@@ -361,6 +361,15 @@ def read_facts(lines: list, words: list | None = None, scanned: bool = False) ->
       seen[key]["count"] += 1
     elif len(seen) < MAX_ITEMS_PER_SHEET:
       seen[key] = {**it, "count": 1}
+  if words:
+    from app.modules.drawings_boq.takeoff.prep import roof_levels as RL
+    for r in RL.read(words):
+      it = {"kind": RL.KIND, "scope": r["name"], "value_mm": r["mm"], "where": r["sheet"], "text": r["text"]}
+      key = (it["kind"], it["scope"], it["value_mm"], None, None, None, None, it["where"], None, None, None, None)
+      if key in seen:
+        seen[key]["count"] += 1
+      else:
+        seen[key] = {**it, "count": 1}
   out = {"items": list(seen.values()), "level_marks": [{"mm": k, "count": v} for k, v in sorted(marks.items())]}
   named = named_levels(lines)
   if named:

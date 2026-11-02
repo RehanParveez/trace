@@ -10,6 +10,8 @@ footing F1 5 x 4 ft
 footing F2 6 x 4 ft
 footing F3 5 x 4.5 ft
 footing F4 6 x 4.5 ft
+legend cat six cable x3 on the First floor
+legend cat six cable x3 on the Ground floor
 legend ceiling fan x3 on the First floor
 legend ceiling fan x6 on the Ground floor
 legend smoke detector x1 on the First floor

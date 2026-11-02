@@ -10,7 +10,11 @@ from app.core.exceptions import TraceException
 from app.modules.drawings_boq.takeoff.prep_service import PrepService
 from app.modules.drawings_boq.takeoff.levels import LEVELS, KEY_PREFIX, view_level_id
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import foundation as FD
+from app.modules.drawings_boq.takeoff.extract import stair_rise as SRS
 from app.modules.drawings_boq.takeoff.extract import tank_record as TR
+from app.modules.drawings_boq.takeoff.extract import wall_steel as WST
+from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.engine.measure import takeoff as tk
 from pydantic import ValidationError
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
@@ -57,6 +61,8 @@ class Accepted:
   decision_log: dict = field(default_factory=dict)     
   copies: dict = field(default_factory=dict)           
   tanks: list = field(default_factory=list)
+  wall_steel: list = field(default_factory=list)
+  electrical: list = field(default_factory=list)
 
 def _sheet_for(case: str, drawing_id: UUID, r: dict, levels: dict) -> TakeoffSheet:
   title = r.get("title") or {}
@@ -219,6 +225,12 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     drawing_id = uid(case, "drawing", pdf_name)
     out.drawings[drawing_id] = pdf_name
     BM.choose_floor_sources(rows)
+    meta = PrepService.floor_heights_from([SimpleNamespace(page_no=r["page_no"], label=None, prep_meta=r.get("meta") or {}) for r in rows])
+    SRS.apply(rows, meta["heights"])
+    out.wall_steel.append({"drawing_id": drawing_id, **WST.apply(rows, C.note)})
+    cov = EL.coverage(rows)
+    if cov:
+      out.electrical.append({"drawing_id": drawing_id, **cov})
     out.tanks.extend({**t, "drawing_id": drawing_id} for t in TR.pair(rows, {k: v for k, v in (decisions or {}).items() if k.startswith(TR.DECISION_PREFIX)}))
     level_ids, floor_of = _levels(case, drawing_id, rows)
     out.floor_of.update(floor_of)
@@ -242,11 +254,12 @@ def accept_case(case: str, reads: list, profile, *, ready_only: bool = False, po
     pages = [{"page_no": r["page_no"], "label": None, "facts": r.get("facts")} for r in rows if r.get("facts") is not None]
     every_page.extend(pages)
     out.printed[drawing_id] = printed_params.from_items(drawing_facts.gather(pages)["items"])
-    out.meta[drawing_id] = PrepService.floor_heights_from([SimpleNamespace(page_no=r["page_no"], label=None, prep_meta=r.get("meta") or {}) for r in rows])
+    out.meta[drawing_id] = meta
     _apply_slab_openings(list(sheets.values()), read_for_ready)
     _apply_beam_sources(list(sheets.values()), read_for_ready)
   
   out.printed_all = printed_params.from_items(drawing_facts.gather(every_page)["items"])
+  FS.lift_assumed(out.candidates, FD.WORK_ITEM[FD.ROOF_TREATMENT], C.note)
   for drawing_id, read in out.read.items():
     out.copies.update({fl: {**e, "drawing_id": drawing_id} for fl, e in FS.floor_copies(read).items()})
   if decisions:
@@ -359,7 +372,7 @@ def split_by_drawing(acc: Accepted) -> list:
     out.append(Accepted(case=acc.case, drawings={drawing_id: pdf}, sheets=sheets, read={drawing_id: acc.read[drawing_id]}, candidates=[c for c in acc.candidates if c.sheet_id in sheets],
       calibrations=[c for c in acc.calibrations if c.id in cal_ids], measurements=ms, floor_of=dict(acc.floor_of), meta={drawing_id: acc.meta[drawing_id]},
       printed={drawing_id: acc.printed[drawing_id]}, printed_all=acc.printed_all, problems=[p for p in acc.problems if p.get("pdf") == pdf], tally=acc.tally,
-      copies={fl: e for fl, e in acc.copies.items() if e["drawing_id"] == drawing_id}, tanks=[t for t in acc.tanks if t["drawing_id"] == drawing_id]))
+      copies={fl: e for fl, e in acc.copies.items() if e["drawing_id"] == drawing_id}, tanks=[t for t in acc.tanks if t["drawing_id"] == drawing_id], electrical=[e for e in acc.electrical if e["drawing_id"] == drawing_id]))
   return out
 
 def _datums(acc: Accepted) -> dict:

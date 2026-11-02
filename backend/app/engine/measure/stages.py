@@ -43,6 +43,7 @@ DEFAULTS = {
   "floor_slab_min_area_frac": 0.5,
   "stage_snap_mm": 5.0,
   "parapet_height_mm": 914.4,
+  "roof_upturn_mm": 0.0,
   "tank_depth_mm": 1524.0,
   "tank_wall_mm": 152.4,
 }
@@ -52,7 +53,7 @@ RULE_PREFIX = "stage."
 PLINTH_STOREY = "stage.plinth_storey"
 LOWEST, GROUND_STOREY = "LOWEST", "GROUND"
 LEVELS_ENV = "TRACE_LEVELS"
-STAGE_RULES = {"dpc_below_ffl_mm": (0.0, 2000.0), "lintel_height_mm": (1500.0, 3500.0), "parapet_height_mm": (0.0, 3000.0), "tank_depth_mm": (600.0, 4000.0), "tank_wall_mm": (75.0, 450.0)}
+STAGE_RULES = {"dpc_below_ffl_mm": (0.0, 2000.0), "lintel_height_mm": (1500.0, 3500.0), "parapet_height_mm": (0.0, 3000.0), "roof_upturn_mm": (0.0, 1500.0), "tank_depth_mm": (600.0, 4000.0), "tank_wall_mm": (75.0, 450.0)}
 MIN_PARAPET_MM = 100.0
 FFL_BIN_MM = 5.0
 HEAD_CLEARANCE_MM = 100.0

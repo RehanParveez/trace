@@ -66,6 +66,7 @@ class ChooseFloorSourcesResponse(BaseModel):
   chosen: list[dict] = Field(default_factory=list)
   set_aside: int = 0
   restored: int = 0
+  sheets_changed: int = 0
   blocked: list[dict] = Field(default_factory=list)
   floors: FloorSourcesResponse
  

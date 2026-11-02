@@ -5,6 +5,8 @@ from app.modules.drawings_boq.takeoff.extract import combine_plan as CP
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff.extract import floor_union as FU
+from app.modules.drawings_boq.takeoff.extract.revisions_service import RevisionService
+from types import SimpleNamespace
 
 class FloorUnionService(FloorSourceService):
 
@@ -62,3 +64,7 @@ class FloorUnionService(FloorSourceService):
     out = await self.combine(org, user_id, drawing_id, automatic=True)
     rest = await super()._default_floors(org, user_id, drawing_id)
     return [*out["combined"], *rest]
+
+  async def _default_rest(self, org: UUID, user_id: UUID, drawing_id: UUID) -> int:
+    taken = await RevisionService(self.session).choose_revisions(org, user_id, drawing_id, SimpleNamespace(use_default=True, choices=None), automatic=True)
+    return taken["sheets_changed"] + await super()._default_rest(org, user_id, drawing_id)

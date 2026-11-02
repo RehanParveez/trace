@@ -18,3 +18,5 @@
 - {kind: LEGEND_COUNT, floor: FIRST, description: CEILING FAN, count: 3, source: {pdf: 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf, page: 30, text: "3 fans printed 56 in"}}
 - {kind: LEGEND_COUNT, floor: GROUND, description: SMOKE DETECTOR, count: 3, source: {pdf: 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf, page: 29, text: "3 symbols printed SD."}}
 - {kind: LEGEND_COUNT, floor: FIRST, description: SMOKE DETECTOR, count: 1, source: {pdf: 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf, page: 30, text: "1 symbol printed SD."}}
+- {kind: LEGEND_COUNT, floor: GROUND, description: CAT SIX CABLE, count: 3, source: {pdf: 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf, page: 29, text: "3 tags printed C-6"}}
+- {kind: LEGEND_COUNT, floor: FIRST, description: CAT SIX CABLE, count: 3, source: {pdf: 191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf, page: 30, text: "3 tags printed C-6"}}

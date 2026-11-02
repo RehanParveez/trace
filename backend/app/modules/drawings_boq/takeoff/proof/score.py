@@ -17,7 +17,9 @@ from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.modules.drawings_boq.takeoff.proof import levels as LV
+from app.modules.drawings_boq.takeoff.proof import convention_infer as CV
 from app.modules.drawings_boq.takeoff.proof import steel_coverage as SC
+from app.modules.drawings_boq.takeoff.proof import electrical_coverage as ECV
 from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 from app.modules.drawings_boq.takeoff.extract import identity_words as IW
@@ -52,7 +54,7 @@ def r3(v):
 CASE_RULES_NOTE = "These rules were read from the totals of one workbook, not stated by the QS, and could fit one building. Until the QS answers, a number that depends on them is that workbook's, not a convention."
 
 def digest(doc: dict) -> str:
-  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join", "floor_copies", "tanks")}
+  body = {k: v for k, v in doc.items() if k not in ("hash", "timings", "stage_view", "members", "wall_faces", "warnings", "fact_decisions", "options", "quantities", "robust", "steel", "reading_work", "levels", "mark_join", "floor_copies", "tanks", "electrical", "dpc")}
   return hashlib.sha256(json.dumps(r3(body), sort_keys=True, separators=(",", ":"), ensure_ascii=False, default=str).encode("utf-8")).hexdigest()
 
 WALL_FORMULA = "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS"
@@ -650,6 +652,14 @@ def members_view(accs: list) -> dict | None:
   found = MB.build(plans, None, mark_skip(LG.undecided_sheets(plans)))
   return found.summary() if found.members else None
 
+def _outline_gap(r: dict, key: str) -> float | None:
+  fo = (r.get("stats") or {}).get("floor_outline")
+  return None if not fo else (fo.get("gaps") or {}).get(key)
+
+def _outline_share(r: dict) -> float | None:
+  fo = (r.get("stats") or {}).get("floor_outline")
+  return round(100.0 * (1.0 - (fo.get("gaps") or {}).get("metres", 0.0) / fo["perimeter_m"]), 1) if fo and fo.get("perimeter_m") else None
+
 def wall_faces_view(accs: list) -> dict | None:
   
   from app.modules.drawings_boq.takeoff.extract import finishes as FN, config as XC
@@ -668,6 +678,7 @@ def wall_faces_view(accs: list) -> dict | None:
         faces = FN.plaster_faces(walls, mm)
         sides = g.sides()
         rows.append({"page_no": r["page_no"], "floor": (r.get("title") or {}).get("level_hint"), "walls": len(walls), "rooms": len(rooms), "closed": g.closed, "open_rooms": sorted(g.open_rooms),
+          "outline_share_pct": _outline_share(r), "gap_m": _outline_gap(r, "metres"), "gap_opening_m": _outline_gap(r, "opening_metres"), "unattached": [u["length_m"] for u in ((r.get("stats") or {}).get("floor_outline") or {}).get("unattached") or []],
           "outline_in_m": round(sum(f["in"] * f["l"] for f in faces), 1), "outline_out_m": round(sum(f["out"] * f["l"] for f in faces), 1),
           "graph_in_m": round(sum(s[0] * f["l"] for s, f in zip(sides, faces)), 1), "graph_out_m": round(sum(s[1] * f["l"] for s, f in zip(sides, faces)), 1)})
   rows.sort(key=lambda x: (str(x["floor"]), x["page_no"]))
@@ -967,6 +978,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   if keep is not None:
     keep["reads"] = reads
   steel_by_policy: dict = {}
+  dpc_by_policy: dict = {}
 
   decision_log: dict = {}
 
@@ -984,6 +996,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     
     if record:
       steel_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("steel") or {})
+      dpc_by_policy[policy_ready].append(((res.stats or {}).get("derived") or {}).get("dpc") or {})
     for e in res.errors:
       errors.append({"pdf": ", ".join(names), **(e if isinstance(e, dict) else {"message": str(e)})})
     ledger = [{**{k: v for k, v in r.items() if k != "_entry"}, "quantity": float(r["quantity"])} for r in res.rows]
@@ -1019,6 +1032,13 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   levels = LV.build(lines, lines_d, lines_r, decisions=case.get("decisions") or [], decision_log=decision_log, corrections=case.get("corrections") or [], applied=applied, pending=pending,
     correction_problems=correction_problems, ledger=ledger_d, residuals=case.get("residuals") or [])
 
+  conventions = case.get("conventions") or []
+  basis = CV.labels(conventions, lines)
+  for group in (lines, lines_d, lines_r):
+    for l in group:
+      l["basis"] = basis.get(l["key"])
+  levels["conventions"] = CV.view(conventions, CIO.load_company_rules(case)[0], basis)
+
   facts = check_facts([r for _n, rows in reads for r in rows], case["facts"])
   doc = {"case": case["name"], "tier": case["tier"], "status": "SCORED", "policy": "ready_only" if main_ready else "accept_all", "lines": lines, "facts": facts,
     "facts_tally": {s: sum(1 for f in facts if f["status"] == s) for s in sorted({f["status"] for f in facts})},
@@ -1043,6 +1063,13 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     doc["steel"] = steel
     dumped_ledger, dumped_cands = dump_view({"accs": accs, "ledger": ledger})
     steel["coverage"] = SC.coverage(dumped_cands, dumped_ledger)
+  dpc_runs = [(d.get("pdf") or {}) for d in dpc_by_policy.get(main_ready) or []]
+  if any(dpc_runs):
+    doc["dpc"] = {"walls_counted": sum(d.get("walls_counted", 0) for d in dpc_runs), "walls_on_dpc": sum(d.get("walls", 0) for d in dpc_runs), "walls_off_dpc": sum(d.get("off_dpc", 0) for d in dpc_runs),
+      "length_m": round(sum(d.get("length_m", 0.0) for d in dpc_runs), 2), "doors_taken_out": sum(d.get("doors_taken_out", 0) for d in dpc_runs), "net_m2": round(sum(float(d.get("net_m2", 0)) for d in dpc_runs), 3)}
+  ecov = ECV.view(accs)
+  if ecov:
+    doc["electrical"] = ecov
   view = stage_view(case, ledger, floor_all, catalog)
   if view:
     doc["stage_view"] = view
@@ -1165,6 +1192,8 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     out += [""]
     if sv.get("coverage"):
       out += SC.lines(sv["coverage"])
+  if doc.get("electrical"):
+    out += ECV.lines(doc["electrical"])
   if doc.get("robust"):
     rb = doc["robust"]
     out += [f"**Robustness** (not part of the hash; more than {rb['move_pct']:g}% is a move): worst move {rb['worst_pct']:g}%."]
@@ -1191,6 +1220,9 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     out += ["**Two copies of a floor** (decision FLOOR_COPY:<floor>, PLAN or KEY_PLAN; not part of the hash). Openings by mark on the plan that is used and on the key plan set aside; the plan is the default.", "", "| Decision | Plan page | Key plan page | Marks that differ (plan / key plan) | Marks that agree |", "|---|---|---|---|---|"]
     out += [f"| {x['id']} | {x['kept_page']} | {x['aside_page']} | " + ", ".join(f"{m['mark']} {m['plan']}/{m['key_plan']}" for m in x["marks"]) + f" | {x['same']} |" for x in doc["floor_copies"]]
     out += [""]
+  if doc.get("dpc"):
+    d = doc["dpc"]
+    out += [f"**DPC at the plinth** (not part of the hash): {d['walls_on_dpc']} of {d['walls_counted']} counted walls cross the DPC level ({d['walls_off_dpc']} do not), {d['length_m']} m of wall, {d['doors_taken_out']} door widths taken out, {d['net_m2']} m2 net.", ""]
   if doc.get("tanks"):
     out += ["**Tanks** (one record per kind of tank; decision TANK_SIZE:<kind> as length x width, or length x width x height x thickness, in mm; not part of the hash). Sizes are outside sizes in mm; each says the route it comes from and its page.", "", "| Tank | Plan | Depth | Wall | Top / base slab | Kept on page | Sheets | Sources |", "|---|---|---|---|---|---|---|---|"]
     out += [f"| {t['kind']} | " + (f"{t['plan_mm'][0]:g} x {t['plan_mm'][1]:g}" if t.get("plan_mm") else "not found") + f" | {t['depth_mm']:g} | {t['wall_mm']:g} | {t['top_mm']:g} / {t['base_mm']:g} | {t['kept_page'] or 'held'} | "
@@ -1199,8 +1231,8 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
 
   if doc.get("wall_faces"):
     wf = doc["wall_faces"]
-    out += [f"**Wall faces** ({wf['closed']} of {wf['of']} plan sheets have walls that close; not part of the hash)", "", "| Page | Floor | Walls | Rooms | Closed | Rooms in the open | Inside, outline (m) | Inside, graph (m) | Outside, outline (m) | Outside, graph (m) |", "|---|---|---|---|---|---|---|---|---|---|"]
-    out += [f"| {x['page_no']} | {x['floor']} | {x['walls']} | {x['rooms']} | {'yes' if x['closed'] else 'no'} | {', '.join(x['open_rooms'])} | {x['outline_in_m']} | {x['graph_in_m']} | {x['outline_out_m']} | {x['graph_out_m']} |" for x in wf["floors"]]
+    out += [f"**Wall faces** ({wf['closed']} of {wf['of']} plan sheets have walls that close; not part of the hash)", "", "| Page | Floor | Walls | Rooms | Closed | Rooms in the open | Outline with a wall along it (%) | Gaps in the outline (m, of them openings) | Walls no room lies against (m) | Inside, outline (m) | Inside, graph (m) | Outside, outline (m) | Outside, graph (m) |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    out += [f"| {x['page_no']} | {x['floor']} | {x['walls']} | {x['rooms']} | {'yes' if x['closed'] else 'no'} | {', '.join(x['open_rooms'])} | {_fmt(x.get('outline_share_pct'))} | {_fmt(x.get('gap_m'))} ({_fmt(x.get('gap_opening_m'))}) | {', '.join(str(u) for u in x.get('unattached') or [])} | {x['outline_in_m']} | {x['graph_in_m']} | {x['outline_out_m']} | {x['graph_out_m']} |" for x in wf["floors"]]
     out += [""]
   if doc.get("stage_view"):
     v = doc["stage_view"]
@@ -1212,12 +1244,12 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     out += [f"Other policy ({doc['other_policy']['policy']}): {o['lines']} lines, {o['within_10']} within 10%, {o['within_5']} within 5% of the QS.", ""]
   if doc.get("levels"):
     out += LV.render(doc["levels"])
-  cols = "| Line | Unit | Trace | QS | Drawing | Diff % QS | Diff % drawing | Status | Class |" + (" Before | Before status |" if baseline else "")
+  cols = "| Line | Unit | Trace | QS | Drawing | Diff % QS | Diff % drawing | Status | Class | Basis |" + (" Before | Before status |" if baseline else "")
 
   out += [cols, "|" + "---|" * (cols.count("|") - 1)]
   old = {l["key"]: l for l in (baseline or {}).get("lines", [])}
   for l in doc["lines"]:
-    row = f"| {l['key']} | {l['unit']} | {_fmt(l['trace'])} | {_fmt(l['qs'])} | {_fmt(l['drawing'])} | {_fmt(l['diff_pct_qs'])} | {_fmt(l['diff_pct_drawing'])} | {l['status']} | {l['class']} |"
+    row = f"| {l['key']} | {l['unit']} | {_fmt(l['trace'])} | {_fmt(l['qs'])} | {_fmt(l['drawing'])} | {_fmt(l['diff_pct_qs'])} | {_fmt(l['diff_pct_drawing'])} | {l['status']} | {l['class']} | {l.get('basis') or ''} |"
     if baseline:
       o = old.get(l["key"])
       row += f" {_fmt(o['trace']) if o else ''} | {o['status'] if o else ''} |"

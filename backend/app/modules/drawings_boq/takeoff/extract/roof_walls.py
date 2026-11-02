@@ -1,6 +1,7 @@
 from __future__ import annotations
 from shapely.geometry import LineString, Point, Polygon
 from shapely.ops import unary_union
+from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
 from app.modules.drawings_boq.takeoff.prep.facts import FLOOR_ORDER
@@ -34,6 +35,22 @@ def outline(walls: list, f: float):
   rings = [Polygon(g.exterior) for g in (joined.geoms if hasattr(joined, "geoms") else [joined]) if not g.is_empty]
   shape = unary_union(rings) if rings else None
   return shape if shape is not None and shape.area > 0.0 else None
+
+def deck(walls: list, f: float) -> dict | None:
+  live = [w for w in walls if _live(w)]
+  parapets = [w for w in live if (w.facts or {}).get("roof_wall") == PARAPET]
+  shape = outline(parapets, f)
+  if shape is None:
+    return None
+  thick = sorted(2.0 * _half_pt(w, f) for w in parapets)
+  t = thick[len(thick) // 2]
+  inner = shape.buffer(-t, join_style=2)
+  stand = outline([w for w in live if (w.facts or {}).get("roof_wall") == MUMTY], f)
+  free = inner.difference(stand) if stand is not None else inner
+  sq = f * f / 1.0e6
+  ring = [g for g in (inner.geoms if hasattr(inner, "geoms") else [inner]) if not g.is_empty]
+  return {"outline_m2": round(shape.area * sq, 3), "band_m2": round((shape.area - inner.area) * sq, 3), "stand_m2": round((inner.area - free.area) * sq, 3), "deck_m2": round(free.area * sq, 3),
+    "parapet_mm": round(t * f, 1), "inner_perimeter_m": round(sum(g.length for g in ring) * f / 1000.0, 3)}
 
 def _samples(w, f: float) -> list:
   ln = _line(w)
@@ -89,13 +106,18 @@ def classify(walls: list, rooms: list, f: float) -> dict:
       out[w.key] = UNCLASSED
   return out
 
-def parapet_height() -> tuple:
-  rv = FR.rule(PARAPET_RULE)
+def parapet_height(printed: dict | None = None) -> tuple:
+  rv = RB.resolve(PARAPET_RULE, None, printed=round(float(printed["height_mm"]), 1)) if printed else FR.rule(PARAPET_RULE)
   try:
     mm = float(rv.value)
   except (TypeError, ValueError):
     mm = 0.0
   return (mm if mm > 0.0 else None), FR.evidence(PARAPET_RULE, rv)
+
+def levels_entry(what: str, row: dict, level_hint: str | None) -> dict:
+  pages = ", ".join(str(p) for p in row["pages"])
+  return {"mm": float(row["height_mm"]), "text": f"{what} {row['height_mm'] / 304.8:.1f} ft: level {row['top']} less roof level {row['roof']}, both printed on the same {row['sheet'].lower()} (page {pages})", "basis": "LEVELS",
+    "ladder": {"what": what, "floor": level_hint, "kind": LV.LEVEL_MARKS, "basis": f"{row['sheet']} pages {pages}", "entry": {}}}
 
 def top_storey(floor_heights: dict | None, level_hint: str | None, storey_height) -> tuple:
   for k in reversed([k for k in FLOOR_ORDER if k in (floor_heights or {}) and k != "BASEMENT"]):
@@ -111,17 +133,23 @@ def _label(w, name: str, height_mm: float) -> str:
   t = float(f.get("thickness_used_mm") or (w.params or {}).get("thickness_mm") or 0.0)
   return f"{name} {t:g} mm · {float(f.get('length_cc_m') or 0.0):.2f} m · {height_mm / 304.8:.1f} ft high"
 
-def apply(walls: list, rooms: list, f: float, floor_heights: dict | None, level_hint: str | None, storey_height, notes_fn, height_notes, status_fn) -> dict:
-  tally = {PARAPET: {"walls": 0, "metres": 0.0}, MUMTY: {"walls": 0, "metres": 0.0}, UNCLASSED: {"walls": 0, "metres": 0.0}, "mumty_floor": None, "mumty_mm": None, "parapet_mm": None}
+def apply(walls: list, rooms: list, f: float, floor_heights: dict | None, level_hint: str | None, storey_height, notes_fn, height_notes, status_fn, spec_facts: dict | None = None) -> dict:
+  tally = {PARAPET: {"walls": 0, "metres": 0.0}, MUMTY: {"walls": 0, "metres": 0.0}, UNCLASSED: {"walls": 0, "metres": 0.0}, "mumty_floor": None, "mumty_mm": None, "parapet_mm": None, "levels": None}
   todo = [w for w in walls if _live(w) and not (w.params or {}).get("height_mm")]
   if not todo:
     return tally
   kinds = classify(todo, rooms, f)
-  para_mm, para_ev = parapet_height()
-  
+  read = (spec_facts or {}).get("roof_levels") or {}
+  para_mm, para_ev = parapet_height(read.get("parapet"))
+  printed_stand = levels_entry("mumty", read["stand"], level_hint) if read.get("stand") else None
   floor, entry = top_storey(floor_heights, level_hint, storey_height)
-  tally["mumty_floor"], tally["mumty_mm"], tally["parapet_mm"] = floor, (float(entry["mm"]) if entry else None), para_mm
-  para_entry = {"mm": para_mm, "text": f"parapet height {para_mm / 304.8:.1f} ft from the rule {PARAPET_RULE}", "basis": "RULE", "origin": para_ev.get("origin"), "ladder": LV.rule_source("PARAPET_HEIGHT", level_hint, PARAPET_RULE)} if para_mm else None
+  if printed_stand:
+    floor, entry = None, printed_stand
+  tally["mumty_floor"], tally["mumty_mm"], tally["parapet_mm"], tally["levels"] = floor, (float(entry["mm"]) if entry else None), para_mm, read or None
+  if para_mm and read.get("parapet"):
+    para_entry = levels_entry("parapet", read["parapet"], level_hint)
+  else:
+    para_entry = {"mm": para_mm, "text": f"parapet height {para_mm / 304.8:.1f} ft from the rule {PARAPET_RULE}", "basis": "RULE", "origin": para_ev.get("origin"), "ladder": LV.rule_source("PARAPET_HEIGHT", level_hint, PARAPET_RULE)} if para_mm else None
   for w in todo:
     kind = kinds.get(w.key)
     if kind is None:
@@ -137,12 +165,12 @@ def apply(walls: list, rooms: list, f: float, floor_heights: dict | None, level_
     elif kind == PARAPET and para_mm:
       w.params["height_mm"], w.params["dims_basis"] = para_mm, "SPECIFIED"
       w.facts["height_rule"] = para_ev
-      w.notes.extend([notes_fn("ROOF_WALL_PARAPET", height_mm=para_mm), *height_notes(para_entry)])
+      w.notes.extend([notes_fn("ROOF_WALL_PARAPET", height_mm=para_mm, printed=bool(read.get("parapet"))), *height_notes(para_entry)])
       w.label = _label(w, "Parapet wall", para_mm)
     elif kind == MUMTY and entry and entry.get("mm"):
       w.params["height_mm"], w.params["dims_basis"] = float(entry["mm"]), "SPECIFIED"
       w.facts["height_floor"] = floor
-      w.notes.extend([notes_fn("ROOF_WALL_MUMTY", height_mm=float(entry["mm"]), floor=floor), *height_notes(entry)])
+      w.notes.extend([notes_fn("ROOF_WALL_MUMTY", height_mm=float(entry["mm"]), floor=floor, printed=bool(printed_stand)), *height_notes(entry)])
       w.label = _label(w, "Mumty wall", float(entry["mm"]))
     else:
       w.notes.append(notes_fn("ROOF_WALL_UNCLASSED"))

@@ -3,6 +3,7 @@ import re
 from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
 from app.modules.drawings_boq.takeoff.extract import electrical_symbols as ES
+from app.modules.drawings_boq.takeoff.extract import electrical_rules as ER
 import collections
 from app.modules.drawings_boq.takeoff.extract import config as C
 import hashlib
@@ -12,27 +13,53 @@ ITEMS = (LIGHT, FAN, SOCKET, SWITCH, LOWV, BOARD, OTHER)
 WORK_ITEM = {LIGHT: "ELE-LIGHT", FAN: "ELE-FAN", SOCKET: "ELE-SOCKET", SWITCH: "ELE-SWITCH", LOWV: "ELE-LOWV", BOARD: "ELE-BOARD", OTHER: "ELE-OTHER"}
 TAG = {LIGHT: "ELEC-LIGHT", FAN: "ELEC-FAN", SOCKET: "ELEC-SOCKET", SWITCH: "ELEC-SWITCH", LOWV: "ELEC-LOWV", BOARD: "ELEC-BOARD", OTHER: "ELEC-OTHER"}
 GROUP_TEXT = {LIGHT: "Lights", FAN: "Fans", SOCKET: "Sockets and plugs", SWITCH: "Switches", LOWV: "Telephone, TV, data, alarm and bell points", BOARD: "Boards, earthing and supply",
-  OTHER: "Other electrical points"}
+   OTHER: "Other electrical points"}
 
-GROUP_RULES = (
-  (FAN, re.compile(r"\bFAN\b", re.I)),
-  (SOCKET, re.compile(r"\b(?:PLUG|SOCKET|RECEPTACLE)\b", re.I)),
-  (LOWV, re.compile(r"\b(?:BELL|BUZZER|SMOKE|DETECTOR|SPEAKER|CCTV|CAMERA|TELEPHONE|TEL|TV|CABLE|COMPUTER|NETWORKING|INTERCOM|DATA)\b", re.I)),
-  (SWITCH, re.compile(r"\bSWITCH(?:ES)?\b", re.I)),
-  (BOARD, re.compile(r"\b(?:BOARD|DB|UPS|GENERATOR|EARTH|MCB|METER)\b", re.I)),
-  (LIGHT, re.compile(r"\b(?:LIGHT|LAMP|TUBE|FIXTURE|LUMINAIRE|BULB)S?\b", re.I)),
+def _rx(*patterns: str) -> tuple:
+  return tuple(re.compile(p, re.I) for p in patterns)
+
+AMPS_5 = r"(?<![\d.])5\s*A(?:MPS?)?\b"
+AMPS_15 = r"(?<![\d.])15\s*A(?:MPS?)?\b"
+OUTLET = r"\b(?:PLUG|SOCKET|RECEPTACLE)\b"
+KIND_RULES = (
+  (ER.EXHAUST, FAN, _rx(r"\bEXHAUST\b")),
+  (ER.FAN, FAN, _rx(r"\bFAN\b")),
+  (ER.TEL, LOWV, _rx(r"\b(?:TELEPHONE|TEL|INTERCOM)\b")),
+  (ER.TV, LOWV, _rx(r"\bTV\b")),
+  (ER.DATA, LOWV, _rx(r"\b(?:CABLE|COMPUTER|NETWORKING|DATA)\b")),
+  (ER.ALARM, LOWV, _rx(r"\b(?:SMOKE|DETECTOR)\b")),
+  (ER.BELL, LOWV, _rx(r"\b(?:BELL|BUZZER)\b")),
+  (ER.CCTV, LOWV, _rx(r"\b(?:CCTV|CAMERA)\b")),
+  (ER.AUDIO, LOWV, _rx(r"\bSPEAKER\b")),
+  (ER.SOCKET_15A, SOCKET, _rx(OUTLET, AMPS_15)),
+  (ER.SOCKET_5A, SOCKET, _rx(OUTLET, AMPS_5)),
+  (ER.SOCKET, SOCKET, _rx(OUTLET)),
+  (ER.SWITCH_2WAY, SWITCH, _rx(r"\bSWITCH(?:ES)?\b", r"\b(?:TWO|2)[\s-]*WAY\b")),
+  (ER.SWITCH_PLATE, SWITCH, _rx(r"\bSWITCH(?:ES)?\b")),
+  (ER.BOARD, BOARD, _rx(r"\b(?:BOARD|DB|UPS|GENERATOR|EARTH|MCB|METER)\b")),
+  (ER.LIGHT, LIGHT, _rx(r"\b(?:LIGHT|LAMP|TUBE|FIXTURE|LUMINAIRE|BULB)S?\b")),
 )
+
+def _hit(rules: tuple, text: str) -> bool:
+  return all(r.search(text or "") for r in rules)
+
+FAMILY = {kind: family for kind, family, _rules in KIND_RULES}
+FAMILY[ER.OTHER] = OTHER
+NOT_COUNTABLE, TAG_NOT_ON_PLAN, NO_PLAN_HIT = "NOT_COUNTABLE", "TAG_NOT_ON_PLAN", "NO_PLAN_HIT"
 
 LEGEND_WORDS = re.compile(r"\b(?:LEGENDS?|SYMBOLS?)\b", re.I)
 ELECTRIC_WORD = re.compile(r"ELECTRIC", re.I)
 PLAN_WORD = re.compile(r"\bPLAN\b", re.I)
 CONFIDENCE_PICTURE, CONFIDENCE_TEXT = 0.6, 0.7
 
+def kind_of(name: str) -> str:
+  for kind, _family, rules in KIND_RULES:
+    if _hit(rules, name):
+      return kind
+  return ER.OTHER
+
 def group_of(name: str) -> str:
-  for group, rule in GROUP_RULES:
-    if rule.search(name or ""):
-      return group
-  return OTHER
+  return FAMILY[kind_of(name)]
 
 def _upper(words: list) -> str:
   return " ".join((w.text or "") for w in words)
@@ -50,7 +77,7 @@ VOCABULARY_MIN_GROUPS = 3
 
 def vocabulary_groups(words: list) -> int:
   text = _upper(words)
-  return len({group for group, rule in GROUP_RULES if rule.search(text)})
+  return len({family for _kind, family, rules in KIND_RULES if _hit(rules, text)})
 
 def pack_legend(legend: list) -> list:
   return [{"name": s.name, "description": s.description, "token": s.token, "mounting_height_mm": s.mounting_height_mm, "table": s.table, "row": s.row, "ocr": bool(s.ocr), "inner": list(s.inner),
@@ -115,9 +142,11 @@ def count_page(doc, page_no: int, rows: list) -> dict:
   by = {s.name: s for s in legend}
   index = {s.name: i for i, s in enumerate(legend)}
   meta = {k: {"index": i, "page": (rows[i] or {}).get("page_no"), "text": by[k].description, "ocr": bool(by[k].ocr), "source": "STRUCTURE" if by[k].table >= 100 else "TABLE"} for k, i in index.items()}
+  table = [{"index": i, "name": s.name, "description": s.description, "objects": len(s.objects), "token": s.token, "by_text": s.by_text, "countable": s.countable,
+    "legend_page": (rows[i] or {}).get("page_no")} for i, s in enumerate(legend)]
   if share >= LEGEND_SHEET_SHARE:
     return {"counts": {}, "points": {}, "aside": {}, "not_countable": [], "by_text": [], "description": {}, "height_mm": {}, "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": True,
-      "legend_row": {}}
+      "legend_row": {}, "legend_table": []}
     
   lines = ES.read_text_lines(page)
   title = ES.title_box(page, lines)
@@ -131,7 +160,7 @@ def count_page(doc, page_no: int, rows: list) -> dict:
   return {"counts": {k: int(v) for k, v in rep.counts.items()}, "points": dict(points), "aside": dict(collections.Counter(h.name for h in rep.set_aside)),
     "not_countable": list(rep.not_countable), "by_text": sorted({s.name for s in legend if s.by_text}),
     "description": {k: s.description for k, s in by.items()}, "height_mm": {k: s.mounting_height_mm for k, s in by.items() if s.mounting_height_mm},
-    "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": False, "legend_row": meta, "excluded_boxes": len(exclude)}
+    "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": False, "legend_row": meta, "excluded_boxes": len(exclude), "legend_table": table}
 
 def count_page_bytes(contents: bytes, page_no: int, rows: list) -> dict:
   from app.modules.drawings_boq.takeoff.prep.extract import open_document
@@ -162,12 +191,16 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
     if n <= 0 or len(pts) != n:
       continue
 
-    group = group_of(name)
+    kind = kind_of(name)
+    group = FAMILY[kind]
+    item, rule = ER.work_item(kind)
     by_text = name in (read.get("by_text") or [])
     aside = int((read.get("aside") or {}).get(name, 0))
     height = (read.get("height_mm") or {}).get(name)
     row = (read.get("legend_row") or {}).get(name) or {}
     notes = [C.note("ELECTRICAL_COUNT_ONLY")]
+    if item == ER.NONE:
+      notes.append(C.note("NO_WORK_ITEM"))
 
     if not by_text:
       notes.append(C.note("ELECTRICAL_PICTURE_MATCH"))
@@ -179,14 +212,36 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
       notes.append(C.note("ELECTRICAL_LEGEND_OCR", text=row.get("text")))
       
     facts = {"electrical": name, "electrical_group": group, "symbol_text": (read.get("description") or {}).get(name), "counted_by": "TEXT" if by_text else "PICTURE",
-      "mounting_height_mm": height, "set_aside_other_size": aside, "foundation_item": group, "derived_from": "LEGEND", "electrical_floor": floor, "legend_row": row.get("index"),
+      "mounting_height_mm": height, "set_aside_other_size": aside, "foundation_item": group, "electrical_kind": kind, "work_item_rule": ER.evidence(kind, rule), "derived_from": "LEGEND", "electrical_floor": floor, "legend_row": row.get("index"),
       "legend_page": row.get("page"), "legend_source": row.get("source"), "legend_ocr": bool(row.get("ocr"))}
     label = f"{GROUP_TEXT[group]} · {name} · {n} no{'s' if n != 1 else ''}" + (f" · {_ft_in(height)} above floor" if height else "") + where
     cand = cls(key=_key_of((name, round(pts[0][0], 1), round(pts[0][1], 1))), category="WALL", kind="COUNT", quantity_mode="DIRECT", label=label, tag=TAG[group],
-      geometry={"points": pts}, params={"dims_basis": "SPECIFIED"}, missing=[], work_item=WORK_ITEM[group], status="VALID", confidence=0.0, facts=facts, notes=notes,
+      geometry={"points": pts}, params={"dims_basis": "SPECIFIED"}, missing=[], work_item=None if item == ER.NONE else item, status="VALID", confidence=0.0, facts=facts, notes=notes,
       source="TAG_SCAN", count=n)
     out.append(finish(cand, ctx, CONFIDENCE_TEXT if by_text else CONFIDENCE_PICTURE))
   return out
+
+def slim(read: dict | None, floor: str | None) -> dict | None:
+  if not read or read.get("failed"):
+    return None
+  return {"floor": floor, "counts": dict(read.get("counts") or {}), "aside": dict(read.get("aside") or {}), "legend_sheet": bool(read.get("legend_sheet")), "legend_table": list(read.get("legend_table") or [])}
+
+def coverage(rows: list) -> dict | None:
+  reads = [(r["page_no"], (r.get("stats") or {}).get("electrical_read")) for r in rows]
+  reads = [(p, x) for p, x in reads if x and not x["legend_sheet"] and x["legend_table"]]
+  if not reads:
+    return None
+  out = []
+  for t in reads[0][1]["legend_table"]:
+    name = t["name"]
+    per = {str(p): int(x["counts"].get(name, 0)) for p, x in reads}
+    total = sum(per.values())
+    reason = None if total else (NOT_COUNTABLE if not t["countable"] else TAG_NOT_ON_PLAN if t["by_text"] else NO_PLAN_HIT)
+    kind = kind_of(name)
+    out.append({"index": t["index"], "name": name, "description": t["description"], "kind": kind, "group": FAMILY[kind], "objects": t["objects"], "token": t["token"], "counted_by": "TEXT" if t["by_text"] else "PICTURE",
+      "legend_page": t["legend_page"], "plan_counts": per, "total": total, "set_aside_other_size": sum(int(x["aside"].get(name, 0)) for _p, x in reads), "reason": reason, "work_item": ER.work_item(kind, record=False)[0]})
+  return {"pages": [p for p, _x in reads], "floors": {str(p): x["floor"] for p, x in reads}, "rows": out, "legend_symbols": len(out), "counted": sum(1 for o in out if o["total"]),
+    "reasons": dict(collections.Counter(o["reason"] for o in out if o["reason"]))}
 
 def sheet_notes(read: dict | None) -> list:
   if not read or read.get("failed"):

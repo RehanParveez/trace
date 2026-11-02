@@ -37,14 +37,14 @@ KEY_LABEL = {
   "BRICK_BOUNDARY": "Boundary wall brick work", "DOOR_FRAMES_RFT": "Door frames (running length)", "DPC_VERTICAL": "Vertical DPC", "RCC_WALLS": "RCC walls", "RCC_LINTELS": "RCC lintels", "RCC_ROOF_BEAMS": "RCC roof beams", "RCC_STAIR": "RCC staircase",
   "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "WALL_PLASTER_EXT": "External plaster", "BRICK_WALLS": "Brick work above plinth",
   "STEEL": "Reinforcement steel", "DOOR_FRAMES": "Door frames", "DOORS": "Doors", "WINDOWS": "Windows and ventilators",
-  "KACHA": "Kacha or PCC on floor", "FILLING": "Earth filling under floors",  "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
+  "KACHA": "Kacha or PCC on floor", "BALLAST": "Brick ballast under floors and on roofs", "FILLING": "Earth filling under floors",  "ROOF_TREATMENT": "Roof treatment", "FORMWORK": "Form work", "TANKS": "Tanks", "LUMP_SUM": "Lump-sum items",
 }
 
 SOFTWARE_UNIT = {
   "EXCAVATION": "m3", "TERMITE": "m2", "MEMBRANE": "m2", "BRICK_FOUNDATION": "m3", "PCC": "m3", "RCC_FOOTINGS": "m3",
   "RCC_PLINTH_BEAM": "m3", "RCC_COLUMNS": "m3", "RCC_WALLS": "m3", "RCC_LINTELS": "m3", "RCC_ROOF_BEAMS": "m3", "RCC_STAIR": "m3",
   "RCC_SLABS": "m3", "CEILING_PLASTER": "m2", "WALL_PLASTER": "m2", "WALL_PLASTER_EXT": "m2", "BRICK_WALLS": "m3", "STEEL": "kg", "DOOR_FRAMES": "m2",
-  "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3", "BRICK_BOUNDARY": "m3", "DOOR_FRAMES_RFT": "m",
+  "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "BALLAST": "m3", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3", "BRICK_BOUNDARY": "m3", "DOOR_FRAMES_RFT": "m",
 }
 
 NOT_MEASURED = ("LUMP_SUM",)
@@ -125,6 +125,8 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "DOOR_FRAMES"
   if t.startswith("EARTH-FILL"):
     return "FILLING"
+  if t.startswith(("FLOOR-BALLAST", "ROOF-BALLAST")):
+    return "BALLAST"
   if t.startswith("KACHA"):
     return "KACHA"
   if t.startswith("L-"):

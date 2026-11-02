@@ -566,8 +566,12 @@ def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None =
     sides, stats = MW.outline_sides(ws, usable_rooms(rooms), mm_per_pt, C.WALL_GAP_CLEAR_MAX_MM, C.OUTLINE_CLOSE_MM, bool(QS.flag("plaster_courtyard_external")))
     if not stats["perimeter_m"]:
       return {"mode": mode, "used": False, "open_rooms": []}
+    loose = {u["key"] for u in stats.get("unattached") or []}
+    both = bool(loose) and str(FR.rule(FR.FREE_WALL_FACES).value or FR.NONE_FACES).upper() == FR.BOTH_FACES
     for w, (inside, outside) in zip(ws, sides):
-      w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}, "outline_perimeter_m": stats["perimeter_m"], "outline_parts_m": stats["parts_m"]}
+      if both and w.key in loose:
+        inside, outside = 0.0, 2.0
+      w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}, "outline_perimeter_m": stats["perimeter_m"], "outline_parts_m": stats["parts_m"], **({"no_room_near": True} if w.key in loose else {})}
     return {"mode": mode, "used": False, "outline": stats, "open_rooms": []}
   if not ws or not mm_per_pt:
     return {"mode": mode, "used": False, "open_rooms": []}

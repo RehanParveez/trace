@@ -33,8 +33,9 @@ def _groups() -> list:
   for item, text in (("brick", "brickwork"), ("plaster", "plaster"), ("paint", "paint")):
     out.append({"id": f"deduct.{item}", "question": f"Openings off the {text}", "key": f"deduct_opening_{item}", "scope": {},
       "methods": [{"label": "openings taken off", "value": 1.0}, {"label": "openings not taken off", "value": 0.0}]})
-  out.append({"id": "dado_bath", "question": "Tile band in a bath", "key": "finish.dado_height_mm", "scope": {"room_type": "BATH"},
-    "methods": [{"label": "7 ft (2134 mm)", "value": 2134.0}, {"label": "to the ceiling", "value": "CEILING"}]})
+  for room_type, text in (("BATH", "a bath"), ("WC", "a W.C"), ("PWD", "a powder room")):
+    out.append({"id": f"dado_{room_type.lower()}", "question": f"Tile band in {text}", "key": "finish.dado_height_mm", "scope": {"room_type": room_type},
+      "methods": [{"label": "7 ft (2134 mm)", "value": 2134.0}, {"label": "to the ceiling", "value": "CEILING"}]})
   out.append({"id": "wall_faces", "question": "Wall faces for plaster and paint", "key": "finish.wall_faces", "scope": {},
     "methods": [{"label": "from the outline of the rooms", "value": "OUTLINE"}, {"label": "from the wall graph", "value": "GRAPH"}]})
   out.append({"id": "stair_external", "question": "A stair outside the building", "key": "finish.stair_external", "scope": {},

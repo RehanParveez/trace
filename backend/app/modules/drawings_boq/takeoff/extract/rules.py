@@ -5,6 +5,7 @@ from app.modules.drawings_boq.takeoff.model import levels as LV
 from app.modules.drawings_boq.takeoff.extract import config as C
 
 BASEMENT = "BASEMENT"
+STOREYS_ABOVE_GROUND = ("GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH")
 HEIGHT_CODES = ("HEIGHT_FROM_SECTION", "HEIGHT_FROM_NOTE", "HEIGHT_FROM_QS")
 
 def floor_finish_by_room() -> bool:
@@ -42,9 +43,22 @@ def less_beams(heights: dict, lowest_level: bool, ft_in) -> dict:
   text = f"{entry['text']}, less the " + " and the ".join(f"{name} {ft_in(v)}" for name, v in cuts) + f" ({basis.lower().replace('_', ' ')}), {ft_in(mm)}"
   return {**heights, "WALL": {**entry, "mm": mm, "text": text, "less_beams": [{"name": n, "mm": v} for n, v in cuts]}}
 
+def column_run(floors: dict | None, ft_in) -> dict | None:
+  parts = [(fl, LV.height(floors, LV.FLOOR_TO_FLOOR, fl)) for fl in STOREYS_ABOVE_GROUND if fl in (floors or {})]
+  parts = [(fl, float(v), src) for fl, (v, src) in parts if v]
+  if not parts:
+    return None
+  neck = PR.sizes()["neck_height_mm"]
+  total = float(neck["mm"]) + sum(v for _fl, v, _s in parts)
+  text = f"column from the top of the footing to the top of the {parts[-1][0].lower()} slab, {ft_in(total)}: neck {ft_in(float(neck['mm']))} and " + ", ".join(f"{fl.lower()} {ft_in(v)}" for fl, v, _s in parts)
+  return {"mm": total, "text": text, "basis": "LEVELS", "ladder": {"what": LV.FLOOR_TO_FLOOR, "floor": parts[-1][0], "kind": LV.PLAN_NOTES, "basis": "neck_height_mm", "entry": {fl: round(v, 1) for fl, v, _s in parts}}}
+
 def floor_heights(heights: dict, floors: dict | None, level_hint: str | None, ft_in, clear_only) -> dict:
   if not QS.flag("wall_height_floor_to_floor"):
     return clear_only(heights, floors, level_hint)
+  if not level_hint or str(level_hint).upper() == "FOUNDATION":
+    run = column_run(floors, ft_in)
+    return {**clear_only(heights, floors, level_hint), **({"COLUMN": run} if run and "COLUMN" not in heights else {})}
   f2f, src = LV.height(floors, LV.FLOOR_TO_FLOOR, level_hint)
   fh = (floors or {}).get(level_hint or "") or {}
   

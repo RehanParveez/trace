@@ -86,7 +86,7 @@ def main(argv: list | None = None) -> int:
       passed = LV.facts_passed(doc.get("facts") or [])
       facts_file(case).write_text("# Printed facts that pass (their text), one per line. python scripts/check.py --write-hashes rewrites it; proof/check.py fails when one of them stops passing.\n" + "\n".join(passed) + ("\n" if passed else ""), encoding="utf8", newline="\n")
       stages = LV.stages_passed(doc.get("stage_view"))
-      stages_file(case).write_text("# Brick and plaster stages within 10% of the QS (line and stage), one per line. proof/check.py --write-hashes rewrites it; proof/check.py fails when the count drops.\n" + "\n".join(stages) + ("\n" if stages else ""), encoding="utf8", newline="\n")
+      stages_file(case).write_text("# Brick and plaster stages within 10% of the QS (line and stage), one per line. proof/check.py --write-hashes rewrites it; proof/check.py fails when the count drops. BRICK_WALLS/ROOF ALL \n" + "\n".join(stages) + ("\n" if stages else ""), encoding="utf8", newline="\n")
       results.append((f"engine output {case}", True, f"written: {got[:16]}, {len(passed)} passing fact(s), {len(stages)} stage(s) within 10%"))
       continue
   
@@ -97,6 +97,9 @@ def main(argv: list | None = None) -> int:
     bad = []
     if not lv:
       bad.append("no levels in score.json")
+    cv = lv.get("conventions") or {}
+    if cv.get("problems"):
+      bad.append("conventions: " + "; ".join(cv["problems"]))
     if rs.get("missing"):
       bad.append(f"over {rs['limit_pct']:g}% with no entry in residuals.yaml: {', '.join(rs['missing'])}")
     if rs.get("stale"):

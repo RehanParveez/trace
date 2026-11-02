@@ -10,6 +10,9 @@
   cause: 'not diagnosed; -32.6%: termite extent is his choice (floors only, plus porch, plus trenches)'
   pack: '202'
   question: '191-C questionnaire: termite'
+- line: PCC/ALL
+  cause: '-6.2% (-0.9% before Pack 232): the footing pads and the blinding come to 289.2 cft against the bill; before this pack the pads of both foundation options were counted (the second option''s extra pad, 0.47 m3 = 16.5 cft, was in the total); only the first printed option is kept now (OPTION_DEFAULTED), so the line shows the kept option and the earlier match came from counting two'
+  pack: '232'
 - line: PCC/ALL/2
   cause: 'not diagnosed; no Trace number: the 1:6:12 line (the second mix) is not read'
   pack: '164'
@@ -18,46 +21,39 @@
   pack: '170'
   question: '191-C questionnaire: kacha floor'
 - line: RCC_COLUMNS/ALL
-  cause: 'no Trace number: the structure PDF has no accepted column yet'
-  pack: '164'
-- line: RCC_STAIR/ALL
-  cause: 'no Trace number: the stair is not read from the stair detail'
-  pack: '165'
+  cause: '-43.2%: the foundation sheet prints two options (page 3 with C1 and C2 once each, page 4 with C1 once and C2 twice; OPTION_DEFAULTED) and the first printed one is kept, so two columns of 228.6 x 457.2 mm, 28 ft each (neck 4 ft, ground 12 ft, first 12 ft from the level table), 63.0 cft; the other option has three columns, 94.5 cft (-14.8%); his 111 cft is 3.5 columns of this size and height, so either the columns are taller (a stair mumty, a parapet column) or there are more than the foundation sheets draw; the drawing does not say which option was built'
+  pack: '232'
 - line: STEEL/ALL
-  cause: 'not diagnosed; +24.8% (+6.3% before Pack 227, which bills the three tanks and their steel at the seed rate steel.band.TANK.likely, 110 kg per m3, +1,015 kg: if the bill leaves the tank steel out, or the rate is too high, that is the +1,015; +4.4% before Pack 219, which adds the two lintels of the wide windows): the steel of the lintels follows their volume; the slab and stair steel are not read from the drawing, so the total is not a comparison yet'
-  pack: '219'
+  cause: 'not diagnosed; +33.1% (+30.1% before Pack 233, which sizes the stair and so adds its steel at the band, +166 kg; +24.8% before Pack 232, which gives the columns a height and so their steel, +290 kg and takes the second foundation option''s steel out; +6.3% before Pack 227, which bills the three tanks and their steel at the seed rate steel.band.TANK.likely, 110 kg per m3, +1,015 kg: if the bill leaves the tank steel out, or the rate is too high, that is the +1,015; +4.4% before Pack 219, which adds the two lintels of the wide windows): the steel of the lintels follows their volume; the slab steel (3,844.7 kg, 56% of the total) stays on the usual band because the framing plans print bar strings (TOP and B.W.) on a sheet that is N.T.S., so no length is read (SLAB_BARS_NOT_MEASURED); the footing, beam and tank steel are band too, so the total is not a comparison yet'
+  pack: '233'
 - line: RCC_LINTELS/ALL
-  cause: 'not diagnosed; -13.9% (was -33.3% before Pack 219, which lets the label of a wide window reach its wall so the two 9 ft windows of the first floor get their lintels): the lintels come to 88 cft against the bill; the sections come from the lintel detail L1 to L4, the rest is the bill''s extent'
+  cause: 'not diagnosed; -11.2% (-13.9% before Pack 228, which pairs the 1448 mm door with the only 1448 mm gap no other mark lay beside, so its lintel is found; was -33.3% before Pack 219, which lets the label of a wide window reach its wall so the two 9 ft windows of the first floor get their lintels): the lintels come to 88 cft against the bill; the sections come from the lintel detail L1 to L4, the rest is the bill''s extent'
   pack: '219'
-- line: ROOF_TREATMENT/ALL
-  cause: 'not diagnosed; no Trace number: roof treatment has no area without the outer faces'
-  pack: '169'
+  pack: '219'
 - line: BRICK_FOUNDATION/ALL
   cause: 'not diagnosed; -27.1%: the steps of the wall footings are read from the sections W1 to W4 (675 cft: five rows for the 4.5 in wall over 42.0 m and 12.5 m, five for the 9 in wall over 46.7 m); the rest is the bill''s extent of brick below the plinth, which the drawing does not state'
   pack: '173'
 - line: BRICK_WALLS/GROUND
-  cause: '+16.2% (+26.4% before Pack 168, which takes the 9 in and 4.5 in walls at 229 and 114 mm where they were 254 and 127): the ground floor does not deduct openings (WALL_OPENINGS_INCLUDED); only some of its walls carry the doors and windows found beside them, which is the reading of the openings, not a convention (Pack 198 makes the convention a rule and leaves this alone)'
-  pack: unassigned
+  cause: '-10.6% (+14.7% before Pack 228, which stops counting the brick ballast under the floor, 11.7 m3, as brick work above the plinth; +16.2% before Pack 168, which takes the 9 in and 4.5 in walls at 229 and 114 mm where they were 254 and 127): all 17 ground openings (50.3 m2) are now on walls; 4 sit 800 to 990 mm from the nearest wall with no gap beside them (OPENING_HOST_UNCONFIRMED). With every opening taken off the line is -10.6%, with none taken off about +8.5% (the 17 hosted openings are 324.6 cft at wall thickness), so what the QS takes off the ground brick (WALL_OPENINGS_INCLUDED) decides the last 0.6 points'
+  pack: '228'
 - line: BRICK_WALLS/FIRST
   cause: 'not diagnosed; -12.9% (-8.3% before Pack 219, which finds the host wall of two wide windows and so takes their area off; +3.8% before Pack 168, when the brick was taken 10% thick): the windows come out as the 17 printed labels, about one 9 ft 6 in by 8 ft 8 in window more than the bill has'
   pack: unassigned
 - line: BRICK_BOUNDARY/ALL
   cause: 'not diagnosed; no Trace number: this set has no boundary-wall plan or elevation, so there is nothing to read; the line is its own (the tag BOUNDARY-RETURNS keeps it out of every floor line) and waits for a drawing or for the lengths typed at accept'
   pack: unassigned
-- line: BRICK_WALLS/ROOF
-  cause: '+28.8% (no Trace number before Pack 171): 46.4 m of parapet at 914 mm (rule stage.parapet_height_mm) and 8.6 m of mumty wall at 3810 mm (the floor-to-floor height of the top floor, taken because the roof plan prints none); the mumty is lower than a storey, which is the likely excess. The height of the parapet and of the mumty is not read from the elevations (PARAPET LEVEL and PARAPET TOP LEV. print 6 inch apart, which do not say which is the top)'
   pack: unassigned
 - line: WALL_PLASTER
-  cause: -14.4% (was -26.4% before Pack 171, which gives the roof walls their heights so the roof plaster is measured; -37.5% before Pack 157, which lets the outside plaster rows through, billed as external plaster and added to this line because the bill's third plaster line is external); the outer
-    faces are still incomplete; -15.7% after Pack 219, which takes the area of the two wide windows off the walls
-  pack: '169'
+  cause: 'not diagnosed; -35.1% (-18.6% before Pack 229): the outline of each floor now takes the named rooms with the walls, so a face counts as outer only when it lies on the real outline, and the two plot-boundary lines (31.1 m, 114 mm, no room against them, listed as WALL_FACES_NO_ROOM) get no plaster; the first floor has a wall along only 73.8% of its outline (12.3 m with no wall read, on the stair, lounge and east sides, where the plan shows rooms and no wall strip), so the walls that are not read have no plaster; the faces missing are the walls the reader did not find, not an outline problem'
+  pack: '229'
 - line: CEILING_PLASTER/ALL
   cause: 'not diagnosed; -27.5%: ceilings of passages and the porch are not in the extent'
   pack: '170'
   question: '191-C questionnaire: false ceiling and ceiling plaster'
 - line: MAS-DPC/ALL
-  cause: 'not diagnosed; -58.8% (-54.2% before Pack 168, which takes the walls at their brick thickness): horizontal DPC is taken on a part of the walls'
-  pack: '169'
+  cause: 'not diagnosed; -59.2%: the DPC is on every ground wall (17 of the 17 that cross the plinth level, 99.2 m, ten door widths taken out, 14.8 m2); the first-floor walls do not cross it. His 36.3 m2 is 2.5 times the footing of the walls, so his bill takes the DPC on more than the plinth footing (a second level, a second layer, or the boundary lines); the drawing does not say which'
+  pack: '229'
+  question: '191-C questionnaire: DPC levels and layers'
 - line: DPC_VERTICAL/ALL
   cause: 'not diagnosed; no Trace number: vertical DPC has no reading'
   pack: '169'
@@ -70,8 +66,8 @@
   pack: '170'
   question: '191-C questionnaire: passage tile'
 - line: FIN-DADO/ALL
-  cause: 'not diagnosed; -10.5%: the bill tiles the bath walls to a height and wet rooms are his choice'
-  pack: '202'
+  cause: '-43.0% (-10.7% before Pack 234R): the tile band of a bath, a W.C and a powder room is 7 ft (2134 mm), the standard of the seed rule; to the ceiling would give -10.7%, but no method of the menu passes the test against his total (the ceiling is 10.7% off, 7 ft is 43.0% off), so it is not adopted and the bill''s own height of the band stays unknown'
+  pack: '234'
   question: '191-C questionnaire: wet rooms and dado'
 - line: FIN-WALL-TILE/ALL
   cause: 'not diagnosed; +51.8%: the kitchen tile band height is his choice (printed note, 7 ft, to the ceiling)'
@@ -94,27 +90,27 @@
   pack: '202'
   question: '191-C questionnaire: porch tile'
 - line: FIN-PAINT-EXT/ALL
-  cause: 'not diagnosed; -27.9% (-26.2% before Pack 219, which takes the area of the two wide windows off; -33.3% before Pack 171, which gives the roof walls their heights so their outer faces are painted; -75.6% before Pack 169, which finds the outer faces from the outline of the floor): the outline reads 77% to 94% of the outline length as outer face, and the facade tile needs the elevations'
-  pack: '204'
+  cause: 'not diagnosed; -62.0% (-28.7% before Pack 229, when the outline of the first floor was broken and read inner faces as outer): the walls on the outline are counted, 39.3 m on the ground floor and 23.7 m on the first, and the first floor has no wall read along 26% of its outline (12.3 m); the facade tile needs the elevations'
+  pack: '229'
 - line: WINDOWS/ALL
   cause: 'not diagnosed; +12.8% (was -15.9% before Pack 219): windows are now the 17 printed labels, 714.4 sft; the bill''s 633.4 sft is 81 sft lower, about one 9 ft 6 in by 8 ft 8 in window (the terrace window of the first floor); the drawing prints it'
   pack: '198'
   question: '191-C questionnaire: terrace window of the first floor'
 - line: ELE-LIGHT/ALL
-  cause: 'not diagnosed; -19.4%: electrical symbols are not all recognised'
-  pack: '184'
+  cause: 'diagnosed; -19.4% (83 of 103): the plans give 68 surface ceiling, 11 external wall bracket and 4 lawn lights. Twelve legend rows of lights (recessed, halogen, spot, track, two tube lights, two tube fixtures, flood, step, LED floor, facade) find no run of drawn objects of the same sizes on pages 29 and 30, and three more (wall bracket, garden spot, gate) have fewer than three drawn objects and no tag, so nothing can be matched. His 103 also counts boundary wall and niche lights that the plans may not draw'
+  pack: '231'
 - line: ELE-FAN/ALL
-  cause: 'not diagnosed; -18.2%: electrical symbols are not all recognised'
-  pack: '184'
+  cause: 'diagnosed; -18.2% (9 of 11): 6 + 3 ceiling fans are counted. The wall bracket fan (9 drawn objects) finds no run on the plans; the exhaust fan is a group of its own, billed to ELE-OTHER by rule, as his 11 are 9 ceiling and 2 wall bracket fans'
+  pack: '231'
 - line: ELE-SOCKET/ALL
-  cause: 'not diagnosed; -31.5%: electrical symbols are not all recognised'
-  pack: '184'
+  cause: 'diagnosed; -31.5% (37 of 54): the 3P-5 AMP light plug is counted (18 + 19). The 3P-15 AMP power plug (11 drawn objects) finds no run on the plans, and his 54 are 45 at 13 A and 9 at 15 A'
+  pack: '231'
 - line: ELE-SWITCH/ALL
-  cause: 'not diagnosed; no Trace number: no switch symbol is read'
-  pack: '184'
+  cause: 'diagnosed; no Trace number: the switch plate (30 drawn objects) and the two way switch (32) find no run on the plans. The plan draws a switch as 31 objects with a different order and a different number of the 8-segment fill pieces than the legend, so an exact match fails. A matcher by similarity of the multiset of object sizes was tried and gave noise on small symbols, so it is not in the code'
+  pack: '231'
 - line: ELE-LOWV/ALL
-  cause: 'not diagnosed; -37.5%: low-voltage symbols are not all recognised'
-  pack: '184'
+  cause: 'diagnosed; no Trace number (his 16 are 8 telephone and 8 TV sockets): the telephone/intercom point has two drawn objects and no tag so it is not countable, the TV outlet point (18 drawn objects) finds no run on the plans, and the tags TEL.BD., TEL.EXCH. and TV. are not on the plan pages. Smoke detectors and CAT6 points are no longer counted in this line: they are billed to ELE-OTHER by rule'
+  pack: '231'
 - line: DOOR_FRAMES_RFT/ALL
   cause: 'not diagnosed; +10.1% (was -2.5% before Pack 157): two doors of size 762 that were dropped by a key collision are counted now, so the frames grew by 41 rft; the QS may count them differently'
   question: '191-C questionnaire: door frames'

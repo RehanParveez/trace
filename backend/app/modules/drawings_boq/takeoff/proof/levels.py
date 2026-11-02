@@ -125,5 +125,9 @@ def render(lv: dict) -> list:
     f"**QS corrections** (qs_corrections.yaml): {cr['entries']} listed, {cr['signed']} signed and applied, {cr['unsigned']} unsigned and not applied" + (f"; **problems: {'; '.join(cr['problems'])}**" if cr["problems"] else "") + ".",
     f"**Rules the ruled level rests on**: {len(ru['case_file'])} from the case's rule file, {len(ru['seed_unconfirmed'])} seed rules, UNCONFIRMED until the QS confirms them" + (f" ({', '.join(x[5:] for x in ru['seed_unconfirmed'])})" if ru["seed_unconfirmed"] else "") + ".",
      f"**Residuals** (residuals.yaml): {rs['over']} lines over {rs['limit_pct']:g}% at the ruled level, {rs['entries']} entries; no entry for: {', '.join(rs['missing']) or 'none'}; stale: {', '.join(rs['stale']) or 'none'}.", ""]
+  cv = lv.get("conventions")
+  if cv:
+    out += [f"**Conventions** (conventions.yaml): {cv['pairs']} question and line pairs from the method menu; {cv['inferred']} pass the test (one method within {cv['near_pct']:g}% of his total and the next {cv['far_pct']:g}% or more away); questions adopted: {', '.join(cv['adopted']) or 'none'}; lines by basis: "
+      + ", ".join(f"{k} {n}" for k, n in sorted(cv["by_basis"].items())) + (f"; **problems: {'; '.join(cv['problems'])}**" if cv["problems"] else "") + ".", ""]
   return out + render_corrections(cr)
 

@@ -20,7 +20,7 @@ class RevisionService(FloorSourceService):
     read, _ = await self._read(org, drawing_id)
     return self._groups(drawing_id, read)
 
-  async def choose_revisions(self, org: UUID, user_id: UUID, drawing_id: UUID, payload) -> dict:
+  async def choose_revisions(self, org: UUID, user_id: UUID, drawing_id: UUID, payload, automatic: bool = False) -> dict:
     read, by = await self._read(org, drawing_id)
     view = RV.build(read)
     entries = {g["id"]: g for g in view["groups"]}
@@ -48,12 +48,16 @@ class RevisionService(FloorSourceService):
         blocked.append({"id": gid, "code": plan["blocked"], "message": "That is not one of the values this sheet is printed with."})
         continue
       keep = plan["keep"]
+      stamp = {"by": RV.BY, "page_no": keep["pages"][0], **({RV.DEFAULTED: True} if automatic and entry["kind"] == "OPTION" else {})}
+      if not automatic:
+        touched.update(c.sheet_id for sid in keep["sheet_ids"] for c in RV.clear_defaulted(by.get(sid, [])))
+        touched.update(c.sheet_id for o in plan["set_aside"] for sid in o["sheet_ids"] for c in RV.clear_defaulted(by.get(sid, [])))
       away = [c for o in plan["set_aside"] for sid in o["sheet_ids"] for c in by.get(sid, []) if c.decision == "NEW"]
       back = [c for sid in keep["sheet_ids"] for c in by.get(sid, []) if c.decision == "REJECTED" and ((c.facts or {}).get(FS.SET_ASIDE) or {}).get("by") == RV.BY]
       
       for c in away:
         c.decision, c.decided_by_user_id, c.decided_at = "REJECTED", user_id, _now()
-        c.facts = {**(c.facts or {}), FS.SET_ASIDE: {"by": RV.BY, "page_no": keep["pages"][0]}}
+        c.facts = {**(c.facts or {}), FS.SET_ASIDE: stamp}
         touched.add(c.sheet_id)
       for c in back:
         c.decision, c.decided_by_user_id, c.decided_at = "NEW", None, None
@@ -65,15 +69,18 @@ class RevisionService(FloorSourceService):
       chosen.append({"id": gid, "kind": entry["kind"], "value": value, "pages": keep["pages"], "set_aside": len(away), "restored": len(back)})
       project_id = next((c.project_id for c in [*away, *back]), None)
       
-      if project_id is not None:
+      if project_id is not None and not automatic:
         await CR.record(self.session, org=org, user_id=user_id, project_id=project_id, drawing_id=drawing_id, sheet_id=keep["sheet_ids"][0], kind=CR.LAYOUT_CHOICE, subject=f"page {keep['pages'][0]}",
           before={"kind": entry["kind"], "pages": sorted(p for o in entry["options"] for p in o["pages"]), "default": entry["default"]},
           after={"kind": entry["kind"], "value": value, "governing_page": keep["pages"][0], "set_aside": len(away), "restored": len(back)})
+    after={"kind": entry["kind"], "value": value, "governing_page": keep["pages"][0], "set_aside": len(away), "restored": len(back)}
+    touched.update(c.sheet_id for c in RV.note_defaulted(read))
     if chosen:
       await self.core._log(org, user_id, drawing_id, AuditAction.UPDATE,
-        "Chose the " + ("option built or revision current" if len({c["kind"] for c in chosen}) > 1 else chosen[0]["kind"].lower() + " in force") + ": " + ", ".join(f"page {c['pages'][0]}" for c in chosen) + f"; {set_aside} items set aside, {restored} restored")
+        ("Took by default the " if automatic else "Chose the ") + ("option built or revision current" if len({c["kind"] for c in chosen}) > 1 else chosen[0]["kind"].lower() + " in force") + ": " + ", ".join(f"page {c['pages'][0]}" for c in chosen) + f"; {set_aside} items set aside, {restored} restored")
     await self.session.flush()
     if touched:
       await self._sync_register(org, touched)
     await self.session.commit()
-    return {"chosen": chosen, "set_aside": set_aside, "restored": restored, "blocked": blocked, "revisions": self._groups(drawing_id, read)}
+    return {"chosen": chosen, "set_aside": set_aside, "restored": restored, "sheets_changed": len(touched), "blocked": blocked, "revisions": self._groups(drawing_id, read)}
+

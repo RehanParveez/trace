@@ -147,8 +147,9 @@ def _pdf_walls(ctx, extra_ledger: list, code: str, params: dict, stats: dict) ->
   by_id = {str(m.id): m for m in getattr(takeoff, "measurements", ()) or ()}
   deduct = params["dpc_door_deduction"]["value"] >= 0.5
   out_solids, out_rows = [], []
-  used = no_level = no_height = 0
+  used = no_level = no_height = off_dpc = 0
   doors_taken = 0
+  length_m = 0.0
   net_total = Decimal("0")
   
   for m in sorted(walls, key=lambda w: str(w.measurement_id)):
@@ -164,6 +165,7 @@ def _pdf_walls(ctx, extra_ledger: list, code: str, params: dict, stats: dict) ->
       continue
   
     if not _on_dpc(float(m.z0_mm), float(m.z1_mm), level.z_mm):
+      off_dpc += 1
       continue
     meas = by_id.get(mid)
     mp = (meas.params if meas is not None else None) or {}
@@ -199,10 +201,10 @@ def _pdf_walls(ctx, extra_ledger: list, code: str, params: dict, stats: dict) ->
     out_rows.append(_row(ctx, solid, None, m.level_id, code, quantity, params, level, Decimal("0.95"), steps,
       {"measurement_id": mid, "candidate_id": str(m.candidate_id), "sheet_id": str(m.sheet_id), "page_no": m.page_no, "tag": m.tag}))
     used += 1
-    
+    length_m += _runs_length(m.parts) * repeat / 1000.0
     doors_taken += len(cuts)
     net_total += quantity
-  stats["pdf"] = {"walls": used, "doors_taken_out": doors_taken, "no_level": no_level, "no_height": no_height, "net_m2": str(q6(net_total)),
+  stats["pdf"] = {"walls": used, "walls_counted": sum(1 for m in walls if str(m.measurement_id) in rows), "off_dpc": off_dpc, "length_m": round(length_m, 3), "doors_taken_out": doors_taken, "no_level": no_level, "no_height": no_height, "net_m2": str(q6(net_total)),
     "levels": {g: ({"z_mm": round(d.z_mm, 1), "source": d.source} if d is not None else None) for g, d in levels.items()}}
   return out_solids, out_rows
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 import re
 import math
 from decimal import Decimal
-from app.engine.measure.member_steel import member_lines
+from app.engine.measure.member_steel import member_lines, kg_per_m
 from app.engine.measure import readings as QS
 from app.modules.drawings_boq.takeoff.prep.views import _SLAB_PANEL
 
@@ -17,6 +17,9 @@ MARK_MARGIN_PT = 2.0
 BAR_NUMBERS = (2, 12)
 SPACING_IN = (2.0, 24.0)
 MAX_BARS = 400
+TAG = re.compile(r"\(\s*(?P<t>TOP|B\.?\s*W\.?)\s*\)", re.I)
+TAG_REACH_SIZES = 2.5
+BOTH_WAYS = 2
 
 def _arrow_end(index, px: float, py: float) -> bool:
   segs, _, _ = index.window(px - ARROW_RADIUS_PT, py - ARROW_RADIUS_PT, px + ARROW_RADIUS_PT, py + ARROW_RADIUS_PT)
@@ -187,8 +190,62 @@ def steel_text(steel: dict) -> str:
   strings = sorted({s["text"] for p in steel["panels"] for s in p["sets"]})
   return f"{len(steel['panels'])} panels, bars from the drawn lines ({', '.join(strings)})"
 
-def attach(cand, plan: dict, index, note) -> None:
-  bbox, mm = plan.get("bbox"), plan.get("mm_per_pt")
+
+def tagged_strings(index, bbox) -> list:
+  words = [w for w in index.words if bbox[0] <= w.cx <= bbox[2] and bbox[1] <= w.cy <= bbox[3]]
+  tags = [(w, "TOP" if m.group("t").upper() == "TOP" else "BW") for w in words for m in [TAG.search(w.text or "")] if m]
+  out = []
+  for w in words:
+    s = _string_of(w)
+    if s is None:
+      continue
+    near = sorted(((math.hypot(t.cx - w.cx, t.cy - w.cy), name) for t, name in tags if round(t.angle) == round(w.angle)), key=lambda p: p[0])
+    s["tag"] = near[0][1] if near and near[0][0] <= TAG_REACH_SIZES * max(float(w.size), 1.0) else None
+    out.append(s)
+  return out
+
+def bottom_rate(s: dict) -> float:
+  return round(float(BOTH_WAYS * kg_per_m({"bar": s["bar"]})) / (s["spacing_mm"] / 1000.0), 2)
+
+def strings_fact(strings: list) -> dict:
+  sets: dict = {}
+  for s in strings:
+    key = (s["tag"] or "UNTAGGED", s["bar"], s["spacing_in"])
+    sets[key] = sets.get(key, 0) + 1
+  by_tag: dict = {}
+  for (tag, _bar, _sp), n in sets.items():
+    by_tag[tag] = by_tag.get(tag, 0) + n
+  listed = [{"tag": t, "text": f"#{b}@{sp:g}", "times": n} for (t, b, sp), n in sorted(sets.items())]
+  bottom = [{"text": f"#{b}@{sp:g}", "kg_per_m2": bottom_rate({"bar": b, "spacing_mm": sp * MM_INCH})} for (t, b, sp) in sorted(sets) if t == "BW"]
+  return {"strings": len(strings), "by_tag": dict(sorted(by_tag.items())), "sets": listed, "bottom_both_ways": bottom}
+
+def attach_strings(cand, plan: dict, index, note) -> None:
+  bbox = plan.get("bbox")
+  if not bbox:
+    return
+  strings = tagged_strings(index, bbox)
+  if not strings:
+    return
+  fact = strings_fact(strings)
+  cand.facts["slab_bar_strings"] = fact
+  rule = float(QS.param("slab_steel_kg_per_m2") or 0.0)
+  
+  tags = ", ".join(f"{v} {k.lower()}" for k, v in fact["by_tag"].items())
+  rates = ", ".join(f"{b['text']} = {b['kg_per_m2']} kg/m\u00b2 of panel" for b in fact["bottom_both_ways"])
+  vs_rule = f", against the QS rule of thumb of {rule:g} kg/m\u00b2 for the whole slab (bottom, top and bearing)" if rule else ""
+  n = note("SLAB_BARS_NOT_MEASURED", strings=fact["strings"], by_tag=fact["by_tag"])
+  n["message"] = (f"The framing plan prints {fact['strings']} bar strings for this slab ({tags}), but the sheet is not to scale and its scale is not verified, "
+    "so no length is read from the drawn lines and the slab steel stays on the usual band. "
+    + (f"Bottom sets printed as both ways (B.W.): {rates}{vs_rule}. " if rates else "")
+    + "These weights per m\u00b2 do not need a scale, but the top bars over the supports and the panel each set belongs to do, so they are not billed.")
+  cand.notes.append(n)
+
+def attach(cand, plan: dict, index, note, scale_unverified: bool = False) -> None:
+  if scale_unverified:
+    attach_strings(cand, plan, index, note)
+    return
+  bbox = plan.get("bbox")
+  mm = plan.get("mm_per_pt")
   if not bbox or not mm:
     return
   found = read(index, bbox, float(mm))

@@ -1,6 +1,7 @@
 from __future__ import annotations
 from app.modules.drawings_boq.takeoff.extract import hosts as H
 import math
+from app.modules.drawings_boq.takeoff.extract import config as C
 
 LABEL_HOST_REACH_MM = 1500.0    
 LABEL_WIDTH_SLACK_MM = 600.0    

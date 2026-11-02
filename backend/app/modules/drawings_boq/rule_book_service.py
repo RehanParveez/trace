@@ -30,6 +30,12 @@ def checked_value(key: str, raw, scope=None):
       return FR.checked(key, scope, raw)
     except ValueError as exc:
       raise TraceException(str(exc), status_code=422, code="FINISH_RULE_REFUSED")
+  if key.startswith("electrical."):
+    from app.modules.drawings_boq.takeoff.extract import electrical_rules as ER
+    try:
+      return ER.checked(key, scope, raw)
+    except ValueError as exc:
+      raise TraceException(str(exc), status_code=422, code="ELECTRICAL_RULE_REFUSED")
   if key.startswith("stage."):
     from app.engine.measure import stages as STG
     try:

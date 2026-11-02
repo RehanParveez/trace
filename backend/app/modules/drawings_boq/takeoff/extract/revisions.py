@@ -3,8 +3,12 @@ import hashlib
 import re
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
+from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import note_scope as NS
 
 BY = FS.OPTION_BY
+DEFAULTED = "defaulted"
+NOTE = "OPTION_DEFAULTED"
 
 SHEET_NO_RX = re.compile(r"^[A-Z]{1,4}-?\d{1,3}[A-Z]?$")
 
@@ -62,7 +66,9 @@ def _group(kind: str, key: tuple, values: list, caption: str, floor: str | None,
   
   if kind == "REVISION":
     default = options[-1]["value"]
-  question = (f"Which option was built for the {caption.lower()}? The set prints {len(options)}: " + ", ".join(o["label"] for o in options) + "." if kind == "OPTION"
+  elif kind == "OPTION":
+    default = options[0]["value"]
+  question = (f"Which option was built for the {caption.lower()}? The set prints {len(options)}: " + ", ".join(o["label"] for o in options) + ". The first printed is taken until you say." if kind == "OPTION"
     else f"Sheet {sheet_no} is printed with {len(options)} revisions. Which one is current? The later one is the default.")
   return {"id": _id(kind, *key, *[o["value"] for o in options]), "kind": kind, "caption": caption, "floor": floor, "sheet_no": sheet_no, "question": question, "state": state, "default": default,
     "chosen": live[0]["value"] if state == "CHOSEN" else None, "options": options, "choosable": True}
@@ -119,17 +125,64 @@ def sheet_mark(rows: list) -> dict | None:
     return dict(marks[0])
   return None
 
+def _marked(c) -> bool:
+  return bool(((c.facts or {}).get(FS.SET_ASIDE) or {}).get(DEFAULTED))
+
+def clear_defaulted(rows: list) -> list:
+  """Rows whose option was taken by default and has since been chosen by a person: the 'taken by default' mark and note are removed."""
+  out = []
+  for c in rows:
+    had = any((n or {}).get("code") == NOTE for n in c.notes or [])
+    if not (had or _marked(c)):
+      continue
+    if _marked(c):
+      c.facts = {**c.facts, FS.SET_ASIDE: {k: v for k, v in c.facts[FS.SET_ASIDE].items() if k != DEFAULTED}}
+    if had:
+      c.notes = [n for n in c.notes if (n or {}).get("code") != NOTE]
+      if c.status != "INVALID":
+        c.status = NS.status_of(c.notes)
+    out.append(c)
+  return out
+
+def note_defaulted(sheets: list) -> list:
+  by_id = {s["sheet_id"]: s for s in sheets}
+  
+  out = []
+  for g in build(sheets)["groups"]:
+    if g["kind"] != "OPTION" or g["state"] != "CHOSEN":
+      continue
+    keep = next(o for o in g["options"] if o["value"] == g["chosen"])
+    rest = [o for o in g["options"] if o is not keep]
+    if not any(_marked(c) for o in rest for sid in o["sheet_ids"] for c in by_id[sid].get("candidates") or []):
+      continue
+    for sid in keep["sheet_ids"]:
+      for c in by_id[sid].get("candidates") or []:
+        if getattr(c, "decision", "NEW") == "REJECTED" or any((n or {}).get("code") == NOTE for n in c.notes or []):
+          continue
+        c.notes = [*(c.notes or []), C.note(NOTE, option=keep["label"], others=[o["label"] for o in rest])]
+        if c.status != "INVALID":
+          c.status = NS.status_of(c.notes)
+        out.append(c)
+        
+  return out
+
 def apply_defaults(sheets: list) -> dict:
   used: dict = {}
   for g in build(sheets)["groups"]:
-    if g["kind"] != "REVISION" or g["state"] != "OPEN" or g["default"] is None:
+    if g["state"] != "OPEN" or g["default"] is None:
       continue
   
     keep = next(o for o in g["options"] if o["value"] == g["default"])
     drop = {sid for o in g["options"] if o["value"] != g["default"] for sid in o["sheet_ids"]}
+    kept = set(keep["sheet_ids"])
     for s in sheets:
       if s["sheet_id"] in drop:
         for c in s.get("candidates") or []:
           c.facts = {**(c.facts or {}), FS.SET_ASIDE: {"by": BY, "page_no": keep["pages"][0]}}
+      elif g["kind"] == "OPTION" and s["sheet_id"] in kept:
+        for c in s.get("candidates") or []:
+          c.notes = [*(c.notes or []), C.note("OPTION_DEFAULTED", option=keep["label"], others=[o["label"] for o in g["options"] if o["value"] != g["default"]])]
+          if c.status != "INVALID":
+            c.status = NS.status_of(c.notes)
     used[g["id"]] = keep["pages"][0]
   return used

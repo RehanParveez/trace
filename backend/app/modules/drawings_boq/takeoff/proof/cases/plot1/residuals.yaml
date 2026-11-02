@@ -7,10 +7,6 @@
 - line: RCC_COLUMNS
   cause: '-5.7% (-21 cft), measured by explain_line: C3 (0.75 x 1.5 ft, 61.6 cft) is in the workbook only; Trace has three unmarked 9 x 9 in columns on the roof (+16.0); C1 and C2 are +49.1 and -24.4 by count, width and height, after the volume given to beams and slabs under FRAME_MONOLITHIC_A (-203.9)'
   pack: '164'
-- line: STEEL
-  cause: '-9.0% (-10.3% before Pack 227, which bills the O/H tank steel at the seed rate steel.band.TANK.likely, +303.7 kg; -17.1% before Pack 213, which gives the 40 C1 columns the 4-#6 of the 9x9 detail proposed for them; was -19.0% before Pack 157): bars not read for every member (the footings F2 and the stair footing print none, the stairs have no section joined), the basement stage is left out (D2, D3, D8)'
-  pack: '195'
-  question: D2, D3, D8 in expected.yaml
 - line: BRICK_WALLS
   cause: '-13.0% (-637 cft), measured by explain_line: the 9 in wall runs are shorter in Trace on the ground (-411), first (-493) and roof (-48) floors; heights are +435.6 higher in Trace and the volume given to beams and slabs takes back -465.1 (FRAME_MONOLITHIC_A); Trace deducts 258.7 cft less than the workbook (openings 220.7, lintels 38.0)'
   pack: '198'

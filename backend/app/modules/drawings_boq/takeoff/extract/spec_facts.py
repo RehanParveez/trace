@@ -11,6 +11,8 @@ RING_MEMBERS = ("BEAM", "COLUMN", "LINTEL")
 PLASTER_ITEMS = ("PLASTER_INSIDE", "PLASTER_OUTSIDE", "CEILING_PLASTER")
 PCC_BED_ITEMS = ("PCC_STRIP", "PCC_PAD")
 ROOF_HEADINGS = ("TERRACE", "ROOF", "PORCH_ROOF", "MUMTY")
+SHEET_ORDER = ("SECTION", "ELEVATION")
+LEVEL_CLUSTER_MM = 305.0
 
 def _pick(rows: list[dict], key) -> tuple:
   by: dict = {}
@@ -90,6 +92,45 @@ def _by_heading(items: list) -> dict:
       "pages": sorted({p for i in h["items"] for p in i.get("pages") or []})}
   return out
 
+def _ft(mm: float) -> str:
+  inch = round(mm / 25.4)
+  return f"{inch // 12}'-{inch % 12}\""
+
+def roof_levels(items: list) -> dict | None:
+  by_page: dict = {}
+  for i in items or []:
+    if i.get("kind") == "ROOF_LEVEL":
+      for p in i.get("pages") or []:
+        by_page.setdefault(p, []).append(i)
+        
+  reads: dict = {}
+  for page, marks in sorted(by_page.items()):
+    parapets = sorted({m["value_mm"] for m in marks if m["scope"] == "PARAPET"})
+    floors = [m["value_mm"] for m in marks if m["scope"] == "FLOOR" and parapets and m["value_mm"] < parapets[0]]
+    if not floors:
+      continue
+    roof = max(floors)
+    above = parapets
+    groups = [[above[0]]]
+    for v in above[1:]:
+      if v - groups[-1][-1] <= LEVEL_CLUSTER_MM:
+        groups[-1].append(v)
+      else:
+        groups.append([v])
+    sheet = marks[0].get("where")
+    for what, top in (("parapet", groups[0][-1]), ("stand", groups[-1][-1] if len(groups) > 1 else None)):
+      if top is not None:
+        reads.setdefault((what, sheet), {}).setdefault(round(top - roof, 1), []).append({"page": page, "roof_mm": roof, "top_mm": top})
+        
+  out: dict = {}
+  for what in ("parapet", "stand"):
+    rows = [{"height_mm": h, "sheet": sheet, "pages": [r["page"] for r in rs], "roof": _ft(rs[0]["roof_mm"]), "top": _ft(rs[0]["top_mm"])}
+      for (w, sheet), table in reads.items() if w == what for h, rs in table.items()]
+    rows.sort(key=lambda r: (SHEET_ORDER.index(r["sheet"]) if r["sheet"] in SHEET_ORDER else len(SHEET_ORDER), -len(r["pages"]), -r["height_mm"]))
+    if rows:
+      out[what] = {**rows[0], "others": rows[1:]}
+  return out or None
+
 def build(items: list) -> dict:
   items = items or []
   loose = [i for i in items if not i.get("under")]
@@ -109,7 +150,7 @@ def build(items: list) -> dict:
   return {"layers": layers, "layers_ambiguous": ambiguous, "by_heading": _by_heading(items),
     "pcc_bed": ({"mix": bed["mix"], "count": bed["count"], "pages": bed["pages"]} if bed else None), "pcc_bed_ambiguous": bed_tie,
     "plaster": ({"mix": plaster["mix"], "thickness_mm": plaster.get("value_mm"), "count": plaster["count"], "pages": plaster["pages"]} if plaster else None), "plaster_ambiguous": plaster_tie,
-    "concrete": concrete, "steel": steel, "waterproof": waterproof}
+    "concrete": concrete, "steel": steel, "waterproof": waterproof, "roof_levels": roof_levels(items)}
 
 def floor_set(spec: dict | None, level_hint: str | None) -> dict | None:
   key = str(level_hint or "").upper()

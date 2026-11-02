@@ -3,6 +3,7 @@ from app.modules.drawings_boq.takeoff.extract import foundation as FD
 from app.modules.drawings_boq.takeoff.extract import finishes as FN
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
 from app.engine.measure import rule_formulas as RF
 from app.modules.drawings_boq.takeoff.extract import spec_facts as SF
 from app.modules.drawings_boq.takeoff.levels import level_spec
@@ -202,15 +203,23 @@ def roof_candidates(slabs: list, ctx: dict, cls, finish, spec_facts: dict | None
     out += _soffit(c, how, ctx, cls, finish)
   return out
 
-def from_outline(level_hint: str | None, outline: dict | None, walls: list, ctx: dict, cls, finish) -> list:
+UPTURN_RULE = "stage.roof_upturn_mm"
+
+def from_outline(level_hint: str | None, outline: dict | None, walls: list, ctx: dict, cls, finish, deck: dict | None = None) -> list:
   area = float((outline or {}).get("area_m2") or 0.0)
   if str(level_hint or "").upper() != "ROOF" or area <= 0.0:
     return []
-  
+  upturn = None
+  if deck and deck.get("deck_m2", 0.0) > 0.0:
+    rv = FR.rule(UPTURN_RULE)
+    upturn = max(0.0, float(rv.value or 0.0))
+    area = deck["deck_m2"] + upturn / 1000.0 * deck["inner_perimeter_m"]
   pts = [p for w in walls if (w.geometry or {}).get("points") for p in w.geometry["points"][:1]]
   facts = {"derived_from": "OUTLINE", "roof_floor": "ROOF", "roof_found_by": "OUTLINE", "roof_role": "ROOF_SLAB", "covered_area_m2": None, "gross_area_m2": None, "layers": None, "slope": None,
-    "layers_defined": False, "area_m2": round(area, 3), "area_basis": "OUTLINE_ASSUMED", "roof_part": "DECK", "projection_area_m2": None, "outline_perimeter_m": (outline or {}).get("perimeter_m"), "edge_m": None, "edge_basis": None}
+    "layers_defined": False, "area_m2": round(area, 3), "area_basis": "DECK_ASSUMED" if upturn is not None else "OUTLINE_ASSUMED", "roof_part": "DECK", "deck": deck, "upturn_mm": upturn, "projection_area_m2": None, "outline_perimeter_m": (outline or {}).get("perimeter_m"), "edge_m": None, "edge_basis": None}
   notes = [C.note("ROOF_TREATMENT_AREA_ONLY"), C.note("ROOF_FROM_OUTLINE", area_m2=round(area, 2), perimeter_m=(outline or {}).get("perimeter_m"))]
+  if upturn is not None:
+    notes.append(C.note("ROOF_DECK_FROM_WALLS", outline_m2=deck["outline_m2"], band_m2=deck["band_m2"], stand_m2=deck["stand_m2"], deck_m2=deck["deck_m2"], parapet_mm=deck["parapet_mm"], upturn_mm=upturn, rule=UPTURN_RULE))
   cand = FD._make(cls, ctx, finish, (ITEM, "ROOF"), ITEM, f"Roof treatment · {area:.2f} m² · from the outline of the walls", "ROOF-TREATMENT", [FD._centre(pts)] if pts else [[0.0, 0.0]],
     {"length_mm": round(area * 1000.0, 1), "width_mm": 1000.0}, [], notes, facts, 0.5)
   cand.facts = {**(cand.facts or {}), FS.SET_ASIDE: {"by": FS.ASSUMED_BY, "page_no": None}}

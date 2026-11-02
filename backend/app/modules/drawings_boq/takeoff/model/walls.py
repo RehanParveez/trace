@@ -37,6 +37,9 @@ PROBE_REACH = 0.35
 MIN_ROOM_M2 = 2.0
 OPEN_SHARE = 0.5
 OUTSIDE_TYPES = (RT.PORCH, RT.TERRACE, RT.LAWN)
+GAP_STEP_MM = 100.0
+GAP_NEAR_MM = 700.0
+UNATTACHED_REACH = 1.5
 
 @dataclass(frozen=True)
 class WallGraph:
@@ -203,8 +206,12 @@ def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float =
   live = [k for k, (w, a, b) in enumerate(segs) if a is not None and (a[0] != b[0] or a[1] != b[1])]
   if not live or not mm_per_pt:
     return [(0.0, 0.0)] * len(segs), {"perimeter_m": 0.0, "outer_face_m": 0.0, "area_m2": 0.0}
+  free = unattached(segs, live, rooms, mm_per_pt)
+  segs = [(w, None, None) if k in free else (w, a, b) for k, (w, a, b) in enumerate(segs)]
   rects, solid = _solid_of(segs, mm_per_pt, bridge_mm)
-  closed = solid.buffer(close_mm / mm_per_pt).buffer(-close_mm / mm_per_pt) if close_mm else solid
+  house = unary_union([Polygon(ring) for r in rooms if RT.of_room(r) not in OUTSIDE_TYPES and (ring := _ring(r)) is not None]).buffer(0)
+  whole = unary_union([solid, house])
+  closed = whole.buffer(close_mm / mm_per_pt).buffer(-close_mm / mm_per_pt) if close_mm else whole
   polys = list(closed.geoms) if hasattr(closed, "geoms") else [closed]
   outline = unary_union([Polygon(p.exterior) for p in polys if not p.is_empty and hasattr(p, "exterior")])
   
@@ -242,4 +249,65 @@ def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float =
     outer_cc += (outside / steps) * n * mm_per_pt / 1000.0
   perimeter = sum(p.length for p in (list(outline.geoms) if hasattr(outline, "geoms") else [outline])) * mm_per_pt / 1000.0
   parts = sorted((round(g.length * mm_per_pt / 1000.0, 2) for g in (list(outline.geoms) if hasattr(outline, "geoms") else [outline])), reverse=True)
-  return out, {"perimeter_m": round(perimeter, 3), "outer_face_m": round(outer_cc, 3), "area_m2": round(outline.area * sqm, 3), "parts_m": parts[:6]}
+  gaps = outline_gaps(outline, solid, [segs[k][0] for k in rects], mm_per_pt)
+  loose = [{"key": getattr(w, "key", None), "length_m": round(float((w.facts or {}).get("length_cc_m") or 0.0), 2), "thickness_mm": round(_thickness_mm(w), 1)} for k, (w, _a, _b) in enumerate(segs) if k in free]
+  return out, {"perimeter_m": round(perimeter, 3), "outer_face_m": round(outer_cc, 3), "area_m2": round(outline.area * sqm, 3), "parts_m": parts[:6], "gaps": gaps, "unattached": loose}
+
+def unattached(segs: list, live: list, rooms: list, mm_per_pt: float) -> set:
+  """Indexes of the walls of a joined group of walls (walls whose ends meet within half a thickness) that no room of the house lies against: no room that is not a porch, terrace or lawn comes within
+  one and a half thicknesses of any wall of the group. They stay on the bill as walls; they are left out of the outline."""
+  rings = [Polygon(ring) for r in rooms if RT.of_room(r) not in OUTSIDE_TYPES and (ring := _ring(r)) is not None]
+  rings = [g for g in rings if g.is_valid and not g.is_empty]
+  if not rings:
+    return set()
+  lines = {k: LineString([segs[k][1], segs[k][2]]) for k in live}
+  half = {k: _thickness_mm(segs[k][0]) / mm_per_pt / 2.0 for k in live}
+  boxes = {k: lines[k].buffer(half[k], cap_style=2) for k in live}
+  parent = {k: k for k in live}
+
+  def find(k):
+    while parent[k] != k:
+      parent[k] = parent[parent[k]]
+      k = parent[k]
+    return k
+
+  for i, a in enumerate(live):
+    for b in live[i + 1:]:
+      if boxes[a].buffer(half[a]).intersects(boxes[b]):
+        parent[find(a)] = find(b)
+  groups: dict = {}
+  for k in live:
+    groups.setdefault(find(k), []).append(k)
+  loose = set()
+  for ks in groups.values():
+    if not any(g.distance(lines[k]) <= UNATTACHED_REACH * 2.0 * half[k] for k in ks for g in rings):
+      loose.update(ks)
+  return loose if len(loose) < len(live) else set()
+
+def outline_gaps(outline, solid, walls: list, mm_per_pt: float) -> dict:
+  reach = max((_thickness_mm(w) for w in walls), default=0.0) / mm_per_pt
+  step = GAP_STEP_MM / mm_per_pt
+  gap_segs = [(tuple(a), tuple(b)) for w in walls for a, b in ((w.facts or {}).get("gap_pts") or [])]
+  near = GAP_NEAR_MM / mm_per_pt
+  edge = prep(solid.buffer(reach))
+  lines = list(outline.boundary.geoms) if hasattr(outline.boundary, "geoms") else [outline.boundary]
+  
+  runs: list = []
+  total = 0.0
+  for ln in lines:
+    n = int(ln.length // step)
+    cur = None
+    for i in range(n):
+      pt = ln.interpolate((i + 0.5) * step)
+      if edge.contains(pt):
+        cur = None
+        continue
+      if cur is None:
+        cur = {"n": 0, "at": (round(pt.x, 1), round(pt.y, 1)), "opening": False}
+        runs.append(cur)
+      cur["n"] += 1
+      cur["opening"] = cur["opening"] or any(LineString([a, b]).distance(pt) <= near for a, b in gap_segs)
+  rows = [{"m": round(r["n"] * GAP_STEP_MM / 1000.0, 2), "kind": "OPENING" if r["opening"] else "NO_WALL", "at": list(r["at"])} for r in runs]
+  
+  total = sum(r["m"] for r in rows)
+  return {"count": len(rows), "metres": round(total, 2), "opening_metres": round(sum(r["m"] for r in rows if r["kind"] == "OPENING"), 2), "rows": rows[:40]}

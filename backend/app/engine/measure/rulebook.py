@@ -201,6 +201,7 @@ def load_rules(path) -> tuple:
   import yaml
   from app.engine.measure import readings
   from app.modules.drawings_boq.takeoff.extract import finish_rules as FR
+  from app.modules.drawings_boq.takeoff.extract import electrical_rules as ER
   path = pathlib.Path(path)
   raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
   default_origin = str(raw.get("origin") or QS_WORKBOOK).upper()
@@ -220,6 +221,12 @@ def load_rules(path) -> tuple:
     if key in FR.KEYS:
       try:
         value = FR.checked(key, scope, r.get("value"))
+      except ValueError as exc:
+        problems.append(f"{where}: {exc}")
+        continue
+    elif key in ER.KEYS:
+      try:
+        value = ER.checked(key, scope, r.get("value"))
       except ValueError as exc:
         problems.append(f"{where}: {exc}")
         continue
@@ -290,6 +297,8 @@ def seed_problems() -> list:
         FR.checked(key, scope, rv.value)
       except ValueError as exc:
         out.append((rv.rule_id, str(exc)))
+  from app.modules.drawings_boq.takeoff.extract import electrical_rules as ER
+  out += ER.seed_problems(SEED_ROWS)
   from app.engine.measure import stages as STG
   for key, expected in STG.seed_expect().items():
     s = next((rv for scope, rv in SEED_ROWS.get(key, ()) if not scope), None)

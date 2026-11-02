@@ -23,6 +23,17 @@ def in_floor(c, floor: str, sheet_floor: str | None) -> bool:
   """An item that belongs to this floor of its sheet (a slab is read from the framing sheets, not from the plans, and is left out)."""
   return c.category != "SLAB" and (FO.level_of(c) or sheet_floor) == floor
 
+def lift_assumed(cands: list, work_item: str, note) -> int:
+  items = [c for c in cands if (getattr(c, "suggested_work_item", None) or getattr(c, "work_item", None)) == work_item and getattr(c, "status", None) != "INVALID"]
+  if any(not is_set_aside(c) for c in items):
+    return 0
+  lifted = [c for c in items if ((c.facts or {}).get(SET_ASIDE) or {}).get("by") == ASSUMED_BY]
+  for c in lifted:
+    c.facts = {k: v for k, v in (c.facts or {}).items() if k != SET_ASIDE}
+    c.decision = "NEW"
+    c.notes = [*(c.notes or []), note("ROOF_ASSUMED_COUNTED")]
+  return len(lifted)
+
 def is_set_aside(c) -> bool:
   """Rejected because the floor's other sheet was chosen, or because the other sheet holds the same item (a combine)."""
   return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY, OPTION_BY, ASSUMED_BY, COPY_BY, TANK_BY)

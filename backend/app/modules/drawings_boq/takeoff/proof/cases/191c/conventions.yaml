@@ -1,0 +1,576 @@
+- id: extent.termite
+  question: 'Termite proofing: over what extent'
+  key: finish.extent
+  scope:
+    item: termite
+  line: TERMITE/ALL
+  qs: 3055.485
+  basis: STANDARD
+  value: null
+  margin_pct: 5.96
+  methods:
+  - value: GROSS
+    label: over the floors plus the plan area of the walls between them
+    figure: 2240.456
+    current: false
+    distance_pct: 26.67
+  - value: FLOOR_AREA
+    label: over the floors inside the walls (the usual way)
+    figure: 2058.527
+    current: true
+    distance_pct: 32.63
+  - value: STRIPS
+    label: as strips along the walls, with the strip widths of the rules
+    figure: 2058.527
+    current: false
+    distance_pct: 32.63
+  - value: ROOMS
+    label: over the rooms of the types the rule lists (finish.pcc_under, finish.ceiling_includes)
+    figure: 2058.527
+    current: false
+    distance_pct: 32.63
+- id: extent.pcc_floor
+  question: 'PCC under the floor: over what extent'
+  key: finish.extent
+  scope:
+    item: pcc_floor
+  line: KACHA/ALL
+  qs: 2065.083
+  basis: STANDARD
+  value: null
+  margin_pct: 0.0
+  methods:
+  - value: FLOOR_AREA
+    label: over the floors inside the walls (the usual way)
+    figure: 2192.964
+    current: true
+    distance_pct: 6.19
+  - value: STRIPS
+    label: as strips along the walls, with the strip widths of the rules
+    figure: 2192.964
+    current: false
+    distance_pct: 6.19
+  - value: ROOMS
+    label: over the rooms of the types the rule lists (finish.pcc_under, finish.ceiling_includes)
+    figure: 2192.964
+    current: false
+    distance_pct: 6.19
+  - value: GROSS
+    label: over the floors plus the plan area of the walls between them
+    figure: 2512.509
+    current: false
+    distance_pct: 21.67
+- id: extent.fill
+  question: 'Earth filling under the floor: over what extent'
+  key: finish.extent
+  scope:
+    item: fill
+  line: FILLING/ALL
+  qs: 7903.162
+  basis: STANDARD
+  value: null
+  margin_pct: 2.68
+  methods:
+  - value: GROSS
+    label: over the floors plus the plan area of the walls between them
+    figure: 1652.918
+    current: false
+    distance_pct: 79.09
+  - value: FLOOR_AREA
+    label: over the floors inside the walls (the usual way)
+    figure: 1440.667
+    current: true
+    distance_pct: 81.77
+  - value: STRIPS
+    label: as strips along the walls, with the strip widths of the rules
+    figure: 1440.667
+    current: false
+    distance_pct: 81.77
+  - value: ROOMS
+    label: over the rooms of the types the rule lists (finish.pcc_under, finish.ceiling_includes)
+    figure: 1440.667
+    current: false
+    distance_pct: 81.77
+- id: extent.ceiling
+  question: 'Ceiling plaster: over what extent'
+  key: finish.extent
+  scope:
+    item: ceiling
+  line: CEILING_PLASTER/ALL
+  qs: 3024.906
+  basis: STANDARD
+  value: null
+  margin_pct: 10.56
+  methods:
+  - value: GROSS
+    label: over the floors plus the plan area of the walls between them
+    figure: 2512.509
+    current: false
+    distance_pct: 16.94
+  - value: FLOOR_AREA
+    label: over the floors inside the walls (the usual way)
+    figure: 2192.964
+    current: true
+    distance_pct: 27.5
+  - value: STRIPS
+    label: as strips along the walls, with the strip widths of the rules
+    figure: 2192.964
+    current: false
+    distance_pct: 27.5
+  - value: ROOMS
+    label: over the rooms of the types the rule lists (finish.pcc_under, finish.ceiling_includes)
+    figure: 2192.964
+    current: false
+    distance_pct: 27.5
+- id: wall_height
+  question: Height of a brick wall
+  key: wall_height_basis
+  scope: {}
+  line: BRICK_WALLS/FIRST
+  qs: 1397.394
+  basis: STANDARD
+  value: null
+  margin_pct: 0.0
+  methods:
+  - value: FLOOR_TO_FLOOR
+    label: floor to floor, as printed on the sections
+    figure: 1216.791
+    current: false
+    distance_pct: 12.92
+  - value: ABOVE_PLINTH_BEAM
+    label: floor to floor less the plinth beam, on the lowest storey
+    figure: 1216.791
+    current: false
+    distance_pct: 12.92
+  - value: BETWEEN_BEAMS
+    label: also less the web of the roof beam below the slab, on every storey
+    figure: 1216.791
+    current: true
+    distance_pct: 12.92
+  - value: CLEAR
+    label: clear storey height, floor to the soffit of the slab above
+    figure: 1124.335
+    current: false
+    distance_pct: 19.54
+- id: wall_height
+  question: Height of a brick wall
+  key: wall_height_basis
+  scope: {}
+  line: BRICK_WALLS/GROUND
+  qs: 1701.336
+  basis: STANDARD
+  value: null
+  margin_pct: 2.62
+  methods:
+  - value: FLOOR_TO_FLOOR
+    label: floor to floor, as printed on the sections
+    figure: 1698.756
+    current: false
+    distance_pct: 0.15
+  - value: CLEAR
+    label: clear storey height, floor to the soffit of the slab above
+    figure: 1654.26
+    current: false
+    distance_pct: 2.77
+  - value: ABOVE_PLINTH_BEAM
+    label: floor to floor less the plinth beam, on the lowest storey
+    figure: 1565.267
+    current: false
+    distance_pct: 8.0
+  - value: BETWEEN_BEAMS
+    label: also less the web of the roof beam below the slab, on every storey
+    figure: 1520.77
+    current: true
+    distance_pct: 10.61
+- id: wall_height
+  question: Height of a brick wall
+  key: wall_height_basis
+  scope: {}
+  line: STEEL/ALL
+  qs: 5500.0
+  basis: STANDARD
+  value: null
+  margin_pct: 6.77
+  methods:
+  - value: CLEAR
+    label: clear storey height, floor to the soffit of the slab above
+    figure: 6837.486
+    current: false
+    distance_pct: 24.32
+  - value: FLOOR_TO_FLOOR
+    label: floor to floor, as printed on the sections
+    figure: 7210.095
+    current: false
+    distance_pct: 31.09
+  - value: ABOVE_PLINTH_BEAM
+    label: floor to floor less the plinth beam, on the lowest storey
+    figure: 7210.095
+    current: false
+    distance_pct: 31.09
+  - value: BETWEEN_BEAMS
+    label: also less the web of the roof beam below the slab, on every storey
+    figure: 7210.095
+    current: true
+    distance_pct: 31.09
+- id: beam_depth
+  question: Depth of a beam
+  key: beam_depth_includes_slab
+  scope: {}
+  line: BRICK_WALLS/GROUND
+  qs: 1701.336
+  basis: STANDARD
+  value: null
+  margin_pct: 5.23
+  methods:
+  - value: 1.0
+    label: the printed depth includes the slab (the web is taken below the slab)
+    figure: 1520.77
+    current: true
+    distance_pct: 10.61
+  - value: 0.0
+    label: the printed depth is the web, below the slab
+    figure: 1431.777
+    current: false
+    distance_pct: 15.84
+- id: brick_lintels
+  question: Brick at a lintel
+  key: brick_net_of_lintels
+  scope: {}
+  line: BRICK_WALLS/FIRST
+  qs: 1397.394
+  basis: STANDARD
+  value: null
+  margin_pct: 1.15
+  methods:
+  - value: 0.0
+    label: gross, the lintels not taken out
+    figure: 1232.854
+    current: false
+    distance_pct: 11.77
+  - value: 1.0
+    label: net of the lintels over the openings
+    figure: 1216.791
+    current: true
+    distance_pct: 12.92
+- id: brick_lintels
+  question: Brick at a lintel
+  key: brick_net_of_lintels
+  scope: {}
+  line: BRICK_WALLS/GROUND
+  qs: 1701.336
+  basis: STANDARD
+  value: null
+  margin_pct: 1.66
+  methods:
+  - value: 0.0
+    label: gross, the lintels not taken out
+    figure: 1549.099
+    current: false
+    distance_pct: 8.95
+  - value: 1.0
+    label: net of the lintels over the openings
+    figure: 1520.77
+    current: true
+    distance_pct: 10.61
+- id: opening_rules
+  question: Which openings come off each item
+  key: opening_rules_basis
+  scope: {}
+  line: BRICK_WALLS/GROUND
+  qs: 1701.336
+  basis: STANDARD
+  value: null
+  margin_pct: 0.22
+  methods:
+  - value: SHEET
+    label: one rule for every item, as a QS sheet has it (0.5 m2 and over)
+    figure: 1520.77
+    current: true
+    distance_pct: 10.61
+  - value: IS1200
+    label: a rule for each item (IS 1200, assumed)
+    figure: 1517.02
+    current: false
+    distance_pct: 10.83
+- id: opening_rules
+  question: Which openings come off each item
+  key: opening_rules_basis
+  scope: {}
+  line: FIN-PAINT-EXT/ALL
+  qs: 6076.014
+  basis: STANDARD
+  value: null
+  margin_pct: 2.84
+  methods:
+  - value: IS1200
+    label: a rule for each item (IS 1200, assumed)
+    figure: 2480.853
+    current: false
+    distance_pct: 59.17
+  - value: SHEET
+    label: one rule for every item, as a QS sheet has it (0.5 m2 and over)
+    figure: 2308.502
+    current: true
+    distance_pct: 62.01
+- id: opening_rules
+  question: Which openings come off each item
+  key: opening_rules_basis
+  scope: {}
+  line: FIN-PAINT/ALL
+  qs: 5967.466
+  basis: STANDARD
+  value: null
+  margin_pct: 7.1
+  methods:
+  - value: IS1200
+    label: a rule for each item (IS 1200, assumed)
+    figure: 5810.926
+    current: false
+    distance_pct: 2.62
+  - value: SHEET
+    label: one rule for every item, as a QS sheet has it (0.5 m2 and over)
+    figure: 5387.565
+    current: true
+    distance_pct: 9.72
+- id: opening_rules
+  question: Which openings come off each item
+  key: opening_rules_basis
+  scope: {}
+  line: WALL_PLASTER
+  qs: 13468.347
+  basis: STANDARD
+  value: null
+  margin_pct: 4.42
+  methods:
+  - value: IS1200
+    label: a rule for each item (IS 1200, assumed)
+    figure: 9335.028
+    current: false
+    distance_pct: 30.69
+  - value: SHEET
+    label: one rule for every item, as a QS sheet has it (0.5 m2 and over)
+    figure: 8739.317
+    current: true
+    distance_pct: 35.11
+- id: deduct.brick
+  question: Openings off the brickwork
+  key: deduct_opening_brick
+  scope: {}
+  line: BRICK_WALLS/FIRST
+  qs: 1397.394
+  basis: STANDARD
+  value: null
+  margin_pct: 0.71
+  methods:
+  - value: 0.0
+    label: openings not taken off
+    figure: 1568.016
+    current: false
+    distance_pct: 12.21
+  - value: 1.0
+    label: openings taken off
+    figure: 1216.791
+    current: true
+    distance_pct: 12.92
+- id: deduct.brick
+  question: Openings off the brickwork
+  key: deduct_opening_brick
+  scope: {}
+  line: BRICK_WALLS/GROUND
+  qs: 1701.336
+  basis: STANDARD
+  value: null
+  margin_pct: 3.87
+  methods:
+  - value: 0.0
+    label: openings not taken off
+    figure: 1816.041
+    current: false
+    distance_pct: 6.74
+  - value: 1.0
+    label: openings taken off
+    figure: 1520.77
+    current: true
+    distance_pct: 10.61
+- id: deduct.brick
+  question: Openings off the brickwork
+  key: deduct_opening_brick
+  scope: {}
+  line: MAS-DPC/ALL
+  qs: 390.756
+  basis: STANDARD
+  value: null
+  margin_pct: 0.4
+  methods:
+  - value: 0.0
+    label: openings not taken off
+    figure: 160.787
+    current: false
+    distance_pct: 58.85
+  - value: 1.0
+    label: openings taken off
+    figure: 159.238
+    current: true
+    distance_pct: 59.25
+- id: deduct.plaster
+  question: Openings off the plaster
+  key: deduct_opening_plaster
+  scope: {}
+  line: WALL_PLASTER
+  qs: 13468.347
+  basis: STANDARD
+  value: null
+  margin_pct: 15.03
+  methods:
+  - value: 0.0
+    label: openings not taken off
+    figure: 10764.156
+    current: false
+    distance_pct: 20.08
+  - value: 1.0
+    label: openings taken off
+    figure: 8739.317
+    current: true
+    distance_pct: 35.11
+- id: deduct.paint
+  question: Openings off the paint
+  key: deduct_opening_paint
+  scope: {}
+  line: FIN-PAINT-EXT/ALL
+  qs: 6076.014
+  basis: STANDARD
+  value: null
+  margin_pct: 6.48
+  methods:
+  - value: 0.0
+    label: openings not taken off
+    figure: 2701.839
+    current: false
+    distance_pct: 55.53
+  - value: 1.0
+    label: openings taken off
+    figure: 2308.502
+    current: true
+    distance_pct: 62.01
+- id: deduct.paint
+  question: Openings off the paint
+  key: deduct_opening_paint
+  scope: {}
+  line: FIN-PAINT/ALL
+  qs: 5967.466
+  basis: STANDARD
+  value: null
+  margin_pct: 7.9
+  methods:
+  - value: 1.0
+    label: openings taken off
+    figure: 5387.565
+    current: true
+    distance_pct: 9.72
+  - value: 0.0
+    label: openings not taken off
+    figure: 7019.067
+    current: false
+    distance_pct: 17.62
+- id: wall_faces
+  question: Wall faces for plaster and paint
+  key: finish.wall_faces
+  scope: {}
+  line: FIN-PAINT-EXT/ALL
+  qs: 6076.014
+  basis: STANDARD
+  value: null
+  margin_pct: 8.07
+  methods:
+  - value: OUTLINE
+    label: from the outline of the rooms
+    figure: 2308.502
+    current: true
+    distance_pct: 62.01
+  - value: GRAPH
+    label: from the wall graph
+    figure: 1818.176
+    current: false
+    distance_pct: 70.08
+- id: wall_faces
+  question: Wall faces for plaster and paint
+  key: finish.wall_faces
+  scope: {}
+  line: FIN-PAINT/ALL
+  qs: 5967.466
+  basis: STANDARD
+  value: null
+  margin_pct: 26.04
+  methods:
+  - value: OUTLINE
+    label: from the outline of the rooms
+    figure: 5387.565
+    current: true
+    distance_pct: 9.72
+  - value: GRAPH
+    label: from the wall graph
+    figure: 8101.198
+    current: false
+    distance_pct: 35.76
+- id: wall_faces
+  question: Wall faces for plaster and paint
+  key: finish.wall_faces
+  scope: {}
+  line: WALL_PLASTER
+  qs: 13468.347
+  basis: STANDARD
+  value: null
+  margin_pct: 16.51
+  methods:
+  - value: GRAPH
+    label: from the wall graph
+    figure: 10962.623
+    current: false
+    distance_pct: 18.6
+  - value: OUTLINE
+    label: from the outline of the rooms
+    figure: 8739.317
+    current: true
+    distance_pct: 35.11
+- id: dado_wc
+  question: Tile band in a W.C
+  key: finish.dado_height_mm
+  scope:
+    room_type: WC
+  line: FIN-DADO/ALL
+  qs: 1168.03
+  basis: STANDARD
+  value: null
+  margin_pct: 32.35
+  methods:
+  - value: CEILING
+    label: to the ceiling
+    figure: 1043.254
+    current: true
+    distance_pct: 10.68
+  - value: 2134.0
+    label: 7 ft (2134 mm)
+    figure: 665.463
+    current: false
+    distance_pct: 43.03
+- id: dado_wc
+  question: Tile band in a W.C
+  key: finish.dado_height_mm
+  scope:
+    room_type: WC
+  line: FIN-PAINT/ALL
+  qs: 5967.466
+  basis: STANDARD
+  value: null
+  margin_pct: 6.33
+  methods:
+  - value: 2134.0
+    label: 7 ft (2134 mm)
+    figure: 5765.346
+    current: false
+    distance_pct: 3.39
+  - value: CEILING
+    label: to the ceiling
+    figure: 5387.565
+    current: true
+    distance_pct: 9.72

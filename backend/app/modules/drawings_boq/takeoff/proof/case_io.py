@@ -42,6 +42,7 @@ def load_case(folder: str) -> dict:
   out["decisions"] = load_decisions(folder)
   out["corrections"] = load_corrections(folder)
   out["residuals"] = load_residuals(folder)
+  out["conventions"] = load_conventions(folder)
   return out
 
 ANSWERED_BY = ("DRAWING", "QS")
@@ -121,6 +122,17 @@ def load_corrections(folder: str) -> list:
     seen.add(str(e["line"]))
     out.append({"line": str(e["line"]), "qs_figure": float(e["qs_figure"]), "corrected": float(e["corrected"]), "reason": str(e["reason"]), "signed": e["signed"], "evidence": evidence,
       "signed_by": str(e["signed_by"]).upper() if e.get("signed_by") else None})
+  return out
+
+def load_conventions(folder: str) -> list:
+  path = os.path.join(folder, "conventions.yaml")
+  out = []
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "id", "line", "key", "basis", "qs", "methods")
+    if e["basis"] not in ("INFERRED", "STANDARD"):
+      raise ValueError(f"{path}, entry {i + 1}: the basis is INFERRED or STANDARD.")
+    out.append({"id": str(e["id"]), "question": str(e.get("question") or ""), "key": str(e["key"]), "scope": dict(e.get("scope") or {}), "line": str(e["line"]), "qs": float(e["qs"]), "basis": e["basis"],
+      "value": e.get("value"), "margin_pct": e.get("margin_pct"), "methods": list(e["methods"])})
   return out
 
 def load_residuals(folder: str) -> list:

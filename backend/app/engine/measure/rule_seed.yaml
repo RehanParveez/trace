@@ -98,9 +98,11 @@ rules:
   - {key: stage.dpc_below_ffl_mm, scope: {}, value: 0.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.lintel_height_mm, scope: {}, value: 2134.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.parapet_height_mm, scope: {}, value: 914.4, unit: "mm", cls: JUDGEMENT}
+  - {key: stage.roof_upturn_mm, scope: {}, value: 0.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.tank_depth_mm, scope: {}, value: 1524.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.tank_wall_mm, scope: {}, value: 152.4, unit: "mm", cls: JUDGEMENT}
   - {key: finish.wall_faces, scope: {}, value: "OUTLINE", unit: null, cls: JUDGEMENT}
+  - {key: finish.free_wall_faces, scope: {}, value: "NONE", unit: null, cls: JUDGEMENT}
   - {key: finish.extent, scope: {}, value: "FLOOR_AREA", unit: null, cls: JUDGEMENT}
   - {key: finish.external_below_grade, scope: {}, value: "EXCLUDE", unit: null, cls: STANDARD, source: "common practice, clause not verified"}
   - {key: steel.unit_weight_divisor, scope: {}, value: 162.2, unit: "kg/m = d2 / value", cls: STANDARD, source: "derived from the density of steel (7850 kg/m3) and the area of the bar, no clause needed"}
@@ -128,3 +130,21 @@ rules:
   - {key: steel.band.PARAPET.low, scope: {}, value: 40, unit: "kg/m3", cls: JUDGEMENT}
   - {key: steel.band.PARAPET.likely, scope: {}, value: 65, unit: "kg/m3", cls: JUDGEMENT}
   - {key: steel.band.PARAPET.high, scope: {}, value: 100, unit: "kg/m3", cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: LIGHT}, value: "ELE-LIGHT", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: FAN}, value: "ELE-FAN", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: EXHAUST}, value: "ELE-FAN", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: SOCKET_5A}, value: "ELE-SOCKET", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: SOCKET_15A}, value: "ELE-SOCKET", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: SOCKET}, value: "ELE-SOCKET", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: SWITCH_PLATE}, value: "ELE-SWITCH", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: SWITCH_2WAY}, value: "ELE-SWITCH", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: TEL}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: TV}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: DATA}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: ALARM}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: BELL}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: CCTV}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: AUDIO}, value: "ELE-LOWV", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: BOARD}, value: "ELE-BOARD", unit: null, cls: JUDGEMENT}
+  - {key: electrical.work_item, scope: {group: OTHER}, value: "ELE-OTHER", unit: null, cls: JUDGEMENT}
+

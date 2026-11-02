@@ -51,6 +51,7 @@ from app.modules.drawings_boq.takeoff.extract import wall_net as WN
 from app.modules.drawings_boq.takeoff.extract import band_count as BC
 from app.modules.drawings_boq.takeoff.extract import slab_projection as SPJ
 from app.modules.drawings_boq.takeoff.extract import slab_panels as SPN
+from app.modules.drawings_boq.takeoff.extract import wall_steel as WST
 from app.modules.drawings_boq.takeoff.extract import slab_plan as SPL
 from app.modules.drawings_boq.takeoff.extract import slab_geometry as SG
 from app.modules.drawings_boq.takeoff.extract import beam_marks as BM
@@ -317,7 +318,7 @@ def _with_clear_height(heights: dict, floor_heights: dict | None, level_hint: st
   return out
 
 def _height_note(h: dict) -> dict:
-  return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_RULE" if h.get("basis") == "RULE" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}),
+  return C.note("HEIGHT_FROM_SECTION" if h.get("basis") == "SECTION" else "HEIGHT_FROM_LEVELS" if h.get("basis") == "LEVELS" else "HEIGHT_FROM_QS" if h.get("basis") == "QS" else "HEIGHT_FROM_RULE" if h.get("basis") == "RULE" else "HEIGHT_FROM_NOTE", text=h["text"], **({"origin": h["origin"]} if h.get("origin") else {}),
     **({"ladder": h["ladder"]} if h.get("ladder") else {}))
 
 def _height_notes(h: dict) -> list:
@@ -1988,7 +1989,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     cand, notes = _slab_candidate(plan, areas, slab_values or [], ctx, _implied_slab_mm(floor_heights, plan.get("level_hint")), (schedule or {}).get("projections"))
     if cand is not None and plan["level_hint"] not in seen_floor:
       seen_floor.add(plan["level_hint"])
-      SPN.attach(cand, plan, index, C.note)
+      SPN.attach(cand, plan, index, C.note, scale_unverified)
       cand.status = _status(cand.notes)
 
       res.candidates.append(cand)
@@ -2005,7 +2006,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     plan = plans[0]
     cand, notes = _slab_candidate_from_plan(plan, index, words, lines, slab_values or [], ctx, _implied_slab_mm(floor_heights, plan.get("level_hint")), mm_per_pt, scale_unverified)
     if cand is not None:
-      SPN.attach(cand, plan, index, C.note)
+      SPN.attach(cand, plan, index, C.note, scale_unverified)
       cand.status = _status(cand.notes)
       res.candidates.append(cand)
       res.notes = [n for n in res.notes if n.get("code") != "SLAB_AREA_NOT_FOUND"]
@@ -2050,12 +2051,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.stats["wall_beams"] = len(beams)
       _stage(res, "OPENING_SYMBOLS", lambda: _opening_symbols(index, walls, mm_per_pt, ctx, imp_sheet, deadline, res, wstats.get("wall_pen_pt"), opening_heights), None)
       hosted = H.assign(walls, [c for c in res.candidates if c.category in ("DOOR", "WINDOW")], mm_per_pt)
-      wstats["openings_assigned"], wstats["openings_unassigned"] = hosted["assigned"], hosted["unassigned"]
+      wstats["openings_assigned"], wstats["openings_unassigned"], wstats["host_audit"] = hosted["assigned"], hosted["unassigned"], hosted["audit"]
       wstats["opening_rules"] = OPR.apply(walls)
       marked = [c for c in res.candidates if c.category in ("DOOR", "WINDOW")]
       wstats["opening_marks"] = OK.check(marked, walls, (schedule or {}).get("openings") or [], mm_per_pt)
       for c in marked:
-        if c.facts.get("gap_check"):
+        if c.facts.get("gap_check") or c.facts.get("host_issue"):
           c.status = _status(c.notes)
       
       for c in walls:
@@ -2132,7 +2133,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.candidates.extend(rooms)
       res.candidates.extend(completion)
       if str(level_hint or "").upper() == "ROOF" and not ctx.get("scale_unverified"):
-        res.stats["roof_walls"] = RW.apply(walls, rooms, mm_per_pt, floor_heights, level_hint, lambda fl: _with_floor_height({}, floor_heights, fl).get("WALL"), C.note, _height_notes, _status)
+        res.stats["roof_walls"] = RW.apply(walls, rooms, mm_per_pt, floor_heights, level_hint, lambda fl: _with_floor_height({}, floor_heights, fl).get("WALL"), C.note, _height_notes, _status, spec_facts)
       if with_finishes or lowest_level:
         faced = FN.attach_faces([*walls, *QR.counted_completion(completion)], rooms, mm_per_pt, level_hint)
         if faced.get("used"):
@@ -2142,8 +2143,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         elif faced.get("outline"):
           res.stats["floor_outline"] = faced["outline"]
           res.notes.append(C.note("WALL_FACES_FROM_OUTLINE", perimeter_m=faced["outline"]["perimeter_m"], outer_face_m=faced["outline"]["outer_face_m"]))
+          if faced["outline"].get("gaps", {}).get("count"):
+            res.notes.append(C.note("WALL_FACES_OUTLINE_GAPS", count=faced["outline"]["gaps"]["count"], metres=faced["outline"]["gaps"]["metres"], opening_metres=faced["outline"]["gaps"]["opening_metres"], places=faced["outline"]["gaps"]["rows"][:12]))
+          if faced["outline"].get("unattached"):
+            res.notes.append(C.note("WALL_FACES_NO_ROOM", count=len(faced["outline"]["unattached"]), metres=round(sum(u["length_m"] for u in faced["outline"]["unattached"]), 2), walls=faced["outline"]["unattached"]))
           if not any(c.category == "SLAB" for c in res.candidates):
-            res.candidates.extend(RF.from_outline(level_hint, faced["outline"], [*walls, *QR.counted_completion(completion)], ctx, Candidate, _finish))
+            res.candidates.extend(RF.from_outline(level_hint, faced["outline"], [*walls, *QR.counted_completion(completion)], ctx, Candidate, _finish, RW.deck(walls, mm_per_pt)))
       
       if with_finishes:
         finishes = _stage(res, "FINISHES", lambda: _finish_candidates([*walls, *QR.counted_completion(completion)], rooms, [c for c in res.candidates if c.category == "DOOR"],
@@ -2200,6 +2205,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         suggested_scale=plaus["suggested_scale"], evidence=plaus["evidence"], agree=plaus["agree"]))
   found_steel = SN.read(notes_lines)
   res.stats["steel"] = SN.attach(res.candidates, found_steel, C.note)
+  wall_sections = WST.read(notes_lines)
+  if wall_sections["sections"]:
+    res.stats["wall_sections"] = wall_sections
   res.stats["column_steel"] = ST.apply_column_steel(res.candidates, col_details, C.note)
   res.stats["steel_notes"] = found_steel["notes"]
   res.stats["spec_grades"] = SPF.annotate(res.candidates, spec_facts, C.note)
@@ -2443,6 +2451,9 @@ def _with_electrical(res: Extraction, electrical: dict | None, kw: dict) -> None
   res.candidates.extend(found)
   res.notes.extend(EL.sheet_notes(electrical))
   res.stats["electrical_items"] = len(found)
+  if electrical:
+    res.stats["electrical_read"] = EL.slim(electrical, kw.get("level_hint"))
+
 
 def _identity_gate(res: Extraction, identity: dict | None) -> None:
   if not identity:

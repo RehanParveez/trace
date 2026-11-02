@@ -59,6 +59,8 @@ def settle(section: str | None, code: str | None, own: str | None, named: bool) 
 
 def apply(sheets: list) -> list:
   from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
+  from app.modules.drawings_boq.takeoff.extract import config as C
+  from app.modules.drawings_boq.takeoff.extract import note_scope as NS
   from app.modules.drawings_boq.takeoff.prep import page_role as PRL
   
   changed: list = []

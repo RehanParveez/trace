@@ -4,6 +4,8 @@ from uuid import UUID
 from app.modules.audit.models import AuditAction
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import base_plan as BP
+from app.modules.drawings_boq.takeoff.extract import foundation as FD
+from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractService
 from app.modules.drawings_boq.takeoff.extract.pipeline import _status
 from app.modules.drawings_boq.takeoff.extract.floor_sources_schemas import ChooseFloorSourcesRequest
@@ -123,13 +125,31 @@ class FloorSourceService(ExtractService):
     out = await self.choose(org, user_id, drawing_id, ChooseFloorSourcesRequest(use_suggested=True), automatic=True)
     return out["chosen"]
 
+  async def _lift_roof(self, org: UUID, drawing_id: UUID) -> int:
+    read, _ = await self._read(org, drawing_id, project=True)
+    rows = [c for r in read for c in r["candidates"]]
+    held = {c.id for c in rows if FS.is_set_aside(c)}
+    FS.lift_assumed(rows, FD.WORK_ITEM[FD.ROOF_TREATMENT], C.note)
+    lifted = [c for c in rows if c.id in held and not FS.is_set_aside(c)]
+    for c in lifted:
+      c.status = _status(c.notes)
+    if lifted:
+      await self.session.flush()
+      await self._sync_register(org, {c.sheet_id for c in lifted})
+      await self.session.commit()
+    return len(lifted)
+
+  async def _default_rest(self, org: UUID, user_id: UUID, drawing_id: UUID) -> int:
+    return await self._lift_roof(org, drawing_id)
+
   async def extract_sheet(self, org: UUID, sheet_id: UUID, user_id: UUID, payload, regions_only: bool = False, site_only: bool = False) -> dict:
     out = await super().extract_sheet(org, sheet_id, user_id, payload, regions_only=regions_only, site_only=site_only)
     if not getattr(payload, "choose_floors", True):
       return out
     sheet = await self.core._sheet(org, sheet_id)
     chosen = await self._default_floors(org, user_id, sheet.drawing_id)
-    if chosen:
+    changed = await self._default_rest(org, user_id, sheet.drawing_id)
+    if chosen or changed:
       out.update(await self._list(org, sheet))
     out["floors_chosen"] = chosen
     return out

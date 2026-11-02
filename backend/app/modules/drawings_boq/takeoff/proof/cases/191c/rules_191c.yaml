@@ -10,21 +10,6 @@ rules:
     value: FIN-PAVING
     cls: JUDGEMENT
     note: 'read from the QS totals, not stated by him: "Tuff Tile (8x4) Passage Area" is a line of its own'
-  - key: finish.dado_height_mm
-    scope: {room_type: BATH}
-    value: CEILING
-    cls: JUDGEMENT
-    note: 'read from the QS totals, not stated by him: the line is "Bath Room Wall Tile", not a dado, and the bill has no other bath wall item; taken to the ceiling'
-  - key: finish.dado_height_mm
-    scope: {room_type: WC}
-    value: CEILING
-    cls: JUDGEMENT
-    note: 'read from the QS totals, not stated by him: a W.C is tiled as the bath is ("Bath Room Wall Tile")'
-  - key: finish.dado_height_mm
-    scope: {room_type: PWD}
-    value: CEILING
-    cls: JUDGEMENT
-    note: 'read from the QS totals, not stated by him: a powder room is tiled as the bath is ("Bath Room Wall Tile")'
   - key: finish.ceiling_includes
     scope: {}
     value: [BEDROOM, BATH, PWD, WC, KITCHEN, LOUNGE, DINING, DRAWING, PORCH, TERRACE, PASSAGE, LAWN, STAIR, STORE, SERVANT, OTHER]
@@ -50,3 +35,43 @@ rules:
     value: [BEDROOM, BATH, PWD, WC, KITCHEN, LOUNGE, DINING, DRAWING, PORCH, TERRACE, PASSAGE, LAWN, STAIR, STORE, SERVANT, OTHER]
     cls: JUDGEMENT
     note: 'read from the QS totals, not stated by him: "P.C.C Concrete (1:2:4) under Floor" is one line for the building, so the bed is under porch and passage rooms too. The same list as the seed; it moves nothing on 191-C'
+  - key: electrical.work_item
+    scope: {group: TEL}
+    value: ELE-LOWV
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the line is "Electric finishes, Telephone socket 8 and TV socket 8"; the telephone and the TV points are the low-voltage line'
+  - key: electrical.work_item
+    scope: {group: TV}
+    value: ELE-LOWV
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the line is "Electric finishes, Telephone socket 8 and TV socket 8"; the telephone and the TV points are the low-voltage line'
+  - key: electrical.work_item
+    scope: {group: DATA}
+    value: ELE-OTHER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the low-voltage line of the bill is the telephone and the TV sockets only (8 and 8), so data and network points are not in it; they are kept as other electrical points'
+  - key: electrical.work_item
+    scope: {group: ALARM}
+    value: ELE-OTHER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the low-voltage line of the bill is the telephone and the TV sockets only (8 and 8), so smoke detectors are not in it; they are kept as other electrical points'
+  - key: electrical.work_item
+    scope: {group: BELL}
+    value: ELE-OTHER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the low-voltage line of the bill is the telephone and the TV sockets only (8 and 8), so bells and buzzers are not in it; they are kept as other electrical points'
+  - key: electrical.work_item
+    scope: {group: CCTV}
+    value: ELE-OTHER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the low-voltage line of the bill is the telephone and the TV sockets only (8 and 8), so cameras are not in it; they are kept as other electrical points'
+  - key: electrical.work_item
+    scope: {group: AUDIO}
+    value: ELE-OTHER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the low-voltage line of the bill is the telephone and the TV sockets only (8 and 8), so speakers are not in it; they are kept as other electrical points'
+  - key: electrical.work_item
+    scope: {group: EXHAUST}
+    value: ELE-OTHER
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the fan line counts 9 ceiling fans and 2 wall bracket fans; the 12 exhaust fans are items 18 and 19 of his sheet and are not in it, so they are kept as other electrical points'
