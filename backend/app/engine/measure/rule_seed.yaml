@@ -101,8 +101,11 @@ rules:
   - {key: stage.roof_upturn_mm, scope: {}, value: 0.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.tank_depth_mm, scope: {}, value: 1524.0, unit: "mm", cls: JUDGEMENT}
   - {key: stage.tank_wall_mm, scope: {}, value: 152.4, unit: "mm", cls: JUDGEMENT}
+  - {key: stage.tank_plan_long_mm, scope: {}, value: 2438.4, unit: "mm", cls: JUDGEMENT}
+  - {key: stage.tank_plan_short_mm, scope: {}, value: 1828.8, unit: "mm", cls: JUDGEMENT}
   - {key: finish.wall_faces, scope: {}, value: "OUTLINE", unit: null, cls: JUDGEMENT}
-  - {key: finish.free_wall_faces, scope: {}, value: "NONE", unit: null, cls: JUDGEMENT}
+  - {key: finish.free_wall_faces, scope: {}, value: "BOTH", unit: null, cls: JUDGEMENT}
+  - {key: finish.boundary_walls, scope: {}, value: "OWN_LINE", unit: null, cls: JUDGEMENT}
   - {key: finish.extent, scope: {}, value: "FLOOR_AREA", unit: null, cls: JUDGEMENT}
   - {key: finish.external_below_grade, scope: {}, value: "EXCLUDE", unit: null, cls: STANDARD, source: "common practice, clause not verified"}
   - {key: steel.unit_weight_divisor, scope: {}, value: 162.2, unit: "kg/m = d2 / value", cls: STANDARD, source: "derived from the density of steel (7850 kg/m3) and the area of the bar, no clause needed"}

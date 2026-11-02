@@ -783,7 +783,7 @@ class PrepService:
     for d, s in pairs:
       meta = s.prep_meta or {}
       samples = (meta.get("outline") or {}).get("samples")
-      if s.prep_status != "READY" or not samples:
+      if s.prep_status != "READY":
         continue
       
       row = await self.prep.meta(org, s.id)
@@ -797,14 +797,14 @@ class PrepService:
       mm = float(rec["ratio"]) * SO.PT_MM * unit if rec.get("ratio") else None
       ident, title = meta.get("identity") or {}, meta.get("title") or {}
       floor = ident.get("floor") or (None if title.get("composite") else title.get("level_hint"))
-      entries.append({"id": s.id, "page_no": s.page_no, "floor": floor, "trusted": bool(ok and mm), "mm_per_pt": mm, "samples": samples})
+      entries.append({"id": s.id, "page_no": s.page_no, "floor": floor, "trusted": bool(ok and mm), "mm_per_pt": mm, "samples": samples or [], "drawing": d.id, **SO.floor_fields(base, ident, full.get("paper") or meta.get("paper"))})
       held[s.id] = (s, row, full, unit)
       
     if not entries:
       return {}
     pages = {e["id"]: e["page_no"] for e in entries}
     verdicts = SO.propose(entries, list(drawing_facts.FLOOR_ORDER))
-    out: dict = {}
+    built: dict = {}
     for sid, (s, row, full, unit) in held.items():
       v = verdicts.get(sid)
       refs = [{"sheet_id": str(r), "page_no": pages.get(r)} for r in (v or {}).get("refs") or []]
@@ -812,7 +812,18 @@ class PrepService:
       
       if v:
         prop = {**v, "ratio": (v["mm_per_pt"] / (SO.PT_MM * unit)) if v.get("mm_per_pt") else None}
-      new_full = OW.rebuild(full, prop, refs, ANALYSIS_AGREE_TOL)
+      built[sid] = (prop, refs, OW.rebuild(full, prop, refs, ANALYSIS_AGREE_TOL))
+    entries_by_id = {e["id"]: e for e in entries}
+    inherited = SO.inherit([{**e, "wanted": not auto_scale_gate(built[e["id"]][2])[0]} for e in entries])
+    
+    out: dict = {}
+    for sid, (s, row, full, unit) in held.items():
+      v = verdicts.get(sid)
+      prop, refs, new_full = built[sid]
+      if sid not in inherited and not entries_by_id[sid]["samples"]:
+        continue
+      if sid in inherited:
+        new_full = OW.rebuild(full, prop, refs, ANALYSIS_AGREE_TOL, floor=inherited[sid])
       check = (new_full.get("outline") or {}).get("verdict")
       locked = await self._sheet(org, sid, lock=True)
       same_check = (locked.prep_meta or {}).get("outline_check") == check

@@ -70,6 +70,7 @@ from app.modules.drawings_boq.takeoff.extract import stair_external as SX
 from app.modules.drawings_boq.takeoff.extract import structure as ST
 from app.modules.drawings_boq.takeoff.extract import column_census as CS
 from app.modules.drawings_boq.takeoff.extract import beam_strips as BSP
+from app.modules.drawings_boq.takeoff.extract import hatch_walls as HW
 from app.modules.drawings_boq.takeoff.extract import beam_labels as BL
 from app.modules.drawings_boq.takeoff.extract import beam_net as BN
 from app.modules.drawings_boq.takeoff.levels import level_spec
@@ -798,6 +799,9 @@ def _wall_basis(pending: list, plaster_mm: float) -> dict:
 
 def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, at_grade: bool = False, outer_only: bool = False, wall_vocab: list | None = None, work: W.Work | None = None) -> tuple:
   frames, runs, stats = W.detect_walls(index, f, deadline, at_grade, work)
+  hatched, hatch_stats = HW.add_runs(index, frames, runs, f, ctx.get("page_unit") or 1.0)
+  runs = [*runs, *hatched]
+  stats.update(hatch_stats)
   rcc = RC.rcc_runs(index.rings, f)
   stats["rcc_runs"] = len(rcc)
   stats["dropped_stubs"] = 0
@@ -880,6 +884,9 @@ def _wall_candidates(index, f, heights, ctx, deadline, imperial: bool = False, a
     if add0 > 0.0 or add1 > 0.0:
       facts["bridged_mm"] = [round(add0 * f), round(add1 * f)]
       notes.append(C.note("WALL_BRIDGED"))
+    if r.hatch:
+      facts["from_hatch"] = True
+      notes.append(C.note("WALL_FROM_HATCH"))
     key = _key("WALL", round(p0[0] / 2), round(p0[1] / 2), round(p1[0] / 2), round(p1[1] / 2))
     work_item, mode, kind = C.SUGGESTIONS["WALL"]
     
@@ -2135,7 +2142,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       if str(level_hint or "").upper() == "ROOF" and not ctx.get("scale_unverified"):
         res.stats["roof_walls"] = RW.apply(walls, rooms, mm_per_pt, floor_heights, level_hint, lambda fl: _with_floor_height({}, floor_heights, fl).get("WALL"), C.note, _height_notes, _status, spec_facts)
       if with_finishes or lowest_level:
-        faced = FN.attach_faces([*walls, *QR.counted_completion(completion)], rooms, mm_per_pt, level_hint)
+        faced = FN.attach_faces([*walls, *QR.counted_completion(completion)], rooms, mm_per_pt, level_hint, bool(lowest_level) or str(level_hint or "").upper() == "GROUND")
         if faced.get("used"):
           res.notes.append(C.note("WALL_FACES_FROM_GRAPH", rooms=faced.get("rooms"), spaces=faced.get("faces")))
         elif faced.get("mode") == "GRAPH":
@@ -2143,6 +2150,9 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         elif faced.get("outline"):
           res.stats["floor_outline"] = faced["outline"]
           res.notes.append(C.note("WALL_FACES_FROM_OUTLINE", perimeter_m=faced["outline"]["perimeter_m"], outer_face_m=faced["outline"]["outer_face_m"]))
+          rooms_route = faced["outline"].get("rooms_route") or {}
+          if abs(faced["outline"]["outer_face_m"] - float(rooms_route.get("outer_face_m") or 0.0)) > C.FACES_ROUTES_DIFFER_SHARE * faced["outline"]["perimeter_m"]:
+            res.notes.append(C.note("WALL_FACES_ROUTES_DIFFER", envelope_m=faced["outline"]["outer_face_m"], rooms_m=rooms_route.get("outer_face_m"), perimeter_m=faced["outline"]["perimeter_m"]))
           if faced["outline"].get("gaps", {}).get("count"):
             res.notes.append(C.note("WALL_FACES_OUTLINE_GAPS", count=faced["outline"]["gaps"]["count"], metres=faced["outline"]["gaps"]["metres"], opening_metres=faced["outline"]["gaps"]["opening_metres"], places=faced["outline"]["gaps"]["rows"][:12]))
           if faced["outline"].get("unattached"):

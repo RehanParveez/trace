@@ -151,6 +151,10 @@ def outline(read: list) -> list:
       out.append(_check("SCALE_FROM_OUTLINE", WARN, floor, f"Page {page} prints no scale that could be trusted. Its scale (about 1:{float(v['ratio']):.1f}) is the one that makes its outer walls the size of the outer walls of page {near}. Check one known length before measuring.", [page, *refs], ratio=v["ratio"], k=v.get("k")))
     elif status == "PROPOSED" and v.get("settled"):
       out.append(_check("SCALE_CONFIRMED_BY_OUTLINE", INFO, floor, f"The scale of page {page} (about 1:{float(v['ratio']):.1f}) was in doubt (the printed dimensions and the size labels of the sheet disagreed, or only a few were found). The outer walls of page {near} agree with it, so it is used. Check one known length before measuring.", [page, *refs], ratio=v["ratio"]))
+    elif status == "FLOOR_PLAN" and v.get("applied"):
+      out.append(_check("SCALE_FROM_SAME_FLOOR_PLAN", WARN, floor, f"Page {page} prints no scale that could be trusted. It takes the scale of page {near} (the {str(floor or '').lower() + ' ' if floor else ''}floor plan of the same set, same sheet size, 1:{float(v['ratio']):.1f}). Check one known length before relying on a pipe length.", [page, *refs], ratio=v["ratio"]))
+    elif status == "FLOOR_PLAN" and v.get("settled"):
+      out.append(_check("SCALE_CONFIRMED_BY_FLOOR_PLAN", INFO, floor, f"The few dimensions of page {page} agree with the scale of page {near} (the floor plan of the same set, 1:{float(v['ratio']):.1f}), so that scale is used. Check one known length before relying on a pipe length.", [page, *refs], ratio=v["ratio"]))
     elif status == "AGREES" and v.get("same_floor") and refs:
       out.append(_check("OUTLINE_AGREES", PASS, floor, f"The outer walls of page {page} are the size of the outer walls of page {near} at the scales they have.", [page, *refs], k=v.get("k")))
     elif status == "DIFFERS" and v.get("same_floor"):

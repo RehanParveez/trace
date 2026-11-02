@@ -21,7 +21,7 @@ def describe(kind: str | None, details: list) -> dict | None:
   if not mine:
     return None
   return {"drawings": [{"view": d["view"], "page_no": d.get("page_no"), "sizes": [x["text"] for x in d.get("lengths") or []], "bar_notes": list(d.get("bar_notes") or []),
-    "lengths": [{"text": x["text"], "inches": x["inches"], "votes": x.get("votes", 0)} for x in d.get("lengths") or []]} for d in mine],
+    "lengths": [{"text": x["text"], "inches": x["inches"], "votes": x.get("votes", 0), "source": x.get("source")} for x in d.get("lengths") or []]} for d in mine],
     "message": " | ".join(_line(d) for d in mine)}
 
 def _ft(inches: float) -> str:

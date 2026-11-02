@@ -681,6 +681,12 @@ class ExtractService:
           singles_read = True
       except TraceException as exc:
         await self.session.rollback()
+        spared = SS.scale_not_needed(identities.get(sheet_id)) if exc.code in SS.SCALE_CODES else None
+        if spared is not None:
+          code, severity, message = spared
+          await self._set_aside(org, sheet_id, code, message, severity)
+          skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": code, "message": message, "severity": severity})
+          continue
         skipped.append({"sheet_id": str(sheet_id), "page_no": page_no, "code": exc.code, "message": exc.message, "severity": "ACTION"})
         await self._note_issue(org, sheet_id, exc.code, exc.message, "ACTION")
     return {"drawing_id": drawing_id, "done": done, "skipped": skipped}

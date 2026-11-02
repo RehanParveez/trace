@@ -179,6 +179,7 @@ def build_lines(words: list) -> list[TextLine]:
 
 _LABEL_SCALE = re.compile(r"\bSCALES?\b\s*[:=\-]?\s*(?P<v>.{0,40})", re.I)
 _RATIO_RE = re.compile(r"(?<![\d.:/])(?P<a>\d+(?:\.\d+)?)\s*:\s*(?P<b>\d+(?:\.\d+)?)(?![\d:])")
+_MIX_RE = re.compile(r"\bC\s?/\s?S\b|\b(?:MORTAR|MIX\w*|CEMENT|SAND|CONCRETE|RATIO|PCC|RCC)\b", re.I)
 _SLASH_RATIO_RE = re.compile(r"^\s*(?P<a>1)\s*/\s*(?P<b>\d{1,5})(?![\d/\"'])")
 _IMPERIAL_RE = re.compile(r"(?:\d+\s+)?\d+(?:\s*/\s*\d+)?(?:\.\d+)?\s*\"\s*=\s*\d+(?:\.\d+)?\s*'(?:\s*-?\s*\d+(?:\.\d+)?\s*\")?", re.I)
 _NTS_RE = re.compile(r"\b(N\.?\s?T\.?\s?S\.?|NOT\s+(?:DRAWN\s+)?(?:TO\s+)?(?:BE\s+)?SCALED?|DON[\u2019']?T\s+SCALE|AS\s+SHOWN|NO\s+SCALE)\b", re.I)
@@ -198,6 +199,8 @@ def find_scale_candidates(lines: list[TextLine]) -> list[dict]:
       except InvalidOperation:
         continue
       if not (a == 1 or (b == 1 and a in (2, 4, 5, 10, 20, 50))):
+        continue
+      if labelled_at is None and _MIX_RE.search(t[max(0, m.start() - 12):m.end() + 12]):
         continue
       txt = m.group(0)
       ratio = parse_scale_text(f"{a}:{b}")

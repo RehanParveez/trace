@@ -11,6 +11,7 @@ PCC_UNDER = "finish.pcc_under"
 ROOM_TYPE = RT.ROOM_TYPE_KEY
 WALL_FACES = "finish.wall_faces"
 FREE_WALL_FACES = "finish.free_wall_faces"
+BOUNDARY_WALLS = "finish.boundary_walls"
 EXTENT = "finish.extent"
 STRIP_WIDTHS = "finish.strip_widths_mm"
 SITE_ITEM = "finish.site_item"
@@ -37,7 +38,9 @@ STRIP_CLASSES = ("outer", "inner", "thin")
 STRIP_WIDTH_MM = (100.0, 3000.0)
 OUTLINE, GRAPH = "OUTLINE", "GRAPH"
 NONE_FACES, BOTH_FACES = "NONE", "BOTH"
-KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES, FREE_WALL_FACES, EXTENT, STRIP_WIDTHS, SITE_ITEM, SITE_LAYERS, FACADE_ITEM, SILL_ITEM, SILL_DEPTH, STOPPER_ITEM, STAIR_EXTERNAL)
+OWN_LINE, WITH_HOUSE = "OWN_LINE", "WITH_HOUSE"
+BOUNDARY_MODES = (OWN_LINE, WITH_HOUSE)
+KEYS = (FLOOR_ITEM, DADO_HEIGHT, KITCHEN_BAND, CEILING_INCLUDES, PCC_UNDER, ROOM_TYPE, WALL_FACES, FREE_WALL_FACES, BOUNDARY_WALLS, EXTENT, STRIP_WIDTHS, SITE_ITEM, SITE_LAYERS, FACADE_ITEM, SILL_ITEM, SILL_DEPTH, STOPPER_ITEM, STAIR_EXTERNAL)
 
 TO_CEILING = "CEILING"
 FULL = "full"
@@ -46,7 +49,7 @@ DADO_FALLBACK_MM = 2134.0
 DEFAULT_FLOOR_ITEM = "FIN-FLOOR"
 DEFAULT_SITE_ITEM = "FIN-PAVING"
 HEIGHT_MIN_MM, HEIGHT_MAX_MM = 300.0, 6000.0
-SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), FREE_WALL_FACES: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",), FACADE_ITEM: ("elevation",), SILL_ITEM: (), SILL_DEPTH: (), STOPPER_ITEM: (), STAIR_EXTERNAL: (), EXTERNAL_BELOW_GRADE: ()}
+SCOPE_KEYS = {FLOOR_ITEM: ("room_type",), DADO_HEIGHT: ("room_type",), KITCHEN_BAND: ("room_type",), CEILING_INCLUDES: ("level",), PCC_UNDER: ("level",), ROOM_TYPE: ("room_name",), WALL_FACES: (), FREE_WALL_FACES: (), BOUNDARY_WALLS: (), EXTENT: ("item", "level"), STRIP_WIDTHS: ("item",), SITE_ITEM: ("region",), SITE_LAYERS: ("region",), FACADE_ITEM: ("elevation",), SILL_ITEM: (), SILL_DEPTH: (), STOPPER_ITEM: (), STAIR_EXTERNAL: (), EXTERNAL_BELOW_GRADE: ()}
 HEIGHT_TYPES = (*RT.WET, RT.KITCHEN)
 TYPED_FLOORS = {RT.PORCH: "FLOOR_PORCH", RT.TERRACE: "FLOOR_TERRACE", RT.PASSAGE: "FLOOR_PASSAGE", RT.LAWN: "FLOOR_LAWN"}
 TYPED_ITEM_CODE = {"FLOOR_PORCH": "FIN-PORCH-TILE", "FLOOR_TERRACE": "FIN-TERRACE-TILE", "FLOOR_PASSAGE": "FIN-PAVING", "FLOOR_LAWN": "FIN-PAVING"}
@@ -251,6 +254,11 @@ def checked(key: str, scope, raw):
     if v not in (NONE_FACES, BOTH_FACES):
       raise ValueError(f"A group of walls that no room lies against gets {NONE_FACES} (no plaster, no paint) or {BOTH_FACES} (both faces, as outside faces).")
     return v
+  if key == BOUNDARY_WALLS:
+    v = raw.strip().upper() if isinstance(raw, str) else ""
+    if v not in BOUNDARY_MODES:
+      raise ValueError(f"A wall on the plot frame is billed as {OWN_LINE} (its own boundary wall line, no plaster from the house) or {WITH_HOUSE} (as a free wall of the house, by finish.free_wall_faces).")
+    return v
   if not isinstance(raw, str) or raw not in RT.TYPES:
     raise ValueError("The type of a room is one of " + ", ".join(RT.TYPES) + ".")
   if not (scope or {}).get("room_name"):
@@ -259,4 +267,4 @@ def checked(key: str, scope, raw):
 
 def seed_expect() -> dict:
   every = [t for t in RT.TYPES if t not in RT.NOT_FLOORED]
-  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, FREE_WALL_FACES: NONE_FACES, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: [], FACADE_ITEM: NONE, SILL_ITEM: NONE, SILL_DEPTH: SILL_DEPTH_FALLBACK_MM, STOPPER_ITEM: NONE, STAIR_EXTERNAL: BILL_SEPARATE, EXTERNAL_BELOW_GRADE: FST.EXCLUDE}
+  return {FLOOR_ITEM: DEFAULT_FLOOR_ITEM, DADO_HEIGHT: DADO_FALLBACK_MM, KITCHEN_BAND: FULL, CEILING_INCLUDES: every, PCC_UNDER: list(every), WALL_FACES: OUTLINE, FREE_WALL_FACES: BOTH_FACES, BOUNDARY_WALLS: OWN_LINE, EXTENT: FLOOR_AREA, SITE_ITEM: DEFAULT_SITE_ITEM, SITE_LAYERS: [], FACADE_ITEM: NONE, SILL_ITEM: NONE, SILL_DEPTH: SILL_DEPTH_FALLBACK_MM, STOPPER_ITEM: NONE, STAIR_EXTERNAL: BILL_SEPARATE, EXTERNAL_BELOW_GRADE: FST.EXCLUDE}

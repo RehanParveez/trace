@@ -38,6 +38,7 @@ MIN_ROOM_M2 = 2.0
 OPEN_SHARE = 0.5
 OUTSIDE_TYPES = (RT.PORCH, RT.TERRACE, RT.LAWN)
 GAP_STEP_MM = 100.0
+FRAME_REACH = 1.0
 GAP_NEAR_MM = 700.0
 UNATTACHED_REACH = 1.5
 
@@ -195,7 +196,22 @@ def build(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None, 
     runs.append(WallRun(str(k), floor, (round(a[0], 3), round(a[1], 3)), (round(b[0], 3), round(b[1], 3)), _thickness_mm(w), faces))
   return WallGraph(tuple(runs), len(closed_spaces), open_rooms, sum(1 for _r, p, bd in room_rows if p.area * sqm >= MIN_ROOM_M2 and bd != OUTSIDE))
 
-def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float = 0.0, close_mm: float = 0.0, courtyard_external: bool = True) -> tuple:
+def on_frame(a: tuple, b: tuple, t_pt: float, built) -> bool:
+  dx, dy = b[0] - a[0], b[1] - a[1]
+  n = math.hypot(dx, dy)
+  if n <= 0.0 or built.is_empty:
+    return False
+  
+  nx, ny = -dy / n, dx / n
+  d0 = a[0] * nx + a[1] * ny
+  polys = list(built.geoms) if hasattr(built, "geoms") else [built]
+  proj = [x * nx + y * ny for p in polys if hasattr(p, "exterior") for x, y in p.exterior.coords]
+  if not proj:
+    return False
+  reach = FRAME_REACH * t_pt
+  return max(proj) <= d0 + reach or min(proj) >= d0 - reach
+
+def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float = 0.0, close_mm: float = 0.0, courtyard_external: bool = True, at_grade: bool = False, boundary_max_mm: float = 0.0, shrink: float = 0.0) -> tuple:
   segs = []
   
   for w in walls:
@@ -207,6 +223,7 @@ def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float =
   if not live or not mm_per_pt:
     return [(0.0, 0.0)] * len(segs), {"perimeter_m": 0.0, "outer_face_m": 0.0, "area_m2": 0.0}
   free = unattached(segs, live, rooms, mm_per_pt)
+  segs0 = list(segs)
   segs = [(w, None, None) if k in free else (w, a, b) for k, (w, a, b) in enumerate(segs)]
   rects, solid = _solid_of(segs, mm_per_pt, bridge_mm)
   house = unary_union([Polygon(ring) for r in rooms if RT.of_room(r) not in OUTSIDE_TYPES and (ring := _ring(r)) is not None]).buffer(0)
@@ -223,7 +240,7 @@ def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float =
       outline = outline.difference(unary_union(inner))
       
   sqm = (mm_per_pt ** 2) / 1e6
-  inside_outline = prep(outline)
+  shrunk: dict = {}
   out, outer_cc = [], 0.0
   for k, (w, a, b) in enumerate(segs):
     if k not in rects:
@@ -241,7 +258,7 @@ def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float =
       f = (s_ + 0.5) / steps
       cx, cy = a[0] + dx * f, a[1] + dy * f
       for sign in (1.0, -1.0):
-        if inside_outline.contains(Point(cx + sign * nx * off, cy + sign * ny * off)):
+        if shrunk.setdefault(round(t, 3), prep(outline.buffer(-shrink * t) if shrink else outline)).contains(Point(cx + sign * nx * off, cy + sign * ny * off)):
           inside += 1
         else:
           outside += 1
@@ -250,7 +267,16 @@ def outline_sides(walls: list, rooms: list, mm_per_pt: float, bridge_mm: float =
   perimeter = sum(p.length for p in (list(outline.geoms) if hasattr(outline, "geoms") else [outline])) * mm_per_pt / 1000.0
   parts = sorted((round(g.length * mm_per_pt / 1000.0, 2) for g in (list(outline.geoms) if hasattr(outline, "geoms") else [outline])), reverse=True)
   gaps = outline_gaps(outline, solid, [segs[k][0] for k in rects], mm_per_pt)
-  loose = [{"key": getattr(w, "key", None), "length_m": round(float((w.facts or {}).get("length_cc_m") or 0.0), 2), "thickness_mm": round(_thickness_mm(w), 1)} for k, (w, _a, _b) in enumerate(segs) if k in free]
+  loose = []
+  for k in sorted(free):
+    w, a, b = segs0[k]
+    framed = on_frame(a, b, _thickness_mm(w) / mm_per_pt, whole)
+    thin = not boundary_max_mm or _thickness_mm(w) <= boundary_max_mm
+    boundary = framed and at_grade and thin
+    why = ("on the outermost line of what is built, at ground level, no thicker than a boundary wall" if boundary else "on the outermost line of what is built, at ground level, but thicker than a boundary wall" if framed and at_grade
+      else "on the outermost line of what is built, but above ground" if framed else "built beyond it on both sides")
+    loose.append({"key": getattr(w, "key", None), "length_m": round(float((w.facts or {}).get("length_cc_m") or 0.0), 2), "thickness_mm": round(_thickness_mm(w), 1),
+      "class": "BOUNDARY" if boundary else "FREE", "why": why})
   return out, {"perimeter_m": round(perimeter, 3), "outer_face_m": round(outer_cc, 3), "area_m2": round(outline.area * sqm, 3), "parts_m": parts[:6], "gaps": gaps, "unattached": loose}
 
 def unattached(segs: list, live: list, rooms: list, mm_per_pt: float) -> set:

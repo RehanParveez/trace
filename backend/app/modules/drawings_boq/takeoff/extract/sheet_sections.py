@@ -102,6 +102,7 @@ def apply(sheets: list) -> list:
     identity["read_as"] = SID.read_as(identity)
     changed.append({"page": page, "was": was, "now": {"discipline": discipline, "read_as": identity["read_as"], "plan_kind": identity.get("plan_kind")}, "basis": basis, "why": why})
   changed.extend(furniture_pass(sheets))
+  changed.extend(detail_pass(sheets))
   return changed
 
 def _floor(identity: dict) -> str | None:
@@ -127,6 +128,34 @@ def furniture_pass(sheets: list) -> list:
     i["read_as"] = "SYMBOLS_ONLY"
     changed.append({"page": page, "was": was, "now": {"discipline": i.get("discipline"), "read_as": "SYMBOLS_ONLY", "plan_kind": "FURNITURE"}, "basis": "FURNITURE_OF_WORKING_PLAN", "why": i["duplicate_of"]["why"]})
   return changed
+
+def detail_pass(sheets: list) -> list:
+  changed: list = []
+  for page, i in sorted(((p, i) for p, i in sheets if i), key=lambda x: x[0]):
+    if i.get("basis") == "PERSON" or i.get("role") not in DETAIL_ROLES or i.get("read_as") != "SYMBOLS_ONLY" or _floor(i):
+      continue
+    if any(v.get("sheet_type") in IW.PLAN_TYPES for v in i.get("views") or []):
+      continue
+  
+    was = {"discipline": i.get("discipline"), "read_as": i.get("read_as"), "plan_kind": i.get("plan_kind")}
+    i["read_as"] = "DETAILS_ONLY"
+    changed.append({"page": page, "was": was, "now": {"discipline": i.get("discipline"), "read_as": "DETAILS_ONLY", "plan_kind": i.get("plan_kind")}, "basis": "DETAIL_SHEET", "why": "a detail sheet with no plan on it"})
+  return changed
+
+SCALE_CODES = ("SCALE_NOT_FOUND", "SCALE_NEEDS_CONFIRMATION")
+
+def scale_not_needed(identity: dict | None) -> tuple | None:
+  i = identity or {}
+  if i.get("basis") == "PERSON":
+    return None
+  if i.get("read_as") == "SKIP":
+    return ("NOTHING_TO_MEASURE", "INFO", "This sheet has pictures, notes or a legend and nothing measured to scale. It needs no scale.")
+  if i.get("duplicate_of"):
+    floor = str(i["duplicate_of"].get("floor") or _floor(i) or "").lower()
+    return ("FURNITURE_COPY", "INFO", f"This is the furniture layout of the {floor + ' ' if floor else ''}floor, which is read from sheet {i['duplicate_of'].get('page')}. It needs no scale.")
+  if i.get("read_as") == "DETAILS_ONLY":
+    return ("DETAIL_SIZES_ONLY", "INFO", "This detail sheet is used for the sizes it prints; nothing on it is measured to scale.")
+  return None
 
 def not_a_plan(identity: dict | None) -> tuple | None:
   i = identity or {}

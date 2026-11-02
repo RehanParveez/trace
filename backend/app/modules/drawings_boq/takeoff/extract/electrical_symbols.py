@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass, field
 import collections
 import numpy as np
+from app.modules.drawings_boq.takeoff.extract import electrical_ink as EI
 
 MAX_OBJECTS = 400_000
 MIN_TABLE_ROWS = 4
@@ -56,6 +57,7 @@ class LegendSymbol:
   block: tuple | None = None
   inner: tuple = ()
   ocr: bool = False
+  ink: dict | None = None
 
   @property
   def by_text(self) -> bool:
@@ -81,6 +83,7 @@ class PageReport:
   set_aside: list = field(default_factory=list)
   not_found: list = field(default_factory=list)
   not_countable: list = field(default_factory=list)
+  by_shape: list = field(default_factory=list)
   stats: dict = field(default_factory=dict)
 
 def _geometry(page) -> tuple:
@@ -455,7 +458,13 @@ def read_legend(page) -> list:
   tp = page.get_textpage()
   heights = _height_table(tp)
   found = _read_ruled(page, objs, tp, rot, ox, oy, wu, hu, heights)
-  return _distinct_names(found if found else _read_structured(page, objs, tp, rot, ox, oy, wu, hu, heights))
+  return _with_ink(page, _distinct_names(found if found else _read_structured(page, objs, tp, rot, ox, oy, wu, hu, heights)))
+
+def _with_ink(page, symbols: list) -> list:
+  ink_of = EI.loader(page)
+  for s in symbols:
+    s.ink = EI.describe(EI.mask([ink_of(o.index) for o in s.objects]))
+  return symbols
 
 def _distinct_names(found: list) -> list:
   by: dict = collections.defaultdict(list)
@@ -538,7 +547,21 @@ def _count_text(rep: PageReport, sym: LegendSymbol, tokens: list) -> None:
     rep.hits.append(Hit(sym.name, i, i, 1.0, box, _centre(box)))
   rep.counts[sym.name] = rep.counts.get(sym.name, 0) + len(found)
 
-def count_symbols(plan_objects: list, legend: list, tokens: list | None = None, exclude: list | None = None) -> PageReport:
+def _count_by_shape(rep: PageReport, plan_objects: list, legend: list, tokens: list, ink_of, taken: list) -> None:
+  wanted = [i for i, s in enumerate(legend) if s.ink and s.countable and not s.by_text and rep.counts.get(s.name, 0) == 0]
+  if not wanted:
+    return
+  by: dict = collections.defaultdict(list)
+  for ri, first, last, scale, box, _d in EI.match(plan_objects, ink_of, [s.ink for s in legend], [s.inner for s in legend], wanted, taken, tokens):
+    by[ri].append(Hit(legend[ri].name, first, last, scale, box, _centre(box)))
+  for ri, hits in by.items():
+    kept, aside = _one_size(hits)
+    rep.hits += kept
+    rep.set_aside += aside
+    rep.counts[legend[ri].name] = len(kept)
+    rep.by_shape.append(legend[ri].name)
+
+def count_symbols(plan_objects: list, legend: list, tokens: list | None = None, exclude: list | None = None, ink_of=None) -> PageReport:
   rep = PageReport()
   if exclude:
     plan_objects = [o for o in plan_objects if not any(b[0] <= _centre(o.box)[0] <= b[2] and b[1] <= _centre(o.box)[1] <= b[3] for b in exclude)]
@@ -566,6 +589,8 @@ def count_symbols(plan_objects: list, legend: list, tokens: list | None = None, 
     rep.hits += kept
     rep.set_aside += aside
     rep.counts[key] = rep.counts.get(key, 0) + len(kept)
+  if ink_of is not None:
+    _count_by_shape(rep, plan_objects, legend, tokens or [], ink_of, taken)
   rep.not_found = [k for k, v in rep.counts.items() if v == 0]
   rep.hits.sort(key=lambda h: (h.centre[1], h.centre[0]))
   return rep
@@ -593,7 +618,7 @@ def read_electrical(doc, legend_page_index: int, plan_page_indexes: list) -> dic
   
   for pi in plan_page_indexes:
     objs, st = load_objects(doc[pi])
-    rep = count_symbols(objs, legend, read_tokens(doc[pi]))
+    rep = count_symbols(objs, legend, read_tokens(doc[pi]), None, EI.loader(doc[pi]))
     rep.stats = st
     out["pages"][pi + 1] = {"counts": rep.counts, "not_found": rep.not_found, "not_countable": rep.not_countable, "stats": st,
       "set_aside_other_size": collections.Counter(h.name for h in rep.set_aside),

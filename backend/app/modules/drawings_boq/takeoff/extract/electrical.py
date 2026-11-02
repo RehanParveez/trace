@@ -3,6 +3,7 @@ import re
 from app.modules.drawings_boq.takeoff.levels import level_spec
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
 from app.modules.drawings_boq.takeoff.extract import electrical_symbols as ES
+from app.modules.drawings_boq.takeoff.extract import electrical_ink as EI
 from app.modules.drawings_boq.takeoff.extract import electrical_rules as ER
 import collections
 from app.modules.drawings_boq.takeoff.extract import config as C
@@ -50,7 +51,7 @@ NOT_COUNTABLE, TAG_NOT_ON_PLAN, NO_PLAN_HIT = "NOT_COUNTABLE", "TAG_NOT_ON_PLAN"
 LEGEND_WORDS = re.compile(r"\b(?:LEGENDS?|SYMBOLS?)\b", re.I)
 ELECTRIC_WORD = re.compile(r"ELECTRIC", re.I)
 PLAN_WORD = re.compile(r"\bPLAN\b", re.I)
-CONFIDENCE_PICTURE, CONFIDENCE_TEXT = 0.6, 0.7
+CONFIDENCE_PICTURE, CONFIDENCE_TEXT, CONFIDENCE_SHAPE = 0.6, 0.7, 0.5
 
 def kind_of(name: str) -> str:
   for kind, _family, rules in KIND_RULES:
@@ -80,7 +81,7 @@ def vocabulary_groups(words: list) -> int:
   return len({family for _kind, family, rules in KIND_RULES if _hit(rules, text)})
 
 def pack_legend(legend: list) -> list:
-  return [{"name": s.name, "description": s.description, "token": s.token, "mounting_height_mm": s.mounting_height_mm, "table": s.table, "row": s.row, "ocr": bool(s.ocr), "inner": list(s.inner),
+  return [{"name": s.name, "description": s.description, "token": s.token, "mounting_height_mm": s.mounting_height_mm, "table": s.table, "row": s.row, "ocr": bool(s.ocr), "inner": list(s.inner), "ink": s.ink,
     "block": [round(v, 2) for v in s.block] if s.block else None, "objects": [[o.kind, o.n, o.box[0], o.box[1], o.box[2], o.box[3]] for o in s.objects]} for s in legend]
 
 def unpack_legend(rows: list) -> list:
@@ -88,7 +89,7 @@ def unpack_legend(rows: list) -> list:
   for ti, r in enumerate(rows or []):
     objs = [ES.Obj(i, int(o[0]), int(o[1]), (float(o[2]), float(o[3]), float(o[4]), float(o[5]))) for i, o in enumerate(r.get("objects") or [])]
     out.append(ES.LegendSymbol(description=r.get("description") or "", name=r.get("name") or "", table=int(r.get("table") or 0), row=ti, objects=objs,
-      mounting_height_mm=r.get("mounting_height_mm"), token=r.get("token") or "", inner=tuple(r.get("inner") or ()), ocr=bool(r.get("ocr"))))
+      mounting_height_mm=r.get("mounting_height_mm"), token=r.get("token") or "", inner=tuple(r.get("inner") or ()), ocr=bool(r.get("ocr")), ink=r.get("ink")))
   return out
 
 def _electrical_rows(rows: list) -> bool:
@@ -145,20 +146,20 @@ def count_page(doc, page_no: int, rows: list) -> dict:
   table = [{"index": i, "name": s.name, "description": s.description, "objects": len(s.objects), "token": s.token, "by_text": s.by_text, "countable": s.countable,
     "legend_page": (rows[i] or {}).get("page_no")} for i, s in enumerate(legend)]
   if share >= LEGEND_SHEET_SHARE:
-    return {"counts": {}, "points": {}, "aside": {}, "not_countable": [], "by_text": [], "description": {}, "height_mm": {}, "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": True,
+    return {"counts": {}, "points": {}, "aside": {}, "not_countable": [], "by_text": [], "by_shape": [], "description": {}, "height_mm": {}, "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": True,
       "legend_row": {}, "legend_table": []}
     
   lines = ES.read_text_lines(page)
   title = ES.title_box(page, lines)
   exclude = blocks + ([title] if title else [])
-  rep = ES.count_symbols(objs, legend, ES.read_tokens(page), exclude)
+  rep = ES.count_symbols(objs, legend, ES.read_tokens(page), exclude, EI.loader(page))
   points: dict = collections.defaultdict(list)
   for h in rep.hits:
     l, b, _, _ = ES._to_page_rect(rot, ox, oy, wu, hu, (h.centre[0], h.centre[1], h.centre[0], h.centre[1]))
     points[h.name].append([round(l, 2), round(b, 2)])
 
   return {"counts": {k: int(v) for k, v in rep.counts.items()}, "points": dict(points), "aside": dict(collections.Counter(h.name for h in rep.set_aside)),
-    "not_countable": list(rep.not_countable), "by_text": sorted({s.name for s in legend if s.by_text}),
+    "not_countable": list(rep.not_countable), "by_text": sorted({s.name for s in legend if s.by_text}), "by_shape": sorted(rep.by_shape),
     "description": {k: s.description for k, s in by.items()}, "height_mm": {k: s.mounting_height_mm for k, s in by.items() if s.mounting_height_mm},
     "objects": stats.get("objects"), "legend_symbols": len(legend), "legend_sheet": False, "legend_row": meta, "excluded_boxes": len(exclude), "legend_table": table}
 
@@ -195,6 +196,7 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
     group = FAMILY[kind]
     item, rule = ER.work_item(kind)
     by_text = name in (read.get("by_text") or [])
+    by_shape = name in (read.get("by_shape") or [])
     aside = int((read.get("aside") or {}).get(name, 0))
     height = (read.get("height_mm") or {}).get(name)
     row = (read.get("legend_row") or {}).get(name) or {}
@@ -202,7 +204,9 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
     if item == ER.NONE:
       notes.append(C.note("NO_WORK_ITEM"))
 
-    if not by_text:
+    if by_shape:
+      notes.append(C.note("ELECTRICAL_SHAPE_MATCH"))
+    elif not by_text:
       notes.append(C.note("ELECTRICAL_PICTURE_MATCH"))
     if aside:
       notes.append(C.note("ELECTRICAL_OTHER_SIZE_SET_ASIDE", count=aside))
@@ -211,20 +215,20 @@ def candidates(read: dict | None, ctx: dict, cls, finish, floor: str | None = No
     if row.get("ocr"):
       notes.append(C.note("ELECTRICAL_LEGEND_OCR", text=row.get("text")))
       
-    facts = {"electrical": name, "electrical_group": group, "symbol_text": (read.get("description") or {}).get(name), "counted_by": "TEXT" if by_text else "PICTURE",
+    facts = {"electrical": name, "electrical_group": group, "Fsymbol_text": (read.get("description") or {}).get(name), "counted_by": "TEXT" if by_text else "SHAPE" if by_shape else "PICTURE",
       "mounting_height_mm": height, "set_aside_other_size": aside, "foundation_item": group, "electrical_kind": kind, "work_item_rule": ER.evidence(kind, rule), "derived_from": "LEGEND", "electrical_floor": floor, "legend_row": row.get("index"),
       "legend_page": row.get("page"), "legend_source": row.get("source"), "legend_ocr": bool(row.get("ocr"))}
     label = f"{GROUP_TEXT[group]} · {name} · {n} no{'s' if n != 1 else ''}" + (f" · {_ft_in(height)} above floor" if height else "") + where
     cand = cls(key=_key_of((name, round(pts[0][0], 1), round(pts[0][1], 1))), category="WALL", kind="COUNT", quantity_mode="DIRECT", label=label, tag=TAG[group],
       geometry={"points": pts}, params={"dims_basis": "SPECIFIED"}, missing=[], work_item=None if item == ER.NONE else item, status="VALID", confidence=0.0, facts=facts, notes=notes,
       source="TAG_SCAN", count=n)
-    out.append(finish(cand, ctx, CONFIDENCE_TEXT if by_text else CONFIDENCE_PICTURE))
+    out.append(finish(cand, ctx, CONFIDENCE_TEXT if by_text else CONFIDENCE_SHAPE if by_shape else CONFIDENCE_PICTURE))
   return out
 
 def slim(read: dict | None, floor: str | None) -> dict | None:
   if not read or read.get("failed"):
     return None
-  return {"floor": floor, "counts": dict(read.get("counts") or {}), "aside": dict(read.get("aside") or {}), "legend_sheet": bool(read.get("legend_sheet")), "legend_table": list(read.get("legend_table") or [])}
+  return {"floor": floor, "counts": dict(read.get("counts") or {}), "aside": dict(read.get("aside") or {}), "by_shape": list(read.get("by_shape") or []), "legend_sheet": bool(read.get("legend_sheet")), "legend_table": list(read.get("legend_table") or [])}
 
 def coverage(rows: list) -> dict | None:
   reads = [(r["page_no"], (r.get("stats") or {}).get("electrical_read")) for r in rows]
@@ -238,7 +242,8 @@ def coverage(rows: list) -> dict | None:
     total = sum(per.values())
     reason = None if total else (NOT_COUNTABLE if not t["countable"] else TAG_NOT_ON_PLAN if t["by_text"] else NO_PLAN_HIT)
     kind = kind_of(name)
-    out.append({"index": t["index"], "name": name, "description": t["description"], "kind": kind, "group": FAMILY[kind], "objects": t["objects"], "token": t["token"], "counted_by": "TEXT" if t["by_text"] else "PICTURE",
+    shaped = any(name in (x.get("by_shape") or []) for _p, x in reads)
+    out.append({"index": t["index"], "name": name, "description": t["description"], "kind": kind, "group": FAMILY[kind], "objects": t["objects"], "token": t["token"], "counted_by": "TEXT" if t["by_text"] else "SHAPE" if shaped else "PICTURE",
       "legend_page": t["legend_page"], "plan_counts": per, "total": total, "set_aside_other_size": sum(int(x["aside"].get(name, 0)) for _p, x in reads), "reason": reason, "work_item": ER.work_item(kind, record=False)[0]})
   return {"pages": [p for p, _x in reads], "floors": {str(p): x["floor"] for p, x in reads}, "rows": out, "legend_symbols": len(out), "counted": sum(1 for o in out if o["total"]),
     "reasons": dict(collections.Counter(o["reason"] for o in out if o["reason"]))}

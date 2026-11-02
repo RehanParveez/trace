@@ -12,7 +12,11 @@ KINDS = ("OHWT", "UGWT", "SEPTIC")
 DECISION_PREFIX = "TANK_SIZE:"
 DEPTH_RULE, WALL_RULE = "stage.tank_depth_mm", "stage.tank_wall_mm"
 DEPTH_DEFAULT, WALL_DEFAULT = 1524.0, 152.4
-RANK = {"DECISION": 0, "DETAIL": 1, "LABEL": 2, "WALLS": 3, "CONVENTION": 4, "RULE": 5}
+PLAN_LONG_RULE, PLAN_SHORT_RULE = "stage.tank_plan_long_mm", "stage.tank_plan_short_mm"
+PLAN_LONG_DEFAULT, PLAN_SHORT_DEFAULT = 2438.4, 1828.8
+WATER = ("OHWT", "UGWT")
+DEFAULTED = ("SIBLING", "SEED")
+RANK = {"DECISION": 0, "DETAIL": 1, "LABEL": 2, "DETAIL_PICTURE": 3, "WALLS": 4, "SIBLING": 5, "SEED": 6, "CONVENTION": 7, "RULE": 8}
 NEAR_LINES = 6.0
 DEPTH_LINES = 3.5
 MIN_SIDE_IN, MAX_SIDE_IN = 36.0, 360.0
@@ -128,17 +132,20 @@ def detail_fields(facts: dict) -> dict:
   pages = [d.get("page_no") for d in facts.get("tank_drawings") or [] if d.get("page_no") is not None]
   page = pages[0] if pages else None
   out: dict = {}
+  read = any(x.get("source") == "PICTURE" for d in facts.get("tank_drawings") or [] for x in d.get("lengths") or [])
+  def route(token: str) -> str:
+    return "DETAIL_PICTURE" if read and src.get(token) == "PICTURE" else "DETAIL"
   
   if sizes.get("length_mm") and sizes.get("width_mm"):
-    out["plan"] = {"route": "DETAIL", "page_no": page, "mm": [sizes["length_mm"], sizes["width_mm"]], "basis": "OUTSIDE", "text": said.get("length_mm") or ""}
+    out["plan"] = {"route": route("length_mm"), "page_no": page, "mm": [sizes["length_mm"], sizes["width_mm"]], "basis": "OUTSIDE", "text": said.get("length_mm") or ""}
   if sizes.get("height_mm"):
-    out["depth"] = {"route": "DETAIL", "page_no": page, "mm": sizes["height_mm"], "basis": "OUTSIDE", "text": said.get("height_mm") or ""}
+    out["depth"] = {"route": route("height_mm"), "page_no": page, "mm": sizes["height_mm"], "basis": "OUTSIDE", "text": said.get("height_mm") or ""}
   if sizes.get("thickness_mm"):
-    out["wall"] = {"route": "DETAIL", "page_no": page, "mm": sizes["thickness_mm"], "text": said.get("thickness_mm") or "", "from": src.get("thickness_mm")}
+    out["wall"] = {"route": route("thickness_mm"), "page_no": page, "mm": sizes["thickness_mm"], "text": said.get("thickness_mm") or "", "from": src.get("thickness_mm")}
   slabs = facts.get("tank_slabs_mm") or {}
   for key, name in (("top_mm", "top"), ("bottom_mm", "bottom")):
     if slabs.get(key):
-      out[name] = {"route": "DETAIL", "page_no": page, "mm": slabs[key], "text": "the slab the tank detail prints"}
+      out[name] = {"route": route("thickness_mm"), "page_no": page, "mm": slabs[key], "text": "the slab the tank detail prints"}
   return out
 
 def sheet_fields(sites: list, walls: list, words: list, mm_per_pt: float) -> int:
@@ -189,7 +196,15 @@ def decided(raw) -> dict | None:
   except ValueError:
     return None
 
-def make(kind: str, items: list, decision: dict | None = None, answered: dict | None = None) -> dict:
+def fallback_plan(kind: str, printed: dict) -> dict:
+  other = printed.get("UGWT" if kind == "OHWT" else "OHWT") if kind in WATER else None
+  if other and other.get("plan_mm"):
+    a, b = other["plan_mm"]
+    return {"route": "SIBLING", "mm": [a, b], "text": f"no sheet prints the plan of this tank, so it is taken as the plan of the {other['kind']} of the same drawing, {a / 1000:.3f} x {b / 1000:.3f} m outside"}
+  a, b = _rule(PLAN_LONG_RULE, PLAN_LONG_DEFAULT), _rule(PLAN_SHORT_RULE, PLAN_SHORT_DEFAULT)
+  return {"route": "SEED", "mm": [a, b], "text": f"no sheet prints the plan of this tank and no other water tank of the drawing gives one, so the seed {a / 1000:.3f} x {b / 1000:.3f} m outside is used"}
+
+def make(kind: str, items: list, decision: dict | None = None, answered: dict | None = None, fallback: dict | None = None) -> dict:
   per: dict = {}
   for it in items:
     tf = it["fields"]
@@ -211,6 +226,8 @@ def make(kind: str, items: list, decision: dict | None = None, answered: dict | 
       else:
         per[name] = [{"route": "DECISION", "mm": typed[key], "basis": "OUTSIDE" if name == "depth" else None, "text": answer.get("source") or f"decision {DECISION_PREFIX}{kind}", "page_no": None}]
         
+  if fallback and not per.get("plan"):
+    per["plan"] = [{"route": fallback["route"], "mm": fallback["mm"], "basis": "OUTSIDE", "text": fallback["text"], "page_no": None}]
   wall = _best(per.get("wall") or [])
   if wall:
     rec["wall_mm"], sources["wall"] = float(wall["mm"]), _cite(wall)
@@ -236,14 +253,15 @@ def make(kind: str, items: list, decision: dict | None = None, answered: dict | 
   else:
     rec["depth_mm"], sources["depth"] = _rule(DEPTH_RULE, DEPTH_DEFAULT), {"route": "RULE", "key": DEPTH_RULE, "text": "no depth is printed for this tank"}
   rec["sources"], rec["complete"] = sources, "plan" in sources
-  rec["assumed"] = sorted(k for k, v in sources.items() if v["route"] in ("RULE", "CONVENTION", "WALLS") or v.get("basis") in ("INSIDE", "CENTRE"))
+  rec["defaulted"] = bool(plan and plan["route"] in DEFAULTED)
+  rec["assumed"] = sorted(k for k, v in sources.items() if v["route"] in ("RULE", "CONVENTION", "WALLS") + DEFAULTED or v.get("basis") in ("INSIDE", "CENTRE"))
   return rec
 
 def _cite(e: dict) -> dict:
   return {"route": e["route"], "page_no": e.get("page_no"), "text": e.get("text") or ""}
 
 def _sources_text(kind: str, record: dict) -> str:
-  return f"{kind}: " + "; ".join(f"{k} from {v['route'].lower()}" + (f" p.{v['page_no']}" if v.get("page_no") else "") for k, v in record["sources"].items())
+  return f"{kind}: " + "; ".join(f"{k} from {v['route'].lower().replace('_', ' ')}" + (f" p.{v['page_no']}" if v.get("page_no") else "") for k, v in record["sources"].items())
 
 def pair(read: list, decisions: dict | None = None, answered: dict | None = None) -> list:
   by_kind: dict = {}
@@ -255,15 +273,16 @@ def pair(read: list, decisions: dict | None = None, answered: dict | None = None
       if c.category == "SITE" and f.get("tank_kind") in KINDS and not FS.is_set_aside(c):
         by_kind.setdefault(f["tank_kind"], []).append((sh, c))
         
-  out = []
+  built = {}
   for kind in sorted(by_kind):
-    group = by_kind[kind]
-    items = [{"fields": (c.facts or {}).get("tank_fields") or {}, "page_no": sh["page_no"], "c": c, "sh": sh} for sh, c in group]
-    rec = make(kind, items, (decisions or {}).get(DECISION_PREFIX + kind), (answered or {}).get(DECISION_PREFIX + kind))
+    items = [{"fields": (c.facts or {}).get("tank_fields") or {}, "page_no": sh["page_no"], "c": c, "sh": sh} for sh, c in by_kind[kind]]
+    built[kind] = (items, make(kind, items, (decisions or {}).get(DECISION_PREFIX + kind), (answered or {}).get(DECISION_PREFIX + kind)))
+  printed = {k: rec for k, (_items, rec) in built.items() if rec["complete"]}
+  out = []
+  for kind in sorted(built):
+    items, rec = built[kind]
     if not rec["complete"]:
-      rec["kept_page"] = None
-      out.append(rec)
-      continue
+      rec = make(kind, items, (decisions or {}).get(DECISION_PREFIX + kind), (answered or {}).get(DECISION_PREFIX + kind), fallback_plan(kind, printed))
   
     plan = rec["sources"]["plan"]
     by_scale = sorted(items, key=lambda i: (i["sh"].get("mm_per_pt") or 0.0, i["page_no"]))
@@ -292,7 +311,7 @@ def _write(c, rec: dict) -> None:
   for token, name in fields.items():
     s = rec["sources"][name]
     
-    said[token] = f"{s['route'].lower()}" + (f" p.{s['page_no']}" if s.get("page_no") else "") + (f", {s['text']}" if s.get("text") else "") + (f" ({s['key']})" if s.get("key") else "")
+    said[token] = f"{s['route'].lower().replace('_', ' ')}" + (f" p.{s['page_no']}"if s.get("page_no") else "") + (f", {s['text']}" if s.get("text") else "") + (f" ({s['key']})" if s.get("key") else "")
   f["sizes_mm"], f["sizes_assumed"] = sizes, said
   f["sizes_from"] = {token: rec["sources"][name]["route"] for token, name in fields.items()}
   f["sizes_source"] = "DRAWING_ASSUMED"
@@ -309,5 +328,7 @@ def _write(c, rec: dict) -> None:
       c.notes.append(C.note(code, kind=rec["kind"], key=rec["sources"][name]["key"]))
   if rec["sources"]["plan"]["route"] == "WALLS":
     c.notes.append(C.note("TANK_PLAN_FROM_WALLS", kind=rec["kind"]))
+  if rec["defaulted"]:
+    c.notes.append(C.note("TANK_SIZE_DEFAULTED", kind=rec["kind"], route=rec["sources"]["plan"]["route"], plan=rec["sources"]["plan"]["text"]))
   from app.modules.drawings_boq.takeoff.extract import note_scope as NS
   c.status = NS.status_of(c.notes)

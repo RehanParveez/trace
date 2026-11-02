@@ -4,6 +4,7 @@ SOURCE = "OUTLINE"
 SETTLE_TOL = 0.02      
 VETO_TOL = 0.10        
 TRUST_CONFIRMED = 0.85
+TRUST_FLOOR_PLAN = 0.7
 CONFIRM_BASIS = {"DIMENSIONS_WEAK": "DIMENSIONS_AND_OUTLINE", "DECLARED_ONLY": "DECLARED_AND_OUTLINE"}
 
 def _labels(witnesses: list | None, strong: bool) -> dict | None:
@@ -94,6 +95,29 @@ def apply(verdict: dict, notes: list, prop: dict | None, declared: dict, agree_t
         "This is a hint only; check one known length before measuring.")}]
   return verdict, notes
 
+def apply_floor(verdict: dict, notes: list, prop: dict | None) -> tuple:
+  if not prop:
+    return verdict, notes
+  ratio = float(prop["ratio"])
+  text = format(round(ratio, 4), "f").rstrip("0").rstrip(".")
+  where = f"sheet {prop['page_no']} ({str(prop['floor']).lower()} floor plan of the same set, same sheet size, 1:{ratio:.1f})"
+  rec = verdict.get("recommended") or {}
+  
+  out = dict(verdict)
+  if prop.get("dims"):
+    out["agreement"] = "VERIFIED_WEAK"
+    out["recommended"] = {"method": "SCALE_RATIO", "ratio": round(ratio, 4), "scale_text": f"1:{text}", "basis": "SAME_FLOOR_PLAN_AND_DIMENSIONS", "trust": TRUST_CONFIRMED,
+      "check": rec.get("check") if rec.get("basis") == "MEASURED_FROM_DIMENSIONS" else None, "support": int(prop.get("support") or 0), "floor_plan": {"page_no": prop["page_no"]}}
+    return out, [*notes, {"code": "SCALE_CONFIRMED_BY_FLOOR_PLAN", "message": (
+      f"Only a few dimensions were found on this sheet. They agree with the scale of {where}, so that scale is used. Check one known length before relying on a pipe length.")}]
+    
+  out["agreement"] = "FLOOR_PLAN_ONLY"
+  out["recommended"] = {"method": "SCALE_RATIO", "ratio": round(ratio, 4), "scale_text": f"1:{text}", "basis": "SAME_FLOOR_PLAN", "trust": TRUST_FLOOR_PLAN, "check": None, "support": 0,
+    "floor_plan": {"page_no": prop["page_no"]}}
+  kept = [n for n in notes if n.get("code") != "NO_SCALE_FOUND"]
+  return out, [*kept, {"code": "SCALE_FROM_SAME_FLOOR_PLAN", "message": (
+    f"No scale can be trusted on this sheet. It takes the scale of {where}. Check one known length before relying on a pipe length.")}]
+
 KEEP = ("agreement", "recommended", "notes")
 
 def original(full: dict) -> dict:
@@ -108,14 +132,19 @@ def summary(prop: dict | None, refs: list) -> dict | None:
   return {"status": prop["status"], "k": None if prop.get("k") is None else round(float(prop["k"]), 4), "ratio": None if not prop.get("ratio") else round(float(prop["ratio"]), 4),
     "refs": refs, "rank": prop.get("rank"), "same_floor": bool(prop.get("same_floor")) or prop.get("rank") == 0, "note": prop.get("note")}
 
-def rebuild(full: dict, prop: dict | None, refs: list, agree_tol: float) -> dict:
+def rebuild(full: dict, prop: dict | None, refs: list, agree_tol: float, floor: dict | None = None) -> dict:
   base = original(full)
   verdict, notes = apply({"agreement": base["agreement"], "recommended": base["recommended"]}, base["notes"], prop, base["declared"], agree_tol, base["witnesses"], base["measured"])
+  if floor:
+    verdict, notes = apply_floor(verdict, notes, floor)
   out = {k: v for k, v in full.items() if k != "outline"}
   out["agreement"], out["recommended"], out["notes"] = verdict["agreement"], verdict["recommended"], notes
   changed = verdict["agreement"] != base["agreement"] or verdict["recommended"] != base["recommended"] or notes != base["notes"]
   settled = str((verdict.get("recommended") or {}).get("basis") or "").endswith("_AND_OUTLINE") and verdict["agreement"] != base["agreement"]
   block = {"verdict": {**summary(prop, refs), "applied": verdict.get("agreement") == "OUTLINE_ONLY", "settled": settled}} if prop else {}
+  if floor:
+    block = {"verdict": {"status": "FLOOR_PLAN", "k": None, "ratio": round(float(floor["ratio"]), 4), "refs": [{"sheet_id": str(floor["ref"]), "page_no": floor["page_no"]}], "rank": 0, "same_floor": True,
+      "note": "The scale of the working plan of the same floor.", "applied": not floor.get("dims"), "settled": bool(floor.get("dims"))}}
   
   if changed:
     block["original"] = {k: base[k] for k in KEEP}

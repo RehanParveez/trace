@@ -49,29 +49,37 @@ def _outline_scales(prepared: list) -> list:
   entries, held = [], {}
   for i, (_doc, analysed, _problems) in enumerate(prepared):
     for no, a in analysed.items():
-      samples = ((a.meta or {}).get("outline") or {}).get("samples")
-      if not samples:
-        continue
+      samples = ((a.meta or {}).get("outline") or {}).get("samples") or []
       full = a.detected_scale or {}
       ok, _code, _msg = auto_scale_gate(full)
       rec = full.get("recommended") or {}
       mm = float(rec["ratio"]) * SO.PT_MM if rec.get("ratio") else None
       ident, title = a.meta.get("identity") or {}, a.meta.get("title") or {}
       floor = ident.get("floor") or (None if title.get("composite") else title.get("level_hint"))
-      entries.append({"id": (i, no), "page_no": no, "floor": floor, "trusted": bool(ok and mm), "mm_per_pt": mm, "samples": samples})
+      entries.append({"id": (i, no), "page_no": no, "floor": floor, "trusted": bool(ok and mm), "mm_per_pt": mm, "samples": samples, "drawing": i,
+        **SO.floor_fields(full, ident, full.get("paper") or (a.meta or {}).get("paper"))})
       held[(i, no)] = full
   verdicts = SO.propose(entries, list(DF.FLOOR_ORDER))
   out = [dict() for _ in prepared]
+  
+  built = {}
   for key, full in held.items():
+    built[key] = full
     v = verdicts.get(key)
     if not v or v["status"] != SO.PROPOSED:
       continue
+    
     prop = {**v, "ratio": v["mm_per_pt"] / SO.PT_MM}
     new = OW.rebuild(full, prop, [{"sheet_id": str(r), "page_no": r[1]} for r in v["refs"]], AGREE_TOL)
+    built[key] = new
     settled = bool(((new.get("outline") or {}).get("verdict") or {}).get("settled"))
     if new.get("agreement") == "OUTLINE_ONLY" or settled:
       ratio = float(new["recommended"]["ratio"])
       out[key[0]][key[1]] = {"ratio": ratio, "mm_per_pt": ratio * 25.4 / 72.0, "refs": list(v["refs"]), "settled": settled}
+  for key, prop in SO.inherit([{**e, "wanted": not auto_scale_gate(built[e["id"]])[0]} for e in entries]).items():
+    new = OW.rebuild(held[key], None, [], AGREE_TOL, floor={**prop, "ref": prop["ref"]})
+    ratio = float(new["recommended"]["ratio"])
+    out[key[0]][key[1]] = {"ratio": ratio, "mm_per_pt": ratio * 25.4 / 72.0, "refs": [prop["ref"]], "settled": bool(prop["dims"]), "source": "FLOOR_PLAN"}
   return out
 
 def _merge_project(sheets: list, others: list) -> dict:
@@ -161,7 +169,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     verdict = a.detected_scale or {}
     labels = float((verdict.get("recommended") or {}).get("ratio")) if not measured and verdict.get("agreement") == "ROOMS_ONLY" and (verdict.get("recommended") or {}).get("ratio") else None
     used = from_outline["ratio"] if from_outline else (float(measured[0]["ratio"]) if measured else labels)
-    source = ("SETTLED" if from_outline.get("settled") else "OUTLINE") if from_outline else ("MEASURED" if measured else ("LABELS" if labels else "DEFAULT"))
+    source = (from_outline.get("source") or ("SETTLED" if from_outline.get("settled") else "OUTLINE")) if from_outline else ("MEASURED" if measured else ("LABELS" if labels else "DEFAULT"))
     mm_per_pt = used * 25.4 / 72.0 if used else DEFAULT_MM_PER_PT
     try:
       res = P.run_extraction(a.index, mm_per_pt, composite=bool(title.get("composite")), regions_only=False, cal_factor=1.0, scale_unverified=scale_unverified or source == "DEFAULT", content_kind=a.content_kind,

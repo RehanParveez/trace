@@ -35,9 +35,8 @@ def hatch_strokes(segments: list, mm_per_pt: float) -> list:
       out.append((s[0], s[1], s[2], s[3]))
   return out
 
-def components(strokes: list, unit: float = 1.0) -> list:
-  """Strokes whose middles lie within LINK_PT of each other form one patch of hatch: [[stroke, ...]]. LINK_PT is the distance on the reference sheet; unit is the sheet's size against it."""
-  cell = LINK_PT * unit
+def components(strokes: list, unit: float = 1.0, link: float | None = None) -> list:
+  cell = (LINK_PT if link is None else link) * unit
   mids = [((s[0] + s[2]) / 2.0, (s[1] + s[3]) / 2.0) for s in strokes]
   grid: dict = {}
   for i, m in enumerate(mids):
@@ -122,12 +121,12 @@ def _label(mask):
           stack.append((ny, nx))
   return lab, n
 
-def legs_of(strokes: list, mm_per_pt: float, unit: float = 1.0) -> list:
+def legs_of(strokes: list, mm_per_pt: float, unit: float = 1.0, grid: float | None = None, widths_mm: tuple | None = None, leg_min_mm: float | None = None) -> list:
   """The straight legs of one patch of hatch: [{"axis": "H" | "V", "p0", "p1", "width_pt", "length_pt"}], p0 and p1 the ends of the centre line (page units).
   The width is that of the hatched band, the length runs end to end on the centre line."""
   xs = [v for s in strokes for v in (s[0], s[2])]
   ys = [v for s in strokes for v in (s[1], s[3])]
-  g = GRID_PT * unit
+  g = (GRID_PT if grid is None else grid) * unit
   r = max(2, int(round(CLOSE_FACTOR * _pitch(strokes) / g)))
   
   x0, y0 = min(xs) - (r + 2) * g, min(ys) - (r + 2) * g
@@ -143,7 +142,7 @@ def legs_of(strokes: list, mm_per_pt: float, unit: float = 1.0) -> list:
       
   mask = _close(mask, r)
   hr, vr = _runs(mask, 1), _runs(mask, 0)
-  lo, hi = WIDTH_MIN_MM / mm_per_pt / g, WIDTH_MAX_MM / mm_per_pt / g
+  lo, hi = (WIDTH_MIN_MM if widths_mm is None else widths_mm[0]) / mm_per_pt / g, (WIDTH_MAX_MM if widths_mm is None else widths_mm[1]) / mm_per_pt / g
   short = np.minimum(hr, vr)[mask]
   short = short[(short >= lo) & (short <= hi)]
   if short.size < 8:
@@ -175,7 +174,7 @@ def legs_of(strokes: list, mm_per_pt: float, unit: float = 1.0) -> list:
         p0, p1 = (c, y0 + ya * g - (0.5 * width if corner0 else 0.0)), (c, y0 + (yb + 1) * g + (0.5 * width if corner1 else 0.0))
       length = math.hypot(p1[0] - p0[0], p1[1] - p0[1])
       
-      if length * mm_per_pt < LEG_MIN_MM:
+      if length * mm_per_pt < (LEG_MIN_MM if leg_min_mm is None else leg_min_mm):
         continue
       out.append({"axis": axis, "p0": p0, "p1": p1, "width_pt": width, "length_pt": length, "corners": (corner0, corner1)})
   return out

@@ -34,13 +34,13 @@
   cause: 'not diagnosed; -27.1%: the steps of the wall footings are read from the sections W1 to W4 (675 cft: five rows for the 4.5 in wall over 42.0 m and 12.5 m, five for the 9 in wall over 46.7 m); the rest is the bill''s extent of brick below the plinth, which the drawing does not state'
   pack: '173'
 - line: BRICK_WALLS/GROUND
-  cause: '-10.6% (+14.7% before Pack 228, which stops counting the brick ballast under the floor, 11.7 m3, as brick work above the plinth; +16.2% before Pack 168, which takes the 9 in and 4.5 in walls at 229 and 114 mm where they were 254 and 127): all 17 ground openings (50.3 m2) are now on walls; 4 sit 800 to 990 mm from the nearest wall with no gap beside them (OPENING_HOST_UNCONFIRMED). With every opening taken off the line is -10.6%, with none taken off about +8.5% (the 17 hosted openings are 324.6 cft at wall thickness), so what the QS takes off the ground brick (WALL_OPENINGS_INCLUDED) decides the last 0.6 points'
+  cause: '-31.6% since Pack 240 bills the two boundary walls the plan draws (18.59 m and 12.49 m at 4.5 in, 11 ft high, 387.8 cft) on their own line, which is where the QS keeps them: the house brick above the plinth is 1,162.9 cft against 1,701.3, about 20 m of 9 in wall at 11 ft short; the hatching shows no unread wall of that length (Pack 242), so the cause is not a missing wall that I can find. Before Pack 240: -10.6% (+14.7% before Pack 228, which stops counting the brick ballast under the floor, 11.7 m3, as brick work above the plinth; +16.2% before Pack 168, which takes the 9 in and 4.5 in walls at 229 and 114 mm where they were 254 and 127): all 17 ground openings (50.3 m2) are now on walls; 4 sit 800 to 990 mm from the nearest wall with no gap beside them (OPENING_HOST_UNCONFIRMED). With every opening taken off the line is -10.6%, with none taken off about +8.5% (the 17 hosted openings are 324.6 cft at wall thickness), so what the QS takes off the ground brick (WALL_OPENINGS_INCLUDED) decides the last 0.6 points'
   pack: '228'
 - line: BRICK_WALLS/FIRST
   cause: 'not diagnosed; -12.9% (-8.3% before Pack 219, which finds the host wall of two wide windows and so takes their area off; +3.8% before Pack 168, when the brick was taken 10% thick): the windows come out as the 17 printed labels, about one 9 ft 6 in by 8 ft 8 in window more than the bill has'
   pack: unassigned
 - line: BRICK_BOUNDARY/ALL
-  cause: 'not diagnosed; no Trace number: this set has no boundary-wall plan or elevation, so there is nothing to read; the line is its own (the tag BOUNDARY-RETURNS keeps it out of every floor line) and waits for a drawing or for the lengths typed at accept'
+  cause: '-59.8% (387.8 cft against 963.9): Pack 240 reads the two boundary walls the ground plan draws, 18.59 m west and 12.49 m rear at 4.5 in and 11 ft high; the front and the east side are not drawn as walls on this set, so the rest of the QS line has no drawing to read (it would need the lengths typed at accept)'
   pack: unassigned
   pack: unassigned
 - line: WALL_PLASTER
@@ -90,8 +90,11 @@
   pack: '202'
   question: '191-C questionnaire: porch tile'
 - line: FIN-PAINT-EXT/ALL
-  cause: 'not diagnosed; -62.0% (-28.7% before Pack 229, when the outline of the first floor was broken and read inner faces as outer): the walls on the outline are counted, 39.3 m on the ground floor and 23.7 m on the first, and the first floor has no wall read along 26% of its outline (12.3 m); the facade tile needs the elevations'
-  pack: '229'
+  cause: 'not diagnosed; -56.1% (-62.0% before Pack 239, -28.7% before Pack 229, when the outline of the first floor was broken and read inner faces as outer): the walls on the outline are counted, 41.9 m on the ground floor and 33.9 m on the first, and the first floor has no wall read along 26% of its outline (12.3 m); the facade tile needs the elevations'
+  pack: '239'
+- line: FIN-PAINT/ALL
+  cause: 'not diagnosed; -7.2% (-1.9% before Pack 239): the faces that Pack 239 moves from inside to outside are real outer faces, and the line was close only because outer faces were missing from the other side; the shortfall is the 12.3 m of the first-floor outline with no wall read, and the same walls leave FIN-PAINT-EXT short'
+  pack: '239'
 - line: WINDOWS/ALL
   cause: 'not diagnosed; +12.8% (was -15.9% before Pack 219): windows are now the 17 printed labels, 714.4 sft; the bill''s 633.4 sft is 81 sft lower, about one 9 ft 6 in by 8 ft 8 in window (the terrace window of the first floor); the drawing prints it'
   pack: '198'
@@ -103,11 +106,11 @@
   cause: 'diagnosed; -18.2% (9 of 11): 6 + 3 ceiling fans are counted. The wall bracket fan (9 drawn objects) finds no run on the plans; the exhaust fan is a group of its own, billed to ELE-OTHER by rule, as his 11 are 9 ceiling and 2 wall bracket fans'
   pack: '231'
 - line: ELE-SOCKET/ALL
-  cause: 'diagnosed; -31.5% (37 of 54): the 3P-5 AMP light plug is counted (18 + 19). The 3P-15 AMP power plug (11 drawn objects) finds no run on the plans, and his 54 are 45 at 13 A and 9 at 15 A'
-  pack: '231'
+  cause: 'diagnosed; -5.6% (51 of 54; -31.5% before Pack 243): the 3P-5 AMP light plug is counted by its drawn objects (18 + 19) and the 3P-15 AMP power plug, whose drawn objects find no run on the plans, by its shape (11 + 3). His 54 are 45 at 13 A and 9 at 15 A, a split Trace does not make'
+  pack: '243'
 - line: ELE-SWITCH/ALL
-  cause: 'diagnosed; no Trace number: the switch plate (30 drawn objects) and the two way switch (32) find no run on the plans. The plan draws a switch as 31 objects with a different order and a different number of the 8-segment fill pieces than the legend, so an exact match fails. A matcher by similarity of the multiset of object sizes was tried and gave noise on small symbols, so it is not in the code'
-  pack: '231'
+  cause: 'not diagnosed; -44.4% (15 of 27; no Trace number before Pack 243): the switch plate is counted by its shape (10 + 5). The two way switch (32 drawn objects) still finds no run on the plans, and why is not known. His 27 are plates by gang, and Trace counts one symbol per plate'
+  pack: '243'
 - line: ELE-LOWV/ALL
   cause: 'diagnosed; no Trace number (his 16 are 8 telephone and 8 TV sockets): the telephone/intercom point has two drawn objects and no tag so it is not countable, the TV outlet point (18 drawn objects) finds no run on the plans, and the tags TEL.BD., TEL.EXCH. and TV. are not on the plan pages. Smoke detectors and CAT6 points are no longer counted in this line: they are billed to ELE-OTHER by rule'
   pack: '231'

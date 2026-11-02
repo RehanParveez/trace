@@ -1,5 +1,11 @@
 origin: QS_WORKBOOK
 rules:
+  - key: finish.boundary_walls
+    scope: {}
+    value: WITH_HOUSE
+    cls: JUDGEMENT
+    note: 'read from the QS totals, not stated by him: the plot has no boundary wall line. The 4.5 in back wall (36 ft) and front wall (23.5 ft) are plastered on both faces among the walls of the building (Plaster!B81, B82, "4.5 in wide")'
+    source: {workbook: BOQ_Plot_1373-C_Sector_I-11_2_Islamabad.xlsx, sheet: Plaster, cell: "B81:B82"}
   - key: neck_height_mm
     value: 1066.8
     unit: mm

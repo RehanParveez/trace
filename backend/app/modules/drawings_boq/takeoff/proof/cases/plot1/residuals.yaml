@@ -21,8 +21,8 @@
   pack: '163'
   question: decision aa06c5dc850cad14 in the score md
 - line: TANKS
-  cause: '-65.0% as read (92.9 cft: only the O/H tank is billed, its plan size from the four walls the plan draws round it); +25.0% (331.7 cft) once the QS sizes in decisions.yaml are answered. The U/G tank then matches his 93.5 cft; the septic tank adds about 145 cft of slabs and walls against his 78.4 cft of slabs, because the rules give it walls of 152.4 mm over 1,524 mm and his septic tank has no concrete walls'
-  pack: '227'
+  cause: '+19.2% (316.3 cft; -65.0% before Pack 241, when the U/G and septic tanks were held and only the O/H tank, 92.9 cft, was billed). No sheet prints a plan size for the U/G or the septic tank, so both are billed from stated assumptions (TANK_SIZE_DEFAULTED): the U/G tank takes the plan of the O/H tank (2,401 x 1,677 mm) with the 7 ft depth and 6 in walls and slabs its own section prints, 117.6 cft against his 93.5; the septic tank takes the seed plan of the rules (2,438 x 1,829 mm) with the rule depth and walls, 105.8 cft against his 78.4, whose septic tank has no concrete walls (D7 in expected.yaml)'
+  pack: '241'
   question: does the septic tank of Plot_1 have concrete walls, and what depth does its section print (D7 in expected.yaml)
 - line: WINDOWS/OTHERS
   cause: '-20.2% against the signed 707.625 sft (-14.6% as written, 661.625): Trace counts 565.0 sft; 78.6 sft of the gap is the first floor Opening of 9.25 x 8.5 ft in his sheet, which is not a window or ventilator mark, and the other 64.0 sft is not diagnosed'

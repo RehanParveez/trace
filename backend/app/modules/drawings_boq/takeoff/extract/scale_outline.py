@@ -8,6 +8,10 @@ WALL_MM = 229.0
 MIN_ELONGATION = 0.05           
 K_MIN, K_MAX = 0.25, 4.0        
 PT_MM = 25.4 / 72.0
+FLOOR_PAPER_TOL = 0.01
+FLOOR_DIMS_TOL = 0.03
+FLOOR_LABELS_VETO = 0.10
+FLOOR_PLAN = "FLOOR_PLAN"
 
 BASE, AGREES, PROPOSED, DIFFERS, SCALE_DIFFERS, AMBIGUOUS, NONE = "BASE", "AGREES", "PROPOSED", "DIFFERS", "SCALE_DIFFERS", "AMBIGUOUS", "NONE"
 
@@ -148,4 +152,38 @@ def propose(sheets: list, floor_order: list | None = None) -> dict:
     out[t["id"]] = {**base, "status": PROPOSED, "note": "The scale that makes the outer walls of this plan the size of the plan(s) it was compared with."}
   for r in refs:
     out.setdefault(r["id"], {"status": BASE, "mm_per_pt": r["mm_per_pt"], "ratio": r["mm_per_pt"] / PT_MM, "k": 1.0, "refs": [], "note": ""})
+  return out
+
+def floor_fields(full: dict, ident: dict, paper: dict | None) -> dict:
+  """What inherit needs to know of a sheet: its role, what it is read as, the scale and the dimensions that were read on it, and the paper size."""
+  rec = full.get("recommended") or {}
+  clusters = (full.get("measured") or {}).get("clusters") or []
+  top = clusters[0] if clusters else None
+  weak = next((float(w["ratio"]) for w in full.get("witnesses") or [] if w.get("source") == "ROOM_LABELS" and w.get("ratio") and not w.get("strong") and int(w.get("support") or 0) >= 2), None)
+  size = tuple(sorted((float(paper["width_mm"]), float(paper["height_mm"])))) if paper and paper.get("width_mm") and paper.get("height_mm") else None
+  return {"role": ident.get("role"), "plan_kind": ident.get("plan_kind"), "read_as": ident.get("read_as"), "agreement": full.get("agreement"), "size": size, "labels": weak,
+    "ratio": float(rec["ratio"]) if rec.get("ratio") else None, "support": int(rec.get("support") or 0),
+    "dims": {"ratio": float(top["ratio"]), "support": int(top.get("support") or 0)} if top and top.get("ratio") else None}
+
+def _same_paper(a: tuple | None, b: tuple | None) -> bool:
+  return bool(a) and bool(b) and all(abs(x / y - 1.0) <= FLOOR_PAPER_TOL for x, y in zip(a, b))
+
+def inherit(sheets: list) -> dict:
+  out: dict = {}
+  for t in sheets:
+    if not t.get("wanted") or t.get("role") != "PLAN" or t.get("plan_kind") != "OVERLAY" or not t.get("floor") or t.get("agreement") not in (None, "NONE", "DIMENSIONS_WEAK"):
+      continue
+    sources = [s for s in sheets if s["id"] != t["id"] and s.get("drawing") == t.get("drawing") and s.get("trusted") and s.get("ratio") and s.get("support") and s.get("role") == "PLAN"
+      and s.get("read_as") == "PLAN_ITEMS" and s.get("floor") == t["floor"] and _same_paper(s.get("size"), t.get("size"))]
+    
+    if not sources:
+      continue
+    src = max(sources, key=lambda s: (s["support"], -s["page_no"]))
+    ratio, own = float(src["ratio"]), t.get("dims")
+    if own and abs(float(own["ratio"]) / ratio - 1.0) > FLOOR_DIMS_TOL:
+      continue
+    if t.get("labels") and abs(float(t["labels"]) / ratio - 1.0) > FLOOR_LABELS_VETO:
+      continue
+    out[t["id"]] = {"status": FLOOR_PLAN, "ratio": ratio, "dims": bool(own), "own": float(own["ratio"]) if own else None, "support": int(own["support"]) if own else 0,
+      "ref": src["id"], "page_no": src["page_no"], "floor": t["floor"]}
   return out

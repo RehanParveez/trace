@@ -85,6 +85,8 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
   if formula == "PDF_MEMBER_STEEL_WEIGHT":
     return "STEEL"
   if formula == "PDF_TAKEOFF_LENGTH_X_HEIGHT_X_THICKNESS":
+    if t.startswith("BOUNDARY-WALL"):
+      return "BRICK_BOUNDARY"
     if "rcc" in lab or "concrete" in lab:
       return "RCC_WALLS"
     if "brick" in lab:

@@ -81,6 +81,7 @@ class Run:
   overlap_pt: float = 0.0
   w: float = 0.0         
   pen_kept: bool = False   
+  hatch: bool = False 
 
 BRIDGE_WORK = 25      
 

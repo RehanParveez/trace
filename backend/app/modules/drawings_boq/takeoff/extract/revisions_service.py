@@ -73,7 +73,6 @@ class RevisionService(FloorSourceService):
         await CR.record(self.session, org=org, user_id=user_id, project_id=project_id, drawing_id=drawing_id, sheet_id=keep["sheet_ids"][0], kind=CR.LAYOUT_CHOICE, subject=f"page {keep['pages'][0]}",
           before={"kind": entry["kind"], "pages": sorted(p for o in entry["options"] for p in o["pages"]), "default": entry["default"]},
           after={"kind": entry["kind"], "value": value, "governing_page": keep["pages"][0], "set_aside": len(away), "restored": len(back)})
-    after={"kind": entry["kind"], "value": value, "governing_page": keep["pages"][0], "set_aside": len(away), "restored": len(back)}
     touched.update(c.sheet_id for c in RV.note_defaulted(read))
     if chosen:
       await self.core._log(org, user_id, drawing_id, AuditAction.UPDATE,

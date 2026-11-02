@@ -556,24 +556,40 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
       face.update({"o_in": round(d_in, 3), "o_out": round(d_out, 3), "rev": round(rev, 3)})
     out.append(face)
   return out
+BOUNDARY_TAG = "BOUNDARY-WALL"
 
-def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None) -> dict:
+def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None = None, at_grade: bool = False) -> dict:
   mode = str(FR.rule(FR.WALL_FACES).value or FR.OUTLINE).upper()
   ws = plaster_walls(walls)
   if mode != FR.GRAPH:
     if not ws or not mm_per_pt:
       return {"mode": mode, "used": False, "open_rooms": []}
-    sides, stats = MW.outline_sides(ws, usable_rooms(rooms), mm_per_pt, C.WALL_GAP_CLEAR_MAX_MM, C.OUTLINE_CLOSE_MM, bool(QS.flag("plaster_courtyard_external")))
+    courtyard = bool(QS.flag("plaster_courtyard_external"))
+    boundary_max = float(QS.convention("boundary_wall_thickness_mm")) + C.BRICK_TOL_MM
+    sides, stats = MW.outline_sides(ws, usable_rooms(rooms), mm_per_pt, C.WALL_GAP_CLEAR_MAX_MM, C.OUTLINE_CLOSE_MM, courtyard, at_grade, boundary_max, C.OUTER_FACE_SHRINK)
     if not stats["perimeter_m"]:
       return {"mode": mode, "used": False, "open_rooms": []}
-    loose = {u["key"] for u in stats.get("unattached") or []}
+    rooms_sides, rooms_stats = MW.outline_sides(ws, usable_rooms(rooms), mm_per_pt, C.WALL_GAP_CLEAR_MAX_MM, C.OUTLINE_CLOSE_MM, courtyard, at_grade, boundary_max)
+    stats["rooms_route"] = {"outer_face_m": rooms_stats["outer_face_m"], "perimeter_m": rooms_stats["perimeter_m"]}
+    loose = {u["key"]: u for u in stats.get("unattached") or []}
     both = bool(loose) and str(FR.rule(FR.FREE_WALL_FACES).value or FR.NONE_FACES).upper() == FR.BOTH_FACES
-    for w, (inside, outside) in zip(ws, sides):
-      if both and w.key in loose:
+    own = str(FR.rule(FR.BOUNDARY_WALLS).value or FR.OWN_LINE).upper() == FR.OWN_LINE
+    
+    for w, (inside, outside), rooms_side in zip(ws, sides, rooms_sides):
+      entry = loose.get(w.key)
+      boundary = bool(entry) and entry["class"] == "BOUNDARY" and own
+      if entry and (both and not boundary):
         inside, outside = 0.0, 2.0
-      w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}, "outline_perimeter_m": stats["perimeter_m"], "outline_parts_m": stats["parts_m"], **({"no_room_near": True} if w.key in loose else {})}
+      if boundary:
+        inside, outside = 0.0, 0.0
+        w.tag = BOUNDARY_TAG
+        w.label = "Boundary " + str(w.label or "wall").lower()
+        w.notes = [*(w.notes or []), C.note("WALL_IS_BOUNDARY", length_m=entry["length_m"], why=entry["why"])]
+      w.facts = {**(w.facts or {}), "face_sides": {"in": inside, "out": outside}, "face_sides_rooms": {"in": rooms_side[0], "out": rooms_side[1]}, "face_route": "ENVELOPE",
+        "outline_perimeter_m": stats["perimeter_m"], "outline_parts_m": stats["parts_m"],
+        **({"no_room_near": True,"free_wall_class": entry["class"]} if entry else {}), **({"boundary": True} if boundary else {})}
+      
     return {"mode": mode, "used": False, "outline": stats, "open_rooms": []}
-  if not ws or not mm_per_pt:
     return {"mode": mode, "used": False, "open_rooms": []}
   g = MW.build(ws, usable_rooms(rooms), mm_per_pt, floor, C.WALL_GAP_CLEAR_MAX_MM)
   if not g.closed:

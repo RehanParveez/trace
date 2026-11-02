@@ -680,6 +680,7 @@ def wall_faces_view(accs: list) -> dict | None:
         rows.append({"page_no": r["page_no"], "floor": (r.get("title") or {}).get("level_hint"), "walls": len(walls), "rooms": len(rooms), "closed": g.closed, "open_rooms": sorted(g.open_rooms),
           "outline_share_pct": _outline_share(r), "gap_m": _outline_gap(r, "metres"), "gap_opening_m": _outline_gap(r, "opening_metres"), "unattached": [u["length_m"] for u in ((r.get("stats") or {}).get("floor_outline") or {}).get("unattached") or []],
           "outline_in_m": round(sum(f["in"] * f["l"] for f in faces), 1), "outline_out_m": round(sum(f["out"] * f["l"] for f in faces), 1),
+          "envelope_out_m": ((r.get("stats") or {}).get("floor_outline") or {}).get("outer_face_m"), "rooms_route_out_m": (((r.get("stats") or {}).get("floor_outline") or {}).get("rooms_route") or {}).get("outer_face_m"), "outline_m": ((r.get("stats") or {}).get("floor_outline") or {}).get("perimeter_m"),
           "graph_in_m": round(sum(s[0] * f["l"] for s, f in zip(sides, faces)), 1), "graph_out_m": round(sum(s[1] * f["l"] for s, f in zip(sides, faces)), 1)})
   rows.sort(key=lambda x: (str(x["floor"]), x["page_no"]))
   return {"floors": rows, "closed": sum(1 for x in rows if x["closed"]), "of": len(rows)} if rows else None
@@ -986,6 +987,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     errors, tallies = [], []
     if record:
       steel_by_policy[policy_ready] = []
+      dpc_by_policy[policy_ready] = []
     names = [name for name, _rows in reads]
     acc = OA.accept_case(case["name"], reads, profile, ready_only=policy_ready, decisions=decisions)
     if decisions:
@@ -1231,8 +1233,8 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
 
   if doc.get("wall_faces"):
     wf = doc["wall_faces"]
-    out += [f"**Wall faces** ({wf['closed']} of {wf['of']} plan sheets have walls that close; not part of the hash)", "", "| Page | Floor | Walls | Rooms | Closed | Rooms in the open | Outline with a wall along it (%) | Gaps in the outline (m, of them openings) | Walls no room lies against (m) | Inside, outline (m) | Inside, graph (m) | Outside, outline (m) | Outside, graph (m) |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
-    out += [f"| {x['page_no']} | {x['floor']} | {x['walls']} | {x['rooms']} | {'yes' if x['closed'] else 'no'} | {', '.join(x['open_rooms'])} | {_fmt(x.get('outline_share_pct'))} | {_fmt(x.get('gap_m'))} ({_fmt(x.get('gap_opening_m'))}) | {', '.join(str(u) for u in x.get('unattached') or [])} | {x['outline_in_m']} | {x['graph_in_m']} | {x['outline_out_m']} | {x['graph_out_m']} |" for x in wf["floors"]]
+    out += [f"**Wall faces** ({wf['closed']} of {wf['of']} plan sheets have walls that close; not part of the hash)", "", "| Page | Floor | Walls | Rooms | Closed | Rooms in the open | Outline with a wall along it (%) | Gaps in the outline (m, of them openings) | Walls no room lies against (m) | Inside, outline (m) | Inside, graph (m) | Outside, outline (m) | Outer face, envelope route (m) | Outer face, room route (m) | Outside, graph (m) | Outline (m) |", "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    out += [f"| {x['page_no']} | {x['floor']} | {x['walls']} | {x['rooms']} | {'yes' if x['closed'] else 'no'} | {', '.join(x['open_rooms'])} | {_fmt(x.get('outline_share_pct'))} | {_fmt(x.get('gap_m'))} ({_fmt(x.get('gap_opening_m'))}) | {', '.join(str(u) for u in x.get('unattached') or [])} | {x['outline_in_m']} | {x['graph_in_m']} | {x['outline_out_m']} | {_fmt(x.get('envelope_out_m'))} | {_fmt(x.get('rooms_route_out_m'))} | {x['graph_out_m']} | {_fmt(x.get('outline_m'))} |" for x in wf["floors"]]
     out += [""]
   if doc.get("stage_view"):
     v = doc["stage_view"]
