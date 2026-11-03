@@ -249,7 +249,17 @@ def _symbol(desc: str, cell: list, token: str, ti: int, ri: int, heights: dict, 
   height = round(int(m.group("ft")) * 304.8 + int(m.group("in")) * 25.4, 1) if m else next((v for k, v in heights.items() if k and (k in key or key in k)), None)
   return LegendSymbol(description=desc, name=name, table=ti, row=ri, objects=sorted(cell, key=lambda o: o.index), mounting_height_mm=height, token=token, block=block, inner=inner, ocr=ocr)
 
-def _read_ruled(page, objs: list, tp, rot, ox, oy, wu, hu, heights: dict) -> list:
+def _drawn_columns(cols: list) -> tuple:
+  widths = [cols[i + 1] - cols[i] for i in range(len(cols) - 1)]
+  d = max(range(len(widths)), key=lambda i: widths[i])
+  return (d - 1, d) if d >= 1 else (None, d)
+
+def _drawn_columns(cols: list) -> tuple:
+  widths = [cols[i + 1] - cols[i] for i in range(len(cols) - 1)]
+  d = max(range(len(widths)), key=lambda i: widths[i])
+  return (d - 1, d) if d >= 1 else (None, d)
+
+def _read_ruled(page, objs: list, tp, rot, ox, oy, wu, hu, heights: dict, by_width: bool = False) -> list:
   import time
   started = time.monotonic()
   symbols: list = []
@@ -266,10 +276,16 @@ def _read_ruled(page, objs: list, tp, rot, ox, oy, wu, hu, heights: dict) -> lis
       if "PLAN" in head and "ELEVATION" not in head:
         plan_col = ci
         break
+    desc_col = len(cols) - 2
+    if plan_col is None and by_width:
+      plan_col, desc_col = _drawn_columns(cols)
+    desc_col = len(cols) - 2
+    if plan_col is None and by_width:
+      plan_col, desc_col = _drawn_columns(cols)
     if plan_col is None:
       continue
   
-    x0, x1, dx0, dx1 = cols[plan_col], cols[plan_col + 1], cols[-2], cols[-1]
+    x0, x1, dx0, dx1 = cols[plan_col], cols[plan_col + 1], cols[desc_col], cols[desc_col + 1]
     block = (tb["x0"], rows[0], tb["x1"], rows[-1])
     for ri in range(first, len(rows) - 1):
       y0, y1 = rows[ri], rows[ri + 1]
@@ -458,7 +474,11 @@ def read_legend(page) -> list:
   tp = page.get_textpage()
   heights = _height_table(tp)
   found = _read_ruled(page, objs, tp, rot, ox, oy, wu, hu, heights)
-  return _with_ink(page, _distinct_names(found if found else _read_structured(page, objs, tp, rot, ox, oy, wu, hu, heights)))
+  if not found:
+    found = _read_structured(page, objs, tp, rot, ox, oy, wu, hu, heights)
+  if not found:
+    found = _read_ruled(page, objs, tp, rot, ox, oy, wu, hu, heights, by_width=True)
+  return _with_ink(page, _distinct_names(found))
 
 def _with_ink(page, symbols: list) -> list:
   ink_of = EI.loader(page)

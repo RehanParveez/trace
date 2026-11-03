@@ -47,7 +47,7 @@
   cause: 'not diagnosed; -35.1% (-18.6% before Pack 229): the outline of each floor now takes the named rooms with the walls, so a face counts as outer only when it lies on the real outline, and the two plot-boundary lines (31.1 m, 114 mm, no room against them, listed as WALL_FACES_NO_ROOM) get no plaster; the first floor has a wall along only 73.8% of its outline (12.3 m with no wall read, on the stair, lounge and east sides, where the plan shows rooms and no wall strip), so the walls that are not read have no plaster; the faces missing are the walls the reader did not find, not an outline problem'
   pack: '229'
 - line: CEILING_PLASTER/ALL
-  cause: 'not diagnosed; -27.5%: ceilings of passages and the porch are not in the extent'
+  cause: 'not diagnosed; -27.5%: the ceiling is the area of the rooms read inside the walls (ground 1,234.9 sft, first 958.1 sft). The plans print the covered area of each floor (AREA = 1,466 Sft and 1,060 Sft, 2,526 together) and his false ceiling is 3,024.9 sft, 499 sft more than the whole covered area, so no extent read from the drawing reaches it. CH=11''-0" is printed on 5 ground-floor and 3 first-floor rooms only (not on the kitchen or the baths) and is the same 11 ft each time, so it does not tell which rooms have a false ceiling'
   pack: '170'
   question: '191-C questionnaire: false ceiling and ceiling plaster'
 - line: MAS-DPC/ALL
@@ -66,7 +66,7 @@
   pack: '170'
   question: '191-C questionnaire: passage tile'
 - line: FIN-DADO/ALL
-  cause: '-43.0% (-10.7% before Pack 234R): the tile band of a bath, a W.C and a powder room is 7 ft (2134 mm), the standard of the seed rule; to the ceiling would give -10.7%, but no method of the menu passes the test against his total (the ceiling is 10.7% off, 7 ft is 43.0% off), so it is not adopted and the bill''s own height of the band stays unknown'
+  cause: '-43.0% (-10.7% before Pack 234R): the tile band of a bath, a W.C and a powder room is 7 ft (2134 mm), the standard of the seed rule; to the ceiling would give -10.7%, but no method of the menu passes the test against his total (the ceiling is 10.7% off, 7 ft is 43.0% off), so it is not adopted and the bill''s own height of the band stays unknown. Measured again on 2 Nov 2026 (Pack 244): the walls of the baths and toilets tiled to the 11 ft clear height of the sections give 1,043.3 sft (-10.7%), but the paint, which leaves the tiled wall, falls from 5,538.3 to 5,160.5 sft (-7.2% to -13.5%), so the lines within 10% go from 13 to 12. His bath tile and his paint cannot both be matched with one tile height'
   pack: '234'
   question: '191-C questionnaire: wet rooms and dado'
 - line: FIN-WALL-TILE/ALL
@@ -78,11 +78,11 @@
   pack: '204'
   question: '191-C questionnaire: which faces of the front elevation are tile'
 - line: FIN-SILL-MARBLE/ALL
-  cause: 'not diagnosed; -94.0%: sills are taken for the 5 windows that print a sill of 300 mm or more (13 ft of width, 0.23 m deep = 9.8 sft). Ten of the 15 windows read print a sill under 300 mm (floor-level windows and door-windows) and get none, and the plan reads 15 windows against the bill window area that is 16% larger. The bill gives 163.9 sft for the sills and does not say how long or how deep; the depth is a rule (230 mm), not a figure on the drawing'
+  cause: 'not diagnosed; -94.0%: sills are taken for the 5 windows that print a sill of 300 mm or more (13 ft of width, 0.23 m deep = 9.8 sft). Ten of the 15 windows read print a sill under 300 mm (floor-level windows and door-windows) and get none, and the plan reads 15 windows against the bill window area that is 16% larger. The bill gives 163.9 sft for the sills and does not say how long or how deep; the depth is a rule (230 mm), not a figure on the drawing. The typical sill detail on p.21 prints one dimension (4½ in) and no depth for the marble; a sill under every one of the 17 windows read (84.4 ft of width) at the 9 in of the wall plus that 4½ in would be 94.9 sft (-42.1%), so the detail does not give his figure either'
   pack: '205'
   question: '191-C questionnaire: which windows have a marble sill, and how deep'
 - line: FIN-WATER-STOPPER/ALL
-  cause: 'not diagnosed; -85.5%: the stopper is taken at the doors of the finished baths and toilets that have a door assigned to them (4 doors, 9.5 ft). The bill gives 65.4 rft, about 20 doors of 3 ft, and does not say which doors'
+  cause: 'not diagnosed; -85.5%: the stopper is taken at the doors of the finished baths and toilets that have a door assigned to them (4 doors, 9.5 ft). The bill gives 65.4 rft, about 20 doors of 3 ft, and does not say which doors. The 17 doors read on both floors total 52.2 ft of width, 20% under his 65.4 rft, so a stopper at every door of the house does not reach it either'
   pack: '205'
   question: '191-C questionnaire: where the water stopper is laid'
 - line: FIN-PORCH-TILE/ALL

@@ -48,6 +48,7 @@ from app.modules.drawings_boq.takeoff.prep import project_facts as PF
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
 from app.modules.drawings_boq.takeoff.extract.slab_openings_service import reconcile_slab_openings
+from app.modules.drawings_boq.takeoff.extract.drawing_passes_service import reconcile_drawing_passes
 from app.modules.drawings_boq.takeoff.detail_only.apply import apply_decisions as apply_detail_decisions
 from app.modules.drawings_boq.takeoff.grades import stamp as GS
 from app.modules.drawings_boq.takeoff.printed_service import printed_for_drawings
@@ -520,6 +521,7 @@ class ExtractService:
     touched |= await reconcile_beams(self, org, sheet.drawing_id)
     touched |= await reconcile_slab_openings(self, org, sheet.drawing_id)
     touched |= await apply_detail_decisions(self, org, sheet.drawing_id)
+    touched |= await reconcile_drawing_passes(self, org, sheet.drawing_id)
     await self._sync_register(org, {sheet.id} | touched)
     await self.session.commit()
     out = await self._list(org, sheet)

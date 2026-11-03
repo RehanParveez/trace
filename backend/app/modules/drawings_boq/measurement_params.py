@@ -258,7 +258,7 @@ async def get_rule_drafts(
   session: AsyncSession = Depends(get_db),
 ):
  
-  from app.modules.drawings_boq import rule_drafts as RD
+  from app.modules.drawings_boq.takeoff import rule_drafts as RD
   return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in await RD.list_drafts(session, current_user.active_membership.organization_id)])
 
 @router.post("/rule-book/drafts", response_model=DraftRulesResponse)
@@ -268,7 +268,7 @@ async def import_rule_drafts(
   session: AsyncSession = Depends(get_db),
 ):
   
-  from app.modules.drawings_boq import rule_drafts as RD
+  from app.modules.drawings_boq.takeoff import rule_drafts as RD
   out = await RD.import_drafts(session, current_user.active_membership.organization_id, payload.model_dump())
   await session.commit()
   return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in out])
@@ -281,7 +281,7 @@ async def confirm_rule_draft(
   session: AsyncSession = Depends(get_db),
 ):
 
-  from app.modules.drawings_boq import rule_drafts as RD
+  from app.modules.drawings_boq.takeoff import rule_drafts as RD
   out = await RD.confirm(session, current_user.active_membership.organization_id, current_user.id, draft_id, payload.value)
   await session.commit()
   return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in out])
@@ -293,7 +293,7 @@ async def reject_rule_draft(
   session: AsyncSession = Depends(get_db),
 ):
   
-  from app.modules.drawings_boq import rule_drafts as RD
+  from app.modules.drawings_boq.takeoff import rule_drafts as RD
   out = await RD.reject(session, current_user.active_membership.organization_id, draft_id)
   await session.commit()
   return DraftRulesResponse(drafts=[DraftRuleItem(**d) for d in out])

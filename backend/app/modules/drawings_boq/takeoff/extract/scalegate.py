@@ -54,7 +54,6 @@ def auto_scale_gate(analysis: dict | None) -> tuple:
     return True, None, None
   if agreement == "FLOOR_PLAN_ONLY" and any(n.get("code") == "SCALE_FROM_SAME_FLOOR_PLAN" for n in a.get("notes") or []):
     return True, None, None
-    return True, None, None
   if agreement == "DECLARED_ONLY" and (a.get("declared") or {}).get("not_to_scale"):
     return False, "SCALE_NEEDS_CONFIRMATION", "This sheet prints a scale and also says it is not to be scaled, and no printed dimension confirms the scale. Confirm the scale on the Measure page."
   if agreement == "DECLARED_ONLY" and float(rec.get("trust") or 0) >= MIN_DECLARED_TRUST:

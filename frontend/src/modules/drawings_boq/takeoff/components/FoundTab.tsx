@@ -17,6 +17,7 @@ import { PrintedGradesPanel } from "../grades/components/PrintedGradesPanel";
 import { PrintedNotesPanel } from "../notes/components/PrintedNotesPanel";
 import { IntegrityPanel } from "../integrity/components/IntegrityPanel";
 import { DecisionsPanel } from "../decisions/components/DecisionsPanel";
+import { DrawingPassesPanel } from "../passes/components/DrawingPassesPanel";
 import { ReadingAccuracyPanel } from "../reading_score/components/ReadingAccuracyPanel";
 import { ReadyToAcceptPanel } from "./ReadyToAcceptPanel";
 import { RepeatMarksNotice } from "./RepeatMarksNotice";
@@ -154,6 +155,7 @@ export function FoundTab(p: Props) {
     <>
     {p.drawingId ? <IntegrityPanel drawingId={p.drawingId} version={list.dataUpdatedAt} /> : null}
     {p.drawingId ? <DecisionsPanel drawingId={p.drawingId} canEdit={p.canEdit} version={list.dataUpdatedAt} /> : null}
+    {p.drawingId ? <DrawingPassesPanel drawingId={p.drawingId} canEdit={p.canEdit} version={list.dataUpdatedAt} /> : null}
     <FloorSourcesPanel
       data={floorSources.data}
       loading={floorSources.isLoading}

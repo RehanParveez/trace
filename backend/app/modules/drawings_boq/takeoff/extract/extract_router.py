@@ -31,6 +31,8 @@ from app.modules.drawings_boq.takeoff.proof.schemas import FactsCheckRequest, Fa
 from app.modules.drawings_boq.takeoff.proof.service import ProofService
 from app.modules.drawings_boq.takeoff.extract.typed_memory_schemas import TypedMemoryResponse
 from app.modules.drawings_boq.takeoff.extract.typed_memory_service import TypedMemoryService
+from app.modules.drawings_boq.takeoff.extract.drawing_passes_schemas import DrawingPassesResponse, TankSizeRequest
+from app.modules.drawings_boq.takeoff.extract.drawing_passes_view_service import DrawingPassesService
 
 router = APIRouter()
 
@@ -236,3 +238,15 @@ async def reader_trace(
   drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
 ):
   return await ProofService(session).trace(_org(current_user), drawing_id)
+
+@router.get("/drawings/{drawing_id}/takeoff/passes", response_model=DrawingPassesResponse)
+async def drawing_passes(
+  drawing_id: UUID, current_user: User = Depends(require_permission(_READ)), session: AsyncSession = Depends(get_db),
+):
+  return await DrawingPassesService(session).view(_org(current_user), drawing_id)
+
+@router.put("/drawings/{drawing_id}/takeoff/tank-sizes", response_model=DrawingPassesResponse)
+async def type_tank_size(
+  drawing_id: UUID, payload: TankSizeRequest, current_user: User = Depends(require_permission(_EDIT)), session: AsyncSession = Depends(get_db),
+):
+  return await DrawingPassesService(session).type_tank_size(_org(current_user), current_user.id, drawing_id, payload)

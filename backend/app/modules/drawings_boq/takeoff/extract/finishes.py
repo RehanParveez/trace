@@ -590,7 +590,6 @@ def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None =
         **({"no_room_near": True,"free_wall_class": entry["class"]} if entry else {}), **({"boundary": True} if boundary else {})}
       
     return {"mode": mode, "used": False, "outline": stats, "open_rooms": []}
-    return {"mode": mode, "used": False, "open_rooms": []}
   g = MW.build(ws, usable_rooms(rooms), mm_per_pt, floor, C.WALL_GAP_CLEAR_MAX_MM)
   if not g.closed:
     return {"mode": mode, "used": False, "open_rooms": list(g.open_rooms), "rooms": g.rooms_seen}
