@@ -1,0 +1,76 @@
+- sheet: 1
+  title: GROUND FLOOR PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: GROUND
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 2
+  title: FIRST FLOOR PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: FIRST
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 3
+  title: MUMTY/ROOF PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: ROOF
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 4
+  title: BASEMENT FLOOR PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: BASEMENT
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 5
+  title: APPROVAL SHEET (ELEVATIONS, SECTIONS, FLOOR PLANS AND SCHEDULE OF OPENING ON ONE SHEET)
+  role: PLAN
+  floor: MULTI
+  discipline: ARCHITECTURAL
+  text_type: PARTIAL
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 6
+  title: STRUCTURAL DRAWINGS (PLANS AND DETAILS ON ONE SHEET)
+  role: DETAIL
+  floor: MULTI
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written

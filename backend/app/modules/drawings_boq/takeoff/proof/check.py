@@ -125,6 +125,15 @@ def main(argv: list | None = None) -> int:
     else:
       results.append((f"engine output {case}", True, got[:16]))
 
+  if not args.write_hashes:
+    print("== reading no regression")
+    from app.modules.drawings_boq.takeoff.proof.reading import score as RSC
+    try:
+      ok14, note14 = RSC.gate(args.cases_dir, args.out)
+    except (RuntimeError, ValueError) as e:
+      ok14, note14 = False, str(e)
+    results.append(("reading no regression (gate 14)", ok14, note14))
+
   if not args.no_toggles:
     print("== convention toggles")
     from app.modules.drawings_boq.takeoff.proof import toggles as TG

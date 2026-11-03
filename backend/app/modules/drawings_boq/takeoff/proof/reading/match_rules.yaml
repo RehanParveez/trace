@@ -1,0 +1,21 @@
+point:
+  max_offset_in: 9
+  max_offset_view_share: 0.01
+line:
+  min_overlap: 0.8
+  max_offset_thickness_share: 0.5
+area:
+  min_iou: 0.8
+fact:
+  length_in: 0.5
+  ratio: 0.001
+wilson_z: 1.96
+profile:
+  raster_share: 0.6
+  raster_max_words: 20
+  outlined_max_words: 40
+  outlined_min_segments: 500
+  mixed_image_share: 0.2
+  damaged_pass_rate: 0.3
+  damaged_min_tokens: 30
+  partial_loose_rows: 100

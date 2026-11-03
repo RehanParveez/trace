@@ -44,6 +44,7 @@ from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
 from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import read_status as RS
 from app.modules.drawings_boq.takeoff.prep import project_facts as PF
 from app.modules.drawings_boq.takeoff.extract import accept_guard as AG
 from app.modules.drawings_boq.takeoff.extract.beam_overlap_service import reconcile_beams
@@ -584,7 +585,8 @@ class ExtractService:
           row.decision, row.decided_at = "REJECTED", _now()
       else:
         updated += 1
-        
+      if row.decision == "NEW" and ((c.facts or {}).get(FS.SET_ASIDE) or {}).get("by") == RS.ROLE_BY:
+        row.decision, row.decided_at = "REJECTED", _now()
       chosen = (row.facts or {}).get(CF.CHOICE_KEY) if row.decision == "NEW" else None
       row.category, row.kind, row.quantity_mode, row.label, row.tag = c.category, c.kind, c.quantity_mode, c.label[:200], c.tag
       row.geometry, row.params, row.missing = c.geometry, c.params, c.missing

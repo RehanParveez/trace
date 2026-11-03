@@ -1,0 +1,688 @@
+- sheet: 1
+  title: COMPLETE WORKING DRAWINGS SET
+  role: COVER
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 2
+  title: STRUCTURAL DRAWINGS
+  role: COVER
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 3
+  title: STRUCTURAL GENERAL NOTES
+  role: NOTES
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 4
+  sheet_no: A-01
+  title: GROUND FLOOR BEAM PLAN & SLAB
+  role: PLAN
+  plan_kind: SLAB
+  floor: GROUND
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 5
+  sheet_no: A-01
+  title: GROUND FLOOR BEAM X-SECTION
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 6
+  sheet_no: A-01
+  title: FIRST FLOOR BEAM PLAN & SLAB
+  role: PLAN
+  plan_kind: SLAB
+  floor: FIRST
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 7
+  sheet_no: A-01
+  title: FIRST FLOOR BEAM X-SECTION
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 8
+  sheet_no: A-01
+  title: FOUNDATION DETAIL
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 9
+  sheet_no: A-01
+  title: SEPTIC TANK, O.H.W. TANK AND UGW TANK DETAILS
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 10
+  sheet_no: A-01
+  title: R.C.C COLUMN FOOTING X-SECTION (PORCH COLUMN F1)
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 11
+  sheet_no: A-01
+  title: R.C.C COLUMN FOOTING X-SECTION (M-GATE)
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 12
+  sheet_no: A-01
+  title: R.C.C STAIR SECTION
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 13
+  sheet_no: A-01
+  title: STANDARD DOOR / WINDOW LINTELS
+  role: SCHEDULE
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 14
+  title: WORKING DRAWINGS
+  role: COVER
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 15
+  sheet_no: A-01
+  title: GROUND FLOOR PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: GROUND
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 16
+  sheet_no: A-01
+  title: FIRST FLOOR PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: FIRST
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 17
+  sheet_no: A-01
+  title: SECTION A-A
+  role: SECTION
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 18
+  sheet_no: A-01
+  title: FRONT ELEVATION
+  role: ELEVATION
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 19
+  sheet_no: A-01
+  title: BOUNDARY WALL & COLUMNS LAYOUT
+  role: PLAN
+  plan_kind: SITE
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 20
+  sheet_no: A-01
+  title: LAYOUT PLAN (FOUNDATION)
+  role: PLAN
+  plan_kind: FOOTING_LAYOUT
+  floor: GROUND
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 21
+  sheet_no: A-01
+  title: FOUNDATION DETAIL
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 22
+  sheet_no: A-01
+  title: GROUND FLOOR WORKING PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: GROUND
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 23
+  sheet_no: A-01
+  title: FIRST FLOOR WORKING PLAN
+  role: PLAN
+  plan_kind: FLOOR
+  floor: FIRST
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 24
+  sheet_no: A-01
+  title: GROUND FLOOR DOOR & WINDOW LAYOUT
+  role: PLAN
+  plan_kind: FLOOR
+  floor: GROUND
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 25
+  sheet_no: A-01
+  title: FIRST FLOOR DOOR & WINDOW LAYOUT
+  role: PLAN
+  plan_kind: FLOOR
+  floor: FIRST
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 26
+  sheet_no: A-01
+  title: GROUND FLOOR DOOR & WINDOW SCHEDULE
+  role: PLAN
+  plan_kind: FLOOR
+  floor: GROUND
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 27
+  sheet_no: A-01
+  title: FIRST FLOOR DOOR & WINDOW SCHEDULE
+  role: PLAN
+  plan_kind: FLOOR
+  floor: FIRST
+  discipline: ARCHITECTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 28
+  title: ELECTRICAL DRAWINGS
+  role: COVER
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 29
+  sheet_no: A-01
+  title: GROUND FLOOR CEILING LIGHTS & D.B
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 30
+  sheet_no: A-01
+  title: FIRST FLOOR CEILING LIGHTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 31
+  sheet_no: A-01
+  title: GROUND FLOOR CEILING FANS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 32
+  sheet_no: A-01
+  title: FIRST FLOOR CEILING FANS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 33
+  sheet_no: A-01
+  title: GROUND FLOOR WALL LIGHTS & SWITCHED BOARD
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: PARTIAL
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 34
+  sheet_no: A-01
+  title: FIRST FLOOR WALL LIGHTS & SWITCHES BOARDS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 35
+  sheet_no: A-01
+  title: GROUND FLOOR T.V & MIRROR LIGHTS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 36
+  sheet_no: A-01
+  title: FIRST FLOOR T.V & MIRROR LIGHTS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 37
+  sheet_no: A-01
+  title: GROUND FLOOR A.C POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 38
+  sheet_no: A-01
+  title: FIRST FLOOR A.C POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 39
+  sheet_no: A-01
+  title: GROUND FLOOR CCTV CAMERAS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 40
+  sheet_no: A-01
+  title: FIRST FLOOR CCTV CAMERAS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 41
+  title: ELECTRIC PLANS LEGEND & MOUNTING HEIGHTS
+  role: LEGEND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 42
+  title: PLUMBING DRAWINGS
+  role: COVER
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 43
+  sheet_no: A-01
+  title: GROUND FLOOR PLUMBING FIXTURES
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 44
+  sheet_no: A-01
+  title: FIRST FLOOR PLUMBING FIXTURES
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 45
+  sheet_no: A-01
+  title: GROUND FLOOR PLUMBING DUCTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 46
+  sheet_no: A-01
+  title: FIRST FLOOR PLUMBING DUCTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 47
+  sheet_no: A-01
+  title: GROUND FLOOR MAIN SEWERAGE LINE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 48
+  sheet_no: A-01
+  title: GROUND FLOOR SEWERAGE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 49
+  sheet_no: A-01
+  title: FIRST FLOOR SEWERAGE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 50
+  sheet_no: A-01
+  title: FIRST FLOOR DRAINAGE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 51
+  title: TYPICAL GULLY TRAP & MANHOLE PLAN, PIPES & SECTIONAL DETAILS
+  role: DETAIL
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 52
+  title: MISCELLANEOUS DETAILS
+  role: DETAIL
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 53
+  title: GENERAL NOTES AND LEGEND
+  role: NOTES
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written

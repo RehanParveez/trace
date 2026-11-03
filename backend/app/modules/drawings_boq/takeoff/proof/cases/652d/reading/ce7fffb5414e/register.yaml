@@ -1,0 +1,290 @@
+- sheet: 1
+  title: MEP DRAWINGS
+  role: COVER
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 2
+  title: ELECTRICAL DRAWINGS
+  role: COVER
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 3
+  title: ELECTRIC PLANS LEGEND & MOUNTING HEIGHTS
+  role: LEGEND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 4
+  title: GROUND FLOOR CEILING LIGHTS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 5
+  title: FIRST FLOOR CEILING LIGHTS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 6
+  title: GROUND FLOOR CEILING FANS & EXHAUST POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 7
+  title: FIRST FLOOR CEILING FANS & EXHAUST POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 8
+  title: GROUND FLOOR WALLS LIGHTS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 9
+  title: FIRST FLOOR WALLS LIGHTS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 10
+  title: GROUND FLOOR SWITCHES & BOARDS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 11
+  title: FIRST FLOOR SWITCHES & BOARDS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 12
+  title: GROUND FLOOR A.C POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 13
+  title: FIRST FLOOR A.C POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 14
+  title: GROUND FLOOR T.V & SWITCHES POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 15
+  title: FIRST FLOOR T.V & SWITCHES POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 16
+  title: GROUND FLOOR CAMERAS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 17
+  title: FIRST FLOOR CAMERAS POINTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 18
+  title: PLUMBING DRAWINGS
+  role: COVER
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 19
+  title: GROUND FLOOR PLUMBING FIXTURES & DUCTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: PLUMBING
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 20
+  title: FIRST FLOOR PLUMBING FIXTURES & DUCTS
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: PLUMBING
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 21
+  title: GROUND FLOOR SEWERAGE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: PLUMBING
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 22
+  title: FIRST FLOOR SEWERAGE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: PLUMBING
+  text_type: PARTIAL
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 23
+  title: ROOF TOP SEWERAGE PLAN
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: ROOF
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written

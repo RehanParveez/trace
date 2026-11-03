@@ -1,0 +1,155 @@
+- sheet: 1
+  sheet_no: A-02
+  title: ELECTRIC DRAWING WORKING
+  role: COVER
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 2
+  sheet_no: A-02
+  title: PLUMBING AND ELECTRICAL DESIGN DRAWING (TITLE PAGE)
+  role: COVER
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 3
+  sheet_no: A-02
+  title: GENERAL & WIRING NOTES
+  role: NOTES
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 4
+  sheet_no: A-02
+  title: MAZZANINE FLOOR PLAN AND GROUND FLOOR PLAN (ELECTRICAL)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MULTI
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 5
+  sheet_no: A-02
+  title: FIRST FLOOR PLAN AND ROOF PLAN (ELECTRICAL)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MULTI
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 6
+  sheet_no: A-02
+  title: ELECTRICAL SYMBOLS LEGEND
+  role: LEGEND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 7
+  sheet_no: A-02
+  title: MECHANICAL DRAWING WORKING
+  role: COVER
+  discipline: PLUMBING
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 8
+  sheet_no: A-02
+  title: GENERAL NOTES AND LEGEND
+  role: NOTES
+  discipline: PLUMBING
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 9
+  sheet_no: A-02
+  title: MAZZANINE FLOOR PLAN AND GROUND FLOOR PLAN (WASTE PIPES)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MULTI
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 10
+  sheet_no: A-02
+  title: FIRST FLOOR PLAN AND ROOF PLAN (WASTE AND RAIN WATER)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MULTI
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 11
+  sheet_no: A-02
+  title: MAZZANINE FLOOR PLAN AND GROUND FLOOR PLAN (WATER SUPPLY)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MULTI
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 12
+  sheet_no: A-02
+  title: FIRST FLOOR PLAN AND ROOF PLAN (WATER SUPPLY)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MULTI
+  discipline: PLUMBING
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written

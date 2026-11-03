@@ -372,6 +372,16 @@ def flag(name: str) -> bool:
   return bool(RB.pick(name, FLAGS.get(name)))
 
 PER_DRAWING = ("wall_height_basis", "opening_rules_basis", "tie_band_single_count", "brick_net_of_lintels")
+EXPECTED_CLASSES = {
+  "PLAN/COLUMN_LAYOUT": ("GRID", "COLUMN"),
+  "PLAN/FOOTING_LAYOUT": ("GRID", "FOOTING_STRIP", "FOOTING_PAD"),
+  "PLAN/FOUNDATION": ("FOOTING_STRIP", "PLINTH_BEAM"),
+  "PLAN/FLOOR": ("WALL", "ROOM", "DOOR", "WINDOW"),
+  "PLAN/SLAB": ("BEAM", "SLAB_PANEL", "SLAB_BAR_CALLOUT"),
+  "PLAN/OVERLAY": ("ELECTRICAL_POINT", "DISTRIBUTION_BOARD", "PLUMBING_FIXTURE", "PIPE_RUN", "DRAIN_POINT"),
+  "SCHEDULE": ("COLUMN_SCHEDULE_CELL",),
+  "NOTES": ("NOTE_FACT",),
+}
 NOT_READ = ("footing_below_ground_mm", "stair_waist_mm", "lintel_bearing_mm", "beam_formwork_mm_per_rft", "lintel_formwork_mm_per_rft", "brick_length_centre_line")
 DEPTHS = {"basement_dig_mm": "BASEMENT_DIG_MM", "trench_depth_mm": "TRENCH_DEPTH_MM", "fill_depth_mm": "FILL_DEPTH_MM"}
 BOUNDS = {"mm": (1.0, 30000.0), "mm per rft": (1.0, 2000.0), "%": (0.0, 100.0), "kg/m2": (0.0, 200.0), "m2": (0.0, 20.0), "cft per m3": (30.0, 40.0), "sft per m2": (10.0, 11.5),

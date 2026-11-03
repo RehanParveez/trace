@@ -1,0 +1,121 @@
+- sheet: 1
+  title: ELECTRICAL DRAWINGS
+  role: COVER
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 2
+  sheet_no: A-01
+  title: ELECTRICAL LEGENDS AND SYMBOLS
+  role: LEGEND
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 3
+  sheet_no: A-01
+  title: GROUND FLOOR ELECTRICAL WORKING
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 4
+  sheet_no: A-01
+  title: FIRST FLOOR (ELECTRICAL)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: PARTIAL
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 5
+  sheet_no: A-01
+  title: GROUND FLOOR (AC POINTS)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 6
+  sheet_no: A-01
+  title: FIRST FLOOR (AC POINTS)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 7
+  sheet_no: A-01
+  title: GROUND FLOOR (LCD & CAMERAS POINTS)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: GROUND
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 8
+  sheet_no: A-01
+  title: FIRST FLOOR (LCD & CAMERAS POINTS)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: FIRST
+  discipline: ELECTRICAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 9
+  sheet_no: A-01
+  title: MUMTY FLOOR (ELECTRICAL)
+  role: PLAN
+  plan_kind: OVERLAY
+  floor: MUMTY
+  discipline: ELECTRICAL
+  text_type: OUTLINED
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written

@@ -1,0 +1,100 @@
+- sheet: 1
+  sheet_no: A-01
+  title: GROUND FLOOR SLAB & BEAM PLAN
+  role: PLAN
+  plan_kind: SLAB
+  floor: GROUND
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 2
+  sheet_no: A-01
+  title: GROUND FLOOR BEAM X-SECTION
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 3
+  sheet_no: A-01
+  title: FIRST FLOOR SLAB & BEAM PLAN
+  role: PLAN
+  plan_kind: SLAB
+  floor: FIRST
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 4
+  sheet_no: A-01
+  title: FIRST FLOOR BEAM X-SECTION
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 5
+  sheet_no: A-01
+  title: U.G.W. TANK DETAIL
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 6
+  sheet_no: A-01
+  title: SEPTIC TANK DETAIL AND O.H.W. TANK DETAIL
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 7
+  sheet_no: A-01
+  title: R.C.C. COLUMN FOOTING X-SECTION (PORCH COLUMN F1)
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: TEXT
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written
+- sheet: 8
+  sheet_no: A-01
+  title: FOUNDATION DETAIL
+  role: DETAIL
+  discipline: STRUCTURAL
+  text_type: PARTIAL
+  truth:
+    by: claude_eye
+    checked: false
+    source: page_image_110dpi
+    date: '2026-11-03'
+    note: role, plan kind, floor, discipline, sheet number and title read on the page image; text_type is the profile's measurement, not an eye check; scale fields not written

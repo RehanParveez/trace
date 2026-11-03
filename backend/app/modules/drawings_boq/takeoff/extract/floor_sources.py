@@ -7,6 +7,7 @@ from app.modules.drawings_boq.takeoff.extract import config as C
 
 SET_ASIDE = "set_aside"         
 SET_ASIDE_BY = "FLOOR_CHOICE"
+ROLE_BY = "ROLE_UNEXPECTED"
 LAYOUT_BY = "LAYOUT_CHOICE"
 MARK_BY = "MARK_CHOICE"
 OPTION_BY = "OPTION_CHOICE"
@@ -36,7 +37,7 @@ def lift_assumed(cands: list, work_item: str, note) -> int:
 
 def is_set_aside(c) -> bool:
   """Rejected because the floor's other sheet was chosen, or because the other sheet holds the same item (a combine)."""
-  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY, OPTION_BY, ASSUMED_BY, COPY_BY, TANK_BY)
+  return ((c.facts or {}).get(SET_ASIDE) or {}).get("by") in (SET_ASIDE_BY, CP.BY, LAYOUT_BY, MARK_BY, OPTION_BY, ASSUMED_BY, COPY_BY, TANK_BY, ROLE_BY)
 
 def _source(sheet: dict, floor: str, from_plans: bool) -> dict:
   title = sheet["title"] or {}
@@ -140,7 +141,7 @@ def set_aside_floors(rows: list, sheet_floor: str | None) -> dict:
     fl = FO.level_of(c) or sheet_floor
     if c.category != "SLAB" and fl and not BP.is_electrical(c):
       by.setdefault(fl, []).append(c)
-  return {fl: dict(cs[0].facts[SET_ASIDE]) for fl, cs in by.items() if all(c.decision == "REJECTED" and is_set_aside(c) for c in cs)}
+  return {fl: dict(cs[0].facts[SET_ASIDE]) for fl, cs in by.items() if all(c.decision == "REJECTED" and is_set_aside(c) and c.facts[SET_ASIDE].get("by") != ROLE_BY for c in cs)}
 
 def opening_mark(c) -> str:
   f = c.facts or {}

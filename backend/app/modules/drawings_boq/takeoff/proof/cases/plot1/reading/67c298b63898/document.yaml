@@ -1,0 +1,8 @@
+alias: plot1
+split: dev
+case: plot1
+sha256: 67c298b63898208242ab2b1bc25fc68b58519e14cacbf90b2c7356bfebcc8484
+pages: 6
+consultant: null
+producer: null
+units: FT_IN

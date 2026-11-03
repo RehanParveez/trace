@@ -40,6 +40,7 @@ from app.modules.drawings_boq.takeoff.extract import drainage as DR
 from app.modules.drawings_boq.takeoff.extract import piles_rafts as PRF
 from app.modules.drawings_boq.takeoff.extract import electrical as EL
 from app.modules.drawings_boq.takeoff.extract import sheet_identity as SID
+from app.modules.drawings_boq.takeoff.extract import read_status as RS
 from app.modules.drawings_boq.takeoff.extract import elevation as ELV
 from app.modules.drawings_boq.takeoff.extract import fittings as FIT
 from app.modules.drawings_boq.takeoff.extract import opening_check as OK
@@ -2524,6 +2525,7 @@ def run_extraction(index, mm_per_pt: float, *, frame: dict | None = None, **kw) 
   _pdf_type_notes(res, pdf)
   _with_electrical(res, electrical, kw)
   _scan_reading_notes(res, scan)
+  RS.apply(res, identity, pdf)
   return res
 
 def _run_extraction_framed(index, mm_per_pt: float, *, frame: dict | None = None, **kw) -> Extraction:
