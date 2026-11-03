@@ -117,3 +117,24 @@
 - line: DOOR_FRAMES_RFT/ALL
   cause: 'not diagnosed; +10.1% (was -2.5% before Pack 157): two doors of size 762 that were dropped by a key collision are counted now, so the frames grew by 41 rft; the QS may count them differently'
   question: '191-C questionnaire: door frames'
+- line: FIN-CC-TILE/ALL
+  cause: 'not measured: the C.C tile in front of the main gate is on the site plan; Trace has no line for it'
+  pack: '256'
+- line: FIN-STAIR-MARBLE/ALL
+  cause: 'not measured: stair treads and risers from the stair detail; no reader yet'
+  pack: '256'
+- line: FIN-KITCHEN-SLAB/ALL
+  cause: 'not measured: the kitchen slab is on the furniture plan; no reader yet'
+  pack: '256'
+- line: FIN-VANITY-MARBLE/ALL
+  cause: 'not measured: the vanities are on the furniture plans; no reader yet'
+  pack: '256'
+- line: JOI-KITCHEN-CABINET/ALL
+  cause: 'not measured: the cabinets are on the furniture plan; no reader yet'
+  pack: '256'
+- line: JOI-WARDROBES/ALL
+  cause: 'not measured: the wardrobes are on the bedroom furniture plans; no reader yet'
+  pack: '256'
+- line: FIN-GLASS-RAILING/ALL
+  cause: 'not measured: the railing runs on the stair, terrace and void edges, from sections and plans; no reader yet'
+  pack: '256'

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import re
 import math
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
 
@@ -20,6 +21,12 @@ MAX_OVERLAP = 0.3
 CELL_PT = 60.0
 EMPTY_MAX_WORDS = 2
 EMPTY_MAX_DRAWN = 20
+PLAN_TITLE_WORDS = ("LAYOUT", "PLAN")
+MARK_WORD = re.compile(r"^[A-Z]{1,3}-?\d{1,2}[A-Z]?$")
+SHEET_NUMBER = re.compile(r"^S-?\d{1,2}$")
+PARTIAL_MIN_UNCOVERED = 15
+PLAN_SUBJECT_WORDS = ("COLUMN", "FOOTING", "FOUNDATION")
+PARTIAL_MAX_MARKS = 3
 
 def glyph_signal(rings: list) -> dict:
   rows: dict = {}
@@ -42,6 +49,28 @@ def outlined_signal(rings: list, stats: dict) -> dict | None:
   if sig["glyphs"] >= SUSPECT_GLYPHS and sig["run"] >= SUSPECT_RUN and sig["glyphs"] >= GLYPHS_PER_CHAR * chars:
     return sig
   return None
+
+def partial_outline_signal(rings: list, words: list) -> dict | None:
+  upper = {w.text.upper() for w in words}
+  if not all(any(t in u for u in upper) for t in PLAN_TITLE_WORDS):
+    return None
+  if not any(t in u for t in PLAN_SUBJECT_WORDS for u in upper):
+    return None
+  
+  marks = [w for w in words if MARK_WORD.match(w.text.strip().upper()) and not SHEET_NUMBER.match(w.text.strip().upper())]
+  if len(marks) > PARTIAL_MAX_MARKS:
+    return None
+  
+  glyphs = [r for r in rings if r.fill and GLYPH_MIN_W_PT <= r.bbox[2] - r.bbox[0] <= GLYPH_MAX_W_PT and GLYPH_MIN_H_PT <= r.bbox[3] - r.bbox[1] <= GLYPH_MAX_H_PT]
+  loose = new_words([_Box(r.bbox) for r in glyphs], words)
+  if len(loose) < PARTIAL_MIN_UNCOVERED:
+    return None
+  return {"partial_outline": True, "marks_in_text": len(marks), "uncovered_glyphs": len(loose)}
+
+class _Box:
+  def __init__(self, bbox: tuple):
+    self.x0, self.y0, self.x1, self.y1 = bbox
+    self.text = "x"
 
 def image_cover(images: list, cropbox: tuple) -> float:
   l, b, r, t = cropbox
@@ -88,11 +117,12 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
   bare = None
   if not scanned and not suspect and cover < ocr_layer.MIN_COVER and len(out.words) <= EMPTY_MAX_WORDS and len(out.segs) // 5 >= SUSPECT_GLYPHS:
     bare = {"drawn_segments": len(out.segs) // 5}
+  partial = None if scanned or suspect or bare else partial_outline_signal(out.rings, out.words)
   added = 0
   error = None
 
-  if suspect or bare:
-    info.update(suspect or bare)
+  if suspect or bare or partial:
+    info.update(suspect or bare or partial)
     if not ENABLED:
       error = "DISABLED"
     elif not ocr_layer.available():

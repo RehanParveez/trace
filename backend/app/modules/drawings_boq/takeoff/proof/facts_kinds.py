@@ -2,9 +2,10 @@ from __future__ import annotations
 import re
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.proof import known_facts as KF
+from app.modules.drawings_boq.takeoff.proof import closure_checks as CC
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _live, _sheet_floor
 
-KINDS = ("OPENING_COUNT", "WALL_TOTAL", "LEGEND_COUNT", "BEAM_SIZE")
+KINDS = ("OPENING_COUNT", "WALL_TOTAL", "LEGEND_COUNT", "BEAM_SIZE", *CC.CHECKS)
 COPIES = ("PLAN", "KEY_PLAN")
 WALL_BANDS_MM = {4.5: (90.0, 130.0), 9.0: (200.0, 260.0)}
 WALL_TOL_PCT = 3.0
@@ -138,7 +139,7 @@ def beam_size(read: list, f: dict) -> dict:
     return _result(text, KF.PASS, str(f["printed"]), shown, f"{f['mark']} read as {', '.join(shown)}: as printed.", pages)
   return _result(text, KF.FAIL, str(f["printed"]), shown, f"{f['mark']} was read as {', '.join(shown)}; {f['printed']} is printed.", pages)
 
-CHECKS = {"OPENING_COUNT": opening_count, "WALL_TOTAL": wall_total, "LEGEND_COUNT": legend_count, "BEAM_SIZE": beam_size}
+CHECKS = {"OPENING_COUNT": opening_count, "WALL_TOTAL": wall_total, "LEGEND_COUNT": legend_count, "BEAM_SIZE": beam_size, **CC.CHECKS}
 
 def check(read: list, f: dict, index: int) -> dict:
   kind = str(f.get("kind") or "").upper()

@@ -5,13 +5,13 @@ from decimal import Decimal
 from app.modules.drawings_boq.takeoff.prep.extract import RawPage
 import math
 import time
-from app.modules.drawings_boq.takeoff.prep import census, dimensions, facts as drawing_facts, projections as projection_reader, schedules, views as sheet_views
+from app.modules.drawings_boq.takeoff.prep import census, closure_facts, dimensions, facts as drawing_facts, projections as projection_reader, schedules, views as sheet_views
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_scale_candidates, find_units_hint, has_not_to_scale, paper_size, title_hints, to_visual
 from app.modules.drawings_boq.takeoff.prep import units as UN
 from app.modules.drawings_boq.takeoff.prep import room_witness as RW
 from app.modules.drawings_boq.takeoff.orientation import carry as orient_carry, frame as orient_frame, turn as orient_turn
 
-ANALYSIS_VERSION = 51
+ANALYSIS_VERSION = 54
 PT_MM = 25.4 / 72.0
 FLOOR_PAPER_TOL = 0.01
 FLOOR_DIMS_TOL = 0.03
@@ -312,6 +312,7 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
     "tags_top": [{"tag": g["tag"], "in_drawing": g["in_drawing"], "count": g["count"]} for g in tags[:12]],
     "user_unit": user_unit, "text_source": "OCR" if raw.stats.get("text_source") == "OCR" and raw.words else "TEXT",
     "facts": drawing_facts.read_facts(lines, raw.words, scanned=raw.stats.get("text_source") == "OCR"),
+    "closure": closure_facts.read(lines, raw.words),
     "schedule": schedules.read_schedules(raw.words),
     "projections": _projections(lines, raw),
     "views": sheet_views.summary(found_views),
@@ -322,6 +323,13 @@ def _analyze_upright(raw: RawPage, user_unit: float = 1.0, budget_s: float = 30.
     meta["opening_labels"] = OHT.sheet_labels(raw.words)
   except Exception:
     meta["opening_labels_reader"] = "FAILED"
+  try:
+    from app.modules.drawings_boq.takeoff.extract import foundation_runs as FR
+    runs_doc = FR.read(index, raw.words)
+    if runs_doc:
+      meta["foundation_runs"] = runs_doc
+  except Exception:
+    meta["foundation_runs_reader"] = "FAILED"
   pdf = raw.stats.get("pdf_type")
   if pdf:
     meta["pdf_type"] = pdf

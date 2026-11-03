@@ -4,19 +4,47 @@ beam B1 12"x13½"
 beam B2 9"x14"
 beam B3 15"x9"
 beam B4 18"x9"
+brickwork mortar mixes
 column C1 9 x 18 in
 column C2 9 x 18 in
+column footing F1
+column footing F2
+column footing F3
+column footing F4
+do not scale note
+floor build-up first
+floor build-up ground
+floor build-up porch roof
+floor build-up roof
+floor build-up terrace
 footing F1 5 x 4 ft
 footing F2 6 x 4 ft
 footing F3 5 x 4.5 ft
 footing F4 6 x 4.5 ft
+foundation plan outline
 legend cat six cable x3 on the First floor
 legend cat six cable x3 on the Ground floor
 legend ceiling fan x3 on the First floor
 legend ceiling fan x6 on the Ground floor
 legend smoke detector x1 on the First floor
 legend smoke detector x3 on the Ground floor
+levels above the road
+lintel table
+plaster mixes
+printed area of the First floor plan
+printed area of the Ground floor plan
+printed conflict: roof level
+roof porch roof waterproofing
+roof roof waterproofing
+roof terrace waterproofing
 step table W1 (4 steps)
 step table W2 (4 steps)
 step table W3 (4 steps)
 step table W4 (4 steps)
+termite treatment scope
+vertical DPC on exterior walls
+wall footing W1
+wall footing W2
+wall footing W3
+wall footing W4
+window sill detail

@@ -38,7 +38,7 @@ def _row(l: dict) -> dict:
   return {k: l.get(k) for k in ("key", "unit", "trace", "qs", "diff_pct_qs", "status", "class")}
 
 def level_view(lines: list) -> dict:
-  judged = [l for l in lines if l.get("qs") is not None]
+  judged = [l for l in lines if l.get("qs") is not None and l.get("kind") != "ALLOWANCE"]
   both = [l for l in judged if l.get("trace") is not None and l.get("diff_pct_qs") is not None]
   errs = [abs(l["diff_pct_qs"]) for l in both]
   within_5 = sum(1 for e in errs if e <= LIMIT_PCT)
@@ -48,7 +48,7 @@ def level_view(lines: list) -> dict:
     "median_abs_error_pct": round(statistics.median(errs), 2) if errs else None}}
 
 def over_limit(lines: list, limit: float = LIMIT_PCT) -> list:
-  return [l["key"] for l in lines if l.get("qs") is not None and (l.get("trace") is None or l.get("diff_pct_qs") is None or abs(l["diff_pct_qs"]) > limit)]
+  return [l["key"] for l in lines if l.get("qs") is not None and l.get("kind") != "ALLOWANCE" and (l.get("trace") is None or l.get("diff_pct_qs") is None or abs(l["diff_pct_qs"]) > limit)]
 
 def residual_check(lines: list, residuals: list, limit: float = LIMIT_PCT) -> dict:
   over = over_limit(lines, limit)

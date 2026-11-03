@@ -124,7 +124,7 @@ def roof_levels(items: list) -> dict | None:
         
   out: dict = {}
   for what in ("parapet", "stand"):
-    rows = [{"height_mm": h, "sheet": sheet, "pages": [r["page"] for r in rs], "roof": _ft(rs[0]["roof_mm"]), "top": _ft(rs[0]["top_mm"])}
+    rows = [{"height_mm": h, "sheet": sheet, "pages": [r["page"] for r in rs], "roof": _ft(rs[0]["roof_mm"]), "top": _ft(rs[0]["top_mm"]), "roof_mm": rs[0]["roof_mm"], "top_mm": rs[0]["top_mm"]}
       for (w, sheet), table in reads.items() if w == what for h, rs in table.items()]
     rows.sort(key=lambda r: (SHEET_ORDER.index(r["sheet"]) if r["sheet"] in SHEET_ORDER else len(SHEET_ORDER), -len(r["pages"]), -r["height_mm"]))
     if rows:

@@ -21,6 +21,9 @@ rules:
   - {key: tank_bottom_slab_mm, value: 203.2, unit: "mm", cls: JUDGEMENT}
   - {key: tank_wall_height_mm, value: 1524.0, unit: "mm", cls: JUDGEMENT}
   - {key: boundary_wall_thickness_mm, value: 114.3, unit: "mm", cls: JUDGEMENT}
+  - {key: excavation.working_space_mm, value: 0.0, unit: "mm", cls: JUDGEMENT}
+  - {key: site.natural_ground_mm, value: 0.0, unit: "mm", cls: JUDGEMENT}
+  - {key: column_footing.pcc_offset_mm, value: 76.2, unit: "mm", cls: JUDGEMENT}
   - {key: tank_base_formwork, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: beam_formwork_mm_per_rft, value: 228.6, unit: "mm per rft", cls: JUDGEMENT}
   - {key: lintel_formwork_mm_per_rft, value: 152.4, unit: "mm per rft", cls: JUDGEMENT}
@@ -44,6 +47,9 @@ rules:
   - {key: derived_props, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: page_role_vote, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: plaster_courtyard_external, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: facts.structure_governs_concrete, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: facts.sections_govern_levels, value: 1.0, unit: null, cls: JUDGEMENT}
+  - {key: boundary.footings_in_foundation_brick, value: 0.0, unit: null, cls: JUDGEMENT}
   - {key: brick_opening_min_m2, value: 0.1, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
   - {key: rcc_wall_opening_min_m2, value: 0.4, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
   - {key: plaster_opening_min_m2, value: 0.5, unit: "m2", cls: STANDARD, source: "common practice, clause not verified"}
@@ -55,6 +61,8 @@ rules:
   - {key: tie_band_single_count, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: brick_net_of_lintels, value: 1.0, unit: null, cls: JUDGEMENT}
   - {key: opening_rules_basis, value: "SHEET", unit: null, cls: JUDGEMENT}
+  - {key: termite.scope, value: "FLOOR_AND_BEDS", unit: null, cls: JUDGEMENT}
+  - {key: plaster.external_height_basis, value: "PER_FLOOR", unit: null, cls: JUDGEMENT}
 
   - {key: working_space_qs_mm, value: 304.8, unit: "mm", cls: JUDGEMENT}
   - {key: props_step_mm, value: 1000.0, unit: "mm", cls: JUDGEMENT}

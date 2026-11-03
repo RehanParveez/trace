@@ -478,7 +478,7 @@ def paint_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str |
       facts["area_m2"] = round(area, 3)
       before = plaster_area(open_off(gross), side)
       facts["before_deductions_m2"], facts["after_deductions_m2"] = round(before - less if before is not None else 0.0, 3), round(area, 3)
-    notes = [C.note("PAINT_FROM_PLASTER"), C.note("PLASTER_OUTER_BY_OUTLINE")]
+    notes = [C.note("PAINT_FROM_PLASTER"), C.note("PLASTER_OUTER_BY_OUTLINE"), *defaulted_notes(facts["conventions"])]
     if area is None:
       notes.append(C.note("PLASTER_HEIGHT_FROM_WALLS"))
     if area is not None and area <= 0.0:
@@ -548,7 +548,7 @@ def plaster_faces(walls: list, mm_per_pt: float) -> list:
     outer = _is_outer(w, box, mm_per_pt, turn)
     h = (w.facts or {}).get("clear_height_mm") or (w.params or {}).get("height_mm")
     sides = (w.facts or {}).get("face_sides")
-    face = {"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, "o": round(_opening_m2(w.params), 3), "in": sides["in"] if sides else 1 if outer else 2,
+    face = {"l": round(float(w.facts["length_cc_m"]), 3), "h": float(h) if h else None, **({"h_out": float(w.facts["outer_face_height_mm"])} if (w.facts or {}).get("outer_face_height_mm") else {}), "o": round(_opening_m2(w.params), 3), "in": sides["in"] if sides else 1 if outer else 2,
       "out": sides["out"] if sides else 1 if outer else 0}
 
     if OPR.is1200():
@@ -590,6 +590,7 @@ def attach_faces(walls: list, rooms: list, mm_per_pt: float, floor: str | None =
         **({"no_room_near": True,"free_wall_class": entry["class"]} if entry else {}), **({"boundary": True} if boundary else {})}
       
     return {"mode": mode, "used": False, "outline": stats, "open_rooms": []}
+  
   g = MW.build(ws, usable_rooms(rooms), mm_per_pt, floor, C.WALL_GAP_CLEAR_MAX_MM)
   if not g.closed:
     return {"mode": mode, "used": False, "open_rooms": list(g.open_rooms), "rooms": g.rooms_seen}
@@ -615,7 +616,10 @@ def conventions_applied(flag: str) -> list:
   out = [{"key": flag, "value": bool(QS.flag(flag))}, {"key": "plaster_opening_min_m2", "value": OPR.plaster_min_m2()}, {"key": "opening_rules_basis", "value": QS.choice("opening_rules_basis")}]
   if OPR.is1200():
     out.append({"key": "plaster_opening_one_face_max_m2", "value": OPR.plaster_one_face_max_m2()})
-  return out
+  return [{**c, "defaulted": QS.defaulted(c["key"])} for c in out]
+
+def defaulted_notes(conventions: list) -> list:
+  return [C.note("RULE_DEFAULTED", rule=c["key"]) for c in conventions if c.get("defaulted")]
 
 def plaster_area(faces: list, side: str, typed_height_mm: float | None = None) -> float | None:
   """Net plastered area in m2 for the faces on one side, or None while a wall that needs a height has none."""
@@ -624,7 +628,7 @@ def plaster_area(faces: list, side: str, typed_height_mm: float | None = None) -
     n = float(r.get(side) or 0.0)
     if n <= 0:
       continue
-    h = r.get("h") or typed_height_mm
+    h = (r.get("h_out") if side == "out" else None) or r.get("h") or typed_height_mm
     if not h:
       return None
     if "o_in" in r:
@@ -669,7 +673,7 @@ def plaster_candidates(walls: list, mm_per_pt: float, ctx: dict, level_hint: str
     if area is not None:
       facts["area_m2"] = round(area, 3)
       facts["before_deductions_m2"], facts["after_deductions_m2"] = round(plaster_area(open_off(gross), side) or 0.0, 3), round(area, 3)
-    notes = [C.note("PLASTER_FROM_WALLS"), C.note("PLASTER_OUTER_BY_OUTLINE")]
+    notes = [C.note("PLASTER_FROM_WALLS"), C.note("PLASTER_OUTER_BY_OUTLINE"), *defaulted_notes(facts["conventions"])]
     if item == PLASTER_OUTSIDE:
       notes.append(C.note("PLASTER_OUTSIDE_SEPARATE"))
     if area is None:

@@ -1950,6 +1950,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   hint = find_units_hint(notes_lines)
   heights = M.height_hints(notes_lines, hint)
   sheet_heights = QR.less_beams(_with_floor_height(heights, floor_heights, level_hint), bool(lowest_level), _ft_in)
+  sheet_heights = QR.slab_top_to_soffit(sheet_heights, floor_heights, level_hint, spec_facts, _ft_in)
   shapes = M.member_shapes(index.rings, mm_per_pt)
   openings = S.opening_lookup(schedule)
   plan_kind = role_info.get("plan_kind")
@@ -2143,6 +2144,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
         res.stats["roof_walls"] = RW.apply(walls, rooms, mm_per_pt, floor_heights, level_hint, lambda fl: _with_floor_height({}, floor_heights, fl).get("WALL"), C.note, _height_notes, _status, spec_facts)
       if with_finishes or lowest_level:
         faced = FN.attach_faces([*walls, *QR.counted_completion(completion)], rooms, mm_per_pt, level_hint, bool(lowest_level) or str(level_hint or "").upper() == "GROUND")
+        res.stats["outer_face_heights"] = QR.set_outer_face_heights([*walls, *QR.counted_completion(completion)], floor_heights, level_hint, spec_facts)
         if faced.get("used"):
           res.notes.append(C.note("WALL_FACES_FROM_GRAPH", rooms=faced.get("rooms"), spaces=faced.get("faces")))
         elif faced.get("mode") == "GRAPH":

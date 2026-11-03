@@ -33,8 +33,8 @@ from app.modules.drawings_boq.takeoff import register as RGS
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 
 SIZE_TOL_PCT = 2.0
-MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH"
-STATUS_RANK = {MATCH: 0, NEAR: 1, DIFF: 2, NO_TRUTH: 3, MISSING: 4, EXTRA: 4}
+MATCH, NEAR, DIFF, MISSING, EXTRA, NO_TRUTH, ALLOWANCE = "MATCH", "NEAR", "DIFF", "MISSING", "EXTRA", "NO_TRUTH", "ALLOWANCE"
+STATUS_RANK = {MATCH: 0, NEAR: 1, DIFF: 2, NO_TRUTH: 3, MISSING: 4, EXTRA: 4, ALLOWANCE: 3}
 CLASS_RANK = {"DRAWING": 0, "CONVENTION": 1, "NEEDS_DECISION": 2, "QS_ERROR": 3}
 DETAIL_SHEET_CATEGORIES = ("WALL", "ROOM", "DOOR", "WINDOW")      
 PLAN_CATEGORIES = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR", "COLUMN", "BEAM", "SLAB", "FOOTING")
@@ -200,12 +200,16 @@ def score_lines(expected: list, lines: list) -> tuple:
         why = f"unit: the bill says {unit or '?'}, Trace measured {', '.join(sorted({l['unit'] for l in got}))}"
     notes = "; ".join(e["note"] for e in es if e["note"])
     key = es[0]["key"] if len(es) == 1 else (fam or es[0]["key"])
-    if trace is None:
+    kind = "ALLOWANCE" if any(e.get("kind") == "ALLOWANCE" for e in es) else "QS_ERROR" if any(e.get("kind") == "QS_ERROR" for e in es) else "MEASURED"
+    if kind == "ALLOWANCE":
+      status = ALLOWANCE
+      notes = "; ".join(x for x in (notes, *(e.get("basis") or "" for e in es)) if x)
+    elif trace is None:
       status = NO_TRUTH if drawing is None and not why else MISSING
     else:
       status = _status(trace, drawing, tol)
     out.append({"key": key, "item": es[0]["item"] if len(es) == 1 else KEY_LABEL.get(fam, es[0]["item"]), "unit": unit, "trace": trace, "qs": qs, "drawing": drawing,
-      "diff_pct_qs": _pct(trace, qs), "diff_pct_drawing": _pct(trace, drawing), "status": status, "class": cls, "tolerance_pct": tol, "entries": len(es),
+      "diff_pct_qs": _pct(trace, qs), "diff_pct_drawing": _pct(trace, drawing), "status": status, "class": cls, "kind": kind, "tolerance_pct": tol, "entries": len(es),
       "why": "; ".join(x for x in (why, notes if status not in (MATCH,) else "") if x)[:300]})
 
   extra = []
@@ -240,14 +244,15 @@ def extra_lines(extra: list) -> list:
     "tolerance_pct": None, "entries": 0, "why": f"{g['rows']} ledger rows on {', '.join(sorted(g['floors']))}; no expected line"} for g in sorted(by.values(), key=lambda x: x["key"])]
 
 def summarise(lines: list) -> dict:
-  both = [l for l in lines if l["trace"] is not None and l["qs"] is not None]
-  dr = [l for l in lines if l["trace"] is not None and l["drawing"] is not None]
+  scored = [l for l in lines if l.get("kind") != "ALLOWANCE"]
+  both = [l for l in scored if l["trace"] is not None and l["qs"] is not None]
+  dr = [l for l in scored if l["trace"] is not None and l["drawing"] is not None]
 
   counts: dict = {}
   for l in lines:
     counts[l["status"]] = counts.get(l["status"], 0) + 1
   return {"lines": len(both), "within_10": sum(1 for l in both if abs(l["diff_pct_qs"]) <= 10.0), "within_5": sum(1 for l in both if abs(l["diff_pct_qs"]) <= 5.0),
-    "expected_lines": sum(1 for l in lines if l["status"] != EXTRA), "with_a_number": sum(1 for l in lines if l["trace"] is not None and l["status"] != EXTRA),
+    "expected_lines": sum(1 for l in scored if l["status"] != EXTRA), "with_a_number": sum(1 for l in scored if l["trace"] is not None and l["status"] != EXTRA), "allowances": len(lines) - len(scored),
     "against_drawing": len(dr), "within_10_drawing": sum(1 for l in dr if abs(l["diff_pct_drawing"]) <= 10.0), "within_5_drawing": sum(1 for l in dr if abs(l["diff_pct_drawing"]) <= 5.0),
     "status": dict(sorted(counts.items()))}
 
@@ -1156,6 +1161,9 @@ def render_md(doc: dict, baseline: dict | None = None, timings: dict | None = No
     f"{s['against_drawing']} with a drawing figure, {s['within_10_drawing']} within 10% and {s['within_5_drawing']} within 5% of it.", "",
     f"**Two figures for D1.** Within 10% of the QS as written: {s['within_10']} of {s['lines']}. Within 2% of the signed figure: {d1_signed(doc)} of {s['lines']} ({doc['levels']['corrections']['signed']} corrections signed). "
     f"Floor stages within 10%: {stage_count(doc)}.", ""]
+  allowed = [l for l in doc["lines"] if l.get("kind") == "ALLOWANCE"]
+  if allowed:
+    out += [f"**Allowances** ({len(allowed)}; shown beside the bill, never scored as a match): " + "; ".join(f"{l['item']} {l['qs']:g} {l['unit']}" for l in allowed), ""]
   if doc.get("rules"):
     r = doc["rules"]
     out += [f"**Run under the rules of the case:** {r['file']}, {r['count']} rules ({', '.join(r['keys'])}). {r['note']}", ""]

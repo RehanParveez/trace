@@ -28,6 +28,9 @@ CONVENTIONS = {
   "tank_top_slab_mm": 152.4,
   "tank_bottom_slab_mm": 203.2,
   "boundary_wall_thickness_mm": 114.3,
+  "excavation.working_space_mm": 0.0,
+  "site.natural_ground_mm": 0.0,
+  "column_footing.pcc_offset_mm": 76.2,
   "beam_formwork_mm_per_rft": 228.6,
   "lintel_formwork_mm_per_rft": 152.4,
 }
@@ -44,21 +47,36 @@ FLAGS = {
   "derived_props": True,
   "page_role_vote": True,
   "plaster_courtyard_external": True,
+  "facts.structure_governs_concrete": True,
+  "facts.sections_govern_levels": True,
+  "boundary.footings_in_foundation_brick": False,
 }
 
 CHOICES = {
   "wall_height_basis": "BETWEEN_BEAMS",
   "opening_rules_basis": "SHEET",
+  "termite.scope": "FLOOR_AND_BEDS",
+  "plaster.external_height_basis": "PER_FLOOR",
 }
+
 CHOICE_OPTIONS = {
   "wall_height_basis": {
     "FLOOR_TO_FLOOR": "Floor to floor, as printed on the building sections (the QS's answer S5). A beam or band inside the wall is not taken off the height.",
     "CLEAR": "Clear storey height printed on the building sections (floor to the soffit of the slab above).",
     "ABOVE_PLINTH_BEAM": "Floor to floor less the depth of the plinth beam, on the lowest storey only: the wall stands from the top of the plinth beam (the QS's own worksheet, 9.25 ft in the basement). Needs the QS to confirm.",
+    "SLAB_TOP_TO_SOFFIT": "From the slab top to the soffit above, gross: the clear height printed for the floor (finished floor to soffit) plus the floor build-up the specification prints above the slab (plaster, concrete bed and ballast; the sand filling under them is not counted). No beam is taken off the height. Read from the drawing, nothing typed.",
     "BETWEEN_BEAMS": "As ABOVE_PLINTH_BEAM, and also less the web of the roof beam below the slab on every storey (the beam depth less the slab, as the beam depth includes the slab, N1): the wall stands between the two beams (the QS's answer R1, 26 Oct; it is where every drawing starts).",
   },
+  "plaster.external_height_basis": {
+    "PER_FLOOR": "The outer face of each floor is as high as that floor's wall (the standard reading).",
+    "ROAD_TO_PARAPET_TOP": "The outer faces run from the road level to the top of the parapet, split by floor: the lowest floor from the road to the next floor level, each floor above from its own level to the next, the top floor to the parapet top. The levels are the ones the plans and sections print. Needs the parapet top to be read.",
+  },
+  "termite.scope": {
+    "FLOOR_AND_BEDS": "The ground-floor area plus the bottoms of every wall trench and column pit (the standard IS 1200 reading of treatment on the bed; assumed).",
+    "FLOOR_BEDS_AND_SIDES": "As FLOOR_AND_BEDS, and also the side slopes of every trench and pit, since the structural notes say beds and side slopes.",
+  },
   "opening_rules_basis": {
-    "SHEET": "One rule for every work item, as the QS's sheet has it: an opening of 0.5 m2 or more comes off, whatever the item; a smaller one does not. Plaster and paint: off every face, no reveals.",
+    "SHEET":"One rule for every work item, as the QS's sheet has it: an opening of 0.5 m2 or more comes off, whatever the item; a smaller one does not. Plaster and paint: off every face, no reveals.",
     "IS1200": "A rule for each work item (IS 1200, assumed): brickwork from 0.1 m2; an RCC wall from 0.4 m2 (the formwork rule, so concrete and formwork agree); plaster and paint from 0.5 m2, one face only up to 3 m2, every face above 3 m2 with the reveals added. Damp proof course unchanged: door widths come off.",
   },
 }
@@ -345,6 +363,9 @@ def choice(name: str):
     return decided[name]
   return RB.pick(name, CHOICES.get(name))
 
+def defaulted(key: str, scope: dict | None = None) -> bool:
+  return RB.resolve(key, scope, record=False).origin == RB.CODE_DEFAULT_ASSUMED
+
 def flag(name: str) -> bool:
   if name == "wall_height_floor_to_floor":
     return choice("wall_height_basis") != "CLEAR"
@@ -415,6 +436,8 @@ LABELS = {
   "tie_band_single_count": ("Decided for each drawing", "Tie band at lintel level"),
   "brick_net_of_lintels": ("Decided for each drawing", "Brick and the lintels over its openings"),
   "opening_rules_basis": ("Decided for each drawing", "Which openings come off each work item"),
+  "termite.scope": ("How the QS counts", "Termite treatment covers"),
+  "plaster.external_height_basis": ("How the QS counts", "Height of the external plaster and paint"),
 }
 
 def code_default(key: str):

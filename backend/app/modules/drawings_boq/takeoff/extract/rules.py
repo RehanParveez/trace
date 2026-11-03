@@ -3,6 +3,7 @@ from app.engine.measure import readings as QS
 from app.engine.measure import proposed as PR
 from app.modules.drawings_boq.takeoff.model import levels as LV
 from app.modules.drawings_boq.takeoff.extract import config as C
+from app.modules.drawings_boq.takeoff.extract import spec_facts as SF
 
 BASEMENT = "BASEMENT"
 STOREYS_ABOVE_GROUND = ("GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH")
@@ -42,6 +43,62 @@ def less_beams(heights: dict, lowest_level: bool, ft_in) -> dict:
   mm = float(entry["mm"]) - total
   text = f"{entry['text']}, less the " + " and the ".join(f"{name} {ft_in(v)}" for name, v in cuts) + f" ({basis.lower().replace('_', ' ')}), {ft_in(mm)}"
   return {**heights, "WALL": {**entry, "mm": mm, "text": text, "less_beams": [{"name": n, "mm": v} for n, v in cuts]}}
+
+SLAB_TOP_TO_SOFFIT = "SLAB_TOP_TO_SOFFIT"
+BELOW_THE_SLAB_LAYERS = ("sand filling",)
+
+def build_up_above_slab_mm(spec: dict | None, level_hint: str | None) -> float | None:
+  head = SF.floor_set(spec, level_hint)
+  if not head:
+    return None
+  total = sum(float(lay["value_mm"]) for name, lay in (head.get("layers") or {}).items() if name not in BELOW_THE_SLAB_LAYERS and lay.get("value_mm"))
+  return total or None
+
+def slab_top_to_soffit(heights: dict, floors: dict | None, level_hint: str | None, spec: dict | None, ft_in) -> dict:
+  if QS.choice("wall_height_basis") != SLAB_TOP_TO_SOFFIT:
+    return heights
+  clear = ((floors or {}).get(level_hint or "") or {}).get("clear_mm")
+  up = build_up_above_slab_mm(spec, level_hint)
+  if not clear or not up:
+    return heights
+  mm = float(clear) + up
+  old = (heights or {}).get("WALL") or {}
+  text = f"clear storey height {ft_in(float(clear))} plus the floor build-up {ft_in(up)} above the slab, slab top to soffit {ft_in(mm)}"
+  return {**heights, "WALL": {**old, "mm": mm, "text": text, "basis": "SECTION", "slab_top_to_soffit": {"clear_mm": float(clear), "build_up_mm": round(up, 1)}}}
+
+ROAD_TO_PARAPET_TOP = "ROAD_TO_PARAPET_TOP"
+ABOVE_GROUND_FLOORS = ("GROUND", "MEZZANINE", "FIRST", "SECOND", "THIRD", "FOURTH")
+
+def outer_face_height_mm(floors: dict | None, level_hint: str | None, spec: dict | None) -> float | None:
+  if QS.choice("plaster.external_height_basis") != ROAD_TO_PARAPET_TOP or str(level_hint or "").upper() not in ABOVE_GROUND_FLOORS:
+    return None
+  levels = sorted((float(v["level_mm"]), fl) for fl, v in (floors or {}).items() if fl in ABOVE_GROUND_FLOORS and v.get("level_mm") is not None)
+  names = [fl for _lv, fl in levels]
+  if str(level_hint).upper() not in names:
+    return None
+  
+  i = names.index(str(level_hint).upper())
+  below = 0.0 if i == 0 else levels[i][0]
+  if i + 1 < len(levels):
+    above = levels[i + 1][0]
+  else:
+    top = (((spec or {}).get("roof_levels") or {}).get("parapet") or {}).get("top_mm")
+    if not top:
+      return None
+    above = float(top)
+  return above - below if above > below else None
+
+def set_outer_face_heights(walls: list, floors: dict | None, level_hint: str | None, spec: dict | None) -> int:
+  h = outer_face_height_mm(floors, level_hint, spec)
+  if not h:
+    return 0
+  n = 0
+  for w in walls:
+    sides = (w.facts or {}).get("face_sides")
+    if sides and float(sides.get("out") or 0.0) > 0.0:
+      w.facts = {**w.facts, "outer_face_height_mm": round(h, 1)}
+      n += 1
+  return n
 
 def column_run(floors: dict | None, ft_in) -> dict | None:
   parts = [(fl, LV.height(floors, LV.FLOOR_TO_FLOOR, fl)) for fl in STOREYS_ABOVE_GROUND if fl in (floors or {})]

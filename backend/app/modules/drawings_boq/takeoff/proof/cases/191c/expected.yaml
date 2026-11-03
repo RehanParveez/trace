@@ -382,4 +382,144 @@
   drawing: null
   class: DRAWING
   tolerance_pct: 10.0
-  note: 'QS count (the workbook gives no drawing count). Electric finishes · Telephone socket 8 and TV socket 8. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+   note: 'QS count (the workbook gives no drawing count). Electric finishes · Telephone socket 8 and TV socket 8. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+- key: FIN-CC-TILE/ALL
+  item: C.C Tile (12x12) front side of main gate
+  unit: sft
+  qs: 105.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Tile Work · row 16. From the site plan; Trace has no line for it."
+  family: FIN-CC-TILE
+- key: FIN-STAIR-MARBLE/ALL
+  item: Stair Marble
+  unit: sft
+  qs: 173.3398
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Marble Work · row 18. Treads and risers of the stair; from the stair detail and sections."
+  family: FIN-STAIR-MARBLE
+- key: FIN-KITCHEN-SLAB/ALL
+  item: Kitchen Slab Marble
+  unit: sft
+  qs: 27.73
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Marble Work · row 19. From the kitchen furniture plan."
+  family: FIN-KITCHEN-SLAB
+- key: FIN-VANITY-MARBLE/ALL
+  item: Bath Vanity Marble
+  unit: sft
+  qs: 25.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Marble Work · row 20. A round 25.0: five vanities at 5 sft each is the likely method; the furniture plan decides."
+  family: FIN-VANITY-MARBLE
+- key: JOI-KITCHEN-CABINET/ALL
+  item: Kitchen Cabinet
+  unit: sft
+  qs: 59.73795
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Marble Work · row 24. From the kitchen furniture plan."
+  family: JOI-KITCHEN-CABINET
+- key: JOI-WARDROBES/ALL
+  item: Wardrobes
+  unit: sft
+  qs: 304.5
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Marble Work · row 25. From the bedroom furniture plans."
+  family: JOI-WARDROBES
+- key: FIN-GLASS-RAILING/ALL
+  item: Glass Railing (stair, terrace and look below)
+  unit: rft
+  qs: 82.285
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  note: "BOQ Finishing work · Marble Work · row 27. From the sections and the stair plan."
+  family: FIN-GLASS-RAILING
+- key: MET-MAIN-GATE/ALL
+  item: Main Gate
+  unit: kg
+  qs: 137.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a whole-kilogram weight typed in the bill; no drawing prints a weight or a section for it (assumed an allowance: the QS can show a method and it becomes MEASURED)"
+  note: "BOQ Finishing work · Marble Work · row 30. "
+  family: MET-MAIN-GATE
+- key: MET-SHEET-DOOR/ALL
+  item: MS Sheet Door
+  unit: kg
+  qs: 51.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a whole-kilogram weight typed in the bill; no drawing prints a weight or a section for it (assumed an allowance: the QS can show a method and it becomes MEASURED)"
+  note: "BOQ Finishing work · Marble Work · row 31. "
+  family: MET-SHEET-DOOR
+- key: MET-GATE-GRATING/ALL
+  item: MS Grating in Gate
+  unit: kg
+  qs: 40.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a whole-kilogram weight typed in the bill; no drawing prints a weight or a section for it (assumed an allowance: the QS can show a method and it becomes MEASURED)"
+  note: "BOQ Finishing work · Marble Work · row 32. "
+  family: MET-GATE-GRATING
+- key: MET-OHWT-COVER/ALL
+  item: OHWT Cover
+  unit: kg
+  qs: 14.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a whole-kilogram weight typed in the bill; no drawing prints a weight or a section for it (assumed an allowance: the QS can show a method and it becomes MEASURED)"
+  note: "BOQ Finishing work · Marble Work · row 33. "
+  family: MET-OHWT-COVER
+- key: MET-SEPTIC-COVER/ALL
+  item: Septic Tank Cover
+  unit: kg
+  qs: 14.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a whole-kilogram weight typed in the bill; no drawing prints a weight or a section for it (assumed an allowance: the QS can show a method and it becomes MEASURED)"
+  note: "BOQ Finishing work · Marble Work · row 34. "
+  family: MET-SEPTIC-COVER
+- key: MET-UGT-COVER/ALL
+  item: UG Tank Cover
+  unit: kg
+  qs: 17.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a whole-kilogram weight typed in the bill; no drawing prints a weight or a section for it (assumed an allowance: the QS can show a method and it becomes MEASURED)"
+  note: "BOQ Finishing work · Marble Work · row 35. "
+  family: MET-UGT-COVER
+- key: LABOUR-GREY/ALL
+  item: Labour cost (grey structure)
+  unit: sft
+  qs: 500.0
+  drawing: null
+  class: CONVENTION
+  tolerance_pct: 10.0
+  kind: ALLOWANCE
+  basis: "a labour lump priced on 500 sft, which is no covered area of the house (assumed an allowance)"
+  note: "BOQ Grey Structure work · Grey Structure · row 32. "
+  family: LABOUR-GREY

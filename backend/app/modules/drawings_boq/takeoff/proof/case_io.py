@@ -8,6 +8,7 @@ from app.modules.drawings_boq.takeoff.proof import case as CASE
 from app.modules.drawings_boq.lab.aliases import bill_key
 
 CASE_CLASSES = ("DRAWING", "QS_ERROR", "CONVENTION", "NEEDS_DECISION")
+LINE_KINDS = ("MEASURED", "ALLOWANCE", "QS_ERROR")
 FORMATS = ("WORKSHEET_MAP", "SUMMARY")
 FACT_KINDS = ("COUNT_BY_MARK", "COUNT_BY_LABEL", "MEMBER_SIZE", "LEVEL", "ROOM_SIZE", "AREA", "SLAB_THICKNESS", "BEAM_SIZE", "TANK_SIZE", "ELEC_COUNT",
   "WALL_RUN", "FOOTING_SIZE", "COLUMN_SIZE", "STEP_TABLE")
@@ -41,6 +42,10 @@ def load_case(folder: str) -> dict:
   out["facts"] = load_facts(os.path.join(folder, "facts.yaml"))
   out["decisions"] = load_decisions(folder)
   out["corrections"] = load_corrections(folder)
+  fixed = {c["line"] for c in out["corrections"]}
+  for e in out["expected"]:
+    if e["kind"] == "QS_ERROR" and e["key"] not in fixed:
+      raise ValueError(f"{folder}: the line {e['key']} is a QS_ERROR and has no entry in qs_corrections.yaml; a QS error needs evidence and a signature there.")
   out["residuals"] = load_residuals(folder)
   out["conventions"] = load_conventions(folder)
   return out
@@ -179,6 +184,11 @@ def load_expected(path: str) -> list:
     if cls not in CASE_CLASSES:
       raise ValueError(f"{path}, {key}: class must be one of {', '.join(CASE_CLASSES)}.")
 
+    kind = str(e.get("kind") or "MEASURED").upper()
+    if kind not in LINE_KINDS:
+      raise ValueError(f"{path}, {key}: kind must be one of {', '.join(LINE_KINDS)}.")
+    if kind != "MEASURED" and not str(e.get("basis") or "").strip():
+      raise ValueError(f"{path}, {key}: a {kind} line says why in `basis` (an allowance is a lump sum, a typed round figure or a figure the QS cannot explain).")
     qs = e.get("qs")
     drawing = e.get("drawing")
     for name, v in (("qs", qs), ("drawing", drawing)):
@@ -189,7 +199,7 @@ def load_expected(path: str) -> list:
     
     tol = e.get("tolerance_pct")
     out.append({"key": key, "item": str(e.get("item") or ""), "unit": str(e.get("unit") or ""), "qs": None if qs is None else float(qs), "drawing": None if drawing is None else float(drawing),
-      "class": cls, "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "faces": e.get("faces"), "floor": e.get("floor"), "grade": e.get("grade"),
+      "class": cls, "kind": kind, "basis": str(e.get("basis") or ""), "tolerance_pct": None if tol is None else float(tol), "note": str(e.get("note") or ""), "family": e.get("family"), "families": [str(f) for f in (e.get("families") or [])], "faces": e.get("faces"), "floor": e.get("floor"), "grade": e.get("grade"),
       "match": [str(w).lower() for w in (e.get("match") or [])]})
   return out
 

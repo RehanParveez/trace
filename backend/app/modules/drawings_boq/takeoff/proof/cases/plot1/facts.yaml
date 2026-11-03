@@ -53,3 +53,4 @@
 - {kind: OPENING_COUNT, floor: ROOF, mark: W2, count: 2, copy: KEY_PLAN, source: {pdf: Islamabad_Plot_1.pdf, page: 5, text: "W2 printed 2 time(s) on the roof key plan"}}
 - {kind: OPENING_COUNT, floor: ROOF, mark: W3, count: 1, copy: KEY_PLAN, source: {pdf: Islamabad_Plot_1.pdf, page: 5, text: "W3 printed 1 time(s) on the roof key plan"}}
 - {kind: OPENING_COUNT, floor: ROOF, mark: V1, count: 1, copy: KEY_PLAN, source: {pdf: Islamabad_Plot_1.pdf, page: 5, text: "V1 printed 1 time(s) on the roof key plan"}}
+- {kind: FACT_CONFLICT, about: SLAB_THICKNESS, values_in: [5, 6], source: {pdf: Islamabad_Plot_1.pdf, page: 6, text: "all slabs are 5 in thick (structural notes); architectural section prints 6 in thick R.c.c slab on page 5"}, status: TO_CHECK}

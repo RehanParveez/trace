@@ -21,7 +21,8 @@ def _groups() -> list:
       "methods": [{"label": EXTENT_TEXT[m], "value": m} for m in EXTENT_MODES]})
   out.append({"id": "wall_height", "question": "Height of a brick wall", "key": "wall_height_basis", "scope": {},
     "methods": [{"label": "floor to floor, as printed on the sections", "value": "FLOOR_TO_FLOOR"}, {"label": "clear storey height, floor to the soffit of the slab above", "value": "CLEAR"},
-      {"label": "floor to floor less the plinth beam, on the lowest storey", "value": "ABOVE_PLINTH_BEAM"}, {"label": "also less the web of the roof beam below the slab, on every storey", "value": "BETWEEN_BEAMS"}]})
+      {"label": "floor to floor less the plinth beam, on the lowest storey", "value": "ABOVE_PLINTH_BEAM"}, {"label": "also less the web of the roof beam below the slab, on every storey", "value": "BETWEEN_BEAMS"},
+      {"label": "slab top to soffit, gross: the printed clear height plus the floor build-up above the slab", "value": "SLAB_TOP_TO_SOFFIT"}]})
   out.append({"id": "beam_depth", "question": "Depth of a beam", "key": "beam_depth_includes_slab", "scope": {},
     "methods": [{"label": "the printed depth includes the slab (the web is taken below the slab)", "value": 1.0}, {"label": "the printed depth is the web, below the slab", "value": 0.0}]})
   out.append({"id": "brick_lintels", "question": "Brick at a lintel", "key": "brick_net_of_lintels", "scope": {},

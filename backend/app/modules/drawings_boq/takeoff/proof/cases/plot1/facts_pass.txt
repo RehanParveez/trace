@@ -52,4 +52,5 @@ opening W4 x2 on the First floor (plan)
 opening W4 x2 on the Ground floor (key plan)
 opening W4 x2 on the Ground floor (plan)
 opening W4 x3 on the First floor (key plan)
+printed conflict: slab thickness
 step table brick foundation under a 9 in wall (3 steps)
