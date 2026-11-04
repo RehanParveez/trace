@@ -6,6 +6,13 @@ from app.core.database import get_db
 from app.dependencies.permissions import require_permission
 from app.modules.drawings_boq.finish_schedule.schemas import BulkReviewRequest, BulkReviewResponse, ConfirmImportRequest, ScheduleImportResponse
 from app.modules.drawings_boq.rebar.rebar_service import RebarService
+from app.modules.drawings_boq.rebar.bbs_router import router as bbs_router
+from app.modules.drawings_boq.rebar.bbs_match_router import router as bbs_match_router
+from app.modules.drawings_boq.rebar.bbs_expect_router import router as bbs_expect_router
+from app.modules.drawings_boq.rebar.bbs_crosscheck_router import router as bbs_crosscheck_router
+from app.modules.drawings_boq.rebar.bbs_report_router import router as bbs_report_router
+from app.modules.drawings_boq.rebar.bbs_steel_router import router as bbs_steel_router
+from app.modules.drawings_boq.rebar.bbs_steel_boq_router import router as bbs_steel_boq_router
 from app.modules.drawings_boq.schemas import (
   BarMarkResponse, BarSizeCreateRequest, BarSizeResponse, RebarConfirmResponse, RebarImportResponse, RebarScheduleRowResponse,
   RebarScheduleRowUpdateRequest, RebarShapeCreateRequest, RebarShapeResponse, RebarSummaryResponse,
@@ -15,6 +22,13 @@ from app.modules.identity.models import User
 from pydantic import BaseModel, Field
 
 router = APIRouter(tags=["Reinforcement"])
+router.include_router(bbs_router)
+router.include_router(bbs_match_router)
+router.include_router(bbs_expect_router)
+router.include_router(bbs_crosscheck_router)
+router.include_router(bbs_report_router)
+router.include_router(bbs_steel_router)
+router.include_router(bbs_steel_boq_router)
 
 class RebarFromPdfRequest(BaseModel):
   drawing_id: UUID

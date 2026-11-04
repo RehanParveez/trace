@@ -133,6 +133,11 @@ def main(argv: list | None = None) -> int:
     except (RuntimeError, ValueError) as e:
       ok14, note14 = False, str(e)
     results.append(("reading no regression (gate 14)", ok14, note14))
+    print("== bar schedule audit")
+    from app.modules.drawings_boq.takeoff.proof import bbs_audit as BAU
+    for name in BAU.audit_cases():
+      ok15, note15 = BAU.gate_case(name, args.cases_dir)
+      results.append((f"bbs audit {name} (gate 15)", ok15, note15))
 
   if not args.no_toggles:
     print("== convention toggles")

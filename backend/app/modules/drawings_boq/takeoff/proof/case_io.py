@@ -235,10 +235,17 @@ def find_files(case: dict, files_dir: str | None) -> tuple:
     found[name] = p
   return found, problems
 
-def list_cases(root: str = HERE) -> list:
+AUDIT_KIND = "BBS_AUDIT"
+
+def is_audit_case(folder: str) -> bool:
+  path = os.path.join(folder, "case.yaml")
+  return os.path.isfile(path) and (_yaml(path) or {}).get("kind") == AUDIT_KIND
+
+def list_cases(root: str = HERE, audit: bool = False) -> list:
   if not os.path.isdir(root):
     return []
-  return sorted(d for d in os.listdir(root) if os.path.isfile(os.path.join(root, d, "case.yaml")))
+  names = sorted(d for d in os.listdir(root) if os.path.isfile(os.path.join(root, d, "case.yaml")))
+  return [n for n in names if audit or not is_audit_case(os.path.join(root, n))]
 
 def _summary_header(ws):
   for r in range(1, 40):

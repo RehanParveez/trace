@@ -1,0 +1,30 @@
+bbs_floor_map:
+  COLUMNS (SUB-STRUCTURE COLUMNS): [GROUND]
+  COLUMNS (GROUND FLOOR): [GROUND]
+  COLUMNS (FIRST FLOOR): [FIRST]
+  COLUMNS (MUMTY FLOOR): [ROOF]
+  BEAMS (G.F): [FIRST]
+  BEAMS (F.F): [ROOF]
+  BEAMS (M.F): [ROOF]
+  SLAB (G.F): [FIRST]
+  SLAB (M.F): [ROOF]
+
+stock_length_ft: null
+tie_zones: ZONES
+curtail_extras: true
+
+floor_heights_ft:
+  GROUND: 10.5
+  FIRST: 10.5
+  ROOF: 6.5
+member_inputs:
+  FOOTING:F1:
+    strip_length_ft: 396
+    width_in: 48
+    depth_in: 12
+    main_bar: 4
+    main_s_in: 6
+    dist_bar: 3
+    dist_s_in: 6
+  BEAM:B1:
+    span_ft: 21.42

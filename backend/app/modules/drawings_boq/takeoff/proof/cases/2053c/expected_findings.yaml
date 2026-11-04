@@ -1,0 +1,103 @@
+# The 17 findings of Build File B (section "What I checked and how") that the audit must raise on the bar schedule of Plot 30, Street 8, DHA Phase III.
+# Each raise names a code, a class, a member and a floor. NO KILOGRAMS appear here: a weight is the audit's result, never its expectation.
+# `class` may be a list (any of them is right). `count` is the least number of findings with that code, member and floor. `member: "*"` means any member.
+# `floor` is the floor of the finding's sheet under decisions.yaml (bbs_floor_map); null means the sheet is not on a floor (footings, plinth beam, lintels, parapet, tanks).
+# `gap` marks an item the audit does not raise as the build file says. It is reported on every run and the gate fails when the item starts to match (a stale gap).
+findings:
+  - item: 1
+    title: 'PC-1 at roof: 10-#6 billed, S-05 prints 4-#4; ten #6 cannot fit a 9 in column'
+    raises:
+      - {code: DIA_MISMATCH, class: ERROR, member: PC-1, floor: ROOF}
+      - {code: COUNT_MISMATCH, class: ERROR, member: PC-1, floor: ROOF}
+      - {code: BARS_DO_NOT_FIT, class: ERROR, member: PC-1, floor: ROOF}
+  - item: 2
+    title: 'C-7 at first floor billed; S-05 blank, S-07 has no column on grid A'
+    raises:
+      - {code: FLOOR_NOT_IN_SCHEDULE, class: ERROR, member: C-7, floor: FIRST}
+  - item: 3
+    title: 'C-5 (15 no.) and C-8 at first floor; S-05 blank, but S-07 draws them'
+    gap: 'Raised as ERROR, not CONFLICT: the plans as the reader stores them do not show these columns on the first floor, so nothing says that the plan draws them (Pack 275).'
+    raises:
+      - {code: FLOOR_NOT_IN_SCHEDULE, class: CONFLICT, member: C-5, floor: FIRST}
+      - {code: FLOOR_NOT_IN_SCHEDULE, class: CONFLICT, member: C-8, floor: FIRST}
+  - item: 4
+    title: 'C-6: 12x12 printed, 18x9 sketched; the BBS follows the sketch'
+    raises:
+      - {code: SIZE_CONFLICT, class: CONFLICT, member: C-6, floor: null}
+  - item: 5
+    title: 'Footing cover of 3 in (S-0A) ignored on F1, F-2, boundary and 4.5 in wall'
+    note: 'Raised on F1 only, and only with the F1 figures of decisions.yaml; F-2, the boundary wall and the 4.5 in wall have no detail in the reading (NO_DETAIL).'
+    raises:
+      - {code: CUT_MISMATCH, class: ERROR, member: F-1, floor: null}
+  - item: 6
+    title: 'F1 distribution: 9 billed; the rule gives 7, or 8 with "+1"'
+    raises:
+      - {code: COUNT_MISMATCH, class: [ERROR, METHOD], member: F-1, floor: null}
+  - item: 7
+    title: 'No laps on runs of 72 to 396 ft (S-0A: #3 23 in, #4 30 in, #6 45 in)'
+    raises:
+      - {code: LAPS_MISSING, class: ERROR, member: F-1, floor: null}
+      - {code: LAPS_MISSING, class: ERROR, member: Plinth Beam at F1, floor: null}
+      - {code: LAPS_MISSING, class: ERROR, member: Typical Boundary Wall, floor: null}
+      - {code: LAPS_MISSING, class: ERROR, member: '" Typical 4.5 Wall', floor: null}
+  - item: 8
+    title: 'Stirrups at 6 in average against #3 @ 4/8 in in 0.25L/0.5L/0.25L zones'
+    raises:
+      - {code: ZONES_AVERAGED, class: METHOD, member: B1, floor: FIRST}
+      - {code: ZONES_AVERAGED, class: METHOD, member: B2, floor: ROOF}
+      - {code: ZONES_AVERAGED, class: METHOD, member: B3-STAIRCASE, floor: ROOF}
+  - item: 9
+    title: 'Beam "Ext." bars billed full length against L/3 and L/8 curtailment'
+    raises:
+      - {code: EXTRAS_FULL_LENGTH, class: ERROR, member: B1, floor: FIRST}
+      - {code: EXTRAS_FULL_LENGTH, class: ERROR, member: B2, floor: ROOF}
+      - {code: EXTRAS_FULL_LENGTH, class: ERROR, member: B2/B2A, floor: FIRST}
+      - {code: EXTRAS_FULL_LENGTH, class: ERROR, member: B5, floor: FIRST}
+      - {code: EXTRAS_FULL_LENGTH, class: ERROR, member: IB-1, floor: FIRST}
+  - item: 10
+    title: 'B4 top bars: 1 billed, 2-#6 drawn'
+    raises:
+      - {code: COUNT_MISMATCH, class: ERROR, member: B4, floor: ROOF}
+  - item: 11
+    title: '#6 column bars cut the same length as #4, although the laps differ'
+    raises:
+      - {code: CUT_MISMATCH, class: CHECK, member: C-7, floor: GROUND}
+      - {code: CUT_MISMATCH, class: CHECK, member: C-8, floor: GROUND}
+  - item: 12
+    title: 'Fractional bars: about 236 rows weigh part of a bar'
+    raises:
+      - {code: FRACTIONAL_BARS, class: ROUNDING, member: '*', floor: null, count: 200}
+  - item: 13
+    title: 'Members x each differs from total: 44 rows'
+    raises:
+      - {code: MEMBERS_EACH, class: ROUNDING, member: '*', floor: null, count: 44}
+  - item: 14
+    title: '4.5 in wall lintels DD1 to W9: no detail on the drawings'
+    raises:
+      - {code: NO_DETAIL, class: UNVERIFIABLE, member: DD1, floor: null}
+  - item: 15
+    title: 'Boundary columns at 10 ft typical, wall ties, stair dowels: not billed'
+    gap: 'Not raised on this house: the reading holds no boundary columns, wall ties or stair dowels, so no drawing member is left without a row (Pack 275).'
+    raises:
+      - {code: MISSING_MEMBER, class: MISSING, member: Boundary columns, floor: null}
+  - item: 16
+    title: 'Pages 64 to 75 headed "SLAB (G.F)" but holding the roof slab'
+    gap: 'Not raised on this house: it needs the slab rows matched to panels on room names, and the reading holds no room outlines (Pack 275).'
+    raises:
+      - {code: LABEL_FLOOR, class: NAMING, member: SLAB (G.F), floor: null}
+  - item: 17
+    title: 'Page counters read 108/110/111 on a 100-page file'
+    raises:
+      - {code: PAGE_COUNTER, class: INFO, member: '*', floor: null}
+
+# ERRORs the audit raises that none of the 17 items names. They are HELD, not confirmed: nobody has checked them against the drawings. They stay here so that the gate shows
+# when one appears or goes; a held error that is a real error of the schedule should become an item, a false one should be fixed in the audit and removed from here.
+accepted_errors:
+  - {code: LAPS_MISSING, member: B2, floor: ROOF, reason: 'beam run over the stock length; item 7 names footings, plinth beam and walls only'}
+  - {code: LAPS_MISSING, member: B2/B2A, floor: FIRST, reason: 'same as above'}
+  - {code: LAPS_MISSING, member: SB, floor: FIRST, reason: 'same as above'}
+  - {code: LAPS_MISSING, member: Building (Front Side) Upper Design, floor: null, reason: 'parapet run over the stock length'}
+  - {code: LAPS_MISSING, member: Parapet (Low Terrace), floor: null, reason: 'parapet run over the stock length'}
+  - {code: LAPS_MISSING, member: Doors, floor: null, reason: 'lintel run over the stock length'}
+  - {code: LAPS_MISSING, member: EXTERIOR WALL LINTELS, floor: null, reason: 'lintel run over the stock length'}
+  - {code: LAPS_MISSING, member: WINDOWS, floor: null, reason: 'lintel run over the stock length'}

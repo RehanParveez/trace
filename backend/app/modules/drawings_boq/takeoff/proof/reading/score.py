@@ -237,6 +237,13 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
     ts = F.load_set(ref.truth_folder)
     if ts.document.split.value not in want:
       continue
+    if CIO.is_audit_case(os.path.join(root, ref.case)):
+      from app.modules.drawings_boq.takeoff.proof import bbs_audit as BAU
+      found_out = BAU.outcomes(ref.pdf_key, ts.document.alias, ts.document.split.value.lower(), os.path.join(root, ref.case))
+      outcomes += found_out
+      sets_out.append({"alias": ts.document.alias, "key": ref.pdf_key, "split": ts.document.split.value.lower(), "pages": ts.document.pages, "consultant": ts.document.consultant,
+        "producer": ts.document.producer, "outcomes": len(found_out), "params": {**param_completeness(ts), "supply": {"supplied": 0, "of": 0}}})
+      continue
   
     facts = [f for f in _case_facts(root, ref.case) if (f.get("source") or {}).get("pdf") == ref.pdf]
     needs_read = bool(ts.elements or ts.register or ts.joins)
@@ -305,6 +312,10 @@ def metrics(outcomes: list, sets_out: list) -> dict:
   for (name, key), rows in sorted(groups.items()):
     out[name][key] = _tally(rows)
   out["by_split"] = {sp: _tally([o for o in outcomes if o["split"] == sp]) for sp in sorted({o["split"] for o in outcomes})}
+  audit_rows = [o for o in outcomes if o["class"] == V.ElementClass.BBS_FINDING.value]
+  if audit_rows:
+    from app.modules.drawings_boq.takeoff.proof import bbs_audit as BAU
+    out["bbs_finding"] = BAU.metrics(audit_rows)
   return out
 
 def silent_count(outcomes: list) -> dict:

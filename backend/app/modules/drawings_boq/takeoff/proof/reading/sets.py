@@ -24,7 +24,7 @@ def _raw_case(folder: str) -> dict:
 def find_sets(cases_dir: str | None = None, root: str = CIO.HERE) -> list:
   files_dir = CIO.cases_dir(cases_dir)
   refs, owners, problems = [], {}, []
-  for name in CIO.list_cases(root):
+  for name in CIO.list_cases(root, audit=True):
     folder = os.path.join(root, name)
     raw = _raw_case(folder)
     shas = raw.get("sha256") or {}

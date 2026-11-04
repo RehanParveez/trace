@@ -31,6 +31,7 @@ import { BOQSnapshotsPanel } from "./BOQSnapshotsPanel";
 import { BOQAdvancedExportPanel } from "./BOQAdvancedExportPanel";
 import { SpacesSchedulesSection } from "./SpacesSchedulesSection";
 import { RebarSummaryPanel } from "../../drawings_boq/rebar/components/RebarSummaryPanel";
+import { SteelAuditPanel } from "../rebar/bbs/components/SteelAuditPanel";
 import { BOQPricingPanel } from "../pricing/components/BOQPricingPanel";
 import { ProjectRateOverridesPanel } from "../pricing/components/ProjectRateOverridesPanel";
 import { RevisionComparePanel } from "../pricing/components/RevisionComparePanel";
@@ -112,6 +113,10 @@ export function DrawingsBoqSection({
 
   const canResolveReview = permissions.includes(
       IDENTITY_PERMISSIONS.REVIEW_RESOLVE,
+    );
+
+  const canImportSchedule = permissions.includes(
+      IDENTITY_PERMISSIONS.SCHEDULE_IMPORT,
     );
 
   const boqVersions =
@@ -339,6 +344,16 @@ export function DrawingsBoqSection({
           {selectedVersion.calculation_run_id ? (
             <RebarSummaryPanel
               versionId={selectedVersion.id}
+            />
+          ) : null}
+
+          {isEngineVersion && selectedVersion.calculation_run_id ? (
+            <SteelAuditPanel
+              runId={selectedVersion.calculation_run_id}
+              projectId={projectId}
+              versionId={selectedVersion.id}
+              canEdit={canImportSchedule}
+              canAdjust={canAdjust && versionEditable}
             />
           ) : null}
 

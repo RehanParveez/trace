@@ -2,6 +2,7 @@ from __future__ import annotations
 from decimal import Decimal
 import re
 from app.modules.drawings_boq.schedule_parsing import MAX_ROWS, ScheduleParseError, _clean, _length_mm, _header_key, parse_decimal, table_from_layout_text
+from app.modules.drawings_boq.rebar.bbs_layouts import bbs_summary, read_bbs_pdf
 
 CSV_CONFIDENCE = Decimal("0.9")
 PDF_TEXT_CONFIDENCE = Decimal("0.7")
@@ -162,3 +163,44 @@ def rows_from_table(table: list[list], *, confidence: Decimal = CSV_CONFIDENCE, 
 def rows_from_pdf_text(text: str) -> list[dict]:
   table = table_from_layout_text(text, header_probe=lambda row: _find_header([row]) is not None)
   return rows_from_table(table, confidence=PDF_TEXT_CONFIDENCE)
+
+BBS_CONFIDENCE = Decimal("0.85")
+BBS_FLAGGED_CONFIDENCE = Decimal("0.5")
+_MM_PER_FT = Decimal("304.8")
+_MM_PER_IN = Decimal("25.4")
+
+def _bbs_member(text) -> str | None:
+  s = re.sub(r"\s+", " ", str(text or "")).strip(" \"'")
+  return s or None
+
+def _bbs_row(r, sheet_name: str) -> dict:
+  member = _bbs_member(r.member)
+  designation, dia = parse_bar_size(f"#{r.dia}") if r.dia else (None, None)
+  cut = (r.cut_ft * _MM_PER_FT).quantize(Decimal("0.001")) if r.cut_ft else None
+  count = int(r.total) if r.total is not None and r.total == r.total.to_integral_value() and r.total >= 0 else None
+  notes = [str(n) for n in r.notes] + [f"Could not read {i.split(':', 1)[0]}." for i in r.issues]
+  
+  if r.total is not None and count is None:
+    notes.append(f"Bar count {r.total} is not a whole number.")
+  flagged = bool(r.issues) or count is None or dia is None or cut is None
+  if r.total and r.cut_ft and r.total_ft and abs(r.total * r.cut_ft - r.total_ft) > r.cut_ft:
+    notes.append(f"Bars x length is {r.total * r.cut_ft:.2f} ft; the schedule prints {r.total_ft} ft.")
+    flagged = True
+  head = f"{member}/{r.sr}" if member and r.sr is not None else (member or (str(r.sr) if r.sr is not None else ""))
+  mark = f"{head} {r.description}".strip()[:50] or None
+  raw = " | ".join(str(x) for x in (sheet_name, member, r.sr, r.description, f"#{r.dia}" if r.dia else None,
+    f"{r.spacing_in} in c/c" if r.spacing_in else None, f"{r.total} bars", f"{r.cut_ft} ft", f"{r.total_kg} kg") if x not in (None, ""))
+  
+  return {"member_mark": member, "mark": mark, "role": infer_role(member, sheet_name), "shape_code": None, "shape_params": {},
+    "designation": designation, "dia_mm": dia, "grade": None, "count": count,
+    "spacing_mm": (r.spacing_in * _MM_PER_IN).quantize(Decimal("0.001")) if r.spacing_in else None,
+    "cut_len_mm": cut if cut and cut > 0 else None, "declared_total_kg": r.total_kg if r.total_kg and r.total_kg > 0 else None,
+    "level_text": None, "notes": notes, "raw_text": raw[:2000], "confidence": str(BBS_FLAGGED_CONFIDENCE if flagged else BBS_CONFIDENCE)}
+
+def rows_from_bbs_pdf(contents: bytes) -> tuple[list[dict], dict]:
+  doc = read_bbs_pdf(contents)
+  names = {s.index: s.name for s in doc.sheets}
+  rows = [_bbs_row(r, names.get(r.sheet, "")) for r in doc.rows]
+  if len(rows) > MAX_ROWS:
+    raise ScheduleParseError(f"The schedule has more than {MAX_ROWS} rows. Split it and import in parts.")
+  return rows, {"extraction": "pk_bbs_feet", **bbs_summary(doc)}

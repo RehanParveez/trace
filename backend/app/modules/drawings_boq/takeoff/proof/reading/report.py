@@ -69,6 +69,10 @@ def render(doc: dict, cmp: dict | None = None) -> str:
     out += ["## By style (consultant, producer)", "", *HEAD]
     out += [_row(k, v) for k, v in m["by_style"].items()]
     out.append("")
+  bf = m.get("bbs_finding")
+  if bf:
+    out += ["## Bar schedule audit (class BBS_FINDING)", "", f"Finding recall {_pct(bf['recall'])} ({bf['raised']} of {bf['expected']} expected raises); class accuracy {_pct(bf['class_accuracy'])}; false-error rate {_pct(bf['false_error_rate'])} "
+      f"({bf['errors_outside_items']} of {bf['errors_raised']} ERRORs raised are named by no item; {bf['errors_silent']} of them are not even held in accepted_errors).", ""]
   params = [s for s in doc["sets"] if s["params"]["inputs"]]
   if params:
     out += ["## Input completeness (parameter ledger)", "", "| PDF | Inputs | PRINTED | DERIVED | DEFAULTED | MISSING | Share printed or derived | Supplied by what Trace read |", "|---|---|---|---|---|---|---|---|"]

@@ -6,6 +6,7 @@ import { importTone } from "../../utils/drawings-boq.utils";
 import type { Drawing, ScheduleImportResponse } from "../../types/drawings-boq.types";
 import { RebarImportDialog } from "./RebarImportDialog";
 import { RebarReviewDialog } from "./RebarReviewDialog";
+import { BbsAuditSection } from "../bbs/components/BbsAuditSection";
 
 interface RebarImportsPanelProps {
   projectId: string;
@@ -92,6 +93,8 @@ export function RebarImportsPanel({ projectId, drawings, canImport }: RebarImpor
           </table>
         </TableShell>
       )}
+
+      <BbsAuditSection projectId={projectId} canImport={canImport} />
 
       {importing ? (
         <RebarImportDialog projectId={projectId} drawings={drawings} onClose={() => setImporting(false)}

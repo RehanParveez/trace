@@ -11,6 +11,7 @@ import { hasRoleFamily, rebarRowBlocker } from "../utils/rebar.utils";
 import type { Drawing, RebarConfirmResponse, RowDecision, ScheduleImportResponse } from "../../types/drawings-boq.types";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { RebarRowsTable } from "./RebarRowsTable";
+import { RebarReadPanel } from "./RebarReadPanel";
 
 interface RebarReviewDialogProps {
   projectId: string;
@@ -113,6 +114,7 @@ export function RebarReviewDialog({ projectId, imp, drawings, canImport, onClose
             {counts.blocked > 0 ? <Badge tone="gold">{t("rebar.sum.blocked", "{{n}} need fixing before accept", { n: counts.blocked })}</Badge> : null}
           </div>
           {imp.notes ? <p className="text-[12px] italic text-[var(--color-text-muted)]">{imp.notes}</p> : null}
+          <RebarReadPanel meta={imp.extraction_meta} />
 
           {counts.noType > 0 && editable ? (
             <div className="rounded-[8px] border border-[var(--color-border)] bg-[var(--color-warning-bg)] px-3 py-2.5 text-[12px] text-[var(--color-warning)]">

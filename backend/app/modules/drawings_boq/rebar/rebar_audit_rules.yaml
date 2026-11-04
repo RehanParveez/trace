@@ -1,0 +1,12 @@
+count: {bars: 1, share: 0.02}
+cut_in: 2
+weight_share: 0.03
+unit_weight_share: 0.01
+length_product_share: 0.001
+fractional_tolerance: 0.02
+sheet_sum_kg: 0.05
+cut_from_parts_in: 1
+fit_aggregate_in: 0.75
+fit_min_gap_in: 1
+extras_full_share: 0.9
+spacing_tol_in: 0.01

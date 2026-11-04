@@ -21,7 +21,7 @@ from app.modules.drawings_boq.standards.service import StandardsService
 from decimal import Decimal
 from app.shared.storage import download_to_path
 from app.modules.drawings_boq.rebar import rebar_repository as repo
-from app.modules.drawings_boq.rebar.rebar_parsing import parse_bar_size, rows_from_pdf_text, rows_from_table
+from app.modules.drawings_boq.rebar.rebar_parsing import parse_bar_size, rows_from_bbs_pdf, rows_from_pdf_text, rows_from_table
 import tempfile
 from fastapi import UploadFile
 from pathlib import PurePosixPath
@@ -178,6 +178,14 @@ class RebarService:
       with open(path, "rb") as handle:
         contents = handle.read()
         
+    try:
+      bbs_rows, bbs_meta = await asyncio.to_thread(rows_from_bbs_pdf, contents)
+    except ScheduleParseError:
+      bbs_rows = None
+    if bbs_rows is not None:
+      return await self._create_import(org, project_id, user_id, source="PDF_TEXT", parsed=bbs_rows, file_name=drawing.original_filename,
+        content_hash=hashlib.sha256(b"BBS|PK|" + contents).hexdigest(), drawing_id=drawing.id, notes=notes, meta=bbs_meta)
+      
     layout = await asyncio.to_thread(extract_pdf_layout_text, contents)
     if not layout.strip():
       raise TraceException("This PDF has no machine-readable text (it may be a scan).", status_code=422, code="PDF_NO_TEXT")
