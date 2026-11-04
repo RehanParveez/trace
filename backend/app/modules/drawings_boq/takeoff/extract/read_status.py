@@ -7,6 +7,7 @@ READ, UNSURE, NOT_READ = "READ", "UNSURE", "NOT_READ"
 ROLE_BY = "ROLE_UNEXPECTED"
 NO_SYMBOLS = "NO_SYMBOLS_FOUND"
 LABELS_OUTLINED = "LABELS_OUTLINED"
+OCR_LOW = "OCR_LOW_CONFIDENCE"
 STATUS_KEY, REASONS_KEY = "read_status", "read_reasons"
 HELD_PLAN_KINDS = ("COLUMN_LAYOUT", "FOOTING_LAYOUT")
 SUPERSTRUCTURE = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR")
@@ -148,12 +149,30 @@ def coverage(candidates: list, role: str | None, plan_kind: str | None, text_typ
   status = None if not rows else READ if states == {READ} else NOT_READ if states == {NOT_READ} else UNSURE
   return {"key": key, "role": role, "plan_kind": plan_kind, "text_type": text_type, "status": status, "classes": rows}
 
+def outlined(res, pdf: dict | None) -> dict:
+  p = pdf or {}
+  marks = {str(m).upper() for m in p.get("outlined_marks") or []}
+  low = {str(m).upper() for m in p.get("outlined_low_marks") or []}
+  seen = {"read": 0, "unsure": 0}
+  for c in res.candidates:
+    tag = str(getattr(c, "tag", None) or "").upper()
+    if tag in low:
+      mark(c, UNSURE, [OCR_LOW])
+      seen["unsure"] += 1
+    elif tag in marks:
+      mark(c, READ, [LABELS_OUTLINED])
+      seen["read"] += 1
+  return seen
+
 def apply(res, identity: dict | None, pdf: dict | None) -> None:
   role = role_of(identity)
   kind = plan_kind_of(identity) if role == "PLAN" else None
   text = text_type_of(pdf)
   held = hold(res, kind, role)
+  seen = outlined(res, pdf)
   cov = coverage(res.candidates, role, kind, text)
   if held:
     cov["held"] = held
+  if seen["read"] or seen["unsure"]:
+    cov["outlined"] = seen
   res.stats["coverage"] = cov

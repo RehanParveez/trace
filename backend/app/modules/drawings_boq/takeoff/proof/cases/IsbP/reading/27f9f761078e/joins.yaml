@@ -1,1 +1,759 @@
-[]
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@E1
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@C1
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@B1
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@F2
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@E2
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@C3
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@B3
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@F4
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@C4
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@D'4
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@C5
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@B5
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@F6
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@D6
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@C6
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@C7
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C3@B7
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-3:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@D8
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C4@F8
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-4:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@B'9
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@C9
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C1@D9
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-1:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@D10
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@G10
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C7@A11
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-7:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@B11
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C5@C'11
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-5:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@D12
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@C'12
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C7@A13
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-7:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C8@C13
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-8:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C6@D13
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-6:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 10
+    class: COLUMN
+    key: C2@G13
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-2:GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#1
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#1
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#2
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#2
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#3
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#3
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#4
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#4
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#5
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#5
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#6
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#6
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#7
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#7
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#8
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#8
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 12
+    class: COLUMN
+    key: PC#9
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC:FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 13
+    class: COLUMN
+    key: PC-1#9
+  to:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: PC-1:ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 8
+    class: FOOTING_PAD
+    key: F2@A11
+  to:
+    sheet: 9
+    class: FOOTING_SECTION
+    key: F2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: section 2-2/S-02
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 8
+    class: FOOTING_PAD
+    key: F2@A13
+  to:
+    sheet: 9
+    class: FOOTING_SECTION
+    key: F2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: section 2-2/S-02
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 8
+    class: FOOTING_PAD
+    key: F3
+  to:
+    sheet: 9
+    class: FOOTING_SECTION
+    key: STAIR
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: section 3-3/S-01 on the stair footing

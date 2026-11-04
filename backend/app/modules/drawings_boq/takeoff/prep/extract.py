@@ -6,6 +6,7 @@ import time
 from array import array
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
 from app.modules.drawings_boq.takeoff.prep import glyph_shift
+from app.modules.drawings_boq.takeoff.prep import text_repair as TR
 from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
 from app.modules.drawings_boq.takeoff.prep import raster_lines as RL
 
@@ -41,6 +42,7 @@ class Word:
   cy: float
   length: float     
   height: float  
+  repair: str = ""
 
 @dataclass
 class Ring:
@@ -116,7 +118,17 @@ def open_document(contents: bytes):
       raise PdfOpenError("PDF_ENCRYPTED", "This PDF is password protected.")
     raise PdfOpenError("PDF_UNREADABLE", "This PDF could not be read.")
 
-def _text_words(page, stats: dict) -> list:
+def _font_name(tp, i: int) -> str:
+  import pypdfium2.raw as raw
+  flags = ctypes.c_int(0)
+  n = raw.FPDFText_GetFontInfo(tp.raw, i, None, 0, ctypes.byref(flags))
+  if not n or n > 256:
+    return ""
+  buf = ctypes.create_string_buffer(int(n))
+  raw.FPDFText_GetFontInfo(tp.raw, i, buf, int(n), ctypes.byref(flags))
+  return buf.value.decode("latin1")
+
+def _text_words(page, stats: dict, fonts_out: list | None = None, decoders: dict | None = None) -> list:
   import pypdfium2.raw as raw
   try:
     tp = page.get_textpage()
@@ -136,11 +148,17 @@ def _text_words(page, stats: dict) -> list:
       text = "".join(c[0] for c in cur)
       if text.strip():
         words.append(_make_word(text, cur))
+        if fonts_out is not None:
+          fonts_out.append(cur_font[0])
       cur.clear()
+    cur_font: list = [""]
     prev = None
     for i in range(n):
       u = raw.FPDFText_GetUnicode(tp.raw, i)
       ch = chr(u) if 0 < u < 0x110000 else ""
+      font = _font_name(tp, i) if (fonts_out is not None or decoders) else ""
+      if decoders and ch and font in decoders:
+        ch = TR.decode_char(ch, decoders[font])
       generated = raw.FPDFText_IsGenerated(tp.raw, i)
       if not ch or ch.isspace() or generated and not ch.strip():
         flush()
@@ -169,6 +187,8 @@ def _text_words(page, stats: dict) -> list:
         da = abs((angle - prev[5] + 180) % 360 - 180)
         if da > 8 or along > 1.2 * max(prev[6], size) or along < -0.2 * prev[6] or abs(across) > 0.6 * max(prev[6], size):
           flush()
+      if not cur:
+        cur_font[0] = font
       cur.append(info)
       prev = info
       if len(words) >= MAX_WORDS:
@@ -364,11 +384,22 @@ def extract_page(doc, index: int, *, budget_s: float = DEFAULT_BUDGET_S) -> RawP
       if stats.get("segments_truncated"):
         stats["truncated"] = True
         break
-    out.words = _text_words(page, stats)
+      
+    fonts: list = []
+    out.words = _text_words(page, stats, fonts)
+    decisions = TR.decide_fonts([w.text for w in out.words], fonts)
+    if decisions:
+      out.words = _text_words(page, stats, None, TR.decoders_of(decisions))
+      stats["font_decoded"] = decisions
     repaired = glyph_shift.repair(out.words)
     if repaired:
       stats["glyph_shift_words"] = repaired
+    repairs = TR.merge_stacked_fractions(out.words) + TR.repair_labels(out.words) + TR.repair_grammar(out.words)
+    if repairs:
+      stats["text_repair"] = repairs[:60]
+      stats["text_repair_words"] = len(repairs)
     scanned = ocr_layer.needs_ocr(out.words, out.images, crop, stats)
+    
     if scanned:
       found, info = ocr_layer.read_page(page, out.rotation, crop, out.images, budget_s=min(ocr_layer.SCAN_OCR_BUDGET_S, max(15.0, budget_s)))
       stats.update(info)

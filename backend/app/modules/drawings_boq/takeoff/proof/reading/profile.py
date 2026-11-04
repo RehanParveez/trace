@@ -6,10 +6,11 @@ import yaml
 import pypdfium2 as pdfium
 import pypdfium2.raw as raw
 from app.modules.drawings_boq.takeoff.prep import pdf_type as PT
+from app.modules.drawings_boq.takeoff.prep import text_repair as TR
 from app.modules.drawings_boq.takeoff.proof.reading import match as M
 from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
 
-WORDS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "words.txt")
+WORDS_PATH = TR.WORDS_PATH
 TOKEN = re.compile(r"[A-Za-z]{3,}")
 OFFSETS = [k for k in range(-64, 65) if k]
 SHIFTS = range(1, 26)

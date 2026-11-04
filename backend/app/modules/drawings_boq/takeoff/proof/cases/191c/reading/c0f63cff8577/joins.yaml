@@ -1,1 +1,126 @@
-[]
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 3
+    class: COLUMN
+    key: C1@p3
+  to:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C1@p6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 3
+    class: COLUMN
+    key: C2@p3
+  to:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C2@p6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 4
+    class: COLUMN
+    key: C1@p4
+  to:
+    sheet: 7
+    class: COLUMN_SCHEDULE_CELL
+    key: C1@p7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 4
+    class: COLUMN
+    key: C2#1@p4
+  to:
+    sheet: 7
+    class: COLUMN_SCHEDULE_CELL
+    key: C2@p7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: PLAN_TO_SCHEDULE
+  from:
+    sheet: 4
+    class: COLUMN
+    key: C2#2@p4
+  to:
+    sheet: 7
+    class: COLUMN_SCHEDULE_CELL
+    key: C2@p7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 3
+    class: FOOTING_PAD
+    key: F1@p3
+  to:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: F1-section
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 3
+    class: FOOTING_PAD
+    key: F2@p3
+  to:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: F2-section
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 4
+    class: FOOTING_PAD
+    key: F3@p4
+  to:
+    sheet: 7
+    class: FOOTING_SECTION
+    key: F3-section
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 4
+    class: FOOTING_PAD
+    key: F4@p4
+  to:
+    sheet: 7
+    class: FOOTING_SECTION
+    key: F4-section
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-03'

@@ -39,7 +39,7 @@ import { StandardsPage } from "../modules/drawings_boq/standards";
 import { RateBookDetailPage, RateBooksPage } from "../modules/drawings_boq/pricing";
 import { RateImportReviewPage, RateImportsPage } from "../modules/drawings_boq/pricing/schedules";
 import { CalculationInsightsPage } from "../modules/drawings_boq/recalculation";
-import { TakeoffPage } from "../modules/drawings_boq/takeoff";
+import { ReadingReportPage, TakeoffPage } from "../modules/drawings_boq/takeoff";
 
 export const router = createBrowserRouter([
   {
@@ -236,6 +236,10 @@ export const router = createBrowserRouter([
     {
       index: true,
       element: <TakeoffPage />,
+    },
+    {
+      path: "reading-report",
+      element: <ReadingReportPage />,
     },
   ],
 },

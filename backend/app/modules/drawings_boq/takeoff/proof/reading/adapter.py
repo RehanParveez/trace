@@ -1,10 +1,12 @@
 from __future__ import annotations
 import os
+import re
 from collections import Counter
 from dataclasses import dataclass, field
 from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
 from app.modules.drawings_boq.takeoff.extract import kinds as K
 from app.modules.drawings_boq.takeoff.extract import read_status as RS
+from app.modules.drawings_boq.takeoff.extract import structure_tables as ST
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 
@@ -37,6 +39,7 @@ class ReadItem:
   reasons: list
   source: V.ReadSource
   confidence: float | None = None
+  join: dict | None = None
 
 @dataclass
 class PageInfo:
@@ -87,7 +90,10 @@ def _geometry(cls: V.ElementClass, pts: list) -> dict | None:
   return None
 
 def _source(page_type: dict) -> V.ReadSource:
-  return V.ReadSource.OCR if page_type.get("text_recovered") or page_type.get("ocr_words_added") else V.ReadSource.TEXT
+   return V.ReadSource.OCR if page_type.get("text_recovered") or page_type.get("ocr_words_added") else V.ReadSource.TEXT
+
+def norm_key(mark) -> str:
+  return re.sub(r"[\s\-_]+", "", str(mark or "")).upper()
 
 def register_of(row: dict) -> dict:
   meta = row.get("meta") or {}
@@ -105,6 +111,49 @@ def register_of(row: dict) -> dict:
   return {"sheet": row["page_no"], "sheet_no": title.get("sheet_no") or ident.get("sheet_no"), "title": title.get("title") or ident.get("title"),
     "role": role.value if role else None, "plan_kind": (PLAN_KIND_OF.get(ident.get("plan_kind")) or None) and PLAN_KIND_OF[ident.get("plan_kind")].value,
     "floor": ident.get("floor"), "discipline": ident.get("discipline"), "scale_ratio": row.get("ratio"), "scale_basis": row.get("scale_source"), "text_type": text_type.value if text_type else None}
+
+def _status_of(conflicts: list, reasons: list) -> V.Status:
+  return V.Status.UNSURE if conflicts or reasons else V.Status.READ
+
+JOIN_OF = {"COLUMN": "schedule_join", "BEAM": "section_join", "FOOTING": "footing_section_join"}
+
+def structure_items(sheet: int, meta: dict, source: V.ReadSource) -> list:
+  out: list = []
+  tables = (meta or {}).get("structure_tables") or {}
+  for rec in (tables.get("column_schedule") or {}).get("cells") or []:
+    if rec.get("state") != "READ":
+      continue
+  
+    size = rec.get("size") or {}
+    reasons = []
+    how = size.get("how")
+    if how == "DECODED" and not size.get("confirmed"):
+      reasons.append("FONT_DECODED")
+    elif how == "DECODED_PARTIAL" or not size.get("size_in"):
+      reasons.append("GLYPH_REPAIRED")
+    conflicts = (rec.get("sketch") or {}).get("conflicts") or []
+    if conflicts:
+      reasons.append("CONFLICT_IN_DRAWING")
+    anchor = rec.get("anchor_native")
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN_SCHEDULE_CELL, mark=rec["mark"], geom={"point": [float(anchor[0]), float(anchor[1])]} if anchor else None, attrs=ST.cell_attrs(rec),
+      status=_status_of(conflicts, reasons), reasons=reasons, source=source))
+    
+  for rec in ((meta or {}).get("structure_joins") or {}).get("planted") or []:
+    attrs = {"count": 1, **({"floor": rec["floor"]} if rec.get("floor") else {})}
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN, mark=rec["mark"], geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs=attrs, status=V.Status.READ, reasons=[], source=source,
+      join={k: rec.get(k) for k in ("status", "how", "to", "reason")}))
+  for rec in ((meta or {}).get("rebar_rules") or {}).get("facts") or []:
+    attrs = {"key": rec["key"], "value": rec["value"], **({"unit": rec["unit"]} if rec.get("unit") else {})}
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.NOTE_FACT, mark=rec["key"], geom=None, attrs=attrs, status=V.Status.READ, reasons=[], source=source))
+  for rec in (tables.get("beam_sections") or {}).get("sections") or []:
+    reasons = []
+    if rec.get("decoded") and (rec.get("sketch_dims") or 0) < 2:
+      reasons.append("FONT_DECODED")
+    if rec.get("conflicts"):
+      reasons.append("CONFLICT_IN_DRAWING")
+      
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.BEAM_SECTION, mark=rec["mark"], geom=None, attrs=ST.beam_section_attrs(rec), status=_status_of(rec.get("conflicts"), reasons), reasons=reasons, source=source))
+  return out
 
 def items_of(rows: list) -> SetRead:
   out = SetRead()
@@ -131,13 +180,16 @@ def items_of(rows: list) -> SetRead:
       status = V.Status.parse(RS.status_of(c))
       reasons = [r for r in RS.reasons_of(c) if r in V.Reason.names()]
       mark = None if c.tag in (None, "") else str(c.tag)
+      join = (c.facts or {}).get(JOIN_OF.get(c.category, "")) if c.category in JOIN_OF else None
       single = _geometry(cls, pts)
-      if single is None and count > 1 and len(pts) == count and cls.value not in LINE_CLASSES + AREA_CLASSES:
-        for p in pts:
-          out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"point": p}, attrs={**attrs, "count": 1}, status=status, reasons=list(reasons), source=source, confidence=c.confidence))
+      if single is None and count > 1 and (len(pts) == count or not pts) and cls.value not in LINE_CLASSES + AREA_CLASSES:
+        for k in range(count):
+          out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"point": pts[k]} if pts else None, attrs={**attrs, "count": 1}, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
         continue
       geom = single if single is not None else ({"point": pts[0]} if len(pts) == 1 and count == 1 else None)
-      out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom=geom, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence))
+      
+      out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom=geom, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
+    out.items.extend(structure_items(sheet, meta, source))
   return out
 
 def read_case(case: dict, files: dict, budget_s: float | None = None) -> dict:

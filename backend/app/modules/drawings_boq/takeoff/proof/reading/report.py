@@ -32,6 +32,15 @@ def register_fields(outcomes: list) -> dict:
       row["right" if o["outcome"] == SCR.OK else "wrong"] += 1
   return out
 
+def join_kinds(outcomes: list) -> dict:
+  out: dict = {}
+  for o in outcomes:
+    parts = o["id"].split(":")
+    if len(parts) == 4 and parts[1] == "JOIN":
+      row = out.setdefault(parts[2], {})
+      row[o["outcome"]] = row.get(o["outcome"], 0) + 1
+  return out
+
 def worst_register_rows(outcomes: list, n: int = 15) -> list:
   wrong: dict = {}
   for o in outcomes:
@@ -42,7 +51,7 @@ def worst_register_rows(outcomes: list, n: int = 15) -> list:
 
 def render(doc: dict, cmp: dict | None = None) -> str:
   m = doc["metrics"]
-  out = [f"# Reading score: {doc['split']}", "", f"Reading hash `{doc['hash']}`. {len(doc['sets'])} PDF(s) scored, {len(doc['outcomes'])} outcomes. Silent-wrong is pessimistic until RB-B2: every item counts as READ.", ""]
+  out = [f"# Reading score: {doc['split']}", "", f"Reading hash `{doc['hash']}`. {len(doc['sets'])} PDF(s) scored, {len(doc['outcomes'])} outcomes. Silent-wrong counts wrong values and inventions among items read with status READ, and every wrong register field (a register field has no status); its rate is over the read items judged plus the register fields judged.", ""]
   if not doc["outcomes"]:
     out += ["No truth has been written for the scored PDFs, so there is nothing to judge.", ""]
   for sp, t in m["by_split"].items():
@@ -62,10 +71,10 @@ def render(doc: dict, cmp: dict | None = None) -> str:
     out.append("")
   params = [s for s in doc["sets"] if s["params"]["inputs"]]
   if params:
-    out += ["## Input completeness (parameter ledger)", "", "| PDF | Inputs | PRINTED | DERIVED | DEFAULTED | MISSING | Share printed or derived |", "|---|---|---|---|---|---|---|"]
+    out += ["## Input completeness (parameter ledger)", "", "| PDF | Inputs | PRINTED | DERIVED | DEFAULTED | MISSING | Share printed or derived | Supplied by what Trace read |", "|---|---|---|---|---|---|---|---|"]
     for s in params:
       p = s["params"]
-      out.append(f"| {s['alias']} | {p['inputs']} | {p['states']['PRINTED']} | {p['states']['DERIVED']} | {p['states']['DEFAULTED']} | {p['states']['MISSING']} | {_pct(p['complete'])} |")
+      out.append(f"| {s['alias']} | {p['inputs']} | {p['states']['PRINTED']} | {p['states']['DERIVED']} | {p['states']['DEFAULTED']} | {p['states']['MISSING']} | {_pct(p['complete'])} | {(p.get('supply') or {}).get('supplied', 0)} of {(p.get('supply') or {}).get('of', 0)} |")
     out.append("")
   fields = register_fields(doc["outcomes"])
   
@@ -77,6 +86,11 @@ def render(doc: dict, cmp: dict | None = None) -> str:
       out.append(f"| {name} | {n_all} | {f['right']} | {_pct(f['right'] / n_all)}{_ci(SCR.wilson(f['right'], n_all))} |")
     out += ["", "The 15 sheets with most wrong fields:", "", "| PDF | Sheet | Wrong fields (truth against Trace) |", "|---|---|---|"]
     out += [f"| {s} | {sh} | {'; '.join(d)} |" for (s, sh), d in worst_register_rows(doc["outcomes"])]
+    out.append("")
+  joins = join_kinds(doc["outcomes"])
+  if joins:
+    out += ["## Joins (the truth joins read back)", "", "| Join | Truth joins | Joined to the right target | Joined wrongly (silent) | Missing, assumed or unsure (reported) | Not read or not attempted (silent) |", "|---|---|---|---|---|---|"]
+    out += [f"| {k} | {sum(v.values())} | {v.get(SCR.OK, 0)} | {v.get(SCR.WRONG, 0)} | {v.get(SCR.MISSED_R, 0)} | {v.get(SCR.MISSED_S, 0)} |" for k, v in joins.items()]
     out.append("")
   worst = worst_sheets(doc["outcomes"])
   
@@ -90,4 +104,38 @@ def render(doc: dict, cmp: dict | None = None) -> str:
     out += ["## Since the baseline", "", f"Truth {'unchanged' if cmp['same_truth'] else 'changed'}; {len(cmp['changed'])} outcome(s) changed; {len(cmp['lost'])} lost.", ""]
     out += [f"- {i}: {a} to {b}" for i, a, b in cmp["changed"][:60]]
     out.append("")
+  return "\n".join(out)
+
+def render_set_join(docs: list) -> str:
+  out = ["# Structure set joined to the architecture set", ""]
+  if not docs:
+    return "\n".join(out + ["No case has two PDFs.", ""])
+  for d in docs:
+    out += [f"## {d['case']}: {d['a']} (structure) with {d['b']} (architecture)", ""]
+    ia, ib = d["identity"]["a"], d["identity"]["b"]
+    out += [f"Title blocks: structure prints {ia}; architecture prints {ib}. {'Paired' if d['pair']['paired'] else 'Not paired'}: {d['pair']['why']}.", ""]
+    al = d.get("alignment")
+    if al:
+      out += [f"Alignment: {al['basis']}, {al['status']}. Residual after the fit: {'-' if al.get('residual_in') is None else str(al['residual_in']) + ' in'}. {al.get('why') or ''}", ""]
+      if al.get("fit"):
+        f = al["fit"]
+        out += [f"Fit (outline a to b): scale {f['scale']}, rotation {f['rotation']} degrees, shared points {f['n']}; outline a {al.get('outline_a_mm')} mm, outline b {al.get('outline_b_mm')} mm.", ""]
+    lv = d.get("levels")
+    
+    if lv:
+      out += ["| Floor | Level above the road (ft) | Storey height from the floor below (ft) | State |", "|---|---|---|---|"]
+      for f in lv["floors"]:
+        h = f["storey_height_mm"]
+        out.append(f"| {f['floor']} | {'-' if f['level_ft'] is None else f['level_ft']} | {'-' if h is None else round(h / 304.8, 2)} | {f['state']} |")
+      out += ["", f"Plinth level: {'not read' if lv.get('plinth_mm') is None else str(round(lv['plinth_mm'] / 304.8, 2)) + ' ft'}.", ""]
+    sl = d.get("slab")
+    if sl:
+      shown = "; ".join(f"{v['inches']:g} in at " + ", ".join(f"{w['set']} p{w['page']} ({w['kind'].lower()})" for w in v["printed"]) for v in sl["values"]) or "none printed"
+      out += [f"Slab thickness printed: {shown}. {'CONFLICT: the plans print ' + str(sl['captions_in']) + ' in and the notes ' + str(sl['notes_in']) + ' in.' if sl['conflict'] else 'No conflict.'}", ""]
+    cw = d.get("columns_in_walls")
+    if cw:
+      out += [f"Columns inside architecture walls: {'not reported (' + cw['why'] + ')' if cw['share'] is None else str(round(cw['share'] * 100)) + '% of ' + str(cw['columns'])}.", ""]
+    lg = d.get("ledger")
+    if lg:
+      out += [f"Parameter ledger of the structure set: share printed or derived {lg['before']} before, {lg['after']} after; now derived: {', '.join(lg['derived']) or 'none'}.", ""]
   return "\n".join(out)

@@ -1,8 +1,9 @@
 from __future__ import annotations
 import os
-import re
 import math
+from app.engine.measure import readings as RD
 from app.modules.drawings_boq.takeoff.prep import ocr_layer
+from app.modules.drawings_boq.takeoff.prep import outlined_text as OT
 
 VECTOR_TEXT, VECTOR_OUTLINED, VECTOR_NOLETTER, RASTER, IMAGE_PAGE, EMPTY = "VECTOR_TEXT", "VECTOR_OUTLINED", "VECTOR_NOLETTER", "RASTER", "IMAGE_PAGE", "EMPTY"
 TYPES = (VECTOR_TEXT, VECTOR_OUTLINED, VECTOR_NOLETTER, RASTER, IMAGE_PAGE, EMPTY)
@@ -21,12 +22,6 @@ MAX_OVERLAP = 0.3
 CELL_PT = 60.0
 EMPTY_MAX_WORDS = 2
 EMPTY_MAX_DRAWN = 20
-PLAN_TITLE_WORDS = ("LAYOUT", "PLAN")
-MARK_WORD = re.compile(r"^[A-Z]{1,3}-?\d{1,2}[A-Z]?$")
-SHEET_NUMBER = re.compile(r"^S-?\d{1,2}$")
-PARTIAL_MIN_UNCOVERED = 15
-PLAN_SUBJECT_WORDS = ("COLUMN", "FOOTING", "FOUNDATION")
-PARTIAL_MAX_MARKS = 3
 
 def glyph_signal(rings: list) -> dict:
   rows: dict = {}
@@ -49,23 +44,6 @@ def outlined_signal(rings: list, stats: dict) -> dict | None:
   if sig["glyphs"] >= SUSPECT_GLYPHS and sig["run"] >= SUSPECT_RUN and sig["glyphs"] >= GLYPHS_PER_CHAR * chars:
     return sig
   return None
-
-def partial_outline_signal(rings: list, words: list) -> dict | None:
-  upper = {w.text.upper() for w in words}
-  if not all(any(t in u for u in upper) for t in PLAN_TITLE_WORDS):
-    return None
-  if not any(t in u for t in PLAN_SUBJECT_WORDS for u in upper):
-    return None
-  
-  marks = [w for w in words if MARK_WORD.match(w.text.strip().upper()) and not SHEET_NUMBER.match(w.text.strip().upper())]
-  if len(marks) > PARTIAL_MAX_MARKS:
-    return None
-  
-  glyphs = [r for r in rings if r.fill and GLYPH_MIN_W_PT <= r.bbox[2] - r.bbox[0] <= GLYPH_MAX_W_PT and GLYPH_MIN_H_PT <= r.bbox[3] - r.bbox[1] <= GLYPH_MAX_H_PT]
-  loose = new_words([_Box(r.bbox) for r in glyphs], words)
-  if len(loose) < PARTIAL_MIN_UNCOVERED:
-    return None
-  return {"partial_outline": True, "marks_in_text": len(marks), "uncovered_glyphs": len(loose)}
 
 class _Box:
   def __init__(self, bbox: tuple):
@@ -117,16 +95,26 @@ def route(page, out, crop: tuple, stats: dict, budget_s: float, scanned: bool) -
   bare = None
   if not scanned and not suspect and cover < ocr_layer.MIN_COVER and len(out.words) <= EMPTY_MAX_WORDS and len(out.segs) // 5 >= SUSPECT_GLYPHS:
     bare = {"drawn_segments": len(out.segs) // 5}
-  partial = None if scanned or suspect or bare else partial_outline_signal(out.rings, out.words)
+  partial = None if scanned or suspect or bare else OT.evidence(out.rings, out.words)
   added = 0
   error = None
 
   if suspect or bare or partial:
-    info.update(suspect or bare or partial)
+    info.update(suspect or bare or {"outlined_clusters": partial["uncovered_clusters"]})
     if not ENABLED:
       error = "DISABLED"
     elif not ocr_layer.available():
       error = "UNAVAILABLE"
+    elif partial and not (suspect or bare):
+      found, oi = OT.read_regions(page, out.rotation, crop, partial["regions"], min(OCR_BUDGET_S, max(15.0, budget_s)))
+      error = oi.get("error")
+      fresh = new_words(found, out.words) if found else []
+      if len(fresh) >= RD.OUTLINED_MIN_LABELS:
+        out.words = list(out.words) + fresh
+        added = len(fresh)
+        info.update(partial_outline=True, ocr_words_added=added, outlined_regions=oi.get("regions"), outlined_unsure=oi.get("unsure"), outlined_marks=oi.get("marks"), outlined_low_marks=oi.get("low"), ocr_elapsed_s=oi.get("seconds"))
+      else:
+        info["outlined_checked"] = True
     else:
       found, oi = ocr_layer.read_page(page, out.rotation, crop, [], budget_s=min(OCR_BUDGET_S, max(15.0, budget_s)))
       error = oi.get("ocr_error")

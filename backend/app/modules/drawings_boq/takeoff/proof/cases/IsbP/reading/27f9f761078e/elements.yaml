@@ -1,1 +1,5625 @@
-[]
+- sheet: 10
+  class: GRID
+  mark: A
+  at:
+    page_xy: &id001
+    - 644.1
+    - 138.3
+  geom:
+    point: *id001
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: null
+    distance_from_A_in: 0.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: B
+  at:
+    page_xy: &id002
+    - 581.6
+    - 138.3
+  geom:
+    point: *id002
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: 83.5
+    distance_from_A_in: 83.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: C
+  at:
+    page_xy: &id003
+    - 436.9
+    - 138.3
+  geom:
+    point: *id003
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: 190.0
+    distance_from_A_in: 273.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: D
+  at:
+    page_xy: &id004
+    - 368.5
+    - 138.3
+  geom:
+    point: *id004
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: 89.5
+    distance_from_A_in: 363.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: E
+  at:
+    page_xy: &id005
+    - 279.6
+    - 138.3
+  geom:
+    point: *id005
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: 118.5
+    distance_from_A_in: 481.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: F
+  at:
+    page_xy: &id006
+    - 234.4
+    - 138.3
+  geom:
+    point: *id006
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: 60.0
+    distance_from_A_in: 541.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: G
+  at:
+    page_xy: &id007
+    - 216.9
+    - 138.3
+  geom:
+    point: *id007
+  attrs:
+    axis: LETTER
+    spacing_from_previous_in: 21.0
+    distance_from_A_in: 562.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '1'
+  at:
+    page_xy: &id008
+    - 704.6
+    - 255.3
+  geom:
+    point: *id008
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: null
+    distance_from_1_in: 0.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '2'
+  at:
+    page_xy: &id009
+    - 704.6
+    - 281.4
+  geom:
+    point: *id009
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 34.5
+    distance_from_1_in: 34.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '3'
+  at:
+    page_xy: &id010
+    - 704.6
+    - 329.0
+  geom:
+    point: *id010
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 62.5
+    distance_from_1_in: 97.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '4'
+  at:
+    page_xy: &id011
+    - 704.6
+    - 407.8
+  geom:
+    point: *id011
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 104.0
+    distance_from_1_in: 201.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '5'
+  at:
+    page_xy: &id012
+    - 704.6
+    - 463.2
+  geom:
+    point: *id012
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 73.0
+    distance_from_1_in: 274.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '6'
+  at:
+    page_xy: &id013
+    - 704.6
+    - 494.5
+  geom:
+    point: *id013
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 41.0
+    distance_from_1_in: 315.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '7'
+  at:
+    page_xy: &id014
+    - 704.6
+    - 539.5
+  geom:
+    point: *id014
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 59.5
+    distance_from_1_in: 374.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '8'
+  at:
+    page_xy: &id015
+    - 704.6
+    - 628.6
+  geom:
+    point: *id015
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 117.5
+    distance_from_1_in: 492.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '9'
+  at:
+    page_xy: &id016
+    - 704.6
+    - 656.3
+  geom:
+    point: *id016
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 36.5
+    distance_from_1_in: 528.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '10'
+  at:
+    page_xy: &id017
+    - 704.6
+    - 727.2
+  geom:
+    point: *id017
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 92.5
+    distance_from_1_in: 621.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '11'
+  at:
+    page_xy: &id018
+    - 704.6
+    - 770.3
+  geom:
+    point: *id018
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 57.0
+    distance_from_1_in: 678.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '12'
+  at:
+    page_xy: &id019
+    - 704.6
+    - 831.4
+  geom:
+    point: *id019
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 81.0
+    distance_from_1_in: 759.0
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: GRID
+  mark: '13'
+  at:
+    page_xy: &id020
+    - 704.6
+    - 885.1
+  geom:
+    point: *id020
+  attrs:
+    axis: NUMBER
+    spacing_from_previous_in: 70.5
+    distance_from_1_in: 829.5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id021
+    - 278.7
+    - 260.0
+    grid:
+    - '1'
+    - E
+  geom:
+    point: *id021
+  attrs:
+    floor: GROUND
+    key: C2@E1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id022
+    - 436.6
+    - 260.0
+    grid:
+    - '1'
+    - C
+  geom:
+    point: *id022
+  attrs:
+    floor: GROUND
+    key: C5@C1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id023
+    - 580.8
+    - 260.0
+    grid:
+    - '1'
+    - B
+  geom:
+    point: *id023
+  attrs:
+    floor: GROUND
+    key: C5@B1
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id024
+    - 233.3
+    - 282.7
+    grid:
+    - '2'
+    - F
+  geom:
+    point: *id024
+  attrs:
+    floor: GROUND
+    key: C2@F2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id025
+    - 278.7
+    - 282.7
+    grid:
+    - '2'
+    - E
+  geom:
+    point: *id025
+  attrs:
+    floor: GROUND
+    key: C2@E2
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id026
+    - 436.6
+    - 330.1
+    grid:
+    - '3'
+    - C
+  geom:
+    point: *id026
+  attrs:
+    floor: GROUND
+    key: C5@C3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id027
+    - 580.8
+    - 330.1
+    grid:
+    - '3'
+    - B
+  geom:
+    point: *id027
+  attrs:
+    floor: GROUND
+    key: C5@B3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id028
+    - 233.3
+    - 405.6
+    grid:
+    - '4'
+    - F
+  geom:
+    point: *id028
+  attrs:
+    floor: GROUND
+    key: C5@F4
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id029
+    - 436.6
+    - 409.1
+    grid:
+    - '4'
+    - C
+  geom:
+    point: *id029
+  attrs:
+    floor: GROUND
+    key: C5@C4
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id030
+    - 380.9
+    - 409.1
+    grid:
+    - '4'
+    - D'
+  geom:
+    point: *id030
+  attrs:
+    floor: GROUND
+    key: C5@D'4
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id031
+    - 436.6
+    - 464.4
+    grid:
+    - '5'
+    - C
+  geom:
+    point: *id031
+  attrs:
+    floor: GROUND
+    key: C5@C5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id032
+    - 580.8
+    - 464.4
+    grid:
+    - '5'
+    - B
+  geom:
+    point: *id032
+  attrs:
+    floor: GROUND
+    key: C5@B5
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id033
+    - 233.3
+    - 495.5
+    grid:
+    - '6'
+    - F
+  geom:
+    point: *id033
+  attrs:
+    floor: GROUND
+    key: C5@F6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id034
+    - 380.9
+    - 495.5
+    grid:
+    - '6'
+    - D
+  geom:
+    point: *id034
+  attrs:
+    floor: GROUND
+    key: C5@D6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id035
+    - 436.6
+    - 495.5
+    grid:
+    - '6'
+    - C
+  geom:
+    point: *id035
+  attrs:
+    floor: GROUND
+    key: C5@C6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id036
+    - 436.6
+    - 540.6
+    grid:
+    - '7'
+    - C
+  geom:
+    point: *id036
+  attrs:
+    floor: GROUND
+    key: C2@C7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C3
+  at:
+    page_xy: &id037
+    - 585.5
+    - 540.6
+    grid:
+    - '7'
+    - B
+  geom:
+    point: *id037
+  attrs:
+    floor: GROUND
+    key: C3@B7
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id038
+    - 368.6
+    - 629.8
+    grid:
+    - '8'
+    - D
+  geom:
+    point: *id038
+  attrs:
+    floor: GROUND
+    key: C2@D8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C4
+  at:
+    page_xy: &id039
+    - 227.0
+    - 629.8
+    grid:
+    - '8'
+    - F
+  geom:
+    point: *id039
+  attrs:
+    floor: GROUND
+    key: C4@F8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id040
+    - 590.1
+    - 657.4
+    grid:
+    - '9'
+    - B'
+  geom:
+    point: *id040
+  attrs:
+    floor: GROUND
+    key: C2@B'9
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id041
+    - 436.6
+    - 657.4
+    grid:
+    - '9'
+    - C
+  geom:
+    point: *id041
+  attrs:
+    floor: GROUND
+    key: C2@C9
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C1
+  at:
+    page_xy: &id042
+    - 368.6
+    - 657.4
+    grid:
+    - '9'
+    - D
+  geom:
+    point: *id042
+  attrs:
+    floor: GROUND
+    key: C1@D9
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id043
+    - 368.6
+    - 727.7
+    grid:
+    - '10'
+    - D
+  geom:
+    point: *id043
+  attrs:
+    floor: GROUND
+    key: C5@D10
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id044
+    - 220.7
+    - 727.7
+    grid:
+    - '10'
+    - G
+  geom:
+    point: *id044
+  attrs:
+    floor: GROUND
+    key: C5@G10
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C7
+  at:
+    page_xy: &id045
+    - 637.7
+    - 774.3
+    grid:
+    - '11'
+    - A
+  geom:
+    point: *id045
+  attrs:
+    floor: GROUND
+    key: C7@A11
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id046
+    - 590.1
+    - 770.9
+    grid:
+    - '11'
+    - B
+  geom:
+    point: *id046
+  attrs:
+    floor: GROUND
+    key: C2@B11
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C5
+  at:
+    page_xy: &id047
+    - 448.2
+    - 770.9
+    grid:
+    - '11'
+    - C'
+  geom:
+    point: *id047
+  attrs:
+    floor: GROUND
+    key: C5@C'11
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id048
+    - 368.6
+    - 832.3
+    grid:
+    - '12'
+    - D
+  geom:
+    point: *id048
+  attrs:
+    floor: GROUND
+    key: C2@D12
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id049
+    - 448.2
+    - 832.3
+    grid:
+    - '12'
+    - C'
+  geom:
+    point: *id049
+  attrs:
+    floor: GROUND
+    key: C2@C'12
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C7
+  at:
+    page_xy: &id050
+    - 640.8
+    - 879.2
+    grid:
+    - '13'
+    - A
+  geom:
+    point: *id050
+  attrs:
+    floor: GROUND
+    key: C7@A13
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C8
+  at:
+    page_xy: &id051
+    - 444.7
+    - 880.8
+    grid:
+    - '13'
+    - C
+  geom:
+    point: *id051
+  attrs:
+    floor: GROUND
+    key: C8@C13
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C6
+  at:
+    page_xy: &id052
+    - 368.6
+    - 879.1
+    grid:
+    - '13'
+    - D
+  geom:
+    point: *id052
+  attrs:
+    floor: GROUND
+    key: C6@D13
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 10
+  class: COLUMN
+  mark: C2
+  at:
+    page_xy: &id053
+    - 220.7
+    - 875.7
+    grid:
+    - '13'
+    - G
+  geom:
+    point: *id053
+  attrs:
+    floor: GROUND
+    key: C2@G13
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id054
+    - 374.0
+    - 359.4
+  geom:
+    point: *id054
+  attrs:
+    floor: FIRST
+    key: PC#1
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id055
+    - 374.0
+    - 243.4
+  geom:
+    point: *id055
+  attrs:
+    floor: FIRST
+    key: PC#2
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id056
+    - 221.6
+    - 359.4
+  geom:
+    point: *id056
+  attrs:
+    floor: FIRST
+    key: PC#3
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id057
+    - 448.3
+    - 359.4
+  geom:
+    point: *id057
+  attrs:
+    floor: FIRST
+    key: PC#4
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id058
+    - 564.6
+    - 364.1
+  geom:
+    point: *id058
+  attrs:
+    floor: FIRST
+    key: PC#5
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id059
+    - 221.6
+    - 521.0
+  geom:
+    point: *id059
+  attrs:
+    floor: FIRST
+    key: PC#6
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id060
+    - 578.5
+    - 866.2
+  geom:
+    point: *id060
+  attrs:
+    floor: FIRST
+    key: PC#7
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id061
+    - 601.9
+    - 564.5
+  geom:
+    point: *id061
+  attrs:
+    floor: FIRST
+    key: PC#8
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: COLUMN
+  mark: PC
+  at:
+    page_xy: &id062
+    - 380.2
+    - 556.0
+  geom:
+    point: *id062
+  attrs:
+    floor: FIRST
+    key: PC#9
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id063
+    - 533.4
+    - 622.8
+  geom:
+    point: *id063
+  attrs:
+    floor: ROOF
+    key: PC-1#1
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id064
+    - 460.4
+    - 622.8
+  geom:
+    point: *id064
+  attrs:
+    floor: ROOF
+    key: PC-1#2
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id065
+    - 426.1
+    - 664.9
+  geom:
+    point: *id065
+  attrs:
+    floor: ROOF
+    key: PC-1#3
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id066
+    - 556.0
+    - 703.4
+  geom:
+    point: *id066
+  attrs:
+    floor: ROOF
+    key: PC-1#4
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id067
+    - 533.4
+    - 823.5
+  geom:
+    point: *id067
+  attrs:
+    floor: ROOF
+    key: PC-1#5
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id068
+    - 354.1
+    - 823.5
+  geom:
+    point: *id068
+  attrs:
+    floor: ROOF
+    key: PC-1#6
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id069
+    - 307.2
+    - 282.8
+  geom:
+    point: *id069
+  attrs:
+    floor: ROOF
+    key: PC-1#7
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id070
+    - 307.2
+    - 338.2
+  geom:
+    point: *id070
+  attrs:
+    floor: ROOF
+    key: PC-1#8
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 13
+  class: COLUMN
+  mark: PC-1
+  at:
+    page_xy: &id071
+    - 406.6
+    - 338.2
+  geom:
+    point: *id071
+  attrs:
+    floor: ROOF
+    key: PC-1#9
+    position_is: label
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-1
+  at:
+    page_xy: &id072
+    - 178.8
+    - 333.2
+  geom:
+    point: *id072
+  attrs:
+    floor: GROUND
+    key: C-1:GROUND
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-1
+  at:
+    page_xy: &id073
+    - 178.8
+    - 434.0
+  geom:
+    point: *id073
+  attrs:
+    floor: FIRST
+    key: C-1:FIRST
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-1
+  at:
+    page_xy: &id074
+    - 178.8
+    - 534.8
+  geom:
+    point: *id074
+  attrs:
+    floor: ROOF
+    key: C-1:ROOF
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-2
+  at:
+    page_xy: &id075
+    - 269.2
+    - 333.2
+  geom:
+    point: *id075
+  attrs:
+    floor: GROUND
+    key: C-2:GROUND
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-2
+  at:
+    page_xy: &id076
+    - 269.2
+    - 434.0
+  geom:
+    point: *id076
+  attrs:
+    floor: FIRST
+    key: C-2:FIRST
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-3
+  at:
+    page_xy: &id077
+    - 359.0
+    - 333.9
+  geom:
+    point: *id077
+  attrs:
+    floor: GROUND
+    key: C-3:GROUND
+    size_mm:
+    - 546.1
+    - 228.6
+    bar_count: 10
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-3
+  at:
+    page_xy: &id078
+    - 359.0
+    - 434.7
+  geom:
+    point: *id078
+  attrs:
+    floor: FIRST
+    key: C-3:FIRST
+    size_mm:
+    - 546.1
+    - 228.6
+    bar_count: 10
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-4
+  at:
+    page_xy: &id079
+    - 449.1
+    - 333.9
+  geom:
+    point: *id079
+  attrs:
+    floor: GROUND
+    key: C-4:GROUND
+    size_mm:
+    - 647.7
+    - 228.6
+    bar_count: 12
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-4
+  at:
+    page_xy: &id080
+    - 449.1
+    - 434.7
+  geom:
+    point: *id080
+  attrs:
+    floor: FIRST
+    key: C-4:FIRST
+    size_mm:
+    - 647.7
+    - 228.6
+    bar_count: 12
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-5
+  at:
+    page_xy: &id081
+    - 537.1
+    - 333.2
+  geom:
+    point: *id081
+  attrs:
+    floor: GROUND
+    key: C-5:GROUND
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-6
+  at:
+    page_xy: &id082
+    - 177.1
+    - 717.3
+  geom:
+    point: *id082
+  attrs:
+    floor: GROUND
+    key: C-6:GROUND
+    size_mm:
+    - 304.8
+    - 304.8
+    bar_count: 8
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  conflict:
+    kind: SIZE_TEXT_VS_SKETCH
+    printed: 12"x12"
+    sketch: 1'-6" x 9" (18 x 9)
+    note: printed 12x12 against an 18x9 sketch with 8 bars drawn
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-6
+  at:
+    page_xy: &id083
+    - 177.5
+    - 817.7
+  geom:
+    point: *id083
+  attrs:
+    floor: FIRST
+    key: C-6:FIRST
+    size_mm:
+    - 304.8
+    - 304.8
+    bar_count: 8
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  conflict:
+    kind: SIZE_TEXT_VS_SKETCH
+    printed: 12"x12"
+    sketch: 1'-6" x 9" (18 x 9)
+    note: printed 12x12 against an 18x9 sketch with 8 bars drawn
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-7
+  at:
+    page_xy: &id084
+    - 267.6
+    - 717.0
+  geom:
+    point: *id084
+  attrs:
+    floor: GROUND
+    key: C-7:GROUND
+    size_mm:
+    - 304.8
+    - 457.2
+    bar_count: 8
+    bar_dia_no: 6
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-8
+  at:
+    page_xy: &id085
+    - 358.0
+    - 714.9
+  geom:
+    point: *id085
+  attrs:
+    floor: GROUND
+    key: C-8:GROUND
+    size_mm:
+    - 342.9
+    - 469.9
+    bar_count: 10
+    bar_dia_no: 6
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  conflict:
+    kind: SIZE_TEXT_VS_SKETCH
+    printed: 13 1/2"x18 1/2"
+    sketch: 1'-1 1/2" x 1'-7 1/2" (13.5 x 19.5)
+    note: found by the builder on a 200 dpi crop; not in the outline; needs the sample check
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: PC
+  at:
+    page_xy: &id086
+    - 447.8
+    - 817.4
+  geom:
+    point: *id086
+  attrs:
+    floor: FIRST
+    key: PC:FIRST
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: PC
+  at:
+    page_xy: &id087
+    - 448.4
+    - 918.0
+  geom:
+    point: *id087
+  attrs:
+    floor: ROOF
+    key: PC:ROOF
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: PC-1
+  at:
+    page_xy: &id088
+    - 531.0
+    - 918.2
+  geom:
+    point: *id088
+  attrs:
+    floor: ROOF
+    key: PC-1:ROOF
+    size_mm:
+    - 228.6
+    - 228.6
+    bar_count: 4
+    bar_dia_no: 4
+    stirrup_mid_spacing_in: 8
+    stirrup_joint_spacing_in: 4
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 12
+  class: BEAM_SECTION
+  mark: SB
+  at:
+    page_xy: &id089
+    - 90.0
+    - 248.0
+  geom:
+    point: *id089
+  attrs:
+    key: SB-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: IB-1
+  at:
+    page_xy: &id090
+    - 90.0
+    - 340.0
+  geom:
+    point: *id090
+  attrs:
+    key: IB-1-section
+    width_in: 12
+    depth_in: 24
+    width_mm: 304.8
+    depth_mm: 609.6
+    top_bars:
+    - 4-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 3-#8 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: IB
+  at:
+    page_xy: &id091
+    - 90.0
+    - 440.0
+  geom:
+    point: *id091
+  attrs:
+    key: IB-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: B5
+  at:
+    page_xy: &id092
+    - 90.0
+    - 540.0
+  geom:
+    point: *id092
+  attrs:
+    key: B5-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: B4
+  at:
+    page_xy: &id093
+    - 90.0
+    - 636.0
+  geom:
+    point: *id093
+  attrs:
+    key: B4-section
+    width_in: 13.5
+    depth_in: 18
+    width_mm: 342.9
+    depth_mm: 457.2
+    top_bars:
+    - 2-#6 Thr.
+    bottom_bars:
+    - 2-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id094
+    - 90.0
+    - 751.0
+  geom:
+    point: *id094
+  attrs:
+    key: B3-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id095
+    - 90.0
+    - 852.0
+  geom:
+    point: *id095
+  attrs:
+    key: B2-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: B1a
+  at:
+    page_xy: &id096
+    - 90.0
+    - 955.0
+  geom:
+    point: *id096
+  attrs:
+    key: B1a-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 12
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id097
+    - 90.0
+    - 1061.0
+  geom:
+    point: *id097
+  attrs:
+    key: B1-section
+    width_in: 12
+    depth_in: 21
+    width_mm: 304.8
+    depth_mm: 533.4
+    top_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: top and bottom bars read on a 250 dpi crop for B2, B1a and B1; the others on the text layer and the 110 dpi image
+- sheet: 13
+  class: BEAM_SECTION
+  mark: SB
+  attrs:
+    key: SB-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: IB-1
+  attrs:
+    key: IB-1-section
+    width_in: 12
+    depth_in: 24
+    width_mm: 304.8
+    depth_mm: 609.6
+    top_bars:
+    - 4-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 3-#8 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: IB
+  attrs:
+    key: IB-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: B5
+  attrs:
+    key: B5-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: B4
+  attrs:
+    key: B4-section
+    width_in: 13.5
+    depth_in: 18
+    width_mm: 342.9
+    depth_mm: 457.2
+    top_bars:
+    - 2-#6 Thr.
+    bottom_bars:
+    - 2-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: B3
+  attrs:
+    key: B3-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: B2
+  attrs:
+    key: B2-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: B1a
+  attrs:
+    key: B1a-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 13
+  class: BEAM_SECTION
+  mark: B1
+  attrs:
+    key: B1-section
+    width_in: 12
+    depth_in: 21
+    width_mm: 304.8
+    depth_mm: 533.4
+    top_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 13; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: SB
+  attrs:
+    key: SB-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: IB-1
+  attrs:
+    key: IB-1-section
+    width_in: 12
+    depth_in: 24
+    width_mm: 304.8
+    depth_mm: 609.6
+    top_bars:
+    - 4-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 3-#8 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: IB
+  attrs:
+    key: IB-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: B5
+  attrs:
+    key: B5-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: B4
+  attrs:
+    key: B4-section
+    width_in: 13.5
+    depth_in: 18
+    width_mm: 342.9
+    depth_mm: 457.2
+    top_bars:
+    - 2-#6 Thr.
+    bottom_bars:
+    - 2-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: B3
+  attrs:
+    key: B3-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    bottom_bars:
+    - 3-#6 Thr.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: B2
+  attrs:
+    key: B2-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: B1a
+  attrs:
+    key: B1a-section
+    width_in: 9
+    depth_in: 18
+    width_mm: 228.6
+    depth_mm: 457.2
+    top_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 14
+  class: BEAM_SECTION
+  mark: B1
+  attrs:
+    key: B1-section
+    width_in: 12
+    depth_in: 21
+    width_mm: 304.8
+    depth_mm: 533.4
+    top_bars:
+    - 3-#6 Thr.
+    - 3-#6 Ext.
+    bottom_bars:
+    - 3-#6 Thr.
+    - 2-#6 Ext.
+    stirrup: '#3@4"/8"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: the same nine beam sections are drawn again on sheet 14; read on the text layer and checked against the 110 dpi image; no position written
+- sheet: 8
+  class: FOOTING_PAD
+  mark: F2
+  at:
+    page_xy: &id098
+    - 637.7
+    - 774.3
+  geom:
+    point: *id098
+  attrs:
+    key: F2@A11
+    size_in:
+    - 66
+    - 60
+    note: plan prints 5' and 5'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 8
+  class: FOOTING_PAD
+  mark: F2
+  at:
+    page_xy: &id099
+    - 640.8
+    - 879.2
+  geom:
+    point: *id099
+  attrs:
+    key: F2@A13
+    size_in:
+    - 66
+    - 60
+    note: plan prints 5' and 5'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 8
+  class: FOOTING_PAD
+  mark: F3
+  at:
+    page_xy: &id100
+    - 460.1
+    - 744.4
+  geom:
+    point: *id100
+  attrs:
+    key: F3
+    note: the stair footing; section 3-3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 9
+  class: FOOTING_SECTION
+  mark: F1
+  attrs:
+    key: F1
+    width_in: 45
+    width_with_pcc_in: 51
+    thickness_in: 12
+    pcc_in: 3
+    depth_below_ffl_in: 48
+    bars:
+    - '#4@6"C/C'
+    - '#3@6"C/C'
+    wall_in: 9
+    plinth_beam: 9"x9"
+    cut: 1-1/S-02
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: values read on 200 dpi crops of page 9; no position written
+- sheet: 9
+  class: FOOTING_SECTION
+  mark: F2
+  attrs:
+    key: F2
+    width_in: 60
+    width_with_pcc_in: 66
+    thickness_in: 12
+    pcc_in: 3
+    depth_below_ffl_in: 48
+    bars:
+    - '#4@6"C/C'
+    cut: 2-2/S-02
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: values read on 200 dpi crops of page 9; no position written
+- sheet: 9
+  class: FOOTING_SECTION
+  mark: 4.5IN-WALL
+  attrs:
+    key: 4.5IN-WALL
+    width_in: 15
+    width_with_pcc_in: 21
+    thickness_in: 9
+    pcc_in: 3
+    bars:
+    - '#4@9"C/C'
+    - 3-#3
+    wall_in: 9
+    dpc_in: 2
+    title: Typical 4 1/2" Wall
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: values read on 200 dpi crops of page 9; no position written
+- sheet: 9
+  class: FOOTING_SECTION
+  mark: BOUNDARY-WALL
+  attrs:
+    key: BOUNDARY-WALL
+    width_in: 24
+    width_with_pcc_in: 27
+    thickness_in: 9
+    pcc_in: 3
+    bars:
+    - '#4@7"C/C'
+    - '#3@9"C/C'
+    wall_in: 9
+    dpc_in: 2
+    boundary_column_spacing_ft: 10
+    title: Typ. Boundary Wall
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: values read on 200 dpi crops of page 9; no position written
+- sheet: 9
+  class: FOOTING_SECTION
+  mark: STAIR
+  attrs:
+    key: STAIR
+    bars:
+    - '#4@9"C/C'
+    - '#4@6"C/C'
+    - '#3@6"C/C'
+    thickness_in: 12
+    depth_in: 48
+    pcc_in: 3
+    cut: 3-3/S-01
+    title: STAIR FOOTING
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: values read on 200 dpi crops of page 9; no position written
+- sheet: 9
+  class: PLINTH_BEAM
+  mark: PB
+  attrs:
+    key: PB-section
+    width_in: 9
+    depth_in: 9
+    bars: 4#4
+    stirrup: '#3@8"c/c'
+    title: Plinth Beam 9x9
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+    note: a small section on page 9, next to the stair footing
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id101
+    - 504.5
+    - 819.4
+  geom:
+    point: *id101
+  attrs:
+    key: 12-CO1
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id102
+    - 526.8
+    - 843.1
+  geom:
+    point: *id102
+  attrs:
+    key: 12-CO2
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id103
+    - 486.7
+    - 791.0
+  geom:
+    point: *id103
+  attrs:
+    key: 12-CO3
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id104
+    - 561.8
+    - 788.6
+  geom:
+    point: *id104
+  attrs:
+    key: 12-CO4
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id105
+    - 563.6
+    - 858.0
+  geom:
+    point: *id105
+  attrs:
+    key: 12-CO5
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id106
+    - 470.4
+    - 857.3
+  geom:
+    point: *id106
+  attrs:
+    key: 12-CO6
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id107
+    - 280.0
+    - 800.0
+  geom:
+    point: *id107
+  attrs:
+    key: 12-CO7
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id108
+    - 302.2
+    - 823.8
+  geom:
+    point: *id108
+  attrs:
+    key: 12-CO8
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id109
+    - 333.1
+    - 851.0
+  geom:
+    point: *id109
+  attrs:
+    key: 12-CO9
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id110
+    - 242.8
+    - 822.0
+  geom:
+    point: *id110
+  attrs:
+    key: 12-CO10
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id111
+    - 340.1
+    - 771.9
+  geom:
+    point: *id111
+  attrs:
+    key: 12-CO11
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id112
+    - 251.2
+    - 659.8
+  geom:
+    point: *id112
+  attrs:
+    key: 12-CO12
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id113
+    - 272.6
+    - 683.5
+  geom:
+    point: *id113
+  attrs:
+    key: 12-CO13
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id114
+    - 292.9
+    - 649.9
+  geom:
+    point: *id114
+  attrs:
+    key: 12-CO14
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id115
+    - 239.1
+    - 638.6
+  geom:
+    point: *id115
+  attrs:
+    key: 12-CO15
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id116
+    - 288.5
+    - 677.5
+  geom:
+    point: *id116
+  attrs:
+    key: 12-CO16
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id117
+    - 323.9
+    - 659.8
+  geom:
+    point: *id117
+  attrs:
+    key: 12-CO17
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id118
+    - 343.9
+    - 683.5
+  geom:
+    point: *id118
+  attrs:
+    key: 12-CO18
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id119
+    - 350.5
+    - 636.5
+  geom:
+    point: *id119
+  attrs:
+    key: 12-CO19
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id120
+    - 362.2
+    - 686.5
+  geom:
+    point: *id120
+  attrs:
+    key: 12-CO20
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id121
+    - 248.6
+    - 597.9
+  geom:
+    point: *id121
+  attrs:
+    key: 12-CO21
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id122
+    - 257.2
+    - 557.6
+  geom:
+    point: *id122
+  attrs:
+    key: 12-CO22
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id123
+    - 288.5
+    - 554.9
+  geom:
+    point: *id123
+  attrs:
+    key: 12-CO23
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id124
+    - 350.5
+    - 578.5
+  geom:
+    point: *id124
+  attrs:
+    key: 12-CO24
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id125
+    - 359.6
+    - 557.6
+  geom:
+    point: *id125
+  attrs:
+    key: 12-CO25
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id126
+    - 288.5
+    - 506.9
+  geom:
+    point: *id126
+  attrs:
+    key: 12-CO26
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id127
+    - 308.5
+    - 530.6
+  geom:
+    point: *id127
+  attrs:
+    key: 12-CO27
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id128
+    - 314.1
+    - 396.1
+  geom:
+    point: *id128
+  attrs:
+    key: 12-CO28
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id129
+    - 466.4
+    - 495.4
+  geom:
+    point: *id129
+  attrs:
+    key: 12-CO29
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id130
+    - 263.0
+    - 449.2
+  geom:
+    point: *id130
+  attrs:
+    key: 12-CO30
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id131
+    - 498.8
+    - 608.8
+  geom:
+    point: *id131
+  attrs:
+    key: 12-CO31
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id132
+    - 520.9
+    - 632.5
+  geom:
+    point: *id132
+  attrs:
+    key: 12-CO32
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id133
+    - 582.7
+    - 635.0
+  geom:
+    point: *id133
+  attrs:
+    key: 12-CO33
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id134
+    - 569.0
+    - 591.4
+  geom:
+    point: *id134
+  attrs:
+    key: 12-CO34
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id135
+    - 458.8
+    - 631.4
+  geom:
+    point: *id135
+  attrs:
+    key: 12-CO35
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id136
+    - 553.5
+    - 701.5
+  geom:
+    point: *id136
+  attrs:
+    key: 12-CO36
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id137
+    - 573.5
+    - 725.1
+  geom:
+    point: *id137
+  attrs:
+    key: 12-CO37
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id138
+    - 573.5
+    - 741.5
+  geom:
+    point: *id138
+  attrs:
+    key: 12-CO38
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id139
+    - 555.4
+    - 666.5
+  geom:
+    point: *id139
+  attrs:
+    key: 12-CO39
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id140
+    - 387.9
+    - 598.5
+  geom:
+    point: *id140
+  attrs:
+    key: 12-CO40
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id141
+    - 410.1
+    - 622.1
+  geom:
+    point: *id141
+  attrs:
+    key: 12-CO41
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id142
+    - 395.4
+    - 635.0
+  geom:
+    point: *id142
+  attrs:
+    key: 12-CO42
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id143
+    - 424.0
+    - 557.6
+  geom:
+    point: *id143
+  attrs:
+    key: 12-CO43
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id144
+    - 502.0
+    - 514.6
+  geom:
+    point: *id144
+  attrs:
+    key: 12-CO44
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id145
+    - 524.2
+    - 538.4
+  geom:
+    point: *id145
+  attrs:
+    key: 12-CO45
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id146
+    - 480.8
+    - 560.1
+  geom:
+    point: *id146
+  attrs:
+    key: 12-CO46
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id147
+    - 552.2
+    - 484.5
+  geom:
+    point: *id147
+  attrs:
+    key: 12-CO47
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id148
+    - 569.0
+    - 548.6
+  geom:
+    point: *id148
+  attrs:
+    key: 12-CO48
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id149
+    - 494.0
+    - 412.1
+  geom:
+    point: *id149
+  attrs:
+    key: 12-CO49
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id150
+    - 516.2
+    - 435.9
+  geom:
+    point: *id150
+  attrs:
+    key: 12-CO50
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id151
+    - 477.6
+    - 396.1
+  geom:
+    point: *id151
+  attrs:
+    key: 12-CO51
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id152
+    - 559.6
+    - 391.5
+  geom:
+    point: *id152
+  attrs:
+    key: 12-CO52
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id153
+    - 455.0
+    - 443.9
+  geom:
+    point: *id153
+  attrs:
+    key: 12-CO53
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id154
+    - 492.1
+    - 309.9
+  geom:
+    point: *id154
+  attrs:
+    key: 12-CO54
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id155
+    - 514.4
+    - 333.6
+  geom:
+    point: *id155
+  attrs:
+    key: 12-CO55
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id156
+    - 553.8
+    - 280.1
+  geom:
+    point: *id156
+  attrs:
+    key: 12-CO56
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id157
+    - 559.6
+    - 339.2
+  geom:
+    point: *id157
+  attrs:
+    key: 12-CO57
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id158
+    - 455.0
+    - 275.6
+  geom:
+    point: *id158
+  attrs:
+    key: 12-CO58
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id159
+    - 396.5
+    - 309.9
+  geom:
+    point: *id159
+  attrs:
+    key: 12-CO59
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id160
+    - 418.8
+    - 333.6
+  geom:
+    point: *id160
+  attrs:
+    key: 12-CO60
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id161
+    - 400.6
+    - 335.8
+  geom:
+    point: *id161
+  attrs:
+    key: 12-CO61
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id162
+    - 405.4
+    - 280.1
+  geom:
+    point: *id162
+  attrs:
+    key: 12-CO62
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id163
+    - 428.6
+    - 357.5
+  geom:
+    point: *id163
+  attrs:
+    key: 12-CO63
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id164
+    - 317.5
+    - 311.4
+  geom:
+    point: *id164
+  attrs:
+    key: 12-CO64
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id165
+    - 339.8
+    - 335.1
+  geom:
+    point: *id165
+  attrs:
+    key: 12-CO65
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id166
+    - 299.4
+    - 287.0
+  geom:
+    point: *id166
+  attrs:
+    key: 12-CO66
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id167
+    - 363.2
+    - 280.1
+  geom:
+    point: *id167
+  attrs:
+    key: 12-CO67
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id168
+    - 254.0
+    - 338.9
+  geom:
+    point: *id168
+  attrs:
+    key: 12-CO68
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id169
+    - 254.2
+    - 302.8
+  geom:
+    point: *id169
+  attrs:
+    key: 12-CO69
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id170
+    - 269.7
+    - 357.5
+  geom:
+    point: *id170
+  attrs:
+    key: 12-CO70
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id171
+    - 397.1
+    - 709.9
+  geom:
+    point: *id171
+  attrs:
+    key: 12-CO71
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id172
+    - 425.3
+    - 751.6
+  geom:
+    point: *id172
+  attrs:
+    key: 12-CO72
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id173
+    - 253.8
+    - 747.8
+  geom:
+    point: *id173
+  attrs:
+    key: 12-CO73
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id174
+    - 364.5
+    - 471.0
+  geom:
+    point: *id174
+  attrs:
+    key: 12-CO74
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id175
+    - 350.5
+    - 518.9
+  geom:
+    point: *id175
+  attrs:
+    key: 12-CO75
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id176
+    - 248.6
+    - 500.8
+  geom:
+    point: *id176
+  attrs:
+    key: 12-CO76
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id177
+    - 322.5
+    - 427.6
+  geom:
+    point: *id177
+  attrs:
+    key: 12-CO77
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 12
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id178
+    - 342.4
+    - 451.4
+  geom:
+    point: *id178
+  attrs:
+    key: 12-CO78
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id179
+    - 293.1
+    - 379.6
+  geom:
+    point: *id179
+  attrs:
+    key: 13-CO1
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id180
+    - 316.6
+    - 404.8
+  geom:
+    point: *id180
+  attrs:
+    key: 13-CO2
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id181
+    - 355.1
+    - 375.4
+  geom:
+    point: *id181
+  attrs:
+    key: 13-CO3
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id182
+    - 271.1
+    - 450.8
+  geom:
+    point: *id182
+  attrs:
+    key: 13-CO4
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id183
+    - 248.6
+    - 365.8
+  geom:
+    point: *id183
+  attrs:
+    key: 13-CO5
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id184
+    - 365.1
+    - 393.4
+  geom:
+    point: *id184
+  attrs:
+    key: 13-CO6
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id185
+    - 318.1
+    - 500.1
+  geom:
+    point: *id185
+  attrs:
+    key: 13-CO7
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id186
+    - 341.9
+    - 525.0
+  geom:
+    point: *id186
+  attrs:
+    key: 13-CO8
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id187
+    - 361.4
+    - 574.8
+  geom:
+    point: *id187
+  attrs:
+    key: 13-CO9
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id188
+    - 413.1
+    - 465.6
+  geom:
+    point: *id188
+  attrs:
+    key: 13-CO10
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id189
+    - 251.4
+    - 546.0
+  geom:
+    point: *id189
+  attrs:
+    key: 13-CO11
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id190
+    - 503.8
+    - 523.2
+  geom:
+    point: *id190
+  attrs:
+    key: 13-CO12
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id191
+    - 527.5
+    - 548.2
+  geom:
+    point: *id191
+  attrs:
+    key: 13-CO13
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id192
+    - 490.1
+    - 616.7
+  geom:
+    point: *id192
+  attrs:
+    key: 13-CO14
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id193
+    - 558.5
+    - 450.8
+  geom:
+    point: *id193
+  attrs:
+    key: 13-CO15
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id194
+    - 565.8
+    - 570.8
+  geom:
+    point: *id194
+  attrs:
+    key: 13-CO16
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id195
+    - 508.8
+    - 669.5
+  geom:
+    point: *id195
+  attrs:
+    key: 13-CO17
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id196
+    - 532.4
+    - 694.5
+  geom:
+    point: *id196
+  attrs:
+    key: 13-CO18
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id197
+    - 597.8
+    - 697.2
+  geom:
+    point: *id197
+  attrs:
+    key: 13-CO19
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id198
+    - 583.2
+    - 651.0
+  geom:
+    point: *id198
+  attrs:
+    key: 13-CO20
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id199
+    - 466.4
+    - 693.3
+  geom:
+    point: *id199
+  attrs:
+    key: 13-CO21
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id200
+    - 279.1
+    - 634.3
+  geom:
+    point: *id200
+  attrs:
+    key: 13-CO22
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id201
+    - 302.9
+    - 659.3
+  geom:
+    point: *id201
+  attrs:
+    key: 13-CO23
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id202
+    - 251.4
+    - 608.2
+  geom:
+    point: *id202
+  attrs:
+    key: 13-CO24
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id203
+    - 341.1
+    - 653.1
+  geom:
+    point: *id203
+  attrs:
+    key: 13-CO25
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id204
+    - 260.7
+    - 724.8
+  geom:
+    point: *id204
+  attrs:
+    key: 13-CO26
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id205
+    - 277.4
+    - 800.3
+  geom:
+    point: *id205
+  attrs:
+    key: 13-CO27
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id206
+    - 301.1
+    - 825.3
+  geom:
+    point: *id206
+  attrs:
+    key: 13-CO28
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id207
+    - 336.6
+    - 925.8
+  geom:
+    point: *id207
+  attrs:
+    key: 13-CO29
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id208
+    - 341.1
+    - 731.0
+  geom:
+    point: *id208
+  attrs:
+    key: 13-CO30
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id209
+    - 237.9
+    - 879.5
+  geom:
+    point: *id209
+  attrs:
+    key: 13-CO31
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id210
+    - 483.1
+    - 897.5
+  geom:
+    point: *id210
+  attrs:
+    key: 13-CO32
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id211
+    - 506.9
+    - 922.5
+  geom:
+    point: *id211
+  attrs:
+    key: 13-CO33
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id212
+    - 570.0
+    - 933.0
+  geom:
+    point: *id212
+  attrs:
+    key: 13-CO34
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id213
+    - 459.8
+    - 862.2
+  geom:
+    point: *id213
+  attrs:
+    key: 13-CO35
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id214
+    - 575.5
+    - 859.8
+  geom:
+    point: *id214
+  attrs:
+    key: 13-CO36
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id215
+    - 394.6
+    - 924.0
+  geom:
+    point: *id215
+  attrs:
+    key: 13-CO37
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id216
+    - 566.8
+    - 767.5
+  geom:
+    point: *id216
+  attrs:
+    key: 13-CO38
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id217
+    - 588.0
+    - 792.5
+  geom:
+    point: *id217
+  attrs:
+    key: 13-CO39
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id218
+    - 588.0
+    - 810.0
+  geom:
+    point: *id218
+  attrs:
+    key: 13-CO40
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id219
+    - 567.0
+    - 730.6
+  geom:
+    point: *id219
+  attrs:
+    key: 13-CO41
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id220
+    - 401.4
+    - 771.6
+  geom:
+    point: *id220
+  attrs:
+    key: 13-CO42
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 13
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id221
+    - 431.1
+    - 820.5
+  geom:
+    point: *id221
+  attrs:
+    key: 13-CO43
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id222
+    - 439.1
+    - 773.6
+  geom:
+    point: *id222
+  attrs:
+    key: 14-CO1
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id223
+    - 463.8
+    - 800.0
+  geom:
+    point: *id223
+  attrs:
+    key: 14-CO2
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id224
+    - 504.4
+    - 825.6
+  geom:
+    point: *id224
+  attrs:
+    key: 14-CO3
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id225
+    - 416.3
+    - 740.3
+  geom:
+    point: *id225
+  attrs:
+    key: 14-CO4
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id226
+    - 524.4
+    - 745.6
+  geom:
+    point: *id226
+  attrs:
+    key: 14-CO5
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id227
+    - 383.0
+    - 798.5
+  geom:
+    point: *id227
+  attrs:
+    key: 14-CO6
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id228
+    - 470.4
+    - 669.9
+  geom:
+    point: *id228
+  attrs:
+    key: 14-CO7
+    text: '#3@8"C/C'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id229
+    - 495.1
+    - 696.4
+  geom:
+    point: *id229
+  attrs:
+    key: 14-CO8
+    text: '#3@6"C/C'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id230
+    - 525.9
+    - 655.6
+  geom:
+    point: *id230
+  attrs:
+    key: 14-CO9
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id231
+    - 524.4
+    - 690.2
+  geom:
+    point: *id231
+  attrs:
+    key: 14-CO10
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 14
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id232
+    - 458.5
+    - 642.3
+  geom:
+    point: *id232
+  attrs:
+    key: 14-CO11
+    text: '#4@6"C/C'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: text and position from the text objects of the page; counted again on the page image
+- sheet: 15
+  class: TANK
+  mark: OHWT
+  attrs:
+    key: OHWT
+    top_slab_in: 6
+    wall_in: 6
+    bottom_slab_in: 8
+    bars:
+      top: '#4@7"C/C'
+      wall_each_face: '#4@6"C/C'
+      bottom: '#4@6"C/C'
+      haunch: '#4@10"C/C'
+    title: Details, sec C-C
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 16
+  class: TANK
+  mark: UGWT
+  attrs:
+    key: UGWT
+    bars:
+      top_slab: '#4@6"C/C'
+      wall_vertical: '#4@8"C/C'
+      wall_horizontal: '#4@6"C/C'
+      bottom_slab: '#4@6"C/C'
+      haunch: '#4@10"C/C'
+      opening_trimmer: (2+2)-#4 T&B
+    title: Under Ground Water Tank, sec A-A
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 17
+  class: TANK
+  mark: SEPTIC
+  attrs:
+    key: SEPTIC
+    haunch_in: 12
+    bars:
+      top_slab:
+      - '#3@6"c/c'
+      - '#4@6"c/c'
+      wall:
+      - '#3@8"c/c'
+      - '#4@6"c/c'
+      baffle_wall:
+      - '#3@8"c/c'
+      - '#4@6"c/c'
+      bottom_slab: '#4@7"c/c'
+      haunch: '#4@10"c/c'
+    title: SEPTIC TANK, x-section B-B
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'
+- sheet: 3
+  class: NOTE_FACT
+  mark: CONCRETE_COLUMN_WALL_LIFTWELL_28D
+  attrs:
+    key: CONCRETE_COLUMN_WALL_LIFTWELL_28D
+    value: 3000
+    unit: psi
+    text: 3000 psi (21 MPa) at 28 days for all columns, R.C.C. walls, lift well
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: CONCRETE_FOUNDATION_BEAM_SLAB_28D
+  attrs:
+    key: CONCRETE_FOUNDATION_BEAM_SLAB_28D
+    value: 3000
+    unit: psi
+    text: 3000 psi (21 MPa) at 28 days for foundation, R.C.C., beams, slabs
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: CONCRETE_LEAN_28D
+  attrs:
+    key: CONCRETE_LEAN_28D
+    value: 1500
+    unit: psi
+    text: 1500 psi, mix not leaner than 1:4:8
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: STEEL_GRADE
+  attrs:
+    key: STEEL_GRADE
+    value: 60000
+    unit: psi
+    text: 60,000 psi (grade 60) (414 MPa) deformed bars
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: STIRRUP_STEEL_GRADE
+  attrs:
+    key: STIRRUP_STEEL_GRADE
+    value: 60000
+    unit: psi
+    text: 60,000 psi (414 MPa)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: COVER_FOOTING
+  attrs:
+    key: COVER_FOOTING
+    value: 3
+    unit: in
+    text: 3" (75 mm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: COVER_SLAB_WALL
+  attrs:
+    key: COVER_SLAB_WALL
+    value: 0.75
+    unit: in
+    text: 3/4" (20 mm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: COVER_COLUMN_BEAM
+  attrs:
+    key: COVER_COLUMN_BEAM
+    value: 1.5
+    unit: in
+    text: 1 1/2" (39 mm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: AGGREGATE_RAFT
+  attrs:
+    key: AGGREGATE_RAFT
+    value: 1.25
+    unit: in
+    text: 1 1/4" (30 mm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: AGGREGATE_SLAB_WALL
+  attrs:
+    key: AGGREGATE_SLAB_WALL
+    value: 0.75
+    unit: in
+    text: 3/4" (20 mm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: AGGREGATE_COLUMN_BEAM
+  attrs:
+    key: AGGREGATE_COLUMN_BEAM
+    value: 0.75
+    unit: in
+    text: 3/4" (20 mm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: EMBEDMENT_3
+  attrs:
+    key: EMBEDMENT_3
+    value: 18
+    unit: in
+    text: '#3: 18" (45 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: EMBEDMENT_4
+  attrs:
+    key: EMBEDMENT_4
+    value: 24
+    unit: in
+    text: '#4: 24" (60 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: EMBEDMENT_5
+  attrs:
+    key: EMBEDMENT_5
+    value: 30
+    unit: in
+    text: '#5: 30" (75 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: EMBEDMENT_6
+  attrs:
+    key: EMBEDMENT_6
+    value: 36
+    unit: in
+    text: '#6: 36" (90 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: EMBEDMENT_7
+  attrs:
+    key: EMBEDMENT_7
+    value: 42
+    unit: in
+    text: '#7: 42" (106 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: EMBEDMENT_8
+  attrs:
+    key: EMBEDMENT_8
+    value: 48
+    unit: in
+    text: '#8: 48" (120 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_3
+  attrs:
+    key: LAP_3
+    value: 23
+    unit: in
+    text: '#3: 23" (60 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_4
+  attrs:
+    key: LAP_4
+    value: 30
+    unit: in
+    text: '#4: 30" (75 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_5
+  attrs:
+    key: LAP_5
+    value: 38
+    unit: in
+    text: '#5: 38" (97 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_6
+  attrs:
+    key: LAP_6
+    value: 45
+    unit: in
+    text: '#6: 45" (115 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_7
+  attrs:
+    key: LAP_7
+    value: 53
+    unit: in
+    text: '#7: 53" (135 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_8
+  attrs:
+    key: LAP_8
+    value: 60
+    unit: in
+    text: '#8: 60" (155 cm)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: LAP_DIFFERENT_SIZES_GOVERNED_BY
+  attrs:
+    key: LAP_DIFFERENT_SIZES_GOVERNED_BY
+    value: smaller bar
+    unit: null
+    text: lap length governed by the smaller of the two bars
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: FIRST_LAST_BAR_START_AT_MAX_HALF_SPACING
+  attrs:
+    key: FIRST_LAST_BAR_START_AT_MAX_HALF_SPACING
+    value: 0.5
+    unit: of adjacent spacing
+    text: first and last bars in walls, slabs, stirrups in beams, ties in columns start and end at a maximum of one half adjacent bar spacing
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: STIRRUP_ZONES
+  attrs:
+    key: STIRRUP_ZONES
+    value: 0.25L / 0.5L / 0.25L
+    unit: null
+    text: typical spaces for stirrups, beam and raft
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: CURTAILMENT_TOP
+  attrs:
+    key: CURTAILMENT_TOP
+    value: L/3
+    unit: null
+    text: cut length for top reinforcement L/3 from support face, L clear span
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: CURTAILMENT_BOTTOM
+  attrs:
+    key: CURTAILMENT_BOTTOM
+    value: L/8
+    unit: null
+    text: cut length for bottom reinforcement L/8 from support face
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: SLAB_SPACERS_TIE_BARS
+  attrs:
+    key: SLAB_SPACERS_TIE_BARS
+    value: '#3@15"c/c (10mm@380mm c/c)'
+    unit: null
+    text: spacers and top tie bars
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: SLAB_CORNER_EXTRA
+  attrs:
+    key: SLAB_CORNER_EXTRA
+    value: 3/4 of main reinforcement (T&B)
+    unit: null
+    text: corners of slabs with main spans above 20' (610 cm); L is the longer span
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: CONSTRUCTION_JOINT_HEIGHT_MAX
+  attrs:
+    key: CONSTRUCTION_JOINT_HEIGHT_MAX
+    value: 20
+    unit: ft
+    text: differential height in construction shall not exceed 20 feet (610 cm)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: WALL_TIES
+  attrs:
+    key: WALL_TIES
+    value: 2#3 (10mm) or 1/2" (12mm) x 1/8" (3mm) MS strip on every 4th course, 18" (450 mm) lap
+    unit: null
+    text: brick and block masonry walls tied to R.C.C. columns
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 3
+  class: NOTE_FACT
+  mark: SEISMIC_BASIS
+  attrs:
+    key: SEISMIC_BASIS
+    value: UBC seismic zone
+    unit: null
+    text: all detailing of rebars as per seismic zone (UBC)
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: text_layer_and_page_image
+    date: '2026-11-03'
+    note: values read from the text objects of page 3 and the page image
+- sheet: 12
+  class: SLAB_PANEL
+  mark: S6-P1
+  attrs:
+    key: S6-P1
+    note: the bottom-left room of the first floor; the builder's label, not printed
+    bar_callouts:
+    - '#4@6"C/C'
+    - '#3@8"C/C'
+    thickness_in: null
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_vector_geometry
+    date: '2026-11-03'

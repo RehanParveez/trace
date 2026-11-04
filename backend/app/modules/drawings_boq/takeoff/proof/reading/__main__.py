@@ -154,6 +154,45 @@ def cmd_score(args) -> int:
     print(f"baseline written: {SCR.BASELINE}")
   return 0
 
+def _structure_first(case: dict, rows_by_pdf: dict) -> list:
+  """The PDFs of a case, the one with most structural sheets first."""
+  def structural(name: str) -> int:
+    return sum(1 for r in rows_by_pdf[name] if ((r.get("meta") or {}).get("identity") or {}).get("discipline") == "STRUCTURAL")
+  return sorted(case["pdfs"], key=lambda n: -structural(n))
+
+def cmd_set_join(args) -> int:
+  from app.modules.drawings_boq.takeoff.extract import set_join as SJN
+  files_dir = CIO.cases_dir(args.cases_dir)
+  docs = []
+  
+  for name in CIO.list_cases(args.root):
+    case = CIO.load_case(os.path.join(args.root, name))
+    if len(case["pdfs"]) < 2:
+      continue
+    found, problems = CIO.find_files(case, files_dir)
+    if problems:
+      raise RuntimeError("; ".join(problems))
+    rows = AD.read_case(case, found)
+    order = _structure_first(case, rows)
+    if not any(((r.get("meta") or {}).get("identity") or {}).get("discipline") == "STRUCTURAL" for r in rows[order[0]]):
+      continue
+    doc = SJN.join_sets(order[0], rows[order[0]], order[1], rows[order[1]])
+    doc["case"] = name
+    refs = [r for r in S.find_sets(args.cases_dir, args.root) if r.case == name and r.pdf == order[0] and not r.link]
+    if refs:
+      doc["ledger"] = SCR.ledger_after_join(F.load_set(refs[0].truth_folder), doc)
+      
+    docs.append(doc)
+  os.makedirs(args.out, exist_ok=True)
+  with open(os.path.join(args.out, "set_join.json"), "w", encoding="utf-8", newline="\n") as fh:
+    json.dump(docs, fh, indent=1, sort_keys=True, default=str)
+  with open(os.path.join(args.out, "set_join.md"), "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(RP.render_set_join(docs))
+  for d in docs:
+    al = d.get("alignment") or {}
+    print(f"{d['case']}: paired {d['pair']['paired']} ({d['pair']['why']}); alignment {al.get('basis')} {al.get('status')} residual {al.get('residual_in')} in; slab conflict {(d.get('slab') or {}).get('conflict')}")
+  return 0
+
 def cmd_diff(args) -> int:
   path = os.path.join(args.out, "reading_score.json")
   if not os.path.isfile(path):
@@ -258,7 +297,8 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--cases-dir", help=f"the folder with the PDFs (default: {CIO.CASES_DIR_ENV})")
   ap.add_argument("--root", default=CIO.HERE, help="the folder of case folders")
   sub = ap.add_subparsers(dest="command", required=True)
-  
+  sj = sub.add_parser("set-join", help="join the structure set of each two-PDF case to its architecture set; writes set_join.md and .json")
+  sj.add_argument("--out", default="reading_out")
   sub.add_parser("list", help="every PDF with its split, pages and truth counts")
   sub.add_parser("validate", help="check every truth folder; exit 1 on any problem")
   sub.add_parser("init", help="make the truth folder of a PDF that has none (held out)")
@@ -279,7 +319,7 @@ def main(argv: list | None = None) -> int:
   pp = sub.add_parser("parity", help="the facts of Plot_1 and 191-C through score.py and through the reading scorer, side by side")
   pp.add_argument("--score-dir")
   args = ap.parse_args(argv)
-  return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "gate": cmd_gate, "profile": cmd_profile}[args.command](args)
+  return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "set-join": cmd_set_join, "gate": cmd_gate, "profile": cmd_profile}[args.command](args)
 
 if __name__ == "__main__":
   sys.exit(main())

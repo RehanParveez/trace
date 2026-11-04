@@ -3,6 +3,7 @@ import re
 import difflib
 
 GAP_SPLIT = 2.2
+SIZE_SPLIT = 1.6
 TALL_WORD = 5.0
 SAME_LINE = 0.55
 VALUE_RIGHT_MAX = 10.0
@@ -15,7 +16,7 @@ _NO_LABEL = r"(?:DRAWING|DRAWINGS|DRG|DWG|SHEET)\s*(?:NO|NUMBER|NUM|#)\.?"
 LABELS = (
   ("sheet_no", re.compile(r"^" + _NO_LABEL + r"\s*:?$", re.I)),
   ("sheet_no_weak", re.compile(r"^(?:NO|NUMBER)\.?\s*:?$", re.I)),
-  ("title", re.compile(r"^(?:(?:DRAWING|SHEET)\s*)?TITLE\s*:?$|^DRAWING\s*:$", re.I)),
+  ("title", re.compile(r"^(?:(?:DRAWING|SHEET)\s*)?TITLE\s*:?$|^DRAWING\s*:$|^(?:DRAWING|SHEET)\s*NAME\s*:?$", re.I)),
   ("revision", re.compile(r"^(?:REV|REVISION|ISSUE)\.?(?:\s*NO\.?)?\s*:?$", re.I)),
   ("scale", re.compile(r"^SCALES?\s*:?$", re.I)),
   ("date", re.compile(r"^(?:ISSUE\s+)?DATE\s*:?$", re.I)),
@@ -73,7 +74,8 @@ def phrases(words: list) -> list:
       for it in its[1:]:
         gap = it[0] - cur[-1][1]
         h = max(it[3] - it[2], cur[-1][3] - cur[-1][2])
-        if gap > GAP_SPLIT * h:
+        small = max(min(it[3] - it[2], cur[-1][3] - cur[-1][2]), 1e-9)
+        if gap > GAP_SPLIT * h or h > SIZE_SPLIT * small:
           out.append(_phrase(q, cur))
           cur = [it]
         else:

@@ -31,6 +31,7 @@ from app.modules.drawings_boq.takeoff.prep import beam_details
 from app.modules.drawings_boq.takeoff.prep import tank_details
 from app.modules.drawings_boq.takeoff.extract import electrical as electrical_reader
 from app.modules.drawings_boq.takeoff.prep import footing_sections, footing_views, units as unit_reader
+from app.modules.drawings_boq.takeoff.extract import structure_tables, rebar_rules, set_join
 from app.modules.drawings_boq.takeoff.prep import sheet_marks
 from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
 from app.modules.drawings_boq.takeoff.prep import opening_heights as OHT
@@ -119,6 +120,31 @@ def _read_details(doc, page_no: int, raw, result) -> None:
       result.meta["tank_details_reader"] = tanks["ocr"]
   except Exception:
     result.meta["tank_details_reader"] = "FAILED"
+  try:
+    tables = structure_tables.read_all(raw)
+    if tables:
+      result.meta["structure_tables"] = tables
+  except Exception:
+    result.meta["structure_tables_reader"] = "FAILED"
+  try:
+    plot = set_join.plot_text(result.index.words)
+    if plot:
+      result.meta["plot_text"] = plot
+    try:
+      page_text = page.get_textpage().get_text_range()
+    except Exception:
+      page_text = ""
+    slabs = set_join.slab_statements(result.index.words, page_text)
+    if slabs:
+      result.meta["slab_statements"] = slabs
+  except Exception:
+    result.meta["set_join_reader"] = "FAILED"
+  try:
+    rules = rebar_rules.read(raw)
+    if rules:
+      result.meta["rebar_rules"] = rules
+  except Exception:
+    result.meta["rebar_rules_reader"] = "FAILED"
   try:
     legend = electrical_reader.read_legend_rows(page, result.index.words, identity=result.meta.get("identity"))
     if legend:

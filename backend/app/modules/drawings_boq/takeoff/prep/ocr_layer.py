@@ -82,7 +82,8 @@ def _tsv(img, timeout: float, psm: str = "11") -> list[dict]:
       img.save(fh, format="PNG")
     env = dict(os.environ)
     env["OMP_THREAD_LIMIT"] = "1"
-    proc = subprocess.run(["tesseract", path, "-", "--psm", psm, "-l", "eng", "tsv"], capture_output=True, text=True,
+    cmd = ["tesseract", path, "-", "--psm", psm, "-l", "eng"] + (["-c", f"tessedit_char_whitelist={whitelist}"] if whitelist else []) + ["tsv"]
+    proc = subprocess.run(cmd, capture_output=True, text=True,
       timeout=max(5.0, timeout), env=env)
     text = proc.stdout
   except Exception:

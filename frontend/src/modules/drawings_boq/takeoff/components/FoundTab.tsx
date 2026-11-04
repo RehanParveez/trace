@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useToast } from "../../../organizations/components/OrganizationUi";
 import { useWorkItems } from "../../standards/hooks";
@@ -182,6 +183,7 @@ export function FoundTab(p: Props) {
     {p.drawingId ? <PrintedGradesPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}
     {p.drawingId ? <PrintedNotesPanel drawingId={p.drawingId} version={list.dataUpdatedAt} /> : null}
     {p.drawingId ? <ReadingAccuracyPanel drawingId={p.drawingId} canEdit={p.canEdit} /> : null}
+    {p.drawingId && p.projectId ? <Link to={`/takeoff/${p.projectId}/${p.drawingId}/reading-report`} className="mx-3 my-2 block rounded-[8px] border border-[var(--color-border)] px-2 py-1.5 text-center text-[12px]" data-testid="open-reading-report">{t("boq.takeoff.readingReport.open", "Open the reading report for this drawing")}</Link> : null}
     <RepeatMarksNotice
       failures={repeat}
       canEdit={p.canEdit}

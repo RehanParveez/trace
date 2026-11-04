@@ -24,6 +24,7 @@ def wilson(k: int, n: int) -> tuple:
   if n <= 0:
     return (None, None)
   z = M.rules()["wilson_z"]
+  k = max(0, min(k, n))
   p = k / n
   d = 1 + z * z / n
   centre = (p + z * z / (2 * n)) / d
@@ -54,7 +55,7 @@ def _flagged(read_items: list, page=None, cls: str | None = None) -> bool:
     return True
   return any(i.status is not V.Status.READ for i in read_items)
 
-def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead) -> list:
+def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | None = None) -> list:
   out, seen = [], {}
   by_scope: dict = {}
   for i, row in enumerate(ts.elements):
@@ -97,6 +98,8 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead) -> list:
         if li in matched:
           r = reads[matched[li]]
           used.add(matched[li])
+          if paired is not None:
+            paired[id(t)] = r
           wrong, unread = M.compare_attrs(t.attrs, r.attrs)
           out.append(_outcome(oid, ts, cls, sheet, "truth", WRONG if wrong else OK, t.mark, ("wrong: " + ", ".join(wrong) if wrong else None) or ("not read: " + ", ".join(unread) if unread else None)))
         else:
@@ -108,6 +111,42 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead) -> list:
         out.append(_outcome(oid, ts, cls, sheet, "read", TRUE, r.mark))
       else:
         out.append(_outcome(oid, ts, cls, sheet, "read", INV_S if r.status is V.Status.READ else INV_F, r.mark))
+  return out
+
+def _ref_equal(want: dict, got: dict | None) -> bool:
+  if not got or want["sheet"] != got.get("sheet") or want["class"] != got.get("class"):
+    return False
+  name = want["key"] if want["key"] is not None else want["mark"]
+  return M.normal_text(name) == M.normal_text(got.get("key") or "")
+
+def join_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict) -> list:
+  out, by = [], {}
+  for e in ts.elements:
+    if e.attrs.get("key") is not None:
+      by.setdefault((e.sheet, e.cls.value, str(e.attrs["key"]).upper()), e)
+    if e.mark is not None:
+      by.setdefault((e.sheet, e.cls.value, "mark:" + str(e.mark).upper()), e)
+      
+  for n, j in enumerate(ts.joins, 1):
+    src = j.src
+    t = by.get((src["sheet"], src["class"], str(src["key"]).upper())) if src["key"] is not None else by.get((src["sheet"], src["class"], "mark:" + str(src["mark"]).upper()))
+    r = paired.get(id(t)) if t is not None else None
+    name = src["key"] or src["mark"]
+    oid = f"{key}:JOIN:{j.kind.value}:{n}"
+    want = j.dst["key"] if j.dst["key"] is not None else j.dst["mark"]
+    jr = r.join if r is not None else None
+    if r is None:
+      verdict, detail = (MISSED_R if _flagged([], read.pages.get(src["sheet"]), src["class"]) else MISSED_S), f"{name}: the source item was not read"
+    elif not jr:
+      verdict, detail = MISSED_S, f"{name}: read, but no join was attempted"
+    elif _ref_equal(j.dst, jr.get("to")):
+      verdict, detail = OK, f"{name} joined to {want} ({jr.get('how') or jr.get('status')})"
+    elif jr.get("status") == "JOINED":
+      verdict, detail = WRONG, f"{name}: truth {want}, joined to {(jr.get('to') or {}).get('key')}"
+    else:
+      verdict, detail = MISSED_R, f"{name}: truth {want}; {jr.get('status')}: {jr.get('reason')}"
+    out.append(_outcome(oid, ts, "JOIN", src["sheet"], "truth", verdict, name, detail))
+    
   return out
 
 def register_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead) -> list:
@@ -146,6 +185,44 @@ def param_completeness(ts: F.TruthSet) -> dict:
   total = sum(counts.values())
   return {"inputs": total, "states": counts, "complete": None if not total else round((counts["PRINTED"] + counts["DERIVED"]) / total, 4)}
 
+CELL_INPUTS = {"size_mm": ("size_mm",), "bars": ("bar_count", "bar_dia_no"), "stirrups": ("stirrup",)}
+SECTION_INPUTS = {"size_in": ("width_in", "depth_in"), "top_bars": ("top_bars",), "bottom_bars": ("bottom_bars",), "stirrups": ("stirrup",)}
+
+def ledger_supply(ts: F.TruthSet, read: AD.SetRead, paired: dict) -> dict:
+  cells = {(i.sheet, str(i.attrs.get("key")).upper()): i for i in read.items if i.cls.value == "COLUMN_SCHEDULE_CELL"}
+  sections = {(i.sheet, AD.norm_key(i.mark)): i for i in read.items if i.cls.value == "BEAM_SECTION"}
+  elements = {(e.sheet, e.cls.value, str(e.attrs.get("key")).upper()): e for e in ts.elements if e.attrs.get("key") is not None}
+  supplied = total = 0
+  
+  for p in ts.params:
+    ref = p.element
+    wanted = [n for n, spec in p.inputs.items() if spec["state"] in (V.ParamState.PRINTED.value, V.ParamState.DERIVED.value)]
+    total += len(wanted)
+    item, table = None, None
+    
+    if ref["class"] == "COLUMN":
+      t = elements.get((ref["sheet"], "COLUMN", str(ref["key"]).upper()))
+      r = paired.get(id(t)) if t is not None else None
+      to = (r.join or {}).get("to") if r is not None and r.join else None
+      item, table = (cells.get((to["sheet"], str(to["key"]).upper())) if to else None), CELL_INPUTS
+    elif ref["class"] == "BEAM_SECTION":
+      item, table = sections.get((ref["sheet"], AD.norm_key(str(ref["key"]).replace("-section", "")))), SECTION_INPUTS
+    if item is None:
+      continue
+    supplied += sum(1 for n in wanted if n in table and all(k in item.attrs for k in table[n]))
+  return {"supplied": supplied, "of": total}
+
+def ledger_after_join(ts: F.TruthSet, joined: dict) -> dict:
+  base = param_completeness(ts)
+  floors = {f["floor"]: f for f in ((joined.get("levels") or {}).get("floors")) or []}
+  derived = []
+  for p in ts.params:
+    for name, spec in p.inputs.items():
+      if spec["state"] == V.ParamState.MISSING.value and name == "storey_height" and any(f["state"] == "DERIVED" and f["storey_height_mm"] for f in floors.values()):
+        derived.append(f"{p.element['class']} {p.element['key']}: {name}")
+  after = None if not base["inputs"] else round((base["states"]["PRINTED"] + base["states"]["DERIVED"] + len(derived)) / base["inputs"], 4)
+  return {"before": base["complete"], "after": after, "inputs": base["inputs"], "derived": derived}
+
 def _case_facts(root: str, case: str) -> list:
   return CIO.load_facts(os.path.join(root, case, "facts.yaml"))
 
@@ -162,7 +239,7 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
       continue
   
     facts = [f for f in _case_facts(root, ref.case) if (f.get("source") or {}).get("pdf") == ref.pdf]
-    needs_read = bool(ts.elements or ts.register)
+    needs_read = bool(ts.elements or ts.register or ts.joins)
     results_all = None
     if facts:
       doc_path = os.path.join(score_dir, ref.case, "score.json") if score_dir else None
@@ -187,14 +264,13 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
       if facts and results_all is None:
         from app.modules.drawings_boq.takeoff.proof import score as SC
         results_all = SC.check_facts([r for rs in rows.values() for r in rs], case["facts"])
-        
     case_facts = _case_facts(root, ref.case)
-    out = element_outcomes(ref.pdf_key, ts, read) + register_outcomes(ref.pdf_key, ts, read)
+    paired: dict = {}
+    out = element_outcomes(ref.pdf_key, ts, read, paired) + register_outcomes(ref.pdf_key, ts, read) + join_outcomes(ref.pdf_key, ts, read, paired)
     if facts:
       out += fact_outcomes(ref.pdf_key, ts, case_facts, results_all, ref.pdf)
-      
     outcomes += out
-    sets_out.append({"alias": ts.document.alias, "key": ref.pdf_key, "split": ts.document.split.value.lower(), "pages": ts.document.pages, "consultant": ts.document.consultant, "producer": ts.document.producer, "outcomes": len(out), "params": param_completeness(ts)})
+    sets_out.append({"alias": ts.document.alias, "key": ref.pdf_key, "split": ts.document.split.value.lower(), "pages": ts.document.pages, "consultant": ts.document.consultant, "producer": ts.document.producer, "outcomes": len(out), "params": {**param_completeness(ts), "supply": ledger_supply(ts, read, paired)}})
   digest = hashlib.sha256("\n".join(sorted(f"{o['id']}|{o['outcome']}" for o in outcomes)).encode()).hexdigest()
   return {"split": split, "hash": digest, "truth_fingerprint": truth_fingerprint(root), "sets": sets_out, "outcomes": outcomes, "unmapped": dict(sorted(unmapped.items())), "metrics": metrics(outcomes, sets_out), "notes": notes}
 
@@ -204,6 +280,7 @@ def _tally(rows: list) -> dict:
     c[o["outcome"]] += 1
   truth = c[OK] + c[WRONG] + c[MISSED_S] + c[MISSED_R]
   judged = c[TRUE] + c[INV_S] + c[INV_F]
+  rows_judged = judged + sum(1 for o in rows if o["class"] == "REGISTER")
   matched = c[OK] + c[WRONG]
   silent = c[WRONG] + c[INV_S]
   unread = c[MISSED_S] + c[MISSED_R]
@@ -212,7 +289,7 @@ def _tally(rows: list) -> dict:
     "recall": None if not truth else round(matched / truth, 4), "recall_ci": wilson(matched, truth),
     "value_accuracy": None if not matched else round(c[OK] / matched, 4), "value_accuracy_ci": wilson(c[OK], matched),
     "precision": None if not judged else round(c[TRUE] / judged, 4), "precision_ci": wilson(c[TRUE], judged),
-    "silent_wrong_rate": None if not judged else round(silent / judged, 4), "silent_wrong_rate_ci": wilson(silent, judged),
+    "silent_wrong_rate": None if not rows_judged else round(silent / rows_judged, 4), "silent_wrong_rate_ci": wilson(silent, rows_judged),
     "honest_unread": None if not unread else round(c[MISSED_R] / unread, 4), "honest_unread_ci": wilson(c[MISSED_R], unread)}
 
 def metrics(outcomes: list, sets_out: list) -> dict:

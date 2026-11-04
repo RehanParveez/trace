@@ -1,3 +1,21 @@
 - date: '2026-11-03'
   by: claude_eye
   note: 'RB-B1: register of 17 page(s) written from the page images rendered at 110 dpi with pypdfium2; text types from proof.reading profile; 10% sample for Rehan to confirm is listed in Pack 262.'
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-C1: grid of page 10 (7 lettered and 13 numbered lines; bubble centres and printed spacings; totals 46''-10 1/2" and 69''-1 1/2" check); 33 ground-floor columns by mark, positions the centres
+    of the drawn squares (native PDF points); marks C5 15, C2 11, C1 1, C3 1, C4 1, C6 1, C7 2, C8 1 read on the page image. The primed column on row 4 is 1''-4" to the LEFT of grid D on the drawing (the
+    outline says right).'
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-C1: PC 9 on page 12 and PC-1 9 on page 13, positions the centres of the printed labels (within about 15 pt of the dashed circle); schedule of page 11, 17 cells; C-6 and C-8 carry SIZE_TEXT_VS_SKETCH
+    (C-8 is new: printed 13 1/2 x 18 1/2, sketch 1''-1 1/2 x 1''-7 1/2); 9 beam sections with bars read on 250 dpi crops (B2, B1a, B1) and the text layer (the others).'
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-C1: footing pads F2 x2 and F3 x1 and 5 footing sections and the plinth beam section; slab bar callouts 78 (page 12), 43 (page 13), 11 (page 14) from the text objects, positions checked on overlays
+    of the page image; tanks OHWT, UGWT, septic; 33 notes of S-0A; 54 joins; ledger of 7 elements, 39 inputs.'
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-C1 NOT WRITTEN: beam runs as polylines (hatched bands cannot be traced reliably by eye), F1 strips as polylines, F4 pads (none found on page 8 at 200 dpi), the beam-mark inventory as rows, the
+    BBS second source (Breakdown_of_BBS.pdf was not available to the builder), the C-5 and C-8 first-floor CONFLICT row (it rests on the BBS), the section-bubble join 1-1 to F1 (no strip rows), and the
+    lintel table of page 11.'

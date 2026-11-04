@@ -191,6 +191,11 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
       "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts"), "stats": res.stats,
       "meta": meta, "ratio": used, "scale_source": source, "content_kind": a.content_kind})
   read.sort(key=lambda sh: sh["page_no"])
+  try:
+    from app.modules.drawings_boq.takeoff.extract import structure_joins as SJ
+    SJ.join_rows(read)
+  except Exception as exc:
+    problems.append((0, f"structure joins: {type(exc).__name__}: {str(exc)[:80]}"))
   return read, problems
 
 EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT", "DRAINAGE", "QS_VOLUME") + BS.SHEET_KINDS
