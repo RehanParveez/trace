@@ -1,1 +1,5399 @@
-[]
+- element:
+    sheet: 1
+    class: BOUNDARY_WALL
+    key: p1-W1
+  qs_line:
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 1
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; the QS note calls these the 4.5 in back and front walls
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on the plans; p5 prints a boundary wall elevation not read in this pack
+    plaster_faces:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: finish.boundary_walls'
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W2
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W3
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W4
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W5
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W6
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W7
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W8
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W9
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W10
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: BOUNDARY_WALL
+    key: p1-W11
+  qs_line:
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 1
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; the QS note calls these the 4.5 in back and front walls
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on the plans; p5 prints a boundary wall elevation not read in this pack
+    plaster_faces:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: finish.boundary_walls'
+- element:
+    sheet: 1
+    class: BOUNDARY_WALL
+    key: p1-W12
+  qs_line:
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 1
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; the QS note calls these the 4.5 in back and front walls
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on the plans; p5 prints a boundary wall elevation not read in this pack
+    plaster_faces:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: finish.boundary_walls'
+- element:
+    sheet: 1
+    class: BOUNDARY_WALL
+    key: p1-W13
+  qs_line:
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 1
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; the QS note calls these the 4.5 in back and front walls
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on the plans; p5 prints a boundary wall elevation not read in this pack
+    plaster_faces:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: finish.boundary_walls'
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W14
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W15
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W16
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W17
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W18
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W19
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W20
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: BOUNDARY_WALL
+    key: p1-W21
+  qs_line:
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 1
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; the QS note calls these the 4.5 in back and front walls
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on the plans; p5 prints a boundary wall elevation not read in this pack
+    plaster_faces:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: finish.boundary_walls'
+- element:
+    sheet: 1
+    class: BOUNDARY_WALL
+    key: p1-W22
+  qs_line:
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 1
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; the QS note calls these the 4.5 in back and front walls
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on the plans; p5 prints a boundary wall elevation not read in this pack
+    plaster_faces:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: finish.boundary_walls'
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W23
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 1
+    class: WALL
+    key: p1-W24
+  qs_line:
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 1; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: PARAPET
+    key: p2-W1
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 2
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W2
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W3
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W4
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W5
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W6
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W7
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W8
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W9
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W10
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W11
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: PARAPET
+    key: p2-W12
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 2
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 2
+    class: PARAPET
+    key: p2-W13
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 2
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W14
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W15
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W16
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W17
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W18
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W19
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W20
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W21
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W22
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: WALL
+    key: p2-W23
+  qs_line:
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 2; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 2
+    class: PARAPET
+    key: p2-W24
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 2
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 2
+    class: PARAPET
+    key: p2-W25
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 2
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 3
+    class: PARAPET
+    key: p3-W1
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 3
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 3
+    class: PARAPET
+    key: p3-W2
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 3
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W3
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W4
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W5
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W6
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W7
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: PARAPET
+    key: p3-W8
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 3
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 3
+    class: PARAPET
+    key: p3-W9
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 3
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W10
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W11
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W12
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: WALL
+    key: p3-W13
+  qs_line:
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 3; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DERIVED
+      from: levels printed on the p5 elevations and sections
+- element:
+    sheet: 3
+    class: PARAPET
+    key: p3-W14
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 3
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 3
+    class: PARAPET
+    key: p3-W15
+  inputs:
+    length_in:
+      state: DERIVED
+      from: vector outline of page 3
+    kind:
+      state: MISSING
+      note: the plan does not say wall, parapet or slab edge
+    height_in:
+      state: MISSING
+      note: not printed
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W1
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W2
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W3
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W4
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W5
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W6
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W7
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W8
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W9
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W10
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W11
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W12
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W13
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 9
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: WALL
+    key: p4-W14
+  qs_line:
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  - BRICK_FOUNDATION/FOUNDATION
+  - TERMITE/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - MEMBRANE/FOUNDATION
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    length_in:
+      state: DERIVED
+      from: measured on the vector outline of page 4; the plan prints only some overall dimensions
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: gap between the drawn outline lines, snapped to 9 or 4.5 in; printed as 4½ on one wall only
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C1
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C2
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C3
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C4
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C5
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C6
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C7
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C8
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C9
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C10
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C11
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C12
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 18
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C13
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 1
+    class: COLUMN
+    key: p1-C14
+  qs_line:
+  - RCC_COLUMNS/GROUND
+  - STEEL/GROUND
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C1
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C2
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C3
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C4
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C5
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C6
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C7
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C8
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C9
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C10
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C11
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C12
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C13
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 2
+    class: COLUMN
+    key: p2-C14
+  qs_line:
+  - RCC_COLUMNS/FIRST
+  - STEEL/FIRST
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 3
+    class: COLUMN
+    key: p3-C1
+  qs_line:
+  - RCC_COLUMNS/ROOF
+  - STEEL/ROOF
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 3
+    class: COLUMN
+    key: p3-C2
+  qs_line:
+  - RCC_COLUMNS/ROOF
+  - STEEL/ROOF
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 3
+    class: COLUMN
+    key: p3-C3
+  qs_line:
+  - RCC_COLUMNS/ROOF
+  - STEEL/ROOF
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DERIVED
+      from: levels p5
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: p4-R1
+  qs_line:
+  - RCC_WALLS/BASEMENT
+  - RCC_WALLS/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    length_in:
+      state: DERIVED
+      from: merged fills on p4
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p4 and p5 note 9 in Thick R.c.c Wall
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: p4-R2
+  qs_line:
+  - RCC_WALLS/BASEMENT
+  - RCC_WALLS/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    length_in:
+      state: DERIVED
+      from: merged fills on p4
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p4 and p5 note 9 in Thick R.c.c Wall
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: p4-R3
+  qs_line:
+  - RCC_WALLS/BASEMENT
+  - RCC_WALLS/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    length_in:
+      state: DERIVED
+      from: merged fills on p4
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p4 and p5 note 9 in Thick R.c.c Wall
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: COLUMN
+    key: p4-C1
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - STEEL/BASEMENT
+  - STEEL/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: neck_height_mm'
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: p4-R4
+  qs_line:
+  - RCC_WALLS/BASEMENT
+  - RCC_WALLS/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    length_in:
+      state: DERIVED
+      from: merged fills on p4
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p4 and p5 note 9 in Thick R.c.c Wall
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: COLUMN
+    key: p4-C2
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - STEEL/BASEMENT
+  - STEEL/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: neck_height_mm'
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: p4-R5
+  qs_line:
+  - RCC_WALLS/BASEMENT
+  - RCC_WALLS/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    length_in:
+      state: DERIVED
+      from: merged fills on p4
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p4 and p5 note 9 in Thick R.c.c Wall
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: COLUMN
+    key: p4-C3
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - STEEL/BASEMENT
+  - STEEL/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: neck_height_mm'
+- element:
+    sheet: 4
+    class: COLUMN
+    key: p4-C4
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - STEEL/BASEMENT
+  - STEEL/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 14
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: neck_height_mm'
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: p4-R6
+  qs_line:
+  - RCC_WALLS/BASEMENT
+  - RCC_WALLS/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    length_in:
+      state: DERIVED
+      from: merged fills on p4
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p4 and p5 note 9 in Thick R.c.c Wall
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: basement_wall_height_mm'
+- element:
+    sheet: 4
+    class: COLUMN
+    key: p4-C5
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - STEEL/BASEMENT
+  - STEEL/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: neck_height_mm'
+- element:
+    sheet: 4
+    class: COLUMN
+    key: p4-C6
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - STEEL/BASEMENT
+  - STEEL/BASEMENT/2
+  - FORMWORK/OTHERS
+  inputs:
+    size_in:
+      state: DERIVED
+      value:
+      - 9
+      - 9
+      from: drawn fill; no column mark is printed on the plan
+    mark:
+      state: MISSING
+      note: no column mark on any plan
+    height_in:
+      state: DEFAULTED
+      from: 'rules_plot1.yaml: neck_height_mm'
+- element:
+    sheet: 5
+    class: DOOR
+    key: S-D1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 84
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: DOOR
+    key: S-D2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: DOOR
+    key: S-D3
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: DOOR
+    key: S-D4
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: WINDOW
+    key: S-W1
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84
+      - 60
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: WINDOW
+    key: S-W2
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: WINDOW
+    key: S-W3
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: WINDOW
+    key: S-W4
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 36
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: VENTILATOR
+    key: S-V1
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84
+      - 24
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: VENTILATOR
+    key: S-V2
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 24
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: VENTILATOR
+    key: S-V3
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 24
+      from: p5 schedule of opening
+- element:
+    sheet: 5
+    class: VENTILATOR
+    key: S-V4
+  qs_line:
+  - WINDOWS/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule of opening
+- element:
+    sheet: 1
+    class: WINDOW
+    key: p1-W1-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84
+      - 60
+      from: p5 schedule row W1
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: WINDOW
+    key: p1-W3-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p5 schedule row W3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: WINDOW
+    key: p1-W4-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 36
+      from: p5 schedule row W4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: WINDOW
+    key: p1-W2-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D1-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 84
+      from: p5 schedule row D1
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D2-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D2-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D2-3
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D2-4
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D4-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D4-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: VENTILATOR
+    key: p1-V4-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: WINDOW
+    key: p1-W2-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: VENTILATOR
+    key: p1-V4-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D4-3
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: WINDOW
+    key: p1-W4-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 36
+      from: p5 schedule row W4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D3-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p5 schedule row D3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: DOOR
+    key: p1-D3-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/GROUND
+  - BRICK_WALLS/GROUND
+  - WALL_PLASTER/GROUND
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p5 schedule row D3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-3
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-4
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D4-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D4-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D4-3
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: WINDOW
+    key: p2-W2-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: WINDOW
+    key: p2-W4-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 36
+      from: p5 schedule row W4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: WINDOW
+    key: p2-W3-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p5 schedule row W3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-5
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-6
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: VENTILATOR
+    key: p2-V4-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: VENTILATOR
+    key: p2-V4-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: VENTILATOR
+    key: p2-V4-3
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: WINDOW
+    key: p2-W4-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 36
+      from: p5 schedule row W4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: WINDOW
+    key: p2-W1-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84
+      - 60
+      from: p5 schedule row W1
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: DOOR
+    key: p2-D2-7
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 2
+    class: WINDOW
+    key: p2-W2-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/FIRST
+  - BRICK_WALLS/FIRST
+  - WALL_PLASTER/FIRST
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: WINDOW
+    key: p3-W2-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: VENTILATOR
+    key: p3-V1-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84
+      - 24
+      from: p5 schedule row V1
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: DOOR
+    key: p3-D2-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: WINDOW
+    key: p3-W2-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: WINDOW
+    key: p3-W2-3
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: DOOR
+    key: p3-D4-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: WINDOW
+    key: p3-W3-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p5 schedule row W3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 3
+    class: VENTILATOR
+    key: p3-V4-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/ROOF
+  - BRICK_WALLS/ROOF
+  - WALL_PLASTER/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V2-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 24
+      from: p5 schedule row V2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V3-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 24
+      from: p5 schedule row V3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V3-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 24
+      from: p5 schedule row V3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V2-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 24
+      from: p5 schedule row V2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D2-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D2-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D2-3
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D4-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D4-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p5 schedule row D4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V4-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V4-2
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 24
+      from: p5 schedule row V4
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D3-1
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p5 schedule row D3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: VENTILATOR
+    key: p4-V1-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84
+      - 24
+      from: p5 schedule row V1
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D3-2
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p5 schedule row D3
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: DOOR
+    key: p4-D2-4
+  qs_line:
+  - DOORS/OTHERS
+  - DOOR_FRAMES/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 84
+      from: p5 schedule row D2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 4
+    class: WINDOW
+    key: p4-W2-1
+  qs_line:
+  - WINDOWS/OTHERS
+  - RCC_LINTELS/BASEMENT
+  - BRICK_WALLS/BASEMENT
+  - BRICK_WALLS/BASEMENT/2
+  - WALL_PLASTER/BASEMENT
+  - WALL_PLASTER/BASEMENT/2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 60
+      from: p5 schedule row W2
+    position:
+      state: DERIVED
+      from: centre of the label; the opening itself is not traced
+    sill_height:
+      state: MISSING
+      note: not printed on the plan; p5 elevations not read
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R1
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 180.0
+      - 132.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R2
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 162.0
+      - 192.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R3
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 171.0
+      - 96.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R4
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 65.0
+      - 46.5
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R5
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108.0
+      - 148.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R6
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 229.5
+      - 144.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R7
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 174.0
+      - 144.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R8
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 159.0
+      - 204.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R9
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 85.5
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 1
+    class: ROOM
+    key: p1-R10
+  qs_line:
+  - RCC_SLABS/GROUND
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84.0
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R1
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 118.5
+      - 87.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R2
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48.0
+      - 87.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R3
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 162.0
+      - 192.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R4
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 171.0
+      - 96.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R5
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108.0
+      - 148.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R6
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 229.5
+      - 144.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R7
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 174.0
+      - 144.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R8
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 159.0
+      - 204.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R9
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 85.5
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 2
+    class: ROOM
+    key: p2-R10
+  qs_line:
+  - RCC_SLABS/FIRST
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84.0
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 3
+    class: ROOM
+    key: p3-R1
+  qs_line:
+  - RCC_SLABS/ROOF
+  - CEILING_PLASTER/OTHERS
+  - ROOF_TREATMENT/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 115.5
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 3
+    class: ROOM
+    key: p3-R2
+  qs_line:
+  - RCC_SLABS/ROOF
+  - CEILING_PLASTER/OTHERS
+  - ROOF_TREATMENT/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42.0
+      - 60.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 3
+    class: ROOM
+    key: p3-R3
+  qs_line:
+  - RCC_SLABS/ROOF
+  - CEILING_PLASTER/OTHERS
+  - ROOF_TREATMENT/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 162.0
+      - 132.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 3
+    class: ROOM
+    key: p3-R4
+  qs_line:
+  - RCC_SLABS/ROOF
+  - CEILING_PLASTER/OTHERS
+  - ROOF_TREATMENT/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 162.0
+      - 117.0
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R1
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 171.0
+      - 87.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R2
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 162.0
+      - 192.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R3
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 123.0
+      - 96.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R4
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108.0
+      - 148.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R5
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 229.5
+      - 144.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R6
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 174.0
+      - 144.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R7
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 159.0
+      - 204.0
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R8
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 85.5
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+- element:
+    sheet: 4
+    class: ROOM
+    key: p4-R9
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - CEILING_PLASTER/OTHERS
+  - KACHA/OTHERS
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 84.0
+      - 55.5
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; the edges are not traced
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L2
+  qs_line:
+  - BRICK_WALLS/GROUND
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 168
+      from: p5 +14'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L3
+  qs_line:
+  - BRICK_WALLS/FIRST
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 294
+      from: p5 +24'-6"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L4
+  qs_line:
+  - BRICK_WALLS/ROOF
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 408
+      from: p5 +34'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L16
+  qs_line:
+  - BRICK_WALLS/GROUND
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 168
+      from: p5 +14'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L17
+  qs_line:
+  - BRICK_WALLS/FIRST
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 294
+      from: p5 +24'-6"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L18
+  qs_line:
+  - BRICK_WALLS/ROOF
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 408
+      from: p5 +34'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L22
+  qs_line:
+  - BRICK_WALLS/GROUND
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 168
+      from: p5 +14'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L23
+  qs_line:
+  - BRICK_WALLS/FIRST
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 294
+      from: p5 +24'-6"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L24
+  qs_line:
+  - BRICK_WALLS/ROOF
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 408
+      from: p5 +34'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L26
+  qs_line:
+  - BRICK_WALLS/GROUND
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 168
+      from: p5 +14'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L27
+  qs_line:
+  - BRICK_WALLS/FIRST
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 294
+      from: p5 +24'-6"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L28
+  qs_line:
+  - BRICK_WALLS/ROOF
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 408
+      from: p5 +34'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L30
+  qs_line:
+  - BRICK_WALLS/GROUND
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 168
+      from: p5 +14'-0"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L31
+  qs_line:
+  - BRICK_WALLS/FIRST
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 294
+      from: p5 +24'-6"
+- element:
+    sheet: 5
+    class: LEVEL
+    key: p5-L32
+  qs_line:
+  - BRICK_WALLS/ROOF
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 408
+      from: p5 +34'-0"
+- element:
+    sheet: 1
+    class: STAIR
+    key: p1-S1
+  qs_line:
+  - RCC_STAIR/GROUND
+  inputs:
+    position:
+      state: DERIVED
+      from: label of the stair
+    flights_and_steps:
+      state: MISSING
+      note: not traced
+- element:
+    sheet: 2
+    class: STAIR
+    key: p2-S1
+  qs_line:
+  - RCC_STAIR/FIRST
+  inputs:
+    position:
+      state: DERIVED
+      from: label of the stair
+    flights_and_steps:
+      state: MISSING
+      note: not traced
+- element:
+    sheet: 3
+    class: STAIR
+    key: p3-S1
+  inputs:
+    position:
+      state: DERIVED
+      from: label of the stair
+    flights_and_steps:
+      state: MISSING
+      note: not traced
+- element:
+    sheet: 4
+    class: STAIR
+    key: p4-S1
+  qs_line:
+  - RCC_STAIR/BASEMENT
+  inputs:
+    position:
+      state: DERIVED
+      from: label of the stair
+    flights_and_steps:
+      state: MISSING
+      note: not traced
+- element:
+    sheet: 3
+    class: TANK
+    key: OHWT
+  qs_line:
+  - TANKS/OTHERS/2
+  - STEEL/OTHERS
+  inputs:
+    outer_size_in:
+      state: DERIVED
+      value:
+      - 71.1
+      - 94.2
+      from: vector walls of p3
+    depth:
+      state: MISSING
+      note: not printed on the plan
+    wall_thickness:
+      state: MISSING
+      note: section on p6 not read
+- element:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: F-A
+  qs_line:
+  - RCC_FOOTINGS/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - STEEL/FOUNDATION
+  inputs:
+    size_or_width_in:
+      state: PRINTED
+      value:
+      - 36
+      - 36
+      from: p6 section
+    thickness:
+      state: MISSING
+      note: printed as the letter C
+    count_on_plan:
+      state: MISSING
+      note: no footing mark on any plan
+- element:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: F-B
+  qs_line:
+  - RCC_FOOTINGS/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - STEEL/FOUNDATION
+  inputs:
+    size_or_width_in:
+      state: PRINTED
+      value:
+      - 36
+      - 36
+      from: p6 section
+    thickness:
+      state: MISSING
+      note: printed as the letter C
+    count_on_plan:
+      state: MISSING
+      note: no footing mark on any plan
+- element:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: F-C
+  qs_line:
+  - RCC_FOOTINGS/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  - STEEL/FOUNDATION
+  inputs:
+    size_or_width_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p6 section
+    thickness:
+      state: MISSING
+      note: printed as the letter C
+    count_on_plan:
+      state: MISSING
+      note: no footing mark on any plan
+- element:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: WF-45
+  qs_line:
+  - BRICK_FOUNDATION/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  inputs:
+    size_or_width_in:
+      state: PRINTED
+      value: 18
+      from: p6 section
+    steps:
+      state: MISSING
+      note: steps of the 4.5 in wall section not read
+- element:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: WF-9a
+  qs_line:
+  - BRICK_FOUNDATION/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  inputs:
+    size_or_width_in:
+      state: PRINTED
+      value: 42
+      from: p6 section
+    steps:
+      state: PRINTED
+      value:
+      - - 13.5
+        - 15
+      - - 18
+        - 6
+      - - 22.5
+        - 6
+      from: p6 section
+- element:
+    sheet: 6
+    class: FOOTING_SECTION
+    key: WF-9b
+  qs_line:
+  - BRICK_FOUNDATION/FOUNDATION
+  - PCC/FOUNDATION
+  - EXCAVATION/FOUNDATION
+  inputs:
+    size_or_width_in:
+      state: PRINTED
+      value: 48
+      from: p6 section
+    steps:
+      state: PRINTED
+      value:
+      - - 13.5
+        - 15
+      - - 18
+        - 6
+      - - 22.5
+        - 6
+      from: p6 section
+- element:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C3a
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - RCC_COLUMNS/GROUND
+  - RCC_COLUMNS/FIRST
+  - RCC_COLUMNS/ROOF
+  - STEEL/FOUNDATION
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 9
+      from: p6 detail
+    bars:
+      state: PRINTED
+      value: 4-#6
+      from: p6 detail
+    position_on_plan:
+      state: MISSING
+      note: no mark on any plan
+- element:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C2
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - RCC_COLUMNS/GROUND
+  - RCC_COLUMNS/FIRST
+  - RCC_COLUMNS/ROOF
+  - STEEL/FOUNDATION
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 15
+      - 9
+      from: p6 detail
+    bars:
+      state: PRINTED
+      value: 6-#6
+      from: p6 detail
+    position_on_plan:
+      state: MISSING
+      note: no mark on any plan
+- element:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C3b
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - RCC_COLUMNS/GROUND
+  - RCC_COLUMNS/FIRST
+  - RCC_COLUMNS/ROOF
+  - STEEL/FOUNDATION
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 18
+      - 9
+      from: p6 detail
+    bars:
+      state: PRINTED
+      value: 8-#6 and 6-#6
+      from: p6 detail
+    position_on_plan:
+      state: MISSING
+      note: no mark on any plan
+- element:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C4
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - RCC_COLUMNS/GROUND
+  - RCC_COLUMNS/FIRST
+  - RCC_COLUMNS/ROOF
+  - STEEL/FOUNDATION
+  inputs:
+    size_in:
+      state: MISSING
+      note: size not read
+    bars:
+      state: PRINTED
+      value: 8-#6
+      from: p6 detail
+    position_on_plan:
+      state: MISSING
+      note: no mark on any plan
+- element:
+    sheet: 6
+    class: COLUMN_SCHEDULE_CELL
+    key: C5
+  qs_line:
+  - RCC_COLUMNS/BASEMENT
+  - RCC_COLUMNS/BASEMENT/2
+  - RCC_COLUMNS/FOUNDATION
+  - RCC_COLUMNS/GROUND
+  - RCC_COLUMNS/FIRST
+  - RCC_COLUMNS/ROOF
+  - STEEL/FOUNDATION
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 9
+      from: p6 detail
+    bars:
+      state: PRINTED
+      value: 4-#5
+      from: p6 detail
+    position_on_plan:
+      state: MISSING
+      note: no mark on any plan
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: PB1
+  qs_line:
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 18
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 3-#4 / 3-#4
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: PB2
+  qs_line:
+  - RCC_PLINTH_BEAM/FOUNDATION
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 12
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 3-#4 / 3-#4
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: TIE
+  qs_line:
+  - RCC_LINTELS/GROUND
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 12
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 3-#4 / None
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: RB1
+  qs_line:
+  - RCC_ROOF_BEAMS/BASEMENT
+  - RCC_ROOF_BEAMS/GROUND
+  - RCC_ROOF_BEAMS/FIRST
+  - RCC_ROOF_BEAMS/ROOF
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 12
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 3-#4 / 3-#4
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: RB2
+  qs_line:
+  - RCC_ROOF_BEAMS/BASEMENT
+  - RCC_ROOF_BEAMS/GROUND
+  - RCC_ROOF_BEAMS/FIRST
+  - RCC_ROOF_BEAMS/ROOF
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 18
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 2-#4 / 4-#4
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: RB3
+  qs_line:
+  - RCC_ROOF_BEAMS/BASEMENT
+  - RCC_ROOF_BEAMS/GROUND
+  - RCC_ROOF_BEAMS/FIRST
+  - RCC_ROOF_BEAMS/ROOF
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p6 section
+    depth_in:
+      state: MISSING
+      note: not read
+    bars:
+      state: PRINTED
+      value: 6-#4 / 4-#6
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: GB4
+  qs_line:
+  - RCC_ROOF_BEAMS/BASEMENT
+  - RCC_ROOF_BEAMS/GROUND
+  - RCC_ROOF_BEAMS/FIRST
+  - RCC_ROOF_BEAMS/ROOF
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 18
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 2-#5 / 4-#5
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: RB4
+  qs_line:
+  - RCC_ROOF_BEAMS/BASEMENT
+  - RCC_ROOF_BEAMS/GROUND
+  - RCC_ROOF_BEAMS/FIRST
+  - RCC_ROOF_BEAMS/ROOF
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 24
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 2-#5 / 6-#6
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: BEAM_SECTION
+    key: B2
+  qs_line:
+  - RCC_ROOF_BEAMS/BASEMENT
+  - RCC_ROOF_BEAMS/GROUND
+  - RCC_ROOF_BEAMS/FIRST
+  - RCC_ROOF_BEAMS/ROOF
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p6 section
+    depth_in:
+      state: PRINTED
+      value: 15
+      from: p6 left dimension
+    bars:
+      state: PRINTED
+      value: 2-#5 / 2-#6
+      from: p6 section labels
+    where_used:
+      state: MISSING
+      note: framing plans not inventoried in this pack
+- element:
+    sheet: 6
+    class: LINTEL_TYPE
+    key: L1
+  qs_line:
+  - RCC_LINTELS/BASEMENT
+  - RCC_LINTELS/GROUND
+  - RCC_LINTELS/FIRST
+  - RCC_LINTELS/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 6
+      from: p6 table
+    bars:
+      state: PRINTED
+      value: 2#3 / 2#3
+      from: p6 table
+    span:
+      state: DERIVED
+      from: read as feet; the table prints an inch mark
+- element:
+    sheet: 6
+    class: LINTEL_TYPE
+    key: L2
+  qs_line:
+  - RCC_LINTELS/BASEMENT
+  - RCC_LINTELS/GROUND
+  - RCC_LINTELS/FIRST
+  - RCC_LINTELS/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 6
+      from: p6 table
+    bars:
+      state: PRINTED
+      value: 2#4 / 3#3
+      from: p6 table
+    span:
+      state: DERIVED
+      from: read as feet; the table prints an inch mark
+- element:
+    sheet: 6
+    class: LINTEL_TYPE
+    key: L3
+  qs_line:
+  - RCC_LINTELS/BASEMENT
+  - RCC_LINTELS/GROUND
+  - RCC_LINTELS/FIRST
+  - RCC_LINTELS/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 9
+      from: p6 table
+    bars:
+      state: PRINTED
+      value: 3#4 / 3#4
+      from: p6 table
+    span:
+      state: DERIVED
+      from: read as feet; the table prints an inch mark
+- element:
+    sheet: 6
+    class: LINTEL_TYPE
+    key: L4
+  qs_line:
+  - RCC_LINTELS/BASEMENT
+  - RCC_LINTELS/GROUND
+  - RCC_LINTELS/FIRST
+  - RCC_LINTELS/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 12
+      from: p6 table
+    bars:
+      state: PRINTED
+      value: 3#5 / 3#4
+      from: p6 table
+    span:
+      state: DERIVED
+      from: read as feet; the table prints an inch mark
+- element:
+    sheet: 6
+    class: LINTEL_TYPE
+    key: L5
+  qs_line:
+  - RCC_LINTELS/BASEMENT
+  - RCC_LINTELS/GROUND
+  - RCC_LINTELS/FIRST
+  - RCC_LINTELS/ROOF
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 12
+      from: p6 table
+    bars:
+      state: PRINTED
+      value: 3#5 / 3#5
+      from: p6 table
+    span:
+      state: DERIVED
+      from: read as feet; the table prints an inch mark
+- element:
+    sheet: 6
+    class: NOTE_FACT
+    key: SLAB_THICKNESS_STRUCTURAL
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - RCC_SLABS/GROUND
+  - RCC_SLABS/FIRST
+  - RCC_SLABS/ROOF
+  inputs:
+    thickness_in:
+      state: PRINTED
+      value: 5
+      from: text layer; conflicts with the other sheet (5 in against 6 in)
+- element:
+    sheet: 5
+    class: NOTE_FACT
+    key: SLAB_THICKNESS_SECTIONS
+  qs_line:
+  - RCC_SLABS/BASEMENT
+  - RCC_SLABS/GROUND
+  - RCC_SLABS/FIRST
+  - RCC_SLABS/ROOF
+  inputs:
+    thickness_in:
+      state: PRINTED
+      value: 6
+      from: text layer; conflicts with the other sheet (5 in against 6 in)

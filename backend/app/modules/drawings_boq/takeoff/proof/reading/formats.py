@@ -69,6 +69,7 @@ class JoinRow:
 class ParamRow:
   element: dict
   inputs: dict
+  qs_line: list = field(default_factory=list)
 
 @dataclass
 class TruthSet:
@@ -285,7 +286,11 @@ def _params(rows: list, pages: int, problems: _Problems) -> list:
     if not isinstance(e, dict):
       problems.add(f, i, "-", "must be a mapping")
       continue
-    _only(e, ("element", "inputs"), f, i, problems)
+    _only(e, ("element", "inputs", "qs_line"), f, i, problems)
+    qs_line = e.get("qs_line", [])
+    if not isinstance(qs_line, list) or not all(isinstance(x, str) and x for x in qs_line):
+      problems.add(f, i, "qs_line", "must be a list of line ids from the case expected.yaml")
+      qs_line = []
     element = _ref(e.get("element"), f, i, "element", pages, problems)
     inputs = e.get("inputs")
     if not isinstance(inputs, dict) or not inputs:
@@ -302,7 +307,7 @@ def _params(rows: list, pages: int, problems: _Problems) -> list:
       if state is not None:
         clean[str(name)] = {"state": state.value, "value": spec.get("value"), "from": spec.get("from"), "note": spec.get("note")}
     if element is not None:
-      out.append(ParamRow(element=element, inputs=clean))
+      out.append(ParamRow(element=element, inputs=clean, qs_line=qs_line))
   return out
 
 def _log(rows: list, problems: _Problems) -> list:

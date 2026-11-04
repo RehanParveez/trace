@@ -1,3 +1,177 @@
-- date: '2026-11-03'
+10% sample for Rehan to confirm is listed in Pack 262.'
+- date: '2026-11-04'
   by: claude_eye
-  note: 'RB-B1: register of 53 page(s) written from the page images rendered at 110 dpi with pypdfium2; text types from proof.reading profile; 10% sample for Rehan to confirm is listed in Pack 262.'
+  pack: RB-C4
+  note: 'RB-C4: element truth written for 959-N (structural pages 2 to 13): 163 rows (SLAB_BAR_CALLOUT 104, NOTE_FACT 22, BEAM_SECTION 20, FOOTING_SECTION 7, TANK 3, COLUMN_SCHEDULE_CELL 3, BOUNDARY_WALL 2, FOOTING_PAD 1, STAIR 1). Every row was read from the page image (110 dpi, 200 dpi crops for sections) and the text layer; all rows are unchecked.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'document.yaml: consultant Creative Associates (DHA Bahawalpur), read from the title block of the pages; units FT_IN, every dimension is printed in feet and inches. Printed text is kept as written in the attrs (size_printed, base_width_printed, printed, text).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'Convention for BEAM_SECTION rows: one row for the section at mid span and one for the section at the support, anchored on the centre of the printed width dimension (the caption BEAM Bn is vector, not in the text layer). The left stacked dimensions give form: UPSTAND is beam above the slab (dims read [above slab, slab]), DROPPED is beam below the slab ([slab, below slab]), FREE is a full-depth beam with no slab dimension. Total depth is DERIVED in params.yaml, never written as printed. A support label such as 2#4+2#6EXT is split into top_bars (2#4) and ext_top_bars (2#6 EXT) with the printed label kept in printed_support_top.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'SLAB_BAR_CALLOUT rows: one row per bar callout in the text layer (key <page>-CO<n>, reading order), position at the centre of the text object in page units (native, y up). Callouts are not tied to a slab panel: panels are not written.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 2
+  measured: false
+  reason: 'cover sheet: title only, no structural content'
+  note: 'page 2 is marked measured: false: cover sheet: title only, no structural content.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 13
+  measured: false
+  reason: 'standard door and window lintel table: no LINTEL_TYPE rows written; same sheet title and layout as 2053-C page 11'
+  note: 'page 13 is marked measured: false: standard door and window lintel table: no LINTEL_TYPE rows written; same sheet title and layout as 2053-C page 11.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 3
+  measured: true
+  note: 'page 3 measured in part: general notes: 22 facts with a number written as NOTE_FACT (key names follow Jakhar''s where the meaning is the same); curing, stripping days, accessories, embedded items and the prose notes are not written.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 4
+  measured: true
+  note: 'page 4 measured in part: slab plan: 55 bar callouts written; slab panel sizes not written (RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 6
+  measured: true
+  note: 'page 6 measured in part: slab plan: 49 bar callouts written; slab panel sizes not written (RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'Second source: none exists for this set (no QS bill, no BBS, no schedule counts), so right means agrees with the drawing, nothing more.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'NOT WRITTEN: beam runs, slab panels and their sizes, the standard lintel table, strip footing runs, the footing plan, stair geometry beyond the printed bars. Storey heights are MISSING in params.yaml because no section or level is printed in the set.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'RB-C7: element truth written for the 959-N architecture and working drawings (pages 14 to 27): 237 rows (WALL 87, ROOM 37, DOOR 24, LEVEL 21, WINDOW 18, FINISH_LAYER 16, NOTE_FACT 12, VENTILATOR 6, BOUNDARY_WALL 4, COLUMN 4, FOOTING_PAD 4, STAIR 2, TANK 2). Plans read as page images at 110 dpi with the vector outline of each plan page; labels from the text layer. Rows are in native page points (unrotated, y up), also on the turned sheets 17 and 18. All rows are unchecked.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Scale: the ground floor plans (pages 15, 22, 24, 26) are drawn at 7.27 pt per ft (the 50 ft plot is 364.5 pt wide) and the first floor plans (16, 23, 25, 27) at 9.67 pt per ft; the scale of each page is taken from the 9 in wall band, so sizes in points are not comparable between the two floors. The sheets print FIT TO SCALE.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Walls: on page 22 each wall is a filled grey band between two outline lines; on page 23 it is two outline lines with no fill. A WALL row is the centreline of one run between junctions, a two point polyline in page points, thickness_in 9 or 4.5 from the band width. Openings are not bridged: a run stops at every door and window gap. Pages 15, 24 and 26 repeat the walls of page 22, and pages 16, 25 and 27 those of page 23; they are not traced again.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Boundary: the plot boundary on page 22 is four BOUNDARY_WALL rows (west, rear, east, front), 4.5 in from the gap of the two outline lines; sheet 8 prints 4.5 in for the boundary wall as well. No gate is drawn. Page 19 (boundary wall and columns layout) gives four boundary columns (two 1 ft x 1 ft 6 in on the west side, two 1 ft 6 in squares on the front) with dashed footing squares of 5 ft and 4 ft 6 in: written as COLUMN and FOOTING_PAD rows; the footing outlines are not traced, and the fourth column is placed from its dimension ticks because it is not a closed path.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Rooms: 37 rows. 31 of the 32 rooms with a printed net size are the size placed where its four sides lie on the wall faces (at least 2.6 of 4 sides covered, geom_basis FITTED_TO_WALL_FACES); 1 is the printed size laid at the label (the porch, open on two sides); 5 are a name without a size (looking below, balconies, passage): point rows. The room named STORE on page 26 has only its size on page 22; the row on page 22 takes the name from page 26 and says so.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Openings: pages 26 and 27 print every mark with its size and sill height (S/L): 24 DOOR rows (D, DD double and SD sliding marks), 18 WINDOW rows (W marks) and 6 VENTILATOR rows (V marks). Position is the label of the mark. There is no separate schedule table, so no join is written. Marks printed with more than one size are listed on the rows as a conflict: V1 (2 sizes); W1 (2 sizes); W2 (3 sizes). Pages 24 and 25 give the opening positions as dimension chains only and are not traced.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Levels and finishes: page 17 (section) prints R.L +0'', P.L +1'', F.L +2'', S.L +13'' and S.L +25'' on both sides of the section; page 18 (elevation) prints them again with S.L +12'' on one side where the section prints +13'' (conflict on the row). Page 22 prints +2''-0" in the lounge and +1''-0" at the porch. The letters are not spelled out on the sheets; reading them as road, plinth, finish floor and slab is an assumption. The build-up lists beside the section are written as 16 FINISH_LAYER rows (ground floor 5, first floor 4, roof 7); order 1 is the top surface. The storey height 11 ft printed on the section replaces the MISSING storey_height of the two column ledger rows of RB-C4 (params.yaml, C-1 and C-3), which said no level was printed.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: 'Second source: no QS bill, BBS or schedule count exists for this set, so right means agrees with the drawing. Cross-checks written: the boundary wall is 4.5 in on sheets 8 and 22; the water tank on pages 17 and 18 (7''-6" x 11''-1 1/2") is the tank of sheet 9 with the same printed size (the rows carry same_item_as); door height 8 ft and window height 7 ft with a 1 ft sill printed on the section match the labels of pages 26 and 27 for the common marks. Params: no qs_line, there is no bill.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 14
+  measured: false
+  note: 'page 14 not inventoried: divider sheet titled WORKING DRAWINGS (title block, no drawing).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 15
+  measured: false
+  note: 'page 15 (ground floor architectural plan) not inventoried: the walls and rooms of page 22 without the dimension chains and levels; the same labels, so the page 22 rows stand for it.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 16
+  measured: false
+  note: 'page 16 (first floor architectural plan) not inventoried: the walls and rooms of page 23 without the dimension chains; the page 23 rows stand for it.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 17
+  measured: true
+  note: 'page 17 (section, turned 270 degrees) measured in part: levels, the three build-up lists and the roof tank. The section drawing itself (walls, doors and windows in section, kitchen units) is not traced. Rows are in native page points.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 18
+  measured: true
+  note: 'page 18 (elevation, turned 270 degrees) measured in part: levels and the roof tank only. The facade (grooves, moulding work, khaprail, glazing) is not traced, so a window on a plan and on the elevation is not yet one item with two sheet references.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 19
+  measured: true
+  note: 'page 19 (boundary wall and columns layout) measured: four boundary columns and their footing squares (COLUMN and FOOTING_PAD rows). The building hatch and the dashed 2''-6" line are not rows.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 20
+  measured: false
+  note: 'page 20 (foundation layout) not inventoried: strip footing runs with the A-A (3''-6") and B-B (2''-6") tags drawn as dashed vectors; no pack owns strip footings yet (RB-C4 also left the footing plan unwritten).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 21
+  measured: false
+  note: 'page 21 (wall footing, DPC and wall sections) not inventoried: details of the same kind as the footing sections of sheet 8; no row is written twice.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 22
+  measured: true
+  note: 'page 22 (ground floor working plan) measured: walls (filled bands), boundary, rooms, stair flight label, levels. Furniture, door and window symbols and dimension chains are not rows.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 23
+  measured: true
+  note: 'page 23 (first floor working plan) measured: walls (outline pairs), rooms, stair flight label and the railing, wall and beam-top notes.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 24
+  measured: false
+  note: 'page 24 (ground floor door and window layout) not inventoried: opening positions as dimension chains on the plan of page 22; the openings are read from page 26.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 25
+  measured: false
+  note: 'page 25 (first floor door and window layout) not inventoried: opening positions as dimension chains on the plan of page 23; the openings are read from page 27.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 26
+  measured: true
+  note: 'page 26 (ground floor door and window schedule) measured: one row per mark with size and sill height.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  page: 27
+  measured: true
+  note: 'page 27 (first floor door and window schedule) measured: one row per mark with size and sill height.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C7
+  note: Pages 28 to 53 (electrical, plumbing and the sewerage details) are services pages and belong to RB-C8; they are not inventoried here. Pages 1 to 13 are the structural pages of RB-C4. The other structure sets of the corpus (Jakhar, 191-C structure, 2053-C, 350-C, 925-B) carry no architectural plan page, and Plot_1 and 191-C architecture are RB-C5 and RB-C6.

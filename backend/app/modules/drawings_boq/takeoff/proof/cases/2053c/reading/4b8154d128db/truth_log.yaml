@@ -1,3 +1,89 @@
 - date: '2026-11-03'
   by: claude_eye
   note: 'RB-B1: register of 11 page(s) written from the page images rendered at 110 dpi with pypdfium2; text types from proof.reading profile; 10% sample for Rehan to confirm is listed in Pack 262.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'RB-C3: element truth written for 350-C: 114 rows (SLAB_BAR_CALLOUT 82, BEAM_SECTION 22, FOOTING_SECTION 5, TANK 3, COLUMN_SCHEDULE_CELL 1, FOOTING_PAD 1). Every row was read from the page image (110 dpi, 200 dpi crops for sections) and the text layer; all rows are unchecked.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'document.yaml: consultant Creative Associates (DHA Bahawalpur), read from the title block of the pages; units FT_IN, every dimension is printed in feet and inches. Printed text is kept as written in the attrs (size_printed, base_width_printed, printed, text).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'Convention for BEAM_SECTION rows: one row for the section at mid span and one for the section at the support, anchored on the centre of the printed width dimension (the caption BEAM Bn is vector, not in the text layer). The left stacked dimensions give form: UPSTAND is beam above the slab (dims read [above slab, slab]), DROPPED is beam below the slab ([slab, below slab]), FREE is a full-depth beam with no slab dimension. Total depth is DERIVED in params.yaml, never written as printed. A support label such as 2#4+2#6EXT is split into top_bars (2#4) and ext_top_bars (2#6 EXT) with the printed label kept in printed_support_top.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'SLAB_BAR_CALLOUT rows: one row per bar callout in the text layer (key <page>-CO<n>, reading order), position at the centre of the text object in page units (native, y up). Callouts are not tied to a slab panel: panels are not written.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  page: 1
+  measured: true
+  note: 'page 1 measured in part: slab plan: 42 bar callouts written; beam marks B1 to B7 are vector labels, and beam runs and slab panel sizes (S1 to S5) are not written (RB-F1, RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  page: 3
+  measured: true
+  note: 'page 3 measured in part: slab plan: 40 bar callouts written; beam runs and slab panel sizes are not written (RB-F1, RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'Second source: none exists for this set (no QS bill, no BBS, no schedule counts), so right means agrees with the drawing, nothing more.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'NOT WRITTEN: beam runs, slab panels and their sizes, the standard lintel table, strip footing runs, the footing plan, stair geometry beyond the printed bars. Storey heights are MISSING in params.yaml because no section or level is printed in the set.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'RB-C3: element truth written for 2053-C: 106 rows (SLAB_BAR_CALLOUT 67, BEAM_SECTION 22, FOOTING_SECTION 7, TANK 3, COLUMN_SCHEDULE_CELL 3, BOUNDARY_WALL 2, STAIR 1, FOOTING_PAD 1). Every row was read from the page image (110 dpi, 200 dpi crops for sections) and the text layer; all rows are unchecked.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'document.yaml: consultant Creative Associates (DHA Bahawalpur), read from the title block of the pages; units FT_IN, every dimension is printed in feet and inches. Printed text is kept as written in the attrs (size_printed, base_width_printed, printed, text).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'Convention for BEAM_SECTION rows: one row for the section at mid span and one for the section at the support, anchored on the centre of the printed width dimension (the caption BEAM Bn is vector, not in the text layer). The left stacked dimensions give form: UPSTAND is beam above the slab (dims read [above slab, slab]), DROPPED is beam below the slab ([slab, below slab]), FREE is a full-depth beam with no slab dimension. Total depth is DERIVED in params.yaml, never written as printed. A support label such as 2#4+2#6EXT is split into top_bars (2#4) and ext_top_bars (2#6 EXT) with the printed label kept in printed_support_top.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'SLAB_BAR_CALLOUT rows: one row per bar callout in the text layer (key <page>-CO<n>, reading order), position at the centre of the text object in page units (native, y up). Callouts are not tied to a slab panel: panels are not written.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  page: 1
+  measured: false
+  reason: 'cover sheet: title only, no structural content'
+  note: 'page 1 is marked measured: false: cover sheet: title only, no structural content.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  page: 11
+  measured: false
+  reason: 'standard door and window lintel table: no LINTEL_TYPE rows written; no pack owns lintel tables yet'
+  note: 'page 11 is marked measured: false: standard door and window lintel table: no LINTEL_TYPE rows written; no pack owns lintel tables yet.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  page: 2
+  measured: true
+  note: 'page 2 measured in part: slab plan: 42 bar callouts written; beam marks B1 to B5 are vector labels, and beam runs and slab panel sizes (S1 to S5) are not written (RB-F1, RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  page: 4
+  measured: true
+  note: 'page 4 measured in part: slab plan: 25 bar callouts written; beam runs and slab panel sizes are not written (RB-F1, RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'Second source: none exists for this set (no QS bill, no BBS, no schedule counts), so right means agrees with the drawing, nothing more.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C3
+  note: 'NOT WRITTEN: beam runs, slab panels and their sizes, the standard lintel table, strip footing runs, the footing plan, stair geometry beyond the printed bars. Storey heights are MISSING in params.yaml because no section or level is printed in the set.'

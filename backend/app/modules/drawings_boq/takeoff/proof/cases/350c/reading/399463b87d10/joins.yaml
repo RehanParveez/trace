@@ -1,1 +1,24 @@
-[]
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 7
+    class: FOOTING_PAD
+    key: F1@p7
+  to:
+    sheet: 7
+    class: FOOTING_SECTION
+    key: F1-section@p7
+  truth: &id001
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 7
+    class: FOOTING_SECTION
+    key: F1-section@p7
+  to:
+    sheet: 7
+    class: COLUMN_SCHEDULE_CELL
+    key: C-1@p7
+  truth: *id001

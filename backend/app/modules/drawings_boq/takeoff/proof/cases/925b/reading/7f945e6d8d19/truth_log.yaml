@@ -1,3 +1,84 @@
 - date: '2026-11-03'
   by: claude_eye
   note: 'RB-B1: register of 20 page(s) written from the page images rendered at 110 dpi with pypdfium2; text types from proof.reading profile; 10% sample for Rehan to confirm is listed in Pack 262.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'RB-C4: element truth written for 925-B: 304 rows (SLAB_BAR_CALLOUT 246, BEAM_SECTION 32, FOOTING_SECTION 11, TANK 4, COLUMN_SCHEDULE_CELL 4, RCC_WALL 2, FOOTING_PAD 2, BOUNDARY_WALL 2, STAIR 1). Every row was read from the page image (110 dpi, 200 dpi crops for sections) and the text layer; all rows are unchecked.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'document.yaml: consultant Creative Associates (DHA Bahawalpur), read from the title block of the pages; units FT_IN, every dimension is printed in feet and inches. Printed text is kept as written in the attrs (size_printed, base_width_printed, printed, text).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'document.yaml corrected: it held the values of the 909-A plumbing set (alias 909a-plumb, case 909a, sha256 869b5359..., 6 pages, producer iLovePDF). Now alias 925b, case 925b, sha256 7f945e6d8d19..., 20 pages, producer null (the PDF carries none).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'Convention for BEAM_SECTION rows: one row for the section at mid span and one for the section at the support, anchored on the centre of the printed width dimension (the caption BEAM Bn is vector, not in the text layer). The left stacked dimensions give form: UPSTAND is beam above the slab (dims read [above slab, slab]), DROPPED is beam below the slab ([slab, below slab]), FREE is a full-depth beam with no slab dimension. Total depth is DERIVED in params.yaml, never written as printed. A support label such as 2#4+2#6EXT is split into top_bars (2#4) and ext_top_bars (2#6 EXT) with the printed label kept in printed_support_top.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'SLAB_BAR_CALLOUT rows: one row per bar callout in the text layer (key <page>-CO<n>, reading order), position at the centre of the text object in page units (native, y up). Callouts are not tied to a slab panel: panels are not written.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 1
+  measured: false
+  reason: 'cover sheet: title only, no structural content'
+  note: 'page 1 is marked measured: false: cover sheet: title only, no structural content.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 2
+  measured: false
+  reason: 'footing plan: strip footings and the section cut marks (A-A, B-B, C-C) are drawn as vectors and not traced; the section details themselves are measured on pages 4 to 6; no pack owns strip footings yet'
+  note: 'page 2 is marked measured: false: footing plan: strip footings and the section cut marks (A-A, B-B, C-C) are drawn as vectors and not traced; the section details themselves are measured on pages 4 to 6; no pack owns strip footings yet.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 12
+  measured: false
+  reason: 'standard door and window lintel table: no LINTEL_TYPE rows written; same sheet title and layout as 2053-C page 11 and 959-N page 13'
+  note: 'page 12 is marked measured: false: standard door and window lintel table: no LINTEL_TYPE rows written; same sheet title and layout as 2053-C page 11 and 959-N page 13.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 15
+  measured: false
+  reason: 'ground floor beam plan: beam runs are hatched vectors; they belong to RB-F1'
+  note: 'page 15 is marked measured: false: ground floor beam plan: beam runs are hatched vectors; they belong to RB-F1.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 18
+  measured: false
+  reason: 'first floor beam plan: beam runs are hatched vectors; they belong to RB-F1'
+  note: 'page 18 is marked measured: false: first floor beam plan: beam runs are hatched vectors; they belong to RB-F1.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 7
+  measured: true
+  note: 'page 7 measured in part: basement slab plan: 38 bar callouts written; slab panel sizes and beam runs not written.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 17
+  measured: true
+  note: 'page 17 measured in part: ground floor slab plan: 118 bar callouts written; slab panel sizes not written (RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  page: 20
+  measured: true
+  note: 'page 20 measured in part: first floor slab plan: 90 bar callouts written; slab panel sizes not written (RB-F2).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'Second source: none exists for this set (no QS bill, no BBS, no schedule counts), so right means agrees with the drawing, nothing more.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C4
+  note: 'NOT WRITTEN: beam runs, slab panels and their sizes, the standard lintel table, strip footing runs, the footing plan, stair geometry beyond the printed bars. Storey heights are MISSING in params.yaml because no section or level is printed in the set.'

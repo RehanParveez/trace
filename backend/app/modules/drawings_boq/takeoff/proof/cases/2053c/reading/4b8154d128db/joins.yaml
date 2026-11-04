@@ -1,1 +1,44 @@
-[]
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 9
+    class: FOOTING_SECTION
+    key: GATEFTG-3-3@p9
+  to:
+    sheet: 9
+    class: COLUMN_SCHEDULE_CELL
+    key: C-3@p9
+  truth: &id001
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 9
+    class: FOOTING_SECTION
+    key: GATEFTG-4-4@p9
+  to:
+    sheet: 9
+    class: COLUMN_SCHEDULE_CELL
+    key: C-4@p9
+  truth: *id001
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 10
+    class: FOOTING_PAD
+    key: F1@p10
+  to:
+    sheet: 10
+    class: FOOTING_SECTION
+    key: F1-section@p10
+  truth: *id001
+- kind: SECTION_TO_MARK
+  from:
+    sheet: 10
+    class: FOOTING_SECTION
+    key: F1-section@p10
+  to:
+    sheet: 10
+    class: COLUMN_SCHEDULE_CELL
+    key: C-1@p10
+  truth: *id001

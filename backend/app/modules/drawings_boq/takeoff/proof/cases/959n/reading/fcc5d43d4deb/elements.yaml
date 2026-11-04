@@ -1,1 +1,5773 @@
-[]
+ text: unless otherwise indicated all holding bars 3/8" dia @10"c/c
+  truth: *id003
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 299.2
+    - 744.7
+  geom:
+    polyline:
+    - - 156.2
+      - 744.7
+    - - 442.2
+      - 744.7
+  attrs:
+    key: p22-W1
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 439.0
+    - 716.5
+  geom:
+    polyline:
+    - - 439.0
+      - 690.6
+    - - 439.0
+      - 742.5
+  attrs:
+    key: p22-W2
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 369.5
+    - 716.5
+  geom:
+    polyline:
+    - - 369.5
+      - 690.6
+    - - 369.5
+      - 742.5
+  attrs:
+    key: p22-W3
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.1 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 323.7
+    - 716.5
+  geom:
+    polyline:
+    - - 323.7
+      - 690.6
+    - - 323.7
+      - 742.5
+  attrs:
+    key: p22-W4
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 381.4
+    - 688.4
+  geom:
+    polyline:
+    - - 320.5
+      - 688.4
+    - - 442.2
+      - 688.4
+  attrs:
+    key: p22-W5
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 208.4
+    - 705.7
+  geom:
+    polyline:
+    - - 208.4
+      - 668.9
+    - - 208.4
+      - 742.5
+  attrs:
+    key: p22-W6
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 705.7
+  geom:
+    polyline:
+    - - 159.4
+      - 668.9
+    - - 159.4
+      - 742.5
+  attrs:
+    key: p22-W7
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 183.9
+    - 668.0
+  geom:
+    polyline:
+    - - 156.2
+      - 668.0
+    - - 211.7
+      - 668.0
+  attrs:
+    key: p22-W8
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 323.7
+    - 652.5
+  geom:
+    polyline:
+    - - 323.7
+      - 618.8
+    - - 323.7
+      - 686.2
+  attrs:
+    key: p22-W9
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 208.4
+    - 643.0
+  geom:
+    polyline:
+    - - 208.4
+      - 618.8
+    - - 208.4
+      - 667.1
+  attrs:
+    key: p22-W10
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 643.0
+  geom:
+    polyline:
+    - - 159.4
+      - 618.8
+    - - 159.4
+      - 667.1
+  attrs:
+    key: p22-W11
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 241.5
+    - 616.6
+  geom:
+    polyline:
+    - - 156.2
+      - 616.6
+    - - 326.9
+      - 616.6
+  attrs:
+    key: p22-W12
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 439.0
+    - 624.4
+  geom:
+    polyline:
+    - - 439.0
+      - 562.5
+    - - 439.0
+      - 686.2
+  attrs:
+    key: p22-W13
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 323.7
+    - 588.5
+  geom:
+    polyline:
+    - - 323.7
+      - 562.5
+    - - 323.7
+      - 614.4
+  attrs:
+    key: p22-W14
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 266.6
+    - 588.5
+  geom:
+    polyline:
+    - - 266.6
+      - 562.5
+    - - 266.6
+      - 614.4
+  attrs:
+    key: p22-W15
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 208.4
+    - 588.5
+  geom:
+    polyline:
+    - - 208.4
+      - 562.5
+    - - 208.4
+      - 614.4
+  attrs:
+    key: p22-W16
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 588.5
+  geom:
+    polyline:
+    - - 159.4
+      - 562.5
+    - - 159.4
+      - 614.4
+  attrs:
+    key: p22-W17
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 381.4
+    - 560.3
+  geom:
+    polyline:
+    - - 320.5
+      - 560.3
+    - - 442.2
+      - 560.3
+  attrs:
+    key: p22-W18
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 213.0
+    - 560.3
+  geom:
+    polyline:
+    - - 156.2
+      - 560.3
+    - - 269.8
+      - 560.3
+  attrs:
+    key: p22-W19
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 439.0
+    - 506.8
+  geom:
+    polyline:
+    - - 439.0
+      - 455.5
+    - - 439.0
+      - 558.1
+  attrs:
+    key: p22-W20
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 266.6
+    - 506.8
+  geom:
+    polyline:
+    - - 266.6
+      - 455.5
+    - - 266.6
+      - 558.1
+  attrs:
+    key: p22-W21
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 506.8
+  geom:
+    polyline:
+    - - 159.4
+      - 455.5
+    - - 159.4
+      - 558.1
+  attrs:
+    key: p22-W22
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 299.2
+    - 453.2
+  geom:
+    polyline:
+    - - 156.2
+      - 453.2
+    - - 442.2
+      - 453.2
+  attrs:
+    key: p22-W23
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 189.8
+    - 438.6
+  geom:
+    polyline:
+    - - 189.8
+      - 426.1
+    - - 189.8
+      - 451.0
+  attrs:
+    key: p22-W24
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 438.6
+  geom:
+    polyline:
+    - - 159.4
+      - 426.1
+    - - 159.4
+      - 451.0
+  attrs:
+    key: p22-W25
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 189.8
+    - 418.0
+  geom:
+    polyline:
+    - - 189.8
+      - 413.7
+    - - 189.8
+      - 422.3
+  attrs:
+    key: p22-W26
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 189.8
+    - 408.3
+  geom:
+    polyline:
+    - - 189.8
+      - 401.9
+    - - 189.8
+      - 414.7
+  attrs:
+    key: p22-W27
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 412.1
+  geom:
+    polyline:
+    - - 159.4
+      - 401.9
+    - - 159.4
+      - 422.3
+  attrs:
+    key: p22-W28
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 173.9
+    - 401.0
+  geom:
+    polyline:
+    - - 156.2
+      - 401.0
+    - - 191.7
+      - 401.0
+  attrs:
+    key: p22-W29
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 189.8
+    - 392.4
+  geom:
+    polyline:
+    - - 189.8
+      - 384.6
+    - - 189.8
+      - 400.1
+  attrs:
+    key: p22-W30
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 439.0
+    - 416.9
+  geom:
+    polyline:
+    - - 439.0
+      - 382.8
+    - - 439.0
+      - 451.0
+  attrs:
+    key: p22-W31
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 330.1
+    - 416.9
+  geom:
+    polyline:
+    - - 330.1
+      - 382.8
+    - - 330.1
+      - 451.0
+  attrs:
+    key: p22-W32
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 384.5
+    - 380.6
+  geom:
+    polyline:
+    - - 326.9
+      - 380.6
+    - - 442.2
+      - 380.6
+  attrs:
+    key: p22-W33
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 189.8
+    - 367.0
+  geom:
+    polyline:
+    - - 189.8
+      - 348.3
+    - - 189.8
+      - 385.6
+  attrs:
+    key: p22-W34
+    thickness_in: 4.5
+    printed: drawn as a filled grey band between two outline lines; 6.3 in across the drawn band, recorded as 4.5 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 159.4
+    - 374.2
+  geom:
+    polyline:
+    - - 159.4
+      - 348.3
+    - - 159.4
+      - 400.1
+  attrs:
+    key: p22-W35
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 209.3
+    - 346.1
+  geom:
+    polyline:
+    - - 156.2
+      - 346.1
+    - - 262.5
+      - 346.1
+  attrs:
+    key: p22-W36
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 330.1
+    - 340.7
+  geom:
+    polyline:
+    - - 330.1
+      - 303.0
+    - - 330.1
+      - 378.4
+  attrs:
+    key: p22-W37
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 259.3
+    - 323.4
+  geom:
+    polyline:
+    - - 259.3
+      - 303.0
+    - - 259.3
+      - 343.8
+  attrs:
+    key: p22-W38
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 294.7
+    - 300.8
+  geom:
+    polyline:
+    - - 256.1
+      - 300.8
+    - - 333.3
+      - 300.8
+  attrs:
+    key: p22-W39
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 439.0
+    - 323.4
+  geom:
+    polyline:
+    - - 439.0
+      - 268.4
+    - - 439.0
+      - 378.4
+  attrs:
+    key: p22-W40
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 330.1
+    - 283.4
+  geom:
+    polyline:
+    - - 330.1
+      - 268.4
+    - - 330.1
+      - 298.5
+  attrs:
+    key: p22-W41
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 384.5
+    - 266.2
+  geom:
+    polyline:
+    - - 326.9
+      - 266.2
+    - - 442.2
+      - 266.2
+  attrs:
+    key: p22-W42
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 259.3
+    - 279.9
+  geom:
+    polyline:
+    - - 259.3
+      - 261.2
+    - - 259.3
+      - 298.5
+  attrs:
+    key: p22-W43
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.6 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: WALL
+  at:
+    page_xy:
+    - 294.7
+    - 258.9
+  geom:
+    polyline:
+    - - 256.1
+      - 258.9
+    - - 333.3
+      - 258.9
+  attrs:
+    key: p22-W44
+    thickness_in: 9.0
+    printed: drawn as a filled grey band between two outline lines; 10.7 in across the drawn band, recorded as 9 in
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 313.4
+    - 151.7
+  geom:
+    polyline:
+    - - 269.8
+      - 151.7
+    - - 356.9
+      - 151.7
+  attrs:
+    key: p23-W1
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 199.5
+    - 161.3
+  geom:
+    polyline:
+    - - 136.6
+      - 161.3
+    - - 262.4
+      - 161.3
+  attrs:
+    key: p23-W2
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 433.1
+    - 161.3
+  geom:
+    polyline:
+    - - 364.1
+      - 161.3
+    - - 502.1
+      - 161.3
+  attrs:
+    key: p23-W3
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 313.4
+    - 207.4
+  geom:
+    polyline:
+    - - 269.8
+      - 207.4
+    - - 356.9
+      - 207.4
+  attrs:
+    key: p23-W4
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 199.5
+    - 267.9
+  geom:
+    polyline:
+    - - 136.6
+      - 267.9
+    - - 262.4
+      - 267.9
+  attrs:
+    key: p23-W5
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 433.1
+    - 267.9
+  geom:
+    polyline:
+    - - 364.1
+      - 267.9
+    - - 502.1
+      - 267.9
+  attrs:
+    key: p23-W6
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 204.4
+    - 553.6
+  geom:
+    polyline:
+    - - 136.6
+      - 553.6
+    - - 272.2
+      - 553.6
+  attrs:
+    key: p23-W7
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 433.1
+    - 553.6
+  geom:
+    polyline:
+    - - 364.1
+      - 553.6
+    - - 502.1
+      - 553.6
+  attrs:
+    key: p23-W8
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 165.6
+    - 628.6
+  geom:
+    polyline:
+    - - 136.6
+      - 628.6
+    - - 194.6
+      - 628.6
+  attrs:
+    key: p23-W9
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 237.1
+    - 628.6
+  geom:
+    polyline:
+    - - 202.0
+      - 628.6
+    - - 272.2
+      - 628.6
+  attrs:
+    key: p23-W10
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 313.9
+    - 628.6
+  geom:
+    polyline:
+    - - 279.4
+      - 628.6
+    - - 348.4
+      - 628.6
+  attrs:
+    key: p23-W11
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 165.6
+    - 697.0
+  geom:
+    polyline:
+    - - 136.6
+      - 697.0
+    - - 194.6
+      - 697.0
+  attrs:
+    key: p23-W12
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.5 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 392.0
+    - 724.3
+  geom:
+    polyline:
+    - - 355.7
+      - 724.3
+    - - 428.3
+      - 724.3
+  attrs:
+    key: p23-W13
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 467.0
+    - 724.3
+  geom:
+    polyline:
+    - - 431.9
+      - 724.3
+    - - 502.1
+      - 724.3
+  attrs:
+    key: p23-W14
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 165.6
+    - 799.3
+  geom:
+    polyline:
+    - - 136.6
+      - 799.3
+    - - 194.6
+      - 799.3
+  attrs:
+    key: p23-W15
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 275.2
+    - 799.3
+  geom:
+    polyline:
+    - - 202.0
+      - 799.3
+    - - 348.4
+      - 799.3
+  attrs:
+    key: p23-W16
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 467.0
+    - 799.3
+  geom:
+    polyline:
+    - - 431.9
+      - 799.3
+    - - 502.1
+      - 799.3
+  attrs:
+    key: p23-W17
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 392.0
+    - 801.1
+  geom:
+    polyline:
+    - - 355.7
+      - 801.1
+    - - 428.3
+      - 801.1
+  attrs:
+    key: p23-W18
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.5 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 133.0
+    - 214.6
+  geom:
+    polyline:
+    - - 133.0
+      - 165.0
+    - - 133.0
+      - 264.2
+  attrs:
+    key: p23-W19
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 133.0
+    - 410.7
+  geom:
+    polyline:
+    - - 133.0
+      - 271.4
+    - - 133.0
+      - 550.0
+  attrs:
+    key: p23-W20
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 133.0
+    - 591.1
+  geom:
+    polyline:
+    - - 133.0
+      - 557.2
+    - - 133.0
+      - 625.0
+  attrs:
+    key: p23-W21
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 133.0
+    - 663.8
+  geom:
+    polyline:
+    - - 133.0
+      - 632.3
+    - - 133.0
+      - 695.2
+  attrs:
+    key: p23-W22
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 133.0
+    - 747.2
+  geom:
+    polyline:
+    - - 133.0
+      - 698.8
+    - - 133.0
+      - 795.6
+  attrs:
+    key: p23-W23
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 198.3
+    - 663.8
+  geom:
+    polyline:
+    - - 198.3
+      - 632.3
+    - - 198.3
+      - 695.2
+  attrs:
+    key: p23-W24
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 198.3
+    - 747.2
+  geom:
+    polyline:
+    - - 198.3
+      - 698.8
+    - - 198.3
+      - 795.6
+  attrs:
+    key: p23-W25
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 266.1
+    - 184.4
+  geom:
+    polyline:
+    - - 266.1
+      - 165.0
+    - - 266.1
+      - 203.8
+  attrs:
+    key: p23-W26
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 266.1
+    - 237.6
+  geom:
+    polyline:
+    - - 266.1
+      - 211.0
+    - - 266.1
+      - 264.2
+  attrs:
+    key: p23-W27
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 275.8
+    - 591.1
+  geom:
+    polyline:
+    - - 275.8
+      - 557.2
+    - - 275.8
+      - 625.0
+  attrs:
+    key: p23-W28
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 352.0
+    - 591.1
+  geom:
+    polyline:
+    - - 352.0
+      - 557.2
+    - - 352.0
+      - 625.0
+  attrs:
+    key: p23-W29
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 352.0
+    - 676.5
+  geom:
+    polyline:
+    - - 352.0
+      - 632.3
+    - - 352.0
+      - 720.6
+  attrs:
+    key: p23-W30
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 352.0
+    - 761.8
+  geom:
+    polyline:
+    - - 352.0
+      - 727.9
+    - - 352.0
+      - 795.6
+  attrs:
+    key: p23-W31
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 360.5
+    - 184.4
+  geom:
+    polyline:
+    - - 360.5
+      - 165.0
+    - - 360.5
+      - 203.8
+  attrs:
+    key: p23-W32
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 360.5
+    - 237.6
+  geom:
+    polyline:
+    - - 360.5
+      - 211.0
+    - - 360.5
+      - 264.2
+  attrs:
+    key: p23-W33
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 360.5
+    - 339.3
+  geom:
+    polyline:
+    - - 360.5
+      - 271.6
+    - - 360.5
+      - 407.0
+  attrs:
+    key: p23-W34
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 360.5
+    - 482.2
+  geom:
+    polyline:
+    - - 360.5
+      - 414.4
+    - - 360.5
+      - 550.0
+  attrs:
+    key: p23-W35
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 8.9 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 430.1
+    - 761.8
+  geom:
+    polyline:
+    - - 430.1
+      - 727.9
+    - - 430.1
+      - 795.6
+  attrs:
+    key: p23-W36
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.5 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 505.7
+    - 214.6
+  geom:
+    polyline:
+    - - 505.7
+      - 165.0
+    - - 505.7
+      - 264.2
+  attrs:
+    key: p23-W37
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 505.7
+    - 638.9
+  geom:
+    polyline:
+    - - 505.7
+      - 557.2
+    - - 505.7
+      - 720.6
+  attrs:
+    key: p23-W38
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 505.7
+    - 761.8
+  geom:
+    polyline:
+    - - 505.7
+      - 727.9
+    - - 505.7
+      - 795.6
+  attrs:
+    key: p23-W39
+    thickness_in: 9.0
+    printed: drawn as two outline lines with no fill; 9.1 in across the drawn band, recorded as 9 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 507.5
+    - 309.0
+  geom:
+    polyline:
+    - - 507.5
+      - 278.8
+    - - 507.5
+      - 339.2
+  attrs:
+    key: p23-W40
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.6 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 507.5
+    - 376.8
+  geom:
+    polyline:
+    - - 507.5
+      - 346.6
+    - - 507.5
+      - 407.0
+  attrs:
+    key: p23-W41
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.6 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 507.5
+    - 444.6
+  geom:
+    polyline:
+    - - 507.5
+      - 414.4
+    - - 507.5
+      - 474.8
+  attrs:
+    key: p23-W42
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.6 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 23
+  class: WALL
+  at:
+    page_xy:
+    - 507.5
+    - 512.4
+  geom:
+    polyline:
+    - - 507.5
+      - 482.2
+    - - 507.5
+      - 542.6
+  attrs:
+    key: p23-W43
+    thickness_in: 4.5
+    printed: drawn as two outline lines with no fill; 4.6 in across the drawn band, recorded as 4.5 in
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one run between junctions, as a two point polyline in page points (native, y up); thickness from the drawn band width
+- sheet: 22
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 118.2
+    - 460.3
+  geom:
+    polyline:
+    - - 118.2
+      - 134.8
+    - - 118.2
+      - 785.8
+  attrs:
+    key: p22-B1
+    thickness_in: 4.5
+    side: WEST
+    floor: GROUND
+    printed: two outline lines 4.5 in apart round the plot (50' x 90')
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one side of the plot boundary; thickness 4.5 in from the drawn gap, the same value as the boundary wall detail on page 8; no gate is drawn on the plot boundary
+- sheet: 22
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 299.2
+    - 785.8
+  geom:
+    polyline:
+    - - 118.2
+      - 785.8
+    - - 480.1
+      - 785.8
+  attrs:
+    key: p22-B2
+    thickness_in: 4.5
+    side: REAR
+    floor: GROUND
+    printed: two outline lines 4.5 in apart round the plot (50' x 90')
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one side of the plot boundary; thickness 4.5 in from the drawn gap, the same value as the boundary wall detail on page 8; no gate is drawn on the plot boundary
+- sheet: 22
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 480.1
+    - 460.3
+  geom:
+    polyline:
+    - - 480.1
+      - 785.8
+    - - 480.1
+      - 134.8
+  attrs:
+    key: p22-B3
+    thickness_in: 4.5
+    side: EAST
+    floor: GROUND
+    printed: two outline lines 4.5 in apart round the plot (50' x 90')
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one side of the plot boundary; thickness 4.5 in from the drawn gap, the same value as the boundary wall detail on page 8; no gate is drawn on the plot boundary
+- sheet: 22
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 299.2
+    - 134.8
+  geom:
+    polyline:
+    - - 480.1
+      - 134.8
+    - - 118.2
+      - 134.8
+  attrs:
+    key: p22-B4
+    thickness_in: 4.5
+    side: FRONT
+    floor: GROUND
+    printed: two outline lines 4.5 in apart round the plot (50' x 90')
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: centreline of one side of the plot boundary; thickness 4.5 in from the drawn gap, the same value as the boundary wall detail on page 8; no gate is drawn on the plot boundary
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 347.8
+    - 716.0
+  geom:
+    polygon:
+    - - 326.9
+      - 690.6
+    - - 368.7
+      - 690.6
+    - - 368.7
+      - 741.5
+    - - 326.9
+      - 741.5
+  attrs:
+    key: p22-R1
+    name: DRESS
+    printed: 5'-9"x7'
+    width_in: 69
+    depth_in: 84
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 404.1
+    - 716.0
+  geom:
+    polygon:
+    - - 371.4
+      - 690.6
+    - - 436.8
+      - 690.6
+    - - 436.8
+      - 741.5
+    - - 371.4
+      - 741.5
+  attrs:
+    key: p22-R2
+    name: BATH
+    printed: 9'-0"x7'-0"
+    width_in: 108
+    depth_in: 84
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 184.4
+    - 705.2
+  geom:
+    polygon:
+    - - 162.6
+      - 668.9
+    - - 206.2
+      - 668.9
+    - - 206.2
+      - 741.6
+    - - 162.6
+      - 741.6
+  attrs:
+    key: p22-R3
+    name: BATH
+    printed: 6'-0"x10'-0"
+    width_in: 72
+    depth_in: 120
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 266.6
+    - 680.1
+  geom:
+    polygon:
+    - - 211.7
+      - 618.8
+    - - 321.6
+      - 618.8
+    - - 321.6
+      - 741.4
+    - - 211.7
+      - 741.4
+  attrs:
+    key: p22-R4
+    name: BED ROOM
+    printed: 15'-1½"x16'-10½"
+    width_in: 181.5
+    depth_in: 202.5
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 184.4
+    - 642.4
+  geom:
+    polygon:
+    - - 162.6
+      - 618.8
+    - - 206.2
+      - 618.8
+    - - 206.2
+      - 666.0
+    - - 162.6
+      - 666.0
+  attrs:
+    key: p22-R5
+    name: DRESS
+    printed: 6'-0"x6'-6"
+    width_in: 72
+    depth_in: 78
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 381.9
+    - 623.8
+  geom:
+    polygon:
+    - - 326.9
+      - 562.5
+    - - 436.8
+      - 562.5
+    - - 436.8
+      - 685.1
+    - - 326.9
+      - 685.1
+  attrs:
+    key: p22-R6
+    name: BED ROOM
+    printed: 15'-1½"x16'-10½"
+    width_in: 181.5
+    depth_in: 202.5
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 184.4
+    - 588.0
+  geom:
+    polygon:
+    - - 162.6
+      - 562.5
+    - - 206.2
+      - 562.5
+    - - 206.2
+      - 613.4
+    - - 162.6
+      - 613.4
+  attrs:
+    key: p22-R7
+    name: D.KITCHEN
+    printed: 6'-0"x7'-0"
+    width_in: 72
+    depth_in: 84
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 238.0
+    - 588.0
+  geom:
+    polygon:
+    - - 211.7
+      - 562.5
+    - - 264.4
+      - 562.5
+    - - 264.4
+      - 613.4
+    - - 211.7
+      - 613.4
+  attrs:
+    key: p22-R8
+    name: STORE
+    printed: 7'-3"x7'-0"
+    width_in: 87
+    depth_in: 84
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'box of the printed net size placed where its four sides lie on the wall faces drawn on the plan; name: page 26 prints the name STORE on this room; page 22 prints only the size'
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 291.5
+    - 588.4
+  geom:
+    polygon:
+    - - 263.3
+      - 562.5
+    - - 319.6
+      - 562.5
+    - - 319.6
+      - 614.3
+    - - 263.3
+      - 614.3
+  attrs:
+    key: p22-R9
+    name: LOBBY
+    printed: 7'-1½"x7'-9"
+    width_in: 85.5
+    depth_in: 93
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 213.4
+    - 506.4
+  geom:
+    polygon:
+    - - 162.6
+      - 455.5
+    - - 264.3
+      - 455.5
+    - - 264.3
+      - 557.2
+    - - 162.6
+      - 557.2
+  attrs:
+    key: p22-R10
+    name: KITCHEN
+    printed: 14'-0"x14'-0"
+    width_in: 168
+    depth_in: 168
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 353.4
+    - 506.4
+  geom:
+    polygon:
+    - - 269.8
+      - 455.5
+    - - 436.9
+      - 455.5
+    - - 436.9
+      - 557.2
+    - - 269.8
+      - 557.2
+  attrs:
+    key: p22-R11
+    name: LOUNGE
+    printed: 23'-0"x14'-0"
+    width_in: 276
+    depth_in: 168
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 175.8
+    - 425.9
+  geom:
+    polygon:
+    - - 162.6
+      - 401.9
+    - - 188.9
+      - 401.9
+    - - 188.9
+      - 450.0
+    - - 162.6
+      - 450.0
+  attrs:
+    key: p22-R12
+    name: SOLAR
+    printed: 3'-7½"x6'-7½"
+    width_in: 43.5
+    depth_in: 79.5
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 385.1
+    - 416.4
+  geom:
+    polygon:
+    - - 333.3
+      - 382.8
+    - - 436.9
+      - 382.8
+    - - 436.9
+      - 450.0
+    - - 333.3
+      - 450.0
+  attrs:
+    key: p22-R13
+    name: DINNING
+    printed: 14'-3"x9'-3"
+    width_in: 171
+    depth_in: 111
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 175.8
+    - 373.8
+  geom:
+    polygon:
+    - - 162.6
+      - 348.3
+    - - 188.9
+      - 348.3
+    - - 188.9
+      - 399.2
+    - - 162.6
+      - 399.2
+  attrs:
+    key: p22-R14
+    name: PWD.
+    printed: 3'-7½"x7'-0"
+    width_in: 43.5
+    depth_in: 84
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 245.2
+    - 399.1
+  geom:
+    polygon:
+    - - 162.6
+      - 348.3
+    - - 327.9
+      - 348.3
+    - - 327.9
+      - 450.0
+    - - 162.6
+      - 450.0
+  attrs:
+    key: p22-R15
+    name: DOUBLE HEIGHT STAIR CASE
+    printed: 22'-9"x14'-0"
+    width_in: 273
+    depth_in: 168
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 295.2
+    - 325.7
+  geom:
+    polygon:
+    - - 262.5
+      - 303.0
+    - - 327.9
+      - 303.0
+    - - 327.9
+      - 348.4
+    - - 262.5
+      - 348.4
+  attrs:
+    key: p22-R16
+    name: LOBBY
+    printed: 9'-0"x6'-3"
+    width_in: 108
+    depth_in: 75
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 385.1
+    - 322.9
+  geom:
+    polygon:
+    - - 333.3
+      - 268.4
+    - - 436.9
+      - 268.4
+    - - 436.9
+      - 377.4
+    - - 333.3
+      - 377.4
+  attrs:
+    key: p22-R17
+    name: DRAWING
+    printed: 14'-3"x15'-0"
+    width_in: 171
+    depth_in: 180
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 193.0
+    - 295.3
+  geom:
+    polygon:
+    - - 124.9
+      - 247.2
+    - - 261.1
+      - 247.2
+    - - 261.1
+      - 343.4
+    - - 124.9
+      - 343.4
+  attrs:
+    key: p22-R18
+    name: PORCH
+    printed: 18'-9"x13'-3"
+    width_in: 225
+    depth_in: 159
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: the walls do not close the room on the plan or the printed size does not fit the drawn faces; only the size is read, the edges are approximate
+- sheet: 22
+  class: ROOM
+  at:
+    page_xy:
+    - 295.2
+    - 280.4
+  geom:
+    polygon:
+    - - 262.5
+      - 262.2
+    - - 327.9
+      - 262.2
+    - - 327.9
+      - 298.5
+    - - 262.5
+      - 298.5
+  attrs:
+    key: p22-R19
+    name: ENTRANCE VERANDAH DOUBLE HEIGHT
+    printed: 9'-0" x 5'-0"
+    width_in: 108
+    depth_in: 60
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 393.1
+    - 764.1
+  geom:
+    polygon:
+    - - 355.7
+      - 727.9
+    - - 430.6
+      - 727.9
+    - - 430.6
+      - 800.4
+    - - 355.7
+      - 800.4
+  attrs:
+    key: p23-R1
+    name: TERRACE
+    printed: 7'-6"x7'-9"
+    width_in: 90
+    depth_in: 93
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 466.9
+    - 761.8
+  geom:
+    polygon:
+    - - 431.9
+      - 727.9
+    - - 502.0
+      - 727.9
+    - - 502.0
+      - 795.6
+    - - 431.9
+      - 795.6
+  attrs:
+    key: p23-R2
+    name: BATH
+    printed: 7'-3"x7'-0"
+    width_in: 87
+    depth_in: 84
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 165.6
+    - 747.1
+  geom:
+    polygon:
+    - - 136.6
+      - 698.8
+    - - 194.6
+      - 698.8
+    - - 194.6
+      - 795.5
+    - - 136.6
+      - 795.5
+  attrs:
+    key: p23-R3
+    name: BATH
+    printed: 6'-0"x10'-0"
+    width_in: 72
+    depth_in: 120
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 275.1
+    - 713.8
+  geom:
+    polygon:
+    - - 202.0
+      - 632.3
+    - - 348.2
+      - 632.3
+    - - 348.2
+      - 795.4
+    - - 202.0
+      - 795.4
+  attrs:
+    key: p23-R4
+    name: BED ROOM
+    printed: 15'-1½"x16'-10½"
+    width_in: 181.5
+    depth_in: 202.5
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 165.6
+    - 663.7
+  geom:
+    polygon:
+    - - 136.6
+      - 632.3
+    - - 194.6
+      - 632.3
+    - - 194.6
+      - 695.1
+    - - 136.6
+      - 695.1
+  attrs:
+    key: p23-R5
+    name: DRESS
+    printed: 6'-0"x6'-6"
+    width_in: 72
+    depth_in: 78
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 430.0
+    - 638.8
+  geom:
+    polygon:
+    - - 356.9
+      - 557.2
+    - - 503.1
+      - 557.2
+    - - 503.1
+      - 720.3
+    - - 356.9
+      - 720.3
+  attrs:
+    key: p23-R6
+    name: BED ROOM
+    printed: 15'-1½"x16'-10½"
+    width_in: 181.5
+    depth_in: 202.5
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 204.2
+    - 591.0
+  geom:
+    polygon:
+    - - 136.6
+      - 557.2
+    - - 271.9
+      - 557.2
+    - - 271.9
+      - 624.9
+    - - 136.6
+      - 624.9
+  attrs:
+    key: p23-R7
+    name: KITCHEN
+    printed: 14'-0"x7'-0"
+    width_in: 168
+    depth_in: 84
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 309.6
+    - 591.7
+  geom:
+    polygon:
+    - - 272.2
+      - 557.2
+    - - 347.1
+      - 557.2
+    - - 347.1
+      - 626.1
+    - - 272.2
+      - 626.1
+  attrs:
+    key: p23-R8
+    name: LOBBY
+    printed: 7'-1½"x7'-9"
+    width_in: 85.5
+    depth_in: 93
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 246.6
+    - 482.1
+  geom:
+    polygon:
+    - - 136.6
+      - 414.4
+    - - 356.5
+      - 414.4
+    - - 356.5
+      - 549.7
+    - - 136.6
+      - 549.7
+  attrs:
+    key: p23-R9
+    name: LOUNGE/DINING
+    printed: 22'-9"x14'-0"
+    width_in: 273
+    depth_in: 168
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 436.6
+    - 410.3
+  geom:
+    polygon:
+    - - 364.1
+      - 271.4
+    - - 509.1
+      - 271.4
+    - - 509.1
+      - 549.3
+    - - 364.1
+      - 549.3
+  attrs:
+    key: p23-R10
+    name: TERRACE
+    printed: 15'-0"x28'-9"
+    width_in: 180
+    depth_in: 345
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 313.3
+    - 234.0
+  geom:
+    polygon:
+    - - 269.8
+      - 203.8
+    - - 356.8
+      - 203.8
+    - - 356.8
+      - 264.2
+    - - 269.8
+      - 264.2
+  attrs:
+    key: p23-R11
+    name: BRIDGE
+    printed: 9'-0"x6'-3"
+    width_in: 108
+    depth_in: 75
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 433.0
+    - 214.6
+  geom:
+    polygon:
+    - - 364.1
+      - 165.0
+    - - 501.9
+      - 165.0
+    - - 501.9
+      - 264.1
+    - - 364.1
+      - 264.1
+  attrs:
+    key: p23-R12
+    name: GUEST ROOM
+    printed: 14'-3"x10'-3"
+    width_in: 171
+    depth_in: 123
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 199.4
+    - 214.6
+  geom:
+    polygon:
+    - - 136.6
+      - 165.0
+    - - 262.3
+      - 165.0
+    - - 262.3
+      - 264.1
+    - - 136.6
+      - 264.1
+  attrs:
+    key: p23-R13
+    name: LIVING AREA
+    printed: 13'-0"x10'-3"
+    width_in: 156
+    depth_in: 123
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed net size placed where its four sides lie on the wall faces drawn on the plan
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 316.0
+    - 339.0
+  geom:
+    point:
+    - 316.0
+    - 339.0
+  attrs:
+    key: p23-R14
+    name: LOOKING BELOW
+    printed: LOOKING BELOW
+    floor: FIRST
+    geom_basis: LABEL_ONLY
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: named on the plan with no printed net size; only the position of the label is written
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 313.3
+    - 178.5
+  geom:
+    point:
+    - 313.3
+    - 178.5
+  attrs:
+    key: p23-R15
+    name: LOOKING BELOW
+    printed: LOOKING BELOW
+    floor: FIRST
+    geom_basis: LABEL_ONLY
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: named on the plan with no printed net size; only the position of the label is written
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 438.3
+    - 147.6
+  geom:
+    point:
+    - 438.3
+    - 147.6
+  attrs:
+    key: p23-R16
+    name: BALCONY
+    printed: BALCONY 2'-0" WIDE
+    floor: FIRST
+    geom_basis: LABEL_ONLY
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: named on the plan with no printed net size; only the position of the label is written
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 198.7
+    - 147.2
+  geom:
+    point:
+    - 198.7
+    - 147.2
+  attrs:
+    key: p23-R17
+    name: BALCONY
+    printed: BALCONY 2'-3" WIDE
+    floor: FIRST
+    geom_basis: LABEL_ONLY
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: named on the plan with no printed net size; only the position of the label is written
+- sheet: 23
+  class: ROOM
+  at:
+    page_xy:
+    - 106.1
+    - 205.9
+  geom:
+    point:
+    - 106.1
+    - 205.9
+  attrs:
+    key: p23-R18
+    name: PASSAGE
+    printed: PASSAGE 5'-4½" WIDE
+    floor: FIRST
+    geom_basis: LABEL_ONLY
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: named on the plan with no printed net size; only the position of the label is written
+- sheet: 19
+  class: COLUMN
+  at:
+    page_xy:
+    - 121.2
+    - 343.4
+  geom:
+    polygon:
+    - - 117.6
+      - 337.9
+    - - 124.9
+      - 337.9
+    - - 124.9
+      - 348.8
+    - - 117.6
+      - 348.8
+  attrs:
+    key: p19-C1
+    size_in:
+    - 12
+    - 18
+    printed: 1' x 1'-6"
+    role: boundary wall column
+    position_basis: bounding box of the drawn square
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'boundary wall and columns layout: column of the printed size; position from the drawn square (dashed footing outline not traced)'
+- sheet: 19
+  class: FOOTING_PAD
+  at:
+    page_xy:
+    - 121.2
+    - 343.4
+  geom:
+    point:
+    - 121.2
+    - 343.4
+  attrs:
+    key: p19-C1-pad
+    size_printed: 5' x 5'
+    size_in:
+    - 60
+    - 60
+    for_column: p19-C1
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: dashed footing square drawn round the column; only the printed size is read, its outline is not traced
+- sheet: 19
+  class: COLUMN
+  at:
+    page_xy:
+    - 121.2
+    - 265.2
+  geom:
+    polygon:
+    - - 117.6
+      - 259.8
+    - - 124.9
+      - 259.8
+    - - 124.9
+      - 270.6
+    - - 117.6
+      - 270.6
+  attrs:
+    key: p19-C2
+    size_in:
+    - 12
+    - 18
+    printed: 1' x 1'-6"
+    role: boundary wall column
+    position_basis: bounding box of the drawn square
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'boundary wall and columns layout: column of the printed size; position from the drawn square (dashed footing outline not traced)'
+- sheet: 19
+  class: FOOTING_PAD
+  at:
+    page_xy:
+    - 121.2
+    - 265.2
+  geom:
+    point:
+    - 121.2
+    - 265.2
+  attrs:
+    key: p19-C2-pad
+    size_printed: 5' x 5'
+    size_in:
+    - 60
+    - 60
+    for_column: p19-C2
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: dashed footing square drawn round the column; only the printed size is read, its outline is not traced
+- sheet: 19
+  class: COLUMN
+  at:
+    page_xy:
+    - 123.0
+    - 138.2
+  geom:
+    polygon:
+    - - 117.6
+      - 132.8
+    - - 128.5
+      - 132.8
+    - - 128.5
+      - 143.6
+    - - 117.6
+      - 143.6
+  attrs:
+    key: p19-C3
+    size_in:
+    - 18
+    - 18
+    printed: 1'-6" x 1'-6"
+    role: boundary wall column
+    position_basis: bounding box of the drawn square
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'boundary wall and columns layout: column of the printed size; position from the drawn square (dashed footing outline not traced)'
+- sheet: 19
+  class: FOOTING_PAD
+  at:
+    page_xy:
+    - 123.0
+    - 138.2
+  geom:
+    point:
+    - 123.0
+    - 138.2
+  attrs:
+    key: p19-C3-pad
+    size_printed: 4'-6" x 4'-6"
+    size_in:
+    - 54
+    - 54
+    for_column: p19-C3
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: dashed footing square drawn round the column; only the printed size is read, its outline is not traced
+- sheet: 19
+  class: COLUMN
+  at:
+    page_xy:
+    - 321.0
+    - 138.2
+  geom:
+    polygon:
+    - - 315.6
+      - 132.8
+    - - 326.4
+      - 132.8
+    - - 326.4
+      - 143.6
+    - - 315.6
+      - 143.6
+  attrs:
+    key: p19-C4
+    size_in:
+    - 18
+    - 18
+    printed: 1'-6" x 1'-6"
+    role: boundary wall column
+    position_basis: centre read from the two dimension ticks of the 1'-6" dimension; the square itself is not a closed path
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'boundary wall and columns layout: column of the printed size; position from the drawn square (dashed footing outline not traced)'
+- sheet: 19
+  class: FOOTING_PAD
+  at:
+    page_xy:
+    - 321.0
+    - 138.2
+  geom:
+    point:
+    - 321.0
+    - 138.2
+  attrs:
+    key: p19-C4-pad
+    size_printed: 4'-6" x 4'-6"
+    size_in:
+    - 54
+    - 54
+    for_column: p19-C4
+    floor: SITE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: dashed footing square drawn round the column; only the printed size is read, its outline is not traced
+- sheet: 26
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy:
+    - 259.3
+    - 780.0
+  geom:
+    point:
+    - 259.3
+    - 780.0
+  attrs:
+    key: p26-W1-1
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark W1 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 8''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy:
+    - 134.6
+    - 751.6
+  geom:
+    point:
+    - 134.6
+    - 751.6
+  attrs:
+    key: p26-V1-1
+    width_in: 30
+    height_in: 24
+    sill_in: 72
+    printed: '2''-6"X 2''-0" (S/L: 6''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark V1 is printed with more than one size in this set: 2''-6" x 2''-0" (4 times); 1''-6" x 2''-0" (2 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy:
+    - 454.6
+    - 751.5
+  geom:
+    point:
+    - 454.6
+    - 751.5
+  attrs:
+    key: p26-V1-2
+    width_in: 30
+    height_in: 24
+    sill_in: 72
+    printed: '2''-6"X 2''-0" (S/L: 6''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark V1 is printed with more than one size in this set: 2''-6" x 2''-0" (4 times); 1''-6" x 2''-0" (2 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D3
+  at:
+    page_xy:
+    - 357.7
+    - 718.2
+  geom:
+    point:
+    - 357.7
+    - 718.2
+  attrs:
+    key: p26-D3-1
+    width_in: 30
+    height_in: 96
+    printed: 2'-6" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D3
+  at:
+    page_xy:
+    - 188.3
+    - 675.8
+  geom:
+    point:
+    - 188.3
+    - 675.8
+  attrs:
+    key: p26-D3-2
+    width_in: 30
+    height_in: 96
+    printed: 2'-6" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy:
+    - 455.3
+    - 646.8
+  geom:
+    point:
+    - 455.3
+    - 646.8
+  attrs:
+    key: p26-W1-2
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark W1 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 8''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W6
+  at:
+    page_xy:
+    - 133.8
+    - 626.5
+  geom:
+    point:
+    - 133.8
+    - 626.5
+  attrs:
+    key: p26-W6-1
+    width_in: 34.5
+    height_in: 60
+    sill_in: 36
+    printed: '2''-10½"X 5''-0" (S/L: 3''-0")'
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 298.2
+    - 624.5
+  geom:
+    point:
+    - 298.2
+    - 624.5
+  attrs:
+    key: p26-D1-1
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 265.3
+    - 616.6
+  geom:
+    point:
+    - 265.3
+    - 616.6
+  attrs:
+    key: p26-D1-2
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D2
+  at:
+    page_xy:
+    - 143.8
+    - 595.9
+  geom:
+    point:
+    - 143.8
+    - 595.9
+  attrs:
+    key: p26-D2-1
+    width_in: 36
+    height_in: 96
+    printed: 3'-0" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 316.7
+    - 593.5
+  geom:
+    point:
+    - 316.7
+    - 593.5
+  attrs:
+    key: p26-D1-3
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy:
+    - 132.9
+    - 524.7
+  geom:
+    point:
+    - 132.9
+    - 524.7
+  attrs:
+    key: p26-W2-1
+    width_in: 96
+    height_in: 60
+    sill_in: 36
+    printed: '8'' X 5''-0" (S/L: 3''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark W2 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 5''-0" (1 times); 4''-0" x 5''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: SD2
+  at:
+    page_xy:
+    - 242.9
+    - 526.1
+  geom:
+    point:
+    - 242.9
+    - 526.1
+  attrs:
+    key: p26-SD2-1
+    width_in: 111
+    height_in: 96
+    printed: 9'-3 x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W9
+  at:
+    page_xy:
+    - 455.7
+    - 527.3
+  geom:
+    point:
+    - 455.7
+    - 527.3
+  attrs:
+    key: p26-W9-1
+    width_in: 30
+    height_in: 84
+    sill_in: 12
+    printed: '2''-6"X 7''-0" (S/L: 1''-0")'
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: DD2
+  at:
+    page_xy:
+    - 285.8
+    - 496.1
+  geom:
+    point:
+    - 285.8
+    - 496.1
+  attrs:
+    key: p26-DD2-1
+    width_in: 60
+    height_in: 96
+    printed: 5'-0" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D4
+  at:
+    page_xy:
+    - 136.0
+    - 456.1
+  geom:
+    point:
+    - 136.0
+    - 456.1
+  attrs:
+    key: p26-D4-1
+    width_in: 30
+    height_in: 84
+    printed: 2'-6" x 7'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W9
+  at:
+    page_xy:
+    - 453.9
+    - 459.5
+  geom:
+    point:
+    - 453.9
+    - 459.5
+  attrs:
+    key: p26-W9-2
+    width_in: 30
+    height_in: 84
+    sill_in: 12
+    printed: '2''-6"X 7''-0" (S/L: 1''-0")'
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy:
+    - 134.2
+    - 434.4
+  geom:
+    point:
+    - 134.2
+    - 434.4
+  attrs:
+    key: p26-V1-3
+    width_in: 18
+    height_in: 24
+    sill_in: 72
+    printed: '1''-6"X 2''-0" (S/L: 6''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark V1 is printed with more than one size in this set: 2''-6" x 2''-0" (4 times); 1''-6" x 2''-0" (2 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: DD3
+  at:
+    page_xy:
+    - 354.0
+    - 434.0
+  geom:
+    point:
+    - 354.0
+    - 434.0
+  attrs:
+    key: p26-DD3-1
+    width_in: 48
+    height_in: 96
+    printed: 4'-0" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W9
+  at:
+    page_xy:
+    - 456.7
+    - 416.5
+  geom:
+    point:
+    - 456.7
+    - 416.5
+  attrs:
+    key: p26-W9-3
+    width_in: 30
+    height_in: 84
+    sill_in: 12
+    printed: '2''-6"X 7''-0" (S/L: 1''-0")'
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy:
+    - 133.3
+    - 398.4
+  geom:
+    point:
+    - 133.3
+    - 398.4
+  attrs:
+    key: p26-V1-4
+    width_in: 18
+    height_in: 24
+    sill_in: 72
+    printed: '1''-6"X 2''-0" (S/L: 6''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark V1 is printed with more than one size in this set: 2''-6" x 2''-0" (4 times); 1''-6" x 2''-0" (2 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: SD1
+  at:
+    page_xy:
+    - 379.5
+    - 381.7
+  geom:
+    point:
+    - 379.5
+    - 381.7
+  attrs:
+    key: p26-SD1-1
+    width_in: 135
+    height_in: 96
+    printed: 11'-3 x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: D4
+  at:
+    page_xy:
+    - 205.1
+    - 379.0
+  geom:
+    point:
+    - 205.1
+    - 379.0
+  attrs:
+    key: p26-D4-2
+    width_in: 30
+    height_in: 84
+    printed: 2'-6" x 7'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: DD1
+  at:
+    page_xy:
+    - 290.2
+    - 342.4
+  geom:
+    point:
+    - 290.2
+    - 342.4
+  attrs:
+    key: p26-DD1-1
+    width_in: 72
+    height_in: 252
+    printed: 6'-0" x 21'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: DOOR
+  mark: DD3
+  at:
+    page_xy:
+    - 353.5
+    - 338.7
+  geom:
+    point:
+    - 353.5
+    - 338.7
+  attrs:
+    key: p26-DD3-2
+    width_in: 48
+    height_in: 96
+    printed: 4'-0" x 8'-0"
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 26
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy:
+    - 385.4
+    - 270.7
+  geom:
+    point:
+    - 385.4
+    - 270.7
+  attrs:
+    key: p26-W1-3
+    width_in: 96
+    height_in: 96
+    sill_in: 12
+    printed: '8''-0"X 8''-0" (S/L: 1''-0")'
+    floor: GROUND
+  conflict:
+    note: 'mark W1 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 8''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy:
+    - 97.4
+    - 803.6
+  geom:
+    point:
+    - 97.4
+    - 803.6
+  attrs:
+    key: p27-V1-1
+    width_in: 30
+    height_in: 24
+    sill_in: 72
+    printed: '2''-6"X 2''-0" (S/L: 6''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark V1 is printed with more than one size in this set: 2''-6" x 2''-0" (4 times); 1''-6" x 2''-0" (2 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy:
+    - 267.2
+    - 796.1
+  geom:
+    point:
+    - 267.2
+    - 796.1
+  attrs:
+    key: p27-W1-1
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W1 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 8''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy:
+    - 519.8
+    - 801.7
+  geom:
+    point:
+    - 519.8
+    - 801.7
+  attrs:
+    key: p27-V1-2
+    width_in: 30
+    height_in: 24
+    sill_in: 72
+    printed: '2''-6"X 2''-0" (S/L: 6''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark V1 is printed with more than one size in this set: 2''-6" x 2''-0" (4 times); 1''-6" x 2''-0" (2 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W8
+  at:
+    page_xy:
+    - 317.9
+    - 787.8
+  geom:
+    point:
+    - 317.9
+    - 787.8
+  attrs:
+    key: p27-W8-1
+    width_in: 36
+    height_in: 84
+    sill_in: 12
+    printed: '3''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W8
+  at:
+    page_xy:
+    - 374.1
+    - 719.3
+  geom:
+    point:
+    - 374.1
+    - 719.3
+  attrs:
+    key: p27-W8-2
+    width_in: 36
+    height_in: 84
+    sill_in: 12
+    printed: '3''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: D3
+  at:
+    page_xy:
+    - 471.6
+    - 722.1
+  geom:
+    point:
+    - 471.6
+    - 722.1
+  attrs:
+    key: p27-D3-1
+    width_in: 30
+    height_in: 96
+    printed: 2'-6" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: D3
+  at:
+    page_xy:
+    - 169.8
+    - 699.5
+  geom:
+    point:
+    - 169.8
+    - 699.5
+  attrs:
+    key: p27-D3-2
+    width_in: 30
+    height_in: 96
+    printed: 2'-6" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy:
+    - 469.8
+    - 653.3
+  geom:
+    point:
+    - 469.8
+    - 653.3
+  attrs:
+    key: p27-W1-2
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W1 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 8''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 315.6
+    - 634.5
+  geom:
+    point:
+    - 315.6
+    - 634.5
+  attrs:
+    key: p27-D1-1
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy:
+    - 97.7
+    - 599.5
+  geom:
+    point:
+    - 97.7
+    - 599.5
+  attrs:
+    key: p27-W2-1
+    width_in: 48
+    height_in: 60
+    sill_in: 36
+    printed: '4''-0"X 5''-0" (S/L: 3''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W2 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 5''-0" (1 times); 4''-0" x 5''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 343.4
+    - 591.3
+  geom:
+    point:
+    - 343.4
+    - 591.3
+  attrs:
+    key: p27-D1-2
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: SD2
+  at:
+    page_xy:
+    - 196.8
+    - 551.9
+  geom:
+    point:
+    - 196.8
+    - 551.9
+  attrs:
+    key: p27-SD2-1
+    width_in: 111
+    height_in: 96
+    printed: 9'-3 x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy:
+    - 95.7
+    - 505.1
+  geom:
+    point:
+    - 95.7
+    - 505.1
+  attrs:
+    key: p27-W2-2
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W2 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 5''-0" (1 times); 4''-0" x 5''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy:
+    - 323.6
+    - 504.2
+  geom:
+    point:
+    - 323.6
+    - 504.2
+  attrs:
+    key: p27-W2-3
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W2 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 5''-0" (1 times); 4''-0" x 5''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: DD3
+  at:
+    page_xy:
+    - 158.7
+    - 455.3
+  geom:
+    point:
+    - 158.7
+    - 455.3
+  attrs:
+    key: p27-DD3-1
+    width_in: 48
+    height_in: 96
+    printed: 4'-0" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy:
+    - 94.5
+    - 365.5
+  geom:
+    point:
+    - 94.5
+    - 365.5
+  attrs:
+    key: p27-W2-4
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W2 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 5''-0" (1 times); 4''-0" x 5''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy:
+    - 322.0
+    - 368.3
+  geom:
+    point:
+    - 322.0
+    - 368.3
+  attrs:
+    key: p27-W2-5
+    width_in: 96
+    height_in: 84
+    sill_in: 12
+    printed: '8''-0"X 7''-0" (S/L: 1''-0")'
+    floor: FIRST
+  conflict:
+    note: 'mark W2 is printed with more than one size in this set: 8''-0" x 7''-0" (4 times); 8''-0" x 5''-0" (1 times); 4''-0" x 5''-0" (1 times)'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 258.0
+    - 257.7
+  geom:
+    point:
+    - 258.0
+    - 257.7
+  attrs:
+    key: p27-D1-3
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: D1
+  at:
+    page_xy:
+    - 347.5
+    - 257.7
+  geom:
+    point:
+    - 347.5
+    - 257.7
+  attrs:
+    key: p27-D1-4
+    width_in: 42
+    height_in: 96
+    printed: 3'-6" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: DD3
+  at:
+    page_xy:
+    - 154.8
+    - 250.4
+  geom:
+    point:
+    - 154.8
+    - 250.4
+  attrs:
+    key: p27-DD3-2
+    width_in: 48
+    height_in: 96
+    printed: 4'-0" x 8'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: DOOR
+  mark: DD1
+  at:
+    page_xy:
+    - 305.4
+    - 237.9
+  geom:
+    point:
+    - 305.4
+    - 237.9
+  attrs:
+    key: p27-DD1-1
+    width_in: 72
+    height_in: 252
+    printed: 6'-0" x 21'-0"
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 27
+  class: WINDOW
+  mark: W4
+  at:
+    page_xy:
+    - 426.5
+    - 201.7
+  geom:
+    point:
+    - 426.5
+    - 201.7
+  attrs:
+    key: p27-W4-1
+    width_in: 60
+    height_in: 90
+    sill_in: 6
+    printed: '5''-0"X 7''-6" (S/L: 0''-6")'
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: position is the label of the mark, not the opening; size and sill height (S/L) as printed beside the mark; there is no separate schedule table in this set
+- sheet: 17
+  class: LEVEL
+  mark: R.L +0'
+  at:
+    page_xy:
+    - 193.5
+    - 215.1
+  geom:
+    point:
+    - 193.5
+    - 215.1
+  attrs:
+    key: p17-L1
+    value_in: 0
+    printed: R.L +0'
+    kind: R.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: R.L +0'
+  at:
+    page_xy:
+    - 195.7
+    - 616.0
+  geom:
+    point:
+    - 195.7
+    - 616.0
+  attrs:
+    key: p17-L2
+    value_in: 0
+    printed: R.L +0'
+    kind: R.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: P.L +1'
+  at:
+    page_xy:
+    - 202.8
+    - 215.4
+  geom:
+    point:
+    - 202.8
+    - 215.4
+  attrs:
+    key: p17-L3
+    value_in: 12
+    printed: P.L +1'
+    kind: P.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: P.L +1'
+  at:
+    page_xy:
+    - 205.1
+    - 615.9
+  geom:
+    point:
+    - 205.1
+    - 615.9
+  attrs:
+    key: p17-L4
+    value_in: 12
+    printed: P.L +1'
+    kind: P.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: F.L +2'
+  at:
+    page_xy:
+    - 212.7
+    - 215.4
+  geom:
+    point:
+    - 212.7
+    - 215.4
+  attrs:
+    key: p17-L5
+    value_in: 24
+    printed: F.L +2'
+    kind: F.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: F.L +2'
+  at:
+    page_xy:
+    - 214.9
+    - 615.6
+  geom:
+    point:
+    - 214.9
+    - 615.6
+  attrs:
+    key: p17-L6
+    value_in: 24
+    printed: F.L +2'
+    kind: F.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: S.L +13'
+  at:
+    page_xy:
+    - 318.4
+    - 617.2
+  geom:
+    point:
+    - 318.4
+    - 617.2
+  attrs:
+    key: p17-L7
+    value_in: 156
+    printed: S.L +13'
+    kind: S.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: S.L +13'
+  at:
+    page_xy:
+    - 319.0
+    - 216.6
+  geom:
+    point:
+    - 319.0
+    - 216.6
+  attrs:
+    key: p17-L8
+    value_in: 156
+    printed: S.L +13'
+    kind: S.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: S.L +25'
+  at:
+    page_xy:
+    - 432.9
+    - 617.9
+  geom:
+    point:
+    - 432.9
+    - 617.9
+  attrs:
+    key: p17-L9
+    value_in: 300
+    printed: S.L +25'
+    kind: S.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 17
+  class: LEVEL
+  mark: S.L +25'
+  at:
+    page_xy:
+    - 433.2
+    - 217.8
+  geom:
+    point:
+    - 433.2
+    - 217.8
+  attrs:
+    key: p17-L10
+    value_in: 300
+    printed: S.L +25'
+    kind: S.L
+    floor: SECTION
+    source_kind: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: R.L +0'
+  at:
+    page_xy:
+    - 237.0
+    - 195.7
+  geom:
+    point:
+    - 237.0
+    - 195.7
+  attrs:
+    key: p18-L1
+    value_in: 0
+    printed: R.L +0'
+    kind: R.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: R.L +0'
+  at:
+    page_xy:
+    - 237.0
+    - 663.0
+  geom:
+    point:
+    - 237.0
+    - 663.0
+  attrs:
+    key: p18-L2
+    value_in: 0
+    printed: R.L +0'
+    kind: R.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: P.L +1'
+  at:
+    page_xy:
+    - 246.4
+    - 195.7
+  geom:
+    point:
+    - 246.4
+    - 195.7
+  attrs:
+    key: p18-L3
+    value_in: 12
+    printed: P.L +1'
+    kind: P.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: P.L +1'
+  at:
+    page_xy:
+    - 246.4
+    - 663.5
+  geom:
+    point:
+    - 246.4
+    - 663.5
+  attrs:
+    key: p18-L4
+    value_in: 12
+    printed: P.L +1'
+    kind: P.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: F.L +2'
+  at:
+    page_xy:
+    - 256.2
+    - 195.6
+  geom:
+    point:
+    - 256.2
+    - 195.6
+  attrs:
+    key: p18-L5
+    value_in: 24
+    printed: F.L +2'
+    kind: F.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: S.L +12'
+  at:
+    page_xy:
+    - 351.0
+    - 664.2
+  geom:
+    point:
+    - 351.0
+    - 664.2
+  attrs:
+    key: p18-L6
+    value_in: 144
+    printed: S.L +12'
+    kind: S.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+  conflict:
+    note: this elevation prints S.L +12' on its right side and +13' on its left side; the section on page 17 prints +13' on both sides
+- sheet: 18
+  class: LEVEL
+  mark: S.L +13'
+  at:
+    page_xy:
+    - 361.5
+    - 195.0
+  geom:
+    point:
+    - 361.5
+    - 195.0
+  attrs:
+    key: p18-L7
+    value_in: 156
+    printed: S.L +13'
+    kind: S.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: S.L +25'
+  at:
+    page_xy:
+    - 474.2
+    - 664.2
+  geom:
+    point:
+    - 474.2
+    - 664.2
+  attrs:
+    key: p18-L8
+    value_in: 300
+    printed: S.L +25'
+    kind: S.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 18
+  class: LEVEL
+  mark: S.L +25'
+  at:
+    page_xy:
+    - 475.3
+    - 194.4
+  geom:
+    point:
+    - 475.3
+    - 194.4
+  attrs:
+    key: p18-L9
+    value_in: 300
+    printed: S.L +25'
+    kind: S.L
+    floor: ELEVATION
+    source_kind: ELEVATION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'level in inches above R.L +0''; what the letters stand for is not spelled out on the sheet (read as R road, P plinth, F finish floor, S slab: an assumption)'
+- sheet: 22
+  class: LEVEL
+  mark: +2'-0"
+  at:
+    page_xy:
+    - 353.8
+    - 498.8
+  geom:
+    point:
+    - 353.8
+    - 498.8
+  attrs:
+    key: p22-L1
+    value_in: 24
+    printed: +2'-0"
+    floor: GROUND
+    source_kind: PLAN_ROOM_LEVEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level printed beside a room label on the plan
+- sheet: 22
+  class: LEVEL
+  mark: +1'-0"
+  at:
+    page_xy:
+    - 192.5
+    - 289.2
+  geom:
+    point:
+    - 192.5
+    - 289.2
+  attrs:
+    key: p22-L2
+    value_in: 12
+    printed: +1'-0"
+    floor: GROUND
+    source_kind: PLAN_ROOM_LEVEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level printed beside a room label on the plan
+- sheet: 17
+  class: FINISH_LAYER
+  mark: GROUND FLOOR
+  at:
+    page_xy:
+    - 157.6
+    - 292.3
+  geom:
+    point:
+    - 157.6
+    - 292.3
+  attrs:
+    key: p17-F1
+    spec: GROUND FLOOR
+    order: 1
+    text: '1"TH: MARBLE/TILE FLOORING'
+    thickness_in: 1
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: GROUND FLOOR
+  at:
+    page_xy:
+    - 162.6
+    - 314.7
+  geom:
+    point:
+    - 162.6
+    - 314.7
+  attrs:
+    key: p17-F2
+    spec: GROUND FLOOR
+    order: 2
+    text: '2"TH: PCC'
+    thickness_in: 2
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: GROUND FLOOR
+  at:
+    page_xy:
+    - 168.0
+    - 306.3
+  geom:
+    point:
+    - 168.0
+    - 306.3
+  attrs:
+    key: p17-F3
+    spec: GROUND FLOOR
+    order: 3
+    text: '4"TH: HARD CORE'
+    thickness_in: 4
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: GROUND FLOOR
+  at:
+    page_xy:
+    - 173.2
+    - 303.9
+  geom:
+    point:
+    - 173.2
+    - 303.9
+  attrs:
+    key: p17-F4
+    spec: GROUND FLOOR
+    order: 4
+    text: '6"TH: SAND FILLING'
+    thickness_in: 6
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: GROUND FLOOR
+  at:
+    page_xy:
+    - 178.5
+    - 297.6
+  geom:
+    point:
+    - 178.5
+    - 297.6
+  attrs:
+    key: p17-F5
+    spec: GROUND FLOOR
+    order: 5
+    text: WEL COMPACTED EARTH
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: FIRST FLOOR
+  at:
+    page_xy:
+    - 303.2
+    - 276.7
+  geom:
+    point:
+    - 303.2
+    - 276.7
+  attrs:
+    key: p17-F6
+    spec: FIRST FLOOR
+    order: 1
+    text: '1" TH: MARBLE FLOORING'
+    thickness_in: 1
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: FIRST FLOOR
+  at:
+    page_xy:
+    - 297.5
+    - 286.6
+  geom:
+    point:
+    - 297.5
+    - 286.6
+  attrs:
+    key: p17-F7
+    spec: FIRST FLOOR
+    order: 2
+    text: '2 "TH: PCC (1:2:4)'
+    thickness_in: 2
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: FIRST FLOOR
+  at:
+    page_xy:
+    - 292.5
+    - 282.0
+  geom:
+    point:
+    - 292.5
+    - 282.0
+  attrs:
+    key: p17-F8
+    spec: FIRST FLOOR
+    order: 3
+    text: '3" TH: BRICK BALAST'
+    thickness_in: 3
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: FIRST FLOOR
+  at:
+    page_xy:
+    - 286.7
+    - 280.4
+  geom:
+    point:
+    - 286.7
+    - 280.4
+  attrs:
+    key: p17-F9
+    spec: FIRST FLOOR
+    order: 4
+    text: '6" TH: RCC SLAB(1:2:4)'
+    thickness_in: 6
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 506.8
+    - 429.7
+  geom:
+    point:
+    - 506.8
+    - 429.7
+  attrs:
+    key: p17-F10
+    spec: ROOF
+    order: 1
+    text: '1½"TH: BRICK TILES'
+    thickness_in: 1.5
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 501.6
+    - 416.8
+  geom:
+    point:
+    - 501.6
+    - 416.8
+  attrs:
+    key: p17-F11
+    spec: ROOF
+    order: 2
+    text: '2½"TH: MUD AND MUD PLASTER'
+    thickness_in: 2.5
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 496.5
+    - 412.8
+  geom:
+    point:
+    - 496.5
+    - 412.8
+  attrs:
+    key: p17-F12
+    spec: ROOF
+    order: 3
+    text: TWO LAYERS OF PLOYTHEN SHEET
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 491.2
+    - 425.0
+  geom:
+    point:
+    - 491.2
+    - 425.0
+  attrs:
+    key: p17-F13
+    spec: ROOF
+    order: 4
+    text: 2"TH JUMBOLON SHEET
+    thickness_in: 2
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 486.3
+    - 412.8
+  geom:
+    point:
+    - 486.3
+    - 412.8
+  attrs:
+    key: p17-F14
+    spec: ROOF
+    order: 5
+    text: TWO LAYERS OF PLOYTHEN SHEET
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 481.1
+    - 418.6
+  geom:
+    point:
+    - 481.1
+    - 418.6
+  attrs:
+    key: p17-F15
+    spec: ROOF
+    order: 6
+    text: TWO COATS OF HOT BITUMEN
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 17
+  class: FINISH_LAYER
+  mark: ROOF
+  at:
+    page_xy:
+    - 475.4
+    - 427.8
+  geom:
+    point:
+    - 475.4
+    - 427.8
+  attrs:
+    key: p17-F16
+    spec: ROOF
+    order: 7
+    text: '6"TH: RCC SLAB(1:2:4)'
+    thickness_in: 6
+    floor: SECTION
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: layer of the build-up listed beside the section; order 1 is the top surface (the ground floor list is printed with the bottom layer first)
+- sheet: 22
+  class: STAIR
+  at:
+    page_xy:
+    - 196.8
+    - 404.4
+  geom:
+    point:
+    - 196.8
+    - 404.4
+  attrs:
+    key: p22-S1
+    name: STAIR
+    width_in: 48
+    tread_in: 11
+    riser_in: 7
+    printed: 'W: 4'' T: 11" R: 7"'
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: width, tread and riser printed beside the flight; the flight itself is not traced
+- sheet: 23
+  class: STAIR
+  at:
+    page_xy:
+    - 182.9
+    - 345.6
+  geom:
+    point:
+    - 182.9
+    - 345.6
+  attrs:
+    key: p23-S1
+    name: STAIR
+    width_in: 48
+    tread_in: 11
+    riser_in: 7
+    printed: 'W: 4'' T: 11" R: 7"'
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: width, tread and riser printed beside the flight; the flight itself is not traced
+- sheet: 17
+  class: TANK
+  mark: OHWT
+  at:
+    page_xy:
+    - 505.0
+    - 567.3
+  geom:
+    point:
+    - 505.0
+    - 567.3
+  attrs:
+    key: p17-T1
+    name: O.H.W.T
+    printed: 7'-6"x11'-1½"
+    width_in: 90
+    depth_in: 133.5
+    floor: SECTION
+    same_item_as: OHWT@p9 (sheet 9, O.H.W.TANK DETAIL 7'-6"X11'-1½")
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: the water tank on the roof drawn in the section; same tank as the detail on sheet 9 (same printed size), written here with this sheet's reference
+- sheet: 18
+  class: TANK
+  mark: OHWT
+  at:
+    page_xy:
+    - 550.0
+    - 558.7
+  geom:
+    point:
+    - 550.0
+    - 558.7
+  attrs:
+    key: p18-T1
+    name: O.H.W.T
+    printed: 7'-6"X11'-1½"
+    width_in: 90
+    depth_in: 133.5
+    floor: ELEVATION
+    same_item_as: OHWT@p9 (sheet 9, O.H.W.TANK DETAIL 7'-6"X11'-1½")
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: the water tank on the roof drawn in the elevation; same tank as the detail on sheet 9 (same printed size), written here with this sheet's reference
+- sheet: 22
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 299.2
+    - 795.5
+  geom:
+    point:
+    - 299.2
+    - 795.5
+  attrs:
+    key: p22-N-PLOT_WIDTH-1
+    name: PLOT_WIDTH
+    text: 50'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: plot width 50'
+- sheet: 22
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 299.2
+    - 124.4
+  geom:
+    point:
+    - 299.2
+    - 124.4
+  attrs:
+    key: p22-N-PLOT_WIDTH-2
+    name: PLOT_WIDTH
+    text: 50'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: plot width 50'
+- sheet: 22
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 108.7
+    - 459.6
+  geom:
+    point:
+    - 108.7
+    - 459.6
+  attrs:
+    key: p22-N-PLOT_DEPTH-1
+    name: PLOT_DEPTH
+    text: 90'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: plot depth 90'
+- sheet: 22
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 491.9
+    - 459.6
+  geom:
+    point:
+    - 491.9
+    - 459.6
+  attrs:
+    key: p22-N-PLOT_DEPTH-2
+    name: PLOT_DEPTH
+    text: 90'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: plot depth 90'
+- sheet: 23
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 319.1
+    - 277.9
+  geom:
+    point:
+    - 319.1
+    - 277.9
+  attrs:
+    key: p23-N-RAILING_WALL_HT
+    name: RAILING_WALL_HT
+    text: WALL+RAILING HT. 3'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: wall + railing height 3'-0"
+- sheet: 23
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 396.4
+    - 794.1
+  geom:
+    point:
+    - 396.4
+    - 794.1
+  attrs:
+    key: p23-N-WALL_HT_TERRACE-1
+    name: WALL_HT_TERRACE
+    text: WALL HT. 3'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: wall height 3'-0"
+- sheet: 23
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 494.6
+    - 415.3
+  geom:
+    point:
+    - 494.6
+    - 415.3
+  attrs:
+    key: p23-N-WALL_HT_TERRACE-2
+    name: WALL_HT_TERRACE
+    text: WALL HT. 3'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: wall height 3'-0"
+- sheet: 23
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 486.4
+    - 414.9
+  geom:
+    point:
+    - 486.4
+    - 414.9
+  attrs:
+    key: p23-N-BEAM_TOP_HT
+    name: BEAM_TOP_HT
+    text: BEAM TOP HT. 8'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: beam top height 8'-0"
+- sheet: 26
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 202.0
+    - 350.9
+  geom:
+    point:
+    - 202.0
+    - 350.9
+  attrs:
+    key: p26-N-NICHE_DEPTH
+    name: NICHE_DEPTH
+    text: NICHE DEPTH 4½"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: niche depth 4½" (porch wall)
+- sheet: 26
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 124.0
+    - 316.9
+  geom:
+    point:
+    - 124.0
+    - 316.9
+  attrs:
+    key: p26-N-PORCH_WALL_HT
+    name: PORCH_WALL_HT
+    text: WALL 7' HT.
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: porch wall 7' high
+- sheet: 26
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 131.1
+    - 314.7
+  geom:
+    point:
+    - 131.1
+    - 314.7
+  attrs:
+    key: p26-N-PORCH_COLUMN
+    name: PORCH_COLUMN
+    text: 12"x24" RCC COLUMN
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: RCC column 12" x 24" at the porch wall
+- sheet: 17
+  class: NOTE_FACT
+  at:
+    page_xy:
+    - 473.1
+    - 303.4
+  geom:
+    point:
+    - 473.1
+    - 303.4
+  attrs:
+    key: p17-N-PARAPET_HT_SECTION
+    name: PARAPET_HT_SECTION
+    text: PARAPET WALL HT. 3'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: parapet wall height 3'

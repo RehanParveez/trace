@@ -1,1 +1,4312 @@
-[]
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B1-MID@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 below the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B1-SUPPORT@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 below the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+    ext_top_bars:
+      state: PRINTED
+      value: 2#6 EXT
+      from: p.5 support section label
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B2-MID@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B2-SUPPORT@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B3-MID@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 below the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B3-SUPPORT@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 below the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+    ext_top_bars:
+      state: PRINTED
+      value: 2#4 EXT
+      from: p.5 support section label
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B4-MID@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 12
+      from: slab 6 + 6 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B4-SUPPORT@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 12
+      from: slab 6 + 6 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B5-MID@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 12
+      from: slab 6 + 6 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B5-SUPPORT@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 12
+      from: slab 6 + 6 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B6-MID@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 5
+    class: BEAM_SECTION
+    key: B6-SUPPORT@p5
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.5 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.5 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.5 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.5 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.5 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B1-MID@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.7 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.7 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 12
+      from: slab 6 + 6 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B1-SUPPORT@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.7 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.7 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 12
+      from: slab 6 + 6 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B2-MID@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.7 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.7 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B2-SUPPORT@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.7 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.7 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B3-MID@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.7 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 12
+      from: p.7 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#4
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B3-SUPPORT@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.7 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 12
+      from: p.7 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#4
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B4-MID@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.7 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.7 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 below the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#6
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 2#8+4#6
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 7
+    class: BEAM_SECTION
+    key: B4-SUPPORT@p7
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.7 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.7 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 below the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 2#6
+      from: p.7 section label
+    bottom_bars:
+      state: PRINTED
+      value: 2#8+4#6
+      from: p.7 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.7 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+    ext_top_bars:
+      state: PRINTED
+      value: 2#6 EXT
+      from: p.7 support section label
+- element:
+    sheet: 10
+    class: COLUMN_SCHEDULE_CELL
+    key: C-1@p10
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 18
+      from: p.10 footing title 9"X18"
+    bars:
+      state: PRINTED
+      value: 4#6+6#4
+      from: p.10
+    ties:
+      state: PRINTED
+      value: '#3@8"c/c'
+      from: p.10
+    storey_height:
+      state: PRINTED
+      value: 132
+      from: p.17 section, 11' between F.L +2' and S.L +13'
+    cover:
+      state: PRINTED
+      value: 1.5
+      from: p.3 general notes, columns and beam 1 1/2 inch
+- element:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-3@p11
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 9
+      from: p.11 column plan, 9"x9" R.C.C with 4½" brick all round
+    bars:
+      state: PRINTED
+      value: 8#4
+      from: p.11
+    ties:
+      state: PRINTED
+      value: '#3@7"c/c'
+      from: p.11
+    storey_height:
+      state: PRINTED
+      value: 132
+      from: p.17 section, 11' between F.L +2' and S.L +13'
+- element:
+    sheet: 8
+    class: FOOTING_SECTION
+    key: W9E1-section
+  inputs:
+    footing_width:
+      state: PRINTED
+      value: 3'-6"
+      from: p.8
+    pcc_in:
+      state: PRINTED
+      value: 6
+      from: p.8
+    step_heights_in:
+      state: PRINTED
+      value:
+      - 3
+      - 3
+      - 3
+      from: p.8
+    strip_length:
+      state: MISSING
+      note: page 4 and 6 are slab plans; the foundation plan is not in the pages measured here
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W1
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W2
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W3
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W4
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W5
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W6
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W7
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W8
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W9
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W10
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W11
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W12
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W13
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W14
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W15
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W16
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W17
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W18
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W19
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W20
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W21
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W22
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W23
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W24
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W25
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W26
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W27
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W28
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W29
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W30
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W31
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W32
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W33
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W34
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W35
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W36
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W37
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W38
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W39
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W40
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W41
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W42
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W43
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 22
+    class: WALL
+    key: p22-W44
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 22; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: 11'' between F.L +2'' and S.L +13'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W1
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W2
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W3
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W4
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W5
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W6
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W7
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W8
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W9
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W10
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W11
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W12
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W13
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W14
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W15
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W16
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W17
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W18
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W19
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W20
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W21
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W22
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W23
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W24
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W25
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W26
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W27
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W28
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W29
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W30
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W31
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W32
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W33
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W34
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W35
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W36
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W37
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W38
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W39
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 9.0
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W40
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W41
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W42
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 23
+    class: WALL
+    key: p23-W43
+  inputs:
+    length_in:
+      state: DERIVED
+      from: traced on the vector outline of page 23; centreline of the run
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn band width, snapped to 4.5 or 9 in; the wall thickness is not printed on this plan
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: first floor storey 11'''
+- element:
+    sheet: 22
+    class: BOUNDARY_WALL
+    key: p22-B1
+  inputs:
+    length_in:
+      state: DERIVED
+      from: p22 outline of the plot, 50' x 90'
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; sheet 8 prints 4.5 in for the boundary wall detail
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on pages 19 or 22
+- element:
+    sheet: 22
+    class: BOUNDARY_WALL
+    key: p22-B2
+  inputs:
+    length_in:
+      state: DERIVED
+      from: p22 outline of the plot, 50' x 90'
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; sheet 8 prints 4.5 in for the boundary wall detail
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on pages 19 or 22
+- element:
+    sheet: 22
+    class: BOUNDARY_WALL
+    key: p22-B3
+  inputs:
+    length_in:
+      state: DERIVED
+      from: p22 outline of the plot, 50' x 90'
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; sheet 8 prints 4.5 in for the boundary wall detail
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on pages 19 or 22
+- element:
+    sheet: 22
+    class: BOUNDARY_WALL
+    key: p22-B4
+  inputs:
+    length_in:
+      state: DERIVED
+      from: p22 outline of the plot, 50' x 90'
+    thickness_in:
+      state: DERIVED
+      value: 4.5
+      from: drawn gap; sheet 8 prints 4.5 in for the boundary wall detail
+    height_in:
+      state: MISSING
+      note: no boundary wall height is printed on pages 19 or 22
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 69
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 120
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R4
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 181.5
+      - 202.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R5
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 78
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R6
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 181.5
+      - 202.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R7
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R8
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 87
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R9
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 85.5
+      - 93
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R10
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 168
+      - 168
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R11
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 276
+      - 168
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R12
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 43.5
+      - 79.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R13
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 171
+      - 111
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R14
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 43.5
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R15
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 273
+      - 168
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R16
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108
+      - 75
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R17
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 171
+      - 180
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R18
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 225
+      - 159
+      from: printed on the plan
+    outline:
+      state: DEFAULTED
+      from: printed size laid at the label; edges not traced
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 22
+    class: ROOM
+    key: p22-R19
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108
+      - 60
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 90
+      - 93
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 87
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 120
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R4
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 181.5
+      - 202.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R5
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 78
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R6
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 181.5
+      - 202.5
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R7
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 168
+      - 84
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R8
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 85.5
+      - 93
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R9
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 273
+      - 168
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R10
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 180
+      - 345
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R11
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 108
+      - 75
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R12
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 171
+      - 123
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R13
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 156
+      - 123
+      from: printed on the plan
+    outline:
+      state: DERIVED
+      from: box of the printed size fitted to the wall faces
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R14
+  inputs:
+    outline:
+      state: MISSING
+      note: label only, no printed size
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R15
+  inputs:
+    outline:
+      state: MISSING
+      note: label only, no printed size
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R16
+  inputs:
+    outline:
+      state: MISSING
+      note: label only, no printed size
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R17
+  inputs:
+    outline:
+      state: MISSING
+      note: label only, no printed size
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 23
+    class: ROOM
+    key: p23-R18
+  inputs:
+    outline:
+      state: MISSING
+      note: label only, no printed size
+    height_in:
+      state: PRINTED
+      value: 132
+      from: 'p17 section: storey 11'''
+- element:
+    sheet: 19
+    class: COLUMN
+    key: p19-C1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 12
+      - 18
+      from: p19 dimension of the column
+    position:
+      state: DERIVED
+      from: bounding box of the drawn square
+    height_in:
+      state: MISSING
+      note: no boundary wall or column height is printed
+    reinforcement:
+      state: MISSING
+      note: not on the architecture pages; the footing sections of sheet 11 are for the gate columns (not joined, the mapping is not stated)
+- element:
+    sheet: 19
+    class: FOOTING_PAD
+    key: p19-C1-pad
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p19 dimension of the dashed footing square 5' x 5'
+    thickness_and_bars:
+      state: MISSING
+      note: not on page 19
+- element:
+    sheet: 19
+    class: COLUMN
+    key: p19-C2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 12
+      - 18
+      from: p19 dimension of the column
+    position:
+      state: DERIVED
+      from: bounding box of the drawn square
+    height_in:
+      state: MISSING
+      note: no boundary wall or column height is printed
+    reinforcement:
+      state: MISSING
+      note: not on the architecture pages; the footing sections of sheet 11 are for the gate columns (not joined, the mapping is not stated)
+- element:
+    sheet: 19
+    class: FOOTING_PAD
+    key: p19-C2-pad
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 60
+      from: p19 dimension of the dashed footing square 5' x 5'
+    thickness_and_bars:
+      state: MISSING
+      note: not on page 19
+- element:
+    sheet: 19
+    class: COLUMN
+    key: p19-C3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 18
+      - 18
+      from: p19 dimension of the column
+    position:
+      state: DERIVED
+      from: bounding box of the drawn square
+    height_in:
+      state: MISSING
+      note: no boundary wall or column height is printed
+    reinforcement:
+      state: MISSING
+      note: not on the architecture pages; the footing sections of sheet 11 are for the gate columns (not joined, the mapping is not stated)
+- element:
+    sheet: 19
+    class: FOOTING_PAD
+    key: p19-C3-pad
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 54
+      - 54
+      from: p19 dimension of the dashed footing square 4'-6" x 4'-6"
+    thickness_and_bars:
+      state: MISSING
+      note: not on page 19
+- element:
+    sheet: 19
+    class: COLUMN
+    key: p19-C4
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 18
+      - 18
+      from: p19 dimension of the column
+    position:
+      state: DERIVED
+      from: centre read from the two dimension ticks of the 1'-6" dimension; the square itself is not a closed path
+    height_in:
+      state: MISSING
+      note: no boundary wall or column height is printed
+    reinforcement:
+      state: MISSING
+      note: not on the architecture pages; the footing sections of sheet 11 are for the gate columns (not joined, the mapping is not stated)
+- element:
+    sheet: 19
+    class: FOOTING_PAD
+    key: p19-C4-pad
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 54
+      - 54
+      from: p19 dimension of the dashed footing square 4'-6" x 4'-6"
+    thickness_and_bars:
+      state: MISSING
+      note: not on page 19
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p26 label beside the mark W1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: VENTILATOR
+    key: p26-V1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 24
+      from: p26 label beside the mark V1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 72
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: VENTILATOR
+    key: p26-V1-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 24
+      from: p26 label beside the mark V1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 72
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D3-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 96
+      from: p26 label beside the mark D3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D3-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 96
+      from: p26 label beside the mark D3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W1-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p26 label beside the mark W1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W6-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 34.5
+      - 60
+      from: p26 label beside the mark W6
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 36
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p26 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D1-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p26 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D2-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 96
+      from: p26 label beside the mark D2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D1-3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p26 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W2-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 60
+      from: p26 label beside the mark W2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 36
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-SD2-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 111
+      - 96
+      from: p26 label beside the mark SD2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W9-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p26 label beside the mark W9
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-DD2-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 96
+      from: p26 label beside the mark DD2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D4-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p26 label beside the mark D4
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W9-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p26 label beside the mark W9
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: VENTILATOR
+    key: p26-V1-3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 18
+      - 24
+      from: p26 label beside the mark V1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 72
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-DD3-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 96
+      from: p26 label beside the mark DD3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W9-3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p26 label beside the mark W9
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: VENTILATOR
+    key: p26-V1-4
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 18
+      - 24
+      from: p26 label beside the mark V1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 72
+      from: S/L printed beside the mark
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-SD1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 135
+      - 96
+      from: p26 label beside the mark SD1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-D4-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 84
+      from: p26 label beside the mark D4
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-DD1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 252
+      from: p26 label beside the mark DD1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: DOOR
+    key: p26-DD3-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 96
+      from: p26 label beside the mark DD3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 26
+    class: WINDOW
+    key: p26-W1-3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 96
+      from: p26 label beside the mark W1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: VENTILATOR
+    key: p27-V1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 24
+      from: p27 label beside the mark V1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 72
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p27 label beside the mark W1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: VENTILATOR
+    key: p27-V1-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 24
+      from: p27 label beside the mark V1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 72
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W8-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p27 label beside the mark W8
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W8-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 36
+      - 84
+      from: p27 label beside the mark W8
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-D3-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 96
+      from: p27 label beside the mark D3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-D3-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 30
+      - 96
+      from: p27 label beside the mark D3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W1-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p27 label beside the mark W1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-D1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p27 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W2-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 60
+      from: p27 label beside the mark W2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 36
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-D1-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p27 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-SD2-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 111
+      - 96
+      from: p27 label beside the mark SD2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W2-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p27 label beside the mark W2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W2-3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p27 label beside the mark W2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-DD3-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 96
+      from: p27 label beside the mark DD3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W2-4
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p27 label beside the mark W2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W2-5
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 96
+      - 84
+      from: p27 label beside the mark W2
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 12
+      from: S/L printed beside the mark
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-D1-3
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p27 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-D1-4
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 42
+      - 96
+      from: p27 label beside the mark D1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-DD3-2
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 48
+      - 96
+      from: p27 label beside the mark DD3
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: DOOR
+    key: p27-DD1-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 72
+      - 252
+      from: p27 label beside the mark DD1
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    leaf_type:
+      state: DERIVED
+      from: 'mark prefix: D door, DD double door, SD sliding door (assumed meaning, not spelled out)'
+- element:
+    sheet: 27
+    class: WINDOW
+    key: p27-W4-1
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 60
+      - 90
+      from: p27 label beside the mark W4
+    position:
+      state: DERIVED
+      from: label of the mark, not the opening
+    sill_height_in:
+      state: PRINTED
+      value: 6
+      from: S/L printed beside the mark
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L1
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 0
+      from: p17 R.L +0'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L2
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 0
+      from: p17 R.L +0'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L3
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 12
+      from: p17 P.L +1'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L4
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 12
+      from: p17 P.L +1'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L5
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 24
+      from: p17 F.L +2'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L6
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 24
+      from: p17 F.L +2'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L7
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 156
+      from: p17 S.L +13'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L8
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 156
+      from: p17 S.L +13'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L9
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 300
+      from: p17 S.L +25'
+- element:
+    sheet: 17
+    class: LEVEL
+    key: p17-L10
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 300
+      from: p17 S.L +25'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L1
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 0
+      from: p18 R.L +0'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L2
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 0
+      from: p18 R.L +0'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L3
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 12
+      from: p18 P.L +1'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L4
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 12
+      from: p18 P.L +1'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L5
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 24
+      from: p18 F.L +2'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L6
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 144
+      from: p18 S.L +12'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L7
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 156
+      from: p18 S.L +13'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L8
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 300
+      from: p18 S.L +25'
+- element:
+    sheet: 18
+    class: LEVEL
+    key: p18-L9
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 300
+      from: p18 S.L +25'
+- element:
+    sheet: 22
+    class: LEVEL
+    key: p22-L1
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 24
+      from: p22 +2'-0"
+- element:
+    sheet: 22
+    class: LEVEL
+    key: p22-L2
+  inputs:
+    level_in:
+      state: PRINTED
+      value: 12
+      from: p22 +1'-0"
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F1
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '1"TH: MARBLE/TILE FLOORING'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 1
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F2
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '2"TH: PCC'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 2
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F3
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '4"TH: HARD CORE'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 4
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F4
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '6"TH: SAND FILLING'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 6
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F5
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: WEL COMPACTED EARTH
+      from: p17 build-up list
+    thickness_in:
+      state: MISSING
+      note: no thickness in the layer text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F6
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '1" TH: MARBLE FLOORING'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 1
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F7
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '2 "TH: PCC (1:2:4)'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 2
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F8
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '3" TH: BRICK BALAST'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 3
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F9
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '6" TH: RCC SLAB(1:2:4)'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 6
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F10
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '1½"TH: BRICK TILES'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 1.5
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F11
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '2½"TH: MUD AND MUD PLASTER'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 2.5
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F12
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: TWO LAYERS OF PLOYTHEN SHEET
+      from: p17 build-up list
+    thickness_in:
+      state: MISSING
+      note: no thickness in the layer text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F13
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: 2"TH JUMBOLON SHEET
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 2
+      from: p17 text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F14
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: TWO LAYERS OF PLOYTHEN SHEET
+      from: p17 build-up list
+    thickness_in:
+      state: MISSING
+      note: no thickness in the layer text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F15
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: TWO COATS OF HOT BITUMEN
+      from: p17 build-up list
+    thickness_in:
+      state: MISSING
+      note: no thickness in the layer text
+- element:
+    sheet: 17
+    class: FINISH_LAYER
+    key: p17-F16
+  inputs:
+    layer_text:
+      state: PRINTED
+      value: '6"TH: RCC SLAB(1:2:4)'
+      from: p17 build-up list
+    thickness_in:
+      state: PRINTED
+      value: 6
+      from: p17 text
+- element:
+    sheet: 22
+    class: STAIR
+    key: p22-S1
+  inputs:
+    width_tread_riser:
+      state: PRINTED
+      value:
+      - 48
+      - 11
+      - 7
+      from: 'W: 4'' T: 11" R: 7" beside the flight'
+    risers_count:
+      state: MISSING
+      note: flight not traced
+- element:
+    sheet: 23
+    class: STAIR
+    key: p23-S1
+  inputs:
+    width_tread_riser:
+      state: PRINTED
+      value:
+      - 48
+      - 11
+      - 7
+      from: 'W: 4'' T: 11" R: 7" beside the flight'
+    risers_count:
+      state: MISSING
+      note: flight not traced
+- element:
+    sheet: 17
+    class: TANK
+    key: p17-T1
+  inputs:
+    plan_size_in:
+      state: PRINTED
+      value:
+      - 90
+      - 133.5
+      from: 7'-6" x 11'-1½" beside the tank
+    depth:
+      state: MISSING
+      note: section on sheet 9 holds the tank detail; not joined here
+- element:
+    sheet: 18
+    class: TANK
+    key: p18-T1
+  inputs:
+    plan_size_in:
+      state: PRINTED
+      value:
+      - 90
+      - 133.5
+      from: 7'-6" x 11'-1½" beside the tank
+    depth:
+      state: MISSING
+      note: section on sheet 9 holds the tank detail; not joined here

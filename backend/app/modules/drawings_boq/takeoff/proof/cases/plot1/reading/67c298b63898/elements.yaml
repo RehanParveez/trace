@@ -1,1 +1,6706 @@
-[]
+- sheet: 1
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 306.9
+    - 86.1
+  geom:
+    polyline:
+    - - 138.5
+      - 86.1
+    - - 475.2
+      - 86.1
+  attrs:
+    key: p1-W1
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 393.2
+    - 158.2
+  geom:
+    polyline:
+    - - 313.3
+      - 158.2
+    - - 473.2
+      - 158.2
+  attrs:
+    key: p1-W2
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 157.3
+    - 186.7
+  geom:
+    polyline:
+    - - 134.0
+      - 186.7
+    - - 180.7
+      - 186.7
+  attrs:
+    key: p1-W3
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 219.3
+    - 251.6
+  geom:
+    polyline:
+    - - 185.0
+      - 251.6
+    - - 253.6
+      - 251.6
+  attrs:
+    key: p1-W4
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 234.7
+    - 353.6
+  geom:
+    polyline:
+    - - 138.5
+      - 353.6
+    - - 330.8
+      - 353.6
+  attrs:
+    key: p1-W5
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 454.8
+    - 353.6
+  geom:
+    polyline:
+    - - 438.7
+      - 353.6
+    - - 470.9
+      - 353.6
+  attrs:
+    key: p1-W6
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 413.1
+    - 502.3
+  geom:
+    polyline:
+    - - 355.4
+      - 502.3
+    - - 470.9
+      - 502.3
+  attrs:
+    key: p1-W7
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 190.8
+    - 504.5
+  geom:
+    polyline:
+    - - 138.5
+      - 504.5
+    - - 243.2
+      - 504.5
+  attrs:
+    key: p1-W8
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 236.8
+    - 648.8
+  geom:
+    polyline:
+    - - 172.0
+      - 648.8
+    - - 301.7
+      - 648.8
+  attrs:
+    key: p1-W9
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 220.1
+    - 709.3
+  geom:
+    polyline:
+    - - 138.5
+      - 709.3
+    - - 301.7
+      - 709.3
+  attrs:
+    key: p1-W10
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 304.6
+    - 781.4
+  geom:
+    polyline:
+    - - 134.0
+      - 781.4
+    - - 475.2
+      - 781.4
+  attrs:
+    key: p1-W11
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 131.9
+    - 150.9
+  geom:
+    polyline:
+    - - 131.9
+      - 101.4
+    - - 131.9
+      - 200.5
+  attrs:
+    key: p1-W12
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 131.9
+    - 753.8
+  geom:
+    polyline:
+    - - 131.9
+      - 728.3
+    - - 131.9
+      - 779.3
+  attrs:
+    key: p1-W13
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 134.1
+    - 531.5
+  geom:
+    polyline:
+    - - 134.1
+      - 358.0
+    - - 134.1
+      - 704.9
+  attrs:
+    key: p1-W14
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 182.9
+    - 218.1
+  geom:
+    polyline:
+    - - 182.9
+      - 188.9
+    - - 182.9
+      - 247.2
+  attrs:
+    key: p1-W15
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 217.9
+    - 678.0
+  geom:
+    polyline:
+    - - 217.9
+      - 651.0
+    - - 217.9
+      - 704.9
+  attrs:
+    key: p1-W16
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 245.5
+    - 428.0
+  geom:
+    polyline:
+    - - 245.5
+      - 358.1
+    - - 245.5
+      - 497.9
+  attrs:
+    key: p1-W17
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 306.1
+    - 589.0
+  geom:
+    polyline:
+    - - 306.1
+      - 506.6
+    - - 306.1
+      - 671.4
+  attrs:
+    key: p1-W18
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 309.0
+    - 275.6
+  geom:
+    polyline:
+    - - 309.0
+      - 202.0
+    - - 309.0
+      - 349.2
+  attrs:
+    key: p1-W19
+    thickness_in: 9
+    gap_measured_in: 8.6
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 475.2
+    - 433.8
+  geom:
+    polyline:
+    - - 475.2
+      - 162.6
+    - - 475.2
+      - 704.9
+  attrs:
+    key: p1-W20
+    thickness_in: 9
+    gap_measured_in: 8.6
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 477.4
+    - 121.1
+  geom:
+    polyline:
+    - - 477.4
+      - 88.3
+    - - 477.4
+      - 153.8
+  attrs:
+    key: p1-W21
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: BOUNDARY_WALL
+  at:
+    page_xy:
+    - 477.4
+    - 746.5
+  geom:
+    polyline:
+    - - 477.4
+      - 713.6
+    - - 477.4
+      - 779.3
+  attrs:
+    key: p1-W22
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 363.6
+    - 709.3
+  geom:
+    polyline:
+    - - 301.7
+      - 709.3
+    - - 425.5
+      - 709.3
+  attrs:
+    key: p1-W23
+    thickness_in: 9
+    gap_measured_in: 8.7
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: WALL
+  at:
+    page_xy:
+    - 134.1
+    - 304.9
+  geom:
+    polyline:
+    - - 134.1
+      - 251.9
+    - - 134.1
+      - 357.9
+  attrs:
+    key: p1-W24
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: PARAPET
+  at:
+    page_xy:
+    - 293.4
+    - 103.8
+  geom:
+    polyline:
+    - - 108.7
+      - 103.8
+    - - 478.2
+      - 103.8
+  attrs:
+    key: p2-W1
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 150.8
+    - 142.1
+  geom:
+    polyline:
+    - - 122.3
+      - 142.1
+    - - 179.3
+      - 142.1
+  attrs:
+    key: p2-W2
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 390.4
+    - 142.1
+  geom:
+    polyline:
+    - - 298.0
+      - 142.1
+    - - 482.8
+      - 142.1
+  attrs:
+    key: p2-W3
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 189.2
+    - 238.3
+  geom:
+    polyline:
+    - - 122.3
+      - 238.3
+    - - 256.0
+      - 238.3
+  attrs:
+    key: p2-W4
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 230.4
+    - 343.4
+  geom:
+    polyline:
+    - - 122.3
+      - 343.4
+    - - 338.5
+      - 343.4
+  attrs:
+    key: p2-W5
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 457.2
+    - 343.4
+  geom:
+    polyline:
+    - - 431.6
+      - 343.4
+    - - 482.8
+      - 343.4
+  attrs:
+    key: p2-W6
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 251.6
+    - 496.6
+  geom:
+    polyline:
+    - - 243.8
+      - 496.6
+    - - 259.3
+      - 496.6
+  attrs:
+    key: p2-W7
+    thickness_in: 9
+    gap_measured_in: 9.1
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 421.9
+    - 496.6
+  geom:
+    polyline:
+    - - 361.0
+      - 496.6
+    - - 482.8
+      - 496.6
+  attrs:
+    key: p2-W8
+    thickness_in: 9
+    gap_measured_in: 9.1
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 185.3
+    - 498.8
+  geom:
+    polyline:
+    - - 131.3
+      - 498.8
+    - - 239.3
+      - 498.8
+  attrs:
+    key: p2-W9
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 235.7
+    - 647.5
+  geom:
+    polyline:
+    - - 165.8
+      - 647.5
+    - - 305.5
+      - 647.5
+  attrs:
+    key: p2-W10
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 273.9
+    - 709.9
+  geom:
+    polyline:
+    - - 122.3
+      - 709.9
+    - - 425.5
+      - 709.9
+  attrs:
+    key: p2-W11
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: PARAPET
+  at:
+    page_xy:
+    - 293.4
+    - 748.1
+  geom:
+    polyline:
+    - - 108.7
+      - 748.1
+    - - 478.2
+      - 748.1
+  attrs:
+    key: p2-W12
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: FIRST
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: PARAPET
+  at:
+    page_xy:
+    - 106.5
+    - 426.0
+  geom:
+    polyline:
+    - - 106.5
+      - 106.1
+    - - 106.5
+      - 745.9
+  attrs:
+    key: p2-W13
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: FIRST
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 126.8
+    - 426.0
+  geom:
+    polyline:
+    - - 126.8
+      - 137.6
+    - - 126.8
+      - 714.4
+  attrs:
+    key: p2-W14
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 181.6
+    - 207.5
+  geom:
+    polyline:
+    - - 181.6
+      - 181.2
+    - - 181.6
+      - 233.8
+  attrs:
+    key: p2-W15
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 217.6
+    - 677.6
+  geom:
+    polyline:
+    - - 217.6
+      - 649.8
+    - - 217.6
+      - 705.4
+  attrs:
+    key: p2-W16
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 241.6
+    - 359.9
+  geom:
+    polyline:
+    - - 241.6
+      - 348.0
+    - - 241.6
+      - 371.9
+  attrs:
+    key: p2-W17
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 241.6
+    - 482.3
+  geom:
+    polyline:
+    - - 241.6
+      - 472.6
+    - - 241.6
+      - 492.0
+  attrs:
+    key: p2-W18
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 307.0
+    - 270.5
+  geom:
+    polyline:
+    - - 307.0
+      - 193.2
+    - - 307.0
+      - 347.9
+  attrs:
+    key: p2-W19
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 309.2
+    - 121.8
+  geom:
+    polyline:
+    - - 309.2
+      - 106.1
+    - - 309.2
+      - 137.6
+  attrs:
+    key: p2-W20
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 310.0
+    - 581.4
+  geom:
+    polyline:
+    - - 310.0
+      - 492.0
+    - - 310.0
+      - 670.8
+  attrs:
+    key: p2-W21
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 334.4
+    - 121.8
+  geom:
+    polyline:
+    - - 334.4
+      - 106.1
+    - - 334.4
+      - 137.6
+  attrs:
+    key: p2-W22
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: WALL
+  at:
+    page_xy:
+    - 478.3
+    - 426.0
+  geom:
+    polyline:
+    - - 478.3
+      - 137.6
+    - - 478.3
+      - 714.4
+  attrs:
+    key: p2-W23
+    thickness_in: 9
+    gap_measured_in: 9.0
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: PARAPET
+  at:
+    page_xy:
+    - 480.5
+    - 121.8
+  geom:
+    polyline:
+    - - 480.5
+      - 106.1
+    - - 480.5
+      - 137.6
+  attrs:
+    key: p2-W24
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 2
+  class: PARAPET
+  at:
+    page_xy:
+    - 480.5
+    - 730.1
+  geom:
+    polyline:
+    - - 480.5
+      - 714.4
+    - - 480.5
+      - 745.9
+  attrs:
+    key: p2-W25
+    thickness_in: 4.5
+    gap_measured_in: 4.6
+    floor: FIRST
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: PARAPET
+  at:
+    page_xy:
+    - 398.0
+    - 112.2
+  geom:
+    polyline:
+    - - 329.6
+      - 112.2
+    - - 466.3
+      - 112.2
+  attrs:
+    key: p3-W1
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: PARAPET
+  at:
+    page_xy:
+    - 214.8
+    - 147.0
+  geom:
+    polyline:
+    - - 104.2
+      - 147.0
+    - - 325.3
+      - 147.0
+  attrs:
+    key: p3-W2
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 214.2
+    - 288.2
+  geom:
+    polyline:
+    - - 131.6
+      - 288.2
+    - - 296.8
+      - 288.2
+  attrs:
+    key: p3-W3
+    thickness_in: 9
+    gap_measured_in: 8.6
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 209.9
+    - 341.1
+  geom:
+    polyline:
+    - - 131.6
+      - 341.1
+    - - 288.1
+      - 341.1
+  attrs:
+    key: p3-W4
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 172.9
+    - 399.0
+  geom:
+    polyline:
+    - - 131.6
+      - 399.0
+    - - 214.2
+      - 399.0
+  attrs:
+    key: p3-W5
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 209.9
+    - 530.9
+  geom:
+    polyline:
+    - - 131.6
+      - 530.9
+    - - 288.1
+      - 530.9
+  attrs:
+    key: p3-W6
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 209.9
+    - 650.4
+  geom:
+    polyline:
+    - - 131.6
+      - 650.4
+    - - 288.1
+      - 650.4
+  attrs:
+    key: p3-W7
+    thickness_in: 9
+    gap_measured_in: 8.6
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: PARAPET
+  at:
+    page_xy:
+    - 285.2
+    - 733.7
+  geom:
+    polyline:
+    - - 104.2
+      - 733.7
+    - - 466.3
+      - 733.7
+  attrs:
+    key: p3-W8
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: PARAPET
+  at:
+    page_xy:
+    - 101.9
+    - 440.4
+  geom:
+    polyline:
+    - - 101.9
+      - 149.2
+    - - 101.9
+      - 731.5
+  attrs:
+    key: p3-W9
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: ROOF
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 127.3
+    - 469.4
+  geom:
+    polyline:
+    - - 127.3
+      - 292.6
+    - - 127.3
+      - 646.1
+  attrs:
+    key: p3-W10
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 245.3
+    - 370.1
+  geom:
+    polyline:
+    - - 245.3
+      - 343.3
+    - - 245.3
+      - 396.8
+  attrs:
+    key: p3-W11
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 292.4
+    - 414.9
+  geom:
+    polyline:
+    - - 292.4
+      - 343.3
+    - - 292.4
+      - 486.4
+  attrs:
+    key: p3-W12
+    thickness_in: 9
+    gap_measured_in: 8.6
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: WALL
+  at:
+    page_xy:
+    - 292.4
+    - 612.9
+  geom:
+    polyline:
+    - - 292.4
+      - 579.7
+    - - 292.4
+      - 646.1
+  attrs:
+    key: p3-W13
+    thickness_in: 9
+    gap_measured_in: 8.6
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: PARAPET
+  at:
+    page_xy:
+    - 327.5
+    - 129.6
+  geom:
+    polyline:
+    - - 327.5
+      - 114.4
+    - - 327.5
+      - 144.8
+  attrs:
+    key: p3-W14
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 3
+  class: PARAPET
+  at:
+    page_xy:
+    - 468.5
+    - 422.9
+  geom:
+    polyline:
+    - - 468.5
+      - 114.4
+    - - 468.5
+      - 731.5
+  attrs:
+    key: p3-W15
+    thickness_in: 4.5
+    gap_measured_in: 4.3
+    floor: ROOF
+  conflict:
+    note: drawn as a 4.5 in double line round the roof edge; the plan does not name it wall, parapet or slab edge
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 307.3
+    - 82.8
+  geom:
+    polyline:
+    - - 139.6
+      - 82.8
+    - - 475.0
+      - 82.8
+  attrs:
+    key: p4-W1
+    thickness_in: 9
+    gap_measured_in: 8.9
+    floor: BASEMENT
+  conflict:
+    note: 9 in wall on the plot line, drawn in outline, not filled black like the RCC walls; the plan does not say brick or RCC
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 397.6
+    - 153.4
+  geom:
+    polyline:
+    - - 356.5
+      - 153.4
+    - - 438.8
+      - 153.4
+  attrs:
+    key: p4-W2
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 200.6
+    - 247.6
+  geom:
+    polyline:
+    - - 139.6
+      - 247.6
+    - - 261.7
+      - 247.6
+  attrs:
+    key: p4-W3
+    thickness_in: 9
+    gap_measured_in: 8.9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 285.4
+    - 350.5
+  geom:
+    polyline:
+    - - 139.6
+      - 350.5
+    - - 431.3
+      - 350.5
+  attrs:
+    key: p4-W4
+    thickness_in: 9
+    gap_measured_in: 8.9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 416.9
+    - 500.5
+  geom:
+    polyline:
+    - - 358.7
+      - 500.5
+    - - 475.0
+      - 500.5
+  attrs:
+    key: p4-W5
+    thickness_in: 9
+    gap_measured_in: 8.9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 192.5
+    - 502.7
+  geom:
+    polyline:
+    - - 139.6
+      - 502.7
+    - - 245.4
+      - 502.7
+  attrs:
+    key: p4-W6
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 238.9
+    - 648.4
+  geom:
+    polyline:
+    - - 173.4
+      - 648.4
+    - - 304.3
+      - 648.4
+  attrs:
+    key: p4-W7
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 221.9
+    - 709.4
+  geom:
+    polyline:
+    - - 139.6
+      - 709.4
+    - - 304.3
+      - 709.4
+  attrs:
+    key: p4-W8
+    thickness_in: 9
+    gap_measured_in: 8.9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 219.8
+    - 677.8
+  geom:
+    polyline:
+    - - 219.8
+      - 650.6
+    - - 219.8
+      - 705.0
+  attrs:
+    key: p4-W9
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 247.6
+    - 366.8
+  geom:
+    polyline:
+    - - 247.6
+      - 355.0
+    - - 247.6
+      - 378.5
+  attrs:
+    key: p4-W10
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 247.6
+    - 486.6
+  geom:
+    polyline:
+    - - 247.6
+      - 477.0
+    - - 247.6
+      - 496.1
+  attrs:
+    key: p4-W11
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 308.8
+    - 588.1
+  geom:
+    polyline:
+    - - 308.8
+      - 505.0
+    - - 308.8
+      - 671.2
+  attrs:
+    key: p4-W12
+    thickness_in: 9
+    gap_measured_in: 8.9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 311.7
+    - 271.8
+  geom:
+    polyline:
+    - - 311.7
+      - 197.5
+    - - 311.7
+      - 346.1
+  attrs:
+    key: p4-W13
+    thickness_in: 9
+    gap_measured_in: 8.8
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 4
+  class: WALL
+  at:
+    page_xy:
+    - 472.7
+    - 327.8
+  geom:
+    polyline:
+    - - 472.7
+      - 309.4
+    - - 472.7
+      - 346.1
+  attrs:
+    key: p4-W14
+    thickness_in: 4.5
+    gap_measured_in: 4.4
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: run measured on the vector outline of the plan page; thickness is the gap between the two outline lines, snapped to 9 in or 4.5 in; checked on the 110 dpi overlay
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id001
+    - 134.1
+    - 709.2
+  geom:
+    point: *id001
+  attrs:
+    key: p1-C1
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id002
+    - 306.0
+    - 709.2
+  geom:
+    point: *id002
+  attrs:
+    key: p1-C2
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id003
+    - 475.2
+    - 709.2
+  geom:
+    point: *id003
+  attrs:
+    key: p1-C3
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id004
+    - 134.1
+    - 502.2
+  geom:
+    point: *id004
+  attrs:
+    key: p1-C4
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id005
+    - 306.0
+    - 502.2
+  geom:
+    point: *id005
+  attrs:
+    key: p1-C5
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id006
+    - 475.2
+    - 502.2
+  geom:
+    point: *id006
+  attrs:
+    key: p1-C6
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id007
+    - 134.1
+    - 353.6
+  geom:
+    point: *id007
+  attrs:
+    key: p1-C7
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id008
+    - 309.0
+    - 353.6
+  geom:
+    point: *id008
+  attrs:
+    key: p1-C8
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id009
+    - 475.2
+    - 353.6
+  geom:
+    point: *id009
+  attrs:
+    key: p1-C9
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id010
+    - 134.1
+    - 251.6
+  geom:
+    point: *id010
+  attrs:
+    key: p1-C10
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id011
+    - 309.0
+    - 251.6
+  geom:
+    point: *id011
+  attrs:
+    key: p1-C11
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id012
+    - 134.1
+    - 162.6
+  geom:
+    point: *id012
+  attrs:
+    key: p1-C12
+    size_in:
+    - 9
+    - 18
+    floor: GROUND
+  conflict:
+    note: drawn 9 in x 18 in as two stacked 9 in squares; the structural detail C-2 is 9 in x 15 in
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id013
+    - 309.0
+    - 158.2
+  geom:
+    point: *id013
+  attrs:
+    key: p1-C13
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 1
+  class: COLUMN
+  at:
+    page_xy: &id014
+    - 475.2
+    - 158.2
+  geom:
+    point: *id014
+  attrs:
+    key: p1-C14
+    size_in:
+    - 9
+    - 9
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id015
+    - 126.8
+    - 709.9
+  geom:
+    point: *id015
+  attrs:
+    key: p2-C1
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id016
+    - 310.0
+    - 709.9
+  geom:
+    point: *id016
+  attrs:
+    key: p2-C2
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id017
+    - 478.3
+    - 709.9
+  geom:
+    point: *id017
+  attrs:
+    key: p2-C3
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id018
+    - 126.8
+    - 496.6
+  geom:
+    point: *id018
+  attrs:
+    key: p2-C4
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id019
+    - 310.0
+    - 496.6
+  geom:
+    point: *id019
+  attrs:
+    key: p2-C5
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id020
+    - 478.3
+    - 496.6
+  geom:
+    point: *id020
+  attrs:
+    key: p2-C6
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id021
+    - 126.8
+    - 343.4
+  geom:
+    point: *id021
+  attrs:
+    key: p2-C7
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id022
+    - 307.0
+    - 343.4
+  geom:
+    point: *id022
+  attrs:
+    key: p2-C8
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id023
+    - 478.3
+    - 343.4
+  geom:
+    point: *id023
+  attrs:
+    key: p2-C9
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id024
+    - 126.8
+    - 238.3
+  geom:
+    point: *id024
+  attrs:
+    key: p2-C10
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id025
+    - 307.0
+    - 238.3
+  geom:
+    point: *id025
+  attrs:
+    key: p2-C11
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id026
+    - 126.8
+    - 142.1
+  geom:
+    point: *id026
+  attrs:
+    key: p2-C12
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id027
+    - 307.0
+    - 142.1
+  geom:
+    point: *id027
+  attrs:
+    key: p2-C13
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 2
+  class: COLUMN
+  at:
+    page_xy: &id028
+    - 478.3
+    - 142.1
+  geom:
+    point: *id028
+  attrs:
+    key: p2-C14
+    size_in:
+    - 9
+    - 9
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 3
+  class: COLUMN
+  at:
+    page_xy: &id029
+    - 127.2
+    - 537.4
+  geom:
+    point: *id029
+  attrs:
+    key: p3-C1
+    size_in:
+    - 9
+    - 9
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 3
+  class: COLUMN
+  at:
+    page_xy: &id030
+    - 127.2
+    - 389.6
+  geom:
+    point: *id030
+  attrs:
+    key: p3-C2
+    size_in:
+    - 9
+    - 9
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 3
+  class: COLUMN
+  at:
+    page_xy: &id031
+    - 127.2
+    - 288.2
+  geom:
+    point: *id031
+  attrs:
+    key: p3-C3
+    size_in:
+    - 9
+    - 9
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 4
+  class: RCC_WALL
+  at:
+    page_xy:
+    - 307.3
+    - 780.0
+  geom:
+    polyline:
+    - - 130.8
+      - 780.0
+    - - 483.8
+      - 780.0
+  attrs:
+    key: p4-R1
+    thickness_in: 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: filled (black) band on the basement plan, merged where the fills touch; thickness 9 in is the printed note 9 in Thick R.c.c Wall and the drawn width; checked on the 110 dpi overlay
+- sheet: 4
+  class: RCC_WALL
+  at:
+    page_xy:
+    - 135.2
+    - 691.0
+  geom:
+    polyline:
+    - - 135.2
+      - 606.4
+    - - 135.2
+      - 775.7
+  attrs:
+    key: p4-R2
+    thickness_in: 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: filled (black) band on the basement plan, merged where the fills touch; thickness 9 in is the printed note 9 in Thick R.c.c Wall and the drawn width; checked on the 110 dpi overlay
+- sheet: 4
+  class: RCC_WALL
+  at:
+    page_xy:
+    - 479.4
+    - 462.4
+  geom:
+    polyline:
+    - - 479.4
+      - 149.0
+    - - 479.4
+      - 775.7
+  attrs:
+    key: p4-R3
+    thickness_in: 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: filled (black) band on the basement plan, merged where the fills touch; thickness 9 in is the printed note 9 in Thick R.c.c Wall and the drawn width; checked on the 110 dpi overlay
+- sheet: 4
+  class: COLUMN
+  at:
+    page_xy: &id032
+    - 308.8
+    - 709.5
+  geom:
+    point: *id032
+  attrs:
+    key: p4-C1
+    size_in:
+    - 9
+    - 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 4
+  class: RCC_WALL
+  at:
+    page_xy:
+    - 135.2
+    - 501.4
+  geom:
+    polyline:
+    - - 135.2
+      - 462.4
+    - - 135.2
+      - 540.4
+  attrs:
+    key: p4-R4
+    thickness_in: 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: filled (black) band on the basement plan, merged where the fills touch; thickness 9 in is the printed note 9 in Thick R.c.c Wall and the drawn width; checked on the 110 dpi overlay
+- sheet: 4
+  class: COLUMN
+  at:
+    page_xy: &id033
+    - 308.8
+    - 500.6
+  geom:
+    point: *id033
+  attrs:
+    key: p4-C2
+    size_in:
+    - 9
+    - 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 4
+  class: RCC_WALL
+  at:
+    page_xy:
+    - 135.2
+    - 374.8
+  geom:
+    polyline:
+    - - 135.2
+      - 346.1
+    - - 135.2
+      - 403.4
+  attrs:
+    key: p4-R5
+    thickness_in: 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: filled (black) band on the basement plan, merged where the fills touch; thickness 9 in is the printed note 9 in Thick R.c.c Wall and the drawn width; checked on the 110 dpi overlay
+- sheet: 4
+  class: COLUMN
+  at:
+    page_xy: &id034
+    - 311.7
+    - 350.6
+  geom:
+    point: *id034
+  attrs:
+    key: p4-C3
+    size_in:
+    - 9
+    - 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 4
+  class: COLUMN
+  at:
+    page_xy: &id035
+    - 135.2
+    - 335.6
+  geom:
+    point: *id035
+  attrs:
+    key: p4-C4
+    size_in:
+    - 9
+    - 14
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 4
+  class: RCC_WALL
+  at:
+    page_xy:
+    - 135.2
+    - 256.4
+  geom:
+    polyline:
+    - - 135.2
+      - 243.1
+    - - 135.2
+      - 269.6
+  attrs:
+    key: p4-R6
+    thickness_in: 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: filled (black) band on the basement plan, merged where the fills touch; thickness 9 in is the printed note 9 in Thick R.c.c Wall and the drawn width; checked on the 110 dpi overlay
+- sheet: 4
+  class: COLUMN
+  at:
+    page_xy: &id036
+    - 311.7
+    - 247.6
+  geom:
+    point: *id036
+  attrs:
+    key: p4-C5
+    size_in:
+    - 9
+    - 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 4
+  class: COLUMN
+  at:
+    page_xy: &id037
+    - 311.7
+    - 153.4
+  geom:
+    point: *id037
+  attrs:
+    key: p4-C6
+    size_in:
+    - 9
+    - 9
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: black filled square on the plan, size read from the drawn fill; no column mark is printed on any plan
+- sheet: 5
+  class: DOOR
+  mark: D1
+  at:
+    page_xy: &id038
+    - 569.8
+    - 165.4
+  geom:
+    point: *id038
+  attrs:
+    key: S-D1
+    width_in: 48
+    height_in: 84
+    printed: 4'- 0" x 7'-0''
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id039
+    - 561.3
+    - 165.1
+  geom:
+    point: *id039
+  attrs:
+    key: S-D2
+    width_in: 42
+    height_in: 84
+    printed: 3'- 6" x 7'-0''
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: DOOR
+  mark: D3
+  at:
+    page_xy: &id040
+    - 552.7
+    - 165.1
+  geom:
+    point: *id040
+  attrs:
+    key: S-D3
+    width_in: 36
+    height_in: 84
+    printed: 3'- 0" x 7'-0''
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id041
+    - 544.2
+    - 165.2
+  geom:
+    point: *id041
+  attrs:
+    key: S-D4
+    width_in: 30
+    height_in: 84
+    printed: 2'- 6" x 7'-0''
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy: &id042
+    - 512.1
+    - 164.7
+  geom:
+    point: *id042
+  attrs:
+    key: S-W1
+    width_in: 84
+    height_in: 60
+    printed: 7'-0" x 5'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id043
+    - 503.6
+    - 164.4
+  geom:
+    point: *id043
+  attrs:
+    key: S-W2
+    width_in: 72
+    height_in: 60
+    printed: 6'-0'' x 5'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: WINDOW
+  mark: W3
+  at:
+    page_xy: &id044
+    - 494.9
+    - 164.4
+  geom:
+    point: *id044
+  attrs:
+    key: S-W3
+    width_in: 60
+    height_in: 60
+    printed: 5'-0" x 5'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: WINDOW
+  mark: W4
+  at:
+    page_xy: &id045
+    - 486.5
+    - 164.4
+  geom:
+    point: *id045
+  attrs:
+    key: S-W4
+    width_in: 60
+    height_in: 36
+    printed: 5'-0" x 3'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy: &id046
+    - 462.2
+    - 166.1
+  geom:
+    point: *id046
+  attrs:
+    key: S-V1
+    width_in: 84
+    height_in: 24
+    printed: 7'-0" x 2'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: VENTILATOR
+  mark: V2
+  at:
+    page_xy: &id047
+    - 453.8
+    - 165.9
+  geom:
+    point: *id047
+  attrs:
+    key: S-V2
+    width_in: 72
+    height_in: 24
+    printed: 6'-0" x 2'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: VENTILATOR
+  mark: V3
+  at:
+    page_xy: &id048
+    - 445.2
+    - 165.8
+  geom:
+    point: *id048
+  attrs:
+    key: S-V3
+    width_in: 60
+    height_in: 24
+    printed: 5'-0" x 2'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 5
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id049
+    - 436.7
+    - 165.8
+  geom:
+    point: *id049
+  attrs:
+    key: S-V4
+    width_in: 36
+    height_in: 24
+    printed: 3'-0" x 2'-0"
+    floor: SCHEDULE
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: row of the schedule of opening on the approval sheet; size read from the text layer and the 110 dpi image
+- sheet: 1
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy: &id050
+    - 403.0
+    - 147.7
+  geom:
+    point: *id050
+  attrs:
+    key: p1-W1-1
+    floor: GROUND
+    width_in: 84
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: WINDOW
+  mark: W3
+  at:
+    page_xy: &id051
+    - 120.0
+    - 304.6
+  geom:
+    point: *id051
+  attrs:
+    key: p1-W3-1
+    floor: GROUND
+    width_in: 60
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: WINDOW
+  mark: W4
+  at:
+    page_xy: &id052
+    - 120.0
+    - 436.1
+  geom:
+    point: *id052
+  attrs:
+    key: p1-W4-1
+    floor: GROUND
+    width_in: 60
+    height_in: 36
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id053
+    - 120.0
+    - 573.1
+  geom:
+    point: *id053
+  attrs:
+    key: p1-W2-1
+    floor: GROUND
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D1
+  at:
+    page_xy: &id054
+    - 268.9
+    - 253.9
+  geom:
+    point: *id054
+  attrs:
+    key: p1-D1-1
+    floor: GROUND
+    width_in: 48
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id055
+    - 285.2
+    - 506.3
+  geom:
+    point: *id055
+  attrs:
+    key: p1-D2-1
+    floor: GROUND
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id056
+    - 327.2
+    - 506.3
+  geom:
+    point: *id056
+  attrs:
+    key: p1-D2-2
+    floor: GROUND
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id057
+    - 287.4
+    - 355.9
+  geom:
+    point: *id057
+  attrs:
+    key: p1-D2-3
+    floor: GROUND
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id058
+    - 444.9
+    - 704.9
+  geom:
+    point: *id058
+  attrs:
+    key: p1-D2-4
+    floor: GROUND
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id059
+    - 154.7
+    - 654.6
+  geom:
+    point: *id059
+  attrs:
+    key: p1-D4-1
+    floor: GROUND
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id060
+    - 300.6
+    - 690.0
+  geom:
+    point: *id060
+  attrs:
+    key: p1-D4-2
+    floor: GROUND
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id061
+    - 177.5
+    - 720.0
+  geom:
+    point: *id061
+  attrs:
+    key: p1-V4-1
+    floor: GROUND
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id062
+    - 372.1
+    - 720.0
+  geom:
+    point: *id062
+  attrs:
+    key: p1-W2-2
+    floor: GROUND
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id063
+    - 261.9
+    - 719.6
+  geom:
+    point: *id063
+  attrs:
+    key: p1-V4-2
+    floor: GROUND
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id064
+    - 236.3
+    - 317.3
+  geom:
+    point: *id064
+  attrs:
+    key: p1-D4-3
+    floor: GROUND
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: WINDOW
+  mark: W4
+  at:
+    page_xy: &id065
+    - 218.8
+    - 261.4
+  geom:
+    point: *id065
+  attrs:
+    key: p1-W4-2
+    floor: GROUND
+    width_in: 60
+    height_in: 36
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D3
+  at:
+    page_xy: &id066
+    - 238.6
+    - 458.4
+  geom:
+    point: *id066
+  attrs:
+    key: p1-D3-1
+    floor: GROUND
+    width_in: 36
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: DOOR
+  mark: D3
+  at:
+    page_xy: &id067
+    - 304.2
+    - 176.7
+  geom:
+    point: *id067
+  attrs:
+    key: p1-D3-2
+    floor: GROUND
+    width_in: 36
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id068
+    - 284.3
+    - 240.8
+  geom:
+    point: *id068
+  attrs:
+    key: p2-D2-1
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id069
+    - 288.5
+    - 500.7
+  geom:
+    point: *id069
+  attrs:
+    key: p2-D2-2
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id070
+    - 331.7
+    - 500.7
+  geom:
+    point: *id070
+  attrs:
+    key: p2-D2-3
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id071
+    - 284.7
+    - 345.8
+  geom:
+    point: *id071
+  attrs:
+    key: p2-D2-4
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id072
+    - 148.0
+    - 653.4
+  geom:
+    point: *id072
+  attrs:
+    key: p2-D4-1
+    floor: FIRST
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id073
+    - 304.3
+    - 690.0
+  geom:
+    point: *id073
+  attrs:
+    key: p2-D4-2
+    floor: FIRST
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id074
+    - 174.8
+    - 161.8
+  geom:
+    point: *id074
+  attrs:
+    key: p2-D4-3
+    floor: FIRST
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id075
+    - 118.3
+    - 569.6
+  geom:
+    point: *id075
+  attrs:
+    key: p2-W2-1
+    floor: FIRST
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: WINDOW
+  mark: W4
+  at:
+    page_xy: &id076
+    - 118.4
+    - 428.4
+  geom:
+    point: *id076
+  attrs:
+    key: p2-W4-1
+    floor: FIRST
+    width_in: 60
+    height_in: 36
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: WINDOW
+  mark: W3
+  at:
+    page_xy: &id077
+    - 118.4
+    - 292.3
+  geom:
+    point: *id077
+  attrs:
+    key: p2-W3-1
+    floor: FIRST
+    width_in: 60
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id078
+    - 312.4
+    - 160.8
+  geom:
+    point: *id078
+  attrs:
+    key: p2-D2-5
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id079
+    - 284.5
+    - 145.2
+  geom:
+    point: *id079
+  attrs:
+    key: p2-D2-6
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id080
+    - 115.4
+    - 189.6
+  geom:
+    point: *id080
+  attrs:
+    key: p2-V4-1
+    floor: FIRST
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id081
+    - 171.5
+    - 720.9
+  geom:
+    point: *id081
+  attrs:
+    key: p2-V4-2
+    floor: FIRST
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id082
+    - 261.4
+    - 720.5
+  geom:
+    point: *id082
+  attrs:
+    key: p2-V4-3
+    floor: FIRST
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: WINDOW
+  mark: W4
+  at:
+    page_xy: &id083
+    - 221.0
+    - 130.2
+  geom:
+    point: *id083
+  attrs:
+    key: p2-W4-2
+    floor: FIRST
+    width_in: 60
+    height_in: 36
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: WINDOW
+  mark: W1
+  at:
+    page_xy: &id084
+    - 395.1
+    - 131.2
+  geom:
+    point: *id084
+  attrs:
+    key: p2-W1-1
+    floor: FIRST
+    width_in: 84
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id085
+    - 445.5
+    - 705.4
+  geom:
+    point: *id085
+  attrs:
+    key: p2-D2-7
+    floor: FIRST
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 2
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id086
+    - 375.2
+    - 720.9
+  geom:
+    point: *id086
+  attrs:
+    key: p2-W2-2
+    floor: FIRST
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id087
+    - 209.1
+    - 277.8
+  geom:
+    point: *id087
+  attrs:
+    key: p3-W2-1
+    floor: ROOF
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy: &id088
+    - 111.3
+    - 371.9
+  geom:
+    point: *id088
+  attrs:
+    key: p3-V1-1
+    floor: ROOF
+    width_in: 84
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id089
+    - 287.0
+    - 302.2
+  geom:
+    point: *id089
+  attrs:
+    key: p3-D2-1
+    floor: ROOF
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id090
+    - 276.7
+    - 438.2
+  geom:
+    point: *id090
+  attrs:
+    key: p3-W2-2
+    floor: ROOF
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id091
+    - 208.7
+    - 638.6
+  geom:
+    point: *id091
+  attrs:
+    key: p3-W2-3
+    floor: ROOF
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id092
+    - 232.9
+    - 397.4
+  geom:
+    point: *id092
+  attrs:
+    key: p3-D4-1
+    floor: ROOF
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: WINDOW
+  mark: W3
+  at:
+    page_xy: &id093
+    - 113.3
+    - 321.5
+  geom:
+    point: *id093
+  attrs:
+    key: p3-W3-1
+    floor: ROOF
+    width_in: 60
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 3
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id094
+    - 302.7
+    - 611.9
+  geom:
+    point: *id094
+  attrs:
+    key: p3-V4-1
+    floor: ROOF
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V2
+  at:
+    page_xy: &id095
+    - 202.8
+    - 235.1
+  geom:
+    point: *id095
+  attrs:
+    key: p4-V2-1
+    floor: BASEMENT
+    width_in: 72
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V3
+  at:
+    page_xy: &id096
+    - 123.1
+    - 308.3
+  geom:
+    point: *id096
+  attrs:
+    key: p4-V3-1
+    floor: BASEMENT
+    width_in: 60
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V3
+  at:
+    page_xy: &id097
+    - 123.0
+    - 433.7
+  geom:
+    point: *id097
+  attrs:
+    key: p4-V3-2
+    floor: BASEMENT
+    width_in: 60
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V2
+  at:
+    page_xy: &id098
+    - 122.7
+    - 572.0
+  geom:
+    point: *id098
+  attrs:
+    key: p4-V2-2
+    floor: BASEMENT
+    width_in: 72
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id099
+    - 287.6
+    - 504.6
+  geom:
+    point: *id099
+  attrs:
+    key: p4-D2-1
+    floor: BASEMENT
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id100
+    - 330.0
+    - 504.6
+  geom:
+    point: *id100
+  attrs:
+    key: p4-D2-2
+    floor: BASEMENT
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id101
+    - 290.5
+    - 352.9
+  geom:
+    point: *id101
+  attrs:
+    key: p4-D2-3
+    floor: BASEMENT
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id102
+    - 156.0
+    - 654.2
+  geom:
+    point: *id102
+  attrs:
+    key: p4-D4-1
+    floor: BASEMENT
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D4
+  at:
+    page_xy: &id103
+    - 303.1
+    - 689.9
+  geom:
+    point: *id103
+  attrs:
+    key: p4-D4-2
+    floor: BASEMENT
+    width_in: 30
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id104
+    - 179.0
+    - 720.3
+  geom:
+    point: *id104
+  attrs:
+    key: p4-V4-1
+    floor: BASEMENT
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V4
+  at:
+    page_xy: &id105
+    - 264.0
+    - 719.9
+  geom:
+    point: *id105
+  attrs:
+    key: p4-V4-2
+    floor: BASEMENT
+    width_in: 36
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D3
+  at:
+    page_xy: &id106
+    - 288.4
+    - 252.0
+  geom:
+    point: *id106
+  attrs:
+    key: p4-D3-1
+    floor: BASEMENT
+    width_in: 36
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: VENTILATOR
+  mark: V1
+  at:
+    page_xy: &id107
+    - 396.6
+    - 142.8
+  geom:
+    point: *id107
+  attrs:
+    key: p4-V1-1
+    floor: BASEMENT
+    width_in: 84
+    height_in: 24
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D3
+  at:
+    page_xy: &id108
+    - 306.9
+    - 172.1
+  geom:
+    point: *id108
+  attrs:
+    key: p4-D3-2
+    floor: BASEMENT
+    width_in: 36
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: DOOR
+  mark: D2
+  at:
+    page_xy: &id109
+    - 448.8
+    - 705.1
+  geom:
+    point: *id109
+  attrs:
+    key: p4-D2-4
+    floor: BASEMENT
+    width_in: 42
+    height_in: 84
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 4
+  class: WINDOW
+  mark: W2
+  at:
+    page_xy: &id110
+    - 375.4
+    - 720.3
+  geom:
+    point: *id110
+  attrs:
+    key: p4-W2-1
+    floor: BASEMENT
+    width_in: 72
+    height_in: 60
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mark read from the text layer at the centre of the label, position checked on the 110 dpi image; size comes from the schedule on page 5
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 229.6
+    - 196.5
+  geom:
+    polygon:
+    - - 139.6
+      - 130.5
+    - - 319.6
+      - 130.5
+    - - 319.6
+      - 262.5
+    - - 139.6
+      - 262.5
+  attrs:
+    key: p1-R1
+    name: PORCH
+    printed: 15'-0"x11'-0"
+    width_in: 180.0
+    depth_in: 132.0
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 387.0
+    - 262.0
+  geom:
+    polygon:
+    - - 306.0
+      - 166.0
+    - - 468.0
+      - 166.0
+    - - 468.0
+      - 358.0
+    - - 306.0
+      - 358.0
+  attrs:
+    key: p1-R2
+    name: DWG/DINING
+    printed: 13'-6"x16'-0"
+    width_in: 162.0
+    depth_in: 192.0
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 214.9
+    - 285.7
+  geom:
+    polygon:
+    - - 129.4
+      - 237.7
+    - - 300.4
+      - 237.7
+    - - 300.4
+      - 333.7
+    - - 129.4
+      - 333.7
+  attrs:
+    key: p1-R3
+    name: STAIR
+    printed: 14'-3"x8'-0"
+    width_in: 171.0
+    depth_in: 96.0
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 208.7
+    - 325.4
+  geom:
+    polygon:
+    - - 176.2
+      - 302.1
+    - - 241.2
+      - 302.1
+    - - 241.2
+      - 348.6
+    - - 176.2
+      - 348.6
+  attrs:
+    key: p1-R4
+    name: W/C
+    printed: 5'-5"x3'-10½"
+    width_in: 65.0
+    depth_in: 46.5
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 192.5
+    - 432.0
+  geom:
+    polygon:
+    - - 138.5
+      - 358.0
+    - - 246.5
+      - 358.0
+    - - 246.5
+      - 506.0
+    - - 138.5
+      - 506.0
+  attrs:
+    key: p1-R5
+    name: KITCHEN
+    printed: 9'-0"x12'-4"
+    width_in: 108.0
+    depth_in: 148.0
+    floor: GROUND
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 338.5
+    - 423.5
+  geom:
+    polygon:
+    - - 223.8
+      - 351.5
+    - - 453.2
+      - 351.5
+    - - 453.2
+      - 495.5
+    - - 223.8
+      - 495.5
+  attrs:
+    key: p1-R6
+    name: LOUNGE
+    printed: 19'-1½"x12-0"
+    width_in: 229.5
+    depth_in: 144.0
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 222.0
+    - 581.9
+  geom:
+    polygon:
+    - - 135.0
+      - 509.9
+    - - 309.0
+      - 509.9
+    - - 309.0
+      - 653.9
+    - - 135.0
+      - 653.9
+  attrs:
+    key: p1-R7
+    name: BED
+    printed: 14'-6"x12'-0"
+    width_in: 174.0
+    depth_in: 144.0
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 393.2
+    - 597.2
+  geom:
+    polygon:
+    - - 313.7
+      - 495.2
+    - - 472.7
+      - 495.2
+    - - 472.7
+      - 699.2
+    - - 313.7
+      - 699.2
+  attrs:
+    key: p1-R8
+    name: BED
+    printed: 13'-3"x17'-0"
+    width_in: 159.0
+    depth_in: 204.0
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 260.0
+    - 676.1
+  geom:
+    polygon:
+    - - 217.2
+      - 648.4
+    - - 302.8
+      - 648.4
+    - - 302.8
+      - 703.9
+    - - 217.2
+      - 703.9
+  attrs:
+    key: p1-R9
+    name: BATH
+    printed: 7'-1½"x4'-7½"
+    width_in: 85.5
+    depth_in: 55.5
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: ROOM
+  at:
+    page_xy:
+    - 178.6
+    - 688.5
+  geom:
+    polygon:
+    - - 136.6
+      - 660.8
+    - - 220.6
+      - 660.8
+    - - 220.6
+      - 716.2
+    - - 136.6
+      - 716.2
+  attrs:
+    key: p1-R10
+    name: BATH
+    printed: 7'-0"x4'-7½"
+    width_in: 84.0
+    depth_in: 55.5
+    floor: GROUND
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 242.5
+    - 188.9
+  geom:
+    polygon:
+    - - 183.2
+      - 145.4
+    - - 301.8
+      - 145.4
+    - - 301.8
+      - 232.4
+    - - 183.2
+      - 232.4
+  attrs:
+    key: p2-R1
+    name: STUDY
+    printed: 9'-10½"x7'-3"
+    width_in: 118.5
+    depth_in: 87.0
+    floor: FIRST
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 155.3
+    - 190.1
+  geom:
+    polygon:
+    - - 131.3
+      - 146.6
+    - - 179.3
+      - 146.6
+    - - 179.3
+      - 233.6
+    - - 131.3
+      - 233.6
+  attrs:
+    key: p2-R2
+    name: BATH
+    printed: 4'-0"x7'-3"
+    width_in: 48.0
+    depth_in: 87.0
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 392.5
+    - 242.6
+  geom:
+    polygon:
+    - - 311.5
+      - 146.6
+    - - 473.5
+      - 146.6
+    - - 473.5
+      - 338.6
+    - - 311.5
+      - 338.6
+  attrs:
+    key: p2-R3
+    name: SITTING
+    printed: 13'-6"x16'-0"
+    width_in: 162.0
+    depth_in: 192.0
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 216.8
+    - 290.8
+  geom:
+    polygon:
+    - - 131.3
+      - 242.8
+    - - 302.3
+      - 242.8
+    - - 302.3
+      - 338.8
+    - - 131.3
+      - 338.8
+  attrs:
+    key: p2-R4
+    name: STAIR
+    printed: 14'-3"x8'-0"
+    width_in: 171.0
+    depth_in: 96.0
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 185.3
+    - 421.9
+  geom:
+    polygon:
+    - - 131.3
+      - 347.9
+    - - 239.3
+      - 347.9
+    - - 239.3
+      - 495.9
+    - - 131.3
+      - 495.9
+  attrs:
+    key: p2-R5
+    name: KITCHEN
+    printed: 9'-0"x12'-4"
+    width_in: 108.0
+    depth_in: 148.0
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 352.1
+    - 430.0
+  geom:
+    polygon:
+    - - 237.4
+      - 358.0
+    - - 466.9
+      - 358.0
+    - - 466.9
+      - 502.0
+    - - 237.4
+      - 502.0
+  attrs:
+    key: p2-R6
+    name: SITTING
+    printed: 19'-1½"x12'-0"
+    width_in: 229.5
+    depth_in: 144.0
+    floor: FIRST
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 218.3
+    - 573.1
+  geom:
+    polygon:
+    - - 131.3
+      - 501.1
+    - - 305.3
+      - 501.1
+    - - 305.3
+      - 645.1
+    - - 131.3
+      - 645.1
+  attrs:
+    key: p2-R7
+    name: BED
+    printed: 14'-6"x12'-0"
+    width_in: 174.0
+    depth_in: 144.0
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 394.0
+    - 603.1
+  geom:
+    polygon:
+    - - 314.5
+      - 501.1
+    - - 473.5
+      - 501.1
+    - - 473.5
+      - 705.1
+    - - 314.5
+      - 705.1
+  attrs:
+    key: p2-R8
+    name: BED
+    printed: 13'-3"x17'-0"
+    width_in: 159.0
+    depth_in: 204.0
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 262.6
+    - 677.5
+  geom:
+    polygon:
+    - - 219.8
+      - 649.8
+    - - 305.3
+      - 649.8
+    - - 305.3
+      - 705.3
+    - - 219.8
+      - 705.3
+  attrs:
+    key: p2-R9
+    name: BATH
+    printed: 7'-1½"x4'-7½"
+    width_in: 85.5
+    depth_in: 55.5
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 2
+  class: ROOM
+  at:
+    page_xy:
+    - 173.3
+    - 677.5
+  geom:
+    polygon:
+    - - 131.3
+      - 649.8
+    - - 215.3
+      - 649.8
+    - - 215.3
+      - 705.3
+    - - 131.3
+      - 705.3
+  attrs:
+    key: p2-R10
+    name: BATH
+    printed: 7'-0"x4'-7½"
+    width_in: 84.0
+    depth_in: 55.5
+    floor: FIRST
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 3
+  class: ROOM
+  at:
+    page_xy:
+    - 189.3
+    - 371.1
+  geom:
+    polygon:
+    - - 131.6
+      - 343.3
+    - - 247.1
+      - 343.3
+    - - 247.1
+      - 398.8
+    - - 131.6
+      - 398.8
+  attrs:
+    key: p3-R1
+    name: BATH
+    printed: 9'-7½"x4'-7½"
+    width_in: 115.5
+    depth_in: 55.5
+    floor: ROOF
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 3
+  class: ROOM
+  at:
+    page_xy:
+    - 268.4
+    - 373.3
+  geom:
+    polygon:
+    - - 247.4
+      - 343.3
+    - - 289.4
+      - 343.3
+    - - 289.4
+      - 403.3
+    - - 247.4
+      - 403.3
+  attrs:
+    key: p3-R2
+    name: STORE
+    printed: 3'-6"x5'-0"
+    width_in: 42.0
+    depth_in: 60.0
+    floor: ROOF
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 3
+  class: ROOM
+  at:
+    page_xy:
+    - 190.7
+    - 473.2
+  geom:
+    polygon:
+    - - 109.7
+      - 407.2
+    - - 271.7
+      - 407.2
+    - - 271.7
+      - 539.2
+    - - 109.7
+      - 539.2
+  attrs:
+    key: p3-R3
+    name: ROOM
+    printed: 13'-6"x11'-0"
+    width_in: 162.0
+    depth_in: 132.0
+    floor: ROOF
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 3
+  class: ROOM
+  at:
+    page_xy:
+    - 212.6
+    - 587.2
+  geom:
+    polygon:
+    - - 131.6
+      - 528.7
+    - - 293.6
+      - 528.7
+    - - 293.6
+      - 645.7
+    - - 131.6
+      - 645.7
+  attrs:
+    key: p3-R4
+    name: ROOM
+    printed: 13'-6"x9'-9"
+    width_in: 162.0
+    depth_in: 117.0
+    floor: ROOF
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 220.7
+    - 195.5
+  geom:
+    polygon:
+    - - 135.2
+      - 152.0
+    - - 306.2
+      - 152.0
+    - - 306.2
+      - 239.0
+    - - 135.2
+      - 239.0
+  attrs:
+    key: p4-R1
+    name: STORE
+    printed: 14'-3"x7'-3"
+    width_in: 171.0
+    depth_in: 87.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 390.0
+    - 258.0
+  geom:
+    polygon:
+    - - 309.0
+      - 162.0
+    - - 471.0
+      - 162.0
+    - - 471.0
+      - 354.0
+    - - 309.0
+      - 354.0
+  attrs:
+    key: p4-R2
+    name: SITTING
+    printed: 13'-6"x16'-0"
+    width_in: 162.0
+    depth_in: 192.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 195.5
+    - 282.5
+  geom:
+    polygon:
+    - - 134.0
+      - 234.5
+    - - 257.0
+      - 234.5
+    - - 257.0
+      - 330.5
+    - - 134.0
+      - 330.5
+  attrs:
+    key: p4-R3
+    name: STORE
+    printed: 10'-3"x8'-0"
+    width_in: 123.0
+    depth_in: 96.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 192.5
+    - 428.7
+  geom:
+    polygon:
+    - - 138.5
+      - 354.7
+    - - 246.5
+      - 354.7
+    - - 246.5
+      - 502.7
+    - - 138.5
+      - 502.7
+  attrs:
+    key: p4-R4
+    name: KITCHEN
+    printed: 9'-0"x12'-4"
+    width_in: 108.0
+    depth_in: 148.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 348.9
+    - 429.4
+  geom:
+    polygon:
+    - - 234.1
+      - 357.4
+    - - 463.6
+      - 357.4
+    - - 463.6
+      - 501.4
+    - - 234.1
+      - 501.4
+  attrs:
+    key: p4-R5
+    name: SITTING
+    printed: 19'-1½"x12'-0"
+    width_in: 229.5
+    depth_in: 144.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 218.1
+    - 580.8
+  geom:
+    polygon:
+    - - 131.1
+      - 508.8
+    - - 305.1
+      - 508.8
+    - - 305.1
+      - 652.8
+    - - 131.1
+      - 652.8
+  attrs:
+    key: p4-R6
+    name: ROOM
+    printed: 14'-6"x12'-0"
+    width_in: 174.0
+    depth_in: 144.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 393.0
+    - 598.2
+  geom:
+    polygon:
+    - - 313.5
+      - 496.2
+    - - 472.5
+      - 496.2
+    - - 472.5
+      - 700.2
+    - - 313.5
+      - 700.2
+  attrs:
+    key: p4-R7
+    name: ROOM
+    printed: 13'-3"x17'-0"
+    width_in: 159.0
+    depth_in: 204.0
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 260.4
+    - 678.4
+  geom:
+    polygon:
+    - - 217.6
+      - 650.6
+    - - 303.1
+      - 650.6
+    - - 303.1
+      - 706.1
+    - - 217.6
+      - 706.1
+  attrs:
+    key: p4-R8
+    name: BATH
+    printed: 7'-1½"x4'-7½"
+    width_in: 85.5
+    depth_in: 55.5
+    floor: BASEMENT
+    geom_basis: FITTED_TO_WALL_FACES
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: box of the printed size placed where its sides lie on the wall faces drawn on the plan; the printed size is the net room size
+- sheet: 4
+  class: ROOM
+  at:
+    page_xy:
+    - 180.1
+    - 688.6
+  geom:
+    polygon:
+    - - 138.1
+      - 660.9
+    - - 222.1
+      - 660.9
+    - - 222.1
+      - 716.4
+    - - 138.1
+      - 716.4
+  attrs:
+    key: p4-R9
+    name: BATH
+    printed: 7'-0"x4'-7½"
+    width_in: 84.0
+    depth_in: 55.5
+    floor: BASEMENT
+    geom_basis: PRINTED_SIZE_AT_LABEL
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: walls do not close the room on the plan (open to the next room or a partial wall); the outline is the printed size laid at the label, so only the size is read, not the position of the
+      edges
+- sheet: 1
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id111
+    - 203.1
+    - 95.1
+  geom:
+    point: *id111
+  attrs:
+    key: p1-L1
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 1
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id112
+    - 235.1
+    - 225.6
+  geom:
+    point: *id112
+  attrs:
+    key: p1-L2
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 1
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id113
+    - 349.0
+    - 389.4
+  geom:
+    point: *id113
+  attrs:
+    key: p1-L3
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 1
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id114
+    - 145.1
+    - 75.4
+  geom:
+    point: *id114
+  attrs:
+    key: p1-L4
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id115
+    - 616.3
+    - 936.1
+  geom:
+    point: *id115
+  attrs:
+    key: p5-L1
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +14'-0"
+  at:
+    page_xy: &id116
+    - 661.4
+    - 937.8
+  geom:
+    point: *id116
+  attrs:
+    key: p5-L2
+    value_in: 168
+    printed: +14'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +24'-6"
+  at:
+    page_xy: &id117
+    - 706.6
+    - 937.7
+  geom:
+    point: *id117
+  attrs:
+    key: p5-L3
+    value_in: 294
+    printed: +24'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +34'-0"
+  at:
+    page_xy: &id118
+    - 746.4
+    - 938.2
+  geom:
+    point: *id118
+  attrs:
+    key: p5-L4
+    value_in: 408
+    printed: +34'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id119
+    - 616.3
+    - 469.7
+  geom:
+    point: *id119
+  attrs:
+    key: p5-L5
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id120
+    - 601.3
+    - 752.0
+  geom:
+    point: *id120
+  attrs:
+    key: p5-L6
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id121
+    - 602.8
+    - 566.1
+  geom:
+    point: *id121
+  attrs:
+    key: p5-L7
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id122
+    - 601.2
+    - 247.7
+  geom:
+    point: *id122
+  attrs:
+    key: p5-L8
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id123
+    - 530.3
+    - 1048.6
+  geom:
+    point: *id123
+  attrs:
+    key: p5-L9
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id124
+    - 527.6
+    - 1109.8
+  geom:
+    point: *id124
+  attrs:
+    key: p5-L10
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id125
+    - 538.4
+    - 997.7
+  geom:
+    point: *id125
+  attrs:
+    key: p5-L11
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id126
+    - 532.2
+    - 1091.0
+  geom:
+    point: *id126
+  attrs:
+    key: p5-L12
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id127
+    - 528.0
+    - 838.9
+  geom:
+    point: *id127
+  attrs:
+    key: p5-L13
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id128
+    - 527.6
+    - 814.2
+  geom:
+    point: *id128
+  attrs:
+    key: p5-L14
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id129
+    - 616.3
+    - 1108.3
+  geom:
+    point: *id129
+  attrs:
+    key: p5-L15
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +14'-0"
+  at:
+    page_xy: &id130
+    - 661.4
+    - 1110.0
+  geom:
+    point: *id130
+  attrs:
+    key: p5-L16
+    value_in: 168
+    printed: +14'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +24'-6"
+  at:
+    page_xy: &id131
+    - 706.6
+    - 1110.0
+  geom:
+    point: *id131
+  attrs:
+    key: p5-L17
+    value_in: 294
+    printed: +24'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +34'-0"
+  at:
+    page_xy: &id132
+    - 746.4
+    - 1110.5
+  geom:
+    point: *id132
+  attrs:
+    key: p5-L18
+    value_in: 408
+    printed: +34'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id133
+    - 601.7
+    - 1092.8
+  geom:
+    point: *id133
+  attrs:
+    key: p5-L19
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id134
+    - 601.4
+    - 920.8
+  geom:
+    point: *id134
+  attrs:
+    key: p5-L20
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id135
+    - 616.3
+    - 766.4
+  geom:
+    point: *id135
+  attrs:
+    key: p5-L21
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +14'-0"
+  at:
+    page_xy: &id136
+    - 661.4
+    - 768.2
+  geom:
+    point: *id136
+  attrs:
+    key: p5-L22
+    value_in: 168
+    printed: +14'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +24'-6"
+  at:
+    page_xy: &id137
+    - 706.6
+    - 768.1
+  geom:
+    point: *id137
+  attrs:
+    key: p5-L23
+    value_in: 294
+    printed: +24'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +34'-0"
+  at:
+    page_xy: &id138
+    - 746.4
+    - 768.6
+  geom:
+    point: *id138
+  attrs:
+    key: p5-L24
+    value_in: 408
+    printed: +34'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id139
+    - 616.3
+    - 575.7
+  geom:
+    point: *id139
+  attrs:
+    key: p5-L25
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +14'-0"
+  at:
+    page_xy: &id140
+    - 661.4
+    - 577.4
+  geom:
+    point: *id140
+  attrs:
+    key: p5-L26
+    value_in: 168
+    printed: +14'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +24'-6"
+  at:
+    page_xy: &id141
+    - 706.6
+    - 577.3
+  geom:
+    point: *id141
+  attrs:
+    key: p5-L27
+    value_in: 294
+    printed: +24'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +34'-0"
+  at:
+    page_xy: &id142
+    - 746.4
+    - 577.8
+  geom:
+    point: *id142
+  attrs:
+    key: p5-L28
+    value_in: 408
+    printed: +34'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id143
+    - 616.3
+    - 265.4
+  geom:
+    point: *id143
+  attrs:
+    key: p5-L29
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +14'-0"
+  at:
+    page_xy: &id144
+    - 661.4
+    - 267.1
+  geom:
+    point: *id144
+  attrs:
+    key: p5-L30
+    value_in: 168
+    printed: +14'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +24'-6"
+  at:
+    page_xy: &id145
+    - 706.6
+    - 267.0
+  geom:
+    point: *id145
+  attrs:
+    key: p5-L31
+    value_in: 294
+    printed: +24'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +34'-0"
+  at:
+    page_xy: &id146
+    - 746.4
+    - 267.5
+  geom:
+    point: *id146
+  attrs:
+    key: p5-L32
+    value_in: 408
+    printed: +34'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id147
+    - 109.4
+    - 384.6
+  geom:
+    point: *id147
+  attrs:
+    key: p5-L33
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id148
+    - 105.8
+    - 369.8
+  geom:
+    point: *id148
+  attrs:
+    key: p5-L34
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id149
+    - 109.6
+    - 884.1
+  geom:
+    point: *id149
+  attrs:
+    key: p5-L35
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +12"
+  at:
+    page_xy: &id150
+    - 151.6
+    - 891.8
+  geom:
+    point: *id150
+  attrs:
+    key: p5-L36
+    value_in: 12
+    printed: +12"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id151
+    - 217.2
+    - 830.7
+  geom:
+    point: *id151
+  attrs:
+    key: p5-L37
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: ±0'-0"
+  at:
+    page_xy: &id152
+    - 102.4
+    - 905.2
+  geom:
+    point: *id152
+  attrs:
+    key: p5-L38
+    value_in: 0
+    printed: ±0'-0"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 5
+  class: LEVEL
+  mark: +3'-6"
+  at:
+    page_xy: &id153
+    - 616.3
+    - 641.3
+  geom:
+    point: *id153
+  attrs:
+    key: p5-L39
+    value_in: 42
+    printed: +3'-6"
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: level text read from the text layer; on page 1 the plan level marks, on page 5 the levels at the four elevation and section views
+- sheet: 1
+  class: STAIR
+  at:
+    page_xy: &id154
+    - 217.2
+    - 290.1
+  geom:
+    point: *id154
+  attrs:
+    key: p1-S1
+    floor: GROUND
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: ground floor stair, labelled STAIR 14'-3"x8'-0", flight marked UP; only the position of the label is written, the flights and the landing are not traced
+- sheet: 2
+  class: STAIR
+  at:
+    page_xy: &id155
+    - 219.0
+    - 271.6
+  geom:
+    point: *id155
+  attrs:
+    key: p2-S1
+    floor: FIRST
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: first floor stair, labelled STAIR 14'-3"x8'-0", flights marked UP and DN; only the position of the label is written, the flights and the landing are not traced
+- sheet: 3
+  class: STAIR
+  at:
+    page_xy: &id156
+    - 255.0
+    - 323.0
+  geom:
+    point: *id156
+  attrs:
+    key: p3-S1
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: mumty stair, flight marked DN; only the position of the label is written, the flights and the landing are not traced
+- sheet: 4
+  class: STAIR
+  at:
+    page_xy: &id157
+    - 407.0
+    - 645.0
+  geom:
+    point: *id157
+  attrs:
+    key: p4-S1
+    floor: BASEMENT
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: basement stair, flight marked UP (right side); only the position of the label is written, the flights and the landing are not traced
+- sheet: 3
+  class: TANK
+  mark: OHWT
+  at:
+    page_xy:
+    - 430.8
+    - 654.0
+  geom:
+    polygon:
+    - - 395.2
+      - 606.9
+    - - 466.3
+      - 606.9
+    - - 466.3
+      - 701.1
+    - - 395.2
+      - 701.1
+  attrs:
+    key: OHWT
+    outer_in:
+    - 71.1
+    - 94.2
+    floor: ROOF
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: outline of the O.H.W.T enclosure on the mumty/roof plan, measured on the vector walls; the tank depth and wall thickness are not printed on this plan
+- sheet: 6
+  class: FOOTING_SECTION
+  at:
+    page_xy: &id158
+    - 146.8
+    - 787.6
+  geom:
+    point: *id158
+  attrs:
+    key: F-A
+    size_in:
+    - 36
+    - 36
+    printed: SECTION OF FOOTING (3'-0"X3'-0")
+    depth_below_ngl_in: 39
+    thickness_printed: C
+    pcc_in: 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; footing thickness is printed as the letter C, not a value; no footing mark F1 or F2 is printed
+      on the section or on any plan
+- sheet: 6
+  class: FOOTING_SECTION
+  at:
+    page_xy: &id159
+    - 146.8
+    - 700.7
+  geom:
+    point: *id159
+  attrs:
+    key: F-B
+    size_in:
+    - 36
+    - 36
+    printed: SECTION OF FOOTING (3'-0"X3'-0")
+    depth_below_ngl_in: 39
+    thickness_printed: C
+    pcc_in: 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; footing thickness is printed as the letter C, not a value; no footing mark F1 or F2 is printed
+      on the section or on any plan
+- sheet: 6
+  class: FOOTING_SECTION
+  at:
+    page_xy: &id160
+    - 146.8
+    - 622.4
+  geom:
+    point: *id160
+  attrs:
+    key: F-C
+    size_in:
+    - 60
+    - 60
+    printed: SECTION OF FOOTING (5'-0"X5'-0")
+    depth_below_ngl_in: 39
+    thickness_printed: C
+    pcc_in: 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; footing thickness is printed as the letter C, not a value; no footing mark F1 or F2 is printed
+      on the section or on any plan
+- sheet: 6
+  class: FOOTING_SECTION
+  at:
+    page_xy: &id161
+    - 147.8
+    - 1079.9
+  geom:
+    point: *id161
+  attrs:
+    key: WF-45
+    width_in: 18
+    wall_in: 4.5
+    pcc_in: 3
+  conflict:
+    note: the caption says 9 in thick masonry wall; the wall drawn is 4.5 in with a 1'-6" footing; the unsigned QS correction says no 4.5 in wall section is printed
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the section is for a 4.5 in wall (footing 1'-6" wide); it is labelled FOOTING FOR 9" THICK
+      MASONRY WALL like the others, so the label and the drawing disagree
+- sheet: 6
+  class: FOOTING_SECTION
+  at:
+    page_xy: &id162
+    - 148.7
+    - 1008.0
+  geom:
+    point: *id162
+  attrs:
+    key: WF-9a
+    width_in: 42
+    wall_in: 9
+    steps_in:
+    - - 13.5
+      - 15
+    - - 18
+      - 6
+    - - 22.5
+      - 6
+    bars: '#4@8" c/c'
+    pcc_in: 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; three stepped courses 13.5 x 15, 18 x 6 and 22.5 x 6 in
+- sheet: 6
+  class: FOOTING_SECTION
+  at:
+    page_xy: &id163
+    - 148.7
+    - 906.2
+  geom:
+    point: *id163
+  attrs:
+    key: WF-9b
+    width_in: 48
+    wall_in: 9
+    steps_in:
+    - - 13.5
+      - 15
+    - - 18
+      - 6
+    - - 22.5
+      - 6
+    bars: '#4@8" c/c'
+    pcc_in: 3
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; three stepped courses 13.5 x 15, 18 x 6 and 22.5 x 6 in
+- sheet: 6
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-3
+  at:
+    page_xy: &id164
+    - 388.0
+    - 728.0
+  geom:
+    point: *id164
+  attrs:
+    key: C3a
+    width_in: 9
+    depth_in: 9
+    bars: 4-#6
+    ties: '#3@6"'
+  conflict:
+    note: 'two details carry the label C-3: 9 x 9 in and 18 x 9 in'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed
+- sheet: 6
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-2
+  at:
+    page_xy: &id165
+    - 388.0
+    - 632.2
+  geom:
+    point: *id165
+  attrs:
+    key: C2
+    width_in: 15
+    depth_in: 9
+    bars: 6-#6
+    ties: '#3@6"'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed
+- sheet: 6
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-3
+  at:
+    page_xy: &id166
+    - 376.5
+    - 529.2
+  geom:
+    point: *id166
+  attrs:
+    key: C3b
+    width_in: 18
+    depth_in: 9
+    bars: 8-#6 and 6-#6
+    ties: '#3@6"'
+  conflict:
+    note: 'two details carry the label C-3: 9 x 9 in and 18 x 9 in'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed
+- sheet: 6
+  class: COLUMN_SCHEDULE_CELL
+  mark: C4
+  at:
+    page_xy: &id167
+    - 395.4
+    - 313.0
+  geom:
+    point: *id167
+  attrs:
+    key: C4
+    bars: 8-#6
+    ties: '#3@6" and 2X#3@6"C/C/4'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the size of C4 is not read
+- sheet: 6
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-5
+  at:
+    page_xy: &id168
+    - 321.1
+    - 310.7
+  geom:
+    point: *id168
+  attrs:
+    key: C5
+    width_in: 9
+    depth_in: 9
+    bars: 4-#5
+    ties: '#3@6"'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed
+- sheet: 6
+  class: BEAM_SECTION
+  mark: PB-1
+  at:
+    page_xy: &id169
+    - 367.6
+    - 1075.1
+  geom:
+    point: *id169
+  attrs:
+    key: PB1
+    width_in: 9
+    depth_in: 18
+    top_bars: 3-#4
+    bottom_bars: 3-#4
+    stirrup: '#3@6"'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: PB-2
+  at:
+    page_xy: &id170
+    - 368.0
+    - 950.4
+  geom:
+    point: *id170
+  attrs:
+    key: PB2
+    width_in: 9
+    depth_in: 12
+    top_bars: 3-#4
+    bottom_bars: 3-#4
+    stirrup: '#3@6"'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: LINTEL-TIE-BAND
+  at:
+    page_xy: &id171
+    - 374.8
+    - 859.7
+  geom:
+    point: *id171
+  attrs:
+    key: TIE
+    width_in: 9
+    depth_in: 12
+    top_bars: 3-#4
+    stirrup: '#3@6"'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: RB-1
+  at:
+    page_xy: &id172
+    - 292.9
+    - 1074.2
+  geom:
+    point: *id172
+  attrs:
+    key: RB1
+    width_in: 9
+    depth_in: 12
+    top_bars: 3-#4
+    bottom_bars: 3-#4
+    stirrup: '#3@5"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: RB-2
+  at:
+    page_xy: &id173
+    - 292.0
+    - 940.8
+  geom:
+    point: *id173
+  attrs:
+    key: RB2
+    width_in: 9
+    depth_in: 18
+    top_bars: 2-#4
+    bottom_bars: 4-#4
+    stirrup: '#3@5"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: RB-3
+  at:
+    page_xy: &id174
+    - 305.7
+    - 741.5
+  geom:
+    point: *id174
+  attrs:
+    key: RB3
+    width_in: 18
+    top_bars: 6-#4
+    bottom_bars: 4-#6
+    stirrup: '#3@6"C/C 4-legged and #3@5"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: GB-4
+  at:
+    page_xy: &id175
+    - 375.0
+    - 433.4
+  geom:
+    point: *id175
+  attrs:
+    key: GB4
+    width_in: 9
+    depth_in: 18
+    top_bars: 2-#5
+    bottom_bars: 4-#5
+    stirrup: '#3@5"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: RB-4
+  at:
+    page_xy: &id176
+    - 292.3
+    - 623.3
+  geom:
+    point: *id176
+  attrs:
+    key: RB4
+    width_in: 9
+    depth_in: 24
+    top_bars: 2-#5
+    bottom_bars: 6-#6
+    stirrup: '#3@4"C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: BEAM_SECTION
+  mark: B-2
+  at:
+    page_xy: &id177
+    - 297.5
+    - 537.0
+  geom:
+    point: *id177
+  attrs:
+    key: B2
+    width_in: 9
+    depth_in: 15
+    top_bars: 2-#5
+    bottom_bars: 2-#6
+    stirrup: '#3@6"'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: read on a 200 dpi crop of page 6 and the text layer; bar labels and dimensions as printed; the split of the depth between slab and web is not written
+- sheet: 6
+  class: LINTEL_TYPE
+  mark: L1
+  at:
+    page_xy: &id178
+    - 589.3
+    - 145.7
+  geom:
+    point: *id178
+  attrs:
+    key: L1
+    span_printed: UP TO 4"
+    width_in: 9
+    depth_in: 6
+    bottom_bars: 2#3
+    top_bars: 2#3
+    rings: '#3-8" C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'row of the structural table for R.C.C. lintels on page 6, read from the text layer and a 200 dpi crop; the span is printed with an inch mark but is read as feet: not settled'
+- sheet: 6
+  class: LINTEL_TYPE
+  mark: L2
+  at:
+    page_xy: &id179
+    - 576.2
+    - 145.7
+  geom:
+    point: *id179
+  attrs:
+    key: L2
+    span_printed: UP TO 6"
+    width_in: 9
+    depth_in: 6
+    bottom_bars: 2#4
+    top_bars: 3#3
+    rings: '#3-7" C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'row of the structural table for R.C.C. lintels on page 6, read from the text layer and a 200 dpi crop; the span is printed with an inch mark but is read as feet: not settled'
+- sheet: 6
+  class: LINTEL_TYPE
+  mark: L3
+  at:
+    page_xy: &id180
+    - 560.5
+    - 145.7
+  geom:
+    point: *id180
+  attrs:
+    key: L3
+    span_printed: UP TO 8"
+    width_in: 9
+    depth_in: 9
+    bottom_bars: 3#4
+    top_bars: 3#4
+    rings: '#3-6" C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'row of the structural table for R.C.C. lintels on page 6, read from the text layer and a 200 dpi crop; the span is printed with an inch mark but is read as feet: not settled'
+- sheet: 6
+  class: LINTEL_TYPE
+  mark: L4
+  at:
+    page_xy: &id181
+    - 542.7
+    - 145.7
+  geom:
+    point: *id181
+  attrs:
+    key: L4
+    span_printed: UP TO 12"
+    width_in: 9
+    depth_in: 12
+    bottom_bars: 3#5
+    top_bars: 3#4
+    rings: '#3-6" C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'row of the structural table for R.C.C. lintels on page 6, read from the text layer and a 200 dpi crop; the span is printed with an inch mark but is read as feet: not settled'
+- sheet: 6
+  class: LINTEL_TYPE
+  mark: L5
+  at:
+    page_xy: &id182
+    - 517.6
+    - 145.7
+  geom:
+    point: *id182
+  attrs:
+    key: L5
+    span_printed: UP TO 15"
+    width_in: 9
+    depth_in: 12
+    bottom_bars: 3#5
+    top_bars: 3#5
+    rings: '#3-6" C/C'
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: 'row of the structural table for R.C.C. lintels on page 6, read from the text layer and a 200 dpi crop; the span is printed with an inch mark but is read as feet: not settled'
+- sheet: 6
+  class: NOTE_FACT
+  mark: SLAB_THICKNESS_STRUCTURAL
+  at:
+    page_xy: &id183
+    - 491.9
+    - 534.7
+  geom:
+    point: *id183
+  attrs:
+    key: SLAB_THICKNESS_STRUCTURAL
+    value: 5
+    unit: in
+    text: ALL SLABS ARE 5" THICK UNLESS OTHERWISE NOTED ON PLAN
+  conflict:
+    about: SLAB_THICKNESS
+    values_in:
+    - 5
+    - 6
+    note: the approval sheet (page 5) prints 6 in thick R.c.c slab on the sections
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: text layer; the same note is printed under four framing plans
+- sheet: 5
+  class: NOTE_FACT
+  mark: SLAB_THICKNESS_SECTIONS
+  at:
+    page_xy: &id184
+    - 654.4
+    - 483.2
+  geom:
+    point: *id184
+  attrs:
+    key: SLAB_THICKNESS_SECTIONS
+    value: 6
+    unit: in
+    text: 6" Thick R.c.c Slab
+  conflict:
+    about: SLAB_THICKNESS
+    values_in:
+    - 5
+    - 6
+    note: the structural notes on page 6 print 5 in
+  truth:
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+    note: text layer of the section views on page 5; printed at every slab of both sections

@@ -1,1 +1,1175 @@
-[]
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B1-MID@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.8 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.8 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 11
+      from: slab 6 + 5 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B1-SUPPORT@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.8 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.8 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 11
+      from: slab 6 + 5 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B2-MID@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.8 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.8 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 11
+      from: slab 6 + 5 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B2-SUPPORT@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.8 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.8 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 11
+      from: slab 6 + 5 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B3-MID@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.8 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.8 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B3-SUPPORT@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.8 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.8 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 15
+      from: slab 6 + 9 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 8
+    class: BEAM_SECTION
+    key: B4-MID@p8
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.8 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 9
+      from: p.8 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.8 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#4
+      from: p.8 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.8 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B1-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#8+5#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B1-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#8+5#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B2-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B2-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 5#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B3-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 5
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 10
+      from: slab 5 + 5 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B3-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 5
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 10
+      from: slab 5 + 5 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B4-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#8+4#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B4-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#8+4#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B5-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.16 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 15
+      from: p.16 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B5-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.16 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 15
+      from: p.16 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+    ext_top_bars:
+      state: PRINTED
+      value: 2#6 EXT
+      from: p.16 support section label
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B6-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B6-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 15
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 6#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B7-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B7-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B8-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 2#8+4#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B8-SUPPORT@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p.16 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.16 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 2#8+4#6
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 16
+    class: BEAM_SECTION
+    key: B9-MID@p16
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.16 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 9
+      from: p.16 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.16 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#4
+      from: p.16 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.16 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B1-MID@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p.19 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.19 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#8+4#6
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B1-SUPPORT@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 18
+      from: p.19 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.19 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 4#6
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#8+4#6
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B2-MID@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.19 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.19 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B2-SUPPORT@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 12
+      from: p.19 width dimension and left stacked dimensions
+    slab_in:
+      state: PRINTED
+      value: 6
+      from: p.19 left stacked dimension
+    depth_in:
+      state: DERIVED
+      value: 18
+      from: slab 6 + 12 above the slab, the two printed left dimensions added
+    top_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B3-MID@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.19 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 9
+      from: p.19 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#4
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B3-SUPPORT@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.19 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 9
+      from: p.19 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 3#4
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 4#4
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B4-MID@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.19 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 9
+      from: p.19 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 19
+    class: BEAM_SECTION
+    key: B4-SUPPORT@p19
+  inputs:
+    width_in:
+      state: PRINTED
+      value: 9
+      from: p.19 width dimension and left stacked dimensions
+    depth_in:
+      state: PRINTED
+      value: 9
+      from: p.19 left dimension; no slab dimension is drawn on this section
+    top_bars:
+      state: PRINTED
+      value: 2#4
+      from: p.19 section label
+    bottom_bars:
+      state: PRINTED
+      value: 3#6
+      from: p.19 section label
+    stirrup:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.19 section label
+    run_length:
+      state: MISSING
+      note: beam runs are not traced in this truth; the span needs a beam plan trace
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 9
+    class: COLUMN_SCHEDULE_CELL
+    key: C-1@p9
+  inputs:
+    diameter_in:
+      state: PRINTED
+      value: 18
+      from: p.9 plan
+    bars:
+      state: PRINTED
+      value: 8#6
+      from: p.9
+    ties:
+      state: PRINTED
+      value: '#3@8"c/c'
+      from: p.9
+    storey_height:
+      state: MISSING
+      note: no section or level is printed for the upper storeys
+    cover:
+      state: MISSING
+      note: this set has no general notes sheet
+- element:
+    sheet: 11
+    class: COLUMN_SCHEDULE_CELL
+    key: C-3@p11
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 9
+      - 9
+      from: p.11 column plan, 9"x9" R.C.C with 4½" brick all round
+    bars:
+      state: PRINTED
+      value: 4#4
+      from: p.11
+    ties:
+      state: PRINTED
+      value: '#3@7"c/c'
+      from: p.11
+    storey_height:
+      state: MISSING
+      note: no section or level is printed
+- element:
+    sheet: 10
+    class: FOOTING_SECTION
+    key: F2-section@p10
+  inputs:
+    size_ft:
+      state: PRINTED
+      value:
+      - 6.5
+      - 4.5
+      from: p.10 plan
+    bars:
+      state: PRINTED
+      value: '#4@6"c/c b/w'
+      from: p.10
+    thickness_in:
+      state: DERIVED
+      value: 24
+      from: steps 9 + 9 + 6 inches as drawn on the section
+- element:
+    sheet: 4
+    class: RCC_WALL
+    key: RW-A-A@p4
+  inputs:
+    thickness_in:
+      state: PRINTED
+      value: 9
+      from: p.4 9" R.C.C WALL
+    height_ft:
+      state: MISSING
+      note: basement height is not printed on the wall section
+    bars:
+      state: PRINTED
+      value:
+      - '#3@9"c/c'
+      - '#3@6"c/c'
+      - '#4@6"c/c'
+      from: p.4

@@ -1,1 +1,4678 @@
-[]
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id001
+    - 88.6
+    - 348.7
+  geom:
+    point: *id001
+  attrs:
+    key: 7-CO1
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: &id003
+    by: CLAUDE_EYE
+    checked: false
+    source: page_image_110dpi_and_text_layer
+    date: '2026-11-04'
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id002
+    - 96.7
+    - 426.3
+  geom:
+    point: *id002
+  attrs:
+    key: 7-CO2
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id004
+    - 104.1
+    - 513.7
+  geom:
+    point: *id004
+  attrs:
+    key: 7-CO3
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id005
+    - 103.2
+    - 606.7
+  geom:
+    point: *id005
+  attrs:
+    key: 7-CO4
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id006
+    - 113.1
+    - 339.6
+  geom:
+    point: *id006
+  attrs:
+    key: 7-CO5
+    text: '#4@8''''c/c'
+    bar_dia_no: 4
+    spacing_in: 8
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id007
+    - 126.7
+    - 486.3
+  geom:
+    point: *id007
+  attrs:
+    key: 7-CO6
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id008
+    - 126.7
+    - 578.7
+  geom:
+    point: *id008
+  attrs:
+    key: 7-CO7
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id009
+    - 141.0
+    - 319.5
+  geom:
+    point: *id009
+  attrs:
+    key: 7-CO8
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id010
+    - 162.4
+    - 433.3
+  geom:
+    point: *id010
+  attrs:
+    key: 7-CO9
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id011
+    - 172.7
+    - 367.7
+  geom:
+    point: *id011
+  attrs:
+    key: 7-CO10
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id012
+    - 171.1
+    - 515.4
+  geom:
+    point: *id012
+  attrs:
+    key: 7-CO11
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id013
+    - 188.3
+    - 331.4
+  geom:
+    point: *id013
+  attrs:
+    key: 7-CO12
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id014
+    - 193.7
+    - 503.3
+  geom:
+    point: *id014
+  attrs:
+    key: 7-CO13
+    text: '#4@9''''c/c'
+    bar_dia_no: 4
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id015
+    - 216.1
+    - 477.3
+  geom:
+    point: *id015
+  attrs:
+    key: 7-CO14
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id016
+    - 216.7
+    - 603.0
+  geom:
+    point: *id016
+  attrs:
+    key: 7-CO15
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id017
+    - 228.7
+    - 303.6
+  geom:
+    point: *id017
+  attrs:
+    key: 7-CO16
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id018
+    - 229.0
+    - 536.4
+  geom:
+    point: *id018
+  attrs:
+    key: 7-CO17
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id019
+    - 231.1
+    - 260.5
+  geom:
+    point: *id019
+  attrs:
+    key: 7-CO18
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id020
+    - 247.2
+    - 482.4
+  geom:
+    point: *id020
+  attrs:
+    key: 7-CO19
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id021
+    - 250.8
+    - 297.3
+  geom:
+    point: *id021
+  attrs:
+    key: 7-CO20
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id022
+    - 260.3
+    - 271.5
+  geom:
+    point: *id022
+  attrs:
+    key: 7-CO21
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id023
+    - 264.6
+    - 402.7
+  geom:
+    point: *id023
+  attrs:
+    key: 7-CO22
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id024
+    - 283.3
+    - 260.7
+  geom:
+    point: *id024
+  attrs:
+    key: 7-CO23
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id025
+    - 287.5
+    - 613.7
+  geom:
+    point: *id025
+  attrs:
+    key: 7-CO24
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id026
+    - 299.3
+    - 485.6
+  geom:
+    point: *id026
+  attrs:
+    key: 7-CO25
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id027
+    - 317.7
+    - 599.7
+  geom:
+    point: *id027
+  attrs:
+    key: 7-CO26
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id028
+    - 328.0
+    - 414.3
+  geom:
+    point: *id028
+  attrs:
+    key: 7-CO27
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id029
+    - 342.7
+    - 459.9
+  geom:
+    point: *id029
+  attrs:
+    key: 7-CO28
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id030
+    - 342.7
+    - 552.1
+  geom:
+    point: *id030
+  attrs:
+    key: 7-CO29
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id031
+    - 363.5
+    - 504.0
+  geom:
+    point: *id031
+  attrs:
+    key: 7-CO30
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id032
+    - 369.4
+    - 402.7
+  geom:
+    point: *id032
+  attrs:
+    key: 7-CO31
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id033
+    - 390.9
+    - 482.4
+  geom:
+    point: *id033
+  attrs:
+    key: 7-CO32
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id034
+    - 403.5
+    - 301.9
+  geom:
+    point: *id034
+  attrs:
+    key: 7-CO33
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id035
+    - 408.9
+    - 260.5
+  geom:
+    point: *id035
+  attrs:
+    key: 7-CO34
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id036
+    - 415.6
+    - 345.9
+  geom:
+    point: *id036
+  attrs:
+    key: 7-CO35
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id037
+    - 422.1
+    - 400.7
+  geom:
+    point: *id037
+  attrs:
+    key: 7-CO36
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id038
+    - 429.0
+    - 295.9
+  geom:
+    point: *id038
+  attrs:
+    key: 7-CO37
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 7
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id039
+    - 438.3
+    - 306.2
+  geom:
+    point: *id039
+  attrs:
+    key: 7-CO38
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id040
+    - 62.4
+    - 97.6
+  geom:
+    point: *id040
+  attrs:
+    key: 17-CO1
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id041
+    - 62.4
+    - 165.4
+  geom:
+    point: *id041
+  attrs:
+    key: 17-CO2
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id042
+    - 62.4
+    - 253.5
+  geom:
+    point: *id042
+  attrs:
+    key: 17-CO3
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id043
+    - 61.8
+    - 510.8
+  geom:
+    point: *id043
+  attrs:
+    key: 17-CO4
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id044
+    - 61.5
+    - 634.2
+  geom:
+    point: *id044
+  attrs:
+    key: 17-CO5
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id045
+    - 63.1
+    - 385.5
+  geom:
+    point: *id045
+  attrs:
+    key: 17-CO6
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id046
+    - 65.4
+    - 556.7
+  geom:
+    point: *id046
+  attrs:
+    key: 17-CO7
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id047
+    - 69.8
+    - 605.6
+  geom:
+    point: *id047
+  attrs:
+    key: 17-CO8
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id048
+    - 83.5
+    - 125.9
+  geom:
+    point: *id048
+  attrs:
+    key: 17-CO9
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id049
+    - 81.0
+    - 194.0
+  geom:
+    point: *id049
+  attrs:
+    key: 17-CO10
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id050
+    - 81.8
+    - 399.5
+  geom:
+    point: *id050
+  attrs:
+    key: 17-CO11
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id051
+    - 81.8
+    - 671.0
+  geom:
+    point: *id051
+  attrs:
+    key: 17-CO12
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id052
+    - 82.8
+    - 719.6
+  geom:
+    point: *id052
+  attrs:
+    key: 17-CO13
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id053
+    - 90.1
+    - 99.0
+  geom:
+    point: *id053
+  attrs:
+    key: 17-CO14
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id054
+    - 91.1
+    - 170.6
+  geom:
+    point: *id054
+  attrs:
+    key: 17-CO15
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id055
+    - 87.8
+    - 329.2
+  geom:
+    point: *id055
+  attrs:
+    key: 17-CO16
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id056
+    - 89.1
+    - 475.5
+  geom:
+    point: *id056
+  attrs:
+    key: 17-CO17
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id057
+    - 89.1
+    - 519.7
+  geom:
+    point: *id057
+  attrs:
+    key: 17-CO18
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id058
+    - 89.1
+    - 569.0
+  geom:
+    point: *id058
+  attrs:
+    key: 17-CO19
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id059
+    - 93.1
+    - 426.8
+  geom:
+    point: *id059
+  attrs:
+    key: 17-CO20
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id060
+    - 102.0
+    - 250.7
+  geom:
+    point: *id060
+  attrs:
+    key: 17-CO21
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id061
+    - 104.9
+    - 644.8
+  geom:
+    point: *id061
+  attrs:
+    key: 17-CO22
+    text: '#3@8''''c/c'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id062
+    - 108.2
+    - 377.7
+  geom:
+    point: *id062
+  attrs:
+    key: 17-CO23
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id063
+    - 114.5
+    - 105.8
+  geom:
+    point: *id063
+  attrs:
+    key: 17-CO24
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id064
+    - 112.5
+    - 604.0
+  geom:
+    point: *id064
+  attrs:
+    key: 17-CO25
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id065
+    - 117.0
+    - 173.4
+  geom:
+    point: *id065
+  attrs:
+    key: 17-CO26
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id066
+    - 120.5
+    - 463.6
+  geom:
+    point: *id066
+  attrs:
+    key: 17-CO27
+    text: '#3@8''''c/c'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id067
+    - 119.6
+    - 508.8
+  geom:
+    point: *id067
+  attrs:
+    key: 17-CO28
+    text: '#3@8''''c/c'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id068
+    - 120.1
+    - 558.0
+  geom:
+    point: *id068
+  attrs:
+    key: 17-CO29
+    text: '#3@8''''c/c'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id069
+    - 126.9
+    - 392.3
+  geom:
+    point: *id069
+  attrs:
+    key: 17-CO30
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id070
+    - 139.3
+    - 242.0
+  geom:
+    point: *id070
+  attrs:
+    key: 17-CO31
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id071
+    - 140.3
+    - 624.6
+  geom:
+    point: *id071
+  attrs:
+    key: 17-CO32
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id072
+    - 139.4
+    - 678.6
+  geom:
+    point: *id072
+  attrs:
+    key: 17-CO33
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id073
+    - 143.5
+    - 97.6
+  geom:
+    point: *id073
+  attrs:
+    key: 17-CO34
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id074
+    - 143.5
+    - 169.6
+  geom:
+    point: *id074
+  attrs:
+    key: 17-CO35
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id075
+    - 153.9
+    - 93.3
+  geom:
+    point: *id075
+  attrs:
+    key: 17-CO36
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id076
+    - 153.8
+    - 461.1
+  geom:
+    point: *id076
+  attrs:
+    key: 17-CO37
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id077
+    - 155.4
+    - 504.9
+  geom:
+    point: *id077
+  attrs:
+    key: 17-CO38
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id078
+    - 153.9
+    - 624.9
+  geom:
+    point: *id078
+  attrs:
+    key: 17-CO39
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id079
+    - 162.0
+    - 170.6
+  geom:
+    point: *id079
+  attrs:
+    key: 17-CO40
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id080
+    - 159.6
+    - 270.5
+  geom:
+    point: *id080
+  attrs:
+    key: 17-CO41
+    text: '#4@8''''c/c'
+    bar_dia_no: 4
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id081
+    - 164.7
+    - 329.2
+  geom:
+    point: *id081
+  attrs:
+    key: 17-CO42
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id082
+    - 172.3
+    - 126.2
+  geom:
+    point: *id082
+  attrs:
+    key: 17-CO43
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id083
+    - 173.1
+    - 195.1
+  geom:
+    point: *id083
+  attrs:
+    key: 17-CO44
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id084
+    - 182.0
+    - 423.0
+  geom:
+    point: *id084
+  attrs:
+    key: 17-CO45
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id085
+    - 178.2
+    - 718.8
+  geom:
+    point: *id085
+  attrs:
+    key: 17-CO46
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id086
+    - 187.2
+    - 96.5
+  geom:
+    point: *id086
+  attrs:
+    key: 17-CO47
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id087
+    - 188.3
+    - 173.0
+  geom:
+    point: *id087
+  attrs:
+    key: 17-CO48
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id088
+    - 188.4
+    - 373.5
+  geom:
+    point: *id088
+  attrs:
+    key: 17-CO49
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id089
+    - 186.1
+    - 590.4
+  geom:
+    point: *id089
+  attrs:
+    key: 17-CO50
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id090
+    - 194.0
+    - 641.9
+  geom:
+    point: *id090
+  attrs:
+    key: 17-CO51
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id091
+    - 197.1
+    - 104.1
+  geom:
+    point: *id091
+  attrs:
+    key: 17-CO52
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id092
+    - 197.1
+    - 167.7
+  geom:
+    point: *id092
+  attrs:
+    key: 17-CO53
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id093
+    - 202.2
+    - 246.2
+  geom:
+    point: *id093
+  attrs:
+    key: 17-CO54
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id094
+    - 204.2
+    - 428.8
+  geom:
+    point: *id094
+  attrs:
+    key: 17-CO55
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id095
+    - 212.4
+    - 446.4
+  geom:
+    point: *id095
+  attrs:
+    key: 17-CO56
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id096
+    - 211.4
+    - 551.6
+  geom:
+    point: *id096
+  attrs:
+    key: 17-CO57
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id097
+    - 210.1
+    - 618.5
+  geom:
+    point: *id097
+  attrs:
+    key: 17-CO58
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id098
+    - 219.3
+    - 123.9
+  geom:
+    point: *id098
+  attrs:
+    key: 17-CO59
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id099
+    - 219.6
+    - 408.2
+  geom:
+    point: *id099
+  attrs:
+    key: 17-CO60
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id100
+    - 228.5
+    - 283.7
+  geom:
+    point: *id100
+  attrs:
+    key: 17-CO61
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id101
+    - 233.9
+    - 113.1
+  geom:
+    point: *id101
+  attrs:
+    key: 17-CO62
+    text: '#4@8''''c/c'
+    bar_dia_no: 4
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id102
+    - 240.0
+    - 423.0
+  geom:
+    point: *id102
+  attrs:
+    key: 17-CO63
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id103
+    - 239.9
+    - 537.8
+  geom:
+    point: *id103
+  attrs:
+    key: 17-CO64
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id104
+    - 248.9
+    - 366.9
+  geom:
+    point: *id104
+  attrs:
+    key: 17-CO65
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id105
+    - 247.5
+    - 602.1
+  geom:
+    point: *id105
+  attrs:
+    key: 17-CO66
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id106
+    - 247.5
+    - 694.7
+  geom:
+    point: *id106
+  attrs:
+    key: 17-CO67
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id107
+    - 254.5
+    - 99.0
+  geom:
+    point: *id107
+  attrs:
+    key: 17-CO68
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id108
+    - 260.0
+    - 152.4
+  geom:
+    point: *id108
+  attrs:
+    key: 17-CO69
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id109
+    - 260.4
+    - 270.0
+  geom:
+    point: *id109
+  attrs:
+    key: 17-CO70
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id110
+    - 266.9
+    - 591.4
+  geom:
+    point: *id110
+  attrs:
+    key: 17-CO71
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id111
+    - 266.9
+    - 675.0
+  geom:
+    point: *id111
+  attrs:
+    key: 17-CO72
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id112
+    - 268.1
+    - 541.0
+  geom:
+    point: *id112
+  attrs:
+    key: 17-CO73
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id113
+    - 278.7
+    - 590.4
+  geom:
+    point: *id113
+  attrs:
+    key: 17-CO74
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id114
+    - 280.8
+    - 673.6
+  geom:
+    point: *id114
+  attrs:
+    key: 17-CO75
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id115
+    - 289.4
+    - 241.2
+  geom:
+    point: *id115
+  attrs:
+    key: 17-CO76
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id116
+    - 286.0
+    - 624.2
+  geom:
+    point: *id116
+  attrs:
+    key: 17-CO77
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id117
+    - 285.0
+    - 721.9
+  geom:
+    point: *id117
+  attrs:
+    key: 17-CO78
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id118
+    - 292.2
+    - 123.9
+  geom:
+    point: *id118
+  attrs:
+    key: 17-CO79
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id119
+    - 291.9
+    - 366.9
+  geom:
+    point: *id119
+  attrs:
+    key: 17-CO80
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id120
+    - 292.9
+    - 537.4
+  geom:
+    point: *id120
+  attrs:
+    key: 17-CO81
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id121
+    - 298.4
+    - 306.5
+  geom:
+    point: *id121
+  attrs:
+    key: 17-CO82
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id122
+    - 306.6
+    - 592.5
+  geom:
+    point: *id122
+  attrs:
+    key: 17-CO83
+    text: '#3@8''''c/c'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id123
+    - 306.6
+    - 684.2
+  geom:
+    point: *id123
+  attrs:
+    key: 17-CO84
+    text: '#3@8''''c/c'
+    bar_dia_no: 3
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id124
+    - 313.8
+    - 599.6
+  geom:
+    point: *id124
+  attrs:
+    key: 17-CO85
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id125
+    - 313.8
+    - 683.6
+  geom:
+    point: *id125
+  attrs:
+    key: 17-CO86
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id126
+    - 315.9
+    - 284.0
+  geom:
+    point: *id126
+  attrs:
+    key: 17-CO87
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id127
+    - 323.5
+    - 113.1
+  geom:
+    point: *id127
+  attrs:
+    key: 17-CO88
+    text: '#4@8''''c/c'
+    bar_dia_no: 4
+    spacing_in: 8
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id128
+    - 322.2
+    - 551.6
+  geom:
+    point: *id128
+  attrs:
+    key: 17-CO89
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id129
+    - 339.6
+    - 239.7
+  geom:
+    point: *id129
+  attrs:
+    key: 17-CO90
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id130
+    - 341.9
+    - 270.0
+  geom:
+    point: *id130
+  attrs:
+    key: 17-CO91
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id131
+    - 344.5
+    - 593.7
+  geom:
+    point: *id131
+  attrs:
+    key: 17-CO92
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id132
+    - 344.5
+    - 672.9
+  geom:
+    point: *id132
+  attrs:
+    key: 17-CO93
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id133
+    - 349.8
+    - 99.0
+  geom:
+    point: *id133
+  attrs:
+    key: 17-CO94
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id134
+    - 349.8
+    - 440.3
+  geom:
+    point: *id134
+  attrs:
+    key: 17-CO95
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id135
+    - 356.7
+    - 498.2
+  geom:
+    point: *id135
+  attrs:
+    key: 17-CO96
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id136
+    - 351.3
+    - 541.0
+  geom:
+    point: *id136
+  attrs:
+    key: 17-CO97
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id137
+    - 360.8
+    - 366.9
+  geom:
+    point: *id137
+  attrs:
+    key: 17-CO98
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id138
+    - 368.6
+    - 155.9
+  geom:
+    point: *id138
+  attrs:
+    key: 17-CO99
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id139
+    - 364.8
+    - 306.5
+  geom:
+    point: *id139
+  attrs:
+    key: 17-CO100
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id140
+    - 366.1
+    - 432.0
+  geom:
+    point: *id140
+  attrs:
+    key: 17-CO101
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id141
+    - 366.9
+    - 642.0
+  geom:
+    point: *id141
+  attrs:
+    key: 17-CO102
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id142
+    - 378.1
+    - 253.8
+  geom:
+    point: *id142
+  attrs:
+    key: 17-CO103
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id143
+    - 378.6
+    - 410.6
+  geom:
+    point: *id143
+  attrs:
+    key: 17-CO104
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id144
+    - 378.8
+    - 537.8
+  geom:
+    point: *id144
+  attrs:
+    key: 17-CO105
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id145
+    - 383.5
+    - 479.1
+  geom:
+    point: *id145
+  attrs:
+    key: 17-CO106
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id146
+    - 382.7
+    - 594.6
+  geom:
+    point: *id146
+  attrs:
+    key: 17-CO107
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id147
+    - 382.7
+    - 686.3
+  geom:
+    point: *id147
+  attrs:
+    key: 17-CO108
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id148
+    - 391.7
+    - 120.6
+  geom:
+    point: *id148
+  attrs:
+    key: 17-CO109
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id149
+    - 389.6
+    - 537.6
+  geom:
+    point: *id149
+  attrs:
+    key: 17-CO110
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id150
+    - 394.1
+    - 448.2
+  geom:
+    point: *id150
+  attrs:
+    key: 17-CO111
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id151
+    - 401.5
+    - 760.8
+  geom:
+    point: *id151
+  attrs:
+    key: 17-CO112
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id152
+    - 410.6
+    - 695.3
+  geom:
+    point: *id152
+  attrs:
+    key: 17-CO113
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id153
+    - 411.3
+    - 610.6
+  geom:
+    point: *id153
+  attrs:
+    key: 17-CO114
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id154
+    - 426.1
+    - 588.2
+  geom:
+    point: *id154
+  attrs:
+    key: 17-CO115
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id155
+    - 426.1
+    - 683.9
+  geom:
+    point: *id155
+  attrs:
+    key: 17-CO116
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id156
+    - 459.6
+    - 595.5
+  geom:
+    point: *id156
+  attrs:
+    key: 17-CO117
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 17
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id157
+    - 459.6
+    - 680.9
+  geom:
+    point: *id157
+  attrs:
+    key: 17-CO118
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id158
+    - 63.5
+    - 123.6
+  geom:
+    point: *id158
+  attrs:
+    key: 20-CO1
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id159
+    - 63.7
+    - 192.9
+  geom:
+    point: *id159
+  attrs:
+    key: 20-CO2
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id160
+    - 63.9
+    - 285.3
+  geom:
+    point: *id160
+  attrs:
+    key: 20-CO3
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id161
+    - 72.7
+    - 193.6
+  geom:
+    point: *id161
+  attrs:
+    key: 20-CO4
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id162
+    - 74.0
+    - 266.3
+  geom:
+    point: *id162
+  attrs:
+    key: 20-CO5
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id163
+    - 77.3
+    - 125.8
+  geom:
+    point: *id163
+  attrs:
+    key: 20-CO6
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id164
+    - 77.7
+    - 152.1
+  geom:
+    point: *id164
+  attrs:
+    key: 20-CO7
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id165
+    - 75.8
+    - 221.0
+  geom:
+    point: *id165
+  attrs:
+    key: 20-CO8
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id166
+    - 84.1
+    - 621.0
+  geom:
+    point: *id166
+  attrs:
+    key: 20-CO9
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id167
+    - 83.4
+    - 694.5
+  geom:
+    point: *id167
+  attrs:
+    key: 20-CO10
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id168
+    - 87.3
+    - 650.3
+  geom:
+    point: *id168
+  attrs:
+    key: 20-CO11
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id169
+    - 89.3
+    - 723.0
+  geom:
+    point: *id169
+  attrs:
+    key: 20-CO12
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id170
+    - 96.6
+    - 128.3
+  geom:
+    point: *id170
+  attrs:
+    key: 20-CO13
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id171
+    - 96.6
+    - 201.0
+  geom:
+    point: *id171
+  attrs:
+    key: 20-CO14
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id172
+    - 102.0
+    - 278.1
+  geom:
+    point: *id172
+  attrs:
+    key: 20-CO15
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id173
+    - 109.3
+    - 637.0
+  geom:
+    point: *id173
+  attrs:
+    key: 20-CO16
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id174
+    - 109.3
+    - 681.9
+  geom:
+    point: *id174
+  attrs:
+    key: 20-CO17
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id175
+    - 125.0
+    - 128.3
+  geom:
+    point: *id175
+  attrs:
+    key: 20-CO18
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id176
+    - 131.7
+    - 196.4
+  geom:
+    point: *id176
+  attrs:
+    key: 20-CO19
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id177
+    - 138.2
+    - 125.8
+  geom:
+    point: *id177
+  attrs:
+    key: 20-CO20
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id178
+    - 136.8
+    - 483.9
+  geom:
+    point: *id178
+  attrs:
+    key: 20-CO21
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id179
+    - 138.5
+    - 635.1
+  geom:
+    point: *id179
+  attrs:
+    key: 20-CO22
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id180
+    - 145.8
+    - 220.3
+  geom:
+    point: *id180
+  attrs:
+    key: 20-CO23
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id181
+    - 141.2
+    - 266.2
+  geom:
+    point: *id181
+  attrs:
+    key: 20-CO24
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id182
+    - 141.2
+    - 355.7
+  geom:
+    point: *id182
+  attrs:
+    key: 20-CO25
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id183
+    - 146.6
+    - 474.9
+  geom:
+    point: *id183
+  attrs:
+    key: 20-CO26
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id184
+    - 147.2
+    - 566.9
+  geom:
+    point: *id184
+  attrs:
+    key: 20-CO27
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id185
+    - 157.7
+    - 300.6
+  geom:
+    point: *id185
+  attrs:
+    key: 20-CO28
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id186
+    - 155.5
+    - 523.9
+  geom:
+    point: *id186
+  attrs:
+    key: 20-CO29
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id187
+    - 161.7
+    - 460.1
+  geom:
+    point: *id187
+  attrs:
+    key: 20-CO30
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id188
+    - 168.6
+    - 128.6
+  geom:
+    point: *id188
+  attrs:
+    key: 20-CO31
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id189
+    - 170.1
+    - 199.1
+  geom:
+    point: *id189
+  attrs:
+    key: 20-CO32
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id190
+    - 165.9
+    - 633.9
+  geom:
+    point: *id190
+  attrs:
+    key: 20-CO33
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id191
+    - 187.9
+    - 525.0
+  geom:
+    point: *id191
+  attrs:
+    key: 20-CO34
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id192
+    - 192.3
+    - 471.2
+  geom:
+    point: *id192
+  attrs:
+    key: 20-CO35
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id193
+    - 191.6
+    - 567.0
+  geom:
+    point: *id193
+  attrs:
+    key: 20-CO36
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id194
+    - 193.8
+    - 700.2
+  geom:
+    point: *id194
+  attrs:
+    key: 20-CO37
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id195
+    - 198.9
+    - 615.9
+  geom:
+    point: *id195
+  attrs:
+    key: 20-CO38
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id196
+    - 204.0
+    - 173.7
+  geom:
+    point: *id196
+  attrs:
+    key: 20-CO39
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id197
+    - 205.8
+    - 317.0
+  geom:
+    point: *id197
+  attrs:
+    key: 20-CO40
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id198
+    - 212.6
+    - 216.6
+  geom:
+    point: *id198
+  attrs:
+    key: 20-CO41
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id199
+    - 211.5
+    - 367.7
+  geom:
+    point: *id199
+  attrs:
+    key: 20-CO42
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id200
+    - 208.9
+    - 445.4
+  geom:
+    point: *id200
+  attrs:
+    key: 20-CO43
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id201
+    - 223.1
+    - 147.9
+  geom:
+    point: *id201
+  attrs:
+    key: 20-CO44
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id202
+    - 223.1
+    - 308.6
+  geom:
+    point: *id202
+  attrs:
+    key: 20-CO45
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id203
+    - 220.7
+    - 658.4
+  geom:
+    point: *id203
+  attrs:
+    key: 20-CO46
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id204
+    - 230.5
+    - 580.5
+  geom:
+    point: *id204
+  attrs:
+    key: 20-CO47
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id205
+    - 231.7
+    - 464.1
+  geom:
+    point: *id205
+  attrs:
+    key: 20-CO48
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id206
+    - 246.3
+    - 317.0
+  geom:
+    point: *id206
+  attrs:
+    key: 20-CO49
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id207
+    - 247.8
+    - 630.0
+  geom:
+    point: *id207
+  attrs:
+    key: 20-CO50
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id208
+    - 250.7
+    - 163.6
+  geom:
+    point: *id208
+  attrs:
+    key: 20-CO51
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id209
+    - 261.6
+    - 126.0
+  geom:
+    point: *id209
+  attrs:
+    key: 20-CO52
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id210
+    - 261.6
+    - 266.2
+  geom:
+    point: *id210
+  attrs:
+    key: 20-CO53
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id211
+    - 271.9
+    - 461.9
+  geom:
+    point: *id211
+  attrs:
+    key: 20-CO54
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id212
+    - 274.0
+    - 369.0
+  geom:
+    point: *id212
+  attrs:
+    key: 20-CO55
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id213
+    - 281.4
+    - 214.9
+  geom:
+    point: *id213
+  attrs:
+    key: 20-CO56
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id214
+    - 284.3
+    - 439.5
+  geom:
+    point: *id214
+  attrs:
+    key: 20-CO57
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id215
+    - 280.9
+    - 627.9
+  geom:
+    point: *id215
+  attrs:
+    key: 20-CO58
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id216
+    - 282.0
+    - 703.6
+  geom:
+    point: *id216
+  attrs:
+    key: 20-CO59
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id217
+    - 287.3
+    - 750.6
+  geom:
+    point: *id217
+  attrs:
+    key: 20-CO60
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id218
+    - 294.3
+    - 617.4
+  geom:
+    point: *id218
+  attrs:
+    key: 20-CO61
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id219
+    - 295.6
+    - 655.3
+  geom:
+    point: *id219
+  attrs:
+    key: 20-CO62
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id220
+    - 291.1
+    - 698.9
+  geom:
+    point: *id220
+  attrs:
+    key: 20-CO63
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id221
+    - 297.7
+    - 157.5
+  geom:
+    point: *id221
+  attrs:
+    key: 20-CO64
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id222
+    - 299.3
+    - 310.4
+  geom:
+    point: *id222
+  attrs:
+    key: 20-CO65
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id223
+    - 300.1
+    - 730.2
+  geom:
+    point: *id223
+  attrs:
+    key: 20-CO66
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id224
+    - 305.7
+    - 467.9
+  geom:
+    point: *id224
+  attrs:
+    key: 20-CO67
+    text: '#4@5''''c/c'
+    bar_dia_no: 4
+    spacing_in: 5
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id225
+    - 314.9
+    - 152.8
+  geom:
+    point: *id225
+  attrs:
+    key: 20-CO68
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id226
+    - 314.9
+    - 314.9
+  geom:
+    point: *id226
+  attrs:
+    key: 20-CO69
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id227
+    - 327.2
+    - 439.5
+  geom:
+    point: *id227
+  attrs:
+    key: 20-CO70
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id228
+    - 333.1
+    - 643.2
+  geom:
+    point: *id228
+  attrs:
+    key: 20-CO71
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id229
+    - 343.9
+    - 124.1
+  geom:
+    point: *id229
+  attrs:
+    key: 20-CO72
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id230
+    - 344.7
+    - 265.4
+  geom:
+    point: *id230
+  attrs:
+    key: 20-CO73
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id231
+    - 349.6
+    - 368.1
+  geom:
+    point: *id231
+  attrs:
+    key: 20-CO74
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id232
+    - 352.6
+    - 216.6
+  geom:
+    point: *id232
+  attrs:
+    key: 20-CO75
+    text: '#4@7''''c/c'
+    bar_dia_no: 4
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id233
+    - 351.1
+    - 501.9
+  geom:
+    point: *id233
+  attrs:
+    key: 20-CO76
+    text: '#4@5''''c/c'
+    bar_dia_no: 4
+    spacing_in: 5
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id234
+    - 352.3
+    - 640.2
+  geom:
+    point: *id234
+  attrs:
+    key: 20-CO77
+    text: '#4@9''''c/c'
+    bar_dia_no: 4
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id235
+    - 365.6
+    - 152.7
+  geom:
+    point: *id235
+  attrs:
+    key: 20-CO78
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id236
+    - 365.3
+    - 304.1
+  geom:
+    point: *id236
+  attrs:
+    key: 20-CO79
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id237
+    - 374.1
+    - 317.6
+  geom:
+    point: *id237
+  attrs:
+    key: 20-CO80
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id238
+    - 374.0
+    - 617.4
+  geom:
+    point: *id238
+  attrs:
+    key: 20-CO81
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id239
+    - 387.0
+    - 745.6
+  geom:
+    point: *id239
+  attrs:
+    key: 20-CO82
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id240
+    - 387.6
+    - 147.2
+  geom:
+    point: *id240
+  attrs:
+    key: 20-CO83
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id241
+    - 395.1
+    - 479.1
+  geom:
+    point: *id241
+  attrs:
+    key: 20-CO84
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id242
+    - 398.9
+    - 686.0
+  geom:
+    point: *id242
+  attrs:
+    key: 20-CO85
+    text: '#4@6''''c/c'
+    bar_dia_no: 4
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id243
+    - 415.1
+    - 639.6
+  geom:
+    point: *id243
+  attrs:
+    key: 20-CO86
+    text: '#3@6''''c/c'
+    bar_dia_no: 3
+    spacing_in: 6
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id244
+    - 425.0
+    - 467.8
+  geom:
+    point: *id244
+  attrs:
+    key: 20-CO87
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id245
+    - 425.9
+    - 548.8
+  geom:
+    point: *id245
+  attrs:
+    key: 20-CO88
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id246
+    - 429.2
+    - 530.6
+  geom:
+    point: *id246
+  attrs:
+    key: 20-CO89
+    text: '#3@7''''c/c'
+    bar_dia_no: 3
+    spacing_in: 7
+  truth: *id003
+- sheet: 20
+  class: SLAB_BAR_CALLOUT
+  at:
+    page_xy: &id247
+    - 449.9
+    - 498.9
+  geom:
+    point: *id247
+  attrs:
+    key: 20-CO90
+    text: '#3@9''''c/c'
+    bar_dia_no: 3
+    spacing_in: 9
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id248
+    - 103.2
+    - 163.9
+  geom:
+    point: *id248
+  attrs:
+    key: B1-MID@p8
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 6#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 5
+    slab_in: 6
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id249
+    - 103.2
+    - 311.1
+  geom:
+    point: *id249
+  attrs:
+    key: B1-SUPPORT@p8
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 6#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 5
+    slab_in: 6
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id250
+    - 103.2
+    - 505.1
+  geom:
+    point: *id250
+  attrs:
+    key: B2-MID@p8
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 5#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 5
+    slab_in: 6
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id251
+    - 103.2
+    - 652.1
+  geom:
+    point: *id251
+  attrs:
+    key: B2-SUPPORT@p8
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 5#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 5
+    slab_in: 6
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id252
+    - 272.7
+    - 163.9
+  geom:
+    point: *id252
+  attrs:
+    key: B3-MID@p8
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 9
+    top_bars: 3#6
+    bottom_bars: 3#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 9
+    slab_in: 6
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id253
+    - 272.7
+    - 311.0
+  geom:
+    point: *id253
+  attrs:
+    key: B3-SUPPORT@p8
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 9
+    top_bars: 3#6
+    bottom_bars: 3#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 9
+    slab_in: 6
+  truth: *id003
+- sheet: 8
+  class: BEAM_SECTION
+  mark: B4
+  at:
+    page_xy: &id254
+    - 292.9
+    - 597.0
+  geom:
+    point: *id254
+  attrs:
+    key: B4-MID@p8
+    section_at: MID SPAN
+    form: FREE
+    width_in: 9
+    top_bars: 3#4
+    bottom_bars: 4#4
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 9
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id255
+    - 486.8
+    - 58.4
+  geom:
+    point: *id255
+  attrs:
+    key: B1-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 4#8+5#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id256
+    - 378.1
+    - 58.4
+  geom:
+    point: *id256
+  attrs:
+    key: B1-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 4#8+5#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id257
+    - 234.8
+    - 68.5
+  geom:
+    point: *id257
+  attrs:
+    key: B2-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#6
+    bottom_bars: 5#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id258
+    - 127.3
+    - 68.5
+  geom:
+    point: *id258
+  attrs:
+    key: B2-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#6
+    bottom_bars: 5#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id259
+    - 486.8
+    - 201.1
+  geom:
+    point: *id259
+  attrs:
+    key: B3-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#6
+    bottom_bars: 4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 5
+    slab_in: 5
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id260
+    - 379.3
+    - 201.1
+  geom:
+    point: *id260
+  attrs:
+    key: B3-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#6
+    bottom_bars: 4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 5
+    slab_in: 5
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B4
+  at:
+    page_xy: &id261
+    - 237.4
+    - 201.1
+  geom:
+    point: *id261
+  attrs:
+    key: B4-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 18
+    top_bars: 4#6
+    bottom_bars: 3#8+4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B4
+  at:
+    page_xy: &id262
+    - 128.6
+    - 201.1
+  geom:
+    point: *id262
+  attrs:
+    key: B4-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 18
+    top_bars: 4#6
+    bottom_bars: 3#8+4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B5
+  at:
+    page_xy: &id263
+    - 487.1
+    - 324.1
+  geom:
+    point: *id263
+  attrs:
+    key: B5-MID@p16
+    section_at: MID SPAN
+    form: FREE
+    width_in: 9
+    top_bars: 2#4
+    bottom_bars: 6#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 15
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B5
+  at:
+    page_xy: &id264
+    - 376.7
+    - 324.1
+  geom:
+    point: *id264
+  attrs:
+    key: B5-SUPPORT@p16
+    section_at: SUPPORT
+    form: FREE
+    width_in: 9
+    top_bars: 2#4
+    bottom_bars: 6#6
+    ext_top_bars: 2#6 EXT
+    printed_support_top: 2#4+2#6EXT
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 15
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B6
+  at:
+    page_xy: &id265
+    - 234.8
+    - 347.5
+  geom:
+    point: *id265
+  attrs:
+    key: B6-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 6#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B6
+  at:
+    page_xy: &id266
+    - 126.5
+    - 347.5
+  geom:
+    point: *id266
+  attrs:
+    key: B6-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 15
+    top_bars: 4#6
+    bottom_bars: 6#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B7
+  at:
+    page_xy: &id267
+    - 484.6
+    - 487.0
+  geom:
+    point: *id267
+  attrs:
+    key: B7-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#6
+    bottom_bars: 3#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B7
+  at:
+    page_xy: &id268
+    - 377.0
+    - 487.0
+  geom:
+    point: *id268
+  attrs:
+    key: B7-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#6
+    bottom_bars: 3#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B8
+  at:
+    page_xy: &id269
+    - 237.4
+    - 480.2
+  geom:
+    point: *id269
+  attrs:
+    key: B8-MID@p16
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 18
+    top_bars: 4#6
+    bottom_bars: 2#8+4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B8
+  at:
+    page_xy: &id270
+    - 128.6
+    - 480.2
+  geom:
+    point: *id270
+  attrs:
+    key: B8-SUPPORT@p16
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 18
+    top_bars: 4#6
+    bottom_bars: 2#8+4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 16
+  class: BEAM_SECTION
+  mark: B9
+  at:
+    page_xy: &id271
+    - 294.9
+    - 619.8
+  geom:
+    point: *id271
+  attrs:
+    key: B9-MID@p16
+    section_at: MID SPAN
+    form: FREE
+    width_in: 9
+    top_bars: 3#4
+    bottom_bars: 4#4
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 9
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id272
+    - 86.2
+    - 155.8
+  geom:
+    point: *id272
+  attrs:
+    key: B1-MID@p19
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 18
+    top_bars: 4#6
+    bottom_bars: 3#8+4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B1
+  at:
+    page_xy: &id273
+    - 86.2
+    - 308.3
+  geom:
+    point: *id273
+  attrs:
+    key: B1-SUPPORT@p19
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 18
+    top_bars: 4#6
+    bottom_bars: 3#8+4#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id274
+    - 95.9
+    - 508.7
+  geom:
+    point: *id274
+  attrs:
+    key: B2-MID@p19
+    section_at: MID SPAN
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#4
+    bottom_bars: 3#4
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B2
+  at:
+    page_xy: &id275
+    - 95.9
+    - 659.4
+  geom:
+    point: *id275
+  attrs:
+    key: B2-SUPPORT@p19
+    section_at: SUPPORT
+    form: UPSTAND
+    width_in: 12
+    top_bars: 3#4
+    bottom_bars: 3#4
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    above_slab_in: 12
+    slab_in: 6
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id276
+    - 281.8
+    - 152.5
+  geom:
+    point: *id276
+  attrs:
+    key: B3-MID@p19
+    section_at: MID SPAN
+    form: FREE
+    width_in: 9
+    top_bars: 3#4
+    bottom_bars: 4#4
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 9
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B3
+  at:
+    page_xy: &id277
+    - 281.8
+    - 303.3
+  geom:
+    point: *id277
+  attrs:
+    key: B3-SUPPORT@p19
+    section_at: SUPPORT
+    form: FREE
+    width_in: 9
+    top_bars: 3#4
+    bottom_bars: 4#4
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 9
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B4
+  at:
+    page_xy: &id278
+    - 281.8
+    - 501.8
+  geom:
+    point: *id278
+  attrs:
+    key: B4-MID@p19
+    section_at: MID SPAN
+    form: FREE
+    width_in: 9
+    top_bars: 2#4
+    bottom_bars: 3#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 9
+  truth: *id003
+- sheet: 19
+  class: BEAM_SECTION
+  mark: B4
+  at:
+    page_xy: &id279
+    - 281.8
+    - 652.6
+  geom:
+    point: *id279
+  attrs:
+    key: B4-SUPPORT@p19
+    section_at: SUPPORT
+    form: FREE
+    width_in: 9
+    top_bars: 2#4
+    bottom_bars: 3#6
+    stirrup: '#3@6"c/c'
+    position_is: width dimension label
+    depth_in: 9
+  truth: *id003
+- sheet: 3
+  class: TANK
+  mark: BSEPTIC
+  at:
+    page_xy: &id280
+    - 481.1
+    - 449.0
+  geom:
+    point: *id280
+  attrs:
+    key: BSEPTIC@p3
+    title: SEPTIC TANK OF BASEMENT DETAIL 4'-0"x4'-0"
+    size_printed: 4'-0"x4'-0"
+    pcc: P.C.C 1:4:8 (CRUSH 1½" DOWN)
+    rcc: R.C.C 1:1½:3
+    flooring: R.C.C FLOORING 5"
+    bars:
+    - '#3@6"c/c'
+    - '#3@7"c/c'
+    - '#3@9"c/c'
+    position_is: caption label
+  truth: *id003
+- sheet: 4
+  class: RCC_WALL
+  mark: A-A
+  at:
+    page_xy: &id281
+    - 174.0
+    - 384.5
+  geom:
+    point: *id281
+  attrs:
+    key: RW-A-A@p4
+    title: Retaining Wall Section A-A
+    wall_in: 9
+    bars:
+    - '#3@9"c/c'
+    - '#3@6"c/c'
+    - '#4@6"c/c'
+    waterproofing: two layers of hot bitumen, 0.75 kg per sft, external face
+    position_is: wall label
+  truth: *id003
+- sheet: 4
+  class: FOOTING_SECTION
+  mark: A-A
+  at:
+    page_xy: &id282
+    - 439.4
+    - 341.0
+  geom:
+    point: *id282
+  attrs:
+    key: RW-A-A-base@p4
+    title: Retaining Wall Section A-A
+    base_width_printed: 6'-9"
+    floor: 5" R.C.C over 4" P.C.C (1:4:8)
+    floor_bars: '#3@12"c/c (B.W.)'
+    base_bars:
+    - '#4@9"c/c'
+    - '#4@6"c/c'
+    position_is: base width dimension
+  truth: *id003
+- sheet: 5
+  class: RCC_WALL
+  mark: B-B
+  at:
+    page_xy: &id283
+    - 174.0
+    - 444.2
+  geom:
+    point: *id283
+  attrs:
+    key: RW-B-B@p5
+    title: Retaining Wall Section B-B
+    wall_in: 9
+    bars:
+    - '#3@9"c/c'
+    - '#3@6"c/c'
+    - '#4@6"c/c'
+    waterproofing: two layers of hot bitumen, 0.75 kg per sft, external face
+    position_is: wall label
+  truth: *id003
+- sheet: 5
+  class: FOOTING_SECTION
+  mark: B-B
+  at:
+    page_xy: &id284
+    - 437.8
+    - 498.5
+  geom:
+    point: *id284
+  attrs:
+    key: RW-B-B-base@p5
+    title: Retaining Wall Section B-B
+    base_width_printed: 4'-0"
+    floor: 5" R.C.C over 4" P.C.C (1:4:8)
+    floor_bars: '#3@12"c/c (B.W.)'
+    base_bars:
+    - '#4@9"c/c'
+    - '#4@6"c/c'
+    position_is: base width dimension
+  truth: *id003
+- sheet: 6
+  class: FOOTING_SECTION
+  mark: C-C
+  at:
+    page_xy: &id285
+    - 439.4
+    - 426.8
+  geom:
+    point: *id285
+  attrs:
+    key: WALL-C-C@p6
+    title: Retaining Wall Section C-C (9" brick wall 1:5)
+    base_width_printed: 4'-0"
+    wall_in: 9
+    floor: 5" R.C.C over 4" P.C.C (1:4:8)
+    floor_bars: '#3@12"c/c (B.W.)'
+    base_bars:
+    - '#4@9"c/c'
+    - '#4@6"c/c'
+    position_is: base width dimension
+  truth: *id003
+- sheet: 9
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-1
+  at:
+    page_xy: &id286
+    - 378.1
+    - 160.3
+  geom:
+    point: *id286
+  attrs:
+    key: C-1@p9
+    shape: ROUND
+    diameter_in: 18
+    bar_count: 8
+    bar_dia_no: 6
+    bars: 8#6
+    ring: '#3@8"c/c'
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth: *id003
+- sheet: 9
+  class: FOOTING_PAD
+  mark: F1
+  at:
+    page_xy: &id287
+    - 320.0
+    - 750.7
+  geom:
+    point: *id287
+  attrs:
+    key: F1@p9
+    title: R.C.C PORCH COLUMN FOOTING 18" DIA
+    size_ft:
+    - 5.5
+    - 6
+    position_is: caption label
+  truth: *id003
+- sheet: 9
+  class: FOOTING_SECTION
+  mark: F1
+  at:
+    page_xy: &id288
+    - 319.2
+    - 516.3
+  geom:
+    point: *id288
+  attrs:
+    key: F1-section@p9
+    bars: '#4@6"c/c b/w'
+    pcc_in: 6
+    pcc_mix: '1:4:8'
+    step_heights_in:
+    - 9
+    - 9
+    - 6
+    position_is: caption label
+  truth: *id003
+- sheet: 10
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-2
+  at:
+    page_xy: &id289
+    - 326.1
+    - 146.1
+  geom:
+    point: *id289
+  attrs:
+    key: C-2@p10
+    shape: ROUND
+    diameter_in: 18
+    bar_count: 8
+    bar_dia_no: 6
+    bars: 8#6
+    ring: '#3@8"c/c'
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth: *id003
+- sheet: 10
+  class: FOOTING_PAD
+  mark: F2
+  at:
+    page_xy: &id290
+    - 325.6
+    - 721.2
+  geom:
+    point: *id290
+  attrs:
+    key: F2@p10
+    title: R.C.C COLUMN FOOTING F2
+    size_ft:
+    - 6.5
+    - 4.5
+    columns_on_footing: 2
+    position_is: caption label
+  truth: *id003
+- sheet: 10
+  class: FOOTING_SECTION
+  mark: F2
+  at:
+    page_xy: &id291
+    - 325.4
+    - 496.7
+  geom:
+    point: *id291
+  attrs:
+    key: F2-section@p10
+    bars: '#4@6"c/c b/w'
+    soling_in: 6
+    soling_mix: '1:4:8'
+    step_heights_in:
+    - 9
+    - 9
+    - 6
+    position_is: caption label
+  truth: *id003
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-3
+  at:
+    page_xy: &id292
+    - 443.6
+    - 123.5
+  geom:
+    point: *id292
+  attrs:
+    key: C-3@p11
+    size_in:
+    - 9
+    - 9
+    overall_in: 18
+    bar_count: 4
+    bar_dia_no: 4
+    bars: 4#4
+    ring: '#3@7"c/c'
+    cladding_brick_in: 4.5
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth: *id003
+- sheet: 11
+  class: COLUMN_SCHEDULE_CELL
+  mark: C-4
+  at:
+    page_xy: &id293
+    - 175.6
+    - 123.5
+  geom:
+    point: *id293
+  attrs:
+    key: C-4@p11
+    size_in:
+    - 9
+    - 9
+    overall_in: 18
+    bar_count: 4
+    bar_dia_no: 4
+    bars: 4#4
+    ring: '#3@7"c/c'
+    cladding_brick_in: 4.5
+    concrete_mix: 1:1½:3
+    position_is: caption label
+  truth: *id003
+- sheet: 11
+  class: FOOTING_SECTION
+  mark: GATE-3-3
+  at:
+    page_xy: &id294
+    - 386.6
+    - 479.5
+  geom:
+    point: *id294
+  attrs:
+    key: GATEFTG-3-3@p11
+    title: R.C.C M-GATE 18"X18" COLUMN FOOTING
+    size_ft:
+    - 4.5
+    - 4.5
+    bars: '#4@7"c/c b/w'
+    soling_in: 6
+    soling_mix: '1:4:8'
+    step_heights_in:
+    - 6
+    - 6
+    - 6
+    serves: C-3
+    position_is: caption label
+  truth: *id003
+- sheet: 11
+  class: FOOTING_SECTION
+  mark: GATE-4-4
+  at:
+    page_xy: &id295
+    - 160.7
+    - 479.5
+  geom:
+    point: *id295
+  attrs:
+    key: GATEFTG-4-4@p11
+    title: R.C.C M-GATE 18"X18" COLUMN FOOTING
+    size_ft:
+    - 4.5
+    - 4.5
+    bars: '#4@7"c/c b/w'
+    soling_in: 6
+    soling_mix: '1:4:8'
+    step_heights_in:
+    - 6
+    - 6
+    - 6
+    serves: C-4
+    position_is: caption label
+  truth: *id003
+- sheet: 13
+  class: FOOTING_SECTION
+  mark: W9E1
+  at:
+    page_xy: &id296
+    - 456.5
+    - 424.0
+  geom:
+    point: *id296
+  attrs:
+    key: W9E1-section
+    wall_in: 9
+    exterior: true
+    footing_width_printed: 3'
+    base_width_printed: 2'-3"
+    overall_depth_printed: 3'-6"
+    pcc_in: 4
+    pcc_mix: '1:4:8'
+    dpc_in: 2
+    dpc_mix: '1:2:4'
+    step_heights_in:
+    - 3
+    - 3
+    - 3
+    position_is: caption label
+  truth: *id003
+- sheet: 13
+  class: FOOTING_SECTION
+  mark: W9E2
+  at:
+    page_xy: &id297
+    - 327.1
+    - 423.7
+  geom:
+    point: *id297
+  attrs:
+    key: W9E2-section
+    wall_in: 9
+    exterior: true
+    footing_width_printed: 3'
+    base_width_printed: 2'-3"
+    overall_depth_printed: 3'-6"
+    pcc_in: 4
+    pcc_mix: '1:4:8'
+    dpc_in: 2
+    dpc_mix: '1:2:4'
+    step_heights_in:
+    - 3
+    - 3
+    - 3
+    position_is: caption label
+  truth: *id003
+- sheet: 13
+  class: FOOTING_SECTION
+  mark: W9I
+  at:
+    page_xy: &id298
+    - 210.6
+    - 424.0
+  geom:
+    point: *id298
+  attrs:
+    key: W9I-section
+    wall_in: 9
+    exterior: false
+    footing_width_printed: 3'
+    base_width_printed: 2'-3"
+    overall_depth_printed: 3'-6"
+    pcc_in: 4
+    pcc_mix: '1:4:8'
+    dpc_in: 2
+    dpc_mix: '1:2:4'
+    step_heights_in:
+    - 3
+    - 3
+    - 3
+    position_is: caption label
+  truth: *id003
+- sheet: 13
+  class: FOOTING_SECTION
+  mark: W45I
+  at:
+    page_xy: &id299
+    - 113.7
+    - 423.1
+  geom:
+    point: *id299
+  attrs:
+    key: W45I-section
+    wall_in: 4.5
+    exterior: false
+    footing_width_printed: 2'-9"
+    overall_depth_printed: 3'-6"
+    pcc_in: 4
+    pcc_mix: '1:4:8'
+    dpc_in: 2
+    dpc_mix: '1:2:4'
+    step_heights_in:
+    - 3
+    - 3
+    - 3
+    position_is: caption label
+  truth: *id003
+- sheet: 13
+  class: BOUNDARY_WALL
+  mark: BW-RAMP
+  at:
+    page_xy: &id300
+    - 419.0
+    - 626.4
+  geom:
+    point: *id300
+  attrs:
+    key: BW-RAMP@p13
+    title: BOUNDARY WALL & RAMP DETAIL
+    wall_in: 4.5
+    wall_mortar: '1:4'
+    pcc_mix: '1:6:12'
+    base_width_printed: 2'-6"
+    ramp: 2% slope, channel 3"x3", 6" dia HDPE pipe, 5'-0" berm
+    position_is: caption label
+  truth: *id003
+- sheet: 13
+  class: BOUNDARY_WALL
+  mark: BW-RSLSBS
+  at:
+    page_xy: &id301
+    - 220.5
+    - 631.7
+  geom:
+    point: *id301
+  attrs:
+    key: BW-RSLSBS@p13
+    title: BOUNDARY WALL R/S - L/S - B/S
+    wall_in: 4.5
+    wall_mortar: '1:4'
+    pcc_mix: '1:6:12'
+    base_width_printed: 2'-6"
+    position_is: caption label
+  truth: *id003
+- sheet: 14
+  class: TANK
+  mark: UGWT
+  at:
+    page_xy: &id302
+    - 281.3
+    - 239.6
+  geom:
+    point: *id302
+  attrs:
+    key: UGWT@p14
+    title: U.G.W.TANK DETAIL 6'-6"x7'
+    size_printed: 6'-6"x7'
+    wall_in: 6
+    printed:
+    - R.C.C 1:1½:3
+    - P.C.C 1:4:8 (CRUSH 1½" DOWN)
+    - '#3@6"c/c'
+    - '#3@9"c/c'
+    position_is: caption label
+  truth: *id003
+- sheet: 14
+  class: TANK
+  mark: OHWT
+  at:
+    page_xy: &id303
+    - 254.1
+    - 558.7
+  geom:
+    point: *id303
+  attrs:
+    key: OHWT@p14
+    title: O.H.W.TANK DETAIL 11'-0"x9'-3"
+    size_printed: 11'-0"x9'-3"
+    wall_in: 4.5
+    printed:
+    - '5" TH: R.C.C SLAB'
+    - '4½" TH: R.C.C WALL'
+    - '4½" TH: BRICK WALL'
+    - '½" TH: TERRAZO'
+    - '2" TH: JUMBOLON SHEET'
+    - '1" TH: JUMBOLON SHEET'
+    - '#4 @6" c/c (B.W)'
+    - '#4 @7" C/C'
+    - '#3 @7" c/c'
+    - '#3@7" c/c(B.W)'
+    - 9" RCC. COL.
+    position_is: caption label
+  truth: *id003
+- sheet: 14
+  class: TANK
+  mark: SEPTIC
+  at:
+    page_xy: &id304
+    - 500.9
+    - 562.3
+  geom:
+    point: *id304
+  attrs:
+    key: SEPTIC@p14
+    title: SEPTIC TANK DETAIL 7'-9"x5'-6"
+    size_printed: 7'-9"x5'-6"
+    pcc: P.C.C (1:4:8)
+    bars:
+    - '#3 @6" C/C'
+    - '#3@7"c/c'
+    - '#3@6"c/c'
+    sump_ft:
+    - 2
+    - 2
+    pipes: inlet and outlet 6 in UPVC
+    position_is: caption label
+  truth: *id003
+- sheet: 14
+  class: STAIR
+  mark: STAIR-BASEMENT
+  at:
+    page_xy: &id305
+    - 493.5
+    - 231.8
+  geom:
+    point: *id305
+  attrs:
+    key: STAIR-BASEMENT@p14
+    title: STAIR X-SECTION BASEMENT
+    bars:
+    - '#4@6"c/c'
+    - '#3@8"c/c'
+    position_is: caption label
+  truth: *id003
