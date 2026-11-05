@@ -87,6 +87,8 @@ from app.modules.drawings_boq.takeoff.extract import mark_join as MJ
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark as ST_norm
 from app.modules.drawings_boq.takeoff.prep.texts import build_lines, find_units_hint, is_tag
 from app.modules.drawings_boq.takeoff.prep import mark_vocab as MV
+from app.modules.drawings_boq.takeoff.extract import beam_bands as BBD
+from app.modules.drawings_boq.takeoff.extract import slab_panel_graph as SPG
 import time
 
 SCAN_TEXT_FACTOR = 0.8
@@ -1983,6 +1985,13 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     res.candidates.extend(found)
     plans = []
     
+  if not partial and not scale_unverified:
+    bands = BBD.of_page(index, mm_per_pt, ctx.get("page_unit") or 1.0, views, beam_sections)
+    if bands:
+      res.stats["beam_bands"] = bands
+      graph = SPG.of_page(index, bands, views, mm_per_pt, ctx.get("page_unit") or 1.0)
+      if graph:
+        res.stats["slab_panel_graph"] = graph
   res.stats["schedule_marks"] = len(openings)
   _mark_stats(res, words, marks)
   kind = sheet_kind(sheet_words if sheet_words is not None else words)

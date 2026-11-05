@@ -155,6 +155,28 @@ def structure_items(sheet: int, meta: dict, source: V.ReadSource) -> list:
     out.append(ReadItem(sheet=sheet, cls=V.ElementClass.BEAM_SECTION, mark=rec["mark"], geom=None, attrs=ST.beam_section_attrs(rec), status=_status_of(rec.get("conflicts"), reasons), reasons=reasons, source=source))
   return out
 
+def band_items(sheet: int, bands: dict, source: V.ReadSource) -> list:
+  out: list = []
+  for view in (bands or {}).get("views") or []:
+    for b in view.get("bands") or []:
+      reasons = [r for r in b.get("reasons") or [] if r in V.Reason.names()]
+      attrs = {"count": 1, "width_in": float(b["width_in"]), "length_mm": float(b["length_mm"]), "fill": b.get("source") or "DOTS",
+        "supports": [(s or {}).get("on") for s in b.get("supports") or []]}
+      out.append(ReadItem(sheet=sheet, cls=V.ElementClass.BEAM, mark=b.get("mark"), geom={"polyline": b["polyline"]}, attrs=attrs, status=_status_of(None, reasons), reasons=reasons, source=source))
+  return out
+
+def panel_items(sheet: int, graph: dict, source: V.ReadSource) -> list:
+  out: list = []
+  for view in (graph or {}).get("views") or []:
+    for p in view.get("panels") or []:
+      reasons = [r for r in p.get("reasons") or [] if r in V.Reason.names()]
+      attrs = {"count": 1, "void": bool(p.get("void")), "callouts": [c["text"] for c in p.get("callouts") or []], "room": p.get("room")}
+      for key in ("clear_span_x_ft", "clear_span_y_ft"):
+        if p.get(key) is not None:
+          attrs[key] = float(p[key])
+      out.append(ReadItem(sheet=sheet, cls=V.ElementClass.SLAB_PANEL, mark=p.get("mark"), geom={"polygon": p["polygon"]}, attrs=attrs, status=V.Status.UNSURE, reasons=reasons, source=source))
+  return out
+
 def items_of(rows: list) -> SetRead:
   out = SetRead()
   for row in rows:
@@ -190,6 +212,10 @@ def items_of(rows: list) -> SetRead:
       
       out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom=geom, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
     out.items.extend(structure_items(sheet, meta, source))
+    if not any(i.sheet == sheet and i.cls == V.ElementClass.BEAM for i in out.items):
+      out.items.extend(band_items(sheet, (row.get("stats") or {}).get("beam_bands") or {}, source))
+    if not any(i.sheet == sheet and i.cls == V.ElementClass.SLAB_PANEL for i in out.items):
+      out.items.extend(panel_items(sheet, (row.get("stats") or {}).get("slab_panel_graph") or {}, source))
   return out
 
 def read_case(case: dict, files: dict, budget_s: float | None = None) -> dict:

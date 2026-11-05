@@ -73,7 +73,7 @@ def view_to_user(a: float, b: float, rotation: int, crop: tuple) -> tuple:
 def user_angle(view_angle: float, rotation: int) -> float:
   return (view_angle + rotation) % 360.0
 
-def _tsv(img, timeout: float, psm: str = "11") -> list[dict]:
+def _tsv(img, timeout: float, psm: str = "11", whitelist: str | None = None) -> list[dict]:
   from PIL import ImageOps
   img = ImageOps.expand(img, border=20, fill=255)
   fd, path = tempfile.mkstemp(suffix=".png")

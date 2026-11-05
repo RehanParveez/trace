@@ -382,7 +382,7 @@
   drawing: null
   class: DRAWING
   tolerance_pct: 10.0
-   note: 'QS count (the workbook gives no drawing count). Electric finishes · Telephone socket 8 and TV socket 8. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
+  note: 'QS count (the workbook gives no drawing count). Electric finishes · Telephone socket 8 and TV socket 8. The drawing count is for Rehan: electrical plans, pages 29 and 30.'
 - key: FIN-CC-TILE/ALL
   item: C.C Tile (12x12) front side of main gate
   unit: sft

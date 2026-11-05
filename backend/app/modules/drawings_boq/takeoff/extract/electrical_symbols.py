@@ -254,11 +254,6 @@ def _drawn_columns(cols: list) -> tuple:
   d = max(range(len(widths)), key=lambda i: widths[i])
   return (d - 1, d) if d >= 1 else (None, d)
 
-def _drawn_columns(cols: list) -> tuple:
-  widths = [cols[i + 1] - cols[i] for i in range(len(cols) - 1)]
-  d = max(range(len(widths)), key=lambda i: widths[i])
-  return (d - 1, d) if d >= 1 else (None, d)
-
 def _read_ruled(page, objs: list, tp, rot, ox, oy, wu, hu, heights: dict, by_width: bool = False) -> list:
   import time
   started = time.monotonic()

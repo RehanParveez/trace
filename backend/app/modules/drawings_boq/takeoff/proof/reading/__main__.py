@@ -6,6 +6,7 @@ import sys
 import yaml
 from app.modules.drawings_boq.takeoff.proof.reading import adapter as AD
 from app.modules.drawings_boq.takeoff.proof.reading import formats as F
+from app.modules.drawings_boq.takeoff.proof.reading import intake as IN
 from app.modules.drawings_boq.takeoff.proof.reading import profile as PR
 from app.modules.drawings_boq.takeoff.proof.reading import report as RP
 from app.modules.drawings_boq.takeoff.proof.reading import score as SCR
@@ -147,6 +148,8 @@ def cmd_score(args) -> int:
   print(f"reading score {args.split}: {len(doc['sets'])} PDF(s), {len(doc['outcomes'])} outcomes; hash {doc['hash'][:16]}; {time.monotonic() - t0:.1f} s")
   for sp, row in t.items():
     print(f"  {sp}: truth {row['truth']}, matched {row['matched']}, silent-wrong {row['silent_wrong']}")
+    if row["truth"]:
+      print(f"      recall {row['recall']:.1%}, Wilson 95% interval {row['recall_ci'][0]:.1%} to {row['recall_ci'][1]:.1%}")
   if args.write_baseline:
     with open(SCR.BASELINE, "w", encoding="utf-8", newline="\n") as fh:
       json.dump(SCR.to_baseline(doc), fh, indent=1, sort_keys=True)
@@ -318,8 +321,22 @@ def main(argv: list | None = None) -> int:
   gp.add_argument("--score-dir")
   pp = sub.add_parser("parity", help="the facts of Plot_1 and 191-C through score.py and through the reading scorer, side by side")
   pp.add_argument("--score-dir")
+  ip = sub.add_parser("intake", help="take in a new PDF as held out: key, truth folder, profile, draft register, first sight (never overwritten), pages for the eye check, 10% sample")
+  ip.add_argument("pdf")
+  ip.add_argument("--case", required=True)
+  ip.add_argument("--consultant", required=True)
+  ip.add_argument("--alias")
+  ip.add_argument("--note")
+  ip.add_argument("--plot-size")
+  ip.add_argument("--storeys")
+  ip.add_argument("--city")
+  ip.add_argument("--companions")
+  sub.add_parser("first-sight-check", help="read each held-out set again and say whether the engine still reads it as at first sight")
+  cp = sub.add_parser("corpus", help="write proof/reading/corpus.md: one row per set and the variety gaps")
+  cp.add_argument("--score-json", help="reading_score.json from a score run, for the first-sight scores (default reading_out/reading_score.json)")
   args = ap.parse_args(argv)
-  return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "set-join": cmd_set_join, "gate": cmd_gate, "profile": cmd_profile}[args.command](args)
+  return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "set-join": cmd_set_join, "gate": cmd_gate, "profile": cmd_profile,
+    "intake": IN.cmd_intake, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
 
 if __name__ == "__main__":
   sys.exit(main())

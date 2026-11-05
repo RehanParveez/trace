@@ -1,0 +1,70 @@
+- element:
+    sheet: 3
+    class: COLUMN
+    key: C1@p3
+  inputs:
+    size_mm:
+      state: PRINTED
+      value:
+      - 228.6
+      - 457.2
+      from: p.6 column section C1
+    bars:
+      state: PRINTED
+      value: 4-#6 and 4-#4
+      from: p.6
+    rings:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.6
+    storey_height:
+      state: MISSING
+      note: levels are in the architecture set (ground +2', first +14')
+- element:
+    sheet: 3
+    class: FOOTING_PAD
+    key: F1@p3
+  inputs:
+    size_ft:
+      state: PRINTED
+      value:
+      - 5
+      - 4
+      from: p.6 plan F1
+    bars:
+      state: PRINTED
+      value: '#4@8"c/c (B.W.)'
+      from: p.6
+    pcc_in:
+      state: PRINTED
+      value: 4
+      from: p.6
+    thickness_in:
+      state: MISSING
+      note: tapered; no single thickness is printed
+- element:
+    sheet: 11
+    class: BEAM_SECTION
+    key: B1-section
+  inputs:
+    size_in:
+      state: PRINTED
+      value:
+      - 12
+      - 13.5
+      from: p.11 and the plan label
+    top_bars:
+      state: PRINTED
+      value: 4-#4
+      from: p.11
+    bottom_bars:
+      state: PRINTED
+      value: 4-#6 and 2-#6 bent up
+      from: p.11
+    stirrups:
+      state: PRINTED
+      value: '#3@6"c/c'
+      from: p.11
+    beam_length:
+      state: MISSING
+      note: the runs are not traced in this truth

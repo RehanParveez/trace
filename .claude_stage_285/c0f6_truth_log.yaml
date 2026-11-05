@@ -1,0 +1,13 @@
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-B1: register of 11 page(s) written from the page images rendered at 110 dpi with pypdfium2; text types from proof.reading profile; 10% sample for Rehan to confirm is listed in Pack 262.'
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-C2: element truth of the 191-C structure set from the page images (110 dpi) and the text layer: foundation plans of both options (columns C1 and C2, footings F1 to F4, boundary wall as an outline
+    only), wall footing sections W1 to W4, column footing sections F1 to F4 and column sections C1 and C2, the stair beam SB1, 31 slab bar callouts, beam sections B1 to B4, the slab thickness conflict,
+    12 joins, a ledger of 3 elements.'
+- date: '2026-11-03'
+  by: claude_eye
+  note: 'RB-C2 NOT WRITTEN: slab panels (the reader makes one SLAB item per floor plan, so panel truth waits for the panel reader), beam runs (the plan labels carry sizes but one label can name several
+    runs), wall footing strip runs by W type (Pack 253 reads these into the page meta), the boundary length, the other lettered sections of page 11 (A-A, B-B, S1-S1, L-L, D-D, H-H, F-F, C-C, G-G and the
+    parapet), notes already held as facts of the case (the 30 facts are the NOTE_FACT truth of this set, not repeated).'
