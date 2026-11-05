@@ -39,4 +39,5 @@ minio-data/
 
 # Generated
 score_out/
+.claude_stage_*
 alembic/versions/*.pyc

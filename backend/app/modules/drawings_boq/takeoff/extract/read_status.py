@@ -9,8 +9,10 @@ NO_SYMBOLS = "NO_SYMBOLS_FOUND"
 LABELS_OUTLINED = "LABELS_OUTLINED"
 OCR_LOW = "OCR_LOW_CONFIDENCE"
 STATUS_KEY, REASONS_KEY = "read_status", "read_reasons"
-HELD_PLAN_KINDS = ("COLUMN_LAYOUT", "FOOTING_LAYOUT")
+HELD_PLAN_KINDS = ("COLUMN_LAYOUT", "FOOTING_LAYOUT", "EXCAVATION")
+SUBSTRUCTURE_PLAN_KINDS = ("FOOTING_LAYOUT", "EXCAVATION")
 SUPERSTRUCTURE = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL", "STAIR")
+SUPERSTRUCTURE_CLASSES = ("WALL", "ROOM", "DOOR", "WINDOW", "LINTEL_TYPE", "STAIR", "FINISH_LAYER", "BEAM")
 SERVICES = ("ELECTRICAL", "PLUMBING", "FIRE", "HVAC", "GAS")
 ROLE_OF = {"ARCH_PLAN": "PLAN", "FURNITURE_PLAN": "PLAN", "STRUCT_PLAN": "PLAN", "MEP_PLAN": "PLAN", "SCHEDULE": "SCHEDULE", "NOTES": "NOTES", "DETAIL": "DETAIL",
   "SECTION": "SECTION", "ELEVATION": "ELEVATION", "COVER": "COVER"}
@@ -90,6 +92,12 @@ def plan_kind_of(identity: dict | None) -> str | None:
     return "FLOOR"
   return None
 
+def excavation_page(identity: dict | None) -> bool:
+  i = identity or {}
+  views = i.get("views") or []
+  texts = [str(i.get("title") or ""), *[str(v.get("caption") or "") for v in views if len(views) == 1 and v.get("sheet_type") == "PLAN"]]
+  return any("EXCAVATION" in t.upper() and ("LAYOUT" in t.upper() or "PLAN" in t.upper()) and not NOT_LAYOUT.search(t.upper()) for t in texts)
+
 def text_type_of(pdf: dict | None) -> str:
   p = pdf or {}
   if p.get("type") in ("VECTOR_OUTLINED", "VECTOR_NOLETTER"):
@@ -99,6 +107,10 @@ def text_type_of(pdf: dict | None) -> str:
   if p.get("type") in ("RASTER", "IMAGE_PAGE"):
     return "RASTER"
   return "TEXT"
+
+def _set_aside(c, plan_kind: str, role: str | None) -> None:
+  mark(c, UNSURE, [ROLE_BY])
+  c.facts = {**c.facts, "set_aside": {"by": ROLE_BY, "plan_kind": plan_kind, "role": role}}
 
 def hold(res, plan_kind: str | None, role: str | None) -> dict | None:
   if plan_kind not in HELD_PLAN_KINDS:
@@ -111,14 +123,17 @@ def hold(res, plan_kind: str | None, role: str | None) -> dict | None:
   for c in res.candidates:
     cls = class_of(c)
     if c.category in SUPERSTRUCTURE and cls != "FOOTING_STRIP":
-      mark(c, UNSURE, [ROLE_BY])
-      c.facts = {**c.facts, "set_aside": {"by": ROLE_BY, "plan_kind": plan_kind, "role": role}}
+      _set_aside(c, plan_kind, role)
       key = cls or "FINISH_LAYER"
       held[key] = held.get(key, 0) + 1
       length += float((c.facts or {}).get("length_cc_m") or 0.0) if key == "WALL" else 0.0
     elif cls and cls not in expected:
       mark(c, UNSURE, [ROLE_BY])
-      flagged[cls] = flagged.get(cls, 0) + int(c.count or 1)
+      if plan_kind in SUBSTRUCTURE_PLAN_KINDS and cls in SUPERSTRUCTURE_CLASSES:
+        _set_aside(c, plan_kind, role)
+        held[cls] = held.get(cls, 0) + int(c.count or 1)
+      else:
+        flagged[cls] = flagged.get(cls, 0) + int(c.count or 1)
       
   if not held and not flagged:
     return None
@@ -168,7 +183,7 @@ def apply(res, identity: dict | None, pdf: dict | None) -> None:
   role = role_of(identity)
   kind = plan_kind_of(identity) if role == "PLAN" else None
   text = text_type_of(pdf)
-  held = hold(res, kind, role)
+  held = hold(res, "EXCAVATION" if role == "PLAN" and kind not in ("COLUMN_LAYOUT", "FOOTING_LAYOUT") and excavation_page(identity) else kind, role)
   seen = outlined(res, pdf)
   cov = coverage(res.candidates, role, kind, text)
   if held:

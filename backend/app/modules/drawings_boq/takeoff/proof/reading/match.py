@@ -11,7 +11,11 @@ MM_PT = 72.0 / IN_MM
 SAMPLES = 40
 RATIO_TOL_PCT = 2.0
 SKIP_KEYS = ("count", "key")
+SIZE_MARK_KIND = "SIZE"
+SIZE_PREFIX = "size:"
 _rules: dict = {}
+DIM = re.compile(r"(\d+)\s*['\u2032\u2019]\s*(?:-?\s*(\d+)?\s*(\u00bd|\d+\s*/\s*\d+)?\s*[\"\u2033\u201d])?")
+READ_SIZE = re.compile(r"(\d+(?:\.\d+)?)(?:x(\d+(?:\.\d+)?))?(?:s(\d+(?:\.\d+)?))?$")
 
 def rules() -> dict:
   if not _rules:
@@ -23,6 +27,62 @@ def normal_text(value) -> str:
   s = str(value).strip().lower().replace("×", "x")
   s = re.sub(r"-(?=#)", "", s)
   return re.sub(r"[\s\"'″”′’]+", "", s)
+
+def _fraction(text) -> float:
+  if not text:
+    return 0.0
+  if text == "\u00bd":
+    return 0.5
+  top, bottom = (float(x) for x in text.replace(" ", "").split("/"))
+  return top / bottom
+
+def label_size_in(label) -> tuple | None:
+  dims = [int(m.group(1)) * 12 + int(m.group(2) or 0) + _fraction(m.group(3)) for m in DIM.finditer(str(label or ""))]
+  if len(dims) < 2:
+    return None
+  return (dims[0], dims[1])
+
+def read_size_in(read) -> tuple | None:
+  attrs = getattr(read, "attrs", None) or {}
+  if attrs.get("width_in") is not None:
+    return (float(attrs["width_in"]), None if attrs.get("height_in") is None else float(attrs["height_in"]))
+  m = READ_SIZE.search(str(getattr(read, "mark", None) or ""))
+  if not m:
+    return None
+  return (float(m.group(1)) / IN_MM, None if m.group(2) is None else float(m.group(2)) / IN_MM)
+
+def is_size_row(row) -> bool:
+  return getattr(row, "mark_kind", None) == SIZE_MARK_KIND and row.cls.value in rules()["SIZE_AS_MARK"]["classes"]
+
+def truth_size_in(row) -> tuple | None:
+  return label_size_in(row.mark)
+
+def row_key(row) -> str | None:
+  if is_size_row(row):
+    size = truth_size_in(row)
+    if size is not None:
+      return f"{SIZE_PREFIX}{size[0]:g}x{size[1]:g}"
+  return None if row.mark is None else normal_mark(row.mark)
+
+def _dims_equal(a: float, b: float) -> bool:
+  r = rules()["fact"]
+  return abs(a - b) <= max(max(abs(a), abs(b)) * r["ratio"], r["length_in"])
+
+def size_equal(row, read) -> bool:
+  want, got = truth_size_in(row), read_size_in(read)
+  if want is None or got is None:
+    return False
+  if not _dims_equal(want[0], got[0]):
+    return False
+  return got[1] is None or _dims_equal(want[1], got[1])
+
+def pair_by_size(truth: list, read: list) -> list:
+  def dist(t, r) -> float:
+    xy = ((getattr(t, "at", None) or {}).get("page_xy"))
+    pt = ((getattr(r, "geom", None) or {}).get("point"))
+    return _dist(xy, pt) if xy and pt else 0.0
+  cost = [[dist(t, r) for r in read] for t in truth]
+  return sorted(assign(cost)) if cost and cost[0] else []
 
 def values_equal(key: str, a, b) -> bool:
   r = rules()["fact"]

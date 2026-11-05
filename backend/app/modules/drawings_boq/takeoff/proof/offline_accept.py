@@ -167,15 +167,41 @@ def apply_tank_decisions(out: Accepted, decisions: dict) -> tuple:
       applied.append({"id": did, "value": str(value), "rows": 1})
   return applied, unmatched
 
+def apply_column_decisions(out: Accepted, decisions: dict) -> tuple:
+  from app.modules.drawings_boq.takeoff.extract import column_stacks as CST
+  from app.modules.drawings_boq.takeoff.extract import note_scope as NS
+  applied, unmatched = [], []
+  
+  for did, value in sorted(decisions.items()):
+    rows = [c for c in out.candidates if ((c.facts or {}).get("column_conflict") or {}).get("id") == did]
+    options = {o["value"] for o in (((rows[0].facts or {}).get("column_conflict") or {}).get("options") or [])} if rows else set()
+    if not rows:
+      unmatched.append({"id": did, "value": value, "why": "the readings raise no such decision"})
+    elif str(value) not in options:
+      unmatched.append({"id": did, "value": value, "why": "not one of its options: " + ", ".join(sorted(options))})
+    else:
+      size = CST.parse_option(value)
+      
+      for r in rows:
+        r.params = {**(r.params or {}), "length_mm": size[0], "width_mm": size[1], "dims_basis": "SPECIFIED"}
+        r.missing = [m for m in (r.missing or []) if m != "size"]
+        r.notes = [n for n in (r.notes or []) if n.get("code") != "COLUMN_SIZE_HELD"]
+        r.status = NS.status_of(r.notes)
+        r.facts = {**(r.facts or {}), "size_used_mm": size, "column_conflict": {**r.facts["column_conflict"], "chosen": str(value)}}
+      applied.append({"id": did, "value": str(value), "rows": len(rows)})
+  return applied, unmatched
+
 def apply_decisions(out: Accepted, decisions: dict) -> dict:
   from app.modules.drawings_boq.takeoff.extract import conflicts as CF
   from app.modules.drawings_boq.takeoff.extract import review_service as RS
   copy_ids = {k: v for k, v in decisions.items() if k.startswith(FS.COPY_PREFIX)}
   tank_ids = {k: v for k, v in decisions.items() if k.startswith(TR.DECISION_PREFIX)}
+  column_ids = {k: v for k, v in decisions.items() if k.startswith("column_conflict.")}
   copy_applied, copy_unmatched = apply_copy_decisions(out, copy_ids)
   tank_applied, tank_unmatched = apply_tank_decisions(out, tank_ids)
-  copy_applied, copy_unmatched = copy_applied + tank_applied, copy_unmatched + tank_unmatched
-  decisions = {k: v for k, v in decisions.items() if k not in copy_ids and k not in tank_ids}
+  column_applied, column_unmatched = apply_column_decisions(out, column_ids)
+  copy_applied, copy_unmatched = copy_applied + tank_applied + column_applied, copy_unmatched + tank_unmatched + column_unmatched
+  decisions = {k: v for k, v in decisions.items() if k not in copy_ids and k not in tank_ids and k not in column_ids}
   titles = {r["sheet_id"]: r.get("title") for read in out.read.values() for r in read}
   sheets = {sid: {"page_no": sh.page_no, "discipline": CF.sheet_discipline(titles.get(sid))} for sid, sh in out.sheets.items()}
   rows = list(out.candidates)

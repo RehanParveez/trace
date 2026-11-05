@@ -27,7 +27,7 @@ from app.shared.storage import download_to_path
 
 MAX_SHEETS = 300
 log = logging.getLogger(__name__)
-TWIN_FIELDS = ("sheet_id", "geometry_hash", "work_item_code", "quantity_mode", "role")
+TWIN_FIELDS = ("sheet_id", "geometry_hash", "work_item_code", "quantity_mode", "role", "level_id")
 
 def twin_key(m) -> tuple:
   return tuple(getattr(m, f) or "" if f == "role" else getattr(m, f) for f in TWIN_FIELDS)

@@ -13,6 +13,7 @@ from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 BASELINE = os.path.join(HERE, "baseline.json")
+BASELINE_VERSION = 2
 ACCEPTED = os.path.join(HERE, "accepted_regressions.yaml")
 OK, WRONG, MISSED_S, MISSED_R = (V.OutcomeTruth.MATCHED_OK.value, V.OutcomeTruth.MATCHED_WRONG_VALUE.value, V.OutcomeTruth.MISSED_SILENT.value, V.OutcomeTruth.MISSED_REPORTED.value)
 TRUE, INV_S, INV_F = V.OutcomeRead.TRUE.value, V.OutcomeRead.INVENTED_SILENT.value, V.OutcomeRead.INVENTED_FLAGGED.value
@@ -60,6 +61,7 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
   by_scope: dict = {}
   for i, row in enumerate(ts.elements):
     by_scope.setdefault((row.sheet, row.cls.value), []).append(row)
+  drafted: set = set()
   reads_by_scope: dict = {}
   for item in read.items:
     reads_by_scope.setdefault((item.sheet, item.cls.value), []).append(item)
@@ -70,12 +72,15 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
     
     marked = {}
     for t in truths:
-      marked.setdefault(M.group_key(t.mark), []).append(t)
+      marked.setdefault(M.row_key(t), []).append(t)
     order = [k for k in sorted(marked, key=lambda x: (x is None, x or ""))]
     
     for gk in order:
       group = marked[gk]
-      pool = [j for j, r in enumerate(reads) if j not in used and (gk is None or M.group_key(r.mark) == gk)]
+      if M.is_size_row(group[0]) and gk is not None and gk.startswith(M.SIZE_PREFIX):
+        pool = [j for j, r in enumerate(reads) if j not in used and M.size_equal(group[0], r)]
+      else:
+        pool = [j for j, r in enumerate(reads) if j not in used and (gk is None or M.group_key(r.mark) == gk)]
       counted = [t for t in group if isinstance((t.attrs or {}).get("count"), int) and t.attrs["count"] >= 2 and not t.geom]
       single = [t for t in group if t not in counted]
       for t in counted:
@@ -86,11 +91,17 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
           verdict = MISSED_R if _flagged(reads, page, cls) else MISSED_S
         else:
           verdict = OK if M.counts_equal(t.attrs["count"], total) else WRONG
-        out.append(_outcome(oid, ts, cls, sheet, "truth", verdict, t.mark, f"count truth {t.attrs['count']}, read {total}"))
+        if F.is_draft(t.truth):
+          drafted.update(pool)
+        else:
+          out.append(_outcome(oid, ts, cls, sheet, "truth", verdict, t.mark, f"count truth {t.attrs['count']}, read {total}"))
         used.update(pool)
         pool = []
         
-      pairs, left_t, _left_r = M.pair_group(single, [reads[j] for j in pool], page)
+      if M.is_size_row(group[0]) and gk is not None and gk.startswith(M.SIZE_PREFIX):
+        pairs = M.pair_by_size(single, [reads[j] for j in pool])
+      else:
+        pairs, left_t, _left_r = M.pair_group(single, [reads[j] for j in pool], page)
       matched = {li: pool[ri] for li, ri in pairs}
       for li, t in enumerate(single):
         n = seen[(sheet, cls, gk)] = seen.get((sheet, cls, gk), 0) + 1
@@ -98,15 +109,21 @@ def element_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict | 
         if li in matched:
           r = reads[matched[li]]
           used.add(matched[li])
+          if F.is_draft(t.truth):
+            drafted.add(matched[li])
+            continue
           if paired is not None:
             paired[id(t)] = r
           wrong, unread = M.compare_attrs(t.attrs, r.attrs)
+          
           out.append(_outcome(oid, ts, cls, sheet, "truth", WRONG if wrong else OK, t.mark, ("wrong: " + ", ".join(wrong) if wrong else None) or ("not read: " + ", ".join(unread) if unread else None)))
-        else:
+        elif not F.is_draft(t.truth):
           out.append(_outcome(oid, ts, cls, sheet, "truth", MISSED_R if _flagged(reads, page, cls) else MISSED_S, t.mark))
     for j, r in enumerate(reads):
       n = j + 1
       oid = f"{key}:RD:{sheet}:{cls}:{M.group_key(r.mark) or '-'}:{n}"
+      if j in drafted:
+        continue
       if j in used:
         out.append(_outcome(oid, ts, cls, sheet, "read", TRUE, r.mark))
       else:
@@ -130,6 +147,8 @@ def join_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict) -> l
   for n, j in enumerate(ts.joins, 1):
     src = j.src
     t = by.get((src["sheet"], src["class"], str(src["key"]).upper())) if src["key"] is not None else by.get((src["sheet"], src["class"], "mark:" + str(src["mark"]).upper()))
+    if F.is_draft(j.truth) or (t is not None and F.is_draft(t.truth)):
+      continue
     r = paired.get(id(t)) if t is not None else None
     name = src["key"] or src["mark"]
     oid = f"{key}:JOIN:{j.kind.value}:{n}"
@@ -152,6 +171,8 @@ def join_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead, paired: dict) -> l
 def register_outcomes(key: str, ts: F.TruthSet, read: AD.SetRead) -> list:
   out = []
   for row in ts.register:
+    if F.is_draft(row.truth):
+      continue
     got = (read.pages.get(row.sheet).register if row.sheet in read.pages else {}) or {}
     for name in REGISTER_FIELDS:
       want = getattr(row, name)
@@ -326,7 +347,7 @@ def silent_count(outcomes: list) -> dict:
   return per
 
 def to_baseline(doc: dict) -> dict:
-  return {"hash": doc["hash"], "truth_fingerprint": doc["truth_fingerprint"], "outcomes": {o["id"]: o["outcome"] for o in doc["outcomes"]},
+  return {"version": BASELINE_VERSION, "hash": doc["hash"], "truth_fingerprint": doc["truth_fingerprint"], "outcomes": {o["id"]: o["outcome"] for o in doc["outcomes"]},
     "splits": {o["id"]: o["split"] for o in doc["outcomes"]}, "silent": silent_count(doc["outcomes"])}
 
 def load_baseline(path: str = BASELINE) -> dict | None:

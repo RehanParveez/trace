@@ -59,6 +59,25 @@ def check_heights(v):
     raise ValueError(f"unknown floor {bad[0]}; use {', '.join(FLOOR_RANK)}")
   return {k: _num(x, 6, 30, f"the height of {k}") for k, x in v.items()}
 
+def check_storeys(v):
+  if not isinstance(v, list) or not v or len(v) > len(FLOOR_RANK):
+    raise ValueError("storeys is a list of floors, each with its floor-to-floor height")
+  out, seen = [], set()
+  
+  for r in v:
+    if not isinstance(r, dict) or r.get("floor") not in FLOOR_RANK:
+      raise ValueError(f"a storey names a floor of {', '.join(FLOOR_RANK)}")
+    if r["floor"] in seen:
+      raise ValueError(f"the floor {r['floor']} is given twice")
+    seen.add(r["floor"])
+    given = [k for k in ("ftf_mm", "ftf_in", "ftf_ft") if k in r]
+    if len(given) != 1:
+      raise ValueError(f"the storey {r['floor']} gives its height once, as ftf_mm, ftf_in or ftf_ft")
+    lo, hi = {"ftf_mm": (1500, 9000), "ftf_in": (60, 360), "ftf_ft": (5, 30)}[given[0]]
+    
+    out.append({"floor": r["floor"], given[0]: _num(r[given[0]], lo, hi, f"the height of {r['floor']}"), "source": "DECISION", **({"evidence": str(r["evidence"])[:300]} if r.get("evidence") else {})})
+  return out
+
 def _check_table(rows):
   out = []
   if not isinstance(rows, list) or len(rows) > 12:
@@ -103,6 +122,6 @@ def check_member_inputs(v):
 
 EXPECT_KEYS = {
   "stock_length_ft": check_stock, "bar_count_plus_one": _flag, "tie_zones": check_zones, "column_l0": check_l0, "hook_lengths": check_hooks,
-  "curtail_extras": _flag, "round_whole_bars": _flag, "strip_junction": check_junction, "floor_heights_ft": check_heights, "member_inputs": check_member_inputs,
+  "curtail_extras": _flag, "round_whole_bars": _flag, "strip_junction": check_junction, "floor_heights_ft": check_heights, "storeys": check_storeys, "member_inputs": check_member_inputs,
   "link_cut_basis": check_link_basis,
 }

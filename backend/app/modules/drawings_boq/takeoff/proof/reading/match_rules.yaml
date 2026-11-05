@@ -9,6 +9,9 @@ area:
 fact:
   length_in: 0.5
   ratio: 0.001
+SIZE_AS_MARK:
+  classes: [DOOR, WINDOW]
+  compare: [width, height]
 wilson_z: 1.96
 profile:
   raster_share: 0.6

@@ -13,10 +13,17 @@ stock_length_ft: null
 tie_zones: ZONES
 curtail_extras: true
 
-floor_heights_ft:
-  GROUND: 10.5
-  FIRST: 10.5
-  ROOF: 6.5
+storeys:
+  - floor: GROUND
+    ftf_ft: 10.5
+    source: DECISION
+  - floor: FIRST
+    ftf_ft: 10.5
+    source: DECISION
+  - floor: ROOF
+    ftf_ft: 6.5
+    source: DECISION
+
 member_inputs:
   FOOTING:F1:
     strip_length_ft: 396

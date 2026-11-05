@@ -1,6 +1,8 @@
 from __future__ import annotations
 import os
 import re
+import shutil
+import tempfile
 from dataclasses import dataclass, field
 from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
 import yaml
@@ -8,6 +10,10 @@ import yaml
 FILES = ("document.yaml", "register.yaml", "elements.yaml", "joins.yaml", "params.yaml", "truth_log.yaml")
 DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 KEY_LEN = 12
+MARK_KINDS = ("SIZE",)
+SIZE_CLASSES = ("DOOR", "WINDOW")
+DRAFT_SOURCE = "draft"
+CHECKED_SOURCE = "checked"
 
 class TruthFormatError(ValueError):
   def __init__(self, problems: list):
@@ -57,6 +63,7 @@ class ElementRow:
   geom: dict | None = None
   attrs: dict = field(default_factory=dict)
   conflict: dict | None = None
+  mark_kind: str | None = None
 
 @dataclass
 class JoinRow:
@@ -235,9 +242,19 @@ def _elements(rows: list, pages: int, problems: _Problems) -> list:
       problems.add(f, i, "-", "must be a mapping")
       continue
   
-    _only(e, ("sheet", "class", "mark", "at", "geom", "attrs", "conflict", "truth"), f, i, problems)
+    _only(e, ("sheet", "class", "mark", "mark_kind", "at", "geom", "attrs", "conflict", "truth"), f, i, problems)
     sheet = _page(e.get("sheet"), pages, f, i, "sheet", problems)
     cls = _enum(V.ElementClass, e.get("class"), f, i, "class", problems)
+    mark_kind = e.get("mark_kind")
+    if mark_kind is not None:
+      if mark_kind not in MARK_KINDS:
+        problems.add(f, i, "mark_kind", f"must be one of {', '.join(MARK_KINDS)}")
+        mark_kind = None
+      elif cls is not None and cls.value not in SIZE_CLASSES:
+        problems.add(f, i, "mark_kind", f"{mark_kind} applies to {' and '.join(SIZE_CLASSES)} only")
+        mark_kind = None
+      elif e.get("mark") is None:
+        problems.add(f, i, "mark_kind", "a row with a mark kind needs the printed mark")
     _at(e.get("at"), f, i, problems)
     _geom(e.get("geom"), f, i, problems)
     attrs = e.get("attrs") or {}
@@ -247,7 +264,7 @@ def _elements(rows: list, pages: int, problems: _Problems) -> list:
       
     stamp = _stamp(e.get("truth"), f, i, problems, True)
     if None not in (sheet, cls, stamp):
-      out.append(ElementRow(sheet=sheet, cls=cls, truth=stamp, mark=None if e.get("mark") is None else str(e["mark"]), at=e.get("at"), geom=e.get("geom"), attrs=attrs, conflict=e.get("conflict")))
+      out.append(ElementRow(sheet=sheet, cls=cls, truth=stamp, mark=None if e.get("mark") is None else str(e["mark"]), at=e.get("at"), geom=e.get("geom"), attrs=attrs, conflict=e.get("conflict"), mark_kind=mark_kind))
   return out
 
 def _ref(ref, f: str, i, name: str, pages: int, problems: _Problems) -> dict | None:
@@ -335,6 +352,96 @@ def element_keys(elements: list) -> set:
     if e.attrs.get("key") is not None:
       keys.add((e.sheet, e.cls.value, "key:" + str(e.attrs["key"]).upper()))
   return keys
+
+def is_draft(stamp: TruthStamp | None) -> bool:
+  return stamp is not None and (stamp.by is V.TruthSource.DRAFT or str(stamp.source).strip().lower() == DRAFT_SOURCE)
+
+class _NoAlias(yaml.SafeDumper):
+  def ignore_aliases(self, data):
+    return True
+
+def folder_key(folder: str) -> str:
+  return os.path.basename(os.path.normpath(folder))
+
+def _refuse(folder: str, message: str) -> None:
+  raise TruthFormatError([{"file": os.path.basename(os.path.normpath(folder)), "row": "-", "field": "folder", "message": message}])
+
+def _document_sha(folder: str, incoming: dict | None) -> str:
+  doc = incoming
+  if doc is None:
+    path = os.path.join(folder, "document.yaml")
+    if not os.path.isfile(path):
+      _refuse(folder, "has no document.yaml, so the PDF it belongs to is not known; nothing was written")
+    with open(path, encoding="utf-8") as fh:
+      doc = yaml.safe_load(fh) or {}
+  return str(doc.get("sha256") or "") if isinstance(doc, dict) else ""
+
+def check_folder_key(folder: str, incoming_document: dict | None = None) -> None:
+  key = folder_key(folder)
+  if not re.fullmatch(r"[0-9a-f]{%d}" % KEY_LEN, key):
+    _refuse(folder, f"{key} is not the first {KEY_LEN} characters of a PDF's sha256; nothing was written")
+  sha = _document_sha(folder, incoming_document)
+  if not re.fullmatch(r"[0-9a-f]{64}", sha) or sha[:KEY_LEN] != key:
+    _refuse(folder, f"is named {key}, but its document.yaml gives the PDF hash {sha[:KEY_LEN] or 'none'}; nothing was written")
+
+def write_truth_files(folder: str, files: dict, check: bool = True) -> list:
+  unknown = [n for n in files if n not in FILES]
+  if unknown:
+    raise ValueError(f"{', '.join(unknown)} is not a truth file; the truth files are {', '.join(FILES)}")
+  incoming_doc = files.get("document.yaml")
+  check_folder_key(folder, incoming_doc if isinstance(incoming_doc, dict) else None)
+  
+  texts = {}
+  for name, data in files.items():
+    want = dict if name == "document.yaml" else list
+    text = data if isinstance(data, str) else yaml.dump(data, Dumper=_NoAlias, sort_keys=False, allow_unicode=True, width=200, default_flow_style=False)
+    try:
+      parsed = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+      raise TruthFormatError([{"file": name, "row": "-", "field": "-", "message": f"what was about to be written is not valid YAML: {str(exc).splitlines()[0]}"}])
+    parsed = want() if parsed is None else parsed
+    if not isinstance(parsed, want):
+      raise TruthFormatError([{"file": name, "row": "-", "field": "-", "message": f"must be a {'mapping' if want is dict else 'list'}"}])
+    if not isinstance(data, str) and parsed != data:
+      raise TruthFormatError([{"file": name, "row": "-", "field": "-", "message": "does not read back as the rows given; nothing was written"}])
+    texts[name] = text if text.endswith("\n") else text + "\n"
+    
+  if check:
+    stage = tempfile.mkdtemp()
+    try:
+      mirror = os.path.join(stage, folder_key(folder))
+      os.makedirs(mirror)
+      for name in FILES:
+        src = os.path.join(folder, name)
+        if name in texts:
+          with open(os.path.join(mirror, name), "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(texts[name])
+        elif os.path.isfile(src):
+          shutil.copy2(src, os.path.join(mirror, name))
+      if all(os.path.isfile(os.path.join(mirror, n)) for n in FILES):
+        load_set(mirror)
+    finally:
+      shutil.rmtree(stage, ignore_errors=True)
+  os.makedirs(folder, exist_ok=True)
+  
+  tmps = []
+  try:
+    for name, text in texts.items():
+      tmp = os.path.join(folder, name + ".tmp")
+      with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
+      tmps.append((tmp, os.path.join(folder, name)))
+      
+  except OSError:
+    for tmp, _final in tmps:
+      if os.path.isfile(tmp):
+        os.remove(tmp)
+    raise
+  for tmp, final in tmps:
+    os.replace(tmp, final)
+  return sorted(texts)
 
 def load_set(folder: str) -> TruthSet:
   problems = _Problems()

@@ -4,6 +4,7 @@ import re
 from app.engine.measure import rebar_expect as RX
 from decimal import Decimal as D
 from app.modules.drawings_boq.rebar.member_source import candidate_dict, norm_mark, sheet_floor
+from app.modules.drawings_boq.takeoff.model.storeys import heights_ft as storey_heights_ft
 
 BARS = re.compile(r"(\d+)\s*-\s*#(\d+)\s*(Thr|Ext)", re.I)
 STIRRUP = re.compile(r"#(\d+)\s*@\s*(\d+(?:\.\d+)?)\"?(?:\s*/\s*(\d+(?:\.\d+)?)\")?")
@@ -100,7 +101,7 @@ def build_jobs(sheets: list, candidates: dict, decisions: dict, bbs_titles: list
   rules = rules_inputs(sheets)
   rule_names = {r.name for r in rules}
   base = rules + decision_inputs(decisions, rule_names)
-  heights = decisions.get("floor_heights_ft") or {}
+  heights = storey_heights_ft(decisions.get("storeys")) or decisions.get("floor_heights_ft") or {}
   table = decisions.get("member_inputs") or {}
   jobs: list = []
   seen: set = set()
@@ -127,7 +128,7 @@ def build_jobs(sheets: list, candidates: dict, decisions: dict, bbs_titles: list
         RX.printed("tie_bar", mid.get("bar_no"), src) if mid.get("bar_no") else None, RX.printed("tie_end_in", D(str(mid["end"])), src) if mid.get("end") else None,
         RX.printed("tie_mid_in", D(str(mid["mid"])), src) if mid.get("mid") else None) if i is not None]
       if fl in heights:
-        ins.append(RX.defaulted("height_ft", D(str(heights[fl])), "decision floor_heights_ft", None))
+        ins.append(RX.defaulted("height_ft", D(str(heights[fl])), "decision storeys", None))
       add("COLUMN", str(c["mark"]), fl, RX.column, ins, page=page)
     for s in (tables.get("beam_sections") or {}).get("sections") or []:
       if not s.get("mark"):

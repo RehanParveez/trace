@@ -1,2 +1,55 @@
-- {line: RCC_FOOTINGS/FOUNDATION, qs_figure: 159.375, corrected: 142.5, signed: false, reason: "-39.375 cft: F-3 (3 nos x 3.5 x 5 x 0.75 ft) has no mark on the plan and no section on sheet 6; +22.5 cft: F2 is 5 ft x 5 ft in the sheet 6 section, his 4 nos are 3.5 x 5 ft. Evidence: Islamabad_Plot_1.pdf p.6, workbook Footing & Column_B.F E10:G12. Unsigned until Pack 226R."}
-- {line: BRICK_FOUNDATION/FOUNDATION, qs_figure: 526.882, corrected: 436.62, signed: false, reason: "-70.965 cft: 9 in wall 4th step (126.16 ft x 0.75 x 0.75 ft); -19.297 cft: 4.5 in wall 3rd step (0.375 x 1.25 ft). The sheet 6 section of the 9 in wall prints three steps (13.5 x 15, 18 x 6, 22.5 x 6 in) and no 4.5 in wall section. Evidence: Islamabad_Plot_1.pdf p.6, workbook Brick Work, 3rd Step block (4.5 in rows) and 4th Step block (9 in rows). Unsigned until Pack 226R."}
+- line: MEMBRANE/FOUNDATION
+  qs_figure: 2254.505
+  corrected: 1814.505
+  signed: true
+  signed_by: REHAN_EVIDENCE
+  reason: "-440 sft: the ten 4 x 11 ft pieces (10 x 44 sft) are an allowance added to the wall strip; handoff section 5 lists them as a QS error. No drawing page is cited: this rests on the workbook rows."
+  evidence:
+    - {kind: WORKBOOK, ref: "Membrane A20:H29", says: "ten rows, each 1 no x width 4 ft x 11 = 44 sft with no length, repeating the room names of B9:B18; their total is 440 of the 2,254.505 in H31"}
+    - {kind: WORKBOOK, ref: "Membrane A9:H18", says: "the wall rows are a run (E) times 11 (G) and total 1,814.505 sft; no wall row has a 4 ft width, so the ten pieces are not wall runs"}
+- line: BRICK_FOUNDATION/FOUNDATION
+  qs_figure: 526.882
+  corrected: 436.62
+  signed: true
+  signed_by: REHAN_EVIDENCE
+  reason: "-90.262 cft: -70.965 cft for the 9 in wall 4th step (0.75 x 0.75 ft over 126.16 ft) and -19.297 cft for the 4.5 in wall 3rd step (0.375 x 1.25 ft); the drawing prints neither."
+  evidence:
+    - {kind: DRAWING, ref: "Islamabad_Plot_1.pdf p.6", says: "the section of the 9 in wall prints three steps (13.5 x 15, 18 x 6, 22.5 x 6 in); no fourth step is drawn, and no section of the 4.5 in wall is drawn"}
+    - {kind: WORKBOOK, ref: "Brick Work B47:H55", says: "4th Step rows A49 to A55 (4.921875 + 8.20125 + 4.921875 + 16.03125 + 10.873125 + 9.984375 + 16.03125 = 70.965 cft)"}
+    - {kind: WORKBOOK, ref: "Brick Work H40:H41 and H45:H46", says: "3rd Step rows marked 4.5 in wide, 0.375 x 1.25 ft (5.9765625 + 4.29703125 + 6.5625 + 2.4609375 = 19.297 cft)"}
+- line: RCC_FOOTINGS/FOUNDATION
+  qs_figure: 159.375
+  corrected: 142.5
+  signed: true
+  signed_by: REHAN_EVIDENCE
+  reason: "-39.375 cft for F-3 (3 nos x 3.5 x 5 x 0.75 ft), which has no mark on the plan and no section; +22.5 cft because F2 is 5 x 5 ft in the section and his four are 3.5 x 5 ft."
+  evidence:
+    - {kind: DRAWING, ref: "Islamabad_Plot_1.pdf p.6", says: "the footing section prints F2 as 5 ft x 5 ft; the plan carries no F-3 mark and the sheet has no F-3 section"}
+    - {kind: WORKBOOK, ref: "Concrete Work D11:H12", says: "F-2 is 4 nos x 3.5 x 5 x 0.75 ft = 52.5 cft (5 x 5 gives 75.0, +22.5) and F-3 is 3 nos x 3.5 x 5 x 0.75 ft = 39.375 cft"}
+- line: WALL_PLASTER/FIRST
+  qs_figure: 2392.048
+  corrected: 5797.345
+  signed: true
+  signed_by: REHAN_EVIDENCE
+  reason: "The first floor plaster is taken on one face of each wall while its deductions are taken on both; the ground floor of the same sheet takes both faces of every wall (No. 2). Both faces of every wall run at the first floor give 2 x (1,732.0275 + 1,673.27) - 1,013.25 = 5,797.345 sft."
+  evidence:
+    - {kind: WORKBOOK, ref: "Plaster A71:H94 (ground floor)", says: "every outer and inner wall row carries No. 2, so both faces are plastered"}
+    - {kind: WORKBOOK, ref: "Plaster A111:H132 (first floor)", says: "the same walls carry No. 1 (the rear lawn wall row 116 has No. 2 for its two sides at 6 ft against 12 ft x No. 2 on the ground); outer rows total 1,732.0275 and inner rows 1,673.27 sft, one face each"}
+    - {kind: WORKBOOK, ref: "Plaster A135:H143", says: "the first floor deductions (14 D2 leaves, 6 D4, 4 W2, 6 W4, 6 V4, 2 openings = 1,013.25 sft) are taken for both faces, as the ground floor deductions are"}
+- line: WINDOWS/OTHERS
+  qs_figure: 661.625
+  corrected: 707.625
+  signed: true
+  signed_by: REHAN_EVIDENCE
+  reason: "+46.0 sft: the basement plan has ventilators V1 x1 (7 x 2 ft), V2 x2 (6 x 2), V3 x2 (5 x 2), V4 x2 (3 x 2); his basement lists V4 x2 and V2 x1 only. The 78.625 sft Opening of the first floor is left as he has it."
+  evidence:
+    - {kind: DRAWING, ref: "Islamabad_Plot_1.pdf p.4", says: "the basement plan labels V1 1 no, V2 2 nos, V3 2 nos and V4 2 nos; the sizes read for the marks are V1 7 x 2 ft, V2 6 x 2, V3 5 x 2, V4 3 x 2"}
+    - {kind: WORKBOOK, ref: "WIndows & Vent. A11:H12", says: "basement ventilators V4 2 nos x 3 x 2 (12) and V2 1 no x 6 x 2 (12) only; V1 (14), the second V2 (12) and V3 (20) are not in the sheet, +46.0 sft"}
+- line: RCC_SLABS/BASEMENT
+  qs_figure: 841.772
+  corrected: 777.274
+  signed: false
+  reason: "-64.498 cft: the summary line takes 841.772 cft for the basement slab; the slab row of his measurement sheet is 1,554.547 sft x 0.5 ft = 777.274 cft. The case's expected.yaml note (D1) puts the 64.498 cft down to roof beams; the cells that add up to it are not traced here. D12 (6 in against 5 in) is a separate open question. Unsigned until you sign it."
+  evidence:
+    - {kind: WORKBOOK, ref: "Concrete Work D59:H59", says: "Slab: 1 no x 1554.547 sft x 0.5 ft = 777.274 cft"}
+    - {kind: WORKBOOK, ref: "Breakdown of Summary D32", says: "RCC Basement Slab 841.772 cft, 64.498 cft more than the slab row"}

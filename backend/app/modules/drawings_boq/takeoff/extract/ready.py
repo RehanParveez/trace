@@ -112,7 +112,7 @@ def ready(read: list, checks: list | None = None, ifc: tuple = ()) -> dict:
         why.append("WARNING")
       f = c.facts or {}
       
-      if c.category == "BEAM" and f.get("derived_from") != "WALLS" and not f.get("from_strips"):
+      if c.category == "BEAM" and f.get("derived_from") != "WALLS" and not f.get("from_strips") and not f.get("from_section") and not f.get("from_runs"):
         why.append("NOT_MEASURABLE")
       if c.missing and c.category == "SITE" and f.get("tank_kind"):
         why.append("TANK_SIZE")

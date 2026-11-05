@@ -11,6 +11,7 @@ BILL_ALIASES = (
   (r"\blean\b|\bpcc\s*1\s*[:;]\s*4\s*[:;]\s*8", "PCC"),
   (r"rcc\s*foundation|rcc\s*footing", "RCC_FOOTINGS"),
   (r"plinth\s*beam", "RCC_PLINTH_BEAM"),
+  (r"rcc\s*beams?\b", "RCC_BEAMS"),
   (r"rcc\s*columns?", "RCC_COLUMNS"),
   (r"rcc\s*walls?", "RCC_WALLS"),
   (r"lintel", "RCC_LINTELS"),
@@ -33,7 +34,7 @@ BILL_ALIASES = (
 
 KEY_LABEL = {
   "EXCAVATION": "Excavation", "TERMITE": "Termite treatment", "MEMBRANE": "Membrane", "BRICK_FOUNDATION": "Brick work in foundation",
-  "PCC": "Lean concrete", "RCC_FOOTINGS": "RCC footings", "RCC_PLINTH_BEAM": "RCC plinth beam", "RCC_COLUMNS": "RCC columns",
+  "PCC": "Lean concrete", "RCC_FOOTINGS": "RCC footings", "RCC_PLINTH_BEAM": "RCC plinth beam", "RCC_BEAMS": "RCC beams", "RCC_COLUMNS": "RCC columns",
   "BRICK_BOUNDARY": "Boundary wall brick work", "DOOR_FRAMES_RFT": "Door frames (running length)", "DPC_VERTICAL": "Vertical DPC", "RCC_WALLS": "RCC walls", "RCC_LINTELS": "RCC lintels", "RCC_ROOF_BEAMS": "RCC roof beams", "RCC_STAIR": "RCC staircase",
   "RCC_SLABS": "RCC slabs", "CEILING_PLASTER": "Ceiling plaster", "WALL_PLASTER": "Wall plaster", "WALL_PLASTER_EXT": "External plaster", "BRICK_WALLS": "Brick work above plinth",
   "STEEL": "Reinforcement steel", "DOOR_FRAMES": "Door frames", "DOORS": "Doors", "WINDOWS": "Windows and ventilators",
@@ -42,7 +43,7 @@ KEY_LABEL = {
 
 SOFTWARE_UNIT = {
   "EXCAVATION": "m3", "TERMITE": "m2", "MEMBRANE": "m2", "BRICK_FOUNDATION": "m3", "PCC": "m3", "RCC_FOOTINGS": "m3",
-  "RCC_PLINTH_BEAM": "m3", "RCC_COLUMNS": "m3", "RCC_WALLS": "m3", "RCC_LINTELS": "m3", "RCC_ROOF_BEAMS": "m3", "RCC_STAIR": "m3",
+  "RCC_PLINTH_BEAM": "m3", "RCC_BEAMS": "m3", "RCC_COLUMNS": "m3", "RCC_WALLS": "m3", "RCC_LINTELS": "m3", "RCC_ROOF_BEAMS": "m3", "RCC_STAIR": "m3",
   "RCC_SLABS": "m3", "CEILING_PLASTER": "m2", "WALL_PLASTER": "m2", "WALL_PLASTER_EXT": "m2", "BRICK_WALLS": "m3", "STEEL": "kg", "DOOR_FRAMES": "m2",
   "DOORS": "m2", "WINDOWS": "m2", "KACHA": "m2", "BALLAST": "m3", "FILLING": "m3", "ROOF_TREATMENT": "m2", "FORMWORK": "m2", "TANKS": "m3", "BRICK_BOUNDARY": "m3", "DOOR_FRAMES_RFT": "m",
 }
@@ -107,6 +108,8 @@ def software_key(formula: str, tag: str | None, label: str | None) -> str | None
     return "PCC"
   if t.startswith("PLINTH-BEAM"):
     return "RCC_PLINTH_BEAM"
+  if t.startswith("BEAM-"):
+    return "RCC_BEAMS"
   if t.startswith("ROOF-BEAM"):
     return "RCC_ROOF_BEAMS"
   if t.startswith("ROOF-TREATMENT"):

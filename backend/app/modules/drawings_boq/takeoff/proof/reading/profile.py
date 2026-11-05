@@ -205,5 +205,5 @@ def draft_rows(profile: dict, registers: dict, date: str) -> list:
   return rows
 
 def write_register(folder: str, rows: list) -> None:
-  with open(os.path.join(folder, "register.yaml"), "w", encoding="utf-8", newline="\n") as fh:
-    yaml.safe_dump(rows, fh, sort_keys=False, width=200, allow_unicode=True)
+  from app.modules.drawings_boq.takeoff.proof.reading import formats as F
+  F.write_truth_files(folder, {"register.yaml": rows}, check=False)

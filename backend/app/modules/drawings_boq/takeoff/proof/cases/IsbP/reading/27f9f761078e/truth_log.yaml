@@ -19,3 +19,7 @@
   note: 'RB-C1 NOT WRITTEN: beam runs as polylines (hatched bands cannot be traced reliably by eye), F1 strips as polylines, F4 pads (none found on page 8 at 200 dpi), the beam-mark inventory as rows, the
     BBS second source (Breakdown_of_BBS.pdf was not available to the builder), the C-5 and C-8 first-floor CONFLICT row (it rests on the BBS), the section-bubble join 1-1 to F1 (no strip rows), and the
     lintel table of page 11.'
+- date: '2026-11-05'
+  by: claude_eye
+  pack: RP-2
+  note: 'RP-2: the three TANK rows now say internal_size_in UNKNOWN. S-09, S-10 and S-11 print slab and wall thicknesses, bars and a 12 in haunch but no internal length, width or depth, and each sheet says not to scale the drawing. A tank size has to come from another sheet or from you; Build File D ST-7 assumed it was printed.'

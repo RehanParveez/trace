@@ -2,6 +2,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 from decimal import Decimal as D
 import yaml
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
@@ -22,6 +23,10 @@ DECISIONS = "decisions.yaml"
 READS = "reads"
 BBS_READ = "bbs_read.json"
 STRUCTURE_READ = "structure_read.json"
+SOURCE_SHA = "source_sha256"
+ROWS_SHA = "rows_sha256"
+DECIMAL_FIELDS = ("spacing_in", "members", "each", "total", "cut_ft", "total_ft", "unit_kg_ft", "total_kg")
+MAKE_READS = "make-reads"
 OK, WRONG, MISSED, MISSED_KNOWN, INV_FLAGGED, INV_SILENT, TRUE = "MATCHED_OK", "MATCHED_WRONG_VALUE", "MISSED_SILENT", "MISSED_REPORTED", "INVENTED_FLAGGED", "INVENTED_SILENT", "TRUE"
 ANY = "*"
 ROW_FIELDS = ("page", "sheet", "member", "sr", "description", "dia", "spacing_in", "members", "each", "total", "cut_ft", "total_ft", "unit_kg_ft", "total_kg")
@@ -136,6 +141,117 @@ def read_drift(doc: BBS.BbsDocument, pdf_path: str) -> str | None:
     return f"the reader's rows differ from the snapshot's, the first at row {bad}"
   return None
 
+def _text(v):
+  return None if v is None else str(v)
+
+def _plain(v):
+  if isinstance(v, (set, frozenset)):
+    return sorted(v, key=str)
+  if isinstance(v, D):
+    return str(v)
+  if hasattr(v, "item"):
+    return v.item()
+  if hasattr(v, "__dataclass_fields__"):
+    return {k: getattr(v, k) for k in v.__dataclass_fields__}
+  raise TypeError(f"a {type(v).__name__} cannot be stored in a read file")
+
+def bbs_read_dict(doc: BBS.BbsDocument, source_sha256: str) -> dict:
+  sheets = [{"index": s.index, "name": s.name, "first_page": s.first_page, "last_page": s.last_page, "printed_total_kg": _text(s.printed_total_kg),
+    "dia_totals_kg": {str(k): str(v) for k, v in s.dia_totals_kg.items()}} for s in doc.sheets]
+  rows = [{"page": r.page, "y": r.y, "sheet": r.sheet, "member": r.member, "sr": r.sr, "description": r.description, "dia": r.dia, **{k: _text(getattr(r, k)) for k in DECIMAL_FIELDS},
+    "parts": [str(p) for p in r.parts], "notes": list(r.notes), "issues": list(r.issues)} for r in doc.rows]
+  return {SOURCE_SHA: source_sha256, ROWS_SHA: rows_digest(doc.rows), "title": doc.title, "pages": doc.pages, "profile": doc.profile, "page_counters": [list(x) for x in doc.page_counters],
+    "sheets": sheets, "rows": rows}
+
+def _untimed(v):
+  if isinstance(v, dict):
+    return {k: _untimed(x) for k, x in v.items() if not str(k).endswith("elapsed_s")}
+  if isinstance(v, list):
+    return [_untimed(x) for x in v]
+  return v
+
+def structure_read_dict(sheets: list, key: str, source_sha256: str) -> dict:
+  return _untimed({SOURCE_SHA: source_sha256, "sheets": [{"pdf_key": key, "page_no": sh["page_no"], "meta": sh.get("meta") or {}} for sh in sheets],
+    "candidates": {f"{key}|{sh['page_no']}": [MS.candidate_dict(c) for c in sh["candidates"]] for sh in sheets}})
+
+def _dump(path: str, doc: dict) -> None:
+  text = json.dumps(doc, indent=1, ensure_ascii=False, default=_plain)
+  json.loads(text)
+  tmp = path + ".tmp"
+  with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+    fh.write(text + "\n")
+  os.replace(tmp, path)
+
+def make_reads(folder: str, cases_dir: str | None) -> list:
+  raw = _yaml(os.path.join(folder, "case.yaml")) or {}
+  files = CIO.cases_dir(cases_dir)
+  if not files:
+    raise ValueError("give --cases-dir or set TRACE_CASES_DIR")
+  bbs_name, bbs_sha = next(iter((raw.get("sha256") or {}).items()))
+  st = raw.get("structure") or {}
+  if not st.get("pdf") or not st.get("sha256"):
+    raise ValueError(f"{folder}/case.yaml has no `structure: {{pdf, sha256}}`: the structural set the schedule is audited against.")
+  
+  paths = {}
+  for name, sha in ((bbs_name, bbs_sha), (st["pdf"], st["sha256"])):
+    path = os.path.join(files, name)
+    if not os.path.isfile(path):
+      raise ValueError(f"{name} is not in {files}.")
+    if CASE.sha256_of(path) != sha:
+      raise ValueError(f"{name} is not the file this case was made for (its hash differs).")
+    paths[name] = path
+    
+  from app.modules.drawings_boq.takeoff.proof import benchmark as BM
+  with open(paths[bbs_name], "rb") as fh:
+    doc = BBS.read_bbs_pdf(fh.read())
+  with open(paths[st["pdf"]], "rb") as fh:
+    sheets = BM.read_set([(st["pdf"], fh.read())])[0][1]
+  bbs = bbs_read_dict(doc, bbs_sha)
+  if rows_digest(snapshot_document(json.loads(json.dumps(bbs))).rows) != bbs[ROWS_SHA]:
+    raise ValueError(f"{BBS_READ} does not read back to the rows the reader gave.")
+  
+  data = structure_read_dict(sheets, st["sha256"][:12], st["sha256"])
+  out = os.path.join(folder, READS)
+  os.makedirs(out, exist_ok=True)
+  _dump(os.path.join(out, BBS_READ), bbs)
+  _dump(os.path.join(out, STRUCTURE_READ), data)
+  return [f"{READS}/{BBS_READ}: {len(doc.rows)} rows, {len(doc.sheets)} sheets", f"{READS}/{STRUCTURE_READ}: {len(data['sheets'])} sheets, {sum(len(v) for v in data['candidates'].values())} candidates"]
+
+def stale_reads(folder: str) -> list:
+  raw = _yaml(os.path.join(folder, "case.yaml")) or {}
+  want = {BBS_READ: next(iter((raw.get("sha256") or {}).values()), None), STRUCTURE_READ: (raw.get("structure") or {}).get("sha256")}
+  
+  bad = []
+  for name, sha in want.items():
+    path = os.path.join(folder, READS, name)
+    if not os.path.isfile(path):
+      bad.append(f"{READS}/{name} is missing; run: python -m app.modules.drawings_boq.takeoff.proof.bbs_audit {MAKE_READS} --cases-dir <PDFs folder>")
+      continue
+    
+    with open(path, encoding="utf-8") as fh:
+      doc = json.load(fh)
+    if sha and doc.get(SOURCE_SHA) != sha:
+      bad.append(f"{READS}/{name} is stale: made from {str(doc.get(SOURCE_SHA))[:12]}, the case expects {sha[:12]}; run {MAKE_READS}")
+    elif name == BBS_READ and doc.get(ROWS_SHA) and rows_digest(snapshot_document(doc).rows) != doc[ROWS_SHA]:
+      bad.append(f"{READS}/{name} rows differ from the digest it records; run {MAKE_READS}")
+  return bad
+
+def make_reads_main(argv: list) -> int:
+  import argparse
+  ap = argparse.ArgumentParser(description="Write reads/bbs_read.json and reads/structure_read.json of each audit case from its PDFs, for gate 15 to read. Commit the output.")
+  ap.add_argument("cases", nargs="*", help="audit case names (default: every audit case)")
+  ap.add_argument("--cases-dir", help="the folder with the case PDFs (default: TRACE_CASES_DIR)")
+  args = ap.parse_args(argv)
+  
+  try:
+    for name in args.cases or audit_cases():
+      for line in make_reads(os.path.join(CIO.HERE, name), args.cases_dir):
+        print(f"{name}: {line}")
+  except (ValueError, OSError) as e:
+    print(f"make-reads failed: {e}")
+    return 1
+  return 0
+
 def _finding_dict(f, i: int) -> dict:
   return {"id": str(i), "code": f.code, "finding_class": f.finding_class, "rule": f.rule, "bbs_ref": f.bbs_ref, "drawing_ref": getattr(f, "drawing_ref", None), "effect_basis": getattr(f, "effect_basis", None),
     "convention": getattr(f, "convention", None), "bbs_value": f.bbs_value, "trace_value": f.trace_value, "diff_kg": f.diff_kg, "diff_pct": f.diff_pct, "confidence": f.confidence,
@@ -232,6 +348,9 @@ def reconcile(audit: dict, tol_kg=D("1"), tol_share=D("0.001")) -> list:
   return bad
 
 def gate(folder: str, pdf_path: str | None = None) -> tuple:
+  stale = stale_reads(folder)
+  if stale:
+    return False, "; ".join(stale)
   try:
     expected = load_expected(folder)
     audit = run_audit(folder)
@@ -299,6 +418,10 @@ def metrics(rows: list) -> dict:
 
 def main(argv: list | None = None) -> int:
   import argparse
+  args_in = sys.argv[1:] if argv is None else argv
+  if args_in[:1] == [MAKE_READS]:
+    return make_reads_main(args_in[1:])
+  
   ap = argparse.ArgumentParser(description="Gate 15: the bar schedule audit against the findings the build file says it must raise.")
   ap.add_argument("--cases-dir", help="the folder with the case PDFs (default: TRACE_CASES_DIR); without the schedule PDF the reader is not compared")
   args = ap.parse_args(argv)

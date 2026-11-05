@@ -42,6 +42,9 @@ def load_case(folder: str) -> dict:
   out["facts"] = load_facts(os.path.join(folder, "facts.yaml"))
   out["decisions"] = load_decisions(folder)
   out["corrections"] = load_corrections(folder)
+  out["storeys"] = load_storeys(folder)
+  out["sections"] = load_sections(folder)
+  out["beam_runs"] = load_beam_runs(folder)
   fixed = {c["line"] for c in out["corrections"]}
   for e in out["expected"]:
     if e["kind"] == "QS_ERROR" and e["key"] not in fixed:
@@ -69,6 +72,76 @@ def _need(path: str, i: int, e, *names) -> None:
   for n in names:
     if e.get(n) in (None, ""):
       raise ValueError(f"{path}, entry {i + 1}: `{n}` is missing.")
+
+STOREY_ANSWERERS = ("DRAWING", "QS", "BBS", "REHAN")
+STOREY_FLOORS = ("BASEMENT", "GROUND", "FIRST", "SECOND", "THIRD", "FOURTH", "FIFTH", "ROOF", "MUMTY")
+STOREY_HEIGHT_KEYS = ("ftf_mm", "ftf_in", "ftf_ft")
+
+def load_storeys(folder: str) -> list:
+  path = os.path.join(folder, "storeys.yaml")
+  out, seen = [], set()
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "floor", "answered_by", "date", "source")
+    floor = str(e["floor"]).upper()
+    if floor not in STOREY_FLOORS:
+      raise ValueError(f"{path}, entry {i + 1}: floor must be one of {', '.join(STOREY_FLOORS)}.")
+    if floor in seen:
+      raise ValueError(f"{path}: the floor {floor} is given twice.")
+    seen.add(floor)
+    
+    by = str(e["answered_by"]).upper()
+    if by not in STOREY_ANSWERERS:
+      raise ValueError(f"{path}, entry {i + 1}: answered_by must be one of {', '.join(STOREY_ANSWERERS)}.")
+    given = [k for k in STOREY_HEIGHT_KEYS if e.get(k) is not None]
+    if len(given) != 1 or isinstance(e[given[0]], bool) or not isinstance(e[given[0]], (int, float)) or not e[given[0]] > 0:
+      raise ValueError(f"{path}, entry {i + 1}: give the floor-to-floor height once, as one positive number in ftf_mm, ftf_in or ftf_ft.")
+    out.append({"floor": floor, given[0]: float(e[given[0]]), "answered_by": by, "date": str(e["date"]), "source": str(e["source"])})
+  return out
+
+def load_beam_runs(folder: str) -> bool:
+  path = os.path.join(folder, "beam_runs.yaml")
+  on = False
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "date", "source")
+    if not isinstance(e.get("enabled"), bool):
+      raise ValueError(f"{path}, entry {i + 1}: enabled is true or false.")
+    on = on or e["enabled"]
+  return on
+
+SECTION_KINDS = ("STRIP", "PAD", "WALL_FOOTING", "PLINTH_BEAM")
+SECTION_INCHES = ("width_in", "depth_in", "pcc_width_in", "pcc_in", "nsl_to_pcc_in", "wall_in")
+
+def load_sections(folder: str) -> list:
+  path = os.path.join(folder, "sections.yaml")
+  out, seen = [], set()
+  for i, e in enumerate(_list_file(path)):
+    _need(path, i, e, "mark", "kind", "sheet", "answered_by", "date", "source")
+    kind = str(e["kind"]).upper()
+    if kind not in SECTION_KINDS:
+      raise ValueError(f"{path}, entry {i + 1}: kind must be one of {', '.join(SECTION_KINDS)}.")
+    mark = str(e["mark"])
+    if mark in seen:
+      raise ValueError(f"{path}: the section {mark} is given twice.")
+    seen.add(mark)
+    by = str(e["answered_by"]).upper()
+    if by not in STOREY_ANSWERERS:
+      raise ValueError(f"{path}, entry {i + 1}: answered_by must be one of {', '.join(STOREY_ANSWERERS)}.")
+    
+    for k in SECTION_INCHES:
+      if e.get(k) is not None and (isinstance(e[k], bool) or not isinstance(e[k], (int, float)) or not e[k] > 0):
+        raise ValueError(f"{path}, entry {i + 1}: {k} must be a positive number of inches.")
+    if kind == "PLINTH_BEAM" and not (isinstance(e.get("size_in"), list) and len(e["size_in"]) == 2):
+      raise ValueError(f"{path}, entry {i + 1}: a plinth beam gives size_in: [width, depth].")
+    if kind in ("STRIP", "PAD", "WALL_FOOTING") and not (e.get("width_in") and e.get("depth_in")):
+      raise ValueError(f"{path}, entry {i + 1}: a footing section gives width_in and depth_in.")
+    if e.get("strip_length_ft") is not None:
+      if isinstance(e["strip_length_ft"], bool) or not isinstance(e["strip_length_ft"], (int, float)) or not e["strip_length_ft"] > 0:
+        raise ValueError(f"{path}, entry {i + 1}: strip_length_ft must be a positive number of feet.")
+      if str(e.get("length_answered_by") or "").upper() not in STOREY_ANSWERERS or not e.get("length_source"):
+        raise ValueError(f"{path}, entry {i + 1}: a strip length gives length_answered_by and length_source.")
+      e["length_answered_by"] = str(e["length_answered_by"]).upper()
+    out.append({**e, "mark": mark, "kind": kind, "answered_by": by, "date": str(e["date"]), "source": str(e["source"])})
+  return out
 
 def load_decisions(folder: str) -> list:
   """decisions.yaml: one answer to one open decision, [{id, value, answered_by (DRAWING or QS), date, source}]. `id` is the decision id the score prints under 'Open decisions',

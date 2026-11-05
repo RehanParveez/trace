@@ -68,6 +68,8 @@ class _Inputs:
       self.add(name, MISSING, "not on the drawing")
     elif "NECK_HEIGHT_ASSUMED" in self.codes:
       self.add(name, ASSUMED, "the height is not printed on the drawing; the neck column height of the conventions (the QS workbook's, or your company's) is used (type another to override it)")
+    elif "FOOTING_SECTION_DECIDED" in self.codes:
+      self.add(name, ASSUMED, "the footing depth is read off the section on the footing detail sheet by a person and entered as a decision; the text of the section cannot be read by the software")
     elif "FOOTING_DEPTH_QS" in self.codes:
       self.add(name, ASSUMED, "the footing thickness is not printed as a figure; the footing depth of the conventions (the QS's, or your company's) is used")
     elif "HEIGHT_FROM_SECTION" in self.codes:
@@ -99,6 +101,8 @@ def _size(inp: _Inputs, cand) -> None:
   has = bool(f.get("size_used_mm"))
   if not has:
     inp.add("size", MISSING, "no size on the drawing")
+  elif "FOOTING_SECTION_DECIDED" in codes:
+    inp.add("size", ASSUMED, "the size is read off the section on the footing detail sheet by a person and entered as a decision; the text of the section cannot be read by the software")
   elif "SIZE_FROM_SCHEDULE" in codes:
     inp.add("size", PRINTED, "from the schedule on the drawing")
   elif "COLUMN_DETAILS_DISAGREE" in codes:
@@ -363,11 +367,31 @@ def _rule_text(r: dict) -> str:
   to_ceiling = "; to the ceiling" if r.get("value") == "CEILING" else ""
   return f"{what} from the rule {r.get('key')}" + (f" for {scope}" if scope else "") + f" ({RULE_WHOSE.get(r.get('origin'), r.get('origin'))}; {r.get('rule_id')}, version {r.get('version')}){to_ceiling}"
 
+def _from_section(inp: _Inputs, cand) -> None:
+  f = cand.facts or {}
+  inp.add("section", ASSUMED, "the sizes are read off the section on the footing detail sheet by a person and entered as a decision; the text of the section cannot be read by the software")
+  if f.get("member_of") == "STRIP":
+    inp.add("length", ASSUMED if "STRIP_LENGTH_DECIDED" in inp.codes else MISSING, "the strip length is a decision taken from the bar bending schedule; the strip runs on the footing layout are not measured" if "STRIP_LENGTH_DECIDED" in inp.codes else "no strip length is known")
+  else:
+    inp.add("count", PRINTED, "marks counted on the sheet")
+
+def _from_runs(inp: _Inputs, cand) -> None:
+  f = cand.facts or {}
+  run = f.get("run") or {}
+  inp.measured("length", "the centre line of the beam band drawn on the plan")
+  inp.add("section", PRINTED, "the width and depth of the section printed on the sheet for this mark")
+  inp.add("mark", PRINTED if len(run.get("marks_near") or []) <= 1 else ASSUMED, "the mark written beside the band" if len(run.get("marks_near") or []) <= 1 else "more than one mark is written beside the band; the nearest is used")
+  if "BEAM_RUN_NOT_CLOSED" in inp.codes:
+    inp.add("ends", ASSUMED, "an end of the band does not meet a column or another band, so the run may be cut short")
+  if "BEAM_RUN_WIDTH_CONFLICT" in inp.codes:
+    inp.add("width", ASSUMED, "the band drawn on the plan and the section of the mark differ in width; the section is used")
+
 def _derived(inp: _Inputs, cand) -> None:
-  """A finishing or foundation item worked out from other readings (rooms, walls, openings): its quantity is as good as those readings, and each value the rules assume is listed."""
   facts = cand.facts or {}
   source = facts.get("derived_from")
-  if source == "SITE":
+  if source == "FOOTING_SECTION":
+    _from_section(inp, cand)
+  elif source == "SITE":
     inp.add("front wall", PRINTED if facts.get("front_printed") else ASSUMED,
       "the length and height of the front of the boundary wall as printed on the elevation" if facts.get("front_printed") else "the front of the boundary wall as read from the elevation (see that item for what was assumed)")
   elif source in ("OPENINGS", "DOORS"):
@@ -430,6 +454,9 @@ def evidence_for(cand) -> dict:
     _beam_from_walls(inp, cand)
   elif cat == "BEAM" and facts.get("from_strips"):
     _beam_from_strips(inp, cand)
+  elif cat == "BEAM" and facts.get("from_section"):
+    _from_section(inp, cand)
+    inp.add("length", ASSUMED if "STRIP_LENGTH_DECIDED" in codes else MISSING, "the plinth beam follows the strip, whose length is a decision taken from the bar bending schedule" if "STRIP_LENGTH_DECIDED" in codes else "no strip length is known")
   elif cat == "BEAM":
     _count(inp, cand)
     inp.add("length", NOT_READ, "beam marks are counted only; the length is not read yet")

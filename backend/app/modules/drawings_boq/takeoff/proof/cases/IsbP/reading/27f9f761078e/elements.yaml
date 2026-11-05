@@ -5090,6 +5090,7 @@
   mark: OHWT
   attrs:
     key: OHWT
+    internal_size_in: UNKNOWN
     top_slab_in: 6
     wall_in: 6
     bottom_slab_in: 8
@@ -5109,6 +5110,7 @@
   mark: UGWT
   attrs:
     key: UGWT
+    internal_size_in: UNKNOWN
     bars:
       top_slab: '#4@6"C/C'
       wall_vertical: '#4@8"C/C'
@@ -5127,6 +5129,7 @@
   mark: SEPTIC
   attrs:
     key: SEPTIC
+    internal_size_in: UNKNOWN
     haunch_in: 12
     bars:
       top_slab:

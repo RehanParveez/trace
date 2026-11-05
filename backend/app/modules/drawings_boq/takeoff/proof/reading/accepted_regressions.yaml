@@ -1,1 +1,8 @@
-[]
+- id: "c0f63cff8577:EL:3:COLUMN:C1:1"
+  reason: "The 191-C structure truth was not in the repo: the c0f63cff8577 folder held the architecture truth under the structure PDF's key. RP-1 moved that to 6fac7864791a and emptied this folder. RP-2 restores the structure truth from the staged files and takes this entry out."
+- id: "c0f63cff8577:EL:3:COLUMN:C2:1"
+  reason: "The 191-C structure truth was not in the repo: the c0f63cff8577 folder held the architecture truth under the structure PDF's key. RP-1 moved that to 6fac7864791a and emptied this folder. RP-2 restores the structure truth from the staged files and takes this entry out."
+- id: "c0f63cff8577:EL:3:FOOTING_PAD:F1:1"
+  reason: "The 191-C structure truth was not in the repo: the c0f63cff8577 folder held the architecture truth under the structure PDF's key. RP-1 moved that to 6fac7864791a and emptied this folder. RP-2 restores the structure truth from the staged files and takes this entry out."
+- id: "c0f63cff8577:EL:3:FOOTING_PAD:F2:1"
+  reason: "The 191-C structure truth was not in the repo: the c0f63cff8577 folder held the architecture truth under the structure PDF's key. RP-1 moved that to 6fac7864791a and emptied this folder. RP-2 restores the structure truth from the staged files and takes this entry out."

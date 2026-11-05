@@ -1,4 +1,3 @@
-10% sample for Rehan to confirm is listed in Pack 262.'
 - date: '2026-11-04'
   by: claude_eye
   pack: RB-C4
@@ -175,3 +174,8 @@
   by: claude_eye
   pack: RB-C7
   note: Pages 28 to 53 (electrical, plumbing and the sewerage details) are services pages and belong to RB-C8; they are not inventoried here. Pages 1 to 13 are the structural pages of RB-C4. The other structure sets of the corpus (Jakhar, 191-C structure, 2053-C, 350-C, 925-B) carry no architectural plan page, and Plot_1 and 191-C architecture are RB-C5 and RB-C6.
+- date: '2026-11-05'
+  by: draft
+  pack: RP-2
+  note: 'redraft: 472 element row(s) added from Trace''s own read, every one truth.by DRAFT and source draft; they do not score until checked. Classes: BEAM 18, DISTRIBUTION_BOARD 1, DOOR 18, DRAIN_POINT
+    16, ELECTRICAL_POINT 219, FINISH_LAYER 31, LINTEL_TYPE 44, PLINTH_BEAM 1, ROOM 25, SLAB_PANEL 9, STAIR 2, TANK 2, WALL 60, WINDOW 26. Existing rows were not changed.'

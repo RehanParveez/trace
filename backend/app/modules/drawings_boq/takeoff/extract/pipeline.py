@@ -1920,7 +1920,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
   lowest_level: bool = False, with_finishes: bool = False, beam_sections: list | None = None, tank_details: list | None = None,
    sheet_words: list | None = None, outer_only: bool = False, imperial: bool | None = None, wall_vocab: list | None = None,
   footing_sections: list | None = None, spec_facts: dict | None = None, read_as: str | None = None, role_info: dict | None = None, scale_sibling: dict | None = None,
-  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, footing_views: list | None = None, page_unit: float = 1.0) -> Extraction:
+  mark_vocab: dict | None = None, discipline: str | None = None, opening_heights: dict | None = None, footing_views: list | None = None, page_unit: float = 1.0, band_sections: list | None = None) -> Extraction:
   started = time.monotonic()
   deadline = started + budget_s
   work = W.Work(C.PAGE_WORK_BUDGET, started + C.PAGE_HARD_STOP_FACTOR * budget_s)
@@ -1986,12 +1986,12 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
     plans = []
     
   if not partial and not scale_unverified:
-    bands = BBD.of_page(index, mm_per_pt, ctx.get("page_unit") or 1.0, views, beam_sections)
+    bands = BBD.of_page(index, mm_per_pt, ctx.get("page_unit") or 1.0, views, band_sections if band_sections is not None else beam_sections)
     if bands:
       res.stats["beam_bands"] = bands
       graph = SPG.of_page(index, bands, views, mm_per_pt, ctx.get("page_unit") or 1.0)
       if graph:
-        res.stats["slab_panel_graph"] = graph
+        res.stats["slab_panel_graph"] = graDph
   res.stats["schedule_marks"] = len(openings)
   _mark_stats(res, words, marks)
   kind = sheet_kind(sheet_words if sheet_words is not None else words)

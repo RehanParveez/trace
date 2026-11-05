@@ -492,7 +492,7 @@ def invariants(reads: list, accs: list, rows: list) -> list:
         structural += [tag] * sum(1 for c in live if c.category in ("DOOR", "WINDOW"))
       if _is_plan(r) and live:
         title = r.get("title") or {}
-        if not title.get("composite") and not (title.get("level_hint") or ident.get("floor")) and r["page_no"] not in ordered:
+        if not title.get("composite") and not (title.get("level_hint") or ident.get("floor")) and r["page_no"] not in ordered and not any((c.facts or {}).get("floor_all") or (c.facts or {}).get("stack") for c in live):
           no_floor.append(tag)
         if r.get("ratio") is None:
           if not _held_for_scale(r, live):
@@ -960,7 +960,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     for name in case["pdfs"]:
       with open(files[name], "rb") as fh:
         blobs.append((name, fh.read()))
-    whole = {n: (r, pr) for n, r, pr in BM.read_set(blobs, budget_s=page_budget)}
+    whole = {n: (r, pr) for n, r, pr in BM.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), runs=case.get("beam_runs"))}
     timings["read the set"] = round(time.monotonic() - t, 1)
   for name in case["pdfs"]:
     t = time.monotonic()
@@ -1297,6 +1297,36 @@ def load_baseline(path: str | None, case: str) -> dict | None:
     doc = json.load(fh)
   return (doc.get("cases") or {}).get(case) if "cases" in doc else (doc if doc.get("case") == case else None)
 
+BASELINE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "baseline_scores.json")
+
+def load_pins() -> dict:
+  if not os.path.isfile(BASELINE_FILE):
+    return {}
+  with open(BASELINE_FILE, encoding="utf-8") as fh:
+    return json.load(fh).get("cases") or {}
+
+def pin_status(name: str, doc: dict, pins: dict) -> str:
+  pin = pins.get(name) or {}
+  if not pin.get("hash"):
+    return "UNPINNED (run with --pin-baseline once the numbers are right)"
+  engine = str(doc.get("engine_digest") or "")
+  if doc["hash"].startswith(pin["hash"]) and engine.startswith(str(pin.get("engine") or "")):
+    return f"unchanged ({pin['hash']})"
+  return f"MOVED: pinned {pin['hash']} engine {str(pin.get('engine') or '')[:8]}, this run {doc['hash'][:16]} engine {engine[:8]}"
+
+def write_pins(new: dict, overwrite: bool) -> None:
+  pins = load_pins()
+  for name, pin in sorted(new.items()):
+    held = pins.get(name, {}).get("hash")
+    if held and not overwrite and held != pin["hash"]:
+      print(f"{name}: pin kept ({held}); this run gave {pin['hash']}; use --repin to replace it")
+      continue
+    pins[name] = pin
+  note = "The score hash and the engine output of each case. proof.score prints unchanged or MOVED against them; proof.precommit fails on MOVED. Written by proof.score --pin-baseline (fills a case with no pin) or --repin (replaces)."
+  with open(BASELINE_FILE, "w", encoding="utf-8", newline="\n") as fh:
+    json.dump({"note": note, "cases": pins}, fh, indent=1, sort_keys=True)
+    fh.write("\n")
+
 def main(argv: list | None = None) -> int:
   ap = argparse.ArgumentParser(description="Read, accept and run every case offline and score it against the QS and the drawing.")
   ap.add_argument("cases", nargs="*", help="case names (default: every case folder)")
@@ -1310,6 +1340,8 @@ def main(argv: list | None = None) -> int:
   ap.add_argument("--seed-rules", action="store_true", help="ignore the company_rules of the cases and run on the seed rules alone")
   ap.add_argument("--dump", action="store_true", help="also write ledger.json and candidates.json beside score.json (every ledger row, and every candidate read with how it was decided)")
   ap.add_argument("--rules", help="run every case named under this rules file (a company_rules file), whatever its case.yaml says")
+  ap.add_argument("--pin-baseline", action="store_true", help="write the hash and engine output of each case run to baseline_scores.json where the case has no pin")
+  ap.add_argument("--repin", action="store_true", help="write them even where the case already has a different pin")
 
   args = ap.parse_args(argv)
   names = args.cases or CIO.list_cases()
@@ -1318,6 +1350,7 @@ def main(argv: list | None = None) -> int:
   catalog = OR.work_item_catalog()
   os.makedirs(args.out, exist_ok=True)
   done: dict = {}
+  pins, pinned = load_pins(), {}
   total = time.monotonic()
   for name in names:
     folder = os.path.join(CIO.HERE, name)
@@ -1366,8 +1399,13 @@ def main(argv: list | None = None) -> int:
           json.dump(r3(body), fh, indent=1, sort_keys=True, ensure_ascii=False, default=str)
     s = doc["summary"]
     print(f"{name}: {s['lines']} lines, {s['within_10']} within 10%, {s['within_5']} within 5% of the QS as written, {d1_signed(doc)} within 2% of the signed figure; floor stages {stage_count(doc)}; invariants failing: {sum(1 for i in doc['invariants'] if i['status'] == 'FAIL')}; hash {doc['hash'][:16]}; {timings['total']} s")
+    print(f"  baseline: {pin_status(name, doc, pins)}")
+    if args.pin_baseline or args.repin:
+      pinned[name] = {"hash": doc["hash"][:16], "engine": str(doc.get("engine_digest") or "")[:16]}
     done[name] = doc
 
+  if pinned:
+    write_pins(pinned, args.repin)
   combined = {"cases": {k: r3(v) for k, v in sorted(done.items())}}
   combined["hash"] = hashlib.sha256(json.dumps({k: v.get("hash") or v.get("status") for k, v in sorted(done.items())}, sort_keys=True).encode()).hexdigest()
   with open(os.path.join(args.out, "all.json"), "w", encoding="utf-8") as fh:

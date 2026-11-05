@@ -1,0 +1,15 @@
+- floor: GROUND
+  ftf_ft: 10.5
+  answered_by: BBS
+  date: '2026-11-05'
+  source: Not printed on the structure set (no section, level mark or floor-to-floor note). Taken from the bar bending schedule of the same project, as cases/bbs_156/decisions.yaml states it. A decision, not a reading; Rehan to confirm against the architecture set.
+- floor: FIRST
+  ftf_ft: 10.5
+  answered_by: BBS
+  date: '2026-11-05'
+  source: Not printed on the structure set. Taken from the bar bending schedule of the same project (cases/bbs_156/decisions.yaml). A decision, not a reading; Rehan to confirm against the architecture set.
+- floor: ROOF
+  ftf_ft: 6.5
+  answered_by: BBS
+  date: '2026-11-05'
+  source: Not printed on the structure set. The mumty (roof-floor) column height from the bar bending schedule of the same project (cases/bbs_156/decisions.yaml). A decision, not a reading; Rehan to confirm against the architecture set.

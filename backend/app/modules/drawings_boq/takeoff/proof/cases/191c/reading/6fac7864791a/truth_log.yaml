@@ -1,3 +1,404 @@
 - date: '2026-11-03'
   by: claude_eye
   note: 'RB-B1: register of 49 page(s) written from the page images rendered at 110 dpi with pypdfium2; text types from proof.reading profile; 10% sample for Rehan to confirm is listed in Pack 262.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'RB-C6: element truth written for the 191-C architecture set: 200 rows (WALL 48, LEVEL 35, ROOM 28, FINISH_LAYER 27, WINDOW 17, DOOR 14, PARAPET 12, BOUNDARY_WALL 8, NOTE_FACT 6, GATE 2, STAIR 2, TANK 1). Plans read as page images at 110 dpi with the vector outline of each plan page, openings and levels from the text layer, finishes from the specification sheet. All rows are unchecked.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Scale: the plans are drawn at 14.172 pt per ft (the 36 ft plot width is 510.2 pt), not at the printed 1/4 in = 1 ft (that would be 18 pt per ft). The printed scale is kept as a NOTE_FACT with a conflict. All sizes in rows are feet and inches as printed, or measured in inches at 14.172 pt per ft.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Walls: the hatched walls are drawn as two outline lines with hatch between. A WALL row is the centreline of a run between the outline lines, a two point polyline in page points (native, y up). thickness_in is the brick thickness, 9 or 4.5, taken from the gap between the outline lines; the drawn width is kept as text in attrs.printed because the plaster faces are part of the drawn width. Runs continue across window symbols (bridged where the nearest label is a W= label) and stop at door openings. Four diagonal walls (two on each of pages 9 and 10) are written from endpoint pairs.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Boundary: the plot boundary on page 9 is BOUNDARY_WALL (8 rows: west in two parts, rear, east in two parts, front) and never WALL; the main gate (18 ft) and the side gate (8 ft 9 in) are GATE rows; two black squares on the west boundary are read as gate piers (assumption). Shared wall: where the east building wall stands on the plot line it is written as WALL up to the building outline and the boundary is BOUNDARY_WALL beyond it.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Openings: one row per printed label on the working plans, 14 DOOR rows (8 on page 9, 6 on page 10) and 17 WINDOW rows (6 on page 9, 11 on page 10). Size is the printed size beside the label, sill height the SILL= label. The mark is the printed label text; there is no door or window schedule in this set, so no join is written. One window label on page 10 (W=5''-10 1/2 in x 8''-8 in) is split in the text layer and was completed from a 300 dpi crop.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Rooms: 28 rows. 8 are the printed net size placed where its four sides lie on the wall faces (at least 2.6 of 4 sides covered, geom_basis FITTED_TO_WALL_FACES), 9 are the printed size laid at the label (edges approximate), 11 are a name with no size (passages, terraces, lawn, lobby, look-below): a point row, geom_basis LABEL_ONLY. Ceiling height (CH=) is kept as ceiling_height_in.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Levels: 35 LEVEL rows. Plan room levels from the + n''-n in texts of pages 9, 10 and 11; section levels from pages 17 and 18 (value and the nearest LEV. name). Conflicts written to the rows: the roof plan prints +26''-6 in where the sections print +26''-0 in; the first floor terrace is +13''-0 in. Page 11 double lines round the roof are PARAPET with a conflict note (the sections name a parapet at +28''-6 in and +29''-0 in); the two runs round the O.H.W.TANK are WALL with attrs.enclosure.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Finishes: 27 FINISH_LAYER rows from the floor specification on page 20 (ground floor 7 layers, first floor 5, terrace 6, roof 6, porch roof 3), one per printed layer with its order, text and thickness where printed. Page 20 is read for finishes only.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'params.yaml: qs_line lists the expected.yaml line ids that each ledger row''s element feeds (needs the loader change of Pack 281). 180 ledger rows. 10 of the 58 lines are not architecture: the 5 electrical lines (RB-C8) and 5 structure lines (structure folder c0f63cff8577); 5 more have no element in this set and some architecture lines have no element that feeds them (listed in the pack). A line built from a convention links to an input whose state is MISSING when the convention is not in rules_191c.yaml. The links show the inputs of each line; the QS gave totals only, so they do not show how the QS built the figure.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: 'Second source: Quantities_191-C.xlsx. Door area from the labels 405.0 sft against the QS 471.75, window area 714.4 sft against 633.37; ground floor brick gross at 12.5 ft is 1,683 cft against the QS 1,701.3 (the QS appears to take gross volume, not net of openings: an inference, not stated by the QS); first floor 1,455 cft gross at 12 ft against 1,397.4. Truth follows the drawing.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 1
+  measured: false
+  note: 'page 1 not inventoried: cover sheet, no drawing.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 2
+  measured: false
+  note: 'page 2 not inventoried: list of drawings, specification index and area notes: no geometry.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 5
+  measured: false
+  note: 'page 5 not inventoried: divider sheet titled FURNITURE & WORKING PLANS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 12
+  measured: false
+  note: 'page 12 not inventoried: divider sheet titled BUILDING ELEVATIONS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 16
+  measured: false
+  note: 'page 16 not inventoried: divider sheet titled BUILDING SECTIONS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 19
+  measured: false
+  note: 'page 19 not inventoried: divider sheet titled BLOW UP DETAILS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 3
+  measured: false
+  note: 'page 3 not inventoried: 3D view of the building (no plan geometry, nothing to measure).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 4
+  measured: false
+  note: 'page 4 not inventoried: 3D view of the building (no plan geometry, nothing to measure).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 6
+  measured: false
+  note: 'furniture copy of page 9: same walls and openings as the working plan, furniture added (page 6). Not inventoried; the working plan is.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 7
+  measured: false
+  note: 'furniture copy of page 10: same walls and openings as the working plan, furniture added (page 7). Not inventoried; the working plan is.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 8
+  measured: false
+  note: 'furniture copy of page 11: same walls and openings as the working plan, furniture added (page 8). Not inventoried; the working plan is.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 9
+  measured: true
+  note: 'page 9 (ground floor working plan) measured: walls, openings, rooms, levels, boundary, gates and stair hall. Furniture, fixtures, hatch and dimension chains are not inventoried.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 10
+  measured: true
+  note: 'page 10 (first floor working plan) measured: walls, openings, rooms, levels, stair hall. Furniture, fixtures, hatch and dimension chains are not inventoried.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 11
+  measured: true
+  note: 'page 11 (roof (top roof and low roof) working plan) measured: walls, openings, rooms, levels, parapet and the O.H.W.TANK. Furniture, fixtures, hatch and dimension chains are not inventoried.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 13
+  measured: false
+  note: 'page 13 (elevation) not traced in this pack: no window or door elevation rows, so the rule that a window on a plan and an elevation is one item with two sheet references is not applied. Facade tile zones (FIN-FACADE-TILE) stay unmeasured.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 14
+  measured: false
+  note: 'page 14 (elevation) not traced in this pack: no window or door elevation rows, so the rule that a window on a plan and an elevation is one item with two sheet references is not applied. Facade tile zones (FIN-FACADE-TILE) stay unmeasured.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 15
+  measured: false
+  note: 'page 15 (elevation) not traced in this pack: no window or door elevation rows, so the rule that a window on a plan and an elevation is one item with two sheet references is not applied. Facade tile zones (FIN-FACADE-TILE) stay unmeasured.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 17
+  measured: true
+  note: page 17 (building section) measured for levels only (finish floor, slab, porch, road, parapet levels); heights and thicknesses in the sections are not traced.
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 18
+  measured: true
+  note: page 18 (building section) measured for levels only (finish floor, slab, porch, road, parapet levels); heights and thicknesses in the sections are not traced.
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 20
+  measured: true
+  note: 'page 20 (floor specifications) measured for finishes only: FINISH_LAYER rows.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 21
+  measured: false
+  note: 'page 21 (blow-up detail) not inventoried: detail of joint, sunshade and entrance steps; no quantity line of the QS bill is read from it in this pack.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 22
+  measured: false
+  note: 'page 22 (blow-up detail) not inventoried: detail of joint, sunshade and entrance steps; no quantity line of the QS bill is read from it in this pack.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  page: 23
+  measured: false
+  note: 'page 23 (blow-up detail) not inventoried: detail of joint, sunshade and entrance steps; no quantity line of the QS bill is read from it in this pack.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C6
+  note: Pages 24 to 49 (electrical, plumbing, sewerage, water supply and gas drawings) are services pages and belong to RB-C8; they are not inventoried in this pack.
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'RB-C8: element truth written for the 191-C services pages (24 to 49): 582 rows (ELECTRICAL_POINT 245, NOTE_FACT 237, DRAIN_POINT 42, PLUMBING_FIXTURE 29, PIPE_RUN 19, TANK 6, DISTRIBUTION_BOARD 4). Pages read as images (110 dpi page, 200 dpi and finer crops) together with the vector layers and the text layer; all rows are unchecked. This appends to the architecture rows written by RB-C6 in the same folder.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Layers: on the services pages the services overlay (symbols, pipes, boards) is the pure black stroke layer; the architecture underlay is grey (77,77,77 on pages 29 and 30, 102,102,102 on the plumbing plans). Symbols were isolated from the black layer by bounding box clustering and each cluster was classified by eye against the legend, then counted in code so that every cluster of pages 29 and 30 is assigned.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Meaning rule: a symbol has the legend meaning only if its glyph matches a legend row (attrs.meaning_source LEGEND_GLYPH, attrs.legend_no). If the glyph is not in the legend but a printed label on the plan names it (WALL BRACKET LIGHT, SPLIT AC, CHANGE OVER DB., FLOOR LIGHT, GEYSER-n, tanks) the meaning is the label (PLAN_LABEL, no legend number). Otherwise attrs.meaning is UNKNOWN (boxed fan symbols, unlabelled houses, gate pier objects, K.H, R, dash and dot lines at the terrace edge). Nothing is named from its shape.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Electrical legend (page 25, rotated 270 degrees): 44 symbol rows and 12 mounting height rows written as NOTE_FACT, one per printed entry, numbered in reading order (my numbering). Conflict recorded: switch height is 3''-6 in on the symbol rows and in the detail on page 27, but 3''-3 in in the height table. The 3''-3 in is used for the ledger input and the conflict is on the rows.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Electrical points: pages 29 (ground) and 30 (first floor) carry the symbols. Two way switches cannot be told from single switches at this size, so all are written as SWITCH (legend 7). Tube light length (4FT or 2FT, legend 27 and 28) is not printed on the plan glyph, so no length is claimed. Ceiling fan size (56 in or 48 in) is the printed label. Small cross in circle symbols on the terrace edge of page 30 are the legend ceiling light at a smaller drawn size (size_note on the row).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Distribution boards: ELE. DB. and CHANGE OVER DB. are written as DISTRIBUTION_BOARD with attrs.circuits NOT PRINTED. No board schedule, circuit list or home run line is printed anywhere in pages 24 to 49 (pages 26 to 28 are blow-ups of a split AC, a kitchen and vanity, and the facade, LCD and lawn light details).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Plumbing and gas plans (pages 34, 35, 36, 38, 39, 40, 42) are SCHEMATIC: pipes are drawn as dash and dot lines with arrow heads, not to a scaled route. Points and fixtures (manholes, gully traps, trap, valves, geysers, tanks, meter, pumps) are reliable counts; PIPE_RUN rows are polylines read by eye from grid tiles (about 3 to 5 pt) and are rough. Cold and hot supply lines run side by side and are written as one PPCW/PPHW pair run. Sizes are written only where a size text is printed; printed pipe texts (size, service, slope, vent) are NOTE_FACT rows at their own text position and are not joined to a run.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Ball valves are counted by glyph, not by label: each geyser group has three valve glyphs with two BV. labels (page 38: 6 glyphs at the geysers, 4 at the first bath wall, 2 at the second, 2 on the kitchen branch; page 42: 6 at the geysers). Floor drains (FD), bottle traps (BT) and clean out plugs (CO) of the plumbing legend are not itemised: about twenty small circle glyphs (9 to 11 pt) near the fixtures of the sewer plan could be FD, BT or CO, but no label or leader names them, so they are not written and not guessed (listed under next patches).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Scale: the printed 1/4 in = 1 ft (18 pt per ft) is wrong on all of them. Known length checks (NOTE_FACT rows pNN-SCALE): ground plans 29, 34, 38 and 42 hold the architecture scale of 14.172 pt per ft within 1 percent (36 ft plot width 506.7 to 509.0 pt); the first floor services plan 30 is about 5 percent larger (the 36 ft rectangle is 537.5 pt, 14.93 pt per ft); the roof plans 36 and 40 are about 6 percent larger (tank outer rectangle 97.8 x 121.2 pt for 6''-6 in x 8''-1 1/2 in, 15.0 pt per ft); pages 35 and 39 could not be checked (no known length found). The ground scale must not be inherited by upper floor or roof services plans. Row positions are native page points and are not affected.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'Second source: none for these pages. The QS bill (Quantities_191-C.xlsx) has five electrical lines with totals only (lights 103, fans 11, sockets 54, switches 27, telephone and TV sockets 16); the QS has no plumbing line. The comparison in the pack md groups symbols by my assumption and decides nothing.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  note: 'params.yaml: ledger rows for electrical points, boards, drain points, fixtures, tanks and pipe runs; qs_line links only the five electrical lines (assumed grouping; the QS gives totals only). Circuit is MISSING on every electrical point; mounting height is PRINTED where the page 25 height table lists the item.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 24
+  measured: false
+  reason: divider sheet titled ELECTRICAL DRAWINGS
+  note: 'page 24 not inventoried: divider sheet titled ELECTRICAL DRAWINGS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 31
+  measured: false
+  reason: divider sheet titled PUBLIC HEALTH DRAWINGS
+  note: 'page 31 not inventoried: divider sheet titled PUBLIC HEALTH DRAWINGS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 33
+  measured: false
+  reason: divider sheet titled SEWERAGE SYSTEM PLANS
+  note: 'page 33 not inventoried: divider sheet titled SEWERAGE SYSTEM PLANS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 37
+  measured: false
+  reason: divider sheet titled WATER SUPPLY PLANS
+  note: 'page 37 not inventoried: divider sheet titled WATER SUPPLY PLANS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 41
+  measured: false
+  reason: divider sheet titled GAS SUPPLY PLANS
+  note: 'page 41 not inventoried: divider sheet titled GAS SUPPLY PLANS.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 25
+  measured: true
+  note: 'page 25 (electrical legend, notes and mounting heights) measured: legend rows, mounting heights. The general notes are not written as rows.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 26
+  measured: false
+  reason: blow-up detail
+  note: 'page 26 not inventoried: blow-up of a typical split AC placement (heights and pipe for A.C. printed in the blow-up); no count on this page feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 27
+  measured: false
+  reason: blow-up detail
+  note: 'page 27 not inventoried: kitchen and vanity blow-up; the 3''-6 in switch height seen there is the conflict noted on page 25.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 28
+  measured: false
+  reason: blow-up detail
+  note: 'page 28 not inventoried: facade, LCD and lawn light details.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 29
+  measured: true
+  note: 'page 29 (ground floor electrical plan) measured: every black cluster assigned (150 clusters).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 30
+  measured: true
+  note: 'page 30 (first floor electrical plan) measured: every black cluster assigned (132 clusters), plus two unclassified dash and dot terrace lines (UNKNOWN).'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 32
+  measured: true
+  note: 'page 32 (plumbing legend and notes) measured: 16 legend rows and the general notes that fix pipe sizes, the PPRC size table and the slope table. Legend rows 7 to 16 have no text in the text layer; their positions are read from the image.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 34
+  measured: true
+  note: 'page 34 measured (ground floor sewer plan: manholes, gully traps, K.H, P-trap, R marks, septic tank, sump, 11 rough runs, printed pipe texts). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 35
+  measured: true
+  note: 'page 35 measured (first floor sewer plan: K.H, R marks, rough printed pipe texts (no pipe run written, the pipes to the ground floor are callouts only)). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 36
+  measured: true
+  note: 'page 36 measured (roof drainage plan: K.H, R marks, two 15 in drain channels, rain water pipe texts, O.H.W.TANK). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 38
+  measured: true
+  note: 'page 38 measured (ground floor water supply plan: ball valve glyphs, geysers, tank, cover, float valve, pumps, meter, K.H, R marks, three ring runs). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 39
+  measured: true
+  note: 'page 39 measured (first floor water supply plan: K.H, R marks and the printed pipe texts; no run written). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 40
+  measured: true
+  note: 'page 40 measured (roof water supply plan: K.H, R mark, tank and the printed pipe texts; no run written). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 42
+  measured: true
+  note: 'page 42 measured (ground floor gas plan: ball valve glyphs, geysers, gas meter, R marks, three gas runs). Schematic plan: counts reliable, runs rough.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 43
+  measured: false
+  reason: typical detail
+  note: 'page 43 not inventoried: typical overhead water tank pipe detail; a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 44
+  measured: false
+  reason: typical detail
+  note: 'page 44 not inventoried: typical underground water tank pipe detail; a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 45
+  measured: false
+  reason: typical detail
+  note: 'page 45 not inventoried: typical manhole, gully trap, trench, pipe jointing, rain water collection and drain details; a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 46
+  measured: false
+  reason: typical detail
+  note: 'page 46 not inventoried: typical sump pit and septic tank plan and section; a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 47
+  measured: false
+  reason: typical detail
+  note: 'page 47 not inventoried: typical fixture details (wash basin, sink, water closets, inspection eye); a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 48
+  measured: false
+  reason: typical detail
+  note: 'page 48 not inventoried: typical vent pipe, rain water pipe, gate valve, clean out and drain details; a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-04'
+  by: claude_eye
+  pack: RB-C8
+  page: 49
+  measured: false
+  reason: typical detail
+  note: 'page 49 not inventoried: typical grease trap detail; a typical detail with no position on the plans, no count feeds a QS line.'
+- date: '2026-11-05'
+  by: claude_eye
+  pack: RP-2
+  note: 'RP-2: the DOOR and WINDOW rows of this set carry mark_kind SIZE (31 rows). Their mark is the printed size label, not a mark the plan prints; the reader gives the size in its own mark, so the match is on width and height (rule SIZE_AS_MARK). No row, position or value was changed.'

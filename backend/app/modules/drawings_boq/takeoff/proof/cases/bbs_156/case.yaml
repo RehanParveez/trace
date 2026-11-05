@@ -5,4 +5,8 @@ pdfs:
 - Breakdown_of_BBS.pdf
 sha256:
   Breakdown_of_BBS.pdf: bef366df7f310d5c67c2609a8e5cbe4fa80c1396dfb6e4f15e550dd65025a62d
+structure:
+  case: IsbP
+  pdf: 156-BRIG.GHAZANFER_IQBAL_JAKHAR_DHA-III.pdf
+  sha256: 27f9f761078e6ee06d4a9c2fba9c11898e9159d6d830886eeef4bfba43ca0c48
 note: 'Plot 30, Street 8, Sector F, DHA Phase III Islamabad: the bar bending schedule (100 pages, 20 sheets) audited against the structural set 156-BRIG.GHAZANFER_IQBAL_JAKHAR (17 pages). An audit case, not a quantity case: proof/bbs_audit.py reads reads/bbs_read.json and reads/structure_read.json (the readers output when the case was made), applies decisions.yaml and compares the findings with expected_findings.yaml. Gate 15.'

@@ -9,6 +9,7 @@ from app.modules.drawings_boq.rebar.bbs_audit import Finding
 from app.modules.drawings_boq.rebar import expect_source as ES
 import yaml
 from app.modules.drawings_boq.rebar.member_source import norm_mark
+from app.modules.drawings_boq.takeoff.model.storeys import heights_ft as storey_heights_ft
 
 CROSSCHECK_VERSION = "L4.1"
 RULES_PATH = Path(__file__).with_name("rebar_audit_rules.yaml")
@@ -146,10 +147,10 @@ def _below_ground(sheet_name: str) -> bool:
   return "SUB-STRUCTURE" in up or "SUB STRUCTURE" in up or "BASEMENT" in up
 
 def _rework_height(job: dict, decisions: dict):
-  heights = decisions.get("floor_heights_ft") or {}
+  heights = storey_heights_ft(decisions.get("storeys")) or decisions.get("floor_heights_ft") or {}
   inputs = [i for i in job["inputs"] if i.name != "height_ft"]
   if "BASEMENT" in heights:
-    inputs.append(RX.defaulted("height_ft", D(str(heights["BASEMENT"])), "decision floor_heights_ft (BASEMENT)", None))
+    inputs.append(RX.defaulted("height_ft", D(str(heights["BASEMENT"])), "decision storeys (BASEMENT)", None))
   new = {**job, "inputs": inputs}
   return new, ES.run_jobs([new])[0][1]
 

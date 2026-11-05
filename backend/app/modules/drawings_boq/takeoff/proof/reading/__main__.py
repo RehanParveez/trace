@@ -124,12 +124,7 @@ def cmd_init(args) -> int:
     alias = ref.case if len(siblings) == 1 else f"{ref.case}-{siblings.index(ref) + 1}"
     os.makedirs(ref.truth_folder)
     doc = {"alias": alias, "split": V.Split.HELDOUT.value.lower(), "case": ref.case, "sha256": sha, "pages": pages, "consultant": None, "producer": producer, "units": "UNKNOWN"}
-    
-    with open(os.path.join(ref.truth_folder, "document.yaml"), "w", encoding="utf-8", newline="\n") as fh:
-      yaml.safe_dump(doc, fh, sort_keys=False)
-    for name in F.FILES[1:]:
-      with open(os.path.join(ref.truth_folder, name), "w", encoding="utf-8", newline="\n") as fh:
-        fh.write("[]\n")
+    F.write_truth_files(ref.truth_folder, {"document.yaml": doc, **{name: [] for name in F.FILES[1:]}})
     print(f"made {ref.truth_folder} ({alias}, {pages} pages, heldout)")
   return 0
 
@@ -331,12 +326,15 @@ def main(argv: list | None = None) -> int:
   ip.add_argument("--storeys")
   ip.add_argument("--city")
   ip.add_argument("--companions")
+  rd = sub.add_parser("redraft", help="add a draft row (truth.by DRAFT, source draft, never scored) for every item Trace read that no truth row covers; prints the 10% sample to check")
+  rd.add_argument("set", help="the PDF key (or its first characters) or the alias of one set")
+  rd.add_argument("--write", action="store_true", help="write the rows; without it nothing changes")
   sub.add_parser("first-sight-check", help="read each held-out set again and say whether the engine still reads it as at first sight")
   cp = sub.add_parser("corpus", help="write proof/reading/corpus.md: one row per set and the variety gaps")
   cp.add_argument("--score-json", help="reading_score.json from a score run, for the first-sight scores (default reading_out/reading_score.json)")
   args = ap.parse_args(argv)
   return {"list": cmd_list, "validate": cmd_validate, "init": cmd_init, "score": cmd_score, "diff": cmd_diff, "parity": cmd_parity, "set-join": cmd_set_join, "gate": cmd_gate, "profile": cmd_profile,
-    "intake": IN.cmd_intake, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
+    "intake": IN.cmd_intake, "redraft": IN.cmd_redraft, "first-sight-check": IN.cmd_first_sight_check, "corpus": IN.cmd_corpus}[args.command](args)
 
 if __name__ == "__main__":
   sys.exit(main())

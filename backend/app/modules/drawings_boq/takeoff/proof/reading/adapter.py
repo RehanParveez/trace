@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import kinds as K
 from app.modules.drawings_boq.takeoff.extract import read_status as RS
 from app.modules.drawings_boq.takeoff.extract import structure_tables as ST
@@ -66,8 +67,9 @@ def class_of(cand) -> V.ElementClass | None:
   return V.ElementClass.parse(name) if name else None
 
 def _live(c) -> bool:
-  aside = (c.facts or {}).get("set_aside")
-  return c.decision != "REJECTED" and (not aside or aside.get("by") == RS.ROLE_BY)
+  f = c.facts or {}
+  aside = f.get("set_aside")
+  return c.decision != "REJECTED" and not f.get("stack") and (not aside or aside.get("by") in (RS.ROLE_BY, FS.STACK_BY, FS.FAMILY_BY))
 
 def _points(c) -> list:
   pts = (c.geometry or {}).get("points") or []
