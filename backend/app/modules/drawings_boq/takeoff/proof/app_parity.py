@@ -17,6 +17,7 @@ from app.modules.drawings_boq.takeoff.extract.extract_service import ExtractServ
 from sqlalchemy import text
 from app.modules.drawings_boq.takeoff.proof import case_io as CIO
 from app.engine.measure import rulebook as RB
+from app.engine.measure import rule_registry as RR
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 from app.core.database import Base
@@ -120,11 +121,16 @@ def differences(want: dict, got: dict) -> list:
   return out
 
 async def run(case: str, files_dir: str) -> dict:
+  spec = CIO.load_case(os.path.join(CIO.HERE, case))
+  with RR.using(spec.get("overrides")):
+    return await _run(case, files_dir)
+
+async def _run(case: str, files_dir: str) -> dict:
   folder = os.path.join(CIO.HERE, case)
   spec = CIO.load_case(folder)
   files, _problems = CIO.find_files(spec, files_dir)
   rows, _bad, _file = CIO.load_company_rules(spec)
-  inputs = {"sections": spec.get("sections"), "storeys": spec.get("storeys"), "runs": bool(spec.get("beam_runs"))}
+  inputs = {"sections": spec.get("sections"), "storeys": spec.get("storeys"), "runs": RR.on("BEAM_RUNS")}
   items = [(n, open(files[n], "rb").read()) for n in spec["pdfs"]]
   with RB.using_case(rows):
     full = [(n, r) for n, r, _p in BM.read_set(items, **inputs)]

@@ -4,6 +4,9 @@ from contextlib import contextmanager
 from app.engine.measure import proposed
 from app.engine.measure import company as CO
 from app.engine.measure import rulebook as RB
+from app.engine.measure import rule_registry as RR
+from app.engine.catalogue import conventions as CVN
+from app.engine.catalogue import loader as CAT
 
 QS_NAME = RB.QS_SEED.get("name", "")
 ANSWERED_BEFORE = RB.QS_SEED.get("answered_before", "")
@@ -20,9 +23,9 @@ SECTIONS = {"A": "Walls, finishes and openings", "B": "Columns, footings, beams,
 CONVENTIONS = {
   "basement_wall_height_mm": 3352.8,
   "basement_floor_to_floor_mm": 3276.6,
-  "footing_depth_mm": 228.6,
+  "footing_depth_mm": CVN.seed("PK_FOOTING_DEPTH_DEFAULT"),
   "footing_below_ground_mm": 1066.8,
-  "slab_thickness_mm": 152.4,
+  "slab_thickness_mm": CVN.seed("PK_SLAB_THK_DEFAULT"),
   "stair_waist_mm": 127.0,
   "lintel_bearing_mm": 152.4,
   "tank_top_slab_mm": 152.4,
@@ -88,9 +91,9 @@ PARAM_VALUES = {
   "tie_band_single_count": 1.0,
   "slab_projection_chajja_max_mm": 457.2,
   "footing_formwork": 1.0,             
-  "steel_wastage_pct": 5.0,            
+  "steel_wastage_pct": CVN.seed("PK_STEEL_WASTAGE_PCT"),
   "pcc_thickness_mm": 76.2,                        
-  "slab_steel_kg_per_m2": 16.1459,     
+  "slab_steel_kg_per_m2": CVN.seed("PK_SLAB_STEEL_KG_PER_M2"),     
   "tank_base_formwork": 1.0,           
   "earth_swell_pct": 0.0,              
   "fill_compaction_pct": 0.0,
@@ -254,7 +257,7 @@ READINGS = [
   _a("v4-N1", "B", "Beam depth, inverted beams", "Beam depth on the section: overall? Inverted beams?",
     "The depth is overall. Only the part below the slab is concrete of the beam. An inverted beam (above the slab) is included. Concrete is never counted twice.", CONFIRM,
     "Beam depth includes the slab, so the part inside the slab is the slab's. A beam section captioned 'upstand' or 'inverted' is read as a beam above the slab: its concrete is the depth less the slab, it is shuttered on both sides above the slab with no soffit, and the section is not offered for a beam the plan does not mark.",
-    "Which beam of the plan is the upstand one: the plan of Plot_1 does not mark it, so none is shuttered that way yet.", params=["beam_depth_includes_slab"], on=NEW),
+    "Which beam of the plan is the upstand one: the plan of the office D set does not mark it, so none is shuttered that way yet.", params=["beam_depth_includes_slab"], on=NEW),
   _a("v4-N2", "D", "Tank base slab", "Is the base slab of a tank shuttered?",
     "Yes, shuttered.", APPLIED, "The soffit of a tank's base slab is shuttered (tank_base_formwork is 1 by the QS's answer).", params=["tank_base_formwork"], on=NEW),
   _a("v4-N3", "B", "Chajja", "Is a chajja inside the projection or balcony slab, and shuttered?",
@@ -366,6 +369,12 @@ def choice(name: str):
 def defaulted(key: str, scope: dict | None = None) -> bool:
   return RB.resolve(key, scope, record=False).origin == RB.CODE_DEFAULT_ASSUMED
 
+def rule_on(rule_id: str) -> bool:
+  return RR.on(rule_id)
+
+def reading_rules() -> list:
+  return RR.rules()
+
 def flag(name: str) -> bool:
   if name == "wall_height_floor_to_floor":
     return choice("wall_height_basis") != "CLEAR"
@@ -398,16 +407,8 @@ FONT_DECODE_ONLY_BELOW = 0.50
 MAX_TIE_SPACING_IN = 12
 MAX_SLAB_SPACING_IN = 18
 PER_DRAWING = ("wall_height_basis", "opening_rules_basis", "tie_band_single_count", "brick_net_of_lintels")
-EXPECTED_CLASSES = {
-  "PLAN/COLUMN_LAYOUT": ("GRID", "COLUMN"),
-  "PLAN/FOOTING_LAYOUT": ("GRID", "FOOTING_STRIP", "FOOTING_PAD"),
-  "PLAN/FOUNDATION": ("FOOTING_STRIP", "PLINTH_BEAM"),
-  "PLAN/FLOOR": ("WALL", "ROOM", "DOOR", "WINDOW"),
-  "PLAN/SLAB": ("BEAM", "SLAB_PANEL", "SLAB_BAR_CALLOUT"),
-  "PLAN/OVERLAY": ("ELECTRICAL_POINT", "DISTRIBUTION_BOARD", "PLUMBING_FIXTURE", "PIPE_RUN", "DRAIN_POINT"),
-  "SCHEDULE": ("COLUMN_SCHEDULE_CELL",),
-  "NOTES": ("NOTE_FACT",),
-}
+EXPECTED_CLASSES = CAT.expected_classes()
+
 NOT_READ = ("footing_below_ground_mm", "stair_waist_mm", "lintel_bearing_mm", "beam_formwork_mm_per_rft", "lintel_formwork_mm_per_rft", "brick_length_centre_line")
 DEPTHS = {"basement_dig_mm": "BASEMENT_DIG_MM", "trench_depth_mm": "TRENCH_DEPTH_MM", "fill_depth_mm": "FILL_DEPTH_MM"}
 BOUNDS = {"mm": (1.0, 30000.0), "mm per rft": (1.0, 2000.0), "%": (0.0, 100.0), "kg/m2": (0.0, 200.0), "m2": (0.0, 20.0), "cft per m3": (30.0, 40.0), "sft per m2": (10.0, 11.5),
@@ -416,6 +417,7 @@ WHY_FIXED = {
   "PER_DRAWING": "Decided for each drawing on its decisions screen. The figure here is only where every drawing starts.",
   "NOT_READ": "Held for reference. The software does not read this figure yet; the value it uses is a constant in the code.",
 }
+
 LABELS = {
   "basement_wall_height_mm": ("Heights and depths", "Basement concrete wall height"),
   "basement_floor_to_floor_mm": ("Heights and depths", "Basement floor to floor"),
@@ -476,8 +478,12 @@ LABELS = {
   "plaster.external_height_basis": ("How the QS counts", "Height of the external plaster and paint"),
 }
 
+LABELS.update({CVN.switch_key(c["id"]): ("Pakistan QS conventions", c["name"]) for c in CVN.conventions()})
+
 def code_default(key: str):
   """The figure the software starts from, whatever the company holds."""
+  if key.startswith(CVN.SWITCH_PREFIX):
+    return 0.0
   if key in CONVENTIONS:
     return CONVENTIONS[key]
   if key in PARAM_VALUES:

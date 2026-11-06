@@ -1,6 +1,7 @@
 from __future__ import annotations
 import re
 from app.engine.measure import readings as RD
+from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.extract import config as C
 
 READ, UNSURE, NOT_READ = "READ", "UNSURE", "NOT_READ"
@@ -129,7 +130,7 @@ def hold(res, plan_kind: str | None, role: str | None) -> dict | None:
       length += float((c.facts or {}).get("length_cc_m") or 0.0) if key == "WALL" else 0.0
     elif cls and cls not in expected:
       mark(c, UNSURE, [ROLE_BY])
-      if plan_kind in SUBSTRUCTURE_PLAN_KINDS and cls in SUPERSTRUCTURE_CLASSES:
+      if plan_kind in SUBSTRUCTURE_PLAN_KINDS and cls in SUPERSTRUCTURE_CLASSES and RR.on("HOLD_SUPERSTRUCTURE_ON_SUBSTRUCTURE_LAYOUTS"):
         _set_aside(c, plan_kind, role)
         held[cls] = held.get(cls, 0) + int(c.count or 1)
       else:
@@ -183,7 +184,7 @@ def apply(res, identity: dict | None, pdf: dict | None) -> None:
   role = role_of(identity)
   kind = plan_kind_of(identity) if role == "PLAN" else None
   text = text_type_of(pdf)
-  held = hold(res, "EXCAVATION" if role == "PLAN" and kind not in ("COLUMN_LAYOUT", "FOOTING_LAYOUT") and excavation_page(identity) else kind, role)
+  held = hold(res, "EXCAVATION" if role == "PLAN" and kind not in ("COLUMN_LAYOUT", "FOOTING_LAYOUT") and RR.on("HOLD_SUPERSTRUCTURE_ON_SUBSTRUCTURE_LAYOUTS") and excavation_page(identity) else kind, role)
   seen = outlined(res, pdf)
   cov = coverage(res.candidates, role, kind, text)
   if held:

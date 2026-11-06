@@ -52,6 +52,16 @@ def main(argv: list | None = None) -> int:
   results: list = []
   print("== import check")
   results.append(("import check", IC.main() == 0, ""))
+  from app.modules.drawings_boq.takeoff.proof import gate17 as G17
+  from app.modules.drawings_boq.takeoff.proof import generality as GEN
+  print("== gate 17")
+  ok17, note17, lines17 = G17.gate()
+  results.append(("no case literal outside proof (gate 17)", ok17, note17 if ok17 else note17 + ": " + "; ".join(lines17[:4])))
+  okg, noteg, _linesg = GEN.gate()
+  results.append(("generality baseline", okg, noteg))
+  from app.modules.drawings_boq.takeoff.proof import catalogue_check as CC
+  okc, notec, linesc = CC.gate()
+  results.append(("element catalogue", okc, notec if okc else notec + ": " + "; ".join(linesc[:4])))
 
   from app.modules.drawings_boq.takeoff.proof import case_io as CIO
   for case in CHECK_CASES:
@@ -128,11 +138,20 @@ def main(argv: list | None = None) -> int:
   if not args.write_hashes:
     print("== reading no regression")
     from app.modules.drawings_boq.takeoff.proof.reading import score as RSC
+    from app.modules.drawings_boq.takeoff.proof import gate16 as G16
+    collected = G16.Collector()
     try:
-      ok14, note14 = RSC.gate(args.cases_dir, args.out)
+       ok14, note14 = RSC.gate(args.cases_dir, args.out, on_read=collected)
     except (RuntimeError, ValueError) as e:
       ok14, note14 = False, str(e)
     results.append(("reading no regression (gate 14)", ok14, note14))
+    print("== project completeness")
+    ok16, note16, lines16 = G16.gate(collected, args.out)
+    results.append(("project completeness (gate 16)", ok16, note16 if ok16 else note16 + ": " + "; ".join(lines16[:4])))
+    print("== first-upload job")
+    from app.modules.drawings_boq.takeoff.proof import gate18 as G18
+    ok18, note18, lines18 = G18.gate(collected, args.out)
+    results.append(("first-upload job (gate 18)", ok18, note18 if ok18 else note18 + ": " + "; ".join(lines18[:4])))
     print("== bar schedule audit")
     from app.modules.drawings_boq.takeoff.proof import bbs_audit as BAU
     for name in BAU.audit_cases():

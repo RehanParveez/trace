@@ -59,10 +59,18 @@ def step_keys() -> tuple:
         bad.append(f"{case}/reading/{name} is not the sha256 prefix of any PDF of the case")
   return not bad, f"{count} truth folder(s) are named by their PDF's sha256" if not bad else f"{len(bad)} truth folder(s) misnamed", bad
 
+def step_gate17() -> tuple:
+  from app.modules.drawings_boq.takeoff.proof import gate17 as G17
+  return G17.gate()
+
+def step_catalogue() -> tuple:
+  from app.modules.drawings_boq.takeoff.proof import catalogue_check as CC
+  return CC.gate()
+
 def step_gates(cases_dir: str | None, out: str, no_toggles: bool) -> tuple:
   from app.modules.drawings_boq.takeoff.proof import check as CK
   argv = ["--out", out] + (["--cases-dir", cases_dir] if cases_dir else []) + (["--no-toggles"] if no_toggles else [])
-  return CK.main(argv) == 0, "score, engine hashes, residuals, gate 14, gate 15", []
+  return CK.main(argv) == 0, "score, engine hashes, residuals, gate 14, gate 15, gate 16", []
 
 def step_baseline(cases_dir: str | None, out: str) -> tuple:
   from app.modules.drawings_boq.takeoff.proof import score as SC
@@ -94,7 +102,7 @@ def main(argv: list | None = None) -> int:
   cases_dir = CIO.cases_dir(args.cases_dir)
   
   steps = [("import check", step_import), ("case files", step_files), ("reading validate", lambda: step_validate(cases_dir)), ("truth folder keys", step_keys),
-    ("gates", lambda: step_gates(cases_dir, args.out, args.no_toggles)), ("baseline", lambda: step_baseline(cases_dir, args.out))]
+    ("gate 17", step_gate17), ("catalogue", step_catalogue), ("gates", lambda: step_gates(cases_dir, args.out, args.no_toggles)), ("baseline", lambda: step_baseline(cases_dir, args.out))]
   for name, run in steps:
     ok, note, details = run()
     print(f"{'ok  ' if ok else 'FAIL'}  {name}: {note}")

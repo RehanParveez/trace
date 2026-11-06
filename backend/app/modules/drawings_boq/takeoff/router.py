@@ -139,6 +139,10 @@ from app.modules.drawings_boq.takeoff.integrity.router import router as _integri
 router.include_router(_integrity_router)
 from app.modules.drawings_boq.takeoff.decisions.router import router as _decisions_router
 router.include_router(_decisions_router)
+from app.modules.drawings_boq.takeoff.questions.router import router as _questions_router
+router.include_router(_questions_router)
+from app.modules.drawings_boq.takeoff.first_run.router import router as _first_run_router
+router.include_router(_first_run_router)
 from app.modules.drawings_boq.takeoff.crops.router import router as _crops_router
 router.include_router(_crops_router)
 from app.modules.drawings_boq.takeoff.ai_reader.router import router as _ai_shadow_router

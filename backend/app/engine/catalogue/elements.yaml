@@ -1,0 +1,5796 @@
+- id: EW-01
+  name: "Site clearance and levelling"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+  yields:
+    - {qty: cleared_area, unit: sft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Plot area"
+  status_v1: "NO"
+  reads: []
+- id: EW-02
+  name: "Excavation for foundations (trench and pit)"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: working_space, unit: mm, sources: [SPEC, CONVENTION, DECISION]}
+  yields:
+    - {qty: excavation_volume, unit: cft, split: [floor]}
+  page_roles: [FOOTING_LAYOUT, SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: EXCAVATION, qty: excavation_volume}]
+  how_measured: "Trench length × width (with working space) × depth below NGL"
+  status_v1: "BILLS"
+  reads: []
+- id: EW-03
+  name: "Bulk excavation for basement"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: footprint, unit: mm2, sources: [LAYOUT, DETAIL]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: working_space, unit: mm, sources: [SPEC, CONVENTION, DECISION]}
+  yields:
+    - {qty: excavation_volume, unit: cft, split: []}
+  page_roles: [BASEMENT_PLAN, SECTION]
+  applies_when: {basement: true}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Basement footprint plus working space × depth"
+  status_v1: "PARTIAL"
+  reads: []
+- id: EW-04
+  name: "Excavation for tanks, septic, soakage"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: tank_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: working_space, unit: mm, sources: [SPEC, CONVENTION, DECISION]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: excavation_volume, unit: cft, split: [tank]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Tank outer size plus working space × depth"
+  status_v1: "NO"
+  reads: []
+- id: EW-05
+  name: "Excavation in hard soil or rock"
+  section: "Earthwork and substructure"
+  use: [P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: soil_class, unit: text, sources: [SPEC, NOTE]}
+    - {name: excavation_volume, unit: cft, sources: [DERIVED]}
+  yields:
+    - {qty: excavation_volume_hard, unit: cft, split: [type]}
+  page_roles: [SOIL_REPORT]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As above, by soil class"
+  status_v1: "NO"
+  reads: []
+- id: EW-06
+  name: "Back filling around foundations"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: excavation_volume, unit: cft, sources: [DERIVED]}
+    - {name: buried_volume, unit: cft, sources: [DERIVED]}
+    - {name: backfill_method, unit: text, sources: [DECISION, CONVENTION]}
+  yields:
+    - {qty: backfill_volume, unit: cft, split: []}
+  page_roles: [SECTION, FOOTING_LAYOUT]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: {from: [EW-02, EW-13, RC-01, RC-06, EW-16], rule: excavation_minus_buried}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Excavation minus buried volumes"
+  status_v1: "PARTIAL"
+  reads: []
+- id: EW-07
+  name: "Earth filling under floors (plinth filling)"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: fill_depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+  yields:
+    - {qty: fill_volume, unit: cft, split: [floor]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FILLING, qty: fill_volume}]
+  how_measured: "Floor area × fill depth (NGL to under PCC)"
+  status_v1: "BILLS"
+  reads: []
+- id: EW-08
+  name: "Sand filling under floors"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: sand_volume, unit: cft, split: [floor]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Floor area × thickness"
+  status_v1: "NO"
+  reads: []
+- id: EW-09
+  name: "Compaction of fill"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: sft
+  member_class: EARTHWORK
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: fill_depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: specification, unit: text, sources: [SPEC, NOTE, LEGEND]}
+  yields:
+    - {qty: compacted_area, unit: sft, split: []}
+    - {qty: compacted_volume, unit: cft, split: []}
+  page_roles: [SPEC]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area or volume compacted"
+  status_v1: "NO"
+  reads: []
+- id: EW-10
+  name: "Disposal of surplus earth"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: excavation_volume, unit: cft, sources: [DERIVED]}
+    - {name: fill_volume, unit: cft, sources: [DERIVED]}
+  yields:
+    - {qty: surplus_volume, unit: cft, split: []}
+  page_roles: [SECTION, FOOTING_LAYOUT]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: {from: [EW-02, EW-07], rule: excavation_minus_fill}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Excavation minus fill"
+  status_v1: "NO"
+  reads: []
+- id: EW-11
+  name: "Dewatering and shoring"
+  section: "Earthwork and substructure"
+  use: [P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: perimeter, unit: mm, sources: [LAYOUT, SECTION]}
+    - {name: specification, unit: text, sources: [SPEC, NOTE, LEGEND]}
+  yields:
+    - {qty: dewatering_length, unit: rft, split: []}
+    - {qty: dewatering_lump, unit: lump_sum, split: []}
+  page_roles: [SECTION, SPEC]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Basement perimeter"
+  status_v1: "NO"
+  reads: []
+- id: EW-12
+  name: "Stone or brick soling"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: soling_volume, unit: cft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area × thickness"
+  status_v1: "NO"
+  reads: []
+- id: EW-13
+  name: "PCC under footings (lean, e.g. 1:4:8 or 1:6:12)"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: footing_plan_area, unit: mm2, sources: [LAYOUT, SECTION]}
+    - {name: projection, unit: mm, sources: [SECTION, DETAIL, CONVENTION]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: mix, unit: text, sources: [NOTE, SPEC, SECTION]}
+  yields:
+    - {qty: pcc_volume, unit: cft, split: [mix]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: PCC, qty: pcc_volume}]
+  how_measured: "Footing plan area plus projection × thickness"
+  status_v1: "BILLS"
+  reads: []
+- id: EW-14
+  name: "PCC under floors (e.g. 1:2:4 or 1:4:8)"
+  section: "Earthwork and substructure"
+  use: [H, P]
+  unit: cft
+  member_class: EARTHWORK
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: mix, unit: text, sources: [NOTE, SPEC, SECTION]}
+  yields:
+    - {qty: pcc_volume, unit: cft, split: [floor, mix]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: PCC, qty: pcc_volume}]
+  how_measured: "Floor area × thickness"
+  status_v1: "BILLS"
+  reads: []
+- id: EW-15
+  name: "Kacha (rammed earth, brick ballast) under floors"
+  section: "Earthwork and substructure"
+  use: [H]
+  unit: sft
+  member_class: EARTHWORK
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: layer, unit: text, sources: [SECTION, SPEC]}
+  yields:
+    - {qty: kacha_area, unit: sft, split: [floor]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: KACHA, qty: kacha_area}]
+  how_measured: "Floor area"
+  status_v1: "BILLS"
+  reads: []
+- id: EW-16
+  name: "Brick masonry in foundation (steps)"
+  section: "Earthwork and substructure"
+  use: [H]
+  unit: cft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: step_width, unit: mm, sources: [SECTION, DETAIL]}
+    - {name: step_height, unit: mm, sources: [SECTION, DETAIL]}
+    - {name: courses, unit: nos, sources: [SECTION, DETAIL]}
+  yields:
+    - {qty: brick_volume, unit: cft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_FOUNDATION, qty: brick_volume}]
+  how_measured: "Wall length × step width × height, per step"
+  status_v1: "BILLS"
+  reads: []
+- id: RC-01
+  name: "RCC isolated footings (pads)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: FOOTING_PAD
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: length, unit: mm, sources: [SECTION, SCHEDULE, PLAN_LABEL]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION], default_rule: PK_FOOTING_DEPTH_DEFAULT}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [size]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: [FOOTING_LAYOUT, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_FOOTINGS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Count × L × W × D, plus sloped part if any"
+  status_v1: "BILLS"
+  reads: [{class: FOOTING_PAD, 'on': [PLAN/FOOTING_LAYOUT], support: false}, {class: GRID, 'on': [PLAN/FOOTING_LAYOUT], support: true}]
+- id: RC-02
+  name: "RCC strip or wall footings"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: FOOTING_STRIP
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION], default_rule: PK_FOOTING_DEPTH_DEFAULT}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [run]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: [FOOTING_LAYOUT, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_FOOTINGS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Centreline length × width × depth"
+  status_v1: "PARTIAL"
+  reads: [{class: FOOTING_STRIP, 'on': [PLAN/FOOTING_LAYOUT, PLAN/FOUNDATION], support: false}]
+- id: RC-03
+  name: "RCC combined footings"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: FOOTING_OTHER
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION], default_rule: PK_FOOTING_DEPTH_DEFAULT}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [size]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: [FOOTING_LAYOUT, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As pads"
+  status_v1: "NO"
+  reads: []
+- id: RC-04
+  name: "RCC raft or mat foundation"
+  section: "Concrete and RCC members"
+  use: [P]
+  unit: cft
+  member_class: FOOTING_OTHER
+  inputs:
+    - {name: raft_area, unit: mm2, sources: [LAYOUT]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: thickening, unit: mm, sources: [SECTION, DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: [RAFT_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Raft area × thickness, plus thickenings"
+  status_v1: "NO"
+  reads: []
+- id: RC-05
+  name: "Pile caps and piles"
+  section: "Concrete and RCC members"
+  use: [P]
+  unit: cft
+  member_class: FOOTING_OTHER
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: pile_length, unit: mm, sources: [LAYOUT, SECTION, SCHEDULE]}
+    - {name: pile_diameter, unit: mm, sources: [SCHEDULE, DETAIL]}
+    - {name: cap_size, unit: mm, sources: [DETAIL, SCHEDULE]}
+  yields:
+    - {qty: pile_length, unit: rft, split: []}
+    - {qty: concrete_volume, unit: cft, split: []}
+  page_roles: [PILE_LAYOUT]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count × size; pile length × count"
+  status_v1: "NO"
+  reads: []
+- id: RC-06
+  name: "RCC plinth beam (grade beam, DPC beam)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: PLINTH_BEAM
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [run]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: [FOOTING_LAYOUT, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_PLINTH_BEAM, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Length × b × d"
+  status_v1: "BILLS"
+  reads: [{class: PLINTH_BEAM, 'on': [PLAN/FOUNDATION], support: false}]
+- id: RC-07
+  name: "RCC columns (by floor)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: COLUMN
+  inputs:
+    - {name: b, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SECTION]}
+    - {name: d, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+  page_roles: [COLUMN_LAYOUT, SECTION, COLUMN_SCHEDULE]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-3
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
+    PRIVATE_QS: [{line: RCC_COLUMNS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Count × b × d × height (floor to slab or beam soffit)"
+  status_v1: "BILLS"
+  reads: [{class: COLUMN, 'on': [PLAN/COLUMN_LAYOUT], support: false}, {class: GRID, 'on': [PLAN/COLUMN_LAYOUT], support: true}, {class: COLUMN_SCHEDULE_CELL, 'on': [SCHEDULE], support: true}]
+- id: RC-08
+  name: "RCC column necks (footing to plinth)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: COLUMN
+  inputs:
+    - {name: size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SECTION]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: neck_height, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-3
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_COLUMNS, qty: concrete_volume}]
+  how_measured: "Count × size × neck height"
+  status_v1: "PARTIAL"
+  reads: []
+- id: RC-09
+  name: "RCC beams (by floor)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: BEAM
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+    - {name: stirrups, unit: text, sources: [SECTION, DETAIL, NOTE]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+  page_roles: [BEAM_LAYOUT, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-5
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_BEAMS, qty: concrete_volume}, {line: RCC_ROOF_BEAMS, qty: concrete_volume}, {line: RCC_BEAMS_SLABS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Clear span × b × (d minus slab, if slab is billed through)"
+  status_v1: "BILLS"
+  reads: [{class: BEAM, 'on': [PLAN/SLAB], support: false}]
+- id: RC-10
+  name: "RCC slabs (by floor)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION], default_rule: PK_SLAB_THK_DEFAULT}
+    - {name: bar_callouts, unit: text, sources: [LAYOUT, NOTE, PLAN_LABEL], default_rule: PK_SLAB_STEEL_KG_PER_M2}
+    - {name: openings, unit: mm2, sources: [LAYOUT]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+  page_roles: [SLAB_PLAN, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_SLABS, qty: concrete_volume}, {line: RCC_BEAMS_SLABS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Area net of openings × thickness"
+  status_v1: "BILLS"
+  reads: [{class: SLAB_PANEL, 'on': [PLAN/SLAB], support: false}, {class: SLAB_BAR_CALLOUT, 'on': [PLAN/SLAB], support: true}]
+- id: RC-11
+  name: "RCC sunken slabs (toilets)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION], default_rule: PK_SLAB_THK_DEFAULT}
+    - {name: drop, unit: mm, sources: [SECTION, DETAIL, NOTE]}
+    - {name: bar_callouts, unit: text, sources: [LAYOUT, NOTE]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SLAB_PLAN, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area × thickness, plus drop walls"
+  status_v1: "NO"
+  reads: []
+- id: RC-12
+  name: "RCC cantilever slabs, chajjas, sunshades"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: projection, unit: mm, sources: [LAYOUT, SECTION, ELEVATION]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [FLOOR_PLAN, ELEVATION, SECTION]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Projection × length × thickness"
+  status_v1: "NO"
+  reads: []
+- id: RC-13
+  name: "RCC lintels"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: LINTEL_TYPE
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: opening_width, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: bearing, unit: mm, sources: [TABLE, CONVENTION]}
+    - {name: lintel_section, unit: mm, sources: [TABLE, DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [FLOOR_PLAN, LINTEL_TABLE]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_LINTELS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "(Opening width plus bearings) × b × d, per opening"
+  status_v1: "BILLS"
+  reads: [{class: LINTEL_TYPE, 'on': [], support: false}]
+- id: RC-14
+  name: "RCC tie bands or seismic bands"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: BEAM
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: band_section, unit: mm, sources: [SECTION, NOTE, DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SECTION, GENERAL_NOTES]
+  applies_when: {structure: RCC_FRAME}
+  owner_pack: CV-5
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Wall length × b × d"
+  status_v1: "NO"
+  reads: []
+- id: RC-15
+  name: "RCC walls: basement, retaining"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: STRUCT_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [SECTION, ELEVATION, NOTE, CONVENTION]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [BASEMENT_PLAN, SECTION]
+  applies_when: {basement: true}
+  owner_pack: CV-3
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_WALLS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Length × height × thickness, net of openings"
+  status_v1: "BILLS"
+  reads: []
+- id: RC-16
+  name: "RCC shear walls and lift core"
+  section: "Concrete and RCC members"
+  use: [P]
+  unit: cft
+  member_class: STRUCT_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [STRUCTURAL_PLAN]
+  applies_when: {}
+  owner_pack: CV-3
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As walls"
+  status_v1: "NO"
+  reads: []
+- id: RC-17
+  name: "RCC stair (waist, steps, landings)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: STAIR
+  inputs:
+    - {name: waist, unit: mm, sources: [SECTION, DETAIL, CONVENTION]}
+    - {name: rise, unit: mm, sources: [SECTION, DETAIL]}
+    - {name: going, unit: mm, sources: [SECTION, DETAIL]}
+    - {name: width, unit: mm, sources: [LAYOUT, DETAIL]}
+    - {name: landing, unit: mm, sources: [LAYOUT, DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SECTION, STAIR_DETAIL]
+  applies_when: {floors_min: 2}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_STAIR, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Waist slab plus steps (triangles) plus landings"
+  status_v1: "BILLS"
+  reads: [{class: STAIR, 'on': [], support: false}]
+- id: RC-18
+  name: "RCC water tanks: OHWT, UGWT"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: TANK
+  inputs:
+    - {name: inner_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: wall_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: base_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: top_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [tank]}
+    - {qty: formwork_area, unit: sft, split: [tank]}
+    - {qty: steel_mass, unit: kg, split: [tank, dia]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: TANKS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
+  how_measured: "Walls plus base plus top, net"
+  status_v1: "BILLS"
+  reads: [{class: TANK, 'on': [], support: false}]
+- id: RC-19
+  name: "RCC septic tank and soakage pit"
+  section: "Concrete and RCC members"
+  use: [H]
+  unit: cft
+  member_class: TANK
+  inputs:
+    - {name: inner_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: wall_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: baffle_walls, unit: nos, sources: [DETAIL]}
+    - {name: soakage_depth, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [tank]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: TANKS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
+  how_measured: "As tanks"
+  status_v1: "PARTIAL"
+  reads: []
+- id: RC-20
+  name: "RCC parapet or coping"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: PARAPET
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [SECTION, ELEVATION, NOTE, CONVENTION]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+    - {qty: parapet_length, unit: rft, split: []}
+  page_roles: [ROOF_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length × section"
+  status_v1: "NO"
+  reads: []
+- id: RC-21
+  name: "RCC ramp"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: gradient, unit: text, sources: [SECTION, NOTE, DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SITE_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area × thickness"
+  status_v1: "NO"
+  reads: []
+- id: RC-22
+  name: "RCC boundary wall columns and beams"
+  section: "Concrete and RCC members"
+  use: [H]
+  unit: cft
+  member_class: BOUNDARY_WALL
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SECTION]}
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: beam_section, unit: mm, sources: [DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As columns and beams"
+  status_v1: "NO"
+  reads: []
+- id: RC-23
+  name: "RCC mumty slab and machine-room slab"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION], default_rule: PK_SLAB_THK_DEFAULT}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [ROOF_PLAN]
+  applies_when: {floors_min: 2}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: RCC_SLABS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
+  how_measured: "As slabs"
+  status_v1: "BILLS"
+  reads: []
+- id: RC-24
+  name: "Precast items (jali, coping, kerb)"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: rft
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SECTION]}
+    - {name: type, unit: text, sources: [SCHEDULE, PLAN_LABEL, SPEC]}
+  yields:
+    - {qty: precast_length, unit: rft, split: []}
+    - {qty: precast_count, unit: nos, split: []}
+  page_roles: [ELEVATION, DETAIL]
+  applies_when: {}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length or count"
+  status_v1: "NO"
+  reads: []
+- id: RF-01
+  name: "Steel reinforcement, Grade 40 or 60, by diameter (#3 to #8, or 10–25 mm)"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: kg
+  member_class: REINFORCEMENT
+  inputs:
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+    - {name: grade, unit: text, sources: [SPEC, NOTE, SCHEDULE]}
+    - {name: mark_count, unit: nos, sources: [SCHEDULE, LAYOUT]}
+    - {name: bar_length, unit: mm, sources: [SECTION, SCHEDULE, DERIVED]}
+    - {name: wastage, unit: percent, sources: [SPEC, NOTE, CONVENTION], default_rule: PK_STEEL_WASTAGE_PCT}
+  yields:
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SLAB_PLAN, SECTION, GENERAL_NOTES, REINFORCEMENT_SCHEDULE]
+  applies_when: {}
+  owner_pack: BB-1
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: STEEL, qty: steel_mass}]
+  how_measured: "BBS: bars × cut length × unit weight, per member; laps, hooks and bends per notes; wastage %"
+  status_v1: "Partial (estimated from volume, except via the BBS)"
+  reads: [{class: NOTE_FACT, 'on': [NOTES], support: true}]
+- id: RF-02
+  name: "Steel by member: footings, columns, beams, slabs, stair, tanks, lintels"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: kg
+  member_class: REINFORCEMENT
+  inputs:
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+    - {name: member_ref, unit: text, sources: [SCHEDULE, DERIVED]}
+  yields:
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+  page_roles: [SLAB_PLAN, SECTION, GENERAL_NOTES, REINFORCEMENT_SCHEDULE]
+  applies_when: {}
+  owner_pack: BB-1
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: STEEL, qty: steel_mass}]
+  how_measured: "As above, grouped as BBS sheets"
+  status_v1: "PARTIAL"
+  reads: []
+- id: RF-03
+  name: "Binding wire"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: kg
+  member_class: REINFORCEMENT
+  inputs:
+    - {name: steel_mass, unit: kg, sources: [DERIVED]}
+    - {name: binding_percent, unit: percent, sources: [RATE_BOOK, CONVENTION], default_rule: PK_BINDING_WIRE_PCT}
+  yields:
+    - {qty: binding_wire, unit: kg, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: [RF-01], rule: binding_wire_pct}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "% of steel"
+  status_v1: "NO"
+  reads: []
+- id: RF-04
+  name: "Dowels and starter bars"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: kg
+  member_class: REINFORCEMENT
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: dowel_length, unit: mm, sources: [SECTION, DETAIL, NOTE]}
+    - {name: dowel_diameter, unit: mm, sources: [SECTION, DETAIL]}
+  yields:
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: BB-1
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count × length"
+  status_v1: "NO"
+  reads: []
+- id: RF-05
+  name: "Mesh (BRC) for floors or toppings"
+  section: "Reinforcement and formwork"
+  use: [P]
+  unit: sft
+  member_class: REINFORCEMENT
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: mesh_type, unit: text, sources: [SECTION, NOTE, SPEC]}
+    - {name: lap, unit: mm, sources: [NOTE, CONVENTION]}
+  yields:
+    - {qty: mesh_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: RF-06
+  name: "Formwork or shuttering: footings"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: sft
+  member_class: FORMWORK
+  inputs:
+    - {name: footing_contact_area, unit: mm2, sources: [DERIVED]}
+  yields:
+    - {qty: formwork_area, unit: sft, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: RC-01, rule: footing_contact_faces}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FORMWORK, qty: formwork_area}]
+  how_measured: "Side areas"
+  status_v1: "Bills (as one formwork line)"
+  reads: []
+- id: RF-07
+  name: "Formwork: columns"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: sft
+  member_class: FORMWORK
+  inputs:
+    - {name: column_perimeter, unit: mm, sources: [DERIVED]}
+    - {name: column_height, unit: mm, sources: [DERIVED]}
+  yields:
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: RC-07, rule: perimeter_x_height}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Perimeter × height"
+  status_v1: "BILLS"
+  reads: []
+- id: RF-08
+  name: "Formwork: beams"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: sft
+  member_class: FORMWORK
+  inputs:
+    - {name: beam_soffit, unit: mm2, sources: [DERIVED]}
+    - {name: beam_sides, unit: mm2, sources: [DERIVED]}
+  yields:
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: RC-09, rule: soffit_plus_sides}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Sides plus soffit"
+  status_v1: "BILLS"
+  reads: []
+- id: RF-09
+  name: "Formwork: slabs (soffit and edges)"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: sft
+  member_class: FORMWORK
+  inputs:
+    - {name: slab_soffit, unit: mm2, sources: [DERIVED]}
+    - {name: slab_edges, unit: mm, sources: [DERIVED]}
+  yields:
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: RC-10, rule: soffit_plus_edges}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Soffit area plus edges"
+  status_v1: "BILLS"
+  reads: []
+- id: RF-10
+  name: "Formwork: stair, tanks, walls"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: sft
+  member_class: FORMWORK
+  inputs:
+    - {name: contact_faces, unit: mm2, sources: [DERIVED]}
+  yields:
+    - {qty: formwork_area, unit: sft, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: [RC-17, RC-18, RC-15], rule: contact_faces}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Contact areas"
+  status_v1: "PARTIAL"
+  reads: []
+- id: RF-11
+  name: "Centring and props (staging) for slabs"
+  section: "Reinforcement and formwork"
+  use: [H, P]
+  unit: sft
+  member_class: FORMWORK
+  inputs:
+    - {name: slab_soffit, unit: mm2, sources: [DERIVED]}
+    - {name: support_height, unit: mm, sources: [STOREY, DERIVED, CONVENTION]}
+  yields:
+    - {qty: staging_area, unit: sft, split: [floor]}
+  page_roles: []
+  applies_when: {}
+  owner_pack: DERIVED
+  derived: {from: RC-10, rule: soffit_area_x_support_height}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Slab soffit area, by height"
+  status_v1: "NO"
+  reads: []
+- id: MS-01
+  name: "Brickwork 13½\" and 9\" walls, superstructure, per floor"
+  section: "Masonry"
+  use: [H, P]
+  unit: cft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: wall_thickness, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: openings, unit: mm2, sources: [LAYOUT, SCHEDULE]}
+    - {name: beam_depth, unit: mm, sources: [SECTION, DERIVED]}
+  yields:
+    - {qty: brick_volume, unit: cft, split: [floor]}
+  page_roles: [FLOOR_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
+  how_measured: "Length × height × thickness, minus openings and RCC passing through"
+  status_v1: "BILLS"
+  reads: [{class: WALL, 'on': [PLAN/FLOOR], support: false}]
+- id: MS-02
+  name: "Brickwork 4½\" partitions"
+  section: "Masonry"
+  use: [H, P]
+  unit: sft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: openings, unit: mm2, sources: [LAYOUT, SCHEDULE]}
+  yields:
+    - {qty: partition_area, unit: sft, split: [floor]}
+    - {qty: brick_volume, unit: cft, split: [floor]}
+  page_roles: [FLOOR_PLAN]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
+  how_measured: "Length × height"
+  status_v1: "PARTIAL"
+  reads: []
+- id: MS-03
+  name: "Brickwork in substructure (plinth walls)"
+  section: "Masonry"
+  use: [H, P]
+  unit: cft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: plinth_height, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+    - {name: wall_thickness, unit: mm, sources: [LAYOUT, SECTION]}
+  yields:
+    - {qty: brick_volume, unit: cft, split: []}
+  page_roles: [FOOTING_LAYOUT, SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
+  how_measured: "As above, below plinth"
+  status_v1: "BILLS"
+  reads: []
+- id: MS-04
+  name: "Brickwork in boundary wall"
+  section: "Masonry"
+  use: [H]
+  unit: cft
+  member_class: BOUNDARY_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [DETAIL, SECTION, DECISION]}
+    - {name: wall_thickness, unit: mm, sources: [DETAIL, SECTION, CONVENTION]}
+    - {name: gate_openings, unit: mm, sources: [LAYOUT, DETAIL]}
+  yields:
+    - {qty: brick_volume, unit: cft, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_BOUNDARY, qty: brick_volume}]
+  how_measured: "Length × height × thickness, plus footing steps"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: MS-05
+  name: "Brickwork in parapet"
+  section: "Masonry"
+  use: [H, P]
+  unit: cft
+  member_class: PARAPET
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [SECTION, ELEVATION, NOTE, CONVENTION]}
+    - {name: wall_thickness, unit: mm, sources: [SECTION, DETAIL, CONVENTION]}
+  yields:
+    - {qty: brick_volume, unit: cft, split: []}
+  page_roles: [ROOF_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
+  how_measured: "Roof perimeter × height × thickness"
+  status_v1: "PARTIAL"
+  reads: []
+- id: MS-06
+  name: "Brickwork in mumty"
+  section: "Masonry"
+  use: [H, P]
+  unit: cft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [SECTION, ELEVATION, NOTE, CONVENTION]}
+    - {name: wall_thickness, unit: mm, sources: [LAYOUT, SECTION]}
+  yields:
+    - {qty: brick_volume, unit: cft, split: []}
+  page_roles: [ROOF_PLAN]
+  applies_when: {floors_min: 2}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_WALLS, qty: brick_volume}]
+  how_measured: "As walls"
+  status_v1: "BILLS"
+  reads: []
+- id: MS-07
+  name: "Brick on edge (sills, copings)"
+  section: "Masonry"
+  use: [H]
+  unit: rft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: type, unit: text, sources: [SCHEDULE, PLAN_LABEL, SPEC]}
+  yields:
+    - {qty: brick_on_edge_length, unit: rft, split: []}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: MS-08
+  name: "Block masonry (concrete or AAC blocks)"
+  section: "Masonry"
+  use: [P]
+  unit: cft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: wall_thickness, unit: mm, sources: [LAYOUT, SPEC]}
+    - {name: block_type, unit: text, sources: [SPEC, NOTE]}
+  yields:
+    - {qty: block_volume, unit: cft, split: []}
+    - {qty: block_area, unit: sft, split: []}
+  page_roles: [FLOOR_PLAN, SPEC]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As brickwork"
+  status_v1: "NO"
+  reads: []
+- id: MS-09
+  name: "Honeycomb or jali brickwork"
+  section: "Masonry"
+  use: [H]
+  unit: sft
+  member_class: WALL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, ELEVATION]}
+    - {name: jali_pattern, unit: text, sources: [ELEVATION, DETAIL]}
+  yields:
+    - {qty: jali_area, unit: sft, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: MS-10
+  name: "Stone masonry or cladding walls"
+  section: "Masonry"
+  use: [H, P]
+  unit: cft
+  member_class: WALL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, ELEVATION, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: stone_type, unit: text, sources: [SPEC, ELEVATION, DETAIL]}
+  yields:
+    - {qty: stone_volume, unit: cft, split: []}
+    - {qty: stone_area, unit: sft, split: []}
+  page_roles: [ELEVATION, DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Volume or area"
+  status_v1: "NO"
+  reads: []
+- id: MS-11
+  name: "Brick tiles or exposed brick facing"
+  section: "Masonry"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, ELEVATION, PLAN_LABEL]}
+    - {name: brick_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: facing_area, unit: sft, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: DP-01
+  name: "DPC horizontal (1:2:4 concrete with bitumen coat)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: wall_thickness, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: door_openings, unit: mm, sources: [LAYOUT, SCHEDULE]}
+  yields:
+    - {qty: dpc_area, unit: sft, split: []}
+  page_roles: [FLOOR_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: MAS-DPC, qty: dpc_area}]
+  how_measured: "Wall length at plinth × wall width"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: DP-02
+  name: "DPC vertical (basement or below-grade face)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: external_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: dpc_height, unit: mm, sources: [SECTION, DETAIL, DECISION]}
+  yields:
+    - {qty: dpc_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {basement: true}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: DPC_VERTICAL, qty: dpc_area}]
+  how_measured: "Length × height"
+  status_v1: "NO"
+  reads: []
+- id: DP-03
+  name: "Polythene or membrane sheet under floor"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: sheet_overlap, unit: mm, sources: [SPEC, CONVENTION]}
+  yields:
+    - {qty: membrane_area, unit: sft, split: [floor]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: MEMBRANE, qty: membrane_area}]
+  how_measured: "Floor area plus laps"
+  status_v1: "BILLS"
+  reads: []
+- id: DP-04
+  name: "Anti-termite treatment"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: treated_area, unit: mm2, sources: [LAYOUT, DERIVED]}
+    - {name: method, unit: text, sources: [SPEC, NOTE, DECISION]}
+  yields:
+    - {qty: termite_area, unit: sft, split: []}
+  page_roles: [FOOTING_LAYOUT, SPEC]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: TERMITE, qty: termite_area}]
+  how_measured: "Footprint plus trench sides and bottoms"
+  status_v1: "BILLS"
+  reads: []
+- id: DP-05
+  name: "Bitumen coats on foundations"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: coated_area, unit: mm2, sources: [SECTION, DERIVED]}
+    - {name: coats, unit: nos, sources: [SPEC, NOTE]}
+  yields:
+    - {qty: bitumen_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Buried faces"
+  status_v1: "NO"
+  reads: []
+- id: DP-06
+  name: "Basement waterproofing (membrane or crystalline)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: wall_area, unit: mm2, sources: [DERIVED, SECTION]}
+    - {name: specification, unit: text, sources: [SPEC, NOTE, LEGEND]}
+  yields:
+    - {qty: waterproofing_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {basement: true}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Walls plus floor area"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DP-07
+  name: "Waterproofing of wet areas (toilet floors, sunken slabs)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: upturn, unit: mm, sources: [DETAIL, SECTION, CONVENTION]}
+  yields:
+    - {qty: waterproofing_area, unit: sft, split: [room]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Floor plus upturn"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DP-08
+  name: "Tank waterproofing (inside faces)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: WATERPROOFING
+  inputs:
+    - {name: inner_faces, unit: mm2, sources: [DERIVED, DETAIL]}
+  yields:
+    - {qty: waterproofing_area, unit: sft, split: [tank]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Inside area"
+  status_v1: "NO"
+  reads: []
+- id: DP-09
+  name: "Roof treatment: mud and tiles (traditional)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: layer, unit: text, sources: [SECTION, NOTE, SPEC]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: roof_area, unit: sft, split: []}
+  page_roles: [ROOF_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ROOF_TREATMENT, qty: roof_area}]
+  how_measured: "Roof area plus parapet upturn"
+  status_v1: "BILLS"
+  reads: []
+- id: DP-10
+  name: "Roof treatment: brick-bat coba, screed to slope"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: average_thickness, unit: mm, sources: [SECTION, NOTE, CONVENTION]}
+    - {name: slope, unit: text, sources: [SECTION, NOTE]}
+  yields:
+    - {qty: roof_area, unit: sft, split: []}
+    - {qty: coba_volume, unit: cft, split: []}
+  page_roles: [ROOF_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ROOF_TREATMENT, qty: roof_area}, {line: BALLAST, qty: coba_volume}]
+  how_measured: "Roof area × average thickness"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DP-11
+  name: "Roof membrane or bitumen felt"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: upturn, unit: mm, sources: [SECTION, DETAIL, CONVENTION]}
+    - {name: layers, unit: nos, sources: [SECTION, SPEC]}
+  yields:
+    - {qty: membrane_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Roof area plus upturns"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DP-12
+  name: "Roof thermal insulation (thermopore, polystyrene)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: insulation_type, unit: text, sources: [SECTION, SPEC]}
+  yields:
+    - {qty: insulation_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Roof area"
+  status_v1: "NO"
+  reads: []
+- id: DP-13
+  name: "Roof tiles (terracotta, concrete)"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: tile_type, unit: text, sources: [SPEC, NOTE, LEGEND]}
+  yields:
+    - {qty: tile_area, unit: sft, split: []}
+  page_roles: [ROOF_PLAN]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: DP-14
+  name: "Gola or fillet at roof edges"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H]
+  unit: rft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: fillet_size, unit: mm, sources: [SECTION, DETAIL]}
+  yields:
+    - {qty: fillet_length, unit: rft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Perimeter"
+  status_v1: "NO"
+  reads: []
+- id: DP-15
+  name: "Water spouts and khurras"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: spout_type, unit: text, sources: [DETAIL, LEGEND]}
+  yields:
+    - {qty: spout_count, unit: nos, split: []}
+  page_roles: [ROOF_PLAN]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: DP-16
+  name: "Expansion joints and sealant"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [P]
+  unit: rft
+  member_class: FITTING
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: joint_width, unit: mm, sources: [DETAIL, NOTE]}
+  yields:
+    - {qty: joint_length, unit: rft, split: []}
+  page_roles: [FLOOR_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: PL-01
+  name: "Cement plaster inside walls (½\", 1:4 or 1:6)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: openings, unit: mm2, sources: [LAYOUT, SCHEDULE]}
+    - {name: plaster_thickness, unit: mm, sources: [SPEC, NOTE, CONVENTION]}
+    - {name: room_type, unit: text, sources: [PLAN_LABEL, SCHEDULE]}
+  yields:
+    - {qty: plaster_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: WALL_PLASTER, qty: plaster_area}]
+  how_measured: "Both faces of internal walls, room-side faces of external walls, minus openings above a size"
+  status_v1: "BILLS"
+  reads: []
+- id: PL-02
+  name: "Cement plaster outside walls (¾\")"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: outer_perimeter, unit: mm, sources: [LAYOUT, ELEVATION, DERIVED]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: openings, unit: mm2, sources: [LAYOUT, SCHEDULE]}
+    - {name: plaster_thickness, unit: mm, sources: [SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: plaster_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN, ELEVATION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: WALL_PLASTER_EXT, qty: plaster_area}]
+  how_measured: "Outer face of external walls × height, minus openings"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: PL-03
+  name: "Ceiling plaster (⅜\", 1:4)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: open_to_sky, unit: mm2, sources: [LAYOUT, NOTE]}
+  yields:
+    - {qty: plaster_area, unit: sft, split: [floor]}
+  page_roles: [SLAB_PLAN, FLOOR_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: CEILING_PLASTER, qty: plaster_area}]
+  how_measured: "Room ceiling areas"
+  status_v1: "BILLS"
+  reads: []
+- id: PL-04
+  name: "Plaster on columns and beams (exposed RCC)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: member_faces, unit: mm2, sources: [DERIVED]}
+    - {name: exposed_faces, unit: text, sources: [LAYOUT, SECTION, NOTE]}
+  yields:
+    - {qty: plaster_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Exposed faces"
+  status_v1: "PARTIAL"
+  reads: []
+- id: PL-05
+  name: "Plaster on boundary wall and parapet"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [SECTION, ELEVATION, NOTE, CONVENTION]}
+    - {name: faces, unit: nos, sources: [DETAIL, CONVENTION]}
+  yields:
+    - {qty: plaster_area, unit: sft, split: []}
+  page_roles: [SITE_PLAN, ROOF_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Both faces"
+  status_v1: "NO"
+  reads: []
+- id: PL-06
+  name: "Pointing (exposed brick)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, ELEVATION, PLAN_LABEL]}
+    - {name: pointing_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: pointing_area, unit: sft, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: PL-07
+  name: "Wall putty and skim coat"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: wall_area, unit: mm2, sources: [DERIVED]}
+    - {name: coats, unit: nos, sources: [SPEC, NOTE, SCHEDULE]}
+  yields:
+    - {qty: putty_area, unit: sft, split: [room]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: {from: [PL-08], rule: putty_from_paint_area}
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Painted area"
+  status_v1: "NO"
+  reads: []
+- id: PL-08
+  name: "Emulsion paint inside (walls)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: wall_area, unit: mm2, sources: [DERIVED]}
+    - {name: coats, unit: nos, sources: [SPEC, NOTE, SCHEDULE]}
+    - {name: colour_code, unit: text, sources: [SCHEDULE, NOTE]}
+  yields:
+    - {qty: paint_area, unit: sft, split: [room]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-PAINT, qty: paint_area}]
+  how_measured: "Plastered internal area"
+  status_v1: "BILLS"
+  reads: []
+- id: PL-09
+  name: "Paint on ceilings"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: ceiling_area, unit: mm2, sources: [DERIVED]}
+    - {name: coats, unit: nos, sources: [SPEC, NOTE, SCHEDULE]}
+  yields:
+    - {qty: paint_area, unit: sft, split: [floor]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-PAINT, qty: paint_area}]
+  how_measured: "Ceiling area"
+  status_v1: "BILLS"
+  reads: []
+- id: PL-10
+  name: "Weather-shield paint outside"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: outer_wall_area, unit: mm2, sources: [DERIVED, ELEVATION]}
+    - {name: paint_type, unit: text, sources: [SPEC, ELEVATION, NOTE]}
+  yields:
+    - {qty: paint_area, unit: sft, split: [floor]}
+  page_roles: [ELEVATION, SPEC]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-PAINT-EXT, qty: paint_area}]
+  how_measured: "External plaster area"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: PL-11
+  name: "Textured or stone-coat finish outside"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, ELEVATION, PLAN_LABEL]}
+    - {name: texture_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: finish_area, unit: sft, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: PL-12
+  name: "Facade tiles, stone or cladding"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: hatch_area, unit: mm2, sources: [ELEVATION]}
+    - {name: openings, unit: mm2, sources: [ELEVATION, SCHEDULE]}
+    - {name: cladding_type, unit: text, sources: [SPEC, ELEVATION, NOTE]}
+  yields:
+    - {qty: facade_area, unit: sft, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-FACADE-TILE, qty: facade_area}]
+  how_measured: "Elevation areas by finish, minus openings"
+  status_v1: "Bills (estimated)"
+  reads: []
+- id: PL-13
+  name: "Wall tiles (bathroom dado)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: wet_room_perimeter, unit: mm, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: dado_height, unit: mm, sources: [SPEC, DETAIL, NOTE, CONVENTION]}
+    - {name: openings, unit: mm2, sources: [LAYOUT, SCHEDULE]}
+  yields:
+    - {qty: tile_area, unit: sft, split: [room]}
+  page_roles: [FLOOR_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-DADO, qty: tile_area}]
+  how_measured: "Wet-room wall perimeter × dado height, minus openings"
+  status_v1: "BILLS"
+  reads: []
+- id: PL-14
+  name: "Kitchen wall tiles (backsplash)"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: counter_wall_length, unit: mm, sources: [LAYOUT, DETAIL]}
+    - {name: tile_height, unit: mm, sources: [DETAIL, SPEC, NOTE]}
+  yields:
+    - {qty: tile_area, unit: sft, split: []}
+  page_roles: [DETAIL, KITCHEN_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-WALL-TILE, qty: tile_area}]
+  how_measured: "Counter wall length × height"
+  status_v1: "BILLS"
+  reads: []
+- id: PL-15
+  name: "False ceiling: gypsum board or tiles"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: ceiling_area, unit: mm2, sources: [LAYOUT]}
+    - {name: ceiling_type, unit: text, sources: [LAYOUT, SPEC, LEGEND]}
+  yields:
+    - {qty: ceiling_area, unit: sft, split: [room]}
+  page_roles: [CEILING_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: PL-16
+  name: "Cornice and ceiling moulding"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: profile, unit: text, sources: [DETAIL, SPEC]}
+  yields:
+    - {qty: cornice_length, unit: rft, split: []}
+  page_roles: [CEILING_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Room perimeter"
+  status_v1: "NO"
+  reads: []
+- id: PL-17
+  name: "Enamel paint on doors, windows, grills"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: opening_area, unit: mm2, sources: [SCHEDULE, DERIVED]}
+    - {name: coats, unit: nos, sources: [SPEC, NOTE, SCHEDULE]}
+  yields:
+    - {qty: paint_area, unit: sft, split: []}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Both faces × factor"
+  status_v1: "NO"
+  reads: []
+- id: PL-18
+  name: "Polish or lacquer on woodwork"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: shutter_area, unit: mm2, sources: [SCHEDULE, DERIVED]}
+    - {name: polish_type, unit: text, sources: [SPEC, SCHEDULE]}
+  yields:
+    - {qty: polish_area, unit: sft, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: PL-19
+  name: "Wallpaper or wall panelling"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: wall_area, unit: mm2, sources: [DETAIL, DERIVED]}
+    - {name: panel_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: panel_area, unit: sft, split: [room]}
+  page_roles: [INTERIOR_DRAWINGS]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: FL-01
+  name: "Floor screed or cement topping (1½\"–2\")"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: screed_area, unit: sft, split: [floor]}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Floor area"
+  status_v1: "NO"
+  reads: []
+- id: FL-02
+  name: "Porcelain or ceramic floor tiles (rooms)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: room_type, unit: text, sources: [PLAN_LABEL, SCHEDULE]}
+    - {name: tile_size, unit: mm, sources: [SCHEDULE, SPEC, NOTE]}
+  yields:
+    - {qty: tile_area, unit: sft, split: [floor, room]}
+  page_roles: [FLOOR_PLAN, FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-FLOOR, qty: tile_area}, {line: FIN-FLOOR-TILE, qty: tile_area}]
+  how_measured: "Room areas by finish"
+  status_v1: "BILLS"
+  reads: [{class: ROOM, 'on': [PLAN/FLOOR], support: false}]
+- id: FL-03
+  name: "Bathroom floor tiles (anti-skid)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: tile_size, unit: mm, sources: [SCHEDULE, SPEC, NOTE]}
+  yields:
+    - {qty: tile_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-FLOOR-TILE, qty: tile_area}]
+  how_measured: "Wet-room areas"
+  status_v1: "BILLS"
+  reads: []
+- id: FL-04
+  name: "Marble floor (Ziarat, Botticino and so on)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: marble_type, unit: text, sources: [SCHEDULE, SPEC, NOTE]}
+  yields:
+    - {qty: marble_area, unit: sft, split: [floor, room]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "PARTIAL"
+  reads: []
+- id: FL-05
+  name: "Terrazzo or chips flooring"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: chip_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: flooring_area, unit: sft, split: [floor]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: FL-06
+  name: "Wooden or laminate floor"
+  section: "Floors, skirting and stair finishes"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: wood_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: flooring_area, unit: sft, split: [room]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: FL-07
+  name: "Skirting (tile, marble, wood), 4\"–6\""
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_perimeter, unit: mm, sources: [LAYOUT, PLAN_LABEL, DERIVED]}
+    - {name: door_openings, unit: mm, sources: [LAYOUT, SCHEDULE]}
+    - {name: skirting_height, unit: mm, sources: [SPEC, SCHEDULE, NOTE, CONVENTION]}
+  yields:
+    - {qty: skirting_length, unit: rft, split: [floor]}
+  page_roles: [FLOOR_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Room perimeters minus door widths"
+  status_v1: "PARTIAL"
+  reads: []
+- id: FL-08
+  name: "Stair treads and risers (marble or granite)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: tread_width, unit: mm, sources: [DETAIL, SECTION, DERIVED]}
+    - {name: rise, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: going, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: treads, unit: nos, sources: [DETAIL, DERIVED]}
+  yields:
+    - {qty: tread_length, unit: rft, split: []}
+    - {qty: tread_area, unit: sft, split: []}
+  page_roles: [SECTION, STAIR_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-STAIR-MARBLE, qty: tread_area}]
+  how_measured: "Steps × width; landings by area"
+  status_v1: "NO"
+  reads: []
+- id: FL-09
+  name: "Stair nosing or anti-skid strips"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: treads, unit: nos, sources: [DETAIL, DERIVED]}
+    - {name: tread_width, unit: mm, sources: [DETAIL, DERIVED]}
+  yields:
+    - {qty: nosing_length, unit: rft, split: []}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Steps × width"
+  status_v1: "NO"
+  reads: []
+- id: FL-10
+  name: "Window sills (marble)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: window_width, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: sill_depth, unit: mm, sources: [SPEC, DETAIL, CONVENTION]}
+  yields:
+    - {qty: sill_length, unit: rft, split: []}
+    - {qty: sill_area, unit: sft, split: []}
+  page_roles: [FLOOR_PLAN, FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-SILL-MARBLE, qty: sill_length}]
+  how_measured: "Window widths × sill depth"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: FL-11
+  name: "Door thresholds and water stoppers"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: door_width, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: room_type, unit: text, sources: [PLAN_LABEL, SCHEDULE]}
+  yields:
+    - {qty: stopper_length, unit: rft, split: []}
+  page_roles: [FLOOR_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-WATER-STOPPER, qty: stopper_length}]
+  how_measured: "Wet-room door widths"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: FL-12
+  name: "Kitchen counter top (granite or marble slab)"
+  section: "Floors, skirting and stair finishes"
+  use: [H]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: counter_length, unit: mm, sources: [DETAIL, LAYOUT]}
+    - {name: counter_depth, unit: mm, sources: [DETAIL, CONVENTION]}
+  yields:
+    - {qty: counter_length, unit: rft, split: []}
+    - {qty: counter_area, unit: sft, split: []}
+  page_roles: [KITCHEN_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-KITCHEN-SLAB, qty: counter_area}]
+  how_measured: "Counter length × depth"
+  status_v1: "NO"
+  reads: []
+- id: FL-13
+  name: "Vanity top marble"
+  section: "Floors, skirting and stair finishes"
+  use: [H]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: top_size, unit: mm, sources: [DETAIL, LAYOUT]}
+  yields:
+    - {qty: vanity_area, unit: sft, split: []}
+    - {qty: vanity_count, unit: nos, split: []}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-VANITY-MARBLE, qty: vanity_area}]
+  how_measured: "Count × size"
+  status_v1: "NO"
+  reads: []
+- id: FL-14
+  name: "Porch, driveway and lawn paving (tiles, pavers)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, DETAIL]}
+    - {name: paving_type, unit: text, sources: [SPEC, NOTE, LEGEND]}
+  yields:
+    - {qty: paving_area, unit: sft, split: [type]}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-PAVING, qty: paving_area}, {line: FIN-PORCH-TILE, qty: paving_area}]
+  how_measured: "Outdoor areas by finish"
+  status_v1: "BILLS"
+  reads: []
+- id: FL-15
+  name: "CC tiles (outside the gate, service lanes)"
+  section: "Floors, skirting and stair finishes"
+  use: [H]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, DETAIL]}
+    - {name: tile_type, unit: text, sources: [SPEC, NOTE]}
+  yields:
+    - {qty: tile_area, unit: sft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-CC-TILE, qty: tile_area}]
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: FL-16
+  name: "Rooftop tiles (on roof treatment)"
+  section: "Floors, skirting and stair finishes"
+  use: [H]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: tile_type, unit: text, sources: [SPEC, NOTE, SECTION]}
+  yields:
+    - {qty: tile_area, unit: sft, split: []}
+  page_roles: [ROOF_PLAN]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Roof area"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DW-01
+  name: "Door frames: wood (deodar, partal) or MS pressed steel"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: rft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: frame_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: frame_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: frame_length, unit: rft, split: []}
+    - {qty: frame_count, unit: nos, split: []}
+  page_roles: [FLOOR_PLAN, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: DOOR_FRAMES, qty: frame_count}, {line: DOOR_FRAMES_RFT, qty: frame_length}]
+  how_measured: "Frame perimeter per door × count, by type"
+  status_v1: "BILLS"
+  reads: []
+- id: DW-02
+  name: "Door shutters: solid wood, flush, panel"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shutter_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: shutter_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: shutter_area, unit: sft, split: []}
+    - {qty: shutter_count, unit: nos, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: DOORS, qty: shutter_area}]
+  how_measured: "Width × height × count, by type"
+  status_v1: "BILLS"
+  reads: [{class: DOOR, 'on': [PLAN/FLOOR], support: false}]
+- id: DW-03
+  name: "Main entrance door"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: nos
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shutter_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: shutter_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: door_count, unit: nos, split: []}
+  page_roles: [FLOOR_PLAN, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DW-04
+  name: "Bathroom doors (PVC, WPC, fibre)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: nos
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shutter_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: shutter_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: door_count, unit: nos, split: []}
+    - {qty: door_area, unit: sft, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count × size"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DW-05
+  name: "Aluminium windows (sliding, casement) with glass"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: window_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: window_type, unit: text, sources: [SCHEDULE, SPEC]}
+    - {name: glass_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: window_area, unit: sft, split: [type]}
+  page_roles: [FLOOR_PLAN, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: WINDOWS, qty: window_area}]
+  how_measured: "Width × height × count"
+  status_v1: "BILLS"
+  reads: [{class: WINDOW, 'on': [PLAN/FLOOR], support: false}]
+- id: DW-06
+  name: "uPVC windows"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: window_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: window_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: window_area, unit: sft, split: [type]}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As above"
+  status_v1: "NO"
+  reads: []
+- id: DW-07
+  name: "Ventilators (toilet, kitchen)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: ventilator_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SYMBOL_COUNT]}
+    - {name: host_wall, unit: text, sources: [LAYOUT]}
+  yields:
+    - {qty: ventilator_area, unit: sft, split: []}
+    - {qty: ventilator_count, unit: nos, split: []}
+  page_roles: [FLOOR_PLAN, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: WINDOWS, qty: ventilator_area}]
+  how_measured: "Count × size"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DW-08
+  name: "Steel or wrought-iron grills and safety bars"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: METALWORK
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: grill_size, unit: mm, sources: [SCHEDULE, ELEVATION, DETAIL]}
+    - {name: section_weight, unit: text, sources: [SPEC, DETAIL, NOTE]}
+  yields:
+    - {qty: grill_area, unit: sft, split: []}
+    - {qty: grill_mass, unit: kg, split: []}
+  page_roles: [ELEVATION, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Opening area or weight"
+  status_v1: "NO"
+  reads: []
+- id: DW-09
+  name: "Fly-screen or mosquito net"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: window_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+  yields:
+    - {qty: screen_area, unit: sft, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Window areas"
+  status_v1: "NO"
+  reads: []
+- id: DW-10
+  name: "Glazing: float, tinted, tempered"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: pane_size, unit: mm, sources: [SCHEDULE, DETAIL]}
+    - {name: glass_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: glass_area, unit: sft, split: [type]}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Pane areas"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DW-11
+  name: "Ironmongery: locks, handles, hinges, stoppers"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: set_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: ironmongery_sets, unit: nos, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Per door or window"
+  status_v1: "NO"
+  reads: []
+- id: DW-12
+  name: "Main gate (MS or wrought iron)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H]
+  unit: nos
+  member_class: METALWORK
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: gate_size, unit: mm, sources: [LAYOUT, DETAIL]}
+    - {name: gate_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: gate_count, unit: nos, split: []}
+    - {qty: gate_mass, unit: kg, split: []}
+  page_roles: [SITE_PLAN, GATE_DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: MET-MAIN-GATE, qty: gate_count}]
+  how_measured: "Count or weight"
+  status_v1: "Allowance only"
+  reads: []
+- id: DW-13
+  name: "Garage or rolling shutter"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: METALWORK
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shutter_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, ELEVATION]}
+  yields:
+    - {qty: shutter_area, unit: sft, split: []}
+  page_roles: [FLOOR_PLAN, ELEVATION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Width × height"
+  status_v1: "NO"
+  reads: []
+- id: DW-14
+  name: "Stair railing (MS, SS, glass)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: rft
+  member_class: METALWORK
+  inputs:
+    - {name: railing_length, unit: mm, sources: [LAYOUT, DETAIL, DERIVED]}
+    - {name: railing_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: railing_length, unit: rft, split: []}
+  page_roles: [SECTION, STAIR_DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: FIN-GLASS-RAILING, qty: railing_length}]
+  how_measured: "Stair and landing open edges"
+  status_v1: "Bills (glass, no number)"
+  reads: []
+- id: DW-15
+  name: "Balcony and terrace railing"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: rft
+  member_class: METALWORK
+  inputs:
+    - {name: open_edge_length, unit: mm, sources: [LAYOUT, ELEVATION, DERIVED]}
+    - {name: railing_height, unit: mm, sources: [DETAIL, ELEVATION, CONVENTION]}
+  yields:
+    - {qty: railing_length, unit: rft, split: []}
+  page_roles: [FLOOR_PLAN, ELEVATION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Edge length"
+  status_v1: "NO"
+  reads: []
+- id: DW-16
+  name: "Tank covers: OHWT, UGWT, septic (MS or cast iron)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H]
+  unit: nos
+  member_class: METALWORK
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: cover_size, unit: mm, sources: [DETAIL]}
+    - {name: cover_type, unit: text, sources: [DETAIL, SPEC]}
+  yields:
+    - {qty: cover_count, unit: nos, split: []}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: MET-UGT-COVER, qty: cover_count}, {line: MET-OHWT-COVER, qty: cover_count}, {line: MET-SEPTIC-COVER, qty: cover_count}]
+  how_measured: "Count"
+  status_v1: "Allowance only"
+  reads: []
+- id: DW-17
+  name: "Manhole covers and gratings"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: nos
+  member_class: METALWORK
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: cover_size, unit: mm, sources: [LAYOUT, DETAIL, LEGEND]}
+    - {name: grating_length, unit: mm, sources: [LAYOUT, DETAIL]}
+  yields:
+    - {qty: cover_count, unit: nos, split: []}
+  page_roles: [DRAINAGE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: MET-GATE-GRATING, qty: cover_count}]
+  how_measured: "Count"
+  status_v1: "PARTIAL"
+  reads: []
+- id: DW-18
+  name: "Sheet doors (store, mumty)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H]
+  unit: nos
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shutter_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+  yields:
+    - {qty: door_count, unit: nos, split: []}
+    - {qty: door_area, unit: sft, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: MET-SHEET-DOOR, qty: door_count}]
+  how_measured: "Count × size"
+  status_v1: "Allowance only"
+  reads: []
+- id: DW-19
+  name: "Canopies, pergolas, sunshades (steel)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: kg
+  member_class: METALWORK
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: plan_size, unit: mm, sources: [ELEVATION, DETAIL, LAYOUT]}
+    - {name: section_weight, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: canopy_mass, unit: kg, split: []}
+    - {qty: canopy_area, unit: sft, split: []}
+  page_roles: [ELEVATION, DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Weight or area"
+  status_v1: "NO"
+  reads: []
+- id: DW-20
+  name: "Glass curtain wall or structural glazing"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [P]
+  unit: sft
+  member_class: METALWORK
+  inputs:
+    - {name: wall_area, unit: mm2, sources: [ELEVATION]}
+    - {name: glazing_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: glazing_area, unit: sft, split: []}
+  page_roles: [FACADE]
+  applies_when: {}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Elevation area"
+  status_v1: "NO"
+  reads: []
+- id: KJ-01
+  name: "Kitchen cabinets: base and wall units"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: rft
+  member_class: JOINERY
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, DETAIL]}
+    - {name: unit_depth, unit: mm, sources: [DETAIL, CONVENTION]}
+    - {name: unit_type, unit: text, sources: [DETAIL, SPEC]}
+  yields:
+    - {qty: cabinet_length, unit: rft, split: []}
+  page_roles: [KITCHEN_DETAIL, FURNITURE_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: JOI-KITCHEN-CABINET, qty: cabinet_length}]
+  how_measured: "Run length of each"
+  status_v1: "NO"
+  reads: []
+- id: KJ-02
+  name: "Wardrobes and built-in cupboards"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: sft
+  member_class: JOINERY
+  inputs:
+    - {name: block_width, unit: mm, sources: [LAYOUT]}
+    - {name: block_height, unit: mm, sources: [DETAIL, CONVENTION]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: wardrobe_area, unit: sft, split: []}
+    - {qty: wardrobe_length, unit: rft, split: []}
+  page_roles: [FLOOR_PLAN, FURNITURE_PLAN]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: JOI-WARDROBES, qty: wardrobe_area}]
+  how_measured: "Front area or length"
+  status_v1: "NO"
+  reads: []
+- id: KJ-03
+  name: "Vanity units"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: nos
+  member_class: JOINERY
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: unit_size, unit: mm, sources: [DETAIL]}
+  yields:
+    - {qty: vanity_count, unit: nos, split: []}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: KJ-04
+  name: "TV wall and console units"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: rft
+  member_class: JOINERY
+  inputs:
+    - {name: run_length, unit: mm, sources: [DETAIL]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: unit_length, unit: rft, split: []}
+    - {qty: unit_count, unit: nos, split: []}
+  page_roles: [INTERIOR_DRAWINGS]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length or count"
+  status_v1: "NO"
+  reads: []
+- id: KJ-05
+  name: "Shelving and niches"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: rft
+  member_class: JOINERY
+  inputs:
+    - {name: run_length, unit: mm, sources: [DETAIL]}
+  yields:
+    - {qty: shelf_length, unit: rft, split: []}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: KJ-06
+  name: "Wooden stair (if any) and handrail"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: rft
+  member_class: STAIR
+  inputs:
+    - {name: flights, unit: nos, sources: [DETAIL, LAYOUT]}
+    - {name: rail_length, unit: mm, sources: [DETAIL, DERIVED]}
+  yields:
+    - {qty: rail_length, unit: rft, split: []}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: KJ-07
+  name: "Mirror"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H]
+  unit: sft
+  member_class: FIXTURE
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: mirror_size, unit: mm, sources: [DETAIL]}
+  yields:
+    - {qty: mirror_area, unit: sft, split: []}
+    - {qty: mirror_count, unit: nos, split: []}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Size × count"
+  status_v1: "NO"
+  reads: []
+- id: KJ-08
+  name: "Bathroom accessories (towel rail, soap dish)"
+  section: "Kitchen, wardrobes, fixtures and joinery"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: set_type, unit: text, sources: [SCHEDULE, SPEC, LEGEND]}
+  yields:
+    - {qty: accessory_sets, unit: nos, split: []}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Per bathroom"
+  status_v1: "NO"
+  reads: []
+- id: PB-01
+  name: "Water supply pipes, PPR or GI, by diameter (½\" to 2\")"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+    - {name: pipe_material, unit: text, sources: [LEGEND, SPEC, NOTE]}
+  yields:
+    - {qty: pipe_length, unit: rft, split: [dia]}
+  page_roles: [PLUMBING_PLAN, ISOMETRIC]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Run lengths per diameter"
+  status_v1: "NO"
+  reads: []
+- id: PB-02
+  name: "Hot water pipes"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+    - {name: pipe_material, unit: text, sources: [LEGEND, SPEC, NOTE]}
+  yields:
+    - {qty: pipe_length, unit: rft, split: [dia]}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Run lengths"
+  status_v1: "NO"
+  reads: []
+- id: PB-03
+  name: "Fittings: elbows, tees, sockets"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: pipe_length, unit: rft, sources: [DERIVED]}
+    - {name: fitting_percent, unit: percent, sources: [RATE_BOOK, CONVENTION]}
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+  yields:
+    - {qty: fitting_count, unit: nos, split: []}
+    - {qty: fitting_percent, unit: percent, split: []}
+  page_roles: [ISOMETRIC]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count or allowance"
+  status_v1: "NO"
+  reads: []
+- id: PB-04
+  name: "Valves: gate, ball, float, non-return"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: valve_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: valve_count, unit: nos, split: [type]}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-05
+  name: "Water meter and connection"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+  yields:
+    - {qty: meter_count, unit: nos, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-06
+  name: "Water pump and motor (lifting)"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: motor_rating, unit: text, sources: [SCHEDULE, SPEC, NOTE]}
+  yields:
+    - {qty: pump_count, unit: nos, split: []}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-07
+  name: "Pressure pump or booster"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: motor_rating, unit: text, sources: [SCHEDULE, SPEC, NOTE]}
+  yields:
+    - {qty: pump_count, unit: nos, split: []}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-08
+  name: "Plastic water tank on roof"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: capacity, unit: text, sources: [NOTE, SPEC, LEGEND]}
+  yields:
+    - {qty: tank_count, unit: nos, split: []}
+  page_roles: [ROOF_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-09
+  name: "Water heater or geyser (gas, electric, solar)"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: heater_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: heater_count, unit: nos, split: []}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-10
+  name: "Drainage pipes, uPVC or PVC, by diameter (2\" to 6\")"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+    - {name: pipe_material, unit: text, sources: [LEGEND, SPEC, NOTE]}
+    - {name: gradient, unit: text, sources: [NOTE, SECTION]}
+  yields:
+    - {qty: pipe_length, unit: rft, split: [dia]}
+  page_roles: [DRAINAGE_PLAN, PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Run lengths per diameter"
+  status_v1: "NO"
+  reads: [{class: PIPE_RUN, 'on': [PLAN/OVERLAY], support: false}]
+- id: PB-11
+  name: "Soil and vent stacks"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+    - {name: stack_height, unit: mm, sources: [SECTION, STOREY, DERIVED]}
+  yields:
+    - {qty: stack_length, unit: rft, split: [dia]}
+  page_roles: [SECTION, DRAINAGE_PLAN, PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Height × count"
+  status_v1: "NO"
+  reads: []
+- id: PB-12
+  name: "Rainwater down-pipes"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+    - {name: roof_height, unit: mm, sources: [ELEVATION, SECTION, STOREY]}
+  yields:
+    - {qty: pipe_length, unit: rft, split: [dia]}
+  page_roles: [ROOF_PLAN, ELEVATION]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Height × count"
+  status_v1: "NO"
+  reads: []
+- id: PB-13
+  name: "Floor traps and gully traps"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: trap_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: trap_count, unit: nos, split: [type]}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: [{class: DRAIN_POINT, 'on': [PLAN/OVERLAY], support: false}]
+- id: PB-14
+  name: "Inspection chambers and manholes"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: chamber_size, unit: mm, sources: [DETAIL, LEGEND, NOTE]}
+    - {name: chamber_depth, unit: mm, sources: [DETAIL, SECTION]}
+  yields:
+    - {qty: chamber_count, unit: nos, split: []}
+  page_roles: [DRAINAGE_PLAN, PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count, by size"
+  status_v1: "PARTIAL"
+  reads: []
+- id: PB-15
+  name: "Septic tank (if not in RCC) and soakage pit"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: nos
+  member_class: TANK
+  inputs:
+    - {name: inner_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: depth, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: tank_count, unit: nos, split: []}
+    - {qty: tank_volume, unit: cft, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count or volume"
+  status_v1: "PARTIAL"
+  reads: []
+- id: PB-16
+  name: "Sewer connection to main line"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+  yields:
+    - {qty: pipe_length, unit: rft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: PB-17
+  name: "WC: commode (wall-hung or floor) or Asian (squatting)"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: fixture_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: [{class: PLUMBING_FIXTURE, 'on': [PLAN/OVERLAY], support: false}]
+- id: PB-18
+  name: "Wash basin with pedestal or vanity"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: fixture_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-19
+  name: "Kitchen sink (single or double)"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: fixture_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [KITCHEN_DETAIL, PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-20
+  name: "Shower set, mixers, taps, muslim shower"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: fixture_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-21
+  name: "Bathtub or shower tray"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: fixture_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-22
+  name: "Washing-machine and ablution points"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: point_type, unit: text, sources: [LEGEND, NOTE]}
+  yields:
+    - {qty: point_count, unit: nos, split: [type]}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PB-23
+  name: "Gas pipe, GI or PE, and gas points (stove, heater, geyser)"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: diameter, unit: mm, sources: [PLAN_LABEL, LEGEND, NOTE]}
+    - {name: pipe_material, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: pipe_length, unit: rft, split: []}
+    - {qty: point_count, unit: nos, split: []}
+  page_roles: [GAS_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Run lengths, count"
+  status_v1: "NO"
+  reads: []
+- id: PB-24
+  name: "Gas meter connection"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+  yields:
+    - {qty: meter_count, unit: nos, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EL-01
+  name: "Light points (ceiling, wall bracket, outdoor, lawn)"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+    - {name: room_type, unit: text, sources: [PLAN_LABEL, SCHEDULE]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor, type]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-LIGHT, qty: point_count}]
+  how_measured: "Count per symbol"
+  status_v1: "BILLS"
+  reads: [{class: ELECTRICAL_POINT, 'on': [PLAN/OVERLAY], support: false}]
+- id: EL-02
+  name: "Fan points (ceiling, exhaust)"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+    - {name: room_type, unit: text, sources: [PLAN_LABEL, SCHEDULE]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor, type]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-FAN, qty: point_count}]
+  how_measured: "Count"
+  status_v1: "BILLS"
+  reads: []
+- id: EL-03
+  name: "Switch plates and switches (by gang)"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+    - {name: gangs, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+  yields:
+    - {qty: plate_count, unit: nos, split: [floor]}
+    - {qty: switch_count, unit: nos, split: [floor]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-SWITCH, qty: switch_count}]
+  how_measured: "Count of plates, or of switches"
+  status_v1: "Bills (but short)"
+  reads: []
+- id: EL-04
+  name: "Socket outlets: 5 A light plug, 15 A power plug"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+    - {name: rating, unit: text, sources: [LEGEND, NOTE]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor, type]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-SOCKET, qty: point_count}]
+  how_measured: "Count"
+  status_v1: "BILLS"
+  reads: []
+- id: EL-05
+  name: "AC points (with dedicated circuit)"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EL-06
+  name: "Geyser and heater points"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EL-07
+  name: "Wiring: point wiring or circuits"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: circuit_length, unit: mm, sources: [LAYOUT, SCHEDULE]}
+    - {name: point_run, unit: mm, sources: [CONVENTION, DERIVED]}
+  yields:
+    - {qty: wiring_points, unit: nos, split: []}
+    - {qty: wiring_length, unit: rft, split: []}
+  page_roles: [SINGLE_LINE_DIAGRAM, ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Per point, or run lengths by wire size"
+  status_v1: "NO"
+  reads: []
+- id: EL-08
+  name: "Conduits: PVC, by size"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: circuit_length, unit: mm, sources: [LAYOUT, DERIVED]}
+    - {name: conduit_size, unit: mm, sources: [LEGEND, NOTE, SPEC]}
+    - {name: point_run, unit: mm, sources: [CONVENTION, DERIVED]}
+  yields:
+    - {qty: conduit_length, unit: rft, split: [dia]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Run lengths"
+  status_v1: "NO"
+  reads: []
+- id: EL-09
+  name: "Main cable from meter to DB"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: rft
+  member_class: PIPE_RUN
+  inputs:
+    - {name: cable_length, unit: mm, sources: [LAYOUT, DETAIL, DERIVED]}
+    - {name: cable_size, unit: text, sources: [DETAIL, SPEC, NOTE]}
+  yields:
+    - {qty: cable_length, unit: rft, split: []}
+  page_roles: [SITE_PLAN, SINGLE_LINE_DIAGRAM]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: EL-10
+  name: "Distribution boards and breakers (MCB, RCD)"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: rating, unit: text, sources: [DETAIL, SCHEDULE, LEGEND]}
+  yields:
+    - {qty: breaker_count, unit: nos, split: [type]}
+    - {qty: board_count, unit: nos, split: []}
+  page_roles: [SINGLE_LINE_DIAGRAM]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count, by ways"
+  status_v1: "NO"
+  reads: [{class: DISTRIBUTION_BOARD, 'on': [PLAN/OVERLAY], support: false}]
+- id: EL-11
+  name: "Earthing pit and earth wire"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: earth_wire, unit: mm, sources: [LAYOUT, NOTE]}
+  yields:
+    - {qty: pit_count, unit: nos, split: []}
+    - {qty: earth_wire_length, unit: rft, split: []}
+  page_roles: [GENERAL_NOTES, ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count and length"
+  status_v1: "NO"
+  reads: []
+- id: EL-12
+  name: "Light fixtures: LED panels, downlights, chandeliers"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+    - {name: fixture_type, unit: text, sources: [LEGEND, SCHEDULE, SPEC]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [CEILING_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count, by type"
+  status_v1: "NO"
+  reads: []
+- id: EL-13
+  name: "Ceiling and exhaust fans (supply)"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: fan_count, unit: nos, split: [type]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EL-14
+  name: "TV and telephone points"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor, type]}
+  page_roles: [LOW_VOLTAGE_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-LOWV, qty: point_count}]
+  how_measured: "Count"
+  status_v1: "No number"
+  reads: []
+- id: EL-15
+  name: "Data (CAT6) points"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: point_count, unit: nos, split: [floor]}
+  page_roles: [LOW_VOLTAGE_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-LOWV, qty: point_count}]
+  how_measured: "Count"
+  status_v1: "BILLS"
+  reads: []
+- id: EL-16
+  name: "CCTV cameras and DVR"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: camera_count, unit: nos, split: []}
+    - {qty: recorder_count, unit: nos, split: []}
+  page_roles: [LOW_VOLTAGE_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-LOWV, qty: camera_count}]
+  how_measured: "Count"
+  status_v1: "BILLS"
+  reads: []
+- id: EL-17
+  name: "Smoke detectors and fire alarm"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: detector_count, unit: nos, split: []}
+    - {qty: panel_count, unit: nos, split: []}
+  page_roles: [LOW_VOLTAGE_PLAN, FIRE_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: ELE-LOWV, qty: detector_count}]
+  how_measured: "Count"
+  status_v1: "BILLS"
+  reads: []
+- id: EL-18
+  name: "Door bell, intercom, video door phone"
+  section: "Electrical and low voltage"
+  use: [H]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: legend_entry, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: unit_count, unit: nos, split: [type]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EL-19
+  name: "Solar panels, inverter, batteries"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: array_size, unit: text, sources: [DETAIL, LAYOUT, NOTE]}
+    - {name: rating, unit: text, sources: [DETAIL, NOTE, LEGEND]}
+  yields:
+    - {qty: panel_count, unit: nos, split: []}
+    - {qty: capacity, unit: kw, split: []}
+  page_roles: [ROOF_PLAN, SINGLE_LINE_DIAGRAM]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count or capacity"
+  status_v1: "NO"
+  reads: []
+- id: EL-20
+  name: "UPS or generator connection and changeover"
+  section: "Electrical and low voltage"
+  use: [H, P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: rating, unit: text, sources: [DETAIL, NOTE]}
+  yields:
+    - {qty: unit_count, unit: nos, split: []}
+  page_roles: [SINGLE_LINE_DIAGRAM]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EL-21
+  name: "Lightning arrester"
+  section: "Electrical and low voltage"
+  use: [P]
+  unit: nos
+  member_class: POINT
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+  yields:
+    - {qty: arrester_count, unit: nos, split: []}
+  page_roles: [ROOF_PLAN]
+  applies_when: {sets_present: [ELECTRICAL]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EX-01
+  name: "Boundary wall: footing, brick, RCC columns, coping, plaster, paint"
+  section: "External works"
+  use: [H]
+  unit: lump_sum
+  member_class: BOUNDARY_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [DETAIL, SECTION, DECISION]}
+    - {name: footing_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: column_spacing, unit: mm, sources: [LAYOUT, DETAIL]}
+  yields:
+    - {qty: wall_length, unit: rft, split: []}
+    - {qty: brick_volume, unit: cft, split: []}
+    - {qty: lump_sum, unit: lump_sum, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: BRICK_BOUNDARY, qty: brick_volume}]
+  how_measured: "Boundary length × sections"
+  status_v1: "Partial (brick only)"
+  reads: []
+- id: EX-02
+  name: "Front elevation boundary with grill or cladding"
+  section: "External works"
+  use: [H]
+  unit: sft
+  member_class: BOUNDARY_WALL
+  inputs:
+    - {name: front_length, unit: mm, sources: [ELEVATION, LAYOUT]}
+    - {name: grill_height, unit: mm, sources: [ELEVATION, DETAIL]}
+    - {name: cladding_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: frontage_area, unit: sft, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: EX-03
+  name: "Driveway and ramp (concrete or pavers)"
+  section: "External works"
+  use: [H, P]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, DETAIL]}
+    - {name: paving_type, unit: text, sources: [SPEC, NOTE, LEGEND]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: drive_area, unit: sft, split: [type]}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "PARTIAL"
+  reads: []
+- id: EX-04
+  name: "Lawn: soil filling and grass"
+  section: "External works"
+  use: [H]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, NOTE]}
+    - {name: fill_depth, unit: mm, sources: [NOTE, DETAIL, CONVENTION]}
+  yields:
+    - {qty: lawn_area, unit: sft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: EX-05
+  name: "Planters and flower beds"
+  section: "External works"
+  use: [H]
+  unit: rft
+  member_class: SITE_AREA
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: planter_length, unit: rft, split: []}
+    - {qty: planter_count, unit: nos, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length or count"
+  status_v1: "NO"
+  reads: []
+- id: EX-06
+  name: "Car porch canopy"
+  section: "External works"
+  use: [H]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, ELEVATION]}
+    - {name: canopy_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: canopy_area, unit: sft, split: []}
+  page_roles: [FLOOR_PLAN, ELEVATION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area"
+  status_v1: "NO"
+  reads: []
+- id: EX-07
+  name: "External steps"
+  section: "External works"
+  use: [H, P]
+  unit: rft
+  member_class: SITE_AREA
+  inputs:
+    - {name: step_length, unit: mm, sources: [LAYOUT, SECTION]}
+    - {name: treads, unit: nos, sources: [SECTION, DETAIL]}
+  yields:
+    - {qty: step_length, unit: rft, split: []}
+  page_roles: [SITE_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count × width"
+  status_v1: "NO"
+  reads: []
+- id: EX-08
+  name: "Storm drains and channels"
+  section: "External works"
+  use: [H, P]
+  unit: rft
+  member_class: SITE_AREA
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: width, unit: mm, sources: [SECTION, DETAIL, SCHEDULE]}
+    - {name: depth, unit: mm, sources: [SECTION, LEVELS, CONVENTION]}
+  yields:
+    - {qty: drain_length, unit: rft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: EX-09
+  name: "Underground water tank access and pump room"
+  section: "External works"
+  use: [H, P]
+  unit: nos
+  member_class: SITE_AREA
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: room_size, unit: mm, sources: [LAYOUT, DETAIL]}
+  yields:
+    - {qty: access_count, unit: nos, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EX-10
+  name: "Guard room or servant quarter (as a small building)"
+  section: "External works"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: building_type, unit: text, sources: [NOTE, LAYOUT]}
+  yields:
+    - {qty: built_area, unit: sft, split: []}
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: [FLOOR_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As the main building"
+  status_v1: "NO"
+  reads: []
+- id: EX-11
+  name: "Name plate and house number"
+  section: "External works"
+  use: [H]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: plate_type, unit: text, sources: [ELEVATION, DETAIL]}
+  yields:
+    - {qty: plate_count, unit: nos, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: EX-12
+  name: "Street-level culvert or ramp to road"
+  section: "External works"
+  use: [H]
+  unit: sft
+  member_class: SITE_AREA
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, SECTION]}
+    - {name: fill_depth, unit: mm, sources: [SECTION, LEVELS]}
+  yields:
+    - {qty: ramp_area, unit: sft, split: []}
+    - {qty: culvert_volume, unit: cft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area or volume"
+  status_v1: "NO"
+  reads: []
+- id: PZ-01
+  name: "Raft foundation and thickenings"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: cft
+  member_class: FOOTING_OTHER
+  inputs:
+    - {name: raft_area, unit: mm2, sources: [LAYOUT]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: thickening, unit: mm, sources: [SECTION, DETAIL]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+    - {qty: steel_mass, unit: kg, split: [floor, dia]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+  page_roles: [RAFT_PLAN, SECTION]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area × thickness"
+  status_v1: "NO"
+  reads: []
+- id: PZ-02
+  name: "Piles and pile caps"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: rft
+  member_class: FOOTING_OTHER
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: pile_length, unit: mm, sources: [LAYOUT, SECTION, SCHEDULE]}
+    - {name: pile_diameter, unit: mm, sources: [SCHEDULE, DETAIL]}
+    - {name: cap_size, unit: mm, sources: [DETAIL, SCHEDULE]}
+  yields:
+    - {qty: pile_length, unit: rft, split: []}
+    - {qty: concrete_volume, unit: cft, split: []}
+  page_roles: [PILE_LAYOUT]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count × length; caps by volume"
+  status_v1: "NO"
+  reads: []
+- id: PZ-03
+  name: "Basement retaining walls (multi-level)"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: cft
+  member_class: STRUCT_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [SECTION, ELEVATION, NOTE, CONVENTION]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [BASEMENT_PLAN, SECTION]
+  applies_when: {basement: true, type: PLAZA}
+  owner_pack: CV-3
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length × height × thickness"
+  status_v1: "PARTIAL"
+  reads: []
+- id: PZ-04
+  name: "Shear walls and lift core"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: cft
+  member_class: STRUCT_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [STRUCTURAL_PLAN]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-3
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As walls"
+  status_v1: "NO"
+  reads: []
+- id: PZ-05
+  name: "Flat slabs, drop panels, column capitals"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: drop_size, unit: mm, sources: [LAYOUT, DETAIL, SECTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [floor]}
+    - {qty: formwork_area, unit: sft, split: [floor]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [SLAB_PLAN]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area × thickness, plus drops"
+  status_v1: "NO"
+  reads: []
+- id: PZ-06
+  name: "Post-tensioned slabs (tendons)"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: kg
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: tendon_schedule, unit: text, sources: [SCHEDULE, DETAIL]}
+    - {name: anchor_count, unit: nos, sources: [SCHEDULE, DETAIL]}
+  yields:
+    - {qty: tendon_mass, unit: kg, split: [floor]}
+    - {qty: anchor_count, unit: nos, split: [floor]}
+  page_roles: [STRUCTURAL_PLAN]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-6
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Tendon weight, anchors"
+  status_v1: "NO"
+  reads: []
+- id: PZ-07
+  name: "Ramps (car parking)"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: gradient, unit: text, sources: [SECTION, NOTE, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+  page_roles: [BASEMENT_PLAN]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Area × thickness"
+  status_v1: "NO"
+  reads: []
+- id: PZ-08
+  name: "Lift (elevator) and escalator"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: stops, unit: nos, sources: [SECTION, NOTE, SCHEDULE]}
+    - {name: lift_type, unit: text, sources: [SPEC, SCHEDULE, NOTE]}
+  yields:
+    - {qty: lift_count, unit: nos, split: []}
+  page_roles: [FLOOR_PLAN, SECTION]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count, by stops"
+  status_v1: "NO"
+  reads: []
+- id: PZ-09
+  name: "Fire-fighting: hydrants, sprinklers, hose reels, fire pumps"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: fire_item, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fire_count, unit: nos, split: [type]}
+    - {qty: pipe_length, unit: rft, split: []}
+  page_roles: [FIRE_PLAN]
+  applies_when: {type: PLAZA, sets_present: [FIRE]}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count and pipe lengths"
+  status_v1: "NO"
+  reads: []
+- id: PZ-10
+  name: "Fire doors and fire-rated shutters"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: rating, unit: text, sources: [SCHEDULE, SPEC]}
+    - {name: door_size, unit: mm, sources: [SCHEDULE]}
+  yields:
+    - {qty: door_count, unit: nos, split: [type]}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {type: PLAZA, sets_present: [FIRE]}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count, by rating"
+  status_v1: "NO"
+  reads: []
+- id: PZ-11
+  name: "Emergency staircase pressurisation"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: pressure_zone, unit: text, sources: [SPEC, NOTE]}
+  yields:
+    - {qty: unit_count, unit: nos, split: []}
+  page_roles: [HVAC_PLAN]
+  applies_when: {type: PLAZA, sets_present: [FIRE]}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PZ-12
+  name: "HVAC: ducting, VRF units, chillers, AHUs"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: sft
+  member_class: FITTING
+  inputs:
+    - {name: duct_length, unit: mm, sources: [LAYOUT, DERIVED]}
+    - {name: duct_size, unit: mm, sources: [LEGEND, SPEC]}
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: unit_type, unit: text, sources: [LEGEND, SCHEDULE]}
+  yields:
+    - {qty: duct_area, unit: sft, split: []}
+    - {qty: unit_count, unit: nos, split: [type]}
+  page_roles: [HVAC_PLAN]
+  applies_when: {type: PLAZA, sets_present: [HVAC]}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Duct area or weight; unit count"
+  status_v1: "NO"
+  reads: []
+- id: PZ-13
+  name: "Curtain wall, ACP cladding, structural glazing"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: sft
+  member_class: METALWORK
+  inputs:
+    - {name: facade_area, unit: mm2, sources: [ELEVATION]}
+    - {name: panel_type, unit: text, sources: [SPEC, ELEVATION]}
+  yields:
+    - {qty: cladding_area, unit: sft, split: [type]}
+  page_roles: [ELEVATION]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Facade area by type"
+  status_v1: "NO"
+  reads: []
+- id: PZ-14
+  name: "Shopfront glazing and rolling shutters"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shopfront_size, unit: mm, sources: [SCHEDULE, ELEVATION]}
+    - {name: shutter_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: glazing_area, unit: sft, split: []}
+  page_roles: [FLOOR_PLAN, ELEVATION]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Width × height"
+  status_v1: "NO"
+  reads: []
+- id: PZ-15
+  name: "Public toilets (multiple fixtures per block)"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: block_count, unit: nos, sources: [LAYOUT, NOTE]}
+    - {name: fixture_type, unit: text, sources: [LEGEND]}
+  yields:
+    - {qty: fixture_count, unit: nos, split: [type]}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PZ-16
+  name: "Car parking marking, wheel stoppers"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: rft
+  member_class: FITTING
+  inputs:
+    - {name: marking_length, unit: mm, sources: [LAYOUT, DERIVED]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: marking_length, unit: rft, split: []}
+    - {qty: stopper_count, unit: nos, split: []}
+  page_roles: [PARKING_PLAN]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length, count"
+  status_v1: "NO"
+  reads: []
+- id: PZ-17
+  name: "Transformer room, LT panel, generator"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: rating, unit: text, sources: [DETAIL, SCHEDULE, NOTE]}
+  yields:
+    - {qty: unit_count, unit: nos, split: [type]}
+  page_roles: [ELECTRICAL_PLAN]
+  applies_when: {type: PLAZA, sets_present: [ELECTRICAL]}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PZ-18
+  name: "Water treatment, overhead and underground tanks (large)"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: cft
+  member_class: TANK
+  inputs:
+    - {name: inner_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: depth, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+  yields:
+    - {qty: tank_volume, unit: cft, split: [tank]}
+  page_roles: [DETAIL]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "As tanks"
+  status_v1: "PARTIAL"
+  reads: []
+- id: PZ-19
+  name: "Signage and facade lighting"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: sign_type, unit: text, sources: [ELEVATION, DETAIL, NOTE]}
+  yields:
+    - {qty: sign_count, unit: nos, split: []}
+  page_roles: [ELEVATION]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Count"
+  status_v1: "NO"
+  reads: []
+- id: PZ-20
+  name: "Expansion joints (structural)"
+  section: "Plaza and commercial additions"
+  use: [P]
+  unit: rft
+  member_class: FITTING
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: joint_width, unit: mm, sources: [DETAIL, NOTE]}
+  yields:
+    - {qty: joint_length, unit: rft, split: []}
+  page_roles: [STRUCTURAL_PLAN]
+  applies_when: {type: PLAZA}
+  owner_pack: CV-13
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Length"
+  status_v1: "NO"
+  reads: []
+- id: MS-12
+  name: "Drywall or gypsum board partitions"
+  section: "Masonry"
+  use: [H, P]
+  unit: sft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: partition_type, unit: text, sources: [SPEC, DETAIL, LEGEND]}
+    - {name: openings, unit: mm2, sources: [LAYOUT, SCHEDULE]}
+  yields:
+    - {qty: partition_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: [{item: 9-50, qty: partition_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: MS-13
+  name: "Aluminium glazed partitions"
+  section: "Masonry"
+  use: [P]
+  unit: sft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: glazing_type, unit: text, sources: [SPEC, DETAIL, LEGEND]}
+  yields:
+    - {qty: partition_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN, ELEVATION]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: [{item: 25-56, qty: partition_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: MS-14
+  name: "Reinforced brick walling"
+  section: "Masonry"
+  use: [H]
+  unit: sft
+  member_class: WALL
+  inputs:
+    - {name: length, unit: mm, sources: [LAYOUT, SECTION, PLAN_LABEL]}
+    - {name: height, unit: mm, sources: [STOREY, SECTION, CONVENTION], default_rule: PK_STOREY_DEFAULT}
+    - {name: wall_thickness, unit: mm, sources: [LAYOUT, SECTION, DETAIL]}
+  yields:
+    - {qty: wall_area, unit: sft, split: [floor]}
+  page_roles: [FLOOR_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: [{item: 7-21, qty: wall_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DP-17
+  name: "Drip course under slab edges"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: rft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: drip_size, unit: mm, sources: [DETAIL, SECTION]}
+  yields:
+    - {qty: drip_length, unit: rft, split: []}
+  page_roles: [SECTION, DETAIL]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: [{item: 9-33, qty: drip_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DP-18
+  name: "Flashing: GI, lead or copper"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: developed_width, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: metal, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: flashing_length, unit: rft, split: []}
+    - {qty: flashing_area, unit: sft, split: []}
+  page_roles: [ROOF_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: [{item: 9-18, qty: flashing_length}, {item: 9-19, qty: flashing_length}, {item: 6-29, qty: flashing_length}, {item: 25-50, qty: flashing_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DP-19
+  name: "Sheet roofing: GI, asbestos, sandwich panel"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: sheet_type, unit: text, sources: [SPEC, NOTE, ELEVATION]}
+    - {name: pitch, unit: text, sources: [SECTION, ELEVATION]}
+  yields:
+    - {qty: sheet_area, unit: sft, split: []}
+  page_roles: [ROOF_PLAN, ELEVATION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: [{item: 9-13, qty: sheet_area}, {item: 9-25, qty: sheet_area}, {item: 9-26, qty: sheet_area}, {item: 9-28, qty: sheet_area}, {item: 9-29, qty: sheet_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DP-20
+  name: "Foam concrete or screed insulation layer"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: ROOF_LAYER
+  inputs:
+    - {name: area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: foam_type, unit: text, sources: [SPEC, SECTION]}
+  yields:
+    - {qty: layer_area, unit: sft, split: []}
+  page_roles: [SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-26, qty: layer_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: PL-20
+  name: "Edge beads and corner guards"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: bead_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: bead_length, unit: rft, split: []}
+  page_roles: [DETAIL, FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 11-33, qty: bead_length}, {item: 11-55, qty: bead_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: PL-21
+  name: "Wall guards and bumper rails"
+  section: "Plaster, wall and ceiling finishes, paint"
+  use: [P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: rail_type, unit: text, sources: [SPEC, DETAIL, LEGEND]}
+  yields:
+    - {qty: rail_length, unit: rft, split: []}
+  page_roles: [FLOOR_PLAN, INTERIOR_DRAWINGS]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 11-53, qty: rail_length}, {item: 11-54, qty: rail_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: FL-17
+  name: "Epoxy, vinyl, rubber and carpet flooring"
+  section: "Floors, skirting and stair finishes"
+  use: [P]
+  unit: sft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: room_area, unit: mm2, sources: [LAYOUT, PLAN_LABEL]}
+    - {name: floor_type, unit: text, sources: [SCHEDULE, SPEC, NOTE]}
+  yields:
+    - {qty: flooring_area, unit: sft, split: [floor, room]}
+  page_roles: [FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 10-55, qty: flooring_area}, {item: 10-56, qty: flooring_area}, {item: 10-52, qty: flooring_area}, {item: 10-39, qty: flooring_area}, {item: 10-60, qty: flooring_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: FL-18
+  name: "Floor divider strips (glass, marble)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: rft
+  member_class: FINISH_LAYER
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: strip_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: strip_length, unit: rft, split: []}
+  page_roles: [DETAIL, FINISH_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 10-40, qty: strip_length}, {item: 10-41, qty: strip_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: FL-19
+  name: "Floor trap jali (stainless)"
+  section: "Floors, skirting and stair finishes"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: trap_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: trap_count, unit: nos, split: []}
+  page_roles: [TOILET_DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 10-64, qty: trap_count}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DW-21
+  name: "Curtain rails and blinds"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: rft
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: opening_width, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: rail_type, unit: text, sources: [SPEC, SCHEDULE]}
+  yields:
+    - {qty: rail_length, unit: rft, split: []}
+    - {qty: blind_area, unit: sft, split: []}
+  page_roles: [OPENING_SCHEDULE, INTERIOR_DRAWINGS]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 12-54, qty: rail_length}, {item: 12-69, qty: rail_length}, {item: 12-70, qty: rail_length}, {item: 12-71, qty: rail_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DW-22
+  name: "Door closers, kick plates and stoppers"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: fitting_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: fitting_count, unit: nos, split: []}
+  page_roles: [OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 12-62, qty: fitting_count}, {item: 12-63, qty: fitting_count}, {item: 12-53, qty: fitting_count}, {item: 12-66, qty: fitting_count}, {item: 12-67, qty: fitting_count}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DW-23
+  name: "Architraves and door trims"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H]
+  unit: rft
+  member_class: FITTING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: door_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: trim_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: trim_length, unit: rft, split: []}
+    - {qty: trim_area, unit: sft, split: []}
+  page_roles: [DETAIL, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 12-57, qty: trim_length}, {item: 12-56, qty: trim_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DW-24
+  name: "Steel grated and security doors"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: door_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: door_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: door_area, unit: sft, split: []}
+  page_roles: [ELEVATION, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: [{item: 25-30, qty: door_area}, {item: 25-31, qty: door_area}, {item: 25-66, qty: door_area}, {item: 25-59, qty: door_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DW-25
+  name: "Frameless and automatic glass doors"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: door_size, unit: mm, sources: [SCHEDULE, PLAN_LABEL]}
+    - {name: door_type, unit: text, sources: [SCHEDULE, SPEC]}
+  yields:
+    - {qty: door_area, unit: sft, split: []}
+  page_roles: [ELEVATION, OPENING_SCHEDULE]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: [{item: 25-69, qty: door_area}, {item: 25-70, qty: door_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DW-26
+  name: "Spiral stair (MS)"
+  section: "Doors, windows, glazing, railings and metalwork"
+  use: [H, P]
+  unit: rft
+  member_class: STAIR
+  inputs:
+    - {name: diameter, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: rise, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: storey_height, unit: mm, sources: [STOREY, SECTION]}
+  yields:
+    - {qty: stair_count, unit: nos, split: []}
+    - {qty: stair_mass, unit: kg, split: []}
+    - {qty: length, unit: rft, split: []}
+  page_roles: [SECTION, STAIR_DETAIL]
+  applies_when: {}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: [{item: 25-63, qty: stair_count}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: PB-25
+  name: "Flushing cisterns and stop cocks"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H, P]
+  unit: nos
+  member_class: FITTING
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: fitting_type, unit: text, sources: [LEGEND, SPEC]}
+  yields:
+    - {qty: fitting_count, unit: nos, split: []}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: [{item: 19-12, qty: fitting_count}, {item: 19-21, qty: fitting_count}, {item: 19-22, qty: fitting_count}, {item: 19-23, qty: fitting_count}, {item: 19-25, qty: fitting_count}, {item: 19-42, qty: fitting_count}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: PB-26
+  name: "Glass and ceramic shelves"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: shelf_size, unit: mm, sources: [DETAIL]}
+  yields:
+    - {qty: shelf_count, unit: nos, split: []}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-9
+  derived: null
+  billing:
+    MRS_PB: [{item: 19-18, qty: shelf_count}, {item: 19-19, qty: shelf_count}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: EX-13
+  name: "Barbed or razor wire fencing on boundary"
+  section: "External works"
+  use: [H, P]
+  unit: rft
+  member_class: BOUNDARY_WALL
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: strands, unit: nos, sources: [DETAIL, NOTE, SPEC]}
+  yields:
+    - {qty: fence_length, unit: rft, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: [{item: 25-73to25-77, qty: fence_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: EX-14
+  name: "Kerb stones and edging"
+  section: "External works"
+  use: [H, P]
+  unit: rft
+  member_class: SITE_AREA
+  inputs:
+    - {name: run_length, unit: mm, sources: [LAYOUT, SECTION, DERIVED]}
+    - {name: kerb_size, unit: mm, sources: [DETAIL, NOTE]}
+  yields:
+    - {qty: kerb_length, unit: rft, split: []}
+  page_roles: [SITE_PLAN]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-53, qty: kerb_length}, {item: 6-55, qty: kerb_length}, {item: 10-45, qty: kerb_length}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: RC-25
+  name: "Rainwater harvesting tank"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: TANK
+  inputs:
+    - {name: inner_size, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: wall_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: base_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: top_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [tank]}
+    - {qty: steel_mass, unit: kg, split: [tank, dia]}
+  page_roles: [DETAIL]
+  applies_when: {}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-6(b), qty: concrete_volume}, {item: 6-6(a), qty: concrete_volume}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: RC-26
+  name: "Sump pit and basement drainage pit"
+  section: "Concrete and RCC members"
+  use: [H, P]
+  unit: cft
+  member_class: TANK
+  inputs:
+    - {name: inner_size, unit: mm, sources: [DETAIL, SECTION, LAYOUT]}
+    - {name: depth, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: wall_thickness, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: [tank]}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [BASEMENT_PLAN, DRAINAGE_PLAN]
+  applies_when: {basement: true}
+  owner_pack: CV-4
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-6(b), qty: concrete_volume}, {item: 3-21, qty: concrete_volume}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: RC-27
+  name: "Overhead tank stand or platform"
+  section: "Concrete and RCC members"
+  use: [H]
+  unit: cft
+  member_class: SLAB_PANEL
+  inputs:
+    - {name: platform_size, unit: mm, sources: [LAYOUT, DETAIL]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+    - {name: support_height, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: bars, unit: text, sources: [SCHEDULE, SECTION, DETAIL]}
+  yields:
+    - {qty: concrete_volume, unit: cft, split: []}
+    - {qty: steel_mass, unit: kg, split: [dia]}
+  page_roles: [ROOF_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-7
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: MS-15
+  name: "Fireplace and chimney"
+  section: "Masonry"
+  use: [H]
+  unit: nos
+  member_class: WALL
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: chimney_size, unit: mm, sources: [DETAIL, LAYOUT]}
+    - {name: chimney_height, unit: mm, sources: [SECTION, DETAIL]}
+  yields:
+    - {qty: fireplace_count, unit: nos, split: []}
+    - {qty: brick_volume, unit: cft, split: []}
+  page_roles: [FLOOR_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-8
+  derived: null
+  billing:
+    MRS_PB: [{item: 7-20, qty: fireplace_count}, {item: 25-49, qty: fireplace_count}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DP-21
+  name: "Skylight and light-well glazing"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: sft
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SECTION]}
+    - {name: glazing_type, unit: text, sources: [SPEC, DETAIL]}
+  yields:
+    - {qty: glazing_area, unit: sft, split: []}
+  page_roles: [ROOF_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: [{item: 12-52, qty: glazing_area}, {item: 25-52, qty: glazing_area}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: DP-22
+  name: "Roof access hatch"
+  section: "Damp proofing, waterproofing, termite, insulation and roof"
+  use: [H, P]
+  unit: nos
+  member_class: OPENING
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: size, unit: mm, sources: [SCHEDULE, PLAN_LABEL, SECTION]}
+  yields:
+    - {qty: hatch_count, unit: nos, split: []}
+  page_roles: [ROOF_PLAN, SECTION]
+  applies_when: {}
+  owner_pack: CV-11
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: PB-27
+  name: "Home water filter plant"
+  section: "Plumbing, drainage, water supply and sanitary"
+  use: [H]
+  unit: nos
+  member_class: FIXTURE
+  inputs:
+    - {name: symbol_count, unit: nos, sources: [SYMBOL_COUNT, LEGEND]}
+    - {name: capacity, unit: text, sources: [NOTE, SPEC, LEGEND]}
+  yields:
+    - {qty: plant_count, unit: nos, split: []}
+  page_roles: [PLUMBING_PLAN]
+  applies_when: {sets_present: [PLUMBING]}
+  owner_pack: CV-10
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: EX-15
+  name: "Swimming pool (shell, finishes, plant)"
+  section: "External works"
+  use: [H]
+  unit: cft
+  member_class: SITE_AREA
+  inputs:
+    - {name: shell_size, unit: mm, sources: [DETAIL, LAYOUT]}
+    - {name: depth, unit: mm, sources: [DETAIL, SECTION]}
+    - {name: finish_area, unit: mm2, sources: [DETAIL, DERIVED]}
+    - {name: plant_count, unit: nos, sources: [DETAIL, NOTE]}
+  yields:
+    - {qty: shell_volume, unit: cft, split: []}
+    - {qty: finish_area, unit: sft, split: []}
+    - {qty: plant_count, unit: nos, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: EX-16
+  name: "Water feature or fountain"
+  section: "External works"
+  use: [H]
+  unit: nos
+  member_class: SITE_AREA
+  inputs:
+    - {name: count, unit: nos, sources: [LAYOUT, SYMBOL_COUNT, SCHEDULE]}
+    - {name: feature_type, unit: text, sources: [DETAIL, NOTE]}
+  yields:
+    - {qty: feature_count, unit: nos, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: EX-17
+  name: "Generator platform and pad"
+  section: "External works"
+  use: [H, P]
+  unit: cft
+  member_class: SITE_AREA
+  inputs:
+    - {name: pad_size, unit: mm, sources: [DETAIL, LAYOUT]}
+    - {name: thickness, unit: mm, sources: [SECTION, SPEC, NOTE, CONVENTION]}
+  yields:
+    - {qty: pad_volume, unit: cft, split: []}
+  page_roles: [SITE_PLAN, DETAIL]
+  applies_when: {}
+  owner_pack: CV-12
+  derived: null
+  billing:
+    MRS_PB: [{item: 6-5, qty: pad_volume}]
+    PRIVATE_QS: []
+  how_measured: "Added from the rate books; the method is for the QS to confirm."
+  status_v1: "NO"
+  reads: []
+- id: NR-01
+  name: "Mobilisation, site office, temporary water and power"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: lump, unit: text, sources: [RATE_BOOK, DECISION]}
+  yields:
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Lump sum"
+  status_v1: "NO"
+  reads: []
+- id: NR-02
+  name: "Scaffolding"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: sft
+  member_class: ALLOWANCE
+  inputs:
+    - {name: elevation_area, unit: mm2, sources: [ELEVATION, DERIVED]}
+    - {name: lump, unit: text, sources: [RATE_BOOK, DECISION]}
+  yields:
+    - {qty: scaffold_area, unit: sft, split: []}
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "sft of elevation, or lump sum"
+  status_v1: "NO"
+  reads: []
+- id: NR-03
+  name: "Curing"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: curing_rule, unit: text, sources: [SPEC, RATE_BOOK]}
+  yields:
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Included in concrete and plaster rates"
+  status_v1: "NO"
+  reads: []
+- id: NR-04
+  name: "Carriage of materials (lead and lift)"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: lead, unit: text, sources: [RATE_BOOK, DECISION]}
+    - {name: lift, unit: text, sources: [RATE_BOOK, DECISION]}
+  yields:
+    - {qty: carriage, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Rate-book chapter, per distance"
+  status_v1: "NO"
+  reads: []
+- id: NR-05
+  name: "Loading, unloading and stacking"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: rule, unit: text, sources: [RATE_BOOK, DECISION]}
+  yields:
+    - {qty: handling, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Rate-book chapter"
+  status_v1: "NO"
+  reads: []
+- id: NR-06
+  name: "Testing: cube tests, steel tests, soil investigation"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: nos
+  member_class: ALLOWANCE
+  inputs:
+    - {name: test_count, unit: nos, sources: [SPEC, DECISION]}
+  yields:
+    - {qty: test_count, unit: nos, split: []}
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Nos or lump sum"
+  status_v1: "NO"
+  reads: []
+- id: NR-07
+  name: "Dewatering"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: period, unit: text, sources: [DECISION, SPEC]}
+  yields:
+    - {qty: lump, unit: lump_sum, split: []}
+    - {qty: days, unit: day, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Lump sum or per day"
+  status_v1: "NO"
+  reads: []
+- id: NR-08
+  name: "Labour: grey structure and finishing"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: sft
+  member_class: ALLOWANCE
+  inputs:
+    - {name: covered_area, unit: mm2, sources: [LAYOUT, DERIVED]}
+    - {name: labour_rate, unit: text, sources: [RATE_BOOK, DECISION]}
+  yields:
+    - {qty: covered_area, unit: sft, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: [{line: LABOUR-GREY, qty: covered_area}]
+  how_measured: "sft of covered area"
+  status_v1: "NO"
+  reads: []
+- id: NR-09
+  name: "Site cleaning and debris removal"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: lump, unit: text, sources: [RATE_BOOK, DECISION]}
+  yields:
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Lump sum"
+  status_v1: "NO"
+  reads: []
+- id: NR-10
+  name: "Contractor's profit and overheads"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: percent
+  member_class: ALLOWANCE
+  inputs:
+    - {name: percent, unit: percent, sources: [DECISION, RATE_BOOK]}
+  yields:
+    - {qty: overheads, unit: percent, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "% of works"
+  status_v1: "NO"
+  reads: []
+- id: NR-11
+  name: "Contingencies"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: percent
+  member_class: ALLOWANCE
+  inputs:
+    - {name: percent, unit: percent, sources: [DECISION, RATE_BOOK]}
+  yields:
+    - {qty: contingency, unit: percent, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "% of works"
+  status_v1: "NO"
+  reads: []
+- id: NR-12
+  name: "Design and supervision fees"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: percent
+  member_class: ALLOWANCE
+  inputs:
+    - {name: percent, unit: percent, sources: [DECISION, RATE_BOOK]}
+  yields:
+    - {qty: fees, unit: percent, split: []}
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "% or lump sum"
+  status_v1: "NO"
+  reads: []
+- id: NR-13
+  name: "Authority fees and approvals"
+  section: "Items that are not read from drawings"
+  use: [H, P]
+  unit: lump_sum
+  member_class: ALLOWANCE
+  inputs:
+    - {name: lump, unit: text, sources: [DECISION, RATE_BOOK]}
+  yields:
+    - {qty: lump, unit: lump_sum, split: []}
+  page_roles: []
+  applies_when: {}
+  owner_pack: RATE
+  derived: null
+  billing:
+    MRS_PB: []
+    PRIVATE_QS: []
+  how_measured: "Lump sum"
+  status_v1: "NO"
+  reads: []

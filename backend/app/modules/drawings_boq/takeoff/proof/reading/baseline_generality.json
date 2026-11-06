@@ -1,0 +1,1302 @@
+{
+ "date": "2026-11-06",
+ "note": "Per-class recall and precision from proof.reading score; members from a read with every ST-1 to ST-5 rule forced on and no decision except the case's own storeys and sections. Offices are letters (proof/reading/sets.py).",
+ "pack": "GEN-1",
+ "reading_hash": "cb5302b656dd10ec421926522f3542b21dfe008c4d7c9a45de047b25a8816258",
+ "sets": {
+  "191c-arch": {
+   "classes": {
+    "BOUNDARY_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 8,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 8
+    },
+    "DISTRIBUTION_BOARD": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 4,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "DOOR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 3,
+     "MATCHED_OK": 14,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 0.8235,
+     "recall": 1.0,
+     "truth": 14
+    },
+    "DRAIN_POINT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 42,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 42
+    },
+    "ELECTRICAL_POINT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 173,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 72,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.7061,
+     "truth": 245
+    },
+    "FINISH_LAYER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 27,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 27
+    },
+    "GATE": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "LEVEL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 35,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 35
+    },
+    "NOTE_FACT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 21,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 24,
+     "MISSED_SILENT": 219,
+     "precision": 1.0,
+     "recall": 0.0795,
+     "truth": 264
+    },
+    "PARAPET": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 12,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 12
+    },
+    "PIPE_RUN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 19,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 19
+    },
+    "PLUMBING_FIXTURE": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 29,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 29
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 159,
+     "MATCHED_WRONG_VALUE": 103,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.6069,
+     "truth": 262
+    },
+    "ROOM": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 17,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 11,
+     "precision": 1.0,
+     "recall": 0.6071,
+     "truth": 28
+    },
+    "STAIR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 2,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": 0.0,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 4,
+     "MATCHED_OK": 1,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 6,
+     "precision": 0.2,
+     "recall": 0.1429,
+     "truth": 7
+    },
+    "WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 25,
+     "MATCHED_OK": 24,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 24,
+     "precision": 0.4898,
+     "recall": 0.5,
+     "truth": 48
+    },
+    "WINDOW": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 17,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "truth": 17
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "C",
+   "pages": 49,
+   "reading_split": "dev"
+  },
+  "191c-str": {
+   "classes": {
+    "BEAM_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 5,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 5
+    },
+    "BOUNDARY_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "COLUMN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 2,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 3,
+     "precision": 1.0,
+     "recall": 0.4,
+     "truth": 5
+    },
+    "COLUMN_SCHEDULE_CELL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "FOOTING_PAD": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 2,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": 1.0,
+     "recall": 0.5,
+     "truth": 4
+    },
+    "FOOTING_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 8,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 8
+    },
+    "JOIN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 2,
+     "MISSED_SILENT": 7,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 9
+    },
+    "NOTE_FACT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 29,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": 1.0,
+     "recall": 0.9355,
+     "truth": 31
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 45,
+     "MATCHED_WRONG_VALUE": 17,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.7258,
+     "truth": 62
+    },
+    "SLAB_BAR_CALLOUT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 31,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 31
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "C",
+   "pages": 11,
+   "reading_split": "dev"
+  },
+  "201cd": {
+   "classes": {
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 31,
+     "MATCHED_WRONG_VALUE": 40,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.4366,
+     "truth": 71
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 12,
+   "reading_split": "heldout"
+  },
+  "2053c": {
+   "classes": {
+    "BEAM_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 22,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 22
+    },
+    "BOUNDARY_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "COLUMN_SCHEDULE_CELL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 3,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 3
+    },
+    "FOOTING_PAD": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "FOOTING_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 7,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 7
+    },
+    "JOIN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 40,
+     "MATCHED_WRONG_VALUE": 18,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.6897,
+     "truth": 58
+    },
+    "SLAB_BAR_CALLOUT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 67,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 67
+    },
+    "STAIR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 3,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "truth": 3
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 11,
+   "reading_split": "heldout"
+  },
+  "350c": {
+   "classes": {
+    "BEAM_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 22,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 22
+    },
+    "COLUMN_SCHEDULE_CELL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "FOOTING_PAD": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "FOOTING_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 5,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 5
+    },
+    "JOIN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 34,
+     "MATCHED_WRONG_VALUE": 10,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.7727,
+     "truth": 44
+    },
+    "SLAB_BAR_CALLOUT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 82,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 82
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 3,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "truth": 3
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 8,
+   "reading_split": "heldout"
+  },
+  "652d": {
+   "classes": {
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 86,
+     "MATCHED_WRONG_VALUE": 43,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.6667,
+     "truth": 129
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "E",
+   "pages": 23,
+   "reading_split": "heldout"
+  },
+  "909a-elec": {
+   "classes": {
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 33,
+     "MATCHED_WRONG_VALUE": 25,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.569,
+     "truth": 58
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 9,
+   "reading_split": "heldout"
+  },
+  "909a-plumb": {
+   "classes": {
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 19,
+     "MATCHED_WRONG_VALUE": 16,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.5429,
+     "truth": 35
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 6,
+   "reading_split": "heldout"
+  },
+  "925b": {
+   "classes": {
+    "BEAM_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 32,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 32
+    },
+    "BOUNDARY_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "COLUMN_SCHEDULE_CELL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "FOOTING_PAD": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "FOOTING_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 11,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 11
+    },
+    "JOIN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 6,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 6
+    },
+    "RCC_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 55,
+     "MATCHED_WRONG_VALUE": 56,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.4955,
+     "truth": 111
+    },
+    "SLAB_BAR_CALLOUT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 246,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 246
+    },
+    "STAIR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 1,
+     "MATCHED_OK": 3,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": 0.75,
+     "recall": 0.75,
+     "truth": 4
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 20,
+   "reading_split": "heldout"
+  },
+  "959n": {
+   "classes": {
+    "BOUNDARY_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "COLUMN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "DOOR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 24,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 24
+    },
+    "FINISH_LAYER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 16,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 16
+    },
+    "FOOTING_PAD": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 4
+    },
+    "LEVEL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 21,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 21
+    },
+    "NOTE_FACT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 12,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 12
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 189,
+     "MATCHED_WRONG_VALUE": 128,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.5962,
+     "truth": 317
+    },
+    "ROOM": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 37,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 37
+    },
+    "STAIR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 2
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 1,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": 1.0,
+     "recall": 0.5,
+     "truth": 2
+    },
+    "VENTILATOR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 6,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 6
+    },
+    "WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 87,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 87
+    },
+    "WINDOW": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 18,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 18
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "B",
+   "pages": 53,
+   "reading_split": "heldout"
+  },
+  "bbs_156": {
+   "classes": {
+    "BBS_FINDING": {
+     "INVENTED_FLAGGED": 8,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 26,
+     "MATCHED_WRONG_VALUE": 2,
+     "MISSED_REPORTED": 2,
+     "MISSED_SILENT": 0,
+     "precision": 0.7778,
+     "recall": 0.8667,
+     "truth": 30
+    }
+   },
+   "members_with_rules_on": {},
+   "office": "A",
+   "pages": 100,
+   "reading_split": "dev"
+  },
+  "jakhar": {
+   "classes": {
+    "BEAM_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 27,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "truth": 27
+    },
+    "COLUMN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 51,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "truth": 51
+    },
+    "COLUMN_SCHEDULE_CELL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 17,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 1.0,
+     "truth": 17
+    },
+    "FOOTING_PAD": {
+     "INVENTED_FLAGGED": 16,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 1,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 2,
+     "MISSED_SILENT": 0,
+     "precision": 0.0588,
+     "recall": 0.3333,
+     "truth": 3
+    },
+    "FOOTING_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 5,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 5
+    },
+    "GRID": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 20,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 20
+    },
+    "JOIN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 51,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 1,
+     "MISSED_SILENT": 2,
+     "precision": 1.0,
+     "recall": 0.9444,
+     "truth": 54
+    },
+    "NOTE_FACT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 22,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 11,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.6667,
+     "truth": 33
+    },
+    "PLINTH_BEAM": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 51,
+     "MATCHED_WRONG_VALUE": 43,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.5426,
+     "truth": 94
+    },
+    "SLAB_BAR_CALLOUT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 132,
+     "MISSED_SILENT": 0,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 132
+    },
+    "SLAB_PANEL": {
+     "INVENTED_FLAGGED": 31,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 1,
+     "MISSED_SILENT": 0,
+     "precision": 0.0,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 2,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": 1.0,
+     "recall": 0.6667,
+     "truth": 3
+    }
+   },
+   "members_with_rules_on": {
+    "bands": 19,
+    "bands_with_a_support": 14,
+    "beam_run_members": 16,
+    "beam_runs_closed": 1,
+    "column_stack_members": 67,
+    "floor_all_columns": 33,
+    "footing_family_members": 12,
+    "held_on_substructure_layouts": 202,
+    "planted_column_members": 18
+   },
+   "office": "A",
+   "pages": 17,
+   "reading_split": "dev"
+  },
+  "plot1": {
+   "classes": {
+    "BEAM_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 9,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 9
+    },
+    "BOUNDARY_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 6,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 6
+    },
+    "COLUMN": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 37,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 37
+    },
+    "COLUMN_SCHEDULE_CELL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 5,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 5
+    },
+    "DOOR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 30,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": 1.0,
+     "recall": 0.8824,
+     "truth": 34
+    },
+    "FOOTING_SECTION": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 6,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 6
+    },
+    "LEVEL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 43,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 43
+    },
+    "LINTEL_TYPE": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 5,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 5
+    },
+    "NOTE_FACT": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 56,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 2,
+     "precision": 1.0,
+     "recall": 0.9655,
+     "truth": 58
+    },
+    "PARAPET": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 11,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 11
+    },
+    "RCC_WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 6,
+     "precision": null,
+     "recall": 0.0,
+     "truth": 6
+    },
+    "REGISTER": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 23,
+     "MATCHED_WRONG_VALUE": 11,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 1.0,
+     "recall": 0.6765,
+     "truth": 34
+    },
+    "ROOM": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 1,
+     "MATCHED_OK": 33,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 0,
+     "precision": 0.9706,
+     "recall": 1.0,
+     "truth": 33
+    },
+    "STAIR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 7,
+     "MATCHED_OK": 1,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 3,
+     "precision": 0.125,
+     "recall": 0.25,
+     "truth": 4
+    },
+    "TANK": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 1,
+     "MATCHED_OK": 0,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 1,
+     "precision": 0.0,
+     "recall": 0.0,
+     "truth": 1
+    },
+    "VENTILATOR": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 14,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": 1.0,
+     "recall": 0.7778,
+     "truth": 18
+    },
+    "WALL": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 31,
+     "MATCHED_OK": 29,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 32,
+     "precision": 0.4833,
+     "recall": 0.4754,
+     "truth": 61
+    },
+    "WINDOW": {
+     "INVENTED_FLAGGED": 0,
+     "INVENTED_SILENT": 0,
+     "MATCHED_OK": 17,
+     "MATCHED_WRONG_VALUE": 0,
+     "MISSED_REPORTED": 0,
+     "MISSED_SILENT": 4,
+     "precision": 1.0,
+     "recall": 0.8095,
+     "truth": 21
+    }
+   },
+   "members_with_rules_on": {
+    "bands": 1,
+    "bands_with_a_support": 1
+   },
+   "office": "D",
+   "pages": 6,
+   "reading_split": "dev"
+  }
+ }
+}

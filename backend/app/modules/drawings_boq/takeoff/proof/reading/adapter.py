@@ -228,7 +228,7 @@ def read_case(case: dict, files: dict, budget_s: float | None = None) -> dict:
     with open(files[name], "rb") as fh:
       blobs.append((name, fh.read()))
   kw = {} if budget_s is None else {"budget_s": budget_s}
-  return {name: rows for name, rows, _problems in BM.read_set(blobs, **kw)}
+  return {name: rows for name, rows, _problems in BM.read_set(blobs, rules=case.get("overrides"), **kw)}
 
 def read_items(pdf_path: str) -> SetRead:
   with open(pdf_path, "rb") as fh:

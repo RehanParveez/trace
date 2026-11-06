@@ -20,6 +20,8 @@ from app.modules.drawings_boq.takeoff.proof import levels as LV
 from app.modules.drawings_boq.takeoff.proof import convention_infer as CV
 from app.modules.drawings_boq.takeoff.proof import steel_coverage as SC
 from app.modules.drawings_boq.takeoff.proof import electrical_coverage as ECV
+from app.engine.catalogue import conventions as PKC
+from app.modules.drawings_boq.takeoff.questions import answers as QAN
 from app.engine.measure import rulebook as RB
 from app.modules.drawings_boq.takeoff.prep import page_role as PRL
 from app.modules.drawings_boq.takeoff.extract import identity_words as IW
@@ -960,7 +962,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     for name in case["pdfs"]:
       with open(files[name], "rb") as fh:
         blobs.append((name, fh.read()))
-    whole = {n: (r, pr) for n, r, pr in BM.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), runs=case.get("beam_runs"))}
+    whole = {n: (r, pr) for n, r, pr in BM.read_set(blobs, budget_s=page_budget, storeys=case.get("storeys"), sections=case.get("sections"), rules=case.get("overrides"))}
     timings["read the set"] = round(time.monotonic() - t, 1)
   for name in case["pdfs"]:
     t = time.monotonic()
@@ -1026,7 +1028,8 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     other = summarise(other_lines)
     timings["accept and run (other policy)"] = round(time.monotonic() - t, 1)
 
-  decisions = {d["id"]: d["value"] for d in case.get("decisions") or []}
+  engine_decisions, case_answers = QAN.split_case(case.get("decisions") or [])
+  decisions = {d["id"]: d["value"] for d in engine_decisions}
   if decisions:
     t = time.monotonic()
     accs_d, ledger_d, errors_d, _t, lines_d = engine(main_ready, decisions, False)
@@ -1036,7 +1039,7 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
     accs_d, ledger_d, lines_d = accs, ledger, lines
   expected_r, applied, pending, correction_problems = LV.corrected_expected(case["expected"], case.get("corrections") or [])
   lines_r = score_ledger(expected_r, ledger_d, accs_d, catalog) if applied else lines_d
-  levels = LV.build(lines, lines_d, lines_r, decisions=case.get("decisions") or [], decision_log=decision_log, corrections=case.get("corrections") or [], applied=applied, pending=pending,
+  levels = LV.build(lines, lines_d, lines_r, decisions=engine_decisions, decision_log=decision_log, corrections=case.get("corrections") or [], applied=applied, pending=pending,
     correction_problems=correction_problems, ledger=ledger_d, residuals=case.get("residuals") or [])
 
   conventions = case.get("conventions") or []
@@ -1044,7 +1047,11 @@ def run_case(case: dict, files: dict, profile, rule_set, catalog, *, ready_only:
   for group in (lines, lines_d, lines_r):
     for l in group:
       l["basis"] = basis.get(l["key"])
-  levels["conventions"] = CV.view(conventions, CIO.load_company_rules(case)[0], basis)
+  company_rows = CIO.load_company_rules(case)[0]
+  levels["conventions"] = CV.view(conventions, company_rows, basis)
+  held = {r["key"]: r["value"] for r in company_rows if str(r.get("key")).startswith(PKC.SWITCH_PREFIX)}
+  levels["questions"] = {"answered_by_case": sorted(case_answers)}
+  levels["pk_conventions"] = {"switched_on": PKC.on_ids(held), "engine_seeds": [{"id": c["id"], "engine_key": c["engine_key"], "value": c["value"], "range": c["range"], "source": c["source"]["label"]} for c in PKC.conventions() if c.get("engine_key")]}
 
   facts = check_facts([r for _n, rows in reads for r in rows], case["facts"])
   doc = {"case": case["name"], "tier": case["tier"], "status": "SCORED", "policy": "ready_only" if main_ready else "accept_all", "lines": lines, "facts": facts,

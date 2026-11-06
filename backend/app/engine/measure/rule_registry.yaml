@@ -1,0 +1,79 @@
+- id: HOLD_SUPERSTRUCTURE_ON_SUBSTRUCTURE_LAYOUTS
+  module: takeoff/extract/read_status.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "census: members set aside on an excavation or footing layout", value: 202, pack: GEN-1, met: false}
+    - {office: B, sets: 6, metric: "census: members set aside on an excavation or footing layout", value: 0, pack: GEN-1, met: false}
+    - {office: C, sets: 1, metric: "census: members set aside on an excavation or footing layout", value: 0, pack: GEN-1, met: false}
+    - {office: D, sets: 1, metric: "census: members set aside on an excavation or footing layout", value: 0, pack: GEN-1, met: false}
+    - {office: E, sets: 1, metric: "census: members set aside on an excavation or footing layout", value: 0, pack: GEN-1, met: false}
+  notes: A sheet whose page title or only view caption says excavation or footing layout cannot hold walls, rooms, doors, windows, lintels, stairs, finish layers or beams. The rule sets those classes aside (held, visible, never deleted) and treats an excavation layout as a held plan kind.
+- id: FLOOR_FROM_SCHEDULE
+  module: takeoff/extract/member_passes.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "census: columns given the floors their schedule rows name", value: 33, pack: GEN-1, met: false}
+    - {office: B, sets: 6, metric: "census: columns given the floors their schedule rows name", value: 0, pack: GEN-1, met: false}
+    - {office: C, sets: 1, metric: "census: columns given the floors their schedule rows name", value: 0, pack: GEN-1, met: false}
+    - {office: D, sets: 1, metric: "census: columns given the floors their schedule rows name", value: 0, pack: GEN-1, met: false}
+    - {office: E, sets: 1, metric: "census: columns given the floors their schedule rows name", value: 0, pack: GEN-1, met: false}
+  notes: A column layout that prints no floor, on a set whose order gives it none, takes the floors its schedule rows name, and each column the sum of the floor-to-floor heights of those floors.
+- id: PK_STOREY_DEFAULT
+  module: takeoff/model/storeys.py
+  kind: CONVENTION
+  default: off
+  status: CANDIDATE
+  evidence: []
+  notes: A QS floor-to-floor height used only for a floor with no printed, joined or decided height, when a project passes a value. No value is switched on anywhere. CT-3 moves it into the conventions file with a source and a range.
+- id: COLUMN_STACKS
+  module: takeoff/extract/member_passes.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "census: column members made, stacks and planted columns", value: 67, pack: GEN-1, met: false}
+    - {office: B, sets: 6, metric: "census: column members made, stacks and planted columns", value: 0, pack: GEN-1, met: false}
+    - {office: C, sets: 1, metric: "census: column members made, stacks and planted columns", value: 0, pack: GEN-1, met: false}
+    - {office: D, sets: 1, metric: "census: column members made, stacks and planted columns", value: 0, pack: GEN-1, met: false}
+    - {office: E, sets: 1, metric: "census: column members made, stacks and planted columns", value: 0, pack: GEN-1, met: false}
+  notes: One column member for each floor a mark's schedule rows name, with the size of that floor's schedule cell and the height of that floor, and one member for each planted column mark counted on a slab or framing plan. Same pass for both.
+- id: FOOTING_FAMILIES
+  module: takeoff/extract/member_passes.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "census: footing family members made", value: 12, pack: GEN-1, met: false}
+    - {office: B, sets: 6, metric: "census: footing family members made", value: 0, pack: GEN-1, met: false}
+    - {office: C, sets: 1, metric: "census: footing family members made", value: 0, pack: GEN-1, met: false}
+    - {office: D, sets: 1, metric: "census: footing family members made", value: 0, pack: GEN-1, met: false}
+    - {office: E, sets: 1, metric: "census: footing family members made", value: 0, pack: GEN-1, met: false}
+  notes: A footing mark joined to a decided or read section becomes one strip family or its pads, with PCC, trench or excavation, brick steps and the plinth beam. Without a section for the mark nothing is made.
+- id: BEAM_RUNS
+  module: takeoff/extract/member_passes.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "census: beam run members made", value: 16, pack: GEN-1, met: false}
+    - {office: B, sets: 6, metric: "census: beam run members made", value: 0, pack: GEN-1, met: false}
+    - {office: C, sets: 1, metric: "census: beam run members made", value: 0, pack: GEN-1, met: false}
+    - {office: D, sets: 1, metric: "census: beam run members made", value: 0, pack: GEN-1, met: false}
+    - {office: E, sets: 1, metric: "census: beam run members made", value: 0, pack: GEN-1, met: false}
+  notes: The labelled beam bands of a structural plan become beam members with the section of the mark, its bars and stirrup zones. An end that meets no column or band holds the member.
+- id: BEAM_BAND_SQUARE_OUTLINES
+  module: takeoff/extract/beam_bands.py
+  kind: READING
+  default: off
+  status: CANDIDATE
+  evidence:
+    - {office: A, sets: 1, metric: "census: beam bands that end on a square outline taken as a column", value: 14, pack: GEN-1, met: false}
+    - {office: B, sets: 6, metric: "census: beam bands that end on a square outline taken as a column", value: 0, pack: GEN-1, met: false}
+    - {office: C, sets: 1, metric: "census: beam bands that end on a square outline taken as a column", value: 0, pack: GEN-1, met: false}
+    - {office: D, sets: 1, metric: "census: beam bands that end on a square outline taken as a column", value: 1, pack: GEN-1, met: false}
+    - {office: E, sets: 1, metric: "census: beam bands that end on a square outline taken as a column", value: 0, pack: GEN-1, met: false}
+  notes: Stroked square outlines with diagonal hatch inside, drawn at a column size, are taken as columns so a beam run can end on a support.

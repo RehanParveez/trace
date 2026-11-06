@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import time
+from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.extract.crosschecks import _floor, _sheet_floor
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
@@ -87,8 +88,8 @@ def _merge_project(sheets: list, others: list) -> dict:
   from app.modules.drawings_boq.takeoff.prep import project_facts as PF
   return PF.bundle([("this", s) for s in sheets] + [(name, s) for name, group in others for s in group], "this")
 
-def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, 
-storeys: list | None = None, sections: list | None = None, runs: bool = False, structure: bool = True) -> list:
+def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, storeys: list | None = None,
+  sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None) -> list:
   from types import SimpleNamespace
   from app.core.config import settings
   use = settings.takeoff_project_facts if project is None else project
@@ -114,10 +115,13 @@ storeys: list | None = None, sections: list | None = None, runs: bool = False, s
       pass
   return ou
 
-def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, prepared: tuple | None = None, project: dict | None = None, storeys: list | None = None, sections: list | None = None, runs: bool = False, structure: bool = True) -> tuple:
+def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, prepared: tuple | None = None, project: dict | None = None, storeys: list | None = None, sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None) -> tuple:
   """Every page of the set read the way the application reads a drawing: the pictures on each sheet are read when it is analysed, and what the whole drawing prints (floor
-  heights from the sections, slab values, specification, beam sections, tank and footing details, units, schedules) is gathered from all the sheets and given to each one. Only
+  heights from the sections, slab values, spFecification, beam sections, tank and footing details, units, schedules) is gathered from all the sheets and given to each one. Only
   the database is left out. The wall thicknesses the drawing's own sheets agree on are gathered as the sheets are read, plain sheets first, as a first run does."""
+  if rules:
+    with RR.using(rules):
+      return read_pdf(pdf, pages, budget_s=budget_s, scale_unverified=scale_unverified, prepared=prepared, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure)
   from types import SimpleNamespace
   from app.modules.drawings_boq.takeoff import prep_service as PSV
   from app.modules.drawings_boq.takeoff.prep import beam_details as BD, facts as DF, tank_details as TD, units as UR
@@ -147,6 +151,7 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
     schedule, units = known["schedule"], known["units"]
     drawing = {"floor_heights": known["storey_heights"], "slab_values": known["slab_values"], "spec_facts": known["spec_facts"], "beam_sections": known["beam_sections"],
       "tank_details": known["tank_details"], "footing_sections": known["footing_sections"], "footing_views": known["footing_views"], "column_details": known["column_details"]}
+  runs = RR.on("BEAM_RUNS") if runs is None else runs
   if runs:
     from app.modules.drawings_boq.takeoff.extract import beam_members as BMEM
     drawing["band_sections"] = BMEM.table_sections(sheets, drawing["beam_sections"])

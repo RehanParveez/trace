@@ -1,0 +1,44 @@
+- path: backend/app/modules/drawings_boq/takeoff/tuning/registry.py
+  pattern: 'import trace as'
+  reason: The tuning screen is an application feature that reads the trace service kept in the proof package.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/takeoff/extract/extract_router.py
+  pattern: 'proof\.schemas import'
+  reason: The facts-check endpoint of the extraction router uses the request and response schemas of the proof service.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/takeoff/extract/extract_router.py
+  pattern: 'proof\.service import'
+  reason: The facts-check endpoint of the extraction router calls the proof service, which is an application feature.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/takeoff/extract/foundation_runs.py
+  pattern: '"W[1-4]"'
+  reason: Tag names the footing-run reader gives its own wall classes by thickness and edge; they are made here, not read from a sheet.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/takeoff/reading_score/labels.py
+  pattern: 'writerow\(\[1, "COLUMN"'
+  reason: One example row written into the labelling template file so a person sees the column order.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/rebar/bbs_crosscheck_service.py
+  pattern: 'level="L4"'
+  reason: Audit level code L4 of a rebar audit run, not a mark printed on a drawing.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/rebar/bbs_models.py
+  pattern: '"L1"'
+  reason: Default audit level code L1 of the rebar audit table, not a mark printed on a drawing.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/rebar/bbs_service.py
+  pattern: 'level="L1"'
+  reason: Audit level code L1 of a rebar audit run, not a mark printed on a drawing.
+  pack: GEN-1
+- path: backend/app/modules/drawings_boq/takeoff/first_run/service.py
+  pattern: 'proof import first_run_run'
+  reason: The first-upload job runs the stage bindings kept in the proof package, the same ones gate 18 checks, so the product and the check cannot drift apart.
+  pack: CT-5
+- path: backend/app/modules/drawings_boq/takeoff/first_run/service.py
+  pattern: 'proof import completeness_run'
+  reason: The job turns a reading into the plain form the ledger takes with the same function gates 14 and 16 use, kept in the proof package.
+  pack: CT-5
+- path: backend/app/modules/drawings_boq/takeoff/first_run/service.py
+  pattern: 'proof\.reading import adapter'
+  reason: The job reads a PDF with the reader that gate 14 judges, which lives in the proof package until it is moved out of it.
+  pack: CT-5

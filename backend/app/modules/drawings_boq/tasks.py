@@ -416,6 +416,27 @@ async def _parse_drawing(drawing_id: UUID) -> None:
 PDF_READ_ROUNDS = 6
 
 @celery_app.task(
+  name="app.modules.drawings_boq.tasks.first_run_task",
+  time_limit=int(settings.bim_parsing_time_limit_seconds),
+  soft_time_limit=int(settings.bim_parsing_soft_time_limit_seconds),
+  acks_late=True,
+)
+
+def first_run_task(org_id: str, project_id: str, user_id: str | None) -> str:
+  async def _run() -> None:
+    from app.modules.drawings_boq.takeoff.first_run.service import FirstRunService
+    try:
+      async with WorkerSessionLocal() as session:
+        await scope_session_as_dispatch(session)
+        await scope_session_to_org(session, UUID(org_id))
+        await FirstRunService(session).run(UUID(org_id), UUID(user_id) if user_id else None, UUID(project_id))
+    finally:
+      await dispose_worker_engine()
+
+  asyncio.run(_run())
+  return "first_run"
+
+@celery_app.task(
   name="app.modules.drawings_boq.tasks.read_pdf_drawing_task",
   time_limit=int(settings.bim_parsing_time_limit_seconds),
   soft_time_limit=int(settings.bim_parsing_soft_time_limit_seconds),

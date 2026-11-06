@@ -1,4 +1,5 @@
 from __future__ import annotations
+from app.engine.catalogue import conventions as CVN
 from app.engine.measure.models import CalculationContext, LedgerEntry, ModelElement, Solid
 from app.engine.measure.takeoff import SOURCE_KIND as PDF_SOURCE
 from shapely.affinity import translate
@@ -58,7 +59,7 @@ PARAMS = {
   "ring_hook_dia": (20.0, 0.0, 40.0),
   "bar_lap_dia": (40.0, 0.0, 80.0),
   "bar_anchor_dia": (40.0, 0.0, 80.0),
-  "steel_wastage_pct": (5.0, 0.0, 15.0),
+  "steel_wastage_pct": (CVN.seed("PK_STEEL_WASTAGE_PCT"), 0.0, 15.0),
   "steel_cover_slab_mm": (38.1, 10.0, 100.0),
   "steel_cover_beam_mm": (38.1, 10.0, 100.0),
   "steel_cover_column_mm": (38.1, 10.0, 100.0),
@@ -84,7 +85,7 @@ PARAMS = {
   "wall_membrane": (0.0, 0.0, 1.0),
   "wall_finishes_from_walls": (0.0, 0.0, 1.0),
   "steel_estimate_from_volume": (1.0, 0.0, 1.0),
-  "slab_steel_kg_per_m2": (16.1459, 0.0, 200.0),
+  "slab_steel_kg_per_m2": (CVN.seed("PK_SLAB_STEEL_KG_PER_M2"), 0.0, 200.0),
   "one_total": (0.0, 0.0, 1.0),
   "one_total_prefer": (0.0, 0.0, 2.0),
   "one_total_position_tol_mm": (100.0, 10.0, 1000.0),
@@ -97,7 +98,7 @@ PARAMS = {
   "roof_screed": (1.0, 0.0, 1.0),
   "roof_turnup_mm": (300.0, 0.0, 1500.0),
   "steel_binding_wire": (0.0, 0.0, 1.0),
-  "steel_binding_wire_pct": (1.0, 0.0, 5.0),
+  "steel_binding_wire_pct": (CVN.seed("PK_BINDING_WIRE_PCT"), 0.0, 5.0),
   "steel_chairs": (0.0, 0.0, 1.0),
   "steel_chairs_kg_per_m2": (0.25, 0.0, 5.0),
   "ring_dense_default": (0.0, 0.0, 1.0),

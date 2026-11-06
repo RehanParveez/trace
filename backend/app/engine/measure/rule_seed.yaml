@@ -63,6 +63,12 @@ rules:
   - {key: opening_rules_basis, value: "SHEET", unit: null, cls: JUDGEMENT}
   - {key: termite.scope, value: "FLOOR_AND_BEDS", unit: null, cls: JUDGEMENT}
   - {key: plaster.external_height_basis, value: "PER_FLOOR", unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_STOREY_DEFAULT, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_SLAB_THK_DEFAULT, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_FOOTING_DEPTH_DEFAULT, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_STEEL_WASTAGE_PCT, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_SLAB_STEEL_KG_PER_M2, value: 0.0, unit: null, cls: JUDGEMENT}
+  - {key: convention.PK_BINDING_WIRE_PCT, value: 0.0, unit: null, cls: JUDGEMENT}
 
   - {key: working_space_qs_mm, value: 304.8, unit: "mm", cls: JUDGEMENT}
   - {key: props_step_mm, value: 1000.0, unit: "mm", cls: JUDGEMENT}

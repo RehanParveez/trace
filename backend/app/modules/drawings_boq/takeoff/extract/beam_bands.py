@@ -1,5 +1,6 @@
 from __future__ import annotations
 import numpy as np
+from app.engine.measure import rule_registry as RR
 from app.modules.drawings_boq.takeoff.prep.details import norm_mark
 from app.modules.drawings_boq.takeoff.prep import views as VW
 

@@ -1,0 +1,85 @@
+conventions:
+  - id: PK_STOREY_DEFAULT
+    name: "Floor to floor height when no sheet, section or decision gives it"
+    value: 3276.6
+    unit: mm
+    range: [3200.4, 3352.8]
+    source: {kind: TRACE_SEED, label: "Trace seed, unsourced", note: "The value is the basement floor to floor the code already holds (10 ft 9 in), the range is 10 ft 6 in to 11 ft, the shape of range Build File G says a QS gives. The QS convention sheet was not supplied; the QS confirms or replaces both."}
+    scope: [H, P]
+    engine_key: null
+    fills: [RC-07.height, RC-16.height, MS-01.height, MS-02.height, MS-08.height, PL-01.height, PL-02.height, PZ-04.height, MS-12.height, MS-13.height, MS-14.height]
+  - id: PK_SLAB_THK_DEFAULT
+    name: "Slab thickness when none is printed"
+    value: 152.4
+    unit: mm
+    range: [127.0, 177.8]
+    source: {kind: TRACE_SEED, label: "Trace seed, unsourced", note: "The value is the slab thickness the code already holds (6 in) under slab_thickness_mm. The range, 5 in to 7 in, is a Trace estimate from trade knowledge. House only: a plaza slab differs and no plaza value is held, so plaza slabs stay asked."}
+    scope: [H]
+    engine_key: slab_thickness_mm
+    fills: [RC-10.thickness, RC-11.thickness, RC-23.thickness]
+  - id: PK_FOOTING_DEPTH_DEFAULT
+    name: "Footing depth when only a symbol is printed"
+    value: 228.6
+    unit: mm
+    range: [203.2, 304.8]
+    source: {kind: TRACE_SEED, label: "Trace seed, unsourced", note: "The value is the footing depth the code already holds (9 in) under footing_depth_mm. The range, 8 in to 12 in, is a Trace estimate from trade knowledge."}
+    scope: [H, P]
+    engine_key: footing_depth_mm
+    fills: [RC-01.depth, RC-02.depth, RC-03.depth]
+  - id: PK_STEEL_WASTAGE_PCT
+    name: "Steel wastage added to the weight of the bars"
+    value: 5.0
+    unit: percent
+    range: [3.0, 7.0]
+    source: {kind: TRACE_SEED, label: "Trace seed, unsourced", note: "The value is the wastage the code already holds under steel_wastage_pct. The range, 3 to 7 percent, is a Trace estimate from trade knowledge."}
+    scope: [H, P]
+    engine_key: steel_wastage_pct
+    fills: [RF-01.wastage]
+  - id: PK_SLAB_STEEL_KG_PER_M2
+    name: "Slab steel by rule of thumb when the bars are not printed"
+    value: 16.1459
+    unit: kg_per_m2
+    range: [10.764, 21.528]
+    source: {kind: TRACE_SEED, label: "Trace seed, unsourced", note: "The value is 1.5 kg per sq ft, the rule the code already holds under slab_steel_kg_per_m2. The range, 1 to 2 kg per sq ft, is a Trace estimate from trade knowledge."}
+    scope: [H, P]
+    engine_key: slab_steel_kg_per_m2
+    fills: [RC-10.bar_callouts]
+  - id: PK_BINDING_WIRE_PCT
+    name: "Binding wire as a percentage of the steel weight"
+    value: 1.0
+    unit: percent
+    range: [0.5, 1.5]
+    source: {kind: TRACE_SEED, label: "Trace seed, unsourced", note: "The value is the percentage the code already holds under steel_binding_wire_pct. The range, 0.5 to 1.5 percent, is a Trace estimate from trade knowledge."}
+    scope: [H, P]
+    engine_key: null
+    fills: [RF-03.binding_percent]
+methods:
+  - id: backfill_method
+    item: EW-06
+    input: backfill_method
+    default: UNDER_FLOOR_ONLY
+    options:
+      NONE: {effect: NOT_COUNTED, text: "No back fill is counted."}
+      AROUND_FOUNDATION: {effect: COMPUTED, text: "Back fill around the foundations is the excavation less the plain concrete, the footings, the plinth beam and the brick below ground, each from the members."}
+      UNDER_FLOOR_ONLY: {effect: NOT_COUNTED, text: "Only the filling under the floors is counted (EW-07); nothing is counted around the foundations."}
+  - id: dpc_vertical
+    item: DP-02
+    input: null
+    default: NOT_TAKEN
+    options:
+      NOT_TAKEN: {effect: NOT_COUNTED, text: "The vertical damp proof course on the below-ground face is not measured, which is what the engine does today."}
+      TAKEN: {effect: NOT_BUILT, text: "The vertical damp proof course on the below-ground face is measured. Not built: the entry reports it as not read."}
+  - id: tanks_same_concrete
+    item: RC-18
+    input: null
+    default: null
+    options:
+      SAME_CONCRETE: {effect: RECORDED, text: "The tanks are cast in the same concrete as the rest of the structure."}
+      OWN_MIX: {effect: RECORDED, text: "Each tank has its own concrete mix, billed apart from the structure."}
+  - id: basement_walls_repeated
+    item: RC-15
+    input: null
+    default: null
+    options:
+      REPEATED_ON_UPPER_FLOORS: {effect: RECORDED, text: "The QS repeats the basement wall list on the upper floors."}
+      BASEMENT_ONLY: {effect: RECORDED, text: "The basement wall list is taken once, for the basement."}

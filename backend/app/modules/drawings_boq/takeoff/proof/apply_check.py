@@ -6,6 +6,8 @@ import re
 import sys
 
 APPLIED, TO_APPLY, NEITHER = "applied", "to apply", "neither"
+GENERALITY_KEYS = ("pack", "dev", "first_sight", "class_recall", "registry_changes", "gate17_hits", "case_file_changes")
+BEFORE_GENERALITY = ("RP1", "RP2", "ST1", "ST2", "ST3", "ST4", "ST5", "ST5B", "U1", "U2")
 
 def _no_comment(line: str) -> str:
   for m in re.finditer(r"#", line):
@@ -49,6 +51,37 @@ def parse_md(text: str) -> dict:
     if m:
       new_files = re.findall(r"^- `([^`]+)`", m.group(1), re.M)
   return {"edits": edits, "manifest": manifest, "new_files": new_files}
+
+def _pack_id(name: str) -> str:
+  return re.sub(r"[^A-Z0-9]", "", str(name).upper())
+
+def generality_problems(text: str, manifest: dict | None) -> list:
+  pack = _pack_id((manifest or {}).get("pack") or "")
+  if not pack or pack.isdigit() or pack in BEFORE_GENERALITY:
+    return []
+  
+  head = re.search(r"(?m)^##\s*(?:\d+\.\s*)?Generality\b.*$", text)
+  if not head:
+    return ["the pack md has no Generality section"]
+  rest = text[head.end():]
+  nxt = re.search(r"(?m)^##\s", rest)
+  body = rest[:nxt.start()] if nxt else rest
+  import yaml
+  for block in re.findall(r"```yaml\n(.*?)\n```", body, re.S):
+    try:
+      doc = yaml.safe_load(block)
+    except yaml.YAMLError:
+      continue
+    if isinstance(doc, dict) and isinstance(doc.get("generality"), dict):
+      rec = doc["generality"]
+      missing = [k for k in GENERALITY_KEYS if k not in rec]
+      if missing:
+        return [f"the generality record lacks {', '.join(missing)}"]
+      if _pack_id(rec["pack"]) != pack:
+        return [f"the generality record names pack {rec['pack']}, the manifest names {(manifest or {}).get('pack')}"]
+      return []
+    
+  return ["the Generality section has no `generality:` record in a yaml block"]
 
 def block_state(tree_text: str, find: str, replace: str) -> tuple:
   f, r, t = norm(find), norm(replace), norm(tree_text)
@@ -113,6 +146,9 @@ def check(md_path: pathlib.Path, root: pathlib.Path, before: bool = False) -> tu
     still = resolve(root, gone).exists()
     out.append(f"Deleted    {'STILL THERE' if still else 'ok':11}{gone}")
     misses += 0 if before else (1 if still else 0)
+  for problem in generality_problems(md_path.read_text(encoding="utf8"), doc["manifest"]):
+    out.append(f"Generality {problem}")
+    misses += 1
   listed = {n for ed in (mf.get("edits") or []) for n in ed.get("blocks") or []}
   have = {e["n"] for e in doc["edits"]}
   if mf and listed != have:

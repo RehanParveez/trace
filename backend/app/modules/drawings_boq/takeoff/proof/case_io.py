@@ -44,7 +44,7 @@ def load_case(folder: str) -> dict:
   out["corrections"] = load_corrections(folder)
   out["storeys"] = load_storeys(folder)
   out["sections"] = load_sections(folder)
-  out["beam_runs"] = load_beam_runs(folder)
+  out["overrides"] = load_overrides(folder)
   fixed = {c["line"] for c in out["corrections"]}
   for e in out["expected"]:
     if e["kind"] == "QS_ERROR" and e["key"] not in fixed:
@@ -99,14 +99,21 @@ def load_storeys(folder: str) -> list:
   return out
 
 def load_beam_runs(folder: str) -> bool:
-  path = os.path.join(folder, "beam_runs.yaml")
-  on = False
+  from app.engine.measure import rule_registry as RR
+  path = os.path.join(folder, RR.OVERRIDES_FILE)
+  out: dict = {}
   for i, e in enumerate(_list_file(path)):
-    _need(path, i, e, "date", "source")
-    if not isinstance(e.get("enabled"), bool):
-      raise ValueError(f"{path}, entry {i + 1}: enabled is true or false.")
-    on = on or e["enabled"]
-  return on
+    _need(path, i, e, "rule", "value", "reason", "date")
+    if str(e["value"]).lower() not in ("on", "off") and not isinstance(e["value"], bool):
+      raise ValueError(f"{path}, entry {i + 1}: value is on or off.")
+    try:
+      RR.get(str(e["rule"]))
+    except KeyError:
+      raise ValueError(f"{path}, entry {i + 1}: {e['rule']} is not a rule of the registry.")
+    if str(e["rule"]) in out:
+      raise ValueError(f"{path}: the rule {e['rule']} is given twice.")
+    out[str(e["rule"])] = e["value"] is True or str(e["value"]).lower() == "on"
+  return out
 
 SECTION_KINDS = ("STRIP", "PAD", "WALL_FOOTING", "PLINTH_BEAM")
 SECTION_INCHES = ("width_in", "depth_in", "pcc_width_in", "pcc_in", "nsl_to_pcc_in", "wall_in")

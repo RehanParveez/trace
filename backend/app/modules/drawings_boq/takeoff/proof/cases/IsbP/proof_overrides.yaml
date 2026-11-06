@@ -1,0 +1,24 @@
+- rule: BEAM_RUNS
+  value: on
+  reason: The beam runs are proved on one office only, so the registry keeps them off. This proof run forces them on so the score of this case still shows the beam line.
+  date: '2026-11-06'
+- rule: COLUMN_STACKS
+  value: on
+  reason: Column stacks and planted columns are proved on one office only. Forced on for this proof run so the column lines of this case are scored.
+  date: '2026-11-06'
+- rule: FLOOR_FROM_SCHEDULE
+  value: on
+  reason: The column layout of this set prints no floor. Forced on for this proof run until a second office shows the same convention.
+  date: '2026-11-06'
+- rule: FOOTING_FAMILIES
+  value: on
+  reason: Footing families are proved on one office only, from decided sections. Forced on for this proof run so the footing lines of this case are scored.
+  date: '2026-11-06'
+- rule: BEAM_BAND_SQUARE_OUTLINES
+  value: on
+  reason: The hatched square outlines that close beam runs on supports are proved on one office only. Forced on for this proof run.
+  date: '2026-11-06'
+- rule: HOLD_SUPERSTRUCTURE_ON_SUBSTRUCTURE_LAYOUTS
+  value: on
+  reason: The hold of superstructure classes on excavation and footing layouts is proved on one office only. Forced on for this proof run so the false finish lines stay out of the score.
+  date: '2026-11-06'

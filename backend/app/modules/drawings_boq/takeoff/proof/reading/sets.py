@@ -7,6 +7,8 @@ from app.modules.drawings_boq.takeoff.proof import case as CASE
 from app.modules.drawings_boq.takeoff.proof.reading.formats import KEY_LEN
 
 READING = "reading"
+OFFICES = {"IsbP": "A", "bbs_156": "A", "2053c": "B", "350c": "B", "925b": "B", "959n": "B", "201cd": "B", "909a": "B", "191c": "C", "plot1": "D", "652d": "E"}
+UNKNOWN_OFFICE = "?"
 
 class SetRef(NamedTuple):
   case: str
@@ -16,6 +18,10 @@ class SetRef(NamedTuple):
   truth_folder: str
   owner: str
   link: bool
+  office: str = UNKNOWN_OFFICE
+
+def office_of(case: str) -> str:
+  return OFFICES.get(case, UNKNOWN_OFFICE)
 
 def _raw_case(folder: str) -> dict:
   with open(os.path.join(folder, "case.yaml"), encoding="utf-8") as fh:
@@ -36,7 +42,7 @@ def find_sets(cases_dir: str | None = None, root: str = CIO.HERE) -> list:
         continue
       key = str(sha)[:KEY_LEN]
       owner = owners.setdefault(key, name)
-      refs.append(SetRef(case=name, pdf=pdf, pdf_path=path, pdf_key=key, truth_folder=os.path.join(root, owner, READING, key), owner=owner, link=owner != name))
+      refs.append(SetRef(case=name, pdf=pdf, pdf_path=path, pdf_key=key, truth_folder=os.path.join(root, owner, READING, key), owner=owner, link=owner != name, office=office_of(owner)))
       
   if problems:
     raise ValueError("\n".join(problems))

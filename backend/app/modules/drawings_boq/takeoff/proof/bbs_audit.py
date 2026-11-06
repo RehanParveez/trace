@@ -205,7 +205,7 @@ def make_reads(folder: str, cases_dir: str | None) -> list:
   with open(paths[bbs_name], "rb") as fh:
     doc = BBS.read_bbs_pdf(fh.read())
   with open(paths[st["pdf"]], "rb") as fh:
-    sheets = BM.read_set([(st["pdf"], fh.read())])[0][1]
+    sheets = BM.read_set([(st["pdf"], fh.read())], rules=CIO.load_case(os.path.join(CIO.HERE, st["case"])).get("overrides"))[0][1]
   bbs = bbs_read_dict(doc, bbs_sha)
   if rows_digest(snapshot_document(json.loads(json.dumps(bbs))).rows) != bbs[ROWS_SHA]:
     raise ValueError(f"{BBS_READ} does not read back to the rows the reader gave.")

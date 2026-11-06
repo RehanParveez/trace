@@ -247,7 +247,7 @@ def ledger_after_join(ts: F.TruthSet, joined: dict) -> dict:
 def _case_facts(root: str, case: str) -> list:
   return CIO.load_facts(os.path.join(root, case, "facts.yaml"))
 
-def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: str = CIO.HERE) -> dict:
+def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: str = CIO.HERE, on_read=None) -> dict:
   want = {"dev": ("DEV",), "heldout": ("HELDOUT",), "all": ("DEV", "HELDOUT")}[split]
   files_dir = CIO.cases_dir(cases_dir)
   outcomes, sets_out, unmapped, notes = [], [], {}, []
@@ -287,6 +287,8 @@ def run(split: str, cases_dir: str | None, score_dir: str | None = None, root: s
         reads_by_case[ref.case] = AD.read_case(case, found)
       rows = reads_by_case[ref.case]
       read = AD.items_of(rows[ref.pdf])
+      if on_read is not None:
+        on_read(ref, read)
       for k, n in read.unmapped.items():
         unmapped[k] = unmapped.get(k, 0) + n
       if facts and results_all is None:
@@ -391,11 +393,11 @@ def compare(baseline: dict, doc: dict, accepted: dict) -> dict:
   changed = [(i, baseline["outcomes"][i], now[i]) for i in sorted(common) if baseline["outcomes"][i] != now[i]]
   return {"lost": lost, "gone": gone, "register_down": reg_down, "silent_rises": rises, "same_truth": same_truth, "changed": changed, "ok": not lost and not gone and not rises}
 
-def gate(cases_dir: str | None, score_dir: str | None, root: str = CIO.HERE) -> tuple:
+def gate(cases_dir: str | None, score_dir: str | None, root: str = CIO.HERE, on_read=None) -> tuple:
   baseline = load_baseline()
   if baseline is None:
     return False, "proof/reading/baseline.json is missing (write it with `proof.reading score --split all --write-baseline` once the reading is right)"
-  doc = run("all", cases_dir, score_dir, root)
+  doc = run("all", cases_dir, score_dir, root, on_read)
   cmp = compare(baseline, doc, load_accepted())
   if cmp["ok"]:
     n_ok = sum(1 for v in baseline["outcomes"].values() if v == OK)
