@@ -299,7 +299,7 @@ def of_page(index, mm_per_pt: float, unit: float, views: list, sections: list | 
   segs = np.asarray(index.segs, dtype=float).reshape(-1, 5)[:, :4]
   kinds = np.asarray(index.kinds, dtype=int) if index.kinds is not None else None
   words = [(w.text, w.cx, w.cy, w.angle, w.length, w.height) for w in index.words]
-  squares = square_list if square_list is not None else [(s["cx"], s["cy"], s["b"] / mm_per_pt, s["b"] / mm_per_pt) for s in ST.dedupe_solid(ST.square_shapes(index.rings, mm_per_pt), mm_per_pt)]
+  squares = square_list if square_list is not None else ([(s["cx"], s["cy"], s["b"] / mm_per_pt, s["b"] / mm_per_pt) for s in ST.dedupe_solid(ST.square_shapes(index.rings, mm_per_pt), mm_per_pt)] if RR.on("BEAM_BAND_SQUARE_OUTLINES") else [])
   widths = _widths(sections)
   known = set(widths) | {norm_mark(str(s.get("mark"))) for s in sections or [] if s.get("mark")}
   

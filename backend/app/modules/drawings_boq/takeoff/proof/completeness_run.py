@@ -31,7 +31,7 @@ def page_rows(plain: dict) -> list:
   rows = []
   for key, p in plain["pages"].items():
     reg = p.get("register") or {}
-    rows.append({"page": int(p.get("sheet") or key), "role": reg.get("role"), "plan_kind": reg.get("plan_kind"), "floor": reg.get("floor"), "discipline": reg.get("discipline"), "title": reg.get("title")})
+    rows.append({"page": int(p.get("sheet") or key), "role": reg.get("role"), "plan_kind": reg.get("plan_kind"), "floor": reg.get("floor"), "discipline": reg.get("discipline"), "title": reg.get("title"), "scale_basis": reg.get("scale_basis")})
   return sorted(rows, key=lambda r: r["page"])
 
 def sheet_key(row: dict) -> str | None:

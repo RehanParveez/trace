@@ -135,6 +135,7 @@ def scan_python(path: pathlib.Path, names, marks: set) -> list:
     if isinstance(node, ast.Compare):
       sides = [node.left, *node.comparators]
       named = [_name_of(s) for s in sides]
+      
       const = [s for s in sides if isinstance(s, (ast.Constant, ast.Tuple, ast.List, ast.Set)) and (not isinstance(s, ast.Constant) or isinstance(s.value, int) and not isinstance(s.value, bool))]
       if any(n in PAGE_NAMES for n in named) and const and all(isinstance(op, (ast.Eq, ast.NotEq, ast.In, ast.NotIn)) for op in node.ops):
         elts = [e for c in const for e in (c.elts if isinstance(c, (ast.Tuple, ast.List, ast.Set)) else [c])]
@@ -211,6 +212,7 @@ def convention_hits() -> list:
 def load_allow() -> tuple:
   if not ALLOW.is_file():
     return [], []
+  
   raw = _yaml(ALLOW) or []
   problems, entries = [], []
   names = name_pattern(case_names())

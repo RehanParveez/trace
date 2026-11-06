@@ -98,7 +98,7 @@ def load_storeys(folder: str) -> list:
     out.append({"floor": floor, given[0]: float(e[given[0]]), "answered_by": by, "date": str(e["date"]), "source": str(e["source"])})
   return out
 
-def load_beam_runs(folder: str) -> bool:
+def load_overrides(folder: str) -> dict:
   from app.engine.measure import rule_registry as RR
   path = os.path.join(folder, RR.OVERRIDES_FILE)
   out: dict = {}

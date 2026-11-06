@@ -27,16 +27,19 @@ def read_plains(files: list) -> tuple:
   """Each PDF read on its own: one that cannot be read is listed and left out, the others still count. Blocking, so the caller runs it off the event loop."""
   from app.modules.drawings_boq.takeoff.proof import completeness_run as CR
   from app.modules.drawings_boq.takeoff.proof.reading import adapter as AD
-  plains, unread = [], []
+  from app.modules.drawings_boq.takeoff.profile import run as PRUN
+  plains, unread, facts = [], [], []
   with tempfile.TemporaryDirectory() as tmp:
     for n, (name, key) in enumerate(files):
       path = os.path.join(tmp, f"{n}.pdf")
       try:
         download_to_path(key, path)
-        plains.append(CR.plain_read(AD.read_items(path)))
+        plain = CR.plain_read(AD.read_items(path))
+        facts.extend(PRUN.facts_of_pdf(path, len(plains) * CR.SHEET_SHIFT))
+        plains.append(plain)
       except Exception as exc:
         unread.append({"file": name, "error": f"{type(exc).__name__}: {str(exc)[:200]}"})
-  return plains, unread
+  return plains, unread, facts
 
 class FirstRunService(TakeoffService):
   async def _drawings(self, org: UUID, project_id: UUID) -> list:
@@ -52,9 +55,9 @@ class FirstRunService(TakeoffService):
     """The first-upload job over every PDF of the project: read, ledger, BOQ draft, questions. The snapshot goes on the first drawing and the report with it."""
     drawings = await self._drawings(org, project_id)
     files = [(d.original_filename, d.storage_key) for d in drawings]
-    plains, unread = await asyncio.to_thread(read_plains, files)
+    plains, unread, facts = await asyncio.to_thread(read_plains, files)
     state = {"conventions": await self._conventions(org), "answers": AN.merge([d.ingestion_meta for d in drawings]), "unread": unread}
-    out = JB.run(FR.offline_bindings(plains=plains), state, progress=progress)
+    out = JB.run(FR.offline_bindings(plains=plains, page_facts=facts), state, progress=progress)
     report = RP.build(state, out)
     home = drawings[0]
     meta = dict(home.ingestion_meta or {})

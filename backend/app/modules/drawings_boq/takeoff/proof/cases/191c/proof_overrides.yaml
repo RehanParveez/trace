@@ -1,0 +1,8 @@
+- rule: COLUMN_DETAIL_CELLS
+  value: on
+  reason: Column details read as schedule cells are proved on two offices, with no set of office B read. Forced on for this proof run so the schedule cell lines of this case are scored.
+  date: '2026-11-06'
+- rule: COLUMN_PLAN_CENSUS
+  value: on
+  reason: Columns counted from the floor plans are not proved on this office, where it finds no more than the stacks do. Forced on for this proof run.
+  date: '2026-11-06'

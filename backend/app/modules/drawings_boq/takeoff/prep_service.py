@@ -699,12 +699,23 @@ class PrepService:
     changed = SS.apply([(s.page_no, identities[s.id]) for s in sheets])
     from app.modules.drawings_boq.takeoff.extract import wall_scale as WS
     changed += WS.apply([(s.page_no, (s.prep_meta or {}).get("wall_gap"), identities[s.id]) for s in sheets])
+    from app.modules.drawings_boq.takeoff.profile import sheet_numbers as SN
+    numbered = {s.id: {k: copy.deepcopy((s.prep_meta or {}).get(k)) for k in ("sheet_strip", "title", "identity")} for s in sheets}
+    SN.apply([(s.page_no, numbered[s.id]) for s in sheets])
     pages = {c["page"] for c in changed}
     for s in sheets:
-      if s.page_no not in pages:
+      kept = {k: (s.prep_meta or {}).get(k) for k in ("sheet_strip", "title")}
+      renumbered = {k: numbered[s.id][k] for k in kept} != kept or numbered[s.id]["identity"] != (s.prep_meta or {}).get("identity")
+      if s.page_no not in pages and not renumbered:
         continue
+      
       locked = await self._sheet(org, s.id, lock=True)
-      locked.prep_meta = {**(locked.prep_meta or {}), "identity": identities[s.id]}
+      meta = {**(locked.prep_meta or {}), "identity": {**identities[s.id], "sheet_no": numbered[s.id]["identity"].get("sheet_no")} if renumbered else identities[s.id]}
+      for k in kept:
+        if numbered[s.id][k] is not None:
+          meta[k] = numbered[s.id][k]
+      meta["sheet_no_basis"] = numbered[s.id].get("sheet_no_basis")
+      locked.prep_meta = meta
     await self.session.flush()
     await self.session.commit()
     return changed

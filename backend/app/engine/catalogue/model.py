@@ -18,7 +18,6 @@ SECTIONS = {
   "PZ": "Plaza and commercial additions",
   "NR": "Items that are not read from drawings",
 }
-
 USES = ("H", "P")
 UNITS = ("cft", "sft", "rft", "nos", "kg", "kw", "lump_sum", "percent", "day")
 INPUT_UNITS = UNITS + ("mm", "m", "ft", "in", "mm2", "text")
@@ -28,14 +27,12 @@ MEMBER_CLASSES = (
   "EARTHWORK", "FOOTING_PAD", "FOOTING_STRIP", "FOOTING_OTHER", "PLINTH_BEAM", "COLUMN", "BEAM", "SLAB_PANEL", "LINTEL_TYPE", "STRUCT_WALL", "STAIR", "TANK", "PARAPET",
   "REINFORCEMENT", "FORMWORK", "WALL", "BOUNDARY_WALL", "OPENING", "ROOM", "FINISH_LAYER", "FIXTURE", "JOINERY", "FITTING", "POINT", "PIPE_RUN", "SITE_AREA", "ROOF_LAYER", "WATERPROOFING", "METALWORK", "ALLOWANCE",
 )
-
 PAGE_ROLES = (
   "SITE_PLAN", "FOOTING_LAYOUT", "EXCAVATION_PLAN", "BASEMENT_PLAN", "RAFT_PLAN", "PILE_LAYOUT", "COLUMN_LAYOUT", "COLUMN_SCHEDULE", "BEAM_LAYOUT", "SLAB_PLAN", "STRUCTURAL_PLAN",
   "FLOOR_PLAN", "ROOF_PLAN", "ELEVATION", "SECTION", "DETAIL", "LINTEL_TABLE", "STAIR_DETAIL", "TANK_DETAIL", "SEPTIC_DETAIL", "TOILET_DETAIL", "KITCHEN_DETAIL", "FURNITURE_PLAN",
   "CEILING_PLAN", "OPENING_SCHEDULE", "FINISH_SCHEDULE", "ELECTRICAL_PLAN", "SINGLE_LINE_DIAGRAM", "LOW_VOLTAGE_PLAN", "PLUMBING_PLAN", "DRAINAGE_PLAN", "ISOMETRIC", "GAS_PLAN", "FIRE_PLAN",
   "FACADE", "HVAC_PLAN", "PARKING_PLAN", "BOUNDARY_DETAIL", "GATE_DETAIL", "SPEC", "SOIL_REPORT", "GENERAL_NOTES", "INTERIOR_DRAWINGS", "REINFORCEMENT_SCHEDULE",
 )
-
 READER_CLASSES = (
   "GRID", "COLUMN", "FOOTING_STRIP", "FOOTING_PAD", "PLINTH_BEAM", "WALL", "ROOM", "DOOR", "WINDOW", "BEAM", "SLAB_PANEL", "SLAB_BAR_CALLOUT", "ELECTRICAL_POINT", "DISTRIBUTION_BOARD",
   "PLUMBING_FIXTURE", "PIPE_RUN", "DRAIN_POINT", "COLUMN_SCHEDULE_CELL", "NOTE_FACT", "LINTEL_TYPE", "STAIR", "TANK",
@@ -48,7 +45,6 @@ FACT_VALUES = {
   "structure": ("RCC_FRAME", "LOAD_BEARING", "STEEL_FRAME"),
   "sets_present": ("ARCHITECTURE", "STRUCTURE", "ELECTRICAL", "PLUMBING", "HVAC", "FIRE", "INTERIOR"),
 }
-
 BILLING_KINDS = ("MRS_PB", "PRIVATE_QS")
 OWNER_RE = re.compile(r"^(CV-\d+|BB-\d+|PX-\d+|CT-\d+|BM-\d+|RATE|DERIVED)$")
 ID_RE = re.compile(r"^([A-Z]{2})-(\d{2})$")
@@ -116,14 +112,13 @@ class Item:
       "yields": [{"qty": y.qty, "unit": y.unit, "split": list(y.split)} for y in self.yields],
       "page_roles": list(self.page_roles), "applies_when": dict(self.applies_when), "owner_pack": self.owner_pack, "derived": self.derived,
       "billing": {"MRS_PB": [{"item": b.item, "qty": b.qty, "spec": b.spec, "convert": b.convert} for b in self.billing.MRS_PB],
-      "PRIVATE_QS": [{"line": b.line, "qty": b.qty} for b in self.billing.PRIVATE_QS]},
+        "PRIVATE_QS": [{"line": b.line, "qty": b.qty} for b in self.billing.PRIVATE_QS]},
       "how_measured": self.how_measured, "status_v1": self.status_v1,
       "reads": [{"class": r.cls, "on": list(r.on), "support": r.support} for r in self.reads],
     }
 
 def parse(raw: dict) -> Item:
   billing = raw.get("billing") or {}
-  
   return Item(
     id=str(raw["id"]), name=str(raw["name"]), section=str(raw["section"]), use=tuple(raw["use"]), unit=str(raw["unit"]), member_class=str(raw["member_class"]),
     inputs=tuple(Input(name=str(i["name"]), sources=tuple(i.get("sources") or ()), unit=i.get("unit"), default_rule=i.get("default_rule")) for i in raw.get("inputs") or []),
@@ -137,10 +132,8 @@ def parse(raw: dict) -> Item:
     reads=tuple(Read(cls=str(r["class"]), on=tuple(r.get("on") or ()), support=bool(r.get("support", False))) for r in raw.get("reads") or []),
   )
 
-
 def _facts_problems(item_id: str, facts: dict) -> list:
   out = []
-  
   for k, v in facts.items():
     if k not in FACT_KEYS:
       out.append(f"{item_id}: applies_when names {k}, which is not a project fact ({', '.join(FACT_KEYS)})")
@@ -174,12 +167,12 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
     except (KeyError, TypeError) as e:
       out.append(f"{label}: cannot be read ({e})")
       continue
-    
     if it.id in seen:
       out.append(f"{it.id}: id used twice")
     seen[it.id] = True
     items[it.id] = it
     m = ID_RE.match(it.id)
+    
     if not m or m.group(1) not in SECTIONS:
       out.append(f"{it.id}: the id is not a section prefix ({', '.join(SECTIONS)}) and two digits")
     elif SECTIONS[m.group(1)] != it.section:
@@ -188,7 +181,6 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
       out.append(f"{it.id}: use must be H, P or both")
     if it.member_class not in MEMBER_CLASSES:
       out.append(f"{it.id}: member_class {it.member_class} is not one of the known classes")
-      
     if not it.yields:
       out.append(f"{it.id}: no yield")
     for y in it.yields:
@@ -200,6 +192,7 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
     if len({y.qty for y in it.yields}) != len(it.yields):
       out.append(f"{it.id}: two yields with the same name")
     names = [i.name for i in it.inputs]
+    
     if len(set(names)) != len(names):
       out.append(f"{it.id}: two inputs with the same name")
     for i in it.inputs:
@@ -210,7 +203,6 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
       if i.default_rule and rule_ids is not None and i.default_rule not in rule_ids:
         out.append(f"{it.id}: input {i.name} names default rule {i.default_rule}, which is not in the rule registry")
     bad_roles = [r for r in it.page_roles if r not in PAGE_ROLES]
-    
     if bad_roles:
       out.append(f"{it.id}: page role {', '.join(bad_roles)} is unknown")
     if not it.page_roles and it.owner_pack not in ("RATE", "DERIVED"):
@@ -251,10 +243,10 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
   return out
 
 def expected_classes(items: list) -> dict:
+  """The classes a sheet kind is expected to show, in the order of READER_CLASSES: what the items read on that kind of sheet. Replaces a hand-kept table."""
   found: dict = {}
   for it in items:
     for r in it.reads:
       for key in r.on:
         found.setdefault(key, set()).add(r.cls)
   return {key: tuple(c for c in READER_CLASSES if c in classes) for key, classes in found.items()}
-          

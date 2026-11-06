@@ -4,6 +4,15 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 from app.modules.drawings_boq.takeoff.proof.reading import vocab as V
+from app.modules.drawings_boq.takeoff.extract import column_census_items as CCI
+from app.modules.drawings_boq.takeoff.extract import column_detail_cells as CDC
+from app.modules.drawings_boq.takeoff.extract import beam_section_items as BSI
+from app.modules.drawings_boq.takeoff.extract import footing_section_items as FSI
+from app.modules.drawings_boq.takeoff.extract import slab_callouts as SC
+from app.modules.drawings_boq.takeoff.extract import slab_thickness_items as STI
+from app.modules.drawings_boq.takeoff.extract import lintel_schedule_items as LSI
+from app.modules.drawings_boq.takeoff.extract import finish_spec_items as FSP
+from app.modules.drawings_boq.takeoff.extract import drain_labels as DLB
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import kinds as K
 from app.modules.drawings_boq.takeoff.extract import read_status as RS
@@ -142,6 +151,30 @@ def structure_items(sheet: int, meta: dict, source: V.ReadSource) -> list:
     out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN_SCHEDULE_CELL, mark=rec["mark"], geom={"point": [float(anchor[0]), float(anchor[1])]} if anchor else None, attrs=ST.cell_attrs(rec),
       status=_status_of(conflicts, reasons), reasons=reasons, source=source))
     
+  for rec in ((meta or {}).get(CDC.META_KEY) or {}).get("cells") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN_SCHEDULE_CELL, mark=rec["mark"], geom={"point": [float(rec["anchor"][0]), float(rec["anchor"][1])]} if rec.get("anchor") else None, attrs=CDC.attrs_of(sheet, rec),
+      status=_status_of(None, rec.get("reasons") or []), reasons=list(rec.get("reasons") or []), source=source))
+  for rec in ((meta or {}).get(CCI.META_KEY) or {}).get("members") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]} if rec.get("at") else None, attrs={"count": 1, "size_mm": list(rec["size_mm"]), "floor": rec["floor"]},
+      status=V.Status.UNSURE, reasons=list(CCI.REASONS), source=source))
+  for rec in ((meta or {}).get(BSI.META_KEY) or {}).get("sections") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.BEAM_SECTION, mark=rec["mark"], geom=None, attrs=rec["attrs"], status=_status_of(None, rec["reasons"]), reasons=list(rec["reasons"]), source=source))
+  for rec in ((meta or {}).get(SC.META_KEY) or {}).get("callouts") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.SLAB_BAR_CALLOUT, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"text": rec["text"], "bar_dia_no": rec["bar"], "spacing_in": rec["spacing_in"]}, status=V.Status.READ, reasons=[], source=source))
+  for rec in ((meta or {}).get(STI.META_KEY) or {}).get("facts") or []:
+    if rec.get("key"):
+      out.append(ReadItem(sheet=sheet, cls=V.ElementClass.NOTE_FACT, mark=rec["key"], geom=None, attrs={"key": rec["key"], "value": rec["value"], "unit": rec["unit"]}, status=V.Status.READ, reasons=[], source=source))
+  for rec in ((meta or {}).get(LSI.META_KEY) or {}).get("types") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.LINTEL_TYPE, mark=rec["mark"], geom=None, attrs=rec["attrs"], status=_status_of(None, rec["reasons"]), reasons=list(rec["reasons"]), source=source))
+  for rec in ((meta or {}).get(DLB.META_KEY) or {}).get("labels") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.DRAIN_POINT, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"kind": rec["kind"], **({"size_in": rec["size_in"]} if rec.get("size_in") else {})},
+      status=V.Status.READ, reasons=[], source=source))
+  for block in ((meta or {}).get(FSP.META_KEY) or {}).get("blocks") or []:
+    for layer in block["layers"]:
+      attrs = {"spec": block["mark"], "order": layer["order"], "text": layer["text"], **({"thickness_in": layer["thickness_in"]} if "thickness_in" in layer else {})}
+      out.append(ReadItem(sheet=sheet, cls=V.ElementClass.FINISH_LAYER, mark=block["mark"], geom={"point": [float(layer["at"][0]), float(layer["at"][1])]}, attrs=attrs, status=V.Status.READ, reasons=[], source=source))
+  for rec in ((meta or {}).get(FSI.META_KEY) or {}).get("sections") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.FOOTING_SECTION, mark=rec["mark"], geom=None, attrs=rec["attrs"], status=_status_of(None, rec["reasons"]), reasons=list(rec["reasons"]), source=source))
   for rec in ((meta or {}).get("structure_joins") or {}).get("planted") or []:
     attrs = {"count": 1, **({"floor": rec["floor"]} if rec.get("floor") else {})}
     out.append(ReadItem(sheet=sheet, cls=V.ElementClass.COLUMN, mark=rec["mark"], geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs=attrs, status=V.Status.READ, reasons=[], source=source,

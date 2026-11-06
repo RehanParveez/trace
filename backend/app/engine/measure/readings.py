@@ -481,7 +481,9 @@ LABELS = {
 LABELS.update({CVN.switch_key(c["id"]): ("Pakistan QS conventions", c["name"]) for c in CVN.conventions()})
 
 def code_default(key: str):
-  """The figure the software starts from, whatever the company holds."""
+  """The figure the software starts from, whatever the company holds. A Pakistan convention switch starts off."""
+  if key.startswith(CVN.SWITCH_PREFIX):
+    return 0.0
   if key.startswith(CVN.SWITCH_PREFIX):
     return 0.0
   if key in CONVENTIONS:

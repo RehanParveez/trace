@@ -152,6 +152,14 @@ def main(argv: list | None = None) -> int:
     from app.modules.drawings_boq.takeoff.proof import gate18 as G18
     ok18, note18, lines18 = G18.gate(collected, args.out)
     results.append(("first-upload job (gate 18)", ok18, note18 if ok18 else note18 + ": " + "; ".join(lines18[:4])))
+    print("== convention census")
+    from app.modules.drawings_boq.takeoff.proof import census as CEN
+    ok19, note19, lines19 = CEN.gate(collected, args.cases_dir)
+    results.append(("convention census (gate 19)", ok19, note19 if ok19 else note19 + ": " + "; ".join(lines19[:4])))
+    print("== sheet numbers")
+    from app.modules.drawings_boq.takeoff.proof import sheet_number_gate as SNG
+    ok20, note20, lines20 = SNG.gate(collected, args.cases_dir)
+    results.append(("sheet numbers (gate 20)", ok20, note20 if ok20 else note20 + ": " + "; ".join(lines20[:4])))
     print("== bar schedule audit")
     from app.modules.drawings_boq.takeoff.proof import bbs_audit as BAU
     for name in BAU.audit_cases():

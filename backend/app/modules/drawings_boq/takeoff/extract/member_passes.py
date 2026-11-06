@@ -54,6 +54,45 @@ def run(read: list, floor_keys: list, floor_heights: dict | None, *, storeys: li
   except Exception as exc:
     problems.append((0, f"storeys: {type(exc).__name__}: {str(exc)[:80]}"))
   try:
+    from app.modules.drawings_boq.takeoff.extract import column_census_items as CCI
+    from app.modules.drawings_boq.takeoff.extract import column_detail_cells as CDC
+    CDC.apply(read)
+    CCI.apply(read)
+  except Exception as exc:
+    problems.append((0, f"column cells and census: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import footing_section_items as FSI
+    FSI.apply(read)
+  except Exception as exc:
+    problems.append((0, f"footing section items: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import beam_section_items as BSI
+    BSI.apply(read)
+  except Exception as exc:
+    problems.append((0, f"beam section items: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import slab_callouts as SC
+    from app.modules.drawings_boq.takeoff.extract import slab_thickness_items as STI
+    SC.apply(read)
+    STI.apply(read)
+  except Exception as exc:
+    problems.append((0, f"slab callouts and thickness: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import lintel_schedule_items as LSI
+    LSI.apply(read)
+  except Exception as exc:
+    problems.append((0, f"lintel schedule items: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import finish_spec_items as FSP
+    FSP.apply(read)
+  except Exception as exc:
+    problems.append((0, f"finish spec items: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import drain_labels as DLB
+    DLB.apply(read)
+  except Exception as exc:
+    problems.append((0, f"drain labels: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
     from app.modules.drawings_boq.takeoff.extract import footing_members as FM
     if RR.on("FOOTING_FAMILIES"):
       FM.apply(read)

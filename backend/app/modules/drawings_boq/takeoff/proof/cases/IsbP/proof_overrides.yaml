@@ -22,3 +22,19 @@
   value: on
   reason: The hold of superstructure classes on excavation and footing layouts is proved on one office only. Forced on for this proof run so the false finish lines stay out of the score.
   date: '2026-11-06'
+- rule: COLUMN_PLAN_CENSUS
+  value: on
+  reason: Columns counted from the floor plans are proved on one office only that has a clean read. Forced on for this proof run so the columns the schedule stacks do not reach are scored.
+  date: '2026-11-06'
+- rule: SLAB_CALLOUT_ITEMS
+  value: on
+  reason: Slab bar strings read from the text layer of a reinforcement plan are proved on two offices, with no set of office B read. Forced on for this proof run so the slab callout lines of this case are scored.
+  date: '2026-11-06'
+- rule: FINISH_SPEC_ITEMS
+  value: on
+  reason: The finish specification lists a sheet prints are shown as reading items on one office only. Forced on for this proof run so the finish layer lines of this case are scored.
+  date: '2026-11-06'
+- rule: DRAIN_LABEL_ITEMS
+  value: on
+  reason: The drain point labels of a plumbing plan are shown as reading items on one office only. Forced on for this proof run so the drain point lines of this case are scored.
+  date: '2026-11-06'

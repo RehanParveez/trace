@@ -38,6 +38,8 @@ def analyse_pdf(pdf: bytes, pages: list | None = None) -> tuple:
   SS.apply([(no, a.meta.get("identity")) for no, a in analysed.items()])
   from app.modules.drawings_boq.takeoff.extract import wall_scale as WS
   WS.apply([(no, a.meta.get("wall_gap"), a.meta.get("identity")) for no, a in analysed.items() if a.meta.get("identity")])
+  from app.modules.drawings_boq.takeoff.profile import sheet_numbers as SN
+  SN.apply([(no, a.meta) for no, a in analysed.items()])
   return doc, analysed, problems
 
 def _outline_scales(prepared: list) -> list:
@@ -90,6 +92,9 @@ def _merge_project(sheets: list, others: list) -> dict:
 
 def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, storeys: list | None = None,
   sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None) -> list:
+  if rules:
+    with RR.using(rules):
+      return read_set(items, pages, budget_s=budget_s, scale_unverified=scale_unverified, project=project, storeys=storeys, sections=sections, runs=runs, structure=structure)
   from types import SimpleNamespace
   from app.core.config import settings
   use = settings.takeoff_project_facts if project is None else project
@@ -113,7 +118,7 @@ def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_B
       doc.close()
     except Exception:
       pass
-  return ou
+  return out
 
 def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, prepared: tuple | None = None, project: dict | None = None, storeys: list | None = None, sections: list | None = None, runs: bool | None = None, structure: bool = True, rules: dict | None = None) -> tuple:
   """Every page of the set read the way the application reads a drawing: the pictures on each sheet are read when it is analysed, and what the whole drawing prints (floor
@@ -586,6 +591,7 @@ def main(argv: list | None = None) -> int:
   rep = report(os.path.basename(args.pdf), read, problems, facts, notes, baseline, check_extras(extras, pdf_bytes, electrical, read))
   rep["floor_sources"] = used
   print(render(rep))
+  
   if args.draft_facts:
     json.dump(draft_facts(read, os.path.splitext(os.path.basename(args.pdf))[0], os.path.basename(args.pdf)), open(args.draft_facts, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     print(f"\nA draft facts file was written to {args.draft_facts}: check each fact against the plan and put your name in its checked_by.")

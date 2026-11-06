@@ -1,0 +1,669 @@
+{
+ "note": "10 sets from 5 offices: a first picture, not market shares; fewer than 15 sets",
+ "offices": [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E"
+ ],
+ "ranking": {
+  "bar_notation": {
+   "not_shown": 2,
+   "sets_showing": 8,
+   "values": [
+    {
+     "offices": 4,
+     "sets": 8,
+     "share": 1.0,
+     "value": "HASH"
+    }
+   ]
+  },
+  "labels": {
+   "not_shown": 0,
+   "sets_showing": 10,
+   "values": [
+    {
+     "offices": 5,
+     "sets": 10,
+     "share": 1.0,
+     "value": "TEXT"
+    }
+   ]
+  },
+  "legend": {
+   "not_shown": 0,
+   "sets_showing": 10,
+   "values": [
+    {
+     "offices": 3,
+     "sets": 6,
+     "share": 0.6,
+     "value": "ABSENT"
+    },
+    {
+     "offices": 3,
+     "sets": 4,
+     "share": 0.4,
+     "value": "PRESENT"
+    }
+   ]
+  },
+  "scale": {
+   "not_shown": 0,
+   "sets_showing": 10,
+   "values": [
+    {
+     "offices": 2,
+     "sets": 6,
+     "share": 0.6,
+     "value": "PRINTED_TRUE"
+    },
+    {
+     "offices": 4,
+     "sets": 4,
+     "share": 0.4,
+     "value": "NONE"
+    }
+   ]
+  },
+  "schedule_layout": {
+   "not_shown": 2,
+   "sets_showing": 8,
+   "values": [
+    {
+     "offices": 2,
+     "sets": 6,
+     "share": 0.75,
+     "value": "DRAWN_SECTIONS"
+    },
+    {
+     "offices": 2,
+     "sets": 2,
+     "share": 0.25,
+     "value": "MARK_ROWS"
+    }
+   ]
+  },
+  "section_titles": {
+   "not_shown": 2,
+   "sets_showing": 8,
+   "values": [
+    {
+     "offices": 4,
+     "sets": 8,
+     "share": 1.0,
+     "value": "DETAIL_NUMBER"
+    }
+   ]
+  },
+  "sheet_arrangement": {
+   "not_shown": 0,
+   "sets_showing": 10,
+   "values": [
+    {
+     "offices": 4,
+     "sets": 6,
+     "share": 0.6,
+     "value": "COMBINED"
+    },
+    {
+     "offices": 2,
+     "sets": 4,
+     "share": 0.4,
+     "value": "SEPARATE"
+    }
+   ]
+  },
+  "title_block": {
+   "not_shown": 1,
+   "sets_showing": 9,
+   "values": [
+    {
+     "offices": 3,
+     "sets": 8,
+     "share": 0.889,
+     "value": "BOTTOM_STRIP"
+    },
+    {
+     "offices": 1,
+     "sets": 1,
+     "share": 0.111,
+     "value": "RIGHT_STRIP"
+    }
+   ]
+  },
+  "units": {
+   "not_shown": 0,
+   "sets_showing": 10,
+   "values": [
+    {
+     "offices": 5,
+     "sets": 9,
+     "share": 0.9,
+     "value": "FT_IN"
+    },
+    {
+     "offices": 1,
+     "sets": 1,
+     "share": 0.1,
+     "value": "MM"
+    }
+   ]
+  },
+  "walls": {
+   "not_shown": 7,
+   "sets_showing": 3,
+   "values": [
+    {
+     "offices": 2,
+     "sets": 2,
+     "share": 0.667,
+     "value": "HATCHED"
+    },
+    {
+     "offices": 1,
+     "sets": 1,
+     "share": 0.333,
+     "value": "LINES"
+    }
+   ]
+  }
+ },
+ "sets": {
+  "191c": {
+   "office": "C",
+   "pages": 60,
+   "pdfs": {
+    "191-C_D.H.A_BWP_REVISED_DRAWINGS_SET_10_MARLA_HOUSE_1.pdf": "6fac7864791a",
+    "191-C_DHA_BWP_STR_DRAWING_1.pdf": "c0f63cff8577"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.761,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 1.0,
+     "value": "PRESENT"
+    },
+    "scale": {
+     "confidence": 1.0,
+     "value": "PRINTED_TRUE"
+    },
+    "schedule_layout": {
+     "confidence": 1.0,
+     "value": "DRAWN_SECTIONS"
+    },
+    "section_titles": {
+     "confidence": 0.825,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "COMBINED"
+    },
+    "title_block": {
+     "confidence": 0.571,
+     "value": "RIGHT_STRIP"
+    },
+    "units": {
+     "confidence": 0.968,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.977,
+     "value": "HATCHED"
+    }
+   }
+  },
+  "201cd": {
+   "office": "B",
+   "pages": 12,
+   "pdfs": {
+    "MEP_201-CD.pdf": "1d8e7f8a83f5"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "labels": {
+     "confidence": 0.917,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 0.9,
+     "value": "ABSENT"
+    },
+    "scale": {
+     "confidence": 0.8,
+     "value": "NONE"
+    },
+    "schedule_layout": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "section_titles": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "COMBINED"
+    },
+    "title_block": {
+     "confidence": 1.0,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "MM"
+    },
+    "walls": {
+     "confidence": 0.5,
+     "value": "LINES"
+    }
+   }
+  },
+  "2053c": {
+   "office": "B",
+   "pages": 11,
+   "pdfs": {
+    "2053-C_STRUCTURE.pdf": "4b8154d128db"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.984,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 0.9,
+     "value": "ABSENT"
+    },
+    "scale": {
+     "confidence": 1.0,
+     "value": "PRINTED_TRUE"
+    },
+    "schedule_layout": {
+     "confidence": 0.667,
+     "value": "DRAWN_SECTIONS"
+    },
+    "section_titles": {
+     "confidence": 0.556,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "SEPARATE"
+    },
+    "title_block": {
+     "confidence": 1.0,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  },
+  "350c": {
+   "office": "B",
+   "pages": 8,
+   "pdfs": {
+    "350-c_structure.pdf": "399463b87d10"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.985,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 0.9,
+     "value": "ABSENT"
+    },
+    "scale": {
+     "confidence": 1.0,
+     "value": "PRINTED_TRUE"
+    },
+    "schedule_layout": {
+     "confidence": 0.5,
+     "value": "DRAWN_SECTIONS"
+    },
+    "section_titles": {
+     "confidence": 0.571,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 0.7,
+     "value": "SEPARATE"
+    },
+    "title_block": {
+     "confidence": 1.0,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  },
+  "652d": {
+   "office": "E",
+   "pages": 23,
+   "pdfs": {
+    "652-D_MEP.pdf": "ce7fffb5414e"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "labels": {
+     "confidence": 0.714,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 0.9,
+     "value": "ABSENT"
+    },
+    "scale": {
+     "confidence": 0.8,
+     "value": "NONE"
+    },
+    "schedule_layout": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "section_titles": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "COMBINED"
+    },
+    "title_block": {
+     "confidence": 0.0,
+     "value": null
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  },
+  "909a": {
+   "office": "B",
+   "pages": 15,
+   "pdfs": {
+    "909-A_ELECTRICAL_DRAWINGS.pdf": "22a320ea0919",
+    "909-A_PLUMBING_DRAWINGS.pdf": "869b535980d7"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 1.0,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 0.929,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 1.0,
+     "value": "PRESENT"
+    },
+    "scale": {
+     "confidence": 0.667,
+     "value": "PRINTED_TRUE"
+    },
+    "schedule_layout": {
+     "confidence": 0.667,
+     "value": "DRAWN_SECTIONS"
+    },
+    "section_titles": {
+     "confidence": 0.636,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "COMBINED"
+    },
+    "title_block": {
+     "confidence": 0.5,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  },
+  "925b": {
+   "office": "B",
+   "pages": 20,
+   "pdfs": {
+    "925-B_STRUCTURE.pdf": "7f945e6d8d19"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.994,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 0.9,
+     "value": "ABSENT"
+    },
+    "scale": {
+     "confidence": 1.0,
+     "value": "PRINTED_TRUE"
+    },
+    "schedule_layout": {
+     "confidence": 0.833,
+     "value": "DRAWN_SECTIONS"
+    },
+    "section_titles": {
+     "confidence": 0.545,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "SEPARATE"
+    },
+    "title_block": {
+     "confidence": 1.0,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  },
+  "959n": {
+   "office": "B",
+   "pages": 53,
+   "pdfs": {
+    "959-N_COMPLETE_DRAWINGS..pdf": "fcc5d43d4deb"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 0.984,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 1.0,
+     "value": "PRESENT"
+    },
+    "scale": {
+     "confidence": 1.0,
+     "value": "PRINTED_TRUE"
+    },
+    "schedule_layout": {
+     "confidence": 1.0,
+     "value": "DRAWN_SECTIONS"
+    },
+    "section_titles": {
+     "confidence": 0.64,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "COMBINED"
+    },
+    "title_block": {
+     "confidence": 1.0,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  },
+  "IsbP": {
+   "office": "A",
+   "pages": 17,
+   "pdfs": {
+    "156-BRIG.GHAZANFER_IQBAL_JAKHAR_DHA-III.pdf": "27f9f761078e"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 1.0,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 0.9,
+     "value": "ABSENT"
+    },
+    "scale": {
+     "confidence": 0.8,
+     "value": "NONE"
+    },
+    "schedule_layout": {
+     "confidence": 1.0,
+     "value": "MARK_ROWS"
+    },
+    "section_titles": {
+     "confidence": 0.789,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "COMBINED"
+    },
+    "title_block": {
+     "confidence": 1.0,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 0.881,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.997,
+     "value": "HATCHED"
+    }
+   }
+  },
+  "plot1": {
+   "office": "D",
+   "pages": 6,
+   "pdfs": {
+    "Islamabad_Plot_1.pdf": "67c298b63898"
+   },
+   "points": {
+    "bar_notation": {
+     "confidence": 1.0,
+     "value": "HASH"
+    },
+    "labels": {
+     "confidence": 1.0,
+     "value": "TEXT"
+    },
+    "legend": {
+     "confidence": 1.0,
+     "value": "PRESENT"
+    },
+    "scale": {
+     "confidence": 0.8,
+     "value": "NONE"
+    },
+    "schedule_layout": {
+     "confidence": 1.0,
+     "value": "MARK_ROWS"
+    },
+    "section_titles": {
+     "confidence": 0.9,
+     "value": "DETAIL_NUMBER"
+    },
+    "sheet_arrangement": {
+     "confidence": 1.0,
+     "value": "SEPARATE"
+    },
+    "title_block": {
+     "confidence": 0.556,
+     "value": "BOTTOM_STRIP"
+    },
+    "units": {
+     "confidence": 1.0,
+     "value": "FT_IN"
+    },
+    "walls": {
+     "confidence": 0.0,
+     "value": null
+    }
+   }
+  }
+ },
+ "small": true
+}

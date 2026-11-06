@@ -25,7 +25,7 @@ LABELS = (
 INLINE_NO = re.compile(r"^" + _NO_LABEL + r"\s*[:\-]\s*(?P<v>\S.*)$", re.I)
 _SCALE_VALUE = re.compile(r"^(?:\d+\s*:\s*\d[\d,.]*|N\.?\s?T\.?\s?S\.?|AS\s+SHOWN|VARIES|NOT\s+TO\s+SCALE|\d+(?:/\d+)?\s*\"\s*=\s*\d+\s*'(?:\s*-\s*\d+\s*\"?)?|\d+(?:/\d+)?\s*\"\s*=\s*\d+\s*'?)$", re.I)
 _MONTH = r"JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC"
-_DATE_VALUE = re.compile(r"^(?:\d{1,2}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{2,4}|(?:\d{1,2}[ -]*)?(?:" + _MONTH + r")[A-Z]*[ ,.\-]*(?:\d{1,2}[ ,.\-]*)?\d{2,4})$", re.I)
+_DATE_VALUE = re.compile(r"^(?:\d{1,2}\s*[-/.]\s*\d{1,2}\s*[-/.]\s*\d{2,4}|(?:\d{1,2}[ ,.\-]*)?(?:" + _MONTH + r")[A-Z]*[ ,.\-]*(?:\d{1,2}[ ,.\-]*)?\d{2,4})$", re.I)
 _REV_VALUE = re.compile(r"^[A-Z0-9]{1,3}$|^[A-Z]-?\d{1,2}$", re.I)
 _LABEL_WORD = re.compile(r"^(?:DRAWING|DRG|DWG|SHEET|REV|REVISION|DATE|SCALE|TITLE|PROJECT|CLIENT|DRAWN|CHECKED|DESIGNED|APPROVED|NO\.?|NUMBER)\b", re.I)
 
@@ -148,7 +148,35 @@ def _candidates(label: dict, ph: list, field: str) -> list:
   out.sort(key=lambda t: t[0])
   return [(how, p) for _d, how, p in out if _fits(field, p["text"])]
 
-def read(words: list, cropbox: tuple) -> dict:
+
+ZONE_CAP = 80
+
+def visual_box(bbox: tuple, cropbox: tuple, rotation: int) -> tuple:
+  l, b, r, t = cropbox
+  w, h = max(r - l, 1.0), max(t - b, 1.0)
+  x0, y0, x1, y1 = (bbox[0] - l) / w, (bbox[1] - b) / h, (bbox[2] - l) / w, (bbox[3] - b) / h
+  q = (int(rotation) // 90) % 4
+  if q == 1:
+    return (y0, 1.0 - x1, y1, 1.0 - x0)
+  if q == 2:
+    return (1.0 - x1, 1.0 - y1, 1.0 - x0, 1.0 - y0)
+  if q == 3:
+    return (1.0 - y1, x0, 1.0 - y0, x1)
+  return (x0, y0, x1, y1)
+
+def zone_phrases(ph: list, cropbox: tuple, rotation: int = 0) -> list:
+  upright = (int(rotation) // 90) % 4
+  out = []
+  for p in ph:
+    if p["q"] != upright:
+      continue
+    v = visual_box(p["bbox"], cropbox, rotation)
+    cx, cy = (v[0] + v[2]) / 2.0, (v[1] + v[3]) / 2.0
+    if cx >= ZONE_RIGHT or cy <= ZONE_BOTTOM:
+      out.append({"t": p["text"][:60], "b": [round(x, 4) for x in v]})
+  return out[:ZONE_CAP]
+
+def read(words: list, cropbox: tuple, rotation: int = 0) -> dict:
   ph = phrases(words)
   l, b, r, t = cropbox
   w, h = max(r - l, 1.0), max(t - b, 1.0)
@@ -193,5 +221,5 @@ def read(words: list, cropbox: tuple) -> dict:
     rows.sort(key=lambda x: -x[0])
     score, value, p, how = rows[0]
     fields[field] = value
-    evidence.append({"label": field, "value": value[:60], "how": how, "in_strip": score >= 3.5})
+    evidence.append({"label": field, "value": value[:60], "how": how, "in_strip": score >= 3.5, "box": [round(x, 4) for x in visual_box(p["bbox"], cropbox, rotation)]})
   return {"fields": fields, "evidence": evidence}

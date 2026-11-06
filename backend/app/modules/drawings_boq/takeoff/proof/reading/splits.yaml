@@ -1,0 +1,12 @@
+needed_first_sight: 3
+groups:
+  structure:
+    packs: CV-3 to CV-7
+    dev: [A, B]
+    test: [C]
+    first_sight: [D, E]
+  architecture_and_services:
+    packs: CV-8 to CV-10
+    dev: [C, D]
+    test: [B]
+    first_sight: [E]

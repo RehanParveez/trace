@@ -1,10 +1,11 @@
 from __future__ import annotations
+from app.engine.catalogue import conventions as CV
+from app.engine.catalogue import model as CM
+from app.engine.measure import rule_registry as RR
+from app.modules.drawings_boq.takeoff.completeness import derived_rules as DR
 from app.modules.drawings_boq.takeoff.completeness import expected as EX
 from app.modules.drawings_boq.takeoff.completeness import facts as F
 from app.modules.drawings_boq.takeoff.questions import keys as QK
-from app.engine.catalogue import conventions as CV
-from app.engine.catalogue import model as CM
-from app.modules.drawings_boq.takeoff.completeness import derived_rules as DR
 
 MEASURED, ASSUMED, ASKED, NOT_APPLICABLE, NOT_READ = CM.STATES
 READ = "READ"
@@ -62,8 +63,10 @@ def _read_classes(item) -> set:
 
 def _members_on(item, floor: str, evidence: dict) -> tuple:
   classes = _read_classes(item)
+  support = {r.cls for r in item.reads if r.support} - classes if RR.on("SUPPORT_CONFLICT_QUESTIONS") else set()
   every = [m for m in evidence["members"] if m["cls"] in classes]
-  here = [m for m in every if floor == ALL or m.get("floor") in (None, floor)]
+  printed_twice = [m for m in evidence["members"] if m["cls"] in support and "CONFLICT_IN_DRAWING" in (m.get("reasons") or [])]
+  here = [m for m in every + printed_twice if floor == ALL or m.get("floor") in (None, floor)]
   return every, here
 
 def _lines_for(item, floor: str, evidence: dict) -> list:
@@ -83,7 +86,6 @@ def _quantity(item, lines: list) -> dict | None:
 def _assumed(item, floor: str, evidence: dict) -> list:
   return [a for a in evidence["assumptions"] if a["item"] == item.id and a.get("floor") in (floor, ALL, None)]
 
-
 def _convention_for(item, input_name: str, ctx: dict) -> str | None:
   """The switched-on convention that fills this input, when the project is of a type it covers."""
   ref = f"{item.id}.{input_name}"
@@ -94,6 +96,7 @@ def _convention_for(item, input_name: str, ctx: dict) -> str | None:
   return None
 
 def _widen(quantity: dict | None, covered: list) -> dict | None:
+  """The quantity's range from the assumptions behind it, taking the quantity as proportional to each assumed input."""
   if not quantity or not covered:
     return quantity
   lo = hi = 1.0
@@ -118,7 +121,6 @@ def _unread(item, floor: str, every: list, evidence: dict) -> tuple:
   if on and not on & set(evidence["sheets"]):
     shown = sorted(on)[0]
     return ASKED, [NO_SHEET], [_ask(None, f"The set has no {shown} sheet. Supply it, or give the quantity.", QK.sheets_key(shown), QK.SUPPLY)]
-  
   gaps = [g for g in evidence["gaps"] if g["cls"] in classes]
   reasons = [r for g in gaps for r in g.get("reasons") or []]
   if all(c in evidence["no_reader"] for c in classes):
@@ -126,15 +128,14 @@ def _unread(item, floor: str, every: list, evidence: dict) -> tuple:
   return NOT_READ, reasons or [NO_SYMBOLS], []
 
 def _blocks(m: dict) -> bool:
+  """A member blocks an assumption when it is not read and names no missing input, or carries a reason that is neither information nor a missing input."""
   if m["status"] != READ and not m.get("missing"):
     return True
   return any(r not in INFO_REASONS and r not in REASON_INPUT for r in m.get("reasons") or [])
 
-
 def _settle(m: dict, floor: str, ctx: dict) -> tuple:
   rk = QK.reading_key(m["cls"])
   used: list = []
-  
   if _answer(ctx, rk) == QK.REJECT:
     return None, [rk]
   accepted = _answer(ctx, rk) == QK.ACCEPT
@@ -156,7 +157,6 @@ def _settle(m: dict, floor: str, ctx: dict) -> tuple:
 
 def _confirm_questions(item, blockers: list) -> list:
   out = []
-  
   by_conflict: dict = {}
   by_class: dict = {}
   for m in blockers:
@@ -165,7 +165,6 @@ def _confirm_questions(item, blockers: list) -> list:
       by_conflict.setdefault((m["cls"], m.get("mark")), []).append(m)
     else:
       by_class.setdefault(m["cls"], []).append(m)
-      
   for (cls, mark), ms in by_conflict.items():
     out.append(_ask(None, f"{item.name}: the drawing prints {mark or 'a member'} two ways ({len(ms)} member(s), first {ms[0]['id']}). Say which governs.", QK.conflict_key(cls, mark), QK.CONFLICT, cls=cls, mark=mark, members=[m["id"] for m in ms], reasons=["CONFLICT_IN_DRAWING"]))
   for cls, ms in by_class.items():
@@ -187,9 +186,9 @@ def _regular(item, floor: str, evidence: dict, ctx: dict) -> dict:
   lines = _lines_for(item, floor, evidence)
   unknown = [FLOOR_UNKNOWN] if floor != ALL and any(m.get("floor") is None for m in settled) else []
   said = [f"{ANSWERED}:{k}" for k in dict.fromkeys(used)]
-  
   if unsure:
     reasons = [UNSURE_READ] + [r for m in unsure for r in m.get("reasons") or []] + said
+    
     asked: dict = {}
     for m in unsure:
       for n in m.get("missing") or []:
@@ -200,7 +199,9 @@ def _regular(item, floor: str, evidence: dict, ctx: dict) -> dict:
   if live or lines:
     return _entry(item, floor, MEASURED, unknown + said, members=here_ids, quantity=_quantity(item, lines))
   state, reasons, questions = _unread(item, floor, every, evidence)
-  return _finish_ask(item, floor, evidence, reasons, ids, questions, None, ctx) if state == ASKED else _entry(item, floor, state, reasons, members=ids)
+  if state == ASKED and all(_answer(ctx, q["key"]) == QK.NOT_IN_SCOPE for q in questions if q.get("key")) and any(q.get("key") for q in questions):
+    return _entry(item, floor, NOT_APPLICABLE, [f"{DECLARED_OUT}:{q['key']}" for q in questions if q.get("key")])
+  return _finish_ask(item, floor, evidence, reasons, here_ids, questions, None, ctx) if state == ASKED else _entry(item, floor, state, reasons, members=here_ids)
 
 def _finish_ask(item, floor: str, evidence: dict, reasons: list, ids: list, questions: list, quantity: dict | None, ctx: dict) -> dict:
   covered = _assumed(item, floor, evidence)
@@ -219,7 +220,6 @@ def _from_ids(item) -> list:
   return [src] if isinstance(src, str) else list(src)
 
 def _source_quantity(rows: list, floor: str) -> dict | None:
-  """The summed quantity of one source over its floors; None when a live row has no quantity."""
   same = [e for e in rows if e["floor"] == floor] or rows
   live = [e for e in same if e["state"] != NOT_APPLICABLE]
   if not live or any(e["quantity"] is None for e in live):
@@ -246,7 +246,6 @@ def _compute(item, floor: str, entries: dict, rule: dict, ctx: dict, tag: list, 
   if not src or src[0] not in quantities:
     return _entry(item, floor, NOT_READ, tag + [DERIVED_NOT_COMPUTED])
   iv = {sid: x[0] for sid, x in quantities.items()}
-  
   unit = quantities[src[0]][1]
   assumed = []
   pct = DR.exact(1.0)
@@ -281,6 +280,7 @@ def _derived(item, floor: str, entries: dict, evidence: dict, ctx: dict) -> dict
   states = [e["state"] for e in picked]
   tag = [f"{DERIVED_FROM}:{','.join(_from_ids(item))}"]
   live = [s for s in states if s != NOT_APPLICABLE]
+  
   if not live:
     return _entry(item, floor, NOT_APPLICABLE, tag)
   if ASKED in live:
@@ -296,10 +296,10 @@ def _derived(item, floor: str, entries: dict, evidence: dict, ctx: dict) -> dict
   return _entry(item, floor, NOT_READ, tag + [DERIVED_NOT_COMPUTED])
 
 def _method(item, ctx: dict) -> dict | None:
+  """The entry a decided or default method gives an item, or None when the method leaves the item to be read as usual."""
   m = CV.method_of_item(item.id)
   if m is None:
     return None
-  
   name, effect, decided = CV.method_choice(m["id"], ctx["methods"])
   why = [f"{METHOD}:{m['id']}={name}"] + ([] if decided else [METHOD_DEFAULT])
   if effect == CV.RECORDED:
@@ -320,12 +320,10 @@ def _single(item, facts: dict, evidence: dict, scope: str, entries: dict, ctx: d
     return [_entry(item, ALL, NOT_APPLICABLE, why)]
   if item.owner_pack == "RATE":
     return [_entry(item, ALL, NOT_READ, [NOT_DRAWN])]
-  
   chosen = _method(item, ctx)
+  
   if chosen is not None:
     return [chosen]
-  absent = _missing_sets(item, facts)
-  
   absent = _missing_sets(item, facts)
   if absent:
     if scope == "STRUCTURE_ONLY":
@@ -339,12 +337,13 @@ def _single(item, facts: dict, evidence: dict, scope: str, entries: dict, ctx: d
   return [_regular(item, f, evidence, ctx) for f in floors]
 
 def build(items: list, facts: dict, evidence: dict, conventions: list | None = None, methods: dict | None = None, answers: dict | None = None) -> list:
+  """The five-state ledger: one entry per catalogue item and floor. Items that are derived are settled after the items they come from. Conventions are the ids a company switched on; methods are the options a project decided; answers are the answers to questions, by question key."""
   scope = F.scope_of(facts)
   held = dict(answers or {})
   decided = {QK.method_id(k): str(a.get("value")) for k, a in held.items() if QK.kind_of(k) == QK.METHOD}
   ctx = {"on": list(conventions or []), "methods": {**dict(methods or {}), **decided}, "type": F.values(facts).get("type"), "answers": held}
-  entries: dict = {}
   
+  entries: dict = {}
   plain = [it for it in items if not it.derived]
   for it in plain:
     entries[it.id] = _single(it, facts, evidence, scope, entries, ctx)

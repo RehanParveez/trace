@@ -16,6 +16,7 @@ def build(state: dict, run: dict) -> dict:
     "boq": {"lines": len(boq["rows"]), "totals": boq["totals"], "money": boq["money"], "rates_loaded": boq["rates_loaded"]},
     "questions": {"open": len(open_q), "top": [{"key": q["key"], "kind": q["kind"], "prompt": q["prompt"], "blocks": q["blocks"]} for q in open_q[:TOP]]},
     "stages": [{"name": s["name"], "status": s["status"], "seconds": s["seconds"], "error": s["error"]} for s in run["stages"]],
+    "convention": {k: {"value": v["value"], "confidence": v["confidence"]} for k, v in (state.get("convention") or {}).get("points", {}).items()} or None,
     "failed": list(run["failed"]), "unread": list(state.get("unread") or []), "seconds": run["seconds"]}
 
 def render(rep: dict, name: str = "") -> str:
@@ -26,6 +27,7 @@ def render(rep: dict, name: str = "") -> str:
     "  items: " + ", ".join(f"{n} {s}" for s, n in rep["items"].items()),
     f"  BOQ draft: {rep['boq']['lines']} lines" + ("; " + "; ".join(f"{u} {t['MEASURED']:g} measured, {t['ASSUMED']:g} assumed" for u, t in sorted(rep["boq"]["totals"].items())) if rep["boq"]["totals"] else "") + ("" if rep["boq"]["rates_loaded"] else " (no rate book loaded: quantities only)"),
     f"  questions open: {rep['questions']['open']}" + (" (" + "; ".join(q["key"] for q in rep["questions"]["top"]) + ")" if rep["questions"]["top"] else ""),
+    "  convention: " + ", ".join(f"{k} {v['value'] or '-'}" for k, v in rep["convention"].items()) if rep.get("convention") else "  convention: not profiled (no PDF given)",
     "  stages: " + ", ".join(f"{s['name']} {s['seconds']:.1f}s{'' if s['status'] == 'DONE' else ' ' + s['status']}" for s in rep["stages"]) + f"; total {rep['seconds']:.1f}s"]
   if rep.get("unread"):
     lines.append("  NOT READ: " + "; ".join(f"{u['file']} ({u['error']})" for u in rep["unread"]))

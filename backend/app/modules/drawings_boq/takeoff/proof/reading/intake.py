@@ -137,6 +137,9 @@ def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | No
   today = datetime.date.today().isoformat()
   rows = PR.draft_rows(prof, {n: i.register for n, i in read.pages.items()}, today)
   PR.write_register(truth, rows)
+  from app.modules.drawings_boq.takeoff.profile import run as PRUN
+  register = [{"page": n, **{k: i.register.get(k) for k in ("role", "plan_kind", "floor", "discipline", "title", "scale_basis")}} for n, i in read.pages.items()]
+  convention = PRUN.summary(PRUN.profile_pdfs([target], register))
   items = [plain(i) for i in read.items]
   kinds: dict = {}
   for p in prof["pages"]:
@@ -150,6 +153,7 @@ def intake(pdf_path: str, case: str, consultant: str | None, cases_dir: str | No
     by_class[i["cls"]] = by_class.get(i["cls"], 0) + 1
     by_status[i["status"]] = by_status.get(i["status"], 0) + 1
   first = {"pdf_key": key, "alias": doc["alias"], "case": case, "pdf": name, "sha256": sha, "consultant": consultant, "taken": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+    "convention": convention,
     "profile": {"producer": prof["producer"], "pages": len(prof["pages"]), "text_types": kinds, "damaged_font_pages": [p["sheet"] for p in prof["pages"] if PR.damaged_fonts(p)]},
     "register_rows": len(rows), "items": {"count": len(items), "by_class": dict(sorted(by_class.items())), "by_status": dict(sorted(by_status.items())), "digest": digest_of(items)},
     "unmapped": dict(read.unmapped), "read": items}
@@ -176,6 +180,8 @@ def cmd_intake(args) -> int:
   print(f"taken in: {res['alias']} (key {res['key']}), {f['profile']['pages']} pages, held out")
   print(f"  folder {res['truth']}")
   print(f"  register drafted: {f['register_rows']} rows, truth.by draft")
+  print("  convention profile: " + ", ".join(f"{k} {v['value'] or '-'} ({v['confidence']:g})" for k, v in f["convention"].items()))
+  print("  add it to the census with `python -m app.modules.drawings_boq.takeoff.proof.census --write`")
   print(f"  first sight stored: {FIRST_SIGHT} ({f['items']['count']} items, digest {f['items']['digest'][:16]}); it is never overwritten")
   print("  by class: " + ", ".join(f"{k} {v}" for k, v in f["items"]["by_class"].items()))
   print("\nPages for the eye check (sheet, text type, items read, why):")

@@ -489,6 +489,9 @@ def read_all(raw) -> dict | None:
   out: dict = {}
   
   sched = read(raw)
+  if not (sched and sched.get("cells")):
+    from app.modules.drawings_boq.takeoff.extract import schedule_axes
+    sched = schedule_axes.read(raw)
   if sched and sched.get("cells"):
     out["column_schedule"] = sched
   beams = read_beam_sections(raw)
@@ -497,5 +500,21 @@ def read_all(raw) -> dict | None:
   planted = read_planted(raw)
   if planted:
     out["planted_labels"] = planted
+  from app.modules.drawings_boq.takeoff.extract import beam_callouts
+  callouts = beam_callouts.read(raw)
+  if callouts:
+    out["beam_callouts"] = callouts
+  from app.modules.drawings_boq.takeoff.extract import slab_callouts
+  slabs = slab_callouts.read(raw)
+  if slabs:
+    out[slab_callouts.SOURCE_KEY] = slabs
+  from app.modules.drawings_boq.takeoff.extract import finish_spec_items
+  specs = finish_spec_items.read(raw)
+  if specs:
+    out[finish_spec_items.SOURCE_KEY] = specs
+  from app.modules.drawings_boq.takeoff.extract import drain_labels
+  drains = drain_labels.read(raw)
+  if drains:
+    out[drain_labels.SOURCE_KEY] = drains
   return out or None
 

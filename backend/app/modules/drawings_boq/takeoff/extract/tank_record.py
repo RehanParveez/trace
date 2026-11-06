@@ -1,6 +1,7 @@
 from __future__ import annotations
 import math
 import re
+from app.engine.measure import rule_registry as RR
 from app.engine.measure import rulebook as RB
 from app.engine.measure import readings as QS
 from app.modules.drawings_boq.takeoff.extract import config as C
@@ -16,6 +17,7 @@ PLAN_LONG_RULE, PLAN_SHORT_RULE = "stage.tank_plan_long_mm", "stage.tank_plan_sh
 PLAN_LONG_DEFAULT, PLAN_SHORT_DEFAULT = 2438.4, 1828.8
 WATER = ("OHWT", "UGWT")
 DEFAULTED = ("SIBLING", "SEED")
+NO_SEED_RULE = "TANK_NO_SEED"
 RANK = {"DECISION": 0, "DETAIL": 1, "LABEL": 2, "DETAIL_PICTURE": 3, "WALLS": 4, "SIBLING": 5, "SEED": 6, "CONVENTION": 7, "RULE": 8}
 NEAR_LINES = 6.0
 DEPTH_LINES = 3.5
@@ -204,6 +206,14 @@ def fallback_plan(kind: str, printed: dict) -> dict:
   a, b = _rule(PLAN_LONG_RULE, PLAN_LONG_DEFAULT), _rule(PLAN_SHORT_RULE, PLAN_SHORT_DEFAULT)
   return {"route": "SEED", "mm": [a, b], "text": f"no sheet prints the plan of this tank and no other water tank of the drawing gives one, so the seed {a / 1000:.3f} x {b / 1000:.3f} m outside is used"}
 
+def hold(kind: str, items: list, decision: str | None = None, answered: dict | None = None) -> dict:
+  rec = make(kind, items, decision, answered, None)
+  by_scale = sorted(items, key=lambda i: (i["sh"].get("mm_per_pt") or 0.0, i["page_no"]))
+  for i in by_scale[1:]:
+    i["c"].facts = {**(i["c"].facts or {}), FS.SET_ASIDE: {"by": FS.TANK_BY, "page_no": by_scale[0]["page_no"], "kind": kind}}
+  rec["held"] = True
+  return rec
+
 def make(kind: str, items: list, decision: dict | None = None, answered: dict | None = None, fallback: dict | None = None) -> dict:
   per: dict = {}
   for it in items:
@@ -282,7 +292,11 @@ def pair(read: list, decisions: dict | None = None, answered: dict | None = None
   for kind in sorted(built):
     items, rec = built[kind]
     if not rec["complete"]:
-      rec = make(kind, items, (decisions or {}).get(DECISION_PREFIX + kind), (answered or {}).get(DECISION_PREFIX + kind), fallback_plan(kind, printed))
+      fallback = fallback_plan(kind, printed)
+      if fallback["route"] == "SEED" and RR.on(NO_SEED_RULE):
+        out.append(hold(kind, items, (decisions or {}).get(DECISION_PREFIX + kind), (answered or {}).get(DECISION_PREFIX + kind)))
+        continue
+      rec = make(kind, items, (decisions or {}).get(DECISION_PREFIX + kind), (answered or {}).get(DECISION_PREFIX + kind), fallback)
   
     plan = rec["sources"]["plan"]
     by_scale = sorted(items, key=lambda i: (i["sh"].get("mm_per_pt") or 0.0, i["page_no"]))

@@ -36,12 +36,12 @@ def strip_regions(view_w: float, view_h: float) -> list:
   return [("BOTTOM", (view_w * BLOCK_LEFT_SHARE, view_h * (1.0 - BLOCK_TOP_SHARE), view_w, view_h)), ("RIGHT", (view_w * (1.0 - STRIP_RIGHT_SHARE), 0.0, view_w, view_h))]
 
 def read_strip(page, rotation: int, cropbox: tuple, words: list) -> dict:
-  got = TS.read(words, cropbox)
+  got = TS.read(words, cropbox, rotation)
   basis = "TEXT"
   tried: list = []
+  merged = list(words)
 
   if not got["fields"].get("sheet_no") and page is not None:
-    merged = list(words)
     Wv, Hv = page.get_size()
     done = False
     for name, box in strip_regions(Wv, Hv):
@@ -52,9 +52,9 @@ def read_strip(page, rotation: int, cropbox: tuple, words: list) -> dict:
           continue
         
         merged = _merge(merged, extra, RO.user_box(box, rotation, cropbox))
-        again = TS.read(extra, cropbox)
+        again = TS.read(extra, cropbox, rotation)
         if not again["fields"].get("sheet_no"):
-          again = TS.read(merged, cropbox)
+          again = TS.read(merged, cropbox, rotation)
         if again["fields"].get("sheet_no"):
           got, basis, done = again, "REGION_OCR", True
           break
@@ -62,7 +62,14 @@ def read_strip(page, rotation: int, cropbox: tuple, words: list) -> dict:
           got, basis = again, "REGION_OCR"
       if done:
         break
-  return {**got["fields"], "basis": basis if got["fields"] else "NONE", "evidence": got["evidence"], "tried": tried}
+  zone = TS.zone_phrases(TS.phrases(merged), cropbox, rotation)
+  if page is not None:
+    try:
+      from app.modules.drawings_boq.takeoff.profile import zones as ZN
+      zone = ZN.merge_zones(ZN.zone_of(page), zone)
+    except Exception:
+      pass
+  return {**got["fields"], "basis": basis if got["fields"] else "NONE", "evidence": got["evidence"], "zone": zone, "tried": tried}
 
 def _numbers(words: list) -> list:
   out = []
@@ -151,7 +158,7 @@ def read_list(page, rotation: int, cropbox: tuple, words: list) -> dict | None:
 def read(page, rotation: int, cropbox: tuple, words: list) -> dict:
   out: dict = {}
   strip = read_strip(page, rotation, cropbox, words)
-  if strip.get("basis") != "NONE":
+  if strip.get("basis") != "NONE" or strip.get("zone"):
     out["strip"] = strip
   listing = read_list(page, rotation, cropbox, words)
   if listing:
