@@ -12,17 +12,21 @@ from app.modules.drawings_boq.takeoff.extract import tank_record as TR
 from decimal import Decimal
 from uuid import UUID
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import member_passes as MP
 
 META_KEY = "takeoff_passes"
+PROBLEMS_KEY = "structure_problems"
 FIELDS = ("label", "tag", "geometry", "params", "missing", "status", "facts", "notes")
 
 def _now() -> datetime:
   return datetime.now(timezone.utc)
 
 def to_candidate(row: TakeoffCandidate) -> Candidate:
-  return Candidate(key=row.ckey, category=row.category, kind=row.kind, quantity_mode=row.quantity_mode, label=row.label, tag=row.tag, geometry=copy.deepcopy(row.geometry or {}),
+  c = Candidate(key=row.ckey, category=row.category, kind=row.kind, quantity_mode=row.quantity_mode, label=row.label, tag=row.tag, geometry=copy.deepcopy(row.geometry or {}),
     params=copy.deepcopy(row.params or {}), missing=list(row.missing or []), work_item=row.suggested_work_item, status=row.status, confidence=float(row.confidence),
     facts=copy.deepcopy(row.facts or {}), notes=copy.deepcopy(row.notes or []), source=row.source, count=row.count)
+  c.decision = row.decision
+  return c
 
 def snapshot(c: Candidate) -> str:
   return json.dumps([getattr(c, k) for k in FIELDS], sort_keys=True, default=str)
@@ -59,7 +63,7 @@ def usable(row: TakeoffCandidate) -> bool:
   return row.decision == "NEW" or bool((row.facts or {}).get(FS.SET_ASIDE))
 
 def sheet_dict(sheet, ext, cands: list) -> dict:
-  meta = sheet.prep_meta or {}
+  meta = copy.deepcopy(sheet.prep_meta or {})
   return {"sheet_id": sheet.id, "page_no": sheet.page_no, "title": meta.get("title") or {}, "meta": meta, "stats": (ext.stats if ext is not None else None) or {},
     "mm_per_pt": float(ext.mm_per_pt) if ext is not None and ext.mm_per_pt else None, "candidates": cands}
 
@@ -104,6 +108,14 @@ async def reconcile_drawing_passes(svc, org: UUID, drawing_id: UUID) -> set:
       undo_tank_notes(c)
       cands.append(c)
     read.append(sheet_dict(s, exts[s.id], cands))
+    
+  gone = MP.reset(read)
+  made_before = {(row["sheet_id"], c.key) for row, c in gone}
+  held = {(r.sheet_id, r.ckey) for r in rows_all if not usable(r)}
+  bundle = await svc.prep.fact_bundle(org, drawing)
+  problems = MP.run(read, svc.prep._floor_keys(sheets), bundle["facts"]["storey_heights"], **MP.inputs_of(drawing.ingestion_meta))
+  for sh in read:
+    sh["candidates"] = [c for c in sh["candidates"] if not (MP.generated(c) and (sh["sheet_id"], c.key) in held)]
   result = run_passes(read, heights, typed_tank_decisions(drawing.ingestion_meta))
   
   touched: set = set()
@@ -135,6 +147,13 @@ async def reconcile_drawing_passes(svc, org: UUID, drawing_id: UUID) -> set:
         row.decision, row.decided_at = "NEW", None
       touched.add(sid)
       
-  drawing.ingestion_meta = {**(drawing.ingestion_meta or {}), META_KEY: plain(result)}
+  made_now = {(sh["sheet_id"], c.key) for sh in read for c in sh["candidates"]}
+  for key in made_before - made_now:
+    row = rows_of.get(key)
+    if row is not None and row.decision == "NEW":
+      row.decision, row.decided_at = "REJECTED", _now()
+      touched.add(key[0])
+      
+  drawing.ingestion_meta = {**(drawing.ingestion_meta or {}), META_KEY: plain(result), PROBLEMS_KEY: plain(problems)}
   await svc.session.flush()
   return touched

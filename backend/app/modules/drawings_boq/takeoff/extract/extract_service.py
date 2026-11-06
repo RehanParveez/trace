@@ -41,6 +41,8 @@ from app.modules.drawings_boq.takeoff.prep import stairs as STR
 from app.modules.drawings_boq.takeoff import stair_twins as ST
 from app.modules.drawings_boq.takeoff.extract import kinds as KD
 from app.modules.drawings_boq.takeoff.extract import beam_sections as BS
+from app.modules.drawings_boq.takeoff.extract import beam_members as BMEM
+from app.modules.drawings_boq.takeoff.extract import member_passes as MP
 from app.modules.drawings_boq.takeoff.extract import steel_rollup as SR
 from app.modules.drawings_boq.takeoff.extract import floor_overlap as FO
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
@@ -456,6 +458,7 @@ class ExtractService:
     schedule, floor_heights, slab_values, beam_sections = known["schedule"], known["storey_heights"], known["slab_values"], known["beam_sections"]
     tank_details, footing_sections, spec_facts = known["tank_details"], known["footing_sections"], known["spec_facts"]
     electrical = await self.prep.sheet_electrical(org, sheet, index.words)
+    band_sections = BMEM.table_sections(await self.prep.repo.sheets(org, sheet.drawing_id), beam_sections) if MP.inputs_of(drawing.ingestion_meta)["runs"] else None
     units = await self.prep.sheet_units(org, sheet, known["units"])
     wall_vocab = await self.prep.drawing_wall_vocab(org, sheet.drawing_id, units["imperial"])
     mark_vocab = await self.prep.drawing_marks(org, drawing)
@@ -469,7 +472,7 @@ class ExtractService:
         result = await asyncio.to_thread(run_extraction, index, mm_per_pt, composite=bool(title.get("composite")), regions_only=regions_only, site_only=site_only, cal_factor=float(ev.factor), scale_unverified=unverified,
          content_kind=sheet.content_kind, budget_s=float(payload.budget_seconds), schedule=schedule, views_meta=(sheet.prep_meta or {}).get("views"), frame=(sheet.prep_meta or {}).get("frame"),
         col_details=known["column_details"], floor_heights=floor_heights, level_hint=level_hint, slab_values=slab_values, text_source=(sheet.prep_meta or {}).get("text_source", "TEXT"), scan_reading=(sheet.prep_meta or {}).get("scan_reading"), pdf_type=(sheet.prep_meta or {}).get("pdf_type"), identity=(sheet.prep_meta or {}).get("identity"),
-        lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, tank_details=tank_details,
+        lowest_level=lowest_level, with_finishes=True, beam_sections=beam_sections, band_sections=band_sections, tank_details=tank_details,
         imperial=units["imperial"], wall_vocab=wall_vocab, footing_sections=footing_sections, footing_views=known.get("footing_views") or [], spec_facts=spec_facts, electrical=electrical, mark_vocab=mark_vocab, opening_heights=opening_heights)
     except Exception:
       log.exception("PDF extraction failed for sheet %s", sheet.id)

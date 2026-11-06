@@ -88,11 +88,7 @@ def _merge_project(sheets: list, others: list) -> dict:
   return PF.bundle([("this", s) for s in sheets] + [(name, s) for name, group in others for s in group], "this")
 
 def read_set(items: list, pages: dict | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, project: bool | None = None, 
-storeys: list | None = None, sections: list | None = None, runs: bool = False) -> list:
-  """The PDFs of a set read together, the way the application reads the PDFs of a project: [(name, pdf bytes)] -> [(name, rows, problems)]. Every PDF is analysed first. A sheet that printed
-  no scale takes one from the outline of the other plans (any PDF), what one PDF does not print is taken from the others, and a floor drawn on plans of several PDFs keeps its base plan
-  and sets the others aside. A set of one PDF is read as read_pdf reads it, except for the scale from the outline and the choice of the base plan. project=False (or TAKEOFF_PROJECT_FACTS off)
-  reads each PDF alone."""
+storeys: list | None = None, sections: list | None = None, runs: bool = False, structure: bool = True) -> list:
   from types import SimpleNamespace
   from app.core.config import settings
   use = settings.takeoff_project_facts if project is None else project
@@ -100,9 +96,10 @@ storeys: list | None = None, sections: list | None = None, runs: bool = False) -
   scales = _outline_scales(prepared) if use else [dict() for _ in prepared]
   groups = [[SimpleNamespace(page_no=no, label=None, prep_meta=a.meta) for no, a in sorted(analysed.items())] for _doc, analysed, _p in prepared]
   out, every = [], []
+  
   for i, (name, data) in enumerate(items):
     others = [(items[j][0], groups[j]) for j in range(len(items)) if j != i] if use and len(items) > 1 else []
-    rows, problems = read_pdf(data, (pages or {}).get(name), budget_s=budget_s, scale_unverified=scale_unverified, prepared=prepared[i], project={"others": others, "scales": scales[i]}, storeys=storeys, sections=sections, runs=runs)
+    rows, problems = read_pdf(data, (pages or {}).get(name), budget_s=budget_s, scale_unverified=scale_unverified, prepared=prepared[i], project={"others": others, "scales": scales[i]}, storeys=storeys, sections=sections, runs=runs, structure=structure)
     for r in rows:
       r["drawing"], r["drawing_order"] = name, i
     out.append((name, rows, problems))
@@ -117,7 +114,7 @@ storeys: list | None = None, sections: list | None = None, runs: bool = False) -
       pass
   return ou
 
-def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, prepared: tuple | None = None, project: dict | None = None, storeys: list | None = None, sections: list | None = None, runs: bool = False) -> tuple:
+def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BUDGET_S, scale_unverified: bool = False, prepared: tuple | None = None, project: dict | None = None, storeys: list | None = None, sections: list | None = None, runs: bool = False, structure: bool = True) -> tuple:
   """Every page of the set read the way the application reads a drawing: the pictures on each sheet are read when it is analysed, and what the whole drawing prints (floor
   heights from the sections, slab values, specification, beam sections, tank and footing details, units, schedules) is gathered from all the sheets and given to each one. Only
   the database is left out. The wall thicknesses the drawing's own sheets agree on are gathered as the sheets are read, plain sheets first, as a first run does."""
@@ -195,33 +192,10 @@ def read_pdf(pdf: bytes, pages: list | None = None, *, budget_s: float = PAGE_BU
       "seconds": round(time.monotonic() - started, 1), "facts": meta.get("facts"), "stats": res.stats,
       "meta": meta, "ratio": used, "scale_source": source, "content_kind": a.content_kind})
   read.sort(key=lambda sh: sh["page_no"])
-  try:
-    from app.modules.drawings_boq.takeoff.extract import footing_members as FM
-    from app.modules.drawings_boq.takeoff.extract import structure_joins as SJ
-    FM.inject(read, sections)
-    SJ.join_rows(read)
-  except Exception as exc:
-    problems.append((0, f"structure joins: {type(exc).__name__}: {str(exc)[:80]}"))
-  try:
-    from app.modules.drawings_boq.takeoff.extract import storey_apply as SA
-    from app.modules.drawings_boq.takeoff.model import storeys as STO
-    from app.modules.drawings_boq.takeoff.extract import column_stacks as CST
-    resolved = STO.resolve(floor_keys, STO.printed_records(drawing["floor_heights"]), None, STO.decision_records(storeys))
-    SA.apply(read, resolved)
-    CST.apply(read, resolved)
-  except Exception as exc:
-    problems.append((0, f"storeys: {type(exc).__name__}: {str(exc)[:80]}"))
-  try:
-    from app.modules.drawings_boq.takeoff.extract import footing_members as FM
-    FM.apply(read)
-  except Exception as exc:
-    problems.append((0, f"footing members: {type(exc).__name__}: {str(exc)[:80]}"))
-  if runs:
-    try:
-      from app.modules.drawings_boq.takeoff.extract import beam_members as BMEM
-      BMEM.apply(read)
-    except Exception as exc:
-      problems.append((0, f"beam members: {type(exc).__name__}: {str(exc)[:80]}"))
+  
+  if structure:
+    from app.modules.drawings_boq.takeoff.extract import member_passes as MP
+    problems.extend(MP.run(read, floor_keys, drawing["floor_heights"], storeys=storeys, sections=sections, runs=runs))
   return read, problems
 
 EXTRA_KINDS = ("ELECTRICAL", "NOT_BUILT", "DRAINAGE", "QS_VOLUME") + BS.SHEET_KINDS

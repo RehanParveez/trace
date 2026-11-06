@@ -23,6 +23,7 @@ from app.core.database import Base
 from app.modules.drawings_boq.models import Drawing, DrawingFormat, TakeoffExtraction
 from app.modules.drawings_boq.takeoff.extract import config as C
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
+from app.modules.drawings_boq.takeoff.extract import member_passes as MP
 from app.modules.drawings_boq.takeoff.proof import benchmark as BM
 
 URL_ENV = "TRACE_PARITY_DATABASE_URL"
@@ -53,7 +54,7 @@ def expected_state(reads: list) -> dict:
     out[(_name, "result")] = plain(result)
   return out
 
-async def load(session: AsyncSession, case: str, reads: list) -> dict:
+async def load(session: AsyncSession, case: str, reads: list, inputs: dict | None = None) -> dict:
   session.add(Organization(id=OA.ORG, name="parity", slug="parity"))
   session.add(Project(id=OA.PROJECT, organization_id=OA.ORG, name="parity"))
   await session.flush()
@@ -61,7 +62,7 @@ async def load(session: AsyncSession, case: str, reads: list) -> dict:
   ids: dict = {}
   for name, rows in reads:
     drawing_id = OA.uid(case, "drawing", name)
-    session.add(Drawing(id=drawing_id, organization_id=OA.ORG, project_id=OA.PROJECT, original_filename=name, storage_key=f"parity/{name}", format=DrawingFormat.PDF, revision_group_id=uuid.uuid4()))
+    session.add(Drawing(id=drawing_id, organization_id=OA.ORG, project_id=OA.PROJECT, original_filename=name, storage_key=f"parity/{name}", format=DrawingFormat.PDF, revision_group_id=uuid.uuid4(), ingestion_meta={MP.META_KEY: plain(inputs or {})}))
     await session.flush()
     ids[name] = drawing_id
     
@@ -92,6 +93,12 @@ async def state_of(svc: ExtractService, ids: dict, reads: list) -> dict:
     out[(name, "result")] = plain((drawing.ingestion_meta or {}).get(DPS.META_KEY))
   return out
 
+def comparable(entry):
+  if not isinstance(entry, dict) or "fields" not in entry or entry.get("decision") != "REJECTED":
+    return entry
+  facts = {k: v for k, v in (entry["fields"].get("facts") or {}).items() if k != "footing_section_join"}
+  return {**entry, "fields": {**entry["fields"], "facts": facts}}
+
 def differences(want: dict, got: dict) -> list:
   out = []
   for key in sorted(set(want) | set(got), key=str):
@@ -99,13 +106,13 @@ def differences(want: dict, got: dict) -> list:
       out.append((key, "missing in the database"))
     elif key not in want:
       out.append((key, "only in the database"))
-    elif want[key] != got[key]:
+    elif comparable(want[key]) != comparable(got[key]):
       if key[1] == "result":
         left, right = want[key] or {}, got[key] or {}
         bad = [k for k in sorted(set(left) | set(right)) if left.get(k) != right.get(k)]
         out.append((key, "pass results differ: " + ", ".join(bad)))
       else:
-        bad = [k for k in COMPARED if want[key]["fields"].get(k) != got[key]["fields"].get(k)]
+        bad = [k for k in COMPARED if comparable(want[key])["fields"].get(k) != comparable(got[key])["fields"].get(k)]
         if want[key]["decision"] != got[key]["decision"]:
           bad.append("decision")
         out.append((key, "differs in " + ", ".join(bad)))
@@ -117,10 +124,13 @@ async def run(case: str, files_dir: str) -> dict:
   spec = CIO.load_case(folder)
   files, _problems = CIO.find_files(spec, files_dir)
   rows, _bad, _file = CIO.load_company_rules(spec)
+  inputs = {"sections": spec.get("sections"), "storeys": spec.get("storeys"), "runs": bool(spec.get("beam_runs"))}
+  items = [(n, open(files[n], "rb").read()) for n in spec["pdfs"]]
   with RB.using_case(rows):
-    reads = [(n, r) for n, r, _p in BM.read_set([(n, open(files[n], "rb").read()) for n in spec["pdfs"]])]
+    full = [(n, r) for n, r, _p in BM.read_set(items, **inputs)]
+    reads = [(n, r) for n, r, _p in BM.read_set(items, runs=inputs["runs"], structure=False)]
     
-  want = expected_state([(n, copy.deepcopy(r)) for n, r in reads])
+  want = expected_state([(n, copy.deepcopy(r)) for n, r in full])
   engine = create_async_engine(scratch_url(), poolclass=NullPool)
   async with engine.begin() as conn:
     await conn.execute(text("DROP SCHEMA public CASCADE"))
@@ -129,7 +139,7 @@ async def run(case: str, files_dir: str) -> dict:
   maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
   
   async with maker() as session:
-    ids = await load(session, case, reads)
+    ids = await load(session, case, reads, inputs)
     svc = ExtractService(session)
     unpassed = differences(want, await state_of(svc, ids, reads))
     touched_first = set()

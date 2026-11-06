@@ -101,7 +101,7 @@ def register_of(row: dict) -> dict:
   meta = row.get("meta") or {}
   ident = meta.get("identity") or {}
   vote = ident.get("role_vote") or {}
-  role = ROLE_OF.get(vote.get("role") or "")
+  role = ROLE_OF.get(vote.get("role") or ident.get("role") or "")
   
   if role is None:
     role = {"SPEC": V.Role.SPEC, "LEGEND": V.Role.LEGEND}.get(str(ident.get("sheet_type") or "").upper())
@@ -110,9 +110,11 @@ def register_of(row: dict) -> dict:
   if text_type is V.TextType.TEXT and ptype.get("partial_outline"):
     text_type = V.TextType.PARTIAL
   title = row.get("title") or {}
+  derived = RS.plan_kind_of(ident) if role is V.Role.PLAN else None
+  plan_kind = derived if derived in V.PlanKind.names() else (PLAN_KIND_OF[ident["plan_kind"]].value if ident.get("plan_kind") in PLAN_KIND_OF else None)
   return {"sheet": row["page_no"], "sheet_no": title.get("sheet_no") or ident.get("sheet_no"), "title": title.get("title") or ident.get("title"),
-    "role": role.value if role else None, "plan_kind": (PLAN_KIND_OF.get(ident.get("plan_kind")) or None) and PLAN_KIND_OF[ident.get("plan_kind")].value,
-    "floor": ident.get("floor"), "discipline": ident.get("discipline"), "scale_ratio": row.get("ratio"), "scale_basis": row.get("scale_source"), "text_type": text_type.value if text_type else None}
+    "role": role.value if role else None, "plan_kind": plan_kind,
+    "floor": ident.get("floor") or (None if title.get("composite") else title.get("level_hint")), "discipline": ident.get("discipline"), "scale_ratio": row.get("ratio"), "scale_basis": row.get("scale_source"), "text_type": text_type.value if text_type else None}
 
 def _status_of(conflicts: list, reasons: list) -> V.Status:
   return V.Status.UNSURE if conflicts or reasons else V.Status.READ
