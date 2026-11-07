@@ -1991,7 +1991,7 @@ def _read_sheet(index, mm_per_pt: float, *, cal_factor: float = 1.0, scale_unver
       res.stats["beam_bands"] = bands
       graph = SPG.of_page(index, bands, views, mm_per_pt, ctx.get("page_unit") or 1.0)
       if graph:
-        res.stats["slab_panel_graph"] = graDph
+        res.stats["slab_panel_graph"] = graph
   res.stats["schedule_marks"] = len(openings)
   _mark_stats(res, words, marks)
   kind = sheet_kind(sheet_words if sheet_words is not None else words)

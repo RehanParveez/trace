@@ -30,6 +30,7 @@ def _yaml(path) -> object:
     return yaml.safe_load(fh)
 
 def case_names() -> set:
+  """The names a set goes by: its folder, the name in case.yaml and the stem of each PDF, each in the spellings a person writes (191c, 191-C, 191 C). The list is made from the case folders, so a new set joins it by being added."""
   names: set = set()
   if not CASES.is_dir():
     return names
@@ -42,7 +43,6 @@ def case_names() -> set:
     for pdf in raw.get("pdfs") or []:
       stem = re.sub(r"\.pdf$", "", str(pdf), flags=re.I)
       base.append(stem)
-      
     for b in base:
       if len(b) < 4:
         continue
@@ -61,6 +61,7 @@ def name_pattern(names: set):
   return re.compile(r"(?<![A-Za-z0-9])(?:" + body + r")(?![A-Za-z0-9])", re.I)
 
 def truth_marks() -> set:
+  """Marks and sheet numbers that case truth carries: what a drawing printed, which a reader may match with a pattern but may not name."""
   out: set = set()
   if not CASES.is_dir():
     return out
@@ -69,7 +70,6 @@ def truth_marks() -> set:
       v = (row or {}).get("sheet_no")
       if v:
         out.add(str(v).strip())
-        
   for path in CASES.glob("*/reading/*/elements.yaml"):
     for row in _yaml(path) or []:
       v = (row or {}).get("mark")
@@ -135,7 +135,6 @@ def scan_python(path: pathlib.Path, names, marks: set) -> list:
     if isinstance(node, ast.Compare):
       sides = [node.left, *node.comparators]
       named = [_name_of(s) for s in sides]
-      
       const = [s for s in sides if isinstance(s, (ast.Constant, ast.Tuple, ast.List, ast.Set)) and (not isinstance(s, ast.Constant) or isinstance(s.value, int) and not isinstance(s.value, bool))]
       if any(n in PAGE_NAMES for n in named) and const and all(isinstance(op, (ast.Eq, ast.NotEq, ast.In, ast.NotIn)) for op in node.ops):
         elts = [e for c in const for e in (c.elts if isinstance(c, (ast.Tuple, ast.List, ast.Set)) else [c])]
@@ -191,10 +190,10 @@ def registry_hits() -> list:
   return out
 
 def convention_hits() -> list:
+  """A Pakistan convention holds its value once, in conventions_pk.yaml. A table in the engine that names the convention's engine key and writes the number again is a second copy."""
   from app.engine.catalogue import conventions as CV
   keys = {c["engine_key"]: c["id"] for c in CV.conventions() if c.get("engine_key")}
   out = []
-  
   for rel in CONVENTION_MODULES:
     path = APP / rel
     if not path.is_file():
@@ -212,7 +211,6 @@ def convention_hits() -> list:
 def load_allow() -> tuple:
   if not ALLOW.is_file():
     return [], []
-  
   raw = _yaml(ALLOW) or []
   problems, entries = [], []
   names = name_pattern(case_names())
@@ -250,7 +248,6 @@ def scan() -> dict:
   hits.extend(registry_hits())
   hits.extend(convention_hits())
   entries, problems = load_allow()
-  
   open_hits, kept = [], []
   unique: dict = {}
   for h in hits:

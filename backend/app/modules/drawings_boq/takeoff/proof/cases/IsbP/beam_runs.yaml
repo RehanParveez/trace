@@ -1,3 +1,0 @@
-- enabled: true
-  date: '2026-11-05'
-  source: Switch for ST-5. The labelled beam bands of the structural plans become beam members for this case only; the other cases read their beams as before until their own beam bands have been checked against a hand measure.

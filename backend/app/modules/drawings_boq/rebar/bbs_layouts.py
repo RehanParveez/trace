@@ -3,6 +3,7 @@ import re
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from app.modules.drawings_boq.schedule_parsing import ScheduleParseError
+from app.modules.drawings_boq.rebar import bbs_diameter
 
 MAX_BBS_PAGES = 400
 MAX_PAGE_CHARS = 30000
@@ -556,6 +557,71 @@ def _read_summary(prof, page_no, words, sheet, doc, st) -> None:
 
 PROFILES = (PK_BBS_FEET,)
 SHEET_TOLERANCE_KG = Decimal("0.05")
+VOTE_PAGES = 6
+
+class UnknownBbsLayout(ScheduleParseError):
+  """No known layout matches the document. Carries the closest header text and every profile's score so the person sees what was found."""
+  def __init__(self, message: str, header_text: str = "", scores: dict | None = None):
+    super().__init__(message)
+    self.header_text = header_text
+    self.scores = scores or {}
+
+def header_hits(lines: list, prof: BbsProfile):
+  """Best header-word count in any window of one page's lines, and the text of that window. Unlike _find_header it has no minimum."""
+  best = (0, "")
+  scan = lines[:prof.header_scan_lines]
+  for i in range(0, max(1, len(scan) - 1)):
+    window = scan[i:i + prof.header_window]
+    found = {re.sub(r"[^a-z/]", "", w.text.lower()) for _, ws in window for w in ws}
+    hits = len(found & set(prof.header_tokens))
+    if hits > best[0]:
+      best = (hits, " | ".join(_text(ws) for _, ws in window))
+  return best
+
+def choose_profile(scores: dict, profiles: tuple) -> str | None:
+  """The profile with the most header words, if it reaches its own minimum. A tie is broken by the share of the profile's own header it matched; a tie still left is no choice."""
+  eligible = [(hits, hits / len(p.header_tokens), p.name) for p in profiles for hits in [scores.get(p.name, 0)] if hits >= p.header_min_hits]
+  if not eligible:
+    return None
+  eligible.sort(reverse=True)
+  if len(eligible) > 1 and eligible[0][:2] == eligible[1][:2]:
+    return None
+  return eligible[0][2]
+
+def vote_profile(contents: bytes, profiles: tuple = PROFILES) -> BbsProfile:
+  import pypdfium2 as pdfium
+  try:
+    pdf = pdfium.PdfDocument(contents)
+  except Exception:
+    raise ScheduleParseError("This PDF could not be opened for a bar schedule read.")
+  scores = {p.name: 0 for p in profiles}
+  nearest = (0, "")
+  words_seen = 0
+  try:
+    for i in range(min(len(pdf), VOTE_PAGES)):
+      page = pdf[i]
+      try:
+        words = _merge_numbers(page_words(page), 6.0)
+      finally:
+        page.close()
+      words_seen += len(words)
+      for prof in profiles:
+        hits, text = header_hits(_lines(words, prof.line_tol), prof)
+        if hits > scores[prof.name]:
+          scores[prof.name] = hits
+        if hits > nearest[0]:
+          nearest = (hits, text)
+  finally:
+    pdf.close()
+  chosen = choose_profile(scores, profiles)
+  if chosen is not None:
+    return next(p for p in profiles if p.name == chosen)
+  shown = ", ".join(f"{p.name} {scores[p.name]} of {p.header_min_hits} needed" for p in profiles)
+  if words_seen == 0:
+    raise UnknownBbsLayout("This PDF has no text to read; a scanned bar schedule cannot be read.", "", scores)
+  if any(scores[p.name] >= p.header_min_hits for p in profiles):
+    raise UnknownBbsLayout(f"The layout matches more than one known layout equally ({shown}); none was chosen.", nearest[1], scores)
+  raise UnknownBbsLayout(f"Unknown bar schedule layout ({shown}). Closest header read: {nearest[1] or 'none'}", nearest[1], scores)
 
 def bbs_summary(doc: BbsDocument) -> dict:
   sheets = []
@@ -576,13 +642,7 @@ def bbs_summary(doc: BbsDocument) -> dict:
     "unread_lines": [{"page": u.page, "y": u.y, "text": u.text[:120], "reason": u.reason} for u in doc.unread_lines[:50]]}
 
 def read_bbs_pdf(contents: bytes, profiles: tuple = PROFILES) -> BbsDocument:
-  last: Exception | None = None
-  for prof in profiles:
-    try:
-      return _read_with_profile(contents, prof)
-    except ScheduleParseError as exc:
-      last = exc
-  raise last or ScheduleParseError("No schedule table header was found in the PDF text.")
+  return _read_with_profile(contents, vote_profile(contents, profiles))
 
 def _read_with_profile(contents: bytes, prof: BbsProfile) -> BbsDocument:
   import pypdfium2 as pdfium
@@ -609,4 +669,5 @@ def _read_with_profile(contents: bytes, prof: BbsProfile) -> BbsDocument:
     pdf.close()
   if not doc.rows:
     raise ScheduleParseError("No schedule table header was found in the PDF text.")
+  bbs_diameter.carry_down(doc.rows)
   return doc

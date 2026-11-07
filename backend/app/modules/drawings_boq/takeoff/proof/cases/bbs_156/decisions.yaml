@@ -24,14 +24,5 @@ storeys:
     ftf_ft: 6.5
     source: DECISION
 
-member_inputs:
-  FOOTING:F1:
-    strip_length_ft: 396
-    width_in: 48
-    depth_in: 12
-    main_bar: 4
-    main_s_in: 6
-    dist_bar: 3
-    dist_s_in: 6
-  BEAM:B1:
-    span_ft: 21.42
+# member_inputs: none. F1 (strip length 396 ft, width 48 in, bars) and B1 (span 21.42 ft) were copied from the bar schedule under audit; BB-1 removed them. An answer typed
+# from the drawing goes here again, and the coverage line then counts that member as by answer.

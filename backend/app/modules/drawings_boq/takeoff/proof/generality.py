@@ -18,7 +18,6 @@ def forced_all() -> dict:
 
 def tally(rows: list) -> dict:
   t: collections.Counter = collections.Counter()
-  
   for row in rows:
     for c in row.get("candidates") or []:
       f = c.facts or {}
@@ -36,12 +35,12 @@ def tally(rows: list) -> dict:
         t["beam_runs_closed"] += 1 if (f.get("run") or {}).get("closed") else 0
       if sa.get("by") == "ROLE_UNEXPECTED" and sa.get("plan_kind") in SUBSTRUCTURE:
         t["held_on_substructure_layouts"] += n
+        
     bb = (row.get("stats") or {}).get("beam_bands") or {}
     for v in bb.get("views") or []:
       for b in v.get("bands") or []:
         t["bands"] += 1
         t["bands_with_a_support"] += 1 if any(s for s in b.get("supports") or []) else 0
-        
   return dict(sorted(t.items()))
 
 def census(cases_dir: str | None, only: list | None = None, partial: str = os.devnull) -> dict:
@@ -74,7 +73,6 @@ def class_rows(by_set: dict, alias: str) -> dict:
     a, _, cls = key.partition("|")
     if a != alias:
       continue
-    
     n = {k: int(v.get(k) or 0) for k in CLASS_KEYS}
     truth = n["MATCHED_OK"] + n["MATCHED_WRONG_VALUE"] + n["MISSED_SILENT"] + n["MISSED_REPORTED"]
     read = n["MATCHED_OK"] + n["MATCHED_WRONG_VALUE"] + n["INVENTED_FLAGGED"] + n["INVENTED_SILENT"]
@@ -90,7 +88,6 @@ def baseline(score_json: str, census_json: str, cases_dir: str | None = None) ->
     cen = json.load(fh)
   by_key = {r.pdf_key: r for r in SETS.find_sets(cases_dir)}
   by_set = score["metrics"]["by_set"]
-  
   sets: dict = {}
   for s in score["sets"]:
     ref = by_key.get(s["key"])
@@ -132,7 +129,6 @@ def main(argv: list | None = None) -> int:
       fh.write("\n")
     print(f"{args.out}: {len(doc['sets'])} set(s)")
     return 0
-  
   ok, note, lines = gate()
   print(f"{'ok  ' if ok else 'FAIL'}  {note}")
   for ln in lines:

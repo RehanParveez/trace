@@ -36,7 +36,6 @@ def silent_gaps(plain: dict) -> list:
 def assumption_problems(result: dict, on: bool) -> list:
   """With conventions off nothing is ASSUMED; with them on every assumption names its source and a range the value lies inside, and a quantity built on one carries a range."""
   bad = []
-  
   for e in result["ledger"]:
     tag = f"{e['element']}/{e['floor']}"
     if not on and e["state"] == LG.ASSUMED:
@@ -55,7 +54,6 @@ def invariants(result: dict, plain: dict) -> list:
   floors = set(F.values(result["facts"])["floors"] or []) | {LG.ALL}
   bad = []
   seen = {e["element"] for e in result["ledger"]}
-  
   for it in items:
     if it.id not in seen:
       bad.append(f"{it.id} has no ledger entry")
@@ -105,7 +103,6 @@ def question_problems(case: str, plain: dict, res: dict, lines: list, on: list, 
         bad.append(f"{e['element']}/{e['floor']}: a question with no key or kind: {q['ask'][:60]}")
       elif q["key"] not in keys:
         bad.append(f"{e['element']}/{e['floor']}: question {q['key']} is not in the project's list")
-        
   for q in qs:
     if q["state"] == QE.OPEN and not q["blocks"] and q["kind"] != QK.METHOD:
       bad.append(f"question {q['key']} blocks no item")
@@ -116,7 +113,6 @@ def question_problems(case: str, plain: dict, res: dict, lines: list, on: list, 
   after = CR.run_set(plain, CR.storeys_of(case), lines, conventions=on, answers={**answers, **given})
   more = QE.build(res["ledger"], {**answers, **given}, on)
   still = [q["key"] for q in more if q["key"] in given and q["state"] == QE.OPEN]
-  
   if still:
     bad.append(f"answered and still open: {', '.join(still)}")
   was, now = res["summary"]["by_state"], after["summary"]["by_state"]
@@ -152,7 +148,6 @@ def gate(collector: Collector, score_dir: str | None = None) -> tuple:
     for tag, run, on in (("", res, []), (" (conventions on)", on_res, CV.ids())):
       bad, n_open, n_after = question_problems(case, plain, run, lines, on, answers)
       problems += [f"{case}{tag}: {p}" for p in bad]
-      
       if not on:
         open_total += n_open
         after_total += n_after

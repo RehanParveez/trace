@@ -1,0 +1,30 @@
+profiles:
+  - id: PRIVATE_QS
+    label: "Private QS: own lines per member type and floor"
+    block: PRIVATE_QS
+    split_by_floor: true
+    split_by_floor_codes: []
+    included_in: {}
+  - id: MRS_PB
+    label: "Punjab rate book (MRS): items grouped, formwork inside RCC, steel per cwt"
+    block: MRS_PB
+    split_by_floor: false
+    split_by_floor_codes: ["7-6"]
+    included_in:
+      formwork_area: "6-6 (RCC includes formwork)"
+spec_defaults:
+  concrete_mix: "1:2:4"
+  steel_grade: "Grade 60"
+  brick_mortar: "1:6"
+  plaster_ratio: "1:4"
+  plaster_thickness: "0.5 in"
+  tile_size: "2 x 2 ft"
+  wood: "Deodar"
+spec_questions:
+  concrete_mix: "What concrete mix does this work use (for example 1:2:4)?"
+  steel_grade: "What grade of steel bar does this work use (for example Grade 60)?"
+  brick_mortar: "What mortar ratio is used for the brickwork?"
+  plaster_ratio: "What mortar ratio is used for plaster?"
+  plaster_thickness: "How thick is the plaster?"
+  tile_size: "What size are the floor tiles?"
+  wood: "What wood is used for the joinery?"

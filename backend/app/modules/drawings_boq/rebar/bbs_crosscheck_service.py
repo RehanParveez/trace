@@ -61,7 +61,7 @@ class BbsCrossCheckService:
     decisions = await self.match.decisions(org, project_id)
     expect_decisions = {k: v for k, v in decisions.items() if k in XD.EXPECT_KEYS}
     sheets, cands = await self.expect._read(org, project_id)
-    jobs = ES.build_jobs(sheets, cands, expect_decisions, [s.name for s in parsed.sheets])
+    jobs = ES.build_jobs(sheets, cands, expect_decisions)
     if not jobs:
       raise TraceException("No structural drawing of this project has been read yet, so there is nothing to check the bar schedule against. Upload and prepare the structural drawings first.",
         status_code=409, code="NO_DRAWING_MEMBERS")

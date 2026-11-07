@@ -1,8 +1,9 @@
 from __future__ import annotations
-from app.modules.drawings_boq.takeoff.profile import pages as PG
 from app.modules.drawings_boq.takeoff.prep import title_strip as TS
+from app.modules.drawings_boq.takeoff.profile import pages as PG
 
 def zone_of(page) -> list:
+  """The phrases of a sheet's title zone as the sheet is seen, read from the PDF's own text. Empty for a scan."""
   tp = page.get_textpage()
   text = tp.get_text_range()
   width, height = page.get_size()
@@ -11,6 +12,7 @@ def zone_of(page) -> list:
   return TS.zone_phrases(TS.phrases(words), (0.0, 0.0, float(width), float(height))) if words else []
 
 def merge_zones(first: list, second: list) -> list:
+  """Two readings of one sheet's title zone as one: a phrase of the second that the first already has (same text, same place) is not added twice."""
   out = list(first)
   for z in second:
     cx, cy = (z["b"][0] + z["b"][2]) / 2.0, (z["b"][1] + z["b"][3]) / 2.0

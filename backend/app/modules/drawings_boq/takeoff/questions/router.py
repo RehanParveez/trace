@@ -1,11 +1,11 @@
 from __future__ import annotations
+from uuid import UUID
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.core.database import get_db
+from app.dependencies.permissions import require_permission
 from app.modules.identity.enums import PermissionKey
 from app.modules.identity.models import User
-from uuid import UUID
-from sqlalchemy.ext.asyncio import AsyncSession
-from app.dependencies.permissions import require_permission
-from app.core.database import get_db
 from app.modules.drawings_boq.takeoff.questions.schemas import AnswerRequest, QuestionsResponse
 from app.modules.drawings_boq.takeoff.questions.service import QuestionsService
 

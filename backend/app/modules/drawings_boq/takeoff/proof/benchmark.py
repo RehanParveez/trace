@@ -591,7 +591,6 @@ def main(argv: list | None = None) -> int:
   rep = report(os.path.basename(args.pdf), read, problems, facts, notes, baseline, check_extras(extras, pdf_bytes, electrical, read))
   rep["floor_sources"] = used
   print(render(rep))
-  
   if args.draft_facts:
     json.dump(draft_facts(read, os.path.splitext(os.path.basename(args.pdf))[0], os.path.basename(args.pdf)), open(args.draft_facts, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     print(f"\nA draft facts file was written to {args.draft_facts}: check each fact against the plan and put your name in its checked_by.")

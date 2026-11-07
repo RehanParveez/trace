@@ -1,12 +1,12 @@
 from __future__ import annotations
 import pypdfium2 as pdfium
-from app.modules.drawings_boq.takeoff.profile import pages as PG
 from app.modules.drawings_boq.takeoff.profile import convention as CVN
+from app.modules.drawings_boq.takeoff.profile import pages as PG
 
 def facts_of_pdf(path: str, shift: int = 0) -> list:
+  """The page facts of one PDF, its page numbers moved up by `shift` so the PDFs of a set do not share numbers."""
   doc = pdfium.PdfDocument(path)
   out = []
-  
   try:
     for i in range(len(doc)):
       page = doc[i]
@@ -20,7 +20,6 @@ def facts_of_pdf(path: str, shift: int = 0) -> list:
 
 def profile_pdfs(paths: list, register: list | None = None, shift: int = 1000) -> dict:
   pages: list = []
-  
   for n, path in enumerate(paths):
     pages.extend(facts_of_pdf(path, n * shift))
   return {**CVN.build(pages, register), "page_facts": pages}

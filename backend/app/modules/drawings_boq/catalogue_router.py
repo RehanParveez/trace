@@ -1,10 +1,10 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends
-from app.modules.identity.models import User
-from app.modules.identity.enums import PermissionKey
-from app.engine.catalogue import loader as CL
 from app.core.exceptions import TraceException
 from app.dependencies.permissions import require_permission
+from app.engine.catalogue import loader as CL
+from app.modules.identity.enums import PermissionKey
+from app.modules.identity.models import User
 
 router = APIRouter(prefix="/catalogue", tags=["catalogue"])
 

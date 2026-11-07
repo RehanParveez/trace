@@ -22,7 +22,12 @@ UNIT_SPELLINGS: dict[str, str] = {
   "tonne": "tonne", "tonnes": "tonne", "mt": "tonne", "metric ton": "tonne", "metric tonne": "tonne", "m.ton": "tonne", "m.t": "tonne",
   "nos": "nos", "nos.": "nos", "no": "nos", "no.": "nos", "each": "nos", "ea": "nos", "pcs": "nos", "pc": "nos", "piece": "nos",
   "pieces": "nos", "nr": "nos",
+  "cwt": "cwt", "cwt.": "cwt", "hundredweight": "cwt",
 }
+_P_PREFIXED = ("cft", "sft", "rft", "cum", "cu.m", "sqm", "sq.m", "m", "mtr", "kg", "cwt", "quintal")
+UNIT_SPELLINGS.update({f"p.{u}": UNIT_SPELLINGS[u] for u in _P_PREFIXED})
+UNIT_SPELLINGS.update({f"p. {u}": UNIT_SPELLINGS[u] for u in _P_PREFIXED})
+_QUOTES = "'\"`\u2018\u2019\u201c\u201d"
 
 OTHER_UNITS = {"ton": "ton", "tons": "ton", "bag": "bag", "bags": "bag", "set": "set", "pair": "pair", "l.s": "ls", "l.s.": "ls", "ls": "ls",
   "job": "job", "ltr": "litre", "litre": "litre", "liter": "litre", "gallon": "gallon", "sack": "sack", "day": "day", "month": "month",
@@ -47,9 +52,10 @@ class UnitBasis:
 
 def parse_unit_basis(raw: str | None) -> UnitBasis:
   """'% cft', 'per 100 Cft' and '100 cft' all mean a price for 100 cft; '1000 Nos' a price for 1000 pieces."""
-  text = re.sub(r"\s+", " ", (raw or "").strip().lower())
+  text = re.sub(r"\s+", " ", (raw or "").strip().strip(_QUOTES).strip().lower())
   text = re.sub(r"^(rs\.?|pkr)\s*/?\s*", "", text)
   text = re.sub(r"^per\s+", "", text)
+  text = re.sub(r"^p\.\s*(?=[a-z])", "", text)          # "P.Rft" and "P. Sft" mean "per": the rate is for one unit
   basis = Decimal(1)
   if text.startswith("%"):
     basis, text = Decimal(100), text[1:].strip()
@@ -142,7 +148,7 @@ class RawRow:
 
 REVIEW_FLAGS = frozenset({"NO_ITEM_NO", "UNIT_UNKNOWN", "RATE_MISSING", "RATE_ZERO", "RATE_OUTLIER", "DUPLICATE_ITEM_NO",
   "SECOND_PASS_MISSING", "ALT_RATE_MISMATCH", "UNIT_AMBIGUOUS", "RATE_LABOUR_ONLY", "RATE_TEXT"})
-INFO_FLAGS = frozenset({"WRAPPED_DESCRIPTION", "BASIS_APPLIED", "DUPLICATE_CODE", "UNITS_NOT_COMPARED"})
+INFO_FLAGS = frozenset({"WRAPPED_DESCRIPTION", "BASIS_APPLIED", "DUPLICATE_CODE", "UNITS_NOT_COMPARED", "FULL_PRICE_CHAPTER"})
 
 FLAG_TEXT = {
   "NO_ITEM_NO": "The row has no item number in the document.",
@@ -159,6 +165,7 @@ FLAG_TEXT = {
   "RATE_LABOUR_ONLY": "Only a labour rate is printed for this row (no composite). It is the price of the labour, not of the finished work; confirm it is what you want to price with.",
   "RATE_TEXT": "A rate column holds words, not a figure. Check the row against the page.",
   "DUPLICATE_CODE": "The same item and sub-item number is printed more than once on these pages; the row keeps its own place in the order.",
+  "FULL_PRICE_CHAPTER": "Only a labour rate is printed, and this book's profile lists this chapter as one where the labour rate is the full price (no material). It is priced as printed.",
   "UNITS_NOT_COMPARED": "The British and metric units of this row are not ones that can be converted into each other, so the two rates were not compared.",
 }
 

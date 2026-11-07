@@ -36,8 +36,7 @@ def measure_of(text: str | None) -> Measure | None:
     return None
   t = re.sub(r"\s+", " ", unit_core(text).strip().lower())
   t = re.sub(r"\bper\b", "", t).strip()
-  t = t.replace("p.cft", "cft").replace("p.cum", "cum").replace("p.rft", "rft").replace("p.sft", "sft").replace("p.cu.m", "cum")
-  t = t.replace("p.metre", "metre").replace("p.meter", "meter")
+  t = re.sub(r"\bp\.\s*(?=[a-z])", "", t).strip("'\"`\u2018\u2019\u201c\u201d ")
   m = re.match(r"^(\d[\d,]*)\s*(.*)$", t)
   
   basis = Decimal(1)

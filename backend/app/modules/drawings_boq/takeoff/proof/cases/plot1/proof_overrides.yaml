@@ -18,7 +18,7 @@
   value: on
   reason: The lintel types of the printed table are shown as reading items on one office only. Forced on for this proof run so the lintel lines of this case are scored. The marks are counted down the rows because the table prints none.
   date: '2026-11-06'
-- rule: SLAB_CALLOUT_ITEMS
+- rule: LEVEL_MARK_ITEMS
   value: on
-  reason: Slab bar strings read from the text layer of a reinforcement plan are proved on two offices, with no set of office B read. Forced on for this proof run so the slab callout lines of this case are scored.
+  reason: The level marks a sheet prints are shown as reading items on two offices only, with no set of office B read. Forced on for this proof run so the level lines of this case are scored.
   date: '2026-11-06'

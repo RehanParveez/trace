@@ -81,7 +81,7 @@ class BbsExpectService:
     parsed, _names = await self.bbs._load_parsed(org, doc)
     decisions = await self.expect_decisions(org, project_id)
     sheets, cands = await self._read(org, project_id)
-    jobs = ES.build_jobs(sheets, cands, decisions, [s.name for s in parsed.sheets])
+    jobs = ES.build_jobs(sheets, cands, decisions)
     
     if not jobs:
       raise TraceException("No structural drawing of this project has been read yet, so there is nothing to work out. Upload and prepare the structural drawings first.",

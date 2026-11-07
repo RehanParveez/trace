@@ -86,7 +86,7 @@
   pack: '205'
   question: '191-C questionnaire: where the water stopper is laid'
 - line: FIN-PORCH-TILE/ALL
-  cause: 'not diagnosed; -51.9%: porch tile extent is his choice (porch, plus car porch, plus front). Pack 199 reads the front court (459 sft) as one region named by its only label, FRONT LAWN, and lists it unbilled: the plan draws the lawn hatch as a pattern fill with no outline, so the lawn and the paved front cannot be split'
+  cause: 'not diagnosed; -51.9%. Measured in CV-12: Trace bills 212.0 sft, the porch label of the ground floor plan (16 ft 0 in by 13 ft 3 in = 212.0 sft); the QS bills 440.5 sft, 228.5 sft more. No label or dimension on the 49 pages of the architectural set gives 440.5 sft or a car porch, so the extent is his choice (porch, plus car porch, plus front). A reading that billed the whole front court as porch tile would reach him by construction, so none was built. Pack 199 reads the front court (459 sft) as one region named by its only label, FRONT LAWN, and lists it unbilled: the plan draws the lawn hatch as a pattern fill with no outline, so the lawn and the paved front cannot be split'
   pack: '202'
   question: '191-C questionnaire: porch tile'
 - line: FIN-PAINT-EXT/ALL
@@ -118,7 +118,7 @@
   cause: 'not diagnosed; +10.1% (was -2.5% before Pack 157): two doors of size 762 that were dropped by a key collision are counted now, so the frames grew by 41 rft; the QS may count them differently'
   question: '191-C questionnaire: door frames'
 - line: FIN-CC-TILE/ALL
-  cause: 'not measured: the C.C tile in front of the main gate is on the site plan; Trace has no line for it'
+  cause: 'not measured: the C.C tile in front of the main gate is drawn on the ground floor plan only; no page of the architectural set prints a C.C tile label or an area for it (a text search of all 49 pages). CV-12 built no reader: an area taken from unlabelled geometry would be fitted to the QS 105 sft. Trace has no line for it'
   pack: '256'
 - line: FIN-STAIR-MARBLE/ALL
   cause: 'not measured: stair treads and risers from the stair detail; no reader yet'
@@ -136,5 +136,5 @@
   cause: 'not measured: the wardrobes are on the bedroom furniture plans; no reader yet'
   pack: '256'
 - line: FIN-GLASS-RAILING/ALL
-  cause: 'not measured: the railing runs on the stair, terrace and void edges, from sections and plans; no reader yet'
+  cause: 'not measured: the railing runs on the stair, terrace and void edges; no page of the architectural set prints railing, glass railing or balustrade (a text search of all 49 pages), so a length would come from the open edges of the stair and first floor plans, which no reader finds. CV-12 built none'
   pack: '256'

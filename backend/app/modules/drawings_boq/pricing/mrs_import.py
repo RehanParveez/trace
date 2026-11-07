@@ -5,6 +5,7 @@ from app.modules.drawings_boq.pricing import mrs_parse as mp
 from decimal import Decimal
 from statistics import median
 from app.modules.drawings_boq.pricing import mrs_cells, mrs_spec, mrs_table, mrs_units
+from app.modules.drawings_boq.pricing import rate_profile
 
 CHAPTER_CHARS = 200
 ITEM_NO_CHARS = 60
@@ -24,7 +25,9 @@ def _chapter_label(row: mrs_table.TableRow, names: dict) -> str | None:
 def _norm(text: str) -> str:
   return re.sub(r"[^a-z0-9]+", "", text.lower())
 
-def raw_rows(rows: list[mrs_table.TableRow]) -> list[mp.RawRow]:
+def raw_rows(rows: list[mrs_table.TableRow], profile: rate_profile.RateBookProfile | None = None) -> list[mp.RawRow]:
+  """The rate book's profile (by province and city) names the chapters whose printed labour rate is the full price of the item (earthwork
+  has no material, so the labour rate is the whole rate). Such a row is priced, not held; every other labour-only row stays held."""
   seen: Counter = Counter()
   out: list[mp.RawRow] = []
   per_page: Counter = Counter()
@@ -66,7 +69,10 @@ def raw_rows(rows: list[mrs_table.TableRow]) -> list[mp.RawRow]:
       raw.flag("RATE_MISSING")
     elif rate == 0:
       raw.flag("RATE_ZERO")
-    if kind == "LABOUR":
+    if kind == "LABOUR" and profile is not None and profile.full_price(r.chapter_no):
+      raw.rate_kind = "FULL_PRICE"
+      raw.flag("FULL_PRICE_CHAPTER")
+    elif kind == "LABOUR":
       raw.flag("RATE_LABOUR_ONLY")
     out.append(raw)
   return out
@@ -125,15 +131,16 @@ def report_for(rows: list[mp.RawRow], infos: list, *, page_count: int, digest: s
   statuses = {c["status"] for c in report["checks"]}
   
   report["status"] = "FAIL" if "fail" in statuses else "PASS_WITH_WARNINGS" if "warn" in statuses else "PASS"
+  report["counts"]["full_price_chapter_rows"] = sum(1 for r in rows if "FULL_PRICE_CHAPTER" in r.flags)
   report["counts"]["flagged_for_review"] = sum(1 for r in rows if any(f in mp.REVIEW_FLAGS for f in r.flags))
   report["counts"]["with_alt_rate"] = sum(1 for r in rows if r.rate_alt is not None)
   report["page_range"] = [first_page, first_page + len(infos) - 1 if infos else first_page]
   return report
 
-def read_table(data: bytes, first_page: int, last_page: int | None, digest: str) -> dict:
+def read_table(data: bytes, first_page: int, last_page: int | None, digest: str, profile: rate_profile.RateBookProfile | None = None) -> dict:
   pages, total = mrs_cells.read_pdf_cells(data, first_page=first_page, last_page=last_page)
   table_rows, infos, _notes = mrs_table.read_tables(pages)
-  rows = raw_rows(table_rows)
+  rows = raw_rows(table_rows, profile)
   report = report_for(rows, infos, page_count=total, digest=digest, first_page=first_page)
   if not pages or all(not p.cells for p in pages):
     report["checks"].append({"code": "NO_TEXT_PAGES", "label": "Pages with no readable text", "status": "fail", "count": len(pages),
@@ -150,22 +157,41 @@ def _keyed(rows: list[mp.RawRow]) -> dict:
     out[base + (seen[base],)] = r
   return out
 
+def _match_by_number(left_old: dict, left_new: dict) -> list:
+  """Rows whose wording changed between editions: pair them on the item number when it is printed once in each, the unit measures are the
+  same and the rate kinds are the same. Anything with two candidates is left unmatched."""
+  by_no: dict = defaultdict(list)
+  for k, r in left_new.items():
+    if r.item_no:
+      by_no[r.item_no].append((k, r))
+  pairs, taken = [], set()
+  for k, ra in sorted(left_old.items(), key=lambda t: (t[0][0], t[0][1], t[0][2])):
+    measure = mrs_units.measure_of(ra.unit_raw)
+    if not ra.item_no or measure is None:
+      continue
+    found = [(kb, rb) for kb, rb in by_no.get(ra.item_no, []) if kb not in taken and rb.rate_kind == ra.rate_kind and mrs_units.measure_of(rb.unit_raw) == measure]
+    if len(found) == 1 and len(by_no[ra.item_no]) == 1:
+      taken.add(found[0][0])
+      pairs.append((k, ra, found[0][0], found[0][1]))
+  return pairs
+
 def edition_changes(old: list[mp.RawRow], new: list[mp.RawRow]) -> dict:
   a, b = _keyed(old), _keyed(new)
   common = set(a) & set(b)
   by_chapter: dict = defaultdict(list)
   lines = []
+  numbered = _match_by_number({k: a[k] for k in a if k not in common}, {k: b[k] for k in b if k not in common})
+  pairs = [(k[0], a[k], b[k], "key") for k in sorted(common, key=lambda t: (t[0], t[1], t[2]))] + [(ka[0], ra, rb, "number") for ka, ra, kb, rb in numbered]
   
-  for k in sorted(common, key=lambda t: (t[0], t[1], t[2])):
-    ra, rb = a[k], b[k]
+  for chapter_label, ra, rb, how in pairs:
     if ra.rate is None or rb.rate is None or ra.rate <= 0 or ra.rate_kind != rb.rate_kind:
       continue
     if mrs_units.measure_of(ra.unit_raw) != mrs_units.measure_of(rb.unit_raw):
       continue
     pct = (rb.rate - ra.rate) / ra.rate * 100
-    by_chapter[k[0]].append(pct)
+    by_chapter[chapter_label].append(pct)
     if pct != 0:
-      lines.append({"chapter": k[0], "item_no": rb.item_no, "description": rb.description[:200], "unit": rb.unit_raw, "old": str(ra.rate), "new": str(rb.rate), "pct": f"{pct:.2f}"})
+      lines.append({"matched_by": how, "chapter": chapter_label, "item_no": rb.item_no, "description": rb.description[:200], "unit": rb.unit_raw, "old": str(ra.rate), "new": str(rb.rate), "pct": f"{pct:.2f}"})
       
   chapters = []
   for ch, v in sorted(by_chapter.items(), key=lambda kv: (int(kv[0].split()[0]) if kv[0].split()[:1] and kv[0].split()[0].isdigit() else 999, kv[0])):
@@ -173,4 +199,5 @@ def edition_changes(old: list[mp.RawRow], new: list[mp.RawRow]) -> dict:
     chapters.append({"chapter": ch, "matched": len(v), "changed": len(changed), "unchanged_share": f"{(1 - len(changed) / len(v)) * 100:.1f}",
       "median_pct_all": f"{float(median(v)):.2f}", "median_pct_changed": f"{float(median(changed)):.2f}" if changed else None,
       "min_pct": f"{float(min(v)):.2f}", "max_pct": f"{float(max(v)):.2f}"})
-  return {"matched": len(common), "only_old": len(set(a) - set(b)), "only_new": len(set(b) - set(a)), "chapters": chapters, "lines": lines}
+  return {"matched": len(common) + len(numbered), "matched_by_key": len(common), "matched_by_number": len(numbered),
+    "only_old": len(set(a) - set(b)) - len(numbered), "only_new": len(set(b) - set(a)) - len(numbered), "chapters": chapters, "lines": lines}

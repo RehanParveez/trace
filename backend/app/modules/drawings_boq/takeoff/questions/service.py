@@ -1,14 +1,14 @@
 from __future__ import annotations
-from app.modules.drawings_boq.takeoff.service import TakeoffService
 from uuid import UUID
-from app.modules.drawings_boq.takeoff.questions import answers as AN
-from app.modules.drawings_boq.takeoff.completeness import ledger as LG
-from app.engine.catalogue import loader as CAT
-from app.engine.catalogue import conventions as CV
-from app.modules.drawings_boq import company_conventions as CCV
 from app.core.exceptions import TraceException
-from app.modules.drawings_boq.takeoff.questions import engine as QE
+from app.engine.catalogue import conventions as CV
+from app.engine.catalogue import loader as CAT
 from app.modules.audit.models import AuditAction
+from app.modules.drawings_boq import company_conventions as CCV
+from app.modules.drawings_boq.takeoff.completeness import ledger as LG
+from app.modules.drawings_boq.takeoff.questions import answers as AN
+from app.modules.drawings_boq.takeoff.questions import engine as QE
+from app.modules.drawings_boq.takeoff.service import TakeoffService
 
 class QuestionsService(TakeoffService):
   async def _project(self, org: UUID, project_id: UUID) -> tuple:
@@ -22,7 +22,6 @@ class QuestionsService(TakeoffService):
 
   async def view(self, org: UUID, project_id: UUID) -> dict:
     drawings, snapshot, answers = await self._project(org, project_id)
-    
     if snapshot is None:
       return {"project_id": project_id, "has_ledger": False, "questions": [], "open": 0, "by_state": {}}
     on = CV.on_ids(await CCV.in_force(self.session, org))
@@ -34,7 +33,6 @@ class QuestionsService(TakeoffService):
 
   async def answer(self, org: UUID, user_id: UUID, project_id: UUID, key: str, value: str | None) -> dict:
     view = await self.view(org, project_id)
-    
     if not view["has_ledger"]:
       raise TraceException("This project has no ledger yet. Run the first-upload job.", status_code=409, code="NO_LEDGER")
     question = next((q for q in view["questions"] if q["key"] == key), None)
@@ -42,7 +40,6 @@ class QuestionsService(TakeoffService):
       raise TraceException("This is not a question asked for this project.", status_code=404, code="QUESTION_UNKNOWN")
     drawings, snapshot, _answers = await self._project(org, project_id)
     home = next((d for d in drawings if (d.ingestion_meta or {}).get(AN.META_LEDGER)), None) or drawings[0]
-    
     if value is None:
       for d in drawings:
         if key in AN.stored(d.ingestion_meta):

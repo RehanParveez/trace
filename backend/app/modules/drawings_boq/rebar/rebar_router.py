@@ -11,6 +11,7 @@ from app.modules.drawings_boq.rebar.bbs_match_router import router as bbs_match_
 from app.modules.drawings_boq.rebar.bbs_expect_router import router as bbs_expect_router
 from app.modules.drawings_boq.rebar.bbs_crosscheck_router import router as bbs_crosscheck_router
 from app.modules.drawings_boq.rebar.bbs_report_router import router as bbs_report_router
+from app.modules.drawings_boq.rebar.bbs_prepare_router import router as bbs_prepare_router
 from app.modules.drawings_boq.rebar.bbs_steel_router import router as bbs_steel_router
 from app.modules.drawings_boq.rebar.bbs_steel_boq_router import router as bbs_steel_boq_router
 from app.modules.drawings_boq.schemas import (
@@ -27,6 +28,7 @@ router.include_router(bbs_match_router)
 router.include_router(bbs_expect_router)
 router.include_router(bbs_crosscheck_router)
 router.include_router(bbs_report_router)
+router.include_router(bbs_prepare_router)
 router.include_router(bbs_steel_router)
 router.include_router(bbs_steel_boq_router)
 

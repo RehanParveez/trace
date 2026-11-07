@@ -1,0 +1,6 @@
+profiles:
+  - id: PK_PUNJAB_BAHAWALPUR
+    province: Punjab
+    city: Bahawalpur
+    full_price_chapters: [3]
+    confirmed_by: "the QS, per the build file (PX-2); to be re-confirmed against the book"

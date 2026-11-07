@@ -1,6 +1,6 @@
 from __future__ import annotations
-import os
 import contextvars
+import os
 from contextlib import contextmanager
 import yaml
 
@@ -30,12 +30,11 @@ def offices_met(rule: dict) -> set:
   return {str(e.get("office")) for e in rule.get("evidence") or [] if e.get("met") is True and e.get("value") is not None}
 
 def problems(rules: list) -> list:
+  """What is wrong with the registry: a missing field, an unknown kind or status, a rule on by default without status GENERAL, or GENERAL without evidence from two offices inside the target."""
   out: list = []
   seen: set = set()
-  
   for i, r in enumerate(rules, 1):
     rid = str(r.get("id") or f"entry {i}")
-    
     for f in FIELDS:
       if f not in r:
         out.append(f"{rid}: field {f} is missing")
@@ -52,7 +51,6 @@ def problems(rules: list) -> list:
       missing = [k for k in EVIDENCE_FIELDS if k not in e]
       if missing:
         out.append(f"{rid}: an evidence entry lacks {', '.join(missing)}")
-        
     if r.get("default") == "on" and r.get("status") != "GENERAL":
       out.append(f"{rid}: default on needs status GENERAL")
     if r.get("status") == "GENERAL" and len(offices_met(r)) < MIN_OFFICES:
@@ -74,6 +72,7 @@ def default_of(rule_id: str) -> bool:
   return get(rule_id)["default"] == "on"
 
 def resolve(overrides: dict | None = None) -> dict:
+  """Every rule's state: the registry default, then the overrides given (a proof run only; the application never passes any)."""
   states = {r["id"]: r["default"] == "on" for r in load()}
   for k, v in (overrides or {}).items():
     if k not in states:

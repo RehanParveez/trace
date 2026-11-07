@@ -21,11 +21,13 @@ findings:
       - {code: SIZE_CONFLICT, class: CONFLICT, member: C-6, floor: null}
   - item: 5
     title: 'Footing cover of 3 in (S-0A) ignored on F1, F-2, boundary and 4.5 in wall'
-    note: 'Raised on F1 only, and only with the F1 figures of decisions.yaml; F-2, the boundary wall and the 4.5 in wall have no detail in the reading (NO_DETAIL).'
+    gap: 'Not raised: it needed the F1 strip length, width and bars, which were copied from the bar schedule (BB-1 removed them). The footing section is not read (JOIN_MISSING); it returns when the F1 figures are typed from the footing plan.'
+    note: 'F-2, the boundary wall and the 4.5 in wall have no detail in the reading (NO_DETAIL).'
     raises:
       - {code: CUT_MISMATCH, class: ERROR, member: F-1, floor: null}
   - item: 6
     title: 'F1 distribution: 9 billed; the rule gives 7, or 8 with "+1"'
+    gap: 'Not raised, same cause as item 5: the F1 strip length and width were copied from the bar schedule and are removed.'
     raises:
       - {code: COUNT_MISMATCH, class: [ERROR, METHOD], member: F-1, floor: null}
   - item: 7

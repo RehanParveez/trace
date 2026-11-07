@@ -93,6 +93,16 @@ def run(read: list, floor_keys: list, floor_heights: dict | None, *, storeys: li
   except Exception as exc:
     problems.append((0, f"drain labels: {type(exc).__name__}: {str(exc)[:80]}"))
   try:
+    from app.modules.drawings_boq.takeoff.extract import level_marks as LMK
+    LMK.apply(read)
+  except Exception as exc:
+    problems.append((0, f"level marks: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
+    from app.modules.drawings_boq.takeoff.extract import tube_fixtures as TFX
+    TFX.apply(read)
+  except Exception as exc:
+    problems.append((0, f"tube fixtures: {type(exc).__name__}: {str(exc)[:80]}"))
+  try:
     from app.modules.drawings_boq.takeoff.extract import footing_members as FM
     if RR.on("FOOTING_FAMILIES"):
       FM.apply(read)

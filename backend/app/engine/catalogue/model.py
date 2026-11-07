@@ -118,6 +118,7 @@ class Item:
     }
 
 def parse(raw: dict) -> Item:
+  """One catalogue entry as written in elements.yaml, as an Item. A missing key raises KeyError, which `validate` reports as a problem."""
   billing = raw.get("billing") or {}
   return Item(
     id=str(raw["id"]), name=str(raw["name"]), section=str(raw["section"]), use=tuple(raw["use"]), unit=str(raw["unit"]), member_class=str(raw["member_class"]),
@@ -149,10 +150,10 @@ def _facts_problems(item_id: str, facts: dict) -> list:
   return out
 
 def validate(raws: list, rule_ids: set | None = None) -> list:
+  """Everything wrong with the catalogue: a missing field, an unknown unit, source, page role or member class, a billing entry that points at no yield, an owner that is neither a pack, DERIVED nor RATE, a derived item without its rule, a duplicate id."""
   out: list = []
   seen: dict = {}
   items: dict = {}
-  
   for n, raw in enumerate(raws, 1):
     label = str(raw.get("id") or f"entry {n}") if isinstance(raw, dict) else f"entry {n}"
     if not isinstance(raw, dict):
@@ -172,7 +173,6 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
     seen[it.id] = True
     items[it.id] = it
     m = ID_RE.match(it.id)
-    
     if not m or m.group(1) not in SECTIONS:
       out.append(f"{it.id}: the id is not a section prefix ({', '.join(SECTIONS)}) and two digits")
     elif SECTIONS[m.group(1)] != it.section:
@@ -192,7 +192,6 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
     if len({y.qty for y in it.yields}) != len(it.yields):
       out.append(f"{it.id}: two yields with the same name")
     names = [i.name for i in it.inputs]
-    
     if len(set(names)) != len(names):
       out.append(f"{it.id}: two inputs with the same name")
     for i in it.inputs:
@@ -225,7 +224,6 @@ def validate(raws: list, rule_ids: set | None = None) -> list:
     if it.owner_pack == "DERIVED" and not (isinstance(it.derived, dict) and it.derived.get("from") and it.derived.get("rule")):
       out.append(f"{it.id}: a DERIVED item names {{from, rule}}")
     qtys = {y.qty for y in it.yields}
-    
     for b in it.billing.MRS_PB:
       if b.qty not in qtys:
         out.append(f"{it.id}: rate-book entry {b.item} points at {b.qty}, which is not a yield")

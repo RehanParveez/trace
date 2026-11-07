@@ -18,6 +18,7 @@ UNIT_TABLE: dict[str, tuple[str, Decimal]] = {
   "m": ("m", ONE), "rft": ("m", Decimal("3.280839895")),
   "kg": ("kg", ONE), "nos": ("nos", ONE),
   "quintal": ("kg", Decimal("0.01")),
+  "cwt": ("kg", Decimal("0.0196841306")),
   "tonne": ("kg", Decimal("0.001")),
 }
 _CATEGORY = {"m3": "volume", "m2": "area", "m": "length", "kg": "weight", "nos": "count"}
@@ -28,7 +29,7 @@ UNIT_ALIASES: dict[str, str] = {
   "sq ft": "sft", "sq.ft": "sft", "sqft": "sft", "square feet": "sft", "square foot": "sft",
   "cu ft": "cft", "cu.ft": "cft", "cuft": "cft", "cubic feet": "cft", "cubic foot": "cft",
   "rm": "m", "rmt": "m", "mtr": "m", "metre": "m", "meter": "m", "r.ft": "rft", "running feet": "rft",
-  "kgs": "kg", "kilogram": "kg",
+  "kgs": "kg", "kilogram": "kg", "cwt.": "cwt", "hundredweight": "cwt",
   "no": "nos", "no.": "nos", "nos.": "nos", "each": "nos", "ea": "nos", "unit": "nos", "units": "nos", "pcs": "nos",
 }
 

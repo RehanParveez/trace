@@ -13,6 +13,12 @@ from app.modules.drawings_boq.takeoff.extract import slab_thickness_items as STI
 from app.modules.drawings_boq.takeoff.extract import lintel_schedule_items as LSI
 from app.modules.drawings_boq.takeoff.extract import finish_spec_items as FSP
 from app.modules.drawings_boq.takeoff.extract import drain_labels as DLB
+from app.modules.drawings_boq.takeoff.extract import roof_plan_walls as RPW
+from app.modules.drawings_boq.takeoff.extract import wall_pieces as WPC
+from app.modules.drawings_boq.takeoff.extract import roof_plan_walls as RPW
+from app.modules.drawings_boq.takeoff.extract import wall_pieces as WPC
+from app.modules.drawings_boq.takeoff.extract import level_marks as LMK
+from app.modules.drawings_boq.takeoff.extract import tube_fixtures as TFX
 from app.modules.drawings_boq.takeoff.extract import floor_sources as FS
 from app.modules.drawings_boq.takeoff.extract import kinds as K
 from app.modules.drawings_boq.takeoff.extract import read_status as RS
@@ -29,7 +35,7 @@ CLASS_OF = {
   "DRAIN_MANHOLE": "DRAIN_POINT", "GULLY_TRAP": "DRAIN_POINT", "INSPECTION_CHAMBER": "DRAIN_POINT", "SEWER_PIPE": "PIPE_RUN", "RAIN_PIPE": "PIPE_RUN",
   "ELEC_BOARD": "DISTRIBUTION_BOARD", "ELEC_FAN": "ELECTRICAL_POINT", "ELEC_LIGHT": "ELECTRICAL_POINT", "ELEC_LOWV": "ELECTRICAL_POINT", "ELEC_OTHER": "ELECTRICAL_POINT",
   "ELEC_SOCKET": "ELECTRICAL_POINT", "ELEC_SWITCH": "ELECTRICAL_POINT", **{k: "FINISH_LAYER" for k in FINISH_KINDS}}
-LINE_CLASSES = ("WALL", "BOUNDARY_WALL", "BEAM", "PLINTH_BEAM", "PIPE_RUN", "FOOTING_STRIP")
+LINE_CLASSES = ("WALL", "BOUNDARY_WALL", "BEAM", "PLINTH_BEAM", "PIPE_RUN", "FOOTING_STRIP", "PARAPET")
 AREA_CLASSES = ("ROOM", "SLAB_PANEL")
 UPRIGHT_NOTE = "SHEET_READ_UPRIGHT"
 TEXT_TYPE_OF = {"VECTOR_TEXT": V.TextType.TEXT, "VECTOR_OUTLINED": V.TextType.OUTLINED, "VECTOR_NOLETTER": V.TextType.OUTLINED, "RASTER": V.TextType.RASTER, "IMAGE_PAGE": V.TextType.RASTER, "EMPTY": V.TextType.TEXT}
@@ -169,6 +175,10 @@ def structure_items(sheet: int, meta: dict, source: V.ReadSource) -> list:
   for rec in ((meta or {}).get(DLB.META_KEY) or {}).get("labels") or []:
     out.append(ReadItem(sheet=sheet, cls=V.ElementClass.DRAIN_POINT, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"kind": rec["kind"], **({"size_in": rec["size_in"]} if rec.get("size_in") else {})},
       status=V.Status.READ, reasons=[], source=source))
+  for rec in ((meta or {}).get(LMK.META_KEY) or {}).get("marks") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.LEVEL, mark=rec["mark"], geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"count": 1, "value_in": rec["value_in"]}, status=V.Status.READ, reasons=[], source=source))
+  for rec in ((meta or {}).get(TFX.META_KEY) or {}).get("fixtures") or []:
+    out.append(ReadItem(sheet=sheet, cls=V.ElementClass.ELECTRICAL_POINT, mark=None, geom={"point": [float(rec["at"][0]), float(rec["at"][1])]}, attrs={"count": 1}, status=V.Status.READ, reasons=[], source=source))
   for block in ((meta or {}).get(FSP.META_KEY) or {}).get("blocks") or []:
     for layer in block["layers"]:
       attrs = {"spec": block["mark"], "order": layer["order"], "text": layer["text"], **({"thickness_in": layer["thickness_in"]} if "thickness_in" in layer else {})}
@@ -232,6 +242,10 @@ def items_of(rows: list) -> SetRead:
       if cls is None:
         out.unmapped[K.kind_of(c)] += 1
         continue
+      if cls == V.ElementClass.WALL and RPW.is_parapet(c):
+        cls = V.ElementClass.PARAPET
+      if cls == V.ElementClass.WALL and RPW.is_parapet(c):
+        cls = V.ElementClass.PARAPET
 
       pts = [] if upright else _points(c)
       attrs = _attrs(c)
@@ -240,6 +254,18 @@ def items_of(rows: list) -> SetRead:
       reasons = [r for r in RS.reasons_of(c) if r in V.Reason.names()]
       mark = None if c.tag in (None, "") else str(c.tag)
       join = (c.facts or {}).get(JOIN_OF.get(c.category, "")) if c.category in JOIN_OF else None
+      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.enabled():
+        parts = WPC.pieces_of(c, row.get("mm_per_pt"))
+        if len(parts) > 1:
+          for part in parts:
+            out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"polyline": part}, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
+          continue
+      if cls in (V.ElementClass.WALL, V.ElementClass.PARAPET) and len(pts) >= 2 and WPC.enabled():
+        parts = WPC.pieces_of(c, row.get("mm_per_pt"))
+        if len(parts) > 1:
+          for part in parts:
+            out.items.append(ReadItem(sheet=sheet, cls=cls, mark=mark, geom={"polyline": part}, attrs=attrs, status=status, reasons=list(reasons), source=source, confidence=c.confidence, join=join))
+          continue
       single = _geometry(cls, pts)
       if single is None and count > 1 and (len(pts) == count or not pts) and cls.value not in LINE_CLASSES + AREA_CLASSES:
         for k in range(count):

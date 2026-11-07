@@ -8,7 +8,6 @@ from app.modules.drawings_boq.takeoff.model.storeys import heights_ft as storey_
 
 BARS = re.compile(r"(\d+)\s*-\s*#(\d+)\s*(Thr|Ext)", re.I)
 STIRRUP = re.compile(r"#(\d+)\s*@\s*(\d+(?:\.\d+)?)\"?(?:\s*/\s*(\d+(?:\.\d+)?)\")?")
-TITLE_SIZE = re.compile(r"(\d+)'-(\d+)\"?\s*x\s*(\d+)'-(\d+)\"?\s*x\s*(\d+)'-(\d+)", re.I)
 SPAN_MM = re.compile(r"span\s+(\d+(?:\.\d+)?)\s*mm", re.I)
 TANK_WORDS = ("UGWT", "OHWT", "SEPTIC", "HARVESTING")
 DEFAULTS = {"stock_length_ft": 40, "bar_count_plus_one": False, "tie_zones": "ZONES", "strip_junction": "ONCE", "round_whole_bars": True, "hook_tie_d": 6, "hook_bar_d": 12}
@@ -51,18 +50,6 @@ def decision_inputs(decisions: dict, rules: dict) -> list:
     out.append(RX.defaulted("curtail_extras", False, "no curtailment rule printed and no decision"))
   return out
 
-def _tank_size(sheet_titles: list, word: str) -> list:
-  for t in sheet_titles:
-    if word in t.upper():
-      m = TITLE_SIZE.search(t)
-      if m:
-        a = [int(x) for x in m.groups()]
-        src = "BBS sheet title (not from the drawings)"
-        return [RX.defaulted("tank_len_ft", D(a[0]) + D(a[1]) / 12, src, "FROM_BBS_TITLE"), RX.defaulted("tank_wid_ft", D(a[2]) + D(a[3]) / 12, src, "FROM_BBS_TITLE"),
-          RX.defaulted("tank_ht_ft", D(a[4]) + D(a[5]) / 12, src, "FROM_BBS_TITLE")]
-        
-  return []
-
 def _bars(prefix: str, texts: list, src: str) -> RX.Input:
   found = [(int(n), int(b), "Ext" if k.lower() == "ext" else "Thr") for t in texts for n, b, k in BARS.findall(t)]
   return RX.printed(f"{prefix}_bars", found, src)
@@ -97,7 +84,8 @@ def _find_override(table: dict, cls: str, mark: str, floor: str | None):
       best = (key, fields)
   return best or (None, None)
 
-def build_jobs(sheets: list, candidates: dict, decisions: dict, bbs_titles: list) -> list:
+def build_jobs(sheets: list, candidates: dict, decisions: dict) -> list:
+  """The jobs of the members the drawings give. Nothing here reads the bar schedule under audit: a size that only the schedule prints is left missing, and the member is unverifiable."""
   rules = rules_inputs(sheets)
   rule_names = {r.name for r in rules}
   base = rules + decision_inputs(decisions, rule_names)
@@ -154,7 +142,7 @@ def build_jobs(sheets: list, candidates: dict, decisions: dict, bbs_titles: list
         ins = [RX.derived("opening_ft", D(m.group(1)) / D("304.8"), _where(meta, page, f"lintel {tag}") + " (drawn span)")] if m else []
         add("LINTEL", str(tag), floor0, RX.lintel, ins, int(c.get("count") or 1), page)
       elif cat == "SITE" and tag and str(tag).upper() in TANK_WORDS:
-        add("TANK", str(tag).upper(), None, RX.tank, _tank_size(bbs_titles, str(tag).upper()), 1, page)
+        add("TANK", str(tag).upper(), None, RX.tank, [], 1, page)
   
   for key, fields in table.items():
     if key in seen:
@@ -165,8 +153,7 @@ def build_jobs(sheets: list, candidates: dict, decisions: dict, bbs_titles: list
       fn = RX.strip_footing if "strip_length_ft" in fields else RX.pad_footing
     else:
       fn = MEMBER_PLAN[cls]
-    tank = _tank_size(bbs_titles, mark.upper()) if cls == "TANK" else []
-    jobs.append({"cls": cls, "mark": mark, "floor": floor, "fn": fn, "inputs": _override(base + tank, fields, key), "plan_count": fields.get("plan_count"), "page": None, "decision_only": True})
+    jobs.append({"cls": cls, "mark": mark, "floor": floor, "fn": fn, "inputs": _override(base, fields, key), "plan_count": fields.get("plan_count"), "page": None, "decision_only": True})
   return jobs
 
 def run_jobs(jobs: list) -> list:

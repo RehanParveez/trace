@@ -15,6 +15,7 @@ from sqlalchemy import delete, func, or_, select
 from app.modules.drawings_boq.pricing import mrs_parse as mp
 from app.modules.drawings_boq.pricing import mrs_extract as ex
 from app.modules.drawings_boq.pricing import mrs_import
+from app.modules.drawings_boq.pricing import rate_profile
 from app.modules.drawings_boq.models import RateBook, RateItem, WorkItem
 from app.modules.drawings_boq.pricing.models import RateImport, RateImportRow
 from app.modules.drawings_boq.pricing.import_schemas import ImportUpdateRequest, BulkRowsRequest, PublishRequest, ReparseRequest, RowUpdateRequest
@@ -203,13 +204,13 @@ class RateImportService:
     await self.audit.log(org, user_id, AuditEntityType.RATE_BOOK, import_id, AuditAction.DELETE, f"Deleted rate schedule import {name}")
 
   @staticmethod
-  def _read_file(kind: str, data: bytes, profile_name: str, first_page: int, last_page: int | None, digest: str) -> dict:
+  def _read_file(kind: str, data: bytes, profile_name: str, first_page: int, last_page: int | None, digest: str, place: tuple | None = None) -> dict:
     """CPU-heavy: runs in a thread. Returns plain data only."""
     profile = mp.get_profile(profile_name)
     if profile.reader == "table":
       if kind != "PDF":
         raise ValueError("This layout reads PDF files only.")
-      return mrs_import.read_table(data, first_page, last_page, digest)
+      return mrs_import.read_table(data, first_page, last_page, digest, rate_profile.for_place(*(place or (None, None))))
     if kind == "CSV":
       rows = mp.parse_csv(data, profile)
       unparsed: list[dict] = []
@@ -258,7 +259,7 @@ class RateImportService:
     
     try:
       data = await asyncio.to_thread(self.store.get, imp.storage_key)
-      out = await asyncio.to_thread(self._read_file, imp.source_kind, data, imp.layout_profile, imp.first_page, imp.last_page, imp.content_hash)
+      out = await asyncio.to_thread(self._read_file, imp.source_kind, data, imp.layout_profile, imp.first_page, imp.last_page, imp.content_hash, (imp.province, imp.city))
     except Exception as exc:  
       await self.session.rollback()
       imp = await self._import(org, import_id, for_update=True)

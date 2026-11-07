@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from dataclasses import dataclass, field
 from decimal import Decimal as D, ROUND_CEILING, ROUND_HALF_UP
 
@@ -150,6 +151,38 @@ def input_shares(expectations: list) -> dict:
       n[i.state] += 1
   total = sum(n.values())
   return {"counts": n, "total": total, "shares": {s: (round(n[s] / total, 4) if total else 0.0) for s in STATES}}
+
+BASIS_DRAWING, BASIS_ANSWER, BASIS_ASSUMED, BASIS_BBS = "DRAWING", "ANSWER", "ASSUMED", "BBS"
+BASIS_RANK = {BASIS_DRAWING: 0, BASIS_ANSWER: 1, BASIS_ASSUMED: 2, BASIS_BBS: 3}
+CONVENTION_KEYS = frozenset({"stock_length_ft", "bar_count_plus_one", "tie_zones", "strip_junction", "round_whole_bars", "hook_tie_d", "hook_bar_d", "link_cut_basis", "curtail_extras",
+  "column_l0_in", "l0_in"})
+_BBS_WORD = re.compile(r"\bBBS\b|FROM_BBS", re.I)
+
+def basis_of(i: Input) -> str:
+  """Where one input came from: the drawing (printed or derived from it), an answer the user typed, an assumption, or the bar schedule under audit (which is never allowed)."""
+  if _BBS_WORD.search(f"{i.source} {i.flag or ''}"):
+    return BASIS_BBS
+  src = str(i.source).lower()
+  if i.state in (DEFAULTED, DERIVED) and (src.startswith("decision") or src.startswith("typed")):
+    return BASIS_ANSWER
+  if i.state == DEFAULTED:
+    return BASIS_ASSUMED
+  return BASIS_DRAWING
+
+def job_basis(e: Expected) -> str:
+  """The weakest basis among the facts a member's figure used. A method choice (stock length, rounding, hook, zones) is a convention, not a fact about the member, so it does not count."""
+  worst = BASIS_DRAWING
+  for i in e.inputs:
+    if i.value is None or i.name in CONVENTION_KEYS:
+      continue
+    b = basis_of(i)
+    if BASIS_RANK[b] > BASIS_RANK[worst]:
+      worst = b
+  return worst
+
+def bbs_inputs(expectations: list) -> list:
+  """Every input that rests on the schedule under audit: (class, mark, input name, source). It must stay empty."""
+  return [(e.cls, e.mark, i.name, i.source) for e in expectations for i in e.inputs if basis_of(i) == BASIS_BBS]
 
 def laps(run_ft: D, stock_ft: D, lap_in: D) -> int:
   if run_ft <= stock_ft:

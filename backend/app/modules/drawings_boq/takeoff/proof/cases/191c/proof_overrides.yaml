@@ -6,3 +6,51 @@
   value: on
   reason: Columns counted from the floor plans are not proved on this office, where it finds no more than the stacks do. Forced on for this proof run.
   date: '2026-11-06'
+- rule: FOOTING_SECTION_ITEMS
+  value: on
+  reason: Footing sections and foundation views read as section records are proved on one office only, and Plot_1 and the office A set show none of them. Forced on for this proof run so the footing section lines of this case are scored.
+  date: '2026-11-06'
+- rule: BEAM_CALLOUTS
+  value: on
+  reason: Beam bars read by place from the callouts around each beam section are proved on two offices, with no set of office B read. Forced on for this proof run so the beam section lines of this case are scored.
+  date: '2026-11-06'
+- rule: BEAM_SECTION_ITEMS
+  value: on
+  reason: Beam sections read as section records are proved on two offices, with no set of office B read. Forced on for this proof run so the beam section lines of this case are scored.
+  date: '2026-11-06'
+- rule: SLAB_CALLOUT_ITEMS
+  value: on
+  reason: Slab bar strings read from the text layer of a reinforcement plan are proved on two offices, with no set of office B read. Forced on for this proof run so the slab callout lines of this case are scored.
+  date: '2026-11-06'
+- rule: FINISH_SPEC_ITEMS
+  value: on
+  reason: The finish specification lists a sheet prints are shown as reading items on one office only. Forced on for this proof run so the finish layer lines of this case are scored.
+  date: '2026-11-06'
+- rule: DRAIN_LABEL_ITEMS
+  value: on
+  reason: The drain point labels of a plumbing plan are shown as reading items on one office only. Forced on for this proof run so the drain point lines of this case are scored.
+  date: '2026-11-06'
+- rule: WALL_PIECES_AT_DOORS
+  value: on
+  reason: A wall run reported as the pieces between its door gaps is shown on one office only, and on the Plot_1 set it loses a pair. Forced on for this proof run so the wall lines of this case are scored.
+  date: '2026-11-06'
+- rule: PARAPET_FROM_ROOF_PLAN
+  value: on
+  reason: The wall runs the roof-wall stage judged to be parapets are shown as parapets on one office only. Forced on for this proof run so the parapet lines of this case are scored.
+  date: '2026-11-06'
+- rule: WALL_PIECES_AT_DOORS
+  value: on
+  reason: A wall run reported as the pieces between its door gaps is shown on one office only, and on the Plot_1 set it loses a pair. Forced on for this proof run so the wall lines of this case are scored.
+  date: '2026-11-06'
+- rule: PARAPET_FROM_ROOF_PLAN
+  value: on
+  reason: The wall runs the roof-wall stage judged to be parapets are shown as parapets on one office only. Forced on for this proof run so the parapet lines of this case are scored.
+  date: '2026-11-06'
+- rule: LEVEL_MARK_ITEMS
+  value: on
+  reason: The level marks a sheet prints are shown as reading items on two offices only, with no set of office B read. Forced on for this proof run so the level lines of this case are scored.
+  date: '2026-11-06'
+- rule: TUBE_FIXTURE_ITEMS
+  value: on
+  reason: Tube lights drawn as two parallel lines are shown as reading items on one office only, and the other sets read here have no electrical plan sheet. Forced on for this proof run so the electrical point lines of this case are scored.
+  date: '2026-11-06'

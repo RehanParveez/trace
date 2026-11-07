@@ -134,6 +134,7 @@ def _blocks(m: dict) -> bool:
   return any(r not in INFO_REASONS and r not in REASON_INPUT for r in m.get("reasons") or [])
 
 def _settle(m: dict, floor: str, ctx: dict) -> tuple:
+  """A member after the answers: None when its class's reading was rejected; otherwise the member with the inputs given removed from what it misses, and whether it still blocks."""
   rk = QK.reading_key(m["cls"])
   used: list = []
   if _answer(ctx, rk) == QK.REJECT:
@@ -188,7 +189,6 @@ def _regular(item, floor: str, evidence: dict, ctx: dict) -> dict:
   said = [f"{ANSWERED}:{k}" for k in dict.fromkeys(used)]
   if unsure:
     reasons = [UNSURE_READ] + [r for m in unsure for r in m.get("reasons") or []] + said
-    
     asked: dict = {}
     for m in unsure:
       for n in m.get("missing") or []:
@@ -204,6 +204,7 @@ def _regular(item, floor: str, evidence: dict, ctx: dict) -> dict:
   return _finish_ask(item, floor, evidence, reasons, here_ids, questions, None, ctx) if state == ASKED else _entry(item, floor, state, reasons, members=here_ids)
 
 def _finish_ask(item, floor: str, evidence: dict, reasons: list, ids: list, questions: list, quantity: dict | None, ctx: dict) -> dict:
+  """Assumed when every question is about an input a switched-on convention fills; asked otherwise, still listing the assumptions the conventions would make."""
   covered = _assumed(item, floor, evidence)
   for q in questions:
     cid = _convention_for(item, q["about"], ctx) if q["about"] else None
@@ -220,6 +221,7 @@ def _from_ids(item) -> list:
   return [src] if isinstance(src, str) else list(src)
 
 def _source_quantity(rows: list, floor: str) -> dict | None:
+  """The summed quantity of one source over its floors; None when a live row has no quantity."""
   same = [e for e in rows if e["floor"] == floor] or rows
   live = [e for e in same if e["state"] != NOT_APPLICABLE]
   if not live or any(e["quantity"] is None for e in live):
@@ -234,7 +236,6 @@ def _source_quantity(rows: list, floor: str) -> dict | None:
 def _compute(item, floor: str, entries: dict, rule: dict, ctx: dict, tag: list, live_states: list) -> dict:
   src = _from_ids(item)
   quantities = {}
-  
   for sid in src:
     rows = entries.get(sid) or []
     if all(e["state"] == NOT_APPLICABLE for e in (([e for e in rows if e["floor"] == floor]) or rows)):
@@ -280,7 +281,6 @@ def _derived(item, floor: str, entries: dict, evidence: dict, ctx: dict) -> dict
   states = [e["state"] for e in picked]
   tag = [f"{DERIVED_FROM}:{','.join(_from_ids(item))}"]
   live = [s for s in states if s != NOT_APPLICABLE]
-  
   if not live:
     return _entry(item, floor, NOT_APPLICABLE, tag)
   if ASKED in live:
@@ -321,7 +321,6 @@ def _single(item, facts: dict, evidence: dict, scope: str, entries: dict, ctx: d
   if item.owner_pack == "RATE":
     return [_entry(item, ALL, NOT_READ, [NOT_DRAWN])]
   chosen = _method(item, ctx)
-  
   if chosen is not None:
     return [chosen]
   absent = _missing_sets(item, facts)
@@ -342,7 +341,6 @@ def build(items: list, facts: dict, evidence: dict, conventions: list | None = N
   held = dict(answers or {})
   decided = {QK.method_id(k): str(a.get("value")) for k, a in held.items() if QK.kind_of(k) == QK.METHOD}
   ctx = {"on": list(conventions or []), "methods": {**dict(methods or {}), **decided}, "type": F.values(facts).get("type"), "answers": held}
-  
   entries: dict = {}
   plain = [it for it in items if not it.derived]
   for it in plain:

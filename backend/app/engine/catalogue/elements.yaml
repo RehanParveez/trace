@@ -368,7 +368,7 @@
   owner_pack: CV-4
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(c), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_FOOTINGS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Count × L × W × D, plus sloped part if any"
   status_v1: "BILLS"
@@ -393,7 +393,7 @@
   owner_pack: CV-4
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(c), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_FOOTINGS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
   how_measured: "Centreline length × width × depth"
   status_v1: "PARTIAL"
@@ -493,7 +493,7 @@
   owner_pack: CV-4
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(c), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_PLINTH_BEAM, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Length × b × d"
   status_v1: "BILLS"
@@ -544,7 +544,7 @@
   owner_pack: CV-3
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}]
     PRIVATE_QS: [{line: RCC_COLUMNS, qty: concrete_volume}]
   how_measured: "Count × size × neck height"
   status_v1: "PARTIAL"
@@ -570,7 +570,7 @@
   owner_pack: CV-5
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_BEAMS, qty: concrete_volume}, {line: RCC_ROOF_BEAMS, qty: concrete_volume}, {line: RCC_BEAMS_SLABS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Clear span × b × (d minus slab, if slab is billed through)"
   status_v1: "BILLS"
@@ -595,7 +595,7 @@
   owner_pack: CV-6
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_SLABS, qty: concrete_volume}, {line: RCC_BEAMS_SLABS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Area net of openings × thickness"
   status_v1: "BILLS"
@@ -669,7 +669,7 @@
   owner_pack: CV-8
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_LINTELS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "(Opening width plus bearings) × b × d, per opening"
   status_v1: "BILLS"
@@ -717,7 +717,7 @@
   owner_pack: CV-3
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(b), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_WALLS, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Length × height × thickness, net of openings"
   status_v1: "BILLS"
@@ -769,7 +769,7 @@
   owner_pack: CV-7
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_STAIR, qty: concrete_volume}, {line: FORMWORK, qty: formwork_area}, {line: STEEL, qty: steel_mass}]
   how_measured: "Waist slab plus steps (triangles) plus landings"
   status_v1: "BILLS"
@@ -916,7 +916,7 @@
   owner_pack: CV-6
   derived: null
   billing:
-    MRS_PB: []
+    MRS_PB: [{item: 6-6(a), qty: concrete_volume, spec: concrete_mix}, {item: 6-12(b), qty: steel_mass, convert: cwt, spec: steel_grade}]
     PRIVATE_QS: [{line: RCC_SLABS, qty: concrete_volume}, {line: STEEL, qty: steel_mass}]
   how_measured: "As slabs"
   status_v1: "BILLS"

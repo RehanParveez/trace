@@ -12,6 +12,8 @@ from app.modules.drawings_boq.rebar import expect_source as ES
 from app.modules.drawings_boq.rebar import bbs_report as BR
 from app.modules.drawings_boq.rebar import bbs_audit as AUD
 from app.modules.drawings_boq.rebar import bbs_crosscheck as XC
+from app.modules.drawings_boq.rebar import bbs_coverage as COV
+from app.engine.measure import rebar_expect as RX
 from app.modules.drawings_boq.rebar import bbs_decisions as DEC
 from app.modules.drawings_boq.rebar import member_match as MM
 from app.modules.drawings_boq.takeoff.proof import case as CASE
@@ -267,7 +269,7 @@ def run_audit(folder: str) -> dict:
   expect = {k: v for k, v in decisions.items() if k in DEC.EXPECT_KEYS}
   names = {s.index: s.name for s in doc.sheets}
   cands = {(k.split("|")[0], int(k.split("|")[1])): v for k, v in data["candidates"].items()}
-  jobs = ES.build_jobs(data["sheets"], cands, expect, [s.name for s in doc.sheets])
+  jobs = ES.build_jobs(data["sheets"], cands, expect)
   results = ES.run_jobs(jobs)
   members = MS.collapse(MS.members_from_sheets(data["sheets"], cands))
   
@@ -283,7 +285,8 @@ def run_audit(folder: str) -> dict:
   sheets = [{"idx": s.index, "name": s.name, "first_page": s.first_page, "last_page": s.last_page, "printed_total_kg": s.printed_total_kg} for s in doc.sheets]
   findings = BR.sort_findings([_finding_dict(f, i) for i, f in enumerate(found, 1)])
   floor_map = {k: list(v) for k, v in (decisions.get("bbs_floor_map") or match.floor_map or {}).items()}
-  return {"document": doc, "rows": rows, "sheets": sheets, "findings": findings, "floor_map": floor_map, "decisions": decisions, "summary": BR.summarize(rows, sheets, findings)}
+  return {"document": doc, "rows": rows, "sheets": sheets, "findings": findings, "floor_map": floor_map, "decisions": decisions, "summary": BR.summarize(rows, sheets, findings),
+    "coverage": cross.totals["coverage"], "bbs_inputs": RX.bbs_inputs([e for _, e in results])}
 
 def floor_of(f: dict, floor_map: dict) -> str | None:
   floors = floor_map.get((f.get("bbs_ref") or {}).get("sheet_name") or "")
@@ -370,6 +373,9 @@ def gate(folder: str, pdf_path: str | None = None) -> tuple:
   for h in j["held_stale"]:
     bad.append(f"held ERROR {h['code']} {h['member'] or ''} is no longer raised; remove it from accepted_errors")
   bad += [f"sheet does not reconcile: {x}" for x in reconcile(audit)]
+  for cls, mark, name, source in audit["bbs_inputs"][:6]:
+    bad.append(f"expectation input {name} of {cls} {mark} rests on the bar schedule ({source}); an expectation is made from the drawings only")
+  bad += COV.reconciles(audit["coverage"])
   if pdf_path:
     if os.path.isfile(pdf_path):
       drift = read_drift(audit["document"], pdf_path)
@@ -380,7 +386,11 @@ def gate(folder: str, pdf_path: str | None = None) -> tuple:
   ok_items = sum(1 for it in expected["items"] if all(v["verdict"] == OK for v in j["verdicts"] if v["item"] == it["item"]))
   if bad:
     return False, "; ".join(bad)
-  note = f"{ok_items} of {n_items} items raised with their class; {len(audit['rows'])} rows, {len(audit['sheets'])} sheets reconcile; {len(j['held_hits'])} held ERROR(s), none outside the list"
+  tot = audit["coverage"]["total"]
+  n_errors = sum(1 for f in audit["findings"] if f["finding_class"] == "ERROR")
+  held_share = f"{len(j['held_hits'])} of {n_errors} ERRORs ({len(j['held_hits']) * 100 / n_errors:.0f}%)" if n_errors else "no ERRORs"
+  note = (f"{ok_items} of {n_items} items raised with their class; {len(audit['rows'])} rows, {len(audit['sheets'])} sheets reconcile; held for the QS: {held_share}, none outside the list; "
+    f"tonnage with an expectation: {tot['independent_share_pct']}% from the drawings, {tot['by_answer_kg']} kg by answer, {tot['unverifiable_kg']} of {tot['billed_kg']} kg none; no input from the schedule")
   if gaps:
     note += "; known gaps: " + ", ".join(sorted({f"item {v['item']}" for v in gaps}))
   note += "; reader " + ("same as the snapshot" if pdf_path and os.path.isfile(pdf_path) else "not compared (PDF not in the folder)")

@@ -7,6 +7,7 @@ from decimal import Decimal as D
 from app.engine.measure import rebar_expect as RX
 from app.modules.drawings_boq.rebar.bbs_audit import Finding
 from app.modules.drawings_boq.rebar import expect_source as ES
+from app.modules.drawings_boq.rebar import bbs_coverage as COV
 import yaml
 from app.modules.drawings_boq.rebar.member_source import norm_mark
 from app.modules.drawings_boq.takeoff.model.storeys import heights_ft as storey_heights_ft
@@ -249,6 +250,8 @@ def crosscheck(rows: list, sheet_names: dict, match, results: list, members: lis
   raw: list = []   
   skipped = {"combined": 0, "no_line": 0, "no_expectation": 0, "not_matched": 0, "blocked": {}}
   compared = {"rows": 0, "lines": 0}
+  row_basis: dict = {}
+  row_why: dict = {}
   expected_kg_by_sheet: dict = {}
   billed_kg_by_sheet: dict = {}
   sources: dict = {}
@@ -265,14 +268,20 @@ def crosscheck(rows: list, sheet_names: dict, match, results: list, members: lis
     first = its[0]
     if first.kind != "MATCH" or not first.elements:
       skipped["not_matched"] += len(its)
+      for it in its:
+        row_why[it.row_index] = (COV.NO_MEMBER if it.kind == "ASK" else COV.EXTRA_MEMBER, it.family, [])
       continue
     found = [_find_expectation(idx, el) for el in first.elements]
     found = [f for f in found if f is not None]
     if not found:
       skipped["no_expectation"] += len(its)
+      for it in its:
+        row_why[it.row_index] = (COV.NO_EXPECTATION, it.family, [])
       continue
     if len({_signature(e) for _, e in found}) > 1:
       skipped["combined"] += len(its)
+      for it in its:
+        row_why[it.row_index] = (COV.SEVERAL_SHAPES, it.family, [])
       continue
     
     job, e = found[0]
@@ -289,10 +298,15 @@ def crosscheck(rows: list, sheet_names: dict, match, results: list, members: lis
       for k, i in enumerate(row_ids):
         if k >= len(lines) and job["cls"] != "COLUMN":
           skipped["no_line"] += 1
+          row_why[i] = (COV.INPUT_MISSING, job["cls"], list(e.blocked)[:3]) if e.blocked else (COV.NO_LINE, job["cls"], [])
           continue
         n, line = lines[k % len(lines)]
         _check_pair(out, add, states[i], rows[i], job, e, n, line, role, k, lines, row_ids, rows, states, decisions, bands, skipped, compared, conflict_marks)
         sheet_idx = rows[i].sheet
+        if line.kg is None:
+          row_why[i] = (COV.INPUT_MISSING, job["cls"], list(e.blocked)[:3])
+        else:
+          row_basis[i] = (RX.job_basis(e), job["cls"])
         if line.kg is not None:
           expected_kg_by_sheet[sheet_idx] = expected_kg_by_sheet.get(sheet_idx, ZERO) + (rows[i].members or D(1)) * line.kg
           billed_kg_by_sheet[sheet_idx] = billed_kg_by_sheet.get(sheet_idx, ZERO) + (rows[i].total_kg or ZERO)
@@ -361,6 +375,7 @@ def crosscheck(rows: list, sheet_names: dict, match, results: list, members: lis
   out.totals["skipped_no_expectation_rows"] = skipped["no_expectation"]
   out.totals["skipped_not_matched_rows"] = skipped["not_matched"]
   out.totals["unchecked_blockers"] = dict(sorted(skipped["blocked"].items(), key=lambda t: -t[1]))
+  out.totals["coverage"] = COV.build(rows, sheet_names, match, row_basis, row_why)
   _assemble(out, raw, rows, sheet_names, states, refs, results, bands, decisions, match)
   for sh, idx_name in sheet_names.items():
     out.by_sheet[sh] = {"name": idx_name, "rows": sum(1 for r in rows if r.sheet == sh), "billed_kg": str(sum((r.total_kg or ZERO for r in rows if r.sheet == sh), ZERO).quantize(D("0.01"))),

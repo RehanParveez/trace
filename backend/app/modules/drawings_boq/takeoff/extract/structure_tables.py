@@ -516,5 +516,13 @@ def read_all(raw) -> dict | None:
   drains = drain_labels.read(raw)
   if drains:
     out[drain_labels.SOURCE_KEY] = drains
+  from app.modules.drawings_boq.takeoff.extract import level_marks
+  levels = level_marks.read(raw)
+  if levels:
+    out[level_marks.SOURCE_KEY] = levels
+  from app.modules.drawings_boq.takeoff.extract import tube_fixtures
+  tubes = tube_fixtures.read(raw)
+  if tubes:
+    out[tube_fixtures.SOURCE_KEY] = tubes
   return out or None
 
